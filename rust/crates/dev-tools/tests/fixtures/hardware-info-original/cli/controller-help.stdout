@@ -1,0 +1,12 @@
+usage: check_hardware_info.py [-h] [--cases CASES] [--runner ...]
+                              binary binding output
+
+positional arguments:
+  binary
+  binding
+  output
+
+options:
+  -h, --help     show this help message and exit
+  --cases CASES
+  --runner ...

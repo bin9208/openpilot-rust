@@ -1,0 +1,7 @@
+{
+  "cases": 42,
+  "gzip_sha256": "392e086258b17da497ef89b065b4f383dab27e7207c79c56d2a5853a03c69b06",
+  "decoded_sha256": "9d157d3a7400b80cf9327940000bc83c3ab6206c0ed8aa16edd9e33d6f188c0c",
+  "bytes": 19130,
+  "scope": "42 actual unchanged original checker CLI invocations. Valid positions use /bin/true to exercise real empty-output/early-peer behavior and both Params directory checks; this is not a daemon policy oracle. Only owned temporary paths/root are normalized in diagnostic text."
+}

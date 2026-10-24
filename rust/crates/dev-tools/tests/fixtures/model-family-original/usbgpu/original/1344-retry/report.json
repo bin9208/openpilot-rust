@@ -1,0 +1,112 @@
+{
+  "camera": [
+    1344,
+    760
+  ],
+  "mode": "retry",
+  "passed": true,
+  "initial": {
+    "UsbGpuPresent": true,
+    "UsbGpuCompiled": true,
+    "UsbGpuHardwareSeen": true,
+    "UsbGpuLoading": true,
+    "UsbGpuActive": true,
+    "UsbGpuStartupFailed": false
+  },
+  "final": {
+    "UsbGpuPresent": true,
+    "UsbGpuCompiled": true,
+    "UsbGpuHardwareSeen": true,
+    "UsbGpuLoading": false,
+    "UsbGpuActive": true,
+    "UsbGpuStartupFailed": false
+  },
+  "packets": [
+    {
+      "frame": 2,
+      "raw_bytes": 73808
+    },
+    {
+      "frame": 3,
+      "raw_bytes": 73808
+    }
+  ],
+  "argv": [
+    "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/examples/usbgpu_daemon_fixture",
+    "/home/runner/work/_temp/model-family-preparation-296/current-catalog",
+    "/home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry",
+    "/home/runner/work/_temp/model-family-preparation-296/usb-assets",
+    "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/examples/worker_protocol_fixture",
+    "2"
+  ],
+  "peer_argv": [
+    "/home/runner/work/_temp/model-family-preparation-296/peer/driving-daemon-peer",
+    "1344",
+    "760",
+    "1408",
+    "1081344",
+    "2428928",
+    "dual"
+  ],
+  "workers": [
+    {
+      "pid": 9947,
+      "shared": "/tmp/.tmp7cYat9"
+    },
+    {
+      "pid": 9949,
+      "shared": "/tmp/.tmpr6jzvh"
+    }
+  ],
+  "workers_reaped_and_shared_removed": true,
+  "commands": [
+    {
+      "command": "receive modelV2 50 /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/unexpected.bin",
+      "response": "TIMEOUT"
+    },
+    {
+      "command": "receive drivingModelData 50 /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/unexpected.bin",
+      "response": "TIMEOUT"
+    },
+    {
+      "command": "receive cameraOdometry 50 /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/unexpected.bin",
+      "response": "TIMEOUT"
+    },
+    {
+      "command": "send 2 /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/frame.bin /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/frame.bin",
+      "response": "OK"
+    },
+    {
+      "command": "receive modelV2 30000 /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/modelV2-2.bin",
+      "response": "OK"
+    },
+    {
+      "command": "receive drivingModelData 30000 /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/drivingModelData-2.bin",
+      "response": "OK"
+    },
+    {
+      "command": "receive cameraOdometry 30000 /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/cameraOdometry-2.bin",
+      "response": "OK"
+    },
+    {
+      "command": "send 3 /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/frame.bin /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/frame.bin",
+      "response": "OK"
+    },
+    {
+      "command": "receive modelV2 30000 /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/modelV2-3.bin",
+      "response": "OK"
+    },
+    {
+      "command": "receive drivingModelData 30000 /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/drivingModelData-3.bin",
+      "response": "OK"
+    },
+    {
+      "command": "receive cameraOdometry 30000 /home/runner/work/_temp/model-family-original-296/usbgpu/original/1344-retry/cameraOdometry-3.bin",
+      "response": "OK"
+    },
+    {
+      "command": "stop",
+      "response": "OK"
+    }
+  ]
+}

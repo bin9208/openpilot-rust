@@ -1,0 +1,46 @@
+[
+  {
+    "axis": "binary",
+    "receipt": "{\n  \"cases\": 0,\n  \"steps\": 0,\n  \"mismatch_count\": 0,\n  \"mismatches\": [],\n  \"binary_sha256\": \"3704666fd1955bd51e87be2d904719b4c21ce23d8cc33d7a8a1d1a4eb9538943\",\n  \"input_sha256\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\",\n  \"command\": [\n    \"BASE/binary-\\udcff\"\n  ]\n}\n",
+    "printed": "{\"cases\": 0, \"steps\": 0, \"mismatch_count\": 0, \"mismatches\": [], \"binary_sha256\": \"3704666fd1955bd51e87be2d904719b4c21ce23d8cc33d7a8a1d1a4eb9538943\", \"input_sha256\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\", \"command\": [\"BASE/binary-\\udcff\"]}\n",
+    "exit": 0,
+    "files": [
+      "726563656970742e6a736f6e",
+      "7374646572722e6c6f67",
+      "7374646f75742e6a736f6e"
+    ]
+  },
+  {
+    "axis": "source",
+    "receipt": "{\n  \"cases\": 0,\n  \"steps\": 0,\n  \"mismatch_count\": 0,\n  \"mismatches\": [],\n  \"binary_sha256\": \"3704666fd1955bd51e87be2d904719b4c21ce23d8cc33d7a8a1d1a4eb9538943\",\n  \"input_sha256\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\",\n  \"command\": [\n    \"BASE/binary\"\n  ]\n}\n",
+    "printed": "{\"cases\": 0, \"steps\": 0, \"mismatch_count\": 0, \"mismatches\": [], \"binary_sha256\": \"3704666fd1955bd51e87be2d904719b4c21ce23d8cc33d7a8a1d1a4eb9538943\", \"input_sha256\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\", \"command\": [\"BASE/binary\"]}\n",
+    "exit": 0,
+    "files": [
+      "726563656970742e6a736f6e",
+      "7374646572722e6c6f67",
+      "7374646f75742e6a736f6e"
+    ]
+  },
+  {
+    "axis": "output",
+    "receipt": "{\n  \"cases\": 0,\n  \"steps\": 0,\n  \"mismatch_count\": 0,\n  \"mismatches\": [],\n  \"binary_sha256\": \"3704666fd1955bd51e87be2d904719b4c21ce23d8cc33d7a8a1d1a4eb9538943\",\n  \"input_sha256\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\",\n  \"command\": [\n    \"BASE/binary\"\n  ]\n}\n",
+    "printed": "{\"cases\": 0, \"steps\": 0, \"mismatch_count\": 0, \"mismatches\": [], \"binary_sha256\": \"3704666fd1955bd51e87be2d904719b4c21ce23d8cc33d7a8a1d1a4eb9538943\", \"input_sha256\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\", \"command\": [\"BASE/binary\"]}\n",
+    "exit": 0,
+    "files": [
+      "726563656970742e6a736f6e",
+      "7374646572722e6c6f67",
+      "7374646f75742e6a736f6e"
+    ]
+  },
+  {
+    "axis": "resolved-binary",
+    "receipt": "{\n  \"cases\": 0,\n  \"steps\": 0,\n  \"mismatch_count\": 0,\n  \"mismatches\": [],\n  \"binary_sha256\": \"3704666fd1955bd51e87be2d904719b4c21ce23d8cc33d7a8a1d1a4eb9538943\",\n  \"input_sha256\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\",\n  \"command\": [\n    \"BASE/peer-\\udcff\"\n  ]\n}\n",
+    "printed": "{\"cases\": 0, \"steps\": 0, \"mismatch_count\": 0, \"mismatches\": [], \"binary_sha256\": \"3704666fd1955bd51e87be2d904719b4c21ce23d8cc33d7a8a1d1a4eb9538943\", \"input_sha256\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\", \"command\": [\"BASE/peer-\\udcff\"]}\n",
+    "exit": 0,
+    "files": [
+      "726563656970742e6a736f6e",
+      "7374646572722e6c6f67",
+      "7374646f75742e6a736f6e"
+    ]
+  }
+]

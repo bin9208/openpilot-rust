@@ -1,0 +1,18 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%Creator: PIL 0.1 EpsEncode
+%%BoundingBox: 0 0 4 3
+%%Pages: 1
+%%EndComments
+%%Page: 1 1
+%ImageData: 4 3 8 3 0 1 1 "false 3 colorimage"
+gsave
+10 dict begin
+/buf 12 string def
+4 3 scale
+4 3 8
+[4 0 0 -3 0 3]
+{ currentfile buf readhexstring pop } bind
+false 3 colorimage
+00356a13487d265b90396ea34c81b65f94c972a7dc85baef98cd02abe015bef328d1063b
+%%%%EndBinary
+grestore end

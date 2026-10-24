@@ -1,0 +1,165 @@
+[
+  {
+    "passed": true,
+    "mode": "live",
+    "pid": 30238,
+    "exit": 0,
+    "opens": 1,
+    "callbacks": 110,
+    "median_period": 0.05000008049995586,
+    "packets": [
+      {
+        "topic": "soundPressure",
+        "values": {
+          "soundPressureWeightedDb": 54.0
+        },
+        "time": 692.878535545
+      },
+      {
+        "topic": "selfdriveState",
+        "values": {
+          "enabled": false,
+          "alertSound": 1
+        },
+        "time": 693.029072487
+      },
+      {
+        "topic": "selfdriveState",
+        "values": {
+          "enabled": false,
+          "alertSound": 7
+        },
+        "time": 693.222544912
+      },
+      {
+        "topic": "selfdriveState",
+        "values": {
+          "enabled": false,
+          "alertSound": 0
+        },
+        "time": 693.994785009
+      },
+      {
+        "topic": "carrotMan",
+        "values": {
+          "leftSec": 3
+        },
+        "time": 693.994899403
+      },
+      {
+        "topic": "carrotMan",
+        "values": {
+          "leftSec": -1
+        },
+        "time": 694.166611931
+      },
+      {
+        "topic": "selfdriveState",
+        "values": {
+          "enabled": false,
+          "alertSound": 0
+        },
+        "time": 694.166726765
+      },
+      {
+        "topic": "carState",
+        "values": {
+          "buttonEvents": [
+            {
+              "type": "mainCruise",
+              "pressed": true
+            }
+          ]
+        },
+        "time": 694.333697567
+      },
+      {
+        "topic": "carState",
+        "values": {
+          "buttonEvents": [
+            {
+              "type": "mainCruise",
+              "pressed": false
+            }
+          ]
+        },
+        "time": 696.646454672
+      },
+      {
+        "topic": "selfdriveState",
+        "values": {
+          "enabled": true,
+          "alertSound": 0
+        },
+        "time": 696.646549348
+      }
+    ],
+    "audio_hardware_opened": false
+  },
+  {
+    "passed": true,
+    "mode": "bounded",
+    "pid": 30244,
+    "exit": 0,
+    "opens": 1,
+    "callbacks": 3,
+    "median_period": 0.05000522099999216,
+    "packets": [],
+    "audio_hardware_opened": false
+  },
+  {
+    "passed": true,
+    "mode": "retry",
+    "pid": 30249,
+    "exit": 0,
+    "opens": 3,
+    "callbacks": 3,
+    "median_period": 0.050004166999997324,
+    "packets": [],
+    "audio_hardware_opened": false
+  },
+  {
+    "passed": true,
+    "mode": "inactive",
+    "pid": 30254,
+    "exit": 1,
+    "opens": 1,
+    "callbacks": 2,
+    "median_period": 0.049993997999990825,
+    "packets": [],
+    "audio_hardware_opened": false
+  },
+  {
+    "passed": true,
+    "mode": "start-failed",
+    "pid": 30259,
+    "exit": 1,
+    "opens": 1,
+    "callbacks": 0,
+    "median_period": null,
+    "packets": [],
+    "audio_hardware_opened": false
+  },
+  {
+    "passed": true,
+    "mode": "stop-retry",
+    "pid": 30263,
+    "exit": 0,
+    "opens": 1,
+    "callbacks": 0,
+    "median_period": null,
+    "packets": [],
+    "audio_hardware_opened": false
+  },
+  {
+    "passed": true,
+    "mode": "exhausted",
+    "pid": 30267,
+    "exit": 1,
+    "opens": 10,
+    "callbacks": 0,
+    "median_period": null,
+    "packets": [],
+    "audio_hardware_opened": false
+  }
+]

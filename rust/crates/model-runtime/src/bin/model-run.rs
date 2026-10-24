@@ -22,8 +22,12 @@ fn main() -> ExitCode {
 
 fn run() -> Result<(), Box<dyn Error>> {
     let args = env::args_os().skip(1).collect::<Vec<_>>();
-    if args.len() == 2 && args[0] == "--check-catalog" {
+    if args.len() == 2 && (args[0] == "--check-catalog" || args[0] == "--catalog-generation") {
         let catalog = openpilot_model_runtime::catalog::Catalog::load(&PathBuf::from(&args[1]))?;
+        if args[0] == "--catalog-generation" {
+            println!("{}", catalog.generation());
+            return Ok(());
+        }
         let bundles: Vec<_> = catalog.bundles().iter().map(|bundle| serde_json::json!({
             "kind":format!("{:?}", bundle.descriptor.kind), "camera":bundle.descriptor.camera,
             "backend":bundle.backend, "checkpoint":bundle.descriptor.metadata.model_checkpoint,
@@ -34,9 +38,13 @@ fn run() -> Result<(), Box<dyn Error>> {
         );
         return Ok(());
     }
-    if args.len() != 3 || args[0] != "--trusted-bundle" {
+    if !matches!(args.len(), 3 | 7)
+        || args[0] != "--trusted-bundle"
+        || (args.len() == 7
+            && (args[3] != "--cached-admission" || args[5] != "--cached-admission-sha256"))
+    {
         return Err(
-            "usage: model-run --check-catalog ROOT | --trusted-bundle BUNDLE SEQUENCE.json".into(),
+            "usage: model-run --check-catalog ROOT | --catalog-generation ROOT | --trusted-bundle BUNDLE SEQUENCE.json [--cached-admission PATH --cached-admission-sha256 SHA256]".into(),
         );
     }
     let directory = PathBuf::from(&args[1]);
@@ -47,7 +55,36 @@ fn run() -> Result<(), Box<dyn Error>> {
     let frames: Vec<Frame> = serde_json::from_slice(&fs::read(&sequence_path)?)?;
     // SAFETY: --trusted-bundle explicitly selects executable model code under the
     // same trust boundary as running a local program; its bundle must be immutable.
-    let mut model = unsafe { CpuModel::load(&directory) }?;
+    #[cfg(unix)]
+    let admission = if args.len() == 7 {
+        let expected = args[6].to_str().ok_or("cached admission SHA is not UTF8")?;
+        Some(
+            openpilot_model_runtime::cached_code::Admission::read_authenticated(
+                &PathBuf::from(&args[4]),
+                expected,
+            )
+            .map_err(openpilot_model_runtime::Error::CachedCode)?,
+        )
+    } else {
+        None
+    };
+    #[cfg(unix)]
+    // SAFETY: explicit paired admission additionally authenticates original/current
+    // issuer expectations; neither argument is derived from a candidate sidecar.
+    let mut model = unsafe {
+        match &admission {
+            Some(expected) => CpuModel::load_cached(&directory, expected),
+            None => CpuModel::load(&directory),
+        }
+    }?;
+    #[cfg(not(unix))]
+    let mut model = {
+        if args.len() != 3 {
+            return Err("cached admission requires x86_64 Linux".into());
+        }
+        // SAFETY: ordinary --trusted-bundle contract above applies.
+        unsafe { CpuModel::load(&directory) }?
+    };
     for frame in frames {
         for (name, path) in frame.inputs {
             model.write_input(&name, &fs::read(parent.join(path))?)?;

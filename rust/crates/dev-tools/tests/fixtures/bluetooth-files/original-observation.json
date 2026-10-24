@@ -1,0 +1,113 @@
+{
+  "files": [
+    {
+      "bytes": 4,
+      "index": 0,
+      "mode": 384,
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "succeeded": true
+    },
+    {
+      "bytes": 4,
+      "index": 1,
+      "mode": 384,
+      "sha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "succeeded": true
+    },
+    {
+      "bytes": 5,
+      "index": 2,
+      "mode": 384,
+      "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "succeeded": true
+    },
+    {
+      "bytes": 1,
+      "index": 3,
+      "mode": 384,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "succeeded": true
+    },
+    {
+      "bytes": 4,
+      "index": 4,
+      "mode": 384,
+      "sha256": "c26617c7ccbcaa6631b45d851b8cf56e21d2ca624bdb1193afdbd4b560702cec",
+      "succeeded": true
+    },
+    {
+      "bytes": 5,
+      "index": 5,
+      "mode": 384,
+      "sha256": "e485fac25775a7da830698e7daac582737fc8b43ba4b351467a16cf8ed83122a",
+      "succeeded": true
+    },
+    {
+      "bytes": 5,
+      "index": 6,
+      "mode": 384,
+      "sha256": "7c18c9fbdcc8281573e9db9e04f04c3790b10696f3706f0f03fa87427d33e28b",
+      "succeeded": true
+    },
+    {
+      "bytes": 8,
+      "index": 7,
+      "mode": 384,
+      "sha256": "d0067cad9a63e0813759a2bb841051ca73570c0da2e08e840a8eb45db6a7a010",
+      "succeeded": true
+    },
+    {
+      "bytes": 9,
+      "index": 8,
+      "mode": 384,
+      "sha256": "c64ddf11bcd45660f0cf66dd0c22d2b4570ef3d3fc6527a9a6f6c722aefa3c39",
+      "succeeded": true
+    },
+    {
+      "bytes": 3,
+      "index": 9,
+      "mode": 384,
+      "sha256": "d5b592c05dc25b5032553f1b27f4139be95e881f73db33b02b05ab20c3f9981e",
+      "succeeded": true
+    },
+    {
+      "bytes": 245,
+      "index": 10,
+      "mode": 384,
+      "sha256": "15feb0fa24f7248a5416f5a6282e8544a4f56a3ee962ed9a174e8a52bc10c489",
+      "succeeded": true
+    },
+    {
+      "bytes": 7,
+      "index": 11,
+      "mode": 420,
+      "sha256": "ac1b5c0961a7269b6a053ee64276ed0e20a7f48aefb9f67519539d23aaf10149",
+      "succeeded": false
+    },
+    {
+      "bytes": 7,
+      "index": 12,
+      "mode": 420,
+      "sha256": "ac1b5c0961a7269b6a053ee64276ed0e20a7f48aefb9f67519539d23aaf10149",
+      "succeeded": false
+    },
+    {
+      "bytes": 7,
+      "index": 13,
+      "mode": 420,
+      "sha256": "ac1b5c0961a7269b6a053ee64276ed0e20a7f48aefb9f67519539d23aaf10149",
+      "succeeded": false
+    },
+    {
+      "bytes": 4382736,
+      "index": 14,
+      "mode": 384,
+      "sha256": "57e981f64bd97f179471154328d2c7c9202ce92fa5503814073aaff388c877f2",
+      "succeeded": true
+    }
+  ],
+  "input_sha256": "a548190ff3cfdaf9649197573cd7756d9994c79fe66d9dec455d051bcf69913a",
+  "kind": "actual unchanged Python checker source files, not native candidate answers",
+  "model_sha256": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633",
+  "source_checker_sha256": "e30b4cdca8c658cfbd713b6603ef23c64d21854ff41ffa1f611bdd43d2371682"
+}

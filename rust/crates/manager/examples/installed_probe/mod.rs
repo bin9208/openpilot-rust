@@ -21,26 +21,52 @@ pub struct Probe {
     lock: File,
     contender: File,
     listener: UnixListener,
-    _namespace: tempfile::TempDir,
+    _namespace: Option<tempfile::TempDir>,
     prefix: String,
     stats_socket_owned: bool,
+    native_owned_ipc: bool,
+    qa_ipc_root: Option<PathBuf>,
+}
+fn owned_qa_directory(path: &Path, parent: &Path, prefix: &[u8]) -> Result<()> {
+    if path.parent() != Some(parent)
+        || !path
+            .file_name()
+            .is_some_and(|name| name.as_encoded_bytes().starts_with(prefix))
+        || !std::fs::symlink_metadata(path)?.is_dir()
+        || std::fs::canonicalize(path)? != path
+    {
+        return Err("invalid route-upload owned directory".into());
+    }
+    Ok(())
 }
 impl Probe {
     pub fn new(output: &Path, root: &Path, binaries: &Path, mode: &str) -> Result<Self> {
+        let qa_namespace = std::env::var_os("ROUTE_UPLOAD_QA_NAMESPACE");
+        let qa_ipc_root = std::env::var_os("ROUTE_UPLOAD_QA_IPC_ROOT").map(PathBuf::from);
+        let native_owned_ipc = qa_namespace.is_some();
         let display = std::env::var_os("DISPLAY");
         let raylib = std::env::var_os("STARTUP_UI_RAYLIB_LIBRARY");
         for (key, _) in std::env::vars_os() {
             std::env::remove_var(key);
         }
         std::fs::create_dir_all(output)?;
-        if mode == "normal" && Path::new("/tmp/stats").exists() {
+        if !native_owned_ipc && mode == "normal" && Path::new("/tmp/stats").exists() {
             return Err("stats socket already belongs to another runtime".into());
         }
-        let namespace = tempfile::Builder::new()
-            .prefix("msgq_rust-probe-installed-")
-            .tempdir_in("/dev/shm")?;
+        // The native route-upload CLI holds and journals this directory before
+        // spawning the probe. Ordinary callers retain the original allocation.
+        let (namespace_owner, namespace) = if let Some(path) = qa_namespace {
+            let path = PathBuf::from(path);
+            owned_qa_directory(&path, Path::new("/dev/shm"), b"msgq_rust-probe-installed-")?;
+            (None, path)
+        } else {
+            let owner = tempfile::Builder::new()
+                .prefix("msgq_rust-probe-installed-")
+                .tempdir_in("/dev/shm")?;
+            let path = owner.path().to_path_buf();
+            (Some(owner), path)
+        };
         let prefix = namespace
-            .path()
             .file_name()
             .and_then(|value| value.to_str())
             .and_then(|value| value.strip_prefix("msgq_"))
@@ -48,6 +74,13 @@ impl Probe {
             .to_owned();
         std::env::set_var("OPENPILOT_PREFIX", &prefix);
         std::env::set_var("PARAMS_ROOT", output.join("params"));
+        if native_owned_ipc {
+            let ipc = qa_ipc_root.as_ref().ok_or("native QA IPC root missing")?;
+            owned_qa_directory(ipc, Path::new("/tmp"), b"route-upload-ipc-")?;
+            std::env::set_var("ROUTE_UPLOAD_QA_IPC_ROOT", ipc);
+        } else if qa_ipc_root.is_some() {
+            return Err("QA IPC root requires native-owned namespace".into());
+        }
         let params = openpilot_params::Params::for_runtime()?;
         let bindir = output.join("bin");
         let tools = output.join("tools");
@@ -86,7 +119,7 @@ impl Probe {
         lock.lock()?;
         let contender = OpenOptions::new().read(true).write(true).open(&lock_path)?;
         assert!(contender.try_lock().is_err());
-        let socket = namespace.path().join("lock.sock");
+        let socket = namespace.join("lock.sock");
         let listener = UnixListener::bind(&socket)?;
         listener.set_nonblocking(true)?;
         let block = catalog(ImportConfig::from_environment(false))
@@ -119,6 +152,9 @@ impl Probe {
         if mode.starts_with("missing-bootlog") {
             command.env("PREPAREONLY", "1");
         }
+        if let Some(ipc) = &qa_ipc_root {
+            command.env("ROUTE_UPLOAD_QA_IPC_ROOT", ipc);
+        }
         if mode == "missing-bootlog-ui" {
             command
                 .env("DISPLAY", display.ok_or("UI display missing")?)
@@ -135,9 +171,20 @@ impl Probe {
             lock,
             contender,
             listener,
-            _namespace: namespace,
+            _namespace: namespace_owner,
             prefix,
-            stats_socket_owned: mode == "normal",
+            stats_socket_owned: mode == "normal" && !native_owned_ipc,
+            native_owned_ipc,
+            qa_ipc_root,
+        })
+    }
+    pub fn stats_endpoint(&self) -> Result<String> {
+        Ok(match &self.qa_ipc_root {
+            Some(root) => format!(
+                "ipc://{}/stats",
+                root.to_str().ok_or("QA IPC root is not UTF-8")?
+            ),
+            None => "ipc:///tmp/stats".into(),
         })
     }
     pub fn model_assets_override(&mut self, path: &Path) {
@@ -296,7 +343,7 @@ impl Drop for Probe {
             }
         }
         let ipc = PathBuf::from(format!("/tmp/logmessage{}", self.prefix));
-        if ipc.exists() {
+        if !self.native_owned_ipc && ipc.exists() {
             if let Err(error) = std::fs::remove_file(ipc) {
                 eprintln!("probe logging IPC cleanup: {error}");
             }
@@ -317,4 +364,37 @@ pub fn packet(topic: &str, started: bool) -> Result<Vec<u8>> {
         _ => return Err("unknown input topic".into()),
     }
     Ok(capnp::serialize::write_message_to_words(&message))
+}
+
+#[cfg(test)]
+mod qa_endpoint_tests {
+    use super::*;
+    #[test]
+    fn owned_qa_roots_reject_aliases_even_with_trailing_separators() {
+        for (parent, prefix) in [
+            ("/tmp", "route-upload-ipc-"),
+            ("/dev/shm", "msgq_rust-probe-installed-"),
+        ] {
+            let root = tempfile::Builder::new()
+                .prefix(prefix)
+                .tempdir_in(parent)
+                .unwrap();
+            let alias = root.path().with_extension("alias");
+            symlink(root.path(), &alias).unwrap();
+            for suffix in ["", "/", "/."] {
+                let mut spelling = alias.as_os_str().to_owned();
+                spelling.push(suffix);
+                assert!(
+                    owned_qa_directory(Path::new(&spelling), Path::new(parent), prefix.as_bytes())
+                        .is_err(),
+                    "QA alias must be rejected, including trailing separators: {suffix}"
+                );
+                let mut genuine = root.path().as_os_str().to_owned();
+                genuine.push(suffix);
+                owned_qa_directory(Path::new(&genuine), Path::new(parent), prefix.as_bytes())
+                    .unwrap();
+            }
+            std::fs::remove_file(alias).unwrap();
+        }
+    }
 }

@@ -1,0 +1,11 @@
+{
+  "source_cases": 13,
+  "original_source_operations": 40,
+  "paired_request_plans": 26,
+  "original_source_and_native_differential": true,
+  "lifecycle_native_only": true,
+  "request_plan_sha256": "678f66f7328df0133dac8870f095f19fc1e7d89e277f46c4adbe733bd48a111d",
+  "source_unchanged": true,
+  "provider_unchanged": true,
+  "retirement_acceptance": false
+}

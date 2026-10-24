@@ -36,45 +36,10 @@ pub(super) fn upload_one(
             |event: openpilot_web_upload::Progress<'_>| -> Result<(), openpilot_web_upload::Error> {
                 let update = || -> Result<(), Error> {
                     let mut transfer = lock(&context.transfer)?;
-                    let key = (index, event.filename.to_owned());
-                    let previous = transfer.by_file.get(&key).copied().unwrap_or(0);
-                    let current = previous.max(event.sent.min(event.size));
-                    transfer.by_file.insert(key, current);
-                    transfer.logical += current - previous;
-                    transfer.transmitted += event.chunk as u64;
-                    let now = worker::clock().monotonic;
-                    let sent = transfer.transmitted;
-                    transfer.samples.push_back((now, sent));
-                    while transfer.samples.len() > 2
-                        && transfer
-                            .samples
-                            .front()
-                            .is_some_and(|(at, _)| now - at > 3.0)
-                    {
-                        transfer.samples.pop_front();
-                    }
-                    let (sample_time, sample_bytes) = transfer
-                        .samples
-                        .front()
-                        .copied()
-                        .ok_or_else(|| Error::Runtime("speed sample unavailable".into()))?;
-                    let rate = ((sent - sample_bytes) as f64 / (now - sample_time).max(0.001))
-                        .round_ties_even();
-                    let logical = transfer.logical.min(bytes);
-                    context.progress(Progress {
-                        percent: Some(transfer.percent(total, bytes)),
-                        phase: Some("uploading".into()),
-                        phase_current: Some(if bytes > 0 {
-                            logical
-                        } else {
-                            transfer.completed as u64
-                        } as i64),
-                        phase_total: Some(if bytes > 0 { bytes } else { total as u64 } as i64),
-                        bytes_current: Some(logical as i64),
-                        bytes_total: Some(bytes as i64),
-                        bytes_per_second: Some(rate as i64),
-                        ..Progress::default()
-                    })
+                    let patch = transfer.record_progress(index, total, bytes, event, || {
+                        worker::clock().monotonic
+                    })?;
+                    context.progress(patch)
                 };
                 update().map_err(|error| openpilot_web_upload::Error::Source(error.to_string()))
             };

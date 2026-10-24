@@ -1,0 +1,9 @@
+#!/bin/sh
+if [ "$1" = --detached ]; then
+  printf '%s\n' "$$" > "$TOMBSTONE_LIVE_TEST_ACK"
+  exec /bin/sleep 60
+fi
+/usr/bin/setsid /bin/sh "$TOMBSTONE_LIVE_TEST_FIXTURE" --detached >/dev/null 2>&1 < /dev/null &
+while [ ! -e "$TOMBSTONE_LIVE_TEST_RELEASE" ]; do /bin/sleep 0.01; done
+printf '%s\n' 'intentional worker failure after nested child acknowledgement' >&2
+exit 7

@@ -13,7 +13,7 @@ import io
 import json
 from pathlib import Path
 import subprocess
-from can_source import ROOT, load
+from can_source import ROOT, load, dbc_generator_sources
 from check_card_mazda import compare, decoded
 from card_qa.nissan.source import trace
 from card_qa.nissan.scenarios import cases
@@ -30,13 +30,13 @@ def main() -> None:
   (args.evidence / "result.json").unlink(missing_ok=True)
   (args.evidence / "failure.txt").unlink(missing_ok=True)
   load()
-  from opendbc.dbc.generator.generator import create_dbc
+  from opendbc import native_dbc_generator, run_dbc_generator
   import opendbc.can.dbc as source_dbc
 
   dbc_root = args.evidence / "dbc"
   dbc_root.mkdir(exist_ok=True)
   for filename in ("nissan_x_trail_2017.dbc", "nissan_leaf_2018.dbc"):
-    create_dbc(str(ROOT / "opendbc_repo/opendbc/dbc/generator/nissan"), filename, str(dbc_root))
+    run_dbc_generator("compose", ROOT / "opendbc_repo/opendbc/dbc/generator/nissan", filename, dbc_root)
   source_dbc.DBC_PATH = str(dbc_root.resolve())
   request = [c for c in cases() if args.op is None or c["op"] == args.op]
   assert request
@@ -80,8 +80,8 @@ def main() -> None:
       ROOT / "opendbc_repo/opendbc/car/interfaces.py",
       ROOT / "opendbc_repo/opendbc/car/__init__.py",
       ROOT / "opendbc_repo/opendbc/car/crc.py",
-      ROOT / "opendbc_repo/opendbc/dbc/generator/generator.py",
     ]
+    + dbc_generator_sources()
   )
   report = {
     "status": "pass",
@@ -95,6 +95,7 @@ def main() -> None:
     "binary_sha256": hashlib.sha256(args.binary.read_bytes()).hexdigest(),
     "source_sha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in files},
     "generated_dbc_sha256": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in dbc_root.glob("*.dbc")},
+    "dbc_generator_binary_sha256": hashlib.sha256(native_dbc_generator().read_bytes()).hexdigest(),
   }
   (args.evidence / "result.json").write_text(json.dumps(report, indent=2) + "\n")
   print(json.dumps(report))

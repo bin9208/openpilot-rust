@@ -1,0 +1,97 @@
+[
+  {
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout_nonempty": true,
+    "stderr_nonempty": false
+  },
+  {
+    "args": [
+      "--binary"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout_nonempty": false,
+    "stderr_nonempty": true
+  },
+  {
+    "args": [
+      "--capnp-prefix"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout_nonempty": false,
+    "stderr_nonempty": true
+  },
+  {
+    "args": [
+      "--unknown"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout_nonempty": false,
+    "stderr_nonempty": true
+  },
+  {
+    "args": [
+      "x"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout_nonempty": false,
+    "stderr_nonempty": true
+  },
+  {
+    "args": [
+      "--binary",
+      "-x"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout_nonempty": false,
+    "stderr_nonempty": true
+  },
+  {
+    "args": [
+      "--help",
+      "--unknown"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout_nonempty": true,
+    "stderr_nonempty": false
+  },
+  {
+    "args": [
+      "--unknown",
+      "--help"
+    ],
+    "exit": 0,
+    "help": true,
+    "stdout_nonempty": true,
+    "stderr_nonempty": false
+  },
+  {
+    "args": [
+      "--b",
+      "--help"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout_nonempty": false,
+    "stderr_nonempty": true
+  },
+  {
+    "args": [
+      "--capnp",
+      "--help"
+    ],
+    "exit": 2,
+    "help": false,
+    "stdout_nonempty": false,
+    "stderr_nonempty": true
+  }
+]

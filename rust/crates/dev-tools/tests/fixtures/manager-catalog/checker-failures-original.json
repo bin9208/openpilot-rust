@@ -1,0 +1,62 @@
+[
+  {
+    "name": "missing-candidate",
+    "code": 1,
+    "source_result": true,
+    "native_result": false,
+    "native_stdout": false,
+    "request": true,
+    "next_scenario": false,
+    "manifest": false
+  },
+  {
+    "name": "false-candidate",
+    "code": 1,
+    "source_result": true,
+    "native_result": false,
+    "native_stdout": true,
+    "request": true,
+    "next_scenario": false,
+    "manifest": false
+  },
+  {
+    "name": "false-runner",
+    "code": 1,
+    "source_result": true,
+    "native_result": false,
+    "native_stdout": true,
+    "request": true,
+    "next_scenario": false,
+    "manifest": false
+  },
+  {
+    "name": "missing-runner",
+    "code": 1,
+    "source_result": true,
+    "native_result": false,
+    "native_stdout": false,
+    "request": true,
+    "next_scenario": false,
+    "manifest": false
+  },
+  {
+    "name": "existing-scenario",
+    "code": 1,
+    "source_result": false,
+    "native_result": false,
+    "native_stdout": false,
+    "request": false,
+    "next_scenario": false,
+    "manifest": false
+  },
+  {
+    "name": "output-file",
+    "code": 1,
+    "source_result": false,
+    "native_result": false,
+    "native_stdout": false,
+    "request": false,
+    "next_scenario": false,
+    "manifest": false
+  }
+]

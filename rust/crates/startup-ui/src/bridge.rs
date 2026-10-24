@@ -1,5 +1,7 @@
-// SAFETY: CXX owns all opaque resources; the C++ adapter checks indices, copies
-// borrowed strings/slices, never retains Rust pointers, and releases raylib objects once.
+// SAFETY: CXX owns opaque adapter/token storage. Adapters validate indices and
+// handles, never retain borrowed Rust pointers, and release raylib objects once.
+// The independent EGL reference adapter exposes only checked raw ABI calls; its
+// private close entrypoint is wrapped by a Rust API consuming descriptor ownership.
 #[cxx::bridge(namespace = "startup_ui")]
 pub mod ffi {
     extern "Rust" {
@@ -78,7 +80,106 @@ pub mod ffi {
         scale: Vector3,
         tint: u32,
     }
+    #[derive(Clone, Copy, Debug)]
+    enum ReferenceCore {
+        Current,
+        Initialize,
+        Query,
+        Proc,
+        Error,
+        Bind,
+        Active,
+    }
+    #[derive(Clone, Copy, Debug)]
+    enum ReferenceExtension {
+        Create,
+        Destroy,
+        ImageTarget,
+    }
+
     unsafe extern "C++" {
+        include!("polygon_reference.h");
+        type PolygonReferenceApi;
+        fn polygon_reference_api(library: &[u8]) -> Result<UniquePtr<PolygonReferenceApi>>;
+        fn polygon_flags(self: Pin<&mut PolygonReferenceApi>, flags: u32) -> Result<()>;
+        fn polygon_initialize(
+            self: Pin<&mut PolygonReferenceApi>,
+            width: i32,
+            height: i32,
+            title: &str,
+        ) -> Result<()>;
+        fn polygon_fps(self: Pin<&mut PolygonReferenceApi>, fps: i32) -> Result<()>;
+        fn polygon_begin(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        fn polygon_clear(self: Pin<&mut PolygonReferenceApi>, color: u32) -> Result<()>;
+        fn polygon_load_shader(
+            self: Pin<&mut PolygonReferenceApi>,
+            vertex: &str,
+            fragment: &str,
+        ) -> Result<()>;
+        fn polygon_location(self: Pin<&mut PolygonReferenceApi>, name: &str) -> Result<()>;
+        fn polygon_integer(
+            self: Pin<&mut PolygonReferenceApi>,
+            name: &str,
+            value: i32,
+        ) -> Result<()>;
+        fn polygon_floats(
+            self: Pin<&mut PolygonReferenceApi>,
+            name: &str,
+            values: &[f32],
+            components: u32,
+            vector: bool,
+        ) -> Result<()>;
+        fn polygon_matrix(
+            self: Pin<&mut PolygonReferenceApi>,
+            name: &str,
+            values: &[f32],
+        ) -> Result<()>;
+        fn polygon_begin_shader(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        fn polygon_strip(
+            self: Pin<&mut PolygonReferenceApi>,
+            points: &[f32],
+            color: u32,
+        ) -> Result<()>;
+        fn polygon_end_shader(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        fn polygon_flush(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        fn polygon_load_capture(self: Pin<&mut PolygonReferenceApi>) -> Result<u64>;
+        fn polygon_export_capture(
+            self: Pin<&mut PolygonReferenceApi>,
+            image: u64,
+            path: &[u8],
+        ) -> Result<bool>;
+        fn polygon_unload_capture(self: Pin<&mut PolygonReferenceApi>, image: u64) -> Result<()>;
+        fn polygon_end(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        fn polygon_unload_shader(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        fn polygon_close(self: Pin<&mut PolygonReferenceApi>) -> Result<()>;
+        include!("egl_reference.h");
+        type ReferenceApi;
+        fn reference_api() -> UniquePtr<ReferenceApi>;
+        fn reference_close_owned_descriptor(fd: i32) -> i32;
+        fn load_egl(self: Pin<&mut ReferenceApi>) -> Result<()>;
+        fn load_gles(self: Pin<&mut ReferenceApi>) -> Result<()>;
+        fn resolve_core(self: Pin<&mut ReferenceApi>, symbol: ReferenceCore) -> Result<()>;
+        fn resolve_proc(self: Pin<&mut ReferenceApi>, symbol: ReferenceExtension) -> Result<bool>;
+        fn resolve_library(self: Pin<&mut ReferenceApi>, symbol: ReferenceExtension) -> Result<()>;
+        fn reference_display(self: Pin<&mut ReferenceApi>) -> Result<u64>;
+        fn reference_initialize(self: &ReferenceApi, display: u64) -> Result<bool>;
+        fn reference_extensions(self: &ReferenceApi, display: u64) -> Result<Vec<u8>>;
+        fn reference_error(self: &ReferenceApi) -> Result<i32>;
+        fn reference_create(
+            self: Pin<&mut ReferenceApi>,
+            display: u64,
+            target: u32,
+            attributes: &[i32],
+        ) -> Result<u64>;
+        fn reference_active(self: &ReferenceApi, texture: u32) -> Result<()>;
+        fn reference_bind(self: &ReferenceApi, target: u32, texture: u32) -> Result<()>;
+        fn reference_image_target(self: &ReferenceApi, target: u32, image: u64) -> Result<()>;
+        fn reference_destroy(
+            self: Pin<&mut ReferenceApi>,
+            display: u64,
+            image: u64,
+        ) -> Result<bool>;
+
         include!("bridge.h");
         include!("egl.h");
         include!("gles.h");

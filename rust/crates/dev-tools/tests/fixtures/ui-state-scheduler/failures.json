@@ -1,0 +1,4229 @@
+[
+  {
+    "kind": "state",
+    "case": "success",
+    "success": true,
+    "error": null,
+    "files": {
+      "results.json": {
+        "bytes": 470,
+        "sha256": "d5192af0611dc33db7d9a72c62752d40f2d074c12d718d89959867b7c757c1ed"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643843,
+        "sha256": "7745396f01ad31ce3d463b98c97059c46caa722c7eab314502b15b81d5e7c79f"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "PASS: 2400 actual-source/native UI state, cached Params reads, transition ordering, display timeout and brightness frames\n",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "7745396f01ad31ce3d463b98c97059c46caa722c7eab314502b15b81d5e7c79f",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "nonzero",
+    "success": false,
+    "error": "AssertionError: ('native', '')",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643843,
+        "sha256": "7745396f01ad31ce3d463b98c97059c46caa722c7eab314502b15b81d5e7c79f"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "7745396f01ad31ce3d463b98c97059c46caa722c7eab314502b15b81d5e7c79f",
+        "stderr_hex": "",
+        "status": 7
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "spawn",
+    "success": false,
+    "error": "FileNotFoundError: controlled absent candidate",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "spawn_error": true
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "invalid-utf8",
+    "success": false,
+    "error": "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "invalid-stderr",
+    "success": false,
+    "error": "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "7745396f01ad31ce3d463b98c97059c46caa722c7eab314502b15b81d5e7c79f",
+        "stderr_hex": "ff",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "empty",
+    "success": false,
+    "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "malformed",
+    "success": false,
+    "error": "JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 1,
+        "sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "scalar",
+    "success": false,
+    "error": "TypeError: 'int' object is not iterable",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 1,
+        "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "short",
+    "success": false,
+    "error": "ValueError: zip() argument 2 is shorter than argument 1",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643058,
+        "sha256": "a6fa5cb0ae607b8346322328100ce1b30ec917ad0a48a442ad7271478e24df76"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "a6fa5cb0ae607b8346322328100ce1b30ec917ad0a48a442ad7271478e24df76",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "extra",
+    "success": false,
+    "error": "ValueError: zip() argument 2 is longer than argument 1",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 644666,
+        "sha256": "94ecfc05fcc23783d230cb08eb6411c0d4e460b3a64907091e8529a67b7fcf45"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "94ecfc05fcc23783d230cb08eb6411c0d4e460b3a64907091e8529a67b7fcf45",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "mismatch",
+    "success": false,
+    "error": "AssertionError: ('big', 0, 'status', 'disengaged', 'wrong')",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643838,
+        "sha256": "da227db21855ccd8e02640a206cc162b4b104196a67cd89b19cc1566a1accdf0"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "da227db21855ccd8e02640a206cc162b4b104196a67cd89b19cc1566a1accdf0",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "numeric-equivalent",
+    "success": true,
+    "error": null,
+    "files": {
+      "results.json": {
+        "bytes": 470,
+        "sha256": "d5192af0611dc33db7d9a72c62752d40f2d074c12d718d89959867b7c757c1ed"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 605469,
+        "sha256": "ca2dfa4bbfbaca73514fc646b8c8d53ddec6966d2e7a9296123f1cac86e8a144"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "PASS: 2400 actual-source/native UI state, cached Params reads, transition ordering, display timeout and brightness frames\n",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "ca2dfa4bbfbaca73514fc646b8c8d53ddec6966d2e7a9296123f1cac86e8a144",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "stale-malformed",
+    "success": false,
+    "error": "JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+    "files": {
+      "results.json": {
+        "bytes": 10,
+        "sha256": "6b3c0723d010036ba7b0949dafcad0c08284312ca6cdd22e07cd2f01ac47ae90"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "untouched": {
+        "bytes": 4,
+        "sha256": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 1,
+        "sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "stale-mismatch",
+    "success": false,
+    "error": "AssertionError: ('big', 0, 'status', 'disengaged', 'wrong')",
+    "files": {
+      "results.json": {
+        "bytes": 10,
+        "sha256": "6b3c0723d010036ba7b0949dafcad0c08284312ca6cdd22e07cd2f01ac47ae90"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "untouched": {
+        "bytes": 4,
+        "sha256": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643838,
+        "sha256": "da227db21855ccd8e02640a206cc162b4b104196a67cd89b19cc1566a1accdf0"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "da227db21855ccd8e02640a206cc162b4b104196a67cd89b19cc1566a1accdf0",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "newlines",
+    "success": true,
+    "error": null,
+    "files": {
+      "results.json": {
+        "bytes": 470,
+        "sha256": "d5192af0611dc33db7d9a72c62752d40f2d074c12d718d89959867b7c757c1ed"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "1f36466c60a666e19bca83660f4d862e72d5773d66c5b299b09fb385bcdfe8d6"
+      },
+      "big-native.json": {
+        "bytes": 643844,
+        "sha256": "b7d68f541a9e2df8d43730689ad0b8a9c11b6fc256ad1213ec5c979cc2691a63"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "PASS: 2400 actual-source/native UI state, cached Params reads, transition ordering, display timeout and brightness frames\n",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "b7d68f541a9e2df8d43730689ad0b8a9c11b6fc256ad1213ec5c979cc2691a63",
+        "stderr_hex": "7374646572720a6e6578740a",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "late-nonzero-1",
+    "success": false,
+    "error": "AssertionError: ('native', '')",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643843,
+        "sha256": "7745396f01ad31ce3d463b98c97059c46caa722c7eab314502b15b81d5e7c79f"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "7745396f01ad31ce3d463b98c97059c46caa722c7eab314502b15b81d5e7c79f",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 7
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "late-nonzero-2",
+    "success": false,
+    "error": "AssertionError: ('native', '')",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643843,
+        "sha256": "7745396f01ad31ce3d463b98c97059c46caa722c7eab314502b15b81d5e7c79f"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "7745396f01ad31ce3d463b98c97059c46caa722c7eab314502b15b81d5e7c79f",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 7
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "flatten-state",
+    "success": true,
+    "error": null,
+    "files": {
+      "results.json": {
+        "bytes": 470,
+        "sha256": "d5192af0611dc33db7d9a72c62752d40f2d074c12d718d89959867b7c757c1ed"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643843,
+        "sha256": "19b8dc2f5f09be978df5c2238bf685b5b73f6275f42595d675e3576c7a66db68"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "PASS: 2400 actual-source/native UI state, cached Params reads, transition ordering, display timeout and brightness frames\n",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "19b8dc2f5f09be978df5c2238bf685b5b73f6275f42595d675e3576c7a66db68",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "flatten-slow",
+    "success": true,
+    "error": null,
+    "files": {
+      "results.json": {
+        "bytes": 470,
+        "sha256": "d5192af0611dc33db7d9a72c62752d40f2d074c12d718d89959867b7c757c1ed"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643860,
+        "sha256": "61e8c6efb804db4a75132229ea406a5dc81fc305bb87a3d51a38eba68d94319c"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "PASS: 2400 actual-source/native UI state, cached Params reads, transition ordering, display timeout and brightness frames\n",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "61e8c6efb804db4a75132229ea406a5dc81fc305bb87a3d51a38eba68d94319c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "flatten-device",
+    "success": true,
+    "error": null,
+    "files": {
+      "results.json": {
+        "bytes": 470,
+        "sha256": "d5192af0611dc33db7d9a72c62752d40f2d074c12d718d89959867b7c757c1ed"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643877,
+        "sha256": "3b89ca57f7425e12a5adb5e4552145e1b18fbc0b15c60da49293af42bb22cac3"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "PASS: 2400 actual-source/native UI state, cached Params reads, transition ordering, display timeout and brightness frames\n",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3b89ca57f7425e12a5adb5e4552145e1b18fbc0b15c60da49293af42bb22cac3",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "flatten-native",
+    "success": true,
+    "error": null,
+    "files": {
+      "results.json": {
+        "bytes": 470,
+        "sha256": "d5192af0611dc33db7d9a72c62752d40f2d074c12d718d89959867b7c757c1ed"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643896,
+        "sha256": "4a75eaf31566b1a5bc789cef75bd6ec6acf4367aa2b986ac1d889558531cc34d"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "PASS: 2400 actual-source/native UI state, cached Params reads, transition ordering, display timeout and brightness frames\n",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "4a75eaf31566b1a5bc789cef75bd6ec6acf4367aa2b986ac1d889558531cc34d",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "flatten-next-refresh",
+    "success": true,
+    "error": null,
+    "files": {
+      "results.json": {
+        "bytes": 470,
+        "sha256": "d5192af0611dc33db7d9a72c62752d40f2d074c12d718d89959867b7c757c1ed"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643844,
+        "sha256": "65c37af7cbbc45ae708182de7f41e41d459c0a04a088e779788ef905b1b7e747"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "PASS: 2400 actual-source/native UI state, cached Params reads, transition ordering, display timeout and brightness frames\n",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "65c37af7cbbc45ae708182de7f41e41d459c0a04a088e779788ef905b1b7e747",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "flatten-value-next-refresh",
+    "success": true,
+    "error": null,
+    "files": {
+      "results.json": {
+        "bytes": 470,
+        "sha256": "d5192af0611dc33db7d9a72c62752d40f2d074c12d718d89959867b7c757c1ed"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643869,
+        "sha256": "af1bdbb49a03e974919e49885c7dc15bf52addcf9af4a05a4074cbddfb198d2e"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "PASS: 2400 actual-source/native UI state, cached Params reads, transition ordering, display timeout and brightness frames\n",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "af1bdbb49a03e974919e49885c7dc15bf52addcf9af4a05a4074cbddfb198d2e",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "missing-state",
+    "success": false,
+    "error": "KeyError: 'state'",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643767,
+        "sha256": "c8f8a572a6ff1d9bc295d041ba1676b20ecac013be3ebb3453ad0585043f606d"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "c8f8a572a6ff1d9bc295d041ba1676b20ecac013be3ebb3453ad0585043f606d",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "missing-key",
+    "success": false,
+    "error": "KeyError: 'status'",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643819,
+        "sha256": "6c56161977f9b3da9ffd2ab13ea87a8c4e27543b0b5ef51b2d267def867ad335"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "6c56161977f9b3da9ffd2ab13ea87a8c4e27543b0b5ef51b2d267def867ad335",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "float-at-bound",
+    "success": true,
+    "error": null,
+    "files": {
+      "results.json": {
+        "bytes": 470,
+        "sha256": "d5192af0611dc33db7d9a72c62752d40f2d074c12d718d89959867b7c757c1ed"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643845,
+        "sha256": "730c91b356fdfea743a94d58e9b87c0f07ba8a7600a6d7c8fbdae6d280ae132a"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "PASS: 2400 actual-source/native UI state, cached Params reads, transition ordering, display timeout and brightness frames\n",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "730c91b356fdfea743a94d58e9b87c0f07ba8a7600a6d7c8fbdae6d280ae132a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "float-above-bound",
+    "success": false,
+    "error": "AssertionError: ('big', 0, 'started_time', 0.0, 1.0000000000000001e-11)",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643862,
+        "sha256": "d830831ffead527ed0e53905cfc7a22a6605fa8b56ea4db430bb8fbfaf525429"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "d830831ffead527ed0e53905cfc7a22a6605fa8b56ea4db430bb8fbfaf525429",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "float-nan",
+    "success": false,
+    "error": "AssertionError: ('big', 0, 'started_time', 0.0, nan)",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643843,
+        "sha256": "d73a250c25fd5dcb465248a13889095480172f3fbdeed55adf8839606a09bec9"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "d73a250c25fd5dcb465248a13889095480172f3fbdeed55adf8839606a09bec9",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "float-infinity",
+    "success": false,
+    "error": "AssertionError: ('big', 0, 'started_time', 0.0, inf)",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643848,
+        "sha256": "a5645b7c7c98f08cc22c0ef73f4e669e0f2ddb6fbfa7f416ecebf9bec172b8c2"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "a5645b7c7c98f08cc22c0ef73f4e669e0f2ddb6fbfa7f416ecebf9bec172b8c2",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "float-bool",
+    "success": true,
+    "error": null,
+    "files": {
+      "results.json": {
+        "bytes": 470,
+        "sha256": "d5192af0611dc33db7d9a72c62752d40f2d074c12d718d89959867b7c757c1ed"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643845,
+        "sha256": "c78edbf2b6cc999b063331862299838074e6efee9adb3db67eaa764a421a1f3c"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "PASS: 2400 actual-source/native UI state, cached Params reads, transition ordering, display timeout and brightness frames\n",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "c78edbf2b6cc999b063331862299838074e6efee9adb3db67eaa764a421a1f3c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "flatten-precedence",
+    "success": true,
+    "error": null,
+    "files": {
+      "results.json": {
+        "bytes": 470,
+        "sha256": "d5192af0611dc33db7d9a72c62752d40f2d074c12d718d89959867b7c757c1ed"
+      },
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "mici-native.json": {
+        "bytes": 644726,
+        "sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.json": {
+        "bytes": 643682,
+        "sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501"
+      },
+      "pc-input.json": {
+        "bytes": 382381,
+        "sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2"
+      },
+      "pc-source.json": {
+        "bytes": 570948,
+        "sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c"
+      },
+      "big-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-native.json": {
+        "bytes": 643860,
+        "sha256": "26279340a88c8730154e2b4f7fcc47ba01f79cd5fed881388d01e1baf8362389"
+      },
+      "mici-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "mici-source.json": {
+        "bytes": 571992,
+        "sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a"
+      },
+      "mici-input.json": {
+        "bytes": 382382,
+        "sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73"
+      },
+      "mici-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "pc-native.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "PASS: 2400 actual-source/native UI state, cached Params reads, transition ordering, display timeout and brightness frames\n",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "big",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "26279340a88c8730154e2b4f7fcc47ba01f79cd5fed881388d01e1baf8362389",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "mici",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e11d47aeb672dd91df5228c4e00df2311c22015d29e43ae34d0782ac3a82266a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "mici",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "407e06b1ab0cfe9a6658fa1dcb862658a92444df42dc7701da167aa0ab863a73",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "504b9d071ebc7a1326898a132a91ec97e50e92aef76da6cc88c7507e19fad9a8",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "source",
+        "name": "pc",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "3fe1ea6cfb54b8dd5ebf20b157e36c4fddd0f0ab2fa5824aa43975ac4241861c",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "pc",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "8db4132b121eea05d4ce932ec8bae567da102452852c3bbb905385504451eee2",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "44eaacb04fc689596c292d7bd1d722871401e9285762463ef2bf9831b5ff3501",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "source-nonzero",
+    "success": false,
+    "error": "AssertionError: ('source', '')",
+    "files": {
+      "big-source.json": {
+        "bytes": 571109,
+        "sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e7a29cc9029a03dd0bb44ef0ab3465e35616472ab6062ced42ff00664a733386",
+        "stderr_hex": "",
+        "status": 7
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "source-empty",
+    "success": false,
+    "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
+    "files": {
+      "big-source.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "source-malformed",
+    "success": false,
+    "error": "JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+    "files": {
+      "big-source.json": {
+        "bytes": 1,
+        "sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96"
+      },
+      "big-source.log": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "state",
+    "case": "source-invalid-utf8",
+    "success": false,
+    "error": "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+    "files": {
+      "big-input.json": {
+        "bytes": 382382,
+        "sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "source",
+        "name": "big",
+        "argv": [
+          "/home/fma1/rust/openpilot-rust/.venv/bin/python",
+          "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/rust/tools/ui_application_qa/state_source.py"
+        ],
+        "input_sha256": "37e7a468440673c2d4dbba240a0b43496367d63adce22c995354849283232105",
+        "env_overlay": {
+          "PYTHONPATH": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust"
+        },
+        "check": false,
+        "reply_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "success",
+    "success": true,
+    "error": null,
+    "files": {
+      "disabled-native.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "result.json": {
+        "bytes": 103,
+        "sha256": "ee39606f5837e40da7322ef211a31afca347f1550581d4c914e4ac5b70f8378c"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      },
+      "enabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "disabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "enabled-source.json": {
+        "bytes": 21047,
+        "sha256": "09597f9d8401ce5d27a8832fc8daf8bf3ec83005d2e32f1956ffdd5066540e49"
+      },
+      "enabled-native.json": {
+        "bytes": 21047,
+        "sha256": "09597f9d8401ce5d27a8832fc8daf8bf3ec83005d2e32f1956ffdd5066540e49"
+      },
+      "enabled-input.json": {
+        "bytes": 11188,
+        "sha256": "df6477b30cbeace6f586e5c18a264d321d4dcaec83145745a94a2177f1f61f6f"
+      }
+    },
+    "stdout": "PASS: 160 unchanged-source/native display sweeps; realtime downgrade/nice/affinity order, hotplug fallback, child threads, exited worker and permission handling; native own-process SCHED_OTHER readback\n",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "enabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "df6477b30cbeace6f586e5c18a264d321d4dcaec83145745a94a2177f1f61f6f",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "09597f9d8401ce5d27a8832fc8daf8bf3ec83005d2e32f1956ffdd5066540e49",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "nonzero",
+    "success": false,
+    "error": "CalledProcessError: Command '['controlled-native']' returned non-zero exit status 7.",
+    "files": {
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a",
+        "stderr_hex": "",
+        "status": 7
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "spawn",
+    "success": false,
+    "error": "FileNotFoundError: controlled absent candidate",
+    "files": {
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "spawn_error": true
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "invalid-utf8",
+    "success": false,
+    "error": "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+    "files": {
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "invalid-stderr",
+    "success": false,
+    "error": "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+    "files": {
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a",
+        "stderr_hex": "ff",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "empty",
+    "success": false,
+    "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
+    "files": {
+      "disabled-native.json": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      },
+      "disabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "malformed",
+    "success": false,
+    "error": "JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+    "files": {
+      "disabled-native.json": {
+        "bytes": 1,
+        "sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96"
+      },
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      },
+      "disabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "scalar",
+    "success": false,
+    "error": "TypeError: 'int' object is not iterable",
+    "files": {
+      "disabled-native.json": {
+        "bytes": 1,
+        "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+      },
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      },
+      "disabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "short",
+    "success": false,
+    "error": "ValueError: zip() argument 2 is shorter than argument 1",
+    "files": {
+      "disabled-native.json": {
+        "bytes": 15642,
+        "sha256": "043a8ff76f0389a60144d57c8b404608277bb0fb484c6b5ad06d5eab213c5a7c"
+      },
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      },
+      "disabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "043a8ff76f0389a60144d57c8b404608277bb0fb484c6b5ad06d5eab213c5a7c",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "extra",
+    "success": false,
+    "error": "ValueError: zip() argument 2 is longer than argument 1",
+    "files": {
+      "disabled-native.json": {
+        "bytes": 16038,
+        "sha256": "6ef0a2febe2293866e453157a7587e3315f222dbe60bf4944d2be1d1821cbf6f"
+      },
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      },
+      "disabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "6ef0a2febe2293866e453157a7587e3315f222dbe60bf4944d2be1d1821cbf6f",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "mismatch",
+    "success": false,
+    "error": "AssertionError: ('disabled', 0, {'onroad': None, 'next_check': 0.0, 'workers': {'1': {'policy': 1, 'nice': 0, 'cores': [0]}, '2': {'policy': 1, 'nice': 0, 'cores': [0]}, '3': {'policy': 1, 'nice': 0, 'cores': [0]}}, 'calls': []}, {'onroad': None, 'next_check': 0.0, 'workers': {'1': {'policy': 1, 'nice': 0, 'cores': [0]}, '2': {'policy': 1, 'nice': 0, 'cores': [0]}, '3': {'policy': 1, 'nice': 0, 'cores': [0]}}, 'c",
+    "files": {
+      "disabled-native.json": {
+        "bytes": 15849,
+        "sha256": "6497264c1ab32a707b288f8b35734f6d9050440047b2205a9122478a29adda01"
+      },
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      },
+      "disabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "6497264c1ab32a707b288f8b35734f6d9050440047b2205a9122478a29adda01",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "numeric-equivalent",
+    "success": true,
+    "error": null,
+    "files": {
+      "disabled-native.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "result.json": {
+        "bytes": 103,
+        "sha256": "ee39606f5837e40da7322ef211a31afca347f1550581d4c914e4ac5b70f8378c"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      },
+      "enabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "disabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "enabled-source.json": {
+        "bytes": 21047,
+        "sha256": "09597f9d8401ce5d27a8832fc8daf8bf3ec83005d2e32f1956ffdd5066540e49"
+      },
+      "enabled-native.json": {
+        "bytes": 21047,
+        "sha256": "09597f9d8401ce5d27a8832fc8daf8bf3ec83005d2e32f1956ffdd5066540e49"
+      },
+      "enabled-input.json": {
+        "bytes": 11188,
+        "sha256": "df6477b30cbeace6f586e5c18a264d321d4dcaec83145745a94a2177f1f61f6f"
+      }
+    },
+    "stdout": "PASS: 160 unchanged-source/native display sweeps; realtime downgrade/nice/affinity order, hotplug fallback, child threads, exited worker and permission handling; native own-process SCHED_OTHER readback\n",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "enabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "df6477b30cbeace6f586e5c18a264d321d4dcaec83145745a94a2177f1f61f6f",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "09597f9d8401ce5d27a8832fc8daf8bf3ec83005d2e32f1956ffdd5066540e49",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "stale-malformed",
+    "success": false,
+    "error": "JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+    "files": {
+      "disabled-native.json": {
+        "bytes": 1,
+        "sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96"
+      },
+      "untouched": {
+        "bytes": 4,
+        "sha256": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f"
+      },
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "result.json": {
+        "bytes": 10,
+        "sha256": "6b3c0723d010036ba7b0949dafcad0c08284312ca6cdd22e07cd2f01ac47ae90"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      },
+      "disabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "stale-mismatch",
+    "success": false,
+    "error": "AssertionError: ('disabled', 0, {'onroad': None, 'next_check': 0.0, 'workers': {'1': {'policy': 1, 'nice': 0, 'cores': [0]}, '2': {'policy': 1, 'nice': 0, 'cores': [0]}, '3': {'policy': 1, 'nice': 0, 'cores': [0]}}, 'calls': []}, {'onroad': None, 'next_check': 0.0, 'workers': {'1': {'policy': 1, 'nice': 0, 'cores': [0]}, '2': {'policy': 1, 'nice': 0, 'cores': [0]}, '3': {'policy': 1, 'nice': 0, 'cores': [0]}}, 'c",
+    "files": {
+      "disabled-native.json": {
+        "bytes": 15849,
+        "sha256": "6497264c1ab32a707b288f8b35734f6d9050440047b2205a9122478a29adda01"
+      },
+      "untouched": {
+        "bytes": 4,
+        "sha256": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f"
+      },
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "result.json": {
+        "bytes": 10,
+        "sha256": "6b3c0723d010036ba7b0949dafcad0c08284312ca6cdd22e07cd2f01ac47ae90"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      },
+      "disabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "6497264c1ab32a707b288f8b35734f6d9050440047b2205a9122478a29adda01",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "newlines",
+    "success": true,
+    "error": null,
+    "files": {
+      "disabled-native.json": {
+        "bytes": 15841,
+        "sha256": "cce9775e0ad013d582e42e0593d85a4d5af1f823245af8204570bc76077ebcda"
+      },
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "result.json": {
+        "bytes": 103,
+        "sha256": "ee39606f5837e40da7322ef211a31afca347f1550581d4c914e4ac5b70f8378c"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      },
+      "enabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "disabled-native.log": {
+        "bytes": 12,
+        "sha256": "1f36466c60a666e19bca83660f4d862e72d5773d66c5b299b09fb385bcdfe8d6"
+      },
+      "enabled-source.json": {
+        "bytes": 21047,
+        "sha256": "09597f9d8401ce5d27a8832fc8daf8bf3ec83005d2e32f1956ffdd5066540e49"
+      },
+      "enabled-native.json": {
+        "bytes": 21047,
+        "sha256": "09597f9d8401ce5d27a8832fc8daf8bf3ec83005d2e32f1956ffdd5066540e49"
+      },
+      "enabled-input.json": {
+        "bytes": 11188,
+        "sha256": "df6477b30cbeace6f586e5c18a264d321d4dcaec83145745a94a2177f1f61f6f"
+      }
+    },
+    "stdout": "PASS: 160 unchanged-source/native display sweeps; realtime downgrade/nice/affinity order, hotplug fallback, child threads, exited worker and permission handling; native own-process SCHED_OTHER readback\n",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "cce9775e0ad013d582e42e0593d85a4d5af1f823245af8204570bc76077ebcda",
+        "stderr_hex": "7374646572720a6e6578740a",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "enabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "df6477b30cbeace6f586e5c18a264d321d4dcaec83145745a94a2177f1f61f6f",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "09597f9d8401ce5d27a8832fc8daf8bf3ec83005d2e32f1956ffdd5066540e49",
+        "stderr_hex": "",
+        "status": 0
+      }
+    ]
+  },
+  {
+    "kind": "scheduler",
+    "case": "late-nonzero-1",
+    "success": false,
+    "error": "CalledProcessError: Command '['controlled-native']' returned non-zero exit status 7.",
+    "files": {
+      "disabled-native.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-source.json": {
+        "bytes": 15840,
+        "sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a"
+      },
+      "disabled-input.json": {
+        "bytes": 11189,
+        "sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e"
+      },
+      "disabled-native.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "enabled-source.json": {
+        "bytes": 21047,
+        "sha256": "09597f9d8401ce5d27a8832fc8daf8bf3ec83005d2e32f1956ffdd5066540e49"
+      },
+      "enabled-input.json": {
+        "bytes": 11188,
+        "sha256": "df6477b30cbeace6f586e5c18a264d321d4dcaec83145745a94a2177f1f61f6f"
+      }
+    },
+    "stdout": "",
+    "calls": [
+      {
+        "lane": "native",
+        "name": "disabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "e2724377fdd864736d230b378539f327731beec2536e445fd8188c8a49e4666e",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "90c126659d91440c96ca38f31b51d0302b8bbb627c2b86912dc859280131412a",
+        "stderr_hex": "",
+        "status": 0
+      },
+      {
+        "lane": "native",
+        "name": "enabled",
+        "argv": [
+          "controlled-native"
+        ],
+        "input_sha256": "df6477b30cbeace6f586e5c18a264d321d4dcaec83145745a94a2177f1f61f6f",
+        "env_overlay": {},
+        "check": true,
+        "reply_sha256": "09597f9d8401ce5d27a8832fc8daf8bf3ec83005d2e32f1956ffdd5066540e49",
+        "stderr_hex": "",
+        "status": 7
+      }
+    ]
+  }
+]

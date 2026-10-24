@@ -4,10 +4,12 @@ pub use diagnostics::{Event, EventSink};
 pub mod http;
 pub mod runtime;
 mod scan;
+mod source;
 use openpilot_logging::log_site;
 pub use scan::{clear_locks, Attributes, Candidate, XattrCache};
 use serde::Serialize;
 use serde_json::{json, Value};
+pub use source::UploadedSource;
 use std::{
     fs, io,
     path::{Path, PathBuf},
@@ -73,6 +75,9 @@ impl Backoff {
 pub struct UploadResponse {
     pub status: u16,
     pub content_length: String,
+    /// The descriptor retained from before body consumption. No-body
+    /// dispositions (including HTTP 412) leave this absent.
+    pub source: Option<UploadedSource>,
 }
 #[derive(Debug, thiserror::Error)]
 pub enum TransferError {
@@ -155,8 +160,8 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
         network_type: u16,
         metered: bool,
     ) -> Result<Outcome, Error> {
-        let size = match fs::metadata(&file.path) {
-            Ok(meta) => meta.len(),
+        let metadata = match fs::metadata(&file.path) {
+            Ok(meta) => meta,
             Err(error) => {
                 self.events.emit(Event::exception(
                     log_site!(),
@@ -166,6 +171,7 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                 return Ok(Outcome::Failure);
             }
         };
+        let size = metadata.len();
         let fields = json!({"key":file.key.to_string_lossy(),"fn":file.path.to_string_lossy(),"sz":size,"network_type":network_type,"metered":metered});
         self.events.emit(Event::Fields {
             site: log_site!(),
@@ -179,6 +185,8 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
         };
         let transferred = size != 0 && !too_large;
         let mut last_exception = None;
+        let mut marker = None;
+        let mut previous_filename = None;
         let success = if !transferred {
             if too_large {
                 self.events.emit(Event::Fields {
@@ -193,9 +201,21 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
             match self
                 .transfer
                 .upload(&file.key, &file.path, &mut self.events)
-            {
+                .and_then(|mut response| {
+                    if matches!(response.status, 200 | 201 | 401 | 403 | 412) {
+                        marker = Some(source::marker(
+                            &file.path,
+                            &metadata,
+                            response.source.take(),
+                        )?);
+                    }
+                    Ok(response)
+                }) {
                 Ok(response) if matches!(response.status, 200 | 201 | 401 | 403 | 412) => {
-                    self.last_filename.clone_from(&file.path);
+                    previous_filename = Some(std::mem::replace(
+                        &mut self.last_filename,
+                        file.path.clone(),
+                    ));
                     let mut fields = fields.clone();
                     let name = if response.status == 412 {
                         "upload_ignored"
@@ -237,7 +257,44 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
             }
         };
         if success {
-            if let Err(error) = self.attributes.mark_uploaded(&file.path) {
+            let marker = match marker {
+                Some(marker) => marker,
+                None => match source::marker(&file.path, &metadata, None) {
+                    Ok(marker) => marker,
+                    Err(error) => {
+                        self.events.emit(Event::exception(
+                            log_site!(),
+                            "upload source changed",
+                            &error,
+                        ))?;
+                        return Ok(Outcome::Failure);
+                    }
+                },
+            };
+            // Logging is a fallible callback and may block or mutate the file.
+            // Keep its original snapshot until immediately before the actual
+            // descriptor mark, rather than discarding it at response admission.
+            if let Ok(source) = &marker.0 {
+                if let Err(error) = source.check() {
+                    if let Some(previous) = previous_filename {
+                        self.last_filename = previous;
+                    }
+                    let mut fields = fields.clone();
+                    fields["stat"] = Value::Null;
+                    fields["exc"] = json!(Some(diagnostics::error_details(log_site!(), &error)));
+                    self.events.emit(Event::Fields {
+                        site: log_site!(),
+                        name: "upload_failed",
+                        fields,
+                    })?;
+                    return Ok(Outcome::Failure);
+                }
+            }
+            let marked = marker.0.and_then(|source| {
+                self.attributes
+                    .mark_uploaded_source(&file.path, &source.file)
+            });
+            if let Err(error) = marked {
                 if !transferred {
                     return Err(Error::UninitializedLastException(error));
                 }

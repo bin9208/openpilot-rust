@@ -1,0 +1,18 @@
+{
+  "UpdaterCurrentDescription": "1.0 / dev / 475272d / Jan 01",
+  "LastUpdateUptimeOnroad": "0.0",
+  "LastUpdateTime": "2026-10-21T06:01:32.612737",
+  "UpdaterAvailableBranches": "dev,release-tizi",
+  "UpdaterState": "idle",
+  "UpdaterTargetBranch": "dev",
+  "UpdaterNewDescription": "2.0 / dev / b82f23a / Jan 01",
+  "GitDiff": "",
+  "UpdaterFetchAvailable": "0",
+  "LastUpdateRouteCount": "0",
+  "InstallDate": "2026-10-21T06:01:31.612753",
+  "UpdateFailedCount": "0",
+  "UpdateAvailable": "1",
+  "UpdaterLastFetchTime": "2026-10-21T06:01:32.583041",
+  "UpdaterCurrentReleaseNotes": "<h1>1.0</h1>\n<ul>\n<li>verified &amp; staged\n<ul>\n<li>nested</li>\n</ul>\n</li>\n</ul>\n",
+  "UpdaterNewReleaseNotes": "<h1>2.0</h1>\n<ul>\n<li>verified &amp; staged\n<ul>\n<li>nested</li>\n</ul>\n</li>\n</ul>\n"
+}

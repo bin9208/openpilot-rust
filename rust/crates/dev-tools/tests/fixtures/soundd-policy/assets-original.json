@@ -1,0 +1,362 @@
+{
+  "provenance": {
+    "capture": "actual unchanged assets() AST definition, real wave/numpy/filesystem; no native candidate/reference imported",
+    "source": "rust/tools/check_soundd.py",
+    "source_sha256": "3ec6eb74836e2dca07fbe4bc16e80a2f4d4c20af47bf49a9a4dec0e886411f9b",
+    "function_sha256": "a15c6e5bde5c7be3bdee9333d2bb561a1576ef71eb7599003dc8419f476539ab",
+    "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+    "numpy": "2.5.3",
+    "raw_capture": ".analysis/scratch/2026-10-19-soundd-policy-tools/assets-original-ogtiya3t"
+  },
+  "cases": [
+    {
+      "rate": 48000,
+      "channels": 1,
+      "return_path": "openpilot/selfdrive/assets",
+      "files": {
+        "openpilot/selfdrive/assets/sounds/disengage_tizi.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010080bb00000077010002001000646174610800000020037cfce803b4fb",
+          "sha256": "e2a5a234500148edb9bb785f0111f3f0f92efdbca470c4658b97af4d396ec989"
+        },
+        "openpilot/selfdrive/assets/sounds/engage.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010080bb00000077010002001000646174610800000020037cfce803b4fb",
+          "sha256": "e2a5a234500148edb9bb785f0111f3f0f92efdbca470c4658b97af4d396ec989"
+        },
+        "openpilot/selfdrive/assets/sounds/engage_tizi.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010080bb00000077010002001000646174610800000020037cfce803b4fb",
+          "sha256": "e2a5a234500148edb9bb785f0111f3f0f92efdbca470c4658b97af4d396ec989"
+        },
+        "openpilot/selfdrive/assets/sounds/prompt.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010080bb00000077010002001000646174610800000020037cfce803b4fb",
+          "sha256": "e2a5a234500148edb9bb785f0111f3f0f92efdbca470c4658b97af4d396ec989"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/disengage_tizi.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010080bb0000007701000200100064617461080000000cfe580244fd2003",
+          "sha256": "14e72bce3ea08057db3d75f27fadd8d021d178b6289e19d821ff0c7fd5f5a42a"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/engage.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010080bb0000007701000200100064617461080000000cfe580244fd2003",
+          "sha256": "14e72bce3ea08057db3d75f27fadd8d021d178b6289e19d821ff0c7fd5f5a42a"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/engage_tizi.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010080bb0000007701000200100064617461080000000cfe580244fd2003",
+          "sha256": "14e72bce3ea08057db3d75f27fadd8d021d178b6289e19d821ff0c7fd5f5a42a"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/prompt.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010080bb0000007701000200100064617461080000000cfe580244fd2003",
+          "sha256": "14e72bce3ea08057db3d75f27fadd8d021d178b6289e19d821ff0c7fd5f5a42a"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/disengage_tizi.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010080bb000000770100020010006461746108000000b004a0f6100e40ed",
+          "sha256": "67b1b9e88eba53ffd907ae51379d3eabde4cbdbcf4162a9e1ebfe1596f4b6503"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/engage.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010080bb000000770100020010006461746108000000b004a0f6100e40ed",
+          "sha256": "67b1b9e88eba53ffd907ae51379d3eabde4cbdbcf4162a9e1ebfe1596f4b6503"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/engage_tizi.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010080bb000000770100020010006461746108000000b004a0f6100e40ed",
+          "sha256": "67b1b9e88eba53ffd907ae51379d3eabde4cbdbcf4162a9e1ebfe1596f4b6503"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/prompt.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010080bb000000770100020010006461746108000000b004a0f6100e40ed",
+          "sha256": "67b1b9e88eba53ffd907ae51379d3eabde4cbdbcf4162a9e1ebfe1596f4b6503"
+        }
+      }
+    },
+    {
+      "rate": 48000,
+      "channels": 2,
+      "return_path": "openpilot/selfdrive/assets",
+      "files": {
+        "openpilot/selfdrive/assets/sounds/disengage_tizi.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020080bb000000ee020004001000646174611000000020030a017cfcd4fee8034d01b4fb91fe",
+          "sha256": "2a0f4709c8bdc30294717d81a3053b8f3d687195936a77604d8d8864220d4c3f"
+        },
+        "openpilot/selfdrive/assets/sounds/engage.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020080bb000000ee020004001000646174611000000020030a017cfcd4fee8034d01b4fb91fe",
+          "sha256": "2a0f4709c8bdc30294717d81a3053b8f3d687195936a77604d8d8864220d4c3f"
+        },
+        "openpilot/selfdrive/assets/sounds/engage_tizi.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020080bb000000ee020004001000646174611000000020030a017cfcd4fee8034d01b4fb91fe",
+          "sha256": "2a0f4709c8bdc30294717d81a3053b8f3d687195936a77604d8d8864220d4c3f"
+        },
+        "openpilot/selfdrive/assets/sounds/prompt.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020080bb000000ee020004001000646174611000000020030a017cfcd4fee8034d01b4fb91fe",
+          "sha256": "2a0f4709c8bdc30294717d81a3053b8f3d687195936a77604d8d8864220d4c3f"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/disengage_tizi.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020080bb000000ee02000400100064617461100000000cfe59ff5802c80044fd16ff20030a01",
+          "sha256": "1cdc9dcf5b98da043145fe9bbb3aaac2f2a082d8f3d30fbb555dd9b5f04e951b"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/engage.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020080bb000000ee02000400100064617461100000000cfe59ff5802c80044fd16ff20030a01",
+          "sha256": "1cdc9dcf5b98da043145fe9bbb3aaac2f2a082d8f3d30fbb555dd9b5f04e951b"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/engage_tizi.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020080bb000000ee02000400100064617461100000000cfe59ff5802c80044fd16ff20030a01",
+          "sha256": "1cdc9dcf5b98da043145fe9bbb3aaac2f2a082d8f3d30fbb555dd9b5f04e951b"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/prompt.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020080bb000000ee02000400100064617461100000000cfe59ff5802c80044fd16ff20030a01",
+          "sha256": "1cdc9dcf5b98da043145fe9bbb3aaac2f2a082d8f3d30fbb555dd9b5f04e951b"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/disengage_tizi.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020080bb000000ee0200040010006461746110000000b0049001a0f6e0fc100eb00440edc0f9",
+          "sha256": "d924748e921952a6a4e80f8375928cf9946d0e5d80ae6f3e24407a33a317e52e"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/engage.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020080bb000000ee0200040010006461746110000000b0049001a0f6e0fc100eb00440edc0f9",
+          "sha256": "d924748e921952a6a4e80f8375928cf9946d0e5d80ae6f3e24407a33a317e52e"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/engage_tizi.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020080bb000000ee0200040010006461746110000000b0049001a0f6e0fc100eb00440edc0f9",
+          "sha256": "d924748e921952a6a4e80f8375928cf9946d0e5d80ae6f3e24407a33a317e52e"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/prompt.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020080bb000000ee0200040010006461746110000000b0049001a0f6e0fc100eb00440edc0f9",
+          "sha256": "d924748e921952a6a4e80f8375928cf9946d0e5d80ae6f3e24407a33a317e52e"
+        }
+      }
+    },
+    {
+      "rate": 12000,
+      "channels": 1,
+      "return_path": "openpilot/selfdrive/assets",
+      "files": {
+        "openpilot/selfdrive/assets/sounds/disengage_tizi.wav": {
+          "hex": "524946462c00000057415645666d74201000000001000100e02e0000c05d000002001000646174610800000020037cfce803b4fb",
+          "sha256": "0170c7eb15185042c83dbc8e00af3fd1f39ea063fb0ac27ece44418624855e52"
+        },
+        "openpilot/selfdrive/assets/sounds/engage.wav": {
+          "hex": "524946462c00000057415645666d74201000000001000100e02e0000c05d000002001000646174610800000020037cfce803b4fb",
+          "sha256": "0170c7eb15185042c83dbc8e00af3fd1f39ea063fb0ac27ece44418624855e52"
+        },
+        "openpilot/selfdrive/assets/sounds/engage_tizi.wav": {
+          "hex": "524946462c00000057415645666d74201000000001000100e02e0000c05d000002001000646174610800000020037cfce803b4fb",
+          "sha256": "0170c7eb15185042c83dbc8e00af3fd1f39ea063fb0ac27ece44418624855e52"
+        },
+        "openpilot/selfdrive/assets/sounds/prompt.wav": {
+          "hex": "524946462c00000057415645666d74201000000001000100e02e0000c05d000002001000646174610800000020037cfce803b4fb",
+          "sha256": "0170c7eb15185042c83dbc8e00af3fd1f39ea063fb0ac27ece44418624855e52"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/disengage_tizi.wav": {
+          "hex": "524946462c00000057415645666d74201000000001000100e02e0000c05d00000200100064617461080000000cfe580244fd2003",
+          "sha256": "1dfb62652e9d62f01fa8c51d5be997fc0831faebc756eb6cb4a7ce33072c1a31"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/engage.wav": {
+          "hex": "524946462c00000057415645666d74201000000001000100e02e0000c05d00000200100064617461080000000cfe580244fd2003",
+          "sha256": "1dfb62652e9d62f01fa8c51d5be997fc0831faebc756eb6cb4a7ce33072c1a31"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/engage_tizi.wav": {
+          "hex": "524946462c00000057415645666d74201000000001000100e02e0000c05d00000200100064617461080000000cfe580244fd2003",
+          "sha256": "1dfb62652e9d62f01fa8c51d5be997fc0831faebc756eb6cb4a7ce33072c1a31"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/prompt.wav": {
+          "hex": "524946462c00000057415645666d74201000000001000100e02e0000c05d00000200100064617461080000000cfe580244fd2003",
+          "sha256": "1dfb62652e9d62f01fa8c51d5be997fc0831faebc756eb6cb4a7ce33072c1a31"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/disengage_tizi.wav": {
+          "hex": "524946462c00000057415645666d74201000000001000100e02e0000c05d0000020010006461746108000000b004a0f6100e40ed",
+          "sha256": "2b1607d3aa0d908fe063ffa3a9e097afbe1b02cf509a2c0896a4b23188c299b3"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/engage.wav": {
+          "hex": "524946462c00000057415645666d74201000000001000100e02e0000c05d0000020010006461746108000000b004a0f6100e40ed",
+          "sha256": "2b1607d3aa0d908fe063ffa3a9e097afbe1b02cf509a2c0896a4b23188c299b3"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/engage_tizi.wav": {
+          "hex": "524946462c00000057415645666d74201000000001000100e02e0000c05d0000020010006461746108000000b004a0f6100e40ed",
+          "sha256": "2b1607d3aa0d908fe063ffa3a9e097afbe1b02cf509a2c0896a4b23188c299b3"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/prompt.wav": {
+          "hex": "524946462c00000057415645666d74201000000001000100e02e0000c05d0000020010006461746108000000b004a0f6100e40ed",
+          "sha256": "2b1607d3aa0d908fe063ffa3a9e097afbe1b02cf509a2c0896a4b23188c299b3"
+        }
+      }
+    },
+    {
+      "rate": 12000,
+      "channels": 2,
+      "return_path": "openpilot/selfdrive/assets",
+      "files": {
+        "openpilot/selfdrive/assets/sounds/disengage_tizi.wav": {
+          "hex": "524946463400000057415645666d74201000000001000200e02e000080bb000004001000646174611000000020030a017cfcd4fee8034d01b4fb91fe",
+          "sha256": "3d40ae05f6151da86883d4c7efca733f63591279e57ea45cc1bb14397023f42f"
+        },
+        "openpilot/selfdrive/assets/sounds/engage.wav": {
+          "hex": "524946463400000057415645666d74201000000001000200e02e000080bb000004001000646174611000000020030a017cfcd4fee8034d01b4fb91fe",
+          "sha256": "3d40ae05f6151da86883d4c7efca733f63591279e57ea45cc1bb14397023f42f"
+        },
+        "openpilot/selfdrive/assets/sounds/engage_tizi.wav": {
+          "hex": "524946463400000057415645666d74201000000001000200e02e000080bb000004001000646174611000000020030a017cfcd4fee8034d01b4fb91fe",
+          "sha256": "3d40ae05f6151da86883d4c7efca733f63591279e57ea45cc1bb14397023f42f"
+        },
+        "openpilot/selfdrive/assets/sounds/prompt.wav": {
+          "hex": "524946463400000057415645666d74201000000001000200e02e000080bb000004001000646174611000000020030a017cfcd4fee8034d01b4fb91fe",
+          "sha256": "3d40ae05f6151da86883d4c7efca733f63591279e57ea45cc1bb14397023f42f"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/disengage_tizi.wav": {
+          "hex": "524946463400000057415645666d74201000000001000200e02e000080bb00000400100064617461100000000cfe59ff5802c80044fd16ff20030a01",
+          "sha256": "91380863f2024447182f592a6cbd2b5a202c7e45620de7d499802d385256faea"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/engage.wav": {
+          "hex": "524946463400000057415645666d74201000000001000200e02e000080bb00000400100064617461100000000cfe59ff5802c80044fd16ff20030a01",
+          "sha256": "91380863f2024447182f592a6cbd2b5a202c7e45620de7d499802d385256faea"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/engage_tizi.wav": {
+          "hex": "524946463400000057415645666d74201000000001000200e02e000080bb00000400100064617461100000000cfe59ff5802c80044fd16ff20030a01",
+          "sha256": "91380863f2024447182f592a6cbd2b5a202c7e45620de7d499802d385256faea"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/prompt.wav": {
+          "hex": "524946463400000057415645666d74201000000001000200e02e000080bb00000400100064617461100000000cfe59ff5802c80044fd16ff20030a01",
+          "sha256": "91380863f2024447182f592a6cbd2b5a202c7e45620de7d499802d385256faea"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/disengage_tizi.wav": {
+          "hex": "524946463400000057415645666d74201000000001000200e02e000080bb0000040010006461746110000000b0049001a0f6e0fc100eb00440edc0f9",
+          "sha256": "f852749269b8e43e34984e25287124281abae4dc50441d376e909c1769df04bd"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/engage.wav": {
+          "hex": "524946463400000057415645666d74201000000001000200e02e000080bb0000040010006461746110000000b0049001a0f6e0fc100eb00440edc0f9",
+          "sha256": "f852749269b8e43e34984e25287124281abae4dc50441d376e909c1769df04bd"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/engage_tizi.wav": {
+          "hex": "524946463400000057415645666d74201000000001000200e02e000080bb0000040010006461746110000000b0049001a0f6e0fc100eb00440edc0f9",
+          "sha256": "f852749269b8e43e34984e25287124281abae4dc50441d376e909c1769df04bd"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/prompt.wav": {
+          "hex": "524946463400000057415645666d74201000000001000200e02e000080bb0000040010006461746110000000b0049001a0f6e0fc100eb00440edc0f9",
+          "sha256": "f852749269b8e43e34984e25287124281abae4dc50441d376e909c1769df04bd"
+        }
+      }
+    },
+    {
+      "rate": 44100,
+      "channels": 1,
+      "return_path": "openpilot/selfdrive/assets",
+      "files": {
+        "openpilot/selfdrive/assets/sounds/disengage_tizi.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010044ac00008858010002001000646174610800000020037cfce803b4fb",
+          "sha256": "a1ef58c4456a3de43cab9b96fb4ca3b65b06d1cc67137e1067777f9947dee973"
+        },
+        "openpilot/selfdrive/assets/sounds/engage.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010044ac00008858010002001000646174610800000020037cfce803b4fb",
+          "sha256": "a1ef58c4456a3de43cab9b96fb4ca3b65b06d1cc67137e1067777f9947dee973"
+        },
+        "openpilot/selfdrive/assets/sounds/engage_tizi.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010044ac00008858010002001000646174610800000020037cfce803b4fb",
+          "sha256": "a1ef58c4456a3de43cab9b96fb4ca3b65b06d1cc67137e1067777f9947dee973"
+        },
+        "openpilot/selfdrive/assets/sounds/prompt.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010044ac00008858010002001000646174610800000020037cfce803b4fb",
+          "sha256": "a1ef58c4456a3de43cab9b96fb4ca3b65b06d1cc67137e1067777f9947dee973"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/disengage_tizi.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010044ac0000885801000200100064617461080000000cfe580244fd2003",
+          "sha256": "11da6f806b79fc7a9735084fd3c5a4a861f0749aa6471da7f91832049b792791"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/engage.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010044ac0000885801000200100064617461080000000cfe580244fd2003",
+          "sha256": "11da6f806b79fc7a9735084fd3c5a4a861f0749aa6471da7f91832049b792791"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/engage_tizi.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010044ac0000885801000200100064617461080000000cfe580244fd2003",
+          "sha256": "11da6f806b79fc7a9735084fd3c5a4a861f0749aa6471da7f91832049b792791"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/prompt.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010044ac0000885801000200100064617461080000000cfe580244fd2003",
+          "sha256": "11da6f806b79fc7a9735084fd3c5a4a861f0749aa6471da7f91832049b792791"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/disengage_tizi.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010044ac000088580100020010006461746108000000b004a0f6100e40ed",
+          "sha256": "95582ea065b87fbdb9d6899e2b771bdc73268dae9278c36ddfba6ca21f73bc5e"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/engage.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010044ac000088580100020010006461746108000000b004a0f6100e40ed",
+          "sha256": "95582ea065b87fbdb9d6899e2b771bdc73268dae9278c36ddfba6ca21f73bc5e"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/engage_tizi.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010044ac000088580100020010006461746108000000b004a0f6100e40ed",
+          "sha256": "95582ea065b87fbdb9d6899e2b771bdc73268dae9278c36ddfba6ca21f73bc5e"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/prompt.wav": {
+          "hex": "524946462c00000057415645666d7420100000000100010044ac000088580100020010006461746108000000b004a0f6100e40ed",
+          "sha256": "95582ea065b87fbdb9d6899e2b771bdc73268dae9278c36ddfba6ca21f73bc5e"
+        }
+      }
+    },
+    {
+      "rate": 44100,
+      "channels": 2,
+      "return_path": "openpilot/selfdrive/assets",
+      "files": {
+        "openpilot/selfdrive/assets/sounds/disengage_tizi.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020044ac000010b1020004001000646174611000000020030a017cfcd4fee8034d01b4fb91fe",
+          "sha256": "661db1a4f2da45913114c70694a51d682babe9c1db9de5081d33020d74fdb00c"
+        },
+        "openpilot/selfdrive/assets/sounds/engage.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020044ac000010b1020004001000646174611000000020030a017cfcd4fee8034d01b4fb91fe",
+          "sha256": "661db1a4f2da45913114c70694a51d682babe9c1db9de5081d33020d74fdb00c"
+        },
+        "openpilot/selfdrive/assets/sounds/engage_tizi.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020044ac000010b1020004001000646174611000000020030a017cfcd4fee8034d01b4fb91fe",
+          "sha256": "661db1a4f2da45913114c70694a51d682babe9c1db9de5081d33020d74fdb00c"
+        },
+        "openpilot/selfdrive/assets/sounds/prompt.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020044ac000010b1020004001000646174611000000020030a017cfcd4fee8034d01b4fb91fe",
+          "sha256": "661db1a4f2da45913114c70694a51d682babe9c1db9de5081d33020d74fdb00c"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/disengage_tizi.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020044ac000010b102000400100064617461100000000cfe59ff5802c80044fd16ff20030a01",
+          "sha256": "40ce8ca2f139d8794765dd8e412074581500b4909a4a0396d6192f9ed935367f"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/engage.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020044ac000010b102000400100064617461100000000cfe59ff5802c80044fd16ff20030a01",
+          "sha256": "40ce8ca2f139d8794765dd8e412074581500b4909a4a0396d6192f9ed935367f"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/engage_tizi.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020044ac000010b102000400100064617461100000000cfe59ff5802c80044fd16ff20030a01",
+          "sha256": "40ce8ca2f139d8794765dd8e412074581500b4909a4a0396d6192f9ed935367f"
+        },
+        "openpilot/selfdrive/assets/sounds_chs/prompt.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020044ac000010b102000400100064617461100000000cfe59ff5802c80044fd16ff20030a01",
+          "sha256": "40ce8ca2f139d8794765dd8e412074581500b4909a4a0396d6192f9ed935367f"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/disengage_tizi.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020044ac000010b10200040010006461746110000000b0049001a0f6e0fc100eb00440edc0f9",
+          "sha256": "8d77ec99fb3c0bc6ac556113b6efbb36c83c85b8b55c502d6a727ab298d40e80"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/engage.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020044ac000010b10200040010006461746110000000b0049001a0f6e0fc100eb00440edc0f9",
+          "sha256": "8d77ec99fb3c0bc6ac556113b6efbb36c83c85b8b55c502d6a727ab298d40e80"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/engage_tizi.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020044ac000010b10200040010006461746110000000b0049001a0f6e0fc100eb00440edc0f9",
+          "sha256": "8d77ec99fb3c0bc6ac556113b6efbb36c83c85b8b55c502d6a727ab298d40e80"
+        },
+        "openpilot/selfdrive/assets/sounds_eng/prompt.wav": {
+          "hex": "524946463400000057415645666d7420100000000100020044ac000010b10200040010006461746110000000b0049001a0f6e0fc100eb00440edc0f9",
+          "sha256": "8d77ec99fb3c0bc6ac556113b6efbb36c83c85b8b55c502d6a727ab298d40e80"
+        }
+      }
+    }
+  ],
+  "failure_cases": [
+    {
+      "name": "root-file",
+      "error": "NotADirectoryError",
+      "files": {},
+      "root_bytes_hex": "70726573657276656420726f6f742073656e74696e656c"
+    },
+    {
+      "name": "existing-assets-folder",
+      "error": "FileExistsError",
+      "files": {
+        "openpilot/selfdrive/assets/sounds_eng/prompt.wav": {
+          "hex": "707265736572766564206f726967696e616c2073656e74696e656c",
+          "sha256": "69a902e0dfc439ea1e46d116a667e49b1242d4a1654d993f9b171b687ab62ae5"
+        }
+      },
+      "root_bytes_hex": null
+    }
+  ]
+}

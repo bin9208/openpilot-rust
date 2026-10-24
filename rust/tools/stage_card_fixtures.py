@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
-import sys
 from card_qa.ci import ROOT, TOOLS, hashes, require_space, run, source_command
+from can_source import dbc_asset_sources, native_card_asset_preparer
 
 GENERATORS = (
   ('source', False), ('wire_source', True), ('acc_source', True), ('state_source', True),
@@ -18,8 +19,9 @@ def stage(fixtures: Path, dbc: Path) -> None:
   fixtures.mkdir(parents=True)
   dbc.parent.mkdir(parents=True, exist_ok=True)
   commands = fixtures / 'commands'
-  run([sys.executable, str(TOOLS / 'card_prepare_assets.py'), str(ROOT), str(dbc)], commands, 'assets')
-  sources = [TOOLS / 'card_prepare_assets.py', Path(__file__).resolve(), TOOLS / 'card_qa/ci.py']
+  preparer = native_card_asset_preparer()
+  run([str(preparer), str(ROOT), str(dbc)], commands, 'assets')
+  sources = [*dbc_asset_sources(), TOOLS / 'can_source.py', Path(__file__).resolve(), TOOLS / 'card_qa/ci.py']
   for suffix, needs_dbc in GENERATORS:
     script = TOOLS / f'card_hyundai_{suffix}.py'
     sources.append(script)
@@ -28,6 +30,7 @@ def stage(fixtures: Path, dbc: Path) -> None:
   sources.extend((ROOT / 'opendbc_repo/opendbc/car/hyundai').glob('*.py'))
   sources.extend([ROOT / 'opendbc_repo/opendbc/car/car.capnp', ROOT / 'opendbc_repo/opendbc/car/interfaces.py'])
   (fixtures / 'provenance.json').write_text(json.dumps({'source_sha256': hashes(sources),
+    'asset_preparer_sha256': hashlib.sha256(preparer.read_bytes()).hexdigest(),
     'fixtures': str(fixtures), 'dbc': str(dbc), 'generators': [suffix for suffix, _ in GENERATORS]}, indent=2) + '\n')
 
 

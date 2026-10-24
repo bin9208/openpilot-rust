@@ -1,0 +1,151 @@
+{"kind": "command", "command": "echo 42 | sudo tee /sys/class/gpio/export", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"out\" | sudo tee /sys/class/gpio/gpio42/direction", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.1}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.05}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.03}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.02}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.02}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.02}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.02}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.02}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.03}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.03}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.03}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.03}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.02}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.02}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.03}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.03}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.03}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.04}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.04}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.04}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.04}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.04}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.04}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.04}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.04}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.04}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.04}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}
+{"kind": "command", "command": "echo \"0\" | sudo tee /sys/class/gpio/gpio42/value", "failed": false, "status": 0}
+{"kind": "sleep", "seconds": 0.01}

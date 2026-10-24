@@ -1,0 +1,39 @@
+{
+  "source": "rust/tools/check_encoder_target.py",
+  "source_sha256": "5f9a794f6797ee43618eaa7ad274187ea363609f8dab7c407ae74639b6eee2a8",
+  "controls": "Real unchanged original CLI with explicit known inputs; only selected raw Unix hash argv byte and fresh output path differ. No build or QEMU invoked.",
+  "cases": [
+    {
+      "name": "rust_sha256",
+      "raw_value_hex": "ff",
+      "exit": 1,
+      "stdout_hex": "",
+      "output_exists": true,
+      "failure": {
+        "type": "TargetFailure",
+        "error": "frozen Rust ELF hash differs"
+      },
+      "receipt_status": "FAIL",
+      "completed_cases": [],
+      "option_codepoints": [
+        56575
+      ]
+    },
+    {
+      "name": "jpeg_sha256",
+      "raw_value_hex": "ff",
+      "exit": 1,
+      "stdout_hex": "",
+      "output_exists": true,
+      "failure": {
+        "type": "TargetFailure",
+        "error": "frozen target JPEG archive hash differs"
+      },
+      "receipt_status": "FAIL",
+      "completed_cases": [],
+      "option_codepoints": [
+        56575
+      ]
+    }
+  ]
+}

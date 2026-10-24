@@ -1,0 +1,9 @@
+{
+  "check-ui-qr": "4c3567949e6af91de75cf1434f911aecb41e92d438b6a055bfbc3c2a5cc6400a",
+  "check-ui-torque-geometry": "4b8a402190c6789401c1a5485d56fc221863d2cdbba1e77f758f2a962473761f",
+  "examples/qr_trace": "417c9a7c6a63054024785b0b92b5ba8f187d88643f4438fdbd658222c51567a6",
+  "examples/torque_geometry": "9fd87f6c844cd8df6762fed888353b299c21b8134f22ec4e3cd76da1f9dafa25",
+  "rust/crates/ui-application/examples/qr_trace.rs": "c05b570221d37eec2a5834d41f6f8d389a5ff87631bda3d60d4ce60d4d1b706f",
+  "rust/crates/ui-application/examples/torque_geometry.rs": "155f3021ed43598f9439688a4a4a1423b658c8a012f92be636bcb138c42532c7",
+  "rust/crates/dev-tools/src/ui_fixed_corpus_check.rs": "cb35d98f5e0e54db52d079439dfe119de703ad24629362bb3d54a97b7befe9d6"
+}

@@ -8,6 +8,7 @@ use std::{
     collections::HashSet,
     fs::{self, File},
     io::{self, Read},
+    os::unix::fs::MetadataExt,
     path::Path,
 };
 pub const CHUNK_SIZE: usize = 1024 * 1024;
@@ -107,6 +108,7 @@ impl FolderUpload<'_> {
                 let mut stream = Stream {
                     path: &path,
                     file: None,
+                    metadata: None,
                     observer,
                     filename: &filename,
                     size,
@@ -175,6 +177,7 @@ impl FolderUpload<'_> {
 struct Stream<'a, 'b> {
     path: &'a Path,
     file: Option<File>,
+    metadata: Option<fs::Metadata>,
     observer: &'a mut Observer<'b>,
     filename: &'a str,
     size: u64,
@@ -185,6 +188,9 @@ struct Stream<'a, 'b> {
 }
 impl Stream<'_, '_> {
     fn read_chunk(&mut self, output: &mut [u8]) -> Result<usize, Error> {
+        if output.is_empty() {
+            return Ok(0);
+        }
         if self.ended {
             return Ok(0);
         }
@@ -197,7 +203,13 @@ impl Stream<'_, '_> {
                 chunk: 0,
             })?;
             self.observer.check()?;
-            self.file = Some(File::open(self.path)?);
+            let file = File::open(self.path)?;
+            let metadata = file.metadata()?;
+            if !metadata.is_file() || metadata.len() != self.size {
+                return Err(Error::Source("upload source changed".into()));
+            }
+            self.metadata = Some(metadata);
+            self.file = Some(file);
         }
         self.observer.check()?;
         let limit = output.len().min(CHUNK_SIZE);
@@ -212,6 +224,36 @@ impl Stream<'_, '_> {
             }
         }
         if size == 0 {
+            // Returning final EOF commits a complete chunked HTTP request.
+            // Check the held descriptor and current pathname before that
+            // boundary, so a changed attempt cannot be published remotely.
+            let identity = |m: &fs::Metadata| {
+                (
+                    m.dev(),
+                    m.ino(),
+                    m.len(),
+                    m.mtime(),
+                    m.mtime_nsec(),
+                    m.ctime(),
+                    m.ctime_nsec(),
+                )
+            };
+            let before = self
+                .metadata
+                .as_ref()
+                .ok_or_else(|| Error::Source("upload source metadata missing".into()))?;
+            let current = self
+                .file
+                .as_ref()
+                .ok_or_else(|| Error::Source("upload source file missing".into()))?
+                .metadata()?;
+            let named = fs::metadata(self.path)?;
+            if self.sent != self.size
+                || identity(before) != identity(&current)
+                || identity(before) != identity(&named)
+            {
+                return Err(Error::Source("upload source changed".into()));
+            }
             self.ended = true;
             self.file = None;
             return Ok(0);

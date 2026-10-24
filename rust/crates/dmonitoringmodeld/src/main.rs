@@ -23,15 +23,18 @@ use std::{
 struct Options {
     catalog: PathBuf,
     frames: Option<u64>,
+    cached_admission: Option<(PathBuf, String)>,
 }
 
 fn options() -> Result<Option<Options>, Error> {
     let mut args = env::args_os().skip(1);
     let mut catalog = None;
     let mut frames = None;
+    let mut cached_admission = None;
+    let mut cached_sha = None;
     while let Some(arg) = args.next() {
         if arg == "--help" {
-            println!("openpilot-dmonitoringmodeld --trusted-catalog PATH [--frames N]\n\nRuns the driver VisionIPC/native-model/driverStateV2 loop. PATH must contain\ntrusted immutable executable model artifacts. Omit --frames to run continuously.\nUses the original OPENPILOT_PREFIX namespace and SEND_RAW_PRED behavior.");
+            println!("openpilot-dmonitoringmodeld --trusted-catalog PATH [--frames N] [--cached-admission PATH --cached-admission-sha256 SHA256]\n\nRuns the driver VisionIPC/native-model/driverStateV2 loop. PATH must contain\ntrusted immutable executable model artifacts. Omit --frames to run continuously.\nUses the original OPENPILOT_PREFIX namespace and SEND_RAW_PRED behavior.");
             return Ok(None);
         } else if arg == "--trusted-catalog" && catalog.is_none() {
             catalog = Some(PathBuf::from(
@@ -49,6 +52,18 @@ fn options() -> Result<Option<Options>, Error> {
                 return Err(Error::Contract("frame count must be positive"));
             }
             frames = Some(count);
+        } else if arg == "--cached-admission" && cached_admission.is_none() {
+            cached_admission = Some(PathBuf::from(
+                args.next()
+                    .ok_or(Error::Contract("missing cached admission path"))?,
+            ));
+        } else if arg == "--cached-admission-sha256" && cached_sha.is_none() {
+            cached_sha = Some(
+                args.next()
+                    .ok_or(Error::Contract("missing cached admission SHA256"))?
+                    .into_string()
+                    .map_err(|_| Error::Contract("cached admission SHA256 is not UTF8"))?,
+            );
         } else {
             return Err(Error::Contract("unknown or duplicate option; see --help"));
         }
@@ -56,6 +71,15 @@ fn options() -> Result<Option<Options>, Error> {
     Ok(Some(Options {
         catalog: catalog.ok_or(Error::Contract("--trusted-catalog is required"))?,
         frames,
+        cached_admission: match (cached_admission, cached_sha) {
+            (Some(path), Some(sha)) => Some((path, sha)),
+            (None, None) => None,
+            _ => {
+                return Err(Error::Contract(
+                    "cached admission requires paired path and SHA256",
+                ))
+            }
+        },
     }))
 }
 
@@ -118,6 +142,14 @@ fn camera_ready(client: &VisionClient, stop: &AtomicBool) -> Result<bool, Error>
 
 fn run_loop(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Result<(), Error> {
     let catalog = Catalog::load(&options.catalog)?;
+    let admission = options
+        .cached_admission
+        .as_ref()
+        .map(|(path, sha)| {
+            openpilot_model_runtime::cached_code::Admission::read_authenticated(path, sha)
+                .map_err(openpilot_model_runtime::Error::CachedCode)
+        })
+        .transpose()?;
     let raw = env::var_os("SEND_RAW_PRED").is_some_and(|value| !value.is_empty());
     logger.emit(
         log_site!(),
@@ -158,7 +190,12 @@ fn run_loop(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Re
         8
     };
     // SAFETY: --trusted-catalog explicitly requires immutable executable artifacts.
-    let mut runtime = unsafe { DriverRuntime::load(bundle, priority) }?;
+    let mut runtime = unsafe {
+        match &admission {
+            Some(expected) => DriverRuntime::load_cached(bundle, priority, expected),
+            None => DriverRuntime::load(bundle, priority),
+        }
+    }?;
     logger.emit(
         log_site!(),
         Record::text(

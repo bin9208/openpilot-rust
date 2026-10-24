@@ -1,0 +1,3390 @@
+{
+  "sources": {
+    "rust/tools/check_encoder_target.py": "5f9a794f6797ee43618eaa7ad274187ea363609f8dab7c407ae74639b6eee2a8"
+  },
+  "controls": "Only command and disk availability boundaries controlled; source extraction/ELF/package/packet checks and run receipts execute unchanged.",
+  "cases": [
+    {
+      "name": "success",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ],
+        [
+          "command",
+          "$ROOT/output/build",
+          [
+            "$ROOT/compiler",
+            "-std=c++17",
+            "-O1",
+            "-g0",
+            "-pthread",
+            "$ROOT/output/source-oracle.cc",
+            "-I$ROOT/ffmpeg/include",
+            "-I$ROOT/yuv/include",
+            "-I$ROOT/rust/crates/jpeg/native/vendor/src",
+            "-I$ROOT/jpeg-build",
+            "-Wl,--start-group",
+            "$ROOT/ffmpeg/lib/libavformat.a",
+            "$ROOT/ffmpeg/lib/libavcodec.a",
+            "$ROOT/ffmpeg/lib/libavutil.a",
+            "$ROOT/ffmpeg/lib/libswresample.a",
+            "$ROOT/ffmpeg/lib/libx264.a",
+            "$ROOT/ffmpeg/lib/libz.a",
+            "$ROOT/ffmpeg/lib/libva.a",
+            "$ROOT/ffmpeg/lib/libva-drm.a",
+            "$ROOT/ffmpeg/lib/libdrm.a",
+            "$ROOT/yuv/lib/libyuv.a",
+            "$ROOT/jpeg.a",
+            "-Wl,--end-group",
+            "-lm",
+            "-ldl",
+            "-o",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "$ROOT/host-libs",
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/rust-elf"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-0-lossless/source",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-0-lossless/rust",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-1-lossless/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-1-lossless/source",
+            "lossless",
+            "256",
+            "160",
+            "128",
+            "80",
+            "288",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-1-lossless/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-1-lossless/rust",
+            "lossless",
+            "256",
+            "160",
+            "128",
+            "80",
+            "288",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-2-h264/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-2-h264/source",
+            "h264",
+            "256",
+            "160",
+            "128",
+            "80",
+            "288",
+            "80"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-2-h264/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-2-h264/rust",
+            "h264",
+            "256",
+            "160",
+            "128",
+            "80",
+            "288",
+            "80"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-3-jpeg/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-3-jpeg/source",
+            "jpeg",
+            "1928",
+            "1208",
+            "482",
+            "302",
+            "2048",
+            "3"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-3-jpeg/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-3-jpeg/rust",
+            "jpeg",
+            "1928",
+            "1208",
+            "482",
+            "302",
+            "2048",
+            "3"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-4-jpeg/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-4-jpeg/source",
+            "jpeg",
+            "1280",
+            "720",
+            "320",
+            "180",
+            "1344",
+            "3"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-4-jpeg/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-4-jpeg/rust",
+            "jpeg",
+            "1280",
+            "720",
+            "320",
+            "180",
+            "1344",
+            "3"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ]
+      ],
+      "error": null,
+      "failure": null,
+      "stdout": "{\"status\": \"PASS\", \"cases\": 5, \"packets\": 112, \"receipt\": \"$ROOT/output/receipt.json\"}\n",
+      "status": "PASS",
+      "completed": [
+        "case-0-lossless",
+        "case-1-lossless",
+        "case-2-h264",
+        "case-3-jpeg",
+        "case-4-jpeg"
+      ],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "disk",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "insufficient disk space; recover at least 35 GiB before resuming"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "insufficient disk space; recover at least 35 GiB before resuming"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": null
+    },
+    {
+      "name": "rust-hash",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "frozen Rust ELF hash differs"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "frozen Rust ELF hash differs"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": null
+    },
+    {
+      "name": "jpeg-hash",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "frozen target JPEG archive hash differs"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "frozen target JPEG archive hash differs"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": null
+    },
+    {
+      "name": "rust-elf",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "not a little-endian AArch64 ELF: $ROOT/rust-elf"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "not a little-endian AArch64 ELF: $ROOT/rust-elf"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": null
+    },
+    {
+      "name": "loader-elf",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "not a little-endian AArch64 ELF: $ROOT/agnos/ld-linux-aarch64.so.1"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "not a little-endian AArch64 ELF: $ROOT/agnos/ld-linux-aarch64.so.1"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": null
+    },
+    {
+      "name": "missing-include",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "missing explicit include directory: $ROOT/jpeg-build"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "missing explicit include directory: $ROOT/jpeg-build"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "ffmpeg-pin",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "FFmpeg release pin differs"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "FFmpeg release pin differs"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "yuv-pin",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "libyuv release pin differs"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "libyuv release pin differs"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "ffmpeg-payload",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "FFmpeg payload differs from pinned receipt: $ROOT/ffmpeg/include/fixture.h"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "FFmpeg payload differs from pinned receipt: $ROOT/ffmpeg/include/fixture.h"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "yuv-payload",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "libyuv payload differs from pinned receipt: $ROOT/yuv/include/fixture.h"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "libyuv payload differs from pinned receipt: $ROOT/yuv/include/fixture.h"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "build-fail",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ],
+        [
+          "command",
+          "$ROOT/output/build",
+          [
+            "$ROOT/compiler",
+            "-std=c++17",
+            "-O1",
+            "-g0",
+            "-pthread",
+            "$ROOT/output/source-oracle.cc",
+            "-I$ROOT/ffmpeg/include",
+            "-I$ROOT/yuv/include",
+            "-I$ROOT/rust/crates/jpeg/native/vendor/src",
+            "-I$ROOT/jpeg-build",
+            "-Wl,--start-group",
+            "$ROOT/ffmpeg/lib/libavformat.a",
+            "$ROOT/ffmpeg/lib/libavcodec.a",
+            "$ROOT/ffmpeg/lib/libavutil.a",
+            "$ROOT/ffmpeg/lib/libswresample.a",
+            "$ROOT/ffmpeg/lib/libx264.a",
+            "$ROOT/ffmpeg/lib/libz.a",
+            "$ROOT/ffmpeg/lib/libva.a",
+            "$ROOT/ffmpeg/lib/libva-drm.a",
+            "$ROOT/ffmpeg/lib/libdrm.a",
+            "$ROOT/yuv/lib/libyuv.a",
+            "$ROOT/jpeg.a",
+            "-Wl,--end-group",
+            "-lm",
+            "-ldl",
+            "-o",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "$ROOT/host-libs",
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "controlled child failure"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "controlled child failure"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "oracle-elf",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ],
+        [
+          "command",
+          "$ROOT/output/build",
+          [
+            "$ROOT/compiler",
+            "-std=c++17",
+            "-O1",
+            "-g0",
+            "-pthread",
+            "$ROOT/output/source-oracle.cc",
+            "-I$ROOT/ffmpeg/include",
+            "-I$ROOT/yuv/include",
+            "-I$ROOT/rust/crates/jpeg/native/vendor/src",
+            "-I$ROOT/jpeg-build",
+            "-Wl,--start-group",
+            "$ROOT/ffmpeg/lib/libavformat.a",
+            "$ROOT/ffmpeg/lib/libavcodec.a",
+            "$ROOT/ffmpeg/lib/libavutil.a",
+            "$ROOT/ffmpeg/lib/libswresample.a",
+            "$ROOT/ffmpeg/lib/libx264.a",
+            "$ROOT/ffmpeg/lib/libz.a",
+            "$ROOT/ffmpeg/lib/libva.a",
+            "$ROOT/ffmpeg/lib/libva-drm.a",
+            "$ROOT/ffmpeg/lib/libdrm.a",
+            "$ROOT/yuv/lib/libyuv.a",
+            "$ROOT/jpeg.a",
+            "-Wl,--end-group",
+            "-lm",
+            "-ldl",
+            "-o",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "$ROOT/host-libs",
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "not a little-endian AArch64 ELF: $ROOT/output/source-oracle"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "not a little-endian AArch64 ELF: $ROOT/output/source-oracle"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "loader-outside",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ],
+        [
+          "command",
+          "$ROOT/output/build",
+          [
+            "$ROOT/compiler",
+            "-std=c++17",
+            "-O1",
+            "-g0",
+            "-pthread",
+            "$ROOT/output/source-oracle.cc",
+            "-I$ROOT/ffmpeg/include",
+            "-I$ROOT/yuv/include",
+            "-I$ROOT/rust/crates/jpeg/native/vendor/src",
+            "-I$ROOT/jpeg-build",
+            "-Wl,--start-group",
+            "$ROOT/ffmpeg/lib/libavformat.a",
+            "$ROOT/ffmpeg/lib/libavcodec.a",
+            "$ROOT/ffmpeg/lib/libavutil.a",
+            "$ROOT/ffmpeg/lib/libswresample.a",
+            "$ROOT/ffmpeg/lib/libx264.a",
+            "$ROOT/ffmpeg/lib/libz.a",
+            "$ROOT/ffmpeg/lib/libva.a",
+            "$ROOT/ffmpeg/lib/libva-drm.a",
+            "$ROOT/ffmpeg/lib/libdrm.a",
+            "$ROOT/yuv/lib/libyuv.a",
+            "$ROOT/jpeg.a",
+            "-Wl,--end-group",
+            "-lm",
+            "-ldl",
+            "-o",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "$ROOT/host-libs",
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "target loader resolved a library outside the supplied AGNOS tree"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "target loader resolved a library outside the supplied AGNOS tree"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "loader-empty",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ],
+        [
+          "command",
+          "$ROOT/output/build",
+          [
+            "$ROOT/compiler",
+            "-std=c++17",
+            "-O1",
+            "-g0",
+            "-pthread",
+            "$ROOT/output/source-oracle.cc",
+            "-I$ROOT/ffmpeg/include",
+            "-I$ROOT/yuv/include",
+            "-I$ROOT/rust/crates/jpeg/native/vendor/src",
+            "-I$ROOT/jpeg-build",
+            "-Wl,--start-group",
+            "$ROOT/ffmpeg/lib/libavformat.a",
+            "$ROOT/ffmpeg/lib/libavcodec.a",
+            "$ROOT/ffmpeg/lib/libavutil.a",
+            "$ROOT/ffmpeg/lib/libswresample.a",
+            "$ROOT/ffmpeg/lib/libx264.a",
+            "$ROOT/ffmpeg/lib/libz.a",
+            "$ROOT/ffmpeg/lib/libva.a",
+            "$ROOT/ffmpeg/lib/libva-drm.a",
+            "$ROOT/ffmpeg/lib/libdrm.a",
+            "$ROOT/yuv/lib/libyuv.a",
+            "$ROOT/jpeg.a",
+            "-Wl,--end-group",
+            "-lm",
+            "-ldl",
+            "-o",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "$ROOT/host-libs",
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "AGNOS loader did not report resolved library paths"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "AGNOS loader did not report resolved library paths"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "source-fail",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ],
+        [
+          "command",
+          "$ROOT/output/build",
+          [
+            "$ROOT/compiler",
+            "-std=c++17",
+            "-O1",
+            "-g0",
+            "-pthread",
+            "$ROOT/output/source-oracle.cc",
+            "-I$ROOT/ffmpeg/include",
+            "-I$ROOT/yuv/include",
+            "-I$ROOT/rust/crates/jpeg/native/vendor/src",
+            "-I$ROOT/jpeg-build",
+            "-Wl,--start-group",
+            "$ROOT/ffmpeg/lib/libavformat.a",
+            "$ROOT/ffmpeg/lib/libavcodec.a",
+            "$ROOT/ffmpeg/lib/libavutil.a",
+            "$ROOT/ffmpeg/lib/libswresample.a",
+            "$ROOT/ffmpeg/lib/libx264.a",
+            "$ROOT/ffmpeg/lib/libz.a",
+            "$ROOT/ffmpeg/lib/libva.a",
+            "$ROOT/ffmpeg/lib/libva-drm.a",
+            "$ROOT/ffmpeg/lib/libdrm.a",
+            "$ROOT/yuv/lib/libyuv.a",
+            "$ROOT/jpeg.a",
+            "-Wl,--end-group",
+            "-lm",
+            "-ldl",
+            "-o",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "$ROOT/host-libs",
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/rust-elf"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-0-lossless/source",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "controlled child failure"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "controlled child failure"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "runtime-version",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ],
+        [
+          "command",
+          "$ROOT/output/build",
+          [
+            "$ROOT/compiler",
+            "-std=c++17",
+            "-O1",
+            "-g0",
+            "-pthread",
+            "$ROOT/output/source-oracle.cc",
+            "-I$ROOT/ffmpeg/include",
+            "-I$ROOT/yuv/include",
+            "-I$ROOT/rust/crates/jpeg/native/vendor/src",
+            "-I$ROOT/jpeg-build",
+            "-Wl,--start-group",
+            "$ROOT/ffmpeg/lib/libavformat.a",
+            "$ROOT/ffmpeg/lib/libavcodec.a",
+            "$ROOT/ffmpeg/lib/libavutil.a",
+            "$ROOT/ffmpeg/lib/libswresample.a",
+            "$ROOT/ffmpeg/lib/libx264.a",
+            "$ROOT/ffmpeg/lib/libz.a",
+            "$ROOT/ffmpeg/lib/libva.a",
+            "$ROOT/ffmpeg/lib/libva-drm.a",
+            "$ROOT/ffmpeg/lib/libdrm.a",
+            "$ROOT/yuv/lib/libyuv.a",
+            "$ROOT/jpeg.a",
+            "-Wl,--end-group",
+            "-lm",
+            "-ldl",
+            "-o",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "$ROOT/host-libs",
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/rust-elf"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-0-lossless/source",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-0-lossless/rust",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "pinned codec runtime versions differ: $ROOT/output/case-0-lossless"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "pinned codec runtime versions differ: $ROOT/output/case-0-lossless"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "trace-different",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ],
+        [
+          "command",
+          "$ROOT/output/build",
+          [
+            "$ROOT/compiler",
+            "-std=c++17",
+            "-O1",
+            "-g0",
+            "-pthread",
+            "$ROOT/output/source-oracle.cc",
+            "-I$ROOT/ffmpeg/include",
+            "-I$ROOT/yuv/include",
+            "-I$ROOT/rust/crates/jpeg/native/vendor/src",
+            "-I$ROOT/jpeg-build",
+            "-Wl,--start-group",
+            "$ROOT/ffmpeg/lib/libavformat.a",
+            "$ROOT/ffmpeg/lib/libavcodec.a",
+            "$ROOT/ffmpeg/lib/libavutil.a",
+            "$ROOT/ffmpeg/lib/libswresample.a",
+            "$ROOT/ffmpeg/lib/libx264.a",
+            "$ROOT/ffmpeg/lib/libz.a",
+            "$ROOT/ffmpeg/lib/libva.a",
+            "$ROOT/ffmpeg/lib/libva-drm.a",
+            "$ROOT/ffmpeg/lib/libdrm.a",
+            "$ROOT/yuv/lib/libyuv.a",
+            "$ROOT/jpeg.a",
+            "-Wl,--end-group",
+            "-lm",
+            "-ldl",
+            "-o",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "$ROOT/host-libs",
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/rust-elf"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-0-lossless/source",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-0-lossless/rust",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "metadata/return values differ: $ROOT/output/case-0-lossless"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "metadata/return values differ: $ROOT/output/case-0-lossless"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "packet-extra",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ],
+        [
+          "command",
+          "$ROOT/output/build",
+          [
+            "$ROOT/compiler",
+            "-std=c++17",
+            "-O1",
+            "-g0",
+            "-pthread",
+            "$ROOT/output/source-oracle.cc",
+            "-I$ROOT/ffmpeg/include",
+            "-I$ROOT/yuv/include",
+            "-I$ROOT/rust/crates/jpeg/native/vendor/src",
+            "-I$ROOT/jpeg-build",
+            "-Wl,--start-group",
+            "$ROOT/ffmpeg/lib/libavformat.a",
+            "$ROOT/ffmpeg/lib/libavcodec.a",
+            "$ROOT/ffmpeg/lib/libavutil.a",
+            "$ROOT/ffmpeg/lib/libswresample.a",
+            "$ROOT/ffmpeg/lib/libx264.a",
+            "$ROOT/ffmpeg/lib/libz.a",
+            "$ROOT/ffmpeg/lib/libva.a",
+            "$ROOT/ffmpeg/lib/libva-drm.a",
+            "$ROOT/ffmpeg/lib/libdrm.a",
+            "$ROOT/yuv/lib/libyuv.a",
+            "$ROOT/jpeg.a",
+            "-Wl,--end-group",
+            "-lm",
+            "-ldl",
+            "-o",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "$ROOT/host-libs",
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/rust-elf"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-0-lossless/source",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-0-lossless/rust",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "missing/extra packet files: $ROOT/output/case-0-lossless: 16/17"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "missing/extra packet files: $ROOT/output/case-0-lossless: 16/17"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "packet-missing",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ],
+        [
+          "command",
+          "$ROOT/output/build",
+          [
+            "$ROOT/compiler",
+            "-std=c++17",
+            "-O1",
+            "-g0",
+            "-pthread",
+            "$ROOT/output/source-oracle.cc",
+            "-I$ROOT/ffmpeg/include",
+            "-I$ROOT/yuv/include",
+            "-I$ROOT/rust/crates/jpeg/native/vendor/src",
+            "-I$ROOT/jpeg-build",
+            "-Wl,--start-group",
+            "$ROOT/ffmpeg/lib/libavformat.a",
+            "$ROOT/ffmpeg/lib/libavcodec.a",
+            "$ROOT/ffmpeg/lib/libavutil.a",
+            "$ROOT/ffmpeg/lib/libswresample.a",
+            "$ROOT/ffmpeg/lib/libx264.a",
+            "$ROOT/ffmpeg/lib/libz.a",
+            "$ROOT/ffmpeg/lib/libva.a",
+            "$ROOT/ffmpeg/lib/libva-drm.a",
+            "$ROOT/ffmpeg/lib/libdrm.a",
+            "$ROOT/yuv/lib/libyuv.a",
+            "$ROOT/jpeg.a",
+            "-Wl,--end-group",
+            "-lm",
+            "-ldl",
+            "-o",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "$ROOT/host-libs",
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/rust-elf"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-0-lossless/source",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-0-lossless/rust",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "missing/extra packet files: $ROOT/output/case-0-lossless: 16/15"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "missing/extra packet files: $ROOT/output/case-0-lossless: 16/15"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "packet-bytes",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ],
+        [
+          "command",
+          "$ROOT/output/build",
+          [
+            "$ROOT/compiler",
+            "-std=c++17",
+            "-O1",
+            "-g0",
+            "-pthread",
+            "$ROOT/output/source-oracle.cc",
+            "-I$ROOT/ffmpeg/include",
+            "-I$ROOT/yuv/include",
+            "-I$ROOT/rust/crates/jpeg/native/vendor/src",
+            "-I$ROOT/jpeg-build",
+            "-Wl,--start-group",
+            "$ROOT/ffmpeg/lib/libavformat.a",
+            "$ROOT/ffmpeg/lib/libavcodec.a",
+            "$ROOT/ffmpeg/lib/libavutil.a",
+            "$ROOT/ffmpeg/lib/libswresample.a",
+            "$ROOT/ffmpeg/lib/libx264.a",
+            "$ROOT/ffmpeg/lib/libz.a",
+            "$ROOT/ffmpeg/lib/libva.a",
+            "$ROOT/ffmpeg/lib/libva-drm.a",
+            "$ROOT/ffmpeg/lib/libdrm.a",
+            "$ROOT/yuv/lib/libyuv.a",
+            "$ROOT/jpeg.a",
+            "-Wl,--end-group",
+            "-lm",
+            "-ldl",
+            "-o",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "$ROOT/host-libs",
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/rust-elf"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-0-lossless/source",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-0-lossless/rust",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "compressed bytes differ: $ROOT/output/case-0-lossless/packet-000.bin"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "compressed bytes differ: $ROOT/output/case-0-lossless/packet-000.bin"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "rust-changed",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ],
+        [
+          "command",
+          "$ROOT/output/build",
+          [
+            "$ROOT/compiler",
+            "-std=c++17",
+            "-O1",
+            "-g0",
+            "-pthread",
+            "$ROOT/output/source-oracle.cc",
+            "-I$ROOT/ffmpeg/include",
+            "-I$ROOT/yuv/include",
+            "-I$ROOT/rust/crates/jpeg/native/vendor/src",
+            "-I$ROOT/jpeg-build",
+            "-Wl,--start-group",
+            "$ROOT/ffmpeg/lib/libavformat.a",
+            "$ROOT/ffmpeg/lib/libavcodec.a",
+            "$ROOT/ffmpeg/lib/libavutil.a",
+            "$ROOT/ffmpeg/lib/libswresample.a",
+            "$ROOT/ffmpeg/lib/libx264.a",
+            "$ROOT/ffmpeg/lib/libz.a",
+            "$ROOT/ffmpeg/lib/libva.a",
+            "$ROOT/ffmpeg/lib/libva-drm.a",
+            "$ROOT/ffmpeg/lib/libdrm.a",
+            "$ROOT/yuv/lib/libyuv.a",
+            "$ROOT/jpeg.a",
+            "-Wl,--end-group",
+            "-lm",
+            "-ldl",
+            "-o",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": "$ROOT/host-libs",
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/output/source-oracle"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/loader-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "--list",
+            "$ROOT/rust-elf"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-0-lossless/source",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-0-lossless/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-0-lossless/rust",
+            "lossless",
+            "128",
+            "80",
+            "128",
+            "80",
+            "160",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-1-lossless/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-1-lossless/source",
+            "lossless",
+            "256",
+            "160",
+            "128",
+            "80",
+            "288",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-1-lossless/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-1-lossless/rust",
+            "lossless",
+            "256",
+            "160",
+            "128",
+            "80",
+            "288",
+            "8"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-2-h264/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-2-h264/source",
+            "h264",
+            "256",
+            "160",
+            "128",
+            "80",
+            "288",
+            "80"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-2-h264/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-2-h264/rust",
+            "h264",
+            "256",
+            "160",
+            "128",
+            "80",
+            "288",
+            "80"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-3-jpeg/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-3-jpeg/source",
+            "jpeg",
+            "1928",
+            "1208",
+            "482",
+            "302",
+            "2048",
+            "3"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-3-jpeg/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-3-jpeg/rust",
+            "jpeg",
+            "1928",
+            "1208",
+            "482",
+            "302",
+            "2048",
+            "3"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-4-jpeg/run-source",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/output/source-oracle",
+            "$ROOT/output/case-4-jpeg/source",
+            "jpeg",
+            "1280",
+            "720",
+            "320",
+            "180",
+            "1344",
+            "3"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ],
+        [
+          "command",
+          "$ROOT/output/case-4-jpeg/run-rust",
+          [
+            "$ROOT/qemu",
+            "$ROOT/agnos/ld-linux-aarch64.so.1",
+            "--library-path",
+            "$ROOT/agnos",
+            "$ROOT/rust-elf",
+            "$ROOT/output/case-4-jpeg/rust",
+            "jpeg",
+            "1280",
+            "720",
+            "320",
+            "180",
+            "1344",
+            "3"
+          ],
+          {
+            "LC_ALL": "C",
+            "DEBUG_ENCODER": "0",
+            "LD_LIBRARY_PATH": null,
+            "LD_PRELOAD": null,
+            "QEMU_FIXTURE": null
+          }
+        ]
+      ],
+      "error": {
+        "type": "TargetFailure",
+        "message": "frozen Rust ELF changed during comparison"
+      },
+      "failure": {
+        "type": "TargetFailure",
+        "error": "frozen Rust ELF changed during comparison"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [
+        "case-0-lossless",
+        "case-1-lossless",
+        "case-2-h264",
+        "case-3-jpeg",
+        "case-4-jpeg"
+      ],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    },
+    {
+      "name": "receipt-missing-field",
+      "calls": [
+        [
+          "disk",
+          "$ROOT/output",
+          536870912
+        ]
+      ],
+      "error": {
+        "type": "KeyError",
+        "message": "'wheel_sha256'"
+      },
+      "failure": {
+        "type": "KeyError",
+        "error": "'wheel_sha256'"
+      },
+      "stdout": "",
+      "status": "FAIL",
+      "completed": [],
+      "required_cases": [
+        [
+          "lossless",
+          128,
+          80,
+          128,
+          80,
+          160,
+          8
+        ],
+        [
+          "lossless",
+          256,
+          160,
+          128,
+          80,
+          288,
+          8
+        ],
+        [
+          "h264",
+          256,
+          160,
+          128,
+          80,
+          288,
+          80
+        ],
+        [
+          "jpeg",
+          1928,
+          1208,
+          482,
+          302,
+          2048,
+          3
+        ],
+        [
+          "jpeg",
+          1280,
+          720,
+          320,
+          180,
+          1344,
+          3
+        ]
+      ],
+      "required_packet_counts": [
+        16,
+        16,
+        68,
+        6,
+        6
+      ],
+      "generated": "adapter\n\nclass FfmpegEncoder\n\nclass JpegEncoder\n\nFfmpegEncoder::FfmpegEncoder\n\nJpegEncoder::JpegEncoder\n\n#include <libyuv/version.h>\nstatic const bool version_recorded = [] {\n  fprintf(stderr, \"encoder-target %s %u %u %u %d\\n\", av_version_info(), avcodec_version(),\n          avformat_version(), avutil_version(), LIBYUV_VERSION);\n  return true;\n}();\n\nmain\n"
+    }
+  ]
+}

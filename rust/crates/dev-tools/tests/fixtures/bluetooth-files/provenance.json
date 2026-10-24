@@ -1,0 +1,18 @@
+{
+  "kind": "independent unchanged Python observation manifest, retained byte-for-byte from GitHub Actions",
+  "source_commit": "1364e48c96e888fa5d178c5eb2132d135cf30765",
+  "run_id": 39190411681,
+  "job_id": 117862093373,
+  "job_url": "https://github.com/bin9208/openpilot-rust/actions/runs/39190411681/job/117862093373",
+  "artifact_id": 12159974238,
+  "artifact_zip_sha256": "52b48b41f8d2477f3e04b6f10cb0ca49472b86e761533d176cdf43c28e594636",
+  "artifact_entry": "ui-connectivity/bluetooth-files-original/original-observation.json",
+  "observation_sha256": "a70cdb6d3bf57a44e0d711149500759895c0af93032b6df922ab5d1917c01273",
+  "source_checker_sha256": "e30b4cdca8c658cfbd713b6603ef23c64d21854ff41ffa1f611bdd43d2371682",
+  "model_sha256": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633",
+  "input_bytes": 12963708,
+  "input_sha256": "a548190ff3cfdaf9649197573cd7756d9994c79fe66d9dec455d051bcf69913a",
+  "files": 15,
+  "total_bytes": 4383050,
+  "note": "Only the independent original observation manifest is an oracle. Full raw original temporary files were not persisted by the test. Native-controller files in the same archive match these hashes, but are not relabelled original source captures. Tests authenticate their independent reference reconstruction against each original full SHA256, byte length, mode and outcome."
+}

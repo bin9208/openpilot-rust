@@ -1,0 +1,2358 @@
+[
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      },
+      {
+        "op": "step",
+        "state": "SEARCHING"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTING"
+      },
+      {
+        "op": "sleep",
+        "ms": 150
+      },
+      {
+        "op": "step",
+        "state": "CONNECTED"
+      },
+      {
+        "op": "poll"
+      },
+      {
+        "op": "step",
+        "state": "DISCONNECTING"
+      }
+    ],
+    "changes": {},
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      },
+      {
+        "op": "step",
+        "state": "SEARCHING"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTING"
+      },
+      {
+        "op": "sleep",
+        "ms": 150
+      },
+      {
+        "op": "step",
+        "state": "CONNECTED"
+      },
+      {
+        "op": "poll"
+      },
+      {
+        "op": "step",
+        "state": "DISCONNECTING"
+      }
+    ],
+    "changes": {},
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "at",
+        "command": "AT+BAD"
+      },
+      {
+        "op": "at",
+        "command": "AT+PLAINERROR"
+      },
+      {
+        "op": "at",
+        "command": "AT+BLANK"
+      },
+      {
+        "op": "at",
+        "command": "AT+TIMEOUT"
+      }
+    ],
+    "changes": {},
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "at",
+        "command": "AT+BAD"
+      },
+      {
+        "op": "at",
+        "command": "AT+PLAINERROR"
+      },
+      {
+        "op": "at",
+        "command": "AT+BLANK"
+      },
+      {
+        "op": "at",
+        "command": "AT+TIMEOUT"
+      }
+    ],
+    "changes": {},
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "at",
+        "command": "AT+CGMI"
+      },
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      }
+    ],
+    "changes": {},
+    "flags": [],
+    "held_lock": true,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "at",
+        "command": "AT+CGMI"
+      },
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      }
+    ],
+    "changes": {},
+    "flags": [],
+    "held_lock": true,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      }
+    ],
+    "changes": {
+      "AT+CGMI": [
+        "AT+CGMI",
+        "Quectel"
+      ]
+    },
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "AT+CGMI",
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      }
+    ],
+    "changes": {
+      "AT+CGMI": [
+        "AT+CGMI",
+        "Quectel"
+      ]
+    },
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "AT+CGMI",
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      }
+    ],
+    "changes": {
+      "AT+CGSN": [
+        "invalid"
+      ]
+    },
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "invalid"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      }
+    ],
+    "changes": {
+      "AT+CGSN": [
+        "invalid"
+      ]
+    },
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "invalid"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      },
+      {
+        "op": "step",
+        "state": "SEARCHING"
+      }
+    ],
+    "changes": {
+      "AT+QCCID": [
+        "ERROR"
+      ],
+      "AT+CIMI": [
+        "ERROR"
+      ]
+    },
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "ERROR"
+      ],
+      "AT+CIMI": [
+        "ERROR"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      },
+      {
+        "op": "step",
+        "state": "SEARCHING"
+      }
+    ],
+    "changes": {
+      "AT+QCCID": [
+        "ERROR"
+      ],
+      "AT+CIMI": [
+        "ERROR"
+      ]
+    },
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "ERROR"
+      ],
+      "AT+CIMI": [
+        "ERROR"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      },
+      {
+        "op": "step",
+        "state": "SEARCHING"
+      }
+    ],
+    "changes": {
+      "AT+QCCID": [
+        "+QCCID: 1234567890"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,5"
+      ]
+    },
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 1234567890"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,5"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      },
+      {
+        "op": "step",
+        "state": "SEARCHING"
+      }
+    ],
+    "changes": {
+      "AT+QCCID": [
+        "+QCCID: 1234567890"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,5"
+      ]
+    },
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 1234567890"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,5"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "poll"
+      }
+    ],
+    "changes": {
+      "AT+CSQ": [
+        "+CSQ: 99,99"
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: bad"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"LTE\",\"45008\",\"LTE BAND 3\",bad"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",bad"
+      ]
+    },
+    "flags": [
+      "no-ip"
+    ],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 99,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",bad"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"LTE\",\"45008\",\"LTE BAND 3\",bad"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: bad"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "poll"
+      }
+    ],
+    "changes": {
+      "AT+CSQ": [
+        "+CSQ: 99,99"
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: bad"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"LTE\",\"45008\",\"LTE BAND 3\",bad"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",bad"
+      ]
+    },
+    "flags": [
+      "no-ip"
+    ],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 99,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",bad"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"LTE\",\"45008\",\"LTE BAND 3\",bad"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: bad"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTING"
+      },
+      {
+        "op": "wait_exit"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTED"
+      },
+      {
+        "op": "wait_exit"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTED"
+      },
+      {
+        "op": "wait_exit"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTED"
+      },
+      {
+        "op": "step",
+        "state": "DISCONNECTING"
+      }
+    ],
+    "changes": {},
+    "flags": [
+      "fail-ppp"
+    ],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTING"
+      },
+      {
+        "op": "wait_exit"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTED"
+      },
+      {
+        "op": "wait_exit"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTED"
+      },
+      {
+        "op": "wait_exit"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTED"
+      },
+      {
+        "op": "step",
+        "state": "DISCONNECTING"
+      }
+    ],
+    "changes": {},
+    "flags": [
+      "fail-ppp"
+    ],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTING"
+      },
+      {
+        "op": "sleep",
+        "ms": 150
+      },
+      {
+        "op": "poll"
+      },
+      {
+        "op": "wait_exit"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTED"
+      },
+      {
+        "op": "sleep",
+        "ms": 500
+      },
+      {
+        "op": "kill"
+      }
+    ],
+    "changes": {},
+    "flags": [
+      "fail-route"
+    ],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "step",
+        "state": "INITIALIZING"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTING"
+      },
+      {
+        "op": "sleep",
+        "ms": 150
+      },
+      {
+        "op": "poll"
+      },
+      {
+        "op": "wait_exit"
+      },
+      {
+        "op": "step",
+        "state": "CONNECTED"
+      },
+      {
+        "op": "sleep",
+        "ms": 500
+      },
+      {
+        "op": "kill"
+      }
+    ],
+    "changes": {},
+    "flags": [
+      "fail-route"
+    ],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "routes",
+        "ip": "10.0.0.2",
+        "peer": "10.0.0.1"
+      }
+    ],
+    "changes": {},
+    "flags": [
+      "fail-route"
+    ],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "routes",
+        "ip": "10.0.0.2",
+        "peer": "10.0.0.1"
+      }
+    ],
+    "changes": {},
+    "flags": [
+      "fail-route"
+    ],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "routes",
+        "ip": "bad",
+        "peer": "10.0.0.1"
+      }
+    ],
+    "changes": {},
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "routes",
+        "ip": "bad",
+        "peer": "10.0.0.1"
+      }
+    ],
+    "changes": {},
+    "flags": [],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "source",
+    "operations": [
+      {
+        "op": "dns",
+        "servers": [
+          "1.1.1.1"
+        ]
+      }
+    ],
+    "changes": {},
+    "flags": [
+      "fail-dns"
+    ],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  },
+  {
+    "side": "native",
+    "operations": [
+      {
+        "op": "dns",
+        "servers": [
+          "1.1.1.1"
+        ]
+      }
+    ],
+    "changes": {},
+    "flags": [
+      "fail-dns"
+    ],
+    "held_lock": false,
+    "config": {
+      "at_port": "<owned-fixture-root>/at",
+      "ppp_port": "<owned-fixture-root>/absent-data-port",
+      "state": "<owned-fixture-root>/state",
+      "lock": "<owned-fixture-root>/lock",
+      "params": "<owned-fixture-root>/params",
+      "statistics": "<owned-fixture-root>/statistics",
+      "modem_manager": "<owned-fixture-root>/manager.service",
+      "sudo": "<owned-fixture-root>/sudo",
+      "ip": "<owned-fixture-root>/ip",
+      "serial_timeout_ms": 100,
+      "state_wait_ms": 30,
+      "iccid_interval": 0.1,
+      "launcher": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-process-child"
+    },
+    "initial_responses": {
+      "AT+CGMI": [
+        "Quectel"
+      ],
+      "AT+CGSN": [
+        "123456789012345"
+      ],
+      "AT+QCCID": [
+        "+QCCID: 8985235123456789012F"
+      ],
+      "AT+CIMI": [
+        "450081123456789"
+      ],
+      "AT+GMR": [
+        "EG25G_TEST"
+      ],
+      "AT+CREG?": [
+        "+CREG: 2,1"
+      ],
+      "AT+CGREG?": [
+        "+CGREG: 2,1"
+      ],
+      "AT+CSQ": [
+        "+CSQ: 23,99"
+      ],
+      "AT+COPS?": [
+        "+COPS: 0,0,\"Fixture\",7"
+      ],
+      "AT+QNWINFO": [
+        "+QNWINFO: \"FDD LTE\",\"45008\",\"LTE BAND 3\",1300"
+      ],
+      "AT+QENG=\"servingcell\"": [
+        "+QENG: \"servingcell\",\"NOCONN\",\"LTE\""
+      ],
+      "AT+QTEMP": [
+        "+QTEMP: 31,255,34"
+      ],
+      "AT+CGCONTRDP=1": [
+        "+CGCONTRDP: 1,5,\"apn\",\"10.0.0.2\",\"10.0.0.1\",\"1.1.1.1\",\"8.8.8.8\""
+      ],
+      "AT+BAD": [
+        "+CME ERROR: 10"
+      ],
+      "AT+PLAINERROR": [
+        "ERROR"
+      ],
+      "AT+BLANK": [
+        "",
+        "  ",
+        "+TEST: 1"
+      ]
+    }
+  }
+]

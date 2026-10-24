@@ -1,0 +1,11 @@
+#!/bin/bash
+[[ "$1" == -s && "$#" == 2 ]] || exit 51
+head -c 4096 "$2" > "$FIXTURE_INPUT"
+case "$(cat "$FIXTURE_MODE")" in
+normal) cat "$FIXTURE_TRACE";;
+exit) printf 'failed\r\n'; exit 7;;
+invalid) printf '\377';;
+invalid-exit) printf '\377'; exit 8;;
+timeout) echo $$ > "$FIXTURE_PID"; exec sleep 45;;
+flood) while true; do printf 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'; done;;
+esac

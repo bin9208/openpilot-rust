@@ -1,0 +1,19 @@
+{
+  "kind": "immutable independent original source observations",
+  "run": 39791032084,
+  "workflow": "bf0eba28fc04058fd19a85dbe993534187fcb15e",
+  "source": "5fc4e8886dde7d41840758dbdf113143b6bc0a78",
+  "artifact": 12432035228,
+  "archive_sha256": "4befab6556f7ad324862b731fc631e028da8b94e61553c96d09afe9b03c7e4e2",
+  "archive_bytes": 29485,
+  "all_crc_entries": 42,
+  "all_observation_seals": 33,
+  "source_observations_bytes": 144901,
+  "source_observations_sha256": "b4e652323459d74d54acbd3cf05eb8ae0a1f543033686d039928f63c530f6a64",
+  "scenarios": 28,
+  "comparisons": 78,
+  "original_low_space_cycles": 3,
+  "native_expected_outputs": false,
+  "corrections": "#298 original and independently asserted corrected bookmark histories retained; other rows preserve original behavior",
+  "scope": "synthetic temporary filesystem and private 16 MiB mount; historical CLI contract assertions, not original Python CLI observation or vehicle evidence"
+}

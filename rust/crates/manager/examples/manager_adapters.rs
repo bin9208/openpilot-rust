@@ -14,6 +14,7 @@ use openpilot_manager::{
 };
 use std::{os::unix::fs::PermissionsExt, path::PathBuf};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _runtime_logs = openpilot_logging::producer::RuntimeLogScope;
     let args: Vec<_> = std::env::args_os().collect();
     let output = PathBuf::from(&args[1]);
     std::fs::create_dir_all(&output)?;

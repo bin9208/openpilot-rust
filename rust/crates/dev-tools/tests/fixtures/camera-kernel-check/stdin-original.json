@@ -1,0 +1,210 @@
+{
+  "source_sha256": "23c6eed1cdf11d9045e2ee63e8033170845d2fc24b71912c391655ca8be0f72c",
+  "provenance": "Original check_camerad_kernel.py main executed with a real /bin/sh qemu peer and token\\n repeated 50 times on inherited stdin; expectation extracted from independent red-proof.json, without native values or temporary paths.",
+  "exit": 0,
+  "source_stdout": "{\"stdin\":\"token\"}\n",
+  "stderr": "",
+  "cases": [
+    {
+      "name": "session-0",
+      "mode": "session",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "destroy_session-0",
+      "mode": "destroy_session",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "acquire_sensor-0",
+      "mode": "acquire_sensor",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "acquire_phy-0",
+      "mode": "acquire_phy",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "configure-0",
+      "mode": "configure",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "start-0",
+      "mode": "start",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "stop-0",
+      "mode": "stop",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "release_device-0",
+      "mode": "release_device",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "flush_device-0",
+      "mode": "flush_device",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "link-0",
+      "mode": "link",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "activate-0",
+      "mode": "activate",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "deactivate-0",
+      "mode": "deactivate",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "unlink-0",
+      "mode": "unlink",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "schedule-0",
+      "mode": "schedule",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "flush_requests-0",
+      "mode": "flush_requests",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "probe-0",
+      "mode": "probe",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "release_buffer-0",
+      "mode": "release_buffer",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "fences-0",
+      "mode": "fences",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "wait-0",
+      "mode": "wait",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "destroy_fence-0",
+      "mode": "destroy_fence",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "poll-0",
+      "mode": "poll",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "event-0",
+      "mode": "event",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "imports-2",
+      "mode": "imports",
+      "seed": 2,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "allocation-0",
+      "mode": "allocation",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    },
+    {
+      "name": "pool-0",
+      "mode": "pool",
+      "seed": 0,
+      "environment": {},
+      "passed": true,
+      "calls": 0
+    }
+  ],
+  "failures": []
+}

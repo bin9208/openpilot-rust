@@ -1,0 +1,28 @@
+{
+  "scope": "Actual unchanged original --source byte stdin and raw runner-path reference CLI captures. No native answers. Only temporary runner-root and probe path normalized in original manifest subset.",
+  "source_sha256": "d0ad5fbec23e1ba4a2507ae6dbc68856141d03eda07dadebab3280d5731525d5",
+  "cases": [
+    {
+      "name": "raw-byte-path",
+      "stdin_hex": "7b226f70223a227072656275696c74222c2270617468223a227261772dff227d0a",
+      "exit": 0,
+      "stdout": "{\"value\": false, \"logs\": []}\n"
+    },
+    {
+      "name": "invalid-json-byte",
+      "stdin_hex": "ff0a",
+      "exit": 0,
+      "stdout": "{\"error\": \"JSONDecodeError\", \"logs\": []}\n"
+    }
+  ],
+  "raw_runner_manifest": {
+    "exit": 0,
+    "comparisons": 171,
+    "binary": "@PROBE@",
+    "invocation": [
+      "/bin/sh",
+      "@FIXTURE@/runner-\udcfe.body",
+      "@PROBE@"
+    ]
+  }
+}

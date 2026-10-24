@@ -1,0 +1,2511 @@
+{
+  "python_executable": "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+  "python_version": "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]",
+  "scenarios": {
+    "errors": [
+      {
+        "argv": [
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/errors/bin/sudo",
+          "echo",
+          "forbidden"
+        ],
+        "exit": 1,
+        "label": "unknown-command",
+        "log": {
+          "exists": true,
+          "normalized_root_text": "[\"echo\", \"forbidden\"]\n",
+          "raw_hex": "5b226563686f222c2022666f7262696464656e225d0a",
+          "sha256": "ef902e245caf1aaf1204d6e58acdc1f45af8dbf8c69f50ca4938d0d289f793c5"
+        },
+        "stderr_hex": "54726163656261636b20286d6f737420726563656e742063616c6c206c617374293a0a202046696c6520222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f62696e2f7375646f222c206c696e652032302c20696e203c6d6f64756c653e0a20202020656c73653a20726169736520417373657274696f6e4572726f722861726773290a202020202020202020205e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e0a417373657274696f6e4572726f723a205b276563686f272c2027666f7262696464656e275d0a",
+        "stdout_hex": "",
+        "tree": {
+          "base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "base/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "base/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "base/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "base/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "bin": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "bin/bash": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/bash"
+          },
+          "bin/find": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/find"
+          },
+          "bin/git": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/git"
+          },
+          "bin/ionice": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/ionice"
+          },
+          "bin/sudo": {
+            "byte_count": 951,
+            "kind": "file",
+            "mode": 493,
+            "sha256": "3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"
+          },
+          "data": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params/d": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "overlay-commands.jsonl": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b226563686f222c2022666f7262696464656e225d0a",
+            "sha256": "ef902e245caf1aaf1204d6e58acdc1f45af8dbf8c69f50ca4938d0d289f793c5"
+          },
+          "sys": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base/model": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "636f6d6d6120633300",
+            "sha256": "02e5f28fb60649b2cbc95537febdc08d7b1dd718dc0eda854f7a6fceb6a20418"
+          },
+          "tmp": {
+            "kind": "directory",
+            "mode": 493
+          }
+        }
+      },
+      {
+        "argv": [
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/errors/bin/sudo",
+          "rm",
+          "-rf",
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/private-outside"
+        ],
+        "exit": 1,
+        "label": "outside-root-rm",
+        "log": {
+          "exists": true,
+          "normalized_root_text": "[\"echo\", \"forbidden\"]\n[\"rm\", \"-rf\", \"/home/runner/work/_temp/updated-overlay-original-okh8onzj/private-outside\"]\n",
+          "raw_hex": "5b226563686f222c2022666f7262696464656e225d0a5b22726d222c20222d7266222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f707269766174652d6f757473696465225d0a",
+          "sha256": "0f34b6b4483e7835c03af389e1bf0986abf76b5f852345a246fd4655b1fb2c46"
+        },
+        "stderr_hex": "54726163656261636b20286d6f737420726563656e742063616c6c206c617374293a0a202046696c6520222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f62696e2f7375646f222c206c696e652031312c20696e203c6d6f64756c653e0a20202020703d6f776e656428617267735b325d290a2020202020205e5e5e5e5e5e5e5e5e5e5e5e5e5e0a202046696c6520222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f62696e2f7375646f222c206c696e6520372c20696e206f776e65640a2020202061737365727420702e69735f72656c61746976655f746f28726f6f742920616e64207020213d20726f6f742c20700a20202020202020202020205e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e0a417373657274696f6e4572726f723a202f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f707269766174652d6f7574736964650a",
+        "stdout_hex": "",
+        "tree": {
+          "base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "base/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "base/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "base/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "base/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "bin": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "bin/bash": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/bash"
+          },
+          "bin/find": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/find"
+          },
+          "bin/git": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/git"
+          },
+          "bin/ionice": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/ionice"
+          },
+          "bin/sudo": {
+            "byte_count": 951,
+            "kind": "file",
+            "mode": 493,
+            "sha256": "3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"
+          },
+          "data": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params/d": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "overlay-commands.jsonl": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b226563686f222c2022666f7262696464656e225d0a5b22726d222c20222d7266222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f707269766174652d6f757473696465225d0a",
+            "sha256": "0f34b6b4483e7835c03af389e1bf0986abf76b5f852345a246fd4655b1fb2c46"
+          },
+          "sys": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base/model": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "636f6d6d6120633300",
+            "sha256": "02e5f28fb60649b2cbc95537febdc08d7b1dd718dc0eda854f7a6fceb6a20418"
+          },
+          "tmp": {
+            "kind": "directory",
+            "mode": 493
+          }
+        }
+      },
+      {
+        "argv": [
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/errors/bin/sudo",
+          "mount",
+          "-t",
+          "overlay",
+          "-o",
+          "lowerdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/errors/base",
+          "none",
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/errors/data/stage"
+        ],
+        "exit": 1,
+        "label": "missing-overlay-option",
+        "log": {
+          "exists": true,
+          "normalized_root_text": "[\"echo\", \"forbidden\"]\n[\"rm\", \"-rf\", \"/home/runner/work/_temp/updated-overlay-original-okh8onzj/private-outside\"]\n[\"mount\", \"-t\", \"overlay\", \"-o\", \"lowerdir=<ROOT>/base\", \"none\", \"<ROOT>/data/stage\"]\n",
+          "raw_hex": "5b226563686f222c2022666f7262696464656e225d0a5b22726d222c20222d7266222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f707269766174652d6f757473696465225d0a5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f62617365222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f646174612f7374616765225d0a",
+          "sha256": "edfabc2327ee48fcd8640d8a5c12ce1cc1bba5ea386795da636f7703f9214521"
+        },
+        "stderr_hex": "54726163656261636b20286d6f737420726563656e742063616c6c206c617374293a0a202046696c6520222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f62696e2f7375646f222c206c696e652031352c20696e203c6d6f64756c653e0a20202020736f757263653d6f776e6564286f7074696f6e735b276c6f776572646972275d293b207461726765743d6f776e656428617267735b365d293b20776f726b3d6f776e6564286f7074696f6e735b27776f726b646972275d292f27776f726b270a202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020207e7e7e7e7e7e7e5e5e5e5e5e5e5e5e5e5e5e0a4b65794572726f723a2027776f726b646972270a",
+        "stdout_hex": "",
+        "tree": {
+          "base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "base/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "base/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "base/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "base/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "bin": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "bin/bash": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/bash"
+          },
+          "bin/find": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/find"
+          },
+          "bin/git": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/git"
+          },
+          "bin/ionice": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/ionice"
+          },
+          "bin/sudo": {
+            "byte_count": 951,
+            "kind": "file",
+            "mode": 493,
+            "sha256": "3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"
+          },
+          "data": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params/d": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "overlay-commands.jsonl": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b226563686f222c2022666f7262696464656e225d0a5b22726d222c20222d7266222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f707269766174652d6f757473696465225d0a5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f62617365222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f646174612f7374616765225d0a",
+            "sha256": "edfabc2327ee48fcd8640d8a5c12ce1cc1bba5ea386795da636f7703f9214521"
+          },
+          "sys": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base/model": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "636f6d6d6120633300",
+            "sha256": "02e5f28fb60649b2cbc95537febdc08d7b1dd718dc0eda854f7a6fceb6a20418"
+          },
+          "tmp": {
+            "kind": "directory",
+            "mode": 493
+          }
+        }
+      },
+      {
+        "argv": [
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/errors/bin/sudo",
+          "mount",
+          "-t",
+          "overlay"
+        ],
+        "exit": 1,
+        "label": "short-mount",
+        "log": {
+          "exists": true,
+          "normalized_root_text": "[\"echo\", \"forbidden\"]\n[\"rm\", \"-rf\", \"/home/runner/work/_temp/updated-overlay-original-okh8onzj/private-outside\"]\n[\"mount\", \"-t\", \"overlay\", \"-o\", \"lowerdir=<ROOT>/base\", \"none\", \"<ROOT>/data/stage\"]\n[\"mount\", \"-t\", \"overlay\"]\n",
+          "raw_hex": "5b226563686f222c2022666f7262696464656e225d0a5b22726d222c20222d7266222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f707269766174652d6f757473696465225d0a5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f62617365222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f646174612f7374616765225d0a5b226d6f756e74222c20222d74222c20226f7665726c6179225d0a",
+          "sha256": "cab8607334f2314f7a99b9e37dccb1093a8bb4d3964b277267d0deb0f0697ab7"
+        },
+        "stderr_hex": "54726163656261636b20286d6f737420726563656e742063616c6c206c617374293a0a202046696c6520222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f62696e2f7375646f222c206c696e652032302c20696e203c6d6f64756c653e0a20202020656c73653a20726169736520417373657274696f6e4572726f722861726773290a202020202020202020205e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e0a417373657274696f6e4572726f723a205b276d6f756e74272c20272d74272c20276f7665726c6179275d0a",
+        "stdout_hex": "",
+        "tree": {
+          "base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "base/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "base/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "base/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "base/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "bin": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "bin/bash": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/bash"
+          },
+          "bin/find": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/find"
+          },
+          "bin/git": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/git"
+          },
+          "bin/ionice": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/ionice"
+          },
+          "bin/sudo": {
+            "byte_count": 951,
+            "kind": "file",
+            "mode": 493,
+            "sha256": "3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"
+          },
+          "data": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params/d": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "overlay-commands.jsonl": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b226563686f222c2022666f7262696464656e225d0a5b22726d222c20222d7266222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f707269766174652d6f757473696465225d0a5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f62617365222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6572726f72732f646174612f7374616765225d0a5b226d6f756e74222c20222d74222c20226f7665726c6179225d0a",
+            "sha256": "cab8607334f2314f7a99b9e37dccb1093a8bb4d3964b277267d0deb0f0697ab7"
+          },
+          "sys": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base/model": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "636f6d6d6120633300",
+            "sha256": "02e5f28fb60649b2cbc95537febdc08d7b1dd718dc0eda854f7a6fceb6a20418"
+          },
+          "tmp": {
+            "kind": "directory",
+            "mode": 493
+          }
+        }
+      }
+    ],
+    "nested-symlink-outside": [
+      {
+        "argv": [
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/nested-symlink-outside/bin/sudo",
+          "mount",
+          "-t",
+          "overlay",
+          "-o",
+          "lowerdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/nested-symlink-outside/base,upperdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/nested-symlink-outside/data/upper,workdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/nested-symlink-outside/data/work",
+          "none",
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/nested-symlink-outside/data/stage"
+        ],
+        "exit": 0,
+        "label": "mount-to-existing-tree-with-nested-symlink",
+        "log": {
+          "exists": true,
+          "normalized_root_text": "[\"mount\", \"-t\", \"overlay\", \"-o\", \"lowerdir=<ROOT>/base,upperdir=<ROOT>/data/upper,workdir=<ROOT>/data/work\", \"none\", \"<ROOT>/data/stage\"]\n",
+          "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6e65737465642d73796d6c696e6b2d6f7574736964652f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6e65737465642d73796d6c696e6b2d6f7574736964652f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6e65737465642d73796d6c696e6b2d6f7574736964652f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6e65737465642d73796d6c696e6b2d6f7574736964652f646174612f7374616765225d0a",
+          "sha256": "929f1fa4b0abc4d26cc582426cfc32ea94254a02c2df3f61f7105b54bbbf5cf6"
+        },
+        "stderr_hex": "",
+        "stdout_hex": "",
+        "tree": {
+          "base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "base/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "base/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "base/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "base/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "bin": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "bin/bash": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/bash"
+          },
+          "bin/find": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/find"
+          },
+          "bin/git": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/git"
+          },
+          "bin/ionice": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/ionice"
+          },
+          "bin/sudo": {
+            "byte_count": 951,
+            "kind": "file",
+            "mode": 493,
+            "sha256": "3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"
+          },
+          "data": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params/d": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "data/stage/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "data/stage/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/common/version.h": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/home/runner/work/_temp/updated-overlay-original-okh8onzj/private-nested-outside/version.h"
+          },
+          "data/stage/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "data/stage/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "data/stage/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "data/stage/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "data/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "overlay-commands.jsonl": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6e65737465642d73796d6c696e6b2d6f7574736964652f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6e65737465642d73796d6c696e6b2d6f7574736964652f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6e65737465642d73796d6c696e6b2d6f7574736964652f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f6e65737465642d73796d6c696e6b2d6f7574736964652f646174612f7374616765225d0a",
+            "sha256": "929f1fa4b0abc4d26cc582426cfc32ea94254a02c2df3f61f7105b54bbbf5cf6"
+          },
+          "sys": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base/model": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "636f6d6d6120633300",
+            "sha256": "02e5f28fb60649b2cbc95537febdc08d7b1dd718dc0eda854f7a6fceb6a20418"
+          },
+          "tmp": {
+            "kind": "directory",
+            "mode": 493
+          }
+        }
+      }
+    ],
+    "nested_outside_after": {
+      "kind": "file",
+      "mode": 420,
+      "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+      "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+    },
+    "nested_outside_before": {
+      "kind": "file",
+      "mode": 420,
+      "raw_hex": "70726976617465206f726967696e616c20636f6e74656e74733b206f75747369646520746865206669787475726520726f6f740a",
+      "sha256": "2aa7aaefdf12074eeca1647f192a1e58a8eca0eb5fd9691ccc47bffe2fe045f8"
+    },
+    "private_outside_after": {
+      "RELEASES.md": {
+        "kind": "file",
+        "mode": 420,
+        "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+        "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+      },
+      "build.json": {
+        "kind": "file",
+        "mode": 420,
+        "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+        "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+      },
+      "common": {
+        "kind": "directory",
+        "mode": 493
+      },
+      "common/version.h": {
+        "kind": "file",
+        "mode": 420,
+        "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+        "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+      },
+      "launch_env.sh": {
+        "kind": "file",
+        "mode": 493,
+        "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+        "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+      },
+      "openpilot": {
+        "kind": "directory",
+        "mode": 493
+      },
+      "openpilot/system": {
+        "kind": "directory",
+        "mode": 493
+      },
+      "openpilot/system/hardware": {
+        "kind": "directory",
+        "mode": 493
+      },
+      "openpilot/system/hardware/tici": {
+        "kind": "directory",
+        "mode": 493
+      },
+      "openpilot/system/hardware/tici/agnos-tici.json": {
+        "kind": "file",
+        "mode": 420,
+        "raw_hex": "5b5d",
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "openpilot/system/hardware/tici/agnos.json": {
+        "kind": "file",
+        "mode": 420,
+        "raw_hex": "5b5d",
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "sentinel": {
+        "kind": "file",
+        "mode": 420,
+        "raw_hex": "70726976617465207369626c696e672c206e65766572206120686f737420706174680a",
+        "sha256": "fcb2be2689dc1695ba23a9845060c822fcfe5226bb2d9a73d9dbed3129a779e4"
+      },
+      "version-link": {
+        "kind": "symlink",
+        "mode": 511,
+        "target": "common/version.h"
+      }
+    },
+    "repeat": [
+      {
+        "argv": [
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/repeat/bin/sudo",
+          "mount",
+          "-t",
+          "overlay",
+          "-o",
+          "lowerdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/repeat/base,upperdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/repeat/data/upper,workdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/repeat/data/work",
+          "none",
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/repeat/data/stage"
+        ],
+        "exit": 0,
+        "label": "first-mount",
+        "log": {
+          "exists": true,
+          "normalized_root_text": "[\"mount\", \"-t\", \"overlay\", \"-o\", \"lowerdir=<ROOT>/base,upperdir=<ROOT>/data/upper,workdir=<ROOT>/data/work\", \"none\", \"<ROOT>/data/stage\"]\n",
+          "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f7374616765225d0a",
+          "sha256": "1eb0506fda95791cadc07f45394813a9f22f41b31563f8ac8f21ff36595ef717"
+        },
+        "stderr_hex": "",
+        "stdout_hex": "",
+        "tree": {
+          "base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "base/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "base/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "base/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "base/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "bin": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "bin/bash": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/bash"
+          },
+          "bin/find": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/find"
+          },
+          "bin/git": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/git"
+          },
+          "bin/ionice": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/ionice"
+          },
+          "bin/sudo": {
+            "byte_count": 951,
+            "kind": "file",
+            "mode": 493,
+            "sha256": "3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"
+          },
+          "data": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params/d": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "data/stage/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "data/stage/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "data/stage/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "data/stage/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "data/stage/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "data/stage/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "data/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "overlay-commands.jsonl": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f7374616765225d0a",
+            "sha256": "1eb0506fda95791cadc07f45394813a9f22f41b31563f8ac8f21ff36595ef717"
+          },
+          "sys": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base/model": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "636f6d6d6120633300",
+            "sha256": "02e5f28fb60649b2cbc95537febdc08d7b1dd718dc0eda854f7a6fceb6a20418"
+          },
+          "tmp": {
+            "kind": "directory",
+            "mode": 493
+          }
+        }
+      },
+      {
+        "argv": [
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/repeat/bin/sudo",
+          "mount",
+          "-t",
+          "overlay",
+          "-o",
+          "lowerdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/repeat/base,upperdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/repeat/data/upper,workdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/repeat/data/work",
+          "none",
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/repeat/data/stage"
+        ],
+        "exit": 1,
+        "label": "second-mount",
+        "log": {
+          "exists": true,
+          "normalized_root_text": "[\"mount\", \"-t\", \"overlay\", \"-o\", \"lowerdir=<ROOT>/base,upperdir=<ROOT>/data/upper,workdir=<ROOT>/data/work\", \"none\", \"<ROOT>/data/stage\"]\n[\"mount\", \"-t\", \"overlay\", \"-o\", \"lowerdir=<ROOT>/base,upperdir=<ROOT>/data/upper,workdir=<ROOT>/data/work\", \"none\", \"<ROOT>/data/stage\"]\n",
+          "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f7374616765225d0a5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f7374616765225d0a",
+          "sha256": "673c80d6e1f69185a1ec5d61d9e49c2f28cc3963d40a4d25ce44a02b862a6c3c"
+        },
+        "stderr_hex": "54726163656261636b20286d6f737420726563656e742063616c6c206c617374293a0a202046696c6520222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f62696e2f7375646f222c206c696e652031362c20696e203c6d6f64756c653e0a2020202073687574696c2e636f70797472656528736f757263652c7461726765742c646972735f65786973745f6f6b3d547275652c73796d6c696e6b733d54727565290a202046696c6520222f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f6c69622f707974686f6e332e31322f73687574696c2e7079222c206c696e65203630302c20696e20636f7079747265650a2020202072657475726e205f636f70797472656528656e74726965733d656e74726965732c207372633d7372632c206473743d6473742c2073796d6c696e6b733d73796d6c696e6b732c0a20202020202020202020205e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e0a202046696c6520222f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f6c69622f707974686f6e332e31322f73687574696c2e7079222c206c696e65203535342c20696e205f636f7079747265650a202020207261697365204572726f72286572726f7273290a73687574696c2e4572726f723a205b28272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f34372f3532373264306464376438363630306563663334656637643663643433303665633261666163272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f34372f3532373264306464376438363630306563663334656637643663643433303665633261666163272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f34372f35323732643064643764383636303065636633346566376436636434333036656332616661632722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f36612f3532656638353231636634616161373636353934356665303536356164323131633938643633272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f36612f3532656638353231636634616161373636353934356665303536356164323131633938643633272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f36612f35326566383532316366346161613736363539343566653035363561643231316339386436332722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f37302f3436653735373939326162336366656531393134646234386265633233303465353865636134272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f37302f3436653735373939326162336366656531393134646234386265633233303465353865636134272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f37302f34366537353739393261623363666565313931346462343862656332333034653538656361342722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f37612f3664646563346235613334383066373532636535383932366434643565373838656539393462272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f37612f3664646563346235613334383066373532636535383932366434643565373838656539393462272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f37612f36646465633462356133343830663735326365353839323664346435653738386565393934622722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f63332f3138373034653565663866326465383161376564313666306365393530646337346332613536272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f63332f3138373034653565663866326465383161376564313666306365393530646337346332613536272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f63332f31383730346535656638663264653831613765643136663063653935306463373463326135362722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f36392f3830363031643065636630373838376561313561356464633434663430643835376266333564272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f36392f3830363031643065636630373838376561313561356464633434663430643835376266333564272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f36392f38303630316430656366303738383765613135613564646334346634306438353762663335642722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f66302f3331333966353232303333333362643933653833663464376533313331303235613730323235272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f66302f3331333966353232303333333362643933653833663464376533313331303235613730323235272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f66302f33313339663532323033333333626439336538336634643765333133313032356137303232352722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f35382f3063396631643562643631656530373930386665303739656431313765333738396338376639272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f35382f3063396631643562643631656530373930386665303739656431313765333738396338376639272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f35382f30633966316435626436316565303739303866653037396564313137653337383963383766392722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f62382f3266323361393930356265316265326261326335313031313739633338643332373634303663272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f62382f3266323361393930356265316265326261326335313031313739633338643332373634303663272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f62382f32663233613939303562653162653262613263353130313137396333386433323736343036632722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f30312f6338363139336335303334343066386366396334386635363837356439616465623239616638272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f30312f6338363139336335303334343066386366396334386635363837356439616465623239616638272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f30312f63383631393363353033343430663863663963343866353638373564396164656232396166382722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f66312f3261626133376263616663376338633435376134316263376232613937316237613661313539272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f66312f3261626133376263616663376338633435376134316263376232613937316237613661313539272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f66312f32616261333762636166633763386334353761343162633762326139373162376136613135392722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f30362f3337613038386130316538646461623362663366613938646265383034636264653161306463272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f30362f3337613038386130316538646461623362663366613938646265383034636264653161306463272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f30362f33376130383861303165386464616233626633666139386462653830346362646531613064632722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f34652f3439333634356332623365363362333964333537383834613939383134393661613937323635272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f34652f3439333634356332623365363362333964333537383834613939383134393661613937323635272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f34652f34393336343563326233653633623339643335373838346139393831343936616139373236352722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f36322f6535363538666330623161313761306535343436663438346162363362666534393039633263272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f36322f6535363538666330623161313761306535343436663438346162363362666534393039633263272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f36322f65353635386663306231613137613065353434366634383461623633626665343930396332632722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f39322f3466656366383862366661633961366462343738356539313463336562396130376532336239272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f39322f3466656366383862366661633961366462343738356539313463336562396130376532336239272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f39322f34666563663838623666616339613664623437383565393134633365623961303765323362392722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f36642f3738363261363332623562306231343330326134346232363237363232633561326136306261272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f36642f3738363261363332623562306231343330326134346232363237363232633561326136306261272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f36642f37383632613633326235623062313433303261343462323632373632326335613261363062612722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f35372f6237386564393163323737623032353737616536656239623161376231653164623036653664272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f35372f6237386564393163323737623032353737616536656239623161376231653164623036653664272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f35372f62373865643931633237376230323537376165366562396231613762316531646230366536642722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f35352f3565313265373637626439383766316137616530346661333432363631663266376164323930272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f35352f3565313265373637626439383766316137616530346661333432363631663266376164323930272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f35352f35653132653736376264393837663161376165303466613334323636316632663761643239302722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f2e6769742f6f626a656374732f64332f6632373961333962613766393131343138663562323563343664323661333465326132396365272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f64332f6632373961333962613766393131343138663562323563343664323661333465326132396365272c20225b4572726e6f2031335d205065726d697373696f6e2064656e6965643a20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f2e6769742f6f626a656374732f64332f66323739613339626137663931313431386635623235633436643236613334653261323963652722292c2028272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652f76657273696f6e2d6c696e6b272c20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f76657273696f6e2d6c696e6b272c20225b4572726e6f2031375d2046696c65206578697374733a2027636f6d6d6f6e2f76657273696f6e2e6827202d3e20272f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f73746167652f76657273696f6e2d6c696e6b2722295d0a",
+        "stdout_hex": "",
+        "tree": {
+          "base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "base/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "base/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "base/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "base/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "bin": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "bin/bash": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/bash"
+          },
+          "bin/find": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/find"
+          },
+          "bin/git": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/git"
+          },
+          "bin/ionice": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/ionice"
+          },
+          "bin/sudo": {
+            "byte_count": 951,
+            "kind": "file",
+            "mode": 493,
+            "sha256": "3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"
+          },
+          "data": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params/d": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "data/stage/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "data/stage/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "data/stage/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "data/stage/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "data/stage/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "data/stage/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "data/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "overlay-commands.jsonl": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f7374616765225d0a5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f7265706561742f646174612f7374616765225d0a",
+            "sha256": "673c80d6e1f69185a1ec5d61d9e49c2f28cc3963d40a4d25ce44a02b862a6c3c"
+          },
+          "sys": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base/model": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "636f6d6d6120633300",
+            "sha256": "02e5f28fb60649b2cbc95537febdc08d7b1dd718dc0eda854f7a6fceb6a20418"
+          },
+          "tmp": {
+            "kind": "directory",
+            "mode": 493
+          }
+        }
+      }
+    ],
+    "success": [
+      {
+        "argv": [
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/success/bin/sudo",
+          "mount",
+          "-t",
+          "overlay",
+          "-o",
+          "lowerdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/success/base,upperdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/success/data/upper,workdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/success/data/work",
+          "none",
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/success/data/stage"
+        ],
+        "exit": 0,
+        "label": "mount",
+        "log": {
+          "exists": true,
+          "normalized_root_text": "[\"mount\", \"-t\", \"overlay\", \"-o\", \"lowerdir=<ROOT>/base,upperdir=<ROOT>/data/upper,workdir=<ROOT>/data/work\", \"none\", \"<ROOT>/data/stage\"]\n",
+          "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a",
+          "sha256": "7e26da375e2be341d963b63e4ed9ee7c53d161cb1b106c949ecc85be5add3419"
+        },
+        "stderr_hex": "",
+        "stdout_hex": "",
+        "tree": {
+          "base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "base/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "base/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "base/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "base/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "bin": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "bin/bash": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/bash"
+          },
+          "bin/find": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/find"
+          },
+          "bin/git": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/git"
+          },
+          "bin/ionice": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/ionice"
+          },
+          "bin/sudo": {
+            "byte_count": 951,
+            "kind": "file",
+            "mode": 493,
+            "sha256": "3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"
+          },
+          "data": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params/d": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "data/stage/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "data/stage/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "data/stage/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "data/stage/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "data/stage/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "data/stage/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "data/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "overlay-commands.jsonl": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a",
+            "sha256": "7e26da375e2be341d963b63e4ed9ee7c53d161cb1b106c949ecc85be5add3419"
+          },
+          "sys": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base/model": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "636f6d6d6120633300",
+            "sha256": "02e5f28fb60649b2cbc95537febdc08d7b1dd718dc0eda854f7a6fceb6a20418"
+          },
+          "tmp": {
+            "kind": "directory",
+            "mode": 493
+          }
+        }
+      },
+      {
+        "argv": [
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/success/bin/sudo",
+          "chmod",
+          "755",
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/success/data/stage/launch_env.sh"
+        ],
+        "exit": 0,
+        "label": "chmod",
+        "log": {
+          "exists": true,
+          "normalized_root_text": "[\"mount\", \"-t\", \"overlay\", \"-o\", \"lowerdir=<ROOT>/base,upperdir=<ROOT>/data/upper,workdir=<ROOT>/data/work\", \"none\", \"<ROOT>/data/stage\"]\n[\"chmod\", \"755\", \"<ROOT>/data/stage/launch_env.sh\"]\n",
+          "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a5b2263686d6f64222c2022373535222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f73746167652f6c61756e63685f656e762e7368225d0a",
+          "sha256": "3bed98071df20f94c76099ff8f925b2ca6246558ea51cd0911a6b05d6d334684"
+        },
+        "stderr_hex": "",
+        "stdout_hex": "",
+        "tree": {
+          "base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "base/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "base/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "base/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "base/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "bin": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "bin/bash": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/bash"
+          },
+          "bin/find": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/find"
+          },
+          "bin/git": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/git"
+          },
+          "bin/ionice": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/ionice"
+          },
+          "bin/sudo": {
+            "byte_count": 951,
+            "kind": "file",
+            "mode": 493,
+            "sha256": "3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"
+          },
+          "data": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params/d": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "data/stage/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "data/stage/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "data/stage/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "data/stage/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "data/stage/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "data/stage/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "data/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "overlay-commands.jsonl": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a5b2263686d6f64222c2022373535222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f73746167652f6c61756e63685f656e762e7368225d0a",
+            "sha256": "3bed98071df20f94c76099ff8f925b2ca6246558ea51cd0911a6b05d6d334684"
+          },
+          "sys": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base/model": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "636f6d6d6120633300",
+            "sha256": "02e5f28fb60649b2cbc95537febdc08d7b1dd718dc0eda854f7a6fceb6a20418"
+          },
+          "tmp": {
+            "kind": "directory",
+            "mode": 493
+          }
+        }
+      },
+      {
+        "argv": [
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/success/bin/sudo",
+          "umount",
+          "-l",
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/success/data/stage"
+        ],
+        "exit": 0,
+        "label": "umount",
+        "log": {
+          "exists": true,
+          "normalized_root_text": "[\"mount\", \"-t\", \"overlay\", \"-o\", \"lowerdir=<ROOT>/base,upperdir=<ROOT>/data/upper,workdir=<ROOT>/data/work\", \"none\", \"<ROOT>/data/stage\"]\n[\"chmod\", \"755\", \"<ROOT>/data/stage/launch_env.sh\"]\n[\"umount\", \"-l\", \"<ROOT>/data/stage\"]\n",
+          "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a5b2263686d6f64222c2022373535222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f73746167652f6c61756e63685f656e762e7368225d0a5b22756d6f756e74222c20222d6c222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a",
+          "sha256": "88a023c4a0e2654ff151638fde0fc75e48e5d266590540e23600790c727af7c9"
+        },
+        "stderr_hex": "",
+        "stdout_hex": "",
+        "tree": {
+          "base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "base/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "base/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "base/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "base/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "bin": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "bin/bash": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/bash"
+          },
+          "bin/find": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/find"
+          },
+          "bin/git": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/git"
+          },
+          "bin/ionice": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/ionice"
+          },
+          "bin/sudo": {
+            "byte_count": 951,
+            "kind": "file",
+            "mode": 493,
+            "sha256": "3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"
+          },
+          "data": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params/d": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "data/stage/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "data/stage/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "data/stage/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "data/stage/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "data/stage/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "data/stage/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "data/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "overlay-commands.jsonl": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a5b2263686d6f64222c2022373535222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f73746167652f6c61756e63685f656e762e7368225d0a5b22756d6f756e74222c20222d6c222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a",
+            "sha256": "88a023c4a0e2654ff151638fde0fc75e48e5d266590540e23600790c727af7c9"
+          },
+          "sys": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base/model": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "636f6d6d6120633300",
+            "sha256": "02e5f28fb60649b2cbc95537febdc08d7b1dd718dc0eda854f7a6fceb6a20418"
+          },
+          "tmp": {
+            "kind": "directory",
+            "mode": 493
+          }
+        }
+      },
+      {
+        "argv": [
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/success/bin/sudo",
+          "rm",
+          "-rf",
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/success/data/stage"
+        ],
+        "exit": 0,
+        "label": "rm",
+        "log": {
+          "exists": true,
+          "normalized_root_text": "[\"mount\", \"-t\", \"overlay\", \"-o\", \"lowerdir=<ROOT>/base,upperdir=<ROOT>/data/upper,workdir=<ROOT>/data/work\", \"none\", \"<ROOT>/data/stage\"]\n[\"chmod\", \"755\", \"<ROOT>/data/stage/launch_env.sh\"]\n[\"umount\", \"-l\", \"<ROOT>/data/stage\"]\n[\"rm\", \"-rf\", \"<ROOT>/data/stage\"]\n",
+          "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a5b2263686d6f64222c2022373535222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f73746167652f6c61756e63685f656e762e7368225d0a5b22756d6f756e74222c20222d6c222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a5b22726d222c20222d7266222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a",
+          "sha256": "726e94cde3668b30868ccf6634fdd44c8f1a6a1eb131dda2fa5e4dc9859650b6"
+        },
+        "stderr_hex": "",
+        "stdout_hex": "",
+        "tree": {
+          "base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "base/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "base/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "base/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "base/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "bin": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "bin/bash": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/bash"
+          },
+          "bin/find": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/find"
+          },
+          "bin/git": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/git"
+          },
+          "bin/ionice": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/ionice"
+          },
+          "bin/sudo": {
+            "byte_count": 951,
+            "kind": "file",
+            "mode": 493,
+            "sha256": "3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"
+          },
+          "data": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params/d": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "overlay-commands.jsonl": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a5b2263686d6f64222c2022373535222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f73746167652f6c61756e63685f656e762e7368225d0a5b22756d6f756e74222c20222d6c222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a5b22726d222c20222d7266222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f737563636573732f646174612f7374616765225d0a",
+            "sha256": "726e94cde3668b30868ccf6634fdd44c8f1a6a1eb131dda2fa5e4dc9859650b6"
+          },
+          "sys": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base/model": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "636f6d6d6120633300",
+            "sha256": "02e5f28fb60649b2cbc95537febdc08d7b1dd718dc0eda854f7a6fceb6a20418"
+          },
+          "tmp": {
+            "kind": "directory",
+            "mode": 493
+          }
+        }
+      }
+    ],
+    "symlink-outside": [
+      {
+        "argv": [
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/symlink-outside/bin/sudo",
+          "mount",
+          "-t",
+          "overlay",
+          "-o",
+          "lowerdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/symlink-outside/base,upperdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/symlink-outside/data/upper,workdir=/home/runner/work/_temp/updated-overlay-original-okh8onzj/symlink-outside/data/work",
+          "none",
+          "/home/runner/work/_temp/updated-overlay-original-okh8onzj/symlink-outside/data/stage"
+        ],
+        "exit": 0,
+        "label": "mount-to-sibling-symlink",
+        "log": {
+          "exists": true,
+          "normalized_root_text": "[\"mount\", \"-t\", \"overlay\", \"-o\", \"lowerdir=<ROOT>/base,upperdir=<ROOT>/data/upper,workdir=<ROOT>/data/work\", \"none\", \"<ROOT>/data/stage\"]\n",
+          "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f73796d6c696e6b2d6f7574736964652f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f73796d6c696e6b2d6f7574736964652f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f73796d6c696e6b2d6f7574736964652f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f73796d6c696e6b2d6f7574736964652f646174612f7374616765225d0a",
+          "sha256": "7157dca8e1e0a0374033766afd6822e622cfa2bd8f277fef6cbdc919bfa790fc"
+        },
+        "stderr_hex": "",
+        "stdout_hex": "",
+        "tree": {
+          "base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/RELEASES.md": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "312e300a3d3d3d0a2a2076657269666965642026207374616765640a20202a206e65737465640a0a6f6c6465722072656c65617365",
+            "sha256": "12358b548f9a36fc0f1d90c89b8c38454d6f4bc791d647fcdf55b9cdcbbe97a7"
+          },
+          "base/build.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "7b226368616e6e656c223a2022646576222c20226f70656e70696c6f74223a207b2276657273696f6e223a2022312e30227d7d",
+            "sha256": "da6993681a3480a705c77f1bfcc828d1b75aa814963b417a72757ff0406a0b73"
+          },
+          "base/common": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/common/version.h": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "23646566696e6520434f4d4d415f56455253494f4e2022312e30220a",
+            "sha256": "3ca138968b59b41fc14d084ef387ed55d0ca221d5b7b71334eaccf81b0f4e767"
+          },
+          "base/launch_env.sh": {
+            "kind": "file",
+            "mode": 493,
+            "raw_hex": "6578706f72742041474e4f535f56455253494f4e3d22666978747572652d6f73220a",
+            "sha256": "9a91ac2d72fcb6cc181d529a0e3c7d920467a2f4e18ef9ccff469c17c7730601"
+          },
+          "base/openpilot": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "base/openpilot/system/hardware/tici/agnos-tici.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/openpilot/system/hardware/tici/agnos.json": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b5d",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          "base/version-link": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "common/version.h"
+          },
+          "bin": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "bin/bash": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/bash"
+          },
+          "bin/find": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/find"
+          },
+          "bin/git": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/git"
+          },
+          "bin/ionice": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/usr/bin/ionice"
+          },
+          "bin/sudo": {
+            "byte_count": 951,
+            "kind": "file",
+            "mode": 493,
+            "sha256": "3110cc0a1f9b57cdba2133d7d515121e6e47dae3fbe228f77527df861efb041d"
+          },
+          "data": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/params/d": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/stage": {
+            "kind": "symlink",
+            "mode": 511,
+            "target": "/home/runner/work/_temp/updated-overlay-original-okh8onzj/private-outside"
+          },
+          "data/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "data/work/work": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "overlay-commands.jsonl": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "5b226d6f756e74222c20222d74222c20226f7665726c6179222c20222d6f222c20226c6f7765726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f73796d6c696e6b2d6f7574736964652f626173652c75707065726469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f73796d6c696e6b2d6f7574736964652f646174612f75707065722c776f726b6469723d2f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f73796d6c696e6b2d6f7574736964652f646174612f776f726b222c20226e6f6e65222c20222f686f6d652f72756e6e65722f776f726b2f5f74656d702f757064617465642d6f7665726c61792d6f726967696e616c2d6f6b68386f6e7a6a2f73796d6c696e6b2d6f7574736964652f646174612f7374616765225d0a",
+            "sha256": "7157dca8e1e0a0374033766afd6822e622cfa2bd8f277fef6cbdc919bfa790fc"
+          },
+          "sys": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base": {
+            "kind": "directory",
+            "mode": 493
+          },
+          "sys/firmware/devicetree/base/model": {
+            "kind": "file",
+            "mode": 420,
+            "raw_hex": "636f6d6d6120633300",
+            "sha256": "02e5f28fb60649b2cbc95537febdc08d7b1dd718dc0eda854f7a6fceb6a20418"
+          },
+          "tmp": {
+            "kind": "directory",
+            "mode": 493
+          }
+        }
+      }
+    ]
+  },
+  "scope": "unchanged emitted Python sudo shim, private temp roots only; no host sudo or mount",
+  "source_commit": "ce145d062ad24f71da3e49e9b8b4fc676b35ef41",
+  "source_sha256": {
+    "rust/tools/check_updated.py": "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d",
+    "rust/tools/check_updated_daemon.py": "82be3830f8e468c32abe583c197cdf2777cd5fb748a795a8c70247a7dcd00059",
+    "rust/tools/updated_fixtures.py": "76607e02520f383227264257de0ed8505b9dc12e462227b176f2c919dfec2d60"
+  },
+  "temp_root": "/home/runner/work/_temp/updated-overlay-original-okh8onzj",
+  "workflow_commit": "f0675c52ca8b1c48568a91547fa4a32c0a402e0e"
+}

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Build outside the release tree: release callers clean it and copy its contents.
+set -euo pipefail
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
+cache=$(realpath -m -- "${OPENPILOT_RELEASE_TOOLS_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/openpilot-release-tools}")
+case "$cache/" in "$root/"*) printf 'Release tool cache must be outside the source tree\n' >&2; exit 1 ;; esac
+case $(uname -m) in
+  x86_64) host=x86_64-unknown-linux-gnu ;;
+  aarch64) host=aarch64-unknown-linux-gnu ;;
+  *) printf 'Unsupported release tool host\n' >&2; exit 1 ;;
+esac
+"$root/rust/tools/check-disk-space" --path "$cache" --growth-mib 4096 >&2
+env -u CARGO_BUILD_TARGET -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
+  CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 \
+  cargo +1.94.0 build --manifest-path "$root/rust/Cargo.toml" --locked \
+  -p openpilot-dev-tools --bin release-files --target "$host" --target-dir "$cache" >&2
+exec "$cache/$host/debug/release-files" --root "$root" "$@"

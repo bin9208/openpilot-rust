@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 import pytest
 
 import check_radarcan_ci as ci
-from radarcan_runtime_capture import recorded_environment
+from radarcan_runtime_capture import fd_targets, recorded_environment
 
 
 def arguments(tmp_path: Path) -> argparse.Namespace:
@@ -85,3 +86,53 @@ def test_uploaded_invocations_keep_runtime_controls_without_runner_credentials()
   assert recorded_environment(environment) == {
     key: value for key, value in environment.items() if key not in ('GITHUB_TOKEN', 'ACTIONS_RUNTIME_TOKEN')}
   assert environment == before
+
+
+def test_fd_capture_records_link_closed_after_listing(tmp_path, monkeypatch):
+  fd_dir = tmp_path / 'proc' / '123' / 'fd'
+  fd_dir.mkdir(parents=True)
+  (fd_dir / '3').symlink_to('/fixture/live')
+  (fd_dir / '4').symlink_to('/fixture/closed')
+  original_readlink = os.readlink
+
+  def close_then_readlink(path):
+    if Path(path).name == '4':
+      Path(path).unlink()
+    return original_readlink(path)
+
+  monkeypatch.setattr(os, 'readlink', close_then_readlink)
+  targets, closed = fd_targets(fd_dir)
+  assert targets == {'3': '/fixture/live'}
+  assert closed == ['4']
+
+
+def test_fd_capture_does_not_mask_missing_process_or_permission(tmp_path, monkeypatch):
+  fd_dir = tmp_path / 'proc' / '123' / 'fd'
+  with pytest.raises(FileNotFoundError):
+    fd_targets(fd_dir)
+
+  fd_dir.mkdir(parents=True)
+  (fd_dir / '3').symlink_to('/fixture/live')
+
+  def denied(_path):
+    raise PermissionError('fixture denied')
+
+  monkeypatch.setattr(os, 'readlink', denied)
+  with pytest.raises(PermissionError, match='fixture denied'):
+    fd_targets(fd_dir)
+
+
+def test_fd_capture_does_not_mask_directory_disappearance(tmp_path, monkeypatch):
+  fd_dir = tmp_path / 'proc' / '123' / 'fd'
+  fd_dir.mkdir(parents=True)
+  (fd_dir / '3').symlink_to('/fixture/live')
+  original_readlink = os.readlink
+
+  def remove_directory_then_readlink(path):
+    Path(path).unlink()
+    fd_dir.rmdir()
+    return original_readlink(path)
+
+  monkeypatch.setattr(os, 'readlink', remove_directory_then_readlink)
+  with pytest.raises(FileNotFoundError):
+    fd_targets(fd_dir)

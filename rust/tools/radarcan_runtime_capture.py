@@ -50,15 +50,31 @@ def parameters(root: Path, prefix: str, case: Case) -> bytes:
   return raw
 
 
+def fd_targets(fd_dir: Path) -> tuple[dict[str, str], list[str]]:
+  # A descriptor may close after /proc lists it but before readlink. Keep that
+  # loss explicit; a missing fd directory or any other read failure is fatal.
+  listed = list(fd_dir.iterdir())
+  targets = {}
+  closed = []
+  for fd in listed:
+    try:
+      targets[fd.name] = os.readlink(fd)
+    except FileNotFoundError:
+      closed.append(fd.name)
+  fd_dir.stat()
+  return targets, sorted(closed)
+
+
 def provenance(process: subprocess.Popen, output: Path) -> None:
   proc = Path('/proc') / str(process.pid)
   maps = (proc / 'maps').read_text()
   if output.name == 'native':
     assert 'libpython' not in maps
   (output / 'maps.txt').write_text(maps)
+  fds, closed = fd_targets(proc / 'fd')
   (output / 'process.json').write_text(json.dumps({'pid': process.pid, 'exe': str((proc / 'exe').resolve()),
     'exe_sha256': hashlib.sha256((proc / 'exe').read_bytes()).hexdigest(),
-    'fds': {fd.name: os.readlink(fd) for fd in (proc / 'fd').iterdir()}, 'captured_ns': time.monotonic_ns()}) + '\n')
+    'fds': fds, 'fds_closed_during_capture': closed, 'captured_ns': time.monotonic_ns()}) + '\n')
 
 
 def stop(process: subprocess.Popen) -> int:
@@ -104,6 +120,7 @@ def capture(args: Arguments, case: Case) -> dict[str, int | str]:
   processes, subscribers, rows, modes = [], [], [[], []], ['source', 'native']
   producer = None
   stopped = []
+  stop_requested = []
   shutdowns = []
   result = None
   try:
@@ -200,6 +217,7 @@ def capture(args: Arguments, case: Case) -> dict[str, int | str]:
             completion_ns = time.monotonic_ns()
           if time.monotonic_ns() - completion_ns >= 20_000_000:
             for process in processes:
+              stop_requested.append(time.monotonic_ns())
               stopped.append(stop(process))
             break
         time.sleep(.0005)
@@ -210,6 +228,19 @@ def capture(args: Arguments, case: Case) -> dict[str, int | str]:
         drain(subscriber, values)
         (output / mode / 'publications.json').write_text(json.dumps(values) + '\n')
       producer_result = json.loads((output / 'producer.json').read_text())
+      # Retain the phases before enforcing the same strict bound. Producer exit
+      # includes evidence writes and interpreter teardown after its final send;
+      # without these observations a failed assertion cannot locate the delay.
+      (output / 'capture-timing.json').write_text(json.dumps({
+        'last_send_started_ns': producer_result['rows'][-1]['send_started_ns'],
+        'last_send_finished_ns': producer_result['rows'][-1]['send_finished_ns'],
+        'final_ack_ns': producer_result['final_ack_ns'],
+        'producer_evidence_done_ns': producer_result['evidence_done_ns'],
+        'producer_exit_observed_ns': completion_ns,
+        'stop_bound_ns': 100_000_000,
+        'stops': [{'mode': mode, 'pid': process.pid, 'requested_ns': requested_ns, 'confirmed_ns': stop_ns}
+          for mode, process, requested_ns, stop_ns in zip(modes, processes, stop_requested, stopped, strict=True)],
+      }) + '\n')
       assert 'params_after_first' not in case or parameters_changed
       assert len(producer_result['rows']) == len(case['actions'])
       assert producer_result['encoded_done_ns'] - producer_result['origin_ns'] < 100_000_000

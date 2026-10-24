@@ -1,0 +1,31 @@
+{
+  "status": "opt-in native candidate; 72 syntax/12 Git/all-scalar subset accepted at 1cc88538d; full compatibility and maintained caller retirement pending",
+  "parser_package": "rustpython-ruff_python_parser=0.15.8",
+  "parser_crate_sha256": "01e6ee78bd9671fb5766664b2695fe1f2a92a961f4d9101646c570d8acdb1e0b",
+  "original_run": 39798239318,
+  "original_artifact": 12434037946,
+  "original_zip_sha256": "123620c0e4d08b9ed368867f6d2399989e167cbc66d548ffd30efecb0efce234",
+  "unicode_table_sha256": "0574107dd639e01c426d9497f38f1322881ece9e193805d7c96d9cd0a3a9b41b",
+  "cpython_source": {
+    "repository": "https://github.com/python/cpython",
+    "commit": "e848e4b09ca4bc67c0041c9ce7526dae471d4c36",
+    "tag": "v3.12.15",
+    "alias_source": "Lib/encodings/aliases.py",
+    "alias_source_sha256": "6fdcc49ba23a0203ae6cf28e608f8e6297d7c4d77d52e651db3cb49b9564c6d2",
+    "alias_rows": 326,
+    "canonical_modules": 120,
+    "merged_name_rows": 445,
+    "source_data_only_not_executed": true,
+    "license": "Python/PSF",
+    "registry_source": "Lib/encodings/__init__.py",
+    "registry_source_sha256": "78c4744d407690f321565488710b5aaf6486b5afa8d185637aa1e7633ab59cd8",
+    "registry_source_url": "https://github.com/python/cpython/blob/e848e4b09ca4bc67c0041c9ce7526dae471d4c36/Lib/encodings/__init__.py"
+  },
+  "byte_frontend_provenance": "Pinned CPython3.12.15 tokenizer.c BOM/cookie normalization and source-newline order; PSF license retained",
+  "names_dependency": "NEW unicode_names2=1.3.0 Unicode16 data alongside existing4.0; Unicode15 assigned ranges guard new-character names",
+  "codec_boundary": "UTF7/ShiftJIS/CP932/KOI8R initially use explicit Linux GNU libc iconv; other valid codecs remain explicit Capability errors pending implementation. No Python runtime/fallback; no full-domain codec parity claim",
+  "remaining_names_boundary": "Unicode16 aliases for already assigned Unicode15 codepoints need independent whole-domain capture/validation",
+  "maintained_python_sources_unchanged": true,
+  "native_data_tables_are_original_observations_not_native_goldens": true,
+  "codec_registry_dot_behavior": "Pinned encodings/__init__.py normalize_encoding preserves dots; search_function retries dot-to-underscore in alias lookup only, then excludes dotted module names. Source data read only, never imported/executed."
+}

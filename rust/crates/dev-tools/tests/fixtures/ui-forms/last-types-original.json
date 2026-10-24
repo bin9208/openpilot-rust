@@ -1,0 +1,418 @@
+[
+  {
+    "name": "input-list-zero",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        "a"
+      ],
+      "frames": 0,
+      "props": {
+        "show_touches": true,
+        "password": false
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [],
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2"
+  },
+  {
+    "name": "input-list-render",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        "a"
+      ],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": false
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "input-list-password",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        "a"
+      ],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": [
+            "a"
+          ],
+          "cursor": 1,
+          "offset": 0,
+          "show_cursor": false,
+          "display": "a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": [
+            "a"
+          ],
+          "cursor": 1,
+          "offset": 0,
+          "show_cursor": false,
+          "display": "a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "9f2d89ee7a6393c5917413dcbcf96070039652a5a00c9c097ba2162e88864aa8"
+  },
+  {
+    "name": "input-empty-password",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": [],
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": [],
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "e1c87cee0601dd839518f40871469a6099381ba4fcf2bc439f58b10422aedd8b"
+  },
+  {
+    "name": "input-list-restore",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "ok",
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": false
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "text",
+          "text": [
+            "a"
+          ]
+        },
+        {
+          "frame": 0,
+          "operation": "clear"
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "e1c87cee0601dd839518f40871469a6099381ba4fcf2bc439f58b10422aedd8b"
+  },
+  {
+    "name": "keyboard-list-password",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "keyboard",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": [
+        "a"
+      ],
+      "frames": 1,
+      "props": {
+        "password": true,
+        "toggle": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": [
+            "a"
+          ],
+          "layout": "lowercase",
+          "caps": false,
+          "cursor": 1,
+          "display": "a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "540b208b4ea313a1786d9f0f26e88abcd63f190ba4caa2b42e9ff52192889f9e"
+  },
+  {
+    "name": "confirm-text-null",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "Do you want to continue?",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "text",
+          "text": null
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "11281445d099236a4950d9e2fa5ca4802170042e040a44631f0024d8abbc9c7f"
+  },
+  {
+    "name": "confirm-text-integer-restore",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "Do you want to continue?",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "text",
+          "text": 17
+        },
+        {
+          "frame": 0,
+          "operation": "text",
+          "text": "restored"
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "50d698dfed6a198037e0807be70e11e12fe5741ff27b0a5ba023140e981a66f9"
+  },
+  {
+    "name": "list-action-null-zero",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "list",
+      "rect": {
+        "x": 100,
+        "y": 100,
+        "width": 1800,
+        "height": 170
+      },
+      "text": "Shared setting",
+      "frames": 0,
+      "props": {
+        "description": "A detailed setting explanation.",
+        "description_visible": true,
+        "action": null
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  }
+]

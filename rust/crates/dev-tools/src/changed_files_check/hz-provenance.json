@@ -1,0 +1,30 @@
+{
+  "repository": "https://github.com/python/cpython",
+  "commit": "e848e4b09ca4bc67c0041c9ce7526dae471d4c36",
+  "version": "3.12.15",
+  "license_file": "hz-LICENSE.txt",
+  "source_files": {
+    "CPython-LICENSE.txt": {
+      "bytes": 13936,
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+    },
+    "_codecs_cn.c": {
+      "bytes": 11256,
+      "sha256": "8b28def11821d71acb90ef3e74d7d6d597246daf4c196415107d19ebeeb73e55"
+    },
+    "cjkcodecs.h": {
+      "bytes": 17493,
+      "sha256": "79b8d3dd8c18a18377d6bc72524bf6e53cdedf5e7e108b6a403a476a8cde862b"
+    },
+    "mappings_cn.h": {
+      "bytes": 319910,
+      "sha256": "5c75da57e7fcbb06106a64b03a7fc1f6e76fd9668306c66f71a6485e8eb550aa"
+    }
+  },
+  "source_data_only_never_executed": true,
+  "implementation_data_never_used_as_expected_oracle": true,
+  "layout": "94x94 u16LE, row/col0x21..0x7e, 0xffff absent",
+  "mapped": 7445,
+  "bytes": 17672,
+  "sha256": "ac1fb2e1013a12fde1df729ca2d89be2b3b84c12a274f61800d222c96f62d868"
+}

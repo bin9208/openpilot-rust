@@ -363,8 +363,8 @@ fn require_space(
     // SAFETY: the successful call initialized every field in stats.
     let stats = unsafe { stats.assume_init() };
     let free = u128::from(stats.f_bavail) * u128::from(stats.f_frsize);
-    if free < (25u128 << 30) + growth as u128 {
-        return Err("CPU artifact emission requires 25 GiB free plus artifact growth".into());
+    if free < growth as u128 {
+        return Err("CPU artifact emission requires artifact growth".into());
     }
     Ok(())
 }

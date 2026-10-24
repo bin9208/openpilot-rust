@@ -1,0 +1,6 @@
+#!/bin/bash
+head -c 4096 "$2" > "$FIXTURE_INPUT"
+echo $$ > "$FIXTURE_PID"
+sleep 60 &
+echo $! > "$FIXTURE_DESCENDANT"
+wait

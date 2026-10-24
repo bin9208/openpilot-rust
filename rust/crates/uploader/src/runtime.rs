@@ -61,6 +61,18 @@ fn sleep(stop: &AtomicBool, seconds: f64) {
         thread::sleep(remaining.min(Duration::from_millis(20)));
     }
 }
+
+fn device_affinity(tici: bool) -> Option<rustix::thread::CpuSet> {
+    if !tici {
+        return None;
+    }
+    let mut cpus = rustix::thread::CpuSet::new();
+    for cpu in 0..4 {
+        cpus.set(cpu);
+    }
+    Some(cpus)
+}
+
 pub fn run(cycles: Option<u64>) -> Result<(), Error> {
     let allow_sleep = env::var("UPLOADER_SLEEP")
         .unwrap_or_else(|_| "1".into())
@@ -73,16 +85,14 @@ pub fn run(cycles: Option<u64>) -> Result<(), Error> {
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&stop))?;
     signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&stop))?;
     let mut events = RuntimeEvents(Factory::for_runtime()?.logger());
-    let mut cpus = rustix::thread::CpuSet::new();
-    for cpu in 0..4 {
-        cpus.set(cpu);
-    }
-    if let Err(error) = rustix::thread::sched_setaffinity(None, &cpus) {
-        events.emit(Event::exception(
-            log_site!(),
-            "failed to set core affinity",
-            &error,
-        ))?;
+    if let Some(cpus) = device_affinity(Path::new("/TICI").is_file()) {
+        if let Err(error) = rustix::thread::sched_setaffinity(None, &cpus) {
+            events.emit(Event::exception(
+                log_site!(),
+                "failed to set core affinity",
+                &error,
+            ))?;
+        }
     }
     let root = openpilot_deleter::platform::log_root()
         .map_err(|error| std::io::Error::other(error.to_string()))?;
@@ -158,4 +168,23 @@ pub fn run(cycles: Option<u64>) -> Result<(), Error> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pc_does_not_request_device_affinity() {
+        assert!(device_affinity(false).is_none());
+    }
+
+    #[test]
+    fn device_affinity_keeps_the_source_little_cores() {
+        let cpus = device_affinity(true).expect("device affinity");
+        let selected: Vec<_> = (0..rustix::thread::CpuSet::MAX_CPU)
+            .filter(|cpu| cpus.is_set(*cpu))
+            .collect();
+        assert_eq!(selected, [0, 1, 2, 3]);
+    }
 }

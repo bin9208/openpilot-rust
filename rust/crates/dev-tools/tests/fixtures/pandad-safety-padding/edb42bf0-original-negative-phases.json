@@ -1,0 +1,28 @@
+{
+  "source_commit": "edb42bf095d6a3e3b38cc0a4546976dfb710363e",
+  "job_id": 118816129716,
+  "artifact_sha256": "40026fdfe4f4a6dcd804f1e48208a1e41c38ddd9cff025fd83c6cb19da996d01",
+  "original_directory": "padding-controller/pair-NFda5I",
+  "missing_source": {
+    "car-params.input.jsonl": true,
+    "car-params.stdout": false,
+    "car-params.stderr": false,
+    "source.input.jsonl": false,
+    "source.stdout": false,
+    "source.stderr": false,
+    "native.input.jsonl": false,
+    "native.stdout": false,
+    "native.stderr": false
+  },
+  "missing_native": {
+    "car-params.input.jsonl": true,
+    "car-params.stdout": true,
+    "car-params.stderr": true,
+    "source.input.jsonl": true,
+    "source.stdout": true,
+    "source.stderr": true,
+    "native.input.jsonl": true,
+    "native.stdout": false,
+    "native.stderr": false
+  }
+}

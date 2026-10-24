@@ -1,0 +1,102 @@
+[
+  {
+    "case": "success",
+    "error": null,
+    "log_exists": true,
+    "log_bytes": [
+      111,
+      117,
+      116,
+      45,
+      49,
+      10,
+      101,
+      114,
+      114,
+      45,
+      49,
+      10,
+      111,
+      117,
+      116,
+      45,
+      50,
+      10,
+      101,
+      114,
+      114,
+      45,
+      50,
+      10,
+      255,
+      0,
+      114,
+      97,
+      119,
+      10
+    ],
+    "top_level": [
+      "build.log",
+      "cereal",
+      "command.json",
+      "original-bootlog",
+      "schema",
+      "source-hashes.json"
+    ]
+  },
+  {
+    "case": "compiler-failure",
+    "error": "CalledProcessError",
+    "log_exists": true,
+    "log_bytes": [
+      111,
+      117,
+      116,
+      45,
+      49,
+      10,
+      101,
+      114,
+      114,
+      45,
+      49,
+      10,
+      111,
+      117,
+      116,
+      45,
+      50,
+      10,
+      101,
+      114,
+      114,
+      45,
+      50,
+      10,
+      255,
+      0,
+      114,
+      97,
+      119,
+      10
+    ],
+    "top_level": [
+      "build.log",
+      "cereal",
+      "command.json",
+      "schema"
+    ]
+  },
+  {
+    "case": "spawn-failure",
+    "error": "FileNotFoundError",
+    "log_exists": true,
+    "log_bytes": [],
+    "top_level": [
+      "build.log",
+      "cereal",
+      "command.json",
+      "schema"
+    ]
+  }
+]

@@ -68,16 +68,23 @@ impl Mapping {
             return Err(Error::Contract("DMA copy exceeds mapping"));
         }
         let mut data = vec![0; length];
-        // SAFETY: both ranges cover length bytes and are disjoint. External
+        self.copy_into(&mut data)?;
+        Ok(data)
+    }
+    pub fn copy_into(&self, data: &mut [u8]) -> Result<(), Error> {
+        if data.len() > self.length {
+            return Err(Error::Contract("DMA copy exceeds mapping"));
+        }
+        // SAFETY: both ranges cover data.len() bytes and are disjoint. External
         // producer writes may race this copy, just as in the original API.
         unsafe {
             std::ptr::copy_nonoverlapping(
                 self.pointer.as_ptr().cast::<u8>(),
                 data.as_mut_ptr(),
-                length,
+                data.len(),
             );
         }
-        Ok(data)
+        Ok(())
     }
 }
 impl Drop for Mapping {

@@ -43,6 +43,7 @@ pub struct NativeCommands {
 struct GroupChild {
     child: CapturedChild,
     group: rustix::process::Pid,
+    reaped: bool,
 }
 impl GroupChild {
     fn kill_group(&self) -> Result<(), Error> {
@@ -52,13 +53,20 @@ impl GroupChild {
         }
     }
 }
+impl GroupChild {
+    fn finish(&mut self) -> Result<std::process::ExitStatus, Error> {
+        self.kill_group()?;
+        let status = self.child.process.wait()?;
+        self.reaped = true;
+        Ok(status)
+    }
+}
 impl Drop for GroupChild {
     fn drop(&mut self) {
-        if let Err(error) = self.kill_group() {
-            eprintln!("updated command group cleanup: {error}");
-        }
-        if let Err(error) = self.child.process.wait() {
-            eprintln!("updated command reap: {error}");
+        if !self.reaped {
+            if let Err(error) = self.finish() {
+                eprintln!("updated command cleanup: {error}");
+            }
         }
     }
 }
@@ -88,7 +96,11 @@ impl Commands for NativeCommands {
             .map_err(|_| Error::Contract("child PID out of range"))?;
         let group =
             rustix::process::Pid::from_raw(pid).ok_or(Error::Contract("invalid child PID"))?;
-        let mut owned = GroupChild { child, group };
+        let mut owned = GroupChild {
+            child,
+            group,
+            reaped: false,
+        };
         let flags = rustix::fs::fcntl_getfl(&pipe).map_err(std::io::Error::from)?;
         rustix::fs::fcntl_setfl(&pipe, flags | rustix::fs::OFlags::NONBLOCK)
             .map_err(std::io::Error::from)?;
@@ -108,16 +120,24 @@ impl Commands for NativeCommands {
                 Err(error) => return Err(error.into()),
             }
         }
-        let status = loop {
+        loop {
             if self.wake.stopped() {
                 return Err(Error::Interrupted);
             }
-            if let Some(status) = owned.child.process.try_wait()? {
-                break status;
+            use rustix::process::{waitid, WaitId, WaitIdOptions};
+            match waitid(
+                WaitId::Pid(owned.group),
+                WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT,
+            ) {
+                Ok(Some(_)) => break,
+                Ok(None) | Err(rustix::io::Errno::INTR) => {}
+                Err(error) => return Err(std::io::Error::from(error).into()),
             }
             std::thread::sleep(Duration::from_millis(10));
-        };
-        owned.kill_group()?;
+        }
+        // The leader remains waitable until its final group signal. finish()
+        // disables every later Drop signal before fallible UTF8 decoding.
+        let status = owned.finish()?;
         let output = String::from_utf8(output)?
             .replace("\r\n", "\n")
             .replace('\r', "\n");

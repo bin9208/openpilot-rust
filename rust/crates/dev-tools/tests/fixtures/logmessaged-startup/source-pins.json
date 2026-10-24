@@ -1,0 +1,13 @@
+{
+  "rust/tools/check_logmessaged_startup.py": "46cae42fe4749a48bb9f0acc81b92db974288633d28100b0a023b3d002b9b022",
+  "rust/tools/fixtures/logmessaged_publisher_pause.c": "b54710b8bb665cadcbcafb51ad2252c56fb79e51b5c168bd344d69f3a722444e",
+  "rust/tools/logmessaged_reference.py": "ce6d6764911daaab1e9e5ce70152d9f5efc9b5ea006482064bb8192d36f735e3",
+  "rust/tools/logmessaged_native.py": "3366e64eb36b0bad9b10023c46217f61c66aae0fe823120ae23d597d2456c872",
+  "openpilot/system/logmessaged.py": "93d94801185350ef4470bd482d37ed7f6d466e9b100ad10aa16fa6e8570fb02a",
+  "openpilot/common/logging_extra.py": "ce9b3b3d8498d76e1c4c0352a3e98e72759bb7f367ff8629c1329c46040595c3",
+  "openpilot/common/swaglog.py": "d37b623bd9418b72ffd3c4800a1da192c49856cb63bbbc1c09bb24a5ec6f8616",
+  "openpilot/cereal/services.py": "a0745e2ef00036f0eef08b453a4798b4281549ea9ac6dc91c8b348ef76131edb",
+  "openpilot/cereal/messaging/__init__.py": "1938c80c71dba0855700015bc03371786a711c67bfe3a0c5e073ed790d5e10a9",
+  "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+  "msgq_repo/msgq/msgq.cc": "5910ffb3bc2a4f023b4bbc612e41b76ddeaace2eb84ae8b127e8736905d7a6c2"
+}

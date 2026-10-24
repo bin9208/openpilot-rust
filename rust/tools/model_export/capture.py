@@ -11,15 +11,17 @@ from tinygrad.uop.ops import Ops
 
 from .buffers import BufferTable, host_buffer
 from .binding_order import ordered_inputs
-from .native import compile_kernel
-from .schema import Binding, Bindings, Call, CapturedModel, ExportError, Kernel
+from .native import CachedModel, NativeKernel, compile_kernel
+from .schema import Binding, Bindings, Call, CapturedModel, CachedProgram, ExportError, Kernel
 
 
-def capture_cpu(jit: TinyJit, bindings: Bindings) -> CapturedModel:
+def capture_cpu(jit: TinyJit, bindings: Bindings, *, cached: CachedModel | None = None) -> CapturedModel:
     captured = jit.captured
     if captured is None:
         raise ExportError("JIT must be captured before export")
     renderer = Device.default.renderer
+    if cached is not None and not isinstance(renderer.compiler, CPULLVMCompiler):
+        raise ExportError("cached mode requires CPU:LLVM")
     if not isinstance(renderer, (ClangRenderer, CPULLVMRenderer)) or not isinstance(renderer.compiler, (ClangCompiler, CPULLVMCompiler)):
         raise ExportError("export requires DEV=CPU:CLANG or CPU:LLVM")
     if len(captured.expected_names) != len(captured.expected_input_info) or len(bindings.inputs) != len(captured.expected_names):
@@ -51,9 +53,11 @@ def capture_cpu(jit: TinyJit, bindings: Bindings) -> CapturedModel:
     sources: list[str] = []
     objects: list[bytes] = []
     wrappers: list[str] = []
+    compilation = []
     kernels: list[Kernel] = []
     calls: list[Call] = []
-    kernel_ids: dict[str, int] = {}
+    kernel_ids: dict[object, int] = {}
+    cached_programs = []
     for call in captured.linear.src:
         if call.op is not Ops.CALL:
             raise ExportError(f"unsupported captured operation: {call.op}")
@@ -74,6 +78,7 @@ def capture_cpu(jit: TinyJit, bindings: Bindings) -> CapturedModel:
                 kernels.append(Kernel(2, 0))
                 sources.append(key)
                 objects.append(b"")
+                compilation.append(None)
                 wrappers.append(f"void op_kernel_{index}(void **buffers, const int32_t *scalars) {{ memmove(buffers[0], buffers[1], {buffers[0].nbytes}); }}")
             table.read(buffers[1])
             table.write(buffers[0])
@@ -93,21 +98,36 @@ def capture_cpu(jit: TinyJit, bindings: Bindings) -> CapturedModel:
         source = operation.src[3].arg
         if not isinstance(source, str):
             raise ExportError("compiled program has no C source")
-        if source not in kernel_ids:
+        original_index = cached.operations.get(operation) if cached is not None else None
+        key = ("cached", original_index) if original_index is not None else (("fresh", source) if cached is not None else source)
+        if key not in kernel_ids:
             index = len(kernels)
-            kernel_ids[source] = index
-            native = compile_kernel(operation, index, renderer.compiler)
+            kernel_ids[key] = index
+            if original_index is not None:
+                image = operation.src[4].arg
+                signature = Kernel(len(info.globals), len(info.vars))
+                arguments = [f"buffers[{i}]" for i in range(signature.buffers)] + [f"scalars[{i}]" for i in range(signature.scalars)]
+                types = ["void *"] * signature.buffers + ["int32_t"] * signature.scalars
+                wrapper = (f"extern void op_impl_{index}({', '.join(types) or 'void'});\n" +
+                           f"void op_kernel_{index}(void **buffers, const int32_t *scalars) {{ op_impl_{index}({', '.join(arguments)}); }}")
+                native = NativeKernel(signature, source, b"", wrapper)
+                cached_programs.append(CachedProgram(original_index, index, image))
+            else:
+                native = compile_kernel(operation, index, renderer.compiler, fresh_in_cached=cached is not None)
             kernels.append(native.signature)
             sources.append(native.source)
             objects.append(native.object_code)
             wrappers.append(native.wrapper)
+            compilation.append(native.evidence)
         for index in info.ins:
             table.read(buffers[index])
         for index in info.outs:
             table.write(buffers[index])
-        calls.append(Call(kernel_ids[source], tuple(table.view(buffers[i]) for i in info.globals), tuple(0 for _ in info.vars),
+        calls.append(Call(kernel_ids[key], tuple(table.view(buffers[i]) for i in info.globals), tuple(0 for _ in info.vars),
                           info.global_size[0], info.runtimevars.get("core_id")))
+    if cached is not None and {row.original_index for row in cached_programs} != set(range(len(cached.session.request["admission"]["programs"]))):
+        raise ExportError("composed capture changed the complete admitted PROGRAM roster")
     allocations, weights = table.weights()
     return CapturedModel(allocations, tuple(table.views), tuple(input_bindings), tuple(output_bindings), tuple(kernels), tuple(calls),
                          tuple(sources), tuple(objects), tuple(wrappers), weights,
-                         "cpu-clang" if isinstance(renderer.compiler, ClangCompiler) else "cpu-llvm")
+                         "cpu-cached-llvm" if cached is not None else ("cpu-clang" if isinstance(renderer.compiler, ClangCompiler) else "cpu-llvm"), tuple(compilation), tuple(cached_programs))

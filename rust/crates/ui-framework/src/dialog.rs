@@ -12,26 +12,23 @@ use crate::{
     widget::{DialogResult, Frame, NavigationRequest, RenderResult, Widget, WidgetState},
     Error,
 };
-use std::{
-    cell::{Cell, RefCell},
-    rc::Rc,
-};
+use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 fn result_button(
     text: &str,
     result: DialogResult,
-    pending: &Rc<Cell<Option<DialogResult>>>,
+    pending: &Rc<RefCell<VecDeque<DialogResult>>>,
 ) -> Button {
     let mut button = Button::new(text);
     let pending = pending.clone();
-    button.state.click = Some(Box::new(move || pending.set(Some(result))));
+    button.state.click = Some(Box::new(move || pending.borrow_mut().push_back(result)));
     button
 }
 fn finish(
-    pending: &Cell<Option<DialogResult>>,
+    pending: &RefCell<VecDeque<DialogResult>>,
     callback: &Option<Callback<DialogResult>>,
     frame: &Frame<'_>,
 ) {
-    if let Some(result) = pending.take() {
+    while let Some(result) = pending.borrow_mut().pop_front() {
         let callback = callback.clone();
         frame
             .navigation
@@ -50,11 +47,11 @@ pub struct ConfirmDialog {
     pub cancel: Button,
     pub rich: bool,
     scroller: Scroller,
-    pending: Rc<Cell<Option<DialogResult>>>,
+    pending: Rc<RefCell<VecDeque<DialogResult>>>,
 }
 impl ConfirmDialog {
     pub fn new(text: &str, confirm: &str, cancel: &str) -> Result<Self, Error> {
-        let pending = Rc::new(Cell::new(None));
+        let pending = Rc::new(RefCell::new(VecDeque::new()));
         let mut label = Label::new(text);
         label.size = 70.0;
         label.font = Font::Bold;
@@ -129,9 +126,9 @@ impl Widget for ConfirmDialog {
             self.label.render(frame, draw)?;
         }
         if frame.keyboard.pressed.contains(&keys::ENTER) {
-            self.pending.set(Some(DialogResult::Confirm));
+            self.pending.borrow_mut().push_back(DialogResult::Confirm);
         } else if frame.keyboard.pressed.contains(&keys::ESCAPE) {
-            self.pending.set(Some(DialogResult::Cancel));
+            self.pending.borrow_mut().push_back(DialogResult::Cancel);
         }
         finish(&self.pending, &self.callback, frame);
         let width = ((rect.width - 150.0) / 2.0).floor();
@@ -169,3 +166,63 @@ impl Widget for ConfirmDialog {
 
 mod option;
 pub use option::MultiOptionDialog;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        geometry::{MouseEvent, Point},
+        keys::KeyboardInput,
+        widget::NavigationQueue,
+    };
+
+    #[test]
+    fn confirmation_retains_each_release_and_result_order() {
+        for count in [2, 3] {
+            let mut dialog = ConfirmDialog::new("Question", "Continue", "Cancel").unwrap();
+            let observed = Rc::new(RefCell::new(Vec::new()));
+            let calls = observed.clone();
+            dialog.callback = Some(Callback::new(move |result| calls.borrow_mut().push(result)));
+            for _ in 0..count {
+                dialog.confirm.state.release(0.0);
+            }
+            for _ in 0..count {
+                dialog.cancel.state.release(0.0);
+            }
+            let keyboard = KeyboardInput::default();
+            let navigation = NavigationQueue::default();
+            let frame = Frame {
+                index: 0,
+                now: 0.0,
+                monotonic: 0.0,
+                keyboard: &keyboard,
+                navigation: &navigation,
+                dt: 0.05,
+                target_fps: 20.0,
+                awake: true,
+                events: &[],
+                last_event: MouseEvent::default(),
+                cursor: Point::default(),
+                wheel: 0.0,
+                show_touches: false,
+            };
+            finish(&dialog.pending, &dialog.callback, &frame);
+            assert!(observed.borrow().is_empty());
+            let mut pops = 0;
+            while let Some(request) = navigation.pop() {
+                let NavigationRequest::Pop(Some(callback)) = request else {
+                    panic!("expected callback pop")
+                };
+                pops += 1;
+                callback();
+            }
+            assert_eq!(pops, count * 2);
+            let expected = std::iter::repeat_n(DialogResult::Confirm, count)
+                .chain(std::iter::repeat_n(DialogResult::Cancel, count))
+                .collect::<Vec<_>>();
+            assert_eq!(*observed.borrow(), expected);
+            finish(&dialog.pending, &dialog.callback, &frame);
+            assert!(navigation.pop().is_none());
+        }
+    }
+}

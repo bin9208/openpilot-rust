@@ -1,0 +1,62 @@
+[
+  {
+    "kind": "qr",
+    "file": "result.json",
+    "bytes": 119,
+    "sha256": "7054a9b6d6b15fea63b6fe9d39df26312735339161378dfaf954f3d3a2c94b45"
+  },
+  {
+    "kind": "qr",
+    "file": "native.stderr",
+    "bytes": 12,
+    "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+  },
+  {
+    "kind": "qr",
+    "file": "input.json",
+    "bytes": 24816,
+    "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+  },
+  {
+    "kind": "qr",
+    "file": "source.json",
+    "bytes": 1355319,
+    "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+  },
+  {
+    "kind": "qr",
+    "file": "native.json",
+    "bytes": 1146601,
+    "sha256": "522d13f09bd44180760627cf52ae9ba498d93dd06c72f4ffcc51ae9aaec04b7e"
+  },
+  {
+    "kind": "torque",
+    "file": "result.json",
+    "bytes": 68,
+    "sha256": "c6bee0a7cbfcb4293fb6754efd3fbd97399aa78067449bacebb27c99af88e6b4"
+  },
+  {
+    "kind": "torque",
+    "file": "native.stderr",
+    "bytes": 12,
+    "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+  },
+  {
+    "kind": "torque",
+    "file": "input.json",
+    "bytes": 245492,
+    "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+  },
+  {
+    "kind": "torque",
+    "file": "source.json",
+    "bytes": 6892817,
+    "sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+  },
+  {
+    "kind": "torque",
+    "file": "native.json",
+    "bytes": 6349503,
+    "sha256": "aceaa12ed85523a5d4bbb47ee25a8cb456c05a87ab8c93cce3e60cd9d2989b34"
+  }
+]

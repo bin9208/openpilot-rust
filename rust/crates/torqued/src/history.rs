@@ -31,19 +31,24 @@ pub enum Input {
 }
 #[derive(Default)]
 struct Samples(VecDeque<[f64; 3]>);
+const HISTORY_CAPACITY: usize = 100;
 impl Samples {
     fn push(&mut self, row: [f64; 3]) {
-        if self.0.len() == 100 {
+        if self.0.len() == HISTORY_CAPACITY {
             self.0.pop_front();
         }
         self.0.push_back(row);
     }
     fn at(&self, query: &[f64], column: usize) -> Result<Vec<f64>, Error> {
-        interp(
-            query,
-            &self.0.iter().map(|row| row[0]).collect::<Vec<_>>(),
-            &self.0.iter().map(|row| row[column]).collect::<Vec<_>>(),
-        )
+        // Preserve the deque's logical order and the interpolation arithmetic;
+        // the bounded columns need no heap allocation for each lookup.
+        let mut times = [0.; HISTORY_CAPACITY];
+        let mut values = [0.; HISTORY_CAPACITY];
+        for (index, row) in self.0.iter().enumerate() {
+            times[index] = row[0];
+            values[index] = row[column];
+        }
+        interp(query, &times[..self.0.len()], &values[..self.0.len()])
     }
 }
 pub struct History {
@@ -96,7 +101,7 @@ impl History {
                 angular,
                 valid,
             } => {
-                if self.output.0.len() == 100 && valid {
+                if self.output.0.len() == HISTORY_CAPACITY && valid {
                     let times = engagement_times(time, self.lag)?;
                     let active = self.control.at(&times, 1)?;
                     let pressed = self.state.at(&times, 2)?;

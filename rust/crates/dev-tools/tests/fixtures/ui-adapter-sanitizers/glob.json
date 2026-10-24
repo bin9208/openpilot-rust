@@ -1,0 +1,702 @@
+{
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "source_sha256": {
+    "model": "e824b6901a34896cb96631719f9946d1239a17f6a4c673dc471db1f04369b58b",
+    "training": "60a3f7f41d7cb1183749b54d9213dcb0f66c0288daee364bfc1beba22ceb8936"
+  },
+  "cases": [
+    {
+      "kind": "model",
+      "case": "prefix-file",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-valid.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_model_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/model-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/model-adapter-asan",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/model-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/model-adapter-asan\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "model",
+      "case": "prefix-dangling",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-valid.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_model_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/model-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/model-adapter-asan",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/model-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/model-adapter-asan\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "model",
+      "case": "prefix-file-symlink",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-valid.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_model_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/model-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/model-adapter-asan",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/model-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/model-adapter-asan\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "model",
+      "case": "out-file",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-valid.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_model_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/model-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/model-adapter-asan",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/model-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/model-adapter-asan\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "model",
+      "case": "header-dangling",
+      "error": "FileNotFoundError",
+      "calls": [],
+      "receipt": null
+    },
+    {
+      "kind": "model",
+      "case": "header-valid-symlink",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-valid.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-nope/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_model_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/model-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/model-adapter-asan",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-nope/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/model-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/model-adapter-asan\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "model",
+      "case": "header-directory",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-valid.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-nope/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_model_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/model-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/model-adapter-asan",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-nope/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/model-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/model-adapter-asan\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "model",
+      "case": "cxx-dangling",
+      "error": "FileNotFoundError",
+      "calls": [],
+      "receipt": null
+    },
+    {
+      "kind": "model",
+      "case": "cxx-directory",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-nope.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_model_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/model-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/model-adapter-asan",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-nope.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/model-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/model-adapter-asan\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "case": "prefix-file",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-valid.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_home_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/training-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/training-adapter-asan",
+          "ROOT/openpilot/selfdrive/assets/training",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/training-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/training-adapter-asan\",\n      \"ROOT/openpilot/selfdrive/assets/training\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "case": "prefix-dangling",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-valid.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_home_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/training-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/training-adapter-asan",
+          "ROOT/openpilot/selfdrive/assets/training",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/training-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/training-adapter-asan\",\n      \"ROOT/openpilot/selfdrive/assets/training\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "case": "prefix-file-symlink",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-valid.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_home_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/training-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/training-adapter-asan",
+          "ROOT/openpilot/selfdrive/assets/training",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/training-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/training-adapter-asan\",\n      \"ROOT/openpilot/selfdrive/assets/training\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "case": "out-file",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-valid.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_home_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/training-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/training-adapter-asan",
+          "ROOT/openpilot/selfdrive/assets/training",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/training-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/training-adapter-asan\",\n      \"ROOT/openpilot/selfdrive/assets/training\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "case": "header-dangling",
+      "error": "FileNotFoundError",
+      "calls": [],
+      "receipt": null
+    },
+    {
+      "kind": "training",
+      "case": "header-valid-symlink",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-valid.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-nope/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_home_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/training-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/training-adapter-asan",
+          "ROOT/openpilot/selfdrive/assets/training",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-nope/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/training-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/training-adapter-asan\",\n      \"ROOT/openpilot/selfdrive/assets/training\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "case": "header-directory",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-valid.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-nope/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_home_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/training-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/training-adapter-asan",
+          "ROOT/openpilot/selfdrive/assets/training",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-nope/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/training-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/training-adapter-asan\",\n      \"ROOT/openpilot/selfdrive/assets/training\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "case": "cxx-dangling",
+      "error": "FileNotFoundError",
+      "calls": [],
+      "receipt": null
+    },
+    {
+      "kind": "training",
+      "case": "cxx-directory",
+      "error": null,
+      "calls": [
+        [
+          "rustup",
+          "run",
+          "1.94.0",
+          "rustc",
+          "--edition=2024",
+          "--crate-type=staticlib",
+          "ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs",
+          "--extern",
+          "cxx=ROOT/target/deps/libcxx-nope.rlib",
+          "-L",
+          "dependency=ROOT/target/deps",
+          "-o",
+          "ROOT/evidence/libcxx_runtime.a"
+        ],
+        [
+          "clang++",
+          "-std=c++17",
+          "-g",
+          "-fsanitize=address,undefined",
+          "-fno-omit-frame-pointer",
+          "-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include",
+          "-IROOT/rust/crates/startup-ui/native",
+          "-IROOT/raylib/include",
+          "ROOT/rust/tools/ui_home_qa/bridge_asan.cc",
+          "ROOT/rust/crates/startup-ui/native/bridge.cc",
+          "ROOT/rust/crates/startup-ui/native/raylib_loader.cc",
+          "ROOT/rust/crates/startup-ui/native/graphics.cc",
+          "ROOT/rust/crates/startup-ui/native/egl.cc",
+          "ROOT/evidence/libcxx_runtime.a",
+          "-ldl",
+          "-lpthread",
+          "-o",
+          "ROOT/evidence/training-adapter-asan"
+        ],
+        [
+          "ROOT/evidence/training-adapter-asan",
+          "ROOT/openpilot/selfdrive/assets/training",
+          "ROOT/evidence/capture.png"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"ROOT/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=ROOT/target/deps/libcxx-nope.rlib\",\n      \"-L\",\n      \"dependency=ROOT/target/deps\",\n      \"-o\",\n      \"ROOT/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IROOT/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IROOT/rust/crates/startup-ui/native\",\n      \"-IROOT/raylib/include\",\n      \"ROOT/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"ROOT/rust/crates/startup-ui/native/bridge.cc\",\n      \"ROOT/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"ROOT/rust/crates/startup-ui/native/graphics.cc\",\n      \"ROOT/rust/crates/startup-ui/native/egl.cc\",\n      \"ROOT/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"ROOT/evidence/training-adapter-asan\"\n    ],\n    [\n      \"ROOT/evidence/training-adapter-asan\",\n      \"ROOT/openpilot/selfdrive/assets/training\",\n      \"ROOT/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    }
+  ]
+}

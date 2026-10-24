@@ -87,7 +87,10 @@ to exact commands, binary observables, source/executable hashes and retained
 artifacts. Failed attempts remain alongside final runs. Tests use synthetic
 identifiers and local directories; no C3X, vehicle, NAS or deployment is involved.
 
-The focused checkers are:
+The original validation used the following focused checkers. #296 replaced the
+numeric, clock, daemon, failure, producer, logging-fault, flood and runtime
+controllers with native `check-stats-*` binaries; retained original observations
+and current commands are tracked in the #296 retirement evidence.
 
 | Checker | Actual surface and acceptance |
 | --- | --- |
@@ -97,8 +100,8 @@ The focused checkers are:
 | `check_stats_failures.py` | Original/native fatal UTF-8, surrogate write, missing directory, permission denial, existing destination and dangling-symlink publication; physical missing/invalid UTF-8 Params and real warning logs. |
 | `check_stats_producer.py` | Original/native fork reconnect and inherited-handle destruction; default HWM accepts 1000 of 20,000 queued gauge sends while the remaining 19,000 are dropped without blocking. Ten captured gauge/sample packets from real cereal Int8/UInt16/Float32 getters and integer/float samples match without coercing the source inputs. |
 | `check_stats_log_fault.py` | A one-shot ZMQ EINVAL at the logging boundary in the actual original and native continuous loops produces the same actual collector malformed-metric record. A separate regression verifies that a second log failure propagates. |
-| `check_stats_flood.py` | The production daemon must stop on SIGINT/SIGTERM while two native PUSH processes continue flooding metrics. The pre-fix SIGINT run timed out at two seconds; the regression checks termination without a shutdown flush. |
-| `check_stats_runtime.py` | Production `statsd-rs` with real clocks and default socket/PC paths; actual deviceState, file publication and bounded SIGTERM exit. |
+| `check-stats-flood` (formerly `check_stats_flood.py`) | The production daemon must stop on SIGINT/SIGTERM while two native PUSH processes continue flooding metrics. The pre-fix SIGINT run timed out at two seconds; the regression checks termination without a shutdown flush. |
+| `check-stats-runtime` (formerly `check_stats_runtime.py`) | Production `statsd-rs` with real clocks and default socket/PC paths; actual deviceState, file publication and bounded SIGTERM exit. |
 
 The original main is compiled unchanged with imports supplied by an adapter.
 In normal comparisons, only clock values, temporary paths and the PC hardware

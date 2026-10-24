@@ -1,0 +1,487 @@
+{
+  "provenance": {
+    "python": "3.12.15",
+    "implementation": "CPython",
+    "capture": "Original scenario enumeration with unchanged timed_reference.Source and real filesystem/sudo fixture. Only native comparison arm omitted. No candidate timed code or output used.",
+    "sources": {
+      "rust/tools/check_timed_daemon.py": "1bc662ab16c099f87311791e6eac6ff03cd469ac4f1f1937d448b745ad72cf5c",
+      "rust/tools/check_timed_date_daemon.py": "0351cba6545d8fb3f74dd7601f8d873b8048a4078d9ceb6ff2e8e4b7d1d936b0",
+      "rust/tools/check_timed_dates.py": "12e54b4ddcdfa3afa2518e6f9a577ea47300d1cf60ba19717f1bfa02fa7a3c08",
+      "rust/tools/check_timed_http.py": "835e25276d732e705724826c78bff3319638e98fe28a74491224cc422ba88364",
+      "rust/tools/check_timed_lifecycle.py": "0acc44b19abd5fc64c2444bbb8b7e3f4594d9f7d8eef26c24aa55154747e4ae4",
+      "rust/tools/check_timed_logging.py": "daafbce164022c793e3c0f21852cd1bc696bdf156d109c73c6d1a90cd74db2d6",
+      "rust/tools/check_timed_reference.py": "0a08ff3d4369de09c73ce781cfc80aed5fa7d612d89504a931beeb6fac26f91a",
+      "rust/tools/check_timed_shutdown.py": "307b0bbc6246d94c1e33ac148e6fa462fcce9cdf03cf5770f920709969f266a6",
+      "rust/tools/timed_fixtures.py": "09a04bd1bcbac39731ed8377bf509113f9c36b224d22a0dccc1a8c196eb7b826",
+      "rust/tools/timed_reference.py": "9bedb8a148b2d6c4d7d211cd89e5a85c976710698db69a5a339e181ed6c76316",
+      "rust/tools/timed_shutdown_phase.py": "ddc10bf08d69be7d48de231ab228b59516d38925d20a0472ce75aae28cfe1c4d",
+      "rust/tools/timed_source_live.py": "297f19e2912245aaeb19407549bf70581b86e9fd9494b988c8557e8fd06b7368",
+      "rust/tools/tests/test_timed_shutdown_phase.py": "5025e456e079a5c32141fa2595759b5c6b75aaa4af91f3ef9c78891b1c488906",
+      "rust/tools/logging_producer_reference.py": "ac89bd78f4a2eed348317e374c4f21a9d2e28500abbeab10b50313ef3677a536",
+      "openpilot/common/time_helpers.py": "7e846c4963dc4950c2b2fc96307e21628add9552d19c91dbbca51140cf8caf81",
+      "openpilot/common/gps.py": "2d7ab534e3fbb966d616979966534ec1fe572d19e00731d7d89173e6aa6aead6",
+      "openpilot/system/timezone_helper.py": "c11fec4702333c55081945cdc0c3fe8b7efdbae56801b3ccd02b7fb143da0898",
+      "openpilot/system/timed.py": "cee7a338decfce92269e915920488e526f3ca22beea7b578a7bc744e4407cbfe",
+      "openpilot/common/logging_extra.py": "ce9b3b3d8498d76e1c4c0352a3e98e72759bb7f367ff8629c1329c46040595c3",
+      "openpilot/common/swaglog.py": "d37b623bd9418b72ffd3c4800a1da192c49856cb63bbbc1c09bb24a5ec6f8616"
+    }
+  },
+  "cases": [
+    {
+      "action_json": "{\"kind\": \"set_time\", \"epoch\": -0.0}",
+      "expected": {
+        "values": [
+          {
+            "ok": null
+          }
+        ],
+        "errors": [
+          null
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [
+            [
+              "date",
+              "-s",
+              "@0"
+            ]
+          ],
+          "records": [
+            {
+              "level": 20,
+              "msg": "Setting system time from GPS (diff 1790000000.0s)",
+              "exception": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"set_time\", \"epoch\": -0.5}",
+      "expected": {
+        "values": [
+          {
+            "ok": null
+          }
+        ],
+        "errors": [
+          null
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [
+            [
+              "date",
+              "-s",
+              "@0"
+            ]
+          ],
+          "records": [
+            {
+              "level": 20,
+              "msg": "Setting system time from GPS (diff 1790000000.5s)",
+              "exception": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"set_time\", \"epoch\": -1.0}",
+      "expected": {
+        "values": [
+          {
+            "ok": null
+          }
+        ],
+        "errors": [
+          null
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [
+            [
+              "date",
+              "-s",
+              "@-1"
+            ]
+          ],
+          "records": [
+            {
+              "level": 20,
+              "msg": "Setting system time from GPS (diff 1790000001.0s)",
+              "exception": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"set_time\", \"epoch\": -1.5}",
+      "expected": {
+        "values": [
+          {
+            "ok": null
+          }
+        ],
+        "errors": [
+          null
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [
+            [
+              "date",
+              "-s",
+              "@-1"
+            ]
+          ],
+          "records": [
+            {
+              "level": 20,
+              "msg": "Setting system time from GPS (diff 1790000001.5s)",
+              "exception": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"set_time\", \"epoch\": 0.0}",
+      "expected": {
+        "values": [
+          {
+            "ok": null
+          }
+        ],
+        "errors": [
+          null
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [
+            [
+              "date",
+              "-s",
+              "@0"
+            ]
+          ],
+          "records": [
+            {
+              "level": 20,
+              "msg": "Setting system time from GPS (diff 1790000000.0s)",
+              "exception": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"set_time\", \"epoch\": NaN}",
+      "expected": {
+        "values": [
+          {
+            "error": "ValueError"
+          }
+        ],
+        "errors": [
+          {
+            "type": "ValueError",
+            "message": "cannot convert float NaN to integer"
+          }
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [],
+          "records": [
+            {
+              "level": 20,
+              "msg": "Setting system time from GPS (diff nans)",
+              "exception": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"set_time\", \"epoch\": Infinity}",
+      "expected": {
+        "values": [
+          {
+            "error": "OverflowError"
+          }
+        ],
+        "errors": [
+          {
+            "type": "OverflowError",
+            "message": "cannot convert float infinity to integer"
+          }
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [],
+          "records": [
+            {
+              "level": 20,
+              "msg": "Setting system time from GPS (diff infs)",
+              "exception": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"set_time\", \"epoch\": -Infinity}",
+      "expected": {
+        "values": [
+          {
+            "error": "OverflowError"
+          }
+        ],
+        "errors": [
+          {
+            "type": "OverflowError",
+            "message": "cannot convert float infinity to integer"
+          }
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [],
+          "records": [
+            {
+              "level": 20,
+              "msg": "Setting system time from GPS (diff infs)",
+              "exception": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"set_time\", \"epoch\": 9007199254740993}",
+      "expected": {
+        "values": [
+          {
+            "ok": null
+          }
+        ],
+        "errors": [
+          null
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [
+            [
+              "date",
+              "-s",
+              "@9007199254740993"
+            ]
+          ],
+          "records": [
+            {
+              "level": 20,
+              "msg": "Setting system time from GPS (diff 9007197464740992.0s)",
+              "exception": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"set_time\", \"epoch\": 1267650600228229401496703205377}",
+      "expected": {
+        "values": [
+          {
+            "ok": null
+          }
+        ],
+        "errors": [
+          null
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [
+            [
+              "date",
+              "-s",
+              "@1267650600228229401496703205377"
+            ]
+          ],
+          "records": [
+            {
+              "level": 20,
+              "msg": "Setting system time from GPS (diff 1267650600228229401496703205376.0s)",
+              "exception": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"set_time\", \"epoch\": 1044388881413152506691752710716624382579964249047383780384233483283953907971557456848826811934997558340890106714439262837987573438185793607263236087851365277945956976543709998340361590134383718314428070011855946226376318839397712745672334684344586617496807908705803704071284048740118609114467977783598029006686938976881787785946905630190260940599579453432823469303026696443059025015972399867714215541693835559885291486318237914434496734087811872639496475100189041349008417061675093668333850551032972088269550769983616369411933015213796825837188091833656751221318492846368125550225998300412344784862595674492194617023806505913245610825731835380087608622102834270197698202313169017678006675195485079921636419370285375124784014907159135459982790513399611551794271106831134090584272884279791554849782954323534517065223269061394905987693002122963395687782878948440616007412945674919823050571642377154816321380631045902916136926708342856440730447899971901781465763473223850267253059899795996090799469201774624817718449867455659250178329070473119433165550807568221846571746373296884912819520317457002440926616910874148385078411929804522981857338977648103126085903001302413467189726673216491511131602920781738033436090243804708340403154190336}",
+      "expected": {
+        "values": [
+          {
+            "error": "OverflowError"
+          }
+        ],
+        "errors": [
+          {
+            "type": "OverflowError",
+            "message": "int too large to convert to float"
+          }
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [],
+          "records": []
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"gps\", \"longitude\": NaN}",
+      "expected": {
+        "values": [
+          {
+            "error": "ValueError"
+          }
+        ],
+        "errors": [
+          {
+            "type": "ValueError",
+            "message": "cannot convert float NaN to integer"
+          }
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [],
+          "records": []
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"gps\", \"longitude\": Infinity}",
+      "expected": {
+        "values": [
+          {
+            "error": "OverflowError"
+          }
+        ],
+        "errors": [
+          {
+            "type": "OverflowError",
+            "message": "cannot convert float infinity to integer"
+          }
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [],
+          "records": []
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"gps\", \"longitude\": -Infinity}",
+      "expected": {
+        "values": [
+          {
+            "error": "OverflowError"
+          }
+        ],
+        "errors": [
+          {
+            "type": "OverflowError",
+            "message": "cannot convert float infinity to integer"
+          }
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [],
+          "records": []
+        }
+      }
+    },
+    {
+      "action_json": "{\"kind\": \"gps\", \"longitude\": 1044388881413152506691752710716624382579964249047383780384233483283953907971557456848826811934997558340890106714439262837987573438185793607263236087851365277945956976543709998340361590134383718314428070011855946226376318839397712745672334684344586617496807908705803704071284048740118609114467977783598029006686938976881787785946905630190260940599579453432823469303026696443059025015972399867714215541693835559885291486318237914434496734087811872639496475100189041349008417061675093668333850551032972088269550769983616369411933015213796825837188091833656751221318492846368125550225998300412344784862595674492194617023806505913245610825731835380087608622102834270197698202313169017678006675195485079921636419370285375124784014907159135459982790513399611551794271106831134090584272884279791554849782954323534517065223269061394905987693002122963395687782878948440616007412945674919823050571642377154816321380631045902916136926708342856440730447899971901781465763473223850267253059899795996090799469201774624817718449867455659250178329070473119433165550807568221846571746373296884912819520317457002440926616910874148385078411929804522981857338977648103126085903001302413467189726673216491511131602920781738033436090243804708340403154190336}",
+      "expected": {
+        "values": [
+          {
+            "error": "OverflowError"
+          }
+        ],
+        "errors": [
+          {
+            "type": "OverflowError",
+            "message": "int too large to convert to float"
+          }
+        ],
+        "state": {
+          "params": {
+            "TimezoneName": null,
+            "TimezoneSource": null
+          },
+          "target": null,
+          "commands": [],
+          "records": []
+        }
+      }
+    }
+  ]
+}

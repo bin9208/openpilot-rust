@@ -1,0 +1,54 @@
+{
+  "repository": "https://github.com/python/cpython",
+  "commit": "e848e4b09ca4bc67c0041c9ce7526dae471d4c36",
+  "version": "3.12.15",
+  "license_file": "gb-LICENSE.txt",
+  "source_files": {
+    "_codecs_cn.c": {
+      "bytes": 11256,
+      "sha256": "8b28def11821d71acb90ef3e74d7d6d597246daf4c196415107d19ebeeb73e55"
+    },
+    "mappings_cn.h": {
+      "bytes": 319910,
+      "sha256": "5c75da57e7fcbb06106a64b03a7fc1f6e76fd9668306c66f71a6485e8eb550aa"
+    },
+    "cjkcodecs.h": {
+      "bytes": 17493,
+      "sha256": "79b8d3dd8c18a18377d6bc72524bf6e53cdedf5e7e108b6a403a476a8cde862b"
+    },
+    "CPython-LICENSE.txt": {
+      "bytes": 13936,
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+    }
+  },
+  "source_data_only_never_executed": true,
+  "implementation_data_never_used_as_expected_oracle": true,
+  "outputs": {
+    "gb-gbkext.bin": {
+      "layout": "256x256 u16LE; 0xffff absent",
+      "mapped": 14348,
+      "bytes": 131072,
+      "sha256": "407cf70b841ac5afd19a1c6f51b522135fbb1e5066b799a919f01b26f59ef39c"
+    },
+    "gb-gb18030ext.bin": {
+      "layout": "256x256 u16LE; 0xffff absent",
+      "mapped": 2149,
+      "bytes": 131072,
+      "sha256": "11c5642950882d127f01fc223bc79de8e6af93896fa9fc446ee42ed5400daea9"
+    },
+    "gb-bmp-ranges.bin": {
+      "layout": "(first u32LE,last u32LE,base u32LE) including terminal (0,0,39420)",
+      "rows": 207,
+      "bytes": 2484,
+      "sha256": "0fe234f4b419397d2952984f56b8e5bdd3698223aec577782cfc32df1b952fa4"
+    }
+  },
+  "shared_gb2312": {
+    "path": "hz-gb2312.bin",
+    "bytes": 17672,
+    "sha256": "ac1fb2e1013a12fde1df729ca2d89be2b3b84c12a274f61800d222c96f62d868",
+    "mapped": 7445,
+    "unchanged": true
+  },
+  "decoder_semantics_source": "_codecs_cn.c DECODER(gb2312), GBK_DECODE, DECODER(gbk), DECODER(gb18030)"
+}

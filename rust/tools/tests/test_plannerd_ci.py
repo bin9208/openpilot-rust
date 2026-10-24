@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import ast
 import os
 from pathlib import Path
 import subprocess
@@ -9,6 +10,31 @@ import pytest
 import yaml
 
 from check_plannerd_ci import Check, ROOT, run_checks
+
+
+def ipc_target():
+  # Execute the actual scheduling function without importing C++ IPC bindings.
+  tree = ast.parse((ROOT / 'rust/tools/plannerd_ipc.py').read_text())
+  function = next((node for node in tree.body if isinstance(node, ast.FunctionDef)
+                   and node.name == 'next_model_target'), None)
+  assert function is not None, 'IPC replay needs send-paced scheduling'
+  namespace = {}
+  exec(compile(ast.Module([function], type_ignores=[]), '<ipc scheduling>', 'exec'), namespace)
+  return namespace['next_model_target']
+
+
+def test_ipc_replay_keeps_normal_frequency_independent_of_solver_duration() -> None:
+  target = ipc_target()
+  for work in (0.003, 0.013, 0.025, 0.049):
+    assert target(100.05, 100.0, 100.0 + work) == pytest.approx(100.05)
+
+
+def test_ipc_replay_does_not_catch_up_after_delayed_model_processing() -> None:
+  target = ipc_target()
+  # Solver work spanning a complete period still gets a full recovery interval.
+  assert target(100.05, 100.0, 100.08) == pytest.approx(100.13)
+  # Late host wakeup cannot send two model inputs at the same nominal deadline.
+  assert target(100.05, 100.04, 100.045) == pytest.approx(100.09)
 
 
 def test_failed_comparison_is_recorded_and_stops_before_the_next_check(tmp_path: Path) -> None:

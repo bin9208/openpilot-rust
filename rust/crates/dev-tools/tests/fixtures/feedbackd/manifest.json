@@ -1,0 +1,59 @@
+{
+  "scope": "Unchanged original checker/source, real Cython Params and msgq/full Cereal source-only live8 baseline; no native candidate used as expected policy",
+  "source_sha256": {
+    "rust/tools/check_feedbackd.py": "ba380a1d49b1e69c03f665f51fdad846a0d53eadc8e57bbcd151e7fd3e146c55",
+    "openpilot/selfdrive/ui/feedback/feedbackd.py": "a08e8396b355af4ea5f02c44837a2906dd06af8363d58280c2fdb82f3537d429",
+    "rust/tools/original_params_binding.py": "b5fa10da96aecca63bafef0c03f6ddf9fe5fde89683f10e70742b4e919c38457",
+    "openpilot/cereal/messaging/__init__.py": "1938c80c71dba0855700015bc03371786a711c67bfe3a0c5e073ed790d5e10a9",
+    "openpilot/cereal/services.py": "a0745e2ef00036f0eef08b453a4798b4281549ea9ac6dc91c8b348ef76131edb",
+    "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+    "openpilot/cereal/custom.capnp": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693",
+    "openpilot/cereal/deprecated.capnp": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355",
+    "opendbc_repo/opendbc/car/car.capnp": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda",
+    "openpilot/common/params.py": "4708c127258c0c0de9acd2d670ad9b48d4f3fd050c96deb373ea8cd348afe3a4",
+    "openpilot/common/swaglog.py": "d37b623bd9418b72ffd3c4800a1da192c49856cb63bbbc1c09bb24a5ec6f8616",
+    "openpilot/common/params_pyx.pyx": "a8cc5e5296dd38a012c55b0867c4563f8e320d25960260d897675dd90f0ea544",
+    "openpilot/common/params.cc": "2947645ca30b57d23feeace0e88bead5709c1681dc21359fb1e5a225ca63b187",
+    "openpilot/common/util.cc": "4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a",
+    "openpilot/common/swaglog.cc": "b61e45b8ad799606ba2a78e0b5ee9303a665bad99a67d50f3b7134792bf7ba7c",
+    "openpilot/common/params.h": "47d08fa1987c9150e55d09a2a533a0a115851aadb34bd1a0c82325e0be8726b3",
+    "openpilot/common/params_keys.h": "b8422e8ad2cd74ec3c5750c3e919f6546519d84fabb5f6ec868b5372713b4d7f",
+    "openpilot/common/util.h": "49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea",
+    "openpilot/common/swaglog.h": "bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b",
+    "openpilot/common/timing.h": "66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71",
+    "openpilot/common/version.h": "8d618ada21dcc00618178d67f52c532b95c3eeff0736a9909379a3431e050ba6",
+    "openpilot/common/queue.h": "f7c75c847ae63dfd6e864406e722248540a79908270e85ca2674b43407408fcf",
+    "openpilot/system/hardware/hw.h": "afc36d60417dbaf1683d17f10b32306c1d69f58816a6dad09c8da24484249da7",
+    "openpilot/system/hardware/base.h": "7ef48c160e8e0e5cba3a8f629ac72904900e41be260aee8e4029b5c1a615e3b9",
+    "openpilot/system/hardware/pc/hardware.h": "edee2ab86ca69a3c8f005a823457edfe3a9368703a5583ff0d77b32f8b1e105c",
+    "openpilot/cereal/__init__.py": "c8e54d7417631916d8c5842d0d509d8c573ca8089e9cad6fc7acad849503fb60",
+    "openpilot/cereal/include/c++.capnp": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44",
+    "msgq_repo/msgq/__init__.py": "9b9e5e26cf4190e9aaf056cd90771fb95228f665d1171a9ee919b432a0d2d368",
+    "msgq_repo/msgq/ipc_pyx.pyx": "02cf21d0232967eed7bd68ed0209e55f5f1e3edef3675671bc6524ca64976fa4",
+    "msgq_repo/msgq/ipc.pxd": "010c68272ced25786736d34b1a8833c3054add34fab1d042feb66dca77edccaf",
+    "msgq_repo/msgq/msgq.cc": "5910ffb3bc2a4f023b4bbc612e41b76ddeaace2eb84ae8b127e8736905d7a6c2",
+    "msgq_repo/msgq/msgq.h": "ee16b5b2cccd5fceb526f2f3e85a3ffe0fd523b25fdb0a9cde72fb03ee0183bc",
+    "msgq_repo/msgq/impl_msgq.cc": "3201986c605f3657597bda63b33c30a16f4d597cd8588d5e09f620da6ab93c29",
+    "msgq_repo/msgq/impl_msgq.h": "8d3d70f7e63b47986c9e64db2a62faf1a97c265df6b9ee450b7d9fff831fe7d5",
+    "msgq_repo/msgq/ipc.cc": "096b7a00e03efc9cdd7758351906edb639e23eaf8879fa4ca8026e15f965b544",
+    "msgq_repo/msgq/ipc.h": "1572352e5b24014bc1e26410efd7be9ff27a6b1c577b6614a9b74e7d6d313337"
+  },
+  "retired_sources": [
+    "rust/tools/check_feedbackd.py"
+  ],
+  "files": {
+    "original.json": "2761cbeab3f272932bb3ab7f2c9247864fe42f2f59758ec1a55eafd836211bee",
+    "cli-original.json": "2fed9b0cae8b0145c6f7e2f151bf73e26c0bc1f4c7d8742b1599dbe948784832",
+    "failures-original.json": "cd0ca844155511ce132c271163b3b0131fec94775893a48704603614e2eb9657"
+  },
+  "binding_sha256": "fb7d15475f49abc07f17bf704257dd09b2348a116c6b96f90a7495824dbdf02d",
+  "original_receipt_sha256": "5f5725d339f5cccb1013fd6704de9303678a7ca4b0faf7ebf64813e215162ea0",
+  "counts": {
+    "iterations": 8,
+    "bookmarks": 4,
+    "packets": 6,
+    "cli": 8,
+    "child_failures": 3
+  },
+  "limits": "Fresh source-matched native feedbackd executable and full original/native paired baseline remain pending; source-only evidence is not native replacement or device acceptance"
+}

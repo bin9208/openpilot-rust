@@ -1,0 +1,3798 @@
+{
+  "original_checker_sha256": "fadc1ad42b382d4e4a6be128ead810e2b694e69b937525cb280e8f59cd799664",
+  "assertion_lines": [
+    161,
+    162,
+    163,
+    164,
+    165,
+    167,
+    169,
+    170,
+    171
+  ],
+  "controls": [
+    {
+      "name": "original-live",
+      "mode": "live",
+      "pid": 752299,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254780.340351969,
+          "pid": 752299
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254780.3413743,
+          "pid": 752299
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254780.341468221,
+          "pid": 752299
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254780.341557684,
+          "pid": 752299
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254780.341647818,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254780.342215552,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 254780.392293657,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254780.427940424,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 254780.442172498,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 254780.492174615,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254780.513674352,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 4,
+          "time": 254780.542304173,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 5,
+          "time": 254780.592164371,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254780.599403682,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 6,
+          "time": 254780.642170714,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254780.685276843,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 7,
+          "time": 254780.692268214,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 8,
+          "time": 254780.742176238,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254780.771049421,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 9,
+          "time": 254780.792173395,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 10,
+          "time": 254780.842176402,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254780.856864156,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 11,
+          "time": 254780.89217987,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 12,
+          "time": 254780.942163773,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254780.942668592,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 13,
+          "time": 254780.992153706,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254781.028451308,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 14,
+          "time": 254781.042146304,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 15,
+          "time": 254781.092145665,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254781.114284286,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 16,
+          "time": 254781.142144284,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 17,
+          "time": 254781.192160005,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254781.200050342,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 18,
+          "time": 254781.242145941,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254781.285756849,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 19,
+          "time": 254781.292153817,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 20,
+          "time": 254781.342414364,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254781.371603502,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 21,
+          "time": 254781.392152539,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 22,
+          "time": 254781.442226245,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254781.457362185,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 23,
+          "time": 254781.492424718,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 24,
+          "time": 254781.542169735,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254781.543170648,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 25,
+          "time": 254781.592170669,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254781.628949036,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 26,
+          "time": 254781.642523523,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 27,
+          "time": 254781.692181261,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254781.714735608,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 28,
+          "time": 254781.74226783,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 29,
+          "time": 254781.792178058,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254781.800494721,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 30,
+          "time": 254781.842323594,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254781.886212909,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 31,
+          "time": 254781.89219481,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 32,
+          "time": 254781.942183601,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254781.971908155,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 33,
+          "time": 254781.992160992,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 34,
+          "time": 254782.04215386,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254782.057629669,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 35,
+          "time": 254782.0921479,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 36,
+          "time": 254782.142166986,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254782.14337747,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 37,
+          "time": 254782.192154154,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254782.229121525,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 38,
+          "time": 254782.24217317,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 39,
+          "time": 254782.292179723,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254782.314884825,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 40,
+          "time": 254782.342192608,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 41,
+          "time": 254782.392174546,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254782.400675325,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 42,
+          "time": 254782.442168005,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254782.486409481,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 43,
+          "time": 254782.492163649,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 44,
+          "time": 254782.542187674,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254782.572120045,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 45,
+          "time": 254782.592175633,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 46,
+          "time": 254782.642160827,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254782.65786384,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 47,
+          "time": 254782.692185202,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 48,
+          "time": 254782.742169915,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254782.743532727,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 49,
+          "time": 254782.792139941,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254782.829235786,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 50,
+          "time": 254782.842150371,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 51,
+          "time": 254782.892249152,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254782.915007861,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 52,
+          "time": 254782.942204861,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 53,
+          "time": 254782.992172894,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254783.000725166,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 54,
+          "time": 254783.042165862,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254783.086463129,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 55,
+          "time": 254783.092179568,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 56,
+          "time": 254783.142171393,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254783.172209748,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 57,
+          "time": 254783.192172106,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 58,
+          "time": 254783.242209164,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254783.257946799,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 59,
+          "time": 254783.292174371,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 60,
+          "time": 254783.342172829,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254783.343601079,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 61,
+          "time": 254783.392205409,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254783.429563952,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 62,
+          "time": 254783.442158274,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 63,
+          "time": 254783.492168423,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254783.515273443,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 64,
+          "time": 254783.542206192,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 65,
+          "time": 254783.592190524,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254783.601092193,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 66,
+          "time": 254783.642155781,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254783.68681073,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 67,
+          "time": 254783.692174786,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 68,
+          "time": 254783.742168605,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254783.772568027,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 69,
+          "time": 254783.792152877,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 70,
+          "time": 254783.842151054,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254783.858176262,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 71,
+          "time": 254783.892172342,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 72,
+          "time": 254783.942179435,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254783.943880473,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 73,
+          "time": 254783.992173625,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254784.029579764,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 74,
+          "time": 254784.04219275,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 75,
+          "time": 254784.092147858,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254784.115385189,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 76,
+          "time": 254784.1423904,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 77,
+          "time": 254784.192184345,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254784.201136205,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 78,
+          "time": 254784.242201616,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254784.286977004,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 79,
+          "time": 254784.292143521,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 80,
+          "time": 254784.342182482,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254784.372736936,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 81,
+          "time": 254784.392157847,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 82,
+          "time": 254784.442154852,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254784.458461443,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 83,
+          "time": 254784.492179607,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 84,
+          "time": 254784.542187653,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254784.544272148,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 85,
+          "time": 254784.59242254,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254784.630177474,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 86,
+          "time": 254784.642184586,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 87,
+          "time": 254784.692162416,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254784.71586354,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 88,
+          "time": 254784.742178705,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 89,
+          "time": 254784.792167754,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254784.801549266,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 90,
+          "time": 254784.842179716,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254784.88731626,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 91,
+          "time": 254784.892159849,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 92,
+          "time": 254784.942155601,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254784.973063889,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 93,
+          "time": 254784.992172832,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 94,
+          "time": 254785.04217724,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254785.058819442,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 95,
+          "time": 254785.092179714,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 96,
+          "time": 254785.142181987,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254785.144570065,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 97,
+          "time": 254785.192131104,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254785.230256152,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 98,
+          "time": 254785.242169624,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 99,
+          "time": 254785.292176396,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254785.316043493,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 100,
+          "time": 254785.342202423,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 101,
+          "time": 254785.392167539,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254785.401758322,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 102,
+          "time": 254785.442172387,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254785.487497284,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 103,
+          "time": 254785.492176083,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 104,
+          "time": 254785.542157569,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254785.573251615,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 105,
+          "time": 254785.592168659,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 106,
+          "time": 254785.642190137,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254785.658957497,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 107,
+          "time": 254785.692178776,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 108,
+          "time": 254785.742169849,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254785.744695287,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 109,
+          "time": 254785.792173084,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254785.830433707,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 110,
+          "time": 254785.842170277,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 111,
+          "time": 254785.892185714,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254785.916165446,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 112,
+          "time": 254785.942194139,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 113,
+          "time": 254785.992325527,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254786.001869895,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 114,
+          "time": 254786.042175273,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254786.087586396,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 115,
+          "time": 254786.092141029,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 116,
+          "time": 254786.142155003,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254786.173315821,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 117,
+          "time": 254786.192181561,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 118,
+          "time": 254786.242193331,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254786.259025469,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 119,
+          "time": 254786.29218187,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 120,
+          "time": 254786.342179474,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254786.344743913,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 121,
+          "time": 254786.392174194,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254786.430469481,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 122,
+          "time": 254786.442174814,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 123,
+          "time": 254786.492190932,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254786.51614645,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 124,
+          "time": 254786.542147482,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 125,
+          "time": 254786.592205357,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254786.601869543,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 126,
+          "time": 254786.642148371,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254786.687614114,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 127,
+          "time": 254786.692165511,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 128,
+          "time": 254786.742173925,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254786.773358435,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 129,
+          "time": 254786.792186166,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 130,
+          "time": 254786.842148526,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254786.85912187,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 131,
+          "time": 254786.892256841,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 132,
+          "time": 254786.942188205,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254786.94484963,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 133,
+          "time": 254786.992131319,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254787.03063715,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 134,
+          "time": 254787.042180468,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 135,
+          "time": 254787.092170888,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254787.11633738,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 136,
+          "time": 254787.142174904,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 137,
+          "time": 254787.192159926,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254787.202150175,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 138,
+          "time": 254787.242160425,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254787.287948905,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 139,
+          "time": 254787.292141028,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 140,
+          "time": 254787.342194183,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254787.373736915,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 141,
+          "time": 254787.392177451,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 142,
+          "time": 254787.442174935,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254787.459450039,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 143,
+          "time": 254787.492177127,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 144,
+          "time": 254787.5421461,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254787.545181676,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 145,
+          "time": 254787.592168549,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254787.63090002,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 146,
+          "time": 254787.642138863,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 147,
+          "time": 254787.692162955,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254787.716648136,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 148,
+          "time": 254787.742157112,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 149,
+          "time": 254787.792160847,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254787.802382488,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 150,
+          "time": 254787.842173738,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254787.888153396,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 151,
+          "time": 254787.892178043,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 152,
+          "time": 254787.942158235,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254787.973906201,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 153,
+          "time": 254787.992170165,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 154,
+          "time": 254788.042182265,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254788.059637937,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 155,
+          "time": 254788.092234588,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 156,
+          "time": 254788.142152196,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254788.145333929,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 157,
+          "time": 254788.192179614,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254788.231075584,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 158,
+          "time": 254788.242189259,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 159,
+          "time": 254788.292179509,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254788.316855147,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 160,
+          "time": 254788.342183194,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 161,
+          "time": 254788.39220411,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254788.402692166,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 162,
+          "time": 254788.442179182,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254788.488451363,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 163,
+          "time": 254788.492164644,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 164,
+          "time": 254788.54212483,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254788.574220338,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 165,
+          "time": 254788.592176561,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 166,
+          "time": 254788.642188411,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254788.659946915,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 167,
+          "time": 254788.692180714,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 168,
+          "time": 254788.742148122,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254788.745702394,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 169,
+          "time": 254788.792182933,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254788.831417609,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 170,
+          "time": 254788.842221801,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 171,
+          "time": 254788.892145439,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254788.917114211,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 172,
+          "time": 254788.942154393,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 173,
+          "time": 254788.992167554,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.002822564,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 174,
+          "time": 254789.042184803,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.088572994,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 175,
+          "time": 254789.092143435,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 176,
+          "time": 254789.142154953,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.174340926,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 177,
+          "time": 254789.192180076,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 178,
+          "time": 254789.242169765,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.260559939,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 179,
+          "time": 254789.292194838,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 180,
+          "time": 254789.342176021,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.34637169,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 181,
+          "time": 254789.392159408,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.432143699,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 182,
+          "time": 254789.442178079,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 183,
+          "time": 254789.492126883,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.517909106,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 184,
+          "time": 254789.542152097,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 185,
+          "time": 254789.592152826,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.603692025,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 186,
+          "time": 254789.642153443,
+          "pid": 752299
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.689500049,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 187,
+          "time": 254789.692163198,
+          "pid": 752299
+        },
+        {
+          "event": "poll",
+          "value": 188,
+          "time": 254789.742496532,
+          "pid": 752299
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254789.775585268,
+          "pid": 752299
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254789.775726104,
+          "pid": 752299
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254789.775844149,
+          "pid": 752299
+        }
+      ],
+      "valid": true,
+      "error_type": null,
+      "metrics": {
+        "opens": 1,
+        "callbacks": 110,
+        "median_period": 0.050000933988485485
+      },
+      "source_exit": 0
+    },
+    {
+      "name": "original-bounded",
+      "mode": "bounded",
+      "pid": 752358,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.834620104,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254789.83562834,
+          "pid": 752358
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.835721339,
+          "pid": 752358
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254789.835811373,
+          "pid": 752358
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254789.835900796,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.836446039,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 254789.886527926,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.922220041,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 254789.936514237,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 254789.986526706,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254790.00817898,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 4,
+          "time": 254790.036612439,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 5,
+          "time": 254790.086639816,
+          "pid": 752358
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254790.094186236,
+          "pid": 752358
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254790.094314109,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254790.094431252,
+          "pid": 752358
+        }
+      ],
+      "valid": true,
+      "error_type": null,
+      "metrics": {
+        "opens": 1,
+        "callbacks": 3,
+        "median_period": 0.05001992300094571
+      },
+      "source_exit": 0
+    },
+    {
+      "name": "original-retry",
+      "mode": "retry",
+      "pid": 752363,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254790.161064153,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254790.162103896,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254790.162217543,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254790.162326131,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254793.186588912,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254793.186733195,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 2,
+          "time": 254793.186849807,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.215699168,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.215952599,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 3,
+          "time": 254796.216111348,
+          "pid": 752363
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254796.216275237,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.217074031,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 254796.267569748,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.302918666,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 254796.317270536,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 254796.367109145,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.388721595,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 4,
+          "time": 254796.417279649,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 5,
+          "time": 254796.467156098,
+          "pid": 752363
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254796.474645624,
+          "pid": 752363
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254796.474769179,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.474885691,
+          "pid": 752363
+        }
+      ],
+      "valid": true,
+      "error_type": null,
+      "metrics": {
+        "opens": 3,
+        "callbacks": 3,
+        "median_period": 0.049857528996653855
+      },
+      "source_exit": 0
+    },
+    {
+      "name": "original-inactive",
+      "mode": "inactive",
+      "pid": 752418,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.516717503,
+          "pid": 752418
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.517760452,
+          "pid": 752418
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.517852329,
+          "pid": 752418
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254796.517938346,
+          "pid": 752418
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254796.518029281,
+          "pid": 752418
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.518523311,
+          "pid": 752418
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 254796.568552647,
+          "pid": 752418
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.604429868,
+          "pid": 752418
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 254796.618580612,
+          "pid": 752418
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 254796.668809732,
+          "pid": 752418
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254796.690238997,
+          "pid": 752418
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254796.69037247,
+          "pid": 752418
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.690491928,
+          "pid": 752418
+        }
+      ],
+      "valid": true,
+      "error_type": null,
+      "metrics": {
+        "opens": 1,
+        "callbacks": 2,
+        "median_period": 0.05012854249798693
+      },
+      "source_exit": 1
+    },
+    {
+      "name": "original-start-failed",
+      "mode": "start-failed",
+      "pid": 752425,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.742931883,
+          "pid": 752425
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.744093117,
+          "pid": 752425
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.744185155,
+          "pid": 752425
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254796.744274037,
+          "pid": 752425
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254796.744363389,
+          "pid": 752425
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254796.744522579,
+          "pid": 752425
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254796.74463308,
+          "pid": 752425
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.744729856,
+          "pid": 752425
+        }
+      ],
+      "valid": true,
+      "error_type": null,
+      "metrics": {
+        "opens": 1,
+        "callbacks": 0,
+        "median_period": null
+      },
+      "source_exit": 1
+    },
+    {
+      "name": "original-stop-retry",
+      "mode": "stop-retry",
+      "pid": 752429,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.786073008,
+          "pid": 752429
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.787177399,
+          "pid": 752429
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.787278443,
+          "pid": 752429
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254796.787374788,
+          "pid": 752429
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.807831723,
+          "pid": 752429
+        }
+      ],
+      "valid": true,
+      "error_type": null,
+      "metrics": {
+        "opens": 1,
+        "callbacks": 0,
+        "median_period": null
+      },
+      "source_exit": 0
+    },
+    {
+      "name": "original-exhausted",
+      "mode": "exhausted",
+      "pid": 752433,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.844610465,
+          "pid": 752433
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.845698726,
+          "pid": 752433
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.845801554,
+          "pid": 752433
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254796.84589819,
+          "pid": 752433
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254799.876365265,
+          "pid": 752433
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254799.876519155,
+          "pid": 752433
+        },
+        {
+          "event": "open",
+          "value": 2,
+          "time": 254799.8766368,
+          "pid": 752433
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254802.907489394,
+          "pid": 752433
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254802.907651849,
+          "pid": 752433
+        },
+        {
+          "event": "open",
+          "value": 3,
+          "time": 254802.907776586,
+          "pid": 752433
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254805.936811653,
+          "pid": 752433
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254805.936951588,
+          "pid": 752433
+        },
+        {
+          "event": "open",
+          "value": 4,
+          "time": 254805.937067258,
+          "pid": 752433
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254808.961877896,
+          "pid": 752433
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254808.96203938,
+          "pid": 752433
+        },
+        {
+          "event": "open",
+          "value": 5,
+          "time": 254808.962168365,
+          "pid": 752433
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254811.99339721,
+          "pid": 752433
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254811.993574473,
+          "pid": 752433
+        },
+        {
+          "event": "open",
+          "value": 6,
+          "time": 254811.993689462,
+          "pid": 752433
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254815.021585669,
+          "pid": 752433
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254815.021728039,
+          "pid": 752433
+        },
+        {
+          "event": "open",
+          "value": 7,
+          "time": 254815.021838359,
+          "pid": 752433
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254818.05344499,
+          "pid": 752433
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254818.053617003,
+          "pid": 752433
+        },
+        {
+          "event": "open",
+          "value": 8,
+          "time": 254818.053736251,
+          "pid": 752433
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254821.084525843,
+          "pid": 752433
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254821.084681817,
+          "pid": 752433
+        },
+        {
+          "event": "open",
+          "value": 9,
+          "time": 254821.084814638,
+          "pid": 752433
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254824.113634393,
+          "pid": 752433
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254824.113893885,
+          "pid": 752433
+        },
+        {
+          "event": "open",
+          "value": 10,
+          "time": 254824.114413932,
+          "pid": 752433
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254827.146827025,
+          "pid": 752433
+        }
+      ],
+      "valid": true,
+      "error_type": null,
+      "metrics": {
+        "opens": 10,
+        "callbacks": 0,
+        "median_period": null
+      },
+      "source_exit": 1
+    },
+    {
+      "name": "foreign-pid",
+      "mode": "bounded",
+      "pid": 752358,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.834620104,
+          "pid": 752359
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254789.83562834,
+          "pid": 752358
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.835721339,
+          "pid": 752358
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254789.835811373,
+          "pid": 752358
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254789.835900796,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.836446039,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 254789.886527926,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.922220041,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 254789.936514237,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 254789.986526706,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254790.00817898,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 4,
+          "time": 254790.036612439,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 5,
+          "time": 254790.086639816,
+          "pid": 752358
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254790.094186236,
+          "pid": 752358
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254790.094314109,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254790.094431252,
+          "pid": 752358
+        }
+      ],
+      "valid": false,
+      "error_type": "AssertionError"
+    },
+    {
+      "name": "missing-termination",
+      "mode": "bounded",
+      "pid": 752358,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.834620104,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254789.83562834,
+          "pid": 752358
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.835721339,
+          "pid": 752358
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254789.835811373,
+          "pid": 752358
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254789.835900796,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.836446039,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 254789.886527926,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.922220041,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 254789.936514237,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 254789.986526706,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254790.00817898,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 4,
+          "time": 254790.036612439,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 5,
+          "time": 254790.086639816,
+          "pid": 752358
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254790.094186236,
+          "pid": 752358
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254790.094314109,
+          "pid": 752358
+        }
+      ],
+      "valid": false,
+      "error_type": "AssertionError"
+    },
+    {
+      "name": "wrong-shutdown-order",
+      "mode": "bounded",
+      "pid": 752358,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.834620104,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254789.83562834,
+          "pid": 752358
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.835721339,
+          "pid": 752358
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254789.835811373,
+          "pid": 752358
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254789.835900796,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.836446039,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 254789.886527926,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.922220041,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 254789.936514237,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 254789.986526706,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254790.00817898,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 4,
+          "time": 254790.036612439,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 5,
+          "time": 254790.086639816,
+          "pid": 752358
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254790.094186236,
+          "pid": 752358
+        },
+        {
+          "event": "wrong-close",
+          "value": 0,
+          "time": 254790.094314109,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254790.094431252,
+          "pid": 752358
+        }
+      ],
+      "valid": false,
+      "error_type": "AssertionError"
+    },
+    {
+      "name": "cadence-0.04",
+      "mode": "bounded",
+      "pid": 752358,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.834620104,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254789.83562834,
+          "pid": 752358
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.835721339,
+          "pid": 752358
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254789.835811373,
+          "pid": 752358
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254789.835900796,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.836446039,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.922220041,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254790.00817898,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 0.0,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 0.04,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 0.08,
+          "pid": 752358
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254790.094186236,
+          "pid": 752358
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254790.094314109,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254790.094431252,
+          "pid": 752358
+        }
+      ],
+      "valid": false,
+      "error_type": "AssertionError"
+    },
+    {
+      "name": "cadence-0.040001",
+      "mode": "bounded",
+      "pid": 752358,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.834620104,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254789.83562834,
+          "pid": 752358
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.835721339,
+          "pid": 752358
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254789.835811373,
+          "pid": 752358
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254789.835900796,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.836446039,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.922220041,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254790.00817898,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 0.0,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 0.040001,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 0.080002,
+          "pid": 752358
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254790.094186236,
+          "pid": 752358
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254790.094314109,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254790.094431252,
+          "pid": 752358
+        }
+      ],
+      "valid": true,
+      "error_type": null,
+      "metrics": {
+        "opens": 1,
+        "callbacks": 3,
+        "median_period": 0.040001
+      }
+    },
+    {
+      "name": "cadence-0.064999",
+      "mode": "bounded",
+      "pid": 752358,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.834620104,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254789.83562834,
+          "pid": 752358
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.835721339,
+          "pid": 752358
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254789.835811373,
+          "pid": 752358
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254789.835900796,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.836446039,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.922220041,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254790.00817898,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 0.0,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 0.064999,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 0.129998,
+          "pid": 752358
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254790.094186236,
+          "pid": 752358
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254790.094314109,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254790.094431252,
+          "pid": 752358
+        }
+      ],
+      "valid": true,
+      "error_type": null,
+      "metrics": {
+        "opens": 1,
+        "callbacks": 3,
+        "median_period": 0.064999
+      }
+    },
+    {
+      "name": "cadence-0.065",
+      "mode": "bounded",
+      "pid": 752358,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.834620104,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254789.83562834,
+          "pid": 752358
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254789.835721339,
+          "pid": 752358
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 254789.835811373,
+          "pid": 752358
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254789.835900796,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.836446039,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254789.922220041,
+          "pid": 752358
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254790.00817898,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 0.0,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 0.065,
+          "pid": 752358
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 0.13,
+          "pid": 752358
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254790.094186236,
+          "pid": 752358
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254790.094314109,
+          "pid": 752358
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254790.094431252,
+          "pid": 752358
+        }
+      ],
+      "valid": false,
+      "error_type": "AssertionError"
+    },
+    {
+      "name": "retry-gap-2.95",
+      "mode": "retry",
+      "pid": 752363,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254790.161064153,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254790.162103896,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254790.162217543,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 0.0,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254793.186588912,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254793.186733195,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 2,
+          "time": 2.95,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.215699168,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.215952599,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 3,
+          "time": 5.9,
+          "pid": 752363
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254796.216275237,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.217074031,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 254796.267569748,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.302918666,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 254796.317270536,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 254796.367109145,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.388721595,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 4,
+          "time": 254796.417279649,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 5,
+          "time": 254796.467156098,
+          "pid": 752363
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254796.474645624,
+          "pid": 752363
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254796.474769179,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.474885691,
+          "pid": 752363
+        }
+      ],
+      "valid": false,
+      "error_type": "AssertionError"
+    },
+    {
+      "name": "retry-gap-2.95001",
+      "mode": "retry",
+      "pid": 752363,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254790.161064153,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254790.162103896,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254790.162217543,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 0.0,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254793.186588912,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254793.186733195,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 2,
+          "time": 2.95001,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.215699168,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.215952599,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 3,
+          "time": 5.90002,
+          "pid": 752363
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254796.216275237,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.217074031,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 254796.267569748,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.302918666,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 254796.317270536,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 254796.367109145,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.388721595,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 4,
+          "time": 254796.417279649,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 5,
+          "time": 254796.467156098,
+          "pid": 752363
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254796.474645624,
+          "pid": 752363
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254796.474769179,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.474885691,
+          "pid": 752363
+        }
+      ],
+      "valid": true,
+      "error_type": null,
+      "metrics": {
+        "opens": 3,
+        "callbacks": 3,
+        "median_period": 0.049857528996653855
+      }
+    },
+    {
+      "name": "retry-gap-3.9999",
+      "mode": "retry",
+      "pid": 752363,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254790.161064153,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254790.162103896,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254790.162217543,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 0.0,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254793.186588912,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254793.186733195,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 2,
+          "time": 3.9999,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.215699168,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.215952599,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 3,
+          "time": 7.9998,
+          "pid": 752363
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254796.216275237,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.217074031,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 254796.267569748,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.302918666,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 254796.317270536,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 254796.367109145,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.388721595,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 4,
+          "time": 254796.417279649,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 5,
+          "time": 254796.467156098,
+          "pid": 752363
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254796.474645624,
+          "pid": 752363
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254796.474769179,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.474885691,
+          "pid": 752363
+        }
+      ],
+      "valid": true,
+      "error_type": null,
+      "metrics": {
+        "opens": 3,
+        "callbacks": 3,
+        "median_period": 0.049857528996653855
+      }
+    },
+    {
+      "name": "retry-gap-4.0",
+      "mode": "retry",
+      "pid": 752363,
+      "events": [
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254790.161064153,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254790.162103896,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254790.162217543,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 1,
+          "time": 0.0,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254793.186588912,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254793.186733195,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 2,
+          "time": 4.0,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.215699168,
+          "pid": 752363
+        },
+        {
+          "event": "initialize",
+          "value": 0,
+          "time": 254796.215952599,
+          "pid": 752363
+        },
+        {
+          "event": "open",
+          "value": 3,
+          "time": 8.0,
+          "pid": 752363
+        },
+        {
+          "event": "start",
+          "value": 0,
+          "time": 254796.216275237,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.217074031,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 1,
+          "time": 254796.267569748,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.302918666,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 2,
+          "time": 254796.317270536,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 3,
+          "time": 254796.367109145,
+          "pid": 752363
+        },
+        {
+          "event": "callback",
+          "value": 0,
+          "time": 254796.388721595,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 4,
+          "time": 254796.417279649,
+          "pid": 752363
+        },
+        {
+          "event": "poll",
+          "value": 5,
+          "time": 254796.467156098,
+          "pid": 752363
+        },
+        {
+          "event": "stop",
+          "value": 0,
+          "time": 254796.474645624,
+          "pid": 752363
+        },
+        {
+          "event": "close",
+          "value": 0,
+          "time": 254796.474769179,
+          "pid": 752363
+        },
+        {
+          "event": "terminate",
+          "value": 0,
+          "time": 254796.474885691,
+          "pid": 752363
+        }
+      ],
+      "valid": false,
+      "error_type": "AssertionError"
+    }
+  ]
+}

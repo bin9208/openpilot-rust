@@ -26,6 +26,9 @@ pub enum Error {
     #[error("model binding requires {expected} bytes, received {actual}")]
     Size { expected: usize, actual: usize },
     #[cfg(feature = "native-skip-miri")]
+    #[error("cached code admission: {0}")]
+    CachedCode(String),
+    #[cfg(feature = "native-skip-miri")]
     #[error("native kernel library: {0}")]
     Library(#[from] libloading::Error),
 }

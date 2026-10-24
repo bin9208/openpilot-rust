@@ -24,6 +24,7 @@ pub fn runtime(
     daemon: &str,
     body: impl FnOnce() -> Step<()>,
 ) -> Result<Outcome, RuntimeError> {
+    let _runtime_logs = openpilot_logging::producer::RuntimeLogScope;
     if env::var_os("MANAGER_DAEMON").is_none() {
         return match body() {
             Ok(()) => Ok(Outcome::Returned),

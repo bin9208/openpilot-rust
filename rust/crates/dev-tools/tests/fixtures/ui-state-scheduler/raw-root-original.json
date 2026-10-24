@@ -1,0 +1,10 @@
+{
+  "kind": "state",
+  "root_suffix_hex": "ff",
+  "original_exit": 1,
+  "candidate_called": false,
+  "output_directory_created": true,
+  "files": [],
+  "stderr_last": "UnicodeEncodeError: 'utf-8' codec can't encode character '\\udcff' in position 131: surrogates not allowed",
+  "migration_limit": "Source interpreter/schema loader removed by fixed oracle; native rawroot admission is new capability, not original successful rawroot equivalence."
+}

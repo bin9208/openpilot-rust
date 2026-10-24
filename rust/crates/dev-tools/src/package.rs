@@ -766,17 +766,14 @@ pub fn package(root: &Path, installer: &Path, receipt_path: &Path, output: &Path
 mod tests {
     use super::*;
     #[test]
-    fn disk_reserve_overflow_returns_an_error() {
-        assert!(check_space(u64::MAX, u64::MAX).is_err());
-    }
-    #[test]
-    fn disk_reserve_includes_growth_and_keeps_recovery_instruction() {
-        let reserve = 25 * 1024 * 1024 * 1024;
-        assert!(check_space(reserve + 100, 100).is_ok());
-        assert!(check_space(reserve + 99, 100)
+    fn disk_growth_checks_u64_boundaries_without_fixed_reserve() {
+        assert!(check_space(u64::MAX, u64::MAX).is_ok());
+        assert!(check_space(100, 100).is_ok());
+        assert!(check_space(99, 100)
             .unwrap_err()
             .to_string()
-            .contains("recover at least 35 GiB"));
+            .contains("operation growth exceeds available space"));
+        assert!(check_space(0, 0).is_ok());
     }
     #[test]
     fn paths_and_nested_duplicate_json_fail_closed() {

@@ -5,23 +5,902 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 publish = false
+# Native tool entrypoints are registered explicitly before they enter builds.
+autobins = false
 
-[lints]
-workspace = true
+[[bin]]
+name = "check-loggerd-io"
+path = "src/bin/check_loggerd_io.rs"
+required-features = ["loggerd-check-native"]
+
+[[test]]
+name = "loggerd_io_check"
+required-features = ["loggerd-check-native"]
+
+[[bin]]
+name = "check-carrot-navi-comparison"
+path = "src/bin/check_carrot_navi_comparison.rs"
+required-features = ["carrot-navi-compare-native"]
+
+[[test]]
+name = "carrot_navi_compare"
+required-features = ["carrot-navi-compare-native"]
+
+[[bin]]
+name = "check-version-reference"
+path = "src/bin/check_version_reference.rs"
+required-features = ["version-tools-native"]
+
+[[bin]]
+name = "check-version-collector"
+path = "src/bin/check_version_collector.rs"
+required-features = ["version-tools-native"]
+
+[[bin]]
+name = "version-runtime-worker"
+path = "src/bin/version_runtime_worker.rs"
+required-features = ["version-tools-native"]
+
+[[test]]
+name = "tombstone_source"
+required-features = ["tombstone-tools-native"]
+
+[[test]]
+name = "version_check"
+required-features = ["version-tools-native"]
+
+[[test]]
+name = "version_collector_check"
+required-features = ["version-tools-native"]
+
+[[test]]
+name = "version_source"
+required-features = ["version-tools-native"]
+
+[[test]]
+name = "dbc_generator"
+required-features = ["dbc-generator-native"]
+
+[[test]]
+name = "dbc_generator_cli"
+required-features = ["dbc-generator-native"]
+
+[[test]]
+name = "dbc_assets"
+required-features = ["dbc-generator-native"]
+
+[[test]]
+name = "dbc_assets_cli"
+required-features = ["dbc-generator-native"]
+
+[[test]]
+name = "dbc_assets_raw_names"
+required-features = ["dbc-generator-native"]
+
+[[bin]]
+name = "dbc-generator"
+path = "src/bin/dbc_generator.rs"
+required-features = ["dbc-generator-native"]
+
+[[bin]]
+name = "stage-control-dbcs"
+path = "src/bin/stage_control_dbcs.rs"
+required-features = ["dbc-generator-native"]
+
+[[bin]]
+name = "prepare-card-assets"
+path = "src/bin/prepare_card_assets.rs"
+required-features = ["dbc-generator-native"]
+
+[[bin]]
+name = "prepare-radarcan-assets"
+path = "src/bin/prepare_radarcan_assets.rs"
+required-features = ["dbc-generator-native"]
+
+[[bin]]
+name = "check-services"
+path = "src/bin/check_services.rs"
+required-features = ["services-catalog-native"]
+
+[[test]]
+name = "services_catalog_check"
+required-features = ["services-catalog-native"]
+
+[[bin]]
+name = "timed-command-fixture"
+path = "src/bin/timed_command_fixture.rs"
+
+[[bin]]
+name = "timed-source-reference"
+path = "src/bin/timed_source_reference.rs"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_reference"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_reference_actions"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_http_reference"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_http_report"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_native_capture"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_native_logging"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_proxy_reference"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_check"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_check_cli"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_check_prefix"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_command_publication"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_live_child"
+required-features = ["timed-tools-native"]
+
+[[test]]
+name = "timed_live"
+required-features = ["timed-live-native"]
+
+[[test]]
+name = "timed_live_cleanup"
+required-features = ["timed-live-native"]
+
+[[bin]]
+name = "check-timed-reference"
+path = "src/bin/check_timed_reference.rs"
+required-features = ["timed-tools-native"]
+
+[[bin]]
+name = "check-timed-dates"
+path = "src/bin/check_timed_dates.rs"
+required-features = ["timed-tools-native"]
+
+[[bin]]
+name = "check-timed-http"
+path = "src/bin/check_timed_http.rs"
+required-features = ["timed-tools-native"]
+
+[[bin]]
+name = "check-timed-logging"
+path = "src/bin/check_timed_logging.rs"
+required-features = ["timed-tools-native"]
+
+[[bin]]
+name = "check-bootlog-artifacts"
+path = "src/bin/check_bootlog_artifacts.rs"
+required-features = ["bootlog-artifact-native"]
+
+[[test]]
+name = "bootlog_artifact_check"
+required-features = ["bootlog-artifact-native"]
+
+[[bin]]
+name = "journalctl-fixture"
+path = "src/bin/journalctl_fixture.rs"
+
+[[bin]]
+name = "check-journald"
+path = "src/bin/check_journald.rs"
+required-features = ["journal-runtime-native"]
+
+[[test]]
+name = "journald_runtime_check"
+required-features = ["journal-runtime-native"]
+
+[[bin]]
+name = "check-bootlog-snapshot"
+path = "src/bin/check_bootlog_snapshot.rs"
+
+[[bin]]
+name = "bootlog-snapshot-child"
+path = "src/bin/bootlog_snapshot_child.rs"
+
+[[bin]]
+name = "bootlog-snapshot-reference"
+path = "src/bin/bootlog_snapshot_reference.rs"
+
+[[bin]]
+name = "build-bootlog-snapshot-reference"
+path = "src/bin/build_bootlog_snapshot_reference.rs"
+
+[[bin]]
+name = "generate-camerad-sensor-data"
+path = "src/bin/generate_camerad_sensor_data.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_sensor_generate"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "generate-camerad-bps-data"
+path = "src/bin/generate_camerad_bps_data.rs"
+
+[[bin]]
+name = "generate-camerad-ae-reference"
+path = "src/bin/generate_camerad_ae_reference.rs"
+
+[[bin]]
+name = "generate-camerad-kernel-reference"
+path = "src/bin/generate_camerad_kernel_reference.rs"
+
+[[bin]]
+name = "generate-camerad-sensor-lifecycle-reference"
+path = "src/bin/generate_camerad_sensor_lifecycle_reference.rs"
+
+[[bin]]
+name = "generate-camerad-isp-lifecycle-reference"
+path = "src/bin/generate_camerad_isp_lifecycle_reference.rs"
+
+[[bin]]
+name = "generate-camerad-camera-lifecycle-reference"
+path = "src/bin/generate_camerad_camera_lifecycle_reference.rs"
+
+[[bin]]
+name = "generate-camerad-state-reference"
+path = "src/bin/generate_camerad_state_reference.rs"
+
+[[bin]]
+name = "generate-camerad-stress-reference"
+path = "src/bin/generate_camerad_stress_reference.rs"
+
+[[bin]]
+name = "generate-camerad-runtime-fixture"
+path = "src/bin/generate_camerad_runtime_fixture.rs"
+
+[[bin]]
+name = "check-ui-framework"
+path = "src/bin/check_ui_framework.rs"
+
+[[bin]]
+name = "check-ui-render"
+path = "src/bin/check_ui_render.rs"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "ui-render-reference"
+path = "src/bin/ui_render_reference.rs"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_render_check"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_render_reference"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "generate-camerad-requests-reference"
+path = "src/bin/generate_camerad_requests_reference.rs"
+
+[[bin]]
+name = "generate-camerad-packet-reference"
+path = "src/bin/generate_camerad_packet_reference.rs"
+
+[[bin]]
+name = "generate-bluetooth-digits"
+path = "src/bin/generate_bluetooth_digits.rs"
+
+[[bin]]
+name = "check-ui-plot-samples"
+path = "src/bin/check_ui_plot_samples.rs"
+
+[[bin]]
+name = "plot-samples-reference"
+path = "src/bin/plot_samples_reference.rs"
+
+[[bin]]
+name = "check-ui-forms"
+path = "src/bin/check_ui_forms.rs"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "ui-forms-reference"
+path = "src/bin/ui_forms_reference.rs"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_forms_check"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_forms_reference"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_forms_admission"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "check-selfdrive-params"
+path = "src/bin/check_selfdrive_params.rs"
+required-features = ["selfdrive-params-native"]
+
+[[bin]]
+name = "build-selfdrive-params-reference"
+path = "src/bin/build_selfdrive_params_reference.rs"
+required-features = ["selfdrive-params-native"]
+
+[[test]]
+name = "selfdrive_params_check"
+required-features = ["selfdrive-params-native"]
+
+[[bin]]
+name = "selfdrive-params-test-peer"
+path = "src/bin/selfdrive_params_test_peer.rs"
+required-features = ["selfdrive-params-native"]
+
+[[bin]]
+name = "check-selfdrive-helpers"
+path = "src/bin/check_selfdrive_helpers.rs"
+
+[[bin]]
+name = "check-alert-manager"
+path = "src/bin/check_alert_manager.rs"
+
+[[bin]]
+name = "check-selfdrive-events"
+path = "src/bin/check_selfdrive_events.rs"
+
+[[bin]]
+name = "check-alert-callbacks"
+path = "src/bin/check_alert_callbacks.rs"
+
+[[bin]]
+name = "build-ui-diagnostic-reference"
+path = "src/bin/build_ui_diagnostic_reference.rs"
+
+[[bin]]
+name = "ui-diagnostic-reference"
+path = "src/bin/ui_diagnostic_reference.rs"
+
+[[bin]]
+name = "check-ui-diagnostics"
+path = "src/bin/check_ui_diagnostics.rs"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_diagnostic_check"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "check-selfdrive-state"
+path = "src/bin/check_selfdrive_state.rs"
+
+[[bin]]
+name = "check-cutin-alert"
+path = "src/bin/check_cutin_alert.rs"
+
+[[bin]]
+name = "check-ratekeeper"
+path = "src/bin/check_ratekeeper.rs"
+
+[[bin]]
+name = "check-beep-sleep"
+path = "src/bin/check_beep_sleep.rs"
+
+[[bin]]
+name = "check-beep-integer"
+path = "src/bin/check_beep_integer.rs"
+
+[[bin]]
+name = "build-beep-integer-reference"
+path = "src/bin/build_beep_integer_reference.rs"
+
+[[bin]]
+name = "check-beep-clock"
+path = "src/bin/check_beep_clock.rs"
+
+[[bin]]
+name = "check-stats-clock"
+path = "src/bin/check_stats_clock.rs"
+
+[[bin]]
+name = "check-stats-numbers"
+path = "src/bin/check_stats_numbers.rs"
+
+[[bin]]
+name = "check-amplifier-policy"
+path = "src/bin/check_amplifier_policy.rs"
+
+[[bin]]
+name = "check-hardware-control-policy"
+path = "src/bin/check_hardware_control_policy.rs"
+
+[[bin]]
+name = "check-amplifier-linux"
+path = "src/bin/check_amplifier_linux.rs"
+
+[[bin]]
+name = "amplifier-linux-reference"
+path = "src/bin/amplifier_linux_reference.rs"
+
+[[bin]]
+name = "check-command-reference"
+path = "src/bin/check_command_reference.rs"
+
+[[bin]]
+name = "check-command-json-boundary"
+path = "src/bin/check_command_json_boundary.rs"
+
+[[bin]]
+name = "check-params-reference"
+path = "src/bin/check_params_reference.rs"
+
+[[bin]]
+name = "list-cargo-tests"
+path = "src/bin/list_cargo_tests.rs"
+
+[[test]]
+name = "timed_live_cli"
+required-features = ["timed-live-native"]
+
+[[bin]]
+name = "timed-runtime-worker"
+path = "src/bin/timed_runtime_worker.rs"
+required-features = ["timed-live-native"]
+
+[[bin]]
+name = "check-timed-daemon"
+path = "src/bin/check_timed_daemon.rs"
+required-features = ["timed-live-native"]
+
+[[bin]]
+name = "check-timed-date-daemon"
+path = "src/bin/check_timed_date_daemon.rs"
+required-features = ["timed-live-native"]
+
+[[bin]]
+name = "check-timed-lifecycle"
+path = "src/bin/check_timed_lifecycle.rs"
+required-features = ["timed-live-native"]
+
+[[bin]]
+name = "check-timed-shutdown"
+path = "src/bin/check_timed_shutdown.rs"
+required-features = ["timed-live-native"]
+
+[[test]]
+name = "checkout_status_check"
+required-features = ["checkout-tools-native"]
+
+[[test]]
+name = "checkout_status_reference"
+required-features = ["checkout-tools-native"]
+
+[[bin]]
+name = "check-checkout-status"
+path = "src/bin/check_checkout_status.rs"
+required-features = ["checkout-tools-native"]
+
+[[bin]]
+name = "checkout-status-reference"
+path = "src/bin/checkout_status_reference.rs"
+required-features = ["checkout-tools-native"]
+
+[[test]]
+name = "lagd_reference"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_reference_generic"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_random"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_numeric_cases"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_check"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_frames"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_packet_reference"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_loop_reference"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "manager_catalog_check"
+required-features = ["manager-catalog-tools-native"]
+
+[[test]]
+name = "manager_catalog_reference"
+required-features = ["manager-catalog-tools-native"]
+
+[[bin]]
+name = "check-manager-catalog"
+path = "src/bin/check_manager_catalog.rs"
+required-features = ["manager-catalog-tools-native"]
+
+[[bin]]
+name = "manager-catalog-reference"
+path = "src/bin/manager_catalog_reference.rs"
+required-features = ["manager-catalog-tools-native"]
+
+[features]
+route-sanitizer-native = ["dep:capnp", "dep:openpilot-cereal"]
+kbhit-native = ["dep:nix", "rustix/termios"]
+github-utils-native = ["dep:openpilot-runtime-version"]
+developer-ssh-native = ["dep:openpilot-params", "dep:openpilot-runtime-version", "dep:openpilot-http-transport", "dep:openpilot-registration", "dep:ureq", "dep:cookie_store", "dep:url"]
+loggerd-check-native = ["rustix/pipe", "bootlog-artifact-native", "dep:openpilot-messaging", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "dep:zmq-sys", "rustix/net", "serde_json/float_roundtrip"]
+changed-files-native = ["dep:ruff_python_parser", "dep:ruff_python_ast", "dep:unicode_names2"]
+route-vault-bundle-native = []
+current-catalog-export-native = []
+native-logging-check-native = ["dep:zmq", "dep:zmq-sys", "rustix/net", "serde_json/float_roundtrip"]
+deleter-check-native = []
+kalman-model-generator-native = []
+kalman-corpus-generator-native = ["dep:libloading", "dep:openpilot-runtime-core", "serde_json/float_roundtrip"]
+ci-receipt-metadata-native = []
+carrot-navi-compare-native = []
+beep-reference-native = ["dep:zmq", "serde_json/float_roundtrip"]
+updated-fixture-native = []
+updated-daemon-native = ["updated-fixture-native", "dep:zmq", "dep:chrono"]
+driving-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "serde_json/float_roundtrip"]
+driver-daemon-native = ["driving-daemon-native"]
+paramsd-loop-native = ["paramsd-fixture-native"]
+paramsd-fixture-native = ["dep:capnp", "dep:openpilot-cereal", "serde_json/float_roundtrip"]
+controlsd-fixture-native = ["paramsd-fixture-native", "dep:openpilot-card", "dep:openpilot-params"]
+controlsd-daemon-native = ["controlsd-fixture-native", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
+paramsd-startup-check-native = ["paramsd-fixture-native"]
+paramsd-startup-gate-native = ["rustix/pipe"]
+paramsd-daemon-native = ["serde_json/float_roundtrip", "paramsd-startup-gate-native", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
+eigen-tools-native = []
+bluetooth-sudo-fixture-native = []
+bluetooth-gesture-cases-native = ["dep:openpilot-runtime-core"]
+bluetooth-enumerate-native = []
+bluetooth-bluez-policy-native = ["dep:openpilot-runtime-version"]
+bluetooth-config-native = ["dep:openpilot-runtime-version"]
+bluetooth-journal-native = []
+calibration-float-native = []
+calibration-reference-native = ["dep:capnp", "dep:openpilot-cereal", "serde_json/float_roundtrip"]
+desire-reference-native = ["serde_json/float_roundtrip"]
+panda-ci-native = ["serde_json/float_roundtrip", "dep:openpilot-runtime-version"]
+pandad-safety-padding-native = []
+pandad-device-native = []
+pandad-protocol-native = []
+pandad-can-io-native = ["pandad-protocol-native"]
+recovery-family-native = []
+teleop-version-native = []
+logmessaged-startup-native = ["stats-daemon-native"]
+bluetooth-files-native = []
+soundd-daemon-native = ["serde_json/float_roundtrip", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
+bridge-tools-native = ["dep:openpilot-messaging", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq"]
+navd-config-tools-native = ["registration-tools-native"]
+stats-daemon-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq"]
+proclog-reference-native = ["dep:capnp", "dep:openpilot-cereal", "rustix/param"]
+aarch64-check-native = ["proclog-reference-native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri"]
+stats-producer-native = ["dep:zmq"]
+soundd-policy-native = []
+registration-tools-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "dep:openpilot-params", "dep:openpilot-logging", "dep:p256", "dep:url", "dep:charset-norm", "dep:brotli", "dep:brotli-decompressor"]
+bluetooth-input-native = []
+sdk-receiver-native = ["dep:brotli-decompressor", "rustix/net"]
+sdk-transport-native = ["sdk-receiver-native"]
+version-tools-native = ["dep:zmq", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq"]
+tombstone-tools-native = ["version-tools-native", "dep:unicode-general-category"]
+tombstone-live-native = ["tombstone-tools-native", "sdk-receiver-native"]
+managed-entry-native = ["tombstone-tools-native", "sdk-receiver-native", "openpilot-process-limits/qa-process-title"]
+managed-runtime-native = []
+registration-clock-native = []
+dbc-generator-native = []
+feedback-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
+qcom-assistance-tools-native = []
+manager-catalog-tools-native = []
+lagd-tools-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-pocketfft", "dep:openpilot-runtime-core"]
+checkout-tools-native = ["dep:openpilot-process-supervision", "dep:nix"]
+services-catalog-native = ["dep:capnp", "dep:openpilot-cereal"]
+timed-tools-native = ["dep:chrono", "dep:zmq"]
+timed-live-native = ["timed-tools-native", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq"]
+bootlog-artifact-native = ["dep:capnp", "dep:openpilot-cereal", "dep:zstd"]
+route-upload-native = ["bootlog-artifact-native", "dep:p256", "dep:url", "rustix/net"]
+uploader-reference-native = ["dep:p256", "dep:zstd", "serde_json/float_roundtrip"]
+uploader-siblings-native = ["uploader-logging-native"]
+uploader-logging-native = ["uploader-reference-native", "dep:url", "dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "serde_json/preserve_order"]
+hardware-info-qa-native = []
+hardwared-qa-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-messaging", "openpilot-messaging/native", "dep:openpilot-msgq", "openpilot-msgq/native-skip-miri", "dep:zmq", "serde_json/float_roundtrip"]
+modem-qa-native = ["dep:openpilot-process-supervision", "rustix/termios"]
+manager-qa-native = ["dep:zmq"]
+manager-cars-native = []
+journal-runtime-native = ["dep:capnp", "dep:openpilot-cereal", "dep:openpilot-msgq", "dep:zmq"]
+camera-sensor-native = ["dep:openpilot-runtime-version", "dep:capnp"]
+camera-runtime-native = ["camera-sensor-native", "dep:openpilot-msgq", "dep:zmq"]
+encoder-runtime-native = ["camera-runtime-native", "dep:openpilot-cereal"]
+selfdrive-params-native = ["dep:zmq"]
+egl-reference = ["dep:openpilot-startup-ui"]
+image-array = ["dep:png", "dep:gif", "dep:tiff", "dep:image", "dep:openpilot-jpeg"]
+ui-application-lifecycle-native = ["image-array-native", "dep:zmq"]
+image-array-native = ["image-array", "dep:openpilot-image-codecs", "dep:rustybuzz", "dep:chrono"]
+polygon-reference = ["dep:openpilot-startup-ui", "image-array-native"]
+
+[[test]]
+name = "image_array"
+required-features = ["image-array"]
+
+[[bin]]
+name = "ui-polygon-reference"
+path = "src/bin/ui_polygon_reference.rs"
+required-features = ["polygon-reference"]
+
+[[bin]]
+name = "check-ui-polygon"
+path = "src/bin/check_ui_polygon.rs"
+required-features = ["polygon-reference"]
+
+[[test]]
+name = "ui_polygon_check"
+required-features = ["polygon-reference"]
+
+[[bin]]
+name = "check-ui-egl"
+path = "src/bin/check_ui_egl.rs"
+required-features = ["egl-reference"]
+
+[[bin]]
+name = "ui-egl-reference"
+path = "src/bin/ui_egl_reference.rs"
+required-features = ["egl-reference"]
+
+[[test]]
+name = "ui_egl_reference"
+required-features = ["egl-reference"]
+
+[[test]]
+name = "ui_egl_check"
+required-features = ["egl-reference"]
+
+[[bin]]
+name = "check-ui-translations"
+path = "src/bin/check_ui_translations.rs"
+
+[[bin]]
+name = "check-ui-state"
+path = "src/bin/check_ui_state.rs"
+
+[[bin]]
+name = "check-ui-scheduler"
+path = "src/bin/check_ui_scheduler.rs"
+
+[[bin]]
+name = "check-ui-qr"
+path = "src/bin/check_ui_qr.rs"
+
+[[bin]]
+name = "check-ui-torque-geometry"
+path = "src/bin/check_ui_torque_geometry.rs"
+
+[[bin]]
+name = "check-ui-native-safety"
+path = "src/bin/check_ui_native_safety.rs"
+
+[[bin]]
+name = "check-ui-native-resources"
+path = "src/bin/check_ui_native_resources.rs"
+
+[[bin]]
+name = "check-ui-model-adapter"
+path = "src/bin/check_ui_model_adapter.rs"
+
+[[bin]]
+name = "check-ui-training-adapter"
+path = "src/bin/check_ui_training_adapter.rs"
+
+[[bin]]
+name = "check-registration-vendor"
+path = "src/bin/check_registration_vendor.rs"
+
+[[bin]]
+name = "check-control-tools-policy"
+path = "src/bin/check_control_tools_policy.rs"
+
+[[bin]]
+name = "check-msgq-sanitizers"
+path = "src/bin/check_msgq_sanitizers.rs"
+
+[[bin]]
+name = "build-encoder-source"
+path = "src/bin/build_encoder_source.rs"
+
+[[bin]]
+name = "build-athena-vision-peer"
+path = "src/bin/build_athena_vision_peer.rs"
+
+[[bin]]
+name = "build-pandad-firmware-spi-fixture"
+path = "src/bin/build_pandad_firmware_spi_fixture.rs"
+
+[[bin]]
+name = "check-ui-updater-handshake"
+path = "src/bin/check_ui_updater_handshake.rs"
+
+[[bin]]
+name = "check-hardware-command"
+path = "src/bin/check_hardware_command.rs"
+
+[[bin]]
+name = "check-hardware-info"
+path = "src/bin/check_hardware_info.rs"
+required-features = ["hardware-info-qa-native"]
+
+[[test]]
+name = "hardware_info_qa"
+required-features = ["hardware-info-qa-native"]
+
+[[test]]
+name = "hardware_info_capture"
+required-features = ["hardware-info-qa-native"]
+
+[[test]]
+name = "hardware_info_retirement"
+required-features = ["hardware-info-qa-native"]
+
+[[test]]
+name = "hardwared_qa"
+required-features = ["hardwared-qa-native"]
+
+[[test]]
+name = "hardwared_capture"
+required-features = ["hardwared-qa-native"]
+
+[[test]]
+name = "hardwared_retirement"
+required-features = ["hardwared-qa-native"]
+
+[[bin]]
+name = "check-hardwared"
+path = "src/bin/check_hardwared.rs"
+required-features = ["hardwared-qa-native"]
+
+[[bin]]
+name = "check-hardwared-daemon"
+path = "src/bin/check_hardwared_daemon.rs"
+required-features = ["hardwared-qa-native"]
+
+[[test]]
+name = "modem_retirement"
+required-features = ["modem-qa-native"]
+
+[[bin]]
+name = "check-modem"
+path = "src/bin/check_modem.rs"
+required-features = ["modem-qa-native"]
+
+[[bin]]
+name = "check-manager-qa"
+path = "src/bin/check_manager_qa.rs"
+required-features = ["manager-qa-native"]
+
+[[bin]]
+name = "check-manager"
+path = "src/bin/check_manager.rs"
+required-features = ["manager-qa-native"]
+
+[[bin]]
+name = "check-manager-logging"
+path = "src/bin/check_manager_logging.rs"
+required-features = ["manager-qa-native"]
+
+[[test]]
+name = "manager_qa"
+required-features = ["manager-qa-native"]
+
+[[test]]
+name = "manager_qa_compat"
+required-features = ["manager-qa-native"]
+
+[[test]]
+name = "manager_retirement"
+required-features = ["manager-qa-native"]
+
+[[bin]]
+name = "generate-manager-cars"
+path = "src/bin/generate_manager_cars.rs"
+required-features = ["manager-cars-native"]
+
+[[test]]
+name = "manager_cars_generate"
+required-features = ["manager-cars-native"]
+
+# Keep unsafe denied across tools; only the reviewed C++ oracle loader module
+# permits the explicit FFI calls needed by kalman-corpus-generator-native.
+[lints.rust]
+unsafe_code = "deny"
+unsafe_op_in_unsafe_fn = "deny"
 
 [dependencies]
+openpilot-http-transport = { path = "../http-transport", optional = true }
+openpilot-registration = { path = "../registration", optional = true }
+ureq = { version = "=3.4.2", features = ["json", "gzip", "brotli", "rustls", "cookies"], optional = true }
+cookie_store = { version = "=0.22.1", default-features = false, features = ["preserve_order"], optional = true }
+ruff_python_parser = { package = "rustpython-ruff_python_parser", version = "=0.15.8", optional = true }
+ruff_python_ast = { package = "rustpython-ruff_python_ast", version = "=0.15.8", optional = true }
+unicode_names2 = { version = "=1.3.0", optional = true }
+libloading = { version = "=0.8.9", optional = true }
+openpilot-messaging = { path = "../messaging", default-features = false, optional = true }
+brotli = { version = "=8.0.2", optional = true }
+p256 = { version = "=0.13.2", features = ["ecdsa", "pem"], optional = true }
+url = { version = "=2.5.8", optional = true }
+charset-norm = { version = "=3.5.1", path = "../../vendor/charset-norm", optional = true }
+openpilot-params = { path = "../params", optional = true }
+openpilot-card = { path = "../card", default-features = false, optional = true }
+openpilot-logging = { path = "../logging", optional = true }
+brotli-decompressor = { version = "=5.0.3", optional = true }
+unicode-general-category = { version = "=0.6.0", optional = true }
+openpilot-runtime-core = { path = "../runtime-core", optional = true }
+openpilot-pocketfft = { path = "../pocketfft", optional = true }
+openpilot-process-supervision = { path = "../process-supervision", optional = true }
+nix = { version = "=0.31.3", default-features = false, features = ["process"], optional = true }
+zstd = { version = "=0.13.3", optional = true }
+openpilot-cereal = { path = "../cereal", optional = true }
+chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock"], optional = true }
+capnp = { version = "=0.27.2", optional = true }
+openpilot-process-limits = { path = "../process-limits" }
+rustybuzz = { version = "=0.20.1", optional = true }
+zmq = { version = "=0.10.0", optional = true }
+zmq-sys = { version = "=0.12.0", optional = true }
+openpilot-msgq = { path = "../msgq", optional = true }
+png = { version = "=0.17.16", optional = true }
+gif = { version = "=0.14.2", default-features = false, features = ["std"], optional = true }
+tiff = { version = "=0.11.3", default-features = false, features = ["deflate", "jpeg", "lzw"], optional = true }
+image = { version = "=0.25.10", default-features = false, features = ["bmp", "dds", "tga", "jpeg", "pnm", "webp", "ico"], optional = true }
+openpilot-jpeg = { path = "../jpeg", optional = true }
+openpilot-image-codecs = { path = "../image-codecs", optional = true, features = ["native-sdk"] }
 rsa = "=0.9.10"
 sha1 = "=0.10.7"
 base64 = "=0.22.1"
 openpilot-disk-space = { path = "../disk-space" }
+openpilot-log-format = { path = "../log-format" }
+openpilot-runtime-version = { path = "../runtime-version", optional = true }
+openpilot-startup-ui = { path = "../startup-ui", optional = true, default-features = false, features = ["native"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["raw_value"] }
 sha2 = "0.10"
 tempfile = "3"
 flate2 = "1"
+bzip2 = "=0.6.1"
+command-fds = "=0.3.3"
 tar = { version = "0.4", default-features = false }
-rustix = { version = "1", features = ["fs", "process", "event"] }
+rustix = { version = "1", features = ["fs", "process", "event", "time", "thread", "stdio", "system"] }
 regex = "1"
+num-bigint = "=0.4.8"
+yaml-rust2 = { version = "=0.13.0", default-features = false }
+signal-hook = "0.3"
 toml = "0.8"
 xz2 = "0.1.7"
 zip = { version = "=9.0.3", default-features = false, features = ["deflate-flate2"] }
@@ -58,6 +937,19 @@ path = "src/bin/publish_runtime_release.rs"
 [[bin]]
 name = "stage-encoder-target"
 path = "src/bin/stage_encoder_target.rs"
+
+[[bin]]
+name = "stage-eigen-headers"
+path = "src/bin/stage_eigen_headers.rs"
+required-features = ["eigen-tools-native"]
+
+[[test]]
+name = "eigen_stage"
+required-features = ["eigen-tools-native"]
+
+[[test]]
+name = "paramsd_startup_gate"
+required-features = ["paramsd-startup-gate-native"]
 
 [[bin]]
 name = "runtime-elf-audit"
@@ -126,3 +1018,1542 @@ path = "src/bin/build_runtime_panda.rs"
 [[bin]]
 name = "stage-startup-ui-raylib"
 path = "src/bin/stage_startup_ui_raylib.rs"
+
+[[bin]]
+name = "build-pandad-protocol-source"
+path = "src/bin/build_pandad_protocol_source.rs"
+
+[[bin]]
+name = "build-pandad-usb-source"
+path = "src/bin/build_pandad_usb_source.rs"
+
+[[bin]]
+name = "build-pandad-spi-source"
+path = "src/bin/build_pandad_spi_source.rs"
+
+[[bin]]
+name = "build-pandad-peripheral-source"
+path = "src/bin/build_pandad_peripheral_source.rs"
+
+[[bin]]
+name = "build-pandad-runtime-fixture"
+path = "src/bin/build_pandad_runtime_fixture.rs"
+
+[[bin]]
+name = "sync-upstream"
+path = "src/bin/sync_upstream.rs"
+
+[[bin]]
+name = "stage-json11"
+path = "src/bin/stage_json11.rs"
+
+[[bin]]
+name = "generate-services-header"
+path = "src/bin/generate_services_header.rs"
+
+[[bin]]
+name = "build-pandad-runtime-source"
+path = "src/bin/build_pandad_runtime_source.rs"
+
+[[bin]]
+name = "check-updated-process"
+path = "src/bin/check_updated_process.rs"
+
+[[bin]]
+name = "updated-process-fixture"
+path = "src/bin/updated_process_fixture.rs"
+
+[[bin]]
+name = "release-files"
+path = "src/bin/release_files.rs"
+
+[[bin]]
+name = "check-native-logging"
+path = "src/bin/check_native_logging.rs"
+required-features = ["native-logging-check-native"]
+
+[[bin]]
+name = "build-native-logging-reference"
+path = "src/bin/build_native_logging_reference.rs"
+
+[[bin]]
+name = "check-logger-identifier"
+path = "src/bin/check_logger_identifier.rs"
+
+[[bin]]
+name = "build-bootlog-source"
+path = "src/bin/build_bootlog_source.rs"
+
+[[bin]]
+name = "build-loggerd-source"
+path = "src/bin/build_loggerd_source.rs"
+
+[[bin]]
+name = "check-jpeg-sanitizers"
+path = "src/bin/check_jpeg_sanitizers.rs"
+
+[[bin]]
+name = "build-bridge-source"
+path = "src/bin/build_bridge_source.rs"
+
+[[bin]]
+name = "check-ui-fps"
+path = "src/bin/check_ui_fps.rs"
+
+[[bin]]
+name = "check-ui-stack"
+path = "src/bin/check_ui_stack.rs"
+
+[[bin]]
+name = "check-ui-widgets"
+path = "src/bin/check_ui_widgets.rs"
+
+[[bin]]
+name = "check-ui-navigation"
+path = "src/bin/check_ui_navigation.rs"
+
+[[bin]]
+name = "check-runtime-diagnostics"
+path = "src/bin/check_runtime_diagnostics.rs"
+
+[[bin]]
+name = "check-model-timing"
+path = "src/bin/check_model_timing.rs"
+
+[[bin]]
+name = "check-ui-scroll"
+path = "src/bin/check_ui_scroll.rs"
+
+[[bin]]
+name = "check-ui-scroller"
+path = "src/bin/check_ui_scroller.rs"
+
+[[bin]]
+name = "check-communication-snapshot"
+path = "src/bin/check_communication_snapshot.rs"
+
+[[bin]]
+name = "check-message-state"
+path = "src/bin/check_message_state.rs"
+
+[[bin]]
+name = "hash-miri-core"
+path = "src/bin/hash_miri_core.rs"
+
+[[bin]]
+name = "check-ui-emoji"
+path = "src/bin/check_ui_emoji.rs"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_emoji_check"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "check-registration-utf7"
+path = "src/bin/check_registration_utf7.rs"
+
+[[bin]]
+name = "check-camerad-sensors"
+path = "src/bin/check_camerad_sensors.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_sensor_check"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-camerad-requests"
+path = "src/bin/check_camerad_requests.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_request_check"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-camerad-exposure"
+path = "src/bin/check_camerad_exposure.rs"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-camerad-misc"
+path = "src/bin/check_camerad_misc.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_exposure_check"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_misc_check"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-ui-network"
+path = "src/bin/check_ui_network.rs"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "ui-network-reference"
+path = "src/bin/ui_network_reference.rs"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_network_check"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_network_reference"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "check-camerad-packets"
+path = "src/bin/check_camerad_packets.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_packet_check"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-camerad-kernel"
+path = "src/bin/check_camerad_kernel.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_kernel_check"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-camerad-sensor-lifecycle"
+path = "src/bin/check_camerad_sensor_lifecycle.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_sensor_lifecycle_check"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-camerad-isp-lifecycle"
+path = "src/bin/check_camerad_isp_lifecycle.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_isp_lifecycle_check"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-camerad-camera-lifecycle"
+path = "src/bin/check_camerad_camera_lifecycle.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_lifecycle_check"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "ui_application_lifecycle_recording"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_application_lifecycle_loop"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_application_lifecycle_raw"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "check-camerad-state"
+path = "src/bin/check_camerad_state.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_state_check"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_stress_check"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_generic_stress_check"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_runtime_check"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_runtime_controller"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-camerad-stress"
+path = "src/bin/check_camerad_stress.rs"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "check-camerad-runtime-stress"
+path = "src/bin/check_camerad_runtime_stress.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "camera_runtime_native"
+required-features = ["camera-runtime-native"]
+
+[[bin]]
+name = "camera-runtime-test-peer"
+path = "src/bin/camera_runtime_test_peer.rs"
+required-features = ["camera-runtime-native"]
+
+[[bin]]
+name = "check-camerad-runtime"
+path = "src/bin/check_camerad_runtime.rs"
+required-features = ["camera-runtime-native"]
+
+[[bin]]
+name = "check-camerad-ci"
+path = "src/bin/check_camerad_ci.rs"
+
+[[bin]]
+name = "check-encoder-codecs"
+path = "src/bin/check_encoder_codecs.rs"
+required-features = ["camera-sensor-native"]
+
+[[test]]
+name = "ui_application_lifecycle_reference"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "check-encoder-v4l"
+path = "src/bin/check_encoder_v4l.rs"
+required-features = ["camera-sensor-native"]
+
+[[bin]]
+name = "ui-application-reference"
+path = "src/bin/ui_application_reference.rs"
+required-features = ["image-array-native"]
+
+[[bin]]
+name = "build-ui-application-reference"
+path = "src/bin/build_ui_application_reference.rs"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_application_lifecycle_check"
+required-features = ["image-array-native"]
+
+[[test]]
+name = "ui_application_lifecycle_native"
+required-features = ["ui-application-lifecycle-native"]
+
+[[bin]]
+name = "check-ui-application"
+path = "src/bin/check_ui_application.rs"
+required-features = ["ui-application-lifecycle-native"]
+
+[[test]]
+name = "encoder_runtime_native"
+required-features = ["encoder-runtime-native"]
+
+[[bin]]
+name = "check-encoder-runtime"
+path = "src/bin/check_encoder_runtime.rs"
+required-features = ["encoder-runtime-native"]
+
+[[test]]
+name = "encoder_ci_check"
+required-features = ["encoder-runtime-native"]
+
+[[bin]]
+name = "check-encoder-ci"
+path = "src/bin/check_encoder_ci.rs"
+required-features = ["encoder-runtime-native"]
+
+[[bin]]
+name = "check-encoder-target"
+path = "src/bin/check_encoder_target.rs"
+
+[[test]]
+name = "encoder_target_check"
+
+[[test]]
+name = "qcom_assistance_check"
+required-features = ["qcom-assistance-tools-native"]
+
+[[bin]]
+name = "check-qcomgps-assistance"
+path = "src/bin/check_qcomgps_assistance.rs"
+required-features = ["qcom-assistance-tools-native"]
+
+[[test]]
+name = "feedbackd_check"
+required-features = ["feedback-runtime-native"]
+
+[[test]]
+name = "feedbackd_runtime_check"
+required-features = ["feedback-runtime-native"]
+
+[[bin]]
+name = "check-feedbackd"
+path = "src/bin/check_feedbackd.rs"
+required-features = ["feedback-runtime-native"]
+
+[[test]]
+name = "lagd_cli"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_live_check"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_live_contracts"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_live_native"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_session"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_retirement"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "lagd_live_cli"
+required-features = ["lagd-tools-native"]
+
+[[bin]]
+name = "check-lagd-numeric"
+path = "src/bin/check_lagd_numeric.rs"
+required-features = ["lagd-tools-native"]
+
+[[bin]]
+name = "check-lagd-loop"
+path = "src/bin/check_lagd_loop.rs"
+required-features = ["lagd-tools-native"]
+
+[[bin]]
+name = "check-lagd-cache"
+path = "src/bin/check_lagd_cache.rs"
+required-features = ["lagd-tools-native"]
+
+[[bin]]
+name = "check-lagd-packet"
+path = "src/bin/check_lagd_packet.rs"
+required-features = ["lagd-tools-native"]
+
+[[bin]]
+name = "check-lagd-daemon"
+path = "src/bin/check_lagd_daemon.rs"
+required-features = ["lagd-tools-native"]
+
+[[bin]]
+name = "check-lagd-params-io"
+path = "src/bin/check_lagd_params_io.rs"
+required-features = ["lagd-tools-native"]
+
+[[test]]
+name = "sdk_receiver"
+required-features = ["sdk-receiver-native"]
+
+[[bin]]
+name = "check-sdk-receiver"
+path = "src/bin/check_sdk_receiver.rs"
+required-features = ["sdk-receiver-native"]
+
+[[test]]
+name = "sdk_transport_check"
+required-features = ["sdk-transport-native"]
+
+[[test]]
+name = "tombstone_reference_check"
+required-features = ["tombstone-tools-native"]
+
+[[test]]
+name = "sdk_transport_runtime"
+required-features = ["sdk-transport-native", "tombstone-tools-native"]
+
+[[bin]]
+name = "check-tombstoned-reference"
+path = "src/bin/check_tombstoned_reference.rs"
+required-features = ["tombstone-tools-native"]
+
+[[bin]]
+name = "check-crash-sdk-transport"
+path = "src/bin/check_crash_sdk_transport.rs"
+required-features = ["sdk-transport-native", "tombstone-tools-native"]
+
+[[test]]
+name = "tombstone_runtime_check"
+required-features = ["tombstone-live-native"]
+
+[[test]]
+name = "tombstone_shutdown_check"
+required-features = ["tombstone-live-native"]
+
+[[test]]
+name = "tombstone_safety_check"
+required-features = ["tombstone-tools-native"]
+
+[[bin]]
+name = "check-tombstoned-safety"
+path = "src/bin/check_tombstoned_safety.rs"
+required-features = ["tombstone-tools-native"]
+
+[[bin]]
+name = "check-tombstoned-runtime"
+path = "src/bin/check_tombstoned_runtime.rs"
+required-features = ["tombstone-live-native"]
+
+[[bin]]
+name = "check-tombstoned-shutdown"
+path = "src/bin/check_tombstoned_shutdown.rs"
+required-features = ["tombstone-live-native"]
+
+[[bin]]
+name = "tombstone-runtime-worker"
+path = "src/bin/tombstone_runtime_worker.rs"
+required-features = ["tombstone-live-native"]
+
+[[test]]
+name = "managed_entry_check"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_runtime_check"
+required-features = ["managed-runtime-native"]
+
+[[bin]]
+name = "check-managed-runtime"
+path = "src/bin/check_managed_runtime.rs"
+required-features = ["managed-runtime-native"]
+
+[[test]]
+name = "managed_entry_source"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_entry_collector_source"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_entry_runtime"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_entry_ownership"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_entry_sigint"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_entry_readiness"
+required-features = ["managed-entry-native"]
+
+[[test]]
+name = "managed_entry_collector_readiness"
+required-features = ["managed-entry-native"]
+
+[[bin]]
+name = "check-managed-entry"
+path = "src/bin/check_managed_entry.rs"
+required-features = ["managed-entry-native"]
+
+[[bin]]
+name = "check-registration-clock"
+path = "src/bin/check_registration_clock.rs"
+required-features = ["registration-clock-native"]
+
+[[test]]
+name = "registration_clock_check"
+required-features = ["registration-clock-native"]
+
+[[bin]]
+name = "check-bluetooth-input-decode"
+path = "src/bin/check_bluetooth_input_decode.rs"
+required-features = ["bluetooth-input-native"]
+
+[[test]]
+name = "bluetooth_input_check"
+required-features = ["bluetooth-input-native"]
+
+[[bin]]
+name = "check-registration"
+path = "src/bin/check_registration.rs"
+required-features = ["registration-tools-native"]
+
+[[test]]
+name = "registration_check"
+required-features = ["registration-tools-native"]
+
+[[test]]
+name = "registration_reference"
+required-features = ["registration-tools-native"]
+
+[[test]]
+name = "soundd_policy_reference"
+required-features = ["soundd-policy-native"]
+
+[[test]]
+name = "stats_producer_check"
+required-features = ["stats-producer-native"]
+
+[[bin]]
+name = "check-stats-producer"
+path = "src/bin/check_stats_producer.rs"
+required-features = ["stats-producer-native"]
+
+[[test]]
+name = "proclog_reference_check"
+required-features = ["proclog-reference-native"]
+
+[[bin]]
+name = "check-proclog-reference"
+path = "src/bin/check_proclog_reference.rs"
+required-features = ["proclog-reference-native"]
+
+[[test]]
+name = "soundd_policy_check"
+required-features = ["soundd-policy-native"]
+
+[[bin]]
+name = "check-soundd-policy"
+path = "src/bin/check_soundd_policy.rs"
+required-features = ["soundd-policy-native"]
+
+[[test]]
+name = "stats_daemon_check"
+required-features = ["stats-daemon-native"]
+
+[[test]]
+name = "stats_interrupted_check"
+required-features = ["stats-daemon-native"]
+
+[[test]]
+name = "soundd_fixture_assets"
+required-features = ["soundd-policy-native"]
+
+[[test]]
+name = "soundd_policy_retirement"
+required-features = ["soundd-policy-native"]
+
+[[test]]
+name = "soundd_policy_ci"
+
+[[test]]
+name = "navd_config_check"
+required-features = ["navd-config-tools-native"]
+
+[[test]]
+name = "navd_config_reference"
+required-features = ["navd-config-tools-native"]
+
+[[bin]]
+name = "create-soundd-fixture-assets"
+path = "src/bin/create_soundd_fixture_assets.rs"
+required-features = ["soundd-policy-native"]
+
+[[bin]]
+name = "check-stats-daemon"
+path = "src/bin/check_stats_daemon.rs"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-stats-failures"
+path = "src/bin/check_stats_failures.rs"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-stats-log-fault"
+path = "src/bin/check_stats_log_fault.rs"
+required-features = ["stats-daemon-native"]
+
+[[test]]
+name = "aarch64_check"
+path = "tests/aarch64_check.rs"
+required-features = ["aarch64-check-native"]
+
+[[bin]]
+name = "check-aarch64"
+path = "src/bin/check_aarch64.rs"
+required-features = ["aarch64-check-native"]
+
+[[bin]]
+name = "check-stats-interrupted"
+path = "src/bin/check_stats_interrupted.rs"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-navd-config"
+path = "src/bin/check_navd_config.rs"
+required-features = ["navd-config-tools-native"]
+
+[[test]]
+name = "registration_navd_retirement"
+required-features = ["navd-config-tools-native"]
+
+[[test]]
+name = "stats_runtime_check"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-stats-runtime"
+path = "src/bin/check_stats_runtime.rs"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-stats-flood"
+path = "src/bin/check_stats_flood.rs"
+required-features = ["stats-daemon-native"]
+
+[[bin]]
+name = "check-bridge"
+path = "src/bin/check_bridge.rs"
+required-features = ["bridge-tools-native"]
+
+[[test]]
+name = "bridge_check"
+required-features = ["bridge-tools-native"]
+
+[[test]]
+name = "bridge_controller_reference"
+required-features = ["bridge-tools-native"]
+
+[[bin]]
+name = "check-soundd-daemon"
+path = "src/bin/check_soundd_daemon.rs"
+required-features = ["soundd-daemon-native"]
+
+[[test]]
+name = "soundd_daemon_check"
+required-features = ["soundd-daemon-native"]
+
+[[test]]
+name = "soundd_daemon_runtime"
+required-features = ["soundd-daemon-native"]
+
+[[bin]]
+name = "check-bluetooth-files"
+path = "src/bin/check_bluetooth_files.rs"
+required-features = ["bluetooth-files-native"]
+
+[[test]]
+name = "bluetooth_files_check"
+required-features = ["bluetooth-files-native"]
+
+[[bin]]
+name = "check-logmessaged-startup"
+path = "src/bin/check_logmessaged_startup.rs"
+required-features = ["logmessaged-startup-native"]
+
+[[test]]
+name = "logmessaged_startup_check"
+required-features = ["logmessaged-startup-native"]
+
+[[test]]
+name = "logmessaged_startup_reference"
+required-features = ["logmessaged-startup-native"]
+
+[[test]]
+name = "logmessaged_startup_retirement"
+required-features = ["logmessaged-startup-native"]
+
+[[bin]]
+name = "check-bluetooth-journal"
+path = "src/bin/check_bluetooth_journal.rs"
+required-features = ["bluetooth-journal-native"]
+
+[[test]]
+name = "bluetooth_journal_check"
+required-features = ["bluetooth-journal-native"]
+
+[[bin]]
+name = "check-calibration-float"
+path = "src/bin/check_calibration_float.rs"
+required-features = ["calibration-float-native"]
+
+[[test]]
+name = "calibration_float_check"
+required-features = ["calibration-float-native"]
+
+[[test]]
+name = "calibration_float_postdelete"
+required-features = ["calibration-float-native"]
+
+[[bin]]
+name = "check-pandad-safety-padding"
+path = "src/bin/check_pandad_safety_padding.rs"
+required-features = ["pandad-safety-padding-native"]
+
+[[test]]
+name = "pandad_safety_padding_check"
+required-features = ["pandad-safety-padding-native"]
+
+[[test]]
+name = "pandad_safety_padding_reference"
+required-features = ["pandad-safety-padding-native"]
+
+[[test]]
+name = "pandad_safety_padding_retirement"
+required-features = ["pandad-safety-padding-native"]
+
+[[bin]]
+name = "check-pandad-device"
+path = "src/bin/check_pandad_device.rs"
+required-features = ["pandad-device-native"]
+
+[[test]]
+name = "pandad_device_check"
+required-features = ["pandad-device-native"]
+
+[[test]]
+name = "pandad_device_retirement"
+required-features = ["pandad-device-native"]
+
+[[test]]
+name = "pandad_device_reference"
+required-features = ["pandad-device-native"]
+
+[[bin]]
+name = "check-bluetooth-config"
+path = "src/bin/check_bluetooth_config.rs"
+required-features = ["bluetooth-config-native"]
+
+[[test]]
+name = "bluetooth_config_check"
+required-features = ["bluetooth-config-native"]
+
+[[bin]]
+name = "check-bluetooth-bluez-policy"
+path = "src/bin/check_bluetooth_bluez_policy.rs"
+required-features = ["bluetooth-bluez-policy-native"]
+
+[[test]]
+name = "bluetooth_bluez_policy_check"
+required-features = ["bluetooth-bluez-policy-native"]
+
+[[test]]
+name = "bluetooth_bluez_policy_reference"
+required-features = ["bluetooth-bluez-policy-native"]
+
+[[bin]]
+name = "check-bluetooth-enumerate"
+path = "src/bin/check_bluetooth_enumerate.rs"
+required-features = ["bluetooth-enumerate-native"]
+
+[[test]]
+name = "bluetooth_enumerate_reference"
+required-features = ["bluetooth-enumerate-native"]
+
+[[test]]
+name = "pandad_safety_padding_absence"
+required-features = ["pandad-safety-padding-native"]
+
+[[test]]
+name = "pandad_safety_padding_finalize"
+required-features = ["pandad-safety-padding-native"]
+
+[[bin]]
+name = "generate-bluetooth-gesture-cases"
+path = "src/bin/generate_bluetooth_gesture_cases.rs"
+required-features = ["bluetooth-gesture-cases-native"]
+
+[[test]]
+name = "bluetooth_gesture_cases_generate"
+required-features = ["bluetooth-gesture-cases-native"]
+
+[[bin]]
+name = "bluetooth-sudo-fixture"
+path = "src/bin/bluetooth_sudo_fixture.rs"
+required-features = ["bluetooth-sudo-fixture-native"]
+
+[[test]]
+name = "bluetooth_sudo_fixture"
+required-features = ["bluetooth-sudo-fixture-native"]
+
+[[bin]]
+name = "check-paramsd-daemon-native"
+path = "src/bin/check_paramsd_daemon_native.rs"
+required-features = ["paramsd-daemon-native"]
+
+[[test]]
+name = "paramsd_daemon_check"
+required-features = ["paramsd-daemon-native"]
+
+[[test]]
+name = "soundd_daemon_retirement"
+required-features = ["soundd-daemon-native"]
+
+[[test]]
+name = "paramsd_daemon_reference"
+required-features = ["paramsd-daemon-native"]
+
+[[test]]
+name = "bluetooth_journal_reference"
+required-features = ["bluetooth-journal-native"]
+
+[[test]]
+name = "bluetooth_gesture_cases_retirement"
+required-features = ["bluetooth-gesture-cases-native"]
+
+[[test]]
+name = "bluetooth_config_reference"
+required-features = ["bluetooth-config-native"]
+
+[[bin]]
+name = "generate-paramsd-fixture"
+path = "src/bin/generate_paramsd_fixture.rs"
+required-features = ["paramsd-fixture-native"]
+
+[[test]]
+name = "paramsd_fixture_generate"
+required-features = ["paramsd-fixture-native"]
+
+[[bin]]
+name = "generate-paramsd-loop-fixture"
+path = "src/bin/generate_paramsd_loop_fixture.rs"
+required-features = ["paramsd-fixture-native"]
+
+[[test]]
+name = "paramsd_loop_fixture_generate"
+required-features = ["paramsd-fixture-native"]
+
+[[test]]
+name = "paramsd_loop_reference"
+required-features = ["paramsd-loop-native"]
+
+[[bin]]
+name = "check-paramsd-loop-native"
+path = "src/bin/check_paramsd_loop_native.rs"
+required-features = ["paramsd-loop-native"]
+
+[[test]]
+name = "paramsd_loop_check"
+required-features = ["paramsd-loop-native"]
+
+[[test]]
+name = "paramsd_loop_retirement"
+required-features = ["paramsd-loop-native"]
+
+[[bin]]
+name = "updated-fixture"
+path = "src/bin/updated_fixture.rs"
+required-features = ["updated-fixture-native"]
+
+[[test]]
+name = "updated_fixture_original"
+required-features = ["updated-fixture-native"]
+
+[[bin]]
+name = "check-updated"
+path = "src/bin/check_updated.rs"
+required-features = ["updated-fixture-native"]
+
+[[test]]
+name = "updated_check"
+required-features = ["updated-fixture-native"]
+
+[[bin]]
+name = "check-beep-reference"
+path = "src/bin/check_beep_reference.rs"
+required-features = ["beep-reference-native"]
+
+[[test]]
+name = "beep_reference_check"
+required-features = ["beep-reference-native"]
+
+[[test]]
+name = "beep_reference_retirement"
+required-features = ["beep-reference-native"]
+
+[[bin]]
+name = "check-calibration-reference"
+path = "src/bin/check_calibration_reference.rs"
+required-features = ["calibration-reference-native"]
+
+[[test]]
+name = "calibration_reference_check"
+required-features = ["calibration-reference-native"]
+
+[[test]]
+name = "calibration_reference_retirement"
+required-features = ["calibration-reference-native"]
+
+[[bin]]
+name = "check-desire-reference-native"
+path = "src/bin/check_desire_reference_native.rs"
+required-features = ["desire-reference-native"]
+
+[[test]]
+name = "desire_reference_check"
+required-features = ["desire-reference-native"]
+
+[[bin]]
+name = "check-pandad-ci"
+path = "src/bin/check_pandad_ci.rs"
+required-features = ["panda-ci-native"]
+
+[[test]]
+name = "panda_ci_check"
+required-features = ["panda-ci-native"]
+
+[[test]]
+name = "desire_reference_retirement"
+required-features = ["desire-reference-native"]
+
+[[test]]
+name = "desire_reference_cli"
+required-features = ["desire-reference-native"]
+
+[[bin]]
+name = "check-updated-daemon"
+path = "src/bin/check_updated_daemon.rs"
+required-features = ["updated-daemon-native"]
+
+[[test]]
+name = "updated_daemon_check"
+required-features = ["updated-daemon-native"]
+
+[[test]]
+name = "updated_daemon_retirement"
+required-features = ["updated-daemon-native"]
+
+[[test]]
+name = "updated_daemon_cli"
+required-features = ["updated-daemon-native"]
+
+[[bin]]
+name = "check-driving-daemon"
+path = "src/bin/check_driving_daemon.rs"
+required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "driving_daemon_reference"
+required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "driving_daemon_check"
+required-features = ["driving-daemon-native"]
+
+[[bin]]
+name = "check-model-logging-faults"
+path = "src/bin/check_model_logging_faults.rs"
+required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "driving_logging_check"
+required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "driving_logging_fault_check"
+required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "panda_ci_retirement"
+required-features = ["panda-ci-native"]
+
+[[bin]]
+name = "build-driving-logging-fault"
+path = "src/bin/build_driving_logging_fault.rs"
+required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "driver_daemon_check"
+required-features = ["driver-daemon-native"]
+
+[[test]]
+name = "model_family_retirement"
+required-features = ["driver-daemon-native"]
+
+[[test]]
+name = "driving_daemon_retirement"
+required-features = ["driving-daemon-native"]
+
+[[bin]]
+name = "seal-driving-daemon-fixture"
+path = "src/bin/seal_driving_daemon_fixture.rs"
+required-features = ["driving-daemon-native"]
+
+[[bin]]
+name = "check-driver-daemon"
+path = "src/bin/check_driver_daemon.rs"
+required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "check-pandad-protocol"
+path = "src/bin/check_pandad_protocol.rs"
+required-features = ["pandad-protocol-native"]
+
+[[test]]
+name = "pandad_protocol_check"
+required-features = ["pandad-protocol-native"]
+
+[[test]]
+name = "pandad_protocol_reference"
+required-features = ["pandad-protocol-native"]
+
+[[bin]]
+name = "check-pandad-can-io"
+path = "src/bin/check_pandad_can_io.rs"
+required-features = ["pandad-can-io-native"]
+
+[[test]]
+name = "pandad_can_io_check"
+required-features = ["pandad-can-io-native"]
+
+[[test]]
+name = "pandad_can_io_reference"
+required-features = ["pandad-can-io-native"]
+
+[[test]]
+name = "driver_daemon_no_collector"
+required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "stage-driver-daemon-fixture"
+path = "src/bin/stage_driver_daemon_fixture.rs"
+required-features = ["driver-daemon-native"]
+
+[[test]]
+name = "driver_daemon_fixture"
+required-features = ["driver-daemon-native"]
+
+[[test]]
+name = "driver_daemon_retirement"
+required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "stage-pandad-device-reference"
+path = "src/bin/stage_pandad_device_reference.rs"
+required-features = ["pandad-device-native"]
+
+[[test]]
+name = "pandad_device_fixture"
+required-features = ["pandad-device-native"]
+
+[[bin]]
+name = "stage-pandad-protocol-reference"
+path = "src/bin/stage_pandad_protocol_reference.rs"
+required-features = ["pandad-protocol-native"]
+
+[[test]]
+name = "pandad_protocol_fixture"
+required-features = ["pandad-protocol-native"]
+
+[[bin]]
+name = "stage-pandad-can-io-reference"
+path = "src/bin/stage_pandad_can_io_reference.rs"
+required-features = ["pandad-can-io-native"]
+
+[[test]]
+name = "pandad_can_io_fixture"
+required-features = ["pandad-can-io-native"]
+
+[[bin]]
+name = "stage-driving-daemon-fixture"
+path = "src/bin/stage_driving_daemon_fixture.rs"
+required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "driving_fixture_archive"
+required-features = ["driving-daemon-native"]
+
+[[test]]
+name = "recovery_family_frozen"
+required-features = ["recovery-family-native"]
+
+[[bin]]
+name = "teleop-version"
+path = "src/bin/teleop_version.rs"
+required-features = ["teleop-version-native"]
+
+[[test]]
+name = "teleop_version"
+required-features = ["teleop-version-native"]
+
+[[test]]
+name = "model_startup_check"
+required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "check-model-startup"
+path = "src/bin/model_startup_check.rs"
+required-features = ["driver-daemon-native"]
+
+[[test]]
+name = "usbgpu_daemon_check"
+required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "check-usbgpu-daemon"
+path = "src/bin/usbgpu_daemon_check.rs"
+required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "ci-receipt-metadata"
+path = "src/bin/ci_receipt_metadata.rs"
+required-features = ["ci-receipt-metadata-native"]
+
+[[test]]
+name = "ci_receipt_metadata"
+required-features = ["ci-receipt-metadata-native"]
+
+[[bin]]
+name = "audit-recovery-exec"
+path = "src/bin/audit_recovery_exec.rs"
+required-features = ["recovery-family-native"]
+
+[[bin]]
+name = "stage-model-family-usb-assets"
+path = "src/bin/stage_model_family_usb_assets.rs"
+required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "prepare-model-family-catalog"
+path = "src/bin/prepare_model_family_catalog.rs"
+required-features = ["driver-daemon-native"]
+
+[[test]]
+name = "model_family_prepare"
+required-features = ["driver-daemon-native"]
+
+[[bin]]
+name = "stage-soundd-source"
+path = "src/bin/stage_soundd_source.rs"
+required-features = ["soundd-daemon-native"]
+
+[[test]]
+name = "soundd_source_stage"
+required-features = ["soundd-daemon-native"]
+
+[[bin]]
+name = "generate-pose-model"
+path = "src/bin/generate_pose_model.rs"
+required-features = ["kalman-model-generator-native"]
+
+[[bin]]
+name = "generate-car-model"
+path = "src/bin/generate_car_model.rs"
+required-features = ["kalman-model-generator-native"]
+
+[[test]]
+name = "kalman_model_generator"
+required-features = ["kalman-model-generator-native"]
+
+[[bin]]
+name = "generate-pose-corpus"
+path = "src/bin/generate_pose_corpus.rs"
+required-features = ["kalman-corpus-generator-native"]
+
+[[bin]]
+name = "generate-car-corpus"
+path = "src/bin/generate_car_corpus.rs"
+required-features = ["kalman-corpus-generator-native"]
+
+[[test]]
+name = "kalman_corpus_generator"
+required-features = ["kalman-corpus-generator-native"]
+
+[[bin]]
+name = "check-manager-log-upload"
+path = "src/bin/check_manager_log_upload.rs"
+required-features = ["route-upload-native"]
+
+[[bin]]
+name = "check-runtime-log-upload"
+path = "src/bin/check_runtime_log_upload.rs"
+required-features = ["route-upload-native"]
+
+[[test]]
+name = "route_upload_check"
+required-features = ["route-upload-native"]
+
+[[bin]]
+name = "route-upload-lifecycle-fixture"
+path = "src/bin/route_upload_lifecycle_fixture.rs"
+required-features = ["route-upload-native"]
+
+[[test]]
+name = "route_upload_lifecycle"
+required-features = ["route-upload-native"]
+
+[[bin]]
+name = "check-uploader-reference"
+path = "src/bin/check_uploader_reference.rs"
+required-features = ["uploader-reference-native"]
+
+[[bin]]
+name = "check-uploader-logging"
+path = "src/bin/check_uploader_logging.rs"
+required-features = ["uploader-logging-native"]
+
+[[test]]
+name = "uploader_reference_check"
+required-features = ["uploader-reference-native"]
+
+[[test]]
+name = "uploader_logging_check"
+required-features = ["uploader-logging-native"]
+
+[[bin]]
+name = "check-uploader-siblings"
+path = "src/bin/check_uploader_siblings.rs"
+required-features = ["uploader-siblings-native"]
+
+[[test]]
+name = "uploader_lifecycle_check"
+required-features = ["uploader-siblings-native"]
+
+[[bin]]
+name = "check-deleter"
+path = "src/bin/check_deleter.rs"
+required-features = ["deleter-check-native"]
+
+[[test]]
+name = "deleter_check"
+required-features = ["deleter-check-native"]
+
+[[bin]]
+name = "check-changed-files"
+path = "src/bin/check_changed_files.rs"
+required-features = ["changed-files-native"]
+
+[[bin]]
+name = "prepare-changed-files-context"
+path = "src/bin/prepare_changed_files_context.rs"
+required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_check"
+required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_codec_domains"
+required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_lifecycle"
+required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_japanese_variants"
+required-features = ["changed-files-native"]
+
+[[test]]
+name = "native_logging_lifecycle"
+required-features = ["native-logging-check-native"]
+
+[[bin]]
+name = "check-loggerd-native"
+path = "src/bin/check_loggerd_native.rs"
+required-features = ["loggerd-check-native"]
+
+[[bin]]
+name = "loggerd-lifecycle-fixture"
+path = "src/bin/loggerd_lifecycle_fixture.rs"
+required-features = ["loggerd-check-native"]
+
+[[test]]
+name = "loggerd_check"
+required-features = ["loggerd-check-native"]
+
+[[test]]
+name = "changed_files_hz"
+required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_codec_payloads"
+required-features = ["changed-files-native"]
+
+[[bin]]
+name = "check-paramsd-startup-native"
+path = "src/bin/check_paramsd_startup_native.rs"
+required-features = ["paramsd-startup-check-native"]
+
+[[test]]
+name = "paramsd_startup_check"
+required-features = ["paramsd-startup-check-native"]
+
+[[test]]
+name = "changed_files_korean"
+required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_big5"
+path = "tests/changed_files_big5.rs"
+required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_chinese_gb"
+required-features = ["changed-files-native"]
+
+[[test]]
+name = "changed_files_jp2"
+required-features = ["changed-files-native"]
+
+[[bin]]
+name = "check-loggerd-diagnostics"
+path = "src/bin/check_loggerd_diagnostics.rs"
+required-features = ["loggerd-check-native"]
+
+[[bin]]
+name = "check-loggerd-log-pipeline"
+path = "src/bin/check_loggerd_log_pipeline.rs"
+required-features = ["loggerd-check-native"]
+
+[[test]]
+name = "loggerd_controllers"
+required-features = ["loggerd-check-native"]
+
+[[bin]]
+name = "generate-paramsd-car-params"
+path = "src/bin/generate_paramsd_car_params.rs"
+required-features = ["paramsd-fixture-native"]
+
+[[test]]
+name = "paramsd_startup_caller"
+required-features = ["paramsd-startup-check-native"]
+
+[[test]]
+name = "paramsd_car_params_cli"
+required-features = ["paramsd-fixture-native"]
+[[test]]
+name = "changed_files_cp949"
+required-features = ["changed-files-native"]
+
+[[bin]]
+name = "check-paramsd-estimator-native"
+path = "src/bin/check_paramsd_estimator_native.rs"
+required-features = ["paramsd-fixture-native"]
+
+[[test]]
+name = "paramsd_estimator_check"
+required-features = ["paramsd-fixture-native"]
+
+[[bin]]
+name = "generate-controlsd-fixtures"
+path = "src/bin/generate_controlsd_fixtures.rs"
+required-features = ["controlsd-fixture-native"]
+
+[[test]]
+name = "controlsd_fixture_generate"
+required-features = ["controlsd-fixture-native"]
+
+[[bin]]
+name = "check-controlsd-native"
+path = "src/bin/check_controlsd_native.rs"
+required-features = ["controlsd-fixture-native"]
+
+[[test]]
+name = "controlsd_check"
+path = "tests/controlsd_check.rs"
+required-features = ["controlsd-fixture-native"]
+
+[[bin]]
+name = "check-control-failures-native"
+path = "src/bin/check_control_failures_native.rs"
+required-features = ["controlsd-fixture-native"]
+
+[[test]]
+name = "control_failures_check"
+required-features = ["controlsd-fixture-native"]
+
+[[bin]]
+name = "check-controlsd-daemon-native"
+path = "src/bin/check_controlsd_daemon_native.rs"
+required-features = ["controlsd-daemon-native"]
+
+[[test]]
+name = "controlsd_daemon_check"
+required-features = ["controlsd-daemon-native"]
+
+[[test]]
+name = "ci_model_catalog_publisher"
+
+[[bin]]
+name = "check-loggerd-peer"
+path = "src/bin/check_loggerd_peer.rs"
+required-features = ["loggerd-check-native"]
+
+[[test]]
+name = "loggerd_peer_check"
+required-features = ["loggerd-check-native"]
+
+[[test]]
+name = "changed_files_caller"
+path = "tests/changed_files_caller.rs"
+required-features = ["changed-files-native"]
+
+[[bin]]
+name = "build-route-vault-bundle"
+path = "src/bin/build_route_vault_bundle.rs"
+required-features = ["route-vault-bundle-native"]
+
+[[test]]
+name = "route_sanitizer_original"
+required-features = ["route-sanitizer-native"]
+
+[[test]]
+name = "route_vault_bundle"
+path = "tests/route_vault_bundle.rs"
+required-features = ["route-vault-bundle-native"]
+
+[[bin]]
+name = "export-current-driving-catalog"
+path = "src/bin/export_current_driving_catalog.rs"
+required-features = ["current-catalog-export-native"]
+
+[[test]]
+name = "current_catalog_export"
+path = "tests/current_catalog_export.rs"
+required-features = ["current-catalog-export-native"]
+
+[[bin]]
+name = "developer-ssh"
+path = "src/bin/developer_ssh.rs"
+required-features = ["developer-ssh-native"]
+
+[[bin]]
+name = "setup-ssh-keys"
+path = "src/bin/setup_ssh_keys.rs"
+required-features = ["developer-ssh-native"]
+
+[[test]]
+name = "developer_ssh"
+required-features = ["developer-ssh-native"]
+
+[[bin]]
+name = "developer-auth"
+path = "src/developer_ssh/auth_main.rs"
+required-features = ["developer-ssh-native"]
+
+[[bin]]
+name = "developer-auth-json"
+path = "src/developer_ssh/auth_json_main.rs"
+required-features = ["developer-ssh-native"]
+
+[[test]]
+name = "developer_cli_original"
+required-features = ["developer-ssh-native"]
+
+[[test]]
+name = "developer_auth"
+required-features = ["developer-ssh-native"]
+
+[[test]]
+name = "developer_http"
+required-features = ["developer-ssh-native"]
+
+[[test]]
+name = "github_utils"
+path = "tests/github_utils.rs"
+required-features = ["github-utils-native"]

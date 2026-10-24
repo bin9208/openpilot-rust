@@ -1,0 +1,300 @@
+{
+  "cases": [
+    {
+      "case": "record",
+      "environment": {
+        "RECORD": "1",
+        "RECORD_OUTPUT": "@OUTPUT@"
+      },
+      "exit": 1,
+      "png_sha256": null
+    },
+    {
+      "case": "vsync",
+      "environment": {
+        "ENABLE_VSYNC": "1"
+      },
+      "exit": 0,
+      "png_sha256": "0caa38b72c682cf7acf8902f6ec19498ccfcf0052a869bbf9ee34d3aa90482f8"
+    },
+    {
+      "case": "burn-present",
+      "environment": {
+        "BURN_IN": "0"
+      },
+      "exit": 0,
+      "png_sha256": "1f40c88035c52aa66c44d41b6875a32c373cccd4d3832b24ac14e937ee043885"
+    },
+    {
+      "case": "scale-invalid",
+      "environment": {
+        "SCALE": "x"
+      },
+      "exit": 0,
+      "png_sha256": "0caa38b72c682cf7acf8902f6ec19498ccfcf0052a869bbf9ee34d3aa90482f8"
+    },
+    {
+      "case": "grid-invalid",
+      "environment": {
+        "GRID": "x"
+      },
+      "exit": 1,
+      "png_sha256": null
+    },
+    {
+      "case": "quality-invalid",
+      "environment": {
+        "RECORD_QUALITY": "x"
+      },
+      "exit": 1,
+      "png_sha256": null
+    },
+    {
+      "case": "lang-ko",
+      "environment": {
+        "LANG": "ko_KR.UTF-8",
+        "LANGUAGE": "ko"
+      },
+      "exit": 0,
+      "png_sha256": "0caa38b72c682cf7acf8902f6ec19498ccfcf0052a869bbf9ee34d3aa90482f8"
+    },
+    {
+      "case": "grid-inherited",
+      "environment": {
+        "GRID": "19",
+        "SHOW_TOUCHES": "1",
+        "SHOW_FPS": "1",
+        "BIG": "1",
+        "SCALE": "9"
+      },
+      "exit": 0,
+      "png_sha256": "0caa38b72c682cf7acf8902f6ec19498ccfcf0052a869bbf9ee34d3aa90482f8"
+    },
+    {
+      "case": "record-unknown",
+      "scenario": "unknown",
+      "environment": {
+        "RECORD": "1",
+        "RECORD_QUALITY": "17",
+        "RECORD_SPEED": "2",
+        "RECORD_BITRATE": "123k",
+        "RECORD_OUTPUT": "@OUTPUT@.test"
+      },
+      "exit": 1,
+      "png_sha256": null,
+      "ffmpeg_argv": [
+        "-v",
+        "warning",
+        "-nostats",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "rgba",
+        "-s",
+        "536x240",
+        "-r",
+        "20",
+        "-i",
+        "pipe:0",
+        "-vf",
+        "vflip,format=yuv420p",
+        "-r",
+        "40",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "17",
+        "-b:v",
+        "123k",
+        "-maxrate",
+        "123k",
+        "-bufsize",
+        "123k",
+        "-y",
+        "-f",
+        "mp4",
+        "@OUTPUT@.mp4"
+      ]
+    },
+    {
+      "case": "record-burn-in",
+      "scenario": "burn-in",
+      "environment": {
+        "RECORD": "1",
+        "RECORD_QUALITY": "17",
+        "RECORD_SPEED": "2",
+        "RECORD_BITRATE": "123k",
+        "RECORD_OUTPUT": "@OUTPUT@.test"
+      },
+      "exit": 0,
+      "png_sha256": "1f40c88035c52aa66c44d41b6875a32c373cccd4d3832b24ac14e937ee043885",
+      "ffmpeg_argv": [
+        "-v",
+        "warning",
+        "-nostats",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "rgba",
+        "-s",
+        "536x240",
+        "-r",
+        "20",
+        "-i",
+        "pipe:0",
+        "-vf",
+        "vflip,format=yuv420p",
+        "-r",
+        "40",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "17",
+        "-b:v",
+        "123k",
+        "-maxrate",
+        "123k",
+        "-bufsize",
+        "123k",
+        "-y",
+        "-f",
+        "mp4",
+        "@OUTPUT@.mp4"
+      ]
+    },
+    {
+      "case": "profile-startup",
+      "environment": {
+        "PROFILE_STARTUP": "0"
+      },
+      "exit": 0,
+      "png_sha256": null
+    },
+    {
+      "case": "profile-render-invalid",
+      "environment": {
+        "PROFILE_RENDER": "invalid"
+      },
+      "exit": 1,
+      "png_sha256": null
+    },
+    {
+      "case": "profile-stats-invalid",
+      "environment": {
+        "PROFILE_STATS": "invalid"
+      },
+      "exit": 1,
+      "png_sha256": null
+    },
+    {
+      "case": "record-speed-invalid",
+      "environment": {
+        "RECORD_SPEED": "invalid"
+      },
+      "exit": 1,
+      "png_sha256": null
+    },
+    {
+      "case": "record-profile-unknown",
+      "scenario": "unknown",
+      "environment": {
+        "RECORD": "1",
+        "RECORD_QUALITY": "17",
+        "RECORD_SPEED": "2",
+        "RECORD_BITRATE": "123k",
+        "RECORD_OUTPUT": "@OUTPUT@.test",
+        "PROFILE_STARTUP": "0"
+      },
+      "exit": 0,
+      "png_sha256": null,
+      "ffmpeg_argv": [
+        "-v",
+        "warning",
+        "-nostats",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "rgba",
+        "-s",
+        "536x240",
+        "-r",
+        "20",
+        "-i",
+        "pipe:0",
+        "-vf",
+        "vflip,format=yuv420p",
+        "-r",
+        "40",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "17",
+        "-b:v",
+        "123k",
+        "-maxrate",
+        "123k",
+        "-bufsize",
+        "123k",
+        "-y",
+        "-f",
+        "mp4",
+        "@OUTPUT@.mp4"
+      ]
+    },
+    {
+      "case": "record-profile-burn-in",
+      "scenario": "burn-in",
+      "environment": {
+        "RECORD": "1",
+        "RECORD_QUALITY": "17",
+        "RECORD_SPEED": "2",
+        "RECORD_BITRATE": "123k",
+        "RECORD_OUTPUT": "@OUTPUT@.test",
+        "PROFILE_STARTUP": "0"
+      },
+      "exit": 0,
+      "png_sha256": null,
+      "ffmpeg_argv": [
+        "-v",
+        "warning",
+        "-nostats",
+        "-f",
+        "rawvideo",
+        "-pix_fmt",
+        "rgba",
+        "-s",
+        "536x240",
+        "-r",
+        "20",
+        "-i",
+        "pipe:0",
+        "-vf",
+        "vflip,format=yuv420p",
+        "-r",
+        "40",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "17",
+        "-b:v",
+        "123k",
+        "-maxrate",
+        "123k",
+        "-bufsize",
+        "123k",
+        "-y",
+        "-f",
+        "mp4",
+        "@OUTPUT@.mp4"
+      ]
+    }
+  ]
+}

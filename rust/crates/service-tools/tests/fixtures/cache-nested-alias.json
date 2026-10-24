@@ -1,0 +1,12 @@
+{
+  "input": "missing/../aliases/nested/../nested parent cache",
+  "directories": [
+    "source tree/inside",
+    "aliases"
+  ],
+  "symlink": {
+    "path": "aliases/nested",
+    "target": "../source tree/inside"
+  },
+  "python_resolve": "$ROOT/source tree/nested parent cache"
+}

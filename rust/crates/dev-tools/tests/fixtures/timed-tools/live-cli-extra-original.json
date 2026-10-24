@@ -1,0 +1,296 @@
+{
+  "provenance": {
+    "python": "3.12.15",
+    "source_sha256": {
+      "check_timed_date_daemon.py": "0351cba6545d8fb3f74dd7601f8d873b8048a4078d9ceb6ff2e8e4b7d1d936b0",
+      "check_timed_shutdown.py": "307b0bbc6246d94c1e33ac148e6fa462fcce9cdf03cf5770f920709969f266a6"
+    },
+    "capture": "Unchanged original argparse CLI entrypoints, actual subprocesses, no native candidate or original worker body entered."
+  },
+  "cases": [
+    {
+      "script": "check_timed_date_daemon.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_date_daemon.py [-h] --binary BINARY --output OUTPUT\n                                  [--worker WORKER WORKER WORKER]\ncheck_timed_date_daemon.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_date_daemon.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker",
+        "UTC"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_date_daemon.py [-h] --binary BINARY --output OUTPUT\n                                  [--worker WORKER WORKER WORKER]\ncheck_timed_date_daemon.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_date_daemon.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker",
+        "UTC",
+        "1"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_date_daemon.py [-h] --binary BINARY --output OUTPUT\n                                  [--worker WORKER WORKER WORKER]\ncheck_timed_date_daemon.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_date_daemon.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker=UTC",
+        "1",
+        "python"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_date_daemon.py [-h] --binary BINARY --output OUTPUT\n                                  [--worker WORKER WORKER WORKER]\ncheck_timed_date_daemon.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_date_daemon.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_date_daemon.py [-h] --binary BINARY --output OUTPUT\n                                  [--worker WORKER WORKER WORKER]\ncheck_timed_date_daemon.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_date_daemon.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--help",
+        "--worker"
+      ],
+      "exit_code": 0,
+      "stdout": "usage: check_timed_date_daemon.py [-h] --binary BINARY --output OUTPUT\n                                  [--worker WORKER WORKER WORKER]\n\noptions:\n  -h, --help            show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n  --worker WORKER WORKER WORKER\n",
+      "stderr": "",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_date_daemon.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--w",
+        "UTC"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_date_daemon.py [-h] --binary BINARY --output OUTPUT\n                                  [--worker WORKER WORKER WORKER]\ncheck_timed_date_daemon.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_date_daemon.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_date_daemon.py [-h] --binary BINARY --output OUTPUT\n                                  [--worker WORKER WORKER WORKER]\ncheck_timed_date_daemon.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_date_daemon.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker",
+        "UTC",
+        "1",
+        "python",
+        "--worker",
+        "UTC",
+        "2",
+        "python",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_date_daemon.py [-h] --binary BINARY --output OUTPUT\n                                  [--worker WORKER WORKER WORKER]\ncheck_timed_date_daemon.py: error: unrecognized arguments: --unknown\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_shutdown.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_shutdown.py [-h] --binary BINARY --output OUTPUT\n                               [--worker WORKER WORKER WORKER]\ncheck_timed_shutdown.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_shutdown.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker",
+        "UTC"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_shutdown.py [-h] --binary BINARY --output OUTPUT\n                               [--worker WORKER WORKER WORKER]\ncheck_timed_shutdown.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_shutdown.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker",
+        "UTC",
+        "1"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_shutdown.py [-h] --binary BINARY --output OUTPUT\n                               [--worker WORKER WORKER WORKER]\ncheck_timed_shutdown.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_shutdown.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker=UTC",
+        "1",
+        "python"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_shutdown.py [-h] --binary BINARY --output OUTPUT\n                               [--worker WORKER WORKER WORKER]\ncheck_timed_shutdown.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_shutdown.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker",
+        "--help"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_shutdown.py [-h] --binary BINARY --output OUTPUT\n                               [--worker WORKER WORKER WORKER]\ncheck_timed_shutdown.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_shutdown.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--help",
+        "--worker"
+      ],
+      "exit_code": 0,
+      "stdout": "usage: check_timed_shutdown.py [-h] --binary BINARY --output OUTPUT\n                               [--worker WORKER WORKER WORKER]\n\noptions:\n  -h, --help            show this help message and exit\n  --binary BINARY\n  --output OUTPUT\n  --worker WORKER WORKER WORKER\n",
+      "stderr": "",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_shutdown.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--w",
+        "UTC"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_shutdown.py [-h] --binary BINARY --output OUTPUT\n                               [--worker WORKER WORKER WORKER]\ncheck_timed_shutdown.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_shutdown.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker="
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_shutdown.py [-h] --binary BINARY --output OUTPUT\n                               [--worker WORKER WORKER WORKER]\ncheck_timed_shutdown.py: error: argument --worker: expected 3 arguments\n",
+      "output_exists": false
+    },
+    {
+      "script": "check_timed_shutdown.py",
+      "arguments": [
+        "--binary",
+        "/unused-native-candidate",
+        "--output",
+        "<output>",
+        "--worker",
+        "UTC",
+        "1",
+        "python",
+        "--worker",
+        "UTC",
+        "2",
+        "python",
+        "--unknown"
+      ],
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "usage: check_timed_shutdown.py [-h] --binary BINARY --output OUTPUT\n                               [--worker WORKER WORKER WORKER]\ncheck_timed_shutdown.py: error: unrecognized arguments: --unknown\n",
+      "output_exists": false
+    }
+  ]
+}

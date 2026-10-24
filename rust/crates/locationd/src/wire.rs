@@ -1,20 +1,40 @@
 use crate::{
     model,
-    types::{diagonal, Event, Input, Pose, Sensor, KINDS},
+    types::{diagonal, CameraStd, Event, Input, Pose, Sensor, KINDS},
     Error,
 };
 use capnp::{message::ReaderOptions, serialize};
 use openpilot_cereal::log_capnp::{event, live_pose, sensor_event_data};
 
-fn triple(values: capnp::primitive_list::Reader<'_, f32>) -> Result<[f64; 3], Error> {
-    if values.len() != 3 {
-        return Err(Error::Contract("three vector components required"));
+fn triple(values: capnp::primitive_list::Reader<'_, f32>) -> Option<[f64; 3]> {
+    (values.len() == 3).then(|| {
+        [
+            f64::from(values.get(0)),
+            f64::from(values.get(1)),
+            f64::from(values.get(2)),
+        ]
+    })
+}
+fn camera_std(values: capnp::primitive_list::Reader<'_, f32>) -> CameraStd {
+    if values.is_empty() {
+        return CameraStd::Empty;
     }
-    Ok([
-        f64::from(values.get(0)),
-        f64::from(values.get(1)),
-        f64::from(values.get(2)),
-    ])
+    if let Some(values) = triple(values) {
+        return CameraStd::Three(values);
+    }
+    let mut minimum = f64::INFINITY;
+    let mut sum = 0.;
+    let mut nan = false;
+    for value in values.iter().map(f64::from) {
+        nan |= value.is_nan();
+        minimum = minimum.min(value);
+        sum += value * value;
+    }
+    CameraStd::Other {
+        minimum: if nan { f64::NAN } else { minimum },
+        norm: sum.sqrt(),
+        first: f64::from(values.get(0)),
+    }
 }
 pub fn decode(bytes: &[u8]) -> Result<Event, Error> {
     let message = serialize::read_message(bytes, ReaderOptions::new())?;
@@ -46,27 +66,52 @@ pub fn decode_event(root: event::Reader<'_>) -> Result<Event, Error> {
         event::CarState(car) => ("carState", Input::Speed(f64::from(car?.get_v_ego()))),
         event::LiveCalibration(calibration) => {
             let values = calibration?.get_rpy_calib()?;
-            (
-                "liveCalibration",
-                Input::Calibration(if values.is_empty() {
-                    None
-                } else {
-                    Some(triple(values)?)
-                }),
-            )
+            let input = if values.is_empty() {
+                Input::Calibration(None)
+            } else if let Some(values) = triple(values) {
+                Input::Calibration(Some(values))
+            } else {
+                // NumPy min/max propagate ANY NaN, even beside an out-of-bound
+                // entry. All entries participate before Euler shape admission.
+                let nan = values.iter().any(|value| value.is_nan());
+                let outside = values.iter().any(|value| !(-0.5..=0.5).contains(&value));
+                Input::MalformedCalibration {
+                    out_of_bounds: !nan && outside,
+                }
+            };
+            ("liveCalibration", input)
         }
         event::CameraOdometry(camera) => {
             let camera = camera?;
-            (
-                "cameraOdometry",
-                Input::Camera {
-                    time: camera.get_timestamp_eof() as f64 * 1e-9 - 0.1,
-                    rotation: triple(camera.get_rot()?)?,
-                    translation: triple(camera.get_trans()?)?,
-                    rotation_std: triple(camera.get_rot_std()?)?,
-                    translation_std: triple(camera.get_trans_std()?)?,
+            let time = camera.get_timestamp_eof() as f64 * 1e-9 - 0.1;
+            let rotation = camera.get_rot()?;
+            let translation = camera.get_trans()?;
+            let rotation_std = camera.get_rot_std()?;
+            let translation_std = camera.get_trans_std()?;
+            let input = match (
+                triple(rotation),
+                triple(translation),
+                triple(rotation_std),
+                triple(translation_std),
+            ) {
+                (Some(rotation), Some(translation), Some(rotation_std), Some(translation_std)) => {
+                    Input::Camera {
+                        time,
+                        rotation,
+                        translation,
+                        rotation_std,
+                        translation_std,
+                    }
+                }
+                (rotation, translation, _, _) => Input::IrregularCamera {
+                    time,
+                    rotation,
+                    translation,
+                    rotation_std: camera_std(rotation_std),
+                    translation_std: camera_std(translation_std),
                 },
-            )
+            };
+            ("cameraOdometry", input)
         }
         _ => return Err(Error::Contract("unexpected locationd service")),
     };
@@ -78,12 +123,17 @@ pub fn decode_event(root: event::Reader<'_>) -> Result<Event, Error> {
     })
 }
 fn sensor_input(sensor: sensor_event_data::Reader<'_>, kind: Sensor) -> Result<Input, Error> {
+    let time = sensor.get_timestamp() as f64 * 1e-9;
+    let secondary = matches!(
+        sensor.get_source(),
+        Ok(sensor_event_data::SensorSource::Bmx055)
+    );
     let values = match (kind, sensor.which()?) {
         (Sensor::Acceleration, sensor_event_data::Acceleration(vector))
         | (Sensor::Gyroscope, sensor_event_data::GyroUncalibrated(vector)) => {
             let values = vector?.get_v()?;
             if values.len() < 3 {
-                return Err(Error::Contract("sensor vector prefix"));
+                return Ok(Input::TruncatedSensor { time, secondary });
             }
             [
                 f64::from(values.get(0)),
@@ -95,11 +145,8 @@ fn sensor_input(sensor: sensor_event_data::Reader<'_>, kind: Sensor) -> Result<I
     };
     Ok(Input::Sensor {
         kind,
-        time: sensor.get_timestamp() as f64 * 1e-9,
-        secondary: matches!(
-            sensor.get_source(),
-            Ok(sensor_event_data::SensorSource::Bmx055)
-        ),
+        time,
+        secondary,
         values,
     })
 }

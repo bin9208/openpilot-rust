@@ -1,0 +1,170 @@
+[
+  {
+    "name": "embedded-icns-L-jp2",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "a80c96ccfecc7ea3acbea9fcd50ff6c6338d58e3d67fad9dd452632b85e7b3ed",
+    "input_sha256": "6c8796064a016e84c6352e002e2bdab888168c4cb00160ee474ebdd2d5b65762",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-L-j2k",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "a80c96ccfecc7ea3acbea9fcd50ff6c6338d58e3d67fad9dd452632b85e7b3ed",
+    "input_sha256": "8fb10916dc4519cb58281f83dd1394ddbc4ae8cac61b0ed0358afb3ed4386e09",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-LA-jp2",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "cd7a06534bb1112ff634ba33df7c4f187bec623a325cfe29b85954bb284ee05b",
+    "input_sha256": "ed4001be7a21bf0bfbbe6291681bdf96dc22dccec3bdbc0d90e06ebdcb41b2ca",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-LA-j2k",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "cd7a06534bb1112ff634ba33df7c4f187bec623a325cfe29b85954bb284ee05b",
+    "input_sha256": "3837a67c43e810509ee9f042bcf8a39fe3fcb3d4c19380097fb81d73d7da92bd",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-RGB-jp2",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "1141b0d5c300471edbe5d1cdf44d4781465f3c5bf433d2f543248f367c30f300",
+    "input_sha256": "638643a863488db272eb11cb72f00e3f82d5f7899b6c0d2ba5d64f72b4a50ed1",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-RGB-j2k",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "1141b0d5c300471edbe5d1cdf44d4781465f3c5bf433d2f543248f367c30f300",
+    "input_sha256": "f4a83f7d1699613ba77e4dadc8932a2dd82cf1524f55dfd83a1ffff658daf891",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-RGBA-jp2",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "382c918bf7f4c385213969b6162c0a3391c5a65a6f94c1cc3526403ba184c369",
+    "input_sha256": "c02e0fb7c77b73a28075843724d894c1be7640b17ebbe1fea91a14897439a11d",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-RGBA-j2k",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "382c918bf7f4c385213969b6162c0a3391c5a65a6f94c1cc3526403ba184c369",
+    "input_sha256": "7e162d57c274a3e9573111ac1fbf44a7b6304b8ab97314047170b4231cb2fa34",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-CMYK-jp2",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "3845bb7c08f77c605ff9830f63a352152ab2c8a29aecdc2d98686140642f7269",
+    "input_sha256": "560caad27536d28cb0f6b324e8d64770d321de6bff4f0a35de7cc91980472194",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-CMYK-j2k",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "382c918bf7f4c385213969b6162c0a3391c5a65a6f94c1cc3526403ba184c369",
+    "input_sha256": "7e162d57c274a3e9573111ac1fbf44a7b6304b8ab97314047170b4231cb2fa34",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-I-16-jp2",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "a80c96ccfecc7ea3acbea9fcd50ff6c6338d58e3d67fad9dd452632b85e7b3ed",
+    "input_sha256": "be8c61fc937418618f71612a289ca23c79add7f890a069358ccf11d2f55601b6",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-I-16-j2k",
+    "mode": "RGBA",
+    "shape": [
+      16,
+      16,
+      4
+    ],
+    "values_sha256": "a80c96ccfecc7ea3acbea9fcd50ff6c6338d58e3d67fad9dd452632b85e7b3ed",
+    "input_sha256": "cf5c69c0558c2740ccf9ec48c4a949d1c7017e940446bd7d73ee35fc1797b6af",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-paletteFalse",
+    "error": "ValueError",
+    "message": "This is not one of the allowed sizes of this image",
+    "warnings": []
+  },
+  {
+    "name": "embedded-icns-paletteTrue",
+    "error": "ValueError",
+    "message": "This is not one of the allowed sizes of this image",
+    "warnings": []
+  },
+  {
+    "name": "stub-wmf-valid-header",
+    "error": "OSError",
+    "message": "cannot find loader for this WMF file",
+    "warnings": []
+  },
+  {
+    "name": "stub-emf-valid-header",
+    "error": "OSError",
+    "message": "cannot find loader for this WMF file",
+    "warnings": []
+  }
+]

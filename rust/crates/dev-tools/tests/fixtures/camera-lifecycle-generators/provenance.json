@@ -1,0 +1,10 @@
+{
+  "capture_script_sha256": "7d73082bb763ed307333b0f73008e70127b4d7b03a063aa1a3cf949792ce3507",
+  "fixture_sha256": {
+    "extract.json": "ee0b706098a3c48d30f4db3bf1d7220549d8dd16115da433331388d64b5fbe3f",
+    "original.json": "27de3ef1bb0c74bca64861a471e12bc57e927963830a18a5800661c7bf105d82",
+    "cli.json": "ce9a62368534def588f34630714d1028f4deca9049a7e186e8c34fe09f494b25"
+  },
+  "capture_policy": "Unchanged originals, actual CLI, explicit original tools import closure; no candidate implementation loaded",
+  "initial_import_failure_run": "Discarded; -P without PYTHONPATH caused loader errors. All committed expected data were replaced by corrected independent recapture."
+}

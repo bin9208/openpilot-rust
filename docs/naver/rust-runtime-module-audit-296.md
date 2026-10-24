@@ -5,6 +5,24 @@ A focused regression or passing package test does not clear all internals of
 that module. [The implementation ledger](rust-runtime-retirement-296.md) owns
 integration/device evidence and the remaining Python-tool inventory.
 
+2026-10-21 follow-up: the parent and a 6 Sol reviewer inspected uploader's
+HTTP/body/source identity, scan and runtime ownership, plus loggerd rotation,
+file ownership and writer drain against the retained original paths. This
+bounded review found no new source-demonstrable defect or justified allocation
+change. Uploader response reads retain the original per-I/O timeout semantics;
+a total request budget would need a separately tested behavioral contract.
+Logger rotation's ready count and preserve-before-drain order match the original.
+No local functional run or new recording/upload device evidence follows.
+
+A later encoder review identified [#447](https://github.com/bin9208/openpilot-rust/issues/447): a fresh owned Vec was allocated for every normal V4L packet before the Cap’n Proto copy. The candidate keeps a reusable owned buffer without exposing DMA references; its copied-byte count, output fingerprints and warm allocation counts are under hosted validation. The initialized high-water storage remains allocated until worker exit. This is a concrete copy-boundary candidate, not a measured vehicle or complete encoder improvement. Codec configuration, EOS, timestamp checks and requeue order are retained. See [the focused record](rust-v4l-packet-scratch-447.md).
+
+Measured host follow-ups are [lagd #429](rust-lagd-masked-allocation-429.md)
+and [messaging #431](rust-messaging-update-allocation-296.md): exact-source
+cloud numerical/semantic fingerprints match while allocator calls and requested
+bytes fall. These receipts do not establish whole-core CPU, peak memory, target
+latency or blanket module clearance. The user will personally check normal
+boot, recording, upload and driving after the final source is delivered.
+
 | Area | Inspected scope and evidence | Remaining scope |
 | --- | --- | --- |
 | runtime-launcher | #298 watchdog ownership; #287 exact native service identity; #290/#297 atomic source/package startup handoff and full host launcher tests | Other startup internals; AGNOS/device restart and permission boundaries remain unvalidated |
@@ -24,8 +42,54 @@ integration/device evidence and the remaining Python-tool inventory.
 | Sensors/model/device | camerad, camerad-runtime, camera-kernel, sensord, locationd, calibrationd, paramsd, torqued, modeld, dmonitoringd, dmonitoringmodeld, model-runtime, hardwared, hardware-control, hardware-info, panda-usb, panda-spi-linux, ublox | Internals not cleared by this audit |
 | Runtime/support/tooling | runtime-core, runtime-installer, runtime-version, process-supervision, managed-entry, manager-catalog, agnos, updated, timed, lagd, monitoring, checkout-status, params, params-typed, cereal, messaging, log-format, jpeg, opencv-runtime, pocketfft, xiaoge, dev-tools | Native docs gate is verified separately; remaining internals and developer-tool conversion remain open |
 
+### Locationd sensor admission (#373, 2026-10-19)
+
+The wire decoder previously rejected short accelerometer/gyroscope vectors
+before the original initialization, timestamp and sensor-source checks could
+ignore them. It now retains a truncated-input tag through those checks; genuinely
+admitted malformed vectors still error, and valid measurements keep their
+existing numerical path. No validity threshold or missing-axis replacement was
+introduced. [Issue #373](https://github.com/bin9208/openpilot-rust/issues/373)
+tracks this defect and the separate camera/calibration admission follow-up.
+
+Independent original captures cover 24 direct cases, 40 loop cases, six first
+initialization cases and two recovery sequences. The initial native regression
+failed two of three tests; all five sensor regression tests now pass, together
+with the complete 17-test locationd package and strict all-target Clippy. A fresh
+native daemon, private Msgq/Params namespace and unavailable executable PATH
+also passed three successive real livePose publications after malformed,
+rejected and valid input batches. The exact executable hash and source captures
+are recorded in `rust/crates/locationd/tests/data/admission-373/README.md`.
+Private logs are `2026-10-18-locationd-tools/sensor-green-final1-*` and
+`sensor-live-final1/proof.json`. These tests establish admission and continued
+host operation; full EKF numerical parity and device acceptance remain separate.
+
+The camera/calibration follow-up also preserves original early rejection before
+shape errors, NaN/bounds policy and late posenet history side effects. Its four
+initial regressions failed before repair. Independent original captures include
+34 admission cases and 29 edge cases; the complete locationd package now passes
+23 tests and strict all-target Clippy. The fresh daemon additionally passed seven
+real livePose publications through the private IPC probe, including rejected and
+valid camera/calibration batches. Exact fixture and executable hashes are in the
+same README; private evidence is `camera-calibration-green1-*` and
+`camera-calibration-live1/proof.json`. No missing measurement is fabricated and
+normal three-axis processing retains its existing numerical path.
+
 No blanket module clearance, complete Python retirement, device boot acceptance,
 loaded-driving acceptance or measured CPU improvement follows from this matrix.
+
+2026-10-18 follow-up source review of crash-reporting and tombstoned found an
+external-command ownership gap tracked in [#363](https://github.com/bin9208/openpilot-rust/issues/363).
+The retrace loop reaps its shell with `try_wait()` before fallible output decoding;
+error cleanup can then send a process-group signal using that already-reaped
+leader's numeric ID. An exited leader with a descendant holding stdout reaches
+the same ownership boundary. Actual owned-process traces reproduced a completed
+`wait4` reap followed by `kill(-group, SIGKILL)`. The fix uses
+`waitid(EXITED|NOHANG|NOWAIT)` and retains the leader until output decoding and
+all required group cleanup are complete, then reaps exactly once. PID reuse,
+unrelated signaling and device impact have not been observed. NativeSdk send/flush and tombstone copy/remove order had no additional
+concrete finding in this bounded source review. This does not clear their
+external transport, SDK teardown or arbitrary descendant behavior.
 
 Docs-Not-Needed: internal engineering coverage record without setting changes.
 
@@ -133,6 +197,18 @@ close signals scan/pair cancellation and joins the owned work. No equivalent
 completed-task accumulation was found in those paths. Agent prompt timeout
 cleanup, pairing/reconnect behavior and actual D-Bus behavior still need their
 own focused review and validation.
+
+2026-10-18 source follow-up inspected Wi-Fi manager task ownership, Athena
+session/proxy ownership and Navd publisher ownership. Wi-Fi drains completed
+operation tasks in its select loop; shutdown signals and joins initialization,
+then aborts and joins operation and D-Bus tasks. Navd's publisher uses a bounded
+one-command channel; its owner closes the sender and joins the worker on drop.
+Athena reaps completed proxy threads on subsequent proxy starts and joins its
+registered session/proxy workers at session shutdown. Follow-up actual-thread
+regressions reproduced detached new workers when registry admission failed;
+the scoped correction and evidence are recorded under #360 below. The Wi-Fi and
+Navd observations remain source inspections only. These checks do not clear
+network protocol, general error recovery, hardware or timing behavior.
 
 Startup UI `network::start` installs one process-lifetime IP monitor behind a
 static mutex, avoiding a new monitor on repeated starts. Its input owner bounds
@@ -589,6 +665,22 @@ remain separate gates.
   cannot be attributed to current device CPU. Preserve existing cache/marker
   behavior if optimizing the independently callable path.
 
+### JSON scalar access without composite allocation (2026-10-18)
+
+`JsonValue::text_eq` and `to_utf8` formerly called `view()` before rejecting a
+nonstring value. Arrays and objects consequently allocated child-view vectors
+and cloned document handles only to discard them. Both accessors now inspect
+the stored node directly. String codepoint comparison, strict UTF-8 conversion,
+lone-surrogate rejection and retained-child ownership remain unchanged.
+
+The standalone probe links the actual log-format library and performs12,000
+accessor calls on six pre-parsed scalar/composite values: allocation calls fell
+from4,000 (RED) to0 (GREEN). It is required after workspace tests alongside the
+existing parser allocation probe. Three log-format integration tests, strict
+all-target Clippy and45 affected CI isolation/disk tests pass. Independent review
+found no actionable issue. This demonstrates host allocation removal, not device
+CPU or driving performance. Logs:2026-10-18-ci-diagnostic-routing/json-*.
+
 ### Inherited contracts deliberately retained
 
 Original controlsd explicitly polls for 15 ms. Torqued intentionally calls its
@@ -606,3 +698,1105 @@ Detailed inspected files and per-module exclusions remain in the five ignored
 `2026-10-14-module-audit-{telemetry,ui-connectivity,controls,device,support}`
 scratch notes. Neither those notes nor this consolidated scope establish
 all-module functional/numerical clearance or measured CPU benefit.
+
+### 2026-10-18 continued proc-stat allocation work
+
+`ProcessStat::parse` collected all trailing stat fields into a growable Vec for
+each process and collector identity recheck. It now reads the required first50
+fields into a stack array, preserving minimum52 total fields, all parsed indexes,
+ignored columns, extra-tail acceptance and owned comm. A standalone host probe
+compiles the production parser unchanged and counts actual allocator calls:
+1,000 records RED6,000 calls -> GREEN1,000 calls (the retained owned process name).
+The probe is a required workspace CI step; extra/truncated/Unicode-whitespace
+regressions were added. The complete runtime-core/proclogd package run passes
+35 tests, including actual Linux sampling, PID-reuse and metadata ownership.
+All-target strict Clippy passes for both packages. The final production-source
+allocation probe still reports 1,000 calls. Logs are in the local
+`2026-10-18-proc-stat-296` scratch directory. This is measured host allocation
+work, not device CPU or drive data. Physical acceptance is user-owned: the user
+confirmed no device is currently available and will test after pulling.
+
+Exact-SHA fast CI on 55464c01 found the new 64 MiB probe reservation missing
+from the disk-policy test's inventory (197 actual versus 196 expected). The
+test now classifies and asserts that reservation separately, retaining all
+179 original ordinary reservation arguments and their hash. All 13 disk guard
+tests pass after the correction. This was a CI accounting failure, not an
+allocation probe or runtime failure.
+
+### Log collector and statistics directory allocation reuse (2026-10-18)
+
+The log collector now moves the first received ZMQ frame into the record buffer
+and appends subsequent frames. A normal single-frame record keeps its original
+allocation; byte order, binary/empty records, level parsing, file emission and
+message publication remain unchanged. Its pointer/capacity regression first
+failed against the former flatten/collect expression and passes after the change.
+Multipart and empty-record cases retain exact byte results.
+
+Stats storage counts directory entries with a fallible fold instead of allocating
+a Vec only to read its length. It still consumes the iterator through the first
+error, checks the file limit before empty metrics and preserves publication order.
+Full logmessaged/statsd package tests pass 27 cases, including existing storage
+failure, full-directory and record formatting/rotation tests; strict all-target
+Clippy and the actual collector build pass. Independent review found no actionable
+issue. This is host allocation evidence, not a measured device CPU reduction.
+
+The newly built collector also passes the unchanged real original/native ZMQ and
+full-cereal comparison: 24 records across retention, rollover-open failure,
+write failure, deep-object publication and the 61-second rotation boundary;
+2,500-file retention and message queue capacities match. Idle SIGINT/SIGTERM
+shutdown, empty-record rejection and invalid CLI paths pass. The pre-existing
+explicit CPython recursion-depth difference remains recorded by the unchanged
+reference suite. Results: local `2026-10-18-logmessage-reuse/native-peers/report.json`.
+
+### qcomgpsd assistance download buffer reuse (2026-10-18)
+
+The assistance downloader now retains its 8,192-byte Vec between response chunks,
+clearing its length before each read. The prior implementation allocated/dropped a
+new Vec for each chunk. Reads, writes, response-limit enforcement, retry/stop and
+partial-file cleanup remain in the same order; no timing, URL or size policy changes.
+The package's ten tests, all-target strict Clippy and actual binary build pass.
+The unchanged original/native assistance comparison passes alternate-server,
+HTTP404, oversized and retry scenarios. An additional 89,619-byte multi-chunk
+comparison passes the same four scenarios and byte output/cleanup checks.
+Independent source review found no issue. This reduces allocations by construction;
+it is not a measured device CPU saving or device download validation.
+
+### Uploader extended-attribute scratch buffer (2026-10-18)
+
+Each uncached file formerly allocated a fresh 65,536-byte getxattr buffer and
+returned that capacity even for a one-byte positive result (the cached clone
+was already compact). XattrCache now reuses one read buffer and returns only the
+actual value bytes. Missing attributes,
+empty/short/long values, errors and cached values remain distinct; explicit
+mark_uploaded invalidation and original stale-cache semantics are preserved.
+One 64KiB scratch allocation is retained per cache after its first read in
+exchange for removing repeated 64KiB allocation/zeroing on cache misses.
+No file selection, upload status, retry or network policy is changed.
+
+All 13 uploader package checks and strict all-target Clippy pass. The unchanged
+original/native gate passes 212 filesystem scenarios, 10,000 backoff decisions,
+32 local HTTP scenarios, RS256/ES256 signing and exact compressed payload bytes.
+The actual uploader with original msgq/full cereal passes the daemon scenarios,
+including upload requests, startup lock cleanup, logging, shutdown and startup
+failures. Source-derived storage/allocation reduction is not a device CPU claim.
+Local evidence: `2026-10-18-uploader-buffer/{gate.log,reference/report.json,daemon.log}`.
+
+### Torque history interpolation scratch (2026-10-18)
+
+Four interpolation calls per accepted pose formerly allocated separate time and
+value vectors from the bounded 100-row history. Two 100-element stack arrays now
+hold those columns, preserving logical VecDeque order and the unchanged NumPy
+search/arithmetic implementation. The maximum added stack scratch is 1,600 bytes
+per lookup; query/result allocation and history retention remain unchanged.
+
+The dedicated allocation regression first observed 1,300 allocations over 100
+poses and then passed at 500 after the change. It uses a wrapped warmed history,
+checks exact returned points and reset behavior. All six torqued tests and strict
+all-target Clippy pass. The unchanged original estimator comparison passes 3,613
+steps / 298,537 packet fields / five expected errors; pre/post native traces are
+byte-identical. The original loop comparison passes 2,250 steps / 1,293,144 packet
+fields and 12 persistence steps / 101,564 persisted fields. Independent source
+review found no actionable issue. No period, fit invocation, interpolation, lag,
+state or control policy changed; device CPU savings remain unmeasured.
+Evidence: `2026-10-18-torque-history/{red.log,green.log,baseline,native,loop}`.
+
+### Journal tag allocation ownership (2026-10-18)
+
+`parse_line` now transfers the decoded SYSLOG_IDENTIFIER byte buffer into its
+published String after the complete JSON message and integer fields have been
+processed. Previously it cloned that buffer. JSON ordering/content, absent/empty
+tags, surrogate rejection, integer conversion and fatal-error order are unchanged.
+No journal child, message validity or logging policy changes.
+
+The first global-allocator probe was rejected by this crate's inherited unsafe
+forbid and was discarded; that is not allocation evidence. The replacement safe
+ownership test observed a missing-helper RED, then confirms pointer/capacity
+identity and original text when the owned buffer moves. All seven journal package
+tests, strict all-target Clippy and daemon build pass. Independent source review
+found no actionable issue. The unchanged actual original/native IPC gate passes
+155 messages and13 recoverable errors per implementation,19 fatal-input cases
+and four child/signal lifecycle scenarios. No CPU saving or device result is claimed.
+Evidence: local `2026-10-18-journal-tag/{red-owner,green,clippy,build,reference}.log`
+and `reference/report.json`. The original comparator remains pending Python tooling.
+
+## Upload ownership and allocation follow-up (2026-10-18)
+
+Source inspection covered `uploader` file selection/xattr caching, dashcam worker
+spawn/cancel/expiry/drop, and the web upload/WebDAV streaming readers. The dashcam
+manager removes completed workers after output EOF, terminates and reaps owned
+children on teardown, and the worker arms a parent-death signal before verifying
+its parent identity. File transport reads bounded chunks; WebDAV detects an early
+EOF and keeps cancellation/progress failures as upload failures. These are source
+findings only, not fresh transport or device acceptance evidence.
+
+The uploader's path-keyed xattr cache retains entries for the process lifetime,
+matching the original implementation and its explicit cache tests. Revalidation
+or eviction would change when external xattr changes become visible; no cache
+policy was changed without that contract review. Multipart diagnostic uploads
+also materialize their body in memory. These remain optimization candidates;
+no measured CPU or memory reduction is claimed from this inspection.
+
+### Multipart duplicate allocation removed (#351)
+
+The subsequent bounded optimization appends each file directly into the retained
+request body, removing the temporary full-file Vec and copy. The complete body
+still exists before HTTP starts and remains rewindable for307/308 redirects;
+file errors still occur before a request. No streaming/timeout/retry policy changed.
+
+For a64MiB synthetic log sent to an owned loopback receiver, fresh child peak RSS
+fell from138,096KiB to76,796KiB (repeat77,268KiB). The receiver checked every payload
+byte, multipart headers/tail and Content-Length67,109,134; the payload hash and
+response matched. This is a host allocation measurement, not device CPU savings.
+All17 package tests, all-target strict Clippy and the unchanged99-case
+original/native HTTP comparator pass, including multipart escaping, missing
+settings, error status and redirects. Scope and exact-SHA CI are tracked in
+[issue351](https://github.com/bin9208/openpilot-rust/issues/351). The Python
+comparison tool remains pending under296.
+
+## Bootlog snapshot xattr buffer reuse (#353)
+
+[The focused #353 record](rust-bootlog-xattr-reuse-353.md) covers the synchronous
+Params snapshot copier. One private lazy scratch pair now replaces repeated
+65,536-byte name/value allocations across recursive copying. Actual filesystem
+regressions retain both pointers/capacities over16files, two directories and
+66attributes while preserving copied bytes, timestamps, modes, symlink behavior
+and failed-snapshot retention. All nine package tests, strict all-target Clippy
+and ten unchanged original/native process/filesystem comparisons pass locally.
+No launcher, detached-worker, cleanup or ignored-errno policy changes. This
+proves focused storage reuse and host behavior; device performance/boot remain
+unvalidated, and the remaining bootlog internals are not cleared by this change.
+
+## Declared CPU model inputs after graph pruning (#355)
+
+The #296 strict driving prefix274 check now reaches a separate CPU artifact
+signature defect: compilation completes, but the unchanged caller cannot write
+`desire_pulse` because the native exporter registers only live input plans.
+Original offline export retains all declared ONNX input bindings independently
+of scheduled calls. This failure occurs before numerical execution, so it does
+not establish prefix equivalence or a device failure. The focused repair must
+preserve unused input names and physical capacities while retaining rejection of
+unknown names, wrong byte lengths and undeclared live inputs.
+
+The focused regression reproduced the missing binding before repair. Registering
+all lowered input plans independently of scheduled liveness now passes both
+offline-binding policies and both memory-planning policies, including F16
+capacity and unchanged output after changing unused bytes. The missing live
+declaration still fails without publishing a bundle. The unchanged actual
+prefix274 comparison passes under LLVM18 and LLVM20 with both memory policies, including
+declared input hashes, defined packed-half input lanes and exact full output.
+Fresh12 terminal,24 producer and48 residual physical-oracle cases also pass
+after the shared padding repair, as does scoped strict Clippy. Independent
+provider-specific indexed captures also pass all24 complete caller comparisons
+and12 physical programs on each provider. The final host gates below extend this focused coverage. Exact-commit CI is
+still pending; issue #355 remains open. This is host evidence only.
+
+The formerly rejected parallel depthwise producer contraction cases now pass
+the unchanged48-case original comparison under both LLVM18 and LLVM20. The
+implementation admits only complete, independently owned producer graphs;
+24 captured ownership cases and144 rejection controls preserve intermediate
+outputs and external-reader boundaries. These focused results do not establish
+whole-model equivalence, A630 behavior, or measured device speedup.
+
+Independent review also found a regression in the uncommitted Concat/Slice
+optimization: a published whole-input slice could eliminate every CPU kernel,
+so compilation rejected an otherwise valid graph. The same independent fixture
+passes on committed `1dbc4860` and failed on the proposed optimization. The CPU
+builder now retains a direct copy only for a published Slice alias of an Input
+or Constant. Computed aliases and the empty-kernel rejection remain unchanged.
+Sixteen input/constant, held/unheld and binding/memory combinations pass over two
+frames, including original signed-zero and NaN payload bytes. Existing alias and
+input-binding regressions and scoped Clippy pass; independent review found no
+remaining blocker in that repair. The final host validation accounts for all 47 model-runtime integration targets,
+the library and four binaries under LLVM18. The first broad run was deliberately
+stopped at a completed target to repair the review finding; the remaining/affected
+34 targets then passed 179 tests. This is cumulative coverage, not a successful
+single uninterrupted command. LLVM20 separately passed all 15 required graph
+targets (70 tests) and ten primitive/provider targets (16 tests). Strict all-target
+Clippy and scoped formatting passed. A freshly built ARM helper produced the
+original Add source and identical genuine A630 binary under QEMU. That one-kernel
+proof does not establish GPU execution or whole-model compilation. Independent
+review accepted the bound-output repair and mandatory LLVM20 CI routing. The
+workflow retains full workspace/original-source checks and requires the pinned
+LLVM20 package and library, with three additional disk guards; all 49 routing
+and disk tests passed. Exact-commit CI and user device acceptance remain open.
+
+## UI lifecycle pixel comparison on CI (#357)
+
+At `1dbc48609d83aac36c42b154a48afd80f2650a86`, the
+[UI/connectivity job](https://github.com/bin9208/openpilot-rust/actions/runs/39108803932/job/117620299293)
+passes the Forms replay checks but fails two lifecycle reference comparisons:
+`unknown-mode` and `profile`. Both rendered images have i64 pixel SHA
+`adcf4f00ab1d7da275c23c2e8e001d0aea44feb44b2af4e3a102f1e752efd229`, while the
+independent original capture requires
+`cad51e8e6a7c57ca8b20faab3140d95be545ca5907cee031175a18aa7f481f31`.
+Four other tests in that target pass. The failure differs from #354's original
+GLFW connection failure. The job's renderer reports Mesa 25.2.8 with llvmpipe
+LLVM20.1.2; this identifies the environment, not the cause. Failed test images
+were held in a temporary directory and are absent from the uploaded artifact.
+[#357](https://github.com/bin9208/openpilot-rust/issues/357) tracks diagnosis,
+evidence retention and correction. Running the unchanged original and native
+reference in the same local graphics context produces identical pixels. Changing
+that context with Mesa's `nosse` setting changes the original raster too, while
+both implementations still agree exactly. This demonstrates that the fixed
+capture hash is not portable; it does not reproduce the exact CI hash or prove
+the CI difference's cause.
+
+The lifecycle regression now replays immutable original drawing commands through
+the same pinned mechanical provider and compares every pixel exactly. All25
+original cases,17PNG traces, source/helper/font hashes, measurement float bits,
+state/exit/file/environment and recording checks remain bound to the independent
+capture. Existing original fixture files are unchanged. Mutation controls reject
+changed calls, order, fonts, measurements, cases, mechanical sources and pixels.
+Failures retain both images, state, command context and process output before
+temporary-directory cleanup.
+
+The first real replay gate exposed an adapter error: exporting while a texture
+target was active incorrectly opened an idle window frame. Both recording cases
+failed the raw protocol's duplicate-frame guard. Tracking texture scope fixes
+that adapter; deliberate duplicate `begin` still rejects, including when the
+helper exits zero. All17 original traces then passed strict protocol and exact
+pixel replay. The full lifecycle target passed14tests, the five-mode test passed
+again under `nosse`, and scoped strict Clippy passed. Independent review found no
+remaining blocker. The five affected shared-adapter suites then passed all 52
+host tests: network 8, render 9, Forms 14, family text 11 and admission 10. All
+providers and test/tool ELFs were frozen and hash-checked before and after the
+real graphics runs; required providers were present, with no optional early exit.
+Scoped strict Clippy also passed for these consumers. Evidence is under
+`.analysis/scratch/2026-10-18-ui-lifecycle-pixel-357/impacted-eRtBSKAB`.
+Exact-commit CI remains pending. No device or full CI acceptance follows from
+these host checks.
+
+### Athena proxy workers remain owned on registration errors (#360)
+
+The proxy start path previously spawned its bridge thread before locking the
+registry and reaping previously finished workers. A poisoned registry or a
+previous worker panic returned an error and dropped the new JoinHandle, leaving
+that live worker outside session-owned shutdown joins. A mechanical extraction
+of the existing ordering enabled actual-thread controls; both error controls
+observed the rejected worker start and failed, while the healthy ownership
+control passed. Each failing control released and observed its worker's drop.
+
+Registry locking and completed-worker checks now precede spawning. The new
+handle is inserted while the same registry guard remains held. Already pending
+workers remain registered, completed workers are reaped, and admission failures
+drop the unstarted closure and its connection resources. Network setup order,
+bridge protocol, poll cadence, priorities and stop behavior remain unchanged.
+All seven Athena library tests and all-target tests pass, followed by strict
+all-target Clippy. Evidence: `.analysis/scratch/2026-10-18-athena-proxy-296/`.
+Independent source/test review found no blocker. Exact committed-SHA CI remains
+required; this is not a whole-module clearance, device result or measured
+performance improvement.
+
+### Application diagnostic window guard and exact source pins (#354)
+
+The `4ed93061` UI/connectivity job stopped before graphics comparisons because
+`build-ui-application-reference` still required the old shared Forms dispatcher
+hash after the failed-window guard landed. Its exact source pin is now updated.
+Review also found the independent `app-window` command had its own unguarded
+`InitWindow` call: an actual raylib test with an absent display reproduced signal
+termination after subsequent font work. The same readiness check now rejects
+that command before setting window ownership; font work reports the existing
+missing-window error and `quit` succeeds.
+
+The original draw corpus and source/environment/provenance captures are unchanged.
+Its mechanical boundary check requires three specifically reviewed current hashes
+(shared guard, application guard and builder pin), with the fourth X11 pin unchanged.
+It does not accept the old unguarded versions. Successful drawing still uses the
+same calls, arguments, state/error checks and exact pixel comparisons.
+
+With the real pinned raylib provider and an owned authenticated Xvfb `-noreset`
+server, all four raw-boundary and fourteen application reference tests passed.
+This includes the failed-display regression, actual XTest input, five original
+modes, twenty environment cases and independent draw replay. Strict scoped Clippy
+passed. Evidence is under `.analysis/scratch/2026-10-18-ui-application-window/`;
+independent review found no blocker. This fixes the observed build-pin failure
+and separate application diagnostic crash; the earlier intermittent display-open
+cause and user device startup remain unverified.
+
+### Uploader cache follows observed file deletion (#361)
+
+Both the original Python xattr helper and native uploader retained historical
+path entries after log deletion. An unchanged-original probe read and removed
+512 actual temporary files and still found 512 cached entries. The native
+regressions likewise failed after deleting whole segments and individual files.
+This is an inherited retention problem, not evidence of a new port regression.
+
+The uploader now reuses its completed directory inventories to remove cache keys
+whose absence is established. Live files keep their existing cached values,
+including external attribute changes; locked or unenumerated directories,
+incomplete root scans, uncertain entries and other roots remain conservative.
+There are no additional per-cache-entry filesystem calls. Substantially oversized
+map storage is released after contraction. A file observed absent and later
+recreated is read afresh: this is an intentional stale-cache correction, recorded
+separately from unchanged source behavior.
+
+All sixteen uploader tests passed, including three new real-filesystem regressions
+covering three generations of 256 entries, capacity contraction, deletion/recreation,
+locked/uncertain roots and preservation of other-root/live entries. Strict all-target
+Clippy passed. A freshly built, frozen native trace binary also passed the original
+212 filesystem scenarios, 10,000 backoff decisions and 32 loopback HTTP cases;
+compressed payloads remain byte-identical and RSA/EC signing checks passed.
+Independent source review found no blocker. Real enumeration errors were not
+injected by the new tests; source inspection verifies failed inventories do not
+prune. Evidence is under `.analysis/scratch/2026-10-18-uploader-cache-review/`.
+
+These checks establish cache entry/capacity reclamation on observed deletion,
+not measured heap bytes, CPU savings, a hard bound during indefinitely unreadable
+directories or device upload acceptance. Exact-SHA CI and user device checks remain
+separate delivery evidence.
+
+### Updater process-group ownership follow-up (#364)
+
+The related source review found `updated::process::NativeCommands::run` reaping
+its command leader with `try_wait` before a numeric process-group signal, followed
+by another unconditional signal in `GroupChild::drop`. The native updater QA
+checker's `Probe::capture`/`OwnedChild::drop` also needs this ordering corrected;
+its separately reported worker-group cleanup requires its own ownership review.
+Tracked in [#364](https://github.com/bin9208/openpilot-rust/issues/364). This is
+source evidence pending actual synthetic reproduction and repair. PID reuse,
+unrelated-process signaling and device impact have not been observed. The examined
+cluster font inventory and recovery reboot owners already retain their leader
+with `WNOWAIT`; they are not included in this finding.
+
+### Tombstone retrace ownership repair evidence (#363)
+
+Both actual regressions fail before the fix: invalid UTF8 output, and cancellation
+after an exited leader leaves a descendant holding stdout. The cancellation
+barrier waits for the owner's actual exit observation, preventing an early-stop
+false positive. After the fix, syscall traces show `WNOWAIT`, the final group
+signal, then exactly one reap; UnicodeDecodeError remains identical to the original.
+The successful path decodes and normalizes output before reaping. Filename argv,
+inherited streams, result/exit mapping and the default30-second deadline are unchanged.
+
+All ten package test entries pass (including the two owner regressions and their
+reexec dispatcher), as do all-target strict Clippy and fresh daemon/example builds.
+The newly sealed binaries pass all242 unchanged original comparisons including
+the30-second timeout, literal-filename safety and native SIGINT/SIGTERM held-command
+cleanup. The actual shutdown cases retain the crash, do not copy/upload it, leave
+no active owned descendants and exit0. The old original SIGINT control's known
+active descendant is still recorded and cleaned by the unchanged validator.
+Existing workspace CI already installs mandatory strace and runs the package;
+no test skip or tolerance was added. A separate full live-daemon/collector gate
+was not inferred from an unverified cached logmessaged binary.
+
+Evidence: `.analysis/scratch/2026-10-18-tombstone-owner-review/FINAL-EVIDENCE.md`,
+`before-after-proof.json`, `native-regression-CYhxdR49/{red,green,clippy,build}.log`
+and `affected-original/receipt.json`. Parent reviewed the exact source diff,
+real pre/post syscall traces and source-bound validation receipts. #364 updater
+ownership work is separate and remains pending. Exact committed-SHA CI and user
+device acceptance remain open.
+
+### Updater process ownership repair evidence (#364, 2026-10-18)
+
+Actual runtime success, nonzero and invalid-UTF8 regressions reproduced the
+pre-fix reap-before-group-signal ordering. The native checker independently
+reproduced three Probe cases and a late signal using a previously reported
+worker group. No PID reuse or unrelated-process impact was observed.
+
+The runtime and checker now observe exit with WNOWAIT, perform final group
+cleanup while the leader remains waitable, reap once and disable subsequent
+Drop signals. The source-pinned fixture's single child worker is verified against
+its still-owned probe's parent/group/session/start identities before acquiring a
+pidfd. Worker cleanup uses that pidfd, never a stale numeric group. A malformed
+report is rejected without signalling its named process; the owned probe receives
+its normal interrupt and four-second cleanup budget.
+
+All20 updater package test entries, nine actual checker ownership entries and six
+existing checker tests pass, with strict Clippy for both packages. The added active
+worker regression proves pidfd termination while the worker is still running;
+normal completion alone would not prove that path. Wrong-parent/wrong-group
+fixtures remain alive after rejection. A freshly built/frozen native checker and
+updater example pass all five unchanged original baseline cases (seven report
+rows), with23 native execs and no Python execution. Merged output/newline behavior,
+nonzero status, Git maintenance environment and both SIGINT leader states remain
+unchanged. The mandatory CI gate supplies the freshly built process-child launcher
+and installs strace; no absence-based skip is permitted. Exact-SHA CI is pending.
+
+Evidence: `.analysis/scratch/2026-10-18-updated-owner-review/FINAL-EVIDENCE.md`,
+`native-gate-mp9BcUdL/{runtime-red,checker-red,runtime-green,checker-final-green}.log`,
+`actual-current/receipt.json` and `final-sources.sha256`. The original baseline hash
+remains `b7a2ed108a17d2010516112b20e491493aace5c26d43bf4d84a135bacc2be752`.
+
+### Git-status command ownership repair evidence (#365, 2026-10-18)
+
+Actual cancellation and eight-second timeout cases reproduced Git-status leader
+reaping before final TERM/KILL signals when a child retained stdout. Cancellation
+waits for the owner's real exit-observation syscall, so an early signal cannot
+produce a false pass. WNOWAIT now retains the leader through pipe draining and
+cancellation cleanup; the final wait disables further group signals. The original
+TERM/grace/KILL policy and output/status handling remain unchanged.
+
+Both actual syscall regressions pass, checking final-signal-before-single-reap,
+no active owned descendant and repository lock release. All24 library entries,
+five actual staged-update scenarios and strict all-target Clippy pass. Freshly
+built/frozen Git-status and process-child executables also pass all27 unchanged
+original scenarios, including Git/fetch timeouts and exited-leader-held-output,
+and both optional queued/active polling cancellation scenarios. Existing0.6-second
+source/native cleanup tolerance is unchanged. This verifies29 differential
+scenarios, not CPU savings or device acceptance. Exact-SHA CI remains pending.
+
+Evidence: `.analysis/scratch/2026-10-18-git-status-owner-review/owner-red.log`,
+`owner-green.log`, `clippy-green.log`, `green.sha256`,
+`full-original-green/result.json` and `poll-original-green/result.json`.
+
+### Startup CI retained-space repair (#367, 2026-10-18)
+
+At `518f1657`, startup prerequisites passed its checkout-tool tests but the next
+disk guard correctly stopped work: free space was24,111,370,240 bytes versus the
+required27,111,981,056 bytes. The initial build disabled incremental compilation,
+but subsequent test steps used default incremental/debug profiles. The job now
+sets incremental=0 and development/test debug=0 for every Cargo invocation,
+matching existing bounded jobs. The25 GiB reserve and all original growth guards
+remain unchanged. No disk exhaustion was observed and no test was removed.
+
+The new native workflow assertion failed on the missing job environment before
+repair. All49 routing/space tests now pass, including the #364 mandatory ownership
+checks. There are251 explicit space guards across30 jobs; all30 now include a
+non-renderer guard. The original177 guard argument hash is unchanged. Full new-SHA
+cloud execution is still required to establish available runner space; a host
+contract check is not a measured cloud disk result. Exact failing job:
+https://github.com/bin9208/openpilot-rust/actions/runs/39127259281/job/117674947599.
+Evidence: `.analysis/scratch/2026-10-18-startup-ci-space/contract-red.log` and
+`contract-final-green.log`. Parent independently reviewed #364 source, its actual
+syscall evidence and native baseline receipt; a separate source review found no
+blocker in #365. Device startup/recording/upload remain user-owned.
+
+### Missing metadata diagnostic transport lifetime (#366, 2026-10-18)
+
+Exact518f1657 telemetry CI lost the missing-build-metadata log although the native
+console emitted its original message. The metadata helper created and dropped a
+new PUSH socket on each error. An independent unchanged Python SocketHandler
+control retained its queued record after emit returned and delivered it when the
+collector bound later. Both native regressions failed before repair: one main
+caller and three short-lived emitting threads, with the original2-second receive
+deadline. This establishes transport lifetime loss, not missing error generation.
+
+The helper now uses a process-retained Python-compatible producer. Only Factory
+and socket connection state enter its mutex; ordinary Rc-backed Logger remains
+neither Send nor Sync. Formatting stays on the caller's thread. The shared
+connection implementation preserves nonblocking send, EINTR/EAGAIN behavior,
+10ms linger, inherited-PID reconnect and closed-socket errors. No sender thread,
+format replacement, production unsafe block or receive-timeout increase was added.
+An outermost-only RuntimeLogScope closes the connection after final diagnostics;
+unused guards initialize nothing. Managed entry, manager, launcher, Athena and
+relevant stream fixtures retain that guard. This is not a guarantee of delivery
+when no collector becomes available before process shutdown, nor arbitrary
+multithreaded-fork safety.
+
+Validation passed:17 existing logging tests, six isolated runtime modes, two
+compile-fail thread-contract docs and both actual metadata lifetime regressions;
+strict all-target logging/version Clippy; affected executable/example boundary
+checks; and all50 workflow routing/space tests. The active scope-drop case proves
+Drop closes the socket before any explicit close. Original comparison with fresh,
+frozen executables passed all171 metadata/Git cases with zero divergences,2472
+exact record packets,20 event packets and four source errors, ordinary/native
+thread contexts, backpressure, console failure, fork and original/native collector
+paths. Actual metadata collection produced one logMessage, one errorLogMessage
+and one disk record with unchanged error content. Causal connect interruption and
+invalid-endpoint controls also passed for both original and native producers.
+
+The telemetry CI job now runs both lifetime tests mandatorily. Its and the startup
+service job's new native checks use bounded incremental/debug profiles;253 guards
+cover31 jobs and the original guard-argument hash is unchanged. Exact committed-SHA
+CI remains required. Device startup, recording and upload are still user-owned.
+Evidence: `.analysis/scratch/2026-10-18-version-log-ci/`, including
+`native-red.log`, `original-control/receipt.json`,
+`producer-gate-9KcbHRBA/FINAL-EVIDENCE.md`, `boundaries-check.log`,
+`ci-contracts-green.log`, `reference-green/manifest.json`,
+`producer-original-green/report.json`, `collector-green/manifest.json` and
+`connect-original-green/result.json`. Separate read-only boundary review found no
+blocker. Other short-lived helper logger sites are explicitly inventoried in
+`boundary-and-ephemeral-review.md`; packet loss there is not inferred as tested.
+
+### Dashcam metadata Git pipe capture (#369, 2026-10-18)
+
+Actual public `metadata::git_text` calls reproduced three failures: a successful
+262144-byte stdout or stderr producer returned the fallback after filling its
+pipe, and a leader that exited while a private descendant held its pipes escaped
+the original four-second deadline. The old loop waited for exit before reading
+either pipe and then used unbounded `wait_with_output`. Four controls (invalid
+stdout/stderr UTF-8, nonzero exit and empty output) already passed.
+
+The helper now reuses process-supervision's bounded concurrent capture, preserving
+the four-second total deadline, status/UTF-8 validation, whitespace handling and
+fallback. It terminates/reaps its direct child on capture failure; it does not
+introduce process-group signaling or claim ownership of arbitrary descendants.
+The regression's outer group owner cleans up its private fixtures while retaining
+its own direct leader until final cleanup.
+
+All seven native cases pass after repair. The unchanged original `git_text`
+function, AST-extracted with its actual subprocess call, independently passes the
+same seven executable fixtures; its held-pipe case returns fallback at4.004s.
+The existing full original metadata comparison passes3184 cases with zero
+mismatches. Dashcam-upload and process-supervision all-target tests, dashcam strict
+all-target Clippy and51 workflow routing/space checks pass. Mandatory support CI
+now runs the new regression;254 guards retain the original177 argument hash.
+Exact committed-SHA CI remains required, and physical upload acceptance belongs
+to the user. Evidence: `.analysis/scratch/2026-10-18-dashcam-git-capture/`, including
+`native-red.log`, `native-green.log`, `original-control.json`, `affected-tests.log`,
+`clippy-final.log`, `ci-contracts.log` and `original-metadata-green/report.json`.
+An independent source review found no blocker; its bounded direct-child scope and
+test-only group ownership are recorded in `sol-image-review.md` there.
+
+### Encoder fixture isolation and startup CI component (#370/#371, 2026-10-18)
+
+Exact ad450fa6 Rust CI run39130502778 reproduced `ETXTBSY` in the encoder
+checker's owned executable-copy identity test. The real mutation/hash assertions
+now run in an isolated re-execution of the immutable test executable, avoiding
+unrelated parallel-test fork inheritance of an open writer. The parent requires
+both successful exit and one executed test. No codec behavior, hash comparison,
+error retry or acceptance rule changes. All eight target-checker tests and strict
+scoped Clippy pass locally.
+
+The same run's startup-services job passed its updater ownership tests but then
+failed because the minimal Rust toolchain lacked cargo-clippy. That step now
+installs the pinned1.94.0 Clippy component before invoking it; workflow regression
+coverage requires this ordering. All51 routing/disk tests pass. The existing254
+disk guards remain. The separate telemetry and startup-prerequisites jobs passed
+on ad450fa6, including the new metadata transport and checkout disk-profile checks.
+These results do not establish a successful complete run or device acceptance.
+The new committed SHA still requires cloud validation. Local logs and downloaded
+failing job logs: `.analysis/scratch/2026-10-18-ad450-ci/`.
+
+### Upload and bookmark owner follow-up (source inspection, 2026-10-18)
+
+Inspected uploader runtime/HTTP/scanner, web-upload folder and WebDAV transfer/
+stream/transport, and feedbackd's main loop. Uploader's logger is retained by its
+runtime owner across scan/upload iterations; its public CLI rejects zero cycle
+counts. Feedbackd likewise retains its logger and publisher across the bookmark
+loop. These sites differ from the reproduced short-lived helper loss in #368;
+no new lifetime defect was established in this inspection.
+
+WebDAV streams bounded64KiB reads, checks cancellation between reads/operations,
+verifies sent length and unchanged file metadata before MOVE, and tracks temporary
+upload cleanup with a local owner. Folder uploads keep their separate original
+chunk/retry/remote-size policy. Uploader compressed bodies still allocate the full
+compressed file, matching its current implementation; streaming that path would
+require preserving Content-Length, seek/replay and redirect behavior. No speculative
+change was made. This source review does not validate remote-service behavior,
+all HTTP edge cases, physical upload acceptance or measured memory/CPU savings.
+
+### Retained helper Logger facade (#368, 2026-10-18)
+
+Real manager default-parameter repair and QCOM assistance injection each lost
+their warning/success record after the helper or short-lived emitting thread
+returned, before a delayed collector connected. All four cases reproduced loss
+with the unchanged2s receive deadline. Independently executed original manager
+all-key default-setting loop and original QCOM injection (including its real retry
+decorator and an owned successful mmcli fixture) delivered the records in both
+modes. Manager still repaired the invalid INT to3 and emitted no duplicate on
+its second pass. These are private host operations, not modem/device tests.
+
+An opt-in `Logger::for_runtime_retained` keeps the existing concrete caller-local
+Logger/context API while sending its already formatted packets through the same
+process-retained Connection as `emit_runtime`. No new sender thread/socket/global
+is introduced. Closing or dropping a facade cannot close another facade's
+transport; only the process-root RuntimeLogScope/close_runtime closes the shared
+connection. Ordinary Logger ownership and nonblocking/error/fork policies remain.
+Only the two reproduced production helper constructors changed.
+
+Nine real ZMQ facade modes,17 existing integration tests, six existing runtime
+producer modes and two compile-fail documentation tests pass. Both metadata modes
+and all four actual helper modes pass; strict all-target Clippy for logging,
+runtime-version, manager and qcomgpsd passes. A fixture's initially16-character
+thread name exceeded Linux comm's15-byte limit; the same shorter operation-log
+name was independently recaptured in both originals and native tests. Production
+metadata and assertion deadlines were not changed to hide this fixture error.
+Mandatory telemetry/platform/GNSS CI now runs these tests;51 routing/disk tests
+pass with257 guards across32 jobs and unchanged original guard arguments.
+Exact committed-SHA cloud checks remain required. Evidence and source hashes:
+`.analysis/scratch/2026-10-18-ephemeral-runtime-logs/facade-green-JhCubJnh/`;
+original controls in sibling `original-manager-qcr9pgwn` and
+`original-qcom-al1tpngb`. Two Carrot Server helper candidates remain unverified
+and unchanged pending actual operation reproduction.
+Independent source review found no blocker in facade ownership, the two actual
+callers, regression cleanup or required CI registration; review source pins are
+in `sol-model-facade-review.md` beside that evidence.
+
+### Pinned zlib SDK download endpoint (#372, 2026-10-18)
+
+The3bc673dd UI/connectivity job117692433833 rejected an11,974-byte response from
+the zlib fossils endpoint against the existing pinned source SHA256. The failed
+body was not retained, so its contents and cause are unproved. Fresh host downloads
+from that URL and the official madler/zlib GitHub v1.3 release were byte-identical
+1,495,873-byte archives with the unchanged required digest
+ff0ba4c292013dbc27530b3a81e1f9a813cd39de01ca5e0f8bf355702efa593e.
+Only the manifest URL changes to that official release asset. Version, archive,
+source bytes, receipts and both checksum validations remain unchanged. Exact new
+SHA remote SDK staging/UI checks remain required; a successful local download is
+not a successful UI build. Evidence: `.analysis/scratch/2026-10-18-zlib-source/` and
+`2026-10-18-ad450-ci/3bc-ui-connectivity.log`.
+
+### Carrot Server request-local diagnostic loss (#368, 2026-10-18)
+
+Actual public upload-health and vision-diagnostic HTTP requests reproduced the
+remaining helper lifetime fault in all four success/upstream-failure modes. Each
+request returned its expected response and emitted the invalid CarName warning
+to stderr, but the collector connecting after request/application/Tokio-worker
+completion received nothing within the unchanged2s deadline. Independent original
+HTTP controls delivered the warnings in all four cases. These controls use owned
+loopback endpoints and private Params; the original vision snapshot is explicitly
+a fixture, so this does not claim whole-snapshot or remote-service equivalence.
+
+Only diagnostic_metadata and dashcam/upload_health now construct the existing
+retained Logger facade. The process-root managed-entry scope already owns shutdown;
+no request-local shutdown, worker thread or socket was added. All four real native
+HTTP cases now deliver exactly one warning with the original message, native helper
+callsite and correct process identity after request completion. Payload/fallback,
+health500, vision502 and successful200 responses remain asserted. No unreachable
+webhook Params keys were registered or changed to manufacture another warning.
+
+All24 Carrot Server library tests, five policy tests and strict all-target Clippy
+pass. The new custom integration target is registered without feature/environment
+skips and runs through the required workspace test gate. Independent source review
+found no blocker in the constructors, owner boundaries or regression. Evidence:
+`.analysis/scratch/2026-10-18-carrot-log-lifetime/` contains native-red-1.log,
+native-green-1.log, affected-tests.log, affected-clippy.log and source-review.md;
+original-http-ip_nnes3/receipt.json preserves the unchanged original controls.
+Exact committed-SHA cloud validation remains required; the user owns device tests.
+
+### Athena context-binding diagnostic lifetime (#368, 2026-10-18)
+
+The public Athena context-binding operation reproduced the same short-lived
+logger loss on both the main thread and a joined worker. A private malformed
+DongleId produced the expected null fallback, metadata and stderr warning, but
+the collector connecting after binding completed received no record within2s.
+Independent unchanged manage_athenad context-binding controls delivered both
+warnings with the existing global context. Those controls use real private
+Params/build metadata and an explicit PC hardware value; they do not execute the
+supervisor loop, remote network or vehicle.
+
+Factory::runtime_logger now creates the existing retained facade from the
+caller's factory, preserving already-bound context. Logger::for_runtime_retained
+delegates to it. Only Athena logging::bind changes its constructor; unverified
+worker-exception candidates remain unchanged. Ordinary factory loggers retain
+their existing ownership, and no additional sender/socket/thread is introduced.
+
+Both public-operation regressions now pass with exact warning, native callsite,
+PID, preexisting context, metadata fallback and no duplicate. All Athena/logging
+tests pass:26 ordinary assertions including the two compile-fail documentation
+tests, plus17 custom lifetime modes. The existing ignored context_child is an
+owned subprocess entrypoint explicitly executed by its two parent tests, not
+an omitted validation. Strict all-target Clippy passes. The new integration
+target runs through the workspace gate without an optional feature or skip.
+Evidence is in `.analysis/scratch/2026-10-18-short-red/athena-*` and
+`2026-10-18-athena-log-lifetime/original-pb89fib6/receipt.json`.
+Exact committed-SHA CI and user device acceptance remain separate gates.
+
+## Upload file consistency follow-up (#388 / #389)
+
+A bounded review inspected uploader transport/source opening, completion marking,
+folder stream completion, WebDAV consistency checks and cancellation/retry cleanup.
+It identified two inherited defects; neither is an observed route incident.
+
+Uploader marks `user.upload` by pathname after transport completes. A real-file
+control of the unchanged original method consumed inode A, renamed it, created B
+at the old path and returned a controlled success. The original marked B even
+though only A was consumed. The current Rust transport/mark boundary has the same
+missing identity binding. [#388](https://github.com/bin9208/openpilot-rust/issues/388)
+requires a native regression and completion tied to the transferred file, while
+preserving existing status and size policies. This original control uses a
+controlled transport response; it is not a full HTTP or native-daemon test.
+
+Ordinary folder upload also accepts only a matching byte count. An actual original
+Python upload to a private loopback HTTP receiver sent a 2 MiB file; after its
+first 1 MiB progress notification the entire file was rewritten at identical
+length. The receiver enforced the declared length, received an A-prefix/B-suffix,
+and the original reported success despite matching neither complete source
+version. Rust FolderUpload lacks the consistency checks already present in its
+WebDAV sibling. [#389](https://github.com/bin9208/openpilot-rust/issues/389) tracks
+a native reproduction and an explicitly stronger changed-source contract.
+Both defects are now reproduced by native integration regressions. Uploader's
+actual HTTP acknowledgement and ignored-response cases both mark the replacement
+inode incorrectly; its unchanged-file control passes. FolderUpload's private
+HTTP receiver actually publishes the mixed same-length body and accepts a source
+pathname replacement. Append and truncate controls already reject their attempts.
+These are two failing uploader tests and two failing folder tests, not merely
+source inspection. A further real-file regression reproduced a same-inode rewrite
+inside the success-log callback, after the first metadata check but before marking.
+
+Uploader now retains the actual body descriptor and its metadata through raw and
+compressed transfers, checks identity before accepting completion, and marks via
+`fsetxattr`. A final held-file check after success logging catches that callback
+boundary; a detected change restores the previous last filename, emits failure
+and leaves the marker unset. The already emitted success event cannot be
+retracted, so this late-change case has success followed by corrective failure.
+Zero/oversize and no-body responses use a nonblocking, nontruncating write-only
+descriptor; they do not acquire a new read-permission requirement. Descriptor-open
+errors use the prior marking-error policy, without claiming identical errors for
+every special-file case. Status200/201/401/403/412 policies remain intact.
+
+FolderUpload retains metadata for its actual opened file and validates the held
+descriptor, current pathname and byte count before returning terminal EOF. A
+detected changed attempt therefore does not send the final HTTP completion chunk;
+the existing retry can reopen a stable version. This is a stronger mutation
+consistency contract, not an atomic snapshot or a lock against concurrent writers.
+
+All47 affected package tests pass, including9 uploader and5 folder regressions;
+strict all-target Clippy, formatting and fresh example builds pass. The unchanged
+original comparisons pass212 filesystem scenarios,10,000 backoff decisions,
+32 uploader HTTP scenarios (RS256/ES256 and exact compressed bytes), and99 web
+upload cases. Frozen example and selected source/input hashes were rechecked.
+The new integration targets run through the existing workspace gate without
+feature flags or environment-based skips. Evidence:
+`2026-10-19-upload-ownership-audit/FINAL-HANDOFF.json`.
+
+No additional cancellation/retry-cleanup defect was established in the inspected
+paths. Exact inspected source identities, unchanged-original controls and native
+regression plans are retained privately under
+`.analysis/scratch/2026-10-19-upload-ownership-audit/`. Exact committed-SHA CI and
+user device/upload acceptance remain separate, outstanding gates.
+
+## Logger shutdown with queued audio (#391)
+
+A real AAC encoder, Matroska muxer and decoder reproduced loss of all buffered
+samples when audio arrived before the video header and shutdown followed without
+another audio call.1023 samples passed;1024,1025 and3585 samples produced no
+decodable audio. The original C++ finish path contains the same missing drain,
+so this intentionally fixes inherited behavior rather than asserting unchanged
+parity for the defective boundary.
+
+`Audio::finish` now drains complete frames before its existing partial-frame
+padding and encoder EOF sequence. Header admission, timestamps, trailer and
+incomplete-recording lock policies are unchanged. The four native regressions
+now pass, checking decoded sample count after excluding AAC priming and requiring
+nonzero signal. All16 loggerd package tests, strict all-target Clippy, formatting
+and a fresh daemon build pass. A fresh unchanged C++ source build also passes
+ordinary audio, queued-audio and flush comparisons with the candidate, including
+media packet/decoded content and raw output/finalization checks.
+
+The first ordinary comparison stopped because the local wheel's FFmpeg lacks
+`framemd5`. It passed with isolated Ubuntu6.1.1 tools and their dependencies;
+comparison assertions were not modified. All16 recorded original source hashes
+match the current #296 checkout. Evidence is
+`2026-10-19-logger-audio-391/FINAL-HANDOFF.json`. The permanent regression uses
+real host audio media; normal device recording and exact committed-SHA CI remain
+separate gates. No recording loss on the user's drive is inferred.
+
+## Stats producer/storage and procfs cache review (2026-10-19)
+
+A bounded source comparison inspected statsd's forked socket ownership,
+nonblocking pressure handling, stop boundaries and temporary-file publication,
+and proclogd's cadence, PID/start-time cache keys, post-read identity checks,
+exit eviction and smaps refresh cycle. No additional concrete defect or measured
+optimization was established. The stats logger remains alive for the daemon
+loop; the earlier short-lived context-binding defect does not apply there.
+Original procfs metadata also discards empty command-line fields.
+
+This was source inspection, not a fresh test run or blanket module clearance.
+Sustained-input flush fairness, full statistics numerical behavior, same-name
+exec metadata freshness and device performance remain unvalidated by this review.
+Exact inspected source hashes and limitations are retained in
+`2026-10-19-stats-proc-review/`.
+
+## Sound playback boundaries and diagnostic backpressure (#392/#393)
+
+The original and native playback loops both retained the first callback-local
+sample offset/repeat count while crossing a clip boundary. A finite clip with
+samples `[1,2,3,4]`, starting at frame2 with five requested samples, incorrectly
+returned `[3,4,3,4,3]`. Four native regressions failed before correction; three
+controls passed. The native loop now recalculates each contiguous span and stops
+at a finite repeat limit. Finite output becomes `[3,4,0,0,0]`; an infinite clip
+continues `[3,4,1,2,3]`. Alert selection, volume, scheduling and checked sample
+counter behavior are preserved. This intentionally fixes inherited behavior.
+
+Separately, a full diagnostic stderr pipe during a language change held the
+playback mutex and stalled the real callback thread in the controlled PortAudio
+ABI fixture. The native regression reproduced12 callbacks before/after the
+blocked interval. Dropping the playback guard before emitting the diagnostic
+keeps callbacks progressing while the same diagnostic remains blocked. The
+permanent test requires three additional callbacks and verifies the language
+message after draining the pipe; it failed before and passed after the one-line
+production change.
+
+All eight soundd tests, strict all-target Clippy, formatting and fresh daemon/
+example builds pass. Six policy scenarios cover846 steps and6,348 bit-exact
+intended samples. The unchanged original captures remain available:1,113 samples
+and27 frame-state rows intentionally differ at the corrected boundary; every
+other source state remains exact. The independent reference emits single samples
+by linear index rather than copying native spans. All seven controlled runtime
+scenarios pass, including live/bounded operation, retries and startup/stop errors.
+Selected27 source pins and frozen binaries were rechecked after the proofs.
+Evidence: `2026-10-19-soundd-392/FINAL-HANDOFF.json` and
+`2026-10-19-sound-lock/permanent-{red,green}.log`.
+No physical audio output or device benefit is established; exact-commit CI and
+the user's device acceptance remain separate.
+
+## Connectivity request and child ownership (#394/#395)
+
+A deterministic native BlueZ regression reproduced an answered handler clearing
+an interactive prompt installed by a newer request. The unchanged Python handler
+also exhibits that ordering. Each native answer now retains an internal owner;
+completion clears only the matching request. Display updates retain their existing
+relationship to an outstanding answer. Respond, Cancel and Release overlap,
+expired answers, sender/target checks and actual 60s prompt/90s pairing deadlines
+remain covered. This intentionally corrects inherited behavior.
+
+Wi-Fi's tether command previously killed only its direct child and could reap
+that leader before cleanup. Two native regressions demonstrated a surviving
+owned descendant with both a live and an exited leader. The command now starts
+an owned session, observes exit with `waitid(NOWAIT)`, terminates the group while
+its leader identity remains reserved, and then reaps. A normal exit 17 control
+also passes. The syscall arguments, five-second activation delay, inherited
+streams and settings order remain unchanged. Tests use private helper processes;
+no host NetworkManager, privileged sysctl or vehicle setting is modified.
+
+Bluetooth's 7 and Wi-Fi's 10 package tests, 17 supervision library tests and its three
+CLI targets pass, together with strict all-target Clippy and formatting. All seven
+unchanged original protocol/policy comparisons pass, including real deadlines.
+The first Wi-Fi original import lacked libzmq; only the remaining two comparisons
+were retried with the existing pinned SDK loader path, without changing assertions.
+Five fresh executables, the Params binding and 132 source hashes remained sealed.
+The existing workspace launcher build now supplies the mandatory test executable;
+the UI connectivity job also requires the affected unit tests and Clippy.
+Evidence: `2026-10-19-connectivity-owner-review/FINAL-HANDOFF.json`.
+Device behavior and measured performance remain separate from these host checks.
+
+## Managed-runtime startup acknowledgement (#396)
+
+Exact-source CI at `e167c37d2d62df62677edbe20c65c1dfb27af9e8` failed one
+managed-runtime test while reading the collector's environment immediately before
+its shell exec. The test found no prefix in `/proc/<pid>/environ`; an unchanged
+local repeat passed 100 times, so the failure is intermittent. The fixture now
+acknowledges its actual inherited prefix with its PID, and the test waits for the
+complete record. It no longer depends on a procfs environment read across exec.
+Real SIGINT, exit 130, five-second cleanup, child reaping, IPC removal and absence
+of a success receipt remain required.
+
+Fresh builds of all seven managed daemons and the checker pass 12 integration and
+two unit tests, strict Clippy and 100 repetitions of the corrected startup test.
+Independent review found no actionable blocker. The 46 CI policy and 13 disk tests
+also pass. CI's workspace budget increases from 150 to 210 minutes: the failed run
+reached this stage at 114 minutes, while the last successful remaining comparison
+and release stages took about 43 minutes. No operation deadline or assertion was
+relaxed. The exact new commit still requires remote CI.
+Evidence: `2026-10-19-managed-startup-ack/`; remote failure:
+https://github.com/bin9208/openpilot-rust/actions/runs/39176145410.
+
+## Wi-Fi snapshot allocation candidate (#397)
+
+`State::snapshot` previously cloned the entire cached snapshot, then discarded
+its cloned networks, saved SSIDs and two derived connection fields. It now
+constructs all nine returned fields directly. Network sorting is unchanged.
+The source patch includes a standalone Rust probe with 46 semantic cases and
+paired allocation counts/requested bytes for 8 and 1,024 networks. Its saved
+native algorithm is a before/after allocation comparator; the independent
+original Wi-Fi policy and protocol comparisons remain mandatory separately.
+
+Under the user's new workflow, this candidate received only local formatting,
+syntax and diff checks. Allocation measurements and behavior validation await
+GitHub Actions; no numerical saving or device improvement is claimed. The CI
+job builds the current Wi-Fi library, requires the probe and retains its output
+with the existing connectivity evidence. This adds two growth guards, bringing
+the current workflow to 338; the new routing assertions also await CI.
+
+At exact SHA `1364e48c96e888fa5d178c5eb2132d135cf30765`, Actions run39190411681
+completed the 46-case snapshot semantic check and the allocation probe. For eight
+snapshots of eight networks, allocator calls fell from 256 to 144 and total
+requested bytes from 10,856 to 5,760. For eight snapshots of 1,024 networks, calls
+fell from 54,672 to 43,720 and requested bytes from 2,574,920 to 1,930,304. Each
+difference exactly matches the separately measured discarded clone work. These
+are host allocator totals, not live memory, CPU timing or device savings. The job
+later failed Bluetooth journal test Clippy before its unchanged Wi-Fi protocol
+comparisons, so whole-job and current-source acceptance remain pending.
+
+## Further bounded source review (2026-10-19, cloud execution pending)
+
+Modem external helper admission, interface output and cancellation paths reveal
+the lifetime gaps tracked in [#398](https://github.com/bin9208/openpilot-rust/issues/398).
+The direct-child cleanup and unbounded blocking waits are inherited; accepting an
+exited helper before its descendants close stdout is a native file-capture
+difference requiring paired reproduction. Private fixtures and a repair are in
+progress. No device reproduction is claimed.
+
+LPA HTTP review covered cookie filtering/order, redirect method/body handling,
+response draining and client ownership. No additional concrete HTTP lifetime
+defect was found in that bounded review. Header construction has avoidable
+intermediate allocations, but no change or measurement is recorded yet.
+
+Lagd source review covered startup cancellation polling, Params writer ownership,
+fixed-length point initialization/reset, stable topic timestamp ordering,
+estimator acceptance and calibration admission against the retained original.
+The inspected reset keeps a prefilled window rather than truncating a partially
+filled queue. No new concrete defect was established. Per-evaluation temporary
+vectors remain an unmeasured optimization candidate; FFT/numerical internals,
+filesystem stall behavior and target operation are not cleared by these reads.
+
+## Resumed cloud failure investigation (2026-10-21)
+
+At `11f3dec4`, Integration passed while Rust and Fast failed. The modem PPP
+cleanup regression is documented in #398; the fixed owner retains successful
+exit status. Jetlink socket cleanup and blocking diagnostics are documented in
+#399 with private baseline/fixed controls. Neither has current fixed execution
+evidence yet.
+
+SDK QA #421 exposed a collection-order gap: reporter and barrier use distinct
+PUSH sockets, while the raw request collected zero required records. The native
+I/O control now requires its crash log before checking the existing backtrace,
+log and Params effects. Failed capture observations are persisted before
+rejection. The original 40-second collection deadline remains.
+
+UI QA adapter #423 called Rust `BufWriter::write` once, accepting a partial frame
+as complete. The adapter now uses `write_all`; the independent generic writer
+policy still ignores an injected successful return count, as the original does.
+A real short-reading child supplies a new old-source failure control. The earlier
+already-exited-child timeout is retained and does not alone establish this cause.
+Cloud RED/GREEN and the unchanged UI lifecycle comparisons remain mandatory.
+
+Cweb-push source review covered pinned in-flight request polling, request-client
+ownership, redirect methods, address/interface admission and stop propagation.
+No additional concrete defect was established in that bounded read. Redirect
+encoding creates avoidable temporary strings but remains an unmeasured candidate;
+this review does not clear HTTP internals or device behavior.
+
+
+## Bounded current cloud results and remaining failures (2026-10-21)
+
+At `edb42bf095d6a3e3b38cc0a4546976dfb710363e`, platform job
+[118816129959](https://github.com/bin9208/openpilot-rust/actions/runs/39477200877/job/118816129959)
+passed the old modem EOF regression, all 15 helper-lifetime checks, strict Clippy
+and its remaining original/native platform comparisons. Telemetry job
+[118816129992](https://github.com/bin9208/openpilot-rust/actions/runs/39477200877/job/118816129992)
+passed the required SDK crash record and full native I/O effects, with the
+subsequent tombstone comparisons. These scoped host results supersede the
+previous pending status for #398/#421; they do not clear every runtime module.
+
+The aggregate Rust run is not green: the new Panda device gate exposed QA-only
+packed-field reference UB (#425) and a native short-help admission difference;
+the Audio late-mutation test required unavailable kernel wait-channel visibility
+(#426). UI's old-source recording regression did not execute because sharing a
+CMake output cache across checkout roots failed before compilation. Sanitizers,
+raw byte comparisons, mutation rejection, deadlines and original CLI controls
+remain required. Repairs and isolated baseline build output are prepared for
+fresh cloud execution. Launcher failed-handshake cleanup (#424) and bridge QA
+late-output identity ownership (#427) are separate source-backed findings with
+focused regressions in preparation. No device startup, recording, upload or
+vehicle acceptance was performed during this pass.
+
+
+The same workspace run stopped at cluster live-profile's immediate proc-task
+assertion (#428), after both repeated owned-close calls succeeded. Source review
+follows Input -> MediaInput -> DecodeWorker and confirms the done notification
+and owned thread join precede true. The test now waits at most one second for
+the exact preexisting task set to reappear, preserving all close, start and
+final equality assertions. This addresses the observer boundary supported by
+Linux/libc exit ordering, not a measured device decoder leak; fresh CI remains
+required. Primary source links and the failing job are recorded in #428.
+
+Installer transport deletion was also traced through its caller: descriptor and
+archive destinations are created inside a fresh private `.pending-*` directory
+under the installation lock, then extracted, verified and activated. The retry
+unlink is therefore not an established deletion of an unrelated caller file in
+that actual install path. No speculative transport change or blanket clearance
+was made from the earlier name-pattern inventory.
+
+
+## Lagd masked-input allocation follow-up (#429)
+
+A bounded source review found two temporary masked-input `Vec<f64>` allocations
+per `Correlator::masked` call. Borrowed, clonable iterators now feed the same
+FFT order and squared-value operations. Existing normalization, rounding,
+buffers and daemon policies are preserved. The deep estimation job measures
+the same probe against pinned `edb42bf0` and the candidate in separate targets;
+it must preserve full-output fingerprints and demonstrate two fewer Rust
+allocations per call. No measurement or device CPU result is claimed yet.
+See [the focused record](rust-lagd-masked-allocation-429.md); other Lagd and
+PocketFFT internals remain outside this bounded review.
+
+
+A further source-only review of Params, params-typed, checkout-status and
+runtime-version found no new demonstrated allocation defect. Runtime-version's
+Git output/status calls inherit the original unbounded waits. Checkout-status
+uses a one-second capture budget and direct-child cleanup; its helper contract
+does not claim arbitrary descendant ownership (the #369 metadata capture record
+states the same boundary). These are remaining external-command review areas,
+not newly proven runtime failures or blanket module clearance. No deadlines,
+process groups, cache behavior or source metadata semantics changed in this review.
+
+
+### Bounded timed, messaging and retained logging review (2026-10-21)
+
+Source review covered timed GPS/timezone admission (`timed/src/runtime.rs`),
+the messaging subscriber receive/update path (`messaging/src/runtime.rs` and
+`state.rs`), and logging's retained producer (`logging/src/producer/runtime.rs`).
+No new runtime bug or basis for changing their policies was demonstrated.
+Messaging's intermediate `Vec` conversion is an allocation candidate tracked
+in [#431](https://github.com/bin9208/openpilot-rust/issues/431); a borrowed route
+and exact old/current cloud probe are prepared. Its benefit remains unmeasured,
+including the possibility that Rust already reuses the consumed allocation.
+The malformed-batch parse boundary, topic/frame semantics and original checks
+must remain intact. This source review and pending optimization do not establish
+module-wide clearance, numerical equivalence, vehicle timing or CPU savings.
+
+
+### Accepted bounded copy measurements and next encoder candidate (2026-10-21)
+
+The prior #447 full encoder run39539787018 checked5bcfae44:70 old packet-scratch
+allocations versus0 after warmup, equal93,220 selected copied bytes, full codec,
+V4L, runtime/IPC comparisons and strict Clippy. This measures only that boundary.
+The prior pending lagd/messaging measurements are resolved in their linked focused
+records; the historical paragraphs above do not imply current pending status.
+
+#448 now removes the separate scratch copy by filling owned Capnp data directly
+from DMA. Complete packet-wire controls and the same-builder allocation/copy
+measurement are added. First cloud tests failed at test queue setup before wire
+construction; a6c3201f uses distinct runtime queue endpoints and reruns the full
+encoder job. This candidate still needs complete cloud evidence and affected ARM
+builds. Neither local source review nor host fixtures establishes hardware VIDC,
+vehicle CPU, camera timing, module-wide optimization or all-module bug clearance.
+
+
+### Accepted #448/#449 hosted bounds, 2026-10-21
+
+#448 a6c3201f/39546722792 passed complete codec/V4L/runtime/IPC and Clippy;
+parent and reviewer verified5codec cases/112packet hashes,32V4L and10runtime
+cases. Selected payload-copy accounting is205400→102700bytes with240→240
+allocations. This supersedes the preceding pending host status, not the pending
+latest ARM/device evidence. See rust-v4l-direct-publication-448.md.
+
+#449 4c876dc7/39550724394 passed the entire support/upload/Params/lifecycle job
+and strict Clippy. Repeated1,000 progress callbacks allocate3,000→2,000 times,
+request303,128→273,128bytes and emit the same fingerprint. Cold costs rise
+4→5calls/475→687bytes. These are bounded Rust allocation observations, not CPU,
+network, peak-memory or device results. See rust-dashcam-progress-allocation-449.md.
+
+A new source-only cweb redirect review confirms per-byte temporary Strings in
+http.rs location encoding. A single owned String is a candidate; preserve all
+256 byte mappings, URL joining, methods, redirect limits and actual HTTP/lifecycle
+comparisons before accepting it. No new runtime bug or measured benefit is claimed.
+
+
+### Accepted cweb allocation boundary and tooling defects (2026-10-21)
+
+#450 source3a90dc52 full hosted run39554813792/job119072003793 passed the entire
+cweb package,20actual HTTP cases,6daemon modes,32policy cases/16,000frames,
+ASan/UBSan and strict Clippy. The isolated exact256-byte mapping probe records
+256,000→1,000 allocations and169,000→0 reallocations over1,000 calls; its
+fingerprint6501791830646170789 is unchanged. This supersedes the preceding
+source-only candidate status. Latest affected ARM and device results remain
+pending; no CPU, peak-memory or whole-module clearance is inferred. See
+[rust-cweb-redirect-allocation-450.md](rust-cweb-redirect-allocation-450.md).
+
+Full CI also exposed a test-helper readiness publication race (#451), corrected
+by closing a private sibling before rename while retaining all pidfd/ownership/
+cleanup deadlines, and a native JSON11 raw-path panic (#452), still pending its
+separate fix. These are specific observed boundaries, not an exhaustive bug audit.
+
+
+### Latest bounded validation checkpoint (2026-10-21)
+
+The full917cd7db PR39567841179 failed QA/workspace checks, while its ARM
+job119114353753 passed at merge checkout a9d151ef1bc4486157d40179b3057644938c62b7.
+That checkout includes #448/#449/#450. Generic and encoder artifacts are parent
+CRC/source/AArch64-audited in the repository retirement evidence ledger. Cweb-push
+is compiled for GNU and musl in that job; no standalone cweb executable identity
+is inferred from the generic archive. Host allocation measurements retain their
+original scope and are not device CPU, timing or module-wide clearance.
+
+Camera QA #456 controlled missing-image RED and the complete camera regression
+now pass39572857596. JSON11 #452 old unified-feature receipt-order RED, all83
+fixed library tests and actual locked-wheel/raw-path comparison pass39614534323.
+Navigation #457 instrumentation passes its full gate but has not explained the
+intermittent pre-child startup barrier failure. Native driving/fault-builder,
+Panda retirement, encoder owned-builder raw-path and safety example #458
+validation continue; original shared comparison dependencies remain explicit.

@@ -1,0 +1,21 @@
+{
+  "run": "https://github.com/bin9208/openpilot-rust/actions/runs/39507901490/job/118921359333",
+  "checked_out_source": "9845db2db390bc904401a3794b723b510e3bef84",
+  "artifact_sha256": "a482e760a8aa8ba41d6c29cf16e029915e48ef654be2a6c5fd778c416ad082a3",
+  "original_input_sha256": "b5eefe42e5f5fb135b71ef50e97a7905d5f41a4d943b7b5e3bcebddf1d0d8166",
+  "original_result_sha256": "b22093907e9c61b51dcccc5eb0026709c50ca037f6638768f6fe1a93dcfa6acc",
+  "original_decoder_output_sha256": "ddbdc78183b07d39e77f61002153c935c32a25becf71601e28f6c94c0c703705",
+  "original_generator_sha256": "66810b7ba9f149785d872ea4f4b5ab8ccdce19d26ba30e065f7fc54f1d388253",
+  "original_checker_sha256": "26e3944e4976fb6936879b1d3202f50074001628abc81b6fe4c87dee02ef3369",
+  "model_source_sha256": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633",
+  "recording_sha256": "e68fb82c2b4927f02c6fc54363ce92fc443893c86e9ae25a006eb8b8dfc0440f",
+  "candidate_sha256": "bdafbae44427bf6bc4ec00a37de0ad09c62b80104fe4831174052158c285aafe",
+  "candidate_executed_for_expectations": false,
+  "original_result": {
+    "cases": 37,
+    "steps": 260012,
+    "tokens": 1024,
+    "source_sha256": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633",
+    "binary_sha256": "bdafbae44427bf6bc4ec00a37de0ad09c62b80104fe4831174052158c285aafe"
+  }
+}

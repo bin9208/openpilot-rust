@@ -1,0 +1,2 @@
+usage: generate_manager_cars.py [-h] [--binding BINDING] [--check] output
+generate_manager_cars.py: error: the following arguments are required: output

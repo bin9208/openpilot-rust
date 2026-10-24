@@ -3,31 +3,35 @@ use openpilot_logging::log_site;
 use serde::Serialize;
 use serde_json::json;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     ffi::{OsStr, OsString},
     fs, io,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
 };
+
+#[cfg(test)]
+mod tests;
 
 pub trait Attributes {
     fn get(&mut self, path: &Path) -> io::Result<Option<Vec<u8>>>;
     fn mark_uploaded(&mut self, path: &Path) -> io::Result<()>;
+    fn mark_uploaded_source(&mut self, path: &Path, source: &fs::File) -> io::Result<()>;
+    /// Drop cached paths only when a completed inventory proves them absent.
+    fn retain_paths(&mut self, _present: &dyn Fn(&Path) -> bool) {}
 }
 #[derive(Default)]
 pub struct XattrCache {
     values: HashMap<PathBuf, Option<Vec<u8>>>,
+    buffer: Vec<u8>,
 }
 impl Attributes for XattrCache {
     fn get(&mut self, path: &Path) -> io::Result<Option<Vec<u8>>> {
         if let Some(value) = self.values.get(path) {
             return Ok(value.clone());
         }
-        let mut buffer = vec![0; 65536];
-        let value = match rustix::fs::getxattr(path, "user.upload", &mut buffer[..]) {
-            Ok(length) => {
-                buffer.truncate(length);
-                Some(buffer)
-            }
+        self.buffer.resize(65536, 0);
+        let value = match rustix::fs::getxattr(path, "user.upload", &mut self.buffer[..]) {
+            Ok(length) => Some(self.buffer[..length].to_vec()),
             Err(rustix::io::Errno::NODATA) => None,
             Err(error) => return Err(error.into()),
         };
@@ -42,6 +46,23 @@ impl Attributes for XattrCache {
             b"1",
             rustix::fs::XattrFlags::empty(),
         )?)
+    }
+    fn mark_uploaded_source(&mut self, path: &Path, source: &fs::File) -> io::Result<()> {
+        self.values.remove(path);
+        Ok(rustix::fs::fsetxattr(
+            source,
+            "user.upload",
+            b"1",
+            rustix::fs::XattrFlags::empty(),
+        )?)
+    }
+    fn retain_paths(&mut self, present: &dyn Fn(&Path) -> bool) {
+        self.values.retain(|path, _| present(path));
+        // Retaining entries alone leaves the historical allocation in place.
+        // Avoid rebuilding a steady-size map on every scan.
+        if self.values.capacity() > self.values.len().saturating_mul(4).max(64) {
+            self.values.shrink_to_fit();
+        }
     }
 }
 #[derive(Debug, Clone, Serialize)]
@@ -92,18 +113,20 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
         if !self.root.is_dir() {
             return Ok(Vec::new());
         }
-        let directories = (|| -> io::Result<Vec<OsString>> {
+        let directories = (|| -> io::Result<_> {
             let mut dirs = Vec::new();
+            let mut entries = HashSet::new();
             for entry in fs::read_dir(&self.root)? {
                 let entry = entry?;
+                entries.insert(entry.file_name());
                 if entry.path().is_dir() {
                     dirs.push(entry.file_name());
                 }
             }
             dirs.sort_by_cached_key(|name| openpilot_deleter::directory_sort_key(name));
-            Ok(dirs)
+            Ok((dirs, entries))
         })();
-        let directories = match directories {
+        let (directories, root_entries) = match directories {
             Ok(dirs) => dirs,
             Err(error) => {
                 self.events.emit(Event::exception(
@@ -121,6 +144,7 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
             .map(|route| route.rsplit('|').next().unwrap_or(""))
             .collect();
         let mut output = Vec::new();
+        let mut inventories: HashMap<OsString, HashSet<OsString>> = HashMap::new();
         for directory in directories {
             let path = self.root.join(&directory);
             let names = fs::read_dir(&path).and_then(|entries| {
@@ -137,6 +161,9 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
             {
                 continue;
             }
+            // Failed/incomplete reads and locked directories stay unknown.
+            // Reuse this scan's complete names; do not add per-cache-entry I/O.
+            inventories.insert(directory.clone(), names.iter().cloned().collect());
             names.sort_by_key(|name| priority(name));
             for name in names {
                 let file = path.join(&name);
@@ -171,6 +198,26 @@ impl<T: Transfer, A: Attributes, S: EventSink> Uploader<T, A, S> {
                 });
             }
         }
+        let root = &self.root;
+        self.attributes.retain_paths(&|path| {
+            let Ok(relative) = path.strip_prefix(root) else {
+                return true;
+            };
+            let mut components = relative.components();
+            let Some(Component::Normal(directory)) = components.next() else {
+                return true;
+            };
+            if !root_entries.contains(directory) {
+                return false;
+            }
+            let Some(files) = inventories.get(directory) else {
+                return true;
+            };
+            match (components.next(), components.next()) {
+                (Some(Component::Normal(file)), None) => files.contains(file),
+                _ => true,
+            }
+        });
         Ok(output)
     }
     pub fn next_file(

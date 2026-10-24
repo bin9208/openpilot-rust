@@ -1,0 +1,638 @@
+{
+  "source_sha256": {
+    "model": "e824b6901a34896cb96631719f9946d1239a17f6a4c673dc471db1f04369b58b",
+    "training": "60a3f7f41d7cb1183749b54d9213dcb0f66c0288daee364bfc1beba22ceb8936"
+  },
+  "cases": [
+    {
+      "kind": "model",
+      "axis": "root",
+      "root": "726f6f742dff",
+      "target": "746172676574",
+      "raylib": "7261796c6962",
+      "evidence": "65766964656e6365",
+      "header": "6f70656e70696c6f742d737461727475702d75692d76616c6964",
+      "cxx": "6c69626378782d76616c69642e726c6962",
+      "commands_hex": [
+        [
+          "727573747570",
+          "72756e",
+          "312e39342e30",
+          "7275737463",
+          "2d2d65646974696f6e3d32303234",
+          "2d2d63726174652d747970653d7374617469636c6962",
+          "424153452f726f6f742dff2f727573742f746f6f6c732f737461727475705f75695f71612f6378785f72756e74696d652e7273",
+          "2d2d65787465726e",
+          "6378783d424153452f726f6f742dff2f7461726765742f646570732f6c69626378782d76616c69642e726c6962",
+          "2d4c",
+          "646570656e64656e63793d424153452f726f6f742dff2f7461726765742f64657073",
+          "2d6f",
+          "424153452f726f6f742dff2f65766964656e63652f6c69626378785f72756e74696d652e61"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d67",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d49424153452f726f6f742dff2f7461726765742f6275696c642f6f70656e70696c6f742d737461727475702d75692d76616c69642f6f75742f6378786272696467652f696e636c756465",
+          "2d49424153452f726f6f742dff2f727573742f6372617465732f737461727475702d75692f6e6174697665",
+          "2d49424153452f726f6f742dff2f7261796c69622f696e636c756465",
+          "424153452f726f6f742dff2f727573742f746f6f6c732f75695f6d6f64656c5f71612f6272696467655f6173616e2e6363",
+          "424153452f726f6f742dff2f727573742f6372617465732f737461727475702d75692f6e61746976652f6272696467652e6363",
+          "424153452f726f6f742dff2f727573742f6372617465732f737461727475702d75692f6e61746976652f7261796c69625f6c6f616465722e6363",
+          "424153452f726f6f742dff2f727573742f6372617465732f737461727475702d75692f6e61746976652f67726170686963732e6363",
+          "424153452f726f6f742dff2f727573742f6372617465732f737461727475702d75692f6e61746976652f65676c2e6363",
+          "424153452f726f6f742dff2f65766964656e63652f6c69626378785f72756e74696d652e61",
+          "2d6c646c",
+          "2d6c70746872656164",
+          "2d6f",
+          "424153452f726f6f742dff2f65766964656e63652f6d6f64656c2d616461707465722d6173616e"
+        ],
+        [
+          "424153452f726f6f742dff2f65766964656e63652f6d6f64656c2d616461707465722d6173616e",
+          "424153452f726f6f742dff2f65766964656e63652f636170747572652e706e67"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"BASE/root-\\udcff/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=BASE/root-\\udcff/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=BASE/root-\\udcff/target/deps\",\n      \"-o\",\n      \"BASE/root-\\udcff/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IBASE/root-\\udcff/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IBASE/root-\\udcff/rust/crates/startup-ui/native\",\n      \"-IBASE/root-\\udcff/raylib/include\",\n      \"BASE/root-\\udcff/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"BASE/root-\\udcff/rust/crates/startup-ui/native/bridge.cc\",\n      \"BASE/root-\\udcff/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"BASE/root-\\udcff/rust/crates/startup-ui/native/graphics.cc\",\n      \"BASE/root-\\udcff/rust/crates/startup-ui/native/egl.cc\",\n      \"BASE/root-\\udcff/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"BASE/root-\\udcff/evidence/model-adapter-asan\"\n    ],\n    [\n      \"BASE/root-\\udcff/evidence/model-adapter-asan\",\n      \"BASE/root-\\udcff/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "model",
+      "axis": "target",
+      "root": "726f6f74",
+      "target": "7461726765742dff",
+      "raylib": "7261796c6962",
+      "evidence": "65766964656e6365",
+      "header": "6f70656e70696c6f742d737461727475702d75692d76616c6964",
+      "cxx": "6c69626378782d76616c69642e726c6962",
+      "commands_hex": [
+        [
+          "727573747570",
+          "72756e",
+          "312e39342e30",
+          "7275737463",
+          "2d2d65646974696f6e3d32303234",
+          "2d2d63726174652d747970653d7374617469636c6962",
+          "424153452f726f6f742f727573742f746f6f6c732f737461727475705f75695f71612f6378785f72756e74696d652e7273",
+          "2d2d65787465726e",
+          "6378783d424153452f726f6f742f7461726765742dff2f646570732f6c69626378782d76616c69642e726c6962",
+          "2d4c",
+          "646570656e64656e63793d424153452f726f6f742f7461726765742dff2f64657073",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d67",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d49424153452f726f6f742f7461726765742dff2f6275696c642f6f70656e70696c6f742d737461727475702d75692d76616c69642f6f75742f6378786272696467652f696e636c756465",
+          "2d49424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e6174697665",
+          "2d49424153452f726f6f742f7261796c69622f696e636c756465",
+          "424153452f726f6f742f727573742f746f6f6c732f75695f6d6f64656c5f71612f6272696467655f6173616e2e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f6272696467652e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f7261796c69625f6c6f616465722e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f67726170686963732e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f65676c2e6363",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61",
+          "2d6c646c",
+          "2d6c70746872656164",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f6d6f64656c2d616461707465722d6173616e"
+        ],
+        [
+          "424153452f726f6f742f65766964656e63652f6d6f64656c2d616461707465722d6173616e",
+          "424153452f726f6f742f65766964656e63652f636170747572652e706e67"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"BASE/root/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=BASE/root/target-\\udcff/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=BASE/root/target-\\udcff/deps\",\n      \"-o\",\n      \"BASE/root/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IBASE/root/target-\\udcff/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IBASE/root/rust/crates/startup-ui/native\",\n      \"-IBASE/root/raylib/include\",\n      \"BASE/root/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/bridge.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/graphics.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/egl.cc\",\n      \"BASE/root/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"BASE/root/evidence/model-adapter-asan\"\n    ],\n    [\n      \"BASE/root/evidence/model-adapter-asan\",\n      \"BASE/root/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "model",
+      "axis": "cxx",
+      "root": "726f6f74",
+      "target": "746172676574",
+      "raylib": "7261796c6962",
+      "evidence": "65766964656e6365",
+      "header": "6f70656e70696c6f742d737461727475702d75692d76616c6964",
+      "cxx": "6c69626378782dff2e726c6962",
+      "commands_hex": [
+        [
+          "727573747570",
+          "72756e",
+          "312e39342e30",
+          "7275737463",
+          "2d2d65646974696f6e3d32303234",
+          "2d2d63726174652d747970653d7374617469636c6962",
+          "424153452f726f6f742f727573742f746f6f6c732f737461727475705f75695f71612f6378785f72756e74696d652e7273",
+          "2d2d65787465726e",
+          "6378783d424153452f726f6f742f7461726765742f646570732f6c69626378782dff2e726c6962",
+          "2d4c",
+          "646570656e64656e63793d424153452f726f6f742f7461726765742f64657073",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d67",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d49424153452f726f6f742f7461726765742f6275696c642f6f70656e70696c6f742d737461727475702d75692d76616c69642f6f75742f6378786272696467652f696e636c756465",
+          "2d49424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e6174697665",
+          "2d49424153452f726f6f742f7261796c69622f696e636c756465",
+          "424153452f726f6f742f727573742f746f6f6c732f75695f6d6f64656c5f71612f6272696467655f6173616e2e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f6272696467652e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f7261796c69625f6c6f616465722e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f67726170686963732e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f65676c2e6363",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61",
+          "2d6c646c",
+          "2d6c70746872656164",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f6d6f64656c2d616461707465722d6173616e"
+        ],
+        [
+          "424153452f726f6f742f65766964656e63652f6d6f64656c2d616461707465722d6173616e",
+          "424153452f726f6f742f65766964656e63652f636170747572652e706e67"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"BASE/root/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=BASE/root/target/deps/libcxx-\\udcff.rlib\",\n      \"-L\",\n      \"dependency=BASE/root/target/deps\",\n      \"-o\",\n      \"BASE/root/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IBASE/root/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IBASE/root/rust/crates/startup-ui/native\",\n      \"-IBASE/root/raylib/include\",\n      \"BASE/root/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/bridge.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/graphics.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/egl.cc\",\n      \"BASE/root/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"BASE/root/evidence/model-adapter-asan\"\n    ],\n    [\n      \"BASE/root/evidence/model-adapter-asan\",\n      \"BASE/root/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "model",
+      "axis": "header",
+      "root": "726f6f74",
+      "target": "746172676574",
+      "raylib": "7261796c6962",
+      "evidence": "65766964656e6365",
+      "header": "6f70656e70696c6f742d737461727475702d75692dff",
+      "cxx": "6c69626378782d76616c69642e726c6962",
+      "commands_hex": [
+        [
+          "727573747570",
+          "72756e",
+          "312e39342e30",
+          "7275737463",
+          "2d2d65646974696f6e3d32303234",
+          "2d2d63726174652d747970653d7374617469636c6962",
+          "424153452f726f6f742f727573742f746f6f6c732f737461727475705f75695f71612f6378785f72756e74696d652e7273",
+          "2d2d65787465726e",
+          "6378783d424153452f726f6f742f7461726765742f646570732f6c69626378782d76616c69642e726c6962",
+          "2d4c",
+          "646570656e64656e63793d424153452f726f6f742f7461726765742f64657073",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d67",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d49424153452f726f6f742f7461726765742f6275696c642f6f70656e70696c6f742d737461727475702d75692dff2f6f75742f6378786272696467652f696e636c756465",
+          "2d49424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e6174697665",
+          "2d49424153452f726f6f742f7261796c69622f696e636c756465",
+          "424153452f726f6f742f727573742f746f6f6c732f75695f6d6f64656c5f71612f6272696467655f6173616e2e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f6272696467652e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f7261796c69625f6c6f616465722e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f67726170686963732e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f65676c2e6363",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61",
+          "2d6c646c",
+          "2d6c70746872656164",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f6d6f64656c2d616461707465722d6173616e"
+        ],
+        [
+          "424153452f726f6f742f65766964656e63652f6d6f64656c2d616461707465722d6173616e",
+          "424153452f726f6f742f65766964656e63652f636170747572652e706e67"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"BASE/root/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=BASE/root/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=BASE/root/target/deps\",\n      \"-o\",\n      \"BASE/root/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IBASE/root/target/build/openpilot-startup-ui-\\udcff/out/cxxbridge/include\",\n      \"-IBASE/root/rust/crates/startup-ui/native\",\n      \"-IBASE/root/raylib/include\",\n      \"BASE/root/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/bridge.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/graphics.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/egl.cc\",\n      \"BASE/root/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"BASE/root/evidence/model-adapter-asan\"\n    ],\n    [\n      \"BASE/root/evidence/model-adapter-asan\",\n      \"BASE/root/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "model",
+      "axis": "raylib",
+      "root": "726f6f74",
+      "target": "746172676574",
+      "raylib": "7261796c69622dff",
+      "evidence": "65766964656e6365",
+      "header": "6f70656e70696c6f742d737461727475702d75692d76616c6964",
+      "cxx": "6c69626378782d76616c69642e726c6962",
+      "commands_hex": [
+        [
+          "727573747570",
+          "72756e",
+          "312e39342e30",
+          "7275737463",
+          "2d2d65646974696f6e3d32303234",
+          "2d2d63726174652d747970653d7374617469636c6962",
+          "424153452f726f6f742f727573742f746f6f6c732f737461727475705f75695f71612f6378785f72756e74696d652e7273",
+          "2d2d65787465726e",
+          "6378783d424153452f726f6f742f7461726765742f646570732f6c69626378782d76616c69642e726c6962",
+          "2d4c",
+          "646570656e64656e63793d424153452f726f6f742f7461726765742f64657073",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d67",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d49424153452f726f6f742f7461726765742f6275696c642f6f70656e70696c6f742d737461727475702d75692d76616c69642f6f75742f6378786272696467652f696e636c756465",
+          "2d49424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e6174697665",
+          "2d49424153452f726f6f742f7261796c69622dff2f696e636c756465",
+          "424153452f726f6f742f727573742f746f6f6c732f75695f6d6f64656c5f71612f6272696467655f6173616e2e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f6272696467652e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f7261796c69625f6c6f616465722e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f67726170686963732e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f65676c2e6363",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61",
+          "2d6c646c",
+          "2d6c70746872656164",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f6d6f64656c2d616461707465722d6173616e"
+        ],
+        [
+          "424153452f726f6f742f65766964656e63652f6d6f64656c2d616461707465722d6173616e",
+          "424153452f726f6f742f65766964656e63652f636170747572652e706e67"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"BASE/root/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=BASE/root/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=BASE/root/target/deps\",\n      \"-o\",\n      \"BASE/root/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IBASE/root/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IBASE/root/rust/crates/startup-ui/native\",\n      \"-IBASE/root/raylib-\\udcff/include\",\n      \"BASE/root/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/bridge.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/graphics.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/egl.cc\",\n      \"BASE/root/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"BASE/root/evidence/model-adapter-asan\"\n    ],\n    [\n      \"BASE/root/evidence/model-adapter-asan\",\n      \"BASE/root/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "model",
+      "axis": "evidence",
+      "root": "726f6f74",
+      "target": "746172676574",
+      "raylib": "7261796c6962",
+      "evidence": "65766964656e63652dff",
+      "header": "6f70656e70696c6f742d737461727475702d75692d76616c6964",
+      "cxx": "6c69626378782d76616c69642e726c6962",
+      "commands_hex": [
+        [
+          "727573747570",
+          "72756e",
+          "312e39342e30",
+          "7275737463",
+          "2d2d65646974696f6e3d32303234",
+          "2d2d63726174652d747970653d7374617469636c6962",
+          "424153452f726f6f742f727573742f746f6f6c732f737461727475705f75695f71612f6378785f72756e74696d652e7273",
+          "2d2d65787465726e",
+          "6378783d424153452f726f6f742f7461726765742f646570732f6c69626378782d76616c69642e726c6962",
+          "2d4c",
+          "646570656e64656e63793d424153452f726f6f742f7461726765742f64657073",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652dff2f6c69626378785f72756e74696d652e61"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d67",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d49424153452f726f6f742f7461726765742f6275696c642f6f70656e70696c6f742d737461727475702d75692d76616c69642f6f75742f6378786272696467652f696e636c756465",
+          "2d49424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e6174697665",
+          "2d49424153452f726f6f742f7261796c69622f696e636c756465",
+          "424153452f726f6f742f727573742f746f6f6c732f75695f6d6f64656c5f71612f6272696467655f6173616e2e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f6272696467652e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f7261796c69625f6c6f616465722e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f67726170686963732e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f65676c2e6363",
+          "424153452f726f6f742f65766964656e63652dff2f6c69626378785f72756e74696d652e61",
+          "2d6c646c",
+          "2d6c70746872656164",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652dff2f6d6f64656c2d616461707465722d6173616e"
+        ],
+        [
+          "424153452f726f6f742f65766964656e63652dff2f6d6f64656c2d616461707465722d6173616e",
+          "424153452f726f6f742f65766964656e63652dff2f636170747572652e706e67"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"BASE/root/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=BASE/root/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=BASE/root/target/deps\",\n      \"-o\",\n      \"BASE/root/evidence-\\udcff/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IBASE/root/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IBASE/root/rust/crates/startup-ui/native\",\n      \"-IBASE/root/raylib/include\",\n      \"BASE/root/rust/tools/ui_model_qa/bridge_asan.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/bridge.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/graphics.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/egl.cc\",\n      \"BASE/root/evidence-\\udcff/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"BASE/root/evidence-\\udcff/model-adapter-asan\"\n    ],\n    [\n      \"BASE/root/evidence-\\udcff/model-adapter-asan\",\n      \"BASE/root/evidence-\\udcff/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "axis": "root",
+      "root": "726f6f742dff",
+      "target": "746172676574",
+      "raylib": "7261796c6962",
+      "evidence": "65766964656e6365",
+      "header": "6f70656e70696c6f742d737461727475702d75692d76616c6964",
+      "cxx": "6c69626378782d76616c69642e726c6962",
+      "commands_hex": [
+        [
+          "727573747570",
+          "72756e",
+          "312e39342e30",
+          "7275737463",
+          "2d2d65646974696f6e3d32303234",
+          "2d2d63726174652d747970653d7374617469636c6962",
+          "424153452f726f6f742dff2f727573742f746f6f6c732f737461727475705f75695f71612f6378785f72756e74696d652e7273",
+          "2d2d65787465726e",
+          "6378783d424153452f726f6f742dff2f7461726765742f646570732f6c69626378782d76616c69642e726c6962",
+          "2d4c",
+          "646570656e64656e63793d424153452f726f6f742dff2f7461726765742f64657073",
+          "2d6f",
+          "424153452f726f6f742dff2f65766964656e63652f6c69626378785f72756e74696d652e61"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d67",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d49424153452f726f6f742dff2f7461726765742f6275696c642f6f70656e70696c6f742d737461727475702d75692d76616c69642f6f75742f6378786272696467652f696e636c756465",
+          "2d49424153452f726f6f742dff2f727573742f6372617465732f737461727475702d75692f6e6174697665",
+          "2d49424153452f726f6f742dff2f7261796c69622f696e636c756465",
+          "424153452f726f6f742dff2f727573742f746f6f6c732f75695f686f6d655f71612f6272696467655f6173616e2e6363",
+          "424153452f726f6f742dff2f727573742f6372617465732f737461727475702d75692f6e61746976652f6272696467652e6363",
+          "424153452f726f6f742dff2f727573742f6372617465732f737461727475702d75692f6e61746976652f7261796c69625f6c6f616465722e6363",
+          "424153452f726f6f742dff2f727573742f6372617465732f737461727475702d75692f6e61746976652f67726170686963732e6363",
+          "424153452f726f6f742dff2f727573742f6372617465732f737461727475702d75692f6e61746976652f65676c2e6363",
+          "424153452f726f6f742dff2f65766964656e63652f6c69626378785f72756e74696d652e61",
+          "2d6c646c",
+          "2d6c70746872656164",
+          "2d6f",
+          "424153452f726f6f742dff2f65766964656e63652f747261696e696e672d616461707465722d6173616e"
+        ],
+        [
+          "424153452f726f6f742dff2f65766964656e63652f747261696e696e672d616461707465722d6173616e",
+          "424153452f726f6f742dff2f6f70656e70696c6f742f73656c6664726976652f6173736574732f747261696e696e67",
+          "424153452f726f6f742dff2f65766964656e63652f636170747572652e706e67"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"BASE/root-\\udcff/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=BASE/root-\\udcff/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=BASE/root-\\udcff/target/deps\",\n      \"-o\",\n      \"BASE/root-\\udcff/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IBASE/root-\\udcff/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IBASE/root-\\udcff/rust/crates/startup-ui/native\",\n      \"-IBASE/root-\\udcff/raylib/include\",\n      \"BASE/root-\\udcff/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"BASE/root-\\udcff/rust/crates/startup-ui/native/bridge.cc\",\n      \"BASE/root-\\udcff/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"BASE/root-\\udcff/rust/crates/startup-ui/native/graphics.cc\",\n      \"BASE/root-\\udcff/rust/crates/startup-ui/native/egl.cc\",\n      \"BASE/root-\\udcff/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"BASE/root-\\udcff/evidence/training-adapter-asan\"\n    ],\n    [\n      \"BASE/root-\\udcff/evidence/training-adapter-asan\",\n      \"BASE/root-\\udcff/openpilot/selfdrive/assets/training\",\n      \"BASE/root-\\udcff/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "axis": "target",
+      "root": "726f6f74",
+      "target": "7461726765742dff",
+      "raylib": "7261796c6962",
+      "evidence": "65766964656e6365",
+      "header": "6f70656e70696c6f742d737461727475702d75692d76616c6964",
+      "cxx": "6c69626378782d76616c69642e726c6962",
+      "commands_hex": [
+        [
+          "727573747570",
+          "72756e",
+          "312e39342e30",
+          "7275737463",
+          "2d2d65646974696f6e3d32303234",
+          "2d2d63726174652d747970653d7374617469636c6962",
+          "424153452f726f6f742f727573742f746f6f6c732f737461727475705f75695f71612f6378785f72756e74696d652e7273",
+          "2d2d65787465726e",
+          "6378783d424153452f726f6f742f7461726765742dff2f646570732f6c69626378782d76616c69642e726c6962",
+          "2d4c",
+          "646570656e64656e63793d424153452f726f6f742f7461726765742dff2f64657073",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d67",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d49424153452f726f6f742f7461726765742dff2f6275696c642f6f70656e70696c6f742d737461727475702d75692d76616c69642f6f75742f6378786272696467652f696e636c756465",
+          "2d49424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e6174697665",
+          "2d49424153452f726f6f742f7261796c69622f696e636c756465",
+          "424153452f726f6f742f727573742f746f6f6c732f75695f686f6d655f71612f6272696467655f6173616e2e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f6272696467652e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f7261796c69625f6c6f616465722e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f67726170686963732e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f65676c2e6363",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61",
+          "2d6c646c",
+          "2d6c70746872656164",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f747261696e696e672d616461707465722d6173616e"
+        ],
+        [
+          "424153452f726f6f742f65766964656e63652f747261696e696e672d616461707465722d6173616e",
+          "424153452f726f6f742f6f70656e70696c6f742f73656c6664726976652f6173736574732f747261696e696e67",
+          "424153452f726f6f742f65766964656e63652f636170747572652e706e67"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"BASE/root/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=BASE/root/target-\\udcff/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=BASE/root/target-\\udcff/deps\",\n      \"-o\",\n      \"BASE/root/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IBASE/root/target-\\udcff/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IBASE/root/rust/crates/startup-ui/native\",\n      \"-IBASE/root/raylib/include\",\n      \"BASE/root/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/bridge.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/graphics.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/egl.cc\",\n      \"BASE/root/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"BASE/root/evidence/training-adapter-asan\"\n    ],\n    [\n      \"BASE/root/evidence/training-adapter-asan\",\n      \"BASE/root/openpilot/selfdrive/assets/training\",\n      \"BASE/root/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "axis": "cxx",
+      "root": "726f6f74",
+      "target": "746172676574",
+      "raylib": "7261796c6962",
+      "evidence": "65766964656e6365",
+      "header": "6f70656e70696c6f742d737461727475702d75692d76616c6964",
+      "cxx": "6c69626378782dff2e726c6962",
+      "commands_hex": [
+        [
+          "727573747570",
+          "72756e",
+          "312e39342e30",
+          "7275737463",
+          "2d2d65646974696f6e3d32303234",
+          "2d2d63726174652d747970653d7374617469636c6962",
+          "424153452f726f6f742f727573742f746f6f6c732f737461727475705f75695f71612f6378785f72756e74696d652e7273",
+          "2d2d65787465726e",
+          "6378783d424153452f726f6f742f7461726765742f646570732f6c69626378782dff2e726c6962",
+          "2d4c",
+          "646570656e64656e63793d424153452f726f6f742f7461726765742f64657073",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d67",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d49424153452f726f6f742f7461726765742f6275696c642f6f70656e70696c6f742d737461727475702d75692d76616c69642f6f75742f6378786272696467652f696e636c756465",
+          "2d49424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e6174697665",
+          "2d49424153452f726f6f742f7261796c69622f696e636c756465",
+          "424153452f726f6f742f727573742f746f6f6c732f75695f686f6d655f71612f6272696467655f6173616e2e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f6272696467652e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f7261796c69625f6c6f616465722e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f67726170686963732e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f65676c2e6363",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61",
+          "2d6c646c",
+          "2d6c70746872656164",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f747261696e696e672d616461707465722d6173616e"
+        ],
+        [
+          "424153452f726f6f742f65766964656e63652f747261696e696e672d616461707465722d6173616e",
+          "424153452f726f6f742f6f70656e70696c6f742f73656c6664726976652f6173736574732f747261696e696e67",
+          "424153452f726f6f742f65766964656e63652f636170747572652e706e67"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"BASE/root/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=BASE/root/target/deps/libcxx-\\udcff.rlib\",\n      \"-L\",\n      \"dependency=BASE/root/target/deps\",\n      \"-o\",\n      \"BASE/root/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IBASE/root/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IBASE/root/rust/crates/startup-ui/native\",\n      \"-IBASE/root/raylib/include\",\n      \"BASE/root/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/bridge.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/graphics.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/egl.cc\",\n      \"BASE/root/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"BASE/root/evidence/training-adapter-asan\"\n    ],\n    [\n      \"BASE/root/evidence/training-adapter-asan\",\n      \"BASE/root/openpilot/selfdrive/assets/training\",\n      \"BASE/root/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "axis": "header",
+      "root": "726f6f74",
+      "target": "746172676574",
+      "raylib": "7261796c6962",
+      "evidence": "65766964656e6365",
+      "header": "6f70656e70696c6f742d737461727475702d75692dff",
+      "cxx": "6c69626378782d76616c69642e726c6962",
+      "commands_hex": [
+        [
+          "727573747570",
+          "72756e",
+          "312e39342e30",
+          "7275737463",
+          "2d2d65646974696f6e3d32303234",
+          "2d2d63726174652d747970653d7374617469636c6962",
+          "424153452f726f6f742f727573742f746f6f6c732f737461727475705f75695f71612f6378785f72756e74696d652e7273",
+          "2d2d65787465726e",
+          "6378783d424153452f726f6f742f7461726765742f646570732f6c69626378782d76616c69642e726c6962",
+          "2d4c",
+          "646570656e64656e63793d424153452f726f6f742f7461726765742f64657073",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d67",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d49424153452f726f6f742f7461726765742f6275696c642f6f70656e70696c6f742d737461727475702d75692dff2f6f75742f6378786272696467652f696e636c756465",
+          "2d49424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e6174697665",
+          "2d49424153452f726f6f742f7261796c69622f696e636c756465",
+          "424153452f726f6f742f727573742f746f6f6c732f75695f686f6d655f71612f6272696467655f6173616e2e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f6272696467652e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f7261796c69625f6c6f616465722e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f67726170686963732e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f65676c2e6363",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61",
+          "2d6c646c",
+          "2d6c70746872656164",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f747261696e696e672d616461707465722d6173616e"
+        ],
+        [
+          "424153452f726f6f742f65766964656e63652f747261696e696e672d616461707465722d6173616e",
+          "424153452f726f6f742f6f70656e70696c6f742f73656c6664726976652f6173736574732f747261696e696e67",
+          "424153452f726f6f742f65766964656e63652f636170747572652e706e67"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"BASE/root/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=BASE/root/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=BASE/root/target/deps\",\n      \"-o\",\n      \"BASE/root/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IBASE/root/target/build/openpilot-startup-ui-\\udcff/out/cxxbridge/include\",\n      \"-IBASE/root/rust/crates/startup-ui/native\",\n      \"-IBASE/root/raylib/include\",\n      \"BASE/root/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/bridge.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/graphics.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/egl.cc\",\n      \"BASE/root/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"BASE/root/evidence/training-adapter-asan\"\n    ],\n    [\n      \"BASE/root/evidence/training-adapter-asan\",\n      \"BASE/root/openpilot/selfdrive/assets/training\",\n      \"BASE/root/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "axis": "raylib",
+      "root": "726f6f74",
+      "target": "746172676574",
+      "raylib": "7261796c69622dff",
+      "evidence": "65766964656e6365",
+      "header": "6f70656e70696c6f742d737461727475702d75692d76616c6964",
+      "cxx": "6c69626378782d76616c69642e726c6962",
+      "commands_hex": [
+        [
+          "727573747570",
+          "72756e",
+          "312e39342e30",
+          "7275737463",
+          "2d2d65646974696f6e3d32303234",
+          "2d2d63726174652d747970653d7374617469636c6962",
+          "424153452f726f6f742f727573742f746f6f6c732f737461727475705f75695f71612f6378785f72756e74696d652e7273",
+          "2d2d65787465726e",
+          "6378783d424153452f726f6f742f7461726765742f646570732f6c69626378782d76616c69642e726c6962",
+          "2d4c",
+          "646570656e64656e63793d424153452f726f6f742f7461726765742f64657073",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d67",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d49424153452f726f6f742f7461726765742f6275696c642f6f70656e70696c6f742d737461727475702d75692d76616c69642f6f75742f6378786272696467652f696e636c756465",
+          "2d49424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e6174697665",
+          "2d49424153452f726f6f742f7261796c69622dff2f696e636c756465",
+          "424153452f726f6f742f727573742f746f6f6c732f75695f686f6d655f71612f6272696467655f6173616e2e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f6272696467652e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f7261796c69625f6c6f616465722e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f67726170686963732e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f65676c2e6363",
+          "424153452f726f6f742f65766964656e63652f6c69626378785f72756e74696d652e61",
+          "2d6c646c",
+          "2d6c70746872656164",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652f747261696e696e672d616461707465722d6173616e"
+        ],
+        [
+          "424153452f726f6f742f65766964656e63652f747261696e696e672d616461707465722d6173616e",
+          "424153452f726f6f742f6f70656e70696c6f742f73656c6664726976652f6173736574732f747261696e696e67",
+          "424153452f726f6f742f65766964656e63652f636170747572652e706e67"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"BASE/root/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=BASE/root/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=BASE/root/target/deps\",\n      \"-o\",\n      \"BASE/root/evidence/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IBASE/root/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IBASE/root/rust/crates/startup-ui/native\",\n      \"-IBASE/root/raylib-\\udcff/include\",\n      \"BASE/root/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/bridge.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/graphics.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/egl.cc\",\n      \"BASE/root/evidence/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"BASE/root/evidence/training-adapter-asan\"\n    ],\n    [\n      \"BASE/root/evidence/training-adapter-asan\",\n      \"BASE/root/openpilot/selfdrive/assets/training\",\n      \"BASE/root/evidence/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    },
+    {
+      "kind": "training",
+      "axis": "evidence",
+      "root": "726f6f74",
+      "target": "746172676574",
+      "raylib": "7261796c6962",
+      "evidence": "65766964656e63652dff",
+      "header": "6f70656e70696c6f742d737461727475702d75692d76616c6964",
+      "cxx": "6c69626378782d76616c69642e726c6962",
+      "commands_hex": [
+        [
+          "727573747570",
+          "72756e",
+          "312e39342e30",
+          "7275737463",
+          "2d2d65646974696f6e3d32303234",
+          "2d2d63726174652d747970653d7374617469636c6962",
+          "424153452f726f6f742f727573742f746f6f6c732f737461727475705f75695f71612f6378785f72756e74696d652e7273",
+          "2d2d65787465726e",
+          "6378783d424153452f726f6f742f7461726765742f646570732f6c69626378782d76616c69642e726c6962",
+          "2d4c",
+          "646570656e64656e63793d424153452f726f6f742f7461726765742f64657073",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652dff2f6c69626378785f72756e74696d652e61"
+        ],
+        [
+          "636c616e672b2b",
+          "2d7374643d632b2b3137",
+          "2d67",
+          "2d6673616e6974697a653d616464726573732c756e646566696e6564",
+          "2d666e6f2d6f6d69742d6672616d652d706f696e746572",
+          "2d49424153452f726f6f742f7461726765742f6275696c642f6f70656e70696c6f742d737461727475702d75692d76616c69642f6f75742f6378786272696467652f696e636c756465",
+          "2d49424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e6174697665",
+          "2d49424153452f726f6f742f7261796c69622f696e636c756465",
+          "424153452f726f6f742f727573742f746f6f6c732f75695f686f6d655f71612f6272696467655f6173616e2e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f6272696467652e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f7261796c69625f6c6f616465722e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f67726170686963732e6363",
+          "424153452f726f6f742f727573742f6372617465732f737461727475702d75692f6e61746976652f65676c2e6363",
+          "424153452f726f6f742f65766964656e63652dff2f6c69626378785f72756e74696d652e61",
+          "2d6c646c",
+          "2d6c70746872656164",
+          "2d6f",
+          "424153452f726f6f742f65766964656e63652dff2f747261696e696e672d616461707465722d6173616e"
+        ],
+        [
+          "424153452f726f6f742f65766964656e63652dff2f747261696e696e672d616461707465722d6173616e",
+          "424153452f726f6f742f6f70656e70696c6f742f73656c6664726976652f6173736574732f747261696e696e67",
+          "424153452f726f6f742f65766964656e63652dff2f636170747572652e706e67"
+        ]
+      ],
+      "receipt": "{\n  \"passed\": true,\n  \"invocations\": [\n    [\n      \"rustup\",\n      \"run\",\n      \"1.94.0\",\n      \"rustc\",\n      \"--edition=2024\",\n      \"--crate-type=staticlib\",\n      \"BASE/root/rust/tools/startup_ui_qa/cxx_runtime.rs\",\n      \"--extern\",\n      \"cxx=BASE/root/target/deps/libcxx-valid.rlib\",\n      \"-L\",\n      \"dependency=BASE/root/target/deps\",\n      \"-o\",\n      \"BASE/root/evidence-\\udcff/libcxx_runtime.a\"\n    ],\n    [\n      \"clang++\",\n      \"-std=c++17\",\n      \"-g\",\n      \"-fsanitize=address,undefined\",\n      \"-fno-omit-frame-pointer\",\n      \"-IBASE/root/target/build/openpilot-startup-ui-valid/out/cxxbridge/include\",\n      \"-IBASE/root/rust/crates/startup-ui/native\",\n      \"-IBASE/root/raylib/include\",\n      \"BASE/root/rust/tools/ui_home_qa/bridge_asan.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/bridge.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/raylib_loader.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/graphics.cc\",\n      \"BASE/root/rust/crates/startup-ui/native/egl.cc\",\n      \"BASE/root/evidence-\\udcff/libcxx_runtime.a\",\n      \"-ldl\",\n      \"-lpthread\",\n      \"-o\",\n      \"BASE/root/evidence-\\udcff/training-adapter-asan\"\n    ],\n    [\n      \"BASE/root/evidence-\\udcff/training-adapter-asan\",\n      \"BASE/root/openpilot/selfdrive/assets/training\",\n      \"BASE/root/evidence-\\udcff/capture.png\"\n    ]\n  ],\n  \"observable\": \"zero exit; ASAN/UBSAN halt-on-error; nonempty real-GL capture\",\n  \"capture_bytes\": 11\n}"
+    }
+  ]
+}

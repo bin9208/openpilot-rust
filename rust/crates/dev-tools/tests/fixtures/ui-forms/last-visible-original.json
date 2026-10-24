@@ -1,0 +1,190 @@
+[
+  {
+    "name": "list-visible-null",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "list",
+      "rect": {
+        "x": 100,
+        "y": 100,
+        "width": 1800,
+        "height": 170
+      },
+      "text": "Shared setting",
+      "frames": 1,
+      "props": {
+        "description": "details",
+        "description_visible": null
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "description_visible": null,
+          "height": 170.0,
+          "right": {
+            "x": 1740.0,
+            "y": 100.0,
+            "width": 160.0,
+            "height": 170.0
+          }
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "0baa6e292e27a8d54ec6cbfc7271295667537f7d784f6cd512beef1bd6a9b0db"
+  },
+  {
+    "name": "list-visible-string",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "list",
+      "rect": {
+        "x": 100,
+        "y": 100,
+        "width": 1800,
+        "height": 170
+      },
+      "text": "Shared setting",
+      "frames": 1,
+      "props": {
+        "description": "details",
+        "description_visible": "yes"
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "description_visible": "yes",
+          "height": 170.0,
+          "right": {
+            "x": 1740.0,
+            "y": 100.0,
+            "width": 160.0,
+            "height": 170.0
+          }
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "3f13d2ac0827570e1d43a0521b08ed624385632aaf76972fda7d254e83367cc1"
+  },
+  {
+    "name": "list-visible-array",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "list",
+      "rect": {
+        "x": 100,
+        "y": 100,
+        "width": 1800,
+        "height": 170
+      },
+      "text": "Shared setting",
+      "frames": 1,
+      "props": {
+        "description": "details",
+        "description_visible": [
+          1
+        ]
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "description_visible": [
+            1
+          ],
+          "height": 170.0,
+          "right": {
+            "x": 1740.0,
+            "y": 100.0,
+            "width": 160.0,
+            "height": 170.0
+          }
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "3f13d2ac0827570e1d43a0521b08ed624385632aaf76972fda7d254e83367cc1"
+  },
+  {
+    "name": "list-visible-mapping",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "list",
+      "rect": {
+        "x": 100,
+        "y": 100,
+        "width": 1800,
+        "height": 170
+      },
+      "text": "Shared setting",
+      "frames": 1,
+      "props": {
+        "description": "details",
+        "description_visible": {}
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "description_visible": {},
+          "height": 170.0,
+          "right": {
+            "x": 1740.0,
+            "y": 100.0,
+            "width": 160.0,
+            "height": 170.0
+          }
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "0baa6e292e27a8d54ec6cbfc7271295667537f7d784f6cd512beef1bd6a9b0db"
+  }
+]

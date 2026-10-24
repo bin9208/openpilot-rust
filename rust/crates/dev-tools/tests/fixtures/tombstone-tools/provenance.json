@@ -1,0 +1,81 @@
+{
+  "scope": "Full unmodified original tombstoned_reference.py subprocesses, including actual Worker constructor and verified original compiled Params binding. All15 pure,17 protocol and7 actual piped-stdin transport controls confirmed. No AST/constructor/stdin replacement in this confirmation. Not full242 or runtime/SDK validation.",
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "source_sha256": {
+    "openpilot/system/tombstoned.py": "a7a5f32535fe7c3a74593b3252366db5ac1c8b43f64837293e1c192f517527a5",
+    "openpilot/system/sentry.py": "fec900bf600e7a714460d8494472d6cc648759abf36ff72b79158bff61135fd8",
+    "openpilot/system/athena/registration.py": "461b5976d0e0ad7849c8096e5372dc3514da24fcd7c1924c97027cdcb62a0924",
+    "openpilot/system/version.py": "69b91ce6fc8fe3b164c4f6c23e9514c89a4b6759043cfb607b733c7e006144d7",
+    "openpilot/common/git.py": "68a68daab8137ba307753b6f1dbc18a4a8c736ed118383800ad6bfd8690140d9",
+    "openpilot/common/utils.py": "b1cc68b63cff1386ba397c0cc527dbb38fb50b154043ffcb066ed7acce65ec83",
+    "rust/tools/check_version_reference.py": "d0ad5fbec23e1ba4a2507ae6dbc68856141d03eda07dadebab3280d5731525d5",
+    "rust/tools/tombstoned_reference.py": "7b647dba322d93e5d2bd9c5692356b10d3f85f2a2e0f9da8b982e05206c8e781",
+    "rust/tools/check_tombstoned_reference.py": "6271ece66356f377357ffc2b37bf3d98fcdb4c8231c8c07f556ed0294c261cd4"
+  },
+  "original_nodes": {
+    "Worker": [
+      50,
+      216
+    ],
+    "main": [
+      219,
+      231
+    ]
+  },
+  "seams": [
+    "Original Worker hardware/path/clock/SDK seams are unchanged from the source reference helper itself.",
+    "Capture invokes that complete helper with explicit #296 PYTHONPATH, private temporary cwd and existing source-verified Params binding.",
+    "Actual byte pipes supply stdin; captured stdout bytes are unmodified. No candidate or constructor/AST/TextIOWrapper seam."
+  ],
+  "counts": {
+    "pure": 15,
+    "protocol": 17,
+    "transport": 7
+  },
+  "artifacts": {
+    "pure-original.json": "a2925b02c09be612c380ef4ba496c0331f0915e298a356aa3b56b0575427dd4c",
+    "protocol-original.json": "7497c77d4ea082bfa4994dfddb71da577de2cb60371de7268b2d38b26cc5023b",
+    "transport-original.json": "f00598341205848d180c2b12542098ee6a20f6cf512f190ff998c5f1997f8421"
+  },
+  "candidate_executed": false,
+  "build_or_install": false,
+  "full_worker_confirmation": {
+    "receipt_sha256": "0a95e56f4b641547419b2328cab1a7f1930049ac9d7d2f43a06c7a86d218b022",
+    "binding_sha256": "fb7d15475f49abc07f17bf704257dd09b2348a116c6b96f90a7495824dbdf02d",
+    "binding_provenance_sha256": "5ee3ff154bbcbdf3ba41d638fe8d2f55a5310322c41d0bd7162c218ee2ca1949",
+    "binding_source_sha256": {
+      "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+      "openpilot/cereal/custom.capnp": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693",
+      "openpilot/cereal/deprecated.capnp": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355",
+      "opendbc_repo/opendbc/car/car.capnp": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda",
+      "openpilot/common/params_pyx.pyx": "a8cc5e5296dd38a012c55b0867c4563f8e320d25960260d897675dd90f0ea544",
+      "openpilot/common/params.cc": "2947645ca30b57d23feeace0e88bead5709c1681dc21359fb1e5a225ca63b187",
+      "openpilot/common/util.cc": "4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a",
+      "openpilot/common/swaglog.cc": "b61e45b8ad799606ba2a78e0b5ee9303a665bad99a67d50f3b7134792bf7ba7c",
+      "openpilot/common/params.h": "47d08fa1987c9150e55d09a2a533a0a115851aadb34bd1a0c82325e0be8726b3",
+      "openpilot/common/params_keys.h": "b8422e8ad2cd74ec3c5750c3e919f6546519d84fabb5f6ec868b5372713b4d7f",
+      "openpilot/common/util.h": "49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea",
+      "openpilot/common/swaglog.h": "bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b",
+      "openpilot/common/timing.h": "66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71",
+      "openpilot/common/version.h": "8d618ada21dcc00618178d67f52c532b95c3eeff0736a9909379a3431e050ba6",
+      "openpilot/common/queue.h": "f7c75c847ae63dfd6e864406e722248540a79908270e85ca2674b43407408fcf",
+      "openpilot/system/hardware/hw.h": "afc36d60417dbaf1683d17f10b32306c1d69f58816a6dad09c8da24484249da7",
+      "openpilot/system/hardware/base.h": "7ef48c160e8e0e5cba3a8f629ac72904900e41be260aee8e4029b5c1a615e3b9",
+      "openpilot/system/hardware/pc/hardware.h": "edee2ab86ca69a3c8f005a823457edfe3a9368703a5583ff0d77b32f8b1e105c"
+    },
+    "capture_script_sha256": "6b7550dfc91760b9449013674a07f3647f1539e7ec33927bc3ce7158eb6f3638",
+    "changed_false_constructor_errors": [
+      "filename-long-unicode",
+      "filename-falsey",
+      "filename-list",
+      "filename-nonempty-map",
+      "filename-path-surrogate",
+      "filename-commit-surrogate",
+      "filename-numeric-stamp"
+    ],
+    "changed_text_stream_expectations": [
+      "two-cr"
+    ],
+    "invalid_prior_capture_provenance_sha256": "ffe73150060f8431cef01ef5e4b5bcec3b08dbb44b3be4553e3d1a7b0a0de447"
+  }
+}

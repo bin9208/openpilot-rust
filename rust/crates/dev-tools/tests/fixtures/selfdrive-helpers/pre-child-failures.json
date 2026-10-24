@@ -1,0 +1,21 @@
+[
+  {
+    "blocked": "input.jsonl",
+    "error": "IsADirectoryError",
+    "calls": 0,
+    "stdout": "",
+    "files": {}
+  },
+  {
+    "blocked": "source.json",
+    "error": "IsADirectoryError",
+    "calls": 0,
+    "stdout": "",
+    "files": {
+      "input.jsonl": {
+        "bytes": 5826651,
+        "sha256": "a2296f9ff86a95c09f353b373c7a62ea66eb97dbad3c1fd1b4238a23c9901bcf"
+      }
+    }
+  }
+]

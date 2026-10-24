@@ -1,0 +1,3 @@
+#!/bin/sh
+# Immutable exec boundary; the per-test body is read-only data, never exec'ed.
+exec /bin/sh "$MANAGED_RUNTIME_FIXTURE_BODY" "$@"

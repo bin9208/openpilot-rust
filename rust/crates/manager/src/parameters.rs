@@ -7,7 +7,7 @@ pub trait Parameters {
     fn clear(&self, flags: u32) -> Result<(), Error>;
     fn cast_failed(&self, info: &KeyInfo, value: &[u8]) -> Result<(), Error> {
         crate::diagnostics::cast_failed(
-            &mut openpilot_logging::producer::Factory::for_runtime()?.logger(),
+            &mut openpilot_logging::producer::Logger::for_runtime_retained()?,
             info,
             value,
         )

@@ -6,6 +6,13 @@ rust-version.workspace = true
 license.workspace = true
 publish = false
 
+[features]
+command-owner-tests = []
+
+[[test]]
+name = "command_owner"
+required-features = ["command-owner-tests"]
+
 [lints]
 workspace = true
 

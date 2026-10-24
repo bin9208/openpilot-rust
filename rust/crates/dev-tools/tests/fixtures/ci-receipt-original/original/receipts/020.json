@@ -1,0 +1,67 @@
+{
+  "after": [
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVy"
+    },
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVyL3BsYW5uZXItb3JpZ2luYWw="
+    },
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVyL3BsYW5uZXItb3JpZ2luYWwvcGFyYW1z"
+    },
+    {
+      "mode": 33188,
+      "path_b64": "cnVubmVyL3BsYW5uZXItb3JpZ2luYWwvcGFyYW1zL3Byb3ZlbmFuY2UuanNvbg==",
+      "sha256": "58876adba41bb928751fad7898ca68be6c653f459f5960b47227497ca6e03476",
+      "size": 14
+    }
+  ],
+  "argv_b64": [
+    "L3Vzci9iaW4vcHl0aG9u",
+    "LVA=",
+    "LWM=",
+    "aW1wb3J0IGpzb24sb3M7IGZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aDsgcD1QYXRoKG9zLmVudmlyb25bIlJVTk5FUl9URU1QIl0pLyJwbGFubmVyLW9yaWdpbmFsL3BhcmFtcy9wcm92ZW5hbmNlLmpzb24iOyBwcmludCgiUExBTk5FUl9QQVJBTVNfQklORElORz0iK2pzb24ubG9hZHMocC5yZWFkX3RleHQoKSlbIm1vZHVsZSJdKQ=="
+  ],
+  "before": [
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVy"
+    },
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVyL3BsYW5uZXItb3JpZ2luYWw="
+    },
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVyL3BsYW5uZXItb3JpZ2luYWwvcGFyYW1z"
+    },
+    {
+      "mode": 33188,
+      "path_b64": "cnVubmVyL3BsYW5uZXItb3JpZ2luYWwvcGFyYW1zL3Byb3ZlbmFuY2UuanNvbg==",
+      "sha256": "58876adba41bb928751fad7898ca68be6c653f459f5960b47227497ca6e03476",
+      "size": 14
+    }
+  ],
+  "boundary_nonstring_prefix": false,
+  "caller": "00",
+  "capture_runner_b64": "L2hvbWUvcnVubmVyL3dvcmsvX3RlbXAvY2ktcmVjZWlwdC1zb3VyY2Uvb3JpZ2luYWwvd29yay8wMjAtbW9kdWxlLWVtcHR5LXN0cmluZy9ydW5uZXI=",
+  "env": "PLANNER_PARAMS_BINDING",
+  "error_class": null,
+  "glob_order_b64": [],
+  "name": "module-empty-string",
+  "op": "module",
+  "setup": {
+    "entries": [],
+    "input_relative": "planner-original/params/provenance.json",
+    "kind": "file",
+    "payload_b64": "eyJtb2R1bGUiOiAiIn0=",
+    "raw_root": false
+  },
+  "status": 0,
+  "stderr_b64": "",
+  "stdout_b64": "UExBTk5FUl9QQVJBTVNfQklORElORz0K",
+  "unchanged": true
+}

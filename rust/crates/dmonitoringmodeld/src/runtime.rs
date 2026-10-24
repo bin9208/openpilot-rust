@@ -63,6 +63,33 @@ impl<'a> DriverRuntime<'a> {
     /// The catalog must contain trusted, immutable native kernels satisfying
     /// the CPU/QCOM model load contracts for the entire runtime lifetime.
     pub unsafe fn load(bundle: &'a Bundle, priority: u8) -> Result<Self, Error> {
+        // SAFETY: preserves this method's trusted immutable kernel contract.
+        unsafe { Self::load_inner(bundle, priority, None) }
+    }
+
+    /// # Safety
+    /// All of `load`'s requirements apply. The supplied admission must come from
+    /// independently authenticated original/current issuer evidence, never from
+    /// the model's own certificate. Host ISA is checked before native loading.
+    pub unsafe fn load_cached(
+        bundle: &'a Bundle,
+        priority: u8,
+        admission: &openpilot_model_runtime::cached_code::Admission,
+    ) -> Result<Self, Error> {
+        // SAFETY: the explicit caller supplies both contracts above.
+        unsafe { Self::load_inner(bundle, priority, Some(admission)) }
+    }
+
+    unsafe fn load_inner(
+        bundle: &'a Bundle,
+        priority: u8,
+        admission: Option<&openpilot_model_runtime::cached_code::Admission>,
+    ) -> Result<Self, Error> {
+        if (bundle.backend == "cpu-cached-llvm") != admission.is_some() {
+            return Err(Error::Contract(
+                "cached backend requires explicit matching admission",
+            ));
+        }
         if bundle.descriptor.kind != Kind::Driver {
             return Err(Error::Contract("driver daemon requires a driver bundle"));
         }
@@ -83,6 +110,14 @@ impl<'a> DriverRuntime<'a> {
         let model = match bundle.backend.as_str() {
             // SAFETY: the caller guarantees immutable trusted kernels and buffers.
             "cpu-clang" | "cpu-llvm" => Backend::Cpu(unsafe { CpuModel::load(&bundle.directory) }?),
+            // SAFETY: the explicit caller authenticates original/current and
+            // immutable kernels; load_cached rechecks the actual host before dlopen.
+            "cpu-cached-llvm" => Backend::Cpu(unsafe {
+                CpuModel::load_cached(
+                    &bundle.directory,
+                    admission.ok_or(Error::Contract("cached admission absent"))?,
+                )
+            }?),
             // SAFETY: the caller guarantees the QCOM kernel memory contract.
             "qcom-cl" => Backend::Qcom(unsafe { QcomModel::load(&bundle.directory, priority) }?),
             _ => return Err(Error::Contract("unsupported driver backend")),

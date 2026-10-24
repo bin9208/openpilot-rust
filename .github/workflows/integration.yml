@@ -1,5 +1,5 @@
 name: Integration
-on:
+'on':
   pull_request:
     branches: [dev, main]
   push:
@@ -9,7 +9,8 @@ permissions:
   contents: read
 concurrency:
   group: integration-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
+  queue: max
 jobs:
   build:
     uses: ./.github/workflows/tests.yaml
@@ -34,7 +35,9 @@ jobs:
           NAVIGATION: ${{ needs.navigation.result }}
           APK: ${{ needs.apk.result }}
           JETLINK: ${{ needs.jetlink.result }}
+          SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
+          test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
           test "$BUILD" = success
           test "$NAVIGATION" = success
           test "$APK" = success

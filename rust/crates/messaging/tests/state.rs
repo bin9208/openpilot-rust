@@ -3,6 +3,23 @@ use openpilot_messaging::{
     state::{Options, State},
 };
 
+fn event(name: &str, timestamp: u64) -> Vec<u8> {
+    let mut message = capnp::message::Builder::new_default();
+    let mut root = message.init_root::<openpilot_cereal::log_capnp::event::Builder<'_>>();
+    root.set_valid(true);
+    root.set_log_mono_time(timestamp);
+    match name {
+        "carState" => {
+            root.init_car_state();
+        }
+        "deviceState" => {
+            root.init_device_state();
+        }
+        _ => unreachable!(),
+    }
+    capnp::serialize::write_message_to_words(&message)
+}
+
 #[test]
 fn radar_ranges_and_conflated_poll_rates_match_source() {
     for frequency in [14.0, 16.0, 20.0, 25.0] {
@@ -77,4 +94,30 @@ fn oversized_segment_header_is_rejected_before_state_advances() {
         matches!(error, openpilot_messaging::state::Error::Cereal(error) if matches!(error.kind, capnp::ErrorKind::MessageTooLarge(100)))
     );
     assert_eq!(state.frame(), -1);
+}
+
+#[test]
+fn borrowed_batch_preserves_all_or_nothing_parse_and_topic_updates() {
+    let mut state = State::new(&["carState", "deviceState"], Options::default()).unwrap();
+    let car = event("carState", 11);
+    let device = event("deviceState", 22);
+    let malformed = [0_u32.to_le_bytes(), 100_u32.to_le_bytes()].concat();
+    assert!(state
+        .update_with_clock([car.as_slice(), malformed.as_slice()], || 1.0)
+        .is_err());
+    assert_eq!(state.frame(), -1);
+    assert!(!state.topic("carState").unwrap().seen);
+    assert!(!state.topic("deviceState").unwrap().seen);
+
+    state
+        .update_with_clock([car.as_slice(), device.as_slice()], || 2.0)
+        .unwrap();
+    assert_eq!(state.frame(), 0);
+    for (name, timestamp) in [("carState", 11), ("deviceState", 22)] {
+        let topic = state.topic(name).unwrap();
+        assert!(topic.seen && topic.updated && topic.valid);
+        assert_eq!(topic.log_mono_time, timestamp);
+        assert_eq!(topic.receive_frame, 0);
+        assert_eq!(topic.receive_time, 2.0);
+    }
 }

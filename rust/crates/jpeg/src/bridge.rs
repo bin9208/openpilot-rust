@@ -1,5 +1,11 @@
 #[cxx::bridge(namespace = "openpilot_jpeg")]
 pub(crate) mod ffi {
+    struct Decoded {
+        width: u32,
+        height: u32,
+        components: u32,
+        pixels: Vec<u8>,
+    }
     struct Layout {
         width: u32,
         height: u32,
@@ -22,6 +28,7 @@ pub(crate) mod ffi {
         ) -> Result<Vec<u8>>;
         fn encode(rgb: &[u8], width: u32, height: u32) -> Result<Vec<u8>>;
         fn encode_with(pixels: &[u8], layout: Layout, quality: u8) -> Result<Vec<u8>>;
+        fn decode(bytes: &[u8], max_pixels: u64) -> Result<Decoded>;
     }
 }
 

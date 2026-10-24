@@ -1,0 +1,13 @@
+{
+  "source_sha256": "4641d2e73a12c476a67b418210148a54e178129b94abf65b968a107f302b1920",
+  "probe_capture_sha256": "77ab0e6745cb64af10d56ff09f3a9a530fe766b7888a41fa8d7fea67af093728",
+  "capture_scripts_sha256": {
+    "capture-original.py": "cc7c6b02717aacb1d4c574394cde08faa84556e5117afe6443ee0c2bc621547f",
+    "capture-failures.py": "e98ccd9d623fcd6ed11e7426a817f5d66e7612dde76de20d79d7e4420283f727"
+  },
+  "corpora": {
+    "policy-original.json": "fc5b488cfc50100279e2f348a9fdf7d4ac208459381630eb3283f6fea31ab2c8",
+    "cli-original.json": "d4b39b141d8179328bab71263fff5fbbaed0bf1e8d86e77f9dc23e1e0741e346",
+    "failures-original.json": "e2609ff8ede9e6a246e89b5cdd43217c70e98ef3a2f10d0e6660b7a67e41a0f6"
+  }
+}

@@ -1,0 +1,556 @@
+//! Runs owned upload HTTP and multipart effects against sealed original-only
+//! observations. The hosted controller capture is independent fixture data.
+
+use super::{upload_wire, HttpPeer, OwnedServer, Pin, Result, ScriptedHttpPeer};
+use crate::qa_process::{CommandSpec, NativeRunner, Runner};
+use crate::recovery_exec_audit::CreatedProgramGuard;
+use rustix::process::Signal;
+use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
+use std::{
+    ffi::OsString,
+    fs,
+    net::{IpAddr, Ipv4Addr, TcpListener, UdpSocket},
+    os::unix::fs::{symlink, PermissionsExt},
+    path::Path,
+    time::Duration,
+};
+
+pub struct UploadFrozenConfig<'a> {
+    pub repository: &'a Path,
+    pub source_server: &'a Path,
+    pub candidate: &'a Path,
+    pub actions_binary: &'a Path,
+    pub process_child: &'a Path,
+    pub output: &'a Path,
+}
+
+struct UploadNativeInputs<'a> {
+    repository: &'a Path,
+    candidate: &'a Path,
+    actions_binary: &'a Path,
+    process_child: &'a Path,
+    output: &'a Path,
+}
+
+fn seed_frozen_params(root: &Path, captured_source: &Value) -> Result<()> {
+    let session = &captured_source["source_requests"][0];
+    if session["path"] != "/api/v1/session" {
+        return Err("frozen upload source session request changed".into());
+    }
+    let params = root.join("params/d");
+    fs::create_dir_all(&params)?;
+    for (key, field, value) in [
+        ("CarName", "car_name", "owned 차량"),
+        ("GitBranch", "git_branch", "feature/owned"),
+        ("GithubUsername", "github_id", "owned"),
+        ("GitRemote", "git_remote", "git@github.com:owned/repo.git"),
+        ("GitCommit", "git_commit", "0123456789abcdef"),
+        ("DongleId", "dongle_id", "owned-device"),
+        ("HardwareSerial", "device_serial", "owned-serial"),
+    ] {
+        if session["body"][field] != value {
+            return Err(format!("frozen upload source Params field changed: {field}").into());
+        }
+        fs::write(params.join(key), value)?;
+    }
+    symlink("params", root.join("fixture-params"))?;
+    Ok(())
+}
+
+// The original capture and replay ran on different hosts. Only the UDP-selected
+// private IPv4 in these three metadata fields is host-dependent; all remaining
+// request bytes and field order are still compared against the original.
+fn projected_requests(requests: &[Value]) -> Result<(Vec<Value>, Option<String>)> {
+    let mut projected = requests.to_vec();
+    let mut selected_ip: Option<String> = None;
+    for request in &mut projected {
+        let path = request["path"]
+            .as_str()
+            .ok_or("missing upload request path")?
+            .to_owned();
+        let body = request
+            .get_mut("body")
+            .ok_or("missing upload request body")?;
+        let field = if path == "/api/v1/session" {
+            body.as_object_mut()
+                .and_then(|fields| fields.get_mut("local_ip"))
+        } else if matches!(path.as_str(), "/api/v1/tmux/upload" | "/logs") {
+            body.as_array_mut()
+                .and_then(|parts| parts.iter_mut().find(|part| part["name"] == "local_ip"))
+                .and_then(|part| part.get_mut("text"))
+        } else {
+            None
+        };
+        if let Some(field) = field {
+            let raw = field.as_str().ok_or("invalid upload local_ip field")?;
+            let ip: Ipv4Addr = raw.parse()?;
+            if !ip.is_private() || selected_ip.as_deref().is_some_and(|old| old != raw) {
+                return Err("upload metadata local_ip changed within one replay".into());
+            }
+            selected_ip = Some(raw.to_owned());
+            *field = Value::String("<private-ip>".into());
+        }
+    }
+    Ok((projected, selected_ip))
+}
+
+fn requests_match_with_route(
+    expected: &[Value],
+    observed: &[Value],
+    route_ip: &str,
+) -> Result<bool> {
+    let (source, source_ip) = projected_requests(expected)?;
+    let (native, native_ip) = projected_requests(observed)?;
+    Ok(source == native
+        && source_ip.is_some() == native_ip.is_some()
+        && native_ip.as_deref().is_none_or(|ip| ip == route_ip))
+}
+
+fn current_route_ip() -> Result<String> {
+    let socket = UdpSocket::bind("0.0.0.0:0")?;
+    socket.connect("8.8.8.8:80")?;
+    match socket.local_addr()?.ip() {
+        IpAddr::V4(ip) if ip.is_private() => Ok(ip.to_string()),
+        _ => Err("recovery upload route has no private IPv4 address".into()),
+    }
+}
+
+fn requests_match_original(
+    expected: &[Value],
+    observed: &[Value],
+) -> Result<(bool, Option<String>)> {
+    let route_ip = if expected.is_empty() {
+        None
+    } else {
+        Some(current_route_ip()?)
+    };
+    Ok((
+        requests_match_with_route(expected, observed, route_ip.as_deref().unwrap_or_default())?,
+        route_ip,
+    ))
+}
+
+fn missing_file_result_matches(source: &Value, native: &Value, owned_file: &Path) -> bool {
+    const PREFIX: &str = "tmux log read failed: [Errno 2] No such file or directory: '";
+    let Some(historical) = source["error"]
+        .as_str()
+        .and_then(|text| text.strip_prefix(PREFIX))
+        .and_then(|text| text.strip_suffix('\''))
+    else {
+        return false;
+    };
+    let Some(owned) = owned_file.to_str() else {
+        return false;
+    };
+    if !owned_file.is_absolute()
+        || !Path::new(historical).is_absolute()
+        || !Path::new(historical).ends_with("native/upload/tmux.log")
+        || native["error"].as_str() != Some(format!("{PREFIX}{owned}'").as_str())
+    {
+        return false;
+    }
+    let mut projected = source.clone();
+    projected["error"] = native["error"].clone();
+    &projected == native
+}
+
+fn run_http_action(
+    config: &UploadNativeInputs<'_>,
+    row: &Value,
+    name: &str,
+    output: &Path,
+) -> Result<Value> {
+    fs::create_dir(output)?;
+    let expected_requests = row["source_requests"]
+        .as_array()
+        .ok_or("missing original HTTP action requests")?;
+    let scripted = expected_requests
+        .iter()
+        .map(|request| {
+            let method = if request["body"].is_null() {
+                "GET"
+            } else {
+                "POST"
+            };
+            let path = request["path"]
+                .as_str()
+                .ok_or("missing original HTTP action path")?;
+            Ok(upload_wire::scripted_response(name, method, path))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let recipient = ScriptedHttpPeer::start(scripted)?;
+    let tools = output.join("tools");
+    fs::create_dir(&tools)?;
+    let tmux = tools.join("tmux");
+    fs::write(&tmux, b"#!/bin/sh\nprintf 'owned capture\\377\\r\\n'\n")?;
+    fs::set_permissions(&tmux, fs::Permissions::from_mode(0o755))?;
+    let created_tmux =
+        CreatedProgramGuard::record(&tmux, &output.join("created-upload-tmux.jsonl"))?;
+    let path = std::env::var_os("PATH").ok_or("PATH required for recovery tool")?;
+    let mut owned_path = tools.as_os_str().to_os_string();
+    owned_path.push(":");
+    owned_path.push(path);
+    let port = TcpListener::bind(("127.0.0.1", 0))?.local_addr()?.port();
+    let argv = [
+        OsString::from(config.actions_binary),
+        OsString::from(config.output),
+        OsString::from(output.join("tmux.log")),
+        OsString::from(config.process_child),
+        OsString::from(port.to_string()),
+    ];
+    let base = format!("http://127.0.0.1:{}", recipient.port());
+    let environment = [
+        (OsString::from("PATH"), owned_path),
+        (
+            OsString::from("CARROT_WEB_UPLOAD_URL"),
+            OsString::from(&base),
+        ),
+        (
+            OsString::from("CARROT_TMUX_WEB_UPLOAD_URL"),
+            OsString::from(format!("{base}/logs")),
+        ),
+        (
+            OsString::from("CARROT_EXCEPTION_DISCORD_WEBHOOK_URL"),
+            OsString::from(format!("{base}/discord")),
+        ),
+        (
+            OsString::from("CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE"),
+            OsString::from("0"),
+        ),
+        (
+            OsString::from("CARROT_WEB_UPLOAD_TOKEN"),
+            OsString::from(""),
+        ),
+        (
+            OsString::from("CARROT_DATA_DIR"),
+            OsString::from(config.output.join("data")),
+        ),
+    ];
+    let mut native = OwnedServer::spawn(
+        &argv,
+        config.repository,
+        &output.join("process.log"),
+        &environment,
+        &[],
+        false,
+    )?;
+    let peer = HttpPeer::new(port, Duration::from_secs(5));
+    let observed = (|| -> Result<(u16, Value)> {
+        peer.wait_ready("/api/support_terminal/status", Duration::from_secs(10))?;
+        let response = peer.request("POST", "/api/action", br#"{"action":"server_tmux_log"}"#)?;
+        Ok((response.status, serde_json::from_slice(&response.body)?))
+    })();
+    let stop = native.signal(Signal::TERM);
+    let exit = native.finish(Duration::from_secs(5));
+    let (status, actual) = observed?;
+    stop?;
+    let exit = exit?;
+    let requests = recipient
+        .requests()?
+        .iter()
+        .map(upload_wire::normalized)
+        .collect::<Result<Vec<_>>>()?;
+    let capture = fs::read(output.join("tmux.log"))?;
+    let (requests_match, route_ip) = requests_match_original(expected_requests, &requests)?;
+    let pass = status == 200
+        && actual == row["source"]
+        && requests_match
+        && recipient.pending_replies()? == 0
+        && capture == b"owned capture\xef\xbf\xbd\n";
+    let receipt = json!({"scenario":name,"source":row["source"],"native":actual,
+        "source_requests":expected_requests,"native_requests":requests,"http_status":status,
+        "exit":exit,"capture_sha256":format!("{:x}",Sha256::digest(&capture)),"capture_len":capture.len(),"measured_route_ip":route_ip,"pass":pass});
+    fs::write(
+        output.join("comparison.json"),
+        serde_json::to_vec_pretty(&receipt)?,
+    )?;
+    if !pass {
+        return Err(format!("Rust-driven recovery HTTP action mismatch: {name}").into());
+    }
+    created_tmux.finish()?;
+    Ok(receipt)
+}
+
+const MODES: &[&str] = &[
+    "success",
+    "token",
+    "session-denied",
+    "missing-token",
+    "non-json",
+    "partial",
+    "all-failed",
+    "empty-error",
+    "disabled",
+    "invalid-urls",
+    "large",
+    "missing-file",
+    "redirect301",
+    "redirect307",
+    "large-response",
+    "invalid-utf8-response",
+];
+
+fn run_native_upload_cases(config: &UploadNativeInputs<'_>, rows: &[Value]) -> Result<Vec<Value>> {
+    let mut direct_rows = Vec::new();
+    let mut runner = NativeRunner;
+    let direct_output = config.output.join("direct-native");
+    fs::create_dir(&direct_output)?;
+    for (name, row) in MODES.iter().zip(rows) {
+        let expected_requests = row["source_requests"]
+            .as_array()
+            .ok_or("missing original upload requests")?;
+        let scripted = expected_requests
+            .iter()
+            .map(|request| {
+                let method = if request["body"].is_null() {
+                    "GET"
+                } else {
+                    "POST"
+                };
+                let path = request["path"]
+                    .as_str()
+                    .ok_or("missing original upload request path")?;
+                Ok(upload_wire::scripted_response(name, method, path))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let recipient = ScriptedHttpPeer::start(scripted)?;
+        let tmux = config.output.join("tmux.log");
+        if *name == "missing-file" {
+            if tmux.exists() {
+                fs::remove_file(&tmux)?;
+            }
+        } else if *name == "large" {
+            fs::write(
+                &tmux,
+                (0_u8..=255).cycle().take(256 * 33000).collect::<Vec<_>>(),
+            )?;
+        } else {
+            fs::write(&tmux, b"owned-log\x00\xff\n")?;
+        }
+        let base = format!("http://127.0.0.1:{}", recipient.port());
+        let url = if *name == "invalid-urls" {
+            "invalid".to_owned()
+        } else {
+            base.clone()
+        };
+        let mut replay = CommandSpec::new(
+            vec![
+                config.candidate.display().to_string(),
+                config.output.display().to_string(),
+                "owned-recovery".into(),
+            ],
+            Duration::from_secs(45),
+        );
+        replay.cwd = Some(config.repository.to_owned());
+        replay
+            .env
+            .insert("CARROT_WEB_UPLOAD_URL".into(), url.clone());
+        replay.env.insert(
+            "CARROT_TMUX_WEB_UPLOAD_URL".into(),
+            if *name == "invalid-urls" {
+                url.clone()
+            } else {
+                format!("{base}/logs")
+            },
+        );
+        replay.env.insert(
+            "CARROT_EXCEPTION_DISCORD_WEBHOOK_URL".into(),
+            if *name == "invalid-urls" {
+                url
+            } else {
+                format!("{base}/discord")
+            },
+        );
+        replay.env.insert(
+            "CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE".into(),
+            if *name == "disabled" { "1" } else { "0" }.into(),
+        );
+        replay.env.insert(
+            "CARROT_WEB_UPLOAD_TOKEN".into(),
+            if *name == "token" { "owned-token" } else { "" }.into(),
+        );
+        replay.env.insert(
+            "CARROT_DATA_DIR".into(),
+            config.output.join("data").display().to_string(),
+        );
+        let rerun = runner.run(&replay)?;
+        fs::write(direct_output.join(format!("{name}.stdout")), &rerun.stdout)?;
+        fs::write(direct_output.join(format!("{name}.stderr")), &rerun.stderr)?;
+        let observed_requests = recipient
+            .requests()?
+            .iter()
+            .map(upload_wire::normalized)
+            .collect::<Result<Vec<_>>>()?;
+        let actual: Value = serde_json::from_slice(&rerun.stdout)?;
+        let (requests_match, route_ip) =
+            requests_match_original(expected_requests, &observed_requests)?;
+        let result_matches = if *name == "missing-file" {
+            missing_file_result_matches(&row["source"], &actual, &tmux)
+        } else {
+            actual == row["source"]
+        };
+        let matching = rerun.code == 0
+            && result_matches
+            && requests_match
+            && recipient.pending_replies()? == 0;
+        direct_rows.push(json!({"scenario":name,"source":row["source"],"native":actual,"source_requests":expected_requests,"native_requests":observed_requests,"exit":rerun.code,"measured_route_ip":route_ip}));
+        fs::write(
+            config.output.join("direct-native.json"),
+            serde_json::to_vec_pretty(&direct_rows)?,
+        )?;
+        if !matching {
+            return Err(format!("Rust-driven recovery upload mismatch: {name}").into());
+        }
+    }
+    Ok(direct_rows)
+}
+
+/// Replays all 16 CLI upload modes and three HTTP actions with fresh native
+/// processes, checking full response and recipient requests against the
+/// immutable source-only projection. No Python controller runs in this path.
+pub fn run_upload_frozen(
+    config: &UploadFrozenConfig<'_>,
+    load_original: impl Fn(&str) -> Result<Value>,
+) -> Result<()> {
+    fs::create_dir(config.output)?;
+    let source = Pin::open(config.source_server, 4 * 1024 * 1024)?;
+    require_frozen_upload_source(&source)?;
+    let candidate = Pin::open(config.candidate, 256 * 1024 * 1024)?;
+    let actions = Pin::open(config.actions_binary, 256 * 1024 * 1024)?;
+    let child = Pin::open(config.process_child, 256 * 1024 * 1024)?;
+    let rows = load_original("projected-source/upload/comparisons.json")?;
+    let rows = rows
+        .as_array()
+        .ok_or("frozen upload source scenarios absent")?;
+    let http = load_original("projected-source/upload/http/comparisons.json")?;
+    let http = http.as_array().ok_or("frozen upload HTTP actions absent")?;
+    if rows.len() != MODES.len() || http.len() != 3 {
+        return Err("frozen upload source roster changed".into());
+    }
+    for (name, row) in MODES.iter().zip(rows) {
+        if row["scenario"] != *name
+            || !row["source"].is_object()
+            || !row["source_requests"].is_array()
+            || row.get("native").is_some()
+            || row.get("native_requests").is_some()
+        {
+            return Err(format!("frozen upload source scenario changed: {name}").into());
+        }
+    }
+    for (name, row) in ["success", "partial", "all-failed"].iter().zip(http) {
+        if row["scenario"] != *name
+            || !row["source"].is_object()
+            || !row["source_requests"].is_array()
+            || row.get("native").is_some()
+            || row.get("native_requests").is_some()
+        {
+            return Err(format!("frozen upload HTTP source changed: {name}").into());
+        }
+    }
+    seed_frozen_params(config.output, &http[0])?;
+    let inputs = UploadNativeInputs {
+        repository: config.repository,
+        candidate: config.candidate,
+        actions_binary: config.actions_binary,
+        process_child: config.process_child,
+        output: config.output,
+    };
+    let direct_actions = config.output.join("direct-http-actions");
+    fs::create_dir(&direct_actions)?;
+    let mut action_rows = Vec::with_capacity(http.len());
+    for (name, row) in ["success", "partial", "all-failed"].iter().zip(http) {
+        action_rows.push(run_http_action(
+            &inputs,
+            row,
+            name,
+            &direct_actions.join(name),
+        )?);
+        fs::write(
+            direct_actions.join("comparisons.json"),
+            serde_json::to_vec_pretty(&action_rows)?,
+        )?;
+    }
+    let direct_rows = run_native_upload_cases(&inputs, rows)?;
+    for pin in [&source, &candidate, &actions, &child] {
+        pin.verify()?;
+    }
+    fs::write(
+        config.output.join("admission.json"),
+        serde_json::to_vec_pretty(&json!({"pass":true,"frozen_original_compared":true,
+            "upload_modes":direct_rows.len(),"http_action_modes":action_rows.len(),
+            "source_sha256":source.digest(),"candidate_sha256":candidate.digest(),
+            "actions_sha256":actions.digest(),"child_sha256":child.digest()}))?,
+    )?;
+    Ok(())
+}
+
+fn require_frozen_upload_source(source: &Pin) -> Result<()> {
+    let fixture = super::original_fixture::OriginalFixture::open()?;
+    if source.digest()
+        != fixture.original_input_sha256("openpilot/selfdrive/carrot/recovery/server.py")?
+    {
+        return Err("frozen upload original server source pin changed".into());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod frozen_source_tests {
+    use super::*;
+
+    #[test]
+    fn host_ip_projection_keeps_all_other_upload_fields_exact() {
+        let expected = vec![
+            json!({"path":"/api/v1/session","body":{"local_ip":"10.1.1.218","deviceId":"owned-device"}}),
+            json!({"path":"/logs","body":[{"name":"local_ip","text":"10.1.1.218"},{"name":"dongle_id","text":"owned-device"}]}),
+        ];
+        let mut observed = expected.clone();
+        observed[0]["body"]["local_ip"] = json!("10.1.0.178");
+        observed[1]["body"][0]["text"] = json!("10.1.0.178");
+        assert!(requests_match_with_route(&expected, &observed, "10.1.0.178").unwrap());
+        assert!(!requests_match_with_route(&expected, &observed, "10.1.0.179").unwrap());
+        observed[1]["body"][1]["text"] = json!("different-device");
+        assert!(!requests_match_with_route(&expected, &observed, "10.1.0.178").unwrap());
+        observed[1]["body"][1]["text"] = json!("owned-device");
+        observed[1]["body"][0]["text"] = json!("10.1.0.179");
+        assert!(requests_match_with_route(&expected, &observed, "10.1.0.178").is_err());
+        observed[1]["body"][0]["text"] = json!("8.8.8.8");
+        assert!(requests_match_with_route(&expected, &observed, "10.1.0.178").is_err());
+    }
+
+    #[test]
+    fn changed_source_cannot_admit_old_upload_observations() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("server.py");
+        fs::write(&path, b"changed server source").unwrap();
+        assert!(require_frozen_upload_source(&Pin::open(&path, 1024).unwrap()).is_err());
+    }
+
+    #[test]
+    fn missing_file_projection_changes_only_the_owned_absolute_path() {
+        let original = json!({"ok":false,"error":"tmux log read failed: [Errno 2] No such file or directory: '/home/runner/work/_temp/recovery-family/native/upload/tmux.log'"});
+        let owned = Path::new("/tmp/frozen/upload/tmux.log");
+        let native = json!({"ok":false,"error":"tmux log read failed: [Errno 2] No such file or directory: '/tmp/frozen/upload/tmux.log'"});
+        assert!(missing_file_result_matches(&original, &native, owned));
+        let mut changed = native.clone();
+        changed["ok"] = json!(true);
+        assert!(!missing_file_result_matches(&original, &changed, owned));
+        changed = native.clone();
+        changed["error"] = json!("tmux log read failed: [Errno 2] No such file or directory: '/tmp/other/upload/tmux.log'");
+        assert!(!missing_file_result_matches(&original, &changed, owned));
+        let mut changed_source = original.clone();
+        changed_source["error"] =
+            json!("tmux log read failed: [Errno 2] No such file or directory: '/tmp/other/file'");
+        assert!(!missing_file_result_matches(
+            &changed_source,
+            &native,
+            owned
+        ));
+        assert!(!missing_file_result_matches(
+            &original,
+            &native,
+            Path::new("relative/upload/tmux.log")
+        ));
+    }
+}

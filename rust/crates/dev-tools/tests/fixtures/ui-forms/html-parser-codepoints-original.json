@@ -1,0 +1,251 @@
+[
+  {
+    "text": "<p>first</p><ul><li>alpha</li><ul><li>nested</li></ul></ul>tail",
+    "elements": [
+      {
+        "kind": "p",
+        "content": "first",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      },
+      {
+        "kind": "li",
+        "content": "\u2022 alpha",
+        "size": 48,
+        "top": 6,
+        "bottom": 6,
+        "line_height": 0.9,
+        "indent": 1
+      },
+      {
+        "kind": "li",
+        "content": "\u2022 nested",
+        "size": 48,
+        "top": 6,
+        "bottom": 6,
+        "line_height": 0.9,
+        "indent": 2
+      },
+      {
+        "kind": "p",
+        "content": "tail",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      }
+    ]
+  },
+  {
+    "text": "<>a</>b<<p>c</p>",
+    "elements": [
+      {
+        "kind": "p",
+        "content": ">a </> b <<p> c",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      }
+    ]
+  },
+  {
+    "text": "<!--\ud800-->a<!DOCTYPE \udfff><body data=\ud800>b</body>",
+    "elements": [
+      {
+        "kind": "p",
+        "content": "ab",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      }
+    ]
+  },
+  {
+    "text": "<!--unclosed \ud800 rest",
+    "elements": [
+      {
+        "kind": "p",
+        "content": "!--unclosed \ud800 rest",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      }
+    ]
+  },
+  {
+    "text": "<h1>a</h1><br></br>after",
+    "elements": [
+      {
+        "kind": "h1",
+        "content": "a",
+        "size": 96,
+        "top": 20,
+        "bottom": 16,
+        "line_height": 0.9,
+        "indent": 0
+      },
+      {
+        "kind": "br",
+        "content": "",
+        "size": 0,
+        "top": 0,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      },
+      {
+        "kind": "br",
+        "content": "",
+        "size": 0,
+        "top": 0,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      },
+      {
+        "kind": "p",
+        "content": "after",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      }
+    ]
+  },
+  {
+    "text": "<HTML>Case</HTML><!doctype x>tail",
+    "elements": [
+      {
+        "kind": "p",
+        "content": "<HTML> Case </HTML> <!doctype x> tail",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      }
+    ]
+  },
+  {
+    "text": "a\u001cb\u0085c\u2003d\ud800x",
+    "elements": [
+      {
+        "kind": "p",
+        "content": "a b c d\ud800x",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      }
+    ]
+  },
+  {
+    "text": "<p a=\ud800>kept</p>",
+    "elements": [
+      {
+        "kind": "p",
+        "content": "<p a=\ud800> kept",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      }
+    ]
+  },
+  {
+    "text": "<bodything>stripped</bodything>",
+    "elements": [
+      {
+        "kind": "p",
+        "content": "stripped",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      }
+    ]
+  },
+  {
+    "text": "<head>first</head>\n<h2> next\r\nline </h2>",
+    "elements": [
+      {
+        "kind": "p",
+        "content": "first",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      },
+      {
+        "kind": "h2",
+        "content": "next line",
+        "size": 72,
+        "top": 24,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      }
+    ]
+  },
+  {
+    "text": "<li>raw \udfff</li>",
+    "elements": [
+      {
+        "kind": "li",
+        "content": "\u2022 raw \udfff",
+        "size": 48,
+        "top": 6,
+        "bottom": 6,
+        "line_height": 0.9,
+        "indent": 0
+      }
+    ]
+  },
+  {
+    "text": "<b>bold<p>paragraph</b> tail",
+    "elements": [
+      {
+        "kind": "b",
+        "content": "bold",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      },
+      {
+        "kind": "p",
+        "content": "paragraph",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      },
+      {
+        "kind": "p",
+        "content": "tail",
+        "size": 48,
+        "top": 8,
+        "bottom": 12,
+        "line_height": 0.9,
+        "indent": 0
+      }
+    ]
+  }
+]

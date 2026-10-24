@@ -1,0 +1,2460 @@
+{
+  "scope": "Unchanged original242 source side only. Real FS, shell and exact original helper. All raw expected responses retained. Only private root paths are placeholders. Scanner names/order and ctime rebound to live before-call metadata; no constant epoch expected.",
+  "source_capture_receipt_sha256": "c671daefb4a829089b7685382fbd7e6aa0f911b305fc6d41ad509d445bd76d5b",
+  "source_directory_default_mode": 509,
+  "source_file_default_mode": 436,
+  "setup": [
+    {
+      "op": "write",
+      "path": "trace",
+      "hex": "6865616465720a2330203078646561642073797374656d2028703d30783129206174207379732e630a233120307862656566206d6f64656c2028613d31292061742073656c6664726976652f6d6f64656c642e63633a370a",
+      "mode": null
+    },
+    {
+      "op": "write",
+      "path": "mode",
+      "hex": "6e6f726d616c",
+      "mode": null
+    },
+    {
+      "op": "write",
+      "path": "base/build.json",
+      "hex": "7b226368616e6e656c223a20226e696768746c79222c20226f70656e70696c6f74223a207b226769745f6f726967696e223a2022676974406769746875622e636f6d3a636f6d6d6161692f6f70656e70696c6f742e676974222c20226769745f636f6d6d6974223a20226162636465666768696a6b222c202276657273696f6e223a20226d657461646174612d76657273696f6e227d7d",
+      "mode": null
+    },
+    {
+      "op": "write",
+      "path": "params/fixture/DongleId",
+      "hex": "666978747572652d646576696365",
+      "mode": null
+    },
+    {
+      "op": "write",
+      "path": "base/openpilot/common/version.h",
+      "hex": "23646566696e652056455253494f4e2022666978747572652d312e32220a",
+      "mode": null
+    }
+  ],
+  "cases": [
+    {
+      "index": 0,
+      "before": [],
+      "request": "{\"op\": \"configure\", \"base\": \"$FIXTURE/base\", \"params\": \"$FIXTURE/params\", \"pc\": false, \"device\": \"tici\"}",
+      "original_stdout": "{\"result\": {\"value\": true}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": true}, \"calls\": [], \"logs\": []}\n",
+      "source_files": null,
+      "after": []
+    },
+    {
+      "index": 1,
+      "before": [],
+      "request": "{\"op\": \"init\", \"project\": \"selfdrive_native\"}",
+      "original_stdout": "{\"result\": {\"value\": true}, \"calls\": [{\"op\": \"init\", \"fields\": {\"project\": \"selfdrive_native\", \"release\": \"fixture-1.2\", \"environment\": \"release\", \"default_integrations\": false, \"threading_requested\": false, \"traces_sample_rate\": 1.0, \"max_value_length\": 8192}, \"carrot_exception\": null, \"created\": 1792345909.8154376}, {\"op\": \"set_user\", \"fields\": {\"id\": \"fixture-device\"}, \"carrot_exception\": null, \"created\": 1792345909.8154466}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"dirty\", \"value_json\": \"false\"}, \"carrot_exception\": null, \"created\": 1792345909.8154583}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"origin\", \"value_json\": \"\\\"git@github.com:commaai/openpilot.git\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.815465}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"branch\", \"value_json\": \"\\\"nightly\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8154712}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"commit\", \"value_json\": \"\\\"abcdefghijk\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8154767}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"device\", \"value_json\": \"\\\"tici\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8154826}], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": true}, \"calls\": [{\"op\": \"init\", \"fields\": {\"project\": \"selfdrive_native\", \"release\": \"fixture-1.2\", \"environment\": \"release\", \"default_integrations\": false, \"threading_requested\": false, \"traces_sample_rate\": 1.0, \"max_value_length\": 8192}, \"carrot_exception\": null, \"created\": 1792345909.8154376}, {\"op\": \"set_user\", \"fields\": {\"id\": \"fixture-device\"}, \"carrot_exception\": null, \"created\": 1792345909.8154466}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"dirty\", \"value_json\": \"false\"}, \"carrot_exception\": null, \"created\": 1792345909.8154583}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"origin\", \"value_json\": \"\\\"git@github.com:commaai/openpilot.git\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.815465}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"branch\", \"value_json\": \"\\\"nightly\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8154712}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"commit\", \"value_json\": \"\\\"abcdefghijk\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8154767}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"device\", \"value_json\": \"\\\"tici\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8154826}], \"logs\": []}\n",
+      "source_files": null,
+      "after": []
+    },
+    {
+      "index": 2,
+      "before": [
+        {
+          "op": "write",
+          "path": "trace",
+          "hex": "2373696e676c65",
+          "mode": null
+        },
+        {
+          "op": "write",
+          "path": "apport/test.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/test.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/test.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.822208}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"#single\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8222203}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - No stacktrace\"}, \"carrot_exception\": null, \"created\": 1792345909.8222282}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8222344}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - No stacktrace\"}, \"exception\": false, \"created\": 1792345909.822171}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/test.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.822208}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"#single\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8222203}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - No stacktrace\"}, \"carrot_exception\": null, \"created\": 1792345909.8222282}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8222344}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - No stacktrace\"}, \"exception\": false, \"created\": 1792345909.822171}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 3,
+      "before": [
+        {
+          "op": "write",
+          "path": "trace",
+          "hex": "6865616465720a",
+          "mode": null
+        },
+        {
+          "op": "write",
+          "path": "apport/test.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/test.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/test.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.833316}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8333333}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - No stacktrace\"}, \"carrot_exception\": null, \"created\": 1792345909.8333452}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8333542}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - No stacktrace\"}, \"exception\": false, \"created\": 1792345909.8332322}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/test.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.833316}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8333333}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - No stacktrace\"}, \"carrot_exception\": null, \"created\": 1792345909.8333452}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8333542}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - No stacktrace\"}, \"exception\": false, \"created\": 1792345909.8332322}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 4,
+      "before": [
+        {
+          "op": "write",
+          "path": "trace",
+          "hex": "6865616465720a2330203078646561642073797374656d2028703d30783129206174207379732e630a233120307862656566206d6f64656c2028613d31292061742073656c6664726976652f6d6f64656c642e63633a370a",
+          "mode": null
+        },
+        {
+          "op": "write",
+          "path": "apport/test.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/test.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/test.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8422294}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8422441}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.842254}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8422618}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.842178}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/test.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8422294}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8422441}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.842254}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8422618}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.842178}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 5,
+      "before": [
+        {
+          "op": "write",
+          "path": "trace",
+          "hex": "6865616465720a2330203078612066756e20286f6e652874776f2929207461696c0a",
+          "mode": null
+        },
+        {
+          "op": "write",
+          "path": "apport/test.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/test.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/test.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.849885}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xa fun (one(two)) tail\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.849899}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - fun ) tail\"}, \"carrot_exception\": null, \"created\": 1792345909.8499088}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8499174}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - fun ) tail\"}, \"exception\": false, \"created\": 1792345909.8498278}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/test.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.849885}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xa fun (one(two)) tail\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.849899}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - fun ) tail\"}, \"carrot_exception\": null, \"created\": 1792345909.8499088}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8499174}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - fun ) tail\"}, \"exception\": false, \"created\": 1792345909.8498278}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 6,
+      "before": [
+        {
+          "op": "write",
+          "path": "trace",
+          "hex": "66697273740a776974686f75746e756d6265720a",
+          "mode": null
+        },
+        {
+          "op": "write",
+          "path": "apport/test.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/test.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/test.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.857336}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"first\\\\nwithoutnumber\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8573496}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - \"}, \"carrot_exception\": null, \"created\": 1792345909.8573592}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.857367}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - \"}, \"exception\": false, \"created\": 1792345909.8572757}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/test.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.857336}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"first\\\\nwithoutnumber\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8573496}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - \"}, \"carrot_exception\": null, \"created\": 1792345909.8573592}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.857367}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - \"}, \"exception\": false, \"created\": 1792345909.8572757}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 7,
+      "before": [
+        {
+          "op": "write",
+          "path": "trace",
+          "hex": "610a233020305846462066756e28612928622920617420656c736577686572650a",
+          "mode": null
+        },
+        {
+          "op": "write",
+          "path": "apport/test.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/test.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/test.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.864796}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"a\\\\n#0 0XFF fun(a)(b) at elsewhere\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8648095}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - 0XFF fun at elsewhere\"}, \"carrot_exception\": null, \"created\": 1792345909.8648198}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.864828}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - 0XFF fun at elsewhere\"}, \"exception\": false, \"created\": 1792345909.8647351}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/test.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.864796}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"a\\\\n#0 0XFF fun(a)(b) at elsewhere\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8648095}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - 0XFF fun at elsewhere\"}, \"carrot_exception\": null, \"created\": 1792345909.8648198}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.864828}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - 0XFF fun at elsewhere\"}, \"exception\": false, \"created\": 1792345909.8647351}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 8,
+      "before": [
+        {
+          "op": "write",
+          "path": "trace",
+          "hex": "6865616465720a2330203078646561642073797374656d2028703d30783129206174207379732e630a233120307862656566206d6f64656c2028613d31292061742073656c6664726976652f6d6f64656c642e63633a370a",
+          "mode": null
+        },
+        {
+          "op": "write",
+          "path": "apport/signal.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f61300a5369676e616c3a2031310a436f726544756d703a20646174610a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/signal.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8720455}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a0\\\\nSignal: 11\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8720627}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a0 - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.8720732}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8720818}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a0 - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.8719811}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8720455}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a0\\\\nSignal: 11\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8720627}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a0 - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.8720732}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8720818}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a0 - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.8719811}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 9,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/signal.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f61310a5369676e616c3a202b31310a436f726544756d703a20646174610a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/signal.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.880037}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a1\\\\nSignal: +11\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.880051}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a1 - Signal: +11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.8800607}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8800685}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a1 - Signal: +11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.8799958}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.880037}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a1\\\\nSignal: +11\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.880051}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a1 - Signal: +11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.8800607}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8800685}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a1 - Signal: +11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.8799958}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 10,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/signal.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f61320a5369676e616c3a20315f310a436f726544756d703a20646174610a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/signal.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8875942}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a2\\\\nSignal: 1_1\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8876085}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a2 - Signal: 1_1 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.8876176}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8876255}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a2 - Signal: 1_1 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.8875585}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8875942}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a2\\\\nSignal: 1_1\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8876085}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a2 - Signal: 1_1 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.8876176}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8876255}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a2 - Signal: 1_1 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.8875585}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 11,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/signal.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f61330a5369676e616c3a20d9a1d9a10a436f726544756d703a20646174610a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/signal.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8952475}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a3\\\\nSignal: \\\\u0661\\\\u0661\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.895267}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a3 - Signal: \\u0661\\u0661 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.8952777}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8952868}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a3 - Signal: \\u0661\\u0661 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.895175}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.8952475}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a3\\\\nSignal: \\\\u0661\\\\u0661\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.895267}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a3 - Signal: \\u0661\\u0661 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.8952777}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.8952868}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a3 - Signal: \\u0661\\u0661 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.895175}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 12,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/signal.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f61340a5369676e616c3a2033340a436f726544756d703a20646174610a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/signal.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9034288}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a4\\\\nSignal: 34\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.903446}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a4 - Signal: 34 (SIGRTMIN) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9034567}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.9034653}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a4 - Signal: 34 (SIGRTMIN) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9033625}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9034288}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a4\\\\nSignal: 34\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.903446}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a4 - Signal: 34 (SIGRTMIN) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9034567}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.9034653}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a4 - Signal: 34 (SIGRTMIN) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9033625}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 13,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/signal.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f61350a5369676e616c3a2036340a436f726544756d703a20646174610a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/signal.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9109206}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a5\\\\nSignal: 64\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9109359}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a5 - Signal: 64 (SIGRTMAX) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9109457}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.9109535}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a5 - Signal: 64 (SIGRTMAX) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9108758}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9109206}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a5\\\\nSignal: 64\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9109359}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a5 - Signal: 64 (SIGRTMAX) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9109457}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.9109535}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a5 - Signal: 64 (SIGRTMAX) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9108758}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 14,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/signal.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f61360a5369676e616c3a2033350a436f726544756d703a20646174610a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/signal.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9185371}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a6\\\\nSignal: 35\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9185476}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a6 - Signal: 35 - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.918554}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.91856}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a6 - Signal: 35 - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9185073}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9185371}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a6\\\\nSignal: 35\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9185476}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a6 - Signal: 35 - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.918554}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.91856}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a6 - Signal: 35 - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9185073}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 15,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/signal.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f61370a5369676e616c3a20300a436f726544756d703a20646174610a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/signal.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9258587}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a7\\\\nSignal: 0\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.92587}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a7 - Signal: 0 - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9258764}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.925882}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a7 - Signal: 0 - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.925809}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9258587}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a7\\\\nSignal: 0\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.92587}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a7 - Signal: 0 - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9258764}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.925882}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a7 - Signal: 0 - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.925809}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 16,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/signal.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f61380a5369676e616c3a202d310a436f726544756d703a20646174610a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/signal.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9337451}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a8\\\\nSignal: -1\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9337559}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a8 - Signal: -1 - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.933763}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.933769}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a8 - Signal: -1 - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9336975}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9337451}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a8\\\\nSignal: -1\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9337559}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a8 - Signal: -1 - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.933763}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.933769}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a8 - Signal: -1 - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9336975}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 17,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/signal.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f61390a5369676e616c3a20393939393939393939393939393939393939393939390a436f726544756d703a20646174610a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/signal.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9411125}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a9\\\\nSignal: 9999999999999999999999\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9411275}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a9 - Signal: 9999999999999999999999 - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.941138}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.9411461}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a9 - Signal: 9999999999999999999999 - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9410677}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9411125}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a9\\\\nSignal: 9999999999999999999999\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9411275}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a9 - Signal: 9999999999999999999999 - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.941138}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.9411461}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a9 - Signal: 9999999999999999999999 - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9410677}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 18,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/signal.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f6131300a5369676e616c3a2062726f6b656e0a436f726544756d703a20646174610a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/signal.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9487698}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a10\\\\nSignal: broken\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9487832}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a10 - Signal: broken - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9487925}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.948801}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a10 - Signal: broken - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9487352}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/signal.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9487698}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/a10\\\\nSignal: broken\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9487832}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"a10 - Signal: broken - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9487925}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.948801}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"a10 - Signal: broken - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9487352}]}\n",
+      "source_files": {
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 19,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/utf8-0.crash",
+          "hex": "626164ff0a436f726544756d703a0a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/utf8-0.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"error\": \"UnicodeDecodeError\"}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"error\": \"UnicodeDecodeError\"}, \"calls\": [], \"logs\": []}\n",
+      "source_files": {
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 20,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/utf8-1.crash",
+          "hex": "436f726544756d703a0aff",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/utf8-1.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"error\": \"UnicodeDecodeError\"}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"error\": \"UnicodeDecodeError\"}, \"calls\": [], \"logs\": []}\n",
+      "source_files": {
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 21,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/utf8-2.crash",
+          "hex": "436f726544756d703a0a2020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020ff",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/utf8-2.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/utf8-2.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.960934}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.96095}, {\"op\": \"capture_message\", \"fields\": {\"message\": \" - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9609606}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.9609692}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \" - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9608846}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/utf8-2.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.960934}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.96095}, {\"op\": \"capture_message\", \"fields\": {\"message\": \" - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9609606}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.9609692}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \" - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9608846}]}\n",
+      "source_files": {
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_": {
+          "size": 8203,
+          "sha256": "407d4104eb9567169c69a9982b70ec8c2b46a607815adec2b81cd90041b7e9b2",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 22,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/utf8-3.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f780d0a5369676e616c3a20360d50726f634d6170733a0d686964650d50726f635374617475733a0d73686f770d436f726544756d703a0d",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/utf8-3.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/utf8-3.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9694104}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/x\\\\nSignal: 6\\\\nProcStatus:\\\\nshow\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9694252}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"x - Signal: 6 (SIGABRT) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9694347}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.9694428}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"x - Signal: 6 (SIGABRT) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9693673}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/utf8-3.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9694104}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/x\\\\nSignal: 6\\\\nProcStatus:\\\\nshow\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9694252}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"x - Signal: 6 (SIGABRT) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9694347}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.9694428}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"x - Signal: 6 (SIGABRT) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9693673}]}\n",
+      "source_files": {
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_": {
+          "size": 8203,
+          "sha256": "407d4104eb9567169c69a9982b70ec8c2b46a607815adec2b81cd90041b7e9b2",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_x": {
+          "size": 87,
+          "sha256": "db401bc79b8cd0fb746ac0d0ad08b9b9ded0a8273018b1d748833c1ba156cb0e",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 23,
+      "before": [
+        {
+          "op": "write",
+          "path": "mode",
+          "hex": "65786974",
+          "mode": null
+        },
+        {
+          "op": "write",
+          "path": "apport/command.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/command.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/command.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.977071}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"Error getting stacktrace\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9770863}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - No stacktrace\"}, \"carrot_exception\": null, \"created\": 1792345909.9770954}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.977111}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - No stacktrace\"}, \"exception\": false, \"created\": 1792345909.977033}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/command.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.977071}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"Error getting stacktrace\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9770863}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - No stacktrace\"}, \"carrot_exception\": null, \"created\": 1792345909.9770954}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.977111}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - No stacktrace\"}, \"exception\": false, \"created\": 1792345909.977033}]}\n",
+      "source_files": {
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_": {
+          "size": 8203,
+          "sha256": "407d4104eb9567169c69a9982b70ec8c2b46a607815adec2b81cd90041b7e9b2",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_x": {
+          "size": 87,
+          "sha256": "db401bc79b8cd0fb746ac0d0ad08b9b9ded0a8273018b1d748833c1ba156cb0e",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 24,
+      "before": [
+        {
+          "op": "write",
+          "path": "mode",
+          "hex": "696e76616c6964",
+          "mode": null
+        },
+        {
+          "op": "write",
+          "path": "apport/command.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/command.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"error\": \"UnicodeDecodeError\"}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"error\": \"UnicodeDecodeError\"}, \"calls\": [], \"logs\": []}\n",
+      "source_files": {
+        "apport/command.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_": {
+          "size": 8203,
+          "sha256": "407d4104eb9567169c69a9982b70ec8c2b46a607815adec2b81cd90041b7e9b2",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_x": {
+          "size": 87,
+          "sha256": "db401bc79b8cd0fb746ac0d0ad08b9b9ded0a8273018b1d748833c1ba156cb0e",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 25,
+      "before": [
+        {
+          "op": "write",
+          "path": "mode",
+          "hex": "696e76616c69642d65786974",
+          "mode": null
+        },
+        {
+          "op": "write",
+          "path": "apport/command.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/command.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"error\": \"UnicodeDecodeError\"}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"error\": \"UnicodeDecodeError\"}, \"calls\": [], \"logs\": []}\n",
+      "source_files": {
+        "apport/command.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_": {
+          "size": 8203,
+          "sha256": "407d4104eb9567169c69a9982b70ec8c2b46a607815adec2b81cd90041b7e9b2",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_x": {
+          "size": 87,
+          "sha256": "db401bc79b8cd0fb746ac0d0ad08b9b9ded0a8273018b1d748833c1ba156cb0e",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 26,
+      "before": [
+        {
+          "op": "write",
+          "path": "mode",
+          "hex": "6e6f726d616c",
+          "mode": null
+        },
+        {
+          "op": "write",
+          "path": "apport/command.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/command.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/command.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9998264}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9998379}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9998448}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.9998515}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9997683}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/command.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9998264}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345909.9998379}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345909.9998448}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345909.9998515}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345909.9997683}]}\n",
+      "source_files": {
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_": {
+          "size": 8203,
+          "sha256": "407d4104eb9567169c69a9982b70ec8c2b46a607815adec2b81cd90041b7e9b2",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_x": {
+          "size": 87,
+          "sha256": "db401bc79b8cd0fb746ac0d0ad08b9b9ded0a8273018b1d748833c1ba156cb0e",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 27,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/permission.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        },
+        {
+          "op": "chmod",
+          "path": "apport",
+          "mode": 320
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/permission.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/permission.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0080378}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0080528}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.0080624}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.008071}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.0079958}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/permission.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0080378}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0080528}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.0080624}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.008071}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.0079958}]}\n",
+      "source_files": {
+        "apport/permission.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_": {
+          "size": 8203,
+          "sha256": "407d4104eb9567169c69a9982b70ec8c2b46a607815adec2b81cd90041b7e9b2",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_x": {
+          "size": 87,
+          "sha256": "db401bc79b8cd0fb746ac0d0ad08b9b9ded0a8273018b1d748833c1ba156cb0e",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": [
+        {
+          "op": "chmod",
+          "path": "apport",
+          "mode": 448
+        }
+      ]
+    },
+    {
+      "index": 28,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/copy-error.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        },
+        {
+          "op": "chmod",
+          "path": "logs/crash",
+          "mode": 320
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/copy-error.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-03--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"error\": \"PermissionError\"}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/copy-error.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0166676}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0166783}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.016685}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.0166907}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.0166206}]}\n",
+      "original_stdout_raw": "{\"result\": {\"error\": \"PermissionError\"}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/copy-error.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0166676}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0166783}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.016685}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.0166907}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.0166206}]}\n",
+      "source_files": {
+        "apport/copy-error.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/permission.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 320
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_": {
+          "size": 8203,
+          "sha256": "407d4104eb9567169c69a9982b70ec8c2b46a607815adec2b81cd90041b7e9b2",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_x": {
+          "size": 87,
+          "sha256": "db401bc79b8cd0fb746ac0d0ad08b9b9ded0a8273018b1d748833c1ba156cb0e",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": [
+        {
+          "op": "chmod",
+          "path": "logs/crash",
+          "mode": 448
+        }
+      ]
+    },
+    {
+      "index": 29,
+      "before": [
+        {
+          "op": "write",
+          "path": "apport/nested.crash",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        },
+        {
+          "op": "mkdir",
+          "path": "logs/crash/2020-01-04--03-04-05_abcdefgh_selfdrive_modeld_modeld"
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/nested.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-04--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/nested.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0250092}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0250247}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.0250342}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.0250428}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.0249534}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/nested.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0250092}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0250247}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.0250342}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.0250428}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.0249534}]}\n",
+      "source_files": {
+        "apport/copy-error.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/permission.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 448
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_": {
+          "size": 8203,
+          "sha256": "407d4104eb9567169c69a9982b70ec8c2b46a607815adec2b81cd90041b7e9b2",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_x": {
+          "size": 87,
+          "sha256": "db401bc79b8cd0fb746ac0d0ad08b9b9ded0a8273018b1d748833c1ba156cb0e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-04--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-04--03-04-05_abcdefgh_selfdrive_modeld_modeld/nested.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 30,
+      "before": [
+        {
+          "op": "write",
+          "path": "logs/crash/2020-01-05--03-04-05_abcdefgh_selfdrive_modeld_modeld",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/logs/crash/2020-01-05--03-04-05_abcdefgh_selfdrive_modeld_modeld\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-05--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"error\": \"SameFileError\"}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/logs/crash/2020-01-05--03-04-05_abcdefgh_selfdrive_modeld_modeld\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0337787}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0337927}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.0338025}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.0338101}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.0337327}]}\n",
+      "original_stdout_raw": "{\"result\": {\"error\": \"SameFileError\"}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/logs/crash/2020-01-05--03-04-05_abcdefgh_selfdrive_modeld_modeld\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0337787}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.0337927}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.0338025}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.0338101}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.0337327}]}\n",
+      "source_files": {
+        "apport/copy-error.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/permission.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 448
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_": {
+          "size": 8203,
+          "sha256": "407d4104eb9567169c69a9982b70ec8c2b46a607815adec2b81cd90041b7e9b2",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_x": {
+          "size": 87,
+          "sha256": "db401bc79b8cd0fb746ac0d0ad08b9b9ded0a8273018b1d748833c1ba156cb0e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-04--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-04--03-04-05_abcdefgh_selfdrive_modeld_modeld/nested.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-05--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 31,
+      "before": [
+        {
+          "op": "sparse",
+          "path": "apport/large.crash",
+          "prefix_hex": "436f726544756d703a0a",
+          "size": 100000001,
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/large.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [], \"logs\": [{\"levelnum\": 40, \"msg\": \"Tombstone $FIXTURE/apport/large.crash too big, 100000001. Skipping...\", \"exception\": false, \"created\": 1792345910.1307852}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [], \"logs\": [{\"levelnum\": 40, \"msg\": \"Tombstone /tmp/tombstone-source-capture-r0nu7alb/source/apport/large.crash too big, 100000001. Skipping...\", \"exception\": false, \"created\": 1792345910.1307852}]}\n",
+      "source_files": {
+        "apport/copy-error.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/large.crash": {
+          "size": 100000001,
+          "sha256": "ebb37273d41834160d1fb2ae19257a541f0fc09f28d70fca478dd778c4f7e46e",
+          "mode": 416
+        },
+        "apport/permission.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 448
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_": {
+          "size": 8203,
+          "sha256": "407d4104eb9567169c69a9982b70ec8c2b46a607815adec2b81cd90041b7e9b2",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_x": {
+          "size": 87,
+          "sha256": "db401bc79b8cd0fb746ac0d0ad08b9b9ded0a8273018b1d748833c1ba156cb0e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-04--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-04--03-04-05_abcdefgh_selfdrive_modeld_modeld/nested.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-05--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    },
+    {
+      "index": 32,
+      "before": [
+        {
+          "op": "sparse",
+          "path": "apport/large.crash",
+          "prefix_hex": "436f726544756d703a0a",
+          "size": 100000000,
+          "mode": 416
+        }
+      ],
+      "request": "{\"op\": \"report\", \"path\": \"$FIXTURE/apport/large.crash\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/large.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.2848446}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.2848566}, {\"op\": \"capture_message\", \"fields\": {\"message\": \" - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.2848644}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.2848709}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \" - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.2847848}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-r0nu7alb/source/apport/large.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.2848446}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.2848566}, {\"op\": \"capture_message\", \"fields\": {\"message\": \" - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.2848644}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.2848709}], \"logs\": [{\"levelnum\": 40, \"msg\": {\"tombstone\": \" - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.2847848}]}\n",
+      "source_files": {
+        "apport/copy-error.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/permission.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "apport/utf8-0.crash": {
+          "size": 15,
+          "sha256": "80ee2b6b5588262bacea1a8d040d74ccf54af768b707c32a4ce211493dcc8cdd",
+          "mode": 416
+        },
+        "apport/utf8-1.crash": {
+          "size": 11,
+          "sha256": "9313f592420258dce5f360a502e02a1c1c13ea7b0cd57425332033ca6e72904f",
+          "mode": 416
+        },
+        "logs/crash": {
+          "directory": true,
+          "mode": 448
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_": {
+          "size": 100000000,
+          "sha256": "fb3abfe9ecfbbe05c0896fb0d74bcdab727a51d169201245a2ce9044d62709eb",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a0": {
+          "size": 61,
+          "sha256": "7e5e57af35028b3661e5e3e8dabe58ee6e9033441c934b894082c500ad098195",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a1": {
+          "size": 62,
+          "sha256": "9fb444762a6f361b1ecf99233a031f5cf8aece36664c95c20fce9756c6a7f089",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a10": {
+          "size": 66,
+          "sha256": "2d0016ded2e1f6e711c0c19222907052399820e85cc3fb875a0f7c3f1a21fc54",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a2": {
+          "size": 62,
+          "sha256": "660fef001839d997d290418a0b3aa23bc35fba3086ff12a50e62ba99b6e2c1b0",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a3": {
+          "size": 63,
+          "sha256": "b6a55c07f9b0369500e3492bfde9691f295fc0ff53938c91e00d57faede7347e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a4": {
+          "size": 61,
+          "sha256": "bf3dbcc2d347563adc5096d160e17cc84ac18c63fdb22adf3baa580a1d5e9c53",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a5": {
+          "size": 61,
+          "sha256": "4a62df889d01a87fb0267b13b80ee30ec9d60bb589ac27cd744d6d9bf1a0f1cd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a6": {
+          "size": 61,
+          "sha256": "6e3b1103fa690f224c95f48c73177a149b945a2a82602ac425804f035436a8b9",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a7": {
+          "size": 60,
+          "sha256": "f82a459aa7ae5c1ef6d8b35abefbb92d5849a279a6c74d21bc8671c9b0076069",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a8": {
+          "size": 61,
+          "sha256": "3be11668458fc77c11fd67db6b4a183b4a9231c7fe3303ab11a671b2a7a67e1f",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_a9": {
+          "size": 81,
+          "sha256": "3193dcb8b908f5a0b65a4aa8ddef05ab3f18b5b7fcda380ac4e97cb0e59713bd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-02--03-04-05_abcdefgh_x": {
+          "size": 87,
+          "sha256": "db401bc79b8cd0fb746ac0d0ad08b9b9ded0a8273018b1d748833c1ba156cb0e",
+          "mode": 416
+        },
+        "logs/crash/2020-01-04--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "directory": true,
+          "mode": 509
+        },
+        "logs/crash/2020-01-04--03-04-05_abcdefgh_selfdrive_modeld_modeld/nested.crash": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "logs/crash/2020-01-05--03-04-05_abcdefgh_selfdrive_modeld_modeld": {
+          "size": 122,
+          "sha256": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+          "mode": 416
+        },
+        "CarrotException": null
+      },
+      "after": []
+    }
+  ]
+}

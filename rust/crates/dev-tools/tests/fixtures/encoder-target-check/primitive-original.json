@@ -1,0 +1,122 @@
+{
+  "sources": {
+    "rust/tools/check_encoder_target.py": "5f9a794f6797ee43618eaa7ad274187ea363609f8dab7c407ae74639b6eee2a8"
+  },
+  "cases": [
+    {
+      "kind": "elf",
+      "name": "arm",
+      "bytes": "7f454c460201000000000000000000000000b700",
+      "error": null
+    },
+    {
+      "kind": "elf",
+      "name": "short",
+      "bytes": "7f454c460201000000000000000000000000b7",
+      "error": {
+        "type": "TargetFailure",
+        "message": "not a little-endian AArch64 ELF: $ROOT/short"
+      }
+    },
+    {
+      "kind": "elf",
+      "name": "x86",
+      "bytes": "7f454c4602010000000000000000000000003e00",
+      "error": {
+        "type": "TargetFailure",
+        "message": "not a little-endian AArch64 ELF: $ROOT/x86"
+      }
+    },
+    {
+      "kind": "elf",
+      "name": "big-endian",
+      "bytes": "7f454c460202000000000000000000000000b700",
+      "error": {
+        "type": "TargetFailure",
+        "message": "not a little-endian AArch64 ELF: $ROOT/big-endian"
+      }
+    },
+    {
+      "kind": "elf",
+      "name": "elf32",
+      "bytes": "7f454c460101000000000000000000000000b700",
+      "error": {
+        "type": "TargetFailure",
+        "message": "not a little-endian AArch64 ELF: $ROOT/elf32"
+      }
+    },
+    {
+      "kind": "elf",
+      "name": "trailing",
+      "bytes": "7f454c460201000000000000000000000000b70069676e6f726564",
+      "error": null
+    },
+    {
+      "kind": "loader",
+      "name": "one",
+      "output": "libc => $ROOT/agnos/libc.so (0x1)\n",
+      "files": [
+        "agnos/libc.so"
+      ],
+      "result": [
+        {
+          "path": "$ROOT/agnos/libc.so",
+          "sha256": "2fa5de67d9750e27ee86aa1ccfcfe90af1308b8a04178f93bfb03e0bab97ac6b",
+          "bytes": 21
+        }
+      ],
+      "error": null
+    },
+    {
+      "kind": "loader",
+      "name": "duplicate",
+      "output": "x => $ROOT/agnos/libc.so (0x1)\ny => $ROOT/agnos/libc.so (0x2)\n",
+      "files": [
+        "agnos/libc.so"
+      ],
+      "result": [
+        {
+          "path": "$ROOT/agnos/libc.so",
+          "sha256": "2fa5de67d9750e27ee86aa1ccfcfe90af1308b8a04178f93bfb03e0bab97ac6b",
+          "bytes": 21
+        }
+      ],
+      "error": null
+    },
+    {
+      "kind": "loader",
+      "name": "empty",
+      "output": "linux-vdso.so.1\n",
+      "files": [],
+      "result": null,
+      "error": {
+        "type": "TargetFailure",
+        "message": "AGNOS loader did not report resolved library paths"
+      }
+    },
+    {
+      "kind": "loader",
+      "name": "outside",
+      "output": "x => $ROOT/outside.so (0x1)\n",
+      "files": [
+        "outside.so"
+      ],
+      "result": null,
+      "error": {
+        "type": "TargetFailure",
+        "message": "target loader resolved a library outside the supplied AGNOS tree"
+      }
+    },
+    {
+      "kind": "loader",
+      "name": "missing",
+      "output": "x => $ROOT/agnos/absent.so (0x1)\n",
+      "files": [],
+      "result": null,
+      "error": {
+        "type": "FileNotFoundError",
+        "message": "[Errno 2] No such file or directory: '$ROOT/agnos/absent.so'"
+      }
+    }
+  ]
+}

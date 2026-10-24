@@ -1,0 +1,11 @@
+{
+  "check-ui-fps": "214a115ebb85e181387ed06fe0ceec16464a3340e7dc5c5500771d3c5ad2ab99",
+  "check-ui-stack": "8af8446c54240c371208a570434917586cf5be4e31f6a564bc5bde49a8e8a6fe",
+  "examples/fps_trace": "dafdb69deb476e81ac63691a2f96bc51e5b084a719142280f78d7a0dfdf6536a",
+  "examples/stack_trace": "263278d7e2e1f0ade268c37263039b6ddd9e698f4da47421d19cb9352c0f5b98",
+  "rust/crates/dev-tools/src/ui_application_logic_check.rs": "8455574f0a1c98fe131c1a14139798333c3ad68b1749eabb82ce67fe1b1bd78b",
+  "rust/crates/startup-ui/examples/fps_trace.rs": "73d02f3aa10db010aeb38dac7f49139a0bb0bd289e6fb9dbe54f246cc1669ad3",
+  "rust/crates/startup-ui/src/diagnostics/fps.rs": "ee4a00c65833fbab825b2aab85e3ea749a97d8fa5f9ad221b9753e8dbb9eda41",
+  "rust/crates/ui-framework/examples/stack_trace.rs": "29d33e2dfd5367d3262cb1f604562c4b90ad53dd1c1b24942f4986db15a8a291",
+  "rust/crates/ui-framework/src/stack.rs": "607d60d9e7913bf7e2c3466dbc0d22eeab13060b23c548123ca920f6019472a5"
+}

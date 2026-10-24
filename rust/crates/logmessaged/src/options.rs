@@ -71,10 +71,99 @@ impl Options {
                 .join(format!(".comma{prefix}"))
                 .join("log"),
         };
+        let endpoint =
+            selected_endpoint(endpoint, &prefix, env::var_os("ROUTE_UPLOAD_QA_IPC_ROOT"))?;
         Ok(Some(Self {
             root,
-            endpoint: endpoint.unwrap_or_else(|| format!("ipc:///tmp/logmessage{prefix}")),
+            endpoint,
             frames,
         }))
+    }
+}
+
+fn selected_endpoint(
+    explicit: Option<String>,
+    prefix: &str,
+    qa_root: Option<OsString>,
+) -> Result<String, Error> {
+    match explicit {
+        Some(endpoint) => Ok(endpoint),
+        None => qa_endpoint(prefix, qa_root),
+    }
+}
+fn qa_endpoint(prefix: &str, qa_root: Option<OsString>) -> Result<String, Error> {
+    Ok(match qa_root {
+        None => format!("ipc:///tmp/logmessage{prefix}"),
+        Some(path) => {
+            let path = PathBuf::from(path);
+            if path.parent() != Some(Path::new("/tmp"))
+                || !path
+                    .file_name()
+                    .is_some_and(|name| name.as_encoded_bytes().starts_with(b"route-upload-ipc-"))
+                || !std::fs::symlink_metadata(&path).is_ok_and(|meta| meta.is_dir())
+                || !std::fs::canonicalize(&path).is_ok_and(|actual| actual == path)
+            {
+                return Err(Error::Arguments("invalid route-upload QA IPC root"));
+            }
+            format!(
+                "ipc://{}/logmessage",
+                path.to_str()
+                    .ok_or(Error::Arguments("QA IPC root must be UTF-8"))?
+            )
+        }
+    })
+}
+
+#[cfg(test)]
+mod qa_endpoint_tests {
+    use super::*;
+    #[test]
+    fn explicit_endpoint_precedes_an_invalid_qa_default() {
+        assert_eq!(
+            selected_endpoint(
+                Some("ipc:///explicit-collector".into()),
+                "-original",
+                Some("/tmp".into())
+            )
+            .unwrap(),
+            "ipc:///explicit-collector"
+        );
+        assert!(selected_endpoint(None, "-original", Some("/tmp".into())).is_err());
+    }
+    #[test]
+    fn default_and_owned_qa_collector_endpoint_are_explicit_and_invalid_roots_fail() {
+        assert_eq!(
+            qa_endpoint("-original", None).unwrap(),
+            "ipc:///tmp/logmessage-original"
+        );
+        let root = tempfile::Builder::new()
+            .prefix("route-upload-ipc-")
+            .tempdir_in("/tmp")
+            .unwrap();
+        assert_eq!(
+            qa_endpoint("-original", Some(root.path().as_os_str().to_owned())).unwrap(),
+            format!("ipc://{}/logmessage", root.path().display())
+        );
+        for path in [
+            Path::new("/tmp"),
+            Path::new("relative"),
+            Path::new("/tmp/route-upload-ipc-missing"),
+        ] {
+            assert!(qa_endpoint("-original", Some(path.as_os_str().to_owned())).is_err());
+        }
+        let alias = root.path().with_extension("alias");
+        std::os::unix::fs::symlink(root.path(), &alias).unwrap();
+        for suffix in ["", "/", "/."] {
+            let mut spelling = alias.as_os_str().to_owned();
+            spelling.push(suffix);
+            assert!(
+                qa_endpoint("-original", Some(spelling)).is_err(),
+                "QA alias must be rejected, including trailing separators: {suffix}"
+            );
+            let mut genuine = root.path().as_os_str().to_owned();
+            genuine.push(suffix);
+            assert!(qa_endpoint("-original", Some(genuine)).is_ok());
+        }
+        std::fs::remove_file(alias).unwrap();
     }
 }

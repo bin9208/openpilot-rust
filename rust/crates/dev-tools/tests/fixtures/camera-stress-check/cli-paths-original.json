@@ -1,0 +1,217 @@
+{
+  "source_sha256": "62b87a20edc76103bf88be0b036b650c9836aca21c4f6532ce536f848deac99a",
+  "python": "3.12.15",
+  "capture": "Actual unmodified original CLI with /bin/sh peers; only temporary root replaced by $ROOT. Peers distinguish PATH versus cwd launches; original first policy assertion stays active.",
+  "cases": [
+    {
+      "name": "qemu-path-missing",
+      "args": [
+        "--reference",
+        "./source",
+        "--native",
+        "./native",
+        "--parser",
+        "./parser",
+        "--fixture",
+        "./fixture",
+        "--output",
+        "./out",
+        "--qemu",
+        "./qemu",
+        "--sysroot",
+        "./sysroot"
+      ],
+      "path": "/nonexistent",
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {}
+    },
+    {
+      "name": "qemu-path-found",
+      "args": [
+        "--reference",
+        "./source",
+        "--native",
+        "./native",
+        "--parser",
+        "./parser",
+        "--fixture",
+        "./fixture",
+        "--output",
+        "./out",
+        "--qemu",
+        "./qemu",
+        "--sysroot",
+        "./sysroot"
+      ],
+      "path": "$ROOT/bin",
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {
+        "constructor-lazy-native.json": "{\n  \"command\": [\n    \"qemu\",\n    \"-L\",\n    \"sysroot\",\n    \"-E\",\n    \"LD_PRELOAD=fixture\",\n    \"native\"\n  ],\n  \"environment\": {\n    \"STRESS_CLOCK\": \"1:0,1:1000,1:2000,1:3000\",\n    \"SPECTRA_ERROR_PROB\": \"bad\",\n    \"SPECTRA_ERROR_DT\": \"bad\",\n    \"STRESS_RAND\": \"0\"\n  },\n  \"actions\": \"\",\n  \"exit\": 0,\n  \"result\": {\n    \"origin\": \"PATH\"\n  },\n  \"trace\": [],\n  \"stderr\": \"\"\n}\n",
+        "constructor-lazy-native.stderr": "",
+        "constructor-lazy-native.stdout": "{\"origin\":\"PATH\"}\n",
+        "constructor-lazy-source.json": "{\n  \"command\": [\n    \"qemu\",\n    \"-L\",\n    \"sysroot\",\n    \"-E\",\n    \"LD_PRELOAD=fixture\",\n    \"source\"\n  ],\n  \"environment\": {\n    \"STRESS_CLOCK\": \"1:0,1:1000,1:2000,1:3000\",\n    \"SPECTRA_ERROR_PROB\": \"bad\",\n    \"SPECTRA_ERROR_DT\": \"bad\",\n    \"STRESS_RAND\": \"0\"\n  },\n  \"actions\": \"\",\n  \"exit\": 0,\n  \"result\": {\n    \"origin\": \"PATH\"\n  },\n  \"trace\": [],\n  \"stderr\": \"\"\n}\n",
+        "constructor-lazy-source.stderr": "",
+        "constructor-lazy-source.stdout": "{\"origin\":\"PATH\"}\n"
+      }
+    },
+    {
+      "name": "lexical-all",
+      "args": [
+        "--reference",
+        "./source//",
+        "--native",
+        "./native//",
+        "--parser",
+        "./parser//",
+        "--fixture",
+        "./fixture//",
+        "--output",
+        "./out//./",
+        "--qemu",
+        "$ROOT//./qemu",
+        "--sysroot",
+        "./sysroot//"
+      ],
+      "path": "/nonexistent",
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {
+        "constructor-lazy-native.json": "{\n  \"command\": [\n    \"$ROOT/qemu\",\n    \"-L\",\n    \"sysroot\",\n    \"-E\",\n    \"LD_PRELOAD=fixture\",\n    \"native\"\n  ],\n  \"environment\": {\n    \"STRESS_CLOCK\": \"1:0,1:1000,1:2000,1:3000\",\n    \"SPECTRA_ERROR_PROB\": \"bad\",\n    \"SPECTRA_ERROR_DT\": \"bad\",\n    \"STRESS_RAND\": \"0\"\n  },\n  \"actions\": \"\",\n  \"exit\": 0,\n  \"result\": {\n    \"origin\": \"cwd\"\n  },\n  \"trace\": [],\n  \"stderr\": \"\"\n}\n",
+        "constructor-lazy-native.stderr": "",
+        "constructor-lazy-native.stdout": "{\"origin\":\"cwd\"}\n",
+        "constructor-lazy-source.json": "{\n  \"command\": [\n    \"$ROOT/qemu\",\n    \"-L\",\n    \"sysroot\",\n    \"-E\",\n    \"LD_PRELOAD=fixture\",\n    \"source\"\n  ],\n  \"environment\": {\n    \"STRESS_CLOCK\": \"1:0,1:1000,1:2000,1:3000\",\n    \"SPECTRA_ERROR_PROB\": \"bad\",\n    \"SPECTRA_ERROR_DT\": \"bad\",\n    \"STRESS_RAND\": \"0\"\n  },\n  \"actions\": \"\",\n  \"exit\": 0,\n  \"result\": {\n    \"origin\": \"cwd\"\n  },\n  \"trace\": [],\n  \"stderr\": \"\"\n}\n",
+        "constructor-lazy-source.stderr": "",
+        "constructor-lazy-source.stdout": "{\"origin\":\"cwd\"}\n"
+      }
+    },
+    {
+      "name": "dot-and-slashes",
+      "args": [
+        "--reference",
+        "./nested//./source",
+        "--native",
+        "./nested//./native",
+        "--parser",
+        "./nested//./parser",
+        "--fixture",
+        "./nested//./fixture",
+        "--output",
+        "./out//./",
+        "--qemu",
+        "$ROOT/qemu",
+        "--sysroot",
+        "./nested//./sysroot"
+      ],
+      "path": "/nonexistent",
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {
+        "constructor-lazy-native.json": "{\n  \"command\": [\n    \"$ROOT/qemu\",\n    \"-L\",\n    \"nested/sysroot\",\n    \"-E\",\n    \"LD_PRELOAD=nested/fixture\",\n    \"nested/native\"\n  ],\n  \"environment\": {\n    \"STRESS_CLOCK\": \"1:0,1:1000,1:2000,1:3000\",\n    \"SPECTRA_ERROR_PROB\": \"bad\",\n    \"SPECTRA_ERROR_DT\": \"bad\",\n    \"STRESS_RAND\": \"0\"\n  },\n  \"actions\": \"\",\n  \"exit\": 0,\n  \"result\": {\n    \"origin\": \"cwd\"\n  },\n  \"trace\": [],\n  \"stderr\": \"\"\n}\n",
+        "constructor-lazy-native.stderr": "",
+        "constructor-lazy-native.stdout": "{\"origin\":\"cwd\"}\n",
+        "constructor-lazy-source.json": "{\n  \"command\": [\n    \"$ROOT/qemu\",\n    \"-L\",\n    \"nested/sysroot\",\n    \"-E\",\n    \"LD_PRELOAD=nested/fixture\",\n    \"nested/source\"\n  ],\n  \"environment\": {\n    \"STRESS_CLOCK\": \"1:0,1:1000,1:2000,1:3000\",\n    \"SPECTRA_ERROR_PROB\": \"bad\",\n    \"SPECTRA_ERROR_DT\": \"bad\",\n    \"STRESS_RAND\": \"0\"\n  },\n  \"actions\": \"\",\n  \"exit\": 0,\n  \"result\": {\n    \"origin\": \"cwd\"\n  },\n  \"trace\": [],\n  \"stderr\": \"\"\n}\n",
+        "constructor-lazy-source.stderr": "",
+        "constructor-lazy-source.stdout": "{\"origin\":\"cwd\"}\n"
+      }
+    },
+    {
+      "name": "parents-retained",
+      "args": [
+        "--reference",
+        "nested/../source",
+        "--native",
+        "nested/../native",
+        "--parser",
+        "nested/../parser",
+        "--fixture",
+        "nested/../fixture",
+        "--output",
+        "./out",
+        "--qemu",
+        "$ROOT/qemu",
+        "--sysroot",
+        "nested/../sysroot"
+      ],
+      "path": "/nonexistent",
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {
+        "constructor-lazy-native.json": "{\n  \"command\": [\n    \"$ROOT/qemu\",\n    \"-L\",\n    \"nested/../sysroot\",\n    \"-E\",\n    \"LD_PRELOAD=nested/../fixture\",\n    \"nested/../native\"\n  ],\n  \"environment\": {\n    \"STRESS_CLOCK\": \"1:0,1:1000,1:2000,1:3000\",\n    \"SPECTRA_ERROR_PROB\": \"bad\",\n    \"SPECTRA_ERROR_DT\": \"bad\",\n    \"STRESS_RAND\": \"0\"\n  },\n  \"actions\": \"\",\n  \"exit\": 0,\n  \"result\": {\n    \"origin\": \"cwd\"\n  },\n  \"trace\": [],\n  \"stderr\": \"\"\n}\n",
+        "constructor-lazy-native.stderr": "",
+        "constructor-lazy-native.stdout": "{\"origin\":\"cwd\"}\n",
+        "constructor-lazy-source.json": "{\n  \"command\": [\n    \"$ROOT/qemu\",\n    \"-L\",\n    \"nested/../sysroot\",\n    \"-E\",\n    \"LD_PRELOAD=nested/../fixture\",\n    \"nested/../source\"\n  ],\n  \"environment\": {\n    \"STRESS_CLOCK\": \"1:0,1:1000,1:2000,1:3000\",\n    \"SPECTRA_ERROR_PROB\": \"bad\",\n    \"SPECTRA_ERROR_DT\": \"bad\",\n    \"STRESS_RAND\": \"0\"\n  },\n  \"actions\": \"\",\n  \"exit\": 0,\n  \"result\": {\n    \"origin\": \"cwd\"\n  },\n  \"trace\": [],\n  \"stderr\": \"\"\n}\n",
+        "constructor-lazy-source.stderr": "",
+        "constructor-lazy-source.stdout": "{\"origin\":\"cwd\"}\n"
+      }
+    },
+    {
+      "name": "empty-paths",
+      "args": [
+        "--reference",
+        "",
+        "--native",
+        "",
+        "--parser",
+        "",
+        "--fixture",
+        "",
+        "--output",
+        "./out",
+        "--qemu",
+        "$ROOT/qemu",
+        "--sysroot",
+        ""
+      ],
+      "path": "/nonexistent",
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {
+        "constructor-lazy-native.json": "{\n  \"command\": [\n    \"$ROOT/qemu\",\n    \"-L\",\n    \".\",\n    \"-E\",\n    \"LD_PRELOAD=.\",\n    \".\"\n  ],\n  \"environment\": {\n    \"STRESS_CLOCK\": \"1:0,1:1000,1:2000,1:3000\",\n    \"SPECTRA_ERROR_PROB\": \"bad\",\n    \"SPECTRA_ERROR_DT\": \"bad\",\n    \"STRESS_RAND\": \"0\"\n  },\n  \"actions\": \"\",\n  \"exit\": 0,\n  \"result\": {\n    \"origin\": \"cwd\"\n  },\n  \"trace\": [],\n  \"stderr\": \"\"\n}\n",
+        "constructor-lazy-native.stderr": "",
+        "constructor-lazy-native.stdout": "{\"origin\":\"cwd\"}\n",
+        "constructor-lazy-source.json": "{\n  \"command\": [\n    \"$ROOT/qemu\",\n    \"-L\",\n    \".\",\n    \"-E\",\n    \"LD_PRELOAD=.\",\n    \".\"\n  ],\n  \"environment\": {\n    \"STRESS_CLOCK\": \"1:0,1:1000,1:2000,1:3000\",\n    \"SPECTRA_ERROR_PROB\": \"bad\",\n    \"SPECTRA_ERROR_DT\": \"bad\",\n    \"STRESS_RAND\": \"0\"\n  },\n  \"actions\": \"\",\n  \"exit\": 0,\n  \"result\": {\n    \"origin\": \"cwd\"\n  },\n  \"trace\": [],\n  \"stderr\": \"\"\n}\n",
+        "constructor-lazy-source.stderr": "",
+        "constructor-lazy-source.stdout": "{\"origin\":\"cwd\"}\n"
+      }
+    },
+    {
+      "name": "double-root-retained",
+      "args": [
+        "--reference",
+        "//source//./",
+        "--native",
+        "///native//./",
+        "--parser",
+        "//parser//./",
+        "--fixture",
+        "//fixture//./",
+        "--output",
+        "./out",
+        "--qemu",
+        "$ROOT/qemu",
+        "--sysroot",
+        "//sysroot//./"
+      ],
+      "path": "/nonexistent",
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {
+        "constructor-lazy-native.json": "{\n  \"command\": [\n    \"$ROOT/qemu\",\n    \"-L\",\n    \"//sysroot\",\n    \"-E\",\n    \"LD_PRELOAD=//fixture\",\n    \"/native\"\n  ],\n  \"environment\": {\n    \"STRESS_CLOCK\": \"1:0,1:1000,1:2000,1:3000\",\n    \"SPECTRA_ERROR_PROB\": \"bad\",\n    \"SPECTRA_ERROR_DT\": \"bad\",\n    \"STRESS_RAND\": \"0\"\n  },\n  \"actions\": \"\",\n  \"exit\": 0,\n  \"result\": {\n    \"origin\": \"cwd\"\n  },\n  \"trace\": [],\n  \"stderr\": \"\"\n}\n",
+        "constructor-lazy-native.stderr": "",
+        "constructor-lazy-native.stdout": "{\"origin\":\"cwd\"}\n",
+        "constructor-lazy-source.json": "{\n  \"command\": [\n    \"$ROOT/qemu\",\n    \"-L\",\n    \"//sysroot\",\n    \"-E\",\n    \"LD_PRELOAD=//fixture\",\n    \"//source\"\n  ],\n  \"environment\": {\n    \"STRESS_CLOCK\": \"1:0,1:1000,1:2000,1:3000\",\n    \"SPECTRA_ERROR_PROB\": \"bad\",\n    \"SPECTRA_ERROR_DT\": \"bad\",\n    \"STRESS_RAND\": \"0\"\n  },\n  \"actions\": \"\",\n  \"exit\": 0,\n  \"result\": {\n    \"origin\": \"cwd\"\n  },\n  \"trace\": [],\n  \"stderr\": \"\"\n}\n",
+        "constructor-lazy-source.stderr": "",
+        "constructor-lazy-source.stdout": "{\"origin\":\"cwd\"}\n"
+      }
+    }
+  ]
+}

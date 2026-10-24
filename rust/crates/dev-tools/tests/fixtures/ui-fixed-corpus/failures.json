@@ -1,0 +1,967 @@
+[
+  {
+    "kind": "qr",
+    "case": "success",
+    "exit": 0,
+    "reply_sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "result.json": {
+        "bytes": 119,
+        "sha256": "7054a9b6d6b15fea63b6fe9d39df26312735339161378dfaf954f3d3a2c94b45"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      },
+      "source.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      },
+      "native.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      }
+    },
+    "small": {
+      "result.json": "{\n  \"cases\": 64,\n  \"exact\": true,\n  \"correction\": [\n    \"L\",\n    \"M\"\n  ],\n  \"source_dependency\": \"uv.lock qrcode 8.2\"\n}",
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "PASS: 64 source/native QR segmentation, mask selection and complete module matrices\n",
+    "stderr_last": []
+  },
+  {
+    "kind": "qr",
+    "case": "nonzero",
+    "exit": 1,
+    "reply_sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558",
+    "reply_stderr_hex": "",
+    "status": 7,
+    "files": {
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      }
+    },
+    "small": {},
+    "stdout": "",
+    "stderr_last": [
+      "subprocess.CalledProcessError: Command '['/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-15-ui-fixed-corpus/tmpv19um3y2/peer']' returned non-zero exit status 7."
+    ]
+  },
+  {
+    "kind": "qr",
+    "case": "spawn",
+    "exit": 1,
+    "reply_sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      }
+    },
+    "small": {},
+    "stdout": "",
+    "stderr_last": [
+      "FileNotFoundError: [Errno 2] No such file or directory: '/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-15-ui-fixed-corpus/tmp4yjiqth6/missing'"
+    ]
+  },
+  {
+    "kind": "qr",
+    "case": "invalid-utf8",
+    "exit": 1,
+    "reply_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      }
+    },
+    "small": {},
+    "stdout": "",
+    "stderr_last": [
+      "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+    ]
+  },
+  {
+    "kind": "qr",
+    "case": "malformed",
+    "exit": 1,
+    "reply_sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      },
+      "source.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      },
+      "native.json": {
+        "bytes": 1,
+        "sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n",
+      "native.json": "{"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+    ]
+  },
+  {
+    "kind": "qr",
+    "case": "scalar",
+    "exit": 1,
+    "reply_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      },
+      "source.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      },
+      "native.json": {
+        "bytes": 1,
+        "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n",
+      "native.json": "0"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "TypeError: 'int' object is not iterable"
+    ]
+  },
+  {
+    "kind": "qr",
+    "case": "mapping",
+    "exit": 1,
+    "reply_sha256": "a4934d64e5db89fa5d647a3a0b0d5a263bab2ae6d5c5498f9124a6ccb139e2f8",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      },
+      "source.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      },
+      "native.json": {
+        "bytes": 812,
+        "sha256": "a4934d64e5db89fa5d647a3a0b0d5a263bab2ae6d5c5498f9124a6ccb139e2f8"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n",
+      "native.json": "{\"key0\": 0, \"key1\": 1, \"key2\": 2, \"key3\": 3, \"key4\": 4, \"key5\": 5, \"key6\": 6, \"key7\": 7, \"key8\": 8, \"key9\": 9, \"key10\": 10, \"key11\": 11, \"key12\": 12, \"key13\": 13, \"key14\": 14, \"key15\": 15, \"key16\": 16, \"key17\": 17, \"key18\": 18, \"key19\": 19, \"key20\": 20, \"key21\": 21, \"key22\": 22, \"key23\": 23, \"key24\": 24, \"key25\": 25, \"key26\": 26, \"key27\": 27, \"key28\": 28, \"key29\": 29, \"key30\": 30, \"key31\": 31, \"key32\": 32, \"key33\": 33, \"key34\": 34, \"key35\": 35, \"key36\": 36, \"key37\": 37, \"key38\": 38, \"key39\": 39, \"key40\": 40, \"key41\": 41, \"key42\": 42, \"key43\": 43, \"key44\": 44, \"key45\": 45, \"key46\": 46, \"key47\": 47, \"key48\": 48, \"key49\": 49, \"key50\": 50, \"key51\": 51, \"key52\": 52, \"key53\": 53, \"key54\": 54, \"key55\": 55, \"key56\": 56, \"key57\": 57, \"key58\": 58, \"key59\": 59, \"key60\": 60, \"key61\": 61, \"key62\": 62, \"key63\": 63}"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "TypeError: string indices must be integers, not 'str'"
+    ]
+  },
+  {
+    "kind": "qr",
+    "case": "string",
+    "exit": 1,
+    "reply_sha256": "a169c7f64e12e1be3c96b9efad3be33503cd99c80fb33595e707d21fcd65a881",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      },
+      "source.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      },
+      "native.json": {
+        "bytes": 66,
+        "sha256": "a169c7f64e12e1be3c96b9efad3be33503cd99c80fb33595e707d21fcd65a881"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n",
+      "native.json": "\"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\""
+    },
+    "stdout": "",
+    "stderr_last": [
+      "TypeError: string indices must be integers, not 'str'"
+    ]
+  },
+  {
+    "kind": "qr",
+    "case": "short",
+    "exit": 1,
+    "reply_sha256": "5b01274a15ed84b7adbdca1bcadf0e3f01947be18cc688871431610b7451ee87",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      },
+      "source.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      },
+      "native.json": {
+        "bytes": 1348195,
+        "sha256": "5b01274a15ed84b7adbdca1bcadf0e3f01947be18cc688871431610b7451ee87"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "ValueError: zip() argument 2 is shorter than argument 1"
+    ]
+  },
+  {
+    "kind": "qr",
+    "case": "extra",
+    "exit": 1,
+    "reply_sha256": "1adca96a2f88bea0f5b6a011c9653a67e1cbfc27689f7650303e99c188530b1d",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      },
+      "source.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      },
+      "native.json": {
+        "bytes": 1358218,
+        "sha256": "1adca96a2f88bea0f5b6a011c9653a67e1cbfc27689f7650303e99c188530b1d"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "ValueError: zip() argument 2 is longer than argument 1"
+    ]
+  },
+  {
+    "kind": "qr",
+    "case": "mismatch",
+    "exit": 1,
+    "reply_sha256": "5c25815fc2ad46615995e1c0842f22b19dd98ccfd1771814e00a7631d72b503a",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      },
+      "source.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      },
+      "native.json": {
+        "bytes": 1355320,
+        "sha256": "5c25815fc2ad46615995e1c0842f22b19dd98ccfd1771814e00a7631d72b503a"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "AssertionError: (0, '', 21, 21, 0, 0)"
+    ]
+  },
+  {
+    "kind": "qr",
+    "case": "numeric-equivalent",
+    "exit": 0,
+    "reply_sha256": "9b953851c3a2e75245dfde264eaddf6991bac25edecea28e679cd818862f52a1",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "result.json": {
+        "bytes": 119,
+        "sha256": "7054a9b6d6b15fea63b6fe9d39df26312735339161378dfaf954f3d3a2c94b45"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      },
+      "source.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      },
+      "native.json": {
+        "bytes": 627895,
+        "sha256": "9b953851c3a2e75245dfde264eaddf6991bac25edecea28e679cd818862f52a1"
+      }
+    },
+    "small": {
+      "result.json": "{\n  \"cases\": 64,\n  \"exact\": true,\n  \"correction\": [\n    \"L\",\n    \"M\"\n  ],\n  \"source_dependency\": \"uv.lock qrcode 8.2\"\n}",
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "PASS: 64 source/native QR segmentation, mask selection and complete module matrices\n",
+    "stderr_last": []
+  },
+  {
+    "kind": "qr",
+    "case": "stale-malformed",
+    "exit": 1,
+    "reply_sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "untouched": {
+        "bytes": 4,
+        "sha256": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f"
+      },
+      "result.json": {
+        "bytes": 10,
+        "sha256": "6b3c0723d010036ba7b0949dafcad0c08284312ca6cdd22e07cd2f01ac47ae90"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      },
+      "source.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      },
+      "native.json": {
+        "bytes": 1,
+        "sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96"
+      }
+    },
+    "small": {
+      "untouched": "keep",
+      "result.json": "old-result",
+      "native.stderr": "(no stderr)\n",
+      "native.json": "{"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+    ]
+  },
+  {
+    "kind": "qr",
+    "case": "stale-mismatch",
+    "exit": 1,
+    "reply_sha256": "5c25815fc2ad46615995e1c0842f22b19dd98ccfd1771814e00a7631d72b503a",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "untouched": {
+        "bytes": 4,
+        "sha256": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f"
+      },
+      "result.json": {
+        "bytes": 10,
+        "sha256": "6b3c0723d010036ba7b0949dafcad0c08284312ca6cdd22e07cd2f01ac47ae90"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      },
+      "source.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      },
+      "native.json": {
+        "bytes": 1355320,
+        "sha256": "5c25815fc2ad46615995e1c0842f22b19dd98ccfd1771814e00a7631d72b503a"
+      }
+    },
+    "small": {
+      "untouched": "keep",
+      "result.json": "old-result",
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "AssertionError: (0, '', 21, 21, 0, 0)"
+    ]
+  },
+  {
+    "kind": "qr",
+    "case": "newlines",
+    "exit": 0,
+    "reply_sha256": "2cb6ae513d090db4b4692eaab72d8be5e4e34f8f12f8c8c52a5f27e096695535",
+    "reply_stderr_hex": "7374646572720d0a6e6578740d",
+    "status": 0,
+    "files": {
+      "result.json": {
+        "bytes": 119,
+        "sha256": "7054a9b6d6b15fea63b6fe9d39df26312735339161378dfaf954f3d3a2c94b45"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "1f36466c60a666e19bca83660f4d862e72d5773d66c5b299b09fb385bcdfe8d6"
+      },
+      "input.json": {
+        "bytes": 24816,
+        "sha256": "66b26ad75208f6329c6ffa861017123b8a42fdd3483686bbc74674b203d4c639"
+      },
+      "source.json": {
+        "bytes": 1355319,
+        "sha256": "4a7a29dcd5412c008ab2a99bbc3ce737da0dc50248ac10256af5bb22c2eee558"
+      },
+      "native.json": {
+        "bytes": 1355320,
+        "sha256": "8ef4e996caadc97795e60a96b7eee567e5d6fa45cc9ac681e2a3eaa8be6d3434"
+      }
+    },
+    "small": {
+      "result.json": "{\n  \"cases\": 64,\n  \"exact\": true,\n  \"correction\": [\n    \"L\",\n    \"M\"\n  ],\n  \"source_dependency\": \"uv.lock qrcode 8.2\"\n}",
+      "native.stderr": "stderr\nnext\n"
+    },
+    "stdout": "PASS: 64 source/native QR segmentation, mask selection and complete module matrices\n",
+    "stderr_last": []
+  },
+  {
+    "kind": "torque",
+    "case": "success",
+    "exit": 0,
+    "reply_sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "result.json": {
+        "bytes": 68,
+        "sha256": "c6bee0a7cbfcb4293fb6754efd3fbd97399aa78067449bacebb27c99af88e6b4"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      },
+      "source.json": {
+        "bytes": 6892817,
+        "sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+      },
+      "native.json": {
+        "bytes": 6892817,
+        "sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+      }
+    },
+    "small": {
+      "result.json": "{\n  \"cases\": 1603,\n  \"exact_f32_points\": true,\n  \"differences\": []\n}",
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "PASS 1603 original/native torque arcs, exact float32 points with quantized hits, ties and LRU eviction\n",
+    "stderr_last": []
+  },
+  {
+    "kind": "torque",
+    "case": "nonzero",
+    "exit": 1,
+    "reply_sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b",
+    "reply_stderr_hex": "",
+    "status": 7,
+    "files": {
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      }
+    },
+    "small": {},
+    "stdout": "",
+    "stderr_last": [
+      "subprocess.CalledProcessError: Command '['/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-15-ui-fixed-corpus/tmpl13vk15q/peer']' returned non-zero exit status 7."
+    ]
+  },
+  {
+    "kind": "torque",
+    "case": "spawn",
+    "exit": 1,
+    "reply_sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      }
+    },
+    "small": {},
+    "stdout": "",
+    "stderr_last": [
+      "FileNotFoundError: [Errno 2] No such file or directory: '/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-15-ui-fixed-corpus/tmpk7kyx4b2/missing'"
+    ]
+  },
+  {
+    "kind": "torque",
+    "case": "invalid-utf8",
+    "exit": 1,
+    "reply_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      }
+    },
+    "small": {},
+    "stdout": "",
+    "stderr_last": [
+      "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte"
+    ]
+  },
+  {
+    "kind": "torque",
+    "case": "malformed",
+    "exit": 1,
+    "reply_sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+    ]
+  },
+  {
+    "kind": "torque",
+    "case": "scalar",
+    "exit": 1,
+    "reply_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      },
+      "source.json": {
+        "bytes": 6892817,
+        "sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+      },
+      "native.json": {
+        "bytes": 1,
+        "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n",
+      "native.json": "0"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "TypeError: object of type 'int' has no len()"
+    ]
+  },
+  {
+    "kind": "torque",
+    "case": "mapping",
+    "exit": 1,
+    "reply_sha256": "d64e1fb6ed51a80a741a2eb05eb66e22efbc8d0ca65e1a7b76f0efe30c488c3c",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "result.json": {
+        "bytes": 12185219,
+        "sha256": "622927104b4a9bba75ea0c989527946402107a823ac59e5f5ffcf6ad4c7b1c66"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      },
+      "source.json": {
+        "bytes": 6892817,
+        "sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+      },
+      "native.json": {
+        "bytes": 25031,
+        "sha256": "d64e1fb6ed51a80a741a2eb05eb66e22efbc8d0ca65e1a7b76f0efe30c488c3c"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "AssertionError: [{'step': 0, 'source': [{'x': 307.155029296875, 'y': 317.43206787109375}, {'x': 307.3966369628906, 'y': 316.4629821777344}, {'x': 307.7737121582031, 'y': 315.53814697265625}, {'x': 308.278564453125, 'y': 314.6763916015625}, {'x': 308.9009094238281, 'y': 313.8952331542969}, {'x': 309.6280822753906, 'y': 313.21063232421875}, {'x': 310.4452819824219, 'y': 312.6364440917969}, {'x': 311.3359069824219, 'y': 312.1844482421875}, {'x': 312.2817687988281, 'y': 311.86376953125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 314.26153564453125, 'y': 311.6397705078125}, {'x': 315.2551574707031, 'y': 311.7409973144531}, {'x': 316.2242431640625, 'y': 311.98260498046875}, {'x': 317.1490783691406, 'y': 312.35968017578125}, {'x': 318.0108337402344, 'y': 312.8645324707031}, {'x': 318.7919616699219, 'y': 313.48687744140625}, {'x': 319.4765930175781, 'y': 314.21405029296875}, {'x': 320.0507507324219, 'y': 315.03125}, {'x': 320.5027770996094, 'y': 315.921875}, {'x': 320.8234558105469, 'y': 316.86773681640625}, {'x': 321.0062255859375, 'y': 317.849609375}, {'x': 321.043701171875, 'y': 318.9473876953125}, {'x': 320.90899658203125, 'y': 320.03753662109375}, {'x': 320.60540771484375, 'y': 321.0931701660156}, {'x': 320.1404113769531, 'y': 322.08831787109375}, {'x': 319.52545166015625, 'y': 322.99847412109375}, {'x': 318.77569580078125, 'y': 323.8012390136719}, {'x': 317.90960693359375, 'y': 324.476806640625}, {'x': 316.948486328125, 'y': 325.0085754394531}, {'x': 315.916015625, 'y': 325.3834533691406}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 313.73980712890625, 'y': 325.6296691894531}, {'x': 312.649658203125, 'y': 325.4949645996094}, {'x': 311.5940246582031, 'y': 325.1913757324219}, {'x': 310.598876953125, 'y': 324.72637939453125}, {'x': 309.688720703125, 'y': 324.1114196777344}, {'x': 308.885986328125, 'y': 323.3616638183594}, {'x': 308.21038818359375, 'y': 322.4955749511719}, {'x': 307.6786193847656, 'y': 321.5344543457031}, {'x': 307.3037414550781, 'y': 320.5019836425781}, {'x': 307.0538024902344, 'y': 318.4256591796875}], 'native': 'key0'}]"
+    ]
+  },
+  {
+    "kind": "torque",
+    "case": "string",
+    "exit": 1,
+    "reply_sha256": "21c5b9f0a8568efb9be0168255afaf658918b2d62ee2f53ddc26bbb389701655",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "result.json": {
+        "bytes": 12176711,
+        "sha256": "c359ddb9d81660096f07cb5736de23c978aced5e81db13146e71232e0cb9620c"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      },
+      "source.json": {
+        "bytes": 6892817,
+        "sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+      },
+      "native.json": {
+        "bytes": 1605,
+        "sha256": "21c5b9f0a8568efb9be0168255afaf658918b2d62ee2f53ddc26bbb389701655"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "AssertionError: [{'step': 0, 'source': [{'x': 307.155029296875, 'y': 317.43206787109375}, {'x': 307.3966369628906, 'y': 316.4629821777344}, {'x': 307.7737121582031, 'y': 315.53814697265625}, {'x': 308.278564453125, 'y': 314.6763916015625}, {'x': 308.9009094238281, 'y': 313.8952331542969}, {'x': 309.6280822753906, 'y': 313.21063232421875}, {'x': 310.4452819824219, 'y': 312.6364440917969}, {'x': 311.3359069824219, 'y': 312.1844482421875}, {'x': 312.2817687988281, 'y': 311.86376953125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 314.26153564453125, 'y': 311.6397705078125}, {'x': 315.2551574707031, 'y': 311.7409973144531}, {'x': 316.2242431640625, 'y': 311.98260498046875}, {'x': 317.1490783691406, 'y': 312.35968017578125}, {'x': 318.0108337402344, 'y': 312.8645324707031}, {'x': 318.7919616699219, 'y': 313.48687744140625}, {'x': 319.4765930175781, 'y': 314.21405029296875}, {'x': 320.0507507324219, 'y': 315.03125}, {'x': 320.5027770996094, 'y': 315.921875}, {'x': 320.8234558105469, 'y': 316.86773681640625}, {'x': 321.0062255859375, 'y': 317.849609375}, {'x': 321.043701171875, 'y': 318.9473876953125}, {'x': 320.90899658203125, 'y': 320.03753662109375}, {'x': 320.60540771484375, 'y': 321.0931701660156}, {'x': 320.1404113769531, 'y': 322.08831787109375}, {'x': 319.52545166015625, 'y': 322.99847412109375}, {'x': 318.77569580078125, 'y': 323.8012390136719}, {'x': 317.90960693359375, 'y': 324.476806640625}, {'x': 316.948486328125, 'y': 325.0085754394531}, {'x': 315.916015625, 'y': 325.3834533691406}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 313.73980712890625, 'y': 325.6296691894531}, {'x': 312.649658203125, 'y': 325.4949645996094}, {'x': 311.5940246582031, 'y': 325.1913757324219}, {'x': 310.598876953125, 'y': 324.72637939453125}, {'x': 309.688720703125, 'y': 324.1114196777344}, {'x': 308.885986328125, 'y': 323.3616638183594}, {'x': 308.21038818359375, 'y': 322.4955749511719}, {'x': 307.6786193847656, 'y': 321.5344543457031}, {'x': 307.3037414550781, 'y': 320.5019836425781}, {'x': 307.0538024902344, 'y': 318.4256591796875}], 'native': 'q'}]"
+    ]
+  },
+  {
+    "kind": "torque",
+    "case": "short",
+    "exit": 1,
+    "reply_sha256": "ec9776c664481e13afa86b15a28ea2012408777c06d84da48a22cd3aaaf4ffd8",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      },
+      "source.json": {
+        "bytes": 6892817,
+        "sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+      },
+      "native.json": {
+        "bytes": 6887823,
+        "sha256": "ec9776c664481e13afa86b15a28ea2012408777c06d84da48a22cd3aaaf4ffd8"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "AssertionError"
+    ]
+  },
+  {
+    "kind": "torque",
+    "case": "extra",
+    "exit": 1,
+    "reply_sha256": "5a1f3058f16538b734ac7dd98d5be368e1b41b8cea36962c803c900bec28113e",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      },
+      "source.json": {
+        "bytes": 6892817,
+        "sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+      },
+      "native.json": {
+        "bytes": 6895571,
+        "sha256": "5a1f3058f16538b734ac7dd98d5be368e1b41b8cea36962c803c900bec28113e"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "AssertionError"
+    ]
+  },
+  {
+    "kind": "torque",
+    "case": "mismatch",
+    "exit": 1,
+    "reply_sha256": "c376258e6f7d031646bdc480c23afdd44897cc5e27d983e3c4c9741f0061edb6",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "result.json": {
+        "bytes": 9836,
+        "sha256": "14dff108a1b212690e99fb7a184d8eb3365fe5ff52c8297871b9c3e8347b42df"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      },
+      "source.json": {
+        "bytes": 6892817,
+        "sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+      },
+      "native.json": {
+        "bytes": 6892817,
+        "sha256": "c376258e6f7d031646bdc480c23afdd44897cc5e27d983e3c4c9741f0061edb6"
+      }
+    },
+    "small": {
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "AssertionError: [{'step': 0, 'source': [{'x': 307.155029296875, 'y': 317.43206787109375}, {'x': 307.3966369628906, 'y': 316.4629821777344}, {'x': 307.7737121582031, 'y': 315.53814697265625}, {'x': 308.278564453125, 'y': 314.6763916015625}, {'x': 308.9009094238281, 'y': 313.8952331542969}, {'x': 309.6280822753906, 'y': 313.21063232421875}, {'x': 310.4452819824219, 'y': 312.6364440917969}, {'x': 311.3359069824219, 'y': 312.1844482421875}, {'x': 312.2817687988281, 'y': 311.86376953125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 314.26153564453125, 'y': 311.6397705078125}, {'x': 315.2551574707031, 'y': 311.7409973144531}, {'x': 316.2242431640625, 'y': 311.98260498046875}, {'x': 317.1490783691406, 'y': 312.35968017578125}, {'x': 318.0108337402344, 'y': 312.8645324707031}, {'x': 318.7919616699219, 'y': 313.48687744140625}, {'x': 319.4765930175781, 'y': 314.21405029296875}, {'x': 320.0507507324219, 'y': 315.03125}, {'x': 320.5027770996094, 'y': 315.921875}, {'x': 320.8234558105469, 'y': 316.86773681640625}, {'x': 321.0062255859375, 'y': 317.849609375}, {'x': 321.043701171875, 'y': 318.9473876953125}, {'x': 320.90899658203125, 'y': 320.03753662109375}, {'x': 320.60540771484375, 'y': 321.0931701660156}, {'x': 320.1404113769531, 'y': 322.08831787109375}, {'x': 319.52545166015625, 'y': 322.99847412109375}, {'x': 318.77569580078125, 'y': 323.8012390136719}, {'x': 317.90960693359375, 'y': 324.476806640625}, {'x': 316.948486328125, 'y': 325.0085754394531}, {'x': 315.916015625, 'y': 325.3834533691406}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 313.73980712890625, 'y': 325.6296691894531}, {'x': 312.649658203125, 'y': 325.4949645996094}, {'x': 311.5940246582031, 'y': 325.1913757324219}, {'x': 310.598876953125, 'y': 324.72637939453125}, {'x': 309.688720703125, 'y': 324.1114196777344}, {'x': 308.885986328125, 'y': 323.3616638183594}, {'x': 308.21038818359375, 'y': 322.4955749511719}, {'x': 307.6786193847656, 'y': 321.5344543457031}, {'x': 307.3037414550781, 'y': 320.5019836425781}, {'x': 307.0538024902344, 'y': 318.4256591796875}], 'native': [{'x': 308.155029296875, 'y': 317.43206787109375}, {'x': 307.3966369628906, 'y': 316.4629821777344}, {'x': 307.7737121582031, 'y': 315.53814697265625}, {'x': 308.278564453125, 'y': 314.6763916015625}, {'x': 308.9009094238281, 'y': 313.8952331542969}, {'x': 309.6280822753906, 'y': 313.21063232421875}, {'x': 310.4452819824219, 'y': 312.6364440917969}, {'x': 311.3359069824219, 'y': 312.1844482421875}, {'x': 312.2817687988281, 'y': 311.86376953125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 314.26153564453125, 'y': 311.6397705078125}, {'x': 315.2551574707031, 'y': 311.7409973144531}, {'x': 316.2242431640625, 'y': 311.98260498046875}, {'x': 317.1490783691406, 'y': 312.35968017578125}, {'x': 318.0108337402344, 'y': 312.8645324707031}, {'x': 318.7919616699219, 'y': 313.48687744140625}, {'x': 319.4765930175781, 'y': 314.21405029296875}, {'x': 320.0507507324219, 'y': 315.03125}, {'x': 320.5027770996094, 'y': 315.921875}, {'x': 320.8234558105469, 'y': 316.86773681640625}, {'x': 321.0062255859375, 'y': 317.849609375}, {'x': 321.043701171875, 'y': 318.9473876953125}, {'x': 320.90899658203125, 'y': 320.03753662109375}, {'x': 320.60540771484375, 'y': 321.0931701660156}, {'x': 320.1404113769531, 'y': 322.08831787109375}, {'x': 319.52545166015625, 'y': 322.99847412109375}, {'x': 318.77569580078125, 'y': 323.8012390136719}, {'x': 317.90960693359375, 'y': 324.476806640625}, {'x': 316.948486328125, 'y': 325.0085754394531}, {'x': 315.916015625, 'y': 325.3834533691406}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 313.73980712890625, 'y': 325.6296691894531}, {'x': 312.649658203125, 'y': 325.4949645996094}, {'x': 311.5940246582031, 'y': 325.1913757324219}, {'x': 310.598876953125, 'y': 324.72637939453125}, {'x': 309.688720703125, 'y': 324.1114196777344}, {'x': 308.885986328125, 'y': 323.3616638183594}, {'x': 308.21038818359375, 'y': 322.4955749511719}, {'x': 307.6786193847656, 'y': 321.5344543457031}, {'x': 307.3037414550781, 'y': 320.5019836425781}, {'x': 307.0538024902344, 'y': 318.4256591796875}]}]"
+    ]
+  },
+  {
+    "kind": "torque",
+    "case": "numeric-equivalent",
+    "exit": 0,
+    "reply_sha256": "dd6293ec6c1e3eb953da9b89b9ddef6535624893337a115790b870d8da85a906",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "result.json": {
+        "bytes": 68,
+        "sha256": "c6bee0a7cbfcb4293fb6754efd3fbd97399aa78067449bacebb27c99af88e6b4"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      },
+      "source.json": {
+        "bytes": 6892817,
+        "sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+      },
+      "native.json": {
+        "bytes": 6892817,
+        "sha256": "dd6293ec6c1e3eb953da9b89b9ddef6535624893337a115790b870d8da85a906"
+      }
+    },
+    "small": {
+      "result.json": "{\n  \"cases\": 1603,\n  \"exact_f32_points\": true,\n  \"differences\": []\n}",
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "PASS 1603 original/native torque arcs, exact float32 points with quantized hits, ties and LRU eviction\n",
+    "stderr_last": []
+  },
+  {
+    "kind": "torque",
+    "case": "stale-malformed",
+    "exit": 1,
+    "reply_sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "untouched": {
+        "bytes": 4,
+        "sha256": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f"
+      },
+      "result.json": {
+        "bytes": 10,
+        "sha256": "6b3c0723d010036ba7b0949dafcad0c08284312ca6cdd22e07cd2f01ac47ae90"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      }
+    },
+    "small": {
+      "untouched": "keep",
+      "result.json": "old-result",
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+    ]
+  },
+  {
+    "kind": "torque",
+    "case": "stale-mismatch",
+    "exit": 1,
+    "reply_sha256": "c376258e6f7d031646bdc480c23afdd44897cc5e27d983e3c4c9741f0061edb6",
+    "reply_stderr_hex": "",
+    "status": 0,
+    "files": {
+      "untouched": {
+        "bytes": 4,
+        "sha256": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f"
+      },
+      "result.json": {
+        "bytes": 9836,
+        "sha256": "14dff108a1b212690e99fb7a184d8eb3365fe5ff52c8297871b9c3e8347b42df"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "24d43c81e188922d4ae0a09501560c240c68a6fd1fb26898818919eb041224a7"
+      },
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      },
+      "source.json": {
+        "bytes": 6892817,
+        "sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+      },
+      "native.json": {
+        "bytes": 6892817,
+        "sha256": "c376258e6f7d031646bdc480c23afdd44897cc5e27d983e3c4c9741f0061edb6"
+      }
+    },
+    "small": {
+      "untouched": "keep",
+      "native.stderr": "(no stderr)\n"
+    },
+    "stdout": "",
+    "stderr_last": [
+      "AssertionError: [{'step': 0, 'source': [{'x': 307.155029296875, 'y': 317.43206787109375}, {'x': 307.3966369628906, 'y': 316.4629821777344}, {'x': 307.7737121582031, 'y': 315.53814697265625}, {'x': 308.278564453125, 'y': 314.6763916015625}, {'x': 308.9009094238281, 'y': 313.8952331542969}, {'x': 309.6280822753906, 'y': 313.21063232421875}, {'x': 310.4452819824219, 'y': 312.6364440917969}, {'x': 311.3359069824219, 'y': 312.1844482421875}, {'x': 312.2817687988281, 'y': 311.86376953125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 314.26153564453125, 'y': 311.6397705078125}, {'x': 315.2551574707031, 'y': 311.7409973144531}, {'x': 316.2242431640625, 'y': 311.98260498046875}, {'x': 317.1490783691406, 'y': 312.35968017578125}, {'x': 318.0108337402344, 'y': 312.8645324707031}, {'x': 318.7919616699219, 'y': 313.48687744140625}, {'x': 319.4765930175781, 'y': 314.21405029296875}, {'x': 320.0507507324219, 'y': 315.03125}, {'x': 320.5027770996094, 'y': 315.921875}, {'x': 320.8234558105469, 'y': 316.86773681640625}, {'x': 321.0062255859375, 'y': 317.849609375}, {'x': 321.043701171875, 'y': 318.9473876953125}, {'x': 320.90899658203125, 'y': 320.03753662109375}, {'x': 320.60540771484375, 'y': 321.0931701660156}, {'x': 320.1404113769531, 'y': 322.08831787109375}, {'x': 319.52545166015625, 'y': 322.99847412109375}, {'x': 318.77569580078125, 'y': 323.8012390136719}, {'x': 317.90960693359375, 'y': 324.476806640625}, {'x': 316.948486328125, 'y': 325.0085754394531}, {'x': 315.916015625, 'y': 325.3834533691406}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 313.73980712890625, 'y': 325.6296691894531}, {'x': 312.649658203125, 'y': 325.4949645996094}, {'x': 311.5940246582031, 'y': 325.1913757324219}, {'x': 310.598876953125, 'y': 324.72637939453125}, {'x': 309.688720703125, 'y': 324.1114196777344}, {'x': 308.885986328125, 'y': 323.3616638183594}, {'x': 308.21038818359375, 'y': 322.4955749511719}, {'x': 307.6786193847656, 'y': 321.5344543457031}, {'x': 307.3037414550781, 'y': 320.5019836425781}, {'x': 307.0538024902344, 'y': 318.4256591796875}], 'native': [{'x': 308.155029296875, 'y': 317.43206787109375}, {'x': 307.3966369628906, 'y': 316.4629821777344}, {'x': 307.7737121582031, 'y': 315.53814697265625}, {'x': 308.278564453125, 'y': 314.6763916015625}, {'x': 308.9009094238281, 'y': 313.8952331542969}, {'x': 309.6280822753906, 'y': 313.21063232421875}, {'x': 310.4452819824219, 'y': 312.6364440917969}, {'x': 311.3359069824219, 'y': 312.1844482421875}, {'x': 312.2817687988281, 'y': 311.86376953125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 313.2636413574219, 'y': 311.68096923828125}, {'x': 314.26153564453125, 'y': 311.6397705078125}, {'x': 315.2551574707031, 'y': 311.7409973144531}, {'x': 316.2242431640625, 'y': 311.98260498046875}, {'x': 317.1490783691406, 'y': 312.35968017578125}, {'x': 318.0108337402344, 'y': 312.8645324707031}, {'x': 318.7919616699219, 'y': 313.48687744140625}, {'x': 319.4765930175781, 'y': 314.21405029296875}, {'x': 320.0507507324219, 'y': 315.03125}, {'x': 320.5027770996094, 'y': 315.921875}, {'x': 320.8234558105469, 'y': 316.86773681640625}, {'x': 321.0062255859375, 'y': 317.849609375}, {'x': 321.043701171875, 'y': 318.9473876953125}, {'x': 320.90899658203125, 'y': 320.03753662109375}, {'x': 320.60540771484375, 'y': 321.0931701660156}, {'x': 320.1404113769531, 'y': 322.08831787109375}, {'x': 319.52545166015625, 'y': 322.99847412109375}, {'x': 318.77569580078125, 'y': 323.8012390136719}, {'x': 317.90960693359375, 'y': 324.476806640625}, {'x': 316.948486328125, 'y': 325.0085754394531}, {'x': 315.916015625, 'y': 325.3834533691406}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 314.83758544921875, 'y': 325.5921936035156}, {'x': 313.73980712890625, 'y': 325.6296691894531}, {'x': 312.649658203125, 'y': 325.4949645996094}, {'x': 311.5940246582031, 'y': 325.1913757324219}, {'x': 310.598876953125, 'y': 324.72637939453125}, {'x': 309.688720703125, 'y': 324.1114196777344}, {'x': 308.885986328125, 'y': 323.3616638183594}, {'x': 308.21038818359375, 'y': 322.4955749511719}, {'x': 307.6786193847656, 'y': 321.5344543457031}, {'x': 307.3037414550781, 'y': 320.5019836425781}, {'x': 307.0538024902344, 'y': 318.4256591796875}]}]"
+    ]
+  },
+  {
+    "kind": "torque",
+    "case": "newlines",
+    "exit": 0,
+    "reply_sha256": "f423eebfa85c88654db93dbfa9d4918590caef37dbfc599ffdf8f7342934eedb",
+    "reply_stderr_hex": "7374646572720d0a6e6578740d",
+    "status": 0,
+    "files": {
+      "result.json": {
+        "bytes": 68,
+        "sha256": "c6bee0a7cbfcb4293fb6754efd3fbd97399aa78067449bacebb27c99af88e6b4"
+      },
+      "native.stderr": {
+        "bytes": 12,
+        "sha256": "1f36466c60a666e19bca83660f4d862e72d5773d66c5b299b09fb385bcdfe8d6"
+      },
+      "input.json": {
+        "bytes": 245492,
+        "sha256": "90104ae79c4cdcc18c3a99425098d0220a66c059cb65f79b40afe6b89242e47f"
+      },
+      "source.json": {
+        "bytes": 6892817,
+        "sha256": "c16e71d2cf9c0536e0b86be1a09c1398d53021850b18f509eef73a227e7ec28b"
+      },
+      "native.json": {
+        "bytes": 6892818,
+        "sha256": "933ddf5b95c07696a4916b000f0f2efee6ce1b92bfff9ea5621dcfc8da980190"
+      }
+    },
+    "small": {
+      "result.json": "{\n  \"cases\": 1603,\n  \"exact_f32_points\": true,\n  \"differences\": []\n}",
+      "native.stderr": "stderr\nnext\n"
+    },
+    "stdout": "PASS 1603 original/native torque arcs, exact float32 points with quantized hits, ties and LRU eviction\n",
+    "stderr_last": []
+  }
+]

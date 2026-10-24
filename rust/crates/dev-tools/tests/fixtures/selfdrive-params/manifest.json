@@ -1,0 +1,307 @@
+{
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "implementation": "CPython",
+  "numpy": "2.5.3",
+  "pyzmq": "27.2.0",
+  "binding_sha256": "fb7d15475f49abc07f17bf704257dd09b2348a116c6b96f90a7495824dbdf02d",
+  "source_changes": "None. Original Cython, Params, util, C++ logging and PC hardware headers are compiled unchanged.",
+  "cases": 47,
+  "bytes": 7864,
+  "sha256": "0fb5e091791f620ca0c4686ae72eee38c0c7a819af293d8234014b20b8d469b2",
+  "gzip_sha256": "7fe6dbc09d54c442655636548e576b151932c0929f0c6798077f468c73f9daec",
+  "sources": {
+    "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+    "openpilot/cereal/custom.capnp": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693",
+    "openpilot/cereal/deprecated.capnp": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355",
+    "opendbc_repo/opendbc/car/car.capnp": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda",
+    "openpilot/common/params_pyx.pyx": "a8cc5e5296dd38a012c55b0867c4563f8e320d25960260d897675dd90f0ea544",
+    "openpilot/common/params.cc": "2947645ca30b57d23feeace0e88bead5709c1681dc21359fb1e5a225ca63b187",
+    "openpilot/common/util.cc": "4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a",
+    "openpilot/common/swaglog.cc": "b61e45b8ad799606ba2a78e0b5ee9303a665bad99a67d50f3b7134792bf7ba7c",
+    "openpilot/common/params.h": "47d08fa1987c9150e55d09a2a533a0a115851aadb34bd1a0c82325e0be8726b3",
+    "openpilot/common/params_keys.h": "b8422e8ad2cd74ec3c5750c3e919f6546519d84fabb5f6ec868b5372713b4d7f",
+    "openpilot/common/util.h": "49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea",
+    "openpilot/common/swaglog.h": "bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b",
+    "openpilot/common/timing.h": "66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71",
+    "openpilot/common/version.h": "8d618ada21dcc00618178d67f52c532b95c3eeff0736a9909379a3431e050ba6",
+    "openpilot/common/queue.h": "f7c75c847ae63dfd6e864406e722248540a79908270e85ca2674b43407408fcf",
+    "openpilot/system/hardware/hw.h": "afc36d60417dbaf1683d17f10b32306c1d69f58816a6dad09c8da24484249da7",
+    "openpilot/system/hardware/base.h": "7ef48c160e8e0e5cba3a8f629ac72904900e41be260aee8e4029b5c1a615e3b9",
+    "openpilot/system/hardware/pc/hardware.h": "edee2ab86ca69a3c8f005a823457edfe3a9368703a5583ff0d77b32f8b1e105c",
+    "rust/tools/check_selfdrive_params.py": "0e358cfdb18e3696f506f1f00ded39268a13c3d82b2b7687c5ea9a74a8d4d774",
+    "rust/tools/check_params_string.py": "63a5bb24c76d7c55a5075dbfbe82a54faca5951a5dd2a1acf01a5cf4914ff2b6",
+    "rust/tools/original_params_binding.py": "b5fa10da96aecca63bafef0c03f6ddf9fe5fde89683f10e70742b4e919c38457",
+    "openpilot/common/swaglog.py": "d37b623bd9418b72ffd3c4800a1da192c49856cb63bbbc1c09bb24a5ec6f8616",
+    "openpilot/common/logging_extra.py": "ce9b3b3d8498d76e1c4c0352a3e98e72759bb7f367ff8629c1329c46040595c3"
+  },
+  "dependency_lock": [
+    {
+      "name": "cython",
+      "version": "3.3.0",
+      "source": {
+        "registry": "https://pypi.org/simple"
+      },
+      "sdist": {
+        "url": "https://files.pythonhosted.org/packages/a9/d8/4981ef716ad0e3ff0d3ef383aefc6b03c4a88dee33b272bf8e0d833001ca/cython-3.3.0.tar.gz",
+        "hash": "sha256:eed0d93fbca7087f143b42c34b05a825849bdf17f101572c2105acfa49aa88b8",
+        "size": 3727515,
+        "upload-time": "2026-08-22T05:16:39.493Z"
+      },
+      "wheels": [
+        {
+          "url": "https://files.pythonhosted.org/packages/da/0f/95bad838a80ac52c9e982dad00bd9a0b2bad57fb4c688e5f53ac3ef65ff0/cython-3.3.0-cp312-cp312-macosx_11_0_arm64.whl",
+          "hash": "sha256:03bc5333932f5dda3ba9315298ecdd21daa1b58410bb1f8ce04c78ec8337130a",
+          "size": 3143472,
+          "upload-time": "2026-08-22T05:17:07.956Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/91/8b/53d4a84de853b39940a0e35a6a2a9ed5f54cb05468daee95bc0fd1c2a178/cython-3.3.0-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl",
+          "hash": "sha256:7e321ae700995a16dc3055ada06ffb8d61e1a7434e5d0e811547a45ac1015ebd",
+          "size": 3258974,
+          "upload-time": "2026-08-22T05:17:09.908Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/6a/4e/6b1c5a4e6bbe1726104de007aa2fdf01a3e2e386b4ec93c7be5f5085d53f/cython-3.3.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+          "hash": "sha256:428fafed98ea26927000a287b4dfc9ef07339f56656a5329a34eaa593f79a4f8",
+          "size": 3412225,
+          "upload-time": "2026-08-22T05:17:12.281Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/f4/9b/cd724d91c500116769bdb853450a2197ba3d640dbbe3b02fc54ebdfdbd1b/cython-3.3.0-cp312-cp312-win_amd64.whl",
+          "hash": "sha256:333449cc0350baedee5a6af27929eac8a71eac4ec59333c45ff476b33c6c660d",
+          "size": 2872123,
+          "upload-time": "2026-08-22T05:17:14.322Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/14/59/bc1a84b434cb5bebb0cd6f50da8f239d35a5c141b20fdeafc2817fd87778/cython-3.3.0-cp39-abi3-macosx_10_9_x86_64.whl",
+          "hash": "sha256:e0d2713d2b292c826bc21dc8732bd9e47628103aa3764180c881e04b3fef95dc",
+          "size": 3063660,
+          "upload-time": "2026-08-22T05:17:40.923Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/ba/6d/542e32908fb421d88354f327ed6450e14240f9825d25393065bc65f4723f/cython-3.3.0-cp39-abi3-manylinux1_i686.manylinux_2_28_i686.manylinux_2_5_i686.whl",
+          "hash": "sha256:169e56fd411f4cd5bba51c82f8239421d547a846099db2b261e4aed48ba9f51f",
+          "size": 3358395,
+          "upload-time": "2026-08-22T05:17:43.036Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/9c/7c/ddaf197bc65b581e1891657940bc4f7cb1f740e822115e828920b3a119ce/cython-3.3.0-cp39-abi3-manylinux2014_armv7l.manylinux_2_17_armv7l.manylinux_2_31_armv7l.whl",
+          "hash": "sha256:29f38ebafdf23e3da2516f40c4d065da38bfe002181bf93e2b8cf1262449aba6",
+          "size": 3041760,
+          "upload-time": "2026-08-22T05:17:44.907Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/19/a7/ae5ec3e34d43da846ed4c425734752d83aae0dae49feb929f09c90fc9afa/cython-3.3.0-cp39-abi3-musllinux_1_2_aarch64.whl",
+          "hash": "sha256:75c4ae8a6d3a5ccf3cdaba8ab32e6a8d0cd38e3a476aa7ac12df8f8171a8d570",
+          "size": 3156152,
+          "upload-time": "2026-08-22T05:17:46.884Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/31/44/c60b601fc43f0b08e9d6f14b94e0dd02eb0ca8d60f46e242ace7191ac1be/cython-3.3.0-cp39-abi3-musllinux_1_2_armv7l.whl",
+          "hash": "sha256:b94fb5613b9fe34c27d13ec9972dc0dcd2a2155db2902e93921cadc162610a38",
+          "size": 3046690,
+          "upload-time": "2026-08-22T05:17:48.731Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/b0/9e/d735c26ed907563d3365534006acb263651c2d3b87fee804f7a483dd1714/cython-3.3.0-cp39-abi3-musllinux_1_2_i686.whl",
+          "hash": "sha256:c4558ba85849ab65dc57e10fd0efb13fabd9d3c09981a2566e18dec7cf47586a",
+          "size": 3373534,
+          "upload-time": "2026-08-22T05:17:50.7Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/e0/e8/aa7b4f3a28d6e8117c76e2cf78a0df7a503486cdf7243c5b53200c9533a1/cython-3.3.0-cp39-abi3-musllinux_1_2_x86_64.whl",
+          "hash": "sha256:311a016369adfd1e0015c4f9819168fc0e518451d7efb4435c30d65a3a26d52b",
+          "size": 3265110,
+          "upload-time": "2026-08-22T05:17:52.577Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/9c/66/37892a8999d6bbd3f92d691a9701cb720c8ddd6171e16f5148eee6e8cb7f/cython-3.3.0-cp39-abi3-win32.whl",
+          "hash": "sha256:90869072e50b7c8904fe1dd7810321ae901fd5637a6eec6646ed9c57f9eb1081",
+          "size": 2587733,
+          "upload-time": "2026-08-22T05:17:54.547Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/19/a2/5f4d305cbd4489d21570e5491ad5c483c478cdab032853e2125c280e3bd5/cython-3.3.0-cp39-abi3-win_arm64.whl",
+          "hash": "sha256:dce56c26d388f00a19426371b6926bf2f77c5c03b71d5273e4556c68be98c2dd",
+          "size": 2608078,
+          "upload-time": "2026-08-22T05:17:56.386Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/bf/77/67b0b24e45073a699610e50f00c18474ff9b09ea29ecc95083bdf5e60acd/cython-3.3.0-py3-none-any.whl",
+          "hash": "sha256:9b24b5c8cd536946b62086fcafee6d5509d3f549f72d553d2336af87ffbe0da1",
+          "size": 1349151,
+          "upload-time": "2026-08-22T05:16:36.741Z"
+        }
+      ]
+    },
+    {
+      "name": "numpy",
+      "version": "2.5.3",
+      "source": {
+        "registry": "https://pypi.org/simple"
+      },
+      "sdist": {
+        "url": "https://files.pythonhosted.org/packages/13/01/11703282db468b85f6f7b8c7f22d058de5970d5c7e60a3a8aaa313c3de36/numpy-2.5.3.tar.gz",
+        "hash": "sha256:df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563",
+        "size": 20791231,
+        "upload-time": "2026-09-06T16:27:47.073Z"
+      },
+      "wheels": [
+        {
+          "url": "https://files.pythonhosted.org/packages/d6/50/8fdbb16af64895706a45f06a4068e29db732ec180f3c1375f14123359138/numpy-2.5.3-cp312-cp312-macosx_10_13_x86_64.whl",
+          "hash": "sha256:cb189f09db39283b26bfd061ec16189e14f71c6755207f72a0f7540867afe5b9",
+          "size": 16994982,
+          "upload-time": "2026-09-06T16:24:29.244Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/60/39/789131c1188c078dcb3a1692e72e1e050c68b88ffe72c9ccaac9bcd7a9cd/numpy-2.5.3-cp312-cp312-macosx_11_0_arm64.whl",
+          "hash": "sha256:f59a878c33d6b88122d80d239bb3b845d58708750b0cb06a09aebb9b18ec696c",
+          "size": 12009327,
+          "upload-time": "2026-09-06T16:24:32.491Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/9c/59/a312e95696e5f601914dd8b6dd844692ba61670807417e24b68e337b5c70/numpy-2.5.3-cp312-cp312-macosx_14_0_arm64.whl",
+          "hash": "sha256:a72f874bc9e10e4b8f80426fb49716d5141f64442a0c8418065093ec8017fbb0",
+          "size": 5445405,
+          "upload-time": "2026-09-06T16:24:35.071Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/30/d0/5623a1707ed4fe16e3909fe3cf5ee3da004ae677ad23d83bbf3adf1a6faf/numpy-2.5.3-cp312-cp312-macosx_14_0_x86_64.whl",
+          "hash": "sha256:fc36dc566135b5eceec4cf89758fcb719266a019ef07dae1754ae7c9f617ef3e",
+          "size": 6783213,
+          "upload-time": "2026-09-06T16:24:37.253Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/f1/32/84146fc020ad3c25f805f70ab60da46fe3c540a21369754a7e4369754b6f/numpy-2.5.3-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+          "hash": "sha256:76c2c1e6bfa5c84adc6434dfbf013aa92096a7985221762c8f11fedfd20fff58",
+          "size": 15687872,
+          "upload-time": "2026-09-06T16:24:39.751Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/65/af/aa78d1a88805456e212b65461354cd943197fb9acecc4c90fd12295123a3/numpy-2.5.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "hash": "sha256:b7e18c623bb5c95acb3b3328861272816ba199fb531921c5d6d0b675f1fde9e3",
+          "size": 16717410,
+          "upload-time": "2026-09-06T16:24:42.745Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/3b/24/faa79d865e69a97ba17473b23a1b74094b2259c03e820c70297293b9ea49/numpy-2.5.3-cp312-cp312-musllinux_1_2_aarch64.whl",
+          "hash": "sha256:4f8929ee6c96bfbd7b4ed2032e0c03af86fe1826740ab61ddabf9072d06e57ff",
+          "size": 17040975,
+          "upload-time": "2026-09-06T16:24:45.961Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/62/4a/8877e629445a7176297dffcaf9c485faa96a95d81728a62521ad55bd4c0f/numpy-2.5.3-cp312-cp312-musllinux_1_2_x86_64.whl",
+          "hash": "sha256:b5d93cf48f687479941d12b69c873ad2cc76bbd487f0091c2200636497f34034",
+          "size": 18476479,
+          "upload-time": "2026-09-06T16:24:49.35Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/c8/db/35e1c2d38b04cbd5b731f9d71495e055e813197669d22b612f11748d2ff9/numpy-2.5.3-cp312-cp312-win32.whl",
+          "hash": "sha256:bf63afbe037eb5d2fe87fbcc7778e61da53ebaf21d938a4515aa73b62532a5d4",
+          "size": 6133378,
+          "upload-time": "2026-09-06T16:24:51.915Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/3c/a1/accf6d4f0c80c5d9ba9735d6b1550e444180599f34dec69ca01360f717ad/numpy-2.5.3-cp312-cp312-win_amd64.whl",
+          "hash": "sha256:0a59a421a32580a009e8a1751345bf829631b990dc1794b80514ab722b435def",
+          "size": 12567828,
+          "upload-time": "2026-09-06T16:24:54.255Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/22/43/1764aff32e4652526ae2f71fa8b3efd8d25c8a3d6926914454e47138ed1e/numpy-2.5.3-cp312-cp312-win_arm64.whl",
+          "hash": "sha256:ccb32e0525d29e8b0572eb84c9a57af0e7a4e615726927506f55063c62414034",
+          "size": 10485432,
+          "upload-time": "2026-09-06T16:24:57.278Z"
+        }
+      ]
+    },
+    {
+      "name": "pyzmq",
+      "version": "27.2.0",
+      "source": {
+        "registry": "https://pypi.org/simple"
+      },
+      "dependencies": [
+        {
+          "name": "cffi",
+          "marker": "implementation_name == 'pypy'"
+        }
+      ],
+      "sdist": {
+        "url": "https://files.pythonhosted.org/packages/e7/8d/5b3d5631c2f4b4b8862f64cd0c9eb777b5710eeb5125b4be8dd0a200a4c0/pyzmq-27.2.0.tar.gz",
+        "hash": "sha256:54d4259d1bfae24ecdb5ca79f7acc2eac6c286a02d6a0ae617797cb45f0726d3",
+        "size": 292316,
+        "upload-time": "2026-08-20T19:08:21.19Z"
+      },
+      "wheels": [
+        {
+          "url": "https://files.pythonhosted.org/packages/57/8a/153532fa53db30e116118164f3af269a1f3966b3e2ba32c89b12fe864bd8/pyzmq-27.2.0-cp312-abi3-macosx_10_15_universal2.whl",
+          "hash": "sha256:591c8de5851c5ea372194469fe97587b97c3b641e9a70f31bb3474acbfde0241",
+          "size": 1431074,
+          "upload-time": "2026-08-20T19:06:40.601Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/c8/ef/c08b91248bb90a9efa81fa00ba81b69c157c74d0c5efbb2c319d91babb62/pyzmq-27.2.0-cp312-abi3-manylinux2014_i686.manylinux_2_17_i686.whl",
+          "hash": "sha256:00e73942ef12cecbc7951c4a9104bb8ffaed742abb13af2da6833d90dd368cef",
+          "size": 973915,
+          "upload-time": "2026-08-20T19:06:42.037Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/b4/78/a3a3a86c2b00fadb92ece1ca4f8f028d62b2ce9ac3526097239ab2d6fba9/pyzmq-27.2.0-cp312-abi3-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl",
+          "hash": "sha256:1f8079d0521fe94bbb401fe9407578b28f3701627c8be2c9f7e0c5b77dcb0109",
+          "size": 697722,
+          "upload-time": "2026-08-20T19:06:43.325Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/62/2c/d5828306f795e8d34676d266823b74e2101e0ad3760d12083de3e02abbb2/pyzmq-27.2.0-cp312-abi3-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl",
+          "hash": "sha256:dea74fd65f1fc5f7fe167916a473ebe6ed6174e5e5d9de11ea6583661be6cf43",
+          "size": 872258,
+          "upload-time": "2026-08-20T19:06:44.627Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/09/52/51253b78fd8739293e283407eeecb14215c02c71b6519af21f6eed8e69cd/pyzmq-27.2.0-cp312-abi3-manylinux_2_38_riscv64.manylinux_2_39_riscv64.whl",
+          "hash": "sha256:dcc99ca132b667a4ed750afd42db4ea73288f18425a9b2e3c0af095665c491f5",
+          "size": 739591,
+          "upload-time": "2026-08-20T19:06:46.214Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/e6/3e/142c85b67a4c9678629b0cf6d5125b29663d75be69bfaa57a3cac344d780/pyzmq-27.2.0-cp312-abi3-musllinux_1_2_aarch64.whl",
+          "hash": "sha256:b8d5f66e4a8246cf77f7b8f7902af64f00553368fa0373c89d99b78f0ad79394",
+          "size": 1689031,
+          "upload-time": "2026-08-20T19:06:47.612Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/0e/ee/0776fb0f98ed1eb74d77240087fef0ab045b6ad15cb09555c6c5134c98ad/pyzmq-27.2.0-cp312-abi3-musllinux_1_2_i686.whl",
+          "hash": "sha256:d1526b42a2e725b84ed226f37becedc250c6347594e5ed304e4e9aff68c9aec3",
+          "size": 2059547,
+          "upload-time": "2026-08-20T19:06:49.064Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/aa/0e/ec77f691a4aebe29ab6329f996fb0e0270c876a3016086e3ca6ef733bcae/pyzmq-27.2.0-cp312-abi3-musllinux_1_2_x86_64.whl",
+          "hash": "sha256:f707bcf2c1d007d14d70531d4dd7b41060881c73efa845580bf6faaf9ea24d42",
+          "size": 1910457,
+          "upload-time": "2026-08-20T19:06:50.783Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/30/97/1f5530ff4fc271b4597048371d5af972c2baab51be132ba15874e0327a6a/pyzmq-27.2.0-cp312-abi3-win32.whl",
+          "hash": "sha256:fdaaa4ea3242f6ad298eb5177eb042aea5c73c30e76d20caee7b15af20d24ec2",
+          "size": 563450,
+          "upload-time": "2026-08-20T19:06:52.307Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/02/8b/b83f7780dad22e0878e4c7bd9158ebd24ed12bc3d5e3a471cd0576f77ded/pyzmq-27.2.0-cp312-abi3-win_amd64.whl",
+          "hash": "sha256:2c218c6ab8bc447ba62054b581fd30209689d199c6ecb253f79615ca74a38e12",
+          "size": 628633,
+          "upload-time": "2026-08-20T19:06:53.809Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/52/aa/3918b5ac7f9987bd9c421b065074fd7409ded88f856f2c704a24341877ec/pyzmq-27.2.0-cp312-abi3-win_arm64.whl",
+          "hash": "sha256:348d6fd3e4b81ae4580622ea8c2ea60224e84b2ac1b3be4482e6edc7de06e7a3",
+          "size": 556006,
+          "upload-time": "2026-08-20T19:06:55.242Z"
+        }
+      ]
+    }
+  ],
+  "capture": "Unmodified check_selfdrive_params.py ran real original Cython Params on real files, actual ZMQ PUSH/PULL logs and all seven fatal std::stoi subprocesses. Original candidate was existing Rust alert_params; expected values/messages/fatal diagnostics are copied only from source fields. Raw volatile record metadata remains in ignored scratch; fixture expected data contains no candidate values."
+}

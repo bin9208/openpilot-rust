@@ -1,0 +1,394 @@
+[
+  {
+    "mode": "good",
+    "error": null,
+    "calls": 1,
+    "stdout": "{\"result\": \"PASS\", \"steps\": 4872, \"sources\": {\"openpilot/selfdrive/selfdrived/events.py\": \"a2667e1a2ddcbc4e33d5457de8ca8909867ff651605845f3632ff2f598f0d05f\", \"openpilot/common/realtime.py\": \"6337d64508299a53c00f0795397e5043ec7b69c864d6ca8c02604244502aba5e\", \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\", \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"}, \"binary_sha256\": \"52ccd06ba37c64ce627e164681ec0076857461b1ac93926ddcec364c2ccc5337\", \"scope\": \"event storage, ordering, translation, callback dispatch and delays; callback bodies are separate\"}\n",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "manifest.json": {
+        "bytes": 689,
+        "sha256": "85505cb2444e467dbbdb5885a1f4697ab7dc25c829e8249730fe63a497025190"
+      },
+      "native.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "mutation",
+    "error": "AssertionError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "native.jsonl": {
+        "bytes": 10457240,
+        "sha256": "dacd9a7c903a20f2a241acfb85bbe2f4006cd08dedbdf8b5d64399de08a5700a"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "short",
+    "error": "AssertionError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "native.jsonl": {
+        "bytes": 10456444,
+        "sha256": "28c9d658a5b5df078b62d1d765ad260f5bcb7dc0f2c0a885b61434276049c047"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "extra",
+    "error": "AssertionError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "native.jsonl": {
+        "bytes": 10459973,
+        "sha256": "1a36151d60d5f9cea5381674f11e941902dfe3526eba3f54ba150e09eba7743d"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "empty",
+    "error": "AssertionError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "native.jsonl": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "malformed",
+    "error": "JSONDecodeError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "native.jsonl": {
+        "bytes": 9,
+        "sha256": "83d53fec0f724bcb80fdce8a749119d89bfa54a33274ff63b1387dc1c0566755"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "bom",
+    "error": "JSONDecodeError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "native.jsonl": {
+        "bytes": 10458608,
+        "sha256": "aa0daaaa5c6be068740b77931d1acdb5c395d2846e801e02cddd0515600c7278"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "nul",
+    "error": "JSONDecodeError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "native.jsonl": {
+        "bytes": 10458606,
+        "sha256": "0d067679d3ebf0f0153c643df188ef38b439b89b06eb9936669fe7a6011b346c"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "exit",
+    "error": "AssertionError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "native.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "timeout",
+    "error": "TimeoutExpired",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "invalid-stdout",
+    "error": "UnicodeDecodeError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "invalid-stderr",
+    "error": "UnicodeDecodeError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "stderr",
+    "error": null,
+    "calls": 1,
+    "stdout": "{\"result\": \"PASS\", \"steps\": 4872, \"sources\": {\"openpilot/selfdrive/selfdrived/events.py\": \"a2667e1a2ddcbc4e33d5457de8ca8909867ff651605845f3632ff2f598f0d05f\", \"openpilot/common/realtime.py\": \"6337d64508299a53c00f0795397e5043ec7b69c864d6ca8c02604244502aba5e\", \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\", \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"}, \"binary_sha256\": \"52ccd06ba37c64ce627e164681ec0076857461b1ac93926ddcec364c2ccc5337\", \"scope\": \"event storage, ordering, translation, callback dispatch and delays; callback bodies are separate\"}\n",
+    "files": {
+      "native.stderr": {
+        "bytes": 30,
+        "sha256": "5dc3502023f0b893cebec09f004fe639752b2e8491fb9ef3374e4ea7cdf68861"
+      },
+      "manifest.json": {
+        "bytes": 689,
+        "sha256": "85505cb2444e467dbbdb5885a1f4697ab7dc25c829e8249730fe63a497025190"
+      },
+      "native.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "crlf",
+    "error": null,
+    "calls": 1,
+    "stdout": "{\"result\": \"PASS\", \"steps\": 4872, \"sources\": {\"openpilot/selfdrive/selfdrived/events.py\": \"a2667e1a2ddcbc4e33d5457de8ca8909867ff651605845f3632ff2f598f0d05f\", \"openpilot/common/realtime.py\": \"6337d64508299a53c00f0795397e5043ec7b69c864d6ca8c02604244502aba5e\", \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\", \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"}, \"binary_sha256\": \"52ccd06ba37c64ce627e164681ec0076857461b1ac93926ddcec364c2ccc5337\", \"scope\": \"event storage, ordering, translation, callback dispatch and delays; callback bodies are separate\"}\n",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "manifest.json": {
+        "bytes": 689,
+        "sha256": "85505cb2444e467dbbdb5885a1f4697ab7dc25c829e8249730fe63a497025190"
+      },
+      "native.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "unicode-lines",
+    "error": null,
+    "calls": 1,
+    "stdout": "{\"result\": \"PASS\", \"steps\": 4872, \"sources\": {\"openpilot/selfdrive/selfdrived/events.py\": \"a2667e1a2ddcbc4e33d5457de8ca8909867ff651605845f3632ff2f598f0d05f\", \"openpilot/common/realtime.py\": \"6337d64508299a53c00f0795397e5043ec7b69c864d6ca8c02604244502aba5e\", \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\", \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"}, \"binary_sha256\": \"52ccd06ba37c64ce627e164681ec0076857461b1ac93926ddcec364c2ccc5337\", \"scope\": \"event storage, ordering, translation, callback dispatch and delays; callback bodies are separate\"}\n",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "manifest.json": {
+        "bytes": 689,
+        "sha256": "85505cb2444e467dbbdb5885a1f4697ab7dc25c829e8249730fe63a497025190"
+      },
+      "native.jsonl": {
+        "bytes": 10468349,
+        "sha256": "bc39d284e265fefc99e91285a676776dc1c3fa7f51044545dc64415d2948fbc7"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "numeric-equality",
+    "error": null,
+    "calls": 1,
+    "stdout": "{\"result\": \"PASS\", \"steps\": 4872, \"sources\": {\"openpilot/selfdrive/selfdrived/events.py\": \"a2667e1a2ddcbc4e33d5457de8ca8909867ff651605845f3632ff2f598f0d05f\", \"openpilot/common/realtime.py\": \"6337d64508299a53c00f0795397e5043ec7b69c864d6ca8c02604244502aba5e\", \"openpilot/cereal/log.capnp\": \"fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620\", \"opendbc_repo/opendbc/car/car.capnp\": \"6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda\"}, \"binary_sha256\": \"52ccd06ba37c64ce627e164681ec0076857461b1ac93926ddcec364c2ccc5337\", \"scope\": \"event storage, ordering, translation, callback dispatch and delays; callback bodies are separate\"}\n",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "manifest.json": {
+        "bytes": 689,
+        "sha256": "85505cb2444e467dbbdb5885a1f4697ab7dc25c829e8249730fe63a497025190"
+      },
+      "native.jsonl": {
+        "bytes": 10458601,
+        "sha256": "6253828ba193c8fb2c7c12f0d5e78dec716390ec4126a0914062502617b37ab3"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  },
+  {
+    "mode": "missing-binary",
+    "error": "FileNotFoundError",
+    "calls": 1,
+    "stdout": "",
+    "files": {
+      "native.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "native.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "source.jsonl": {
+        "bytes": 10458605,
+        "sha256": "8b845a2443bf05f94e90901e2b28566ef32bda3f50d7eb0f9bf9bad9cd74fa60"
+      },
+      "input.jsonl": {
+        "bytes": 2173947,
+        "sha256": "00379be3c973186320fdd6a2eeb36787fd35893e501fcffe9aedf598900d97af"
+      }
+    }
+  }
+]

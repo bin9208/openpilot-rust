@@ -1,0 +1,274 @@
+[
+  {
+    "case": "help",
+    "source_checker_sha256": "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d",
+    "source_python_sha256": "53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e",
+    "original": {
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_updated.py",
+        "--help"
+      ],
+      "argv_hex": [
+        "2f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e2f707974686f6e",
+        "2f686f6d652f72756e6e65722f776f726b2f6f70656e70696c6f742d727573742f6f70656e70696c6f742d727573742f727573742f746f6f6c732f636865636b5f757064617465642e7079",
+        "2d2d68656c70"
+      ],
+      "code": 0,
+      "stderr": "",
+      "stderr_hex": "",
+      "stdout": "usage: check_updated.py [-h] --binary BINARY --launcher LAUNCHER --binding\n                        BINDING --output OUTPUT\n\noptions:\n  -h, --help           show this help message and exit\n  --binary BINARY\n  --launcher LAUNCHER\n  --binding BINDING\n  --output OUTPUT\n",
+      "stdout_hex": "75736167653a20636865636b5f757064617465642e7079205b2d685d202d2d62696e6172792042494e415259202d2d6c61756e63686572204c41554e43484552202d2d62696e64696e670a20202020202020202020202020202020202020202020202042494e44494e47202d2d6f7574707574204f55545055540a0a6f7074696f6e733a0a20202d682c202d2d68656c70202020202020202020202073686f7720746869732068656c70206d65737361676520616e6420657869740a20202d2d62696e6172792042494e4152590a20202d2d6c61756e63686572204c41554e434845520a20202d2d62696e64696e672042494e44494e470a20202d2d6f7574707574204f55545055540a"
+    }
+  },
+  {
+    "case": "short-help-attached",
+    "source_checker_sha256": "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d",
+    "source_python_sha256": "53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e",
+    "original": {
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_updated.py",
+        "-hfoo"
+      ],
+      "argv_hex": [
+        "2f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e2f707974686f6e",
+        "2f686f6d652f72756e6e65722f776f726b2f6f70656e70696c6f742d727573742f6f70656e70696c6f742d727573742f727573742f746f6f6c732f636865636b5f757064617465642e7079",
+        "2d68666f6f"
+      ],
+      "code": 0,
+      "stderr": "",
+      "stderr_hex": "",
+      "stdout": "usage: check_updated.py [-h] --binary BINARY --launcher LAUNCHER --binding\n                        BINDING --output OUTPUT\n\noptions:\n  -h, --help           show this help message and exit\n  --binary BINARY\n  --launcher LAUNCHER\n  --binding BINDING\n  --output OUTPUT\n",
+      "stdout_hex": "75736167653a20636865636b5f757064617465642e7079205b2d685d202d2d62696e6172792042494e415259202d2d6c61756e63686572204c41554e43484552202d2d62696e64696e670a20202020202020202020202020202020202020202020202042494e44494e47202d2d6f7574707574204f55545055540a0a6f7074696f6e733a0a20202d682c202d2d68656c70202020202020202020202073686f7720746869732068656c70206d65737361676520616e6420657869740a20202d2d62696e6172792042494e4152590a20202d2d6c61756e63686572204c41554e434845520a20202d2d62696e64696e672042494e44494e470a20202d2d6f7574707574204f55545055540a"
+    }
+  },
+  {
+    "case": "short-help-repeated",
+    "source_checker_sha256": "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d",
+    "source_python_sha256": "53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e",
+    "original": {
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_updated.py",
+        "-hh"
+      ],
+      "argv_hex": [
+        "2f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e2f707974686f6e",
+        "2f686f6d652f72756e6e65722f776f726b2f6f70656e70696c6f742d727573742f6f70656e70696c6f742d727573742f727573742f746f6f6c732f636865636b5f757064617465642e7079",
+        "2d6868"
+      ],
+      "code": 0,
+      "stderr": "",
+      "stderr_hex": "",
+      "stdout": "usage: check_updated.py [-h] --binary BINARY --launcher LAUNCHER --binding\n                        BINDING --output OUTPUT\n\noptions:\n  -h, --help           show this help message and exit\n  --binary BINARY\n  --launcher LAUNCHER\n  --binding BINDING\n  --output OUTPUT\n",
+      "stdout_hex": "75736167653a20636865636b5f757064617465642e7079205b2d685d202d2d62696e6172792042494e415259202d2d6c61756e63686572204c41554e43484552202d2d62696e64696e670a20202020202020202020202020202020202020202020202042494e44494e47202d2d6f7574707574204f55545055540a0a6f7074696f6e733a0a20202d682c202d2d68656c70202020202020202020202073686f7720746869732068656c70206d65737361676520616e6420657869740a20202d2d62696e6172792042494e4152590a20202d2d6c61756e63686572204c41554e434845520a20202d2d62696e64696e672042494e44494e470a20202d2d6f7574707574204f55545055540a"
+    }
+  },
+  {
+    "case": "repeated-binary-before-help",
+    "source_checker_sha256": "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d",
+    "source_python_sha256": "53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e",
+    "original": {
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_updated.py",
+        "--binary",
+        "first",
+        "--binary",
+        "second",
+        "--help"
+      ],
+      "argv_hex": [
+        "2f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e2f707974686f6e",
+        "2f686f6d652f72756e6e65722f776f726b2f6f70656e70696c6f742d727573742f6f70656e70696c6f742d727573742f727573742f746f6f6c732f636865636b5f757064617465642e7079",
+        "2d2d62696e617279",
+        "6669727374",
+        "2d2d62696e617279",
+        "7365636f6e64",
+        "2d2d68656c70"
+      ],
+      "code": 0,
+      "stderr": "",
+      "stderr_hex": "",
+      "stdout": "usage: check_updated.py [-h] --binary BINARY --launcher LAUNCHER --binding\n                        BINDING --output OUTPUT\n\noptions:\n  -h, --help           show this help message and exit\n  --binary BINARY\n  --launcher LAUNCHER\n  --binding BINDING\n  --output OUTPUT\n",
+      "stdout_hex": "75736167653a20636865636b5f757064617465642e7079205b2d685d202d2d62696e6172792042494e415259202d2d6c61756e63686572204c41554e43484552202d2d62696e64696e670a20202020202020202020202020202020202020202020202042494e44494e47202d2d6f7574707574204f55545055540a0a6f7074696f6e733a0a20202d682c202d2d68656c70202020202020202020202073686f7720746869732068656c70206d65737361676520616e6420657869740a20202d2d62696e6172792042494e4152590a20202d2d6c61756e63686572204c41554e434845520a20202d2d62696e64696e672042494e44494e470a20202d2d6f7574707574204f55545055540a"
+    }
+  },
+  {
+    "case": "abbreviated-options-before-help",
+    "source_checker_sha256": "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d",
+    "source_python_sha256": "53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e",
+    "original": {
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_updated.py",
+        "--bina",
+        "b",
+        "--lau",
+        "l",
+        "--bind",
+        "p",
+        "--out",
+        "o",
+        "--help"
+      ],
+      "argv_hex": [
+        "2f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e2f707974686f6e",
+        "2f686f6d652f72756e6e65722f776f726b2f6f70656e70696c6f742d727573742f6f70656e70696c6f742d727573742f727573742f746f6f6c732f636865636b5f757064617465642e7079",
+        "2d2d62696e61",
+        "62",
+        "2d2d6c6175",
+        "6c",
+        "2d2d62696e64",
+        "70",
+        "2d2d6f7574",
+        "6f",
+        "2d2d68656c70"
+      ],
+      "code": 0,
+      "stderr": "",
+      "stderr_hex": "",
+      "stdout": "usage: check_updated.py [-h] --binary BINARY --launcher LAUNCHER --binding\n                        BINDING --output OUTPUT\n\noptions:\n  -h, --help           show this help message and exit\n  --binary BINARY\n  --launcher LAUNCHER\n  --binding BINDING\n  --output OUTPUT\n",
+      "stdout_hex": "75736167653a20636865636b5f757064617465642e7079205b2d685d202d2d62696e6172792042494e415259202d2d6c61756e63686572204c41554e43484552202d2d62696e64696e670a20202020202020202020202020202020202020202020202042494e44494e47202d2d6f7574707574204f55545055540a0a6f7074696f6e733a0a20202d682c202d2d68656c70202020202020202020202073686f7720746869732068656c70206d65737361676520616e6420657869740a20202d2d62696e6172792042494e4152590a20202d2d6c61756e63686572204c41554e434845520a20202d2d62696e64696e672042494e44494e470a20202d2d6f7574707574204f55545055540a"
+    }
+  },
+  {
+    "case": "missing-binary-value",
+    "source_checker_sha256": "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d",
+    "source_python_sha256": "53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e",
+    "original": {
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_updated.py",
+        "--binary"
+      ],
+      "argv_hex": [
+        "2f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e2f707974686f6e",
+        "2f686f6d652f72756e6e65722f776f726b2f6f70656e70696c6f742d727573742f6f70656e70696c6f742d727573742f727573742f746f6f6c732f636865636b5f757064617465642e7079",
+        "2d2d62696e617279"
+      ],
+      "code": 2,
+      "stderr": "usage: check_updated.py [-h] --binary BINARY --launcher LAUNCHER --binding\n                        BINDING --output OUTPUT\ncheck_updated.py: error: argument --binary: expected one argument\n",
+      "stderr_hex": "75736167653a20636865636b5f757064617465642e7079205b2d685d202d2d62696e6172792042494e415259202d2d6c61756e63686572204c41554e43484552202d2d62696e64696e670a20202020202020202020202020202020202020202020202042494e44494e47202d2d6f7574707574204f55545055540a636865636b5f757064617465642e70793a206572726f723a20617267756d656e74202d2d62696e6172793a206578706563746564206f6e6520617267756d656e740a",
+      "stdout": "",
+      "stdout_hex": ""
+    }
+  },
+  {
+    "case": "unknown-option",
+    "source_checker_sha256": "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d",
+    "source_python_sha256": "53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e",
+    "original": {
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_updated.py",
+        "--unknown"
+      ],
+      "argv_hex": [
+        "2f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e2f707974686f6e",
+        "2f686f6d652f72756e6e65722f776f726b2f6f70656e70696c6f742d727573742f6f70656e70696c6f742d727573742f727573742f746f6f6c732f636865636b5f757064617465642e7079",
+        "2d2d756e6b6e6f776e"
+      ],
+      "code": 2,
+      "stderr": "usage: check_updated.py [-h] --binary BINARY --launcher LAUNCHER --binding\n                        BINDING --output OUTPUT\ncheck_updated.py: error: the following arguments are required: --binary, --launcher, --binding, --output\n",
+      "stderr_hex": "75736167653a20636865636b5f757064617465642e7079205b2d685d202d2d62696e6172792042494e415259202d2d6c61756e63686572204c41554e43484552202d2d62696e64696e670a20202020202020202020202020202020202020202020202042494e44494e47202d2d6f7574707574204f55545055540a636865636b5f757064617465642e70793a206572726f723a2074686520666f6c6c6f77696e6720617267756d656e7473206172652072657175697265643a202d2d62696e6172792c202d2d6c61756e636865722c202d2d62696e64696e672c202d2d6f75747075740a",
+      "stdout": "",
+      "stdout_hex": ""
+    }
+  },
+  {
+    "case": "ambiguous-binary-prefix",
+    "source_checker_sha256": "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d",
+    "source_python_sha256": "53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e",
+    "original": {
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_updated.py",
+        "--bin"
+      ],
+      "argv_hex": [
+        "2f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e2f707974686f6e",
+        "2f686f6d652f72756e6e65722f776f726b2f6f70656e70696c6f742d727573742f6f70656e70696c6f742d727573742f727573742f746f6f6c732f636865636b5f757064617465642e7079",
+        "2d2d62696e"
+      ],
+      "code": 2,
+      "stderr": "usage: check_updated.py [-h] --binary BINARY --launcher LAUNCHER --binding\n                        BINDING --output OUTPUT\ncheck_updated.py: error: ambiguous option: --bin could match --binary, --binding\n",
+      "stderr_hex": "75736167653a20636865636b5f757064617465642e7079205b2d685d202d2d62696e6172792042494e415259202d2d6c61756e63686572204c41554e43484552202d2d62696e64696e670a20202020202020202020202020202020202020202020202042494e44494e47202d2d6f7574707574204f55545055540a636865636b5f757064617465642e70793a206572726f723a20616d626967756f7573206f7074696f6e3a202d2d62696e20636f756c64206d61746368202d2d62696e6172792c202d2d62696e64696e670a",
+      "stdout": "",
+      "stdout_hex": ""
+    }
+  },
+  {
+    "case": "help-equals",
+    "source_checker_sha256": "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d",
+    "source_python_sha256": "53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e",
+    "original": {
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_updated.py",
+        "--help=bad"
+      ],
+      "argv_hex": [
+        "2f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e2f707974686f6e",
+        "2f686f6d652f72756e6e65722f776f726b2f6f70656e70696c6f742d727573742f6f70656e70696c6f742d727573742f727573742f746f6f6c732f636865636b5f757064617465642e7079",
+        "2d2d68656c703d626164"
+      ],
+      "code": 2,
+      "stderr": "usage: check_updated.py [-h] --binary BINARY --launcher LAUNCHER --binding\n                        BINDING --output OUTPUT\ncheck_updated.py: error: argument -h/--help: ignored explicit argument 'bad'\n",
+      "stderr_hex": "75736167653a20636865636b5f757064617465642e7079205b2d685d202d2d62696e6172792042494e415259202d2d6c61756e63686572204c41554e43484552202d2d62696e64696e670a20202020202020202020202020202020202020202020202042494e44494e47202d2d6f7574707574204f55545055540a636865636b5f757064617465642e70793a206572726f723a20617267756d656e74202d682f2d2d68656c703a2069676e6f726564206578706c6963697420617267756d656e742027626164270a",
+      "stdout": "",
+      "stdout_hex": ""
+    }
+  },
+  {
+    "case": "short-help-equals",
+    "source_checker_sha256": "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d",
+    "source_python_sha256": "53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e",
+    "original": {
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_updated.py",
+        "-h=bad"
+      ],
+      "argv_hex": [
+        "2f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e2f707974686f6e",
+        "2f686f6d652f72756e6e65722f776f726b2f6f70656e70696c6f742d727573742f6f70656e70696c6f742d727573742f727573742f746f6f6c732f636865636b5f757064617465642e7079",
+        "2d683d626164"
+      ],
+      "code": 2,
+      "stderr": "usage: check_updated.py [-h] --binary BINARY --launcher LAUNCHER --binding\n                        BINDING --output OUTPUT\ncheck_updated.py: error: argument -h/--help: ignored explicit argument 'bad'\n",
+      "stderr_hex": "75736167653a20636865636b5f757064617465642e7079205b2d685d202d2d62696e6172792042494e415259202d2d6c61756e63686572204c41554e43484552202d2d62696e64696e670a20202020202020202020202020202020202020202020202042494e44494e47202d2d6f7574707574204f55545055540a636865636b5f757064617465642e70793a206572726f723a20617267756d656e74202d682f2d2d68656c703a2069676e6f726564206578706c6963697420617267756d656e742027626164270a",
+      "stdout": "",
+      "stdout_hex": ""
+    }
+  },
+  {
+    "case": "incomplete-required-set",
+    "source_checker_sha256": "bfa1686e464e5457b9a9bdc66b954e81f5994db24860d7f7b2869999f4e29b7d",
+    "source_python_sha256": "53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e",
+    "original": {
+      "argv": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_updated.py",
+        "--binary",
+        "b",
+        "--launcher",
+        "l"
+      ],
+      "argv_hex": [
+        "2f6f70742f686f73746564746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e2f707974686f6e",
+        "2f686f6d652f72756e6e65722f776f726b2f6f70656e70696c6f742d727573742f6f70656e70696c6f742d727573742f727573742f746f6f6c732f636865636b5f757064617465642e7079",
+        "2d2d62696e617279",
+        "62",
+        "2d2d6c61756e63686572",
+        "6c"
+      ],
+      "code": 2,
+      "stderr": "usage: check_updated.py [-h] --binary BINARY --launcher LAUNCHER --binding\n                        BINDING --output OUTPUT\ncheck_updated.py: error: the following arguments are required: --binding, --output\n",
+      "stderr_hex": "75736167653a20636865636b5f757064617465642e7079205b2d685d202d2d62696e6172792042494e415259202d2d6c61756e63686572204c41554e43484552202d2d62696e64696e670a20202020202020202020202020202020202020202020202042494e44494e47202d2d6f7574707574204f55545055540a636865636b5f757064617465642e70793a206572726f723a2074686520666f6c6c6f77696e6720617267756d656e7473206172652072657175697265643a202d2d62696e64696e672c202d2d6f75747075740a",
+      "stdout": "",
+      "stdout_hex": ""
+    }
+  }
+]

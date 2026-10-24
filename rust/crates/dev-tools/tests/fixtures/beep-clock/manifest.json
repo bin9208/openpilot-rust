@@ -1,0 +1,13 @@
+{
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "implementation": "CPython",
+  "byteorder": "little",
+  "cases": 1011,
+  "bytes": 118761,
+  "sha256": "f220b1df2c2b396d6d0239d1c4908a56666805c823f53f25b2eb799a34935ca2",
+  "gzip_sha256": "9f8b5577929eafcc41ea8b354f22a0b4d80188da71615f21dd4de81a14d086e3",
+  "sources": {
+    "rust/tools/check_beepd_clock.py": "fa6b799820780f1306b668de617c7d505a42bf074088d66a5d6e0821685d0b1e"
+  },
+  "capture": "Original main generated fixed-seed input; expected bits independently evaluated by CPython _PyTime_AsSecondsDouble before any native candidate."
+}

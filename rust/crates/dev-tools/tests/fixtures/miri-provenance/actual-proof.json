@@ -1,0 +1,22 @@
+{
+  "sysroot": "/home/fma1/.cache/miri",
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "original_expression_sha256": "ef4a7830e4b5d87b86faf98135ef0d9dcf221f04c25f48b4c8501c1c8a4f1ba6",
+  "native_source_sha256": {
+    "rust/crates/dev-tools/src/miri_provenance.rs": "c4f4da20d4a3f1473c90b577e9bf12bff1fadda608d9978ad3dd30bc8f19adb2",
+    "rust/crates/dev-tools/src/bin/hash_miri_core.rs": "2644d48b59a642a393f3381c9e2e34e62f6a816d61980aa3acc57fb9704614a2",
+    "rust/crates/dev-tools/src/python_glob.rs": "3456aa6f793d53c0dd3de5814cc0adc2bddf9e9a7d402a35d116da0af9bc5872",
+    "rust/crates/dev-tools/src/python_fs.rs": "4b1061e75941c906f3d6eb32f15a9882d76333032d7d4c459f9f91be34facb55",
+    "rust/crates/dev-tools/src/seal.rs": "61acb2852b7b000b84ab179fcf7bdde4e062bb5055e1759ef0c4fa7523837c54",
+    "rust/Cargo.lock": "eb88092a18c9b4b324d9355bf4a730ef45fe40b736cb7a3e92e156724a93bab6"
+  },
+  "native_binary_sha256": "c1894ae83131550ae6bfad9a2154eab001926fb1f85a306ef236e961216b1e8b",
+  "native_PATH": "/nonexistent",
+  "stdout_sha256": "1d88caa42ab506cdb3c5d1d7137837d5f70b4b35cd5f5a5115e2de2dc1f7e528",
+  "core_sha256": {
+    "/home/fma1/.cache/miri/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-2a145ed49e081e28.rlib": "3f5bd534a8dc765d701b7a823cda05b60bed22189a830878fa39e1913cbbf2d8"
+  },
+  "both_exit": 0,
+  "stdout_equal": true,
+  "stderr_equal": true
+}

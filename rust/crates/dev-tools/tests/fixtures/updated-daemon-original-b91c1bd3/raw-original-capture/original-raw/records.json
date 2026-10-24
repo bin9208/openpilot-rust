@@ -1,0 +1,467 @@
+[
+  {
+    "msg": "preparing new safe staging area",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566611.6570754
+  },
+  {
+    "msg": "caught SIGUSR1, checking for updates",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "signals.rs",
+    "lineno": 109,
+    "pathname": "crates/updated/src/signals.rs",
+    "module": "openpilot_updated::signals",
+    "funcName": "openpilot_updated::signals::Signals::install::{{closure}}",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9683,
+    "threadName": "openpilot-updat",
+    "created": 1792566611.823827
+  },
+  {
+    "msg": "git diff output:\n",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566611.7501137
+  },
+  {
+    "msg": "caught SIGHUP, attempting to downloading update",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "signals.rs",
+    "lineno": 109,
+    "pathname": "crates/updated/src/signals.rs",
+    "module": "openpilot_updated::signals",
+    "funcName": "openpilot_updated::signals::Signals::install::{{closure}}",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9683,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.1266813
+  },
+  {
+    "msg": "preparing new safe staging area",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566611.824209
+  },
+  {
+    "msg": "git diff output:\n",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566611.9195402
+  },
+  {
+    "msg": "checking for updates",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566611.9641023
+  },
+  {
+    "msg": "update available, dev (475272d) -> dev (b82f23a)",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.081411
+  },
+  {
+    "msg": "skipping fetch, only checking",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.081536
+  },
+  {
+    "msg": "preparing new safe staging area",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.1552882
+  },
+  {
+    "msg": "git diff output:\n",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.251176
+  },
+  {
+    "msg": "checking for updates",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.3228574
+  },
+  {
+    "msg": "update available, dev (475272d) -> dev (b82f23a)",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.4401867
+  },
+  {
+    "msg": "attempting git fetch inside staging overlay",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.4403083
+  },
+  {
+    "msg": "git fetch success: From /tmp/updated-daemon-1dmq6u5m/remote\n * branch            dev        -> FETCH_HEAD\n",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.5333724
+  },
+  {
+    "msg": "git reset in progress",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.533482
+  },
+  {
+    "msg": "git reset success: Reset branch 'dev'\nYour branch is up to date with 'origin/dev'.\n\nbranch 'dev' set up to track 'origin/dev'.\n\nHEAD is now at b82f23a 2.0\n\nRemoving .overlay_init\n\n\n\n",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.6555417
+  },
+  {
+    "msg": "creating finalized version of the overlay",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.6565197
+  },
+  {
+    "msg": "Starting LFS cleanup in finalized update (Git repack skipped)",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.7104366
+  },
+  {
+    "msg": {
+      "event": "Done LFS cleanup",
+      "duration": 0.033619493
+    },
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 26,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::event",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.7442482
+  },
+  {
+    "msg": "done finalizing overlay",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.7450933
+  },
+  {
+    "msg": "finalize success!",
+    "ctx": {
+      "runtime_language": "rust",
+      "source_commit": "b91c1bd30b9ee4c15a6b1ad521173412cb6fa63a",
+      "source_tree": "clean"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "report.rs",
+    "lineno": 12,
+    "pathname": "crates/updated/src/report.rs",
+    "module": "openpilot_updated::report",
+    "funcName": "openpilot_updated::report::info",
+    "host": "runnervm8k3b6",
+    "process": 9682,
+    "thread": 9682,
+    "threadName": "openpilot-updat",
+    "created": 1792566612.7451665
+  }
+]

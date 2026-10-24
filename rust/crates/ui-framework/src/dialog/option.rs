@@ -9,7 +9,7 @@ pub struct MultiOptionDialog {
     pub select: Button,
     options: Vec<String>,
     scroller: Scroller,
-    pending: Rc<Cell<Option<DialogResult>>>,
+    pending: Rc<RefCell<VecDeque<DialogResult>>>,
 }
 impl MultiOptionDialog {
     pub fn new(title: &str, options: Vec<String>, current: &str) -> Self {
@@ -31,7 +31,7 @@ impl MultiOptionDialog {
             button.state.click = Some(Box::new(move || *selected.borrow_mut() = value.clone()));
             scroller.add(Box::new(button));
         }
-        let pending = Rc::new(Cell::new(None));
+        let pending = Rc::new(RefCell::new(VecDeque::new()));
         let cancel = result_button("Cancel", DialogResult::Cancel, &pending);
         let mut select = result_button("Select", DialogResult::Confirm, &pending);
         select.set_style(ButtonStyle::Primary);

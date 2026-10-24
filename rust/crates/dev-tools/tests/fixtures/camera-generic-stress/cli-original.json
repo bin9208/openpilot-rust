@@ -1,0 +1,379 @@
+{
+  "source_sha256": "05407fbd24e73550d8236c79d28213021493138d6436eb5b559e3bf0e10803aa",
+  "cases": [
+    {
+      "name": "help",
+      "args": [
+        "--help"
+      ],
+      "exit": 0,
+      "stdout": null,
+      "output_exists": false,
+      "files": {}
+    },
+    {
+      "name": "missing",
+      "args": [],
+      "exit": 2,
+      "stdout": "",
+      "output_exists": false,
+      "files": {}
+    },
+    {
+      "name": "unknown",
+      "args": [
+        "--unknown"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "output_exists": false,
+      "files": {}
+    },
+    {
+      "name": "empty-runner",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--runner"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {}
+    },
+    {
+      "name": "runner-many",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--runner",
+        "/bin/echo",
+        "a",
+        "b"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {
+        "constructor-lazy-source.stderr": "ERROR: ld.so: object 'missing' from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored.\n",
+        "constructor-lazy-source.stdout": "a b missing\n"
+      }
+    },
+    {
+      "name": "runner-then-profile",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--runner",
+        "/bin/echo",
+        "--profile",
+        "custom"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {
+        "constructor-lazy-source.stderr": "ERROR: ld.so: object 'missing' from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored.\n",
+        "constructor-lazy-source.stdout": "missing\n"
+      }
+    },
+    {
+      "name": "runner-equals",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--runner=/bin/echo",
+        "extra"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "output_exists": false,
+      "files": {}
+    },
+    {
+      "name": "runner-negative-number",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--runner",
+        "-1"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {}
+    },
+    {
+      "name": "runner-negative-option",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--runner",
+        "-L",
+        "x"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "output_exists": false,
+      "files": {}
+    },
+    {
+      "name": "runner-repeat",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--runner",
+        "missing",
+        "--runner",
+        "/bin/echo"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {
+        "constructor-lazy-source.stderr": "ERROR: ld.so: object 'missing' from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored.\n",
+        "constructor-lazy-source.stdout": "missing\n"
+      }
+    },
+    {
+      "name": "profile-last",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--profile",
+        "one",
+        "--profile",
+        "two"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {}
+    },
+    {
+      "name": "abbrev",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--run",
+        "/bin/echo"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {
+        "constructor-lazy-source.stderr": "ERROR: ld.so: object 'missing' from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored.\n",
+        "constructor-lazy-source.stdout": "missing\n"
+      }
+    },
+    {
+      "name": "ambiguous",
+      "args": [
+        "--r",
+        "x"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "output_exists": false,
+      "files": {}
+    },
+    {
+      "name": "trailing-positional",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "extra"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "output_exists": false,
+      "files": {}
+    },
+    {
+      "name": "terminator",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--runner",
+        "/bin/echo",
+        "--",
+        "x"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "output_exists": false,
+      "files": {}
+    },
+    {
+      "name": "unicode-runner",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--runner",
+        "-\u0661"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {}
+    },
+    {
+      "name": "newline-runner",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--runner",
+        "-1\n"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {}
+    },
+    {
+      "name": "terminated-runner",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--",
+        "--runner"
+      ],
+      "exit": 2,
+      "stdout": "",
+      "output_exists": false,
+      "files": {}
+    },
+    {
+      "name": "runner-empty-value",
+      "args": [
+        "--reference",
+        "missing",
+        "--native",
+        "missing",
+        "--parser",
+        "missing",
+        "--fixture",
+        "missing",
+        "--output",
+        "$OUT",
+        "--runner="
+      ],
+      "exit": 1,
+      "stdout": "",
+      "output_exists": true,
+      "files": {}
+    }
+  ]
+}

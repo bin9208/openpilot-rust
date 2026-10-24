@@ -1,0 +1,38 @@
+[
+  {
+    "name": "active-nan-pos",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 1, \"elements\": [{\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 160, \"height\": 80}, \"props\": {}, \"events\": [{\"pos\": {\"x\": NaN, \"y\": 20}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}]}]}",
+    "exit": 0,
+    "png": true,
+    "png_sha256": "1be4433e4ac4cf9d65909065c5ad03c4883a8a1e6edfffa0b4257549858ea7de",
+    "state_text": "[\n  {\n    \"value\": false,\n    \"progress\": 0.0\n  }\n]"
+  },
+  {
+    "name": "active-inf-pos",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 1, \"elements\": [{\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 160, \"height\": 80}, \"props\": {}, \"events\": [{\"pos\": {\"x\": Infinity, \"y\": 20}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}]}]}",
+    "exit": 0,
+    "png": true,
+    "png_sha256": "1be4433e4ac4cf9d65909065c5ad03c4883a8a1e6edfffa0b4257549858ea7de",
+    "state_text": "[\n  {\n    \"value\": false,\n    \"progress\": 0.0\n  }\n]"
+  },
+  {
+    "name": "active-hugeint-pos",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 1, \"elements\": [{\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 160, \"height\": 80}, \"props\": {}, \"events\": [{\"pos\": {\"x\": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, \"y\": 20}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}]}]}",
+    "exit": 1,
+    "png": false
+  },
+  {
+    "name": "slot-float-zero-outside",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 1, \"elements\": [{\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 160, \"height\": 80}, \"props\": {}, \"events\": [{\"pos\": {\"x\": -100, \"y\": 20}, \"slot\": 0.0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}]}]}",
+    "exit": 0,
+    "png": true,
+    "png_sha256": "1be4433e4ac4cf9d65909065c5ad03c4883a8a1e6edfffa0b4257549858ea7de",
+    "state_text": "[\n  {\n    \"value\": false,\n    \"progress\": 0.0\n  }\n]"
+  },
+  {
+    "name": "slot-float-zero-inside",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 1, \"elements\": [{\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 160, \"height\": 80}, \"props\": {}, \"events\": [{\"pos\": {\"x\": 20, \"y\": 20}, \"slot\": 0.0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}]}]}",
+    "exit": 1,
+    "png": false
+  }
+]

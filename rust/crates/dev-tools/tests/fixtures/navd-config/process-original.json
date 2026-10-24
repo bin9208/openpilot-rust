@@ -1,0 +1,155 @@
+{
+  "source_sha256": "27c49d708b1cf39682623b6c05877d1efb91fa7ddc5ba65c8ad9b6c81c794629",
+  "slow_fixture_sha256": "47a4ca029a8440b2daab8ade16a3dd51e1536f0a21596b70781ded8cbae8d90f",
+  "scope": "Real original checker with real source/Params, known bad native boundary executables and actual15sec child timeout/actual SIGINT after immutable launcher barrier; no native-policy expectation.",
+  "rows": [
+    {
+      "name": "empty-success",
+      "returncode": 1,
+      "report_status": null,
+      "source_first": true,
+      "native_stdout": true,
+      "native_record": false,
+      "has_report": false,
+      "error_class": "JSONDecodeError"
+    },
+    {
+      "name": "all-false",
+      "returncode": 1,
+      "report_status": "FAIL",
+      "source_first": true,
+      "native_stdout": true,
+      "native_record": true,
+      "has_report": true,
+      "error_class": null,
+      "cases": [
+        {
+          "name": "environment",
+          "passed": false
+        },
+        {
+          "name": "environment-empty",
+          "passed": false
+        },
+        {
+          "name": "public-key",
+          "passed": false
+        },
+        {
+          "name": "missing-type",
+          "passed": false
+        },
+        {
+          "name": "public-key-empty",
+          "passed": false
+        },
+        {
+          "name": "public-key-invalid-utf8",
+          "passed": false
+        },
+        {
+          "name": "public-key-missing",
+          "passed": false
+        },
+        {
+          "name": "signed-rsa",
+          "passed": false
+        },
+        {
+          "name": "signed-ec",
+          "passed": false
+        },
+        {
+          "name": "rsa-precedence",
+          "passed": false
+        },
+        {
+          "name": "signed-null-identity",
+          "passed": false
+        },
+        {
+          "name": "signed-invalid-identity",
+          "passed": false
+        },
+        {
+          "name": "signed-missing-key",
+          "passed": false
+        },
+        {
+          "name": "missing-key-unicode",
+          "passed": false
+        },
+        {
+          "name": "signed-missing-public",
+          "passed": false
+        },
+        {
+          "name": "signed-invalid-private",
+          "passed": true
+        },
+        {
+          "name": "integer-0",
+          "passed": false
+        },
+        {
+          "name": "integer-1",
+          "passed": false
+        },
+        {
+          "name": "integer-2",
+          "passed": false
+        },
+        {
+          "name": "integer-3",
+          "passed": false
+        },
+        {
+          "name": "integer-4",
+          "passed": false
+        },
+        {
+          "name": "integer-5",
+          "passed": false
+        },
+        {
+          "name": "integer-6",
+          "passed": false
+        },
+        {
+          "name": "integer-7",
+          "passed": true
+        },
+        {
+          "name": "integer-8",
+          "passed": true
+        },
+        {
+          "name": "integer-9",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "timeout",
+      "returncode": 1,
+      "report_status": null,
+      "source_first": true,
+      "native_stdout": false,
+      "native_record": false,
+      "has_report": false,
+      "error_class": "TimeoutExpired",
+      "direct_child_gone": true
+    },
+    {
+      "name": "interrupt",
+      "returncode": -2,
+      "report_status": null,
+      "source_first": true,
+      "native_stdout": false,
+      "native_record": false,
+      "has_report": false,
+      "error_class": "KeyboardInterrupt",
+      "direct_child_gone": true
+    }
+  ]
+}

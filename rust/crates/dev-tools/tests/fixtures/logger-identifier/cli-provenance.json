@@ -1,0 +1,9 @@
+{
+  "path": "rust/tools/check_logger_identifier.py",
+  "revision": "30866c90^",
+  "sha256": "01c1dd90f74c3b53dd31996c111683cfcb10f8d3f10d1fe955cffeb2ce97118c",
+  "native_binary": "check-logger-identifier",
+  "cases": 16,
+  "append_action": "ordered, repeatable --runner; unique abbreviations, inline values and three positional arguments",
+  "actual_boundary_proof": "eight original/native CLI cases including160 peer executions per successful full comparison; flag-looking missing values must exit2 beforeoutput/process"
+}

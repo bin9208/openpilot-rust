@@ -1,0 +1,6319 @@
+{
+  "version": 1,
+  "source_pins": {
+    "rust/tools/check_deleter_reference.py": "60b2ca4e6d4e7260bb275f1aacad0108b029fecf1d7b4ed836dcfa5ed72f0a19",
+    "rust/tools/check_deleter_daemon.py": "ec9b90f63f80d53db05543cdd56556435030f5e84bf1032cad1022771dcc6ec5",
+    "rust/tools/deleter_fixtures.py": "73610dca2ad77b7fe95a3364b7adf86ed7d49069ed991f916dc6dd92022559fd",
+    "rust/tools/tests/test_deleter_observer.py": "32078173a58f11e81af9927fae8fb33c1f3d533a45b61f7d025ca773081ba87d",
+    "openpilot/system/loggerd/deleter.py": "99b0d67d04405b63037f84b9eeade4e14a10ff690eb43ec29ecd6c5c587abc2b",
+    "openpilot/system/loggerd/uploader.py": "8af80c2411a3303d9f3e9e2255dd0732177d9af280abab6e7f568c7576e3a02e",
+    "openpilot/system/loggerd/xattr_cache.py": "35b6460ce0d1ea99066d86d6e81ef10edcd989a2f0967f07a8bae3957720e631",
+    "openpilot/system/loggerd/config.py": "ec950971dbdad607ba19e1144a4ab2455d744560ed962eaa7363420beafb36e8"
+  },
+  "reference": [
+    {
+      "name": "threshold-order",
+      "directories_hex": [
+        "726f7574652d2d3130",
+        "726f7574652d2d32",
+        "726f7574652d2d31",
+        "726f7574652d2d30",
+        "726f7574652d2d33",
+        "726f7574652d2d34",
+        "726f7574652d2d35",
+        "626f6f74",
+        "6372617368",
+        "323032342d6f6c642d2d3130",
+        "323032342d6f6c642d2d32"
+      ],
+      "steps": [
+        [
+          "cycle",
+          5368709120,
+          "30"
+        ],
+        [
+          "cycle",
+          5368709119,
+          "30"
+        ],
+        [
+          "cycle",
+          5368709120,
+          "29.999999999999996"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "5368709120",
+            "percent": "30"
+          },
+          "original": {
+            "deleted": null,
+            "wait_ms": 30000
+          },
+          "expected": {
+            "deleted": null,
+            "wait_ms": 30000
+          },
+          "original_snapshot": [
+            [
+              "323032342d6f6c642d2d3130",
+              false
+            ],
+            [
+              "323032342d6f6c642d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "323032342d6f6c642d2d32",
+              false
+            ],
+            [
+              "323032342d6f6c642d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "323032342d6f6c642d2d3130",
+              false
+            ],
+            [
+              "323032342d6f6c642d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "323032342d6f6c642d2d32",
+              false
+            ],
+            [
+              "323032342d6f6c642d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "5368709119",
+            "percent": "30"
+          },
+          "original": {
+            "deleted": "323032342d6f6c642d2d32",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "323032342d6f6c642d2d32",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "323032342d6f6c642d2d3130",
+              false
+            ],
+            [
+              "323032342d6f6c642d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "323032342d6f6c642d2d3130",
+              false
+            ],
+            [
+              "323032342d6f6c642d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "5368709120",
+            "percent": "29.999999999999996"
+          },
+          "original": {
+            "deleted": "323032342d6f6c642d2d3130",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "323032342d6f6c642d2d3130",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d30",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d30",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d31",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d31",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d32",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d32",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d33",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d33",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d34",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d34",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d35",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d35",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d3130",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d3130",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "626f6f74",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "626f6f74",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "6372617368",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "6372617368",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": null,
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": null,
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": null,
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": null,
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": null,
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": null,
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "locks-and-preserve",
+      "directories_hex": [
+        "726f7574652d2d3130",
+        "726f7574652d2d32",
+        "726f7574652d2d31",
+        "726f7574652d2d30",
+        "726f7574652d2d33",
+        "726f7574652d2d34",
+        "726f7574652d2d35",
+        "626f6f74",
+        "6372617368"
+      ],
+      "steps": [
+        [
+          "lock",
+          "726f7574652d2d30"
+        ],
+        [
+          "attr",
+          "726f7574652d2d33",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "726f7574652d2d31",
+              "726f7574652d2d32",
+              "726f7574652d2d33"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "726f7574652d2d31",
+              "726f7574652d2d32",
+              "726f7574652d2d33"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d34",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d34",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d35",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d35",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d3130",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d3130",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d31",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d31",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d32",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d32",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d33",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d33",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "626f6f74",
+              false
+            ],
+            [
+              "626f6f742f726c6f672e7a7374",
+              false
+            ],
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "626f6f74",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "626f6f74",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "6372617368",
+              false
+            ],
+            [
+              "63726173682f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "6372617368",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "6372617368",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": null,
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": null,
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f68656c642e6c6f636b",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "late-bookmark",
+      "directories_hex": [
+        "726f7574652d2d30",
+        "726f7574652d2d31",
+        "726f7574652d2d32",
+        "726f7574652d2d33"
+      ],
+      "steps": [
+        [
+          "preserved"
+        ],
+        [
+          "attr",
+          "726f7574652d2d32",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": []
+          },
+          "expected": {
+            "preserved": []
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": "#298: refresh mutable preserve attributes"
+        },
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": []
+          },
+          "expected": {
+            "preserved": [
+              "726f7574652d2d30",
+              "726f7574652d2d31",
+              "726f7574652d2d32"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": "#298: refresh mutable preserve attributes"
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d30",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d33",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": "#298: refresh mutable preserve attributes"
+        }
+      ],
+      "expected_origin": "original source with independently asserted #298 correction"
+    },
+    {
+      "name": "removed-bookmark",
+      "directories_hex": [
+        "726f7574652d2d30",
+        "726f7574652d2d31"
+      ],
+      "steps": [
+        [
+          "attr",
+          "726f7574652d2d30",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "remove_attr",
+          "726f7574652d2d30"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "726f7574652d2d30"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "726f7574652d2d30"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": "#298: refresh mutable preserve attributes"
+        },
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "726f7574652d2d30"
+            ]
+          },
+          "expected": {
+            "preserved": []
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": "#298: refresh mutable preserve attributes"
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d31",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d30",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": "#298: refresh mutable preserve attributes"
+        }
+      ],
+      "expected_origin": "original source with independently asserted #298 correction"
+    },
+    {
+      "name": "five-marked-segments",
+      "directories_hex": [
+        "726f7574652d2d30",
+        "726f7574652d2d31",
+        "726f7574652d2d32",
+        "726f7574652d2d33",
+        "726f7574652d2d34",
+        "726f7574652d2d35",
+        "726f7574652d2d36",
+        "726f7574652d2d37",
+        "726f7574652d2d38",
+        "726f7574652d2d39",
+        "726f7574652d2d3130",
+        "726f7574652d2d3131",
+        "726f7574652d2d3132",
+        "726f7574652d2d3133",
+        "726f7574652d2d3134",
+        "726f7574652d2d3135",
+        "726f7574652d2d3136",
+        "726f7574652d2d3137",
+        "726f7574652d2d3138",
+        "726f7574652d2d3139"
+      ],
+      "steps": [
+        [
+          "attr",
+          "726f7574652d2d31",
+          "31"
+        ],
+        [
+          "attr",
+          "726f7574652d2d34",
+          "31"
+        ],
+        [
+          "attr",
+          "726f7574652d2d37",
+          "31"
+        ],
+        [
+          "attr",
+          "726f7574652d2d3130",
+          "31"
+        ],
+        [
+          "attr",
+          "726f7574652d2d3133",
+          "31"
+        ],
+        [
+          "attr",
+          "726f7574652d2d3136",
+          "31"
+        ],
+        [
+          "attr",
+          "726f7574652d2d3139",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "726f7574652d2d3130",
+              "726f7574652d2d3131",
+              "726f7574652d2d3132",
+              "726f7574652d2d3133",
+              "726f7574652d2d3134",
+              "726f7574652d2d3135",
+              "726f7574652d2d3136",
+              "726f7574652d2d3137",
+              "726f7574652d2d3138",
+              "726f7574652d2d3139",
+              "726f7574652d2d35",
+              "726f7574652d2d36",
+              "726f7574652d2d37",
+              "726f7574652d2d38",
+              "726f7574652d2d39"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "726f7574652d2d3130",
+              "726f7574652d2d3131",
+              "726f7574652d2d3132",
+              "726f7574652d2d3133",
+              "726f7574652d2d3134",
+              "726f7574652d2d3135",
+              "726f7574652d2d3136",
+              "726f7574652d2d3137",
+              "726f7574652d2d3138",
+              "726f7574652d2d3139",
+              "726f7574652d2d35",
+              "726f7574652d2d36",
+              "726f7574652d2d37",
+              "726f7574652d2d38",
+              "726f7574652d2d39"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3131",
+              false
+            ],
+            [
+              "726f7574652d2d31312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3132",
+              false
+            ],
+            [
+              "726f7574652d2d31322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3133",
+              false
+            ],
+            [
+              "726f7574652d2d31332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3134",
+              false
+            ],
+            [
+              "726f7574652d2d31342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3135",
+              false
+            ],
+            [
+              "726f7574652d2d31352f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3136",
+              false
+            ],
+            [
+              "726f7574652d2d31362f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3137",
+              false
+            ],
+            [
+              "726f7574652d2d31372f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3138",
+              false
+            ],
+            [
+              "726f7574652d2d31382f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3139",
+              false
+            ],
+            [
+              "726f7574652d2d31392f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d36",
+              false
+            ],
+            [
+              "726f7574652d2d362f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d37",
+              false
+            ],
+            [
+              "726f7574652d2d372f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d38",
+              false
+            ],
+            [
+              "726f7574652d2d382f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d39",
+              false
+            ],
+            [
+              "726f7574652d2d392f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3131",
+              false
+            ],
+            [
+              "726f7574652d2d31312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3132",
+              false
+            ],
+            [
+              "726f7574652d2d31322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3133",
+              false
+            ],
+            [
+              "726f7574652d2d31332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3134",
+              false
+            ],
+            [
+              "726f7574652d2d31342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3135",
+              false
+            ],
+            [
+              "726f7574652d2d31352f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3136",
+              false
+            ],
+            [
+              "726f7574652d2d31362f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3137",
+              false
+            ],
+            [
+              "726f7574652d2d31372f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3138",
+              false
+            ],
+            [
+              "726f7574652d2d31382f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3139",
+              false
+            ],
+            [
+              "726f7574652d2d31392f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d36",
+              false
+            ],
+            [
+              "726f7574652d2d362f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d37",
+              false
+            ],
+            [
+              "726f7574652d2d372f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d38",
+              false
+            ],
+            [
+              "726f7574652d2d382f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d39",
+              false
+            ],
+            [
+              "726f7574652d2d392f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "726f7574652d2d30",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d30",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3131",
+              false
+            ],
+            [
+              "726f7574652d2d31312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3132",
+              false
+            ],
+            [
+              "726f7574652d2d31322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3133",
+              false
+            ],
+            [
+              "726f7574652d2d31332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3134",
+              false
+            ],
+            [
+              "726f7574652d2d31342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3135",
+              false
+            ],
+            [
+              "726f7574652d2d31352f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3136",
+              false
+            ],
+            [
+              "726f7574652d2d31362f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3137",
+              false
+            ],
+            [
+              "726f7574652d2d31372f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3138",
+              false
+            ],
+            [
+              "726f7574652d2d31382f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3139",
+              false
+            ],
+            [
+              "726f7574652d2d31392f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d36",
+              false
+            ],
+            [
+              "726f7574652d2d362f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d37",
+              false
+            ],
+            [
+              "726f7574652d2d372f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d38",
+              false
+            ],
+            [
+              "726f7574652d2d382f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d39",
+              false
+            ],
+            [
+              "726f7574652d2d392f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3131",
+              false
+            ],
+            [
+              "726f7574652d2d31312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3132",
+              false
+            ],
+            [
+              "726f7574652d2d31322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3133",
+              false
+            ],
+            [
+              "726f7574652d2d31332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3134",
+              false
+            ],
+            [
+              "726f7574652d2d31342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3135",
+              false
+            ],
+            [
+              "726f7574652d2d31352f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3136",
+              false
+            ],
+            [
+              "726f7574652d2d31362f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3137",
+              false
+            ],
+            [
+              "726f7574652d2d31372f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3138",
+              false
+            ],
+            [
+              "726f7574652d2d31382f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3139",
+              false
+            ],
+            [
+              "726f7574652d2d31392f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d36",
+              false
+            ],
+            [
+              "726f7574652d2d362f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d37",
+              false
+            ],
+            [
+              "726f7574652d2d372f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d38",
+              false
+            ],
+            [
+              "726f7574652d2d382f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d39",
+              false
+            ],
+            [
+              "726f7574652d2d392f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "invalid-marked-counts",
+      "directories_hex": [
+        "7a7a7a",
+        "726f7574652d2d30",
+        "726f7574652d2d31",
+        "726f7574652d2d32",
+        "726f7574652d2d33",
+        "726f7574652d2d34",
+        "726f7574652d2d35",
+        "726f7574652d2d36",
+        "726f7574652d2d37"
+      ],
+      "steps": [
+        [
+          "attr",
+          "7a7a7a",
+          "31"
+        ],
+        [
+          "attr",
+          "726f7574652d2d31",
+          "31"
+        ],
+        [
+          "attr",
+          "726f7574652d2d33",
+          "31"
+        ],
+        [
+          "attr",
+          "726f7574652d2d34",
+          "31"
+        ],
+        [
+          "attr",
+          "726f7574652d2d35",
+          "31"
+        ],
+        [
+          "attr",
+          "726f7574652d2d36",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "726f7574652d2d30",
+              "726f7574652d2d31",
+              "726f7574652d2d32",
+              "726f7574652d2d33",
+              "726f7574652d2d34",
+              "726f7574652d2d35",
+              "726f7574652d2d36"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "726f7574652d2d30",
+              "726f7574652d2d31",
+              "726f7574652d2d32",
+              "726f7574652d2d33",
+              "726f7574652d2d34",
+              "726f7574652d2d35",
+              "726f7574652d2d36"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d36",
+              false
+            ],
+            [
+              "726f7574652d2d362f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d37",
+              false
+            ],
+            [
+              "726f7574652d2d372f726c6f672e7a7374",
+              false
+            ],
+            [
+              "7a7a7a",
+              false
+            ],
+            [
+              "7a7a7a2f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d36",
+              false
+            ],
+            [
+              "726f7574652d2d362f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d37",
+              false
+            ],
+            [
+              "726f7574652d2d372f726c6f672e7a7374",
+              false
+            ],
+            [
+              "7a7a7a",
+              false
+            ],
+            [
+              "7a7a7a2f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "7a7a7a",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "7a7a7a",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d36",
+              false
+            ],
+            [
+              "726f7574652d2d362f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d37",
+              false
+            ],
+            [
+              "726f7574652d2d372f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d36",
+              false
+            ],
+            [
+              "726f7574652d2d362f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d37",
+              false
+            ],
+            [
+              "726f7574652d2d372f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-0",
+      "directories_hex": [
+        "722d2d2b303033"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2d2b303033",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "722d2d31",
+              "722d2d32",
+              "722d2d33"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "722d2d31",
+              "722d2d32",
+              "722d2d33"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "722d2d2b303033",
+              false
+            ],
+            [
+              "722d2d2b3030332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2d2b303033",
+              false
+            ],
+            [
+              "722d2d2b3030332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2d2b303033",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2d2b303033",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-1",
+      "directories_hex": [
+        "722d2d2d31"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2d2d31",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "722d2d2d30",
+              "722d2d2d31"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "722d2d2d30",
+              "722d2d2d31"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "722d2d2d31",
+              false
+            ],
+            [
+              "722d2d2d312f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2d2d31",
+              false
+            ],
+            [
+              "722d2d2d312f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2d2d31",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2d2d31",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-2",
+      "directories_hex": [
+        "722d2d2d30"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2d2d30",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "722d2d2d30"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "722d2d2d30"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "722d2d2d30",
+              false
+            ],
+            [
+              "722d2d2d302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2d2d30",
+              false
+            ],
+            [
+              "722d2d2d302f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2d2d30",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2d2d30",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-3",
+      "directories_hex": [
+        "722d2d315f32"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2d315f32",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "722d2d3130",
+              "722d2d3131",
+              "722d2d3132"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "722d2d3130",
+              "722d2d3131",
+              "722d2d3132"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "722d2d315f32",
+              false
+            ],
+            [
+              "722d2d315f322f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2d315f32",
+              false
+            ],
+            [
+              "722d2d315f322f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2d315f32",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2d315f32",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-4",
+      "directories_hex": [
+        "722d2d5f31"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2d5f31",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": []
+          },
+          "expected": {
+            "preserved": []
+          },
+          "original_snapshot": [
+            [
+              "722d2d5f31",
+              false
+            ],
+            [
+              "722d2d5f312f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2d5f31",
+              false
+            ],
+            [
+              "722d2d5f312f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2d5f31",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2d5f31",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-5",
+      "directories_hex": [
+        "722d2d315f"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2d315f",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": []
+          },
+          "expected": {
+            "preserved": []
+          },
+          "original_snapshot": [
+            [
+              "722d2d315f",
+              false
+            ],
+            [
+              "722d2d315f2f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2d315f",
+              false
+            ],
+            [
+              "722d2d315f2f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2d315f",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2d315f",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-6",
+      "directories_hex": [
+        "722d2d315f5f32"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2d315f5f32",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": []
+          },
+          "expected": {
+            "preserved": []
+          },
+          "original_snapshot": [
+            [
+              "722d2d315f5f32",
+              false
+            ],
+            [
+              "722d2d315f5f322f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2d315f5f32",
+              false
+            ],
+            [
+              "722d2d315f5f322f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2d315f5f32",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2d315f5f32",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-7",
+      "directories_hex": [
+        "2d2d39"
+      ],
+      "steps": [
+        [
+          "attr",
+          "2d2d39",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": []
+          },
+          "expected": {
+            "preserved": []
+          },
+          "original_snapshot": [
+            [
+              "2d2d39",
+              false
+            ],
+            [
+              "2d2d392f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "2d2d39",
+              false
+            ],
+            [
+              "2d2d392f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "2d2d39",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "2d2d39",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-8",
+      "directories_hex": [
+        "706c61696e"
+      ],
+      "steps": [
+        [
+          "attr",
+          "706c61696e",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": []
+          },
+          "expected": {
+            "preserved": []
+          },
+          "original_snapshot": [
+            [
+              "706c61696e",
+              false
+            ],
+            [
+              "706c61696e2f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "706c61696e",
+              false
+            ],
+            [
+              "706c61696e2f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "706c61696e",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "706c61696e",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-9",
+      "directories_hex": [
+        "722d2d3278"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2d3278",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": []
+          },
+          "expected": {
+            "preserved": []
+          },
+          "original_snapshot": [
+            [
+              "722d2d3278",
+              false
+            ],
+            [
+              "722d2d32782f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2d3278",
+              false
+            ],
+            [
+              "722d2d32782f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2d3278",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2d3278",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-10",
+      "directories_hex": [
+        "722d2d"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2d",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": []
+          },
+          "expected": {
+            "preserved": []
+          },
+          "original_snapshot": [
+            [
+              "722d2d",
+              false
+            ],
+            [
+              "722d2d2f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2d",
+              false
+            ],
+            [
+              "722d2d2f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2d",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2d",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-11",
+      "directories_hex": [
+        "722d2d393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2d393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "722d2d393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393937",
+              "722d2d393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393938",
+              "722d2d393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "722d2d393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393937",
+              "722d2d393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393938",
+              "722d2d393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "722d2d393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939",
+              false
+            ],
+            [
+              "722d2d3939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939392f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2d393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939",
+              false
+            ],
+            [
+              "722d2d3939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939392f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2d393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2d393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939393939",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-12",
+      "directories_hex": [
+        "722d2d2020efbc91efbc922020"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2d2020efbc91efbc922020",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "722d2d3130",
+              "722d2d3131",
+              "722d2d3132"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "722d2d3130",
+              "722d2d3131",
+              "722d2d3132"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "722d2d2020efbc91efbc922020",
+              false
+            ],
+            [
+              "722d2d2020efbc91efbc9220202f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2d2020efbc91efbc922020",
+              false
+            ],
+            [
+              "722d2d2020efbc91efbc9220202f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2d2020efbc91efbc922020",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2d2020efbc91efbc922020",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-13",
+      "directories_hex": [
+        "722d2dd9a1d9a2"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2dd9a1d9a2",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "722d2d3130",
+              "722d2d3131",
+              "722d2d3132"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "722d2d3130",
+              "722d2d3131",
+              "722d2d3132"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "722d2dd9a1d9a2",
+              false
+            ],
+            [
+              "722d2dd9a1d9a22f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2dd9a1d9a2",
+              false
+            ],
+            [
+              "722d2dd9a1d9a22f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2dd9a1d9a2",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2dd9a1d9a2",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-14",
+      "directories_hex": [
+        "722d2dc2b2"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2dc2b2",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": []
+          },
+          "expected": {
+            "preserved": []
+          },
+          "original_snapshot": [
+            [
+              "722d2dc2b2",
+              false
+            ],
+            [
+              "722d2dc2b22f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2dc2b2",
+              false
+            ],
+            [
+              "722d2dc2b22f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2dc2b2",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2dc2b2",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-15",
+      "directories_hex": [
+        "722d2dff"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2dff",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": []
+          },
+          "expected": {
+            "preserved": []
+          },
+          "original_snapshot": [
+            [
+              "722d2dff",
+              false
+            ],
+            [
+              "722d2dff2f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2dff",
+              false
+            ],
+            [
+              "722d2dff2f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2dff",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2dff",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-16",
+      "directories_hex": [
+        "ff2d2d33"
+      ],
+      "steps": [
+        [
+          "attr",
+          "ff2d2d33",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "ff2d2d31",
+              "ff2d2d32",
+              "ff2d2d33"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "ff2d2d31",
+              "ff2d2d32",
+              "ff2d2d33"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "ff2d2d33",
+              false
+            ],
+            [
+              "ff2d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "ff2d2d33",
+              false
+            ],
+            [
+              "ff2d2d332f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "ff2d2d33",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "ff2d2d33",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-17",
+      "directories_hex": [
+        "722d2d1c34"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2d1c34",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": []
+          },
+          "expected": {
+            "preserved": []
+          },
+          "original_snapshot": [
+            [
+              "722d2d1c34",
+              false
+            ],
+            [
+              "722d2d1c342f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2d1c34",
+              false
+            ],
+            [
+              "722d2d1c342f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2d1c34",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2d1c34",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "numeric-name-18",
+      "directories_hex": [
+        "722d2dc28534"
+      ],
+      "steps": [
+        [
+          "attr",
+          "722d2dc28534",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "722d2d32",
+              "722d2d33",
+              "722d2d34"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "722d2d32",
+              "722d2d33",
+              "722d2d34"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "722d2dc28534",
+              false
+            ],
+            [
+              "722d2dc285342f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "722d2dc28534",
+              false
+            ],
+            [
+              "722d2dc285342f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "deleted": "722d2dc28534",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "722d2dc28534",
+            "wait_ms": 100
+          },
+          "original_snapshot": [],
+          "expected_snapshot": [],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "attribute-value",
+      "directories_hex": [
+        "726f7574652d2d3130",
+        "726f7574652d2d32",
+        "726f7574652d2d31",
+        "726f7574652d2d30",
+        "726f7574652d2d33",
+        "726f7574652d2d34",
+        "726f7574652d2d35"
+      ],
+      "steps": [
+        [
+          "attr",
+          "726f7574652d2d31",
+          "3031"
+        ],
+        [
+          "attr",
+          "726f7574652d2d32",
+          ""
+        ],
+        [
+          "attr",
+          "726f7574652d2d33",
+          "3100"
+        ],
+        [
+          "attr",
+          "726f7574652d2d34",
+          "31"
+        ],
+        [
+          "preserved"
+        ],
+        [
+          "cycle",
+          0,
+          "NaN"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "preserved"
+          },
+          "original": {
+            "preserved": [
+              "726f7574652d2d32",
+              "726f7574652d2d33",
+              "726f7574652d2d34"
+            ]
+          },
+          "expected": {
+            "preserved": [
+              "726f7574652d2d32",
+              "726f7574652d2d33",
+              "726f7574652d2d34"
+            ]
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "NaN"
+          },
+          "original": {
+            "deleted": "726f7574652d2d30",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d30",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "symlink-and-io",
+      "directories_hex": [
+        "726f7574652d2d31",
+        "726f7574652d2d32"
+      ],
+      "steps": [
+        [
+          "symlink",
+          "726f7574652d2d30"
+        ],
+        [
+          "deny",
+          "726f7574652d2d31"
+        ],
+        [
+          "cycle",
+          0,
+          "0"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "0"
+          },
+          "original": {
+            "error": 13
+          },
+          "expected": {
+            "error": 13
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              true
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              true
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    },
+    {
+      "name": "nan-idle",
+      "directories_hex": [
+        "726f7574652d2d3130",
+        "726f7574652d2d32",
+        "726f7574652d2d31",
+        "726f7574652d2d30",
+        "726f7574652d2d33",
+        "726f7574652d2d34",
+        "726f7574652d2d35"
+      ],
+      "steps": [
+        [
+          "cycle",
+          5368709120,
+          "NaN"
+        ],
+        [
+          "cycle",
+          0,
+          "inf"
+        ]
+      ],
+      "rows": [
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "5368709120",
+            "percent": "NaN"
+          },
+          "original": {
+            "deleted": null,
+            "wait_ms": 30000
+          },
+          "expected": {
+            "deleted": null,
+            "wait_ms": 30000
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d30",
+              false
+            ],
+            [
+              "726f7574652d2d302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        },
+        {
+          "input": {
+            "op": "cycle",
+            "bytes": "0",
+            "percent": "inf"
+          },
+          "original": {
+            "deleted": "726f7574652d2d30",
+            "wait_ms": 100
+          },
+          "expected": {
+            "deleted": "726f7574652d2d30",
+            "wait_ms": 100
+          },
+          "original_snapshot": [
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "expected_snapshot": [
+            [
+              "726f7574652d2d31",
+              false
+            ],
+            [
+              "726f7574652d2d312f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d3130",
+              false
+            ],
+            [
+              "726f7574652d2d31302f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d32",
+              false
+            ],
+            [
+              "726f7574652d2d322f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d33",
+              false
+            ],
+            [
+              "726f7574652d2d332f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d34",
+              false
+            ],
+            [
+              "726f7574652d2d342f726c6f672e7a7374",
+              false
+            ],
+            [
+              "726f7574652d2d35",
+              false
+            ],
+            [
+              "726f7574652d2d352f726c6f672e7a7374",
+              false
+            ]
+          ],
+          "intentional_correction": null
+        }
+      ],
+      "expected_origin": "actual original source"
+    }
+  ],
+  "low_space_original": {
+    "source_waits": [
+      0.1,
+      0.1,
+      0.1
+    ],
+    "observed_wait_intervals": [
+      0.10025814100001185,
+      0.10024195299999406
+    ],
+    "remaining": [
+      [
+        "626f6f74",
+        false
+      ],
+      [
+        "626f6f742f726c6f672e7a7374",
+        false
+      ],
+      [
+        "726f7574652d2d30",
+        false
+      ],
+      [
+        "726f7574652d2d302f696e7573652e6c6f636b",
+        false
+      ],
+      [
+        "726f7574652d2d302f726c6f672e7a7374",
+        false
+      ]
+    ],
+    "available_bytes": 16756736,
+    "cycles": 3,
+    "mount_bytes": 16777216,
+    "private_mount_namespace": true,
+    "native_execution": false
+  },
+  "cli_contract": {
+    "signals": [
+      2,
+      15
+    ],
+    "signal_exit": 0,
+    "shutdown_seconds_below": 0.3,
+    "invalid_argv": [
+      [
+        "--cycles",
+        "0"
+      ],
+      [
+        "--cycles",
+        "-1"
+      ],
+      [
+        "--unknown"
+      ]
+    ],
+    "invalid_exit": 1,
+    "one_cycle_argv": [
+      "--cycles",
+      "1"
+    ],
+    "one_cycle_exit": 0
+  },
+  "expected_native_outputs_used": false,
+  "original_source_execution_completed": true
+}

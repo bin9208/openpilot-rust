@@ -10,10 +10,15 @@ use std::{
     time::{Duration, Instant},
 };
 
-struct OwnedChild(Child);
+struct OwnedChild(Option<Child>);
 impl OwnedChild {
     fn signal(&self, signal: Signal) -> Result<(), Error> {
-        let pid = i32::try_from(self.0.id())
+        Self::signal_child(self.0.as_ref().expect("owned startup child"), signal)
+    }
+    fn signal_child(child: &Child, signal: Signal) -> Result<(), Error> {
+        // The child is kept unreaped while signaling, so its PID cannot be
+        // reused for an unrelated process even if it has already exited.
+        let pid = i32::try_from(child.id())
             .ok()
             .and_then(Pid::from_raw)
             .ok_or_else(|| Error::Configuration("startup child PID out of range".into()))?;
@@ -51,7 +56,7 @@ impl OwnedChild {
     ) -> Result<ExitStatus, Error> {
         loop {
             self.forward(stopped, signals, &mut sent)?;
-            match self.0.try_wait() {
+            match self.0.as_mut().expect("owned startup child").try_wait() {
                 Ok(Some(status)) => return Ok(status),
                 Ok(None) => thread::sleep(Duration::from_millis(25)),
                 Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
@@ -62,20 +67,44 @@ impl OwnedChild {
 }
 impl Drop for OwnedChild {
     fn drop(&mut self) {
-        if matches!(self.0.try_wait(), Ok(Some(_))) {
+        let Some(mut child) = self.0.take() else {
+            return;
+        };
+        if matches!(child.try_wait(), Ok(Some(_))) {
             return;
         }
-        if let Err(error) = self.signal(Signal::TERM) {
-            eprintln!("startup child termination: {error}");
-        }
-        loop {
-            match self.0.wait() {
-                Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
-                Err(error) => eprintln!("startup child reap: {error}"),
-                Ok(_) => {}
+        // Only failure/unwind reaches this cleanup with a live child. A manager
+        // that successfully received the lock continues through finish above.
+        let _ = Self::signal_child(&child, Signal::TERM);
+        let grace = Instant::now() + Duration::from_millis(500);
+        while Instant::now() < grace {
+            if matches!(child.try_wait(), Ok(Some(_))) {
+                return;
             }
-            break;
+            thread::sleep(Duration::from_millis(10));
         }
+        if matches!(child.try_wait(), Ok(Some(_))) {
+            return;
+        }
+        let _ = Self::signal_child(&child, Signal::KILL);
+        let deadline = Instant::now() + Duration::from_secs(1);
+        while Instant::now() < deadline {
+            if matches!(child.try_wait(), Ok(Some(_))) {
+                return;
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+        if matches!(child.try_wait(), Ok(Some(_))) {
+            return;
+        }
+        // An uninterruptible child must not hold the launcher's error path.
+        // Transfer its still-owned Child handle to a reaper without printing
+        // from Drop; stderr itself may be blocked during startup failure.
+        let _ = thread::Builder::new()
+            .name("startup-child-reaper".into())
+            .spawn(move || {
+                let _ = child.wait();
+            });
     }
 }
 
@@ -111,7 +140,7 @@ fn run(
     command
         .env("CARROT_BOOT_LOCK_SOCKET", &path)
         .env_remove("CARROT_BOOT_LOCK_FD");
-    let mut child = OwnedChild(command.spawn()?);
+    let mut child = OwnedChild(Some(command.spawn()?));
     let deadline = Instant::now() + Duration::from_secs(60);
     let mut sent = false;
     loop {
@@ -119,7 +148,7 @@ fn run(
         if stopped.load(Ordering::Relaxed) || sent {
             return child.finish(stopped, &mut signals, sent);
         }
-        if let Some(status) = child.0.try_wait()? {
+        if let Some(status) = child.0.as_mut().expect("owned startup child").try_wait()? {
             return Err(Error::Configuration(format!(
                 "startup child exited before taking repository lock: {status}"
             )));

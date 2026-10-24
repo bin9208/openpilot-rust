@@ -1,0 +1,364 @@
+[
+  {
+    "name": "keyboard-key-list-multi",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "keyboard",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": [
+        "a"
+      ],
+      "frames": 2,
+      "props": {
+        "password": true,
+        "toggle": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "key",
+          "text": [
+            "bb",
+            "ccc"
+          ]
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": [
+            "a",
+            "bb",
+            "ccc"
+          ],
+          "layout": "lowercase",
+          "caps": false,
+          "cursor": 2,
+          "display": "\u2022bb\u2022"
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": [
+            "a",
+            "bb",
+            "ccc"
+          ],
+          "layout": "lowercase",
+          "caps": false,
+          "cursor": 2,
+          "display": "\u2022bb\u2022"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "5eccf5a01a9ebe0f81df251bcbabf35e1a179f88c80f4995095265d71b503d39"
+  },
+  {
+    "name": "keyboard-key-list-empty",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "keyboard",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": [
+        "a"
+      ],
+      "frames": 2,
+      "props": {
+        "password": true,
+        "toggle": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "key",
+          "text": []
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": [
+            "a"
+          ],
+          "layout": "lowercase",
+          "caps": false,
+          "cursor": 1,
+          "display": "a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": [
+            "a"
+          ],
+          "layout": "lowercase",
+          "caps": false,
+          "cursor": 1,
+          "display": "a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "540b208b4ea313a1786d9f0f26e88abcd63f190ba4caa2b42e9ff52192889f9e"
+  },
+  {
+    "name": "keyboard-key-list-slice",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "keyboard",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": [
+        "a",
+        "b"
+      ],
+      "frames": 2,
+      "props": {
+        "password": true,
+        "toggle": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "key",
+          "text": [
+            "x"
+          ]
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": [
+            "a",
+            "b",
+            "x"
+          ],
+          "layout": "lowercase",
+          "caps": false,
+          "cursor": 3,
+          "display": "\u2022\u2022x"
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": [
+            "a",
+            "b",
+            "x"
+          ],
+          "layout": "lowercase",
+          "caps": false,
+          "cursor": 3,
+          "display": "\u2022\u2022x"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "641b6905ce1fe89bb42b231998ef5a2f9e1d6e244c17389731fac65c9426fd0b"
+  },
+  {
+    "name": "keyboard-key-full-null",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "keyboard",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "frames": 2,
+      "props": {
+        "password": true,
+        "toggle": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "key",
+          "text": null
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "layout": "lowercase",
+          "caps": false,
+          "cursor": 255,
+          "display": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "layout": "lowercase",
+          "caps": false,
+          "cursor": 255,
+          "display": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "f36c2f1eadc86a0b400dc5645c9ceb40776414266a9469d7cedf50375ec01e73"
+  },
+  {
+    "name": "keyboard-key-floatcursor-full",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "keyboard",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "frames": 2,
+      "props": {
+        "password": true,
+        "toggle": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "cursor",
+          "value": 1.5
+        },
+        {
+          "frame": 0,
+          "operation": "key",
+          "text": 17
+        },
+        {
+          "frame": 0,
+          "operation": "text",
+          "text": "restored"
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "keyboard-key-floatcursor-room",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "keyboard",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "a",
+      "frames": 2,
+      "props": {
+        "password": true,
+        "toggle": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "cursor",
+          "value": 0.0
+        },
+        {
+          "frame": 0,
+          "operation": "key",
+          "text": "x"
+        },
+        {
+          "frame": 0,
+          "operation": "text",
+          "text": "restored"
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  }
+]

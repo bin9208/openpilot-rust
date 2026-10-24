@@ -1,0 +1,22 @@
+{
+  "cases": 12,
+  "tools": [
+    "numeric",
+    "cache",
+    "packet",
+    "loop"
+  ],
+  "blobs": 50,
+  "artifacts": {
+    "checker-original.json.gz": {
+      "sha256": "5cd13e73c0fff65428bf88770d5f7741c20f80cfef3b22a0d8b7b15f1f8b7d9e",
+      "bytes": 3648,
+      "decoded_sha256": "ebdac3bccec00705c9cb2fa9fc26258dd1a3590ccf4101c9c381e107a421de81"
+    },
+    "checker-bytes.json.gz": {
+      "sha256": "68602197ab9d8583c1032075925962b71d1f3844f294e9a4a4b5fdad550ee704",
+      "bytes": 2210915,
+      "decoded_sha256": "3c5d8689e79d9d6371ec79a9f28a5e6bb6537603738adb29cc6d931d053663db"
+    }
+  }
+}

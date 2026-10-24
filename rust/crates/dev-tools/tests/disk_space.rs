@@ -12,13 +12,10 @@ fn cli_reports_available_space_and_rejects_impossible_growth() {
     assert!(!output.status.success());
     let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(report["growth_bytes"], 1_000_000_000u64 * 1024 * 1024);
-    assert_eq!(
-        report["required_bytes"],
-        1_000_000_000u64 * 1024 * 1024 + 25 * 1024 * 1024 * 1024
-    );
+    assert_eq!(report["required_bytes"], 1_000_000_000u64 * 1024 * 1024);
     assert!(String::from_utf8(output.stderr)
         .unwrap()
-        .contains("recover at least 35 GiB"));
+        .contains("operation growth exceeds available space"));
 }
 
 #[test]

@@ -1,0 +1,226 @@
+{
+  "python": "3.12.15",
+  "scope": "Unchanged original source with controlled process/time boundaries only; no candidate or ported policy used. Original pre-try spawn-error namespace leak recorded then removed by capture harness.",
+  "sources": {
+    "opendbc_repo/opendbc/car/car.capnp": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda",
+    "opendbc_repo/opendbc/car/include/c++.capnp": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44",
+    "opendbc_repo/opendbc/car/rlog.capnp": "0f4a316832f333bdd17d4af32f0102844fa569b97a417ada3ffbe0d2de5cbd21",
+    "openpilot/cereal/__init__.py": "c8e54d7417631916d8c5842d0d509d8c573ca8089e9cad6fc7acad849503fb60",
+    "openpilot/cereal/custom.capnp": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693",
+    "openpilot/cereal/deprecated.capnp": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355",
+    "openpilot/cereal/include/c++.capnp": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44",
+    "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+    "openpilot/cereal/services.py": "a0745e2ef00036f0eef08b453a4798b4281549ea9ac6dc91c8b348ef76131edb",
+    "openpilot/common/transformations/transformations.py": "5c2e2b43c0ea5ce07550a37b0594edc2b680f042ecd88824e9134e63c30efbd8",
+    "openpilot/selfdrive/locationd/helpers.py": "a220a8fd710a390bde4ba5ed6d58315ce52fd769f0bdd5dddc55bb493a1cdfff",
+    "openpilot/selfdrive/locationd/lagd.py": "cd5922709e4686d105a4bef0dadcd56fda6e64eafc9efabb7c1b58a82c99226a",
+    "rust/crates/lagd/tests/tolerances.json": "5f8d76478bf89581b2c7e25e7e122cd61fb3ddcb3cf63f59ece3b2c9c22e766b",
+    "rust/crates/pocketfft/native/vendor/LICENSE.md": "a85ca13fdf90160b64a0698215868c13b74d835ad0a4e2ba44713b8c5058a056",
+    "rust/crates/pocketfft/native/vendor/pocketfft_hdronly.h": "50f4ddbe60432325f560c706b6f1c49f9e0949fc7f20ae6499f2299e37d9790c",
+    "rust/crates/pocketfft/provenance.json": "8d3372b9d73b0d6400c49ba41247154da2d624f527546dffe7a886d8f4e01fcc",
+    "rust/tools/check_lagd_cache.py": "c0b06b94aff2de1f3f4de3e590e671756291da295268817a6dbb862625c5ab72",
+    "rust/tools/check_lagd_daemon.py": "f9499ca8f1fa19fc452c34936b5626bf782bd1ee03c23a7e1930e0c4275f33fa",
+    "rust/tools/check_lagd_loop.py": "ba2842d988d4d4775b1ce1faa54c1966ab81e47ec9bd94b195deb26887f9fb47",
+    "rust/tools/check_lagd_numeric.py": "ad2f441856234a366b12e20b7e37dbe4c1742e3a95d4f44c2e5fc6d41fea145d",
+    "rust/tools/check_lagd_packet.py": "a21ca66fded3135a9bcc9a172b2b3116622e26e5d3219b3934367884cc67f826",
+    "rust/tools/check_lagd_params_io.py": "96eaf2917219964197b5abb9803403766bb43357107d744f0bdfe04da80be1ed",
+    "rust/tools/lagd_frames.py": "99dff501ac3550a223827106978ce71a4bbb1936da4a22165bb8bb00a35bf259",
+    "rust/tools/lagd_loop_reference.py": "51d0fa72ac35598b903578d60605cdad775422836dbd6ddcb8fbc10eb0150107",
+    "rust/tools/lagd_reference.py": "861e57d0e0c00fd1bc65db7d2155b12dbf4a8856ef2b4138cc93b0a9f007c877"
+  },
+  "cases": [
+    {
+      "kind": "wait",
+      "mode": "healthy",
+      "success": true,
+      "error": null,
+      "stdout": "PASS: signal while waiting for CarParams\n",
+      "result": null,
+      "calls": [
+        {
+          "argv": [
+            "/virtual/native"
+          ],
+          "stdin": null,
+          "stdout": -1,
+          "stderr": -1,
+          "start_new_session": false,
+          "text": false,
+          "bufsize": -1,
+          "env": {
+            "PARAMS_ROOT": "@PARAMS@",
+            "OPENPILOT_PREFIX": "@PREFIX@",
+            "ZMQ": "original-probe",
+            "CEREAL_FAKE": "yes",
+            "LAGD_ENV_PROBE": "retain"
+          }
+        }
+      ],
+      "events": [
+        {
+          "event": "sleep",
+          "seconds": 0.15
+        },
+        {
+          "event": "poll",
+          "role": "native"
+        },
+        {
+          "event": "signal",
+          "role": "native",
+          "signal": 15
+        },
+        {
+          "event": "communicate",
+          "role": "native",
+          "timeout": 3
+        },
+        {
+          "event": "poll",
+          "role": "native"
+        },
+        {
+          "event": "wait",
+          "role": "native",
+          "timeout": 3
+        }
+      ],
+      "files": {
+        "output": "eyJyZXR1cm5jb2RlIjogMCwgInN0ZG91dCI6ICJjYXB0dXJlZC1vdXRcbiIsICJzdGRlcnIiOiAiY2FwdHVyZWQtZXJyXG4iLCAicGFzcyI6IHRydWV9Cg=="
+      },
+      "directories": [],
+      "namespace_cleanup": [
+        true
+      ]
+    },
+    {
+      "kind": "CarParams",
+      "mode": "healthy",
+      "success": true,
+      "error": null,
+      "stdout": "",
+      "result": {
+        "key": "CarParams",
+        "returncode": 0,
+        "directory_retained": true,
+        "stdout": "captured-out\n",
+        "stderr": "captured-err\n",
+        "pass": true
+      },
+      "calls": [
+        {
+          "argv": [
+            "/virtual/native",
+            "--frames",
+            "1"
+          ],
+          "stdin": null,
+          "stdout": -1,
+          "stderr": -1,
+          "start_new_session": false,
+          "text": false,
+          "bufsize": -1,
+          "env": {
+            "PARAMS_ROOT": "@PARAMS@",
+            "OPENPILOT_PREFIX": "@PREFIX@",
+            "ZMQ": "original-probe",
+            "CEREAL_FAKE": "yes",
+            "LAGD_ENV_PROBE": "retain"
+          }
+        }
+      ],
+      "events": [
+        {
+          "event": "sleep",
+          "seconds": 0.2
+        },
+        {
+          "event": "poll",
+          "role": "native"
+        },
+        {
+          "event": "signal",
+          "role": "native",
+          "signal": 15
+        },
+        {
+          "event": "communicate",
+          "role": "native",
+          "timeout": 3
+        },
+        {
+          "event": "poll",
+          "role": "native"
+        },
+        {
+          "event": "wait",
+          "role": "native",
+          "timeout": 3
+        }
+      ],
+      "files": {},
+      "directories": [],
+      "namespace_cleanup": [
+        true
+      ]
+    },
+    {
+      "kind": "LiveDelay",
+      "mode": "healthy",
+      "success": true,
+      "error": null,
+      "stdout": "",
+      "result": {
+        "key": "LiveDelay",
+        "returncode": 0,
+        "directory_retained": true,
+        "stdout": "captured-out\n",
+        "stderr": "captured-err\n",
+        "pass": true
+      },
+      "calls": [
+        {
+          "argv": [
+            "/virtual/native",
+            "--frames",
+            "1"
+          ],
+          "stdin": null,
+          "stdout": -1,
+          "stderr": -1,
+          "start_new_session": false,
+          "text": false,
+          "bufsize": -1,
+          "env": {
+            "PARAMS_ROOT": "@PARAMS@",
+            "OPENPILOT_PREFIX": "@PREFIX@",
+            "ZMQ": "original-probe",
+            "CEREAL_FAKE": "yes",
+            "LAGD_ENV_PROBE": "retain"
+          }
+        }
+      ],
+      "events": [
+        {
+          "event": "communicate",
+          "role": "native",
+          "timeout": 3
+        },
+        {
+          "event": "poll",
+          "role": "native"
+        },
+        {
+          "event": "wait",
+          "role": "native",
+          "timeout": 3
+        }
+      ],
+      "files": {},
+      "directories": [],
+      "namespace_cleanup": [
+        true
+      ]
+    }
+  ]
+}

@@ -1,0 +1,537 @@
+#![cfg(feature = "bluetooth-journal-native")]
+use openpilot_dev_tools::{
+    bluetooth_journal_check::{self as checker, Options, OPERATIONS},
+    qa_process::{Captured, CommandSpec, NativeRunner, Runner},
+    seal::Result,
+};
+use openpilot_log_format::{JsonValue, JsonView};
+use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
+use std::{
+    fs,
+    io::{self, Read, Write},
+    os::unix::fs::symlink,
+    path::{Path, PathBuf},
+    sync::atomic::{AtomicBool, Ordering},
+    time::Duration,
+};
+fn repository() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")
+}
+fn candidate() -> PathBuf {
+    fs::canonicalize(
+        std::env::var_os("BLUETOOTH_JOURNAL_FIXTURE").expect("mandatory fresh journal_fixture"),
+    )
+    .unwrap()
+}
+fn sha(bytes: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(bytes))
+}
+const ORIGINAL_TRACE_BYTES: usize = 5_535_468;
+const ORIGINAL_TRACE_SHA256: &str =
+    "7d5928a8f2ab66747dfedd35a2bd28e767b8eac10f4bf1676d363b10f971c04e";
+const PACKED_TRACE_SHA256: &str =
+    "c574db2834f292cec9b4ae94146a9a6027ebf9676dcbd696e6aa249a9573bb4a";
+
+fn original_rows() -> Vec<JsonValue> {
+    let packed = include_bytes!("fixtures/bluetooth-journal/original-trace-d219.jsonl.bz2");
+    assert_eq!(sha(packed), PACKED_TRACE_SHA256);
+    let mut raw = Vec::new();
+    bzip2::read::BzDecoder::new(&packed[..])
+        .take(ORIGINAL_TRACE_BYTES as u64 + 1)
+        .read_to_end(&mut raw)
+        .unwrap();
+    assert_eq!(raw.len(), ORIGINAL_TRACE_BYTES);
+    assert_eq!(sha(&raw), ORIGINAL_TRACE_SHA256);
+    let rows = checker::parse_trace(std::str::from_utf8(&raw).unwrap()).unwrap();
+    assert_eq!(rows.len(), OPERATIONS);
+    rows
+}
+#[test]
+fn public_trace_parser_keeps_python_crlf_and_other_line_boundaries() {
+    for separator in [
+        "\r\n", "\n", "\r", "\u{b}", "\u{c}", "\u{1c}", "\u{1d}", "\u{1e}", "\u{85}", "\u{2028}",
+        "\u{2029}",
+    ] {
+        let rows = checker::parse_trace(&format!("[1]{separator}[2]{separator}")).unwrap();
+        assert_eq!(rows.len(), 2, "{separator:?}");
+        assert_eq!(rows[0].to_json().unwrap(), "[1]");
+        assert_eq!(rows[1].to_json().unwrap(), "[2]");
+    }
+    assert!(checker::parse_trace("").unwrap().is_empty());
+    // Only CRLF is paired. A genuine blank line still reaches json.loads and
+    // fails; this fix must not silently discard empty records.
+    for text in ["[]\r\n\r\n[]", "[]\r\r\n[]", "[]\n\n[]"] {
+        assert!(checker::parse_trace(text).is_err(), "{text:?}");
+    }
+}
+struct Corpus {
+    directory: tempfile::TempDir,
+    rows: Vec<JsonValue>,
+    input: Vec<u8>,
+}
+fn corpus() -> Corpus {
+    let directory = tempfile::tempdir().unwrap();
+    let original = directory.path().join("source-run/original");
+    fs::create_dir_all(&original).unwrap();
+    let operations = checker::operations();
+    let input = checker::payload(&operations).unwrap();
+    let sealed: Value = serde_json::from_str(include_str!(
+        "fixtures/bluetooth-journal/original-observation-39507901490.json"
+    ))
+    .unwrap();
+    assert_eq!(
+        sha(&input),
+        sealed["observation"]["input_sha256"].as_str().unwrap()
+    );
+    let rows = original_rows();
+    let final_row = rows.last().unwrap();
+    let JsonView::Array(files) = final_row.view() else {
+        panic!("source snapshot array")
+    };
+    for file in files {
+        let channel = file
+            .get("channel")
+            .and_then(|value| value.to_utf8())
+            .unwrap();
+        let bytes = file.get("bytes").and_then(|value| value.to_utf8()).unwrap();
+        fs::write(original.join(format!("{channel}.json")), bytes).unwrap();
+    }
+    Corpus {
+        directory,
+        rows,
+        input,
+    }
+}
+fn options(root: &Path, binary: &Path, output: &Path) -> Options {
+    Options {
+        root: root.into(),
+        binary: binary.into(),
+        output: output.into(),
+    }
+}
+#[test]
+fn all_721_fixed_operations_and_rewrite_decisions_match_sealed_original_rows() {
+    let source = corpus();
+    let observed = checker::normalize_trace(&source.rows).unwrap();
+    let sealed: Value = serde_json::from_str(include_str!(
+        "fixtures/bluetooth-journal/original-observation-39507901490.json"
+    ))
+    .unwrap();
+    assert_eq!(
+        sha(&source.input),
+        sealed["observation"]["input_sha256"].as_str().unwrap()
+    );
+    assert_eq!(observed.rows.len(), 721);
+    let expected = sealed["row_sha256"].as_array().unwrap();
+    assert_eq!(expected.len(), 721);
+    for (row, expected) in observed.rows.iter().zip(expected) {
+        assert_eq!(
+            sha(row.to_json().unwrap().as_bytes()),
+            expected.as_str().unwrap()
+        );
+    }
+    let output = source.directory.path().join("native-checker");
+    let report = checker::check(
+        &options(&repository(), &candidate(), &output),
+        &mut NativeRunner,
+        &mut vec![],
+        &AtomicBool::new(false),
+    )
+    .unwrap();
+    assert_eq!(report["operations"], OPERATIONS);
+    assert_eq!(report["max_events_per_channel"], 64);
+    assert_eq!(
+        report["source_sha256"],
+        sealed["observation"]["model_sha256"]
+    );
+}
+#[test]
+fn fixed_trace_mutations_preserve_every_field_and_original_acceptance_guard() {
+    let original = corpus();
+    let expected = checker::source_trace(&checker::operations()).unwrap();
+    let original_lines = original
+        .rows
+        .iter()
+        .map(|r| r.to_json().unwrap())
+        .collect::<Vec<_>>();
+    for mode in [
+        "missing-row",
+        "extra-row",
+        "mode",
+        "id",
+        "second-session",
+        "sequence",
+        "action",
+        "address",
+        "hold",
+        "repeat",
+        "time",
+        "missing-field",
+        "extra-field",
+        "rewrite",
+        "extra-file",
+        "over64",
+    ] {
+        // Mutate the independent original rows, not the translated expected schedule.
+        let mut lines = original_lines.clone();
+        match mode {
+            "missing-row" => {
+                lines.pop();
+            }
+            "extra-row" => lines.push(lines.last().unwrap().clone()),
+            "mode" => {
+                let mut row: Value = serde_json::from_str(&lines[1]).unwrap();
+                assert_eq!(row[0]["mode"], 384);
+                row[0]["mode"] = json!(420);
+                lines[1] = row.to_string();
+            }
+            "hold" => {
+                let changed = lines[304].replace("/dev/input/event0:up@long", "different-hold");
+                assert_ne!(changed, lines[304], "hold target absent");
+                lines[304] = changed;
+            }
+            "id" | "second-session" | "sequence" | "action" | "address" | "repeat" | "time"
+            | "missing-field" | "extra-field" | "rewrite" | "extra-file" | "over64" => {
+                // Outer structure contains no floats outside the bytes string.
+                let mut row: Value = serde_json::from_str(&lines[1]).unwrap();
+                if mode == "rewrite" {
+                    let previous: Value = serde_json::from_str(&lines[0]).unwrap();
+                    row[0]["inode"] = previous[0]["inode"].clone();
+                } else if mode == "extra-file" {
+                    let extra = row[0].clone();
+                    row.as_array_mut().unwrap().push(extra);
+                } else {
+                    let mut journal: Value =
+                        serde_json::from_str(row[0]["bytes"].as_str().unwrap()).unwrap();
+                    let event = &mut journal["events"][0];
+                    match mode {
+                        "id" => event["id"] = json!("BAD:1"),
+                        "second-session" => {
+                            event["id"] = json!("11111111111111111111111111111111:1")
+                        }
+                        "sequence" => {
+                            let id = event["id"].as_str().unwrap();
+                            let session = id.split_once(':').unwrap().0;
+                            event["id"] = json!(format!("{session}:2"));
+                        }
+                        "action" => event["action"] = json!("cancel"),
+                        "address" => event["address"] = json!("00:00:00:00:00:00"),
+                        "repeat" => {
+                            assert_eq!(event["repeat"], false);
+                            event["repeat"] = json!(true);
+                        }
+                        "time" => event["time"] = json!(10.25),
+                        "missing-field" => {
+                            assert!(event.as_object_mut().unwrap().remove("repeat").is_some());
+                        }
+                        "extra-field" => event["unobserved"] = json!(true),
+                        "over64" => {
+                            let repeated = event.clone();
+                            journal["events"] = json!(vec![repeated; 65]);
+                        }
+                        _ => unreachable!(),
+                    }
+                    row[0]["bytes"] = json!(journal.to_string());
+                }
+                lines[1] = row.to_string();
+            }
+            _ => unreachable!(),
+        }
+        assert!(
+            lines != original_lines,
+            "ineffective source mutation: {mode}"
+        );
+        let rows = lines
+            .iter()
+            .map(|s| JsonValue::parse(s).unwrap())
+            .collect::<Vec<_>>();
+        assert!(
+            checker::compare(&expected, &rows).is_err(),
+            "accepted {mode}"
+        );
+    }
+}
+fn source_copy(root: &Path) {
+    let pins: Value =
+        serde_json::from_str(include_str!("fixtures/bluetooth-journal/source-pins.json")).unwrap();
+    for name in pins.as_object().unwrap().keys() {
+        let path = root.join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        if name != "rust/tools/check_bluetooth_journal.py" {
+            fs::copy(repository().join(name), path).unwrap();
+        }
+    }
+}
+struct Peer<'a> {
+    original: &'a Corpus,
+    mode: &'a str,
+    source: PathBuf,
+    alias: PathBuf,
+    calls: usize,
+}
+impl Runner for Peer<'_> {
+    fn run(&mut self, spec: &CommandSpec) -> Result<Captured> {
+        self.calls += 1;
+        assert_eq!(spec.timeout, Duration::from_secs(30));
+        assert_eq!(spec.input.as_ref().unwrap(), &self.original.input);
+        let argv = spec.effective_argv();
+        assert_eq!(argv.len(), 2);
+        assert!(Path::new(&argv[0]).is_absolute());
+        let root = Path::new(&argv[1]);
+        fs::create_dir_all(root)?;
+        for name in ["cruise.json", "lane.json"] {
+            fs::copy(
+                self.original
+                    .directory
+                    .path()
+                    .join("source-run/original")
+                    .join(name),
+                root.join(name),
+            )?;
+        }
+        match self.mode {
+            "temporary" => fs::write(root.join("leftover.tmp"), b"unremoved")?,
+            "source" => fs::write(&self.source, b"changed")?,
+            "artifact" => fs::write(&self.alias, b"changed artifact")?,
+            "retarget" => {
+                let other = self.alias.with_extension("other");
+                fs::write(&other, b"same candidate")?;
+                fs::remove_file(&self.alias)?;
+                symlink(other, &self.alias)?;
+            }
+            "timeout" => return Err("injected timeout".into()),
+            _ => {}
+        }
+        let text = self
+            .original
+            .rows
+            .iter()
+            .map(|r| r.to_json().unwrap() + "\n")
+            .collect::<String>();
+        Ok(Captured {
+            code: if self.mode == "exit" { 9 } else { 0 },
+            stdout: if self.mode == "decode" {
+                vec![255]
+            } else {
+                text.into_bytes()
+            },
+            stderr: b"diagnostic retained\n".to_vec(),
+        })
+    }
+}
+#[test]
+fn original_sourced_process_identity_and_receipt_failures_cannot_publish_success() {
+    let original = corpus();
+    for mode in [
+        "ok",
+        "temporary",
+        "source",
+        "artifact",
+        "retarget",
+        "timeout",
+        "exit",
+        "decode",
+        "foreign",
+    ] {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("root");
+        source_copy(&root);
+        let target = dir.path().join("target");
+        fs::write(&target, b"same candidate").unwrap();
+        let alias = dir.path().join("candidate");
+        symlink(&target, &alias).unwrap();
+        let output = dir.path().join("output");
+        if mode == "foreign" {
+            fs::create_dir(&output).unwrap();
+            fs::write(output.join("result.json"), b"foreign receipt").unwrap();
+        }
+        let mut peer = Peer {
+            original: &original,
+            mode,
+            source: root.join("openpilot/selfdrive/carrot/bluetooth/model.py"),
+            alias: alias.clone(),
+            calls: 0,
+        };
+        let observed = checker::check(
+            &options(&root, &alias, &output),
+            &mut peer,
+            &mut vec![],
+            &AtomicBool::new(false),
+        );
+        assert_eq!(observed.is_ok(), mode == "ok", "{mode}: {observed:?}");
+        assert_eq!(peer.calls, 1);
+        if mode == "foreign" {
+            assert_eq!(
+                fs::read(output.join("result.json")).unwrap(),
+                b"foreign receipt"
+            );
+        } else {
+            assert_eq!(output.join("result.json").exists(), observed.is_ok());
+        }
+    }
+    struct Broken;
+    impl Write for Broken {
+        fn write(&mut self, _: &[u8]) -> io::Result<usize> {
+            Err(io::Error::from(io::ErrorKind::BrokenPipe))
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    struct Cancel<'a>(&'a AtomicBool);
+    impl Write for Cancel<'_> {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            self.0.store(true, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let binary = dir.path().join("binary");
+    fs::write(&binary, b"owned identity").unwrap();
+    let mut peer = Peer {
+        original: &original,
+        mode: "ok",
+        source: PathBuf::new(),
+        alias: binary.clone(),
+        calls: 0,
+    };
+    let output = dir.path().join("broken");
+    assert!(checker::check(
+        &options(&repository(), &binary, &output),
+        &mut peer,
+        &mut Broken,
+        &AtomicBool::new(false)
+    )
+    .is_err());
+    assert!(!output.join("result.json").exists());
+    let output = dir.path().join("cancel");
+    let stop = AtomicBool::new(false);
+    assert!(checker::check(
+        &options(&repository(), &binary, &output),
+        &mut peer,
+        &mut Cancel(&stop),
+        &stop
+    )
+    .is_err());
+    assert!(!output.join("result.json").exists());
+}
+#[cfg(target_os = "linux")]
+#[test]
+fn missing_changed_dangling_fifo_inputs_reject_without_execution_and_preserve_foreign_report() {
+    struct Never;
+    impl Runner for Never {
+        fn run(&mut self, _: &CommandSpec) -> Result<Captured> {
+            panic!("execution before input admission")
+        }
+    }
+    for source in [true, false] {
+        for kind in ["missing", "changed", "dangling", "fifo"] {
+            if !source && kind == "changed" {
+                continue;
+            }
+            let dir = tempfile::tempdir().unwrap();
+            let root = dir.path().join("root");
+            source_copy(&root);
+            let binary = dir.path().join("binary");
+            fs::write(&binary, b"owned identity").unwrap();
+            let path = if source {
+                root.join("openpilot/selfdrive/carrot/bluetooth/model.py")
+            } else {
+                binary.clone()
+            };
+            fs::remove_file(&path).unwrap();
+            match kind {
+                "changed" => fs::write(&path, b"changed").unwrap(),
+                "dangling" => symlink(dir.path().join("absent"), &path).unwrap(),
+                "fifo" => rustix::fs::mknodat(
+                    rustix::fs::CWD,
+                    &path,
+                    rustix::fs::FileType::Fifo,
+                    rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+                    0,
+                )
+                .unwrap(),
+                _ => {}
+            }
+            let output = dir.path().join("output");
+            fs::create_dir(&output).unwrap();
+            fs::write(output.join("result.json"), b"foreign receipt").unwrap();
+            assert!(checker::check(
+                &options(&root, &binary, &output),
+                &mut Never,
+                &mut vec![],
+                &AtomicBool::new(false)
+            )
+            .is_err());
+            assert_eq!(
+                fs::read(output.join("result.json")).unwrap(),
+                b"foreign receipt"
+            );
+        }
+    }
+}
+#[cfg(target_os = "linux")]
+#[test]
+fn actual_cli_argument_admission_and_raw_paths() {
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt};
+    let checker = env!("CARGO_BIN_EXE_check-bluetooth-journal");
+    for args in [
+        vec!["--help"],
+        vec![],
+        vec!["--unknown"],
+        vec!["--binary", "value"],
+    ] {
+        let observed = NativeRunner
+            .run(&CommandSpec::new(
+                args.iter().fold(vec![checker.into()], |mut a, s| {
+                    a.push((*s).into());
+                    a
+                }),
+                Duration::from_secs(5),
+            ))
+            .unwrap();
+        assert_eq!(observed.code, if args == ["--help"] { 0 } else { 2 });
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let binary = dir
+        .path()
+        .join(OsString::from_vec(b"candidate-\xff".to_vec()));
+    symlink(candidate(), &binary).unwrap();
+    let output = dir.path().join(OsString::from_vec(b"output-\xfe".to_vec()));
+    let mut spec = CommandSpec::new_os(
+        vec![
+            checker.into(),
+            "--binary".into(),
+            binary.into_os_string(),
+            "--output".into(),
+            output.as_os_str().into(),
+        ],
+        Duration::from_secs(45),
+    );
+    spec.os_env = Some(
+        [("OPENPILOT_RUST_ROOT".into(), repository().into_os_string())]
+            .into_iter()
+            .collect(),
+    );
+    let observed = NativeRunner.run(&spec).unwrap();
+    assert_eq!(
+        observed.code,
+        0,
+        "{}",
+        String::from_utf8_lossy(&observed.stderr)
+    );
+    let report: Value = serde_json::from_slice(&observed.stdout).unwrap();
+    assert_eq!(report["operations"], OPERATIONS);
+    assert_eq!(report["max_events_per_channel"], 64);
+    assert_eq!(
+        report,
+        serde_json::from_slice::<Value>(&fs::read(output.join("result.json")).unwrap()).unwrap()
+    );
+}
+#[cfg(target_os = "linux")]
+#[path = "bluetooth_journal_check/lifecycle.rs"]
+mod lifecycle;

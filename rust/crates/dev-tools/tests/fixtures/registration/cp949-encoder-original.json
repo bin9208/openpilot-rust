@@ -1,0 +1,14 @@
+{
+  "scope": "actual unchanged CPython CP949 strict encoder over every scalar reachable from ASCII/two-byte decode; hash sorts Unicode points, then concatenates LEu32 point +u8 size +canonical encoded bytes",
+  "scalar_count": 17176,
+  "duplicate_decodings": 0,
+  "encoded_sha256": "dee6d8bfcc192b57d555cacee3059800f39fbb5fc7a7f0f6c3583a3382e1fa0a",
+  "selected": {
+    "\ud55c": "c7d1",
+    "\uae00": "b1db",
+    "\ud7a3": "c652",
+    "\ubdc1": "94ee",
+    "\u20ac": "a2e6",
+    "\uac00": "b0a1"
+  }
+}

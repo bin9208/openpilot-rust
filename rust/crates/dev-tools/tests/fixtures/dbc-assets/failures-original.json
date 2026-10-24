@@ -1,0 +1,231 @@
+{
+  "scope": "Actual unchanged original API errors and filesystem effects, plus original rawCLI result hashes/templates. No native fixture regeneration.",
+  "api": [
+    {
+      "consumer": "card",
+      "mode": "existing-dir",
+      "class": "FileExistsError",
+      "errno": null,
+      "destination_exists": true,
+      "destination_is_directory": true,
+      "destination_children": [
+        "retained"
+      ],
+      "retained_marker": "evidence",
+      "retained_file": null,
+      "temporary_staging": []
+    },
+    {
+      "consumer": "card",
+      "mode": "existing-file",
+      "class": "FileExistsError",
+      "errno": null,
+      "destination_exists": true,
+      "destination_is_directory": false,
+      "destination_children": null,
+      "retained_marker": null,
+      "retained_file": "evidence",
+      "temporary_staging": []
+    },
+    {
+      "consumer": "card",
+      "mode": "missing-parent",
+      "class": "FileNotFoundError",
+      "errno": 2,
+      "destination_exists": false,
+      "destination_is_directory": false,
+      "destination_children": null,
+      "retained_marker": null,
+      "retained_file": null,
+      "temporary_staging": []
+    },
+    {
+      "consumer": "card",
+      "mode": "generation-failure",
+      "class": "CalledProcessError",
+      "errno": null,
+      "destination_exists": false,
+      "destination_is_directory": false,
+      "destination_children": null,
+      "retained_marker": null,
+      "retained_file": null,
+      "temporary_staging": []
+    },
+    {
+      "consumer": "card",
+      "mode": "missing-source",
+      "class": "FileNotFoundError",
+      "errno": 2,
+      "destination_exists": false,
+      "destination_is_directory": false,
+      "destination_children": null,
+      "retained_marker": null,
+      "retained_file": null,
+      "temporary_staging": []
+    },
+    {
+      "consumer": "radarcan",
+      "mode": "existing-dir",
+      "class": "FileExistsError",
+      "errno": 17,
+      "destination_exists": true,
+      "destination_is_directory": true,
+      "destination_children": [
+        "retained"
+      ],
+      "retained_marker": "evidence",
+      "retained_file": null,
+      "temporary_staging": []
+    },
+    {
+      "consumer": "radarcan",
+      "mode": "existing-file",
+      "class": "FileExistsError",
+      "errno": 17,
+      "destination_exists": true,
+      "destination_is_directory": false,
+      "destination_children": null,
+      "retained_marker": null,
+      "retained_file": "evidence",
+      "temporary_staging": []
+    },
+    {
+      "consumer": "radarcan",
+      "mode": "missing-parent",
+      "class": "FileNotFoundError",
+      "errno": 2,
+      "destination_exists": false,
+      "destination_is_directory": false,
+      "destination_children": null,
+      "retained_marker": null,
+      "retained_file": null,
+      "temporary_staging": []
+    },
+    {
+      "consumer": "radarcan",
+      "mode": "generation-failure",
+      "class": "FileNotFoundError",
+      "errno": 2,
+      "destination_exists": true,
+      "destination_is_directory": true,
+      "destination_children": [],
+      "retained_marker": null,
+      "retained_file": null,
+      "temporary_staging": []
+    }
+  ],
+  "cli": [
+    {
+      "case": "card-relative-default-source",
+      "exit": 0,
+      "stdout": "Prepared 97 DBC assets; Python used only at build time\n",
+      "stderr_template": "",
+      "raw_stdout_sha256": "ed1f01dd1c6dc433c37a22acee1c1b998b4025cf41774e3c84cf47c0a0ff292e",
+      "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "card-existing-dir-attempt",
+      "exit": 1,
+      "stdout": "",
+      "stderr_template": "Traceback (most recent call last):\n  File \"$ROOT/rust/tools/card_prepare_assets.py\", line 132, in <module>\n    result = prepare_assets(Path(sys.argv[1]), Path(sys.argv[2]))\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$ROOT/rust/tools/card_prepare_assets.py\", line 82, in prepare_assets\n    raise FileExistsError(destination)\nFileExistsError: $ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/card-existing-destination/dbc\n",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr_sha256": "0180f691835935341d9b3f8977d559e25225febec2fcc4ec65aa883de68c17c9"
+    },
+    {
+      "case": "card-existing-file-attempt",
+      "exit": 1,
+      "stdout": "",
+      "stderr_template": "Traceback (most recent call last):\n  File \"$ROOT/rust/tools/card_prepare_assets.py\", line 132, in <module>\n    result = prepare_assets(Path(sys.argv[1]), Path(sys.argv[2]))\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$ROOT/rust/tools/card_prepare_assets.py\", line 82, in prepare_assets\n    raise FileExistsError(destination)\nFileExistsError: $ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/card-existing-file-data/dbc\n",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr_sha256": "ceb6285af0e10555031374f798d7be024def42319c49c22d834c62c8f6e60a2b"
+    },
+    {
+      "case": "card-missing-parent",
+      "exit": 1,
+      "stdout": "",
+      "stderr_template": "Traceback (most recent call last):\n  File \"$ROOT/rust/tools/card_prepare_assets.py\", line 132, in <module>\n    result = prepare_assets(Path(sys.argv[1]), Path(sys.argv[2]))\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$ROOT/rust/tools/card_prepare_assets.py\", line 93, in prepare_assets\n    free = shutil.disk_usage(destination.parent).free\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/shutil.py\", line 1350, in disk_usage\n    st = os.statvfs(path)\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/card-missing-parent/missing'\n",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr_sha256": "db0bd1ce0e5fdf086124f63f0dca4c1303b98e402027fba3187f7e80c58b1a96"
+    },
+    {
+      "case": "card-generation-failure",
+      "exit": 1,
+      "stdout": "",
+      "stderr_template": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/card-generation-failure/card-assets-$TEMP/generator/generator.py\", line 64, in create_all\n    create_dbc(src_dir, filename, output_path)\n  File \"$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/card-generation-failure/card-assets-$TEMP/generator/generator.py\", line 36, in create_dbc\n    include_file = read_dbc(src_dir, include_filename)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/card-generation-failure/card-assets-$TEMP/generator/generator.py\", line 17, in read_dbc\n    with open(os.path.join(src_dir, filename), encoding='utf-8') as file_in:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/card-generation-failure/card-assets-$TEMP/generator/nissan/_consumer_missing.dbc'\nTraceback (most recent call last):\n  File \"$ROOT/rust/tools/card_prepare_assets.py\", line 132, in <module>\n    result = prepare_assets(Path(sys.argv[1]), Path(sys.argv[2]))\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$ROOT/rust/tools/card_prepare_assets.py\", line 112, in prepare_assets\n    subprocess.run([\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/subprocess.py\", line 571, in run\n    raise CalledProcessError(retcode, process.args,\nsubprocess.CalledProcessError: Command '['/home/fma1/rust/openpilot-rust/.venv/bin/python', '-c', 'from generator import create_all; import sys; create_all(sys.argv[1], sys.argv[2])', '$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/card-generation-failure/card-assets-$TEMP/dbc', '$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/card-generation-failure/card-assets-$TEMP/generator']' returned non-zero exit status 1.\n",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr_sha256": "0b03a093b7e2e9a5694219dd02cbf5e0563d5f145ec425f8a2683c263771ac5b"
+    },
+    {
+      "case": "card-missing-cli",
+      "exit": 1,
+      "stdout": "",
+      "stderr_template": "usage: card_prepare_assets.py REPOSITORY NEW_DBC_DIRECTORY\n",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr_sha256": "c111fa03372de1625251ffe7a396dbfb259ca96a30959c15c68de53f9d8c4e3e"
+    },
+    {
+      "case": "card-extra-cli",
+      "exit": 1,
+      "stdout": "",
+      "stderr_template": "usage: card_prepare_assets.py REPOSITORY NEW_DBC_DIRECTORY\n",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr_sha256": "c111fa03372de1625251ffe7a396dbfb259ca96a30959c15c68de53f9d8c4e3e"
+    },
+    {
+      "case": "radar-relative-default-source",
+      "exit": 0,
+      "stdout": "Prepared 103 original RadarCAN DBCs\n",
+      "stderr_template": "",
+      "raw_stdout_sha256": "4a4258c7e769b570c0331f8682e6815566c9993b262ed091ed8b1348794a55cd",
+      "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "case": "radar-existing-dir-attempt",
+      "exit": 1,
+      "stdout": "",
+      "stderr_template": "Traceback (most recent call last):\n  File \"$ROOT/rust/tools/radarcan_prepare_assets.py\", line 45, in <module>\n    prepare(Path(sys.argv[1]))\n  File \"$ROOT/rust/tools/radarcan_prepare_assets.py\", line 30, in prepare\n    destination.mkdir()\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/pathlib.py\", line 1311, in mkdir\n    os.mkdir(self, mode)\nFileExistsError: [Errno 17] File exists: '$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/radar-existing-destination/dbc'\n",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr_sha256": "a1bfb1775cd986662ad7e25a9af4563039ab8092af9ca8ce31b71a6b246a2a79"
+    },
+    {
+      "case": "radar-existing-file-attempt",
+      "exit": 1,
+      "stdout": "",
+      "stderr_template": "Traceback (most recent call last):\n  File \"$ROOT/rust/tools/radarcan_prepare_assets.py\", line 45, in <module>\n    prepare(Path(sys.argv[1]))\n  File \"$ROOT/rust/tools/radarcan_prepare_assets.py\", line 30, in prepare\n    destination.mkdir()\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/pathlib.py\", line 1311, in mkdir\n    os.mkdir(self, mode)\nFileExistsError: [Errno 17] File exists: '$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/radar-existing-file-data/dbc'\n",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr_sha256": "0ae1ba8ff92edb8aaf8e227682b2206e0ade3124ca6dd271b2fb0fbe89054f4a"
+    },
+    {
+      "case": "radar-missing-parent",
+      "exit": 1,
+      "stdout": "",
+      "stderr_template": "Traceback (most recent call last):\n  File \"$ROOT/rust/tools/radarcan_prepare_assets.py\", line 45, in <module>\n    prepare(Path(sys.argv[1]))\n  File \"$ROOT/rust/tools/radarcan_prepare_assets.py\", line 27, in prepare\n    free = shutil.disk_usage(destination.parent).free\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fma1/.local/share/uv/python/cpython-3.12.15-linux-x86_64-gnu/lib/python3.12/shutil.py\", line 1350, in disk_usage\n    st = os.statvfs(path)\n         ^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'missing'\n",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr_sha256": "296191002dac8dfdbf29b0c0bd8ab858f9b164652943424e829c190f8b0df50a"
+    },
+    {
+      "case": "radar-generation-failure",
+      "exit": 1,
+      "stdout": "",
+      "stderr_template": "Traceback (most recent call last):\n  File \"$ROOT/rust/tools/radarcan_prepare_assets.py\", line 45, in <module>\n    prepare(Path(sys.argv[1]))\n  File \"$ROOT/rust/tools/radarcan_prepare_assets.py\", line 31, in prepare\n    generated = generate_all()\n                ^^^^^^^^^^^^^^\n  File \"$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/broken-source/opendbc_repo/opendbc/dbc/generator/generator.py\", line 74, in generate_all\n    create_all(output_path, source_path)\n  File \"$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/broken-source/opendbc_repo/opendbc/dbc/generator/generator.py\", line 64, in create_all\n    create_dbc(src_dir, filename, output_path)\n  File \"$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/broken-source/opendbc_repo/opendbc/dbc/generator/generator.py\", line 36, in create_dbc\n    include_file = read_dbc(src_dir, include_filename)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"$ROOT/.analysis/scratch/2026-10-18-dbc-generator/consumers/packagers-original-1/broken-source/opendbc_repo/opendbc/dbc/generator/generator.py\", line 17, in read_dbc\n    with open(os.path.join(src_dir, filename), encoding='utf-8') as file_in:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/tmpvxweq7f7/generator/nissan/_consumer_missing.dbc'\n",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr_sha256": "bebde9d9992a8423744730ff6c347c9ba50d467ab7a36a4ec180b239335dd01f"
+    },
+    {
+      "case": "radar-missing-cli",
+      "exit": 1,
+      "stdout": "",
+      "stderr_template": "Traceback (most recent call last):\n  File \"$ROOT/rust/tools/radarcan_prepare_assets.py\", line 45, in <module>\n    prepare(Path(sys.argv[1]))\n                 ~~~~~~~~^^^\nIndexError: list index out of range\n",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr_sha256": "ee77a25981e0fcc6f046782399833af822a69501342e0e35627baf51169df3bf"
+    },
+    {
+      "case": "radar-extra-cli",
+      "exit": 0,
+      "stdout": "Prepared 103 original RadarCAN DBCs\n",
+      "stderr_template": "",
+      "raw_stdout_sha256": "4a4258c7e769b570c0331f8682e6815566c9993b262ed091ed8b1348794a55cd",
+      "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

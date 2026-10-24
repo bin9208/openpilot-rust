@@ -1,0 +1,499 @@
+[
+  {
+    "name": "options-value-0",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "options",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": null,
+      "frames": 2,
+      "props": {},
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "options-value-1",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "options",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": false,
+      "frames": 2,
+      "props": {},
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "options-value-2",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "options",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": [],
+      "frames": 2,
+      "props": {},
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "list-value-3",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "list",
+      "rect": {
+        "x": 100,
+        "y": 100,
+        "width": 1800,
+        "height": 170
+      },
+      "text": null,
+      "frames": 2,
+      "props": {
+        "description": "A detailed setting explanation.",
+        "description_visible": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "description_visible": true,
+          "height": 170.0,
+          "right": {
+            "x": 1740.0,
+            "y": 100.0,
+            "width": 160.0,
+            "height": 170.0
+          }
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "description_visible": true,
+          "height": 170.0,
+          "right": {
+            "x": 1740.0,
+            "y": 100.0,
+            "width": 160.0,
+            "height": 170.0
+          }
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "8a5edf847a7e0877e15d7dcdf4a4f6c68ff4c2e9e9ec159acca2f3aa7b5044d0"
+  },
+  {
+    "name": "list-value-4",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "list",
+      "rect": {
+        "x": 100,
+        "y": 100,
+        "width": 1800,
+        "height": 170
+      },
+      "text": false,
+      "frames": 2,
+      "props": {
+        "description": "A detailed setting explanation.",
+        "description_visible": true
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "list-value-5",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "list",
+      "rect": {
+        "x": 100,
+        "y": 100,
+        "width": 1800,
+        "height": 170
+      },
+      "text": [],
+      "frames": 2,
+      "props": {
+        "description": "A detailed setting explanation.",
+        "description_visible": true
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "list-value-6",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "list",
+      "rect": {
+        "x": 100,
+        "y": 100,
+        "width": 1800,
+        "height": 170
+      },
+      "text": {
+        "x": 1
+      },
+      "frames": 2,
+      "props": {
+        "description": "A detailed setting explanation.",
+        "description_visible": true
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "slider-value-7",
+    "scene": {
+      "config": {
+        "big": false,
+        "large_viewport": false,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "slider",
+      "rect": {
+        "x": 0,
+        "y": 120,
+        "width": 536,
+        "height": 115
+      },
+      "text": null,
+      "frames": 2,
+      "props": {
+        "green": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "confirmed": false,
+          "percentage": -0.0,
+          "position": 0.0,
+          "scale": 1.0,
+          "dragging": false
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "confirmed": false,
+          "percentage": -0.0,
+          "position": 0.0,
+          "scale": 1.0,
+          "dragging": false
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "846069ede121e2059c843fddcf957264d17a62e0ee7a4f0fde4a49da5daa00ee"
+  },
+  {
+    "name": "slider-value-8",
+    "scene": {
+      "config": {
+        "big": false,
+        "large_viewport": false,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "slider",
+      "rect": {
+        "x": 0,
+        "y": 120,
+        "width": 536,
+        "height": 115
+      },
+      "text": true,
+      "frames": 2,
+      "props": {
+        "green": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "confirmed": false,
+          "percentage": -0.0,
+          "position": 0.0,
+          "scale": 1.0,
+          "dragging": false
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "confirmed": false,
+          "percentage": -0.0,
+          "position": 0.0,
+          "scale": 1.0,
+          "dragging": false
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "2ed78fd698fbceffbe23c753acfdbfb6301490d667d07e898bbd8857b00d509c"
+  },
+  {
+    "name": "slider-value-9",
+    "scene": {
+      "config": {
+        "big": false,
+        "large_viewport": false,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "slider",
+      "rect": {
+        "x": 0,
+        "y": 120,
+        "width": 536,
+        "height": 115
+      },
+      "text": [
+        "x",
+        null
+      ],
+      "frames": 2,
+      "props": {
+        "green": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "confirmed": false,
+          "percentage": -0.0,
+          "position": 0.0,
+          "scale": 1.0,
+          "dragging": false
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "confirmed": false,
+          "percentage": -0.0,
+          "position": 0.0,
+          "scale": 1.0,
+          "dragging": false
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "a33887599a1b14dc4d9dac9f0fe98277de151906fe09da42c2dccd15fd542955"
+  },
+  {
+    "name": "slider-value-10",
+    "scene": {
+      "config": {
+        "big": false,
+        "large_viewport": false,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "slider",
+      "rect": {
+        "x": 0,
+        "y": 120,
+        "width": 536,
+        "height": 115
+      },
+      "text": {
+        "x": "\ud800"
+      },
+      "frames": 2,
+      "props": {
+        "green": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "confirmed": false,
+          "percentage": -0.0,
+          "position": 0.0,
+          "scale": 1.0,
+          "dragging": false
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "confirmed": false,
+          "percentage": -0.0,
+          "position": 0.0,
+          "scale": 1.0,
+          "dragging": false
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "85e7fb7b35ed9a7884789bd360a944ac37d178e233c173034fe170b3eda05137"
+  },
+  {
+    "name": "slider-value-11",
+    "scene": {
+      "config": {
+        "big": false,
+        "large_viewport": false,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "slider",
+      "rect": {
+        "x": 0,
+        "y": 120,
+        "width": 536,
+        "height": 115
+      },
+      "text": 1.25,
+      "frames": 2,
+      "props": {
+        "green": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "confirmed": false,
+          "percentage": -0.0,
+          "position": 0.0,
+          "scale": 1.0,
+          "dragging": false
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "confirmed": false,
+          "percentage": -0.0,
+          "position": 0.0,
+          "scale": 1.0,
+          "dragging": false
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "da3a5bbd937c23a8b8cbd1355196de6fdff0b96d006cbc98d4c95a5088730f4f"
+  }
+]

@@ -1,0 +1,957 @@
+{
+  "source_sha256": "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00",
+  "capture": "Unchanged GuiApplication.init_window; only raylib/process/thread/platform endpoints injected. Full original rendering separately captured.",
+  "cases": [
+    {
+      "name": "default",
+      "settings": {
+        "RECORD": true,
+        "RECORD_QUALITY": 23,
+        "RECORD_SPEED": 1,
+        "RECORD_BITRATE": "",
+        "RECORD_OUTPUT": "/capture/global.mp4",
+        "OFFSCREEN": true,
+        "ENABLE_VSYNC": false,
+        "BURN_IN_MODE": false
+      },
+      "error": null,
+      "calls": [
+        [
+          "signal",
+          2,
+          "@callback@"
+        ],
+        [
+          "atexit"
+        ],
+        [
+          "flags",
+          32
+        ],
+        [
+          "window",
+          536,
+          240,
+          "Original"
+        ],
+        [
+          "target",
+          536,
+          240
+        ],
+        [
+          "filter",
+          "texture",
+          1
+        ],
+        [
+          "popen",
+          [
+            "ffmpeg",
+            "-v",
+            "warning",
+            "-nostats",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-s",
+            "536x240",
+            "-r",
+            "20",
+            "-i",
+            "pipe:0",
+            "-vf",
+            "vflip,format=yuv420p",
+            "-r",
+            "20",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-y",
+            "-f",
+            "mp4",
+            "/capture/global.mp4"
+          ],
+          -1
+        ],
+        [
+          "thread",
+          true,
+          "<lambda>"
+        ],
+        [
+          "thread-start"
+        ],
+        [
+          "fps",
+          0
+        ],
+        [
+          "fonts",
+          null
+        ],
+        [
+          "patch-text"
+        ],
+        [
+          "patch-scissor"
+        ]
+      ],
+      "queue_capacity": 60
+    },
+    {
+      "name": "quality-zero",
+      "settings": {
+        "RECORD": true,
+        "RECORD_QUALITY": 0,
+        "RECORD_SPEED": 1,
+        "RECORD_BITRATE": "",
+        "RECORD_OUTPUT": "/capture/global.mp4",
+        "OFFSCREEN": true,
+        "ENABLE_VSYNC": false,
+        "BURN_IN_MODE": false
+      },
+      "error": null,
+      "calls": [
+        [
+          "signal",
+          2,
+          "@callback@"
+        ],
+        [
+          "atexit"
+        ],
+        [
+          "flags",
+          32
+        ],
+        [
+          "window",
+          536,
+          240,
+          "Original"
+        ],
+        [
+          "target",
+          536,
+          240
+        ],
+        [
+          "filter",
+          "texture",
+          1
+        ],
+        [
+          "popen",
+          [
+            "ffmpeg",
+            "-v",
+            "warning",
+            "-nostats",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-s",
+            "536x240",
+            "-r",
+            "20",
+            "-i",
+            "pipe:0",
+            "-vf",
+            "vflip,format=yuv420p",
+            "-r",
+            "20",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "0",
+            "-y",
+            "-f",
+            "mp4",
+            "/capture/global.mp4"
+          ],
+          -1
+        ],
+        [
+          "thread",
+          true,
+          "<lambda>"
+        ],
+        [
+          "thread-start"
+        ],
+        [
+          "fps",
+          0
+        ],
+        [
+          "fonts",
+          null
+        ],
+        [
+          "patch-text"
+        ],
+        [
+          "patch-scissor"
+        ]
+      ],
+      "queue_capacity": 60
+    },
+    {
+      "name": "speed-two",
+      "settings": {
+        "RECORD": true,
+        "RECORD_QUALITY": 23,
+        "RECORD_SPEED": 2,
+        "RECORD_BITRATE": "",
+        "RECORD_OUTPUT": "/capture/global.mp4",
+        "OFFSCREEN": true,
+        "ENABLE_VSYNC": false,
+        "BURN_IN_MODE": false
+      },
+      "error": null,
+      "calls": [
+        [
+          "signal",
+          2,
+          "@callback@"
+        ],
+        [
+          "atexit"
+        ],
+        [
+          "flags",
+          32
+        ],
+        [
+          "window",
+          536,
+          240,
+          "Original"
+        ],
+        [
+          "target",
+          536,
+          240
+        ],
+        [
+          "filter",
+          "texture",
+          1
+        ],
+        [
+          "popen",
+          [
+            "ffmpeg",
+            "-v",
+            "warning",
+            "-nostats",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-s",
+            "536x240",
+            "-r",
+            "20",
+            "-i",
+            "pipe:0",
+            "-vf",
+            "vflip,format=yuv420p",
+            "-r",
+            "40",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-y",
+            "-f",
+            "mp4",
+            "/capture/global.mp4"
+          ],
+          -1
+        ],
+        [
+          "thread",
+          true,
+          "<lambda>"
+        ],
+        [
+          "thread-start"
+        ],
+        [
+          "fps",
+          0
+        ],
+        [
+          "fonts",
+          null
+        ],
+        [
+          "patch-text"
+        ],
+        [
+          "patch-scissor"
+        ]
+      ],
+      "queue_capacity": 60
+    },
+    {
+      "name": "bitrate",
+      "settings": {
+        "RECORD": true,
+        "RECORD_QUALITY": 23,
+        "RECORD_SPEED": 1,
+        "RECORD_BITRATE": "2000k",
+        "RECORD_OUTPUT": "/capture/global.mp4",
+        "OFFSCREEN": true,
+        "ENABLE_VSYNC": false,
+        "BURN_IN_MODE": false
+      },
+      "error": null,
+      "calls": [
+        [
+          "signal",
+          2,
+          "@callback@"
+        ],
+        [
+          "atexit"
+        ],
+        [
+          "flags",
+          32
+        ],
+        [
+          "window",
+          536,
+          240,
+          "Original"
+        ],
+        [
+          "target",
+          536,
+          240
+        ],
+        [
+          "filter",
+          "texture",
+          1
+        ],
+        [
+          "popen",
+          [
+            "ffmpeg",
+            "-v",
+            "warning",
+            "-nostats",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-s",
+            "536x240",
+            "-r",
+            "20",
+            "-i",
+            "pipe:0",
+            "-vf",
+            "vflip,format=yuv420p",
+            "-r",
+            "20",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-b:v",
+            "2000k",
+            "-maxrate",
+            "2000k",
+            "-bufsize",
+            "2000k",
+            "-y",
+            "-f",
+            "mp4",
+            "/capture/global.mp4"
+          ],
+          -1
+        ],
+        [
+          "thread",
+          true,
+          "<lambda>"
+        ],
+        [
+          "thread-start"
+        ],
+        [
+          "fps",
+          0
+        ],
+        [
+          "fonts",
+          null
+        ],
+        [
+          "patch-text"
+        ],
+        [
+          "patch-scissor"
+        ]
+      ],
+      "queue_capacity": 60
+    },
+    {
+      "name": "all-custom",
+      "settings": {
+        "RECORD": true,
+        "RECORD_QUALITY": 7,
+        "RECORD_SPEED": 3,
+        "RECORD_BITRATE": "3500k",
+        "RECORD_OUTPUT": "/capture/global.mp4",
+        "OFFSCREEN": true,
+        "ENABLE_VSYNC": false,
+        "BURN_IN_MODE": false
+      },
+      "error": null,
+      "calls": [
+        [
+          "signal",
+          2,
+          "@callback@"
+        ],
+        [
+          "atexit"
+        ],
+        [
+          "flags",
+          32
+        ],
+        [
+          "window",
+          536,
+          240,
+          "Original"
+        ],
+        [
+          "target",
+          536,
+          240
+        ],
+        [
+          "filter",
+          "texture",
+          1
+        ],
+        [
+          "popen",
+          [
+            "ffmpeg",
+            "-v",
+            "warning",
+            "-nostats",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-s",
+            "536x240",
+            "-r",
+            "20",
+            "-i",
+            "pipe:0",
+            "-vf",
+            "vflip,format=yuv420p",
+            "-r",
+            "60",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "7",
+            "-b:v",
+            "3500k",
+            "-maxrate",
+            "3500k",
+            "-bufsize",
+            "3500k",
+            "-y",
+            "-f",
+            "mp4",
+            "/capture/global.mp4"
+          ],
+          -1
+        ],
+        [
+          "thread",
+          true,
+          "<lambda>"
+        ],
+        [
+          "thread-start"
+        ],
+        [
+          "fps",
+          0
+        ],
+        [
+          "fonts",
+          null
+        ],
+        [
+          "patch-text"
+        ],
+        [
+          "patch-scissor"
+        ]
+      ],
+      "queue_capacity": 60
+    },
+    {
+      "name": "negative-speed",
+      "settings": {
+        "RECORD": true,
+        "RECORD_QUALITY": 23,
+        "RECORD_SPEED": -1,
+        "RECORD_BITRATE": "",
+        "RECORD_OUTPUT": "/capture/global.mp4",
+        "OFFSCREEN": true,
+        "ENABLE_VSYNC": false,
+        "BURN_IN_MODE": false
+      },
+      "error": null,
+      "calls": [
+        [
+          "signal",
+          2,
+          "@callback@"
+        ],
+        [
+          "atexit"
+        ],
+        [
+          "flags",
+          32
+        ],
+        [
+          "window",
+          536,
+          240,
+          "Original"
+        ],
+        [
+          "target",
+          536,
+          240
+        ],
+        [
+          "filter",
+          "texture",
+          1
+        ],
+        [
+          "popen",
+          [
+            "ffmpeg",
+            "-v",
+            "warning",
+            "-nostats",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-s",
+            "536x240",
+            "-r",
+            "20",
+            "-i",
+            "pipe:0",
+            "-vf",
+            "vflip,format=yuv420p",
+            "-r",
+            "-20",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-y",
+            "-f",
+            "mp4",
+            "/capture/global.mp4"
+          ],
+          -1
+        ],
+        [
+          "thread",
+          true,
+          "<lambda>"
+        ],
+        [
+          "thread-start"
+        ],
+        [
+          "fps",
+          0
+        ],
+        [
+          "fonts",
+          null
+        ],
+        [
+          "patch-text"
+        ],
+        [
+          "patch-scissor"
+        ]
+      ],
+      "queue_capacity": 60
+    },
+    {
+      "name": "record-disabled",
+      "settings": {
+        "RECORD": false,
+        "RECORD_QUALITY": 23,
+        "RECORD_SPEED": 1,
+        "RECORD_BITRATE": "",
+        "RECORD_OUTPUT": "/capture/global.mp4",
+        "OFFSCREEN": true,
+        "ENABLE_VSYNC": false,
+        "BURN_IN_MODE": false
+      },
+      "error": null,
+      "calls": [
+        [
+          "signal",
+          2,
+          "@callback@"
+        ],
+        [
+          "atexit"
+        ],
+        [
+          "flags",
+          32
+        ],
+        [
+          "window",
+          536,
+          240,
+          "Original"
+        ],
+        [
+          "fps",
+          0
+        ],
+        [
+          "fonts",
+          null
+        ],
+        [
+          "patch-text"
+        ],
+        [
+          "patch-scissor"
+        ]
+      ],
+      "queue_capacity": null
+    },
+    {
+      "name": "no-offscreen",
+      "settings": {
+        "RECORD": true,
+        "RECORD_QUALITY": 23,
+        "RECORD_SPEED": 1,
+        "RECORD_BITRATE": "",
+        "RECORD_OUTPUT": "/capture/global.mp4",
+        "OFFSCREEN": false,
+        "ENABLE_VSYNC": false,
+        "BURN_IN_MODE": false
+      },
+      "error": null,
+      "calls": [
+        [
+          "signal",
+          2,
+          "@callback@"
+        ],
+        [
+          "atexit"
+        ],
+        [
+          "flags",
+          32
+        ],
+        [
+          "window",
+          536,
+          240,
+          "Original"
+        ],
+        [
+          "target",
+          536,
+          240
+        ],
+        [
+          "filter",
+          "texture",
+          1
+        ],
+        [
+          "popen",
+          [
+            "ffmpeg",
+            "-v",
+            "warning",
+            "-nostats",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-s",
+            "536x240",
+            "-r",
+            "20",
+            "-i",
+            "pipe:0",
+            "-vf",
+            "vflip,format=yuv420p",
+            "-r",
+            "20",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-y",
+            "-f",
+            "mp4",
+            "/capture/global.mp4"
+          ],
+          -1
+        ],
+        [
+          "thread",
+          true,
+          "<lambda>"
+        ],
+        [
+          "thread-start"
+        ],
+        [
+          "fps",
+          20
+        ],
+        [
+          "fonts",
+          null
+        ],
+        [
+          "patch-text"
+        ],
+        [
+          "patch-scissor"
+        ]
+      ],
+      "queue_capacity": 60
+    },
+    {
+      "name": "vsync",
+      "settings": {
+        "RECORD": true,
+        "RECORD_QUALITY": 23,
+        "RECORD_SPEED": 1,
+        "RECORD_BITRATE": "",
+        "RECORD_OUTPUT": "/capture/global.mp4",
+        "OFFSCREEN": true,
+        "ENABLE_VSYNC": true,
+        "BURN_IN_MODE": false
+      },
+      "error": null,
+      "calls": [
+        [
+          "signal",
+          2,
+          "@callback@"
+        ],
+        [
+          "atexit"
+        ],
+        [
+          "flags",
+          96
+        ],
+        [
+          "window",
+          536,
+          240,
+          "Original"
+        ],
+        [
+          "target",
+          536,
+          240
+        ],
+        [
+          "filter",
+          "texture",
+          1
+        ],
+        [
+          "popen",
+          [
+            "ffmpeg",
+            "-v",
+            "warning",
+            "-nostats",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-s",
+            "536x240",
+            "-r",
+            "20",
+            "-i",
+            "pipe:0",
+            "-vf",
+            "vflip,format=yuv420p",
+            "-r",
+            "20",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-y",
+            "-f",
+            "mp4",
+            "/capture/global.mp4"
+          ],
+          -1
+        ],
+        [
+          "thread",
+          true,
+          "<lambda>"
+        ],
+        [
+          "thread-start"
+        ],
+        [
+          "fps",
+          0
+        ],
+        [
+          "fonts",
+          null
+        ],
+        [
+          "patch-text"
+        ],
+        [
+          "patch-scissor"
+        ]
+      ],
+      "queue_capacity": 60
+    },
+    {
+      "name": "spawn-error",
+      "settings": {
+        "RECORD": true,
+        "RECORD_QUALITY": 23,
+        "RECORD_SPEED": 1,
+        "RECORD_BITRATE": "",
+        "RECORD_OUTPUT": "/capture/global.mp4",
+        "OFFSCREEN": true,
+        "ENABLE_VSYNC": false,
+        "BURN_IN_MODE": false
+      },
+      "error": {
+        "type": "FileNotFoundError",
+        "message": "[Errno 2] No such file or directory: 'ffmpeg'"
+      },
+      "calls": [
+        [
+          "signal",
+          2,
+          "@callback@"
+        ],
+        [
+          "atexit"
+        ],
+        [
+          "flags",
+          32
+        ],
+        [
+          "window",
+          536,
+          240,
+          "Original"
+        ],
+        [
+          "target",
+          536,
+          240
+        ],
+        [
+          "filter",
+          "texture",
+          1
+        ],
+        [
+          "popen",
+          [
+            "ffmpeg",
+            "-v",
+            "warning",
+            "-nostats",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-s",
+            "536x240",
+            "-r",
+            "20",
+            "-i",
+            "pipe:0",
+            "-vf",
+            "vflip,format=yuv420p",
+            "-r",
+            "20",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-y",
+            "-f",
+            "mp4",
+            "/capture/global.mp4"
+          ],
+          -1
+        ]
+      ],
+      "queue_capacity": null
+    }
+  ]
+}

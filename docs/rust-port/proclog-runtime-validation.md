@@ -43,7 +43,7 @@ cargo test --manifest-path rust/Cargo.toml -p openpilot-proclogd -p openpilot-ru
 cargo build --manifest-path rust/Cargo.toml -p openpilot-proclogd --bins --examples --locked
 cargo clippy --manifest-path rust/Cargo.toml -p openpilot-proclogd --all-targets --locked -- -D warnings
 cargo fmt --manifest-path rust/Cargo.toml --all --check
-python rust/tools/check_proclog_reference.py
+cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features proclog-reference-native --bin check-proclog-reference -- --binary "${CARGO_TARGET_DIR:-rust/target}/debug/examples/reference_trace"
 python rust/tools/build_msgq_python.py --output /tmp/proclog-msgq-python
 PYTHONPATH=/tmp/proclog-msgq-python python rust/tools/check_proclog_daemon.py \
   --binary rust/target/debug/openpilot-proclogd-runtime \

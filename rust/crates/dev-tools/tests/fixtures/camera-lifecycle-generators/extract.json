@@ -1,0 +1,47 @@
+[
+  {
+    "text": "prefix f() { a { b } c }suffix",
+    "signature": "f(",
+    "output": "f() { a { b } c }"
+  },
+  {
+    "text": "\u03b1 f() { \u03b2 } \u03b3",
+    "signature": "f(",
+    "output": "f() { \u03b2 }"
+  },
+  {
+    "text": "f() { \"}\"; tail }",
+    "signature": "f(",
+    "output": "f() { \"}"
+  },
+  {
+    "text": "f() { /* { */ x } tail }",
+    "signature": "f(",
+    "output": "f() { /* { */ x } tail }"
+  },
+  {
+    "text": "f() { x",
+    "signature": "f(",
+    "error": "IndexError"
+  },
+  {
+    "text": "none",
+    "signature": "f(",
+    "error": "ValueError"
+  },
+  {
+    "text": "f(); no body",
+    "signature": "f(",
+    "error": "ValueError"
+  },
+  {
+    "text": "f() {} trailing f() {two}",
+    "signature": "f(",
+    "output": "f() {}"
+  },
+  {
+    "text": "f() {\n}\r\n",
+    "signature": "f(",
+    "output": "f() {\n}"
+  }
+]

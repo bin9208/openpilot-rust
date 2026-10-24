@@ -79,8 +79,9 @@ sentry-python 2.55.0 and setproctitle 1.3.7 are test-oracle dependencies.
 
 ## Reproducible validation
 
-Build the native child and existing collector, then supply `PARAMS_BINDING` and
-`MSGQ_PYTHON` from the existing original bindings. `OUTPUT` must be a fresh directory.
+Build the native child, collector and checker, then supply `PARAMS_BINDING` from
+the existing original binding as a hashed provenance artifact. The native checker
+does not load this extension or launch Python. `OUTPUT` must be a fresh directory.
 The checker creates temporary Params/build metadata, unique IPC namespaces and
 loopback-only Sentry receivers. No host Params, vehicle, public Sentry project or
 production publisher is used.
@@ -88,22 +89,28 @@ production publisher is used.
 ```sh
 RUSTUP_TOOLCHAIN=1.94.0 cargo test --manifest-path rust/Cargo.toml -p openpilot-managed-entry --all-targets --locked
 RUSTUP_TOOLCHAIN=1.94.0 cargo clippy --manifest-path rust/Cargo.toml -p openpilot-managed-entry --all-targets --locked -- -D warnings
-RUSTUP_TOOLCHAIN=1.94.0 cargo build --manifest-path rust/Cargo.toml -p openpilot-managed-entry -p openpilot-logmessaged --examples --bins --locked
-PYTHONPATH="$MSGQ_PYTHON:.:rust/tools" uv run --no-project --python 3.12 rust/tools/check_managed_entry.py "$CHILD" "$COLLECTOR" "$PARAMS_BINDING" "$OUTPUT"
+RUSTUP_TOOLCHAIN=1.94.0 cargo build --manifest-path rust/Cargo.toml -p openpilot-managed-entry -p openpilot-logmessaged -p openpilot-dev-tools --features openpilot-dev-tools/managed-entry-native --examples --bins --locked
+rust/target/debug/check-managed-entry "$CHILD" "$COLLECTOR" "$PARAMS_BINDING" "$OUTPUT"
+rust/target/debug/check-managed-entry --readiness "$CHILD" "$COLLECTOR" "$PARAMS_BINDING" "$READINESS_OUTPUT"
 ```
 
-The matrix runs 22 scenarios through both the original and native collectors,
+The native matrix runs 22 scenarios through an independent original-policy
+collector and the deployed native collector,
 comparing 44 source/native pairs (88 isolated child executions): normal return,
 explicit and real SIGINT, I/O and chained errors, disabled reporting, preparation,
 name and context failures, early interrupts, daemon-tag failure, SDK capture/flush
 failures, closed actual logger sockets, Params open/put failures, sent-flag policy,
 global context precedence and Unicode daemon tags. The SDK failure cases inject
 errors only at the external SDK call seam. Enabled non-fault scenarios use actual
-Python/native SDK HTTP envelopes at loopback, with real exceptions and Params.
+native SDK HTTP envelopes at loopback, with real exceptions and Params. The
+independent source adapter preserves the selected original SDK fields captured
+with sentry-python2.55.0; its report explicitly labels that boundary and does not
+claim to execute the original Python SDK. Original captures remain sealed test
+expectations and are not inputs to the independent policy implementation.
 
 The child callbacks prepare a real file and create a fresh native msgq publisher;
-the original callback verifies replacement of the actual Python Context. Both
-publish the same body payload to an original msgq receiver. Fixture handshakes
+the source adapter separately replaces its real msgq context. Both
+publish the same body payload to a real msgq receiver. Fixture handshakes
 establish subscriber readiness and drain diagnostics before observing the real
 child exit; they do not substitute for the entry/error implementation. Tests retain
 real signal response times, stdout/stderr, SDK calls with Params values at each

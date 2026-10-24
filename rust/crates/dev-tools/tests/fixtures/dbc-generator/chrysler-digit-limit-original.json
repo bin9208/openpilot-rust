@@ -1,0 +1,112 @@
+{
+  "scope": "Unchanged original Python Chrysler remapper; actual source-derived common DBC plus one unmapped BO_ line. No native expected-value generation.",
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "source_sha256": {
+    "opendbc_repo/opendbc/dbc/generator/chrysler/_stellantis_common_ram.py": "e01a57265224d0923bd405837d9387d1cf555aaf35131cfc42074a3e70b015cd",
+    "opendbc_repo/opendbc/dbc/generator/chrysler/_stellantis_common.dbc": "96573c311bfd988de02a493de644bae473715d190e5f2951b75bc76aaf7423ab"
+  },
+  "cases": [
+    {
+      "name": "ascii-4300",
+      "digits": 4300,
+      "digit": "1",
+      "sign": "",
+      "separator": "",
+      "exit": 0,
+      "error": null,
+      "outputs": {
+        "_stellantis_common_ram_dt_generated.dbc": {
+          "bytes": 12896,
+          "sha256": "9316636c91af834fff74b1f44e3dda5d6b19dd13e217cecf0b3fc07003896ad5"
+        },
+        "_stellantis_common_ram_hd_generated.dbc": {
+          "bytes": 12899,
+          "sha256": "086b0fc10821d7ad858c5301fd5b954c17cbc70a9494d817c2e4cf2fb534b94a"
+        }
+      }
+    },
+    {
+      "name": "ascii-4301",
+      "digits": 4301,
+      "digit": "1",
+      "sign": "",
+      "separator": "",
+      "exit": 1,
+      "error": "ValueError",
+      "outputs": {
+        "_stellantis_common_ram_dt_generated.dbc": {
+          "bytes": 8571,
+          "sha256": "664374cd04f7a0da4e030a7dc981fe6f58515c7f9779f881d2a14b8ebd383cd9"
+        }
+      }
+    },
+    {
+      "name": "leading-zero-limit",
+      "digits": 4301,
+      "digit": "0",
+      "sign": "",
+      "separator": "",
+      "exit": 1,
+      "error": "ValueError",
+      "outputs": {
+        "_stellantis_common_ram_dt_generated.dbc": {
+          "bytes": 8571,
+          "sha256": "664374cd04f7a0da4e030a7dc981fe6f58515c7f9779f881d2a14b8ebd383cd9"
+        }
+      }
+    },
+    {
+      "name": "signed-4300",
+      "digits": 4300,
+      "digit": "1",
+      "sign": "-",
+      "separator": "",
+      "exit": 0,
+      "error": null,
+      "outputs": {
+        "_stellantis_common_ram_dt_generated.dbc": {
+          "bytes": 12897,
+          "sha256": "049c0667e85e0a66d16daa7cd5913d0a1becd1e75fbd76c359162c197af4745b"
+        },
+        "_stellantis_common_ram_hd_generated.dbc": {
+          "bytes": 12900,
+          "sha256": "849c01e2aec4f1bfe66114e09b222836d19db8e38c75f59724a18c2f4fc8868b"
+        }
+      }
+    },
+    {
+      "name": "underscore-4300",
+      "digits": 4300,
+      "digit": "1",
+      "sign": "+",
+      "separator": "_",
+      "exit": 0,
+      "error": null,
+      "outputs": {
+        "_stellantis_common_ram_dt_generated.dbc": {
+          "bytes": 12896,
+          "sha256": "9316636c91af834fff74b1f44e3dda5d6b19dd13e217cecf0b3fc07003896ad5"
+        },
+        "_stellantis_common_ram_hd_generated.dbc": {
+          "bytes": 12899,
+          "sha256": "086b0fc10821d7ad858c5301fd5b954c17cbc70a9494d817c2e4cf2fb534b94a"
+        }
+      }
+    },
+    {
+      "name": "unicode-4301",
+      "digits": 4301,
+      "digit": "\u0661",
+      "sign": "",
+      "separator": "",
+      "exit": 1,
+      "error": "ValueError",
+      "outputs": {
+        "_stellantis_common_ram_dt_generated.dbc": {
+          "bytes": 8571,
+          "sha256": "664374cd04f7a0da4e030a7dc981fe6f58515c7f9779f881d2a14b8ebd383cd9"
+        }
+      }
+    }
+  ]
+}

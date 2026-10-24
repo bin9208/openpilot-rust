@@ -32,6 +32,32 @@ impl JsonValue {
             index,
         })
     }
+    /// Parse decoded Python Unicode text, preserving raw lone surrogate points.
+    /// Raw points must not participate in adjacent JSON Unicode-escape pairing.
+    ///
+    /// # Errors
+    /// Returns syntax/integer-limit errors, including invalid Unicode points.
+    pub fn parse_codepoints(points: &[u32]) -> Result<Self, Error> {
+        let mut source = String::new();
+        let mut raw = Vec::new();
+        for &point in points {
+            if (0xd800..=0xdfff).contains(&point) {
+                raw.push((source.len(), point));
+                source.push('x');
+            } else {
+                source.push(char::from_u32(point).ok_or(Error::Syntax {
+                    offset: source.len(),
+                    reason: "invalid Unicode codepoint",
+                })?);
+            }
+        }
+        let document = super::parse::parse_with_raw(&source, &raw)?;
+        let index = document.root;
+        Ok(Self {
+            document: Arc::new(document),
+            index,
+        })
+    }
     /// Construct a string from valid Rust UTF-8.
     pub fn text(source: &str) -> Self {
         Self::single(Value::Text(Text::from(source)))
@@ -93,15 +119,15 @@ impl JsonValue {
     }
     /// Compare string codepoints without replacement decoding.
     pub fn text_eq(&self, other: &str) -> bool {
-        match self.view() {
-            JsonView::Text(points) => points.iter().copied().eq(other.chars().map(u32::from)),
+        match &self.document.values[self.index] {
+            Value::Text(text) => text.0.iter().copied().eq(other.chars().map(u32::from)),
             _ => false,
         }
     }
     /// None means either a nonstring value or Python text containing lone surrogates.
     pub fn to_utf8(&self) -> Option<String> {
-        match self.view() {
-            JsonView::Text(points) => points.iter().copied().map(char::from_u32).collect(),
+        match &self.document.values[self.index] {
+            Value::Text(text) => text.0.iter().copied().map(char::from_u32).collect(),
             _ => None,
         }
     }

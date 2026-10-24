@@ -1,0 +1,762 @@
+[
+  {
+    "name": "surrogate-initial-zero",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "\ud800",
+      "frames": 0,
+      "props": {},
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [],
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2"
+  },
+  {
+    "name": "surrogate-initial-render",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "\ud800",
+      "frames": 2,
+      "props": {},
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "surrogate-initial-clear",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "\ud800",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "clear"
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2"
+  },
+  {
+    "name": "surrogate-initial-backspace",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "\ud800",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 0,
+          "key": 259
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": true,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": true,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "76f279547356e46548d1a11f771d617ea3861b2d98e9ebac63f78e5e5ea4690d"
+  },
+  {
+    "name": "surrogate-initial-delete-home",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "\ud800",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 0,
+          "key": 268
+        },
+        {
+          "frame": 0,
+          "key": 261
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "surrogate-transient-clear",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "ok",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "text",
+          "text": "\udfff"
+        },
+        {
+          "frame": 0,
+          "operation": "clear"
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2"
+  },
+  {
+    "name": "surrogate-after-history-clear",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "ok",
+      "frames": 3,
+      "props": {},
+      "actions": [
+        {
+          "frame": 1,
+          "operation": "text",
+          "text": "\ud800"
+        },
+        {
+          "frame": 1,
+          "operation": "clear"
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "surrogate-after-history-render",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "ok",
+      "frames": 3,
+      "props": {},
+      "actions": [
+        {
+          "frame": 1,
+          "operation": "text",
+          "text": "\ud800"
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "surrogate-password-masked",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "\ud800",
+      "frames": 32,
+      "props": {
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "surrogate-password-visible",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "\ud800",
+      "frames": 2,
+      "props": {
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "surrogate-password-hidden-prefix",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "\ud800a",
+      "frames": 2,
+      "props": {
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "\ud800a",
+          "cursor": 2,
+          "offset": 0,
+          "show_cursor": false,
+          "display": "\u2022a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "\ud800a",
+          "cursor": 2,
+          "offset": 0,
+          "show_cursor": false,
+          "display": "\u2022a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "5f28c9ad50aef8f21856128b92e84ee8bd5462d9632d75389afadd6732d4cc77"
+  },
+  {
+    "name": "surrogate-character-password-hidden-prefix",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "\ud800a",
+      "frames": 2,
+      "props": {
+        "password": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "cursor",
+          "value": 2
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "\ud800a",
+          "cursor": 2,
+          "offset": 0,
+          "show_cursor": true,
+          "display": "\u2022a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "\ud800a",
+          "cursor": 2,
+          "offset": 0,
+          "show_cursor": true,
+          "display": "\u2022a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "774e9f95fa5900a9cddb7659033b9f1af8123fbc9516d93d8c5c70bcefc32010"
+  },
+  {
+    "name": "surrogate-password-zero",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "\ud800",
+      "frames": 0,
+      "props": {
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [],
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2"
+  },
+  {
+    "name": "surrogate-max-zero",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "\ud800",
+      "frames": 2,
+      "props": {
+        "max": 0
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2"
+  },
+  {
+    "name": "surrogate-max-truncate",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "ok\ud800",
+      "frames": 2,
+      "props": {
+        "max": 2
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "ok",
+          "cursor": 2,
+          "offset": 0,
+          "show_cursor": false,
+          "display": "ok"
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "ok",
+          "cursor": 2,
+          "offset": 0,
+          "show_cursor": false,
+          "display": "ok"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "9576ad5010fe267b89440f211b48dc8e553b656fc63e85c9eae04a79797c8d5d"
+  },
+  {
+    "name": "surrogate-keyboard-zero",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "keyboard",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "\ud800",
+      "frames": 0,
+      "props": {
+        "password": true,
+        "toggle": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [],
+    "png_sha256": "493ab3adfde13d00c13220fd3b397a5884751944114279d5574b022874c44bc2"
+  },
+  {
+    "name": "surrogate-keyboard-clear",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "keyboard",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "\ud800",
+      "frames": 2,
+      "props": {
+        "password": true,
+        "toggle": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "clear"
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "",
+          "layout": "lowercase",
+          "caps": false,
+          "cursor": 0,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": "",
+          "layout": "lowercase",
+          "caps": false,
+          "cursor": 0,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "989c994e3c577b56754338f6c600bbd0e80fdc4f2f2499439de377cd7d124c82"
+  },
+  {
+    "name": "surrogate-character-deleted",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "character",
+          "text": "\ud800"
+        },
+        {
+          "frame": 1,
+          "key": 259
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  }
+]

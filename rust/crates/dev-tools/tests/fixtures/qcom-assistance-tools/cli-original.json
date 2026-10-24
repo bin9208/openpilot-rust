@@ -1,0 +1,42 @@
+[
+  {
+    "args": [],
+    "code": 2,
+    "stdout": "",
+    "stderr": "usage: check_qcomgps_assistance.py [-h] binary output\ncheck_qcomgps_assistance.py: error: the following arguments are required: binary, output\n"
+  },
+  {
+    "args": [
+      "--help"
+    ],
+    "code": 0,
+    "stdout": "usage: check_qcomgps_assistance.py [-h] binary output\n\nNative assistance worker file/HTTP behavior with private files and loopback\nonly.\n\npositional arguments:\n  binary\n  output\n\noptions:\n  -h, --help  show this help message and exit\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "one"
+    ],
+    "code": 2,
+    "stdout": "",
+    "stderr": "usage: check_qcomgps_assistance.py [-h] binary output\ncheck_qcomgps_assistance.py: error: the following arguments are required: output\n"
+  },
+  {
+    "args": [
+      "one",
+      "two",
+      "three"
+    ],
+    "code": 2,
+    "stdout": "",
+    "stderr": "usage: check_qcomgps_assistance.py [-h] binary output\ncheck_qcomgps_assistance.py: error: unrecognized arguments: three\n"
+  },
+  {
+    "args": [
+      "--unknown"
+    ],
+    "code": 2,
+    "stdout": "",
+    "stderr": "usage: check_qcomgps_assistance.py [-h] binary output\ncheck_qcomgps_assistance.py: error: the following arguments are required: binary, output\n"
+  }
+]

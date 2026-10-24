@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "duplicate_lock_exit": 1,
+  "sigterm_exit": 0,
+  "sigusr1_checked": true,
+  "sighup_fetched": true,
+  "finalized_commit": "b82f23a9905be1be2ba2c5101179c38d3276406c",
+  "actual_mount_or_sudo": false,
+  "device_access": false
+}

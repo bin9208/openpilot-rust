@@ -1,0 +1,45 @@
+{
+  "source_sha256": "a0cb645be563a6490c6df1c660d5fd764cb5ef5804158b82741e147fc87ac473",
+  "cases": [
+    {
+      "case": "existing-output",
+      "outcome": {
+        "kind": "FileExistsError",
+        "errno": 17,
+        "message": "[Errno 17] File exists: '@OUTPUT@/existing-output'"
+      },
+      "artifacts": [],
+      "namespace_clean": true,
+      "endpoint_clean": true
+    },
+    {
+      "case": "missing-collector",
+      "outcome": {
+        "kind": "FileNotFoundError",
+        "errno": 2,
+        "message": "[Errno 2] No such file or directory: '@CONTROL@/bin/openpilot-logmessaged'"
+      },
+      "artifacts": [
+        "collector.log"
+      ],
+      "namespace_clean": true,
+      "endpoint_clean": true
+    },
+    {
+      "case": "missing-daemon",
+      "outcome": {
+        "kind": "FileNotFoundError",
+        "errno": 2,
+        "message": "[Errno 2] No such file or directory: '@CONTROL@/bin/missing-daemon'"
+      },
+      "artifacts": [
+        "collector.log",
+        "logs",
+        "logs/swaglog.0000000000"
+      ],
+      "namespace_clean": true,
+      "endpoint_clean": true
+    }
+  ],
+  "scope": "unchanged original filesystem/real collector spawn boundaries; cached collector observation not source-current proof"
+}

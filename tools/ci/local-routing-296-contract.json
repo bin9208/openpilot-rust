@@ -1,0 +1,1126 @@
+{
+  "issue": 502,
+  "PR": 504,
+  "source_commit": "77663836a95a9e2aff9aa66592d8b06ed9c87cd9",
+  "source_branch": "codex/feat-502-all-local-runners",
+  "validation_run": 39853582741,
+  "validation_accepted": true,
+  "files": {
+    ".github/actions/local-arm/action.yml": {
+      "sha256": "70b18b56a4abe6c5dd0327edbf4c5409900e37c3840f67b5b9e763cbb20532a1",
+      "git_blob": "f51440bb48fd6c2d69b503eaf8601a36b103e062",
+      "mode": "100644"
+    },
+    "tools/ci/local-arm": {
+      "sha256": "1c69c096fa890b478a5b157aba021ba412ff0106e9e31b4b0b840f30f618c090",
+      "git_blob": "d93c939703117c27f7320cc2182214dded09bcae",
+      "mode": "100755"
+    },
+    ".github/actions/job-temp/action.yml": {
+      "sha256": "d03bca53cd15a4fa57bcff731798054ca4a92253c6ca0b94315bb8b6eb053a94",
+      "git_blob": "154566f4016bc4a84a0650aacae93b847f694485",
+      "mode": "100644"
+    },
+    ".github/actions/rust-path/action.yml": {
+      "sha256": "cded6237e2f0a0bb4433d78b3c83918a42cc7319bc22e79350c1a1abb0a86fba",
+      "git_blob": "059664705275c9cef70f570801e5f940c2017f0b",
+      "mode": "100644"
+    }
+  },
+  "interfaces": {
+    "job-temp": [
+      "CI_JOB_TEMP=/tmp/openpilot-ci.XXXXXX",
+      "owner=run_id:run_attempt:job",
+      "CI_RUNNER_TEMP=real Actions command-file temp",
+      "BASH_ENV sets private shell RUNNER_TEMP/TMPDIR"
+    ],
+    "local-arm": [
+      "GITHUB_ACTIONS=true",
+      "RUNNER_ENVIRONMENT=self-hosted",
+      "RUNNER_NAME=bin-actions",
+      "LOCAL_CI_ARCH=x86_64|aarch64",
+      "LOCAL_CI_SOURCE_ROOT optional; HEAD must equal GITHUB_SHA",
+      "private hash-pinned PRoot5.5.0; host /usr/bin/qemu-aarch64-static",
+      "LOCAL_CI_TARGET_DIR host upload path",
+      "openpilot-local-shell {0}",
+      "qemu-user receipt: physical_arm_cpu=false"
+    ],
+    "rust-path": [
+      "provisioned shim discovery or hash-verified Rustup1.29.1",
+      "uses private CARGO_HOME/RUSTUP_HOME when provided"
+    ]
+  },
+  "missing_interfaces": [
+    "No Darwin/APFS executor on Linux bin-actions",
+    "No separate expected-source-SHA input for diagnostic source/workflow splits",
+    "Required Darwin job explicitly fails before checkout or Xcode cleanup; original Darwin commands and gate dependency remain.",
+    "Fresh Actions validation of the new private-source alias and explicit run-shell composite consumer is still missing; source/syntax do not prove execution.",
+    "A retained alias after failed evidence upload intentionally blocks reuse of that per-job alias until scoped owner/proof admission; no stale path overwrite."
+  ],
+  "adaptation_issue": 296,
+  "integration_base": "dev",
+  "runtime_oracle_acceptance_changed": false,
+  "module_path_repair": {
+    "failed_source": "adff0392e61608c9a576550be78dd7eefb8b9065",
+    "run": 39844308544,
+    "job": 120055270784,
+    "failure": "E0583 implicit module roots when CLI includes controller with #[path]; E0282 also reported downstream, not independently diagnosed",
+    "log_sha256": "465c44b6e11be4d4e065e7c0fdaf29abba3ff198d77974d297fd130d06234c3e",
+    "required_paths": [
+      "paramsd_estimator_check/identity.rs",
+      "paramsd_estimator_check/numeric.rs",
+      "paramsd_estimator_check/reference.rs",
+      "controlsd_check/reference.rs"
+    ],
+    "shared_numeric_sha256": "1a0e80bd495f45ec940eedb75431b026a229b5988f3e067c289b1ea7d587672a",
+    "status": "explicit paths observed in parent commit; latest qualified retry source must include these exact reviewed file bytes; not functionally accepted",
+    "observed_parent_commit": "3e79829c4d851b3bf1c435f7b168eacbc6b457f9",
+    "parent_file_sha256": {
+      "rust/crates/dev-tools/src/paramsd_estimator_check.rs": "ab2f29ff67a61297619c8bcfc5d9ed6e70fe87d151d6c63a524ceeda029a2581",
+      "rust/crates/dev-tools/src/controlsd_check.rs": "1db6ee826b66674930aef10e5eac14d8da3a8456bb32d3b66b59b2361515a573"
+    }
+  },
+  "bulk_candidate_publication_ready": false,
+  "focused_policy_recipe_isolation": "unique precheckout source allocation; common owned job temp; private HOME/Cargo/Rustup/target/cache; guarded source and common cleanup only after upload ID+digest success",
+  "acceptance_origin": "explicit human verified delivery; successful foundation not rerun by this lane",
+  "accepted_scope": [
+    "bin-actions/X64, aarch64 QEMU-user/PRoot5.5.0, physical_arm_cpu=false",
+    "ARM ELF/ctypes and Python3.12.14",
+    "GITHUB_ENV, exit37, target mapping, socketpair/SIGTERM, Rust diskguard"
+  ],
+  "changed_files_from_6a8": {
+    "tools/ci/local-arm": {
+      "sha256": "1c69c096fa890b478a5b157aba021ba412ff0106e9e31b4b0b840f30f618c090",
+      "git_blob": "d93c939703117c27f7320cc2182214dded09bcae",
+      "mode": "100755",
+      "old_sha256": "d44d9b68a23901f7b3fb5b167d1df85be2116a45e529099af7afcc0d3f42a031",
+      "changed_from_6a8": true
+    }
+  },
+  "diagnostic_publication_unblocked_by_separate_slice": "diagnostic-minimal-r1 routes only automatically triggered Fast jobs with private source/cache/target; x64 recipes do not call local-arm and keep separate source/workflow SHA receipts; full feature/PR publication still held",
+  "native_apt_contract": "Native APT invocations use scalar APT::Architectures=$(dpkg --print-architecture), command scoped. Explicit dual-source foreign-target APT commands remain unchanged. No global dpkg/apt configuration added.",
+  "private_isolation_candidate": {
+    "status": "implemented source candidate, all functional validation pending",
+    "accepted_Fast_commit": "5a929955b",
+    "other_private_source_jobs": 60,
+    "source_free_disabled_api_jobs": 1,
+    "all_maintained_jobs": 74,
+    "source_allocation": "actual source filesystem growth check before unique checkout",
+    "local_action_resolution": "exclusive owned static per-job symlink to fresh private source; real target and alias inode bound before cleanup",
+    "nested_ARM_composites": "Huygens run-shell source integrated; target producer/consumer command-file shells explicit; new execution evidence still required",
+    "caches_targets": "private HOME/Cargo/Rustup/target/venv/package/Gradle; original source dependent job env moved to private source exports",
+    "cleanup": "all outer and nested Eigen upload outcomes and ID/digest outputs required before guarded alias/source cleanup and common owned temp cleanup",
+    "new_interface_validation": "new consumer gate must validate source alias/composite dispatch; prior foundation functionality reused, not repeated",
+    "runner_provenance": "actual bin-actions/X64; ARM explicitly QEMU-user/physical_arm_cpu:false",
+    "yaml_reuse": "only identical new infrastructure step maps use YAML anchors; original domain command steps remain explicit",
+    "accepted_Fast_domain_commands_and_isolation_unchanged": true,
+    "accepted_Fast_queue_max_parity": "5a929955b"
+  },
+  "resolved_in_candidate_only": [
+    "job-temp isolates shell temp, not source checkout or cache/home by itself",
+    "Legacy maintained job source checkouts and tool/target caches are not made private by job-temp alone; the bulk adapter is not publication-ready until consumer isolation is resolved."
+  ],
+  "concurrency_contract": {
+    "official_source": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency",
+    "contract": "Existing group unchanged; cancel-in-progress false and queue max. At most 100 pending; queue max incompatible with true. No cancellation or rerun performed.",
+    "workflow_scopes_updated": [
+      "naver-ci.yml",
+      "fast-checks.yml",
+      "integration.yml",
+      "tests.yaml",
+      "wiki-settings-check.yaml",
+      "naver-apk-tools.yml",
+      "wiki-settings-publish.yaml",
+      "carrot-route-vault-publish.yaml",
+      "rust.yml",
+      "naver-upstream-sync.yml"
+    ],
+    "focused_recipe_job_scope_updated": true,
+    "old_frozen_candidates_unchanged": true
+  },
+  "composite_consumer_dependency": {
+    "origin_patch_sha256": "fafb7122b22739de4b30b30d78e4e2b184d29ff5ca543dedb5ea1be4465c5c74",
+    "origin_owner": "Huygens 01a16594-6585-7c32-8ebe-6d82f79b0f58",
+    "status": "integrated source candidate, unexecuted",
+    "input": "run-shell optional default bash; six ARM-routed native calls pass openpilot-local-shell {0}",
+    "native_host_semantics": "rustc native_host is native to the selected execution environment; ARM guest stager and target Python consumers remain together; real runner X64 unchanged",
+    "command_bodies_unchanged": true,
+    "GITHUB_ACTION_PATH": "all three native run bodies do not use it; common local-arm setup/finish remain host actions",
+    "eigen_artifact_metadata": "private host upload path and forwarded ID/digest outputs added; native run unchanged",
+    "common_helper_changes": 0
+  },
+  "maintained_model_activation_rebase": {
+    "parent_head": "9368bbf328cfd49aea0d7c888153511355592d4f",
+    "previous_parent_head": "3ed59431d425657218e083a0c2638f560c878502",
+    "parent_rust_workflow_sha256": "ee51c703e3f56e292a8b51e0588d5b18083e1f6f6014396a573635dc6ea0c2a9",
+    "job_roster_unchanged": true,
+    "changed_steps": [
+      {
+        "job": "model-family-retirement",
+        "step": "Fail fast on grouped native CLI compile, changed regressions and strict Clippy",
+        "fields": {
+          "run": {
+            "before_sha256": "6740acccb664dcae7d2a5d0f9345ae7a3200444ee591013bf57434ba3a2d80bd",
+            "after_sha256": "96c7c4ea736104553294c462091e8c60163c296440ca2e1932f274e59c7e372a"
+          }
+        }
+      },
+      {
+        "job": "model-family-retirement",
+        "step": "Build held runtime prerequisites and both C++ peers without original Python bindings",
+        "fields": {
+          "run": {
+            "before_sha256": "709c767b93aa357f886b19d6cd7404100c309331d747d070559f22aba1feeb22",
+            "after_sha256": "e8d804581668840ec5befd85c36e0a18e00523cf44a1330478df57dc22a07191"
+          }
+        }
+      },
+      {
+        "job": "model-family-retirement",
+        "step": "Bind same-source explicit helper for all affected catalog exports",
+        "fields": {
+          "run": {
+            "before_sha256": "7453bb073d771d5bdcb68a7f9bb364a62d5641bc6c2445de5aeeddb3fd5cfdf1",
+            "after_sha256": "b0f281d19f2365c221a068078eaeadedd06d45625a28a21830e93537f3e0d099"
+          }
+        }
+      },
+      {
+        "job": "model-family-retirement",
+        "step": "Stage two independent model datasets and export separate current-host catalogs",
+        "fields": {
+          "env": {
+            "before_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "after_sha256": "bbf936af7d1ee8ae7451d62c141edf31ed26e137c77fa39ac007b76de5a48a6f"
+          }
+        }
+      },
+      {
+        "job": "model-family-retirement",
+        "step": "Run same held native ELFs in actual checkout and private six-source-absent root",
+        "fields": {
+          "env": {
+            "before_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "after_sha256": "bbf936af7d1ee8ae7451d62c141edf31ed26e137c77fa39ac007b76de5a48a6f"
+          }
+        }
+      },
+      {
+        "job": "model-pipelines",
+        "step": "Compile and seal actual bridge catalog test after grouped runtime builds",
+        "fields": {
+          "run": {
+            "before_sha256": "7816b1ed0fd93417927e1dc640486e23a85edabf8dbb74e4ea2028508a1c79cc",
+            "after_sha256": "38414026a1a5207376fedd1847c5482595ff264c76a5619b5fce904b88c27d6f"
+          }
+        }
+      },
+      {
+        "job": "model-pipelines",
+        "step": "Bind same-source explicit helper for all affected catalog exports",
+        "fields": {
+          "run": {
+            "before_sha256": "7453bb073d771d5bdcb68a7f9bb364a62d5641bc6c2445de5aeeddb3fd5cfdf1",
+            "after_sha256": "b0f281d19f2365c221a068078eaeadedd06d45625a28a21830e93537f3e0d099"
+          }
+        }
+      },
+      {
+        "job": "model-pipelines",
+        "step": "Build and validate immutable native pipeline catalog",
+        "fields": {
+          "env": {
+            "before_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+            "after_sha256": "bbf936af7d1ee8ae7451d62c141edf31ed26e137c77fa39ac007b76de5a48a6f"
+          },
+          "run": {
+            "before_sha256": "fdeaf5c4a2a7f17fc18ec58b326f08374ea974957b2b1d9851b0269ef7976ca1",
+            "after_sha256": "fa618b5160ab0d8d3e09a9537cd8a45f023879a0aee7a823b5d68b41b6436a6b"
+          }
+        }
+      }
+    ],
+    "native_run_strings_preserved_exactly": true,
+    "pending_Maxwell_globs_not_applied": false,
+    "unchanged_parent_prerequisites": {
+      "rust/crates/dev-tools/Cargo.toml": "52c4a2d8e6e201a3335c7dee6178e35ccb811d7fdd8fc59da16773fff7749af6",
+      "rust/crates/dev-tools/tests/ci_model_catalog_publisher.rs": "36c443db4b78f18df3fdf0fe757814043501eaa33ffcd9da828f39a15f05197d",
+      "rust/crates/model-runtime/tests/catalog.rs": "f31059ddffc8007c513f230919e671d3c87b8f441be3deac29338969ca6db22a"
+    },
+    "later_Maxwell_retention": "dd4390ec0 two reviewed output-pairs upload globs now retained; see parent_retention_rebase",
+    "current_parent_prerequisites": {
+      "rust/crates/dev-tools/Cargo.toml": "5422b9ff6fa8f4b3c285f1927195b432ad88206edd27f44096430dab7b0e193a",
+      "rust/crates/dev-tools/tests/ci_model_catalog_publisher.rs": "36c443db4b78f18df3fdf0fe757814043501eaa33ffcd9da828f39a15f05197d",
+      "rust/crates/model-runtime/tests/catalog.rs": "f31059ddffc8007c513f230919e671d3c87b8f441be3deac29338969ca6db22a"
+    }
+  },
+  "composite_action_sha256": {
+    ".github/actions/native-json11/action.yml": "91ac2497ca427ff2a375e7e1e50e6f05f3ce1ebd337e96ea81df598444fd7687",
+    ".github/actions/native-eigen/action.yml": "5b842d66d5fe29958a304c15b8be3f9be68d3b7c3b5cad2f3a974e9d7c4594e0",
+    ".github/actions/native-image-sdk/action.yml": "208a00c3cd9451bb4daa0c7fbafaea802b46d537deb2094999fbadf93728c27a"
+  },
+  "parent_retention_rebase": {
+    "parent_head": "dd4390ec01fac2d03ee25c3b4137d6647e35126b",
+    "previous_parent_head": "9368bbf328cfd49aea0d7c888153511355592d4f",
+    "parent_rust_workflow_sha256": "347adc80ad2bf7eaf9e42cf2ffe9933f18768864a55714ac6908a2dfee424b28",
+    "retained_globs": [
+      "${{ env.CI_JOB_TEMP }}/road-pipeline-*/output-pairs/**",
+      "${{ env.CI_JOB_TEMP }}/dm-pipeline-*/output-pairs/**"
+    ],
+    "source_file_sha256": {
+      "rust/tools/check_pipeline_reference.py": "10dfebf12b3d8fa5abdaff7764e80c11468043349ce44f3cc4e57a59b30312e5"
+    },
+    "runtime_source_file_not_a_patch_target": true,
+    "job_roster_and_commands_unchanged": true,
+    "model9368_publisher_payloads_unchanged": true,
+    "no_common_import_or_old_functional_rerun": true
+  },
+  "candidate_integration_base": "9de275e61c04cce1d8b587d45ec0b5ac6cc9c9e4",
+  "private_ownership_review_fixes": {
+    "review_origin": "routing-private-ownership-review-sol/HANDOFF.md",
+    "base_patch_sha256": "d9f70877b46aad7fcb346d74edd9105ad3c4983aa95be5b98459ca447eda0e3c",
+    "recommendation_sha256": "25fb712d0ed439c36d8b3096a83ea436bf96bb0a948c9e1052595e6739e60a9b",
+    "OWN-1": "60 source cleanup guards require successful ci296_source_seal; exact direct/nested upload dependencies preserved; common cleanup requires successful source cleanup",
+    "OWN-2": "eight ARM finalizers require fresh ci296_source_admission success before loading local alias",
+    "OWN-3": "two pinned Android setup steps override inherited SDK root with CI_JOB_TEMP/android-sdk",
+    "provider_source": {
+      "repository": "android-actions/setup-android",
+      "commit": "be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd",
+      "read_only_GitHub_API": true,
+      "source_or_bundle_execution": false,
+      "disk_available_before_dist_download_bytes": 79641882624,
+      "estimated_download_decode_growth_bytes": 4194304,
+      "files": {
+        "android-main.ts": {
+          "github_blob": "eb50f1b09d120fd6bc00d810b3eed1dcf572b3d8",
+          "sha256": "1cb63e5b5abb97747b7977c4e87d44967b17e3a8afd23e51f22227e3921369e4",
+          "bytes": 7106
+        },
+        "android-action.yml": {
+          "github_blob": "6d796b92b1d054f95443380d5a6ea1bbb062543b",
+          "sha256": "a7ee24e1ddce624c235f7069ee78f26b98077cb3ecdc20b2cbfe7a1aa4624aa1",
+          "bytes": 926
+        },
+        "android-dist-index.js": {
+          "github_blob": "0f59a5f17ff86b152cc360af1407481671086958",
+          "sha256": "055d9e00e85fcce754564698758c9c18f9d292457448e139743729c4330b6541",
+          "bytes": 936690
+        }
+      }
+    },
+    "not_admitted": "new policy/negative controls and actual Actions consumer behavior unexecuted locally",
+    "stale_r3": "invalid for current parent integration; r5 derives only exact frozen r4 and recommendation; dd439 retention preserved"
+  },
+  "orthogonal_parent_rebase": {
+    "parent_head": "9de275e61c04cce1d8b587d45ec0b5ac6cc9c9e4",
+    "previous_adapter_parent_head": "dd4390ec01fac2d03ee25c3b4137d6647e35126b",
+    "all_34_adapter_preimages_unchanged_in_git": true,
+    "new_parent_commits": [
+      "241c023e5",
+      "9de275e61"
+    ],
+    "orthogonal_parent_sources_not_patch_targets": {
+      "rust/crates/dev-tools/src/control_failures_check/fixtures.rs": "cf61616d6d1677730c7f66f2cd3de8c0416177e08861bfb1a4fb5f7a8476277f",
+      "rust/crates/dev-tools/src/controlsd_fixture_generate/parameters.rs": "eecf9b4061858547b6081db26c2b614018e9e71b67b64084045cb2aefbb7827d",
+      "rust/crates/dev-tools/tests/model_family_missing_current_diagnostic.rs": "3a48862853f44e809980c790b9690b17e87fd090f2e6e49ce118f7bd8f936d34"
+    },
+    "no_common_or_numeric_source_changes": true
+  },
+  "guest_file_provider_repair": {
+    "review": "arm-native-routing-r5-review-sol/HANDOFF.md",
+    "base_r5_combined_patch_sha256": "58736194cc8ff5f35b2099a84aa8060ba8811fb5b75b5bba65ea5c47f313f43f",
+    "status": "source candidate only; no guest or policy execution claimed",
+    "scope": "Declare file in the two existing guest APT lists; all original ELF checks and command routing unchanged",
+    "source_file_sha256": {
+      ".github/workflows/rust.yml": "a8c7d7d5a0605452762d55bc04c787199650ee9c4f1b7884ca46d7dc83f570b4",
+      "rust/crates/dev-tools/tests/ci_rust_isolation.rs": "35fc5086f1521c94f61a129a9e5124924e1b5ec5357ed336b612c92b19ab1aa0"
+    },
+    "jobs": [
+      {
+        "job": "webcam-runtime",
+        "step": "Install exact source closure and native capture providers",
+        "source_policy_case": "webcam_requires_two_architectures_and_real_capture_ipc",
+        "package": "file",
+        "install_before_sha256": "64d1e1757926629d5c0fc382a378f7b881fb23547c6825658775275648f06248",
+        "install_after_sha256": "34f254bdfa53b8a8a107ef0c2f570ef03ce32291529667b74e23dafe30663230",
+        "run_before_sha256": "47f93e7a13b3a01164256391238b014ca40c47bc9ee9f8e0e203f529c281c551",
+        "run_after_sha256": "e49a81d263fdc6739d690b9def0d8095191b5353b2ac5b33cdbc2dd24df15524"
+      },
+      {
+        "job": "webrtc-runtime",
+        "step": "Reserve capacity and install pinned source and native providers",
+        "source_policy_case": "webrtc_requires_native_host_and_arm_real_media_and_failure_boundaries",
+        "package": "file",
+        "install_before_sha256": "9d5ab43cce8990150f0ec98dcf3b489c84c5dbd0377a71aafea4284c38688b6c",
+        "install_after_sha256": "a822ce3056d6d5c33efd69cdaa84153f888eed8f3ce4a03b8ef107d13746969e",
+        "run_before_sha256": "adec4ab043165834a3eb3a8b52687b67f0f1867720c12a3c3f3003fb4ba4b62b",
+        "run_after_sha256": "ee44dab9f41c4146a398a4ddb625952a766a823b801e9d9db856cdfe34145d68"
+      }
+    ],
+    "common_helper_changes": 0
+  },
+  "action_distribution": {
+    "repository": "bin9208/openpilot-rust",
+    "commit": "b2fc62472ce8183114d59dbeec4d1406df44e4c2",
+    "source_commit": "77663836a95a9e2aff9aa66592d8b06ed9c87cd9",
+    "layout": "four canonical implementation files plus source LICENSE, README.md and tools/ci/helper-provenance.json; no workflows/runtime/symlinks",
+    "implementation_bytes": "all four source hashes remain authoritative and unchanged",
+    "status": "bounded remote caller loading admitted39871081195; ARM guest/original consumer still requires new actual evidence",
+    "consumer_change": "remote common uses ref only; no new embedded helper or cleanup machinery",
+    "caller_file_sha256": {
+      ".github/workflows/carrot-route-vault-publish.yaml": "b96a3d980a9516c36c25699baae730b780edffdea8b9af6272288de76de8208e",
+      ".github/workflows/fast-checks.yml": "bf6aeb0dfd4f0cdfb82a0c677766ff02b25f45905c5ec794dc5f8e843e7828a7",
+      ".github/workflows/jetlink.yml": "04e32ce41a9ba70d09717e247e305cc4e3f433fb6f3521a0c76699641f6bdddc",
+      ".github/workflows/naver-apk-tools.yml": "c3294dd8698b6ba1e5dcf862439519663bdbe0813a1d9bd6b8546b5380227b47",
+      ".github/workflows/naver-ci.yml": "28f1a2e4784d5f7877ab4117b56bf8f1a4a4a80a47b4176c9a00b1d7b0cf79d8",
+      ".github/workflows/naver-upstream-sync.yml": "ea507be1faca090f5e2ede0657f1190d571cd1f71a3150dd972b205522a63bc4",
+      ".github/workflows/rust.yml": "a8c7d7d5a0605452762d55bc04c787199650ee9c4f1b7884ca46d7dc83f570b4",
+      ".github/workflows/sync.yml": "9fa4733662f6d3a649c57a02b669b6591e8303aec31fbc1624fc485bcd0d76a8",
+      ".github/workflows/tests.yaml": "df1a21084f2eba7883fb8bab78205eeba6eff2618bff86b8ec43170c0d8ff325",
+      ".github/workflows/user-docs.yaml": "bcc3b871e40ca973124b1de6ab57af944e8eb3efceb3962cec0a84d8384fb776",
+      ".github/workflows/wiki-settings-check.yaml": "76a8705725e0cab5d46f987de5d1a49809f7dedce42bf770f9e63cc480af18c5",
+      ".github/workflows/wiki-settings-publish.yaml": "6a4f15b8167999b7ff380a45374138b2791a6bc737a29f8d129d05c09675a704",
+      "rust/crates/dev-tools/tests/ci_workflow_policy.rs": "e2bd19ebbca4463a37776fc0b6a1e107caa64af135bc8e4fd0ca1f5d710a538a",
+      "tools/ci/diagnostic-296-contract.json": "abb451ac203a52c2fd98139c132ea57bc207a6dffa6c4c212b6cdf1b523982c7"
+    },
+    "tree": "ad19ac21f14835a7d9f066284f6eef5759b0d214",
+    "provenance_path": "tools/ci/helper-provenance.json",
+    "provenance_sha256": "17795c847534d81c7ba260d566d944e08c10ac624a0fde575d91f48f3f0d5039",
+    "regular_files": 7,
+    "loading_admission": {
+      "run": 39871081195,
+      "job": 120145390655,
+      "artifact": 12470998483,
+      "archive_bytes": 3867,
+      "archive_sha256": "65b3e29e62e1a4cfd212cc5fafb3be174419f642b8112272839f4664e589b827",
+      "CRC_members": 12,
+      "verified_member_seals": 11,
+      "scope": "job-temp + provisioned-shim rust-path + local-arm finish entry only; guest=false; no foundation/runtime replay"
+    }
+  },
+  "loggerd_peer_registration_overlay": {
+    "status": "reviewed additive source; uncompiled/unrun; no caller activation or Python retirement",
+    "patch_sha256": "30e00a3a04438f97c2a50cd7b2262155966fe4d4eee121fe994635b3e544ab9e",
+    "review": "loggerd-whole-consumers-review-sol/HANDOFF.md noP1/P2 source-only",
+    "cargo_delta": "only check-loggerd-peer bin, loggerd_peer_check test and rustix/pipe in loggerd-check-native; all previous Cargo semantics restored by removing exactly these additions",
+    "historical_prerequisites": "unchanged_parent_prerequisites remains the original9368/R6 snapshot; current_parent_prerequisites seals the reviewed additive Cargo overlay for future source-policy qualification",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/Cargo.toml": "5422b9ff6fa8f4b3c285f1927195b432ad88206edd27f44096430dab7b0e193a",
+      "rust/crates/dev-tools/src/bin/check_loggerd_peer.rs": "d5665f8798ef6d3447677573a2c3e2dfcb941577b73d2108a8a4d5c3c1956b86",
+      "rust/crates/dev-tools/src/bin/loggerd_lifecycle_fixture.rs": "e5aa02df4ccc8e21ca3ae7b4e557954cbbe79cdbe4a56a57e69967fa78054a0e",
+      "rust/crates/dev-tools/src/loggerd_check.rs": "5cbf57768738388266671646cd328d1239498e0f10b4be1d00db53a91bb4b8b6",
+      "rust/crates/dev-tools/src/loggerd_check/fixtures.rs": "8bc3c3a7ba6dedf3596d72c9edbc03deec0f092fedc05b90806977ed76edfd0d",
+      "rust/crates/dev-tools/src/loggerd_check/input_completion.rs": "87b6ba5007ae132eaa4e104c4632918982029c212e7898afacc8d75c2ca16505",
+      "rust/crates/dev-tools/src/loggerd_check/owned.rs": "9e13cbaa4bb5613e555b135a2ba9ff78e4431e3dd49a4f2a702bd1ca2b5e5c0b",
+      "rust/crates/dev-tools/tests/loggerd_peer_check.rs": "b15537883be9c608e23e0d0c34e7534074775c90149838cfa09fd262dbd9609d"
+    },
+    "native_acceptance": "new3functions/11cases+barrier, scopedClippy, newCLI signal/postwrite/provenance gates pending; all14Python retained"
+  },
+  "ast_caller_registration_overlay": {
+    "reviewed_base": "cfd7583ab1aab6cece048f9c1d64a144956ec906",
+    "patch_sha256": "c5e0e5bf74438d891a7d4c17dac20d69ec16f2f223630583fd6788bca3b97120",
+    "review": "ast-caller-r4-review-sol/HANDOFF.md maintained source/registration noP1P2; separate recipe cleanup P2 pending",
+    "status": "source integrated; fresh caller/private absence and published two-deletion verification pending; originals retained",
+    "cargo_delta": "ONE changed_files_caller test registration only; all cfd Cargo semantic fields including loggerd rustix/pipe preserved",
+    "source_file_sha256": {
+      ".github/workflows/fast-checks.yml": "31646b3d7fa07f4df6d38d1fe03361718b3a4d1921acb3f5e69597e14eef4689",
+      "rust/crates/dev-tools/tests/ci_workflow_policy.rs": "c19bae45f1376f7c9db5c756aea9ab78ee80846598cf384b097be162e05395d8",
+      "docs/user/en/rust-port.md": "fb93b3ca20b21bae2a30b4754c88bc1ed269ea03fbb1b6826a28185e67555747",
+      "docs/user/ko/rust-port.md": "73474ba2eea0434ff355e3f281878555a7f81cb2d95727f3987043f94c624b08",
+      "rust/crates/dev-tools/tests/changed_files_caller.rs": "085487b0867f0012ef4f2edc000b6f43cc7d506d4f0a1189e1324eb2fbccb172",
+      "rust/crates/dev-tools/Cargo.toml": "05f64cc9c39972e58d2ddec4add18947d1320fc2522710d8ca5a146e3e86d77d"
+    },
+    "current_parent_prerequisites": {
+      "rust/crates/dev-tools/Cargo.toml": "05f64cc9c39972e58d2ddec4add18947d1320fc2522710d8ca5a146e3e86d77d",
+      "rust/crates/dev-tools/tests/ci_model_catalog_publisher.rs": "36c443db4b78f18df3fdf0fe757814043501eaa33ffcd9da828f39a15f05197d",
+      "rust/crates/model-runtime/tests/catalog.rs": "f31059ddffc8007c513f230919e671d3c87b8f441be3deac29338969ca6db22a"
+    },
+    "historical_maps": "R6/R7 action distribution and cfd loggerd peer/current_parent_prerequisites remain historical exact snapshots; future source-policy must explicitly select this newer overlay",
+    "accepted_reuse": "14 original/native codec/lifecycle proofs and eight GNU runtime provider seals unchanged; not new current-source acceptance",
+    "native_acceptance": "four caller tests/one affected policy case/12 absence negatives/held sources and provider equality/strict owned exec accounting pending; no Python deletion or retirement credit"
+  },
+  "aggregate_negative_control_repair": {
+    "failed_source": "20d0beee413efc4db7dc0b0b0c57ca97c5a4ba24",
+    "run": 39875010264,
+    "job": 120158369441,
+    "actual_result": "83ci_rust_isolation+19ci_workflow_policy pass; one false negative-control assertion fails",
+    "cause": "standalone trailing true does not mask failed test under Bash -e; change mutation to || true so it actually masks JETLINK failure",
+    "patch_sha256": "58804b365e87834fbf535dfafea265f529a6c83af1d7184ddc8abd8e8b8aa8ac",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/tests/ci_workflow_policy.rs": "bc8f3329cce93967880a77d5089988fb89899a36b2971a7152069eeff683a804"
+    },
+    "production_commands_changed": false,
+    "status": "unrun two-line assertion repair; only changed negative case plus previously unreached downstream gates need new execution",
+    "historical_maps": "AST overlay retains exact f01 source bytes; cfd/R6/R7 maps remain historical, not current acceptance"
+  },
+  "route_vault_bundle_registration_overlay": {
+    "reviewed_base": "cfd7583ab1aab6cece048f9c1d64a144956ec906",
+    "integration_base": "7bb17057cacdecb78e7b2fbfa2040fb1ebc3c775",
+    "patch_sha256": "82d4f4bb52a0abcd741d90de954c1692742c81a0b3bd9f1bbe0b8862c180ff93",
+    "review": "native-route-vault-bundle-review-sol/HANDOFF.md noP1P2 source-only; reviewed final82d4 patch supersedes earlier09f42 delivery",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/Cargo.toml": "0a2f3b64c8e49177e3a744713b924123fdd60d1a7e7858a718a49a579e3944f9",
+      "rust/crates/dev-tools/src/lib.rs": "97283013165afd0f64ba9ce2c985b9011db1084e80a7062b2c0e68d02bed4702",
+      "rust/crates/dev-tools/src/route_vault_bundle.rs": "8c21b56bd4846e6cfcee4a7c432cd64512d09fbf3fa2c6de39a796cead755fe2",
+      "rust/crates/dev-tools/src/bin/build_route_vault_bundle.rs": "f06bb9002bf3bd5f7bba0c459c36c7021ccf553179ebaade0b71ab4f26e25017",
+      "rust/crates/dev-tools/tests/route_vault_bundle.rs": "6847da3953cdf98ae1a222459ff39f8817d5ce784eb1361eb28b661f9b1dae5b"
+    },
+    "cargo_delta": "ONE empty opt-in feature, dedicated bin/test; exactly removing them restores all previous TOML semantics; no dependency or lockfile changes",
+    "status": "uncompiled/unrun native source; current Python caller and source retained; zero retirement credit",
+    "required_acceptance": "18 authored tests, original/native committed context/partial failures/CLI grammar/lifecycle, scopedClippy, latercaller/absence gates",
+    "limits": "compile-time source-root and UTF8 text host boundary; packages unchanged Python replay/viewer/runtime sources; no Docker/NAS/radar behavior changes",
+    "historical_maps": "ASTf01/cfd/R6/R7 source/prerequisite maps remain immutable historical snapshots"
+  },
+  "common502_8af_capacity_reuse": {
+    "source": "8afbdcf3598df7fe17f60acb2f1f0157e4d1addc",
+    "run": 39873578269,
+    "job": 120153608354,
+    "actual_API": "success on bin-actions22, 2026-10-23T01:08:50Zto01:10:56Z",
+    "native_policy": "four present requested Rust files equal acceptedc5e/6fea bytes; growth-only equivalent; absent radard package not imported",
+    "common_preserved": "four helpers and foreign Cargo.lock unchanged7766to8af; our different855f00e lock unchanged; ARM foundation39853582741 reused",
+    "minimal_patch_sha256": "305a51cf42531ce63b456a40ea6a99b860af48c22165f2b6dced01b37f96cc02",
+    "active_build_side_changes": [
+      {
+        "path": "rust/tools/build_locationd_oracle.py",
+        "before_sha256": "8dcabc38a7eda80d7b9701fb4eab96c9ed38555a8acb27782b2a37613e7a934e",
+        "after_sha256": "77319bc723a55a584cf21b3fdc7732c3c7d47f95a011d447dda0f233d17b6544",
+        "whole_file_equal8af": true
+      },
+      {
+        "path": "rust/tools/build_paramsd_oracle.py",
+        "before_sha256": "5ab14838746c809378d7e943e221a9b0aa86d97cd4145e2700442f91d40100a9",
+        "after_sha256": "12ffa68a79b0ccd84a143c4e46b91a5eef1745b531212311912b728b71132112",
+        "whole_file_equal8af": true
+      },
+      {
+        "path": "rust/tools/build_plannerd_acados.py",
+        "before_sha256": "9f18eda8bb1764f77227c5a4cbaf12258add346c7833abfcf545761ce71e8199",
+        "after_sha256": "cfeb3eb11974c4627964091595186e6fca86ae928a932aed0d71ec3a6bcc29af",
+        "whole_file_equal8af": false
+      },
+      {
+        "path": "rust/tools/carrot_man_stage_geos.py",
+        "before_sha256": "0733cad69693fc9e36df61ceb813947426fc1a05828c5edff831fef265ad4e34",
+        "after_sha256": "a6612e16f17e197db6d8419cd44dd706bdfeb361e37c232b9f4eadd90c6a5e64",
+        "whole_file_equal8af": true
+      }
+    ],
+    "scope": "five guards in four active original build helpers; original operation estimates retained; no compiler command/provider/ELF/ABI/ownership changes",
+    "limits": "54other retained Python floor/expectation paths remain catalogued, not blanket-fixed; old queued source pins unchanged; foreign exactPR/ARM still pending; no wholedevmd merge or source-retirement credit"
+  },
+  "yaml_key_alias_token_repair": {
+    "failed_source": "10ff9c626210e1de73a1c204084daee70e9b9965",
+    "run": 39876347459,
+    "job": 120162770156,
+    "artifact": 12471223219,
+    "artifact_bytes": 162309,
+    "artifact_sha256": "1f780f6d65a0b9848e100814b67425ffa9a98efacbfed32970a20100d1b152e2",
+    "actual_result": "ci_rust_isolation2pass81fail at common YAML parse before assertions; ci_workflow_policy unreached",
+    "first_error": "unknown anchor at byte5523 line5 column945, first *zz: key",
+    "source_diagnosis": "yaml-rust2 0.13 scanner includes colon in anchor names; *zz: is read as zz: while definition is zz; event walker alias support was not the failing layer",
+    "scope": "add476 spaces before alias-key delimiters; add matching key/value alias coverage in existing YAML regression; no parser library/runtime/workflow command changes",
+    "workflow_bytes": 494209,
+    "source_file_sha256": {
+      ".github/workflows/rust.yml": "5974e9f3de6e7e154440de63856816f2d84e2c8e1812ae5bcabe7e1bce60096b",
+      "rust/crates/dev-tools/tests/ci_workflow_policy.rs": "15b5086c7389a870a43abd712ac6323b45a0db98c156b89eec5bbf086d10ba68"
+    },
+    "local_checks": "four Pure/C Base/Safe objects equal; scoped rustfmt; no native parser/Cargo execution",
+    "historical_maps": "earlier493733/f01/cfd/R6/R7 seals remain historical; next source policy must explicitly select this new representation/CI test map",
+    "acceptance": "actual Rust parse and failed-case recovery remain required; R3 is NOT the same old negative-control failure"
+  },
+  "actual_compiler_lint_repairs": {
+    "review": "three-expression-source-review-sol/HANDOFF.md noP1/P2 source-only",
+    "source_children": [
+      {
+        "scope": "peer",
+        "base": "cfd7583ab1aab6cece048f9c1d64a144956ec906",
+        "source": "987ac79eae17805a528f8c19231c6fc2cec55a7a",
+        "tree": "77ec6c2c02e975d33a84561cca0cc8272dd60331",
+        "paths": {
+          "rust/crates/dev-tools/src/loggerd_check/controllers/diagnostics.rs": {
+            "before_sha256": "e0b11cdebc44858f7645ebd23a35f031e05b650936aeed4d4be2ab9026418bd4",
+            "after_sha256": "7e9727cb2bef6c42397548c324ef48a9cdbb2ee39be786a6cb7dd0f0b4427ddb"
+          }
+        },
+        "diff_sha256": "c02291ffc99d0e59f7859a913256d79bd14163918fd2fe4cac1f7ae9f2fb55d0",
+        "status": "source-only child, not published/executed; old Cargo/lock/contract unchanged"
+      },
+      {
+        "scope": "fixture",
+        "base": "55084e65ab94b71ba884ec11e2ce91eb8127bd71",
+        "source": "150bd42771ee45046f0c51343bedeef62646c516",
+        "tree": "c2d27dffb233e90ef68300d3f048798a67651830",
+        "paths": {
+          "rust/crates/dev-tools/src/control_failures_check/inputs.rs": {
+            "before_sha256": "797ca3f1c3be3cd80c418a5b4f3450b6e154b998deb3a58c1d4d83c19df4184b",
+            "after_sha256": "7d2526da0c40b64ff6becf7cec5232c2a128b59e521f134e72256dc4a595987b"
+          },
+          "rust/crates/dev-tools/src/controlsd_fixture_generate.rs": {
+            "before_sha256": "f5e1b29a64bce5a0637335e349ab5622a3b1efa60ee1ec5dd66625b39e62f783",
+            "after_sha256": "bd43c2fe8db4243888395d035145ab574bd1a2f52f72aaeee6ac26220684c8ef"
+          }
+        },
+        "diff_sha256": "a5f9e07b818505c5585ad4ad5bbf6b1fd59da495dec5ee079df2ac351f164275",
+        "status": "source-only child, not published/executed; old Cargo/lock/contract unchanged"
+      }
+    ],
+    "failed_runs": {
+      "peer": 39888221680,
+      "fixture": 39876347504
+    },
+    "accepted_prior_fixture_tests": {
+      "run": 39876347504,
+      "job": 120162770498,
+      "artifact": 12472101435,
+      "passed": 5,
+      "failed": 0,
+      "ignored": 1,
+      "limits": "no native109 generation, ignored full-schema/Float64-bit audit, fresh provider closure or final source seals; explicit source-delta reuse required"
+    },
+    "source_delta": "exactly three expression replacements; BTreeMap key order, integer truth table and false-valid/text/error barrier behavior retained",
+    "historical_maps": "cfd/55084 registration/prerequisite maps remain immutable historical snapshots; explicitly select these scoped repair pins in new recipes",
+    "acceptance": "uncompiled new postimages; exact source children need new Actions build/Clippy/unreached functional gates; no Python retirement"
+  },
+  "lagd_native_startup_policy_repair": {
+    "failed_run": 39888221718,
+    "job": 120201371325,
+    "artifact": 12473419525,
+    "artifact_sha256": "2ae4b4b113d69d831827306ef8c31ed20cbaf37732ffef040047ae4aeb8bd575",
+    "actual": "81parser+3changedpolicy+7downstream pass;2lagd cases fail stale historical startup-Python command expectation",
+    "review": "policy-lagd-startup-review-sol/HANDOFF.md source-only noP1P2",
+    "source_child": "ae7bc0c6ca12d4b5d7fb10e7fe2f1a50ff816f14",
+    "child_base": "2a372557d8958cb38127959a583fa7522b9ed991",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/tests/lagd_ci.rs": "511872e89e447d7cd22a0e85fbfc3853d9fb38217f1636a1fef700561e60ad25"
+    },
+    "scope": "exclude only OLD_STARTUP after exactly-one mandatory native step and full4039B script SHA256 d9be3269d7997a36ee218fa075613870cabab0234e81131b844bc83a385bc777; four new negative assertions; no workflow/runtime/fixture/dependency change",
+    "reuse_limits": "91new passes reused explicitly at2a; after-source/index/tool seals absent;18older unchanged contexts retained; changed AST case separately pending",
+    "next": "new sourceae7 child gate: two failed lagd cases and all genuinely unreached downstream checks, strict Clippy including changed test, final source/tool/index holds; no91pass replay"
+  },
+  "current_catalog_wrapper_registration_overlay": {
+    "patch_sha256": "3b684ae91832acd0717701d322f7f72bb80b6f0add81e94aa860ea8f6e1f8317",
+    "original_embedded_python_sha256": "94a5f103c3831a7bbdf7f6733c5576230539ccb906f1ad3368e587ea16c4a49c",
+    "original_path_tests_sha256": "0810f0cedc18ea3de07227924326b447fa5f01c766ff9aa64ab94c0fe0262366",
+    "review": "native-current-catalog-wrapper-review-sol/HANDOFF.md scoped source PASS,11tests unrun",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/current_catalog_export.rs": "bc2f9305664cb9147a5c4b8375b64935fa6ec8ca3c3f0bb5129a5c2e5f42b819",
+      "rust/crates/dev-tools/src/bin/export_current_driving_catalog.rs": "01e63515b09eb595569252bdb31784df6ad8e008c4d4cae1874e2be786ba98b1",
+      "rust/crates/dev-tools/tests/current_catalog_export.rs": "6f3f0d9fbb55e151e629c1ae5956bad5a488356cb650b616dc3b58c8575d3107",
+      "rust/crates/dev-tools/Cargo.toml": "b9fb056d848eca54d7004ca67cef4e2f2dda02a1bfdaaaf06a62bf21fc78cfdc",
+      "rust/crates/dev-tools/src/lib.rs": "5f69188cd39e279aadada1ece1a5d683daaf2c5b2dcf045fd15ac972bc231b05"
+    },
+    "registration": "empty current-catalog-export-native feature plus one bin/test and cfg module; no dependencies/lock changes; avoids unrelated driving feature providers",
+    "scope": "UTF8 Linux current-host wrapper orchestration only; path/pins/CPU/receipt/existing exporter argv; no caller activation or embedded Python deletion",
+    "external_dependency": "existing build_model_pipelines.py exporter remains Python, explicit original interpreter/argv/cwd; zero25producer/modelcompiler retirement credit",
+    "limits": "explicit30s metadata/900s exporter deadlines versus original unbounded; stdin null versus inherited; UTF8/JSON diagnostic formatting; no full subprocess/Unicode parity",
+    "acceptance": "no compile/functional/type/Clippy or original-native main-effect acceptance; no inventory change",
+    "historical_maps": "bundle/AST/cfd/source-repair prerequisite maps retain historical exact bytes; future current-source gates select this Cargo/lib overlay explicitly"
+  },
+  "developer_ssh_registration_overlay": {
+    "reviewed_candidate_source": "c3f97466161dd62b45a2f7f9086bed3ccaaaf695",
+    "reviewed_base": "da1a4490844fffc9a3800a44ccd86b76da858ed8",
+    "patch_sha256": "626eb0987a3cfb8e0f8b40f1b132a8aca173b63d610a29ed9be5c1558791ce63",
+    "review": "ssh-r3-registration-review-sol/HANDOFF.md noP1P2; native-developer-ssh-r3-review-sol digitguard scopedPASS; native-developer-ssh-r2-review-sol coreeffects scopedPASS",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/bin/developer_ssh.rs": "60121f0f7bcd86bd1457f8379495995dc02c2b3a87a5d9c16b0ef7d50714ffec",
+      "rust/crates/dev-tools/src/bin/setup_ssh_keys.rs": "a531754dca494014de6427d19290d7ee6e49217bd716022c4c7960dcf6fc6fbd",
+      "rust/crates/dev-tools/src/developer_ssh.rs": "0154b2a2ccc8d944736f97466a0c6f6cab19d2ee1cdc4f67326d95d75bb6caf8",
+      "rust/crates/dev-tools/src/developer_ssh/auth.rs": "1056f649b9062202ed0d5c9e8cc15f063999b4d78d6f9901a78eca41ebbee1d8",
+      "rust/crates/dev-tools/src/developer_ssh/cli.rs": "ea6337aaed1b770352c152f7e252b52a47e1e17700359bc5aedf9a14007349fc",
+      "rust/crates/dev-tools/src/developer_ssh/http.rs": "56b249137db34757cc2ea228fe5a78af66a2da03629a01f2354cdf76a72b2934",
+      "rust/crates/dev-tools/src/developer_ssh/integer.rs": "062170d49dcd3d782535b4882c07fc8578686473e1a94a5c0873c92fdd460109",
+      "rust/crates/dev-tools/tests/developer_ssh.rs": "e724f1bb96a7401e5d32cc07b0b0d5c7df8a678630e9f6345bce9d1df8fa7722",
+      "rust/crates/dev-tools/Cargo.toml": "9bd99b48597981c5e7727cd6a2f6435535bafb869326f12df2b5166933385e77",
+      "rust/crates/dev-tools/src/lib.rs": "7ad33da5083e68a3351257272473949d74d37cc2fd22f433c7f1fe7664e703c6",
+      "rust/Cargo.lock": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0"
+    },
+    "lock_delta": "only4 existing-package edges added to openpilot-dev-tools dependency list; no package/version/checksum/otherdependency changes",
+    "historical_lock_sha256": "855f00e2e7751b242e5599d30708d1db8340a85675b522c7e83dac00bb24a667",
+    "current_lock_sha256": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0",
+    "scope": "8new optional tool sources,2bins,1test; no caller/SSH/network/Params/key/auth/device activation; all original Python retained",
+    "source_tests": "27integration+1URLunit unrun; explicit4300/min640/env0 digitguard uses shared Unicode15 decimal table",
+    "holds": "no Cargo resolver/typecheck/build/test/Clippy/functional acceptance; HTTP/proxy/CA/netrc/codec/JSON/argparse/nonUTF8/Unicode/provider and actualexec/buffering remain held",
+    "historical_maps": "old855/Cargo52/542/AST/bundle/currentwrapper source maps remain exact historical scopes; current-source checks must explicitly select this newer11path overlay"
+  },
+  "startup_missing_dependency_repair": {
+    "source_child": "ebc2c724610b75b7298fa827a5e5d3b28a170666",
+    "source_base": "9de275e61c04cce1d8b587d45ec0b5ac6cc9c9e4",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/driver_daemon_check.rs": "14ed67ad7317998759aeb23db7c7afcbaa9dd0acea281624895182acfd3ba478",
+      "rust/crates/dev-tools/src/driver_pipeline_dependency.rs": "300fb681cf462efa524c822517ff6a8911f613e76921c972687cf32cb303657a",
+      "rust/crates/dev-tools/src/driver_pipeline_dependency_attestation.json": "08644fe93141f4655437dd4008c96d95fdcf46ecfd5ce0b5a7371e84b200959f",
+      "rust/crates/dev-tools/src/driver_pipeline_dependency_tests.rs": "4065360ca1ceacddbba9ce72e526d3aa0ea54a5d3c98c5ec6c3ff0f6e759fc55",
+      "rust/crates/dev-tools/tests/fixtures/driver-pipeline-dependency/PROVENANCE.json": "7afd61764b825ee343d7fbcfd20e580dc8b12b36f613f81a971df041371f5ff3",
+      "rust/crates/dev-tools/tests/fixtures/driver-pipeline-dependency/reference-manifest.json": "1b8e6cea511e9f212cd7737688b3e2ec0a165b9ff985b492f0e98c4639f18380",
+      "rust/crates/dev-tools/tests/model_family_missing_current_diagnostic.rs": "68bca665a6e96378d3c7b8b3015e4424abc425c9c6e69d7a3deae943f468ffbc"
+    },
+    "review": [
+      "startup-dependency-attestation-r2-review-sol/HANDOFF.md scopedPASS",
+      "startup-proofdir-r1-review-sol/HANDOFF.md scopedPASS"
+    ],
+    "patches": {
+      "dependency": "b84e8747a99dbfd14282693c606f490dc0774b65e00e896e4a13272beac26877",
+      "adapter": "1f04359fb35074ccecd8526df98270fb0dddce20164f58e5b40a96a51eaa3fd5"
+    },
+    "original_helper_pair": "63e8d880b79603215d7319011809dd3b5ec6699dae1e10c79c105b7dc5cc258b ->10dfebf12b3d8fa5abdaff7764e80c11468043349ce44f3cc4e57a59b30312e5",
+    "source_scope": "exactexecute/write_tensorunchangedfunctions+fullhelper/source/manifestpins;retireddriver+currentcatalog+no-collectoronly;heldhelper/manifestbefore/aftereachcaseandfinal; genericmismatchstillrejects",
+    "adapter_scope": "onlystartupcommandproof freshsibling, allCLI/data/USB pathsunchanged",
+    "tests": "9newadversarialselectors UNRUN; missingstartup8/driver4/finalconsolidation remainrequired; prior6USB/16controls explicit9deboundedreuseonly",
+    "external_pack": "c957c00d4147196a64528d54dfd7acd6cbcc36cc7830f5c591ca4ee6c91ac69b source-onlyPASS, notGittracked/notexecuted,13actualmodelcopiesneedstreamauthentication; oldomissionsnotaccepted",
+    "acceptance": "sourceonly; no testcase/provider/model/full-family/retirement/device/release credit; allhistoricalsource/Cargo/lockmapsretained"
+  },
+  "control_rejection_prefix_clone_repair": {
+    "source": "2e4b41cc28a900b1f54810a1a3cd8392f3892613",
+    "base": "150bd42771ee45046f0c51343bedeef62646c516",
+    "tree": "4f9b6476db0b33bfc3e018d588c1cdf16974c6e5",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/control_failures_check/fixtures.rs": "f227ed8bc24b25ec6cd86922eb0237277f6d7dedd466cdcfb8b804a20d5e0deb"
+    },
+    "patch_sha256": "0a3fa269a06344230d033eb59203ff2681b1b9c5b4538430eea508719652af51",
+    "review": "control-fixture-prefix-review-sol/HANDOFF.md scopedPASS",
+    "scope": "ONEfile onlyprefixclone production +4synthetictests; allother150files/Cargo/855lock unchanged; deadline/roster/numeric/projection untouched",
+    "acceptance": "uncompiled/unrun; sourceclonecountnotmeasuredspeedup/10sreadinessfix; newfocusedgate required",
+    "test_scope": "4newlibsyntheticoldalgorithmbyte/finiteF64bit/prefix/ownership/rejectiontests UNRUN; oneexistingselectedreadinesscaseonly withunchanged10/5/30/180bounds",
+    "timing_limit": "actualR11prehealthreadinessfailurebracketdoesNOTproveCPUcause; source5400->70clonesnotmeasurement; noverifiedlatencyfix",
+    "shared_generation": "NOTchanged; keepsecond6ParamsTempDirwrite/failureorder, allbasic/cases/health/projection/referencesoutsidefirstbyteexact",
+    "replay_limits": "R13fixture150andold7passingcases remainimmutable; no109/normal40/rejection27/health5/goldenrecapture, noearlymarkerhook",
+    "historical_maps": "allold855/Cargo/fixturesmapsremainhistorical; nextprefixchildgate adds explicitpostimagepin/newSOURCEconstant before/after"
+  },
+  "auth_config_set_clear_source_overlay": {
+    "source": "1a1a222ebadbbfe4b62a61ca6be4b66fac3adc04",
+    "base": "c3f97466161dd62b45a2f7f9086bed3ccaaaf695",
+    "tree": "e1769e3230854d41cf066eb390acf5e47a9cdc94",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/developer_ssh/auth.rs": "af77a22fafdc2700bf98c0cfcdfdf81edd36dbe890ccacd939c5782b3ea8a8b6",
+      "rust/crates/dev-tools/src/developer_ssh.rs": "fa2d424438af1aeb1604469b669bc6f452a050c35eb2d22d87ff0b39e2b41cba"
+    },
+    "patch_sha256": "5d4a5e12dada75cc950e7b8f0c568b9119a322b0698d65a4fae597c555d252ec",
+    "review": "auth-config-native-review-sol/HANDOFF.md scopedPASS",
+    "source_scope": "twofilesonly methods+18ownerlibtests/publicreexport; getter/configRoot/CLI/Cargo/lib/locka826/allotherC3f unchanged",
+    "acceptance": "newcompile18tests/privateoriginalcomparisonUNRUN; arbitraryPythonvalues/latechunkcloseerrorparityheld; no caller/credential/device/network effect/retirement",
+    "original_module_sha256": "072cdebd0d49a2c4482d2e829b07568b54fe7c9994984145723f77629412fb50",
+    "native_semantics": "mkdir/openw/truncate/prefix/sharedJsonValueASCIIdefaultwrite/clear-onlyNotFound, normalUnixleafsymlink/hardlink behavior retained; suppliedrootonly",
+    "historical_maps": "SSHC3f28casegate/pins remainhistoricalimmutable; futureauthchild selectsnew2pathpins, samea826lock/Cargo/lib, no old28rerun",
+    "tests": "18syntheticprivate-rootownerlibcasesUNRUN; noauthJSON/HOME/key/account/Params/device/networkaccessoutsidefutureprivateTempDir"
+  },
+  "actual_capacity_and_continuation_checkpoint": {
+    "implementation_source": "12656fa38f4c9f105caafc52532b8cc947f75a17",
+    "validation_commit": "a6f55b59984cea54f73edb6a545e6729dafaa5c0",
+    "model": "gpt-6.1-sol/ultra parent, gpt-6.1-sol only subagents",
+    "inventory": "288/3/3289 of3580 unchanged",
+    "publisher": {
+      "run": 39892674176,
+      "artifact": 12477136405,
+      "source": "9368bbf328cfd49aea0d7c888153511355592d4f",
+      "bound_before_entries": 19287,
+      "first_failure": "missing jq afterpolicy2/twoClippy/link/helpers",
+      "final_closure": false
+    },
+    "cache_inventory": {
+      "run": 39894886684,
+      "artifact": 12477200561,
+      "CRC": 49,
+      "content_seals": 48,
+      "result": "SUCCESS readonly; no actual deletion",
+      "proposed_allocated_bytes": 807460864
+    },
+    "main_capacity": {
+      "run": 39894886518,
+      "available_bytes": 7029460992,
+      "planned_growth_bytes": 8589934592,
+      "Rust_build_started": false
+    },
+    "peer_capacity": {
+      "run": 39892674190,
+      "available_bytes": 7959007232,
+      "planned_growth_bytes": 8589934592,
+      "Rust_build_started": false
+    },
+    "fixture": {
+      "run": 39894886546,
+      "first_failure": "historical log ZIP flat-name assertion",
+      "Cargo_started": false
+    },
+    "logging_recovery": {
+      "run": 39894886676,
+      "artifact": 12477566277,
+      "result": "SUCCESS boundedcompleteinertproof admitted788TAR/787memberhash/778rawseals/754oldcrossmatch; R4lifecycleacceptancefalse",
+      "capture_reexecuted": false,
+      "R4_acceptance": false
+    },
+    "ARM": {
+      "run": 39884478138,
+      "job": 120189323000,
+      "result": "Actions maximum45minute timeout; interruptedcompile, functional/Clippy/media unaccepted",
+      "parent_cancelled": false,
+      "physical_arm_cpu": false
+    },
+    "next": "metadata-only reviewed unused cache cleanup and policy readonly inventory before new build gates; no estimate cut/protected merge/dev-md/local functional execution",
+    "new_metadata_only_runs": {
+      "peer_cache_delete": 39899250358,
+      "policy_cache_inventory": 39899250317,
+      "Fast": 39899250243
+    },
+    "policy_cache_inventory": {
+      "run": 39899250317,
+      "artifact": 12478505973,
+      "CRC": 44,
+      "file_seals": 43,
+      "unique_inode_allocated_bytes": 1265823744,
+      "available_snapshot": 10058493952,
+      "deletion_executed": false
+    }
+  },
+  "github_utils_source_overlay": {
+    "source_child": "d346764d6448ca15c1e4dc468f31b0751f021883",
+    "base": "d8767070c578b74687ef9f7e499cbb6ad3a28862",
+    "exact_delta": [
+      "rust/crates/dev-tools/Cargo.toml",
+      "rust/crates/dev-tools/src/github_utils.rs",
+      "rust/crates/dev-tools/src/lib.rs",
+      "rust/crates/dev-tools/tests/github_utils.rs"
+    ],
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/github_utils.rs": "ff33a676d2664127adee17bb6c0334016d6ead51bca86a121ba2109a7846f93c",
+      "rust/crates/dev-tools/tests/github_utils.rs": "1a8b22bebc4bbb948a1f2efbea6abe35bc06f1d1fd8dac330767aec8a5537914",
+      "rust/crates/dev-tools/Cargo.toml": "4196e485f77da99a50aee055f35bd9c9f82a5e4a7ea4d776976f6f03513e8bd6",
+      "rust/crates/dev-tools/src/lib.rs": "b08a3c031bd0caae0a333b5872f116f87fbe15f1b884f3be4dca29bee7edc912",
+      "rust/Cargo.lock": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0"
+    },
+    "patch_sha256": "8cb45a37b360a0318c1fc7e729eb9dd5f1a273e1fa43ae447ad787bc0bbae8f7",
+    "reviews": [
+      "github-utils-native-review-sol/HANDOFF.md originalP2",
+      "github-utils-native-r2-review-sol/HANDOFF.md sourceP2closedPASS"
+    ],
+    "status": "source-only integrated;23tests/compile/Clippy/originalnativecomparisonUNRUN; noHTTPadapter/caller/CLI/lockchange",
+    "original_sha256": "05d53b2bfa9cf73b9165b534fc1c81fa88171f9f25f1a15fc9d9009d3ca51cbc",
+    "limits": "ordinaryUTF8JSON/injectedtransport+finiteprivatefiles only; Requests/wire/proxy/codec/Unicode/arbitraryPythonobjects held; original retained/inventory unchanged"
+  },
+  "kbhit_source_overlay": {
+    "source_child": "dd87b584ac74853cdd28c585f9086d98e534cfc4",
+    "base": "c34692334897856296692e2eb3ee1378d7118879",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/kbhit.rs": "4393977c8695d719b8f838faf0237e360c70fc9bf10e6aa02951098c522f5148",
+      "rust/crates/dev-tools/src/kbhit/system.rs": "83006b04552c5b082c7c1cc00cdbf1bed5576bb29aa7b4db4633314e7965e2da",
+      "rust/crates/dev-tools/src/kbhit/tests.rs": "d7a2d37ef302b16374591a3fb11322925814467b498785f901541363850ff6d4",
+      "rust/crates/dev-tools/Cargo.toml": "5cb095aefecdc4cc97fb147b30ee96c3fd59b24569551f72fd0e7528f3e6c247",
+      "rust/crates/dev-tools/src/lib.rs": "99f1c7cb200cbe6d02fd0b24a695f6d0d2dd99e5a53f3a114cd683a4f229273a"
+    },
+    "lock_sha256_unchanged": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0",
+    "patch_sha256": "64de9b64daf262817973bb1aa2f9d72669258ec5910ea12ed9a19e32e9463124",
+    "review": "kbhit-native-review-sol/HANDOFF.md scopedsourcePASS",
+    "registration": "oneoptinfeature existingnix+rustixtermios,moduleonlyLinux,noCLI/testtarget/dependency/lockchange",
+    "acceptance": "sourceonly;18unrunlibtests/privatePTY/actualCexit/originalcomparisonrequired; nooriginalCLIactivation/retirement",
+    "limits": "explicitOwnedFd/suppliedstrictUTF8Read/readonlysnapshots; nofullTextIO/locale/newline/shutdown/exception/objectparity; demonstrationmainstillPythonandretained",
+    "historical_maps": "oldGithubD346/auth1a1a/SSH-C3f/855sourcegatesremainimmutable; onlyexplicitKBhitchildselectsnewfeature/postimages"
+  },
+  "route_sanitizer_source_overlay": {
+    "source_child": "80dde9ad911860631e3e883911e11aedc1f51a50",
+    "base": "c676b4191c3e37a9afe926c4724774e1fe76b11d",
+    "source_file_sha256": {
+      "rust/crates/dev-tools/src/route_sanitizer.rs": "581d67d7657d248c6142d510f3bb5b996a8056d970060a217c129a06c23a9e26",
+      "rust/crates/dev-tools/src/route_sanitizer_tests.rs": "9e70a194d873183df46a48d9912fe5734f7beca1689a3916d01d69d33b185040",
+      "rust/crates/dev-tools/Cargo.toml": "7ec69d069ec6a2b6c05ba1c73442fb4ca122b90a05877c29496fc4dc8dbf6834",
+      "rust/crates/dev-tools/src/lib.rs": "b817e5ccecebacdf904632a5d8705b266c6e00998516e5b13092c9c8c9be9412"
+    },
+    "lock_sha256_unchanged": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0",
+    "patch_sha256": "08236c7118d33a673f375057c6c3a9ca9394f6331d189bff799b9b24afb14d77",
+    "review": "route-sanitizer-native-review-sol/HANDOFF.md R2sourcePASS generatedwhichpayloaddebitP2closedtagonly",
+    "superseded_R1": "0890444fda1e2977bcc35b22949b07ece01414b6e58d8a0d4519dfdfd49d7190",
+    "registration": "oneoptionalexistingcapnp+cerealfeature/module; no deps/lock/CLI/caller/defaultactivation",
+    "acceptance": "sourceonly;15syntheticunknownwire/lazy/error/VIN tests+compile/Clippy/independentoriginalcomparisonUNRUN",
+    "limits": "ordinaryCerealreaders/validUTF8; unknownreachablegraphcopyusescapnp set_root; no Pythonducktyping/surrogates/exceptionobjectparity; originalsourceandinventoryretained",
+    "data_scope": "no routes/realVIN/logs/vehicles/NAS data/caller/radar/runtimeactivation"
+  },
+  "github_images_513_fix": {
+    "issue": 513,
+    "source_child": "9e483329b671e908e9a686c54d23407bfb7ac8f1",
+    "base": "d346764d6448ca15c1e4dc468f31b0751f021883",
+    "source_file_sha256": {
+      "openpilot/tools/lib/github_utils.py": {
+        "before": "05d53b2bfa9cf73b9165b534fc1c81fa88171f9f25f1a15fc9d9009d3ca51cbc",
+        "after": "f642a6652ab7238fc2b613ca2f7722b2a4756ef0363169210564d42290aeb063"
+      },
+      "rust/crates/dev-tools/src/github_utils.rs": {
+        "before": "ff33a676d2664127adee17bb6c0334016d6ead51bca86a121ba2109a7846f93c",
+        "after": "9cf1224a6f81b6ff10a7e92abc646362724dfdbcfdd405f61cc8f81832b4169b"
+      },
+      "rust/crates/dev-tools/tests/github_utils.rs": {
+        "before": "1a8b22bebc4bbb948a1f2efbea6abe35bc06f1d1fd8dac330767aec8a5537914",
+        "after": "80e0c07885d517cccca0a1c103bad4deded532c921df972be535da22c1a9e492"
+      }
+    },
+    "patch_sha256": "ded641d64a464ca99db9f43665e9836f9ff1ef537515a38402574b297fbb79fa",
+    "review": "github-images-513-fix-review-sol/HANDOFF.md scopedsourcePASS",
+    "scope": "onlybranch/commenterargfix; original+native; falseoverwrite/rawHTML/body/ups/errorprefixunchanged",
+    "test_scope": "5selectednew/affectednativegroups+5originalgroupsUNRUN;21othertestfunctionssourceexact; total26native",
+    "shared_Cargo_lib_lock_unchanged": true,
+    "state": "sourceimplemented_only; issueOPEN andallfunctional/source-linkedActions acceptancepending",
+    "original_port_gate": "immutableD34623testbaseline; no sourcepointerrebind/no oldpassedresultinvented",
+    "baseline_inventory": "historicalbaseline_git_blob columnunchanged; neworiginalpostimageexplicitlyrecordedhere"
+  },
+  "actual_cache_cleanup_admission": {
+    "peer": {
+      "run": 39899250358,
+      "job": 120236736430,
+      "workflow": "a6f55b59984cea54f73edb6a545e6729dafaa5c0",
+      "artifact": 12479247331,
+      "zip_bytes": 7507955,
+      "zip_sha256": "24fc87bd2c627cb16980c9dbdf927e1cc9f55f2a81775e1caa1127eef48a096c",
+      "CRC": 57,
+      "member_seals": 56,
+      "completed": true,
+      "exact_paths_absent": [
+        "/tmp/openpilot-ci.4o8uWv/cargo-home/registry",
+        "/tmp/openpilot-ci.4o8uWv/target"
+      ],
+      "unlinked_names": 12680,
+      "removed_directories": 2510,
+      "all_events_sequenced_and_intents_paired": 32896,
+      "available_bytes_before": 11471728640,
+      "available_bytes_after": 12270104576,
+      "net_available_delta": 798375936,
+      "remaining_bundle_shortfall_bytes": 4372893696,
+      "limits": "netspaceincludesotheractivity/audit; no guaranteedreclaim/rawsource/proof/providerdeletion; bundleestimate16642998272 unchanged",
+      "functional_tests_replayed": false
+    },
+    "policy": {
+      "run": 39900916038,
+      "job": 120242040697,
+      "workflow": "541f59523fb4ac766d325c69f7df41aa8aae9632",
+      "artifact": 12479235851,
+      "zip_bytes": 1615161,
+      "zip_sha256": "e386705c4fd16a9a8eed9f7e1f8b7bf4c45fb57eed9e422dfcfefc2959efab16",
+      "CRC": 55,
+      "member_seals": 54,
+      "completed": true,
+      "exact_paths_absent": [
+        "/tmp/openpilot-ci.pMuJhG/cargo-home/registry",
+        "/tmp/openpilot-ci.pMuJhG/target"
+      ],
+      "unlinked_names": 10564,
+      "removed_directories": 2210,
+      "all_events_sequenced_and_intents_paired": 27764,
+      "available_bytes_before": 10233270272,
+      "available_bytes_after": 11491475456,
+      "net_available_delta": 1258205184,
+      "remaining_bundle_shortfall_bytes": 5151522816,
+      "limits": "netspaceincludesotheractivity/audit; no guaranteedreclaim/rawsource/proof/providerdeletion; bundleestimate16642998272 unchanged",
+      "functional_tests_replayed": false
+    },
+    "latest_observed_available_bytes": 12270104576,
+    "bundle_growth_bytes_unchanged": 16642998272,
+    "remaining_shortfall_bytes": 4372893696,
+    "newbuildscope": "onlyoriginalfreshper-operationadmission; no inheritedestimatecut/globalscope/oldsuccessfulcohortreplay"
+  },
+  "fixture150_historical_zip_layout_repair": {
+    "source": "150bd42771ee45046f0c51343bedeef62646c516",
+    "workflow_sha256": "72c5cf60aeeb361b04f38f32ee9efacd2e31d09daf14e25a098ca25567d69918",
+    "old_artifact": 12472101435,
+    "old_artifact_sha256": "d81c515c092450c8694e4ab5382577429bfa2ad59344ff4b0417e02d65bc62dc",
+    "normal_nested_members": 25,
+    "delta": "canonicalrelative namesonly;2selectedrootfiles unchanged/other10payloadsbyteexact",
+    "status": "independentreviewpending/notrun; original0221freezeimmutable"
+  },
+  "oct23_r19_source_and_capacity_checkpoint": {
+    "current_implementation_head": "47498503458d8ad7d02ebd491befac5deae3b656",
+    "current_validation": {
+      "revision": "R19",
+      "workflow_commit": "9ac451a4bdf5696ccb69ac6d21fb7018396a7a90",
+      "full_source": "454fc945e5431ac54a381ae799b4b90c33b52a2b",
+      "extra_source_parent": "6d37b6affb15287a0d5d2c73d7e51aebf5a33c04",
+      "preserved_once_leaves": 22,
+      "new_inventory": {
+        "run": 39907352595,
+        "job": 120262239564,
+        "status": "queued",
+        "recipe_sha256": "73fb5a5306c7edac3c2c75b312317c2d4435e6c82d4e856eeb75de443b6a1f28"
+      },
+      "fixture_metadata_repair": {
+        "run": 39907352530,
+        "job": 120262239212,
+        "status": "queued",
+        "source": "150bd42771ee45046f0c51343bedeef62646c516",
+        "recipe_sha256": "72c5cf60aeeb361b04f38f32ee9efacd2e31d09daf14e25a098ca25567d69918"
+      },
+      "prefix_r18": {
+        "run": 39906391694,
+        "job": 120259233730,
+        "status": "queued",
+        "source": "2e4b41cc28a900b1f54810a1a3cd8392f3892613"
+      },
+      "fast": 39907352633,
+      "observation_only": "Fresh job APIs authoritative; no pass inferred from queue or run list"
+    },
+    "latest_capacity_actual": {
+      "run": 39894886518,
+      "attempt": 2,
+      "job": 120257989862,
+      "available_bytes": 6382727168,
+      "required_bytes": 8589934592,
+      "status": "terminalfailure before source checkout/Cargo; no recipebug or stale root collision; do not retryblindly or lowergrowth",
+      "artifact": 12480952000,
+      "artifact_sha256": "4063e6a36b740950592ea25c2631370e9f34c1462432d0658c1e890e2a90d5e8",
+      "admission": ".analysis/scratch/2026-10-23-resume-296/loggerd-main-r13-attempt2-admission-sol/ADMISSION.json",
+      "crc": 16,
+      "content_seals": 12,
+      "complete_source_proof": false,
+      "functional_credit": false,
+      "earlier_cleanup_free_12270104576": "historical not current capacity"
+    },
+    "new_reviewed_source_fixes": {
+      "webrtc514": {
+        "main": "454fc945e5431ac54a381ae799b4b90c33b52a2b",
+        "paths": 3,
+        "patch_sha256": "b5c3bf53d847aa4be175c0902a83daf166ff8595424ef6ec1248e456785787fe",
+        "functional": "UNRUN two newpolicy cases; pending narrowonce recipe",
+        "common515": "untouched"
+      },
+      "growth_roster": {
+        "main": "47498503458d8ad7d02ebd491befac5deae3b656",
+        "minimal": "6d37b6affb15287a0d5d2c73d7e51aebf5a33c04",
+        "parent": "ae7bc0c6ca12d4b5d7fb10e7fe2f1a50ff816f14",
+        "patch_sha256": "e774846ab1d057043d6651aee8dd9d64033c94558e0db61b38a4a73c6f6825df",
+        "source_review": "PASS",
+        "functional": "UNRUN;558guards/37jobs/allrosterhashes unchanged; live decodedrun sourceorder; no unusedenv credit"
+      }
+    }
+  },
+  "oct23_r19_actual_and_retained_logging_checkpoint": {
+    "latest_actual_r18_r19": {
+      "inventory": {
+        "run": 39907352595,
+        "job": 120262239564,
+        "artifact": 12481835937,
+        "zip_sha256": "2ab961b97512ab2fc64a50708a64a7e62681cdd7ca8c99c7048f929b7a8ac1bb",
+        "crc": 73,
+        "seals": 72,
+        "publisher_context_allocated_not_free": 1449828352,
+        "publisher_free_final_snapshot": 6898884608,
+        "publisher_current_ids": {
+          "root": 2799789,
+          "marker": 2799790,
+          "container": 2799792,
+          "target": 2807622,
+          "registry": 2807160,
+          "dev": 64525,
+          "uid": 1000
+        },
+        "3controlsd": "HOLDactualmarkerfilesENOENTcorrecthistoricalname,noinventorrecreate/waive",
+        "admission": ".analysis/scratch/2026-10-23-resume-296/parent/new-actual-r18-r19/39907352595/ADMISSION.json"
+      },
+      "prefix": {
+        "run": 39906391694,
+        "job": 120259233730,
+        "artifact": 12480813929,
+        "zip_sha256": "c1b1bb098715d5386de98c424b6e876e43d1797d841cf3c5cd8668973bbac710",
+        "zip_crc": 3,
+        "tar_seals": 220,
+        "available": 5098356736,
+        "required": 8589934592,
+        "credit": "4newunit+signal+Clippy UNRUNbeforeCargo",
+        "admission": ".analysis/scratch/2026-10-23-resume-296/parent/new-actual-r18-r19/39906391694/ADMISSION.json"
+      },
+      "fixture": {
+        "run": 39907352530,
+        "job": 120262239212,
+        "artifact": 12482001045,
+        "zip_sha256": "e1a0be475e07b2958c7e9dcb9aee20646b23ed2b66f231e4d88ccc3a5224536c",
+        "zip_crc": 70,
+        "available": 3670335488,
+        "required": 8589934592,
+        "credit": "historicalZIPrepairboundaryandold5passreuseauthentication reached;109freshnative+auditor+Clippy UNRUN",
+        "inner_admission": "70CRC/69rawseals ADMITTEDin parent/new-actual-r18-r19/39907352530/ADMISSION.json; qualificationfalse"
+      },
+      "scope": "no newfunctionalbuildpublication untilfreshplannedremaininggrowth fits; no estimatecut/inflightcancel/unchangedsuccessreplay"
+    },
+    "logging_retained_source": {
+      "main": "a0dbfda750e0b40ad76dd1b347f86a4eb794011e",
+      "minimal": "0971ba4b01ac53fc00b0381a2e9a9ff4983a39f0",
+      "parent": "5a26b3ffda5062039f15c9cc2f649dc33b98a81d",
+      "paths": 4,
+      "review": "Noether scopedPASS bee3patch; parentonly2newfilesedition2021cosmeticformat",
+      "tests": 21,
+      "context_index": "2a73317474a029d1e6c3b3124dacb8cf6d8e2ea6efde0de2dfdafe0f634f56ea",
+      "context_members": 108,
+      "source_roles": 19,
+      "runtime": "UNRUN build/cohort/lifecycle/trace/DSO/sourceclosure;19rolesnotcompleteclosure",
+      "r4_and_retirement_credit": false,
+      "private_context_notGit": true
+    }
+  },
+  "oct23_r21_actual_and_retained_lifecycle_checkpoint": {
+    "source_commit": "0414d5de2499745bb9babfca7301a608fb94e45e",
+    "validation_commit": "c919f5640d0997adc1498d779d5225d34049ebdc",
+    "publisher_cleanup": {
+      "run": 39912708274,
+      "job": 120279131393,
+      "artifact": 12483588929,
+      "artifact_bytes": 15629667,
+      "artifact_sha256": "54ddfb316ee2c209ec1e3cf3aac91eac00473e4c31c0bbaa897a4abb4f22a00a",
+      "safe_zip_crc": 81,
+      "content_seals": 80,
+      "journal_events": 30814,
+      "regular_names_unlinked": 11767,
+      "directories_removed": 2424,
+      "exact_two_nested_caches_after": "absent",
+      "snapshot_available_bytes": 14028488704,
+      "snapshot_net_delta": 1440178176,
+      "planned_bundle_growth_unchanged": 16642998272,
+      "snapshot_shortfall": 2614509568,
+      "build_capacity_released": false,
+      "limits": "sameUID-visible,notprivilegedattestation; currentownerID nothistoricalsourceproof; source/proof/provider/Rustup/models/3missingmarkerrootsuntouched; netdeltaalsoincludesotheractivity"
+    },
+    "readonly_jobs": {
+      "private_tool_homes": {
+        "run": 39912708327,
+        "job": 120279131647,
+        "status": "jobSUCCESS actualartifactadmissionpending,noDelete"
+      },
+      "r12_caches": {
+        "run": 39914064327,
+        "job": 120283469522,
+        "status": "jobSUCCESS actualartifactadmissionpending,noDelete"
+      }
+    },
+    "retained_lifecycle_source": {
+      "main": "0414d5de2499745bb9babfca7301a608fb94e45e",
+      "minimal": "dbc529f359afb094f471d93191a0ff902cec8e6c",
+      "remote": false,
+      "reviewed_patch_sha256": "c5c8e3b5a8f59bb281d90a5d019f1c5ef4afc0f7636b5e5d562358d416366b60",
+      "private_context_sha256": "77cb859a33148550f1ec56be5f6de6e8c04f722a3849309a1bebb132bf722ee2",
+      "members": 108,
+      "source_import_roles": 19,
+      "runtime": "UNRUN;21coreunits/newmode14selectors/separateP2controls/freshnativecohort/build-depinfo-source-provider-DSO-tracesrequired",
+      "original27ledger": "17historicalpassed/10pending; newmodecannotcompleteoldledger",
+      "R4_or_retirement_credit": false
+    },
+    "pristine_source_inventory": "unpublishedR2oneP2uncappedGitpipe; boundedR3repairpending; noDelete/reclaim0",
+    "parent_model": "gpt-6.1-sol/ultra actualruntimeverified",
+    "inventory": "288/3/3289 of3580 unchanged"
+  },
+  "github_hosted_535_overlay": {
+    "issue": 535,
+    "baseline_source_commit": "77663836a95a9e2aff9aa66592d8b06ed9c87cd9",
+    "authorization": "2026-10-25 사용자 명시 GitHub 기본 러너 선택",
+    "status": "소스 동결, 실제 hosted ARM 실행 미수용",
+    "files": {
+      "tools/ci/local-arm": {
+        "preimage_sha256": "1c69c096fa890b478a5b157aba021ba412ff0106e9e31b4b0b840f30f618c090",
+        "sha256": "a286863a38d2d122bd97b7f648086c1763e3aa863fe36fe7101f2f7a6ae7ada0",
+        "git_blob": "422d3f93b2c4288486e771f4f3c3bb7b91fb69f0",
+        "mode": "100755"
+      }
+    },
+    "scope": "실제 trusted Linux/X64 host의 명시 hosted 환경 허용 및 guest에 host SDK 변수/PATH가 유입되지 않게 분리",
+    "consumer": "ARM composite는 source admission 후 같은 private source alias에서 읽는다. job-temp/rust-path의 기존 remote b2fc distribution pin은 유지한다.",
+    "preserved": [
+      "원래 PRoot/rootfs/Python/Rustup pins",
+      "source HEAD==GITHUB_SHA",
+      "원래 native/ARM 명령과 QEMU receipt physical_arm_cpu=false",
+      "기존 owner/admission/봉인/소유 정리 조건"
+    ],
+    "historical_acceptance_changed": false,
+    "retirement_credit": 0
+  }
+}

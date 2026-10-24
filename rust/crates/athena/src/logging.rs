@@ -25,7 +25,7 @@ pub fn failure(logger: &mut Logger, name: &str, error: &dyn std::fmt::Display) {
     }
 }
 pub fn bind(shared: &Shared) -> Result<(), Error> {
-    let mut logger = shared.factory.logger();
+    let mut logger = shared.factory.runtime_logger();
     let metadata = openpilot_runtime_version::get_build_metadata(&shared.config.basedir)?;
     let value = json!({
         "dongle_id":shared.text("DongleId", &mut logger)?,

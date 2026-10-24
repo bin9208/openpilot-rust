@@ -52,6 +52,7 @@ pub(super) struct State {
     pub pair: Pair,
     pub prompt: Option<Prompt>,
     pub answer: Option<oneshot::Sender<JsonValue>>,
+    pub answer_owner: Option<uuid::Uuid>,
 }
 
 #[derive(Clone, Default)]
@@ -80,9 +81,22 @@ impl Shared {
             .map_err(|_| Error::PromptExpired)
     }
 
+    /// A completed handler may clear only the request it installed. Display
+    /// updates keep this owner, while a new interactive request replaces it.
+    pub fn finish_answer(&self, owner: uuid::Uuid) -> Result<(), Error> {
+        let mut state = self.lock()?;
+        if state.answer_owner == Some(owner) {
+            state.prompt = None;
+            state.answer = None;
+            state.answer_owner = None;
+        }
+        Ok(())
+    }
+
     pub fn finish(&self) -> Result<(), Error> {
         let mut state = self.lock()?;
         state.target = None;
+        state.answer_owner = None;
         state.prompt = None;
         state.answer = None;
         Ok(())

@@ -1,0 +1,46 @@
+{
+  "cases": [
+    {
+      "name": "empty-eof",
+      "stdin": "",
+      "stdout": "",
+      "exit": 0
+    },
+    {
+      "name": "two-lf",
+      "stdin": "{\"op\":\"safe\",\"text\":\"a/b\"}\n{\"op\":\"safe\",\"text\":\"x_y\"}\n",
+      "stdout": "{\"result\": {\"value\": \"ab\"}, \"calls\": [], \"logs\": []}\n{\"result\": {\"value\": \"x_y\"}, \"calls\": [], \"logs\": []}\n",
+      "exit": 0
+    },
+    {
+      "name": "two-crlf",
+      "stdin": "{\"op\":\"safe\",\"text\":\"a/b\"}\r\n{\"op\":\"safe\",\"text\":\"x_y\"}\r\n",
+      "stdout": "{\"result\": {\"value\": \"ab\"}, \"calls\": [], \"logs\": []}\n{\"result\": {\"value\": \"x_y\"}, \"calls\": [], \"logs\": []}\n",
+      "exit": 0
+    },
+    {
+      "name": "two-cr",
+      "stdin": "{\"op\":\"safe\",\"text\":\"a/b\"}\r{\"op\":\"safe\",\"text\":\"x_y\"}\r",
+      "stdout": "{\"result\": {\"error\": \"JSONDecodeError\"}, \"calls\": [], \"logs\": []}\n",
+      "exit": 0
+    },
+    {
+      "name": "final-no-newline",
+      "stdin": "{\"op\":\"safe\",\"text\":\"a/b\"}",
+      "stdout": "{\"result\": {\"value\": \"ab\"}, \"calls\": [], \"logs\": []}\n",
+      "exit": 0
+    },
+    {
+      "name": "blank-before-request",
+      "stdin": "\n{\"op\":\"safe\",\"text\":\"a/b\"}\n",
+      "stdout": "{\"result\": {\"error\": \"JSONDecodeError\"}, \"calls\": [], \"logs\": []}\n{\"result\": {\"value\": \"ab\"}, \"calls\": [], \"logs\": []}\n",
+      "exit": 0
+    },
+    {
+      "name": "unknown-then-valid",
+      "stdin": "{\"op\":\"unknown\"}\n{\"op\":\"safe\",\"text\":\"a/b\"}\n",
+      "stdout": "{\"result\": {\"error\": \"AssertionError\"}, \"calls\": [], \"logs\": []}\n{\"result\": {\"value\": \"ab\"}, \"calls\": [], \"logs\": []}\n",
+      "exit": 0
+    }
+  ]
+}

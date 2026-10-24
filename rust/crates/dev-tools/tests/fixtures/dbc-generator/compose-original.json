@@ -1,0 +1,304 @@
+[
+  {
+    "name": "minimal",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "424f5f2031204361723a2038204543550a"
+      ]
+    ],
+    "initial_outputs": [],
+    "output_exists": true,
+    "error": null,
+    "outputs": {
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a434d5f20226361722e646263207374617274732068657265223b0a424f5f2031204361723a2038204543550a"
+    }
+  },
+  {
+    "name": "ordered-duplicates",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "434d5f2022494d504f525420622e646263223b0a434d5f2022494d504f525420612e646263223b0a434d5f2022494d504f525420622e646263223b0a434f52450a"
+      ],
+      [
+        "a.dbc",
+        "41"
+      ],
+      [
+        "b.dbc",
+        "420a"
+      ]
+    ],
+    "initial_outputs": [],
+    "output_exists": true,
+    "error": null,
+    "outputs": {
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a0a434d5f2022496d706f727465642066696c6520622e646263207374617274732068657265223b0a420a0a0a434d5f2022496d706f727465642066696c6520612e646263207374617274732068657265223b0a410a0a434d5f2022496d706f727465642066696c6520622e646263207374617274732068657265223b0a420a0a434d5f20226361722e646263207374617274732068657265223b0a434f52450a"
+    }
+  },
+  {
+    "name": "nonrecursive",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "434d5f2022494d504f525420612e646263223b0a434f5245"
+      ],
+      [
+        "a.dbc",
+        "434d5f2022494d504f525420616273656e742e646263223b0a410a"
+      ]
+    ],
+    "initial_outputs": [],
+    "output_exists": true,
+    "error": null,
+    "outputs": {
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a0a434d5f2022496d706f727465642066696c6520612e646263207374617274732068657265223b0a434d5f2022494d504f525420616273656e742e646263223b0a410a0a434d5f20226361722e646263207374617274732068657265223b0a434f5245"
+    }
+  },
+  {
+    "name": "import-no-final-lf",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "434d5f2022494d504f5254206d697373696e672e646263223b"
+      ]
+    ],
+    "initial_outputs": [],
+    "output_exists": true,
+    "error": null,
+    "outputs": {
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a434d5f20226361722e646263207374617274732068657265223b0a434d5f2022494d504f5254206d697373696e672e646263223b"
+    }
+  },
+  {
+    "name": "unanchored-and-malformed",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "70726566697820434d5f2022494d504f525420612e646263223b0a7375666669780a434d5f202022494d504f525420616273656e742e646263223b0a"
+      ],
+      [
+        "a.dbc",
+        "410a"
+      ]
+    ],
+    "initial_outputs": [],
+    "output_exists": true,
+    "error": null,
+    "outputs": {
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a0a434d5f2022496d706f727465642066696c6520612e646263207374617274732068657265223b0a410a0a434d5f20226361722e646263207374617274732068657265223b0a707265666978207375666669780a434d5f202022494d504f525420616273656e742e646263223b0a"
+    }
+  },
+  {
+    "name": "universal-newlines",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "434d5f2022494d504f525420612e646263223b0d0a434f52450d454e440d0a"
+      ],
+      [
+        "a.dbc",
+        "410d0a420d43"
+      ]
+    ],
+    "initial_outputs": [],
+    "output_exists": true,
+    "error": null,
+    "outputs": {
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a0a434d5f2022496d706f727465642066696c6520612e646263207374617274732068657265223b0a410a420a430a434d5f20226361722e646263207374617274732068657265223b0a434f52450a454e440a"
+    }
+  },
+  {
+    "name": "unicode-and-bom",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "efbbbf434d5f2022494d504f525420612e646263223b0aed959ceab8800a"
+      ],
+      [
+        "a.dbc",
+        "ecb0a8eb9f89"
+      ]
+    ],
+    "initial_outputs": [],
+    "output_exists": true,
+    "error": null,
+    "outputs": {
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a0a434d5f2022496d706f727465642066696c6520612e646263207374617274732068657265223b0aecb0a8eb9f890a434d5f20226361722e646263207374617274732068657265223b0aefbbbfed959ceab8800a"
+    }
+  },
+  {
+    "name": "global-filename-replacement",
+    "filename": "car.dbc.dbc",
+    "inputs": [
+      [
+        "car.dbc.dbc",
+        "434f5245"
+      ]
+    ],
+    "initial_outputs": [],
+    "output_exists": true,
+    "error": null,
+    "outputs": {
+      "car_generated.dbc_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a434d5f20226361722e6462632e646263207374617274732068657265223b0a434f5245"
+    }
+  },
+  {
+    "name": "parent-include",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "434d5f2022494d504f5254202e2e2f6f7574736964652e646263223b0a434f5245"
+      ],
+      [
+        "../outside.dbc",
+        "4f555453494445"
+      ]
+    ],
+    "initial_outputs": [],
+    "output_exists": true,
+    "error": null,
+    "outputs": {
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a0a434d5f2022496d706f727465642066696c65202e2e2f6f7574736964652e646263207374617274732068657265223b0a4f5554534944450a434d5f20226361722e646263207374617274732068657265223b0a434f5245"
+    }
+  },
+  {
+    "name": "missing-main-before-output",
+    "filename": "missing.dbc",
+    "inputs": [],
+    "initial_outputs": [
+      [
+        "missing_generated.dbc",
+        "4f4c44"
+      ]
+    ],
+    "output_exists": true,
+    "error": {
+      "type": "FileNotFoundError",
+      "errno": 2
+    },
+    "outputs": {
+      "missing_generated.dbc": "4f4c44"
+    }
+  },
+  {
+    "name": "invalid-main-before-output",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "ff"
+      ]
+    ],
+    "initial_outputs": [
+      [
+        "car_generated.dbc",
+        "4f4c44"
+      ]
+    ],
+    "output_exists": true,
+    "error": {
+      "type": "UnicodeDecodeError",
+      "errno": null
+    },
+    "outputs": {
+      "car_generated.dbc": "4f4c44"
+    }
+  },
+  {
+    "name": "missing-include-partial",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "434d5f2022494d504f525420612e646263223b0a434d5f2022494d504f5254206d697373696e672e646263223b0a434f5245"
+      ],
+      [
+        "a.dbc",
+        "41"
+      ]
+    ],
+    "initial_outputs": [
+      [
+        "car_generated.dbc",
+        "4f4c44"
+      ]
+    ],
+    "output_exists": true,
+    "error": {
+      "type": "FileNotFoundError",
+      "errno": 2
+    },
+    "outputs": {
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a0a434d5f2022496d706f727465642066696c6520612e646263207374617274732068657265223b0a410a0a434d5f2022496d706f727465642066696c65206d697373696e672e646263207374617274732068657265223b0a"
+    }
+  },
+  {
+    "name": "invalid-include-partial",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "434d5f2022494d504f525420612e646263223b0a434f5245"
+      ],
+      [
+        "a.dbc",
+        "ff"
+      ]
+    ],
+    "initial_outputs": [],
+    "output_exists": true,
+    "error": {
+      "type": "UnicodeDecodeError",
+      "errno": null
+    },
+    "outputs": {
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a0a434d5f2022496d706f727465642066696c6520612e646263207374617274732068657265223b0a"
+    }
+  },
+  {
+    "name": "empty-include-is-directory",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "434d5f2022494d504f525420223b0a434f5245"
+      ]
+    ],
+    "initial_outputs": [],
+    "output_exists": true,
+    "error": {
+      "type": "IsADirectoryError",
+      "errno": 21
+    },
+    "outputs": {
+      "car_generated.dbc": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a0a434d5f2022496d706f727465642066696c6520207374617274732068657265223b0a"
+    }
+  },
+  {
+    "name": "missing-output-parent",
+    "filename": "car.dbc",
+    "inputs": [
+      [
+        "car.dbc",
+        "434f5245"
+      ]
+    ],
+    "initial_outputs": [],
+    "output_exists": false,
+    "error": {
+      "type": "FileNotFoundError",
+      "errno": 2
+    },
+    "outputs": {}
+  }
+]

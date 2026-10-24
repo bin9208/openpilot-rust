@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/beep_source.py", line 126, in <module>
+    main()
+  File "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/beep_source.py", line 102, in main
+    beepd = definition(ROOT / 'openpilot/selfdrive/controls/beep.py', 'Beepd', scope)()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/selfdrive/controls/beep.py", line 15, in __init__
+    self.enable_gpio()
+  File "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/selfdrive/controls/beep.py", line 28, in enable_gpio
+    subprocess.run("echo \"out\" | sudo tee /sys/class/gpio/gpio42/direction",
+  File "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/beep_source.py", line 78, in command
+    raise FileNotFoundError('injected command spawn failure')
+FileNotFoundError: injected command spawn failure

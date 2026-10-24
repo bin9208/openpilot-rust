@@ -1,0 +1,40 @@
+{
+  "after": [
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVy"
+    }
+  ],
+  "argv_b64": [
+    "L3Vzci9iaW4vcHl0aG9u",
+    "LVA=",
+    "LWM=",
+    "aW1wb3J0IGpzb24sc3lzOyBwcmludChqc29uLmxvYWQob3BlbihzeXMuYXJndlsxXSkpWyJwcmVmaXgiXSk=",
+    "L2hvbWUvcnVubmVyL3dvcmsvX3RlbXAvY2ktcmVjZWlwdC1zb3VyY2Uvb3JpZ2luYWwvd29yay8wNTYtcHJlZml4LW1pc3NpbmcvcnVubmVyL3N0YWdlLmpzb24="
+  ],
+  "before": [
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVy"
+    }
+  ],
+  "boundary_nonstring_prefix": false,
+  "caller": "13",
+  "capture_runner_b64": "L2hvbWUvcnVubmVyL3dvcmsvX3RlbXAvY2ktcmVjZWlwdC1zb3VyY2Uvb3JpZ2luYWwvd29yay8wNTYtcHJlZml4LW1pc3NpbmcvcnVubmVy",
+  "env": "",
+  "error_class": "FileNotFoundError",
+  "glob_order_b64": [],
+  "name": "prefix-missing",
+  "op": "prefix",
+  "setup": {
+    "entries": [],
+    "input_relative": "stage.json",
+    "kind": "missing",
+    "payload_b64": "eyJtb2R1bGUiOiIvdG1wL3BhcmFtcy5zbyIsInByZWZpeCI6Ii90bXAvanNvbjExIn0=",
+    "raw_root": false
+  },
+  "status": 1,
+  "stderr_b64": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpGaWxlTm90Rm91bmRFcnJvcjogW0Vycm5vIDJdIE5vIHN1Y2ggZmlsZSBvciBkaXJlY3Rvcnk6ICcvaG9tZS9ydW5uZXIvd29yay9fdGVtcC9jaS1yZWNlaXB0LXNvdXJjZS9vcmlnaW5hbC93b3JrLzA1Ni1wcmVmaXgtbWlzc2luZy9ydW5uZXIvc3RhZ2UuanNvbicK",
+  "stdout_b64": "",
+  "unchanged": true
+}
