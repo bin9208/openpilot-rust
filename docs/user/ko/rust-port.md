@@ -4,6 +4,8 @@
 저장소 전체의 Python 제거는 아직 진행 중이며, 검증 결과와 남은 작업은
 [#296 검증 기록](../../naver/rust-repository-python-retirement-296-evidence.md)에 정리합니다.
 
+PC에서는 업로더가 원본과 같이 CPU 배치를 변경하지 않습니다. 기기의 기존 0..3 코어 정책은 유지합니다.
+
 Rust 1.94.0이 설치된 Linux 개발 호스트에서 `rust/` 디렉터리로 이동해 실행합니다.
 
 ```sh

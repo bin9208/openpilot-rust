@@ -856,3 +856,163 @@ Clippy 추가512MiB를 유지한다. `strace --kill-on-exit` 및 owned session/t
 현재 prefix4/signal1·해당 Clippy와 수정 후 ARM/Paramsd A2는 모두 미실행이다. Focus에는
 새 workflow exact path1개·literal SHA1개를 추가해105path/90pin으로만 재사용 허용 범위를 넓힌다.
 원본 제거 credit·controls runtime 전체 수용은 추가하지 않는다.
+
+### 52e4 controls109 전체 감사 수용 — #533 한정 해결
+
+[40108377364/job120914731786](https://github.com/bin9208/openpilot-rust/actions/runs/40108377364/job/120914731786)는
+source `52e4dec6d0b1a3b919ddb8c7c3ab11ea1975ba9a`에서 성공했다. artifact12566018810
+(33,406,501B,SHA256 `19737291df1f9ad0ec7c63a0b0a55df317fb0ecb2d02c06f0e8f9a406e46aa4d`)의179CRC/
+중복0,158개 proof file의 size/SHA와 complete manifest, source/index/full SDK의5쌍 및
+held349개 불변·native output 추가1개를 독립 감사했다. 실제49commands는 모두 exit0이다.
+
+현재 CLI1회73.341초와 exact full-schema ignored1회93.054초가 완료됐다. 기존1,200초 timeout,
+30cases/8,605frames/109requests와 full-schema·F64 기준을 유지했다. 새 case별 framing 경계3개와
+strict Clippy도 통과했다. 기존 원본3개 전체 bytes와177 loaded-project source pin을 다시 확인했다.
+원본/현재 projection109행 전체를 독립 inert 대조해 type/key/길이/순서/모든 값과 `$f64`3,100,676개가
+정확히 같았다. 실제 packet138,861쌍 중138,425쌍의 raw bytes만 같으며 나머지436쌍은 wire layout
+차이로 그대로 남긴다. full-schema/F64 성공을 모든 wire byte 일치라고 표현하지 않는다.
+
+actual ELF3개의 성공 exec와 관측된 executable mapping/provider 봉인을 확인했다. mapping은
+sampling이며 전체 pre-dlopen/data closure가 아니다. 매우 짧은 synthetic3에는 actual exec를
+요구하되 자기 ELF의 mapping 관측 필수만 제외했고 native109/전체 auditor에는 같은 예외가 없다.
+현재 ELF/DSO 본체가 ZIP에 없어 원격 FD를 로컬에서 다시 열거나 빌드를 재현했다고 주장하지 않는다.
+기존 regular5는 과거 core6·함수 prefix 봉인으로 재사용했고 새 regular5를 실행한 것으로 세지 않는다.
+
+이 증거로 #533의 큰 cases 감사 timeout 결함만 해결했다. normal40/rejection27/health5,
+continuous IPC·전체 controls runtime·원본3개 제거와 baseline inventory credit은 모두0이다.
+전체 #523/#296·현재0538007 prefix/ARM/Paramsd·필수 PR/병합 후·전달/실기 조건은 계속 미완료다.
+
+### PR343 현재 구현 연결
+
+기존 PR343 head `adff0392e61608c9a576550be78dd7eefb8b9065`가 현재 HEAD의 조상임과 원격 ref가
+그대로임을 확인하고, force 없이 `0538007a74256ec1dbdbfe0c86d4cc5c33cefea1`로 fast-forward했다.
+[PR343](https://github.com/bin9208/openpilot-rust/pull/343)은 계속 dev 대상 draft다. 현재 필수
+[Integration40111549950](https://github.com/bin9208/openpilot-rust/actions/runs/40111549950),
+[Rust40111549951](https://github.com/bin9208/openpilot-rust/actions/runs/40111549951),
+[Fast40111549923](https://github.com/bin9208/openpilot-rust/actions/runs/40111549923),
+[docs40111549937](https://github.com/bin9208/openpilot-rust/actions/runs/40111549937)는 실행 대기다.
+이 연결은 보호 브랜치 통합·기기 배포·검사 성공이 아니다. PR 본문도 한국어의 현재 구현/증거/한계로 갱신했다.
+
+### 0538007 Focus 현재 admission 수용
+
+[40111455561/job120923877879](https://github.com/bin9208/openpilot-rust/actions/runs/40111455561/job/120923877879)는
+현재 source `0538007a74256ec1dbdbfe0c86d4cc5c33cefea1`에서 성공했다. artifact12567066049
+(15,834,418B,SHA256 `0382f0692320e52727fbe8f7d0d6669ea5802eb256fa203538397111d101eeac`)의55CRC/
+중복0/source-index-venv4쌍을 부모가 감사했다. 실제 changed-path105개가 Git diff와 byte 동일하고
+각 exact allowlist에 있으며90literal SHA를 해당 HEAD의 Git blob과 다시 대조했다. embedded prior3ZIP은
+앞서 감사한5d ZIP과 전체 raw bytes가 같아 원래 실패/수용 구분을 유지한다.
+
+새 alias26/native6+UCD scalar1,112,064·Σ154/SSH27/strict Clippy가 성공했다. original receipt의
+native/source SHA와 현재 HEAD도 일치한다. 현재 ELF 본체가 없는 한계·과거 원본 reuse 범위는 같고,
+전체 auth 원본 제거 credit은0이다. ARM/Paramsd/prefix 및 전체 PR gate는 별도로 판정한다.
+
+### 다음 normal40의 명시적 historical admission 후보
+
+기존 original40 원문 artifact12456242812/run39844308544/job120055270738의 raw input/source/result/log
+4개를 고정한 별도 `legacy-normal40-12456242812-v1` origin을 추가했다. fresh capture의 기존 필수
+source/provider/수치 검사는 그대로이며, 두 모드 혼용·알 수 없는 ID·자동 fallback을 거부한다.
+과거 provider 전체 봉인이 미기록인 사실과 과거 hosted runner/source6f25 provenance를 현재 source나
+현재 SDK로 채우지 않는다. `capture.json`을 새로 만들거나 native output을 expected로 쓰지 않는다.
+
+현재 native CLI와 trace를 같은 실행·Cereal normalize·비교 core로1회 연결하고40cases/8655frames/
+705948 numeric comparisons 및 실제 max error를 새로 계산한다. 기존600초/512MiB·수치 허용오차·
+NaN/Inf·input 전체 shape/길이/순서·현재 numerics ABI/roster와 PASS finalizer를 유지한다. 원본109/
+rejection27/health5/continuous는 재실행하거나 이번 결과로 수용하지 않는다.
+
+Rust4파일의 독립 source 검토에서 기존8 test body·comparator/numerics/runtime core 불변을 확인했다.
+새 negative의 첫6개가 다른 필수 옵션 오류로도 성공할 수 있던 검토P2는 공통 argv를 완비하고
+정확한 오류/exit와 archive pin 단계 기준 호출을 요구하도록 수정했다. metadata controller의
+정상 PASS hardlink·TempDir 정리를 오류로 오인하던 두 검토P2도 수정해 독립 재검토했다.
+exact 게시 pair의 inode·data·추가 alias 검사는 유지하고 정상 정리와 겹친 표본만 최대3회
+전체 재수집한다. compile·기능/normal40·메모리 적합성·Clippy는 모두 미실행이다.
+현재 source/SDK/ELF/numerics/provider 전후 봉인과 child 회수는 실패 때도 별도로 검증한다.
+
+새 임시 Python metadata2경로는 native 전환·진단 폐기까지 execution-edge pending으로 계속 추적한다.
+이 추가는 baseline3580 교체·전체 controls runtime/원본 제거 수용이 아니다.
+
+### 0538007 Paramsd A2 실제 수용
+
+[40111455444/job120923877389](https://github.com/bin9208/openpilot-rust/actions/runs/40111455444/job/120923877389)는
+source `0538007a74256ec1dbdbfe0c86d4cc5c33cefea1`에서 성공했다. artifact12567043237
+(9,438,312B,SHA256 `7c16ac33b65861b9125cfb95f5c8aae1256086e17366d4650238884dd7b7f386`)의165CRC/
+중복0/source-index-SDK-Eigen-system SDK9쌍, 기존 held227개 불변·생성물5개 추가와 완료/최종 봉인을
+독립 감사했다. namespace1개는 기록한 실제 owned identity로 정리됐고 live child는0이다.
+55개 직접/입양 자식은 supervisor가 회수했으며 관측441개 모두를 직접 wait했다고 표현하지 않는다.
+
+정확한 기존 ignored child-FD1과 maintained generator exec1이 각각1PASS했다. 실제 generator1회,
+현재 test2개 및 daemon1회의 runtime exec4를 확인했다. daemon의 child-only ready-write/release-read
+FD는4/5이며 첫 empty wait1회 완료 후 두 번째 poll을 잡고 finish/TERM 뒤5초 내 exit0을 확인했다.
+별도 generator auditor는 원래 생성1회의 정확 argv/전체 exec trace와288B CarParams를 검사했으며
+새 generator를 다시 실행하지 않았다. strict Clippy도 성공했고 source/Eigen/system provider·SDK
+전후 봉인과 artifact 업로드/소유 source·job cleanup이 모두 통과했다.
+
+빠른 generator/auditor 자체 mapping이 sampling에 미관측인 한계는 actual exec/held ELF/test 결과와
+구분한다. gate/daemon/hook은 실제 mapping에 관측됐고 관측 executable 경로는 held 집합 안이다.
+이 runtime trace들의 Python attempt0을 helper 전체의 Python 부재로 표현하지 않는다.
+원본9/NumPy9600/regular7/1196행/별도 startup B/continuous1202+restart8과 원본 제거 credit은0이다.
+
+### 전체 PR 문서 단계의 runner ENOSPC — #534
+
+[현재 docs40111549937/job120924154222](https://github.com/bin9208/openpilot-rust/actions/runs/40111549937/job/120924154222)는
+매핑 검사에 성공한 뒤 checker 테스트 중 worker의 `System.IO.IOException: No space left on device`로
+실패했다. worker 진단 log·후속 seal/upload/cleanup이 완료되지 않아 실제 테스트 assertion 결과와
+현재 증가 경로를 확정하지 않는다. 이후 runner22가 online으로 복귀했지만 read-only 용량 조사
+attempt2도 Worker 진단 log의 ENOSPC로 steps0에서 실패했다. Actions에서 새 복구 shell을
+실행할 수 없다. [#534](https://github.com/bin9208/openpilot-rust/issues/534)의 primary는#527,
+#523에는 cross 조건으로 연결했다.71primary/292·3·3285 상태를 그대로 유지한다.
+
+로컬 SSH 설정·기본 outbound key·관리 browser session이 없어 직접 접속 방식을 사용자에게
+확인 요청했다. 증설은 다시 요청하지 않았다. 사용자는 과거 build·cache를 모두 삭제하고 현재
+문제의 build만 남기도록 명시했다. 현재 소스와 검증 원본 입력은 보존하며, 접속 후 해당 범위로
+정리한다. 자기 PR343의 미시작 대규모 run40111549950/951만 실제 취소해 둘 다
+completed/cancelled를 확인했다. 필수 검사는 미충족이며 다른 세션의 실행 작업은 종료하지 않았다.
+접속 정보 대기 중에도 source-only 구현·검토를 계속한다.
+상세 원문/재발 방지 후보와 미확정 사항은 `python-rust-523-runner-534.md`에 기록한다.
+
+### 추가 interpreter 실행 경로의 누락 보완
+
+3580개 파일 인벤토리와 별도로, 이번 #523의 Rust test source에 삽입된 실제 Python oracle5경로도
+execution-edge에 추가했다. SSH plan/parser, auth/login, UCD15와 loopback Requests 비교는 실제로
+interpreter를 실행한다. 새 Rust source 안에 있다는 이유로 Python 부재라고 세지 않는다.
+setup21을 고정 데이터로 바꾸는 후보도 SSH의 남은 두 live oracle 제거를 의미하지 않는다.
+
+normal40 metadata2경로와 합쳐 이 표는25교체/63대기/1native-existing/2non-executing-text다.
+mutant 정책 검사에 들어 있는 비실행 Python 문자열이나 `PYTHONINTMAXSTRDIGITS`를 해석하는
+순수 Rust 기능은 실행 의존성으로 잘못 추가하지 않았다. baseline292/3/3285는 그대로다.
+
+### setup 키 설정의 한정 frozen21 후보
+
+`developer_cli_original.rs`의 setup-effects21에 기존 a134 원본 JSON payload13,800B를 재직렬화0으로
+수입했다. source `a134b32c5d50d346994d671c0882b147175021dc`의 실제 artifact12558498891/
+run40089943318에 들어 있던 `prior-a134-focused.zip`에서 원문을 추출했고, SHA256은
+`444a47ecba9579d4042f26dd89f8438908b56d244a0f2c98c8b0dd3e1ef3a6ef`다. 과거 metadata에 없던
+native_sources/provider 정보를 현재 값으로 덧붙이지 않는다. 같은 authored input·criteria·21개
+ID/순서/metadata를 고정 admission하고 기존 semantic verifier를 그대로 쓴다.
+
+SSH plan26/parser13은 fresh 원본을 유지한다. 원본 source는 실제 case가 쓰는 tool만 읽도록
+하여 setup 원본 제거에 대한 불필요한 결합만 끊었으며, SSH 원본 부재를 skip하지 않는다.
+독립 source 검토에서 이 경계와 기존3 test body·Case·candidate·verifier 불변을 확인했다.
+고정 원문/metadata/roster/types/입력/criteria 변조 negative3개와 기존 setup 비교1개를 새
+전용 Actions에 연결했다. 별도의 공개 `rust/tools/run-developer-tool setup-ssh-keys` 무인자
+실행1회는 실제 current ELF·정확 exit1/usage를 확인하도록 구성했다. frozen21 자체를 실제
+네트워크 CLI21회 수용으로 표현하지 않는다.
+
+WF bootstrap의 build가 반복 용량 감시 밖에 있던 검토P2는 같은 watched subtree와 bounded
+7분 경로로 옮겼다. 원래 bootstrap2048/6144MiB admission을 낮추지 않았고 후속 growth는
+준비한 동일 cache/SDK를 재사용한다. actual current replay·Clippy·공개 entry·봉인/회수는
+모두 미실행이다. `tools/scripts/setup_ssh_keys.py`는 그대로 두며, pre-delete 실제 수용 뒤
+별도 원본 부재 커밋과 같은 검증을 통과해야1개 제거를 인정한다. 현재 credit은0이다.
+
+### 다음 소스 배치의 검증 경계
+
+위 controls normal40·setup frozen21·#534 docs guard의 소스 독립 리뷰 지적은 수정·재검토했고
+추가 P1/P2는 발견하지 못했다. uploader PC no-op 후보는 기존 `5b66042b0fd7808c2523df732c2433993d2314dc`
+blob 전체 bytes를 재사용했다. 다른 PR500 수정이나 dev-md 작업은 가져오지 않았다.
+Focus의 허용 경로는 exact120개, 개별 literal source pin은103개이며 해당 현재 bytes와 모두
+일치한다. 변경 소스를 과거 성공 cohort로 확대하지 않고 별도 현재 실행 대상으로 유지했다.
+execution-edge의 변경4경로 working blob도 동결 소스로 갱신했다.
+
+로컬 workspace Rust 서식, YAML4개·내부 Bash43개·단독 Bash1개·Python AST와 embedded AST,
+diff를 확인했다. 이 배치의 compile·기능·Clippy·새 normal40/setup entry·docs growth 실패 주입과
+실제 정리는 미실행이다. 앞의0538007 성공은 이번 미실행 소스의 성공으로 사용하지 않는다.
+원본 제거·baseline credit·필수 PR/병합 후·전달 및 실기 수용은 별도 조건으로 남는다.

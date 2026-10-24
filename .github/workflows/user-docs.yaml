@@ -93,42 +93,29 @@ jobs:
           printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
           git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
           tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
-      - name: Expose provisioned Rust shims
+      - name: Admit prepared read-only Rust SDK bound to the private docs source
+        id: prepared_rust
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+        shell: bash
+        working-directory: ${{ env.CI296_SOURCE }}
         env:
           CI296_HOST_CONTROL: '1'
-      - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.94.0 --profile minimal
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        working-directory: ${{ env.CI296_SOURCE }}
+        run: DIAG_SOURCE="$CI296_SOURCE" "$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust" before
       - name: Check code and user documentation changes
         env:
           DOCS_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           PR_BODY: ${{ github.event.pull_request.body }}
           DOCS_EVENT_NAME: ${{ github.event_name }}
         run: |
-          free_bytes=$(df --output=avail -B1 "$GITHUB_WORKSPACE" | tail -n 1)
-          if (( free_bytes < 2 * 1024 * 1024 * 1024 )); then
-            echo 'Insufficient free space for estimated 2 GiB operation growth.' >&2
-            exit 1
-          fi
-          args=(--base "$DOCS_BASE_SHA")
-          if [ "$DOCS_EVENT_NAME" = "push" ]; then
-            args+=(--commit-overrides)
-          fi
-          CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin check-user-docs -- "${args[@]}"
+          set -euo pipefail
+          DIAG_SOURCE="$CI296_SOURCE" "$CI296_SOURCE/tools/ci/run-docs-with-growth-guard" mapped
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.CI296_SOURCE }}
       - name: Test user documentation checker
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled()) }}
         run: |
-          free_bytes=$(df --output=avail -B1 "$GITHUB_WORKSPACE" | tail -n 1)
-          if (( free_bytes < 2 * 1024 * 1024 * 1024 )); then
-            echo 'Insufficient free space for estimated 2 GiB operation growth.' >&2
-            exit 1
-          fi
-          CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test user_docs
+          set -euo pipefail
+          DIAG_SOURCE="$CI296_SOURCE" "$CI296_SOURCE/tools/ci/run-docs-with-growth-guard" user-docs-tests
         working-directory: ${{ env.CI296_SOURCE }}
       - name: Seal private source and index after maintained checks
         id: ci296_source_seal
@@ -148,6 +135,29 @@ jobs:
           git diff --cached --exit-code
           df -PB1 "$CI296_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
           cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+      - name: Verify prepared Rust SDK after all attempted docs commands
+        id: prepared_rust_final
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}
+        shell: bash
+        working-directory: ${{ env.CI296_SOURCE }}
+        env:
+          CI296_HOST_CONTROL: '1'
+        run: DIAG_SOURCE="$CI296_SOURCE" "$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust" after
+      - name: Require owned docs groups to be non-live before cleanup
+        id: ci296_docs_recovery
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI296_SOURCE != '') }}
+        shell: bash
+        working-directory: ${{ env.CI296_SOURCE }}
+        run: |
+          set -euo pipefail
+          for phase in mapped user-docs-tests; do
+            receipt="$CI_JOB_TEMP/proof/docs-growth-$phase/recovery.txt"
+            test -f "$receipt" && test ! -L "$receipt"
+            grep -Fx "phase=$phase" "$receipt"
+            grep -Fx "source=$GITHUB_SHA" "$receipt"
+            grep -Fx "owner=$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" "$receipt"
+            grep -Fx 'recovery=pass' "$receipt"
+          done
       - name: Retain private job ownership and source evidence
         id: ci296_private_evidence
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
@@ -159,7 +169,7 @@ jobs:
           if-no-files-found: error
       - name: Clean only uploaded owned source alias and target
         id: ci296_source_cleanup
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success' && env.CI296_SOURCE_OWNER != '') }}
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.ci296_docs_recovery.outcome == 'success' && env.CI296_SOURCE_OWNER != '') }}
         shell: bash
         working-directory: ${{ github.workspace }}
         env:
@@ -200,3 +210,8 @@ jobs:
           CI296_HOST_CONTROL: '1'
     env:
       CI296_ALIAS_BASENAME: .ci296-source-user-docs--check_user_docs
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'

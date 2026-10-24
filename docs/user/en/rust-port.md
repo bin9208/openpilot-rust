@@ -4,6 +4,8 @@ This independent repository ports the openpilot runtime and development tools to
 Rust. Repository-wide Python retirement is still in progress; current acceptance
 and outstanding work are recorded in the [#296 evidence ledger](../../naver/rust-repository-python-retirement-296-evidence.md).
 
+On a PC, the uploader leaves CPU placement unchanged, matching the original. Devices retain the existing cores 0..3 policy.
+
 On a Linux development host, with Rust 1.94.0 installed, run from `rust/`:
 
 ```sh

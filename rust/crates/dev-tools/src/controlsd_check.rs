@@ -24,6 +24,8 @@ use std::{
 #[allow(dead_code)]
 #[path = "paramsd_estimator_check/reference.rs"]
 mod event_reference;
+#[path = "controlsd_check/frozen.rs"]
+pub(super) mod frozen;
 #[path = "paramsd_estimator_check/identity.rs"]
 mod identity;
 #[allow(dead_code)]
@@ -31,6 +33,7 @@ mod identity;
 pub mod numeric;
 #[path = "controlsd_check/reference.rs"]
 pub mod reference;
+use frozen::REFERENCE_ID as FROZEN_REFERENCE_ID;
 use identity::{Bound, Directory};
 const LIMIT: u64 = 512 * 1024 * 1024;
 pub const TOKENS: [&str; 10] = [
@@ -189,6 +192,24 @@ pub struct Options {
     pub source_commit: String,
     pub capture_sha256: String,
 }
+#[derive(Clone)]
+pub struct FrozenOptions {
+    pub root: PathBuf,
+    pub binary: PathBuf,
+    pub reference_dir: PathBuf,
+    pub reference_id: String,
+    pub numerics: PathBuf,
+    pub evidence: PathBuf,
+    pub source_commit: String,
+}
+type OriginalValues = BTreeMap<&'static str, (Value, Vec<u8>)>;
+enum Origin {
+    Fresh {
+        source_commit: String,
+        capture_sha256: String,
+    },
+    Frozen(Box<frozen::Admission>),
+}
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Provider {
@@ -213,7 +234,7 @@ fn create(path: &Path, bytes: &[u8]) -> Result<()> {
     f.sync_all()?;
     Ok(())
 }
-fn verify(stop: &AtomicBool, dir: &Directory, bounds: &[Bound]) -> Result<()> {
+fn verify(stop: &AtomicBool, dir: &Directory, bounds: &[Bound], origin: &Origin) -> Result<()> {
     require(
         !stop.load(Ordering::SeqCst),
         "controlsd controller cancelled",
@@ -221,6 +242,9 @@ fn verify(stop: &AtomicBool, dir: &Directory, bounds: &[Bound]) -> Result<()> {
     dir.verify()?;
     for bound in bounds {
         bound.verify()?;
+    }
+    if let Origin::Frozen(admission) = origin {
+        admission.verify()?;
     }
     Ok(())
 }
@@ -356,24 +380,144 @@ pub fn execute(options: &Options, runner: &mut dyn Runner, stop: &AtomicBool) ->
         let raw = bounds.last().ok_or("missing bound member")?.bytes(LIMIT)?;
         values.insert(name, (numeric::parse_python(&raw)?, raw));
     }
+    execute_admitted(
+        Execution {
+            root,
+            numerics,
+            binary: &options.binary,
+            evidence: &options.evidence,
+            source_commit: &options.source_commit,
+            bounds,
+            values,
+            origin: Origin::Fresh {
+                source_commit: capture.source_commit,
+                capture_sha256: options.capture_sha256.clone(),
+            },
+        },
+        runner,
+        stop,
+    )
+}
+/// 역사 원문만 수용한다. 현재 source/SDK/실제 exec의 전체 봉인은 부모 gate 책임이다.
+pub fn execute_frozen(
+    options: &FrozenOptions,
+    runner: &mut dyn Runner,
+    stop: &AtomicBool,
+) -> Result<Value> {
+    let fsize = rustix::process::getrlimit(rustix::process::Resource::Fsize);
     require(
-        !fs::symlink_metadata(&options.binary)?
-            .file_type()
-            .is_symlink(),
+        fsize.current.is_some_and(|n| n <= LIMIT),
+        "controller process needs a file-size limit <=512 MiB",
+    )?;
+    require(
+        hex(&options.source_commit, 40),
+        "invalid current source identity",
+    )?;
+    require(
+        options.reference_id == FROZEN_REFERENCE_ID,
+        "unknown frozen reference",
+    )?;
+    require(
+        !stop.load(Ordering::SeqCst),
+        "controlsd controller cancelled",
+    )?;
+    let root = options.root.canonicalize()?;
+    let numerics = options.numerics.canonicalize()?;
+    require(
+        options.numerics.is_absolute() && options.numerics == numerics,
+        "canonical current numerics directory required",
+    )?;
+    let mut bounds = Vec::new();
+    let (admission, values) = frozen::admit(&root, &numerics, &options.reference_dir, &mut bounds)?;
+    execute_admitted(
+        Execution {
+            root,
+            numerics,
+            binary: &options.binary,
+            evidence: &options.evidence,
+            source_commit: &options.source_commit,
+            bounds,
+            values,
+            origin: Origin::Frozen(Box::new(admission)),
+        },
+        runner,
+        stop,
+    )
+}
+struct Execution<'a> {
+    root: PathBuf,
+    numerics: PathBuf,
+    binary: &'a Path,
+    evidence: &'a Path,
+    source_commit: &'a str,
+    bounds: Vec<Bound>,
+    values: OriginalValues,
+    origin: Origin,
+}
+fn execute_admitted(
+    mut execution: Execution<'_>,
+    runner: &mut dyn Runner,
+    stop: &AtomicBool,
+) -> Result<Value> {
+    // 실패 경로의 독립 봉인이 끝날 때까지 owned output도 보존한다.
+    let mut private = None;
+    let result = execute_bound(&mut execution, runner, stop, &mut private);
+    if let (Err(error), Origin::Frozen(admission)) = (&result, &execution.origin) {
+        // 취소/child/parse/compare 실패도 stop flag와 독립적으로 마지막 봉인을 확인한다.
+        let mut failures = Vec::new();
+        for bound in &execution.bounds {
+            if let Err(error) = bound.verify() {
+                failures.push(error.to_string());
+            }
+        }
+        if let Err(error) = admission.verify() {
+            failures.push(error.to_string());
+        }
+        eprintln!(
+            "CONTROLSD_FROZEN_FAILURE_FINAL_SEALS {}",
+            json!({"pass":failures.is_empty(),"errors":failures})
+        );
+        if !failures.is_empty() {
+            return Err(
+                format!("{error}; frozen final seal failed: {}", failures.join("; ")).into(),
+            );
+        }
+    }
+    result
+}
+fn execute_bound(
+    execution: &mut Execution<'_>,
+    runner: &mut dyn Runner,
+    stop: &AtomicBool,
+    owned: &mut Option<tempfile::TempDir>,
+) -> Result<Value> {
+    let root = &execution.root;
+    let numerics = &execution.numerics;
+    let binary = execution.binary;
+    let evidence = execution.evidence;
+    let source_commit = execution.source_commit;
+    let bounds = &mut execution.bounds;
+    let values = &execution.values;
+    let origin = &execution.origin;
+    require(
+        !fs::symlink_metadata(binary)?.file_type().is_symlink(),
         "native trace symlink forbidden",
     )?;
-    let binary = options.binary.canonicalize()?;
+    let binary = binary.canonicalize()?;
     let mut trace = Bound::open(&binary, None)?;
     trace.native_elf()?;
     bounds.push(trace);
-    let directory = Directory::create(&options.evidence)?;
-    let evidence = options.evidence.canonicalize()?;
+    let directory = Directory::create(evidence)?;
+    let evidence = evidence.canonicalize()?;
     // A fresh evidence root prevents overwriting foreign inputs, output or receipts.
-    let private = tempfile::Builder::new()
-        .prefix("owned-trace-")
-        .tempdir_in(&evidence)?;
+    *owned = Some(
+        tempfile::Builder::new()
+            .prefix("owned-trace-")
+            .tempdir_in(&evidence)?,
+    );
+    let private = owned.as_ref().ok_or("owned trace directory missing")?;
     let output = private.path().join("native-raw.json");
-    verify(stop, &directory, &bounds)?;
+    verify(stop, &directory, bounds, origin)?;
     let input = request()?;
     let canonical = |v: &Value| -> Result<Value> {
         fixture::canonical_inputs(&JsonValue::parse(&serde_json::to_string(v)?)?)
@@ -397,6 +541,9 @@ pub fn execute(options: &Options, runner: &mut dyn Runner, stop: &AtomicBool) ->
                 && case["frames"].as_array().map(Vec::len) == old["rows"].as_array().map(Vec::len),
             "original case/frame order differs",
         )?;
+    }
+    if let Origin::Frozen(admission) = origin {
+        admission.check_frames(expected)?;
     }
     create(&evidence.join("input.json"), &serde_json::to_vec(&input)?)?;
     create(&evidence.join("source.json"), &values["source.json"].1)?;
@@ -425,7 +572,7 @@ pub fn execute(options: &Options, runner: &mut dyn Runner, stop: &AtomicBool) ->
     spec.stderr_limit = 8 * 1024 * 1024;
     spec.disable_core_dump = true;
     // CLI-owned RLIMIT_FSIZE is inherited by this child; parent shell unchanged.
-    verify(stop, &directory, &bounds)?;
+    verify(stop, &directory, bounds, origin)?;
     let process = runner.run(&spec);
     if let Ok(child) = &process {
         let mut log = child.stdout.clone();
@@ -433,7 +580,7 @@ pub fn execute(options: &Options, runner: &mut dyn Runner, stop: &AtomicBool) ->
         log.extend(format!("\nEXIT {}\n", child.code).bytes());
         create(&evidence.join("process.log"), &log)?;
     }
-    verify(stop, &directory, &bounds)?;
+    verify(stop, &directory, bounds, origin)?;
     let child = process?;
     require(
         child.code == 0,
@@ -446,24 +593,49 @@ pub fn execute(options: &Options, runner: &mut dyn Runner, stop: &AtomicBool) ->
     let mut actual = numeric::parse_python(&raw_bytes)?;
     reference::normalize(&mut actual)?;
     let (actual, result) = reference::compare(&values["source.json"].0, actual)?;
+    if let Origin::Frozen(admission) = origin {
+        admission.check_result(&result)?;
+    }
     create(
         &evidence.join("native.json"),
         &reference::python_json(&actual)?,
     )?;
-    verify(stop, &directory, &bounds)?;
+    verify(stop, &directory, bounds, origin)?;
+    let mut admission = match origin {
+        Origin::Fresh {
+            source_commit,
+            capture_sha256,
+        } => json!({
+            "original_source_commit":source_commit,"capture_sha256":capture_sha256
+        }),
+        Origin::Frozen(admission) => admission.receipt(),
+    };
+    let fields = admission
+        .as_object_mut()
+        .ok_or("admission must be object")?;
+    fields.insert("current_source_commit".into(), json!(source_commit));
+    fields.insert(
+        "bindings".into(),
+        json!(bounds
+            .iter()
+            .map(|b| json!({"path":b.path,"sha256":b.hash}))
+            .collect::<Vec<_>>()),
+    );
+    fields.insert("argv".into(), json!(spec.argv));
+    fields.insert("numerics".into(), json!(numerics));
+    fields.insert("timeout_seconds".into(), json!(600));
+    fields.insert("original_backend_execs".into(), json!(0));
     create(
         &evidence.join("admission.json"),
-        &serde_json::to_vec_pretty(
-            &json!({"current_source_commit":options.source_commit,"original_source_commit":capture.source_commit,"capture_sha256":options.capture_sha256,"bindings":bounds.iter().map(|b|json!({"path":b.path,"sha256":b.hash})).collect::<Vec<_>>(),"argv":spec.argv,"numerics":numerics,"timeout_seconds":600,"original_backend_execs":0}),
-        )?,
+        &serde_json::to_vec_pretty(&admission)?,
     )?;
     // Passing receipt is last, atomic and removed on post-write cancellation/error.
     let receipt = evidence.join("results.json");
     let pending = private.path().join("results.pending.json");
     create(&pending, &serde_json::to_vec_pretty(&result)?)?;
-    verify(stop, &directory, &bounds)?;
+    verify(stop, &directory, bounds, origin)?;
     fs::hard_link(&pending, &receipt)?;
-    if let Err(error) = verify(stop, &directory, &bounds)
+    if let Err(error) = verify(stop, &directory, bounds, origin)
         .and_then(|_| File::open(&evidence)?.sync_all().map_err(Into::into))
     {
         let a = fs::symlink_metadata(&receipt)?;
@@ -519,6 +691,8 @@ pub fn cli() -> Result<()> {
                 "--evidence",
                 "--source-commit",
                 "--capture-sha256",
+                "--frozen-reference",
+                "--reference-dir",
             ]
             .contains(&flag.as_str()),
             "unknown controlsd option",
@@ -529,25 +703,66 @@ pub fn cli() -> Result<()> {
             "duplicate controlsd option",
         )?;
     }
+    let frozen = values.contains_key("--frozen-reference");
+    require(
+        frozen || !values.contains_key("--reference-dir"),
+        "--reference-dir needs --frozen-reference",
+    )?;
+    if frozen {
+        require(
+            !["--original", "--python-prefix", "--capture-sha256"]
+                .iter()
+                .any(|name| values.contains_key(*name)),
+            "fresh and frozen options cannot be mixed",
+        )?;
+        require(
+            values["--frozen-reference"] == FROZEN_REFERENCE_ID,
+            "unknown frozen reference",
+        )?;
+    }
     let mut take = |name: &str| {
         values
             .remove(name)
             .ok_or_else(|| format!("{name} required"))
     };
-    let options = Options {
-        root: take("--root")?.into(),
-        binary: take("--trace")?.into(),
-        original: take("--original")?.into(),
-        numerics: take("--numerics")?.into(),
-        python_prefix: take("--python-prefix")?.into(),
-        evidence: take("--evidence")?.into(),
-        source_commit: take("--source-commit")?
-            .into_string()
-            .map_err(|_| "source UTF-8 required")?,
-        capture_sha256: take("--capture-sha256")?
-            .into_string()
-            .map_err(|_| "capture UTF-8 required")?,
+    let root = take("--root")?.into();
+    let binary = take("--trace")?.into();
+    let numerics = take("--numerics")?.into();
+    let evidence = take("--evidence")?.into();
+    let source_commit = take("--source-commit")?
+        .into_string()
+        .map_err(|_| "source UTF-8 required")?;
+    enum Invocation {
+        Fresh(Options),
+        Frozen(FrozenOptions),
+    }
+    let invocation = if frozen {
+        Invocation::Frozen(FrozenOptions {
+            root,
+            binary,
+            numerics,
+            evidence,
+            source_commit,
+            reference_dir: take("--reference-dir")?.into(),
+            reference_id: take("--frozen-reference")?
+                .into_string()
+                .map_err(|_| "reference UTF-8 required")?,
+        })
+    } else {
+        Invocation::Fresh(Options {
+            root,
+            binary,
+            numerics,
+            evidence,
+            source_commit,
+            original: take("--original")?.into(),
+            python_prefix: take("--python-prefix")?.into(),
+            capture_sha256: take("--capture-sha256")?
+                .into_string()
+                .map_err(|_| "capture UTF-8 required")?,
+        })
     };
+    require(values.is_empty(), "unused controlsd options")?;
     let mut signals = Signals {
         stop: Arc::new(AtomicBool::new(false)),
         ids: Vec::new(),
@@ -557,11 +772,11 @@ pub fn cli() -> Result<()> {
             .ids
             .push(signal_hook::flag::register(sig, Arc::clone(&signals.stop))?);
     }
-    let result = execute(
-        &options,
-        &mut Controlled(Arc::clone(&signals.stop)),
-        &signals.stop,
-    )?;
+    let mut runner = Controlled(Arc::clone(&signals.stop));
+    let result = match invocation {
+        Invocation::Fresh(options) => execute(&options, &mut runner, &signals.stop),
+        Invocation::Frozen(options) => execute_frozen(&options, &mut runner, &signals.stop),
+    }?;
     println!("{}", serde_json::to_string(&result)?);
     Ok(())
 }

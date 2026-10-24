@@ -1,0 +1,817 @@
+name: Python Rust 523 setup keys frozen21 and public missing argument
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-setup-keys.yml
+    - rust/crates/dev-tools/tests/developer_cli_original.rs
+    - rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json
+    - rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md
+    - rust/tools/run-developer-tool
+    - tools/scripts/setup_ssh_keys.py
+    - rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs
+permissions:
+  contents: read
+concurrency:
+  group: python-rust-523-setup-keys-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  setup-keys:
+    name: Setup frozen21 semantic replay and one public no-argument entry
+    if: ${{ github.repository == 'bin9208/openpilot-rust' }}
+    runs-on:
+    - self-hosted
+    - Linux
+    - X64
+    - dev-md-local
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TERM_COLOR: never
+      RUSTUP_TOOLCHAIN: 1.94.0
+      SETUP_SOURCE_PHASE: pre-delete
+    steps:
+    - name: Deny fork source and require registered local runner
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        EVENT_NAME: ${{ github.event_name }}
+        SOURCE_REF: ${{ github.ref }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        set -euo pipefail
+        test "$EVENT_NAME" = push
+        test "$SOURCE_REF" = refs/heads/codex/feat-523-python-rust
+        test "$GITHUB_ACTIONS" = true
+        test "$RUNNER_NAME" = bin-actions
+        test "$RUNNER_ENVIRONMENT" = self-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -m)" = x86_64
+    - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Allocate private source cache and target before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Actions의 workspace와 Bash가 사용하는 private checkout을 구분한다.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/build/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$job/build/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+    - uses: actions/checkout@v7
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+    - name: Seal exact source HEAD and tracked index before checks
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      id: source_before
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+        allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ ]]
+        printf '{"allocated_private_source_bytes":%s,"planned_source_growth_bytes":2147483648}\n' "$allocated" > "$CI_JOB_TEMP/proof/source-growth-after-checkout.json"
+        git ls-tree -r -l HEAD | awk '$4 ~ /^[0-9]+$/ {bytes+=$4; files++} END {printf "{\"tracked_blob_bytes\":%.0f,\"files\":%d}\n",bytes,files}' > "$CI_JOB_TEMP/proof/tracked-source-size.json"
+        ((allocated <= 2 * 1024 * 1024 * 1024))
+    - name: Admit prepared Rust SDK without installation or permission changes
+      id: prepared_rust
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before
+    - name: Replay frozen setup21 and reach exact current public native entry once
+      id: qualify
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        set +m
+        umask 077
+        source=$DIAG_SOURCE
+        job=$CI_JOB_TEMP
+        proof=$job/proof
+        raw=$proof/raw
+        build=$job/build
+        sdk=$CI_PREPARED_RUST_ROOT
+        mib=$((1024 * 1024))
+        build_cap=$((8192 * mib))
+        mkdir "$raw" "$proof/build" "$build" "$build/cargo-home" "$build/target" "$build/tmp" "$build/programs" "$build/entry-home" "$build/entry-params"
+        test "$CARGO_HOME" = "$build/cargo-home"
+        test "$CARGO_TARGET_DIR" = "$build/target"
+        test "$sdk" = /home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+        export PATH="$sdk/bin:/usr/bin:/bin" LC_ALL=C
+        unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER
+        unset LD_PRELOAD LD_LIBRARY_PATH BASH_ENV ENV
+        entry=$source/rust/tools/run-developer-tool
+        original=$source/tools/scripts/setup_ssh_keys.py
+        fixture=$source/rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json
+        fixture_sha=444a47ecba9579d4042f26dd89f8438908b56d244a0f2c98c8b0dd3e1ef3a6ef
+        entry_sha=2066721af9f04888d00cc8572c5374ed142bf6d5d658cbf12b97a02c5452ca39
+        rustup_root=/home/actions/.rustup
+        rustup_shim=/home/actions/.cargo/bin/rustup
+        replay=setup_cli_original_status_default_decode_and_write_failure_order
+        negatives=(setup_frozen::setup_frozen_rejects_wrong_pin_last_byte_truncation_and_extra_bytes
+                   setup_frozen::setup_frozen_rejects_wrong_scope_metadata_roster_and_types
+                   setup_frozen::setup_frozen_rejects_authored_input_and_criteria_drift)
+        declare -A held_fd=() held_identity=() held_sha=() alias_target=() alias_identity=()
+        declare -a roots=() root_names=()
+        active_leader= active_watcher= active_stop=
+        phase=preflight
+        artifacts_ready=false
+        replay_pass=false
+        negative_pass=false
+        entry_pass=false
+        baseline_ready=false
+        guard_ready=false
+
+        identity() { stat -Lc '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$1"; }
+        bind_file() {
+          local path canonical before descriptor digest
+          path=$1
+          canonical=$(readlink -e -- "$path") || return 1
+          [[ $canonical == /* && -f $canonical && ! -L $canonical ]] || return 1
+          if [[ -v alias_target["$path"] ]]; then
+            [[ ${alias_target[$path]} == "$canonical" && ${alias_identity[$path]} == "$(stat -c '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$path")" ]] || return 1
+          else
+            alias_target[$path]=$canonical
+            alias_identity[$path]=$(stat -c '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$path") || return 1
+          fi
+          if [[ -v held_fd["$canonical"] ]]; then return 0; fi
+          before=$(identity "$canonical") || return 1
+          exec {descriptor}<"$canonical" || return 1
+          [[ $(identity "/proc/$$/fd/$descriptor") == "$before" ]] || return 1
+          digest=$(sha256sum "/proc/$$/fd/$descriptor") || return 1
+          digest=${digest%% *}
+          [[ $(identity "$canonical") == "$before" && $(identity "/proc/$$/fd/$descriptor") == "$before" ]] || return 1
+          held_fd[$canonical]=$descriptor
+          held_identity[$canonical]=$before
+          held_sha[$canonical]=$digest
+          printf '%s\t%s\t%s\n' "$canonical" "$before" "$digest" >> "$proof/held-before.tsv"
+        }
+        verify_held() {
+          local path descriptor digest status=0
+          for path in "${!alias_target[@]}"; do
+            [[ $(readlink -e -- "$path") == "${alias_target[$path]}" && $(stat -c '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$path") == "${alias_identity[$path]}" ]] || status=1
+          done
+          for path in "${!held_fd[@]}"; do
+            descriptor=${held_fd[$path]}
+            if [[ $(identity "$path") != "${held_identity[$path]}" || $(identity "/proc/$$/fd/$descriptor") != "${held_identity[$path]}" ]]; then
+              printf 'identity changed: %s\n' "$path" >&2; status=1; continue
+            fi
+            digest=$(sha256sum "/proc/$$/fd/$descriptor") || { status=1; continue; }
+            digest=${digest%% *}
+            [[ $digest == "${held_sha[$path]}" ]] || status=1
+            [[ $(identity "$path") == "${held_identity[$path]}" && $(identity "/proc/$$/fd/$descriptor") == "${held_identity[$path]}" ]] || status=1
+            printf '%s\t%s\t%s\n' "$path" "${held_identity[$path]}" "$digest" >> "$proof/held-after.tsv"
+          done
+          return "$status"
+        }
+        tree_seal() {
+          local root=$1 out=$2
+          # source의 .git 내부 lock/읽기 bookkeeping은 tracked index/tar 봉인과 별도로 취급한다.
+          find -P "$root" -path "$source/.git" -prune -o -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%y\t%p\t%l\0' | sort -z > "$out.roster.bin" || return 1
+          find -P "$root" -path "$source/.git" -prune -o -type f -print0 | sort -z | xargs -0 -r sha256sum > "$out.files.sha256" || return 1
+          find -P "$root" -path "$source/.git" -prune -o -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%y\t%p\t%l\0' | sort -z > "$out.stable.bin" || return 1
+          cmp "$out.roster.bin" "$out.stable.bin" || return 1
+        }
+        add_tree() {
+          local name=$1 root=$2
+          [[ -d $root && ! -L $root && $(readlink -e "$root") == "$root" ]] || return 1
+          roots+=("$root"); root_names+=("$name")
+          tree_seal "$root" "$proof/$name-before" || return 1
+        }
+        bind_dso() {
+          local program=$1 line dependency
+          bind_file "$program" || return 1
+          # ldd의 shell/loader도 보존한다. vDSO와 static 진단은 실제 파일 provider가 아니다.
+          if ldd "$program" > "$proof/ldd-current.txt" 2>&1; then
+            while IFS= read -r line; do
+              if [[ $line =~ ^[[:space:]]*linux-vdso\.so\.[0-9]+[[:space:]]+\(0x[0-9a-f]+\)$ ]]; then continue; fi
+              if [[ $line =~ ^[[:space:]]*statically[[:space:]]linked[[:space:]]*$ ]]; then
+                readelf -l "$program" > "$proof/static-current.txt" || return 1
+                ! grep -q INTERP "$proof/static-current.txt" || return 1
+                continue
+              fi
+              if [[ $line =~ ^[[:space:]]*[^[:space:]]+[[:space:]]+\=\>[[:space:]]+(/[^[:space:]]+)[[:space:]]+\(0x[0-9a-f]+\)$ ]]; then
+                dependency=${BASH_REMATCH[1]}
+              elif [[ $line =~ ^[[:space:]]*(/[^[:space:]]+)[[:space:]]+\(0x[0-9a-f]+\)$ ]]; then
+                dependency=${BASH_REMATCH[1]}
+              else printf 'unknown/missing DSO: %s\n' "$line" >&2; return 1; fi
+              bind_file "$dependency" || return 1
+            done < "$proof/ldd-current.txt"
+          else
+            grep -Eq '^[[:space:]]*(not a dynamic executable|statically linked)[[:space:]]*$' "$proof/ldd-current.txt" || return 1
+            readelf -l "$program" > "$proof/static-current.txt" || return 1
+            ! grep -q INTERP "$proof/static-current.txt" || return 1
+          fi
+          printf '\nPROGRAM %s\n' "$program" >> "$proof/provider-ldd.txt"
+          cat "$proof/ldd-current.txt" >> "$proof/provider-ldd.txt" || return 1
+        }
+
+        build_usage() {
+          local attempt usage code line relative root_identity bytes apparent
+          local errors=$proof/build-budget-current.stderr
+          local prefix="find: '$CARGO_TARGET_DIR/" suffix="': No such file or directory"
+          [[ -d $build && ! -L $build && $(readlink -e "$build") == "$build" ]] || return 1
+          root_identity=$(stat -c '%d:%i' -- "$build") || return 1
+          for attempt in 1 2 3; do
+            [[ $(stat -c '%d:%i' -- "$build") == "$root_identity" ]] || return 1
+            code=0
+            usage=$(
+              set +e
+              find -P "$build" -ignore_readdir_race -printf '%b %s\n' 2> "$errors" |
+                awk '{b+=$1*512; s+=$2} END {printf "%.0f %.0f\n",b,s}'
+              codes=("${PIPESTATUS[@]}")
+              # An awk/read/write failure must never be treated as a find race.
+              if ((codes[1] != 0)); then
+                printf 'build budget awk failed: status=%s\n' "${codes[1]}" >&2
+                exit 125
+              fi
+              exit "${codes[0]}"
+            ) || code=$?
+            [[ -d $build && ! -L $build && $(readlink -e "$build") == "$build" &&
+               $(stat -c '%d:%i' -- "$build") == "$root_identity" ]] || return 1
+            if [[ $code != 0 || -s $errors ]]; then
+              printf 'attempt=%s find_or_reader_status=%s\n' "$attempt" "$code" >> "$proof/build-budget-errors.log" || return 1
+              cat "$errors" >> "$proof/build-budget-errors.log" || return 1
+            fi
+            if [[ $code == 0 || $code == 1 ]]; then
+              read -r bytes apparent <<< "$usage" || return 1
+              [[ $bytes =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] || return 1
+              # Even an incomplete scan is sufficient to reject an observed
+              # over-cap lower bound. Only a complete scan can admit a build.
+              ((bytes <= build_cap && apparent <= build_cap)) || {
+                printf 'planned cap exceeded: %s allocated=%s apparent=%s cap=%s\n' "$build" "$bytes" "$apparent" "$build_cap" >&2; return 1;
+              }
+            fi
+            if [[ $code == 0 && ! -s $errors ]]; then printf '%s\n' "$usage"; return 0; fi
+            # GNU find may stat a Cargo temp directory, then lose it before
+            # descent. -ignore_readdir_race alone does not cover that failure.
+            # Admit only the observed C-locale ENOENT under the mutable target;
+            # immutable tree_seal, missing roots, permissions and unknowns fail.
+            if [[ $code != 1 || ! -s $errors ]]; then
+              printf 'build budget reader failed: status=%s\n' "$code" >&2; cat "$errors" >&2; return 1
+            fi
+            [[ -d $CARGO_TARGET_DIR && ! -L $CARGO_TARGET_DIR &&
+               $(readlink -e "$CARGO_TARGET_DIR") == "$CARGO_TARGET_DIR" ]] || return 1
+            while IFS= read -r line || [[ -n $line ]]; do
+              if [[ $line != "$prefix"*"$suffix" ]]; then
+                printf 'unknown build budget diagnostic: %s\n' "$line" >&2; return 1
+              fi
+              relative=${line#"$prefix"}; relative=${relative%"$suffix"}
+              [[ $relative =~ ^[A-Za-z0-9_./+-]+$ ]] || return 1
+              case "/$relative/" in *'/../'*|*'/./'*|*'//'*) return 1;; esac
+              [[ ! -e $CARGO_TARGET_DIR/$relative && ! -L $CARGO_TARGET_DIR/$relative ]] || return 1
+            done < "$errors"
+            printf 'mutable-target-ENOENT attempt=%s/3\n' "$attempt" >> "$proof/build-budget-errors.log" || return 1
+          done
+          printf 'build budget sampling failed: mutable target ENOENT retries exhausted\n' >&2
+          return 1
+        }
+
+        bind_native() {
+          local path=$1
+          test "$(head -c 4 "$path" | od -An -tx1 | tr -d ' \n')" = 7f454c46 || return 1
+          bind_dso "$path"
+        }
+        phase_source() {
+          case "$SETUP_SOURCE_PHASE" in
+            pre-delete)
+              [[ -f $original && ! -L $original ]] || return 1
+              printf '%s  %s\n' ab157e4943734c969ffc1e8113dc9d09ded355f3463da34c2b9132fc24181f3f "$original" | sha256sum --check --strict --quiet - || return 1 ;;
+            absent) [[ ! -e $original && ! -L $original ]] || return 1 ;;
+            *) printf 'unknown explicit setup source phase: %s\n' "$SETUP_SOURCE_PHASE" >&2; return 1 ;;
+          esac
+        }
+        growth() {
+          local label=$1 mib=$2
+          [[ $guard_ready == true && -x $disk_guard && $(identity "$disk_guard") == "${held_identity[$disk_guard]}" &&
+             $(identity "/proc/$$/fd/${held_fd[$disk_guard]}") == "${held_identity[$disk_guard]}" ]] || return 1
+          # 같은 source-derived cache와 prepared SDK 검사를 재사용한다. run_bounded는 growth를 호출하지 않는다.
+          CARGO_TARGET_DIR="$guard_target" run_bounded "growth-$label-build" 60s "$proof/growth-$label-build.json" 0 \
+            "${guard_environment[@]}" "$source/rust/tools/check-disk-space" --path "$build" --growth-mib "$mib" || return 1
+          if [[ $(stat -c %d "$source") != "$(stat -c %d "$build")" ]]; then
+            CARGO_TARGET_DIR="$guard_target" run_bounded "growth-$label-source" 60s "$proof/growth-$label-source.json" 0 \
+              "${guard_environment[@]}" "$source/rust/tools/check-disk-space" --path "$source" --growth-mib "$mib" || return 1
+          fi
+        }
+        budgets() {
+          local usage bytes apparent path cap
+          usage=$(build_usage) || return 1
+          read -r bytes apparent <<< "$usage" || return 1
+          [[ $bytes =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] || return 1
+          ((bytes <= build_cap && apparent <= build_cap)) || return 1
+          for path in "$DIAG_SOURCE_OWNER" "$proof" "$raw"; do
+            case "$path" in "$DIAG_SOURCE_OWNER") cap=$((2048 * mib));; "$proof") cap=$((1024 * mib));; *) cap=$((16 * mib));; esac
+            usage=$(find -P "$path" -printf '%b %s\n' | awk '{b+=$1*512;s+=$2} END {printf "%.0f %.0f\n",b,s}') || return 1
+            read -r bytes apparent <<< "$usage" || return 1
+            [[ $bytes =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] || return 1
+            ((bytes <= cap && apparent <= cap)) || { printf 'planned cap exceeded: %s %s %s cap=%s\n' "$path" "$bytes" "$apparent" "$cap" >&2; return 1; }
+          done
+          find -P "$proof" \( ! -type f ! -type d \) -o \( -type f \( -links +1 -o -size +536870912c \) \) > "$proof/budget-rejected.txt" || return 1
+          test ! -s "$proof/budget-rejected.txt"
+        }
+        run_bounded() {
+          local label=$1 duration=$2 output=$3 expected=$4 leader watcher stop code=0 monitor=0
+          local command_home=$job/home command_path=$sdk/bin:/usr/bin:/bin command_rustup=$job/rustup-home offline=false
+          shift 4
+          budgets || return 125
+          test ! -e "$proof/resource-stop.txt" || return 125
+          printf '%s\0' "$label" "$@" >> "$proof/commands.nul" || return 125
+          if [[ $label == public-missing || $label == rustup-preflight ]]; then
+            command_home=$build/entry-home; command_path=$build/programs; command_rustup=$rustup_root; offline=true
+          fi
+          stop=$proof/watcher-stop.$label
+          [[ ! -e $stop && ! -L $stop ]] || return 125
+          # CI harness만 clear env한다. product API/TLS/인증 override는 없다.
+          /usr/bin/env -i HOME="$command_home" PATH="$command_path" RUSTUP_HOME="$command_rustup" RUSTUP_TOOLCHAIN=1.94.0 \
+            CARGO_HOME="$CARGO_HOME" CARGO_TARGET_DIR="$CARGO_TARGET_DIR" CARGO_NET_OFFLINE="$offline" TMPDIR="$build/tmp" \
+            RUSTC="$sdk/bin/rustc" RUSTDOC="$sdk/bin/rustdoc" CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 \
+            CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TERM_COLOR=never LC_ALL=C TZ=UTC \
+            PARAMS_ROOT="$build/entry-params" OPENPILOT_PREFIX="setup523-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            /usr/bin/setsid /usr/bin/bash --noprofile --norc -c '
+              ulimit -c 0
+              ulimit -f 524288
+              duration=$1; trace=$2; shift 2
+              exec /usr/bin/timeout --foreground --signal=TERM --kill-after=10s "$duration" \
+                /usr/bin/strace --kill-on-exit -f -qq -xx -s 65535 -e trace=execve,execveat -o "$trace" "$@"
+            ' bounded-setup "$duration" "$output.exec" "$@" > "$output" 2> "$output.stderr" < /dev/null &
+          leader=$!; active_leader=$leader; active_stop=$stop
+          (
+            while [[ ! -e $stop ]] && kill -0 "$leader" 2>/dev/null; do
+              if ! budgets; then
+                printf '%s\n' "$label" > "$proof/resource-stop.txt"
+                # kernel EXITKILL은 tracer 사망 때 별도 PGID의 tracee도 종료한다.
+                kill -KILL -- "-$leader" 2>/dev/null || true
+                exit 1
+              fi
+              sleep 2
+            done
+          ) &
+          watcher=$!; active_watcher=$watcher
+          wait "$leader" || code=$?
+          : > "$stop" || code=125
+          # find/awk를 중간 kill하지 않고 완료를 기다린다.
+          wait "$watcher" || monitor=$?
+          active_leader= active_watcher= active_stop=
+          printf '%s\t%s\t%s\n' "$label" "$code" "$expected" >> "$proof/exit-codes.tsv" || return 125
+          printf '%s\t%s\n' "$label" "$monitor" >> "$proof/monitor-exit-codes.tsv" || return 125
+          ((monitor == 0)) || return 125
+          budgets || return 125
+          test ! -e "$proof/resource-stop.txt" || return 125
+          test "$code" = "$expected"
+        }
+        select_artifact() {
+          local file=$1 name=$2 kind=$3 src=$4 tested=$5
+          jq -ser --arg manifest "$source/rust/crates/dev-tools/Cargo.toml" \
+            --arg package "path+file://$source/rust/crates/dev-tools#openpilot-dev-tools@0.1.0" \
+            --arg name "$name" --arg kind "$kind" --arg src "$src" --argjson tested "$tested" '
+            if length == 0 or any(.[]; type != "object" or (.reason as $r | ["compiler-artifact","compiler-message","build-script-executed","build-finished"] | index($r)) == null)
+            then error("unknown Cargo JSONL record") else . end |
+            if (map(select(.reason == "build-finished")) | length) != 1 or .[-1] != {reason:"build-finished",success:true}
+            then error("incomplete Cargo JSONL") else . end |
+            (map(select(.reason == "compiler-artifact"))) as $all |
+            if ($all|unique|length) != ($all|length) then error("duplicate Cargo artifact") else . end |
+            map(select(.reason == "compiler-artifact" and .target.name == $name and .target.kind == [$kind] and .profile.test == $tested)) |
+            if length != 1 then error("missing/duplicate exact executable") else .[0] end |
+            if .manifest_path != $manifest or .package_id != $package or .target.src_path != $src or .features != ["developer-ssh-native"] or
+               (.executable|type) != "string" or .executable == "" then error("Cargo package/source/features/executable differs") else .executable end
+          ' "$file"
+        }
+        elf() {
+          local path=$1 label=$2
+          [[ $path == "$CARGO_TARGET_DIR/x86_64-unknown-linux-gnu/debug/"* && $(readlink -e "$path") == "$path" && -f $path && ! -L $path && -x $path ]] || return 1
+          test "$(stat -c %u "$path")" = "$(id -u)" || return 1
+          readelf -h "$path" > "$proof/build/$label.elf" || return 1
+          grep -E 'Class: +ELF64$' "$proof/build/$label.elf" || return 1
+          grep -E 'Machine: +Advanced Micro Devices X86-64$' "$proof/build/$label.elf" || return 1
+          bind_native "$path"
+        }
+        test_result() {
+          local output=$1 selector=$2
+          test "$(grep -Fxc 'running 1 test' "$output")" = 1 || return 1
+          # progress prefix 뒤 원문 marker를 허용한다. exact argv와 1 PASS를 함께 확인한다.
+          test "$(grep -Fc "test $selector ... " "$output")" = 1 || return 1
+          test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; [0-9]+ filtered out;' "$output")" = 1
+        }
+
+        hexquote() {
+          local value=$1 hex pair
+          hex=$(printf '%s' "$value" | od -An -v -tx1 | tr -d ' \n') || return 1
+          quoted='"'
+          while [[ -n $hex ]]; do pair=${hex:0:2}; hex=${hex:2}; quoted+="\\x$pair"; done
+          quoted+='"'
+        }
+        hexargv() {
+          local word separator=
+          vector='['
+          for word in "$@"; do hexquote "$word" || return 1; vector+="$separator$quoted"; separator=', '; done
+          vector+=']'
+        }
+        unhex() {
+          local word=$1 raw
+          raw=${word:1:${#word}-2}
+          [[ $raw != *'\x00'* ]] || return 1
+          printf -v decoded '%b' "$raw"
+        }
+        audit_trace() {
+          local file=$1 mode=$2 first_program=$3 first_argv=$4 line pid body rest program argv result canonical base
+          local calls=0 successes=0 native_calls=0 cargo_calls=0 helper_calls=0 signals=0 status helper_pid= native_pid= last_success=
+          local cq='"(\\x[0-9a-fA-F]{2})*"' vec env_re exec_re
+          local ended='^\+\+\+ exited with ([0-9]+) \+\+\+$'
+          local chld='^--- SIGCHLD \{si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=[1-9][0-9]*, si_uid=[0-9]+, si_status=[0-9]+(, si_utime=[0-9]+, si_stime=[0-9]+)?\} ---$'
+          local usr1='^--- SIGUSR1 \{si_signo=SIGUSR1, si_code=SI_TKILL, si_pid=[1-9][0-9]*, si_uid=[0-9]+\} ---$'
+          local -A pending=() exited=()
+          vec="\\[($cq(, $cq)*)?\\]"
+          env_re="($vec|NULL|0x[0-9a-fA-F]+( /\\* [0-9]+ vars? \\*/)?)"
+          exec_re="^execve\\($cq, ($vec|NULL), $env_re[[:space:]]*\\) += (0|-1 E[A-Z0-9_]+ \\([A-Za-z0-9 ,./:_+-]+\\))$"
+          [[ -s $file && $(tail -c 1 "$file" | od -An -tu1 | tr -d ' ') == 10 ]] || return 1
+          tr -d '\11\12\40-\176' < "$file" > "$proof/build/trace-nonascii.bin" || return 1
+          test ! -s "$proof/build/trace-nonascii.bin" || return 1
+          while IFS= read -r line; do
+            [[ $line =~ ^([1-9][0-9]*)[[:space:]]+(.*)$ ]] || return 1
+            pid=${BASH_REMATCH[1]}; body=${BASH_REMATCH[2]}
+            [[ ! -v exited[$pid] ]] || return 1
+            if [[ $body == *'<unfinished ...>' ]]; then
+              [[ $body == execve\(* && ! -v pending[$pid] ]] || return 1
+              pending[$pid]=${body%'<unfinished ...>'}
+              continue
+            fi
+            if [[ $body == '<... '* ]]; then
+              [[ $body == '<... execve resumed>'* && -v pending[$pid] ]] || return 1
+              body=${pending[$pid]}${body#'<... execve resumed>'}
+              unset 'pending[$pid]'
+            fi
+            if [[ $body == execve* ]]; then
+              [[ $body =~ $exec_re ]] || { printf 'unsupported exec record: %s\n' "$body" >&2; return 1; }
+              rest=${body#'execve('}; program=${rest%%, *}; rest=${rest#"$program, "}
+              if [[ $rest == '['* ]]; then argv=${rest%%], *}']'; else argv=NULL; fi
+              result=${body##*') = '}
+              unhex "$program" || return 1; program=$decoded; base=${program##*/}; base=${base,,}
+              [[ $base != *python* && $base != *.py ]] || return 1
+              calls=$((calls+1))
+              if ((calls == 1)); then [[ $program == "$first_program" && $argv == "$first_argv" && $result == 0 ]] || return 1; fi
+              if [[ $program == "$entry" ]]; then
+                helper_calls=$((helper_calls+1))
+                helper_pid=$pid
+                [[ $mode == public && $result == 0 && $argv == "$entry_argv" ]] || return 1
+              fi
+              if [[ $program == "$cli" ]]; then
+                native_calls=$((native_calls+1))
+                native_pid=$pid
+                [[ $mode == public && $result == 0 && $argv == "$native_argv" ]] || return 1
+              fi
+              if [[ $result == 0 ]]; then
+                successes=$((successes+1))
+                last_success=$program
+                canonical=$(readlink -e "$program") || return 1
+                if [[ $program == "$entry" ]]; then
+                  test "${held_sha[$canonical]}" = "$entry_sha" || return 1
+                else
+                  # 성공 script는 고정 helper 하나뿐이다. 나머지는 ELF+실제 FD/DSO를 확인한다.
+                  if [[ ! -v held_fd[$canonical] ]]; then
+                    [[ $canonical == "$CARGO_TARGET_DIR/"* && $(stat -c %u "$canonical") == "$(id -u)" ]] || return 1
+                  fi
+                  bind_native "$program" || return 1
+                fi
+                if [[ $canonical == "$(readlink -e "$rustup_shim")" ]]; then
+                  [[ $argv == "$rustup_version_argv" || $argv == "$rustup_build_argv" ]] || return 1
+                fi
+                if [[ $canonical == "$sdk/bin/cargo" ]]; then
+                  cargo_calls=$((cargo_calls+1))
+                  # Rustup의 argv[0] spelling만 두 명시형으로 받는다. 나머지 build argv는 exact다.
+                  [[ $argv == "$cargo_argv" || $argv == "$cargo_absolute_argv" ]] || return 1
+                fi
+              fi
+              printf '%s\t%s\t%s\t%s\n' "$pid" "$result" "$program" "$argv" >> "$proof/$mode-execs.tsv"
+            elif [[ $body =~ $chld || $body =~ $usr1 ]]; then
+              signals=$((signals+1))
+            elif [[ $body =~ $ended ]]; then
+              status=${BASH_REMATCH[1]}
+              ((10#$status <= 255)) && [[ ! -v pending[$pid] ]] || return 1
+              exited[$pid]=true
+            else printf 'unknown trace metadata: %s\n' "$body" >&2; return 1
+            fi
+          done < "$file"
+          [[ -z ${!pending[*]} ]] || return 1
+          if [[ $mode == public ]]; then
+            ((helper_calls == 1 && native_calls == 1 && cargo_calls == 1)) || return 1
+            [[ $native_pid == "$helper_pid" && $last_success == "$cli" ]] || return 1
+          else ((calls == 1 && successes == 1)) || return 1
+          fi
+          printf '%s\t%s\t%s\t%s\n' "$mode" "$calls" "$successes" "$signals" >> "$proof/trace-counts.tsv"
+        }
+
+        finish() {
+          local original_status=$? status=0 n name sealed=false
+          trap - EXIT INT TERM HUP
+          set +e
+          if [[ -n $active_leader ]]; then
+            status=1
+            kill -KILL -- "-$active_leader" 2>/dev/null
+            wait "$active_leader"
+          fi
+          if [[ -n $active_watcher ]]; then
+            : > "$active_stop" || status=1
+            wait "$active_watcher" || status=1
+          fi
+          for n in "${!roots[@]}"; do
+            name=${root_names[$n]}
+            tree_seal "${roots[$n]}" "$proof/$name-after" &&
+              cmp "$proof/$name-before.roster.bin" "$proof/$name-after.roster.bin" &&
+              cmp "$proof/$name-before.files.sha256" "$proof/$name-after.files.sha256" || status=1
+          done
+          phase_source || status=1
+          budgets || status=1
+          df -PB1 "$source" "$job" > "$proof/disk-after.txt" || status=1
+          cat /proc/meminfo > "$proof/memory-after.txt" || status=1
+          verify_held || status=1
+          [[ $status == 0 && $baseline_ready == true && $artifacts_ready == true ]] && sealed=true
+          # candidate는 최종 receipt가 아니다. reader의 마지막 봉인 뒤에만 no-overwrite 게시한다.
+          jq -n --arg source "$GITHUB_SHA" --arg source_phase "$SETUP_SOURCE_PHASE" --arg operation "$phase" \
+            --argjson sealed "$sealed" --argjson replay "$replay_pass" --argjson negative "$negative_pass" --argjson entry "$entry_pass" \
+            --arg cli "${cli:-}" --arg fixture "$fixture_sha" --argjson code "$original_status" \
+            '{source_commit:$source,source_phase:$source_phase,operation:$operation,immutable_seals:$sealed,
+              pass:($code==0 and $sealed and $replay and $negative and $entry),
+              controlled_semantic_cases:(if $replay then 21 else 0 end),rejection_tests:(if $negative then 3 else 0 end),
+              public_missing_argument_calls:(if $entry then 1 else 0 end),public_exit_status:(if $entry then 1 else null end),
+              actual_elf:$cli,original_fixture_sha256:$fixture,
+              original_python_executions:(if $replay and $negative and $entry then 0 else null end),full_network_cli_cases:0,
+              historical_artifact_id:12558498891,historical_run_id:40089943318,historical_source:"a134b32c5d50d346994d671c0882b147175021dc",
+              whole_python_absence_accepted:false,existing_http_params_tests_rerun:false,retirement_credit:false,measured_peak_guarantee:false,
+              trace_scope:"strict exec targets including failed Python attempts; pinned helper or ELF on success; not whole Python absence",
+              owned_recovery_scope:"direct owned groups waited; strace EXITKILL for tracees, not a Bash subreaper claim"}' > "$proof/setup-receipt.candidate.json" || status=1
+          # receipt의 native reader를 포함하여 마지막 provider 사용 뒤 다시 확인한다.
+          verify_held || status=1
+          [[ $status == 0 ]] || sealed=false
+          if [[ $status == 0 ]]; then
+            ln -- "$proof/setup-receipt.candidate.json" "$proof/setup-receipt.json" &&
+              rm -- "$proof/setup-receipt.candidate.json" || status=1
+          fi
+          [[ $status == 0 ]] || sealed=false
+          printf 'immutable_seals=%s\n' "$sealed" >> "$GITHUB_OUTPUT" || status=1
+          [[ $original_status == 0 && $status == 0 && $sealed == true ]] || exit 1
+        }
+        trap finish EXIT
+        trap 'exit 130' INT
+        trap 'exit 143' TERM
+        trap 'exit 129' HUP
+        # 설치/apt/복구 fallback은 없다. reader/실제 /bin/sh/컴파일러 helper도 먼저 FD+DSO에 묶는다.
+        readers=(bash sh sleep jq strace setsid timeout head tail sha256sum stat readlink awk sort find ldd capnp cc c++ ar ranlib nm ld as git tar cmp df du cat env grep sed od tr id mkdir rm cut readelf xargs dirname ln cp expr flock chmod mv mktemp uname)
+        for tool in "${readers[@]}"; do bind_file "$(command -v "$tool")"; done
+        for tool in "${readers[@]}"; do [[ $tool == ldd ]] || bind_native "$(command -v "$tool")"; done
+        bind_native /bin/sh
+        bind_native /bin/bash
+        for tool in cargo rustc rustdoc cargo-clippy clippy-driver; do bind_native "$sdk/bin/$tool"; done
+        bind_native "$rustup_shim"
+        bind_file /etc/ld.so.cache
+        for tool in cc1 cc1plus collect2; do
+          driver=cc; [[ $tool != cc1plus ]] || driver=c++
+          provider=$("$driver" -print-prog-name="$tool")
+          [[ $provider == /* ]] || provider=$(command -v "$provider")
+          bind_native "$provider"
+        done
+        for relative in rust/tools/run-developer-tool rust/tools/prepare-readonly-ci-rust rust/tools/check-disk-space rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml rust/crates/dev-tools/Cargo.toml rust/crates/dev-tools/src/lib.rs rust/crates/dev-tools/tests/developer_cli_original.rs rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md .github/workflows/python-rust-523-setup-keys.yml; do bind_file "$source/$relative"; done
+        for relative in rust/crates/disk-space/Cargo.toml rust/crates/disk-space/src/*.rs; do bind_file "$source/$relative"; done
+        printf '%s  %s\n' 86884528b67fab80757b46b8b0bdca6b9b593c6446933adc3ec628d7cff12c58 "$source/rust/crates/dev-tools/tests/developer_cli_original.rs" \
+          11fae1ee5c7a17594c023f5adc114dc6236e1bd078749366d0fa2f0bf3958c62 "$source/rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs" | sha256sum --check --strict --quiet -
+        phase_source
+        if [[ $SETUP_SOURCE_PHASE == pre-delete ]]; then bind_file "$original"; fi
+        printf '%s  %s\n' "$entry_sha" "$entry" | sha256sum --check --strict --quiet -
+        test "$(stat -c %s "$fixture")" = 13800
+        printf '%s  %s\n' "$fixture_sha" "$fixture" | sha256sum --check --strict --quiet -
+        jq -e '.schema=="openpilot.developer-cli-original.v1" and .group=="setup-effects" and (.records|length)==21 and all(.records[]; .input.tool=="setup" and .criteria=={"kind":"exact"})' "$fixture" > "$proof/frozen21-shape.txt"
+        cp -- "$fixture" "$proof/setup-effects-original.json"
+        for tool in "${readers[@]}"; do ln -s "$(command -v "$tool")" "$build/programs/$tool"; done
+        ln -s "$rustup_shim" "$build/programs/rustup"
+        for tool in cargo rustc rustdoc; do ln -s "$sdk/bin/$tool" "$build/programs/$tool"; done
+        add_tree source-tree "$source"
+        add_tree global-rustup "$rustup_root"
+        add_tree entry-home "$build/entry-home"
+        add_tree entry-params "$build/entry-params"
+        add_tree public-programs "$build/programs"
+        baseline_ready=true
+        /usr/bin/strace --help > "$proof/build/strace-help.txt"
+        grep -F -- --kill-on-exit "$proof/build/strace-help.txt"
+        # 현재 global Rustup이 이미 준비된 SDK를 읽는 실제 preflight. 실패하면 helper 설치 분기에 도달하지 않는다.
+        phase=readonly-rustup-preflight
+        run_bounded rustup-preflight 60s "$proof/build/rustup.txt" 0 "$rustup_shim" run 1.94.0 rustc -vV
+        grep -Fx 'release: 1.94.0' "$proof/build/rustup.txt"
+        grep -Fx 'host: x86_64-unknown-linux-gnu' "$proof/build/rustup.txt"
+        phase=bounded-disk-guard-bootstrap
+        # check-disk-space의 RUNNER_TEMP 계약을 그대로 사용한다. 공유 job root 대신
+        # 이미 감시 중인 8 GiB build subtree에 cold build/cache를 한정한다.
+        guard_identity=$(sha256sum "$source/rust/Cargo.toml" "$source/rust/Cargo.lock" "$source/rust/crates/disk-space/Cargo.toml" "$source/rust/crates/disk-space/src/"*.rs | sha256sum)
+        guard_identity=${guard_identity%% *}
+        guard_cache=$build/openpilot-disk-guard/x86_64-unknown-linux-gnu-$guard_identity
+        guard_target=$guard_cache/build
+        disk_guard=$guard_cache/disk-space-guard
+        [[ ! -e $build/openpilot-disk-guard && ! -L $build/openpilot-disk-guard ]]
+        guard_environment=(/usr/bin/env RUNNER_TEMP="$build" GITHUB_ACTIONS=true RUNNER_NAME=bin-actions RUNNER_OS=Linux RUNNER_ARCH=X64
+                           OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST")
+        # 2 GiB cold admission과 7분 outer bound를 유지하며 PGID/FSIZE/watcher를 먼저 건다.
+        # Fast의 기존 2048/6144 MiB bootstrap 계약이나 공유 script는 수정하지 않는다.
+        bootstrap_free=$(df -PB1 "$build" | awk 'NR == 2 {print $4}')
+        [[ $bootstrap_free =~ ^[0-9]+$ ]] && ((bootstrap_free >= 2048 * mib))
+        CARGO_TARGET_DIR="$guard_target" run_bounded disk-guard-bootstrap 7m "$proof/build/disk-guard-bootstrap.json" 0 \
+          "${guard_environment[@]}" "$source/rust/tools/check-disk-space" --path "$build" --growth-mib 2048
+        [[ -f $disk_guard && ! -L $disk_guard && -x $disk_guard && $(readlink -e "$disk_guard") == "$disk_guard" &&
+           $(stat -c %u "$disk_guard") == "$(id -u)" && $(stat -c %h "$disk_guard") == 1 ]]
+        bind_native "$disk_guard"
+        readelf -h "$disk_guard" > "$proof/build/disk-guard.elf"
+        grep -E 'Class: +ELF64$' "$proof/build/disk-guard.elf"
+        grep -E 'Machine: +Advanced Micro Devices X86-64$' "$proof/build/disk-guard.elf"
+        guard_ready=true
+        phase=test-build
+        growth native-cold 8192
+        run_bounded test-build 1800s "$proof/build/tests.jsonl" 0 "$sdk/bin/cargo" test --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_cli_original --no-run --message-format=json --target x86_64-unknown-linux-gnu
+        phase=strict-clippy
+        growth clippy 512
+        run_bounded clippy 1800s "$proof/build/clippy.log" 0 "$sdk/bin/cargo" clippy --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-dev-tools --features developer-ssh-native --bin setup-ssh-keys --test developer_cli_original --target x86_64-unknown-linux-gnu -- -D warnings
+        phase=exact-host-cli-build
+        # helper와 같은 host/feature/build argv를 마지막에 사용한다. no-run이 재link한 CLI를 먼저 hold하지 않는다.
+        run_bounded cli-build 1800s "$proof/build/cli.jsonl" 0 "$sdk/bin/cargo" build --manifest-path "$source/rust/Cargo.toml" -p openpilot-dev-tools --features developer-ssh-native --bin setup-ssh-keys --locked --target x86_64-unknown-linux-gnu --target-dir "$CARGO_TARGET_DIR" --message-format=json
+        integration=$(select_artifact "$proof/build/tests.jsonl" developer_cli_original test "$source/rust/crates/dev-tools/tests/developer_cli_original.rs" true)
+        cli=$(select_artifact "$proof/build/cli.jsonl" setup-ssh-keys bin "$source/rust/crates/dev-tools/src/bin/setup_ssh_keys.rs" false)
+        test "$cli" = "$CARGO_TARGET_DIR/x86_64-unknown-linux-gnu/debug/setup-ssh-keys"
+        elf "$integration" integration
+        elf "$cli" setup-cli
+        artifacts_ready=true
+        jq -n --arg source "$GITHUB_SHA" --arg test "$integration" --arg cli "$cli" '{source_commit:$source,test:$test,cli:$cli}' > "$proof/current-artifacts.json"
+        hexargv "$integration" "$replay" --exact --nocapture --test-threads=1 --color=never
+        replay_argv=$vector
+        phase=frozen21-replay
+        run_bounded frozen21 180s "$raw/frozen21.log" 0 "$integration" "$replay" --exact --nocapture --test-threads=1 --color=never
+        test_result "$raw/frozen21.log" "$replay"
+        audit_trace "$raw/frozen21.log.exec" replay "$integration" "$replay_argv"
+        replay_pass=true
+        phase=frozen-negative-controls
+        for n in "${!negatives[@]}"; do
+          selector=${negatives[$n]}
+          hexargv "$integration" "$selector" --exact --nocapture --test-threads=1 --color=never
+          expected_argv=$vector
+          run_bounded "negative-$n" 120s "$raw/negative-$n.log" 0 "$integration" "$selector" --exact --nocapture --test-threads=1 --color=never
+          test_result "$raw/negative-$n.log" "$selector"
+          audit_trace "$raw/negative-$n.log.exec" "negative-$n" "$integration" "$expected_argv"
+        done
+        negative_pass=true
+        phase=public-missing-argument
+        hexargv "$entry" setup-ssh-keys; entry_argv=$vector
+        hexargv "$cli"; native_argv=$vector
+        # install/fallback 대신 Rustup run의 두 exact tail만 허용한다.
+        hexargv rustup run 1.94.0 rustc -vV; rustup_version_argv=$vector
+        build_tail=(build --manifest-path "$source/rust/Cargo.toml" -p openpilot-dev-tools --features developer-ssh-native --bin setup-ssh-keys --locked --target x86_64-unknown-linux-gnu --target-dir "$CARGO_TARGET_DIR")
+        hexargv rustup run 1.94.0 cargo "${build_tail[@]}"; rustup_build_argv=$vector
+        hexargv cargo "${build_tail[@]}"; cargo_argv=$vector
+        hexargv "$sdk/bin/cargo" "${build_tail[@]}"; cargo_absolute_argv=$vector
+        run_bounded public-missing 300s "$raw/public.stdout" 1 "$entry" setup-ssh-keys
+        printf '%s <github username>\n' "$cli" > "$proof/public.expected.stdout"
+        cmp "$proof/public.expected.stdout" "$raw/public.stdout"
+        # stderr의 Cargo 원문도 보존한다. native stdout/expected exit1은 별도 exact 검사다.
+        audit_trace "$raw/public.stdout.exec" public "$entry" "$entry_argv"
+        entry_pass=true
+        phase=complete
+    - name: Verify full prepared SDK after all attempted checks
+      id: prepared_rust_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome
+        == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after
+    - name: Seal source and index after all attempted contracts
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        du -sx --block-size=1 "$DIAG_SOURCE_OWNER" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/private-output-bytes.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$CI_JOB_TEMP/proof/cgroup-memory-after.txt"; fi
+        find "$CARGO_TARGET_DIR" -name '*.d' -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256" || test ! -d "$CARGO_TARGET_DIR"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        # source/SDK/provider 봉인은 qualify 실패 때도 별도로 수행한다.
+        # 최종 metadata/dep-info 추가 뒤에도 동일 proof/raw 상한을 유지한다.
+        for directory in "$CI_JOB_TEMP/proof" "$CI_JOB_TEMP/proof/raw"; do
+          limit=$((1024 * 1024 * 1024))
+          [[ $directory != "$CI_JOB_TEMP/proof/raw" ]] || limit=$((16 * 1024 * 1024))
+          usage=$(find -P "$directory" -printf '%b %s\n' | awk '{b+=$1*512;s+=$2} END {printf "%.0f %.0f\n",b,s}')
+          read -r allocated apparent <<< "$usage"
+          [[ $allocated =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]]
+          ((allocated <= limit && apparent <= limit))
+        done
+    - name: Require fresh scoped setup receipt and preserve pending retirement boundary
+      id: closure
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        QUALIFY_OUTCOME: ${{ steps.qualify.outcome }}
+        SOURCE_OUTCOME: ${{ steps.source_final.outcome }}
+        SDK_OUTCOME: ${{ steps.prepared_rust_final.outcome }}
+      run: |
+        set -euo pipefail
+        test "$QUALIFY_OUTCOME" = success
+        test "$SOURCE_OUTCOME" = success
+        test "$SDK_OUTCOME" = success
+        /usr/bin/jq -e --arg source "$GITHUB_SHA" --arg phase "$SETUP_SOURCE_PHASE" '
+         .pass == true and .source_commit == $source and .source_phase == $phase and
+         .controlled_semantic_cases == 21 and .rejection_tests == 3 and .public_missing_argument_calls == 1 and
+         .public_exit_status == 1 and .original_python_executions == 0 and .full_network_cli_cases == 0 and
+         .immutable_seals == true and .whole_python_absence_accepted == false and .retirement_credit == false
+        ' "$CI_JOB_TEMP/proof/setup-receipt.json"
+    - name: Upload setup frozen21 and public entry proof before owned cleanup
+      id: fast_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: diagnostic-setup-keys-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        if-no-files-found: error
+        retention-days: 14
+    - name: Clean only uploaded unchanged owned setup source after immutable seals
+      id: fast_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome
+        == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome
+        == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.qualify.outputs.immutable_seals == 'true') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.fast_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.diag296-owner" && test ! -L "$p/.diag296-owner"
+        test "$(cat "$p/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned job temporary paths after evidence upload
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome
+        == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome ==
+        'success') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'

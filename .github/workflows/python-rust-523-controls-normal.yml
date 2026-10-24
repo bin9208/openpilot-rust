@@ -1,0 +1,272 @@
+name: Python Rust 523 controls normal40 frozen reference
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-controls-normal.yml
+    - tools/ci/controlsd_normal_523.py
+    - rust/crates/dev-tools/src/controlsd_check.rs
+    - rust/crates/dev-tools/src/controlsd_check/frozen.rs
+    - rust/crates/dev-tools/tests/controlsd_check.rs
+    - rust/crates/dev-tools/tests/controlsd_check/frozen.rs
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: python-rust-523-controls-normal-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  controls-normal40:
+    name: 'Current controls CLI normal40 with historical raw reference'
+    if: ${{ github.repository == 'bin9208/openpilot-rust' }}
+    runs-on:
+    - self-hosted
+    - Linux
+    - X64
+    - dev-md-local
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TERM_COLOR: never
+      RUSTUP_TOOLCHAIN: 1.94.0
+    steps:
+    - name: Deny fork source and require registered local runner
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+          }}
+        EVENT_NAME: ${{ github.event_name }}
+        SOURCE_REF: ${{ github.ref }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        set -euo pipefail
+        test "$EVENT_NAME" = push
+        test "$SOURCE_REF" = refs/heads/codex/feat-523-python-rust
+        test "$GITHUB_ACTIONS" = true
+        test "$RUNNER_NAME" = bin-actions
+        test "$RUNNER_ENVIRONMENT" = self-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -m)" = x86_64
+    - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Allocate private source cache and target before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Actions의 workspace와 Bash가 사용하는 private checkout을 구분한다.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+    - uses: actions/checkout@v7
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+    - name: Seal exact source HEAD and tracked index before checks
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      id: source_before
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+        allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ ]]
+        printf '{"allocated_private_source_bytes":%s,"planned_source_growth_bytes":2147483648}\n' "$allocated" > "$CI_JOB_TEMP/proof/source-growth-after-checkout.json"
+        git ls-tree -r -l HEAD | awk '$4 ~ /^[0-9]+$/ {bytes+=$4; files++} END {printf "{\"tracked_blob_bytes\":%.0f,\"files\":%d}\n",bytes,files}' > "$CI_JOB_TEMP/proof/tracked-source-size.json"
+        ((allocated <= 2 * 1024 * 1024 * 1024))
+    - name: Admit historical raw4 and qualify current native normal40 once
+      id: qualify
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        umask 077
+        # normal40만 실행한다. 원본 재캡처/109/rejection27/health5/continuous/차량은 제외한다.
+        # 기존 source2GiB/build8GiB/proof2GiB admission/파일512MiB와 Clippy append512MiB를 유지한다.
+        # 내부52분 deadline 뒤 자손 회수와 final seal을 위한 외부 유예를 둔다.
+        /usr/bin/timeout --signal=TERM --kill-after=180s 60m \
+          /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH \
+          /usr/bin/python3 -I -B -S tools/ci/controlsd_normal_523.py
+    - name: Seal source and index after all attempted contracts
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        du -sx --block-size=1 "$DIAG_SOURCE_OWNER" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/private-output-bytes.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$CI_JOB_TEMP/proof/cgroup-memory-after.txt"; fi
+        find "$CARGO_TARGET_DIR" -name '*.d' -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256" || test ! -d "$CARGO_TARGET_DIR"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 1024 * 1024 * 1024))
+    - name: Require immutable source SDK and held input seals independently of comparison outcome
+      id: immutable_seals
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        /usr/bin/python3 -I -B -S - <<'IMMUTABLE'
+        import json, os
+        from pathlib import Path
+        proof=Path(os.environ['CI_JOB_TEMP'])/'proof/controls-normal40'
+        seal=json.loads((proof/'final-seals.json').read_bytes())
+        children=json.loads((proof/'children.json').read_bytes())
+        assert seal['pass'] is True and seal['failures']==[] and seal['source']==os.environ['GITHUB_SHA']
+        assert seal['all_owned_children_reaped'] is True
+        assert children['subreaper'] is True and children['live']==[]
+        for name in ['source-before.json','source-after.json','sdk-before.json','sdk-after.json',
+                     'reference-before.json','reference-after.json','numerics-before.json','numerics-after.json',
+                     'numerics-staged-before.json','numerics-staged-after.json']:
+         assert (proof/name).is_file() and (proof/name).stat().st_size>0
+        IMMUTABLE
+    - name: Require normal40 counts current CLI trace and historical provenance separation
+      id: closure
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        /usr/bin/python3 -I -B -S - <<'SEALS'
+        import json, os
+        from pathlib import Path
+        assert os.environ['QUALIFY_OUTCOME']=='success'
+        proof=Path(os.environ['CI_JOB_TEMP'])/'proof/controls-normal40'
+        seal=json.loads((proof/'final-seals.json').read_bytes())
+        complete=json.loads((proof/'complete.json').read_bytes())
+        assert seal['pass'] is True and seal['source']==os.environ['GITHUB_SHA']
+        assert complete['pass'] is True and complete['source']==os.environ['GITHUB_SHA']
+        assert complete['exact_ignored_tests']==['frozen::frozen_normal40_actual_cli_matches_legacy_reference']
+        assert complete['new_negative_tests']==['frozen::frozen_normal40_admission_rejects_mixed_origins_and_mutation',
+         'controller::frozen::tests::frozen_held_files_and_rosters_reject_mutation_aliases_and_replacement']
+        assert complete['normal40_cli_invocations']==complete['normal40_trace_invocations']==1
+        assert complete['actual_traced_execs_including_auditor']==3 and complete['fresh_legacy_regular_tests']==0
+        assert complete['new_frozen_negative_controls']==2
+        result=complete['current_normal40']
+        assert result['pass'] is True and result['cases']==40 and result['frames']==8655
+        assert result['numeric_comparisons']==705948 and result['max_absolute_error']>=0
+        assert complete['numeric_library_mapped_by_trace_pid'] is True
+        assert complete['all_owned_children_reaped'] is True
+        assert complete['original_capture_executed'] is False and complete['original_backend_execs']==0
+        assert complete['historical_original_provider_closure_complete'] is False
+        assert complete['historical_provider_paths_dereferenced'] is False
+        assert complete['full_runtime_acceptance'] is False and complete['inventory_credit'] is False
+        assert complete['temporary_python_controller']=='pending'
+        SEALS
+      env:
+        QUALIFY_OUTCOME: ${{ steps.qualify.outcome }}
+    - name: Record attempted normal40-only outcomes
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI_JOB_TEMP != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        QUALIFY_OUTCOME: ${{ steps.qualify.outcome }}
+        SOURCE_OUTCOME: ${{ steps.source_final.outcome }}
+        IMMUTABLE_OUTCOME: ${{ steps.immutable_seals.outcome }}
+        CLOSURE_OUTCOME: ${{ steps.closure.outcome }}
+      run: |
+        set -euo pipefail
+        printf 'source=%s\ncurrent_normal40=%s\nsource_seal=%s\nimmutable_seals=%s\nsource_sdk_numerics_elf_provider_children_closure=%s\noriginal_capture_rerun=false\nhistorical_original_provider_closure=not-recorded\noriginal109_and_rejection27_health5_continuous_rerun=false\nfull_runtime_acceptance=false\ninventory_credit=false\ntemporary_python_controller=pending\n' "$GITHUB_SHA" "$QUALIFY_OUTCOME" "$SOURCE_OUTCOME" "$IMMUTABLE_OUTCOME" "$CLOSURE_OUTCOME" > "$CI_JOB_TEMP/proof/outcomes.txt"
+    - name: Retain owned normal40 proof including failed admissions and cleanup evidence
+      id: fast_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: diagnostic-controls-normal40-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        if-no-files-found: error
+        retention-days: 14
+    - name: Clean only uploaded private normal40 source after immutable seals and child recovery
+      id: fast_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest
+        != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.immutable_seals.outcome ==
+        'success') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.fast_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.diag296-owner" && test ! -L "$p/.diag296-owner"
+        test "$(cat "$p/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned job temporary paths after evidence upload
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest
+        != '' && steps.fast_source_cleanup.outcome == 'success') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'

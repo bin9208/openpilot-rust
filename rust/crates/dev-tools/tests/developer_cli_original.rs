@@ -1,6 +1,9 @@
-//! Fresh CLI/source oracle; functional execution belongs to the parent's Actions gate.
-//! JSON records intentionally retain raw original/native channels and explicit criteria.
+//! SSH는 fresh 원본, setup21은 고정 raw 원본을 같은 semantic verifier로 비교한다.
+//! 기능 실행은 Actions 전용이며 setup21은 실제 네트워크 CLI 수용이 아니다.
 #![cfg(feature = "developer-ssh-native")]
+#[path = "developer_cli_original/setup_frozen.rs"]
+mod setup_frozen;
+
 use openpilot_dev_tools::developer_ssh::{
     parse_options, prepare, setup_keys, setup_keys_with_decoder, Get, KeyParams, RequestsText,
     Response, Result, TextDecoder, Transport,
@@ -218,7 +221,8 @@ import requests as real_requests
 assert sys.version_info[:3] == (3, 12, 15), 'the prepared Python runtime must stay pinned after env_clear'
 root, cases = sys.argv[1], json.loads(sys.argv[2])
 paths = {'ssh':'tools/scripts/ssh.py', 'setup':'tools/scripts/setup_ssh_keys.py'}
-source_bytes = {tool: open(os.path.join(root, path), 'rb').read() for tool, path in paths.items()}
+source_bytes = {tool: open(os.path.join(root, path), 'rb').read() for tool, path in paths.items()
+                if any(case['tool'] == tool for case in cases)}
 sources = {tool: data.decode('utf-8') for tool, data in source_bytes.items()}
 metadata = {'python':sys.version, 'requests':real_requests.__version__,
             'sources':{paths[k]:hashlib.sha256(v).hexdigest() for k,v in source_bytes.items()}}
@@ -344,6 +348,17 @@ fn oracle(cases: &[Case]) -> Value {
     serde_json::from_slice(&output.stdout).unwrap()
 }
 fn compare(group: &str, cases: &[Case]) {
+    if group == "setup-effects" {
+        let envelope = setup_frozen::admit(group, cases).expect("fixed setup original admission");
+        // 21개 authored input/criteria와 원문 pin을 확인한 뒤 기존 verifier를 그대로 쓴다.
+        // 원문 bytes를 출력하며 과거 metadata에 현재 native_sources를 채우지 않는다.
+        println!(
+            "DEVELOPER_CLI_FROZEN_JSON {}",
+            std::str::from_utf8(setup_frozen::RAW).unwrap()
+        );
+        verify_envelope(&envelope);
+        return;
+    }
     let original = oracle(cases);
     let outcomes = original["outcomes"].as_array().unwrap();
     assert_eq!(outcomes.len(), cases.len());
@@ -368,8 +383,7 @@ fn compare(group: &str, cases: &[Case]) {
 }
 
 // This checker consumes only JSON expectations, with no Python/source dependency.
-// The default tests always obtain fresh originals; future fixture loading belongs
-// to the parent's separately qualified retirement step, with these same criteria.
+// SSH 두 그룹의 fresh 원본과 setup21의 고정 원문 모두 같은 기존 criteria를 쓴다.
 fn verify_envelope(envelope: &Value) {
     assert_eq!(envelope["schema"], "openpilot.developer-cli-original.v1");
     let (expected_count, tool) = match envelope["group"].as_str().unwrap() {

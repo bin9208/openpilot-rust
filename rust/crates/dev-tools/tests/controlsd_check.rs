@@ -4,6 +4,8 @@
 mod controller;
 use controller::{numeric, reference};
 use serde_json::json;
+#[path = "controlsd_check/frozen.rs"]
+mod frozen;
 
 #[test]
 fn original_print_filter_preserves_every_other_byte_and_native_prints() {
