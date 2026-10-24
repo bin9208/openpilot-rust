@@ -521,3 +521,57 @@ test에 추가했다. writer ACK/release와 별도 postcondition marker로 음�
 Rust 서식/diff·147literal pin·167exact allow 및 원장3580/3306행 집계다. 모두 확인했으며
 컴파일·test·Clippy·원본/후보 CLI 기능은 로컬에서 실행하지 않았다. 새 성공은 Actions
 실행과 artifact/봉인/정리 감사 뒤에만 기록한다.
+
+## 419 실제 Fast/Focus 수용과 PR343 연결
+
+source `419244279fd42ca7a8d83272b8e659bd4136c3ec`의
+[Fast40140187055](https://github.com/bin9208/openpilot-rust/actions/runs/40140187055)는7leaf+aggregate
+모두 성공했다. 최장routing392초/tools339초이며 기존420초 이내다. 기존72suite/build
+selector 계약·Navi2·cold actual과 stderr collector 정상1/음성5를 실제 검사했다.
+Rust554 PASS/FAIL0, 기본ignored2 중 cold는 별도 실제 실행했고 UI Xvfb1은 미실행이다.
+Python306/44/34와 Gradle도 성공했다.
+
+ZIP7개 총2,359,152B/279CRC 및 전후봉인42쌍을 감사했다. 각index19428 unique paths,
+SDK165files/188roster/4program pin과 source SHA가 같고7leaf 전부 upload/소유 정리가
+성공했다. cold raw1,170,129B/505줄 SHA256
+`67d5249b9983a78098aef05d3d9a1948a9f4dee9bd7826c6683c7757c4b196bf`에 unknown/detached가
+없고 strict parser가 exec323/실패172·SDKcargo1/rustc37·Python0/rustup0을 수용했다.
+실제 strace6.8 provider2087432B/SHA
+`28f957c227012de0b18d1bd7fff2d396cb693ea60ed8013be68de071e84b5001`, 전후4쌍이 같다.
+collector wait/collection0·reaped true·timeout false다. BPF activation은 계속 unproven이며
+602 실패237/310행의 최초 원인을 해결했다고 하지 않는다. #552의7분 분할 조건을 충족해 종료했다.
+
+같은 source의 [Focus40140187062/job121010107682](https://github.com/bin9208/openpilot-rust/actions/runs/40140187062/job/121010107682)도
+성공했다. artifact12579025471은15,868,394B/SHA
+`3734cfbd0cd784862150a6bbc05eb3bed7dbf75832eea9c01f25945ca63ad360`,85CRC·해제24,608,749B다.
+source/index/전체SDK·원본 D/base SHA/HEAD-index empty와 내부 역사봉인을 확인했다.
+13개 불변 봉인쌍 및4program pin이 동일하며 disk/memory 관측의 차이를 변조로 세지 않는다.
+source/SDK final→upload→소유 source/job cleanup이 모두 실제 success다.
+
+PR343 head를 force 없이419로 fast-forward했고 dev 대상 draft를 유지한다. 새 필수
+Rust40140991825·Integration40140991803·PR Fast40140991807·docs40140991906을
+정확 merge SHA로 끝까지 확인한다. 아직 새 deep 성공이나 전체 #523 완료가 아니다.
+
+## 419 logging의 실제 backpressure 경계 — #554
+
+[logging40140187029/job121010107517](https://github.com/bin9208/openpilot-rust/actions/runs/40140187029/job/121010107517)은
+raw108/core21/importer9/기존trace20/새summary6 및 앞3lifecycle body를 통과했지만
+runtime-directory INT에서 backpressure2초를 넘겨 실패했다. actual2.148831170초는
+start-peer1.872016784 + command0.171116195 + finish0.105698191이다. 원문 PID12731의
+Git status15212줄, exec1792882565.811218→exit1792882567.575329(1.764111초)가 준비
+구간의 대부분이다. 전체 호출의 ptrace 영향과 양립하지만 VM/각 syscall의 개별 CPU 원인은
+확정하지 않았다. timer/기존 Git검사·2초 기준을 옮기거나 줄이지 않는다.
+
+artifact12579190406은33,923,432B/SHA
+`c0f0556551d355310dacd2fafc72b85ff0640e26ba7e83044cd29c366c98241c`,950CRC·해제388,310,252B다.
+이번까지 proof는1GiB 안이며 source/index/wholeSDK/held 전후가 같고 upload는 성공했다.
+이 workflow에는 명시적인 source/job cleanup 단계가 없어 owned cleanup 성공으로 세지 않는다.
+나머지10lifecycle/retained-once/15inspection은
+미실행이다. #554에서 이 timing 실패를 추적한다. summary6의 성공을 전체15prefix lexical
+성공으로 확대하지 않는다.
+
+단일 변수 후보는 두 collector에만 `--seccomp-bpf`를 추가한다. 같은 전체 trace classes와
+인자·결과·-x/rawread·file512MiB/proof1GiB·shared600초·2초 기준을 유지한다. 미선택 syscall
+정지를 줄일 수 있지만 선택된 Git metadata15212줄은 남으므로148.8ms 개선이나 실제 통과는
+미확정이다. BPF activation unproven/fallback·unknown 거부와 parser·transport·원본2/caller는
+불변이다. 독립 소스 검토 P1/P2 없으며 새 실제 기능 검증은 UNRUN이다.

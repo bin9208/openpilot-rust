@@ -232,12 +232,12 @@ for name in first_int first_term first_eof runtime_directory_int runtime_directo
   ((remaining > 0))
   bound_cs=$remaining; ((bound_cs <= 9500)) || bound_cs=9500
   printf -v bound '%s.%02d' "$((bound_cs / 100))" "$((bound_cs % 100))"
-  run "lifecycle-$name" "$bound" "${runtime[@]}" "${lifecycle_env[@]}" /usr/bin/strace --kill-on-exit -ff -ttt -x -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/$name" "$fixture" --ignored --exact "retained::$name" --test-threads=1 --color=never
+  run "lifecycle-$name" "$bound" "${runtime[@]}" "${lifecycle_env[@]}" /usr/bin/strace --seccomp-bpf --kill-on-exit -ff -ttt -x -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/$name" "$fixture" --ignored --exact "retained::$name" --test-threads=1 --color=never
   test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/build/lifecycle-$name.stdout")" -eq 1
   verify_held
 done
 (( $(monotonic_cs) - started <= 60000 ))
-run retained-once 360 "${runtime[@]}" /usr/bin/strace --kill-on-exit -ff -ttt -x -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/retained-once" "$checker" retained --root "$source" --binary "$probe" --context "$context" --output "$proof/native" --source-commit "$GITHUB_SHA" --binary-sha256 "$NATIVE_LOGGING_RETAINED_BINARY_SHA256"
+run retained-once 360 "${runtime[@]}" /usr/bin/strace --seccomp-bpf --kill-on-exit -ff -ttt -x -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/retained-once" "$checker" retained --root "$source" --binary "$probe" --context "$context" --output "$proof/native" --source-commit "$GITHUB_SHA" --binary-sha256 "$NATIVE_LOGGING_RETAINED_BINARY_SHA256"
 jq -e --arg source "$GITHUB_SHA" '.fresh_native_packets==250 and .fresh_native_responses==697 and .retained_cpp_packets==249 and .retained_cpp_responses==694 and .cpp_executions==0 and .source_commit==$source and .R4_acceptance==false and .lifecycle_reuse_granted==false and (.historical_to_recovered_console|length)==7 and (.recovered_to_fresh_console|length)==7 and all(.historical_to_recovered_console[]; .projected_equal==true) and all(.recovered_to_fresh_console[]; .projected_equal==true)' "$proof/native/report.json" > "$proof/raw-comparison.txt"
 for stem in providers context-inputs source-state; do cmp "$proof/native/$stem.before.json" "$proof/native/$stem.after.json"; done
 # 같은 lexer로 모든 원문 줄을 검사하되 세부 syscall Event는 집계로 출력한다.
