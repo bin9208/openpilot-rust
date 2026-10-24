@@ -401,3 +401,43 @@ FD를 보유하고 전후 identity/bytes SHA를 확인한다. compiler·generate
 
 후보 성공도 ISA admission, 최초 compiler/provider 입증, raw 수치5건·전체 모델·device 수용은 아니다.
 그 결과를 토대로 기존 cached issuer의 엄격 gate를 유지한 후속 독립 검증을 진행한다.
+
+
+## e1bf 역사 object 전체 image 일치 수용
+
+[40094270972/job120873139135](https://github.com/bin9208/openpilot-rust/actions/runs/40094270972/job/120873139135),
+source `e1bfbdc22ca11f6ce4d89c1c95ed02cd4c52b5ec`가 성공했다.
+기존 native 재구성기로 역사object15928B에서 얻은 image14442B가 frozen BINARY와 전 바이트 및
+SHA256 `324697e4d28a400da3c521fea2f9140eea04d50f19e6771a96549f4b8a5a6767`까지 같다.
+text extent14244B/alignment16, first mismatch는null이다. ignored1과 strict Clippy가 성공했다.
+compiler/JIT/generated-code/model 실행은0이며 ISA 및 수치 수용은false다.
+
+artifact12560955339(4750233B), SHA256
+`84342c6721b7e5d4d14b9062f9d3af97723e509c31070227b40bae8703f59fe7`의
+41CRC와 source/index/전체SDK 전후4쌍 및 input/ELF 보유 봉인을 부모가 별도 감사했다.
+첫 compiler provider/cache event의 역사 identity를 소급 입증한 것은 아니다.
+하지만 fresh `alderlake` compile image와 달리 실제 역사object가 frozen 전체image를 만족하므로,
+엄격한 cached triplet/ABI/ISA gate를 유지한 다음 검증으로 진행할 구체적 입력을 확보했다.
+
+
+## 다음 strict triplet/host ISA 후보
+
+기존 `offline-cached-code`의 ISA 모듈 본문과 기존 unit5개를 byte 그대로 shared
+`cached_isa.rs`로 옮겨 readonly 검사와 동일 구현을 사용한다. ISA 판정이나 decoder whitelist를 바꾸지 않는다.
+기존 cached source9경로에 추출 파일을 추가해 정확히10경로로 강화했으며 두 native catalog consumer도
+같은 roster를 요구한다. old9 current receipt는 새 source에서 미수용이고 새 issuer receipt가 필요하다.
+guarded-add8 경로와 기본 cached 비활성 경계는 유지한다.
+
+새 ignored 검사는 실제 pinned program-binding967B를 읽어10pointer/1scalar/core_id0/workers2,
+global0..9와 선언을 대조하고 기존 `verify_original_program`의 엄격한 SOURCE/BINARY/object/ABI를
+그대로 호출한다. 그 뒤 실제 host 기능으로 전체text14244B를 decode해 ISA를 판정한다.
+상수tail을 instruction으로 보거나 sourceCompile/currentCPU tuning으로 바꾸지 않는다.
+현재 test/source4개·원문4개·ELF의 FD 및 bytes/identity를 전후 보유한다.
+이 후보·기존ISA unit5개·old9/변조/경로대체 회귀1개·strict Clippy는 **UNRUN**이다.
+전체모델/원본92program roster, 원본실행·raw수치5건·장치수용은 이 gate로 대체하지 않는다.
+
+
+두 native catalog consumer도 `driver-daemon-native`로 엄격 Clippy compile을 별도 수행한다.
+기존 guarded-add source 경로8개는 보존되지만 공용 `lib.rs` bytes가 달라 과거 hash를 현재 binding으로
+승계할 수 없다. 새 current issuer는 변경된 전체source bytes를 다시 봉인해야 한다.
+이 단계는 기존 원본 capture나 e1bf image equality를 무효화하지 않으며 새 수치·전체모델 수용은 아니다.

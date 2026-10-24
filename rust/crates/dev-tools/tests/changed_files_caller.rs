@@ -4,6 +4,9 @@ use openpilot_dev_tools::ci_policy::{parse, TRUSTED_SOURCE};
 use serde_json::Value;
 use std::{fs, path::Path, process::Command};
 
+#[path = "changed_files_caller/absence.rs"]
+mod absence;
+
 const REGRESSION: &str = "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --test changed_files_caller";
 const RUN: &str = "set -euo pipefail\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 6144\ncargo run --quiet --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --bin check-changed-files --\n";
 fn caller_policy(workflow: &Value) -> bool {
@@ -56,6 +59,9 @@ fn caller_policy(workflow: &Value) -> bool {
 }
 #[test]
 fn maintained_caller_and_native_initial_push_regression_are_mandatory() {
+    let _absence = absence::Guard::current(
+        "maintained_caller_and_native_initial_push_regression_are_mandatory",
+    );
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let workflow =
         parse(&fs::read_to_string(root.join(".github/workflows/fast-checks.yml")).unwrap())
@@ -149,6 +155,7 @@ fn check(root: &Path) -> std::process::Output {
 }
 #[test]
 fn initial_push_checks_earlier_commits() {
+    let _absence = absence::Guard::current("initial_push_checks_earlier_commits");
     // Preserve the original sole unittest's multi-commit initial-push assertion.
     let root = repository();
     fs::write(root.path().join("broken.py"), b"def broken(:\n").unwrap();
@@ -162,6 +169,8 @@ fn initial_push_checks_earlier_commits() {
 }
 #[test]
 fn changed_current_worktree_bytes_are_checked_after_head_selection() {
+    let _absence =
+        absence::Guard::current("changed_current_worktree_bytes_are_checked_after_head_selection");
     let root = repository();
     fs::write(root.path().join("changed.py"), b"x=1\n").unwrap();
     commit(root.path(), "valid HEAD source");
@@ -173,6 +182,7 @@ fn changed_current_worktree_bytes_are_checked_after_head_selection() {
 }
 #[test]
 fn whitespace_precedes_syntax_rejection() {
+    let _absence = absence::Guard::current("whitespace_precedes_syntax_rejection");
     let root = repository();
     fs::write(root.path().join("broken.py"), b"def broken(:\n").unwrap();
     fs::write(root.path().join("space.txt"), b"trailing \n").unwrap();

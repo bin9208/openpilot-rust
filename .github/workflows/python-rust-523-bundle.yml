@@ -160,26 +160,53 @@ jobs:
         find "$CI_JOB_TEMP/venv" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/oracle-venv-files.before.sha256"
         find "$CI_JOB_TEMP/venv" -type l -printf '%p\t%l\n' | sort > "$CI_JOB_TEMP/proof/oracle-venv-links.before.txt"
       id: toolchain
-    - name: Validate native bundle library contracts
+    - name: Admit successful 121aa5 library and seventeen original contracts
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --lib route_vault_bundle::tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-lib.log"
-        grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/bundle-lib.log"
-    - name: Capture original committed bundle and error-boundary contracts
-      if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
-      working-directory: ${{ env.DIAG_SOURCE }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        mkdir -m 700 "$CI_JOB_TEMP/proof/bundle-original"
-        export BUNDLE_ORIGINAL_CAPTURE_DIR="$CI_JOB_TEMP/proof/bundle-original"
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features route-vault-bundle-native --test route_vault_bundle -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/bundle-integration.log"
-        grep -F 'test result: ok. 17 passed;' "$CI_JOB_TEMP/proof/bundle-integration.log"
-        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after-contracts.txt"
-        du -sx --block-size=1 "$CARGO_HOME" "$CARGO_TARGET_DIR" "$CI_JOB_TEMP/venv" > "$CI_JOB_TEMP/proof/allocated-after-contracts.tsv"
+        prior="$CI_JOB_TEMP/proof/prior-bundle-121aa5.zip"
+        gh api repos/bin9208/openpilot-rust/actions/artifacts/12560845618/zip > "$prior"
+        printf 'b6ecc542f61d83ee1bfa518d3926ccfb45e6d2f52240eb7f85fd42c8cdc3f50a  %s\n' "$prior" | sha256sum --check -
+        unzip -t "$prior" > "$CI_JOB_TEMP/proof/prior-bundle-crc.txt"
+        test "$(unzip -p "$prior" SOURCE_COMMIT)" = 121aa5b86ddf427697a8cabb25d2ed337d80f429
+        for item in source index; do
+          if test "$item" = source; then suffix=sha256; else suffix=bin; fi
+          unzip -p "$prior" "$item-before.$suffix" > "$CI_JOB_TEMP/proof/prior-$item-before.$suffix"
+          unzip -p "$prior" "$item-after.$suffix" > "$CI_JOB_TEMP/proof/prior-$item-after.$suffix"
+          cmp "$CI_JOB_TEMP/proof/prior-$item-before.$suffix" "$CI_JOB_TEMP/proof/prior-$item-after.$suffix"
+        done
+        unzip -p "$prior" bundle-lib.log | grep -F 'test result: ok. 1 passed;'
+        unzip -p "$prior" bundle-integration.log | grep -F 'test result: ok. 17 passed;'
+        unzip -p "$prior" rust-tools.sha256 > "$CI_JOB_TEMP/proof/prior-rust-tools.sha256"
+        sha256sum --check "$CI_JOB_TEMP/proof/prior-rust-tools.sha256"
+        git fetch --no-tags --depth=1 origin 121aa5b86ddf427697a8cabb25d2ed337d80f429
+        git diff --exit-code 121aa5b86ddf427697a8cabb25d2ed337d80f429 HEAD -- rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml rust/crates/dev-tools/src/lib.rs rust/crates/dev-tools/src/route_vault_bundle.rs rust/crates/dev-tools/src/bin/build_route_vault_bundle.rs rust/crates/dev-tools/tests/route_vault_bundle.rs rust/crates/dev-tools/src/argparse_scan.rs rust/crates/dev-tools/src/qa_process.rs rust/crates/dev-tools/src/python_fs.rs rust/tools/run-developer-tool tools/carrot_route_vault/build_bundle.py
+        printf '%s  %s\n' a1db3f1726cba01dfcb50efd8d13536de6ff9c47d5244346019010bf7be243a8 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
+        "$BUNDLE_ORACLE_PYTHON" -I -B -S - <<'CARGO'
+        import pathlib, subprocess, tomllib
+        path='rust/crates/dev-tools/Cargo.toml'
+        old=tomllib.loads(subprocess.check_output(['/usr/bin/git','show','121aa5b86ddf427697a8cabb25d2ed337d80f429:'+path],text=True))
+        new=tomllib.loads(pathlib.Path(path).read_text())
+        entry={'name':'prepare-changed-files-context','path':'src/bin/prepare_changed_files_context.rs','required-features':['changed-files-native']}
+        assert new['bin'].count(entry)==1, 'Only the reviewed metadata collector registration is admitted'
+        new['bin'].remove(entry)
+        assert new==old, 'Bundle feature/bin/test/dependency semantics changed'
+        CARGO
+        "$BUNDLE_ORACLE_PYTHON" -I -B -S - "$prior" <<'CAPTURES'
+        import collections,json,sys,zipfile
+        with zipfile.ZipFile(sys.argv[1]) as archive:
+         rows=[json.loads(archive.read(name)) for name in archive.namelist() if name.startswith('bundle-original/') and name.endswith('.json')]
+         assert len(rows)==23
+         assert sorted(collections.Counter(row['test_name'] for row in rows).values())==[1,3,7,12]
+         for row in rows:
+          assert row['source_commit']=='121aa5b86ddf427697a8cabb25d2ed337d80f429'
+          assert row['script_sha256_before']==row['script_sha256_after']=='05551fc470864a4c70758a66b1a156c2b6d9e95e8deeb1f2a74ac13fb5259aa9'
+        CAPTURES
+        printf '%s\n' 'Reused exact unchanged library1/integration17 and actual23 captures. Fresh: current Clippy after Cargo/caller-source binding and public helper trace controls/actual exec/context comparison. Prior whole job failed only SIGUSR1 metadata parsing.' > "$CI_JOB_TEMP/proof/reused-contracts.txt"
     - name: Validate strict bundle Clippy after caller and capture changes
       if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
       working-directory: ${{ env.DIAG_SOURCE }}
@@ -290,6 +317,9 @@ jobs:
         complete=re.compile(rf'execve\((?P<program>{cstring}), (?P<argv>{vector}|NULL), (?P<environment>{environment})[ \t]*\) += (?P<result>0|-1 E[A-Z0-9_]+ \([A-Za-z0-9 ,./:_+-]+\))')
         cpu=r'[0-9]+(?: /\* [0-9]+(?:\.[0-9]+)? s \*/)?'
         sigchld=re.compile(rf'--- SIGCHLD \{{si_signo=SIGCHLD, si_code=CLD_(?:EXITED|KILLED|DUMPED|TRAPPED|STOPPED|CONTINUED), si_pid=[1-9][0-9]*, si_uid=[0-9]+, si_status=(?:[0-9]+|SIG[A-Z0-9]+)(?:, si_utime={cpu}, si_stime={cpu})?\}} ---')
+        # artifact12560845618의 native.exec에는 정확히 이 SIGUSR1/SI_TKILL 형식153행이 있다.
+        # 수신 signal metadata만 기록한다. sender/receiver의 exec 성공이나 종료를 뜻하지 않는다.
+        sigusr1=re.compile(r'--- SIGUSR1 \{si_signo=SIGUSR1, si_code=SI_TKILL, si_pid=(?P<sender_pid>[1-9][0-9]*), si_uid=(?P<sender_uid>0|[1-9][0-9]*)\} ---')
         def cbytes(text):
          data=bytes.fromhex(text[1:-1].replace('\\x',''))
          require(len(data)<=65535 and b'\0' not in data,'Unsupported/truncated C string')
@@ -305,10 +335,10 @@ jobs:
          basename=program.rsplit(b'/',1)[-1].lower()
          require(b'python' not in basename and not basename.endswith(b'.py'),'Forbidden Python attempt, including failed PATH lookup')
          return {'pid':pid,'program':program,'argv':args,'success':match['result']=='0'}
-        def audit(text):
+        def audit(text,signal_records=None):
          require(bool(text) and text.endswith('\n') and all(c in '\n\t' or 32<=ord(c)<=126 for c in text),'Empty, non-ASCII/control-byte or truncated trace')
          calls=[]; pending={}; exited=set()
-         for line in text.split('\n')[:-1]:
+         for line_number,line in enumerate(text.split('\n')[:-1],1):
           match=re.fullmatch(r' *(?:([1-9][0-9]*) +|\[pid +([1-9][0-9]*)\] +)(.+)',line)
           require(match is not None,'Missing PID or unsupported trace record')
           pid=int(match[1] or match[2]); body=match[3]
@@ -325,6 +355,9 @@ jobs:
             calls.append(None)
            else: calls.append(parse_exec(body,pid))
           elif sigchld.fullmatch(body): pass
+          elif (signal:=sigusr1.fullmatch(body)) is not None:
+           if signal_records is not None:
+            signal_records.append({'line':line_number,'receiver_pid':pid,'sender_pid':int(signal['sender_pid']),'sender_uid':int(signal['sender_uid']),'record':line})
           else:
            ended=re.fullmatch(r'\+\+\+ exited with ([0-9]+) \+\+\+',body)
            require(ended is not None and int(ended[1])<=255,'Unknown, malformed or unsupported trace metadata')
@@ -351,6 +384,15 @@ jobs:
         require(len(audit(good))==3,'Complete synthetic control failed')
         paired=audit(first+failed_cc+git+unfinished+'10 <... execve resumed>) = 0\n11 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=12, si_uid=1000, si_status=0, si_utime=36 /* 0.36 s */, si_stime=0} ---\n')
         require(len(paired)==4 and sum(not call['success'] for call in paired)==1,'Resumed/failed-attempt synthetic control failed')
+        # 121aa5 actual trace 48행의 metadata다. 기존 parser는 이 형식을 거절했다.
+        # CI에서만 실행: 수신 PID의 pending exec를 완료하거나 sender exec를 만들면 안 된다.
+        observed_signal='3141182 --- SIGUSR1 {si_signo=SIGUSR1, si_code=SI_TKILL, si_pid=3141173, si_uid=1000} ---\n'
+        signal_unfinished=synthetic(3141182,final,expected_argv).rsplit(') = ',1)[0]+' <unfinished ...>\n'
+        signal_paired=first+failed_cc+git+signal_unfinished+observed_signal+'3141182 <... execve resumed>) = 0\n'
+        signal_records=[]
+        signaled=audit(signal_paired,signal_records)
+        require(len(signaled)==4 and sum(not call['success'] for call in signaled)==1 and signaled[-1]['pid']==3141182 and signaled[-1]['success'],'Signal metadata changed exec/PID pairing')
+        require(signal_records==[{'line':5,'receiver_pid':3141182,'sender_pid':3141173,'sender_uid':1000,'record':observed_signal[:-1]}],'Signal metadata receipt differs')
         negative={
          'truncated_eof':good[:-1],
          'failed_final':first+git+synthetic(10,final,expected_argv,'-1 EACCES (Permission denied)'),
@@ -365,6 +407,17 @@ jobs:
          'failed_git':first+synthetic(11,b'/controlled/git',[b'git'],'-1 ENOENT (No such file or directory)')+last,
          'wrong_final_argv':first+git+synthetic(10,final,[final,b'wrong']),
          'unknown_string_escape':good.replace('\\x2f','\\q',1),
+         'malformed_sigusr1_sender':good+observed_signal.replace('si_pid=3141173','si_pid=bad'),
+         'zero_sigusr1_sender':good+observed_signal.replace('si_pid=3141173','si_pid=0'),
+         'negative_sigusr1_uid':good+observed_signal.replace('si_uid=1000','si_uid=-1'),
+         'truncated_sigusr1_metadata':good+observed_signal.replace('} ---\n','} --\n'),
+         'sigusr1_si_user':good+observed_signal.replace('SI_TKILL','SI_USER'),
+         'unknown_signal_metadata':good+observed_signal.replace('SIGUSR1','SIGUSR2'),
+         'extra_sigusr1_field':good+observed_signal.replace('} ---',', si_status=0} ---'),
+         'signal_does_not_complete_pending_exec':first+git+signal_unfinished+observed_signal,
+         'signal_does_not_repair_wrong_pid_resume':signal_paired.replace('3141182 <... execve resumed>','3141183 <... execve resumed>'),
+         'signal_does_not_hide_failed_python_attempt':first+observed_signal+synthetic(12,b'/missing/python3.12',[b'python3.12'],'-1 ENOENT (No such file or directory)')+git+last,
+         'non_ascii_signal_metadata':good+observed_signal.replace('si_uid=1000','si_uid=１０００'),
         }
         rejected=[]
         for name,text in negative.items():
@@ -380,11 +433,12 @@ jobs:
          try: check_image(magic,line,sha,script)
          except ValueError: rejected_images.append(name)
          else: raise ValueError(f'Negative image control was accepted: {name}')
-        controls={'scope':'합성 trace parser/수용 조건 및 실행 파일 형식·pin 거부만 검증','actual_execution_qualification':False,'positive_controls':['complete','pid_resume_with_failed_nonpython_attempt'],'negative_controls_rejected':rejected,'negative_image_controls_rejected':rejected_images}
+        controls={'scope':'합성 trace parser/수용 조건 및 실행 파일 형식·pin 거부만 검증','actual_execution_qualification':False,'positive_controls':['complete','pid_resume_with_failed_nonpython_attempt','observed_sigusr1_during_pending_exec'],'negative_controls_rejected':rejected,'negative_image_controls_rejected':rejected_images}
         (proof/'trace-controls.json').write_text(json.dumps(controls,indent=2)+'\n')
         # 이 아래에서만 실제 trace를 판정한다. 합성 controls의 결과를 실제 실행 수에 더하지 않는다.
         trace_bytes=(proof/'native.exec').read_bytes()
-        calls=audit(trace_bytes.decode('ascii'))
+        signal_records=[]
+        calls=audit(trace_bytes.decode('ascii'),signal_records)
         def identity(info):
          return (info.st_dev,info.st_ino,info.st_mode,info.st_uid,info.st_gid,info.st_size,info.st_mtime_ns,info.st_ctime_ns)
         def successful_file(program,script=False):
@@ -407,7 +461,7 @@ jobs:
         for program in sorted({call['program'] for call in calls if call['success']}):
          row=successful_file(program,program==entry)
          executables.append(row)
-        actual={'trace_sha256':hashlib.sha256(trace_bytes).hexdigest(),'strace_flags':'-f -qq -xx -s 65535 -e trace=execve,execveat','exec_attempts':len(calls),'failed_exec_attempts':sum(not call['success'] for call in calls),'successful_git_execs':sum(call['success'] and call['program'].rsplit(b'/',1)[-1]==b'git' for call in calls),'successful_final_elf_execs':1,'forwarded_argv_hex':[arg.hex() for arg in expected_argv],'observed_python_exec_attempts':0,'success_executable_evidence':executables,'python_absence_scope':'완전 판독한 execve target의 basename/suffix를 실패 시도까지 검사한다. 성공 파일은 pin 고정 Bash entry 하나 외에는 ELF magic/hash를 확인한다. 이름을 바꾼 interpreter·ELF 내부 동작 및 무제한 전체 Python 부재는 수용하지 않는다.','whole_python_absence_accepted':False,'inventory_credit':False,'controls':'trace-controls.json'}
+        actual={'trace_sha256':hashlib.sha256(trace_bytes).hexdigest(),'strace_flags':'-f -qq -xx -s 65535 -e trace=execve,execveat','exec_attempts':len(calls),'failed_exec_attempts':sum(not call['success'] for call in calls),'received_sigusr1_si_tkill_records':len(signal_records),'received_sigusr1_si_tkill_metadata':signal_records,'successful_git_execs':sum(call['success'] and call['program'].rsplit(b'/',1)[-1]==b'git' for call in calls),'successful_final_elf_execs':1,'forwarded_argv_hex':[arg.hex() for arg in expected_argv],'observed_python_exec_attempts':0,'success_executable_evidence':executables,'python_absence_scope':'완전 판독한 execve target의 basename/suffix를 실패 시도까지 검사한다. 성공 파일은 pin 고정 Bash entry 하나 외에는 ELF magic/hash를 확인한다. 이름을 바꾼 interpreter·ELF 내부 동작 및 무제한 전체 Python 부재는 수용하지 않는다.','whole_python_absence_accepted':False,'inventory_credit':False,'controls':'trace-controls.json'}
         (proof/'trace-audit.json').write_text(json.dumps(actual,indent=2)+'\n')
         (proof/'roster.json').write_text(json.dumps(old,indent=2)+'\n')
         (proof/'comparison.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'equal':True,'files':sum(not r.get('directory',False) for r in old.values()),'bytes':sum(r.get('bytes',0) for r in old.values()),'observed_python_exec_attempts':actual['observed_python_exec_attempts'],'native_elf_sha256':hashlib.sha256(Path(binary).read_bytes()).hexdigest(),'entrypoint':'rust/tools/run-developer-tool','forwarded_argv_verified':True,'trace_audit':'trace-audit.json','whole_python_absence_accepted':False,'inventory_credit':False,'bootstrap_stderr':'native-bootstrap.stderr','original_retired':False,'image_published':False,'nas_deployed':False},indent=2)+'\n')

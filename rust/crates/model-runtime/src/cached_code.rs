@@ -25,10 +25,11 @@ pub const GUARDED_ADD_SOURCES: [&str; 8] = [
     "rust/Cargo.lock",
     "rust/rust-toolchain.toml",
 ];
-pub const CACHED_SOURCES: [&str; 9] = [
+pub const CACHED_SOURCES: [&str; 10] = [
     "rust/crates/model-runtime/src/cached_code.rs",
     "rust/crates/model-runtime/src/bin/offline-cached-code.rs",
     "rust/crates/model-runtime/src/cached_elf.rs",
+    "rust/crates/model-runtime/src/cached_isa.rs",
     "rust/crates/model-runtime/src/cpu.rs",
     "rust/crates/model-runtime/src/graph.rs",
     "rust/crates/model-runtime/src/error.rs",
@@ -691,6 +692,59 @@ mod tests {
         certificate.current = expected.current.clone();
         certificate.current.guarded_add_sources.pop();
         assert!(certificate.current.validate().is_err());
+    }
+    #[test]
+    fn current_binding_requires_the_extracted_isa_source() {
+        const ISA_SOURCE: &str = "rust/crates/model-runtime/src/cached_isa.rs";
+        let (expected, certificate, receipt, graph, library, container) = fixture();
+        let check = |candidate: &Certificate, admitted: &Admission| {
+            validate(
+                candidate,
+                &receipt,
+                admitted,
+                &graph,
+                &library,
+                &container,
+                |_| true,
+            )
+        };
+        check(&certificate, &expected).unwrap();
+        // fixture가 production constant에서 파생되어도 이 별도 필수 경로를 빠뜨릴 수 없다.
+        let index = expected
+            .current
+            .cached_sources
+            .iter()
+            .position(|seal| seal.path == ISA_SOURCE)
+            .expect("current binding must seal the extracted ISA source");
+
+        // 옛 9경로 receipt끼리 일치해도 현재의 정확한 roster gate를 통과하지 못한다.
+        let mut old_admission = expected.clone();
+        old_admission.current.cached_sources.remove(index);
+        let mut old_certificate = certificate.clone();
+        old_certificate.current = old_admission.current.clone();
+        assert_eq!(
+            check(&old_certificate, &old_admission).unwrap_err(),
+            "cached current helper/source/ISA binding"
+        );
+
+        // 독립적으로 수용한 current hash는 그대로 두고 검증서의 ISA source seal만 변조한다.
+        let mut changed_certificate = certificate.clone();
+        changed_certificate.current.cached_sources[index].sha256 = digest(b"changed ISA source");
+        assert_eq!(
+            check(&changed_certificate, &expected).unwrap_err(),
+            "cached original/current/graph/complete proof identity"
+        );
+
+        // 개수만 맞추고 다른 경로로 바꾼 admission/검증서도 모두 거부해야 한다.
+        let mut substituted_admission = expected.clone();
+        substituted_admission.current.cached_sources[index].path =
+            "rust/crates/model-runtime/src/unreviewed_isa.rs".into();
+        let mut substituted_certificate = certificate;
+        substituted_certificate.current = substituted_admission.current.clone();
+        assert_eq!(
+            check(&substituted_certificate, &substituted_admission).unwrap_err(),
+            "cached current helper/source/ISA binding"
+        );
     }
     #[test]
     fn omitted_final_program_abi_change_and_unknown_isa_reject() {

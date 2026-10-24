@@ -35,3 +35,9 @@ pub mod owned_outputs;
 pub mod cached_code;
 #[cfg(all(feature = "native-skip-miri", unix))]
 pub mod cached_elf;
+#[cfg(all(
+    feature = "cached-program-isa",
+    target_arch = "x86_64",
+    target_os = "linux"
+))]
+pub mod cached_isa;

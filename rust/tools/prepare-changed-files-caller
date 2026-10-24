@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# #523: 현재 Cargo/source metadata만 준비한다. caller test/원본/archived ELF는 실행하지 않는다.
+# Usage: prepare-changed-files-caller NEW_PROOF_DIR NEW_ENV_FILE
+set -euo pipefail
+umask 077
+fail() { printf 'prepare changed-files caller: %s\n' "$*" >&2; exit 1; }
+[[ $# == 2 ]] || fail 'new proof directory and new env file required'
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)
+expected=${GITHUB_SHA:?Actions source SHA required}
+proof=$1
+env_file=$2
+[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${RUNNER_NAME:-} == bin-actions && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 ]] || fail 'registered bin-actions Linux/X64 CI required'
+[[ $expected =~ ^[0-9a-f]{40}$ && $expected == "${GITHUB_SHA:-}" ]] || fail 'expected source differs from Actions SHA'
+validate_dir() {
+  local directory=$1 owner mode
+  [[ $directory == /* && -d $directory && ! -L $directory && $(readlink -e -- "$directory") == "$directory" ]] || fail 'canonical directory required'
+  read -r owner mode < <(stat -Lc '%u %a' -- "$directory")
+  [[ $owner == "$(id -u)" ]] && (( (8#$mode & 0022) == 0 )) || fail 'owned private directory required'
+}
+job=${CI_JOB_TEMP:?common CI_JOB_TEMP required}
+validate_dir "$job"
+[[ $(cat -- "$job/owner") == "${GITHUB_RUN_ID:?}:${GITHUB_RUN_ATTEMPT:?}:${GITHUB_JOB:?}" ]] || fail 'common job owner mismatch'
+validate_dir "$job/proof"
+validate_dir "$root"
+[[ $(git -C "$root" rev-parse --verify HEAD) == "$expected" ]] || fail 'actual source HEAD mismatch'
+[[ $proof == "$job/proof/"* && ! -e $proof && ! -L $proof ]] || fail 'new common-job proof subdirectory required'
+validate_dir "$(dirname -- "$proof")"
+[[ $env_file == "$job/"* && ! -e $env_file && ! -L $env_file ]] || fail 'new common-job env file required'
+validate_dir "$(dirname -- "$env_file")"
+target=${CARGO_TARGET_DIR:?current CARGO_TARGET_DIR required}
+if [[ ! -e $target && ! -L $target ]]; then
+  validate_dir "$(dirname -- "$target")"
+  mkdir -m 700 -- "$target"
+fi
+validate_dir "$target"
+exec {source_fd}<"$root"
+source_identity=$(stat -Lc '%d:%i:%f:%u:%g' -- "/proc/$$/fd/$source_fd")
+mkdir -m 700 -- "$proof" "$proof/receipts"
+set -C
+cd -- "$root"
+export CARGO_TARGET_DIR="$target"
+cargo test --manifest-path "$root/rust/Cargo.toml" -p openpilot-dev-tools --locked \
+  --no-default-features --features changed-files-native --test changed_files_caller \
+  --no-run --message-format=json > "$proof/cargo.jsonl" 2> "$proof/compile.stderr"
+cargo run --quiet --manifest-path "$root/rust/Cargo.toml" -p openpilot-dev-tools --locked \
+  --no-default-features --features changed-files-native --bin prepare-changed-files-context -- \
+  --root "$root" --expected-source "$expected" --proof-dir "$proof" --cargo-jsonl "$proof/cargo.jsonl" \
+  > "$proof/context.sha256" 2> "$proof/builder.stderr"
+read -r context_sha < "$proof/context.sha256"
+[[ $context_sha =~ ^[0-9a-f]{64}$ && $(wc -c < "$proof/context.sha256") == 65 ]] || fail 'builder must emit one SHA256 line'
+[[ -f $proof/context.json && ! -L $proof/context.json && $(stat -Lc '%a' -- "$proof/context.json") == 600 ]] || fail 'private context JSON missing'
+actual_sha=$(sha256sum -- "$proof/context.json")
+[[ ${actual_sha:0:64} == "$context_sha" ]] || fail 'context JSON byte SHA mismatch'
+[[ $(stat -Lc '%d:%i:%f:%u:%g' -- "$root") == "$source_identity" && $(stat -Lc '%d:%i:%f:%u:%g' -- "/proc/$$/fd/$source_fd") == "$source_identity" ]] || fail 'held source root changed'
+[[ $(git -C "$root" rev-parse --verify HEAD) == "$expected" ]] || fail 'source HEAD changed'
+printf 'export EXPECTED_SOURCE=%q\nexport CHANGED_FILES_CALLER_CONTEXT=%q\nexport CHANGED_FILES_CALLER_CONTEXT_SHA256=%q\n' \
+  "$expected" "$proof/context.json" "$context_sha" > "$env_file"
+[[ $(stat -Lc '%a' -- "$env_file") == 600 ]] || fail 'private export file required'

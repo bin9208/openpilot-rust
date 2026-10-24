@@ -231,6 +231,8 @@ jobs:
           CI_PREPARED_RUST_PROOF="$CI_JOB_TEMP/proof" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked \
             --test ci_disk_bootstrap prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- --ignored --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/prepared-cold-native-audit.log"
           grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/prepared-cold-native-audit.log"
+          "$GITHUB_WORKSPACE/rust/tools/prepare-changed-files-caller" "$CI_JOB_TEMP/proof/changed-files-caller" "$CI_JOB_TEMP/changed-files-caller.env"
+          source "$CI_JOB_TEMP/changed-files-caller.env"
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --test changed_files_caller
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --lib \
             --test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe \

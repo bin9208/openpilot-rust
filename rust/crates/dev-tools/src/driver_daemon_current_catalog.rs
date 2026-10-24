@@ -9,10 +9,11 @@ use std::{
     path::{Path, PathBuf},
 };
 const MAX_RECEIPT: u64 = 4_000_000;
-const CACHED_SOURCES: [&str; 9] = [
+const CACHED_SOURCES: [&str; 10] = [
     "rust/crates/model-runtime/src/cached_code.rs",
     "rust/crates/model-runtime/src/bin/offline-cached-code.rs",
     "rust/crates/model-runtime/src/cached_elf.rs",
+    "rust/crates/model-runtime/src/cached_isa.rs",
     "rust/crates/model-runtime/src/cpu.rs",
     "rust/crates/model-runtime/src/graph.rs",
     "rust/crates/model-runtime/src/error.rs",

@@ -56,7 +56,7 @@ locale 조건, casefold, Unicode normalization, 허용차나 mask는 추가하�
 ## pin과 라이선스
 
 구현 시점 helper 전체는49834 bytes이며 SHA256은
-`f0edde8b8443486b6940dc8f22e7cea65675b8230a46baec11c8ce0c2bab6b40`。
+`f0edde8b8443486b6940dc8f22e7cea65675b8230a46baec11c8ce0c2bab6b40`.
 생성 data block SHA도 provenance에 별도로 기록했으며 full source pin을 대체하지 않는다.
 원래 UCD raw bytes를 보관하고 SHA를 확인한 뒤 source data를 변환했다.
 1432/157/437 선언 내용은 ignored 생성물과 byte가 같음을 확인했다.
@@ -103,3 +103,19 @@ prefix와20초 timeout을 사용한다. mapping/helper/test/provenance/license5�
 기존 fb1228 parser13은 production parser/scanner pin과 artifact로 재사용한다.
 영향 있는 SSH27개, 새 native unit6개와 위 독립 원본1개, strict Clippy는 fresh Actions 범위다.
 이 추가 검사는 모두 **UNRUN**이다. 성공을 확인한 후에만 #532 수용 상태를 갱신한다.
+
+
+## 121aa5 실제 수용
+
+[40093557829/job120871017507](https://github.com/bin9208/openpilot-rust/actions/runs/40093557829/job/120871017507),
+source `121aa5b86ddf427697a8cabb25d2ed337d80f429`가 성공했다.
+전체scalar1112064개 length-prefixed UTF8 SHA는 원본/native 모두
+`92a1e4ccbd98fc5dd792a55dbba02833632d1526244af40259201412a52826b1`다.
+Σ154개 전체 문자열, native unit6개+원본1개, alias26개, SSH27개 및 strict Clippy도 성공했다.
+변경 없는 auth/login/setup/scanner/parser 범위는 정확 artifact/source/provider로 재사용했다.
+
+artifact12559898006(15832926B)의 SHA256은
+`276e6306a25069b071f9c037c6cbaf84fd76408e6ce7d1562109c057ea0d7fba`다.
+부모가55CRC와 source/index/venv 전후4쌍, 모든 현재native source5개의 SHA를 별도 확인했다.
+보유한 test ELF의 SHA는 `0c8aefd45fd3fc797d74f45671f2339978584b41faf7034bb78152cdbb15e619`다.
+#532 개별 수용으로 종료하며 더 넓은 auth/SSH 변환·원본 제거 또는 전체 #523 완료는 아니다.

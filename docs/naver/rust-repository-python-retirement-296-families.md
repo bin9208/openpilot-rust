@@ -205,3 +205,24 @@ Local work stays at syntax/format/diff and stored evidence inspection; execution
 uses GitHub-hosted Actions. #296 stays isolated from dev-md/#338. The user will
 pull and personally check normal boot, recording, upload and driving; no such
 device acceptance is claimed here. Whole-repository conversion remains open.
+
+
+## 2026-10-24 임시 진단의 interpreter 의존성
+
+#523에서 추가한 원본 비교·증거 해석용 shell/workflow 11개 파일의 Python 의존성을
+execution-edge 원장에 pending으로 명시했다. 파일당 대표 위치이며 모든 callsite를
+열거하거나 새 baseline Python 파일로 세는 것은 아니다. 현재 원장 행 상태는
+25 replaced-local / 50 pending이다.
+원본 비교 성공이나 native 도구 한 개의 Python0 결과로 이 진단 경로까지 제거됐다고
+주장하지 않는다. 전체 전환 완료 전 고정 데이터/native 처리 또는 진단 폐기가 필요하다.
+
+
+같은 날 changed-files의 기존14proof data admission shell도 interpreter 의존성1개를
+pending으로 추가했다. 현재 execution-edge 행은25 replaced-local/51 pending이며,
+native-existing1/non-executing-text2 분류는 별도다. 새 native context builder·Bash wrapper는
+Python 없이 metadata를 처리하지만 legacy proof admission이 제거된 것으로 표현하지 않는다.
+
+
+fresh caller 뒤 provider 최종 seal을 수행하는 새 changed-files workflow의 metadata Python
+대표 위치도 추가했다. 현재 행은25 replaced-local/52 pending/native-existing1/non-executing-text2다.
+이는 발견한 행의 상태이며 exhaustive interpreter 부재 수용이 아니다.

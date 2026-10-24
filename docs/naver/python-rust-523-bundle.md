@@ -85,3 +85,22 @@ SHA 고정 Bash helper 외에는 regular ELF magic/hash를 확인한다. 이름�
 ELF 내부까지 포함한 무제한 Python 부재 증명은 아니며 해당 receipt도 false로 기록한다.
 negative16개와 positive2개의 순수 control은 별도 범위로 기록한다.
 이 controls와 실제 공개 helper 실행은 아직 **UNRUN**이며 Actions에서 확인한다.
+
+
+## 121aa5 실제 계약·원본 출력 결과와 trace 미수용
+
+[40093557875/job120871017872](https://github.com/bin9208/openpilot-rust/actions/runs/40093557875/job/120871017872),
+source `121aa5b86ddf427697a8cabb25d2ed337d80f429`에서 fresh library1/integration17 및 strict Clippy가 성공했다.
+실제 원본23회(1+12+7+3)의 JSON, copied script SHA 전후 일치를 확보했다.
+
+artifact12560845618(4250230B)의 SHA256은
+`b6ecc542f61d83ee1bfa518d3926ccfb45e6d2f52240eb7f85fd42c8cdc3f50a`다.
+부모가889CRC, source/index/venv/script 전후 봉인을 확인했다.
+raw original/native **411개 파일·8621062B·숨김vendor6개**를 모두 byte단위로 대조했다.
+이번에는 hidden 원문도 archive에 포함돼 지난405개 raw 검토의 한계를 해소했다.
+
+공개 helper 실행 후 전체 context/argv 감사 중 trace metadata parser가 실제
+`SIGUSR1 {si_signo=SIGUSR1, si_code=SI_TKILL, si_pid=..., si_uid=1000}`를 거부했다.
+따라서 job 전체는 FAIL이며 actual helper trace 전체 수용 또는 원본 삭제로 세지 않는다.
+이 관측된 형식만 정확히 분류하고 기존 실패 exec/PID pairing/EOF/ELF/argv 검증과 unknown 거부를
+유지하는 수정 후 actual caller를 재실행한다. 성공한1+17 및23원문은 source/provider pin으로 재사용한다.

@@ -2327,6 +2327,11 @@ name = "check-changed-files"
 path = "src/bin/check_changed_files.rs"
 required-features = ["changed-files-native"]
 
+[[bin]]
+name = "prepare-changed-files-context"
+path = "src/bin/prepare_changed_files_context.rs"
+required-features = ["changed-files-native"]
+
 [[test]]
 name = "changed_files_check"
 required-features = ["changed-files-native"]

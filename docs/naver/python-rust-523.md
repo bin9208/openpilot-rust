@@ -565,3 +565,47 @@ libpython identity, source/provider 전후 seal을 확인했다. PR343 통합·#
 전체 ZIP digest를 독립 검증한 것으로 확대하지 않고 selected Range/CRC/SHA와 원래 fixture pin만
 수용한다. 기존 `cached_elf::reconstruct`로 전체 frozen BINARY14442B와 같을지 확인하는
 비실행 진단을 준비 중이다. ISA/raw 수치/모델 수용은 그대로 미완료다.
+
+
+임시 model/paramsd 비교 shell 및 #523 workflow의 Python 원본·증거 해석 의존성도
+execution-edge 원장에 pending으로 추가했다. 이 신규 경로를 baseline3580 수용 건수에
+포함하거나 일반 runtime의 native 수용으로 은폐하지 않는다. 이후 진단 고정/폐기까지 추적한다.
+
+
+## #532 실제 원본 수용
+
+source121aa5b86의 [40093557829](https://github.com/bin9208/openpilot-rust/actions/runs/40093557829)는 성공했다.
+전체Unicode scalar1112064개 SHA, Σ154개, alias26개와 SSH27개 및 strict Clippy가 일치했다.
+artifact12559898006(15832926B,SHA256276e6306a25069b071f9c037c6cbaf84fd76408e6ce7d1562109c057ea0d7fba)의
+55CRC/source·index·venv 전후4쌍을 독립 감사했다. #532 개별 종료이며 전체auth/API 소스 삭제 credit은0이다.
+fb1228 Fast의 남은2policy 실패는 Bundle queue:max가 그다음121aa5 commit에 분리돼 있던 결과다.
+현재source에는 보완이 있어 추가 코드를 바꾸지 않고 다음Fast를 확인한다.
+
+
+## Bundle 121aa5 부분 수용
+
+[40093557875](https://github.com/bin9208/openpilot-rust/actions/runs/40093557875)는 fresh1+17/Clippy와
+원본23회 capture가 성공했다. 부모가 artifact12560845618의889CRC와 실제411파일/8621062B 전체
+raw byte쌍을 확인했으며 hidden6개도 보존돼 있다. source/index/venv/script 전후 seal은 일치했다.
+전체 job은 actual trace parser가 SIGUSR1/SI_TKILL metadata를 아직 처리하지 않아 FAIL이다.
+관측형식만 엄격히 보완해 actualcaller를 다시 검증하며 이미 성공한1+17은 재사용한다.
+
+
+## #482 역사 object 비실행 gate 성공
+
+sourcee1bf의 [40094270972](https://github.com/bin9208/openpilot-rust/actions/runs/40094270972)는
+역사object 재구성 결과14442B가 frozenimage와 전체byte/SHA324697e4...까지 일치했다.
+text14244/alignment16이다. artifact12560955339의CRC/source·index·SDK 전후4쌍과 heldinput/ELF seal을
+독립 감사했다. ISA와 raw수치5건은false로 유지하고 기존 triplet/ABI/hostISA 판정 단계로 이어간다.
+
+
+### 다음 한정 batch
+
+changed-files 원본2파일과 unittest를 정확히 제거한 후보를 준비하고 기존14proof는 source/provider
+overlay로만 재사용한다. 새 native metadata bin은 현재 CargoJSONL의 정확한 CLI/test ELF를 골라
+context를 만들고 기존Fast 회귀 명령 직전에 연결된다. 삭제 후 caller5/normalreceipt5 및 Clippy와
+전체 source/SDK 봉인을 실제 CI에서 확인하기 전까지 inventory credit은0이다.
+
+모델은 기존ISA module을 의미 변경 없이 공유화하고 cached source rosters를9→10으로 강화했다.
+새 fixedtriplet/ABI/현재hostISA와 기존unit5/closure거부1/Clippy는 다음 readonly 검사다.
+기본 cached-disabled/guarded-add8 및 raw수치 gate는 그대로다.
