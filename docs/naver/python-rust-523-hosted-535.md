@@ -222,3 +222,22 @@ hold한다. 다운로드 뒤 native/trace는 비밀 없는 명시적 env만 전�
 현재 source bridge도 아직 HOLD다. 새14를 old10의 대체 credit으로 세지 않는다. P2 adversarial·
 전체 build/trace/FD closure·caller1·원본 부재 단계도 별도로 남는다. 두 Python 원본·caller와
 baseline292/3/3285를 보존하며 새 retirement credit은0이다.
+
+## #550의 SHA 패키지 전용 빌드 후보
+
+현재 a4b1db51c의 Fast40132971071은6leaf와 aggregate가 모두 성공했다. alert-manager도
+기존7분 한도 안에서 이번에는 완료됐다. Focus40132971275도 성공했으며 source별 산출물
+감사를 계속한다. 새 logging40132971238은 실패로 종료돼 실제 phase/원인을 별도 조사한다.
+
+normal40 actual Cargo JSONL3개는 sha2 0.10.9의 opt_level이0임을 보여 준다. 소스와 실제
+held 길이에서 trace 전 SHA 처리량 약1.263GB, trace의40case별 numerics 해시 약1.099GB를
+확인했다. 이 read 양을 함수별 시간 측정으로 해석하지 않는다. 직접 CLI CPU는312.97초이며
+native trace CPU와 다르다. fixture가 CLI를700초에 종료한 뒤 별도 PGID의 trace가 나중에
+완료된 것이므로 retained40/8,655rows를 기한 안의 수치 비교 성공으로 세지 않는다.
+
+최소 후속 후보는 임시 normal helper의 모든 현재 Cargo build/test/strict Clippy에
+`profile.dev.package.sha2.opt-level=3`와 `profile.test.package.sha2.opt-level=3`를 동일하게
+전달하는7줄 보완이다. 수치 계산 crate·feature·DSO·ISA·허용오차·원문·봉인 횟수와
+600/700/1,200초·52분 및 디스크 예산은 바꾸지 않는다. 최종 ELF hold 순서도 유지한다.
+로컬 AST/diff와 독립 소스 검토만 끝났으며, 실제 sha2 opt3와 이 변경만으로 normal40가
+완료되는지는 다음 Actions에서 확인한다. 다른 성공을 이 새 빌드 후보에 소급하지 않는다.

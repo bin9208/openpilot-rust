@@ -482,7 +482,7 @@ jobs:
         printf '%s  %s\n' 11fae1ee5c7a17594c023f5adc114dc6236e1bd078749366d0fa2f0bf3958c62 rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs | sha256sum --check -
         printf '%s  %s\n' fc9bb32973a65af4a05c183d8378645eedae373767b3ea4eee028e815a0e3b2e rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md | sha256sum --check -
         printf '%s  %s\n' 444a47ecba9579d4042f26dd89f8438908b56d244a0f2c98c8b0dd3e1ef3a6ef rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json | sha256sum --check -
-        printf '%s  %s\n' 4049fb6c6a8e34b26f19a9e1642f40364027694e24f6896a5f39da16a350355c tools/ci/controlsd_normal_523.py | sha256sum --check -
+        printf '%s  %s\n' b1a0d1bb2e42bd5af76bd6eb20a0c26a0589052f9374c69549c35915a253e1e2 tools/ci/controlsd_normal_523.py | sha256sum --check -
         printf '%s  %s\n' dd361def66040a1abfcce0634366ecdfa92db6e9cfb062adf231c1640d6695e1 .github/workflows/user-docs.yaml | sha256sum --check -
         printf '%s  %s\n' a1648334531f775ff450f6a71bd82172bd6975cae0898fa3f5c48d9b8604ec3a tools/ci/run-docs-with-growth-guard | sha256sum --check -
         printf '%s  %s\n' b68a027730fff017e6e86fbcd4d72a4ce8b660ccc9ff1297f19add54200f0e38 rust/tools/check-disk-space | sha256sum --check -

@@ -30,6 +30,11 @@ GIB = 1024**3
 REPO = "bin9208/openpilot-rust"
 FEATURES = "controlsd-fixture-native"
 DEV_FEATURES = ["controlsd-fixture-native", "paramsd-fixture-native"]
+# #550 SHA 전용 후보이며 normal40의 단독 해결 여부는 Actions 검증 전이다.
+SHA2_PROFILE_ARGS = (
+    "--config", "profile.dev.package.sha2.opt-level=3",
+    "--config", "profile.test.package.sha2.opt-level=3",
+)
 REFERENCE_ID = "legacy-normal40-12456242812-v1"
 NEGATIVE = "frozen::frozen_normal40_admission_rejects_mixed_origins_and_mutation"
 HELD_NEGATIVE = "controller::frozen::tests::frozen_held_files_and_rosters_reject_mutation_aliases_and_replacement"
@@ -975,7 +980,7 @@ class Probe:
         self.holds.verify()
 
     def cargo(self, args, label, package="openpilot-dev-tools", features=FEATURES):
-        return self.command([self.sdk_root / "bin/cargo", *args, "--manifest-path", self.root / "rust/Cargo.toml",
+        return self.command([self.sdk_root / "bin/cargo", *args, *SHA2_PROFILE_ARGS, "--manifest-path", self.root / "rust/Cargo.toml",
                              "--locked", "-p", package, "--no-default-features", "--features", features],
                             label, seconds=1200)
 
@@ -1171,7 +1176,7 @@ class Probe:
         self.resources("built")
         self.phase = "strict-clippy"
         need(shutil.disk_usage(self.root).free >= 512 * MIB, "existing Clippy append512MiB admission")
-        self.command([self.sdk_root / "bin/cargo", "clippy", "--manifest-path", self.root / "rust/Cargo.toml", "--locked",
+        self.command([self.sdk_root / "bin/cargo", "clippy", *SHA2_PROFILE_ARGS, "--manifest-path", self.root / "rust/Cargo.toml", "--locked",
                       "-p", "openpilot-dev-tools", "--no-default-features", "--features", FEATURES,
                       "--bin", "check-controlsd-native", "--bin", "stage-torque-numerics", "--test", "controlsd_check",
                       "--", "-D", "warnings"], "current-clippy", seconds=1200)
