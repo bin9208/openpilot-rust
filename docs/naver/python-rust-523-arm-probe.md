@@ -26,3 +26,18 @@ source2GiB, tools2GiB/proof512MiB, native build8GiB와 Clippy 추가512MiB의 �
 독립 source 검토에서 남은 P1/P2는 없었다. 로컬 YAML/Bash 문법·diff만 통과했다. 새 build,
 QEMU2회/3frames·Clippy·현재 공간 적합성은 아직 **UNRUN**이다. `physical_arm_cpu:false`,
 `device_validation:not_run`이며 ARM/AGNOS 전체 전달이나 실기 수용으로 확대하지 않는다.
+
+## 52e4 첫 실제 build와 감시기 중단
+
+[40108377408/job120914731865](https://github.com/bin9208/openpilot-rust/actions/runs/40108377408/job/120914731865)는
+source `52e4dec6d0b1a3b919ddb8c7c3ab11ea1975ba9a`에서 musl release procLog build를1분42초/exit0로
+완료했다. host checker는 mutable target의 임시 rmeta directory가 순회 중 사라진 ENOENT를
+감시 실패로 판정해 watcher가 TERM했고 exit143이었다. compiler error나 실제 cap 초과를 관측한
+것은 아니다. QEMU와 Clippy는 미도달이며 전체 job은 실패로 유지한다.
+
+artifact12565563946(8,492,192B,SHA256 `421bb8f4561537a980fe74704e70cc5bc6e6be3e7b5cc9cddd76135acbc9adbf`)의
+90CRC/중복0과 source-tree/SDK/tools/headers/gcc 각각 roster·file SHA의10쌍 전후 동일성을 확인했다.
+새 후보는 target 내부의 정확한 ENOENT에 한해 최대3scan 재시도하며, 부분 합계가 cap을 넘으면
+즉시 실패한다. unknown/awk 오류/재시도 소진은 거부하고 immutable 영역은 그대로 엄격히 검사한다.
+watcher는 협조적 stop 후 wait한다. 기존8GiB 등 cap과 전체 ARM12GiB는 유지하며 수정 후 actual은
+아직 미실행이다. 이 결과로 물리 ARM·AGNOS·전체 runtime 수용을 주장하지 않는다.

@@ -743,9 +743,13 @@ class Probe:
              "monitor": "500ms sampled allocated/logical bytes; stop/reap on limit, not a filesystem quota"})
         stager_raw = self.cargo(["build", "--bin", "stage-eigen-headers", "--message-format=json"], "eigen-build", features="eigen-tools-native")
         stager, _ = self.select(stager_raw, "stage-eigen-headers", "bin", "rust/crates/dev-tools/src/bin/stage_eigen_headers.rs", False)
-        wheel = self.out / "eigen-wheel.stdout"
-        wheel_raw = self.command([self.tools["curl"], "--fail", "--location", "--retry", "3", "--max-time", "180",
-                 "https://github.com/commaai/dependencies/releases/download/eigen/v3.4.0/eigen-3.4.0-py3-none-linux_x86_64.whl"], "eigen-wheel", seconds=240, limit=2250659)
+        # stager는 bytes/SHA뿐 아니라 release의 정확한 wheel basename도 검증한다.
+        wheel = self.out / "eigen-3.4.0-py3-none-linux_x86_64.whl"
+        need(not os.path.lexists(wheel), "Eigen download destination already exists")
+        self.command([self.tools["curl"], "--fail", "--location", "--retry", "3", "--max-time", "180",
+                 "https://github.com/commaai/dependencies/releases/download/eigen/v3.4.0/eigen-3.4.0-py3-none-linux_x86_64.whl",
+                 "--output", wheel], "eigen-wheel", seconds=240, limit=MIB)
+        wheel_raw = read(wheel, 2250658)
         need(len(wheel_raw) == 2250658 and sha(wheel_raw) == "0680581b726b6160646d9053cc7416f68c9a38353a26a7f4e4a58222233aa1ba", "Eigen archive pin differs")
         self.holds.add(wheel, sha(wheel_raw))
         self.command([stager, "--wheel", wheel, "--output", self.job / "cache/eigen", "--architecture", "x86_64"], "eigen-stage")

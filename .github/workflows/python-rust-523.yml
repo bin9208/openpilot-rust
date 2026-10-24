@@ -301,6 +301,7 @@ jobs:
             .github/workflows/python-rust-523-controls.yml) ;;
             tools/ci/controlsd_fixture_523.py) ;;
             .github/workflows/python-rust-523-arm-probe.yml) ;;
+            .github/workflows/python-rust-523-controls-prefix.yml) ;;
             .github/workflows/python-rust-523-paramsd-gate.yml) ;;
             docs/naver/python-rust-523-arm-probe.md) ;;
             rust/tools/prepare-readonly-ci-rust) ;;
@@ -402,10 +403,11 @@ jobs:
         printf '%s  %s\n' b7fae464db25af5b1c13b64ce0e1556d3c4e6f88553641c927ff6f9d8f294980 rust/crates/model-runtime/Cargo.toml | sha256sum --check -
         test ! -e tools/ci/check_changed_files.py && test ! -L tools/ci/check_changed_files.py
         test ! -e tools/ci/tests/test_changed_files.py && test ! -L tools/ci/tests/test_changed_files.py
-        printf '%s  %s\n' 538c4d67ee58d7f5b1659568f2824a3ef08bfaa6154163ad01c5df0b39704735 .github/workflows/python-rust-523-arm-probe.yml | sha256sum --check -
+        printf '%s  %s\n' da5bca65abc48c7b773e74e0cd4c92a363e28c9b30a996040f4c3e5f8fc20025 .github/workflows/python-rust-523-arm-probe.yml | sha256sum --check -
         printf '%s  %s\n' 85f704fadbc19cd907060d99b59bf974180423b96fe096f5f0f68d164c6bba9c .github/workflows/python-rust-523-paramsd-gate.yml | sha256sum --check -
+        printf '%s  %s\n' 52de55a3798b57920cbb8ff04e38d9b247ef7c1d6ad01ef4032fdb49d242a537 .github/workflows/python-rust-523-controls-prefix.yml | sha256sum --check -
         printf '%s  %s\n' fc3831e2d270f0b1da834008911603deedab4d20b1d785310505e9bf3b8200b7 rust/tools/prepare-readonly-ci-rust | sha256sum --check -
-        printf '%s  %s\n' 20a54c19e6fa7969251bfcdf3acef66038ab17779fd4b5439180a79f0fd971b9 tools/ci/paramsd_gate_523.py | sha256sum --check -
+        printf '%s  %s\n' 8009a7377c553b8923640ce8c7b6232e0229978266f112c405f0d759bbf54620 tools/ci/paramsd_gate_523.py | sha256sum --check -
         printf '%s  %s\n' 9c455a724c5f4fcee7616197fbb057e2eda737c4810be0f758cf0a881538f58c rust/crates/dev-tools/src/controlsd_fixture_generate/audit.rs | sha256sum --check -
         test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py
         python - <<'MANIFEST'

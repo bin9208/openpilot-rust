@@ -1,0 +1,415 @@
+name: Python Rust 523 controls prefix and selected signal
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-controls-prefix.yml
+permissions:
+  contents: read
+concurrency:
+  group: python-rust-523-controls-prefix-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  controls-prefix:
+    name: Prefix four and unchanged exact signal test
+    if: ${{ github.repository == 'bin9208/openpilot-rust' }}
+    runs-on:
+    - self-hosted
+    - Linux
+    - X64
+    - dev-md-local
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TERM_COLOR: never
+      RUSTUP_TOOLCHAIN: 1.94.0
+    steps:
+    - name: Deny fork source and require registered local runner
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        EVENT_NAME: ${{ github.event_name }}
+        SOURCE_REF: ${{ github.ref }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        set -euo pipefail
+        test "$EVENT_NAME" = push
+        test "$SOURCE_REF" = refs/heads/codex/feat-523-python-rust
+        test "$GITHUB_ACTIONS" = true
+        test "$RUNNER_NAME" = bin-actions
+        test "$RUNNER_ENVIRONMENT" = self-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -m)" = x86_64
+    - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Allocate private source cache and target before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Actions의 workspace와 Bash가 사용하는 private checkout을 구분한다.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+    - uses: actions/checkout@v7
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+    - name: Seal exact source HEAD and tracked index before checks
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      id: source_before
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+        allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ ]]
+        printf '{"allocated_private_source_bytes":%s,"planned_source_growth_bytes":2147483648}\n' "$allocated" > "$CI_JOB_TEMP/proof/source-growth-after-checkout.json"
+        git ls-tree -r -l HEAD | awk '$4 ~ /^[0-9]+$/ {bytes+=$4; files++} END {printf "{\"tracked_blob_bytes\":%.0f,\"files\":%d}\n",bytes,files}' > "$CI_JOB_TEMP/proof/tracked-source-size.json"
+        ((allocated <= 2 * 1024 * 1024 * 1024))
+    - name: Admit prepared Rust SDK without installation or permission changes
+      id: prepared_rust
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: '"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before'
+    - name: Build exact current artifacts and run only prefix four and selected signal one
+      id: qualify
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        set +m
+        umask 077
+        proof=$CI_JOB_TEMP/proof
+        raw=$proof/raw
+        mkdir "$raw" "$proof/build"
+        sdk=$CI_PREPARED_RUST_ROOT
+        test "$sdk" = /home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+        test "$RUSTC" = "$sdk/bin/rustc"
+        test "$RUSTDOC" = "$sdk/bin/rustdoc"
+        export PATH="$sdk/bin:/usr/bin:/bin"
+        export LC_ALL=C
+        unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER
+        unset LD_PRELOAD LD_LIBRARY_PATH
+        unset BASH_ENV ENV
+        unset CONTROL_FAILURE_PEER_PIDS CONTROLSD_OWNED_CHILD_PID
+        # 새 source/SDK에 대한 이 다섯 selector만 실행한다. 원본/normal40/다른7unit은 실행하지 않는다.
+        declare -A held_fd=() held_identity=() held_sha=() aliases=() alias_identity=()
+        active_leader=
+        artifacts_ready=false
+        prefix_pass=false
+        signal_pass=false
+        phase=preflight
+        identity() { stat -Lc '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$1"; }
+        bind_file() {
+          local path=$1 canonical before descriptor digest
+          canonical=$(readlink -e -- "$path")
+          [[ $canonical == /* && -f $canonical && ! -L $canonical ]]
+          if [[ -v aliases["$path"] ]]; then
+            test "${aliases[$path]}" = "$canonical"
+            test "${alias_identity[$path]}" = "$(stat -c '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$path")"
+          else
+            aliases[$path]=$canonical
+            alias_identity[$path]=$(stat -c '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$path")
+            printf '%s\t%s\t%s\n' "$path" "$canonical" "${alias_identity[$path]}" >> "$proof/aliases-before.tsv"
+          fi
+          if [[ -v held_fd["$canonical"] ]]; then return 0; fi
+          before=$(identity "$canonical")
+          exec {descriptor}<"$canonical"
+          test "$(identity "/proc/$$/fd/$descriptor")" = "$before"
+          digest=$(sha256sum "/proc/$$/fd/$descriptor"); digest=${digest%% *}
+          test "$(identity "$canonical")" = "$before"
+          test "$(identity "/proc/$$/fd/$descriptor")" = "$before"
+          held_fd[$canonical]=$descriptor
+          held_identity[$canonical]=$before
+          held_sha[$canonical]=$digest
+          printf '%s\t%s\t%s\n' "$canonical" "$before" "$digest" >> "$proof/held-before.tsv"
+        }
+        verify_held() {
+          local path descriptor digest status=0
+          for path in "${!aliases[@]}"; do
+            [[ $(readlink -e -- "$path") == "${aliases[$path]}" && $(stat -c '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$path") == "${alias_identity[$path]}" ]] || status=1
+            printf '%s\t%s\t%s\n' "$path" "$(readlink -e -- "$path")" "$(stat -c '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$path")" >> "$proof/aliases-after.tsv"
+          done
+          for path in "${!held_fd[@]}"; do
+            descriptor=${held_fd[$path]}
+            [[ $(identity "$path") == "${held_identity[$path]}" && $(identity "/proc/$$/fd/$descriptor") == "${held_identity[$path]}" ]] || status=1
+            digest=$(sha256sum "/proc/$$/fd/$descriptor") || status=1
+            [[ ${digest%% *} == "${held_sha[$path]}" ]] || status=1
+            [[ $(identity "$path") == "${held_identity[$path]}" && $(identity "/proc/$$/fd/$descriptor") == "${held_identity[$path]}" ]] || status=1
+            printf '%s\t%s\t%s\n' "$path" "$(identity "/proc/$$/fd/$descriptor")" "${digest%% *}" >> "$proof/held-after.tsv"
+          done
+          return "$status"
+        }
+        bind_program() {
+          local path=$1 tag=$2 dependency
+          bind_file "$path"
+          # ldd 자체는 봉인한 system shell script다. 다른 provider는 ELF여야 한다.
+          if [[ $(head -c 4 "$path" | od -An -tx1 | tr -d ' \n') != 7f454c46 ]]; then
+            test "$path" = /usr/bin/ldd
+            return
+          fi
+          ldd "$path" > "$proof/build/$tag.ldd" 2> "$proof/build/$tag.ldd.stderr"
+          ! grep -F 'not found' "$proof/build/$tag.ldd"
+          awk '$2 == "=>" && $3 ~ /^\// {print $3} $1 ~ /^\// {print $1}' "$proof/build/$tag.ldd" | LC_ALL=C sort -u > "$proof/build/$tag.dsos"
+          while IFS= read -r dependency; do bind_file "$dependency"; done < "$proof/build/$tag.dsos"
+        }
+        raw_budget() {
+          # 명령 종료 후와 EXIT postflight에서만 검사한다. 주기 샘플링이나 하드 quota가 아니다.
+          # stdout head cap 외 stderr/trace의 실행 중 크기 증가는 각 outer deadline으로만 시간 제한한다.
+          local bytes
+          bytes=$(find -P "$raw" -type f -printf '%s\n' | awk '{n+=$1} END {printf "%.0f",n}')
+          [[ $bytes =~ ^[0-9]+$ ]] && ((bytes <= 16 * 1024 * 1024))
+        }
+        growth() {
+          local label=$1 mib=$2
+          OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" \
+            "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$DIAG_SOURCE" --growth-mib "$mib" > "$proof/growth-$label-source.json"
+          # 8GiB는 private target+registry의 기존 합산 계획이다. 별도 filesystem이면 양쪽에서 각각 검사한다.
+          if [[ $(stat -c '%d' "$DIAG_SOURCE") != "$(stat -c '%d' "$CI_JOB_TEMP")" ]]; then
+            OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" \
+              "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$CI_JOB_TEMP" --growth-mib "$mib" > "$proof/growth-$label-cache.json"
+          fi
+        }
+        run_bounded() {
+          local label=$1 duration=$2 output=$3 leader trace code=0
+          shift 3
+          trace=$proof/build/$label.exec
+          if [[ $label == prefix-four || $label == selected-signal-one ]]; then trace=$raw/$label.exec; fi
+          printf '%s\0' "$label" "$@" >> "$proof/commands.nul"
+          # 기존 native owner tests의 EXITKILL 패턴. tracer가 죽으면 별도 PGID의 tracee도 종료된다.
+          # stdout는 최대4MiB만 보존한다. stdout cap 도달 또는 stderr4MiB 이상은 실패다.
+          # process trace와 signal의 fd2 write 원문을 보존한다. test TempDir 전체 수집은 아니다.
+          setsid /usr/bin/bash --noprofile --norc -o pipefail -c '
+            trace_args=(-e trace=process)
+            if [[ $4 == selected-signal-one ]]; then trace_args=(-e trace=process,write,writev -e write=2); fi
+            /usr/bin/timeout --foreground --signal=KILL "$1" /usr/bin/strace --kill-on-exit -f -qq -s 256 "${trace_args[@]}" -o "$2" "${@:5}" 2> "$3" | /usr/bin/head -c 4194304
+          ' bounded-prefix "$duration" "$trace" "$output.stderr" "$label" "$@" > "$output" &
+          leader=$!
+          active_leader=$leader
+          wait "$leader" || code=$?
+          active_leader=
+          printf '%s\t%s\n' "$label" "$code" >> "$proof/exit-codes.tsv"
+          test "$(stat -c '%s' "$output")" -lt 4194304
+          test "$(stat -c '%s' "$output.stderr")" -lt 4194304
+          raw_budget
+          return "$code"
+        }
+        finish() {
+          local original=$? status=0
+          trap - EXIT INT TERM HUP
+          set +e
+          if [[ -n $active_leader ]]; then
+            # 직접 소유한 미wait 자식 PGID만 종료한다. tracer 종료 시 kernel EXITKILL을 사용한다.
+            # adopted child 전부를 이 Bash가 wait했다는 주장은 하지 않는다.
+            status=1
+            kill -KILL -- "-$active_leader" 2>/dev/null
+            wait "$active_leader"
+          fi
+          verify_held || status=1
+          for name in held aliases; do
+            LC_ALL=C sort -o "$proof/$name-before.tsv" "$proof/$name-before.tsv" || status=1
+            LC_ALL=C sort -o "$proof/$name-after.tsv" "$proof/$name-after.tsv" || status=1
+            cmp "$proof/$name-before.tsv" "$proof/$name-after.tsv" || status=1
+          done
+          raw_budget || status=1
+          printf 'source=%s\nphase=%s\nprefix4=%s\nselected_signal1=%s\npostflight_status=%s\nartifacts_ready=%s\noriginal_executions=0\nother_seven_unit_executions=0\nnormal40_rejection27_health5_executions=0\nruntime_acceptance=false\nretirement_credit=false\n' "$GITHUB_SHA" "$phase" "$prefix_pass" "$signal_pass" "$status" "$artifacts_ready" > "$proof/outcomes.txt"
+          printf 'raw_limit_bytes=16777216\nraw_check_scope=post-command-and-exit-postflight\nraw_periodic_sampling=false\nraw_hard_quota=false\nprefix_outer_seconds=120\nselected_signal_outer_seconds=180\n' >> "$proof/outcomes.txt"
+          if [[ $status == 0 && $artifacts_ready == true ]]; then
+            printf 'immutable_seals=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'immutable_seals=false\n' >> "$GITHUB_OUTPUT"
+          fi
+          [[ $original == 0 && $status == 0 ]] || exit 1
+        }
+        trap finish EXIT
+        trap 'exit 130' INT
+        trap 'exit 143' TERM
+        trap 'exit 129' HUP
+        # Bash/jq/strace 등도 현재 실제 program+DSO로 고정한다. 추가 install/fallback은 없다.
+        n=0
+        for tool in bash sh sleep jq strace setsid timeout head sha256sum stat readlink awk sort find ldd capnp cc c++ ar ld as git tar cmp df du cat env grep sed od tr id mkdir rm cut readelf; do
+          path=$(command -v "$tool")
+          [[ $path == /* ]]
+          bind_program "$path" "provider-$n"
+          n=$((n+1))
+        done
+        # unit peer의 shebang 및 ldd의 실제 interpreter 경로도 별도로 결합한다.
+        bind_program /bin/sh peer-shell
+        bind_program /bin/bash ldd-shell
+        for tool in cargo rustc rustdoc cargo-clippy clippy-driver; do
+          bind_program "$sdk/bin/$tool" "sdk-$tool"
+        done
+        bind_file /etc/ld.so.cache
+        /usr/bin/strace --help > "$proof/build/strace-help.txt"
+        grep -F -- '--kill-on-exit' "$proof/build/strace-help.txt"
+        for relative in rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml rust/crates/dev-tools/Cargo.toml rust/crates/dev-tools/src/lib.rs rust/crates/dev-tools/src/qa_process.rs rust/crates/dev-tools/src/control_failures_check.rs rust/crates/dev-tools/src/control_failures_check/fixtures.rs rust/crates/dev-tools/tests/control_failures_check.rs rust/crates/dev-tools/src/bin/check_control_failures_native.rs rust/tools/check-disk-space rust/tools/prepare-readonly-ci-rust .github/workflows/python-rust-523-controls-prefix.yml; do
+          bind_file "$DIAG_SOURCE/$relative"
+        done
+        phase=integration-build
+        growth native-cold 8192
+        run_bounded integration-build 1800s "$proof/build/integration.jsonl" "$sdk/bin/cargo" test --manifest-path "$DIAG_SOURCE/rust/Cargo.toml" --locked -p openpilot-dev-tools --features controlsd-fixture-native --test control_failures_check --no-run --message-format=json
+        phase=library-build
+        growth library 512
+        run_bounded library-build 1800s "$proof/build/library.jsonl" "$sdk/bin/cargo" test --manifest-path "$DIAG_SOURCE/rust/Cargo.toml" --locked -p openpilot-dev-tools --features controlsd-fixture-native --lib --no-run --message-format=json
+        phase=clippy
+        growth clippy 512
+        run_bounded clippy 1800s "$proof/build/clippy.log" "$sdk/bin/cargo" clippy --manifest-path "$DIAG_SOURCE/rust/Cargo.toml" --locked -p openpilot-dev-tools --features controlsd-fixture-native --lib --bin check-control-failures-native --test control_failures_check -- -D warnings
+        # stdout JSONL 전체를 EOF까지 읽는다. stderr는 별도 파일로 보존한다.
+        select_artifact() {
+          local file=$1 name=$2 kind=$3 src=$4 tested=$5
+          jq -ser --arg manifest "$DIAG_SOURCE/rust/crates/dev-tools/Cargo.toml" --arg name "$name" --arg kind "$kind" --arg src "$src" --argjson tested "$tested" '
+            if (map(select(.reason == "build-finished")) | length) != 1 or .[-1] != {reason:"build-finished",success:true} then error("incomplete Cargo JSONL") else . end |
+            map(select(.reason == "compiler-artifact" and .manifest_path == $manifest and .target.name == $name and .target.kind == [$kind] and .target.src_path == $src and .profile.test == $tested and (.executable | type) == "string")) |
+            if length != 1 then error("missing/duplicate current executable") else .[0].executable end
+          ' "$file"
+        }
+        integration=$(select_artifact "$proof/build/integration.jsonl" control_failures_check test "$DIAG_SOURCE/rust/crates/dev-tools/tests/control_failures_check.rs" true)
+        library=$(select_artifact "$proof/build/library.jsonl" openpilot_dev_tools lib "$DIAG_SOURCE/rust/crates/dev-tools/src/lib.rs" true)
+        cli=$(select_artifact "$proof/build/integration.jsonl" check-control-failures-native bin "$DIAG_SOURCE/rust/crates/dev-tools/src/bin/check_control_failures_native.rs" false)
+        test "$cli" = "$CARGO_TARGET_DIR/debug/check-control-failures-native"
+        for artifact in "$integration" "$library" "$cli"; do
+          [[ $artifact == "$CARGO_TARGET_DIR/debug/"* && $(readlink -e -- "$artifact") == "$artifact" && -f $artifact && ! -L $artifact && -x $artifact ]]
+          test "$(head -c 4 "$artifact" | od -An -tx1 | tr -d ' \n')" = 7f454c46
+          test "$(stat -c '%u' "$artifact")" = "$(id -u)"
+        done
+        n=0
+        for artifact in "$library" "$integration" "$cli"; do
+          readelf -h "$artifact" > "$proof/build/current-elf-$n.header"
+          grep -E 'Class: +ELF64$' "$proof/build/current-elf-$n.header"
+          grep -E 'Machine: +Advanced Micro Devices X86-64$' "$proof/build/current-elf-$n.header"
+          n=$((n+1))
+        done
+        bind_program "$library" current-library
+        bind_program "$integration" current-integration
+        bind_program "$cli" current-cli
+        jq -n --arg source "$GITHUB_SHA" --arg library "$library" --arg integration "$integration" --arg cli "$cli" '{source:$source,library:$library,integration:$integration,compile_bound_cli:$cli}' > "$proof/current-artifacts.json"
+        artifacts_ready=true
+        phase=prefix-four
+        OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" \
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$raw" --growth-mib 16 > "$proof/growth-raw.json"
+        run_bounded prefix-four 120s "$raw/prefix-four.log" "$library" control_failures_check::fixtures::prefix_tests:: --nocapture --test-threads=1
+        grep -E '^test control_failures_check::fixtures::prefix_tests::[^ ]+ \.\.\. ok$' "$raw/prefix-four.log" > "$proof/prefix-names.actual"
+        printf '%s\n' prefix_clone_matches_original_bytes_and_float_bits_at_all_boundaries prefix_clone_preserves_empty_frames_and_missing_name_insertion prefix_clone_retains_rejection_of_missing_or_non_array_frames prefix_clones_own_every_retained_field_and_do_not_alias_each_other | sed 's/^/test control_failures_check::fixtures::prefix_tests::/;s/$/ ... ok/' > "$proof/prefix-names.expected"
+        cmp "$proof/prefix-names.expected" "$proof/prefix-names.actual"
+        test "$(grep -Ec '^test result: ok\. 4 passed; 0 failed; 0 ignored; 0 measured; [0-9]+ filtered out;$' "$raw/prefix-four.log")" = 1
+        prefix_pass=true
+        phase=selected-signal-one
+        run_bounded selected-signal-one 180s "$raw/selected-signal-one.log" "$integration" actual_cli_int_and_term_stop_the_owned_trace_group_without_success --exact --nocapture --test-threads=1
+        test "$(grep -Fxc 'test actual_cli_int_and_term_stop_the_owned_trace_group_without_success ... ok' "$raw/selected-signal-one.log")" = 1
+        test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out;$' "$raw/selected-signal-one.log")" = 1
+        signal_pass=true
+        phase=complete
+    - name: Verify full prepared SDK after all attempted checks
+      id: prepared_rust_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: '"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after'
+    - name: Seal source and index after all attempted contracts
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE
+        != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        du -sx --block-size=1 "$DIAG_SOURCE_OWNER" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/private-output-bytes.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$CI_JOB_TEMP/proof/cgroup-memory-after.txt"; fi
+        find "$CARGO_TARGET_DIR" -name '*.d' -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256" || test ! -d "$CARGO_TARGET_DIR"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+    - name: Retain owned controls proof including stopped admissions and failures
+      id: fast_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP
+        != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: diagnostic-controls-prefix-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        if-no-files-found: error
+        retention-days: 14
+    - name: Clean only uploaded private controls source with unchanged source SDK and held inputs
+      id: fast_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome
+        == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER
+        != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.qualify.outcome == 'success' && steps.qualify.outputs.immutable_seals == 'true') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.fast_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.diag296-owner" && test ! -L "$p/.diag296-owner"
+        test "$(cat "$p/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned job temporary paths after evidence upload
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome
+        == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome
+        == 'success') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'

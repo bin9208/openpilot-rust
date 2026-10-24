@@ -140,7 +140,7 @@ jobs:
         cross_status=unrun host_status=unrun probe_status=unrun clippy_status=unrun
         sealed=false
         failed=0
-        active_leader= active_watcher=
+        active_leader= active_watcher= active_stop=
 
         # 핵심 program/ELF/DSO는 FD를 끝까지 유지한다. 전체 tree는 hash와 identity roster 둘 다 비교한다.
         identity() { stat -Lc '%d:%i:%f:%u:%g:%s:%h:%y:%z' -- "$1"; }
@@ -242,6 +242,66 @@ jobs:
             capacity "$label" "$second" "$second_bytes" || return 1
           fi
         }
+        build_usage() {
+          local attempt usage code line relative root_identity bytes apparent
+          local errors=$proof/build-budget-current.stderr
+          local prefix="find: '$CARGO_TARGET_DIR/" suffix="': No such file or directory"
+          [[ -d $build && ! -L $build && $(readlink -e "$build") == "$build" ]] || return 1
+          root_identity=$(stat -c '%d:%i' -- "$build") || return 1
+          for attempt in 1 2 3; do
+            [[ $(stat -c '%d:%i' -- "$build") == "$root_identity" ]] || return 1
+            code=0
+            usage=$(
+              set +e
+              find -P "$build" -ignore_readdir_race -printf '%b %s\n' 2> "$errors" |
+                awk '{b+=$1*512; s+=$2} END {printf "%.0f %.0f\n",b,s}'
+              codes=("${PIPESTATUS[@]}")
+              # An awk/read/write failure must never be treated as a find race.
+              if ((codes[1] != 0)); then
+                printf 'build budget awk failed: status=%s\n' "${codes[1]}" >&2
+                exit 125
+              fi
+              exit "${codes[0]}"
+            ) || code=$?
+            [[ -d $build && ! -L $build && $(readlink -e "$build") == "$build" &&
+               $(stat -c '%d:%i' -- "$build") == "$root_identity" ]] || return 1
+            if [[ $code != 0 || -s $errors ]]; then
+              printf 'attempt=%s find_or_reader_status=%s\n' "$attempt" "$code" >> "$proof/build-budget-errors.log" || return 1
+              cat "$errors" >> "$proof/build-budget-errors.log" || return 1
+            fi
+            if [[ $code == 0 || $code == 1 ]]; then
+              read -r bytes apparent <<< "$usage" || return 1
+              [[ $bytes =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] || return 1
+              # Even an incomplete scan is sufficient to reject an observed
+              # over-cap lower bound. Only a complete scan can admit a build.
+              ((bytes <= build_cap && apparent <= build_cap)) || {
+                printf 'planned cap exceeded: %s allocated=%s apparent=%s cap=%s\n' "$build" "$bytes" "$apparent" "$build_cap" >&2; return 1;
+              }
+            fi
+            if [[ $code == 0 && ! -s $errors ]]; then printf '%s\n' "$usage"; return 0; fi
+            # GNU find may stat a Cargo temp directory, then lose it before
+            # descent. -ignore_readdir_race alone does not cover that failure.
+            # Admit only the observed C-locale ENOENT under the mutable target;
+            # immutable tree_seal, missing roots, permissions and unknowns fail.
+            if [[ $code != 1 || ! -s $errors ]]; then
+              printf 'build budget reader failed: status=%s\n' "$code" >&2; cat "$errors" >&2; return 1
+            fi
+            [[ -d $CARGO_TARGET_DIR && ! -L $CARGO_TARGET_DIR &&
+               $(readlink -e "$CARGO_TARGET_DIR") == "$CARGO_TARGET_DIR" ]] || return 1
+            while IFS= read -r line || [[ -n $line ]]; do
+              if [[ $line != "$prefix"*"$suffix" ]]; then
+                printf 'unknown build budget diagnostic: %s\n' "$line" >&2; return 1
+              fi
+              relative=${line#"$prefix"}; relative=${relative%"$suffix"}
+              [[ $relative =~ ^[A-Za-z0-9_./+-]+$ ]] || return 1
+              case "/$relative/" in *'/../'*|*'/./'*|*'//'*) return 1;; esac
+              [[ ! -e $CARGO_TARGET_DIR/$relative && ! -L $CARGO_TARGET_DIR/$relative ]] || return 1
+            done < "$errors"
+            printf 'mutable-target-ENOENT attempt=%s/3\n' "$attempt" >> "$proof/build-budget-errors.log" || return 1
+          done
+          printf 'build budget sampling failed: mutable target ENOENT retries exhausted\n' >&2
+          return 1
+        }
         budgets() {
           local path limit bytes apparent usage
           for path in "$tools" "$proof" "$build" "$DIAG_SOURCE_OWNER"; do
@@ -249,27 +309,33 @@ jobs:
               "$tools") limit=$tools_cap;; "$proof") limit=$proof_cap;;
               "$build") limit=$build_cap;; *) limit=$((2048 * mib));;
             esac
-            # Cargo가 자기 임시파일을 지운 readdir race만 허용한다. 다른 read/stat 실패는 pipefail이다.
-            usage=$(find -P "$path" -ignore_readdir_race -printf '%b %s\n' | awk '{b+=$1*512; s+=$2} END {printf "%.0f %.0f\n",b,s}') || return 1
+            if [[ $path == "$build" ]]; then
+              usage=$(build_usage) || return 1
+            else
+              usage=$(find -P "$path" -ignore_readdir_race -printf '%b %s\n' | awk '{b+=$1*512; s+=$2} END {printf "%.0f %.0f\n",b,s}') || return 1
+            fi
             read -r bytes apparent <<< "$usage" || return 1
             [[ $bytes =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] || return 1
             ((bytes <= limit && apparent <= limit)) || { printf 'planned cap exceeded: %s allocated=%s apparent=%s cap=%s\n' "$path" "$bytes" "$apparent" "$limit" >&2; return 1; }
           done
         }
         run_bounded() {
-          local label=$1 duration=$2 leader watcher code=0
+          local label=$1 duration=$2 leader watcher stop monitor_code=0 code=0
           shift 2
           if ! budgets || test -e "$proof/resource-stop.txt"; then
             printf '%s\tresource-admission-blocked\n' "$label" >> "$proof/exit-codes.tsv"
             return 125
           fi
           printf '%s\0' "$label" "$@" >> "$proof/commands.nul"
+          stop=$proof/watcher-stop.$label
+          [[ ! -e $stop && ! -L $stop ]] || return 1
           # 동시에 하나의 owned process group만 사용한다. 2초 주기로 cap 초과를 중단·기록한다.
           setsid timeout --signal=TERM --kill-after=20s "$duration" "$@" > "$proof/$label.stdout" 2> "$proof/$label.stderr" &
           leader=$!
           active_leader=$leader
+          active_stop=$stop
           (
-            while kill -0 "$leader" 2>/dev/null; do
+            while [[ ! -e $stop ]] && kill -0 "$leader" 2>/dev/null; do
               if ! budgets; then
                 printf '%s\n' "$label" > "$proof/resource-stop.txt"
                 kill -TERM -- "-$leader" 2>/dev/null || true
@@ -281,10 +347,14 @@ jobs:
           watcher=$!
           active_watcher=$watcher
           wait "$leader" || code=$?
-          kill "$watcher" 2>/dev/null || true
-          wait "$watcher" 2>/dev/null || true
-          active_leader= active_watcher=
+          # Let an in-flight find/awk pipeline finish; killing its shell closes
+          # the output pipe before awk exits and can leave an orphaned reader.
+          : > "$stop" || code=125
+          wait "$watcher" || monitor_code=$?
+          active_leader= active_watcher= active_stop=
           printf '%s\t%s\n' "$label" "$code" >> "$proof/exit-codes.tsv"
+          printf '%s\t%s\n' "$label" "$monitor_code" >> "$proof/monitor-exit-codes.tsv"
+          ((monitor_code == 0)) || return 1
           budgets || return 1
           test ! -e "$proof/resource-stop.txt" || return 1
           return "$code"
@@ -302,7 +372,10 @@ jobs:
             wait "$active_leader"
             kill "$killer" 2>/dev/null; wait "$killer" 2>/dev/null
           fi
-          if [[ -n $active_watcher ]]; then kill "$active_watcher" 2>/dev/null; wait "$active_watcher" 2>/dev/null; fi
+          if [[ -n $active_watcher ]]; then
+            : > "$active_stop" || status=1
+            wait "$active_watcher" || status=1
+          fi
           verify_held || status=1
           for n in "${!roots[@]}"; do
             name=${root_names[$n]}

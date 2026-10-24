@@ -803,3 +803,56 @@ Eigen native stager/C hook/daemon/generator/두 test ELF와 source/SDK/provider�
 regular7/continuous1202+8/별도 startup B는 각각 원래 수용 범위를 보존하고 반복하지 않는다.
 새 metadata helper와 WF의 interpreter2경로는 execution-edge pending으로 명시해 현재 **25교체/
 56대기/1native-existing/2non-executing-text**이며 baseline3580 교체에 추가하지 않는다.
+
+### 52e4 actual examples 회수 수용
+
+[40108377406/job120914732060](https://github.com/bin9208/openpilot-rust/actions/runs/40108377406/job/120914732060)는
+source `52e4dec6d0b1a3b919ddb8c7c3ab11ea1975ba9a`에서 성공했다. artifact12565503899
+(7,848,863B,SHA256 `a5e437df4b314ca64e2a3008de8bae4a369b447ea17442d2627e1c8847b8de36`)의19CRC/
+중복0,2,274 intent와2,728 removed의5,002 journal rows, 원래 alias·inode·SHA·link 감소를 감사했다.
+보존39,446항목의 전체 JSON bytes와 tracked source index는 전후 같고,3회 전 UID process scan의
+reference/unknown/compiler는0이다. 원래 examples directory inode/owner는 유지되고 남은 파일은0이다.
+
+실제 free는11,846,819,840→16,874,405,888B다. 순증가5,027,586,048B는 실행 중 metadata/proof 등
+변화도 포함한 관측이다. old allocated5,041,766,400B 전부의 순수 회수나 영구 여유를 보장하지 않는다.
+SDK/deps/DSO/소스/원본·proof는 제거하지 않았다. 미조사 외부 proof/SDK 전체를 새로 qualification한
+결과는 아니며 각 후속 작업의 실제 admission을 유지한다.
+
+### 52e4 Focus 성공과 Paramsd staging 실패
+
+[Focus40108377329/job120914731524](https://github.com/bin9208/openpilot-rust/actions/runs/40108377329/job/120914731524)는
+성공했다. current89literal pin/104exact path·기존 한정 cohort 재사용이 실제 통과했다. 새 artifact
+12566365817(15,834,439B,SHA256 `73830a12d909e9e78492c878d52905f6d102cc9fcece329f963c78bb70224579`)의
+전체 raw ZIP 감사는 아직 진행하지 않았으며 새 auth retirement credit은0이다.
+
+[Paramsd40108377396/job120914731807](https://github.com/bin9208/openpilot-rust/actions/runs/40108377396/job/120914731807)는
+Eigen staging에서 실패했다. artifact12565713049(9,232,451B,SHA256
+`829f9a2d27a4ba272cb7187306885917fa302c22b3984ef8acc15b40d78a306a`)의121CRC/중복0과 source/index
+전후 동일성을 확인했다. 원문 stderr는 `Eigen wheel filename differs from release pin`이다.
+다운로드를 일반 stdout 파일명으로 전달한 진단 caller 오류이며 daemon build/child-FD/exec 감사에는
+미도달이다. Eigen baseline 부재는 final seal을 올바르게 FAIL로 만들었고 자식은 모두 회수됐다.
+
+진단 helper는 curl의 output을 원래 release basename으로 저장한 뒤 같은2,250,658B/SHA를
+검증해 stager에 넘기도록 보완했다. stager의 filename/size/hash/기존 destination 거부는 유지한다.
+원본·수치·runtime 코드를 바꾸지 않았다. 수정 후 staging 및 A2 실제 검증은 다음 CI에서 확인한다.
+
+### ARM 측정 경계 수정과 controls prefix·signal 다음 검사
+
+52e4 ARM의 실제 musl build는 성공했으나 host build 중 사라진 target 하위 `rmeta` directory를
+용량 watcher가 fatal로 처리했다. QEMU와 해당 Clippy는 미실행이다. 자세한 실제 artifact와
+source/SDK 봉인 근거는 `python-rust-523-arm-probe.md`에 기록했다. 수정은 mutable target의
+정확한 ENOENT만 최대3회 전체 재측정하고, 부분합 초과·그 외 오류·재시도 소진을 계속 거절한다.
+watcher는 stop 후 wait하며 불변 source/SDK 검사와8GiB admission·기존 full ARM12GiB gate는 같다.
+
+새 `python-rust-523-controls-prefix.yml`는 기존 prefix library4개와 exact
+`actual_cli_int_and_term_stop_the_owned_trace_group_without_success`1개만 선택한다.
+현재 Cargo JSONL 전체를 읽어 유일한 lib/test/CLI ELF를 고정하고 prepared SDK·source/index를
+전후 봉인한다. 기존 내부 readiness10초/shutdown5초/child30초/aggregate180초와 build8GiB,
+Clippy 추가512MiB를 유지한다. `strace --kill-on-exit` 및 owned session/timeout으로 추적 대상의
+생존을 제한하고 direct leader를 wait한다. 모든 adopted descendant의 wait/reap을 증명한다고
+표현하지 않는다. raw16MiB는 command 뒤/EXIT의 검사이고 hard quota나 실시간 sampling이 아니다.
+
+두 workflow의 독립 source 검토에서 P1/P2는 없었고 YAML/Bash·diff만 로컬 확인했다.
+현재 prefix4/signal1·해당 Clippy와 수정 후 ARM/Paramsd A2는 모두 미실행이다. Focus에는
+새 workflow exact path1개·literal SHA1개를 추가해105path/90pin으로만 재사용 허용 범위를 넓힌다.
+원본 제거 credit·controls runtime 전체 수용은 추가하지 않는다.
