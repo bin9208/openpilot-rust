@@ -575,3 +575,106 @@ artifact12579190406은33,923,432B/SHA
 정지를 줄일 수 있지만 선택된 Git metadata15212줄은 남으므로148.8ms 개선이나 실제 통과는
 미확정이다. BPF activation unproven/fallback·unknown 거부와 parser·transport·원본2/caller는
 불변이다. 독립 소스 검토 P1/P2 없으며 새 실제 기능 검증은 UNRUN이다.
+
+## 079의 실제 기본 러너 검사와 남은 실패
+
+source `0795088a40a9873daddc3912060f741265bff837`의
+[Fast40141223843](https://github.com/bin9208/openpilot-rust/actions/runs/40141223843)는
+7leaf+aggregate 모두 성공했다. 최장 alertmanager369초이며 routing349초/tools291초다.
+ZIP7개 총2,358,986B/279CRC를 읽어 source/index/전체SDK와 program pin을 확인했다.
+봉인49쌍에는 rejected SDK의 빈 manifest7쌍을 포함한다. 앞선419의42쌍과 집계 정의가 다르다.
+cold exec323/실패172·cargo1/rustc37·Python0/rustup0, collector exit0/reaped true이며
+Navi2와 collector6도 실제 성공했다. raw SHA는
+`856e1832621c160cfdeadd77f7bb10baa4a81a00bce798573d032a0d80dcca77`다.
+BPF activation은 여전히 미확정이고 모든 leaf의 source/SDK/upload/소유 정리는 성공했다.
+
+같은 source의 [Focus40141223822/job121013198103](https://github.com/bin9208/openpilot-rust/actions/runs/40141223822/job/121013198103)도
+성공했다. artifact12579071714는15,868,493B/SHA256
+`57144802b18f925983c2bd2b5f1630d1974ecd951985aba7d8156106d3ab01ec`,85CRC다.
+전후 source/index/전체SDK, 역사13쌍과4program pin, setup 원본의 정확한 D/base SHA 및
+HEAD/index 부재를 확인했다. final seal→upload→source/job cleanup까지 성공했다.
+
+[logging40141223827/job121013198226](https://github.com/bin9208/openpilot-rust/actions/runs/40141223827/job/121013198226)은
+13lifecycle을 통과한 뒤14번째 `retained::forbidden_executable_options`에서 실패했다.
+runtime-directory INT는1.376547681초(start1.176446517+command0.095065644+finish0.105035520),
+TERM은1.356430955초로 이번 source의2초 경계를 통과했다. 이를 일반적 timing 원인 해결이나
+BPF 활성 증명으로 확대하지 않는다. artifact12578418898은69,251,068B/SHA256
+`f22dbf32b7ead5cef0717a0296aace415e5da5782101b33868f0d42f8c7f3686`,2292CRC다.
+해제884,960,336B/실제 proof 할당890,032,128B로1GiB 안이고 held final/source/index/전체SDK가
+같다. foreign fixture의 `providers.before.json`과 `providers.after.json`은 서로 다른
+원문 dummy 파일이므로 봉인쌍으로 세지 않는다. retained-once/15inspection은 미실행이며
+workflow에 별도 cleanup 단계가 없어 upload 성공과 소유 정리 성공을 혼동하지 않는다.
+
+실패 #555의 후보는 shared scanner를 그대로 두고 이 CLI의 정확한 금지 옵션3종에만
+정적 옵션 이름을 오류에 덧붙인다. 값은 출력하지 않으며 separate/inline/nonUTF inline9경계와
+required/help 우선순위를 보존한다. 독립 소스 검토에서 P1/P2는 없었고 실제 수정 후 검사는 대기다.
+
+## collision8의 fixture-build 전체 감사 한도
+
+source419의 [collision40140187132/job121010107869](https://github.com/bin9208/openpilot-rust/actions/runs/40140187132/job/121010107869)은
+current Cargo3/fresh ELF4/C++ reference build 뒤 실제 collision8 selector를 통과했다.
+case trace의 fixture1 exit0/checker8 exit1·spawn 시도0·정확 argv/env·외부 output 전후 동일성을
+확인했지만 fixture-build 전체 schema1 model이64MiB 상한을 넘어 최종 실패했다.
+fixture raw1791files/72,410,692B/6796줄 중 exec948행이71,685,836B다.
+artifact12578292747은20,256,477B/SHA256
+`f863974eb445166c08419836acf415c2ffd78a773958e450ec5cdcf353ec1110`,6296CRC다.
+held152/source/index/전체SDK/트리5쌍은 같고 finalizer0/upload 성공이나 cleanup2개는 skipped다.
+reference inspect와 전체 program audit 미실행 상태의 CPP/probe 실행 결과는 null이며0으로 세지 않는다.
+
+후보는 원본 PID 파일을 자르지 않고 raw1MiB/128files 이하의 별도 복사 batch로 나눈다.
+각 batch를 같은 full schema1로 읽고 원본·복사본 identity/SHA/전체 roster, 정확히 한 번의 coverage,
+전체 root1/exec program 검사를 결합한다. 누락/중복 음성 통제도 추가한다.
+단일 operation180초·raw/proof1GiB·8192files·1000000events·2000000lines·model64MiB 상한은
+유지하며 전체 검증과 deadline 확인 뒤에만 complete/candidate를 만든다.
+summary schema로 대체하거나 기존8case/27검사/원본2/caller의 수용 조건을 바꾸지 않는다.
+독립 검토에서 P1/P2는 없었으며 실제180초/1GiB fit와 최종 수용은 대기다.
+
+## PR343의 실제 merge 검증과 경로 보정 후보
+
+PR head419/merge `e882cd1dd2f709572c94fe35bcdb4cfc85997ab8`의
+[docs40140991906/job121012509747](https://github.com/bin9208/openpilot-rust/actions/runs/40140991906/job/121012509747)은
+mapped7546 changed files와 docs13검사를 통과했다. artifact12578288604는328,954B/SHA256
+`e09001b762facf807006d536c0b0431258cc832909b306eb8c241ca58738cb7c`,54CRC다.
+merge 부모 dev b555/PR419, source/index/전체SDK5쌍 및4program pin을 확인했다.
+growth guard2/recovery가 성공했고 source/job cleanup도 성공했다.
+direct leader wait1/group nonlive1을 관측했으며 all adopted/peak 증명은 false로 남긴다.
+
+전체 Rust/Integration 검증은 별도로 진행하며 실제 실패에 대한 다음 후보를 작성했다.
+
+- planner와 model-family compiler의 Python 실행 경로를 canonical ELF로 바꾸면 venv 패키지를
+  잃었다. #545 후속으로 실행에는 venv entry를 유지하고 ELF/entry 전후 검증은 보존한다.
+- model-pipelines의 종료 peer `/proc` 읽기에서 ESRCH가 발생했다. #556 후보는 기존 ENOENT와
+  같은 종료 분기에 ProcessLookupError를 추가하며 남은 model 검사와 종료 기준은 보존한다.
+- camera policy fixture는 이전 runner guard 이름을 가정했다. 승인한 첫 guard 이름과 일치시키고
+  Focus에서 기존 정책2개를 exact selector로 실제 실행하도록 추가했다. camera 기능 수용은 아니다.
+- startup-services 비교 도구는 `/tmp`만 가정했다. current TMPDIR와 역사 `/tmp` 경로를 모두
+  정규화하며 동일한 runtime suffix/nonempty/직계 parent 경계를 유지한다.
+- estimation의 옛 bin-actions label assertion을 현재 승인한 Ubuntu24.04 고정값으로 바꾸고
+  공용 trust/private-layout 검증과 음성5경계를 연결했다. 실제 수정 후 검사는 대기다.
+- Integration release의 DBC2/font4 source mutation은 #557에서 생성 출력과 실제 소비 경로를
+  함께 분리하도록 조사한다. source seal을 제외하거나 결과를 덮어쓰는 방식으로 통과시키지 않는다.
+
+## #553 첫 수치 차이 관측 후보
+
+normal40의 case3 frame0 `lat_pid[0]`은 역사 `-0.034913528710603714`와
+native `-0.03491372987627983`의 F32 54ULP 차이로 실패했다. 허용 오차와 원문 기대값은 유지한다.
+새 default-off `diagnostic-553` feature와 별도 기본 Ubuntu workflow는 같은 case/frame의
+원본과 native를 각각 plain/tapped로 실행해 cast/subtract/normalize/dot/bias/exp/sigmoid 경계를
+관측한다. plain 원본은 역사값, plain native는602 값과 일치해야 하며 taps 유무의 최종 출력 bit도
+같아야 한다. 원본 AST는 taps를 제거하면 전체가 같아야 하고 padding 정수식은 tap하지 않는다.
+실제 수치식은 한 번만 평가하며 최대16calls/512events/vector256/record2MiB를 제한한다.
+현재 CPython3.12.15/NumPy2.5.3/3DSO pin과 source/SDK/자손 회수를 확인하지만 과거 전체
+provider/kernel/normal40/전체 runtime closure나 원본 제거 credit을 주장하지 않는다.
+operation별 전체 증가량18.5GiB와 source/SDK/proof/venv/global Python root의 개별 상한을 둔다.
+독립 소스 검토와 문법 검사를 마쳤으며 실제 진단은 대기다.
+
+이번 후보의 새 Python/WF 진단 경로는 execution-edge 원장에 pending으로 추가한다.
+baseline3580의293교체/3부분/3284대기와 #523/#296의 전체 미완료 상태는 유지한다.
+
+새 후보의 Focus exact allow는178개/literal pin은158개다. camera 정책2개 추가 실행부를
+독립 검토한 뒤 별도 실행 SHA를
+`f46f208c0273d4a678dec98ebecd574063b54e939ca3355740ce3b15723330ba`로 갱신했다.
+과거 성공을 새 수치/로깅/경로 기능 성공으로 소급하지 않는다. execution-edge94행 중 새2행은
+진단 Python pending이며 기존 baseline 집계는 그대로다. 로컬은 YAML3/Bash본문40/embedded
+Python AST8/standalone Python2/Bash2, Rustfmt/TOML2/서식/diff 및158literal pin을 확인했다.
+기능·빌드·Cargo/test/Clippy·원본/프로젝트 CLI는 로컬 미실행이며 새 Actions 결과를 별도로 확인한다.

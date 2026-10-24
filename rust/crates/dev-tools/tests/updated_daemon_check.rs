@@ -38,6 +38,13 @@ fn repo() -> PathBuf {
 }
 
 fn owned_root(path: &Path) -> String {
+    let current_prefix = env::temp_dir().join("updated-daemon-");
+    let prefixes = [
+        current_prefix
+            .to_str()
+            .expect("test temporary root is UTF8"),
+        "/tmp/updated-daemon-",
+    ];
     let bytes = fs::read_to_string(path).unwrap();
     let rows = bytes
         .lines()
@@ -49,12 +56,12 @@ fn owned_root(path: &Path) -> String {
         .flat_map(|row| row.as_array().unwrap())
         .filter_map(Value::as_str)
         .find_map(|arg| {
-            let start = arg.find("/tmp/updated-daemon-")?;
+            let start = prefixes.iter().find_map(|prefix| arg.find(*prefix))?;
             let end = start + arg[start..].find("/runtime/")? + "/runtime".len();
             Some(arg[start..end].to_owned())
         })
         .expect("overlay commands did not include owned runtime root");
-    assert!(root.starts_with("/tmp/updated-daemon-"));
+    assert!(prefixes.iter().any(|prefix| root.starts_with(*prefix)));
     root
 }
 
@@ -153,7 +160,15 @@ fn stable_params(value: &Value, root: &str, started_ns: i128, ended_ns: i128) ->
 
 fn fixture_parent(root: &str) -> &str {
     let parent = root.strip_suffix("/runtime").unwrap();
-    let suffix = parent.strip_prefix("/tmp/updated-daemon-").unwrap();
+    let current_prefix = env::temp_dir().join("updated-daemon-");
+    let suffix = parent
+        .strip_prefix(
+            current_prefix
+                .to_str()
+                .expect("test temporary root is UTF8"),
+        )
+        .or_else(|| parent.strip_prefix("/tmp/updated-daemon-"))
+        .unwrap();
     assert!(!suffix.is_empty() && !suffix.contains('/'));
     parent
 }

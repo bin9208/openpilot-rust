@@ -8,6 +8,7 @@ publish = false
 
 [features]
 default = ["native"]
+diagnostic-553 = ["openpilot-control-policy/diagnostic-553"]
 native = ["openpilot-messaging/native", "openpilot-calibrationd/native-skip-miri", "dep:openpilot-msgq", "dep:openpilot-logging", "dep:signal-hook", "dep:libc"]
 
 [lints.rust]

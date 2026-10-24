@@ -1263,7 +1263,22 @@ fn run_args(args: &[OsString]) -> Result<()> {
             OptionSpec::value("--source-commit", true),
             OptionSpec::value("--binary-sha256", true),
         ],
-    )?;
+    )
+    .map_err(|error| {
+        if error.0 == "unrecognized arguments" {
+            for forbidden in ["--builder", "--reference", "--source-hook"] {
+                let inline = format!("{forbidden}=");
+                if args.iter().any(|arg| {
+                    arg == forbidden || arg.as_encoded_bytes().starts_with(inline.as_bytes())
+                }) {
+                    return crate::argparse_scan::ArgumentError(format!(
+                        "unrecognized arguments: {forbidden}"
+                    ));
+                }
+            }
+        }
+        error
+    })?;
     if parsed.help {
         println!(
             "usage: check-native-logging retained --binary BINARY --root ROOT --context INDEX --output OUTPUT --source-commit SHA40 --binary-sha256 SHA256"

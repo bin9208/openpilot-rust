@@ -5,6 +5,7 @@ name: Python Rust 523 logging current collision8 candidate
     paths:
     - .github/workflows/python-rust-523-logging-collision8.yml
     - tools/ci/logging_collision8_549.sh
+    - tools/ci/logging_collision8_batches_549.sh
     - rust/crates/dev-tools/src/native_logging_build.rs
     - rust/crates/dev-tools/src/json11_stage.rs
     - rust/crates/dev-tools/src/lib.rs
@@ -58,7 +59,8 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
       RUSTUP_TOOLCHAIN: 1.94.0
-      COLLISION8_HELPER_SHA256: 20e94a3667c2680d260bb1eeb19af651b252a307d55c047a5a4137baea754fdd
+      COLLISION8_HELPER_SHA256: 53ce8d3602a62789ba867e140772d586f74389d712cc14b2d6abe09a3f424416
+      COLLISION8_BATCHES_SHA256: 52d4ca212c28cad44579360b8531c915f6fe8e3060c0b480f0f7ec1cdb659a79
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
       shell: bash
@@ -229,6 +231,8 @@ jobs:
         proof=$CI_JOB_TEMP/proof/c8
         jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .collision8_current_pass==true and .immutable_seals==true and .command_exit==0 and .finalizer_exit==0 and .old27_admitted==false and .retirement_credit==0' "$proof/outcome.json"
         jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .selector_count==1 and .logical_cases==8 and .checker_execs==8 and .checker_exit1==8 and .checker_spawn_attempts==0 and .original_cpp_executions==0 and .probe_executions==0 and .foreign_before_after_equal==true and .historical_pass_inherited==false and .old27_admitted==false and .runtime2_admitted==false and .caller_admitted==false and .source_absence_admitted==false and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .retirement_credit==0' "$proof/collision8.candidate.json"
+        jq -e --arg source "$GITHUB_SHA" --arg worker "$COLLISION8_BATCHES_SHA256" '.schema==1 and .source_commit==$source and .worker_sha256==$worker and .all_batches_pass==true and .coverage_exact_once==true and .counts.root_count==1 and .counts.files>0 and .counts.files<=8192 and .counts.raw_bytes<=1073741824 and .counts.events<=1000000 and .counts.physical_lines<=2000000 and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .retirement_credit==0' "$proof/fixture-batches/complete.json"
+        printf '%s  %s\n' "$(jq -er '.fixture_batches_sha256|select(test("^[a-f0-9]{64}$"))' "$proof/collision8.candidate.json")" "$proof/fixture-batches/complete.json" | sha256sum --check --strict --quiet -
         /usr/bin/bash "$DIAG_SOURCE/tools/ci/logging_collision8_549.sh" admit
         ln -- "$proof/collision8.candidate.json" "$proof/collision8.json"
         if ! /usr/bin/bash "$DIAG_SOURCE/tools/ci/logging_collision8_549.sh" admit; then

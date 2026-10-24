@@ -1,5 +1,7 @@
 //! Keep the complete six-checker native closure and every unrelated estimator gate.
-use openpilot_dev_tools::ci_policy::{parse, LOCAL_RUNNER, TRUSTED_ALWAYS, TRUSTED_SOURCE};
+use openpilot_dev_tools::ci_policy::{
+    parse, validate_local_routing, HOSTED_RUNNER, LOCAL_RUNNER, TRUSTED_ALWAYS, TRUSTED_SOURCE,
+};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -111,9 +113,11 @@ fn validate(workflow: &Value) -> Result<(), String> {
     let baseline = original();
     let old = &baseline["job"];
     require(
-        job["runs-on"] == serde_json::json!(LOCAL_RUNNER),
-        "fixed bin-actions runner labels changed",
+        job["runs-on"] == serde_json::json!(HOSTED_RUNNER),
+        "fixed GitHub-hosted Ubuntu 24.04 runner changed",
     )?;
+    // runner 전환 뒤에도 first-deny/source binding과 private source·봉인 경계를 필수로 검증한다.
+    validate_local_routing(&serde_json::json!({"jobs":{"estimation-runtime":job}}))?;
     for key in ["name", "timeout-minutes"] {
         require(
             job[key] == old[key],
@@ -563,6 +567,30 @@ fn six_native_lagd_checkers_full_references_and_existing_estimators_are_mandator
 fn missing_native_tools_tests_guards_or_unrelated_gates_cannot_pass() {
     let current = workflow();
     validate(&current).unwrap();
+    for runner in [
+        serde_json::json!(LOCAL_RUNNER),
+        serde_json::json!("ubuntu-22.04"),
+        serde_json::json!("${{ matrix.runner }}"),
+    ] {
+        let mut changed = current.clone();
+        changed["jobs"]["estimation-runtime"]["runs-on"] = runner;
+        assert!(
+            validate(&changed).is_err(),
+            "accepted changed hosted runner"
+        );
+    }
+    let mut changed = current.clone();
+    changed["jobs"]["estimation-runtime"]["steps"][0]["if"] = TRUSTED_SOURCE.into();
+    assert!(
+        validate(&changed).is_err(),
+        "accepted conditional first denial"
+    );
+    let mut changed = current.clone();
+    changed["jobs"]["estimation-runtime"]["steps"][0]["env"]["SOURCE_ALLOWED"] = Value::Null;
+    assert!(
+        validate(&changed).is_err(),
+        "accepted missing source trust binding"
+    );
     for key in ["CARGO_PROFILE_DEV_DEBUG", "CARGO_PROFILE_TEST_DEBUG"] {
         for value in [Value::Null, Value::String("1".into())] {
             let mut changed = current.clone();

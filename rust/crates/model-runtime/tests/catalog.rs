@@ -253,7 +253,7 @@ with tempfile.TemporaryDirectory() as td:
   for _ in range(100):
    state=Path(f'/proc/{pid}/stat')
    try:observed=state.read_text().rsplit(')',1)[1].split()[0]
-   except FileNotFoundError:break
+   except (FileNotFoundError,ProcessLookupError):break
    if observed=='Z':break
    time.sleep(0.01)
   else:raise AssertionError('owned helper descendant survived: '+mode)

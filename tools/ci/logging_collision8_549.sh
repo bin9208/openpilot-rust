@@ -33,8 +33,12 @@ done
    $(stat -c '%d:%i' "$owner") == "$DIAG_SOURCE_IDENTITY" ]] || fail 'owner differs'
 [[ $(git --no-optional-locks rev-parse HEAD) == "$GITHUB_SHA" ]] || fail 'source HEAD differs'
 [[ ${COLLISION8_HELPER_SHA256:-} =~ ^[a-f0-9]{64}$ ]] || fail 'helper pin missing'
+[[ ${COLLISION8_BATCHES_SHA256:-} =~ ^[a-f0-9]{64}$ ]] || fail 'batch worker pin missing'
 [[ $(readlink -e "${BASH_SOURCE[0]}") == "$source/tools/ci/logging_collision8_549.sh" ]] || fail 'helper source path differs'
 printf '%s  %s\n' "$COLLISION8_HELPER_SHA256" "$source/tools/ci/logging_collision8_549.sh" | sha256sum --check --strict --quiet -
+batch_worker=$source/tools/ci/logging_collision8_batches_549.sh
+[[ -f $batch_worker && ! -L $batch_worker ]]
+printf '%s  %s\n' "$COLLISION8_BATCHES_SHA256" "$batch_worker" | sha256sum --check --strict --quiet -
 unset GH_TOKEN GITHUB_TOKEN NATIVE_LOGGING_LIFECYCLE_RESUME NATIVE_LOGGING_TEST_BUILDER NATIVE_LOGGING_TEST_REFERENCE
 unset LD_PRELOAD LD_LIBRARY_PATH BASH_ENV ENV RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER
 export GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1
@@ -390,7 +394,7 @@ artifact() {
     if length==1 and (.[0].executable|type)=="string" and (.[0].executable|startswith("/"))
     then .[0].executable else error("unique current executable required") end' "$log"
 }
-for tool in bash sh git find sort xargs sha256sum stat readlink readelf sed awk grep head od tr cat cmp df du jq strace timeout setsid sleep curl c++ cc ar as ld ranlib nm capnp pkg-config dirname basename cut mkdir chmod ln id; do
+for tool in bash sh git find sort xargs sha256sum stat readlink readelf sed awk grep head od tr cat cmp df du dd jq strace timeout setsid sleep curl c++ cc ar as ld ranlib nm capnp pkg-config dirname basename cut mkdir chmod ln rm id; do
   bind_elf "$(command -v "$tool")"
 done
 for tool in cargo rustc rustdoc; do bind_elf "$sdk/bin/$tool"; done
@@ -398,6 +402,8 @@ bind_elf "$job/cargo-home/bin/rustup"
 bind_elf "$job/rust-bootstrap/rustup-init"
 hold /etc/ld.so.cache
 hold "$source/tools/ci/logging_collision8_549.sh"
+hold "$batch_worker"
+hold "$CI_PREPARED_RUST_MANIFEST"
 hold "$source/.github/workflows/python-rust-523-logging-collision8.yml"
 for relative in openpilot/common/swaglog.cc openpilot/common/swaglog.h openpilot/common/timing.h rust/tools/native_logging_reference.cc; do hold "$source/$relative"; done
 originals
@@ -582,8 +588,176 @@ jq -e --arg fixture "$fixture" --arg selector "$selector" --arg checker "$checke
   ' "$proof/inspect/collision.json" > "$proof/collision-policy.check"
 # build에서 reference/probe 실행0도 같은 표준 byte decoder로 확인한다. compiler 실행과 섞어 case allow하지 않는다.
 printf '%s\n' "$builder" "${cpp_exec_paths[@]}" | jq -Rs 'split("\n")[:-1]|unique' > "$proof/cpp-programs.expected.json"
+# 성공한 build exec의 현재 파일도 묶는다. 상대경로/삭제된 실행파일/loader 직접기동은 추측하지 않는다.
+# 이 사후 파일 관측은 exec 시점의 완전한 PID/cwd/DSO closure라는 뜻이 아니다.
+audit_build_programs() {
+  local report=$1 prefix=$2 path canonical name
+  jq -r '.events[]|select(.exec!=null and .outcome=="exec_succeeded")|.exec.program.bytes|implode' "$report" > "$proof/build-programs.current.txt"
+  if [[ ! -s $proof/build-programs.current.txt ]]; then
+    [[ $prefix == fixture-batch ]] || return 1
+    jq -e '[.events[]|select(.exec!=null and .outcome=="exec_succeeded")]|length==0' "$report" > /dev/null || return 1
+  fi
+  while IFS= read -r path; do
+    [[ $path =~ ^/[A-Za-z0-9_./+-]+$ ]] || return 1
+    name=${path##*/}
+    case "$name" in python*|pypy*|ld-linux*|check_native_logging.py|native_logging_transport.py) return 1 ;; esac
+    canonical=$(readlink -e "$path") || return 1
+    hold "$path" || return 1
+    if [[ $prefix == reference ]]; then
+      [[ -v cpp_allowed_ids[$canonical] && ${cpp_allowed_ids[$canonical]} == "${held_id[$canonical]}" ]] || return 1
+    fi
+    [[ ${held_sha[$canonical]} != "${held_sha[$fresh_reference]}" &&
+       ${held_sha[$canonical]} != "${held_sha[$probe]}" ]] || return 1
+  done < "$proof/build-programs.current.txt"
+}
+fixture_batches() {
+  local started now remaining batch files bytes identity digest report report_fd actual
+  local path name expected index=$proof/fixture-batches
+  local -a context
+  IFS=' ' read -r started _ < /proc/uptime
+  add_tree cargo-raw "$proof/cargo-trace"
+  hold "$proof/current-artifacts.json"
+  context=(HOME="$job/home" PATH=/usr/bin:/bin TMPDIR="$build/tmp" LC_ALL=C TZ=UTC
+    CARGO_HOME="$build/cargo-home" CARGO_TARGET_DIR="$build/target" RUSTUP_HOME="$job/rustup-home"
+    GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1
+    GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME"
+    GITHUB_REF="$GITHUB_REF" GITHUB_SHA="$GITHUB_SHA" GITHUB_RUN_ID="$GITHUB_RUN_ID"
+    GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" GITHUB_JOB="$GITHUB_JOB" GITHUB_WORKSPACE="$source"
+    RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" RUNNER_OS="$RUNNER_OS" RUNNER_ARCH="$RUNNER_ARCH"
+    DIAG_SOURCE="$source" CI_JOB_TEMP="$job" DIAG_SOURCE_OWNER="$owner" DIAG_ACTIONS_WORKSPACE="$workspace"
+    DIAG_SOURCE_IDENTITY="$DIAG_SOURCE_IDENTITY" CI_PREPARED_RUST_ROOT="$sdk" CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST"
+    COLLISION8_BATCHES_SHA256="$COLLISION8_BATCHES_SHA256" COLLISION8_CHECKER_SHA256="${held_sha[$checker]}"
+    COLLISION8_SDK_MANIFEST_SHA256="${held_sha[$CI_PREPARED_RUST_MANIFEST]}"
+    COLLISION8_ARTIFACTS_SHA256="${held_sha[$proof/current-artifacts.json]}")
+  IFS=' ' read -r now _ < /proc/uptime
+  remaining=$(awk -v start="$started" -v now="$now" 'BEGIN{r=int(180-(now-start));if(r<1||r>180)exit 1;print r}')
+  # 전체 worker에 한 번만 owned timeout/watcher를 둔다. batch마다180s를 새로 주지 않는다.
+  run inspect-fixture-build "$remaining" none unused unused build /usr/bin/env -i "${context[@]}" /usr/bin/bash --noprofile --norc "$batch_worker"
+  for path in worker-index.json original.jsonl coverage.jsonl batches.jsonl; do hold "$index/$path"; done
+  jq -e --arg source "$GITHUB_SHA" --arg worker "$COLLISION8_BATCHES_SHA256" --arg checker "${held_sha[$checker]}" '
+    .schema==1 and .source_commit==$source and .worker_sha256==$worker and .checker_sha256==$checker and
+    (.files|type)=="number" and .files>0 and .files<=8192 and .raw_bytes>0 and .raw_bytes<=1073741824 and
+    .batches>0 and .batches<=.files' "$index/worker-index.json" > "$index/index.check"
+  # 작은 manifest만 slurp한다. full Event 배열은 각 report를 처리하고 버린다.
+  local coverage_policy='
+    . as $coverage | $original as $originals | $batches as $batches |
+    length==$index[0].files and length>0 and
+    (map(.name)|unique|length)==length and (map(.pid)|unique|length)==length and
+    (map({name,pid,identity:.original_identity,sha256})|sort_by(.name))==($originals|sort_by(.name)) and
+    ($batches|length)==$index[0].batches and ($batches|map(.batch)|unique|length)==($batches|length) and
+    all($coverage[]; (.batch|test("^[0-9]{4}$")) and (.name|test("^fixture[.][1-9][0-9]*$")) and
+      .pid>0 and .pid<=4294967295 and .copy_identity.links==1 and .copy_identity.size==.original_identity.size and
+      (.copy_identity.dev!=.original_identity.dev or .copy_identity.ino!=.original_identity.ino) and
+      (.copy_stat|type)=="string") and
+    all($batches[]; . as $batch |
+      [$coverage[]|select(.batch==$batch.batch)] as $rows |
+      $batch.files==($rows|length) and $batch.files>0 and $batch.files<=128 and
+      $batch.raw_bytes==($rows|map(.original_identity.size)|add) and $batch.raw_bytes<=1048576) and
+    all($coverage[]; . as $row | any($batches[]; .batch==$row.batch)) and
+    (map(.original_identity.size)|add)==$index[0].raw_bytes'
+  check_coverage() {
+    jq -se --slurpfile original "$index/original.jsonl" --slurpfile batches "$index/batches.jsonl" \
+      --slurpfile index "$index/worker-index.json" "$coverage_policy" "$1"
+  }
+  check_coverage "$index/coverage.jsonl" > "$index/coverage.check"
+  # 실제 valid 입력에서 한 요소만 바꾼 coverage 통제다. exit1+false를 모두 요구한다.
+  jq -sc '.[1:][]' "$index/coverage.jsonl" > "$index/coverage-missing.jsonl"
+  jq -sc '(.+.[0:1])[]' "$index/coverage.jsonl" > "$index/coverage-duplicate.jsonl"
+  for path in "$index/coverage-missing.jsonl" "$index/coverage-duplicate.jsonl"; do
+    local control_code=0
+    check_coverage "$path" > "$path.check" || control_code=$?
+    [[ $control_code == 1 && $(cat "$path.check") == false ]] || fail 'coverage negative failed'
+  done
+  printf '%s\n' 'positive+missing+duplicate verified' > "$index/coverage-controls.txt"
+  find -P "$index/raw" -mindepth 1 -maxdepth 1 -printf '%f\t%y\n' | sort > "$index/directories.actual.tsv"
+  jq -rs 'sort_by(.batch)[]|.batch+"\td"' "$index/batches.jsonl" > "$index/directories.expected.tsv"
+  cmp "$index/directories.actual.tsv" "$index/directories.expected.tsv"
+  mkdir "$index/checks"
+  jq -r '[.batch,.files,.raw_bytes,.report_identity,.report_sha256]|@tsv' "$index/batches.jsonl" > "$index/reports.tsv"
+  while IFS=$'\t' read -r batch files bytes identity digest; do
+    IFS=' ' read -r now _ < /proc/uptime
+    awk -v start="$started" -v now="$now" 'BEGIN{exit !(now>=start && now-start<=180)}'
+    report=$index/reports/$batch.json
+    [[ $batch =~ ^[0-9]{4}$ && -f $report && ! -L $report && $(idfile "$report") == "$identity" ]]
+    exec {report_fd}<"$report"
+    [[ $(idfile "/proc/$$/fd/$report_fd") == "$identity" ]]
+    actual=$(sha256sum "/proc/$$/fd/$report_fd"); [[ ${actual%% *} == "$digest" ]]
+    jq -se --arg batch "$batch" '[.[]|select(.batch==$batch)]' "$index/coverage.jsonl" > "$index/checks/$batch.inputs.json"
+    jq -e --arg directory "$index/raw/$batch" --arg ref "$fresh_reference" --arg probe "$probe" \
+      --slurpfile wanted "$index/checks/$batch.inputs.json" \
+      --slurpfile argv "$proof/build/fixture-build.argv.expected.json" --slurpfile env "$proof/build/fixture-build.env.expected.json" '
+      . as $report | [.events[]|select(.exec!=null)] as $execs |
+      [$execs[]|select(.exec.program.bytes==($argv[0][0]|explode))] as $roots |
+      [.events[]|select(.kind|startswith("terminal_"))] as $terminals |
+      if .schema==1 and .scope=="read-only rich strace lexical inspection; no execution policy or family admission" and
+        .directory==$directory and .prefix=="fixture" and .raw_immutable==true and .requires_exit_status_zero==true and
+        .full_acceptance==false and .retirement_credit==false and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and
+        (.directory_roster|sort_by(.name))==($wanted[0]|map({name,identity:.copy_identity})|sort_by(.name)) and
+        (.raw_files|map({name,pid,identity_before,identity_after,sha256})|sort_by(.name))==
+          ($wanted[0]|map({name,pid,identity_before:.copy_identity,identity_after:.copy_identity,sha256})|sort_by(.name)) and
+        .selected_raw_bytes==($wanted[0]|map(.original_identity.size)|add) and
+        ($roots|length)<=1 and all($roots[]; .operation=="execve" and .outcome=="exec_succeeded" and
+          .opaque_payload==false and (.exec.argv|map(.bytes))==($argv[0]|map(explode)) and
+          .exec.environment.complete==true and .exec.environment.representation=="vector" and
+          (.exec.environment.entries|map(.bytes)|sort)==($env[0]|map(explode)|sort)) and
+        all($execs[]; .exec.program.bytes!=($ref|explode) and .exec.program.bytes!=($probe|explode)) and
+        ($terminals|map(.pid)|sort)==($wanted[0]|map(.pid)|sort) and
+        all($terminals[]; (.source|length)==1 and .source[0].line>0)
+      then {batch:$wanted[0][0].batch,files:(.raw_files|length),raw_bytes:.selected_raw_bytes,
+        roots:($roots|length),events:(.events|length),lines:($terminals|map(.source[0].line)|add),
+        programs:([$execs[]|select(.outcome=="exec_succeeded")|.exec.program.bytes|implode|split("/")[-1]]|
+          group_by(.)|map({name:.[0],count:length}))}
+      else error("fixture batch full-schema policy differs") end' "/proc/$$/fd/$report_fd" > "$index/checks/$batch.json"
+    audit_build_programs "/proc/$$/fd/$report_fd" fixture-batch
+    actual=$(sha256sum "/proc/$$/fd/$report_fd")
+    [[ ${actual%% *} == "$digest" && $(idfile "$report") == "$identity" && $(idfile "/proc/$$/fd/$report_fd") == "$identity" ]]
+    exec {report_fd}<&-
+  done < "$index/reports.tsv"
+  # 생존 시점 단정 없이 원본/copy의 현재 identity와 전체 bytes를 다시 확인한다.
+  jq -r '[.batch,.name,.copy_stat]|@tsv' "$index/coverage.jsonl" > "$index/copies.tsv"
+  while IFS=$'\t' read -r batch name expected; do
+    path=$index/raw/$batch/$name
+    [[ -f $path && ! -L $path && $(idfile "$path") == "$expected" ]]
+  done < "$index/copies.tsv"
+  jq -r --arg root "$index/raw/" '.sha256+"  "+$root+.batch+"/"+.name' "$index/coverage.jsonl" > "$index/copies.sha256"
+  sha256sum --check --strict --quiet "$index/copies.sha256"
+  find -P "$index/raw" -mindepth 1 -printf '%P\t%y\n' | sort > "$index/copy-roster.actual.tsv"
+  { cat "$index/directories.expected.tsv"; jq -r '.batch+"/"+.name+"\tf"' "$index/coverage.jsonl"; } | sort > "$index/copy-roster.expected.tsv"
+  cmp "$index/copy-roster.actual.tsv" "$index/copy-roster.expected.tsv"
+  tree "$proof/cargo-trace" "$proof/cargo-raw.checked"
+  cmp "$proof/cargo-raw.before.roster" "$proof/cargo-raw.checked.roster"
+  cmp "$proof/cargo-raw.before.sha256" "$proof/cargo-raw.checked.sha256"
+  add_tree fixture-batch-inputs "$index/raw"
+  add_tree fixture-batch-reports "$index/reports"
+  jq -se --slurpfile wanted "$index/worker-index.json" '
+    if length==$wanted[0].batches and (map(.batch)|unique|length)==length and
+      (map(.files)|add)==$wanted[0].files and (map(.raw_bytes)|add)==$wanted[0].raw_bytes and
+      (map(.roots)|add)==1 and (map(.events)|add)<=1000000 and (map(.lines)|add)<=2000000
+    then {batch_count:length,files:(map(.files)|add),raw_bytes:(map(.raw_bytes)|add),root_count:1,
+      events:(map(.events)|add),physical_lines:(map(.lines)|add),
+      programs:([.[].programs[]]|group_by(.name)|map({name:.[0].name,count:(map(.count)|add)}))}
+    else error("fixture batch aggregate differs") end' "$index"/checks/[0-9][0-9][0-9][0-9].json > "$index/aggregate.json"
+  verify_held
+  admit
+  IFS=' ' read -r now _ < /proc/uptime
+  awk -v start="$started" -v now="$now" 'BEGIN{exit !(now>=start && now-start<=180)}'
+  hold "$index/aggregate.json"
+  jq -n --arg source "$GITHUB_SHA" --arg worker "$COLLISION8_BATCHES_SHA256" \
+    --arg coverage "${held_sha[$index/coverage.jsonl]}" --arg reports "${held_sha[$index/batches.jsonl]}" \
+    --arg aggregate "${held_sha[$index/aggregate.json]}" --slurpfile counts "$index/aggregate.json" \
+    '{schema:1,source_commit:$source,worker_sha256:$worker,coverage_sha256:$coverage,reports_index_sha256:$reports,
+      aggregate_sha256:$aggregate,all_batches_pass:true,coverage_exact_once:true,counts:$counts[0],
+      closed_pid:false,closed_cwd:false,closed_fd:false,closed_dso:false,retirement_credit:0}' > "$index/complete.json"
+  IFS=' ' read -r now _ < /proc/uptime
+  if ! awk -v start="$started" -v now="$now" 'BEGIN{exit !(now>=start && now-start<=180)}'; then
+    rm -- "$index/complete.json"
+    fail 'fixture batch deadline exceeded before completion'
+  fi
+  hold "$index/complete.json"
+}
 for spec in 'cargo-trace checker checker-build' 'cargo-trace probe probe-build' 'cargo-trace fixture fixture-build' 'reference-trace reference reference-build'; do
   read -r directory prefix label <<< "$spec"
+  if [[ $prefix == fixture ]]; then fixture_batches; continue; fi
   run "inspect-$prefix-build" 180 none unused unused build "$checker" inspect-trace --directory "$proof/$directory" --prefix "$prefix" --output "$proof/inspect/$prefix-build.json"
   jq -e --arg ref "$fresh_reference" --arg probe "$probe" --arg prefix "$prefix" \
     --slurpfile argv "$proof/build/$label.argv.expected.json" --slurpfile env "$proof/build/$label.env.expected.json" \
@@ -603,26 +777,7 @@ for spec in 'cargo-trace checker checker-build' 'cargo-trace probe probe-build' 
       else true end)
     ' "$proof/inspect/$prefix-build.json" > "$proof/inspect/$prefix-build.check"
 done
-# 성공한 build exec의 현재 파일도 묶는다. 상대경로/삭제된 실행파일/loader 직접기동은 추측하지 않는다.
-# 이 사후 파일 관측은 exec 시점의 완전한 PID/cwd/DSO closure라는 뜻이 아니다.
-audit_build_programs() {
-  local report=$1 prefix=$2 path canonical name
-  jq -r '.events[]|select(.exec!=null and .outcome=="exec_succeeded")|.exec.program.bytes|implode' "$report" > "$proof/build-programs.current.txt"
-  [[ -s $proof/build-programs.current.txt ]]
-  while IFS= read -r path; do
-    [[ $path =~ ^/[A-Za-z0-9_./+-]+$ ]] || return 1
-    name=${path##*/}
-    case "$name" in python*|pypy*|ld-linux*|check_native_logging.py|native_logging_transport.py) return 1 ;; esac
-    canonical=$(readlink -e "$path") || return 1
-    hold "$path" || return 1
-    if [[ $prefix == reference ]]; then
-      [[ -v cpp_allowed_ids[$canonical] && ${cpp_allowed_ids[$canonical]} == "${held_id[$canonical]}" ]] || return 1
-    fi
-    [[ ${held_sha[$canonical]} != "${held_sha[$fresh_reference]}" &&
-       ${held_sha[$canonical]} != "${held_sha[$probe]}" ]] || return 1
-  done < "$proof/build-programs.current.txt"
-}
-for prefix in checker probe fixture reference; do audit_build_programs "$proof/inspect/$prefix-build.json" "$prefix"; done
+for prefix in checker probe reference; do audit_build_programs "$proof/inspect/$prefix-build.json" "$prefix"; done
 verify_held
 phase=collision8-observed
 for path in "$proof/inspect/collision.json" "$proof/case-manifest.jsonl" "$proof/current-artifacts.json"; do hold "$path"; done
@@ -630,13 +785,14 @@ jq -n --arg source "$GITHUB_SHA" --arg checker "$checker" --arg fixture "$fixtur
   --arg lexical_sha "${held_sha[$proof/inspect/collision.json]}" \
   --arg cases_sha "${held_sha[$proof/case-manifest.jsonl]}" \
   --arg artifacts_sha "${held_sha[$proof/current-artifacts.json]}" \
+  --arg batches_sha "${held_sha[$proof/fixture-batches/complete.json]}" \
   --slurpfile cases "$proof/case-manifest.jsonl" \
   '{schema:1,source_commit:$source,selector:"actual_cli_foreign_output_collisions_precede_builder_or_provider_work",
     selector_count:1,logical_cases:8,case_keys:[$cases[]|[.prebuilt,.kind]],checker:$checker,fixture:$fixture,
     checker_execs:8,checker_exit1:8,checker_spawn_attempts:0,harness_pre_exec_session_setup:"none in pinned fixture",
     original_cpp_executions:0,probe_executions:0,
     foreign_before_after_equal:true,lexical_report:"inspect/collision.json",lexical_sha256:$lexical_sha,
-    case_manifest_sha256:$cases_sha,current_artifacts_sha256:$artifacts_sha,historical_pass_inherited:false,
+    case_manifest_sha256:$cases_sha,current_artifacts_sha256:$artifacts_sha,fixture_batches_sha256:$batches_sha,historical_pass_inherited:false,
     old27_admitted:false,runtime2_admitted:false,caller_admitted:false,source_absence_admitted:false,
     closed_pid:false,closed_cwd:false,closed_fd:false,closed_dso:false,retirement_credit:0}' > "$proof/collision8.candidate.json"
 hold "$proof/collision8.candidate.json"

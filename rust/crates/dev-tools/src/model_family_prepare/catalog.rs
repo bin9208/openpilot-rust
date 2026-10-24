@@ -460,7 +460,34 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
         &options.root.join("rust/tools/build_model_pipelines.py"),
         1024 * 1024,
     )?;
-    let python = Input::open(&fs::canonicalize(&options.python)?, 128 * 1024 * 1024)?;
+    // 실행할 venv 경로와 검증할 실제 ELF 경로를 분리한다.
+    let python_entry = std::path::absolute(&options.python)?;
+    let python_entry_before = fs::symlink_metadata(&python_entry)?;
+    require(
+        python_entry_before.is_file() || python_entry_before.file_type().is_symlink(),
+        "compiler Python entry is not regular or a symlink",
+    )?;
+    let python = Input::open(&fs::canonicalize(&python_entry)?, 128 * 1024 * 1024)?;
+    let verify_python = || -> Result<()> {
+        let current = fs::symlink_metadata(&python_entry)?;
+        require(
+            identity(&current) == identity(&python_entry_before)
+                && (
+                    current.mode(),
+                    current.uid(),
+                    current.gid(),
+                    current.nlink(),
+                ) == (
+                    python_entry_before.mode(),
+                    python_entry_before.uid(),
+                    python_entry_before.gid(),
+                    python_entry_before.nlink(),
+                )
+                && fs::canonicalize(&python_entry)? == python.path,
+            "compiler Python entry changed",
+        )?;
+        python.verify()
+    };
     let llvm_path = fs::canonicalize(&options.llvm)?;
     require(
         fs::canonicalize(std::env::var_os("LLVM_PATH").ok_or("LLVM_PATH is required")?)?
@@ -478,7 +505,7 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
         .tempdir_in(parent)?;
     let catalog = temp.path().join("catalog");
     let mut argv = vec![
-        python.path.as_os_str().to_owned(),
+        python_entry.as_os_str().to_owned(),
         "-P".into(),
         compiler.path.as_os_str().to_owned(),
         "--trusted-model-directory".into(),
@@ -587,6 +614,7 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
                 .to_owned(),
         );
     }
+    verify_python()?;
     let result = execute(&spec, temp.path());
     if !matches!(&result, Ok(result) if result.code == 0) {
         let evidence = temp.keep();
@@ -598,7 +626,7 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
     }
     manifest.verify()?;
     compiler.verify()?;
-    python.verify()?;
+    verify_python()?;
     verify_map(&models)?;
     verify_map(&sources)?;
     require(
@@ -869,7 +897,7 @@ pub fn prepare_catalog(options: &CatalogOptions) -> Result<Value> {
     .verify()?;
     manifest.verify()?;
     compiler.verify()?;
-    python.verify()?;
+    verify_python()?;
     verify_map(&models)?;
     verify_map(&sources)?;
     require(before == host(&llvm)?, "final compiler host changed")?;

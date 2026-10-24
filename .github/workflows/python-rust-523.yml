@@ -381,6 +381,17 @@ jobs:
             tools/scripts/setup_ssh_keys.py) ;;
             tools/ci/setup_source_absence_523.sh) ;;
             rust/crates/controlsd/examples/controlsd_trace.rs) ;;
+            .github/workflows/python-rust-523-controls-diagnostic.yml) ;;
+            tools/ci/controlsd_diagnostic_553.py) ;;
+            tools/ci/logging_collision8_batches_549.sh) ;;
+            rust/crates/control-policy/Cargo.toml) ;;
+            rust/crates/control-policy/src/flux.rs) ;;
+            rust/crates/controlsd/Cargo.toml) ;;
+            rust/crates/dev-tools/tests/camera_ci_check.rs) ;;
+            rust/crates/dev-tools/tests/updated_daemon_check.rs) ;;
+            rust/crates/dev-tools/tests/lagd_ci.rs) ;;
+            rust/crates/model-runtime/tests/catalog.rs) ;;
+            rust/tools/check_plannerd_lifecycle.py) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
@@ -391,6 +402,17 @@ jobs:
         printf '%s  %s\n' 634559405e03be79cf66dfcf888bfc28a0b27a51e92b5335013dfe1b16836f59 .github/workflows/python-rust-523-model.yml | sha256sum --check -
         printf '%s  %s\n' 5ec87c23ae6dfdda2c64ce32c314da87197e3da702e3bbca710c0fc6d4477523 .github/workflows/python-rust-523-reclaim.yml | sha256sum --check -
         printf '%s  %s\n' b2b6c63dab892b9a2c0358daf5dd07771515781737c369e5407926e7df90b188 .github/workflows/python-rust-523-sanitizer.yml | sha256sum --check -
+        printf '%s  %s\n' 8f1e696e9edb7836c1f960293c0acc3b07ecbaf2fbb34a1ae5e8aae290fe3068 .github/workflows/python-rust-523-controls-diagnostic.yml | sha256sum --check -
+        printf '%s  %s\n' 51b9ded88754c43a5b44d5269c15160e6a1c313015f417e8968830a35d14f527 tools/ci/controlsd_diagnostic_553.py | sha256sum --check -
+        printf '%s  %s\n' 52d4ca212c28cad44579360b8531c915f6fe8e3060c0b480f0f7ec1cdb659a79 tools/ci/logging_collision8_batches_549.sh | sha256sum --check -
+        printf '%s  %s\n' 376b2a22d5d7e19b5e8d746f3e82c95bd839522baeb4f0f9e8241e8a0fe45fe6 rust/crates/control-policy/Cargo.toml | sha256sum --check -
+        printf '%s  %s\n' cf3c55cb9b630db1a12bcd96839337a39c0af55d77ce300b19024feb3bc69563 rust/crates/control-policy/src/flux.rs | sha256sum --check -
+        printf '%s  %s\n' 4cc6d141717a1cfd162304bcad9457f407a13ab1148fb90ac2b900ffb3ab0a1b rust/crates/controlsd/Cargo.toml | sha256sum --check -
+        printf '%s  %s\n' ae6e5323572f265c4e47479cf326129e14e826f5c83fb5b982e64df31a889e55 rust/crates/dev-tools/tests/camera_ci_check.rs | sha256sum --check -
+        printf '%s  %s\n' edc309fad27015251cdad285f7bbc62c4e647c3ca2db772b55e0a5d45bffc913 rust/crates/dev-tools/tests/updated_daemon_check.rs | sha256sum --check -
+        printf '%s  %s\n' 9f12d13a1c29df1787aeb32a52f77e215b263c6a1b7026241146223cfc7822a7 rust/crates/dev-tools/tests/lagd_ci.rs | sha256sum --check -
+        printf '%s  %s\n' 45de77eb9d26aeb65fc01e6dfad59bf21583281510e92221c7f24b0de30cb662 rust/crates/model-runtime/tests/catalog.rs | sha256sum --check -
+        printf '%s  %s\n' 0e15f738edd830f153ab8f63acdb33140ddf5a8165a4a6e557f2ab20fb785f68 rust/tools/check_plannerd_lifecycle.py | sha256sum --check -
         test ! -e openpilot/tools/lib/sanitizer.py && test ! -L openpilot/tools/lib/sanitizer.py
         printf '%s  %s\n' a1db3f1726cba01dfcb50efd8d13536de6ff9c47d5244346019010bf7be243a8 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
         printf '%s  %s\n' a2e53b5164624f1946ca40fe188915493329dd25fe7abe37a9f7958dcf56adaa rust/crates/dev-tools/src/argparse_scan.rs | sha256sum --check -
@@ -433,7 +455,7 @@ jobs:
         printf '%s  %s\n' 158afd2994f455c7a2a1b55f996ba3e43dfa4c725952496f723f91c87358bacd .github/workflows/python-rust-523-history-image.yml | sha256sum --check -
         printf '%s  %s\n' b47da7e2bda55afe1c6229f8b55ab539bdb72a87490a169049c77fc2b9c94ff2 rust/crates/dev-tools/src/bin/prepare_changed_files_context.rs | sha256sum --check -
         printf '%s  %s\n' f6e9bdba494dba9307a34269c0ac199e855e52b8c3d307e69e2d68d61270f7c9 rust/crates/dev-tools/src/driver_daemon_current_catalog.rs | sha256sum --check -
-        printf '%s  %s\n' c81b1a2718b2770e196d40ef87c51daf3b67250ef10b9e6fa877c78cb2153418 rust/crates/dev-tools/src/model_family_prepare/catalog.rs | sha256sum --check -
+        printf '%s  %s\n' b757dbb0cbc65cf802c34f4b4fda04b19a5ac4fa3ae4661d02ac7519adf3acf0 rust/crates/dev-tools/src/model_family_prepare/catalog.rs | sha256sum --check -
         printf '%s  %s\n' 702c583da057bd9f8f664129a68879b6f5000e8079e5b85819d4fa6c3aafc859 rust/crates/dev-tools/tests/changed_files_caller.rs | sha256sum --check -
         printf '%s  %s\n' d497fbd9fd16f0840cb391d7fc0aa76f2982fdee6a0c2dccaa65e4233bcfeabe rust/crates/dev-tools/tests/changed_files_caller/absence.rs | sha256sum --check -
         printf '%s  %s\n' 5e545050129b2ba24499d8cbed1b04db2f7d980dda94774ef008615a21acfa44 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/README.md | sha256sum --check -
@@ -523,7 +545,7 @@ jobs:
         printf '%s  %s\n' 5254ad39ef99c54fe69e0916dc690b53ce907fba3d1b5ddc1d9be429c14bce40 .github/workflows/python-rust-523-logging.yml | sha256sum --check -
         printf '%s  %s\n' 4bdf9bb3ca65215254ad2c241e13c97b95ab0cee0d6b2ff2e283e3995ac7f7fc tools/ci/logging_retained_549.sh | sha256sum --check -
         printf '%s  %s\n' 33a29b54b7db56a11f8d4e40c1ab707800efdb5381c50a2273e852ba3e56ec8d rust/crates/dev-tools/src/native_logging_check.rs | sha256sum --check -
-        printf '%s  %s\n' 87027bb61d0027f69105eb0109f28e6b86ed792f283074402f72b08fc33a1521 rust/crates/dev-tools/src/native_logging_check/retained.rs | sha256sum --check -
+        printf '%s  %s\n' 7799202c6ea4fd2ece3676b8004528274cd6487923890bcba92325010e36d2b3 rust/crates/dev-tools/src/native_logging_check/retained.rs | sha256sum --check -
         printf '%s  %s\n' 0a294710d272b90f8741036313dc33b917dd66179492296670fc570d38125214 rust/crates/dev-tools/src/native_logging_check/prepare.rs | sha256sum --check -
         printf '%s  %s\n' 0842c3fad82891a4c39036f7c3a36b4c4f6def63d99ccc6f48bfc8389811ec6b rust/crates/dev-tools/src/native_logging_check/prepare_tests.rs | sha256sum --check -
         printf '%s  %s\n' ba6fdf16dcf63c9a4a7516218545e30b9f010b437edd0c5bbfb12ceb05337b11 rust/crates/dev-tools/tests/native_logging_lifecycle/retained.rs | sha256sum --check -
@@ -536,8 +558,8 @@ jobs:
         printf '%s  %s\n' f2c1ae5832b5b9735c202a28eba3797e6c9f8af854250bd9d9b4a72923a9eb47 rust/crates/dev-tools/src/native_logging_check/trace.rs | sha256sum --check -
         printf '%s  %s\n' 9ccd6294f5036c556c986c02f9c2d0f47115c15dd316d7b614a88cdeb40b6233 rust/crates/dev-tools/src/native_logging_check/trace_tests.rs | sha256sum --check -
         printf '%s  %s\n' 5019593b2b61ca692dbf52ec7136901d2157961e8972050a774326196554c8a1 rust/crates/dev-tools/src/native_logging_check/trace_summary_tests.rs | sha256sum --check -
-        printf '%s  %s\n' 20e94a3667c2680d260bb1eeb19af651b252a307d55c047a5a4137baea754fdd tools/ci/logging_collision8_549.sh | sha256sum --check -
-        printf '%s  %s\n' a6e2c1f342f7c95f2243c4a7a86015ffa9a0fccf56be471debbf5784163e0e64 .github/workflows/python-rust-523-logging-collision8.yml | sha256sum --check -
+        printf '%s  %s\n' 53ce8d3602a62789ba867e140772d586f74389d712cc14b2d6abe09a3f424416 tools/ci/logging_collision8_549.sh | sha256sum --check -
+        printf '%s  %s\n' 9a5aa11f95ab696ff4b74676f0b14ccfbb24d55d094e7ec474ca89a405bc9e05 .github/workflows/python-rust-523-logging-collision8.yml | sha256sum --check -
         printf '%s  %s\n' 2dc5533c4a03bdd91fbbaf04c2b442e6b72ca3895b797eef264574e4a2730fa7 tools/ci/setup_source_absence_523.sh | sha256sum --check -
         printf '%s  %s\n' 3f9491a0cd690aca1f8e3749e7caa7fa1e0c48daf1b10e8bb50d4c362a3d82e3 rust/crates/controlsd/examples/controlsd_trace.rs | sha256sum --check -
         test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py
@@ -584,7 +606,12 @@ jobs:
             anchor=b'    "rust/crates/model-runtime/src/cached_elf.rs",\n'
             assert old.count(roster)==old.count(anchor)==1
             expected=old.replace(roster,b'const CACHED_SOURCES: [&str; 10] = [').replace(anchor,anchor+b'    "rust/crates/model-runtime/src/cached_isa.rs",\n')
-            assert now(path)==expected, 'Cached consumer changed outside the reviewed source roster.'
+            if path.endswith('/model_family_prepare/catalog.rs'):
+                # #545: 검토한 venv argv 보존/동일 entry+ELF 전후 검증만 추가한다.
+                assert hashlib.sha256(expected).hexdigest()=='c81b1a2718b2770e196d40ef87c51daf3b67250ef10b9e6fa877c78cb2153418'
+                assert hashlib.sha256(now(path)).hexdigest()=='b757dbb0cbc65cf802c34f4b4fda04b19a5ac4fa3ae4661d02ac7519adf3acf0'
+            else:
+                assert now(path)==expected, 'Cached consumer changed outside the reviewed source roster.'
         # publish 변경은 native Bundle public entrypoint 한 줄뿐이다.
         path='.github/workflows/carrot-route-vault-publish.yaml'
         old=before(path)
@@ -616,7 +643,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='4ee29d23ba43e6824f19a550898b5678db549a0d283bace60f177f9713a9ef89', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='f46f208c0273d4a678dec98ebecd574063b54e939ca3355740ce3b15723330ba', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile
@@ -773,6 +800,20 @@ jobs:
         set -euo pipefail
         cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_ssh -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/ssh-regression.log"
         grep -F 'test result: ok. 27 passed;' "$CI_JOB_TEMP/proof/ssh-regression.log"
+    - name: Check current hosted camera policy
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
+      run: |
+        set -euo pipefail
+        for case in camera_gate_uses_native_visionipc_peers_without_python_setup_or_bindings camera_native_peer_policy_rejects_python_and_lost_or_skipped_native_coverage; do
+          log="$CI_JOB_TEMP/proof/camera-policy-$case.log"
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native \
+            --test camera_ci_check "$case" -- --exact > "$log" 2>&1
+          cat "$log"
+          test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$log")" -eq 1
+          test "$(grep -Fxc "test $case ... ok" "$log")" -eq 1
+        done
     - name: Validate strict auth and SSH Clippy
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash

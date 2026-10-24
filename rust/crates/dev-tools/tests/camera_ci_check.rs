@@ -493,7 +493,7 @@ fn camera_native_peer_policy(job: &Value) -> std::result::Result<(), String> {
             if (step["if"] != TRUSTED_SOURCE
                 && !matches!(
                     step["name"].as_str().unwrap_or(""),
-                    "Deny fork source and require registered local runner"
+                    "Deny fork source and require GitHub-hosted Linux X64"
                         | "Seal private source and index after maintained checks"
                         | "Clean only uploaded owned source alias and target"
                 ))

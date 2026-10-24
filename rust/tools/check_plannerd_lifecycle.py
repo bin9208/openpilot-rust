@@ -16,7 +16,9 @@ def main() -> None:
   for name in ["python", "binary", "artifact", "binding", "source-native", "output"]:
     parser.add_argument("--" + name, type=Path, required=True)
   args = parser.parse_args()
-  for name in ["python", "binary", "artifact", "binding", "source_native", "output"]:
+  # venv 실행 경로를 유지한다. symlink를 풀면 base Python이 venv 의존성을 잃는다.
+  args.python = args.python.absolute()
+  for name in ["binary", "artifact", "binding", "source_native", "output"]:
     setattr(args, name, getattr(args, name).resolve())
   assert shutil.disk_usage(args.output.parent).free >= 25 * 1024**3 + 128 * 1024**2
   args.output.mkdir(parents=True, exist_ok=False)

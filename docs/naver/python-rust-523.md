@@ -1139,3 +1139,15 @@ NN response 경계를 추적한다.208CRC·241held와 source/index/SDK 전후 �
 705948 비교·actual trace DSO mapping·native baseline과 최종 closure는 미수용이다.
 normal 성공으로 기록하거나 expected/수치 허용오차를 바꾸지 않는다. baseline293/3/3284,
 PR343 dev draft와 전체 미완료 상태를 유지한다.
+
+## 2026-10-25 기본 러너 후속 검증
+
+source079의 Fast7leaf+aggregate/Focus는 기본 Ubuntu 러너에서 실제 성공했다.
+logging은13lifecycle 성공 뒤 금지 옵션의 오류 표시 차이 #555에서 실패했으며,
+collision8은8case 성공 뒤 fixture-build model64MiB 경계에서 최종 실패했다.
+한도를 유지하는 PID별 분할 감사와 작은 CLI 오류 보정을 검토했고 실제 후속 검증을 진행한다.
+PR343 head419/mergee882의 docs는 성공했으나 나머지 deep 검증에서 venv 경로·TMPDIR·
+종료 peer ESRCH #556·이전 runner 정책과 source 생성물 mutation #557이 드러나 보정 중이다.
+controls54ULP 차이 #553은 기대값을 유지한 첫 연산 관측으로 좁힌다.
+정확 Actions/ZIP/SHA·완료와 미완료 범위는 `python-rust-523-hosted-535.md`에 기록한다.
+baseline3580의293교체/3부분/3284대기와 전체 #523/#296 미완료 상태는 유지한다.

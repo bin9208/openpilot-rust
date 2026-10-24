@@ -1,6 +1,9 @@
 //! Source-first adversarial tests. UNRUN locally; Actions owns execution.
 use super::*;
-use std::os::unix::fs::{symlink, PermissionsExt};
+use std::os::unix::{
+    ffi::OsStringExt,
+    fs::{symlink, PermissionsExt},
+};
 
 #[test]
 fn dispatch_requires_the_first_literal_not_a_later_argument() {
@@ -17,7 +20,7 @@ fn dispatch_requires_the_first_literal_not_a_later_argument() {
 #[test]
 fn retained_parser_refuses_builder_reference_and_source_hook_options() {
     for forbidden in ["--builder", "--reference", "--source-hook"] {
-        let mut args = vec![
+        let args: Vec<OsString> = vec![
             "--root".into(),
             "/missing/source".into(),
             "--binary".into(),
@@ -31,11 +34,36 @@ fn retained_parser_refuses_builder_reference_and_source_hook_options() {
             "--binary-sha256".into(),
             "b".repeat(64).into(),
         ];
-        args.extend([forbidden.into(), "/must-not-execute".into()]);
-        assert!(run_args(&args)
-            .unwrap_err()
-            .is::<crate::argparse_scan::ArgumentError>());
+        let suffixes: [Vec<OsString>; 3] = [
+            vec![forbidden.into(), "/must-not-execute".into()],
+            vec![format!("{forbidden}=/must-not-execute").into()],
+            vec![OsString::from_vec(
+                [format!("{forbidden}=").into_bytes(), vec![0xff]].concat(),
+            )],
+        ];
+        for suffix in suffixes {
+            let mut rejected = args.clone();
+            rejected.extend(suffix);
+            let error = run_args(&rejected).unwrap_err();
+            assert!(error.is::<crate::argparse_scan::ArgumentError>());
+            assert_eq!(
+                error.to_string(),
+                format!("unrecognized arguments: {forbidden}")
+            );
+        }
     }
+    assert_eq!(
+        run_args(&["--builder".into(), "/must-not-execute".into()])
+            .unwrap_err()
+            .to_string(),
+        "--binary required"
+    );
+    assert!(run_args(&[
+        "--help".into(),
+        "--builder".into(),
+        "/must-not-execute".into()
+    ])
+    .is_ok());
 }
 
 #[test]
