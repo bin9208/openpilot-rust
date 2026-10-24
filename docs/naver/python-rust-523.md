@@ -653,3 +653,22 @@ inventory·process 참조 수용은 성립하지 않았고 실제 삭제는0이�
 제외한다.65,000항목/32MiB metadata 상한은 올리지 않는다. root별 사전 순회 event와 상한 초과
 경로를 남겨 실패 시에도 어느 경계에서 중단됐는지 확인한다. 실제 삭제 후보는 regular nlink1 및
 전 UID inode/path 참조 없음 등 새 최신 관측을 충족해야 하며 현재는 미수용이다.
+
+### 642d01 최신6root 조사 수용과 정확한 SDK4 정리 후보
+
+[40100476281/job120891425564](https://github.com/bin9208/openpilot-rust/actions/runs/40100476281/job/120891425564)는
+source `642d01cc2296790226d7f9058e4f19bca8dc9b1e`에서 성공했다. artifact12563005351
+(2,098,652B, SHA256 `81cd3b7e8fcd4c6e917ac90eb05d26c0d4e85792b2e2e812ad93d9ac9f85acc9`)의
+18CRC를 부모가 감사했다. inner `cache-inventory.json`7,698,013B의 SHA256은
+`cf0b7bfe33614bd8898d6da694d7ae67c5666279e3e2980285aad7340fdd01bf`다.
+
+hRmquO/s9WqUE/Rt5Jlt/eQd1Pi의 old policy SDK는 각각187항목/regular161이며 모든644regular가
+nlink1이다. 합계 allocated2,473,824,256B이며 보호 root의 inode와 중복0이다. 전후 전 UID 참조·
+unknown·active compiler가 모두0이고 current SDK321하위항목/regular294 및 shared target도 기록됐다.
+관측 free9,394,921,472B는 해당 시점의 값이다. 제외한4SDK는 여전히 미조사·보호 상태다.
+
+다음 reclaimer는 이 exact ZIP/manifest·원본owner/root inode와 각 파일의 metadata/SHA를 새로
+대조한 뒤 해당4SDK만 지운다. 각 삭제 직전 전 UID 참조를 다시 확인하고 current SDK root 자체와
+전체 SDK/source/proof/shared ELF·DSO를 retained 전후에 대조한다. 원본compiler를 보유한4o8uWv와
+다른3SDK·current source/SDK/입력/증거는 정리 대상이 아니다. 새metadata 성장128MiB admission을
+유지한다. 현재는 준비 후보이고 실제 삭제·새 free·controls native109 수용은 아직0이다.

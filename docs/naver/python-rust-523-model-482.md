@@ -473,3 +473,16 @@ synthetic 큰 입력/offset/EOF/동일 크기 변조·truncate/동일 bytes 교�
 consumer compile을 확인한다. 로컬은 repository edition2021 rustfmt·diff만 성공했다.
 실제72MB 원본의 새 issuer 통과와 ISA/수치·전체 모델 수용은 아직 미실행이다. current source/ELF
 binding은 새 소스로 발급해야 하며 옛 receipt의 current 자격을 자동 상속하지 않는다.
+
+### 9c95 실제 instruction 및 현재 CPU 확인
+
+[40098470418/job120885554504](https://github.com/bin9208/openpilot-rust/actions/runs/40098470418/job/120885554504)는
+원본triplet 성공 후 ip0x14c의 `EVEX_Vpbroadcastd_xmm_k1z_r32`, bytes `62 f2 7d 08 7c d6`,
+CPUID `[AVX512VL, AVX512F]`에서 거부됐다. 같은 job의 자연 `lscpu`는 i9-13900이며 OS feature에
+AVX512가 없다. 이 cached image는 현재 host에서 실행 수용할 수 없다. ISA allowlist와 CPU/target을
+바꾸거나 불가 명령을 실행하지 않는다. actual generated/model execution은0이다.
+
+artifact12562433455(5,423,678B,SHA256 `464cda9216eb0671f9cfdaa91a024275352d8d6eff193681665eb0bc4694800d`)의
+51CRC와 source/index/SDK 전후4쌍을 부모가 확인했다. 기존ISA5/roster1/Clippy/두consumer compile은
+성공했으나 수치5건과 전체모델 수용은 계속 false다. 원본이미지/동작 기준을 보존한 다른 모델
+검증 경계와 나머지 개발도구 전환을 이어간다.

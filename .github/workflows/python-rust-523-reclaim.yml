@@ -7,6 +7,7 @@ name: Python Rust 523 unused compiler cache recovery
     - .github/workflows/python-rust-523-reclaim.yml
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: python-rust-523-cache-recovery
   cancel-in-progress: false
@@ -24,76 +25,166 @@ jobs:
       shell: bash
       env:
         SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-      run: 'test "${SOURCE_ALLOWED:-}" = true || { echo ''Fork PR source denied on persistent bin-actions'' >&2; exit 1; }
-
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
         set -euo pipefail
-
         test "$RUNNER_NAME" = bin-actions
-
         test "$RUNNER_ENVIRONMENT" = self-hosted
-
         test "$RUNNER_ARCH" = X64
-
         evidence=$(mktemp -d "$RUNNER_TEMP/python-rust-523-reclaim.XXXXXX")
+        printf '%s:%s:%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_JOB" > "$evidence/owner"
+        printf 'RECLAIM_EVIDENCE=%s\n' "$evidence" >> "$GITHUB_ENV"
 
-        printf ''%s:%s:%s\n'' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_JOB" > "$evidence/owner"
-
-        printf ''RECLAIM_EVIDENCE=%s\n'' "$evidence" >> "$GITHUB_ENV"
-
-        '
-    - name: Remove only inventoried obsolete policy caches and Rust link intermediates
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$GITHUB_EVENT_NAME" = push
+        test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
+        test "$RUNNER_OS" = Linux
+    - name: Remove exactly four unused policy SDK caches from the successful readonly inventory
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       shell: bash
-      run: "set -euo pipefail\npython3 - <<'PY'\nimport hashlib,json,os,re,shutil,stat,subprocess\nfrom pathlib\
-        \ import Path\nproof=Path(os.environ['RECLAIM_EVIDENCE'])\nshared=Path('/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust')\n\
-        expected_source='e0ef927ebb4010996feaf52137611cdf2e2c3b86'\nassert subprocess.check_output(['git','-C',str(shared),'rev-parse','HEAD'],text=True).strip()==expected_source\n\
-        assert not subprocess.check_output(['git','-C',str(shared),'status','--porcelain=v1','-uno'])\ncontexts=[\n\
-        \  (Path('/tmp/openpilot-ci.hRmquO'),285821,'39876347459:1:routing-policy'),\n  (Path('/tmp/openpilot-ci.s9WqUE'),176810,'39875010264:1:routing-policy'),\n\
-        \  (Path('/tmp/openpilot-ci.Rt5Jlt'),134388,'39871081170:1:routing-policy'),\n  (Path('/tmp/openpilot-ci.eQd1Pi'),3042742,'39892674289:1:routing-policy'),\n\
-        ]\ndef directory(path, inode=None):\n  s=path.lstat()\n  assert stat.S_ISDIR(s.st_mode) and s.st_uid==os.getuid()\
-        \ and not path.is_symlink(),str(path)\n  assert path.resolve()==path,str(path)\n  if inode is not None:\
-        \ assert (s.st_dev,s.st_ino)==(64525,inode),str(path)\n  return s\nfor root,inode,owner in contexts:\n \
-        \ directory(root,inode)\n  marker=root/'owner'\n  assert stat.S_ISREG(marker.lstat().st_mode) and marker.read_text().strip()==owner\n\
-        target=shared/'rust/target'\ndirectory(target,396387)\nremovable=[]\nfor root,_,_ in contexts:\n  for path\
-        \ in [root/'target',root/'cargo-home/registry']:\n    if path.exists(): directory(path);removable.append(path)\n\
-        pip=Path('/home/actions/.cache/pip/http-v2')\nif pip.exists(): directory(pip);removable.append(pip)\nintermediates=[]\n\
-        deps=target/'debug/deps'\ndirectory(deps)\nfor path in deps.iterdir():\n  s=path.lstat()\n  if stat.S_ISREG(s.st_mode)\
-        \ and re.fullmatch(r'lib[A-Za-z0-9_]+-[0-9a-f]{16}\\.(?:rlib|rmeta)',path.name):\n    assert s.st_uid==os.getuid()\n\
-        \    intermediates.append(path)\nprotected=[str(p) for p in removable+intermediates]\ndef idle():\n  # Read-only\
-        \ root inspection includes all UIDs; unreadable processes reject cleanup.\n  guard=\"import json,os\\nfrom\
-        \ pathlib import Path\\nprotected=json.load(__import__('sys').stdin)\\nfor proc in Path('/proc').iterdir():\\\
-        n  if not proc.name.isdigit() or int(proc.name)==os.getpid():continue\\n  try:\\n    comm=(proc/'comm').read_text().strip()\\\
-        n    assert comm not in {'cargo','rustc','rustdoc','gcc','g++','cc','cc1','cc1plus','clang','clang++','ld','ld.lld'},comm\\\
-        n    links=[proc/'cwd',proc/'exe']+list((proc/'fd').iterdir())\\n    for link in links:\\n      try:value=os.readlink(link).removesuffix('\
-        \ (deleted)')\\n      except FileNotFoundError:continue\\n      assert not any(value==p or value.startswith(p+'/')\
-        \ for p in protected),(proc.name,value)\\n    for line in (proc/'maps').read_text().splitlines():\\n   \
-        \   fields=line.split(None,5)\\n      if len(fields)==6:\\n        value=fields[5].removesuffix(' (deleted)')\\\
-        n        assert not any(value==p or value.startswith(p+'/') for p in protected),(proc.name,value)\\n  except\
-        \ (FileNotFoundError,ProcessLookupError):continue\\n\"\n  subprocess.run(['sudo','-n','python3','-c',guard],input=json.dumps(protected),text=True,check=True)\n\
-        def digest(path):\n  h=hashlib.sha256()\n  with path.open('rb') as f:\n    for block in iter(lambda:f.read(1024*1024),b''):h.update(block)\n\
-        \  return h.hexdigest()\ndef retained():\n  result={}\n  roots=[shared/'rust/target']+[r for r,_,_ in contexts]\n\
-        \  for root in roots:\n    for base,dirs,files in os.walk(root,followlinks=False):\n      dirs[:]=[d for\
-        \ d in dirs if str(Path(base)/d) not in protected]\n      for name in list(dirs):\n        path=Path(base)/name\n\
-        \        metadata=path.lstat()\n        if stat.S_ISLNK(metadata.st_mode):\n          result[str(path)]=['directory-symlink',os.readlink(path)]\n\
-        \          dirs.remove(name)\n        else:result[str(path)]=['directory',metadata.st_mode,metadata.st_ino]\n\
-        \      for name in files:\n        path=Path(base)/name\n        if str(path) in protected:continue\n  \
-        \      s=path.lstat()\n        if stat.S_ISLNK(s.st_mode):result[str(path)]=['symlink',os.readlink(path)]\n\
-        \        elif stat.S_ISREG(s.st_mode):result[str(path)]=[s.st_mode,s.st_size,digest(path)]\n        else:result[str(path)]=['special',s.st_mode,s.st_rdev,s.st_ino]\n\
-        \  return result\nidle()\nbefore=retained()\n(proof/'retained-before.json').write_text(json.dumps(before,sort_keys=True))\n\
-        (proof/'free-before.json').write_text(json.dumps(shutil.disk_usage(shared)._asdict()))\nplan=[{'path':str(p),'identity':[p.lstat().st_dev,p.lstat().st_ino],'type':'tree'}\
-        \ for p in removable]\nplan += [{'path':str(p),'identity':[p.lstat().st_dev,p.lstat().st_ino],'type':'intermediate'}\
-        \ for p in intermediates]\n(proof/'plan.json').write_text(json.dumps(plan,sort_keys=True))\nassert shutil.rmtree.avoids_symlink_attacks\n\
-        idle()\nwith (proof/'journal.jsonl').open('w',buffering=1) as journal:\n  for item in plan:\n    path=Path(item['path']);s=path.lstat()\n\
-        \    assert [s.st_dev,s.st_ino]==item['identity']\n    journal.write(json.dumps({'intent':item})+'\\n')\n\
-        \    if item['type']=='tree':shutil.rmtree(path)\n    else:path.unlink()\n    assert not path.exists() and\
-        \ not path.is_symlink()\n    journal.write(json.dumps({'removed':str(path)})+'\\n')\nafter=retained()\n\
-        (proof/'retained-after.json').write_text(json.dumps(after,sort_keys=True))\nassert before==after,'retained\
-        \ source/proof/toolchains/binaries changed'\nassert subprocess.check_output(['git','-C',str(shared),'rev-parse','HEAD'],text=True).strip()==expected_source\n\
-        assert not subprocess.check_output(['git','-C',str(shared),'status','--porcelain=v1','-uno'])\n(proof/'free-after.json').write_text(json.dumps(shutil.disk_usage(shared)._asdict()))\n\
-        (proof/'result.json').write_text(json.dumps({'removed_paths':len(plan),'retained_files':len(after),'source':expected_source,'scope':'obsolete\
-        \ policy target/registry, pip HTTP downloads and Rust rlib/rmeta only'}))\nPY\n"
+      run: |
+        set -euo pipefail
+        available=$(df -PB1 "$RECLAIM_EVIDENCE" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        ((available >= 128 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_metadata_growth_bytes":134217728}\n' "$available" > "$RECLAIM_EVIDENCE/metadata-growth.json"
+        prior="$RECLAIM_EVIDENCE/capacity-642d01.zip"
+        gh api repos/bin9208/openpilot-rust/actions/artifacts/12563005351/zip > "$prior"
+        test "$(stat -c '%s' -- "$prior")" = 2098652
+        printf '81cd3b7e8fcd4c6e917ac90eb05d26c0d4e85792b2e2e812ad93d9ac9f85acc9  %s\n' "$prior" | sha256sum --check -
+        unzip -t "$prior" > "$RECLAIM_EVIDENCE/prior-crc.txt"
+        unzip -p "$prior" cache-inventory.json > "$RECLAIM_EVIDENCE/cache-inventory.json"
+        export RECLAIM_INVENTORY="$RECLAIM_EVIDENCE/cache-inventory.json"
+        export RECLAIM_INVENTORY_SHA256=cf0b7bfe33614bd8898d6da694d7ae67c5666279e3e2980285aad7340fdd01bf
+        export RECLAIM_INVENTORY_SOURCE=642d01cc2296790226d7f9058e4f19bca8dc9b1e
+        python3 - <<'RECLAIM'
+        # 준비 초안: 실제 최신 inventory pin 입력 없이는 실행하지 않는다. 로컬 실행 금지.
+        import hashlib,json,os,shutil,stat,subprocess,sys
+        from pathlib import Path
+        proof=Path(os.environ['RECLAIM_EVIDENCE'])
+        manifest_path=Path(os.environ['RECLAIM_INVENTORY'])
+        manifest_sha=os.environ['RECLAIM_INVENTORY_SHA256']
+        assert len(manifest_sha)==64 and all(c in '0123456789abcdef' for c in manifest_sha)
+        raw=manifest_path.read_bytes();assert len(raw)<=32*1024**2 and hashlib.sha256(raw).hexdigest()==manifest_sha
+        manifest=json.loads(raw);assert manifest['schema']=='openpilot.runner-cache-readonly.v1' and manifest['physical_deletions']==0
+        assert manifest['source_commit']==os.environ['RECLAIM_INVENTORY_SOURCE']
+        shared=Path('/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust')
+        expected_shared='e0ef927ebb4010996feaf52137611cdf2e2c3b86'
+        sdk=Path('/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu')
+        contexts=[
+         (Path('/tmp/openpilot-ci.hRmquO'),285821,'39876347459:1:routing-policy'),
+         (Path('/tmp/openpilot-ci.s9WqUE'),176810,'39875010264:1:routing-policy'),
+         (Path('/tmp/openpilot-ci.Rt5Jlt'),134388,'39871081170:1:routing-policy'),
+         (Path('/tmp/openpilot-ci.eQd1Pi'),3042742,'39892674289:1:routing-policy'),
+        ]
+        selected={str(root/'rustup-home') for root,_,_ in contexts}
+        assert not any('4o8uWv' in p for p in selected) and str(sdk) not in selected
+        by_path={row['path']:row for row in manifest['roots']};assert len(by_path)==len(manifest['roots'])
+        def identity(s):return [s.st_dev,s.st_ino,s.st_mode,s.st_uid,s.st_gid,s.st_size,s.st_blocks,s.st_nlink,s.st_mtime_ns,s.st_ctime_ns]
+        def fail(error):raise error
+        def digest_file(path,with_prefix=False,expected=None):
+         fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
+         try:
+          before=os.fstat(fd);assert stat.S_ISREG(before.st_mode)
+          assert expected is None or identity(before)==expected, 'lstat/held hash FD identity differs'
+          with os.fdopen(fd,'rb',closefd=False) as stream:
+           prefix=stream.read(4).hex();stream.seek(0)
+           value=hashlib.file_digest(stream,'sha256').hexdigest()
+          assert identity(before)==identity(os.fstat(fd))==identity(path.lstat())
+          return (value,prefix) if with_prefix else value
+         finally:os.close(fd)
+        def subtree(root,complete_identity):
+         assert root.resolve(strict=True)==root and root.is_dir() and not root.is_symlink()
+         root_metadata=root.lstat()
+         result={str(root):{'identity':identity(root_metadata) if complete_identity else [root_metadata.st_dev,root_metadata.st_ino,root_metadata.st_mode,root_metadata.st_uid,root_metadata.st_gid],'type':stat.S_IFDIR}};count=0
+         for base,dirs,files in os.walk(root,followlinks=False,onerror=fail):
+          assert len(Path(base).relative_to(root).parts)<=64
+          for name in dirs+files:
+           path=Path(base)/name
+           if any(path==Path(p) or Path(p) in path.parents for p in selected):continue
+           s=path.lstat();count+=1;assert count<=65000
+           item={'identity':identity(s) if complete_identity else [s.st_dev,s.st_ino,s.st_mode,s.st_uid,s.st_gid,s.st_size],'type':stat.S_IFMT(s.st_mode)}
+           if stat.S_ISLNK(s.st_mode):item['target']=os.readlink(path)
+           elif stat.S_ISREG(s.st_mode):item['sha256']=digest_file(path,expected=identity(s))
+           result[str(path)]=item
+          dirs[:]=[name for name in dirs if not (Path(base)/name).is_symlink() and str(Path(base)/name) not in selected]
+         return result
+        def selected_snapshot(root):
+         assert root.resolve(strict=True)==root and root.is_dir() and not root.is_symlink()
+         result={}
+         for base,dirs,files in os.walk(root,followlinks=False,onerror=fail):
+          for name in dirs+files:
+           path=Path(base)/name;s=path.lstat();item={'identity':identity(s),'type':stat.S_IFMT(s.st_mode)}
+           if stat.S_ISLNK(s.st_mode):item['target']=os.readlink(path)
+           elif stat.S_ISREG(s.st_mode):
+            item['sha256'],item['prefix4_hex']=digest_file(path,True,identity(s))
+           else:assert stat.S_ISDIR(s.st_mode),'Special files cannot enter cache cleanup'
+           result[str(path.relative_to(root))]=item
+          dirs[:]=[name for name in dirs if not (Path(base)/name).is_symlink()]
+         return result
+        # Before any mutation, pin exact owner, current tree, original manifest and whole SDK.
+        assert subprocess.check_output(['git','-C',str(shared),'rev-parse','HEAD'],text=True).strip()==expected_shared
+        assert not subprocess.check_output(['git','-C',str(shared),'status','--porcelain=v1','-uno'])
+        plan=[];selected_inodes={}
+        for root,inode,owner in contexts:
+         s=root.lstat();assert stat.S_ISDIR(s.st_mode) and not root.is_symlink() and root.resolve()==root
+         assert (s.st_dev,s.st_ino,s.st_uid)==(64525,inode,os.getuid())
+         marker=root/'owner';assert stat.S_ISREG(marker.lstat().st_mode) and marker.read_text().strip()==owner
+         path=root/'rustup-home';row=by_path[str(path)]
+         assert row['role']=='old-policy' and not row.get('absent',False)
+         assert identity(path.lstat())==row['root_identity'] and path.lstat().st_uid==os.getuid()
+         assert selected_snapshot(path)==row['entries'],'Cached SDK changed after readonly inventory'
+         for item in [dict(identity=row['root_identity'])]+list(row['entries'].values()):
+          info=item['identity']
+          if stat.S_ISREG(info[2]):assert info[7]==1, 'Hardlinked SDK files remain protected'
+          selected_inodes.setdefault(f'{info[0]}:{info[1]}',[]).append(str(path))
+         plan.append({'path':str(path),'identity':row['root_identity'],'owner':owner})
+        # Any inode also appearing in a protected manifest root is retained, including cross-root hardlinks.
+        for row in manifest['roots']:
+         if row['path'] in selected or row.get('absent'):continue
+         for item in [dict(identity=row['root_identity'])]+list(row['entries'].values()):
+          info=item['identity'];assert f'{info[0]}:{info[1]}' not in selected_inodes,('Protected hardlink alias',row['path'])
+        reader="import json,os,sys\nfrom pathlib import Path\nrequest=json.load(sys.stdin);roots=request['roots'];inodes=request['inodes']\nresult={'references':[],'unknown_processes':[],'active_compilers':[]}\ndef matched(pid,kind,value,device=None,inode=None):\n found={root for root in roots if value==root or value.startswith(root+'/')}\n if device is not None:found.update(inodes.get(f'{device}:{inode}',[]))\n for root in sorted(found):result['references'].append({'pid':pid,'root':root,'kind':kind})\nfor proc in Path('/proc').iterdir():\n if not proc.name.isdigit() or int(proc.name)==os.getpid():continue\n try:\n  comm=(proc/'comm').read_text().strip()\n  if comm in {'cargo','rustc','rustdoc','gcc','g++','cc','cc1','cc1plus','clang','clang++','ld','ld.lld'}:result['active_compilers'].append({'pid':int(proc.name),'comm':comm})\n  for link in [proc/'cwd',proc/'exe']+list((proc/'fd').iterdir()):\n   try:\n    value=os.readlink(link).removesuffix(' (deleted)');info=link.stat()\n   except FileNotFoundError:continue\n   matched(int(proc.name),'fd' if link.parent.name=='fd' else link.name,value,info.st_dev,info.st_ino)\n  for line in (proc/'maps').read_text().splitlines():\n   fields=line.split(None,5)\n   if len(fields)>=5:\n    major,minor=(int(part,16) for part in fields[3].split(':'));device=os.makedev(major,minor)\n    matched(int(proc.name),'map',fields[5].removesuffix(' (deleted)') if len(fields)==6 else '',device,int(fields[4]))\n except (FileNotFoundError,ProcessLookupError):continue\n except (PermissionError,OSError) as error:result['unknown_processes'].append({'pid':int(proc.name),'error_type':type(error).__name__})\nresult['complete_reference_scan']=not result['unknown_processes']\nprint(json.dumps(result,sort_keys=True))\n"
+        def idle(label):
+         p=subprocess.run(['sudo','-n',sys.executable,'-I','-B','-S','-c',reader],input=json.dumps({'roots':sorted(selected),'inodes':selected_inodes}),text=True,capture_output=True,check=True)
+         data=json.loads(p.stdout);(proof/f'processes-{label}.json').write_text(json.dumps(data,indent=2)+'\n')
+         assert data['complete_reference_scan'] and not data['unknown_processes'] and not data['active_compilers'] and not data['references'],'Cache is used or reference state is unknown'
+        def retained():
+         result={}
+         for root in [shared/'rust/target',sdk]+[r for r,_,_ in contexts]:
+          result.update(subtree(root,root==sdk))
+          assert len(result)<=65000, 'Protected retained roster bound'
+         return result
+        idle('before')
+        before=retained();before_json=json.dumps(before,sort_keys=True,separators=(',',':'))+'\n';assert len(before_json.encode())<=32*1024**2
+        (proof/'retained-before.json').write_text(before_json)
+        (proof/'free-before.json').write_text(json.dumps(shutil.disk_usage(shared)._asdict())+'\n')
+        (proof/'plan.json').write_text(json.dumps({'paths':plan,'inventory_sha256':manifest_sha,'inventory_source':manifest['source_commit'],'source_commit':os.environ['GITHUB_SHA'],'scope':'exact four obsolete policy SDK homes only'},indent=2)+'\n')
+        idle('pre-delete')
+        assert shutil.rmtree.avoids_symlink_attacks
+        with (proof/'journal.jsonl').open('x') as journal:
+         for item in plan:
+          path=Path(item['path']);assert identity(path.lstat())==item['identity']
+          assert selected_snapshot(path)==by_path[str(path)]['entries']
+          idle('immediately-before-'+path.parent.name)
+          journal.write(json.dumps({'intent':item})+'\n');journal.flush();os.fsync(journal.fileno())
+          shutil.rmtree(path)
+          assert not os.path.lexists(path)
+          journal.write(json.dumps({'removed':str(path)})+'\n');journal.flush();os.fsync(journal.fileno())
+        after=retained();after_json=json.dumps(after,sort_keys=True,separators=(',',':'))+'\n';assert len(after_json.encode())<=32*1024**2
+        (proof/'retained-after.json').write_text(after_json)
+        assert before==after,'Protected source/proof/SDK/ELF/DSO changed'
+        assert subprocess.check_output(['git','-C',str(shared),'rev-parse','HEAD'],text=True).strip()==expected_shared
+        assert not subprocess.check_output(['git','-C',str(shared),'status','--porcelain=v1','-uno'])
+        (proof/'free-after.json').write_text(json.dumps(shutil.disk_usage(shared)._asdict())+'\n')
+        (proof/'result.json').write_text(json.dumps({'removed_sdk_homes':len(plan),'retained_entries':len(after),'source_commit':os.environ['GITHUB_SHA'],'whole_runtime_acceptance':False},indent=2)+'\n')
+        RECLAIM
+      env:
+        GH_TOKEN: ${{ github.token }}
     - name: Preserve exact cleanup journal and retained-file evidence
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.RECLAIM_EVIDENCE != '') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.RECLAIM_EVIDENCE
+        != '') }}
       uses: actions/upload-artifact@v6
       with:
         name: python-rust-523-reclaim-${{ github.run_id }}
