@@ -252,6 +252,7 @@ legacy_alias() {
 legacy_runtime2() {
   local prior=$CI_JOB_TEMP/proof/logging receipt log role selected actual identity hash row path prior_fd
   local name kind src tested n i cxx queried reference json11_prefix selector started ended
+  local signal label expected_exit remaining command_started command_ended case_root
   phase=legacy-reuse-admission
   export PATH="$sdk:/usr/bin:/bin"
   test "$CARGO_HOME" = "$CI_JOB_TEMP/cargo-home"
@@ -343,7 +344,7 @@ legacy_runtime2() {
   elf builder "$builder"
   for path in "$source/tools/ci/logging_retained_549.sh" "$source/.github/workflows/python-rust-523-logging.yml"; do hold "$path"; done
   for path in /usr/bin/jq /usr/bin/git /usr/bin/strace /usr/bin/timeout; do elf "tool-$(basename "$path")" "$path"; done
-  for path in /usr/bin/c++ /usr/bin/curl /usr/bin/as /usr/bin/ld; do legacy_alias "$path"; done
+  for path in /usr/bin/bash /usr/bin/awk /usr/bin/c++ /usr/bin/curl /usr/bin/as /usr/bin/ld; do legacy_alias "$path"; done
   cxx=$(readlink -e /usr/bin/c++)
   for name in cc1plus collect2 as ld; do
     run "compiler-$name" 30 "${runtime[@]}" "$cxx" "-print-prog-name=$name"
@@ -402,16 +403,58 @@ legacy_runtime2() {
   selector=actual_cli_int_term_reap_held_producer_and_preserve_runtime_foreign_replacement
   legacy_env=(NATIVE_LOGGING_TEST_BINARY="$probe" NATIVE_LOGGING_TEST_BUILDER="$builder" NATIVE_LOGGING_TEST_REFERENCE="$reference"
     NATIVE_LOGGING_LIFECYCLE_EVIDENCE="$proof/lifecycle" NATIVE_LOGGING_LIFECYCLE_RESUME=39833849895)
-  printf '%s\0' "${runtime[@]}" "${legacy_env[@]}" "$fixture" --ignored --exact "$selector" --test-threads=1 --color=never > "$proof/fixture-command.argv0"
   read -r started _ < /proc/uptime
-  run legacy-runtime2 600 "${runtime[@]}" "${legacy_env[@]}" /usr/bin/strace --seccomp-bpf --kill-on-exit -ff -ttt -x -v -s 65536 \
-    -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 \
-    -o "$proof/trace/legacy-runtime2" "$fixture" --ignored --exact "$selector" --test-threads=1 --color=never
+  for signal in INT TERM; do
+    label=legacy-runtime2-${signal,,}
+    expected_exit=130; [[ $signal != TERM ]] || expected_exit=143
+    find -P "$proof/lifecycle" -mindepth 1 -maxdepth 1 -print0 | LC_ALL=C sort -z > "$proof/$label.roots.before.bin"
+    printf '%s\0' "${runtime[@]}" "${legacy_env[@]}" "NATIVE_LOGGING_LIFECYCLE_SIGNAL=$signal" \
+      "$fixture" --ignored --exact "$selector" --test-threads=1 --color=never > "$proof/fixture-command-${signal,,}.argv0"
+    read -r command_started _ < /proc/uptime
+    remaining=$(/usr/bin/awk -v start="$started" -v now="$command_started" 'BEGIN {
+      if (start!~/^[0-9]+[.][0-9]+$/ || now!~/^[0-9]+[.][0-9]+$/ || now<start || now-start>=600) exit 1;
+      printf "%.2f",600-(now-start)
+    }')
+    # run의 admission 뒤 자식 시작 시점에 다시 잔여 시간을 계산한다. 두 case에600초씩 주지 않는다.
+    run "$label" "$remaining" "${runtime[@]}" "${legacy_env[@]}" "NATIVE_LOGGING_LIFECYCLE_SIGNAL=$signal" \
+      /usr/bin/bash --noprofile --norc -euo pipefail -c '
+        read -r now _ < /proc/uptime
+        remaining=$(/usr/bin/awk -v start="$1" -v now="$now" '\''BEGIN {
+          if (start!~/^[0-9]+[.][0-9]+$/ || now!~/^[0-9]+[.][0-9]+$/ || now<start || now-start>=600) exit 1;
+          printf "%.2f",600-(now-start)
+        }'\'')
+        printf "%s\n" "$remaining" > "$2"
+        shift 2
+        exec /usr/bin/timeout --signal=TERM --kill-after=30s "${remaining}s" "$@"
+      ' legacy-runtime2-deadline "$started" "$proof/$label.bound-seconds.txt" \
+      /usr/bin/strace --seccomp-bpf --kill-on-exit -ff -ttt -x -v -s 65536 \
+      -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 \
+      -o "$proof/trace/$label" "$fixture" --ignored --exact "$selector" --test-threads=1 --color=never
+    read -r command_ended _ < /proc/uptime
+    [[ $(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/build/$label.stdout") == 1 ]]
+    [[ $(grep -Fxc "test $selector ... ok" "$proof/build/$label.stdout") == 1 ]]
+    find -P "$proof/lifecycle" -mindepth 1 -maxdepth 1 -print0 | LC_ALL=C sort -z > "$proof/$label.roots.after.bin"
+    LC_ALL=C comm -z -13 "$proof/$label.roots.before.bin" "$proof/$label.roots.after.bin" > "$proof/$label.new-root.bin"
+    mapfile -d '' -t case_roots < "$proof/$label.new-root.bin"
+    [[ ${#case_roots[@]} == 1 ]]
+    case_root=${case_roots[0]}
+    [[ $case_root == "$proof/lifecycle/logging-lifecycle-"?????? && ${case_root##*/} =~ ^logging-lifecycle-[A-Za-z0-9]{6}$ && \
+      -d $case_root && ! -L $case_root && $(realpath -e "$case_root") == "$case_root" && $(stat -c '%u:%a' "$case_root") == "$UID:700" ]]
+    legacy_file "$case_root/case.json"
+    jq -e --argjson exit "$expected_exit" '.mode=="runtime" and .replacement=="directory" and .returncode==$exit and
+      .held.endpoint=="runtime" and .actual_producer_reaped==true and .owned_directory_removed==true' \
+      "$case_root/case.json" > "$proof/$label.case.check"
+    jq -cn --arg source "$GITHUB_SHA" --arg label "$label" --arg signal "$signal" --arg selector "$selector" \
+      --arg root "$case_root" --argjson exit "$expected_exit" --argjson start "$command_started" --argjson end "$command_ended" \
+      '{source_commit:$source,label:$label,signal:$signal,selector:$selector,case_root:$root,returncode:$exit,
+        libtest_passed:1,logical_cases:1,start_seconds:$start,end_seconds:$end}' >> "$proof/commands.jsonl"
+  done
   read -r ended _ < /proc/uptime
   awk -v start="$started" -v end="$ended" 'BEGIN {exit !(start~/^[0-9]+[.][0-9]+$/ && end~/^[0-9]+[.][0-9]+$/ && end>=start && end-start<=600)}'
   printf '%s\t%s\n' "$started" "$ended" > "$proof/runtime2-monotonic.tsv"
-  [[ $(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/build/legacy-runtime2.stdout") == 1 ]]
-  [[ $(grep -Fxc "test $selector ... ok" "$proof/build/legacy-runtime2.stdout") == 1 ]]
+  jq -se --arg source "$GITHUB_SHA" 'length==2 and ([.[].signal]==["INT","TERM"]) and
+    ([.[].label]==["legacy-runtime2-int","legacy-runtime2-term"]) and ([.[].case_root]|unique|length)==2 and
+    all(.[]; .source_commit==$source and .libtest_passed==1 and .logical_cases==1)' "$proof/commands.jsonl" > "$proof/commands.check"
   find -P "$proof/lifecycle" -mindepth 1 -maxdepth 1 -print0 > "$proof/case-roots.bin"
   mapfile -d '' -t case_roots < "$proof/case-roots.bin"
   [[ ${#case_roots[@]} == 2 ]]
@@ -431,7 +474,7 @@ legacy_runtime2() {
   cmp "$proof/reference-before.roster" "$proof/reference-after.roster"
   cmp "$proof/reference-before.sha256" "$proof/reference-after.sha256"
   mkdir "$proof/inspect"
-  for name in reference-build legacy-runtime2; do
+  for name in reference-build legacy-runtime2-int legacy-runtime2-term; do
     run "inspect-$name" 180 "${runtime[@]}" "$checker" inspect-trace-summary --directory "$proof/trace" --prefix "$name" --output "$proof/inspect/$name.json"
     jq -e '.schema==2 and .raw_immutable==true and .lexically_checked_all_events==true and .requires_exit_status_zero==true and
       .full_event_index==false and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and
@@ -443,7 +486,8 @@ legacy_runtime2() {
   phase=legacy-runtime2-observed
   jq -n --arg source "$GITHUB_SHA" --arg selector "$selector" --arg reference "$reference" \
     --arg reference_sha "$(sha256sum "$reference" | cut -d' ' -f1)" \
-    '{schema:1,mode:"legacy-runtime2",source_commit:$source,selector:$selector,logical_cases:2,libtest_passed:1,
+    '{schema:1,mode:"legacy-runtime2",source_commit:$source,selector:$selector,logical_cases:2,logical_commands:2,libtest_passed:2,
+      signal_order:["INT","TERM"],trace_prefixes:["legacy-runtime2-int","legacy-runtime2-term"],aggregate_limit_seconds:600,
       resume:"39833849895",fresh_reference:$reference,fresh_reference_sha256:$reference_sha,
       prior_fd_continuity_claimed:false,old17_reexecuted:false,collision8_reexecuted:false,retained14_reexecuted:false,
       closed_pid:false,closed_cwd:false,closed_fd:false,closed_dso:false,old27_admitted:false,R4_acceptance:false,retirement_credit:0}' > "$proof/complete.json"

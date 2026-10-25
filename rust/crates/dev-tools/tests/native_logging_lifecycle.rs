@@ -39,6 +39,18 @@ fn resume_third_run() -> bool {
         value => panic!("unknown logging lifecycle resume receipt: {value:?}"),
     }
 }
+fn resume_signal_selection(resume: bool) -> Option<Signal> {
+    let value = std::env::var_os("NATIVE_LOGGING_LIFECYCLE_SIGNAL")?;
+    assert!(
+        resume,
+        "logging lifecycle signal selection requires resume receipt"
+    );
+    match value.to_str() {
+        Some("INT") => Some(Signal::INT),
+        Some("TERM") => Some(Signal::TERM),
+        _ => panic!("unknown logging lifecycle signal selection: {value:?}"),
+    }
+}
 fn command(output: &Path) -> Command {
     command_reference(output, true)
 }
@@ -253,6 +265,7 @@ fn argument_errors_precede_any_child_execution() {
 #[ignore = "requires actual independently built C++ and Rust logging providers"]
 fn actual_cli_int_term_reap_held_producer_and_preserve_runtime_foreign_replacement() {
     let resume = resume_third_run();
+    let selected_signal = resume_signal_selection(resume);
     // Two initial-C++ cases + twelve runtime-Rust cases. Default runtime paths
     // are checked both with the original node and with every foreign node kind.
     for mode in ["first", "runtime"] {
@@ -271,6 +284,9 @@ fn actual_cli_int_term_reap_held_producer_and_preserve_runtime_foreign_replaceme
                 continue;
             }
             for signal in [Signal::INT, Signal::TERM] {
+                if selected_signal.is_some_and(|selected| selected != signal) {
+                    continue;
+                }
                 let (root, output, mut checker, held) = held(mode);
                 pidfd_send_signal(checker.peer.as_ref().unwrap(), Signal::STOP).unwrap();
                 let (path, private) = paths(mode, &output, &held);

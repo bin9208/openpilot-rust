@@ -322,7 +322,7 @@ jobs:
         set -euo pipefail
         umask 077
         # 첫 candidate의 실제 결과를 수집한다. old27/P2/closed-trace/caller/absence 수용은 별도다.
-        printf '%s  %s\n' 4b9c87534731c123be6836401acd84cf37d3a80f3ac103bd7f76b4588c097ffe tools/ci/logging_retained_549.sh | sha256sum --check --strict -
+        printf '%s  %s\n' daddac5fbbe3ada80386a1ad1853b1a5ab4f35e864a0ce7ff00ec9cb53d50fe0 tools/ci/logging_retained_549.sh | sha256sum --check --strict -
         printf '%s  %s\n' 23efe5d4bf093d793e1943c49952c75311711f8420bea5f2438da2762fb03638 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check --strict -
         /usr/bin/timeout --signal=TERM --kill-after=180s 60m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh
         jq -e '.schema==1 and .states==8 and .status_pairs==8 and .authored_status_equal==true and .fs_check_passed==true and .fixture_cap_bytes==16777216 and .source_prime==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-cache-554/complete.json"
@@ -353,11 +353,11 @@ jobs:
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
-        printf '%s  %s\n' 4b9c87534731c123be6836401acd84cf37d3a80f3ac103bd7f76b4588c097ffe tools/ci/logging_retained_549.sh | sha256sum --check --strict --quiet -
+        printf '%s  %s\n' daddac5fbbe3ada80386a1ad1853b1a5ab4f35e864a0ce7ff00ec9cb53d50fe0 tools/ci/logging_retained_549.sh | sha256sum --check --strict --quiet -
         /usr/bin/timeout --signal=TERM --kill-after=180s 30m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh legacy-runtime2
         proof=$CI_JOB_TEMP/proof/logging-legacy-runtime2
         jq -e '.schema==1 and .mode=="legacy-runtime2" and .phase=="legacy-runtime2-observed" and .exit_code==0 and .source_sdk_final_exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .provider_alias_final_exit_code==0 and .resource_final_exit_code==0 and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$proof/outcome.json"
-        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .mode=="legacy-runtime2" and .source_commit==$source and .logical_cases==2 and .libtest_passed==1 and .resume=="39833849895" and .selector=="actual_cli_int_term_reap_held_producer_and_preserve_runtime_foreign_replacement" and .prior_fd_continuity_claimed==false and .old17_reexecuted==false and .collision8_reexecuted==false and .retained14_reexecuted==false and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$proof/complete.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .mode=="legacy-runtime2" and .source_commit==$source and .logical_cases==2 and .logical_commands==2 and .libtest_passed==2 and .signal_order==["INT","TERM"] and .trace_prefixes==["legacy-runtime2-int","legacy-runtime2-term"] and .aggregate_limit_seconds==600 and .resume=="39833849895" and .selector=="actual_cli_int_term_reap_held_producer_and_preserve_runtime_foreign_replacement" and .prior_fd_continuity_claimed==false and .old17_reexecuted==false and .collision8_reexecuted==false and .retained14_reexecuted==false and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$proof/complete.json"
     - name: Seal source and index after all attempted contracts
       id: source_final
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
@@ -425,7 +425,7 @@ jobs:
       env:
         UPLOAD_ID: ${{ steps.proof_upload.outputs.artifact-id }}
         UPLOAD_DIGEST: ${{ steps.proof_upload.outputs.artifact-digest }}
-        CURRENT_HELPER_SHA256: 4b9c87534731c123be6836401acd84cf37d3a80f3ac103bd7f76b4588c097ffe
+        CURRENT_HELPER_SHA256: daddac5fbbe3ada80386a1ad1853b1a5ab4f35e864a0ce7ff00ec9cb53d50fe0
       run: |
         set -euo pipefail
         umask 077
@@ -480,9 +480,9 @@ jobs:
         sha256sum --check --strict --quiet "$replay/policy-output.sha256"
         test ! -e "$replay/archive.zip" && test ! -L "$replay/archive.zip"
         legacy=$proof/logging-legacy-runtime2
-        for leaf in outcome.json complete.json reuse-admission.txt cases.check runtime2-monotonic.tsv fixture-command.argv0 source-after.sha256 index-after.bin sdk-after.roster.bin; do required_file "$legacy/$leaf"; done
+        for leaf in outcome.json complete.json reuse-admission.txt cases.check commands.jsonl commands.check runtime2-monotonic.tsv fixture-command-int.argv0 fixture-command-term.argv0 legacy-runtime2-int.bound-seconds.txt legacy-runtime2-term.bound-seconds.txt source-after.sha256 index-after.bin sdk-after.roster.bin; do required_file "$legacy/$leaf"; done
         jq -e '.schema==1 and .mode=="legacy-runtime2" and .phase=="legacy-runtime2-observed" and .exit_code==0 and .source_sdk_final_exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .provider_alias_final_exit_code==0 and .resource_final_exit_code==0 and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$legacy/outcome.json"
-        jq -e --arg source "$GITHUB_SHA" '.source_commit==$source and .logical_cases==2 and .libtest_passed==1 and .prior_fd_continuity_claimed==false and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$legacy/complete.json"
+        jq -e --arg source "$GITHUB_SHA" '.source_commit==$source and .logical_cases==2 and .logical_commands==2 and .libtest_passed==2 and .signal_order==["INT","TERM"] and .trace_prefixes==["legacy-runtime2-int","legacy-runtime2-term"] and .aggregate_limit_seconds==600 and .prior_fd_continuity_claimed==false and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$legacy/complete.json"
         cmp "$proof/source-before.sha256" "$legacy/source-after.sha256"
         cmp "$proof/index-before.bin" "$legacy/index-after.bin"
         cmp "$proof/prepared-rust-roster.before.bin" "$legacy/sdk-after.roster.bin"
@@ -539,7 +539,7 @@ jobs:
         while IFS= read -r group; do [[ $group =~ ^[1-9][0-9]*$ ]]; observed_groups[$group]=1; done < "$scratch/groups.txt"
         ((${#observed_groups[@]} > 0 && ${#observed_pids[@]} > 0))
         # legacy2의 두 prefix에는 retained exact15 정책을 적용하지 않는다.
-        for prefix in reference-build legacy-runtime2; do
+        for prefix in reference-build legacy-runtime2-int legacy-runtime2-term; do
           report=$legacy/inspect/$prefix.json
           required_file "$report"
           jq -e --arg prefix "$prefix" '.schema==2 and .prefix==$prefix and .raw_immutable==true and .lexically_checked_all_events==true and .requires_exit_status_zero==true and (.raw_files|length)>0 and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .full_acceptance==false and .retirement_credit==false' "$report" > /dev/null

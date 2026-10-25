@@ -1,7 +1,8 @@
 # #549 shared logging legacy runtime2 집중 후보
 
 2026-10-25 KST. 이 기록은 `tools/ci/logging_retained_549.sh legacy-runtime2`의
-source 구현과 부모 WF 연결 계약을 설명한다. **기능은 GHA UNRUN**이다.
+source 구현과 부모 WF 연결 계약을 설명한다. **현재 INT/TERM 분할 후보는 GHA UNRUN**이다.
+앞선0873 source는 기능2case를 통과했지만 합쳐진 trace의 inspector event 상한에서 실패했다.
 원본2 삭제·old27/R4 승인·retirement credit은0이며 기존 exec 문서는 수정하지 않았다.
 로컬 원본/CLI/테스트/빌드/Clippy/컴파일은 실행하지 않았다.
 
@@ -53,7 +54,8 @@ SDK/registry는 현재 job의 기존 경로를 사용하며 rustup/install/chmod
 새 target을 기존 target 아래 두었으므로 기존 `admit`의 단일 `du -sx`가 두 build 영역을 포함한다.
 기존 target8GiB/proof2GiB/command output512MiB와 실제 free-space admission을 그대로 쓴다.
 두 target의 할당량을 따로 더해 hardlink를 중복 집계하거나 새 target을 집계에서 빼지 않는다.
-실제 성장량·75분 job 내 적합성은 아직 측정되지 않았다. 초과 시 strict failure이며 상한 확대·자동 B 전환은 없다.
+이전0873은 resource final을 통과했지만 현재 분할 후보의 실제 성장량·75분 job 내 적합성은
+새 GHA 판정 대상이다. 초과 시 strict failure이며 상한 확대·자동 B 전환은 없다.
 
 현재 source의 `native_logging_build.rs`, `json11_stage.rs`, `uv.lock`,
 swaglog.cc/h·timing.h·native_logging_reference.cc를 build 전부터 hold한다.
@@ -75,11 +77,13 @@ NATIVE_LOGGING_TEST_BUILDER=이번 current fresh builder
 NATIVE_LOGGING_TEST_REFERENCE=이번 current fresh C++ reference
 NATIVE_LOGGING_LIFECYCLE_EVIDENCE=proof/logging-legacy-runtime2/lifecycle
 NATIVE_LOGGING_LIFECYCLE_RESUME=39833849895
+NATIVE_LOGGING_LIFECYCLE_SIGNAL=INT 또는 TERM
 ```
 
 QA_ESCAPED/retained env·token·임의 Git config를 넘기지 않는다.
 현재 qualification의 fixed-true preload profile을 명시하고, 과거 false receipt를 수정하지 않는다.
-fixture는 기존 Cargo ELF를 아래 exact selector로 한 번만 실행한다.
+fixture는 같은 job에서 새 source로 빌드·hold한 Cargo ELF를 아래 exact selector로
+INT→TERM 순서에 따라 각각1회 실행한다. source0873의 이전 ELF를 현재 선택 지원으로 재명명하지 않는다.
 
 ```text
 actual_cli_int_term_reap_held_producer_and_preserve_runtime_foreign_replacement
@@ -87,8 +91,12 @@ actual_cli_int_term_reap_held_producer_and_preserve_runtime_foreign_replacement
 
 `--ignored --exact ... --test-threads=1 --color=never`를 사용한다.
 RESUME에 따라 **legacy runtime/directory INT·TERM2만** 남는다.
-1 passed/0 failed/0 ignored 요약과 exact test 이름을 요구하고,
-evidence immediate roster가 정확2개의 private case root인지 확인한다.
+test-only signal 선택은 정확 RESUME39833849895에서만 INT/TERM을 허용하며,
+다른 값·non-UTF8·RESUME 밖의 선택은 case 생성/child 실행 전에 거부한다.
+선택 env가 없으면 기존 loop와 assertion의 순서·본문은 그대로다.
+각 command의1 passed/0 failed/0 ignored 요약·exact test 이름과 새 private case root1개를 요구한다.
+command별 argv0/잔여 시간/전후 root roster/정확 signal exit와 `commands.jsonl`2행을 남긴다.
+전체 evidence immediate roster는 정확2개의 private case root이며 명령 순서는 INT→TERM이다.
 각 원문 `case.json`의 runtime/directory, returncode130·143 각1개, runtime endpoint,
 실제 peer reap/owned private directory 제거를 검사한다.
 
@@ -98,10 +106,15 @@ checker130/143·finish20초·foreign dev/ino 보존을 수정하지 않았다.
 원래60초 runtime barrier/15초 hold 및 transport2초도 그대로다.
 추가로 record 측정치에 새20초 기준을 걸지 않고 원래 `Checker::finish`의 bound를 유지한다.
 
-runtime2 selector 한 번에는 **별도600초 aggregate**와 monotonic start/end를 둔다.
+두 runtime2 command 전체에는 **별도600초 aggregate**와 monotonic start/end를 둔다.
+기존 run/admit/hold wrapper를 유지하며 admission 후 자식 시작 시점에 다시 계산한 잔여 시간만
+inner timeout에 준다. TERM에 새600초를 주지 않고 timeout/자식 실패를 그대로 유지한다.
+deadline wrapper의 실제 Bash/awk도 provider alias/ELF/DSO 전후 hold에 추가한다.
 reference build는 그 selector 전의 별도 준비이며 기존 retained14의600초 구간을 밀거나 늘리지 않는다.
 원래 full syscall classes·`-ff -ttt -x -v`·raw read/pread64·EXITKILL/BPF requested를 유지한다.
-reference-build와 runtime2 raw prefix는 같은 strict inspector로 검증한다.
+raw prefix는 `reference-build`, `legacy-runtime2-int`, `legacy-runtime2-term`3개다.
+같은 strict inspector로 각각 검증하며 event100만/file512MiB/raw1GiB/physical lines200만을 유지한다.
+원문 trace를 시간으로 절단하거나 이름만 바꿔 inspector에 넣지 않는다.
 unknown line은 거부하며 activated BPF/closed PID/cwd/FD/DSO/full semantic acceptance를 주장하지 않는다.
 현재 mode는 legacy runtime의 **기능 case2와 lexical/immutable 증거** 후보이고,
 retained 전용 exact15 policy를 legacy runtime에 잘못 적용하거나 collision의 zero-child 정책을 대입하지 않는다.
@@ -116,7 +129,9 @@ provider alias 전후 검사를 시도한다. 원래 command failure는 유지�
   phase가 legacy-runtime2-observed, `exit_code`, `source_sdk_final_exit_code`,
   `source_final_exit_code`, `sdk_final_exit_code`, `held_final_exit_code`,
   `provider_alias_final_exit_code`, `resource_final_exit_code`가 모두0.
-- `complete.json`: current source SHA·exact selector·logical_cases2/libtest_passed1,
+- `complete.json`: current source SHA·exact selector·logical_cases2/logical_commands2/libtest_passed2,
+  signal_order `["INT","TERM"]`,trace_prefixes `["legacy-runtime2-int","legacy-runtime2-term"]`,
+  aggregate_limit_seconds600,
   fresh current reference path/SHA, old17/collision8/retained14 재실행false,
   old27/R4 false·retirement0.
 - 기존 retained `outcome.json`의 성공 및 재사용 receipt/provider pin.
@@ -131,8 +146,10 @@ trusted-source 조건을 유지하며 같은 private source/SDK/Cargo 경로에�
 부모는 이 step에 기존 job75분 안의 유한 outer timeout/회수 정책을 연결해야 한다.
 source_final/SDK final/upload는 실패에도 유지하고 cleanup은 **기존 조건 AND 새 mode 성공**이어야 한다.
 새 proof namespace의 outcome·reuse checks·Cargo JSONL·provider/reference/source/index/SDK seals,
-원문 case2·trace2prefix/summary를 upload/필수파일/실제 raw SHA 검증에 포함해야 한다.
-기존 cleanup의 observed PID 확인에도 두 새 prefix의 raw PID roster를 추가하고,
+원문 case2·trace3prefix/summary를 upload/필수파일/실제 raw SHA 검증에 포함해야 한다.
+기존 single `fixture-command.argv0` 필수파일 대신 `fixture-command-int.argv0`/`fixture-command-term.argv0`,
+`commands.jsonl`/`commands.check`를 요구하고 두 label의 case/원문 stdout·stderr를 함께 보존한다.
+기존 cleanup의 observed PID 확인에는 reference-build와 두 signal prefix의 raw PID roster를 넣고,
 old retained15 전용 policy 파일을 새 legacy prefix에 요구하지 않아야 한다.
 추가 target은 기존 owned source target 안에 있어 기존 source/job root cleanup 범위를 벗어나지 않는다.
 
@@ -146,7 +163,7 @@ case2 실행/strict lexical 성공을 old27/R4/전체 adopted/DSO closure로 승
 새 mode의 C++/Rust compile·기능 case2·실제 provider reuse·상한 적합성·trace 형식·upload/cleanup은
 GHA에서 실행해야 하며 이 문서의 수치는 기대 선택/상한이지 새 성공 결과가 아니다.
 
-source 구현 시 확인한 정적 결과는 다음과 같다.
+초기 mode 구현 시 확인한 정적 결과는 다음과 같다.
 
 - 추가 parser/proof 선택/function/분기/끝의 publication 호출만 제거하면 기존 helper
   **66901B/SHA256 `53f8108dfc715ca59fc0ab1dcd2b16ba20994ec3025f119a35f79e0813d78a3b`**와 byte 동일하다.
@@ -170,4 +187,39 @@ retained의 CPP0 scope로 바꾸거나 원본 비교를 줄이지 않는다. 다
 before/after 두 step fragment와 같다. main source는489,835B에서490,063B다. 구현 문자열을
 중복하는 새 policy test는 추가하지 않고 기존87개 정책·원래 functional 검사와 새 legacy2 actual을
 검증으로 사용한다. 독립 main/helper/WF source 검토 P1/P2 없음과 구문/format/diff만 확인했다.
-현재 source의 실제 caller·2case·75분 내 자원 적합성·최종 cleanup은 모두 GHA UNRUN이다.
+현재 분할 source의 실제 caller·2case·각 prefix 적합성·75분 내 자원·최종 cleanup은 GHA UNRUN이다.
+
+## 0873 실제 실패와 분할 후속의 경계
+
+run40175510298/job121115184471/source `0873be1f5b1453aa162524c0d51321c4edd1e694`는
+early788 replay/default61·14·15정책·4음성을 통과한 뒤 legacy의
+`inspect-legacy-runtime2`에서 `trace event count exceeds bound`로 exit1이었다.
+artifact12592161587은128047493B/SHA256
+`00793eb92146ad044898043249a0c1889200d49b1528234ec8d3e94db839ba3a`,9314CRC다.
+원래 selector1 PASS/2case의130·143/reap/owned directory 제거·foreign 보존 assertion을 통과했다.
+legacy source/SDK/held/provider-alias/resource final0과 job FAIL·cleanup skipped를 구분한다.
+
+단일 legacy prefix는1706 raw files/773392818B/1891940 physical lines였다.
+time census의 두 case 창945935/946005줄은 관측값이며 공통 PID파일3개가 두 창에 걸친다.
+이 원문을 절단하지 않고 새 GHA에서 처음부터 두 collector로 수집한다.
+각 prefix가 다음 runner에서도 상한 안에 드는지는 아직 미수용이며 다시 초과하면 strict FAIL이다.
+
+분할은 기존 fixture의 optional signal 선택/새 guard와 helper legacy mode에만 추가한다.
+없는 선택의 원래 fixture body와 helper default retained projection이 byte 동일함을 source로 확인한다.
+새 test selector/bin/feature/생산 seam/expected는 추가하지 않는다.
+shared WF/Focus/ledger/원본2는 부모 소유이며 이 worker는 편집·stage·commit하지 않았다.
+부모 연결 fragment와 파일별 SHA는 ignored split freeze 기록으로 전달한다.
+
+분할 후보의 정적 검사는 outer/inner Bash-n, rustfmt2021(skip_children), 새·변경 jq4개의
+미실행 branch compile-only 및 diff다. legacy function을 제외한 helper projection은
+74680B/SHA256 `43fc07f66b5b67686fd4d06c1a604c3490d57a55b9a5b9380030f1a966973adc`로
+분할 전과 byte 동일하다. 새 selection function/call/guard만 제거한 fixture 전체도
+기존17504B/SHA256 `95bad9d07aa6d4b471f3842bf5de88675a880c68944d9e051b13ee5c114e8f8b`와 같다.
+선택 없는 기존 assertion을 복사하거나 새 expected를 만들지 않았다. 새 selector 수0,
+기존 core61/fixture 등록 수는 그대로이며 legacy source의 실제 guard/두 prefix 적합성은 GHA UNRUN이다.
+
+
+부모 workflow 연결은 위 동결 fragment에만 한정했다. helper literal3곳, complete의 명령2/각1PASS·
+INT→TERM/합계600초, 추가 argv·bound/commands 원문, reference-build/INT/TERM raw3prefix를 연결했다.
+parsed 전체 workflow model은 이 변경 외 동일하며 cleanup의 원래 성공 AND·owner/root/UID/inode·
+source/SDK/관측 PID/PGID nonlive 조건을 유지한다. 현재 source의 전체 검사와 cleanup은 Actions UNRUN이다.
