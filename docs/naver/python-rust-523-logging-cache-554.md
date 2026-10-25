@@ -206,3 +206,31 @@ true 채택·성능 개선·#554 해결·old27/R4/원본2 퇴역은 이 후보�
 
 로컬은 Bash 문법(heredoc 포함), WF YAML/Bash와 제한 diff만 확인한다. 새 B·lexer/binding·
 시간·회수·전체 gate 기능은 Actions **UNRUN**이다. stage/commit/push는 하지 않는다.
+
+## 2026-10-25 736 실제14 성공과 proof 용량 중단
+
+source `736260cdc6c7c82fe29eed873b1f419f1d291559`의
+[40158864873/job121065967966](https://github.com/bin9208/openpilot-rust/actions/runs/40158864873/job/121065967966)은
+최종 실패지만 기존 false-schema의 **traced lifecycle14가 모두1pass/0fail**로 끝났다.
+실제 runtime_directory_int/term의 전체 backpressure는 각각1.686007976/1.692789912초이며
+원래2초 안이다. 별도 retained-once도 완전한 원문 JSON/wire168을 출력했고 전체1.702020227초였다.
+그 뒤 admission의 proof 실제1,091,203,072B가 cap1,073,741,824B를 넘어 중단됐다.
+full lexical inspection은 미도달이며 전체 R4/퇴역 수용은0이다. 원래 timer/false-schema를 바꾸지 않았다.
+
+artifact12586245137은75,016,896B/SHA256
+`365440d214e6a62dfe01416e60595004e64576a7e5d02d9e58bf4e88184a6dc1`/4,657CRC다.
+source/index·whole SDK/programs 전후는 동일하다. API의 source/SDK 후속 단계도 같은 proof cap을
+마지막에 검사해 실패하므로 단계 전체를 성공으로 쓰지 않는다. held_final/paired_final은0이다.
+Git false→true 단독1쌍은 exit/stdout/stderr/실제 source 봉인이 같았다. raw exec→terminal은
+1.351707220→0.703995943초, event25,450→25,815, PID1→21이다. true가 두 번째인 순서/cache
+영향을 분리하지 못하므로 성능 보장·원인 해결·true 채택은0이다.
+
+### 관측량에 맞춘 operation-specific admission
+
+원시 증거를 버리거나 검사를 줄이지 않고 proof cap만 **2GiB**로 조정한다.
+기존 준비 admission은 이미 build8GiB+proof2GiB인10GiB를 예약하므로 같은 예측과 일치한다.
+helper와 source/SDK final의 세 cap을 함께 맞춘다. 실제 당시 가용 공간은 retained-once 전후
+87,292,370,944→87,052,754,944B였으나 새 실행은 현재 free와 매 단계 admission을 다시 요구한다.
+2초/공유600초·build8GiB·child파일512MiB·trace grammar·원문14/retained/전체 inspection 및
+전후 봉인/업로드/조건부 정리는 그대로다. 사용자의 고정 stop/resume 규칙 제거와 작업별 증가량
+admission에 맞춘 증거 저장량 수정이며 새 기능 성공·전체 완료를 주장하지 않는다.

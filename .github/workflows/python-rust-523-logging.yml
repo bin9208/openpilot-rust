@@ -186,7 +186,7 @@ jobs:
         set -euo pipefail
         umask 077
         # 첫 candidate의 실제 결과를 수집한다. old27/P2/closed-trace/caller/absence 수용은 별도다.
-        printf '%s  %s\n' 7ef44d0427f6dd49ea2c5d53cca9a773ff7b5f4443277272e0c5a2df43064e81 tools/ci/logging_retained_549.sh | sha256sum --check --strict -
+        printf '%s  %s\n' f5afc50c5148d8593980fcfc8d9da6d1581905fa79557bf4d8024ea35cde0b04 tools/ci/logging_retained_549.sh | sha256sum --check --strict -
         /usr/bin/timeout --signal=TERM --kill-after=180s 60m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh
         jq -e '.schema==1 and .states==8 and .status_pairs==8 and .authored_status_equal==true and .fs_check_passed==true and .fixture_cap_bytes==16777216 and .source_prime==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-cache-554/complete.json"
         jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .fs_check_passed==true and .source_prime_statuses==1 and .status_channels_equal==true and .tracked_source_entries_flags_equal==true and .source_config_unchanged==true and .sdk_equal==true and .raw_index_immutable==false and .fixture_child_optional_locks_zero==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-source-cache-554/complete.json"
@@ -212,7 +212,7 @@ jobs:
         git diff --cached --exit-code
         proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
         [[ $proof_bytes =~ ^[0-9]+$ ]]
-        ((proof_bytes <= 1024 * 1024 * 1024))
+        ((proof_bytes <= 2 * 1024 * 1024 * 1024))
     - name: Verify whole prepared private Rust SDK after all attempted logging candidate contracts
       id: prepared_rust_final
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
@@ -224,7 +224,7 @@ jobs:
         "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after
         proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
         [[ $proof_bytes =~ ^[0-9]+$ ]]
-        ((proof_bytes <= 1024 * 1024 * 1024))
+        ((proof_bytes <= 2 * 1024 * 1024 * 1024))
     - name: Retain current source and native logging candidate proof even on failure
       id: proof_upload
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)

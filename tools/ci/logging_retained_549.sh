@@ -51,7 +51,7 @@ admit() {
   [[ $available =~ ^[0-9]+$ && $target_bytes =~ ^[0-9]+$ && $proof_bytes =~ ^[0-9]+$ ]]
   printf '%s\t%s\t%s\t%s\t%s\n' "$label" "$growth_mib" "$available" "$target_bytes" "$proof_bytes" >> "$proof/growth.tsv"
   ((available >= growth_mib * 1024 * 1024 + 512 * 1024 * 1024))
-  ((target_bytes <= 8 * 1024 * 1024 * 1024 && proof_bytes <= 1024 * 1024 * 1024))
+  ((target_bytes <= 8 * 1024 * 1024 * 1024 && proof_bytes <= 2 * 1024 * 1024 * 1024))
 }
 run() {
   local label=$1 seconds=$2 command_status side started_cs ended_cs; shift 2
