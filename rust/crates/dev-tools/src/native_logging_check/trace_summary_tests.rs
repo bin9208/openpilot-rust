@@ -222,7 +222,7 @@ fn summary_keeps_successful_and_failed_process_session_details_with_exact_counts
         );
         assert_eq!(
             rows[1]["result"],
-            json!(b"-1 EPERM (Operation not permitted)")
+            json!(b"-1 EPERM (Operation not permitted)".as_slice())
         );
         for outcome in ["returned", "failed"] {
             assert_eq!(

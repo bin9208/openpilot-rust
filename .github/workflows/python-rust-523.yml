@@ -692,7 +692,7 @@ jobs:
         printf '%s  %s\n' f890640b869260fa3b5d6d79ebb47f15c83d88711d1489e56cff64aabc3093c0 rust/crates/dev-tools/tests/fixtures/carrot-navi-comparator/README.md | sha256sum --check -
         printf '%s  %s\n' 24196b632b01c84ae188336ce49eeeae24243d0d9349a296065779cce8ff2d68 rust/crates/dev-tools/src/native_logging_check/trace.rs | sha256sum --check -
         printf '%s  %s\n' fecf905f8bc2211a23889bf5eecd9651900f536e4713418526a59c0a3e8df30b rust/crates/dev-tools/src/native_logging_check/trace_tests.rs | sha256sum --check -
-        printf '%s  %s\n' e722981061d324f79eaa92e0ad810da7eedbe39c63309050e3a0e0c8412f34f1 rust/crates/dev-tools/src/native_logging_check/trace_summary_tests.rs | sha256sum --check -
+        printf '%s  %s\n' c2082e4aff6d51e40a3ab72fe36f53e27aaf6b1773cc65f0eb104818b144715a rust/crates/dev-tools/src/native_logging_check/trace_summary_tests.rs | sha256sum --check -
         printf '%s  %s\n' d75c8fa740c9302e88876a6fa4003f31c8f7b4b6d6a0d4ebf8f6ef4c5d10551b tools/ci/logging_collision8_549.sh | sha256sum --check -
         printf '%s  %s\n' fcd5942621a9310a3ab5abad446e5ab2dff3b95215a4c336f0f8ebcee75dc0c7 .github/workflows/python-rust-523-logging-collision8.yml | sha256sum --check -
         printf '%s  %s\n' 2dc5533c4a03bdd91fbbaf04c2b442e6b72ca3895b797eef264574e4a2730fa7 tools/ci/setup_source_absence_523.sh | sha256sum --check -

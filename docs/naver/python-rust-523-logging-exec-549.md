@@ -182,3 +182,18 @@ raw immutable은 기존 inspector의 held 입력 검증 scope다. 이후 모든 
 프로젝트 CLI/fixture/원본/functional/test/build/Clippy/Actions 실행·stage/commit/push0이다.
 부모는 새 jq 경로 source admission/pin과 helper literal/source pins 및 summary7 선택 수를
 통합해야 한다. **새 source의15 policy/4음성/summary7 기능 결과는 GHA UNRUN**이다.
+
+
+## 269의 첫 실제 빌드 오류와 slice 보정
+
+[40170863186/job121101300261](https://github.com/bin9208/openpilot-rust/actions/runs/40170863186/job/121101300261),
+source `269ec98627fbf5b875af782060b4cc2ee43344df`는 units-build에서 exit101이었다.
+artifact12590490701은387,250B/SHA256 `d67cf7ad40d07c12b07e3111c1a2db734a1d659718188a886aefd7a724f5361d`,
+57CRC/전개3,180,859B다. checker/probe build는 성공했지만 새 summary test의
+`json!(b"-1 EPERM (Operation not permitted)")`가 길이34 byte array여서 serde의 고정 배열 Serialize
+경계에 걸렸다. compiler-message JSON의 E0277을 직접 확인했다. units61/exec15/cleanup은 미도달이다.
+helper held-final/untraced/paired 최종 exit은0이고 실패 상태를 유지했다.
+
+후속은 그 기대 byte literal에 `.as_slice()`만 붙여 동일 bytes의 slice로 직렬화한다.
+새 parser/기대값·구조 Event·실제 동작을 바꾸지 않는다. 구문/format/diff만 확인했으며
+실제 compile과61개·15개 정책 검증은 새 Actions 결과 대기다.
