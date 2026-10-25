@@ -986,3 +986,10 @@ cache invalidation과 기존 preload4상태를 보존한다. source prime status
 `9b851b03193ced1673bfe00c9e8ccdc35204d9ab60c20b916a7bb89f4ee5560c`다. 이 새 영역을 과거
 실행과 동일하다고 재사용하지 않는다. 실행-edge100행은26교체/70pending/1기존native/2text/1removed,
 baseline3580은293/3/3284로 유지한다. 로컬 기능/빌드/원본 실행0이며 모든 새 수용은 대기다.
+
+fd3f3d022의 Fast40153172373/job121048794571은 현재 정책33개 중32성공/1실패다.
+새 collision8 step의 trusted source 뒤 outcome 조건에 괄호가 없어 기존 정책의
+untrusted source step bypass 거부가 발생했다. 조건식의 outcome만 괄호로 감싸 기존
+형식에 맞춘다. predicate·fork 거부·정책 검사기 자체는 동일하며 새 기능 수용을 뜻하지 않는다.
+source admission의 해당 workflow literal과 원장 blob만 함께 갱신한다. 같은 fd source의
+SSH/UI/로깅/native ARM 실행은 계속 진행하며 별도 결과로 확인한다.

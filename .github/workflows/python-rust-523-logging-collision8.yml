@@ -202,7 +202,7 @@ jobs:
           "$CI_JOB_TEMP/proof/c8-oversize-controls/complete.json"
     - name: Build fresh reference only and observe current collision8
       id: qualify
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && steps.oversize_controls.outcome == 'success' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.oversize_controls.outcome == 'success') }}
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |

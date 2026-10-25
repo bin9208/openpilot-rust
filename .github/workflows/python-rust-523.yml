@@ -606,7 +606,7 @@ jobs:
         printf '%s  %s\n' 9ccd6294f5036c556c986c02f9c2d0f47115c15dd316d7b614a88cdeb40b6233 rust/crates/dev-tools/src/native_logging_check/trace_tests.rs | sha256sum --check -
         printf '%s  %s\n' 5019593b2b61ca692dbf52ec7136901d2157961e8972050a774326196554c8a1 rust/crates/dev-tools/src/native_logging_check/trace_summary_tests.rs | sha256sum --check -
         printf '%s  %s\n' d75c8fa740c9302e88876a6fa4003f31c8f7b4b6d6a0d4ebf8f6ef4c5d10551b tools/ci/logging_collision8_549.sh | sha256sum --check -
-        printf '%s  %s\n' ce0e55bd26ae07982aa4a2a8f117b5a138f3c8253f52702ba3906292c56b5557 .github/workflows/python-rust-523-logging-collision8.yml | sha256sum --check -
+        printf '%s  %s\n' fcd5942621a9310a3ab5abad446e5ab2dff3b95215a4c336f0f8ebcee75dc0c7 .github/workflows/python-rust-523-logging-collision8.yml | sha256sum --check -
         printf '%s  %s\n' 2dc5533c4a03bdd91fbbaf04c2b442e6b72ca3895b797eef264574e4a2730fa7 tools/ci/setup_source_absence_523.sh | sha256sum --check -
         printf '%s  %s\n' 3f9491a0cd690aca1f8e3749e7caa7fa1e0c48daf1b10e8bb50d4c362a3d82e3 rust/crates/controlsd/examples/controlsd_trace.rs | sha256sum --check -
         test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py
