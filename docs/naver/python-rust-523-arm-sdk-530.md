@@ -156,3 +156,18 @@ main fast42/native8 gate를 그대로 검사한다. 별도 role 허용이나 exp
 이 검사는8role의 fresh SDK before/after·정확 provider pin·순서·cleanup 조건을 필수로 하며,
 다른 job의 기존 Clippy install-before-use 조건은 그대로다. e856 Focus의 최초 실패는 SDK 음성
 입력 vec의 rustfmt 줄바꿈뿐이다. 값3개·순서와39 default/1 ignored를 보존하고5줄로 정리했다.
+
+
+## 788 Fast의 scalar 표현 정정 후보
+
+source `78896f19db29d5cbe305d6f788bac9d0db4ce552`의 [branch Fast40171227302](https://github.com/bin9208/openpilot-rust/actions/runs/40171227302)는
+7 leaf 중6개 SUCCESS, routing1개/aggregate FAIL이다. routing121103864254는 native cold1/16.91초,
+default library83·disk39·process_probe3을 통과한 뒤 ci_rust_isolation86 PASS/1 FAIL이었다.
+PR Fast40171299893/job121102496420도 같은 whole-job 검사에서 실패했다.
+
+실제 YAML parser는 모든 Scalar를 `Value::String`으로 읽지만 새 기대식의 timeout2개를 Number20/10으로
+만들었다. source 기능의 SDK 값은 맞고 기대식의 표현만 달랐다. 후속은 그2개를 String("20")/String("10")으로
+바꾸고 전체 동등식·시간·명령·조건과 runtime 검사를 보존한다. 나머지 mutable job 모델이나 parser는 바꾸지 않는다.
+독립 감사의 artifact7은 총293CRC/전개41,200,268B이며 모든 source/index/SDK 전후5쌍과
+실패 후 source/job cleanup이 동일/성공이었다. 이 결과로 전체 Fast나 main ARM8 기능 성공을 주장하지 않는다.
+실제 수정 후 기능 결과는 GHA 대기다.

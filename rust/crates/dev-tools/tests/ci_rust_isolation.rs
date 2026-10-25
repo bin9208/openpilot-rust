@@ -1958,7 +1958,7 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
             .unwrap();
         steps.insert(first, serde_json::json!({
             "name": "Prepare exact fresh ARM 1.94 SDK for all eight admitted roles",
-            "timeout-minutes": 20, "id": "arm530_sdk", "if": trusted,
+            "timeout-minutes": "20", "id": "arm530_sdk", "if": trusted,
             "shell": "bash", "working-directory": "${{ env.CI296_SOURCE }}",
             "env": sdk_env,
             "run": "/usr/bin/bash \"$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530\" before\n"
@@ -1969,7 +1969,7 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
             .unwrap();
         steps.insert(finish, serde_json::json!({
             "name": "Verify ARM SDK after every attempted maintained command",
-            "timeout-minutes": 10, "id": "arm530_sdk_final",
+            "timeout-minutes": "10", "id": "arm530_sdk_final",
             "if": "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.arm530_sdk.outcome != 'skipped' && env.CI296_SOURCE != '') }}",
             "shell": "bash", "working-directory": "${{ env.CI296_SOURCE }}",
             "env": sdk_env,
