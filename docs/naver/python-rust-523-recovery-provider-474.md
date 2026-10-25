@@ -546,3 +546,48 @@ family는 별도 `cwp::tests::child_driver`를 사용한다. 양 lane native evi
 및 diff 검사만 수행했다. 프로젝트 CLI/테스트/Cargo/strace 실행과 GHA dispatch/cancel/rerun,
 stage/commit/push는0이다. 한 실행의 성공으로 원래 PTRACE_LISTEN 문제의 전역 해결 또는
 #474/#560 종료·퇴역 credit을 주장하지 않는다.
+
+## 후속 WF의 untraced PTY 및 해당 crate strict Clippy 연결 준비
+
+2026-10-26 사용자 위임으로 기존 recovery WF 한 파일과 이 문서 끝 추가만 수정했다.
+작성 기준 HEAD는 `904d86b7b260cedc707522a7e31dfea31ce80702`다. 앞 절의 source3f532 성공은
+새 WF 두 실행의 성공 증거가 아니며, 이번 변경의 실제 기능/Clippy/자원 fit는 **GHA UNRUN**이다.
+
+기존 Cargo JSON/`list-cargo-tests`가 고른 CWP lib test ELF를 그대로 재사용한다.
+원본 source는 `rust/crates/carrot-recovery/src/terminal/pty_tests.rs`이고 selector는
+`terminal::pty::tests::exited_leader_remains_reserved_until_owned_descendant_cleanup`다.
+새 testcase/selector/count 변경 없이 다음 두 실행만 추가했다.
+
+1. 기존 `recovery_build`에서 선정7개의 SHA/stat 봉인 전에
+   `cargo clippy --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --tests --locked -- -D warnings`를
+   한 번 실행한다. 해당 test module까지 포함하며 stdout/stderr/status는
+   `proof/recovery-build/pty-clippy.{stdout,stderr,status}`에 보존한다. 비정상 종료는 기존
+   build/select step을 실패시킨다. 다른 Clippy/테스트를 재실행하는 코드는 추가하지 않았다.
+2. untraced full8 바로 전 `recovery_pty_untraced` step에서 같은 선정 ELF를 open/hold하고
+   `/proc/<실제 부모 Bash PID>/fd/<FD>`를 통해 그 inode를 직접 실행한다. pathname을 다시
+   열어 다른 파일을 실행하지 않으며, Linux `current_exe`는 원래 CWP ELF를 가리키는 구성이다.
+   command NUL 원문에는 실제 timeout/FD 경로/selector/argv를 기록한다. 실제 동작은 GHA로 확인한다.
+
+untraced PTY에는 기존 traced PTY와 같은30초 명령 상한과 TERM/KILL-after15초를 사용한다.
+외부 step1분은 원래 job45분 안에 둔다. 기존 full8의15분/step16분, trace의900초/step16분,
+provider120초·512MiB 및 outer17GiB/scoped10GiB admission은 바꾸지 않았다. 추가 Clippy와
+소규모 proof는 기존 target6GiB/proof1GiB 예상 안에서만 허용하며 실측 fit로 주장하지 않는다.
+
+실행 전후 선정7개 manifest를 검사하고, held CWP ELF와 원래 path의 dev/inode/type/uid/gid/
+nlink/size/mtime/ctime 및 SHA를 전후 대조한다. EXIT finalizer는 unit 실패 시에도 이 검사를
+수행하고 원래 실패와 봉인 실패를 따로 보존한다. unit exit0과 실제 `PTY474_SLEEP_READY`
+PID/PGID/startticks/S/sleep syscall/dev/inode 행1개, `1 passed; 0 failed; 0 ignored` 결과1개를
+모두 요구한다. zero-selected test나 marker만 나온 실행은 성공이 아니다.
+
+새 evidence는 `proof/recovery-pty-untraced/`의 unit stdout/stderr/status, command.nul,
+held-before/after와 path-after TSV, 선정7개 전후 검사 및 finalizer status다. 기존 proof 업로드에
+포함되므로 artifact 경로를 늘리지 않았다. untraced8은 기존 always/build-success 조건을 유지해
+새 PTY step 실패와 별도로 실행하고, cleanup AND에는 새 step success를 추가해 실패를 보존한다.
+기존 provider after-fast/SDK whole files·roster/source·index의 always-final 봉인은 그대로다.
+
+로컬은 YAML parse/16개 run body의 `bash -n`/source·diff 확인만 수행했다. 기존 build/cleanup의
+지정 부분과 새 step 외 모든 step은 YAML 해석 후 기존과 동일하다. Rust test/source,
+helper/preparer/shared pin/strict parser·policy/trace raw/26통제 정의는 변경하지 않았다.
+부모는 새 WF SHA256 `6f960f102735612b05a0c0c9b12c25b877207c864157a9f5fe109c70a34caeda`를
+공유 pin/Focus/원장에 통합한 뒤 실제 GHA를 담당한다. 이 작업의 프로젝트 CLI/테스트/빌드 실행,
+GHA dispatch/cancel/rerun, stage/commit/push는0이다. 원래 LISTEN 문제의 전역 해결을 주장하지 않는다.

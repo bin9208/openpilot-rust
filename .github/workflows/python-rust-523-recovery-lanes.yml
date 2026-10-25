@@ -175,6 +175,11 @@ jobs:
           test "${#harness[@]}" -eq 1 && test -f "${harness[0]}"
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --lib recovery_ --locked
           cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --features recovery-family-native --lib --bin audit-recovery-exec --test recovery_family_frozen --locked -- -D warnings
+          pty_clippy_status=0
+          cargo clippy --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --tests --locked -- -D warnings > "$proof/pty-clippy.stdout" 2> "$proof/pty-clippy.stderr" || pty_clippy_status=$?
+          printf '%s\n' "$pty_clippy_status" > "$proof/pty-clippy.status"
+          tail -n 40 "$proof/pty-clippy.stdout" "$proof/pty-clippy.stderr"
+          test "$pty_clippy_status" -eq 0
           printf '%s\n' "RECOVERY_FAMILY_CHECKOUT_ROOT=$DIAG_SOURCE" "RECOVERY_FAMILY_PRIVATE_ROOT=$private" "RECOVERY_FAMILY_CWP_TEST_BINARY=${cwp[0]}" "RECOVERY_HARNESS=${harness[0]}" "RECOVERY_FAMILY_BINARY=$DIAG_SOURCE/rust/target/debug/openpilot-carrot-recovery" "RECOVERY_FAMILY_ACTIONS_EXAMPLE=$DIAG_SOURCE/rust/target/debug/examples/recovery_actions" "RECOVERY_FAMILY_UPLOAD_EXAMPLE=$DIAG_SOURCE/rust/target/debug/examples/upload" "RECOVERY_FAMILY_PROCESS_CHILD=$DIAG_SOURCE/rust/target/debug/openpilot-process-child" 'RECOVERY_FAMILY_TMUX=/usr/bin/tmux' 'RECOVERY_FAMILY_HISTORICAL_PRESENT=0' >> "$GITHUB_ENV"
           printf '%s\n' "$DIAG_SOURCE/rust/target/debug/openpilot-carrot-recovery" "$DIAG_SOURCE/rust/target/debug/examples/recovery_actions" "$DIAG_SOURCE/rust/target/debug/examples/upload" "$DIAG_SOURCE/rust/target/debug/openpilot-process-child" "${cwp[0]}" /usr/bin/tmux "${harness[0]}" > "$proof/selected-paths.txt"
           while IFS= read -r path; do
@@ -190,6 +195,55 @@ jobs:
             esac
           done < "$proof/selected-paths.txt" > "$proof/selected-before.sha256"
         working-directory: ${{ env.DIAG_SOURCE }}
+      - name: Run the same selected PTY readiness unit once without ptrace
+        id: recovery_pty_untraced
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.recovery_build.outcome == 'success') }}
+        timeout-minutes: 1
+        working-directory: ${{ env.DIAG_SOURCE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          proof="$CI_JOB_TEMP/proof/recovery-pty-untraced"
+          mkdir "$proof"
+          trap 'code=$?; printf "phase=preflight\noriginal_exit=%s\n" "$code" > "$proof/status"' EXIT
+          manifest="$CI_JOB_TEMP/proof/recovery-build/selected-before.sha256"
+          sha256sum --check --strict "$manifest" > "$proof/selected-before.check"
+          elf=$RECOVERY_FAMILY_CWP_TEST_BINARY
+          test -f "$elf" && test -x "$elf" && test ! -L "$elf"
+          test "$(readlink -e -- "$elf")" = "$elf"
+          before=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' -- "$elf")
+          exec {elf_fd}<"$elf"
+          held="/proc/$BASHPID/fd/$elf_fd"
+          test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' -- "$held")" = "$before"
+          digest=$(sha256sum -- "$held"); digest=${digest%% *}
+          printf '%s\t%s\t%s\t%s\n' "$elf" "$held" "$before" "$digest" > "$proof/held-before.tsv"
+          finish() {
+            local original=$? final=0 path_after= fd_after= path_sha= fd_sha=
+            trap - EXIT
+            set +e
+            path_after=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' -- "$elf") || final=1
+            fd_after=$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' -- "$held") || final=1
+            path_sha=$(sha256sum -- "$elf") || final=1; path_sha=${path_sha%% *}
+            fd_sha=$(sha256sum -- "$held") || final=1; fd_sha=${fd_sha%% *}
+            printf '%s\t%s\t%s\n' "$elf" "$path_after" "$path_sha" > "$proof/path-after.tsv" || final=1
+            printf '%s\t%s\t%s\t%s\n' "$elf" "$held" "$fd_after" "$fd_sha" > "$proof/held-after.tsv" || final=1
+            [[ $path_after == "$before" && $fd_after == "$before" && $path_sha == "$digest" && $fd_sha == "$digest" ]] || final=1
+            sha256sum --check --strict "$manifest" > "$proof/selected-after.check" 2> "$proof/selected-after.stderr" || final=1
+            exec {elf_fd}<&- || final=1
+            printf 'original_exit=%s\nfinalizer_exit=%s\ntracer_used=false\n' "$original" "$final" > "$proof/status" || final=1
+            [[ $original == 0 && $final == 0 ]] || exit 1
+          }
+          trap finish EXIT
+          selector=terminal::pty::tests::exited_leader_remains_reserved_until_owned_descendant_cleanup
+          # Execute the held inode; current_exe still identifies the selected CWP ELF.
+          printf '%s\0' /usr/bin/timeout --signal=TERM --kill-after=15s 30s "$held" --exact "$selector" --test-threads=1 --nocapture > "$proof/command.nul"
+          status=0
+          /usr/bin/timeout --signal=TERM --kill-after=15s 30s "$held" --exact "$selector" --test-threads=1 --nocapture > "$proof/unit.stdout" 2> "$proof/unit.stderr" || status=$?
+          printf '%s\n' "$status" > "$proof/unit.status"
+          tail -n 40 "$proof/unit.stdout" "$proof/unit.stderr"
+          test "$status" -eq 0
+          test "$(grep -Ec 'PTY474_SLEEP_READY pid=[1-9][0-9]* pgid=[1-9][0-9]* start=[0-9]+ state=S syscall=(35|230) dev=[0-9]+ ino=[1-9][0-9]*$' "$proof/unit.stdout")" -eq 1
+          test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/unit.stdout")" -eq 1
       - name: Run all eight native functional controllers without ptrace
         id: recovery_functional
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.recovery_build.outcome == 'success') }}
@@ -332,7 +386,7 @@ jobs:
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id
           != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.recovery_functional.outcome
           == 'success' && steps.recovery_trace.outcome == 'success' && steps.recovery_provider.outcome == 'success' && steps.recovery_provider_controls.outcome == 'success'
-          && steps.recovery_provider_pty.outcome == 'success' && steps.recovery_provider_final.outcome == 'success') }}
+          && steps.recovery_provider_pty.outcome == 'success' && steps.recovery_provider_final.outcome == 'success' && steps.recovery_pty_untraced.outcome == 'success') }}
         working-directory: ${{ github.workspace }}
         env:
           UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}

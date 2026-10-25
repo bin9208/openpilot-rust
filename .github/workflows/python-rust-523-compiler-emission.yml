@@ -49,6 +49,10 @@ jobs:
 
         test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
 
+        case "$GITHUB_EVENT_NAME" in push|workflow_dispatch) ;; *) exit 1 ;; esac
+
+        test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
+
         test "$RUNNER_ENVIRONMENT" = github-hosted
 
         test "$RUNNER_OS" = Linux
@@ -280,7 +284,7 @@ jobs:
 
         python -m pip install numpy==2.5.3
 
-        llvm=$(readlink -e -- /usr/lib/x86_64-linux-gnu/libLLVM-18.so.1)
+        llvm=$(readlink -e -- /usr/lib/x86_64-linux-gnu/libLLVM-18.so)
 
         test -f "$llvm" && test ! -L "$llvm"
 

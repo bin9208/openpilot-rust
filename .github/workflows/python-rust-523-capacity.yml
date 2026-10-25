@@ -342,9 +342,10 @@ jobs:
           (.workflow_run.id | tostring) == $run and .workflow_run.head_sha == $head and
           .workflow_run.repository_id == 1395501963 and .workflow_run.head_repository_id == 1395501963
         ' "$report/provenance/preserved-artifact.json" > /dev/null
-        run_start=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/preservation-run.json")" +%s)
+        run_created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/preservation-run.json")" +%s)
+        artifact_created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/preserved-artifact.json")" +%s)
         expires=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .expires_at "$report/provenance/preserved-artifact.json")" +%s)
-        ((expires >= run_start + 90 * 86400 && expires <= run_start + 90 * 86400 + 600))
+        ((run_created <= artifact_created && expires >= artifact_created + 90 * 86400 && expires <= artifact_created + 90 * 86400 + 600))
         redirect=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
           --connect-timeout 10 --max-time 30 --header "Authorization: Bearer $GH_TOKEN" \
           --output /dev/null --write-out '%{http_code}\n%{redirect_url}' "$api/actions/artifacts/$WITNESS_ARTIFACT_ID/zip")
@@ -422,7 +423,7 @@ jobs:
           .original_bytes_equal == true and .unwrapped == false and .requested_retention_days == 90
         ' "$report/provenance/roundtrip.json" > /dev/null
         api=https://api.github.com/repos/bin9208/openpilot-rust
-        run_start=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/preservation-run.json")" +%s)
+        run_created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/preservation-run.json")" +%s)
         for role in payload proof; do
           if [[ $role == payload ]]; then
             artifact=$WITNESS_ARTIFACT_ID; expected_digest=$digest
@@ -450,8 +451,9 @@ jobs:
           bytes=$(/usr/bin/jq -er .size_in_bytes "$report/roundtrip/$role-upload.json")
           [[ $bytes =~ ^[0-9]+$ ]]
           if [[ $role == payload ]]; then ((bytes == 20550808)); else ((bytes > 0 && bytes <= 1048576)); fi
+          artifact_created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/roundtrip/$role-upload.json")" +%s)
           expires=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .expires_at "$report/roundtrip/$role-upload.json")" +%s)
-          ((expires >= run_start + 90 * 86400 && expires <= run_start + 90 * 86400 + 600))
+          ((run_created <= artifact_created && expires >= artifact_created + 90 * 86400 && expires <= artifact_created + 90 * 86400 + 600))
         done
         payload=$report/payload/driver476-object-witness-12393290469.zip
         test -f "$payload" && test ! -L "$payload"

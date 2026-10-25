@@ -171,7 +171,8 @@ consumer/ledger/pin 편집, release/device publication, capture/model/oracle/전
 
 구현 시작 HEAD는 `51fd430f76dd6bd28776ac1fbd04c16955bd977e`다. 해당 capacity 원문의 SHA는
 `47df95c7bee23624b65722bcf6f4633429dbae55697d24d32c1a2e6aa9dfc850`이었다.
-최종 리뷰를 반영한 WF는33936B/SHA256 `be4377d90d34a32444084b92fdb75555e062ba9a89de9a85107dc539e588ea39`다.
+첫 게시본 WF는33936B/SHA256 `be4377d90d34a32444084b92fdb75555e062ba9a89de9a85107dc539e588ea39`다.
+이후 queue/expiry source 보정은 아래 실제 run 관측 절에 별도로 기록한다.
 새 파일/새 job/새 source alias/새 helper/Python/controller는 추가하지 않았다.
 HOST 감사 문서는 수정하지 않았으며 SHA
 `ea99682ee974433cc934b3fcff4062e1ac936003cd1a43e4f7549ec62d3136e1`로 동결했다.
@@ -217,7 +218,9 @@ report dev:inode:uid:mode를 기록한다. 모든 후속 조건은 trusted prefi
 5. `witness_roundtrip`: report/하위 경로 및 held payload의 dev/inode/uid/mode/size/mtime/ctime/SHA를
    재확인한다. 남은 roundtrip+metadata의20550809+4MiB를 같은 FS에서 다시 admission한다.
    새 metadata가 action ID·현재 run/head/repo·정확한 basename·20550808B·원문 digest와 맞아야
-   한다. API 만료는 run created_at+90일 이상, job10분 이내 차이로 검증한다. 원본과 **같은
+   한다. API 만료는 artifact 자체 created_at+90일 이상/+600초 이내를 요구하고,
+   run.created_at≤artifact.created_at 및 현재 run/head/repo 결합도 확인한다. queue 시간은
+   job10분이나 보존 기한에 포함하지 않는다. 원본과 **같은
    `/actions/artifacts/<new-id>/zip` endpoint**를 받아 길이·SHA·cmp를 통과한 뒤에만
    `ROUNDTRIP_VERIFIED`를 만든다. 외부 ZIP이 생기거나 v7 endpoint가 투명하지 않으면 실패하며
    unwrap/retry/fallback은 없다.
@@ -250,7 +253,8 @@ gh workflow run python-rust-523-capacity.yml \
   -f operation=preserve-driver476-witness
 ```
 
-새 preservation ID/run/source는 아직 없다. parent의 실제 단 한 번의 data-only 실행에서
+최초 인계 시 새 preservation ID/run/source는 없었다. 이후 dispatch 관측은 아래 절에 기록한다.
+parent의 실제 단 한 번의 data-only 실행에서
 v7의 새 artifact API size/digest,90일 만료, same `/zip` readback 원문 SHA와 두 upload receipt,
 정상 owned cleanup을 확인해야 한다. 이에 실패하면 원래 witness가 살아 있는 동안 실패 원인을
 검토하며 임의 감싸기·consumer pin 바꾸기·진단/모델 재실행으로 대신하지 않는다.
@@ -263,3 +267,43 @@ consumer의 `RETAINED_OBJECTS`와 driver helper/WF는 건드리지 않았다. �
 프로젝트 policy/Cargo/기능 테스트나 새 shell
 본문·curl/jq/download/upload/cleanup을 로컬에서 실행하지 않았다. CI policy/Focus/source pin 및
 GHA 결과 수용은 부모 소유다. 기존 workflow 개수·alias 등록 수를 바꾸는 shared77→79 수정은0이다.
+
+## source972468 dispatch의 관측과 queue/expiry 보정 — 2026-10-26
+
+부모가 게시한 source는 `972468fab5279a9897d2d2bda736938c89a81a9a`다.
+기존 [dispatch40241602401](https://github.com/bin9208/openpilot-rust/actions/runs/40241602401)은
+workflow_dispatch/attempt1/같은 저장소와 source로 확인했고 API created_at은
+`2026-10-25T22:44:29Z`다. 이번 source 수정 직전 API 상태는 **pending/job0/artifact0**이며,
+아직 원본 인증·업로드·roundtrip·두 receipt·cleanup의 actual 성공이나 최초 실패는 없다.
+등록 runner22 bin-actions는 online/busy이고, 같은 source의 자동 inventory
+run40241573554도 runner 배정을 기다렸다. 이 대기 상태를 기능 실패로 판정하지 않는다.
+후속 API에서 inventory run40241573554는 `2026-10-25T22:49:21Z`에 SUCCESS로 완료됐고,
+보존 run은 `22:49:20Z`부터 queued/job`121315471388`로 진행했다. 이 문서의 마지막 조회에서도
+해당 job은 runner_name 빈값/steps0/queued이며 artifact0이었다. 기본 inventory의 성공을
+아직 시작하지 않은 보존 mode의 성공으로 세지 않는다.
+
+부모의 정적 리뷰에서 첫 게시본의 두 expiry 검사가
+`run.created_at+90일 ≤ expires_at ≤ run.created_at+90일+600초`인 결합을 찾았다.
+run.created_at은 queue 이전 시각이므로10분보다 긴 queue 뒤 생성된 정상90일 artifact도
+상한을 넘을 수 있다. 이는 **source로 확인한 잠재 거부 원인**이며 pending run의 관측된
+실패 원인으로 단정하지 않는다.
+
+WF의 roundtrip 검사와 최종 payload/proof receipt 검사 두 곳만 다음 시각 관계로 보정했다.
+
+```text
+run.created_at <= artifact.created_at
+artifact.created_at + 90*86400 <= artifact.expires_at
+artifact.expires_at <= artifact.created_at + 90*86400 + 600
+```
+
+artifact별 실제 created_at을 사용하며, 기존 API의 현재 run ID/head/repository 결합을 그대로
+요구한다.90일 하한과 기존600초 timestamp window의 크기는 유지하고 기준 시각만 분리했다.
+원문 artifact/run/source/checkout/bytes/SHA, v7 archive:false/90일, same `/zip` 원문 bytes,
+두 upload receipt/소유 cleanup, no-unwrap/no-fallback/no-new-consumer는 바꾸지 않았다.
+보정 WF는34293B/SHA256 `b7b83241b04f3e3688791e72a2579a84862c925b472ace3fbd9c1569825de1fb`다.
+YAML/Bash 문법과 diff를 확인했고, 두 expiry 경계를 역투영하면 게시본 WF SHA로 돌아간다.
+이는 source 검사이며 새 expiry 조건의 기능 실행 결과는 아니다.
+
+이 수정은 현재 로컬 source에만 있다. 이미 dispatch된972468 run의 실행 source를 바꾸거나
+취소·재실행하지 않았다. 새 dispatch/업로드·consumer pin 변경도0이다. 기존 run은 원래 source의
+actual 결과로 계속 구분해서 관측해야 하며, 새 expiry 보정의 actual 수용은 부모가 별도로 소유한다.

@@ -35,3 +35,18 @@ QCOM 모델 전체 export/runtime, 설치·장치·대단원 수용은 이 집�
 ARM24는 그대로 유지한다. source/alias 정책 함수나 finalizer 조건을 완화하지 않는다.
 기존 native-units의 선택 가능한 compiler-export도 일반10/ignored2로 맞추고 COPY exact1만
 작은 러너에서 실행한다. genuine mixed/order7은 이 hosted job의 exact selector에서만 실행한다.
+
+
+## 첫 source581 실행과 provider pathname 보완
+
+[40242309747/job121316531016](https://github.com/bin9208/openpilot-rust/actions/runs/40242309747/job/121316531016)은
+source581c84520에서 dependency 준비 단계가 실패했다. apt와 NumPy2.5.3 설치는 성공한 뒤
+`readlink -e /usr/lib/x86_64-linux-gnu/libLLVM-18.so.1`가 존재하지 않는 pathname을 거부했다.
+기존 실제 currenttriplet WF는 같은 package의 `libLLVM-18.so`를 canonicalize한다. 이 정확한
+기존 경로로 literal 하나를 맞추고 resolved regular file의 SHA/후봉인 조건은 그대로 둔다.
+
+ARM provider staging·native10/COPY/mixed/order7은 모두 미도달이다. 후속 functional upload의
+파일 없음과 SDK baseline 미생성에 따른 source seal 실패는 최초 원인이 아니며 성공으로
+바꾸지 않는다. private artifact12616099750은292540B/SHA256
+`ea18b599054d939c03b2041c06da481d3e15d61be4de86e0f38623142cff11bd`다.
+이 최초 raw log/Actions 증거를 보존하며 새 source actual 수용을 계속 확인한다.
