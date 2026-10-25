@@ -1183,6 +1183,15 @@ class Controller:
         for i,path in enumerate(sorted((self.job/'venv').rglob('*.so*'))):
             need(path.is_file() and not path.is_symlink(),'extension provider must be regular')
             self.dso(path,f'python-dso-{i}')
+        isa_controls = self.command([test, "cached_isa::instruction_isa::tests::", "--nocapture",
+                                     "--test-threads=1", "--color=never"], "current-isa-feature-tests", 60).decode()
+        need(len(re.findall(r"^test result: ok\. 14 passed; 0 failed; 0 ignored;", isa_controls, re.M)) == 1,
+             "all fourteen cached ISA contracts must pass")
+        for selector in ("observed_avx512_vbmi_image_requires_its_own_host_feature",
+                         "avx512_vbmi_at_roster_end_and_after_return_preserves_other_requirements",
+                         "current_host_avx512_vbmi_matches_os_aware_rust_detection"):
+            need(isa_controls.splitlines().count("test cached_isa::instruction_isa::tests::" + selector + " ... ok") == 1,
+                 "exact VBMI regression missing: " + selector)
         controls = self.command([test, "cached_code::tests::", "--nocapture", "--test-threads=1", "--color=never"],
                                 "cached-code-controls", 180).decode()
         need(len(re.findall(r"^test result: ok\. 15 passed; 0 failed; 0 ignored;", controls, re.M)) == 1,

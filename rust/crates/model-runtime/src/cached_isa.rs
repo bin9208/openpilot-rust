@@ -125,6 +125,7 @@ mod instruction_isa {
             F::AVX512VL => "avx512vl",
             F::AVX512DQ => "avx512dq",
             F::AVX512BW => "avx512bw",
+            F::AVX512_VBMI => "avx512vbmi",
             F::AVX512_FP16 => "avx512fp16",
             _ => {
                 return Err(format!(
@@ -194,6 +195,8 @@ mod instruction_isa {
             ("avx512vl", std::is_x86_feature_detected!("avx512vl")),
             ("avx512dq", std::is_x86_feature_detected!("avx512dq")),
             ("avx512bw", std::is_x86_feature_detected!("avx512bw")),
+            // Rust 1.94 gates CPUID(7,0).ECX[1] on AVX512 OS state.
+            ("avx512vbmi", std::is_x86_feature_detected!("avx512vbmi")),
             // Rust 1.94 std_detect checks CPUID(7,0).EDX[23] behind
             // XSAVE/OSXSAVE, XCR0 & 0xe6 == 0xe6, FMA and F16C.
             ("avx512fp16", std::is_x86_feature_detected!("avx512fp16")),
@@ -448,6 +451,76 @@ mod instruction_isa {
             assert_eq!(
                 host.contains("avx512fp16"),
                 std::is_x86_feature_detected!("avx512fp16")
+            );
+        }
+
+        #[test]
+        fn observed_avx512_vbmi_image_requires_its_own_host_feature() {
+            // run40227415603 program3 / compile97 @0xc2, plus a synthetic ret.
+            // Decode only: neither these bytes nor a simulated host are executed.
+            let observed = [0x62, 0x52, 0x7d, 0x48, 0x7d, 0xd9, 0xc3];
+            let mut decoder = Decoder::new(64, &observed, DecoderOptions::NONE);
+            let instruction = decoder.decode();
+            assert_eq!(instruction.code(), Code::EVEX_Vpermt2b_zmm_k1z_zmm_zmmm512);
+            assert_eq!(instruction.len(), 6);
+            assert_eq!(instruction.cpuid_features(), &[CpuidFeature::AVX512_VBMI]);
+            let capable = BTreeSet::from([
+                "avx",
+                "avx2",
+                "f16c",
+                "avx512f",
+                "avx512vl",
+                "avx512dq",
+                "avx512bw",
+                "avx512fp16",
+                "avx512vbmi",
+            ]);
+            let proofs = admit_all(&[(&observed, observed.len())], 1, &capable).unwrap();
+            assert_eq!(proofs[0].required, BTreeSet::from(["avx512vbmi"]));
+            assert_eq!(proofs[0].instructions, 2);
+            assert_eq!(proofs[0].text_bytes, observed.len());
+            // Previously admitted AVX512 features cannot stand in for VBMI.
+            let mut missing = capable;
+            missing.remove("avx512vbmi");
+            assert_eq!(
+                admit_all(&[(&observed, observed.len())], 1, &missing).unwrap_err(),
+                "cached program 0: host lacks avx512vbmi"
+            );
+        }
+
+        #[test]
+        fn avx512_vbmi_at_roster_end_and_after_return_preserves_other_requirements() {
+            let baseline = [0xc3];
+            // Actual VBMI bytes followed by an existing AVX512F/VL witness; decode only.
+            let after_return = [
+                0xc3, 0x62, 0x52, 0x7d, 0x48, 0x7d, 0xd9, 0x62, 0xf2, 0x7d, 0x08, 0x7c, 0xd6, 0xc3,
+            ];
+            let capable = BTreeSet::from(["avx512f", "avx512vl", "avx512vbmi"]);
+            let mut images = vec![(&baseline[..], baseline.len()); 91];
+            images[90] = (&after_return, after_return.len());
+            let proofs = admit_all(&images, 91, &capable).unwrap();
+            assert_eq!(proofs.len(), 91);
+            assert_eq!(proofs[90].required, capable);
+            assert_eq!(proofs[90].instructions, 4);
+            assert_eq!(proofs[90].text_bytes, after_return.len());
+            for &feature in &capable {
+                let mut missing = capable.clone();
+                missing.remove(feature);
+                assert_eq!(
+                    admit_all(&images, 91, &missing).unwrap_err(),
+                    format!("cached program 90: host lacks {feature}")
+                );
+            }
+            assert!(admit_all(&images[..90], 91, &capable).is_err());
+        }
+
+        #[test]
+        fn current_host_avx512_vbmi_matches_os_aware_rust_detection() {
+            // Detection only: no cached instruction, CPUID override or target forcing.
+            let host = current_host();
+            assert_eq!(
+                host.contains("avx512vbmi"),
+                std::is_x86_feature_detected!("avx512vbmi")
             );
         }
 

@@ -19,7 +19,7 @@ import traceback
 
 MIB, GIB = 1024**2, 1024**3
 BASE = "tools/ci/model_current_triplet_482.py"
-BASE_SHA = "6b173bb32ec045bbef9a0d2a968555a9318ff031e1d4cb1574a5254033bf2759"
+BASE_SHA = "9d9d6366f2e3079a85de8218892b9d6f27d6d54f453f391ff69483656f4f9b98"
 WORKFLOW = "bin9208/openpilot-rust/.github/workflows/python-rust-523-model-pr1344-replay.yml@refs/heads/codex/feat-523-python-rust"
 FIXTURE_SHA = "afe1c795d7f609801eb4cd5a5a7748c3c996929403a3c0fa102f232f2a8d248d"
 ARCHIVE_SHA = "3ddfb1213cccbbf0d4d0ef7854b79cef5637acdfd7b59d883b13063d6968b4fe"
@@ -619,7 +619,7 @@ def controller_type(base):
             self.command([cargo,'clippy',*args,'--test','driving_daemon_retirement','--','-D','warnings'],'current-retirement-clippy',900)
             isa=self.command([test,'cached_isa::instruction_isa::tests::','--nocapture',
                               '--test-threads=1','--color=never'],'current-isa-feature-tests',60)
-            need(b'test result: ok. 11 passed; 0 failed; 0 ignored;' in isa,
+            need(b'test result: ok. 14 passed; 0 failed; 0 ignored;' in isa,
                  'complete current cached ISA unit roster')
             registry=self.job/'cargo-home/registry'
             self.baselines['registry']=(registry,None,self.m.snapshot(registry,self.m.walk(registry)))

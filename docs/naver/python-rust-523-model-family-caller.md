@@ -26,3 +26,9 @@ fullsix는 같은 held native CLI/daemon/model-run/C++peer, 독립 driver 두 da
 로컬은 YAML/Bash 구문·복사본 전체 의미 비교·diff만 확인했으며 실제 GHA는 미실행이다.
 이 새 진입점에는 기존 Python compiler/frontend가 남으므로 추가 실행 원장에 pending1개를
 기록한다. #476 및 #523, baseline source6 수용 credit은 실제 결과를 감사하기 전까지0이다.
+
+
+추가 exact-copy 때문에 maintained private-source job은77→78개, ARM은24개 그대로다.
+전체 YAML의 `CI296_ALIAS_BASENAME` 실제78개를 세고 policy의 두 정확 roster assertion을
+78로 맞춘다. 검사 대상을 제외하거나 `>=`로 완화하지 않는다. 새 job도 기존 공유checkout/
+미봉인cleanup/잘못된alias 음성통제를 동일하게 적용받는다.

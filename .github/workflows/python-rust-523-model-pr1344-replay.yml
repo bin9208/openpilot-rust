@@ -7,6 +7,7 @@ name: Python Rust 523 same-VM PR1344 whole triplet and first-packet diagnostic
     - .github/workflows/python-rust-523-model-pr1344-replay.yml
     - tools/ci/model_pr1344_replay_482.py
     - rust/crates/model-runtime/src/cpu/diagnostic_482_pr1344.rs
+    - rust/crates/model-runtime/src/cached_isa.rs
     - rust/crates/dev-tools/tests/driving_daemon_retirement/model_482_pr1344.rs
 permissions:
   contents: read
@@ -26,7 +27,7 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
       PYTHONDONTWRITEBYTECODE: '1'
-      MODEL482_PR1344_HELPER_SHA256: f91b77dbc23b4d7fa6c12a13ff2be0390130944ae4f80d0c850e7d73be104855
+      MODEL482_PR1344_HELPER_SHA256: 01e281b1037423b3bee7373a5a0d3c22d3ebdf4c3a00665a19a26ca0d340a329
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
       shell: bash
@@ -252,7 +253,7 @@ jobs:
         r=json.loads(raw)
         assert type(r['schema']) is int and r['schema']==1 and r['source']==os.environ['GITHUB_SHA'] and r['pass'] is True
         assert r['input_origin']=='authored-metadata-controls' and r['compiler_started'] is False and r['actual_race_recovered'] is False
-        assert r['helper_sha256']=='6b173bb32ec045bbef9a0d2a968555a9318ff031e1d4cb1574a5254033bf2759'
+        assert r['helper_sha256']=='9d9d6366f2e3079a85de8218892b9d6f27d6d54f453f391ff69483656f4f9b98'
         assert hashlib.sha256((Path(os.environ['DIAG_SOURCE'])/'tools/ci/model_current_triplet_482.py').read_bytes()).hexdigest()==r['helper_sha256']
         positive=['actual-du-allocated-apparent-sparse-hardlink-symlink','strict-child-ENOENT']
         negative=['target-root','outside-target','permission','currently-present','non-ENOENT','third-incomplete','deadline','allocated-cap','apparent-cap','group-cap','root-missing','root-replaced']
