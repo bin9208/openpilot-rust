@@ -2,10 +2,33 @@
 # #535 표준 ARM VM 전용 adapter. 원래 기능 명령은 현재 host에서 그대로 실행한다.
 set -euo pipefail
 fail() { printf '%s\n' "$*" >&2; exit 1; }
-[[ ${GITHUB_ACTIONS:-}:${GITHUB_REPOSITORY:-}:${GITHUB_EVENT_NAME:-} == true:bin9208/openpilot-rust:push &&
-   ${GITHUB_REF:-} == refs/heads/codex/feat-523-python-rust &&
+[[ ${GITHUB_ACTIONS:-}:${GITHUB_REPOSITORY:-} == true:bin9208/openpilot-rust &&
    ${RUNNER_ENVIRONMENT:-}:${RUNNER_OS:-}:${RUNNER_ARCH:-} == github-hosted:Linux:ARM64 &&
    $(uname -s):$(uname -m) == Linux:aarch64 && ${LOCAL_CI_ARCH:-} == aarch64 ]] || fail 'Trusted hosted ARM64 source required'
+# GITHUB_WORKFLOW_REF는 reusable 실행에서도 caller context다. candidate 제한은 유지한다.
+if [[ ${GITHUB_WORKFLOW_REF:-} == "bin9208/openpilot-rust/.github/workflows/rust.yml@${GITHUB_REF:-}" ]]; then
+test "${CI296_NATIVE_ARM_CALLER:-}" = rust.yml
+test "${GITHUB_REPOSITORY:-}" = bin9208/openpilot-rust
+test "${GITHUB_WORKFLOW_REF:-}" = "bin9208/openpilot-rust/.github/workflows/rust.yml@${GITHUB_REF:-}"
+case "${GITHUB_EVENT_NAME:-}" in
+  push) [[ ${GITHUB_REF:-} == refs/heads/dev || ${GITHUB_REF:-} == refs/heads/main ]] ;;
+  pull_request)
+    [[ ${GITHUB_REF:-} =~ ^refs/pull/[1-9][0-9]*/merge$ &&
+       ( ${GITHUB_BASE_REF:-} == dev || ${GITHUB_BASE_REF:-} == main ) &&
+       ${CI296_PR_HEAD_REPOSITORY:-} == bin9208/openpilot-rust ]] ;;
+  workflow_dispatch)
+    case "${GITHUB_REF:-}" in refs/heads/?*|refs/tags/?*) ;; *) exit 1 ;; esac ;;
+  *) exit 1 ;;
+esac
+else
+  [[ ${GITHUB_EVENT_NAME:-} == push && ${GITHUB_REF:-} == refs/heads/codex/feat-523-python-rust &&
+     -z ${CI296_NATIVE_ARM_CALLER:-} ]] || fail 'Candidate ARM source required'
+  case ${GITHUB_WORKFLOW_REF:-} in
+    "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm.yml@$GITHUB_REF"|\
+    "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-more.yml@$GITHUB_REF") ;;
+    *) fail 'Unknown native ARM caller' ;;
+  esac
+fi
 job=${CI_JOB_TEMP:?}; source_dir=${CI296_SOURCE:?}
 [[ $job == /tmp/openpilot-ci.?????? && -d $job && ! -L $job && $(realpath -e "$job") == "$job" &&
    $(stat -c '%u:%a' "$job") == "$(id -u):700" &&

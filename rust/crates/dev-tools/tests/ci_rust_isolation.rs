@@ -507,6 +507,12 @@ fn private_local_action(step: &Value, name: &str) -> bool {
 }
 fn commands(job: &Value) -> String {
     if let Some(caller) = job["uses"].as_str() {
+        if caller == "./.github/workflows/rust-native-arm.yml" {
+            let native = parse(&read(".github/workflows/rust-native-arm.yml")).unwrap();
+            return ["planner-runtime", "carrot-man-runtime", "webrtc-runtime"]
+                .map(|name| commands(&native["jobs"][name]))
+                .join("\n");
+        }
         assert_eq!(caller, "./.github/workflows/rust-dbc-darwin.yml");
         let workflow = parse(&read(".github/workflows/rust-dbc-darwin.yml")).unwrap();
         let actual = &workflow["jobs"]["dbc-darwin"];
@@ -1786,7 +1792,7 @@ fn webrtc_requires_native_host_and_arm_real_media_and_failure_boundaries() {
     let job = &data["jobs"]["webrtc-runtime"];
     assert_eq!(
         job["strategy"]["matrix"]["runner"],
-        serde_json::json!(["local-x64", "local-arm64-qemu"])
+        serde_json::json!(["local-x64"])
     );
     mandatory(job, &[""]);
     required(
@@ -1819,6 +1825,82 @@ fn webrtc_requires_native_host_and_arm_real_media_and_failure_boundaries() {
     let req = read("rust/tools/webrtc_source_requirements.txt");
     for line in ["aiortc==1.14.0", "av==16.1.0", "aioice==0.10.2"] {
         assert!(req.lines().any(|v| v == line));
+    }
+}
+
+#[test]
+fn native_arm_reuse_preserves_all_candidate_steps_and_three_x64_rows() {
+    use openpilot_dev_tools::ci_policy::validate_native_arm_reuse;
+    let main = workflow();
+    let native = parse(&read(".github/workflows/rust-native-arm.yml")).unwrap();
+    validate_native_arm_reuse(&main, &native).unwrap();
+    for (name, candidate) in [
+        ("carrot-man-runtime", "python-rust-523-native-arm.yml"),
+        ("planner-runtime", "python-rust-523-native-arm-more.yml"),
+        ("webrtc-runtime", "python-rust-523-native-arm-more.yml"),
+    ] {
+        let data = parse(&read(&format!(".github/workflows/{candidate}"))).unwrap();
+        let expected = &data["jobs"][name];
+        let mut actual = native["jobs"][name].clone();
+        actual["steps"][0] = expected["steps"][0].clone();
+        for key in ["CI296_NATIVE_ARM_CALLER", "CI296_PR_HEAD_REPOSITORY"] {
+            actual["env"].as_object_mut().unwrap().remove(key);
+        }
+        assert_eq!(
+            actual, *expected,
+            "{name}: candidate command/env/conditions/holds changed"
+        );
+        let matrix = &main["jobs"][name]["strategy"]["matrix"];
+        if name == "carrot-man-runtime" {
+            assert_eq!(
+                matrix["include"],
+                serde_json::json!([{"arch":"x86_64","runner":"local-x64"}])
+            );
+        } else {
+            assert_eq!(matrix["runner"], serde_json::json!(["local-x64"]));
+        }
+    }
+    for name in ["webcam-runtime", "xiaoge-runtime"] {
+        assert_eq!(
+            main["jobs"][name]["strategy"]["matrix"]["runner"],
+            serde_json::json!(["local-x64", "local-arm64-qemu"]),
+            "shared strategy must retain {name} ARM"
+        );
+    }
+    assert_eq!(main["jobs"]["fast"]["needs"].as_array().unwrap().len(), 42);
+}
+
+#[test]
+fn native_arm_main_gate_rejects_removed_needs_binding_or_success_check() {
+    let original = workflow();
+    validate_rust_gate(&original).unwrap();
+    for mode in ["caller", "needs", "binding", "test"] {
+        let mut changed = original.clone();
+        match mode {
+            "caller" => {
+                changed["jobs"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("native-arm");
+            }
+            "needs" => changed["jobs"]["fast"]["needs"]
+                .as_array_mut()
+                .unwrap()
+                .retain(|v| v != "native-arm"),
+            "binding" => {
+                changed["jobs"]["fast"]["steps"][0]["env"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("NATIVE_ARM");
+            }
+            _ => {
+                let body = changed["jobs"]["fast"]["steps"][0]["run"].as_str().unwrap();
+                assert!(body.contains("test \"$NATIVE_ARM\" = success\n"));
+                changed["jobs"]["fast"]["steps"][0]["run"] =
+                    body.replace("test \"$NATIVE_ARM\" = success\n", "").into();
+            }
+        }
+        assert!(validate_rust_gate(&changed).is_err(), "native ARM {mode}");
     }
 }
 #[test]

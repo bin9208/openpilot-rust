@@ -155,6 +155,21 @@ pub const TRUSTED_SUCCESS: &str = "${{ (github.event_name != 'pull_request' || g
 pub const TRUSTED_ALWAYS: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}";
 pub const FORK_DENIAL: &str = "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }\n";
 const ARM_FORK_DENIAL: &str = "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied on hosted ARM' >&2; exit 1; }\n";
+// reusable의 github context는 caller이다. 단순 trusted=true 입력으로 승인하지 않는다.
+pub const NATIVE_ARM_MAIN_CONTEXT: &str = r#"test "${CI296_NATIVE_ARM_CALLER:-}" = rust.yml
+test "${GITHUB_REPOSITORY:-}" = bin9208/openpilot-rust
+test "${GITHUB_WORKFLOW_REF:-}" = "bin9208/openpilot-rust/.github/workflows/rust.yml@${GITHUB_REF:-}"
+case "${GITHUB_EVENT_NAME:-}" in
+  push) [[ ${GITHUB_REF:-} == refs/heads/dev || ${GITHUB_REF:-} == refs/heads/main ]] ;;
+  pull_request)
+    [[ ${GITHUB_REF:-} =~ ^refs/pull/[1-9][0-9]*/merge$ &&
+       ( ${GITHUB_BASE_REF:-} == dev || ${GITHUB_BASE_REF:-} == main ) &&
+       ${CI296_PR_HEAD_REPOSITORY:-} == bin9208/openpilot-rust ]] ;;
+  workflow_dispatch)
+    case "${GITHUB_REF:-}" in refs/heads/?*|refs/tags/?*) ;; *) exit 1 ;; esac ;;
+  *) exit 1 ;;
+esac
+"#;
 fn validate_hosted_arm_boundary(job: &Value) -> Result<(), String> {
     require(
         job["env"]["CI296_NATIVE_ARM"] == "1" && job["runs-on"] == HOSTED_ARM_RUNNER,
@@ -165,7 +180,18 @@ fn validate_hosted_arm_boundary(job: &Value) -> Result<(), String> {
         .and_then(|steps| steps.first())
         .ok_or("missing native ARM boundary")?;
     source_result_binding(first)?;
-    let expected = format!("{ARM_FORK_DENIAL}set -euo pipefail\ntest \"$GITHUB_ACTIONS\" = true\ntest \"$GITHUB_REPOSITORY\" = bin9208/openpilot-rust\ntest \"$RUNNER_ENVIRONMENT\" = github-hosted\ntest \"$RUNNER_OS\" = Linux\ntest \"$RUNNER_ARCH\" = ARM64\ntest \"$(uname -s)\" = Linux\ntest \"$(uname -m)\" = aarch64\ntest \"$GITHUB_EVENT_NAME\" = push\ntest \"$GITHUB_REF\" = refs/heads/codex/feat-523-python-rust\n");
+    let context = match job["env"].get("CI296_NATIVE_ARM_CALLER") {
+        None => "test \"$GITHUB_EVENT_NAME\" = push\ntest \"$GITHUB_REF\" = refs/heads/codex/feat-523-python-rust\n",
+        Some(value) if value == "rust.yml" => {
+            require(
+                job["env"]["CI296_PR_HEAD_REPOSITORY"] == "${{ github.event.pull_request.head.repo.full_name }}",
+                "native ARM PR head repository must bind the caller event",
+            )?;
+            NATIVE_ARM_MAIN_CONTEXT
+        }
+        _ => return Err("unknown native ARM caller scope".into()),
+    };
+    let expected = format!("{ARM_FORK_DENIAL}set -euo pipefail\ntest \"$GITHUB_ACTIONS\" = true\ntest \"$GITHUB_REPOSITORY\" = bin9208/openpilot-rust\ntest \"$RUNNER_ENVIRONMENT\" = github-hosted\ntest \"$RUNNER_OS\" = Linux\ntest \"$RUNNER_ARCH\" = ARM64\ntest \"$(uname -s)\" = Linux\ntest \"$(uname -m)\" = aarch64\n{context}");
     require(
         first["name"] == "Deny fork source and require GitHub-hosted Linux ARM64"
             && first["run"]
@@ -947,6 +973,7 @@ pub fn check_workflow_policy(files: &[(String, String)]) -> Result<(), String> {
         )?;
     }
     let rust = get("rust.yml")?;
+    validate_native_arm_reuse(rust, get("rust-native-arm.yml")?)?;
     require(
         rust["jobs"]["dbc-darwin"]["uses"] == "./.github/workflows/rust-dbc-darwin.yml",
         "Darwin dependency must call its same-source native workflow",
@@ -1373,7 +1400,173 @@ const RUST_GATE_BINDINGS: &[(&str, &str)] = &[
     ("XIAOGE", "xiaoge-runtime"),
     ("XIAOGE_MEMORY", "xiaoge-memory"),
     ("UI_RUNTIME", "ui-runtime"),
+    ("NATIVE_ARM", "native-arm"),
 ];
+
+/// 최초 3개 native ARM scope와 main의 동일-source caller를 결합한다.
+pub fn validate_native_arm_reuse(main: &Value, native: &Value) -> Result<(), String> {
+    require(
+        main["jobs"]["native-arm"]
+            == serde_json::json!({"uses":"./.github/workflows/rust-native-arm.yml"}),
+        "native ARM requires its unconditional same-source caller",
+    )?;
+    require(
+        native["on"] == serde_json::json!({"workflow_call":{}})
+            && native["permissions"] == serde_json::json!({"contents":"read"})
+            && native["env"] == serde_json::json!({"RUSTUP_TOOLCHAIN":"1.94.0"})
+            && native["concurrency"]
+                == serde_json::json!({
+                    "group":"rust-native-arm-${{ github.event_name }}-${{ github.ref }}",
+                    "cancel-in-progress":"false", "queue":"max"
+                }),
+        "native ARM reusable trigger, permissions or toolchain changed",
+    )?;
+    // Fast의 source policy에서도 41개 기존 결과와 새 ARM 결과의 결합을 확인한다.
+    // 실제 shell의 음성 실행은 validate_rust_gate와 isolation tests가 담당한다.
+    let main_gate = &main["jobs"]["fast"];
+    let main_steps = main_gate["steps"]
+        .as_array()
+        .ok_or("missing main Rust result step")?;
+    require(
+        main_steps.len() == 1 && main_gate["if"] == "${{ always() }}",
+        "main Rust result gate changed",
+    )?;
+    let main_step = &main_steps[0];
+    source_result_binding(main_step)?;
+    let main_script = main_step["run"]
+        .as_str()
+        .and_then(|s| s.strip_prefix(FORK_DENIAL))
+        .ok_or("missing main Rust result checks")?;
+    require(
+        strings(&main_gate["needs"])? == RUST_GATE_BINDINGS.iter().map(|(_, job)| *job).collect()
+            && main_gate["needs"]
+                .as_array()
+                .is_some_and(|v| v.len() == RUST_GATE_BINDINGS.len())
+            && main_step["env"]
+                .as_object()
+                .is_some_and(|v| v.len() == RUST_GATE_BINDINGS.len() + 1)
+            && main_script.lines().count() == RUST_GATE_BINDINGS.len(),
+        "main Rust must require all 42 results exactly once",
+    )?;
+    for (variable, job) in RUST_GATE_BINDINGS {
+        let expected = format!("test \"${variable}\" = success");
+        require(
+            main_step["env"][*variable] == format!("${{{{ needs.{job}.result }}}}")
+                && main_script.lines().filter(|line| *line == expected).count() == 1,
+            format!("main Rust result binding/check changed: {variable}"),
+        )?;
+    }
+    let jobs = native["jobs"]
+        .as_object()
+        .ok_or("missing native ARM jobs")?;
+    let leaves = ["planner-runtime", "carrot-man-runtime", "webrtc-runtime"];
+    require(
+        jobs.len() == 4
+            && leaves.iter().all(|name| jobs.contains_key(*name))
+            && jobs.contains_key("native-arm-checks"),
+        "native ARM required leaf roster changed",
+    )?;
+    validate_local_routing(native)?;
+    for (name, timeout, stages) in [
+        (
+            "planner-runtime",
+            "90",
+            &[
+                "Reserve capacity and install original planner dependencies",
+                "Build pinned solvers and unchanged original bindings",
+                "Compile and check the complete native planner",
+                "Compare exact policies, main loops, real IPC and lifecycle",
+                "Check generated C with ASan, UBSan and allocator leak detection",
+            ][..],
+        ),
+        (
+            "carrot-man-runtime",
+            "60",
+            &[
+                "Reserve runner capacity and install pinned dependencies",
+                "Stage exact optional GEOS provider",
+                "Build owner and unchanged source bindings",
+                "Compare affected original policy, cereal and time boundaries",
+                "Compare actual owned Params, IPC, sockets and upload recipients",
+            ][..],
+        ),
+        (
+            "webrtc-runtime",
+            "90",
+            &[
+                "Reserve capacity and install pinned source and native providers",
+                "Build unchanged original Params and msgq bindings",
+                "Compile and check both native service entrypoints",
+                "Compare real ownership, media, HTTP and failure boundaries",
+            ][..],
+        ),
+    ] {
+        let job = &jobs[name];
+        absent(job, &["if", "continue-on-error", "needs"])?;
+        require(
+            job["env"]["CI296_NATIVE_ARM_CALLER"] == "rust.yml"
+                && job["timeout-minutes"] == timeout,
+            "native ARM caller scope or timeout changed",
+        )?;
+        let steps = job["steps"].as_array().ok_or("missing native ARM steps")?;
+        for stage in stages {
+            let matches = steps
+                .iter()
+                .filter(|step| step["name"] == *stage)
+                .collect::<Vec<_>>();
+            require(
+                matches.len() == 1,
+                format!("missing or duplicate native ARM stage {stage}"),
+            )?;
+            absent(matches[0], &["continue-on-error"])?;
+            let expected = match *stage {
+                "Compare affected original policy, cereal and time boundaries" => "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.arch == 'x86_64') }}",
+                "Check generated C with ASan, UBSan and allocator leak detection" => "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.runner == 'local-x64') }}",
+                _ => TRUSTED_SOURCE,
+            };
+            require(
+                matches[0]["if"] == expected,
+                format!("native ARM stage condition changed: {stage}"),
+            )?;
+        }
+        let matrix = &main["jobs"][name]["strategy"]["matrix"];
+        require(
+            if name == "carrot-man-runtime" {
+                matrix == &serde_json::json!({"include":[{"arch":"x86_64","runner":"local-x64"}]})
+            } else {
+                matrix == &serde_json::json!({"runner":["local-x64"]})
+            },
+            "migrated family must retain its exact x64 row",
+        )?;
+    }
+    let gate = &jobs["native-arm-checks"];
+    absent(gate, &["continue-on-error", "strategy"])?;
+    require(
+        strings(&gate["needs"])? == expected_strings(&leaves)
+            && gate["needs"]
+                .as_array()
+                .is_some_and(|v| v.len() == leaves.len())
+            && gate["if"] == "${{ always() }}"
+            && gate["runs-on"] == HOSTED_RUNNER
+            && gate["timeout-minutes"] == "2",
+        "native ARM result gate must always require all three leaves",
+    )?;
+    let steps = gate["steps"]
+        .as_array()
+        .ok_or("missing native ARM result step")?;
+    require(steps.len() == 1, "native ARM result step roster changed")?;
+    source_result_binding(&steps[0])?;
+    require(
+        steps[0]["env"] == serde_json::json!({
+            "SOURCE_ALLOWED":TRUSTED_SOURCE,
+            "PLANNER":"${{ needs.planner-runtime.result }}",
+            "CARROT_MAN":"${{ needs.carrot-man-runtime.result }}",
+            "WEBRTC":"${{ needs.webrtc-runtime.result }}"
+        }) && steps[0]["run"] == format!("{FORK_DENIAL}test \"$PLANNER\" = success\ntest \"$CARROT_MAN\" = success\ntest \"$WEBRTC\" = success\n"),
+        "native ARM result bindings or strict success checks changed",
+    )
+}
+
 pub fn validate_rust_gate(workflow: &Value) -> Result<(), String> {
     for event in ["push", "pull_request"] {
         require(
@@ -1391,6 +1584,11 @@ pub fn validate_rust_gate(workflow: &Value) -> Result<(), String> {
         "required Darwin job must keep its same-source reusable caller",
     )?;
     absent(&jobs["dbc-darwin"], &["if", "continue-on-error"])?;
+    require(
+        jobs.get("native-arm")
+            == Some(&serde_json::json!({"uses":"./.github/workflows/rust-native-arm.yml"})),
+        "required native ARM job must keep its unconditional same-source caller",
+    )?;
     let gate = &workflow["jobs"]["fast"];
     require(gate["if"] == "${{ always() }}", "Rust gate must always run")?;
     require(

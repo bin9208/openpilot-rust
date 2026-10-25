@@ -114,3 +114,10 @@ recorder 컴파일과 Cargo build/test는 GitHub Actions에서만 수행한다. 
 최소 수정은 초기 held 개수를 저장하고 종료 검증 성공 뒤 누적 목록의 초기 prefix만 기록하는 것이다. 목록은 append만 하며 전체 누적 FD 검증과 per-use 보고는 그대로 유지한다. driver의 정확14개·unique14·전후 byte 일치, 동결 case/기대값/marker·회수·자원 기준은 바꾸지 않는다. 다음 Actions에서 기존 두 음성 및 실제 두 selector, driver의 provider trace와 Clippy까지 다시 확인한다. 이 수정 후보의 기능은 아직 UNRUN이며 원본 실행/삭제·credit은0이다.
 
 초기 snapshot 중복의 개별 결함은 [#564](https://github.com/bin9208/openpilot-rust/issues/564)에서 추적한다. 수정 source `c00c7a11fbee357cbfb39bee45125d73596bf56c`의 [Focus40154418302](https://github.com/bin9208/openpilot-rust/actions/runs/40154418302)는 실행 중이며 새 성공은 아직 수용하지 않았다.
+
+
+## c00 실제 수용과 #564 개별 종료
+
+[Focus40154418302/job121052614023](https://github.com/bin9208/openpilot-rust/actions/runs/40154418302/job/121052614023), source `c00c7a11fbee357cbfb39bee45125d73596bf56c`가 최종 성공했다. artifact12584392161=41,123,890B/SHA256 `ee697e2a5b4a80acd1f661235e98eba4d9eadfb3c4efc0d28ca17518985b5fe7`,336CRC/해제97,856,834B를 전수 감사했다. 기본음성2·native7·public1과 두 mode의 초기14/unique14/전후raw동일, supervisor worker0/all_owned_children_reaped=true를 확인했다. driver116경로의 종료232행도 전부같고 명시 불변21쌍이 같았다.
+
+driver outcome은 entry4-checked/command0/final0/entry4_candidate=true다. 실제 공개helper warm ELF/exec·mmap 점검, strictClippy, source/index/wholeSDK 마지막봉인·upload/소유cleanup이 모두 성공해 #564를 개별 종료했다. 실제 원격SSH/ProxyCommand·기기·closed trace·전체builddependencyclosure·원본삭제/부재/credit은0이다. 위 초기 UNRUN 문단은 작성 시점의 기록이며 이 실행의 정확 범위만 새로 수용한다. 원본1 삭제는 별도 absent phase와 source-sensitive 재검증 뒤 판정한다.

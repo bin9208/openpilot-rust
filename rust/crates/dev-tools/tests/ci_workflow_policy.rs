@@ -1429,7 +1429,7 @@ fn full_private_jobs_reject_shared_checkouts_or_unsealed_cleanup() {
             assert!(validate_private_job_layout(&unsafe_alias).is_err());
         }
     }
-    assert_eq!(covered, 63, "maintained private source roster changed");
+    assert_eq!(covered, 66, "maintained private source roster changed");
 }
 
 #[test]
@@ -1613,8 +1613,14 @@ fn every_existing_concurrency_scope_preserves_running_and_pending_jobs() {
 #[test]
 fn arm_target_steps_and_nested_native_actions_require_explicit_command_file_shell() {
     use openpilot_dev_tools::ci_policy::validate_private_job_layout;
-    let workflow =
+    let mut workflow =
         parse(&fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap()).unwrap();
+    let native =
+        parse(&fs::read_to_string(root().join(".github/workflows/rust-native-arm.yml")).unwrap())
+            .unwrap();
+    for name in ["planner-runtime", "carrot-man-runtime", "webrtc-runtime"] {
+        workflow["jobs"][format!("native/{name}")] = native["jobs"][name].clone();
+    }
     let mut routed = 0;
     let mut calls = Vec::new();
     for (name, job) in workflow["jobs"].as_object().unwrap() {
@@ -1657,12 +1663,15 @@ fn arm_target_steps_and_nested_native_actions_require_explicit_command_file_shel
             }
         }
     }
-    assert_eq!(routed, 8);
+    assert_eq!(routed, 11);
     calls.sort_unstable();
     assert_eq!(
         calls,
         [
             "carrot-man-runtime",
+            "native/carrot-man-runtime",
+            "native/planner-runtime",
+            "native/webrtc-runtime",
             "planner-runtime",
             "radar-arm",
             "radard-runtime",
@@ -1768,7 +1777,7 @@ fn private_ownership_exact_guards_reject_missing_seal_or_admission() {
             }
         }
     }
-    assert_eq!((sources, arm), (63, 11));
+    assert_eq!((sources, arm), (66, 14));
 }
 
 // Evaluate the actual restricted workflow condition, not a separately invented
@@ -1920,8 +1929,14 @@ fn private_failed_seal_retains_source_alias_and_common_proof() {
 
 #[test]
 fn private_arm_finalizer_requires_fresh_admission_before_alias_load() {
-    let workflow =
+    let mut workflow =
         parse(&fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap()).unwrap();
+    let native =
+        parse(&fs::read_to_string(root().join(".github/workflows/rust-native-arm.yml")).unwrap())
+            .unwrap();
+    for name in ["planner-runtime", "carrot-man-runtime", "webrtc-runtime"] {
+        workflow["jobs"][format!("native/{name}")] = native["jobs"][name].clone();
+    }
     let mut covered = 0;
     for (name, job) in workflow["jobs"].as_object().unwrap() {
         if job["env"].get("LOCAL_CI_ARCH").is_none() {
@@ -1932,7 +1947,14 @@ fn private_arm_finalizer_requires_fresh_admission_before_alias_load() {
             .as_array()
             .unwrap()
             .iter()
-            .find(|s| s["name"] == "Finish emulated architecture evidence")
+            .find(|s| {
+                s["name"]
+                    == if job["env"]["CI296_NATIVE_ARM"] == "1" {
+                        "Finish native ARM execution evidence"
+                    } else {
+                        "Finish emulated architecture evidence"
+                    }
+            })
             .unwrap();
         for admission in ["failure", "cancelled", "skipped", "", "success"] {
             let temp = tempfile::tempdir().unwrap();
@@ -1959,7 +1981,7 @@ fn private_arm_finalizer_requires_fresh_admission_before_alias_load() {
             );
         }
     }
-    assert_eq!(covered, 8);
+    assert_eq!(covered, 11);
 }
 
 #[test]
@@ -2011,10 +2033,12 @@ const WEBRTC_REQUIRED_OUTCOMES: [&str; 4] = [
     "webrtc_real_comparisons",
 ];
 
-fn webrtc_retention_job() -> serde_json::Value {
-    parse(&fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap()).unwrap()["jobs"]
-        ["webrtc-runtime"]
-        .clone()
+fn webrtc_retention_jobs() -> [serde_json::Value; 2] {
+    ["rust.yml", "rust-native-arm.yml"].map(|file| {
+        parse(&fs::read_to_string(root().join(".github/workflows").join(file)).unwrap()).unwrap()
+            ["jobs"]["webrtc-runtime"]
+            .clone()
+    })
 }
 
 fn webrtc_cleanup_condition_passes(
@@ -2037,41 +2061,44 @@ fn webrtc_cleanup_condition_passes(
 
 #[test]
 fn webrtc_required_native_failures_and_cancellation_retain_both_cleanup_roots() {
-    let job = webrtc_retention_job();
-    let steps = job["steps"].as_array().unwrap();
-    let success: BTreeMap<String, String> = WEBRTC_REQUIRED_OUTCOMES
-        .iter()
-        .map(|id| ((*id).into(), "success".into()))
-        .collect();
-    for cleanup in [
-        "Clean only uploaded owned source alias and target",
-        "Clean common owned temporary paths after uploaded source",
-    ] {
-        let condition = steps.iter().find(|s| s["name"] == cleanup).unwrap()["if"]
-            .as_str()
-            .unwrap();
-        assert!(webrtc_cleanup_condition_passes(
-            condition, &success, false, true
-        ));
-        // Keep receipts and native outcomes successful to isolate each status
-        // guard, including cancellation after the native stages have completed.
-        assert!(!webrtc_cleanup_condition_passes(
-            condition, &success, true, true
-        ));
-        assert!(!webrtc_cleanup_condition_passes(
-            condition, &success, false, false
-        ));
-        for id in WEBRTC_REQUIRED_OUTCOMES {
-            for outcome in ["failure", "cancelled", "skipped", ""] {
-                let mut outcomes = success.clone();
-                outcomes.insert(id.into(), outcome.into());
-                // Also hold success() true to prove the explicit outcome guard
-                // independently rejects a failed/skipped producer or comparison.
-                for successful in [false, true] {
-                    assert!(
-                        !webrtc_cleanup_condition_passes(condition, &outcomes, false, successful),
-                        "{cleanup}: {id}={outcome:?} deleted failed evidence"
-                    );
+    for job in webrtc_retention_jobs() {
+        let steps = job["steps"].as_array().unwrap();
+        let success: BTreeMap<String, String> = WEBRTC_REQUIRED_OUTCOMES
+            .iter()
+            .map(|id| ((*id).into(), "success".into()))
+            .collect();
+        for cleanup in [
+            "Clean only uploaded owned source alias and target",
+            "Clean common owned temporary paths after uploaded source",
+        ] {
+            let condition = steps.iter().find(|s| s["name"] == cleanup).unwrap()["if"]
+                .as_str()
+                .unwrap();
+            assert!(webrtc_cleanup_condition_passes(
+                condition, &success, false, true
+            ));
+            // Keep receipts and native outcomes successful to isolate each status
+            // guard, including cancellation after the native stages have completed.
+            assert!(!webrtc_cleanup_condition_passes(
+                condition, &success, true, true
+            ));
+            assert!(!webrtc_cleanup_condition_passes(
+                condition, &success, false, false
+            ));
+            for id in WEBRTC_REQUIRED_OUTCOMES {
+                for outcome in ["failure", "cancelled", "skipped", ""] {
+                    let mut outcomes = success.clone();
+                    outcomes.insert(id.into(), outcome.into());
+                    // Also hold success() true to prove the explicit outcome guard
+                    // independently rejects a failed/skipped producer or comparison.
+                    for successful in [false, true] {
+                        assert!(
+                            !webrtc_cleanup_condition_passes(
+                                condition, &outcomes, false, successful
+                            ),
+                            "{cleanup}: {id}={outcome:?} deleted failed evidence"
+                        );
+                    }
                 }
             }
         }
@@ -2081,58 +2108,61 @@ fn webrtc_required_native_failures_and_cancellation_retain_both_cleanup_roots() 
 #[test]
 fn webrtc_retention_policy_rejects_guard_removal_and_unbound_required_stages() {
     use openpilot_dev_tools::ci_policy::validate_private_job_layout;
-    let job = webrtc_retention_job();
-    validate_private_job_layout(&job).unwrap();
-    let steps = job["steps"].as_array().unwrap();
-    for cleanup in [
-        "Clean only uploaded owned source alias and target",
-        "Clean common owned temporary paths after uploaded source",
-    ] {
-        let index = steps.iter().position(|s| s["name"] == cleanup).unwrap();
-        let original = steps[index]["if"].as_str().unwrap();
-        for clause in ["!cancelled()".to_owned(), "success()".to_owned()]
-            .into_iter()
-            .chain(WEBRTC_REQUIRED_OUTCOMES.map(|id| format!("steps.{id}.outcome == 'success'")))
-        {
+    for job in webrtc_retention_jobs() {
+        validate_private_job_layout(&job).unwrap();
+        let steps = job["steps"].as_array().unwrap();
+        for cleanup in [
+            "Clean only uploaded owned source alias and target",
+            "Clean common owned temporary paths after uploaded source",
+        ] {
+            let index = steps.iter().position(|s| s["name"] == cleanup).unwrap();
+            let original = steps[index]["if"].as_str().unwrap();
+            for clause in ["!cancelled()".to_owned(), "success()".to_owned()]
+                .into_iter()
+                .chain(
+                    WEBRTC_REQUIRED_OUTCOMES.map(|id| format!("steps.{id}.outcome == 'success'")),
+                )
+            {
+                let mut changed = job.clone();
+                let condition = original.replacen(&format!(" && {clause}"), "", 1);
+                assert_ne!(condition, original, "missing mutation anchor: {clause}");
+                changed["steps"][index]["if"] = condition.into();
+                assert!(
+                    validate_private_job_layout(&changed).is_err(),
+                    "{cleanup}: guard removed: {clause}"
+                );
+            }
             let mut changed = job.clone();
-            let condition = original.replacen(&format!(" && {clause}"), "", 1);
-            assert_ne!(condition, original, "missing mutation anchor: {clause}");
-            changed["steps"][index]["if"] = condition.into();
+            changed["steps"][index]["if"] = original.replace(".outcome", ".conclusion").into();
+            assert!(validate_private_job_layout(&changed).is_err());
+        }
+        for id in WEBRTC_REQUIRED_OUTCOMES {
+            let index = steps.iter().position(|s| s["id"] == id).unwrap();
+            let mut changed = job.clone();
+            changed["steps"][index]
+                .as_object_mut()
+                .unwrap()
+                .remove("id");
             assert!(
                 validate_private_job_layout(&changed).is_err(),
-                "{cleanup}: guard removed: {clause}"
+                "missing {id}"
+            );
+            let mut changed = job.clone();
+            changed["steps"][index]["continue-on-error"] = "true".into();
+            assert!(validate_private_job_layout(&changed).is_err(), "COE {id}");
+            let mut changed = job.clone();
+            changed["steps"][index]["if"] = "${{ always() }}".into();
+            assert!(
+                validate_private_job_layout(&changed).is_err(),
+                "not normal {id}"
+            );
+            let mut changed = job.clone();
+            changed["steps"][0]["id"] = id.into();
+            assert!(
+                validate_private_job_layout(&changed).is_err(),
+                "duplicate {id}"
             );
         }
-        let mut changed = job.clone();
-        changed["steps"][index]["if"] = original.replace(".outcome", ".conclusion").into();
-        assert!(validate_private_job_layout(&changed).is_err());
-    }
-    for id in WEBRTC_REQUIRED_OUTCOMES {
-        let index = steps.iter().position(|s| s["id"] == id).unwrap();
-        let mut changed = job.clone();
-        changed["steps"][index]
-            .as_object_mut()
-            .unwrap()
-            .remove("id");
-        assert!(
-            validate_private_job_layout(&changed).is_err(),
-            "missing {id}"
-        );
-        let mut changed = job.clone();
-        changed["steps"][index]["continue-on-error"] = "true".into();
-        assert!(validate_private_job_layout(&changed).is_err(), "COE {id}");
-        let mut changed = job.clone();
-        changed["steps"][index]["if"] = "${{ always() }}".into();
-        assert!(
-            validate_private_job_layout(&changed).is_err(),
-            "not normal {id}"
-        );
-        let mut changed = job.clone();
-        changed["steps"][0]["id"] = id.into();
-        assert!(
-            validate_private_job_layout(&changed).is_err(),
-            "duplicate {id}"
-        );
     }
 }
 #[test]
@@ -2237,4 +2267,330 @@ fn native_arm_transport_rejects_unbound_or_shared_shell() {
         changed["steps"][prepare]["run"] = body.into();
         assert!(validate_private_job_layout(&changed).is_err());
     }
+}
+
+fn native_arm_reuse_inputs() -> (serde_json::Value, serde_json::Value) {
+    let load = |name| {
+        parse(&fs::read_to_string(root().join(format!(".github/workflows/{name}"))).unwrap())
+            .unwrap()
+    };
+    (load("rust.yml"), load("rust-native-arm.yml"))
+}
+
+#[test]
+fn native_arm_reuse_requires_exact_caller_leaf_roster_and_success_gate() {
+    use openpilot_dev_tools::ci_policy::validate_native_arm_reuse;
+    let (main, callee) = native_arm_reuse_inputs();
+    validate_native_arm_reuse(&main, &callee).unwrap();
+    for (key, value) in [
+        ("uses", "./.github/workflows/missing.yml"),
+        (
+            "uses",
+            "bin9208/openpilot-rust/.github/workflows/rust-native-arm.yml@dev",
+        ),
+        ("if", "${{ false }}"),
+        ("continue-on-error", "true"),
+    ] {
+        let mut changed = main.clone();
+        changed["jobs"]["native-arm"][key] = value.into();
+        assert!(
+            validate_native_arm_reuse(&changed, &callee).is_err(),
+            "caller {key}"
+        );
+    }
+    for name in ["PLANNER", "WORKSPACE", "NATIVE_ARM"] {
+        for mode in ["binding", "test"] {
+            let mut changed = main.clone();
+            let step = &mut changed["jobs"]["fast"]["steps"][0];
+            if mode == "binding" {
+                step["env"].as_object_mut().unwrap().remove(name);
+            } else {
+                step["run"] = step["run"]
+                    .as_str()
+                    .unwrap()
+                    .replace(&format!("test \"${name}\" = success\n"), "")
+                    .into();
+            }
+            assert!(
+                validate_native_arm_reuse(&changed, &callee).is_err(),
+                "main {name}/{mode}"
+            );
+        }
+    }
+    for mode in ["missing", "duplicate"] {
+        let mut changed = main.clone();
+        let needs = changed["jobs"]["fast"]["needs"].as_array_mut().unwrap();
+        if mode == "missing" {
+            needs.retain(|v| v != "native-arm");
+        } else {
+            needs.push("native-arm".into());
+        }
+        assert!(
+            validate_native_arm_reuse(&changed, &callee).is_err(),
+            "main needs {mode}"
+        );
+    }
+    let mut changed = callee.clone();
+    changed["concurrency"]["group"] = "rust-${{ github.event_name }}-${{ github.ref }}".into();
+    assert!(
+        validate_native_arm_reuse(&main, &changed).is_err(),
+        "caller concurrency collision"
+    );
+    for name in [
+        "planner-runtime",
+        "carrot-man-runtime",
+        "webrtc-runtime",
+        "native-arm-checks",
+    ] {
+        let mut changed = callee.clone();
+        changed["jobs"].as_object_mut().unwrap().remove(name);
+        assert!(
+            validate_native_arm_reuse(&main, &changed).is_err(),
+            "missing {name}"
+        );
+        for key in ["if", "continue-on-error"] {
+            let mut changed = callee.clone();
+            changed["jobs"][name][key] = "${{ false }}".into();
+            assert!(
+                validate_native_arm_reuse(&main, &changed).is_err(),
+                "{name}/{key}"
+            );
+        }
+    }
+    for key in ["workflow_call", "extra-job"] {
+        let mut changed = callee.clone();
+        if key == "workflow_call" {
+            changed["on"].as_object_mut().unwrap().remove(key);
+        } else {
+            changed["jobs"][key] = changed["jobs"]["planner-runtime"].clone();
+        }
+        assert!(validate_native_arm_reuse(&main, &changed).is_err(), "{key}");
+    }
+    for name in ["planner-runtime", "carrot-man-runtime", "webrtc-runtime"] {
+        let mut changed = callee.clone();
+        changed["jobs"][name]["timeout-minutes"] = "5".into();
+        assert!(
+            validate_native_arm_reuse(&main, &changed).is_err(),
+            "timeout {name}"
+        );
+        let mut changed = callee.clone();
+        changed["jobs"][name]["steps"]
+            .as_array_mut()
+            .unwrap()
+            .retain(|s| {
+                !s["name"]
+                    .as_str()
+                    .unwrap_or("")
+                    .starts_with("Compile and check")
+                    && s["name"] != "Build owner and unchanged source bindings"
+            });
+        assert!(
+            validate_native_arm_reuse(&main, &changed).is_err(),
+            "functional stage {name}"
+        );
+        let position = callee["jobs"][name]["steps"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .position(|s| {
+                s["name"]
+                    .as_str()
+                    .unwrap_or("")
+                    .starts_with("Compile and check")
+                    || s["name"] == "Build owner and unchanged source bindings"
+            })
+            .unwrap();
+        for mode in ["duplicate", "skip", "continue"] {
+            let mut changed = callee.clone();
+            let steps = changed["jobs"][name]["steps"].as_array_mut().unwrap();
+            match mode {
+                "duplicate" => steps.push(steps[position].clone()),
+                "skip" => steps[position]["if"] = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (false) }}".into(),
+                _ => steps[position]["continue-on-error"] = "true".into(),
+            }
+            assert!(
+                validate_native_arm_reuse(&main, &changed).is_err(),
+                "{name}/{mode}"
+            );
+        }
+    }
+}
+
+#[test]
+fn native_arm_main_context_rejects_forks_wrong_callers_and_event_refs() {
+    use openpilot_dev_tools::ci_policy::NATIVE_ARM_MAIN_CONTEXT;
+    let repository = "bin9208/openpilot-rust";
+    let context = |event: &str, reference: &str, base: &str, head: &str| {
+        BTreeMap::from([
+            ("CI296_NATIVE_ARM_CALLER".into(), "rust.yml".into()),
+            ("GITHUB_REPOSITORY".into(), repository.into()),
+            ("GITHUB_EVENT_NAME".into(), event.into()),
+            ("GITHUB_REF".into(), reference.into()),
+            ("GITHUB_BASE_REF".into(), base.into()),
+            ("CI296_PR_HEAD_REPOSITORY".into(), head.into()),
+            (
+                "GITHUB_WORKFLOW_REF".into(),
+                format!("{repository}/.github/workflows/rust.yml@{reference}"),
+            ),
+        ])
+    };
+    for (event, reference, base, head) in [
+        ("push", "refs/heads/dev", "", ""),
+        ("push", "refs/heads/main", "", ""),
+        ("pull_request", "refs/pull/343/merge", "dev", repository),
+        ("pull_request", "refs/pull/343/merge", "main", repository),
+        (
+            "workflow_dispatch",
+            "refs/heads/codex/feat-523-python-rust",
+            "",
+            "",
+        ),
+        ("workflow_dispatch", "refs/tags/test-native-arm", "", ""),
+    ] {
+        assert!(run_shell(
+            NATIVE_ARM_MAIN_CONTEXT,
+            &context(event, reference, base, head)
+        )
+        .unwrap()
+        .success());
+    }
+    for (event, reference, base, head) in [
+        ("push", "refs/heads/other", "", ""),
+        (
+            "pull_request",
+            "refs/pull/343/merge",
+            "dev",
+            "other/openpilot-rust",
+        ),
+        ("pull_request", "refs/pull/343/head", "dev", repository),
+        ("pull_request", "refs/pull/343/merge", "other", repository),
+        ("pull_request", "refs/pull/343/merge", "dev", ""),
+        ("pull_request_target", "refs/heads/dev", "dev", repository),
+        ("workflow_dispatch", "refs/heads/", "", ""),
+    ] {
+        let mut env = context(event, reference, base, head);
+        env.insert("SOURCE_ALLOWED".into(), "true".into());
+        assert!(!run_shell(NATIVE_ARM_MAIN_CONTEXT, &env).unwrap().success());
+    }
+    for key in [
+        "GITHUB_WORKFLOW_REF",
+        "CI296_NATIVE_ARM_CALLER",
+        "GITHUB_REPOSITORY",
+    ] {
+        let mut env = context("push", "refs/heads/dev", "", "");
+        env.insert(key.into(), "wrong".into());
+        assert!(
+            !run_shell(NATIVE_ARM_MAIN_CONTEXT, &env).unwrap().success(),
+            "{key}"
+        );
+    }
+    assert!(fs::read_to_string(root().join("tools/ci/native-arm"))
+        .unwrap()
+        .contains(NATIVE_ARM_MAIN_CONTEXT.trim_end()));
+}
+
+#[test]
+fn native_arm_boundary_keeps_exact_host_and_main_or_candidate_context() {
+    let (_, callee) = native_arm_reuse_inputs();
+    validate_local_routing(&callee).unwrap();
+    for (path, value) in [
+        (vec!["runs-on"], "${{ matrix.runner }}"),
+        (vec!["runs-on"], "ubuntu-24.04"),
+        (vec!["env", "CI296_NATIVE_ARM"], "0"),
+        (vec!["env", "CI296_NATIVE_ARM_CALLER"], "other.yml"),
+        (
+            vec!["env", "CI296_PR_HEAD_REPOSITORY"],
+            "bin9208/openpilot-rust",
+        ),
+    ] {
+        let mut changed = callee.clone();
+        let mut slot = &mut changed["jobs"]["planner-runtime"];
+        for key in path {
+            slot = &mut slot[key];
+        }
+        *slot = value.into();
+        assert!(validate_local_routing(&changed).is_err());
+    }
+    let original = callee["jobs"]["planner-runtime"]["steps"][0]["run"]
+        .as_str()
+        .unwrap();
+    for (from, to) in [
+        ("test \"$RUNNER_ARCH\" = ARM64", "true"),
+        ("test \"$(uname -m)\" = aarch64", "true"),
+        ("GITHUB_WORKFLOW_REF", "IGNORED_WORKFLOW_REF"),
+    ] {
+        let mut changed = callee.clone();
+        assert!(original.contains(from));
+        changed["jobs"]["planner-runtime"]["steps"][0]["run"] = original.replace(from, to).into();
+        assert!(validate_local_routing(&changed).is_err());
+    }
+    for name in [
+        "python-rust-523-native-arm.yml",
+        "python-rust-523-native-arm-more.yml",
+    ] {
+        let candidate =
+            parse(&fs::read_to_string(root().join(".github/workflows").join(name)).unwrap())
+                .unwrap();
+        validate_local_routing(&candidate).unwrap();
+        for job in candidate["jobs"].as_object().unwrap().values() {
+            let body = job["steps"][0]["run"].as_str().unwrap();
+            assert!(body.contains("test \"$GITHUB_EVENT_NAME\" = push"));
+            assert!(body.contains("refs/heads/codex/feat-523-python-rust"));
+        }
+    }
+}
+
+#[test]
+fn native_arm_result_gate_rejects_each_non_success_or_missing_result() {
+    use openpilot_dev_tools::ci_policy::validate_native_arm_reuse;
+    let (main, callee) = native_arm_reuse_inputs();
+    let gate = &callee["jobs"]["native-arm-checks"];
+    let script = gate["steps"][0]["run"].as_str().unwrap();
+    let success = BTreeMap::from([
+        ("SOURCE_ALLOWED".into(), "true".into()),
+        ("PLANNER".into(), "success".into()),
+        ("CARROT_MAN".into(), "success".into()),
+        ("WEBRTC".into(), "success".into()),
+    ]);
+    assert!(run_shell(script, &success).unwrap().success());
+    for key in success.keys() {
+        for value in [
+            Some("failure"),
+            Some("cancelled"),
+            Some("skipped"),
+            Some(""),
+            None,
+        ] {
+            let mut env = success.clone();
+            if let Some(value) = value {
+                env.insert(key.clone(), value.into());
+            } else {
+                env.remove(key);
+            }
+            assert!(
+                !run_shell(script, &env).unwrap().success(),
+                "{key}={value:?}"
+            );
+        }
+    }
+    for key in ["PLANNER", "CARROT_MAN", "WEBRTC"] {
+        let mut changed = callee.clone();
+        changed["jobs"]["native-arm-checks"]["steps"][0]["run"] = script
+            .replace(&format!("test \"${key}\" = success\n"), "")
+            .into();
+        assert!(
+            validate_native_arm_reuse(&main, &changed).is_err(),
+            "removed {key} test"
+        );
+    }
+}
+
+#[test]
+fn native_arm_required_workflow_cannot_be_absent() {
+    let mut files = inputs();
+    assert!(files.iter().any(|(name, _)| name == "rust-native-arm.yml"));
+    files.retain(|(name, _)| name != "rust-native-arm.yml");
+    assert!(check_workflow_policy(&files)
+        .unwrap_err()
+        .contains("missing workflow rust-native-arm.yml"));
 }
