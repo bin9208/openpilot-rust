@@ -125,7 +125,7 @@ need(.schema==2 and .prefix==$prefix and .directory==$b.proof+"/trace" and
 need((.event_counts|to_entries|map(.value)|add)==.event_count and .event_count>0 and .event_count<=1000000 and
   .physical_lines>=.event_count and .physical_lines<=2000000 and
   (.raw_files|map(.pid)|unique|length)==(.raw_files|length) and
-  (.raw_files|map(.name)|sort)==(.directory_roster|map(.name)|sort);"summary counts/roster differ") |
+  (.raw_files|map(.name)|sort)==(.directory_roster|map(select(.name|startswith($prefix+".")))|map(.name)|sort);"summary counts/roster differ") |
 ([$events[]|select(is_detail)]|count_keys) as $detailed |
 (.event_counts|with_entries(select((.key|split(":")[1]) as $op | (detail_ops|index($op))!=null))) as $counts |
 need($detailed==$counts;"process/session detail cardinality differs") |

@@ -676,7 +676,7 @@ jobs:
         printf '%s  %s\n' 836c65ed0b09b614a15fe0a1d39290dfee19749e7e3163e562d8d31e3fb95966 tools/ci/prepare-lfs-source-535 | sha256sum --check -
         printf '%s  %s\n' dfd8e9c0a5faff24058f8f570790a625646a4ba17001eff74efc1c3279f81149 rust/crates/logging/build.rs | sha256sum --check -
         printf '%s  %s\n' b70ad5b50c56e3ce3299efb5db87a0aca006488a936e297cca117424b9123423 rust/crates/logging/tests/build_watch.rs | sha256sum --check -
-        printf '%s  %s\n' cb033784c1baf501894e44325feccf77c507fd8b2881fe31604ccb02dbe13fb9 .github/workflows/python-rust-523-logging.yml | sha256sum --check -
+        printf '%s  %s\n' 8e7ff55515bc3182b946a3a83af97c76ab01d6a4ff373c76c5cdf7ed145187d5 .github/workflows/python-rust-523-logging.yml | sha256sum --check -
         printf '%s  %s\n' 53f8108dfc715ca59fc0ab1dcd2b16ba20994ec3025f119a35f79e0813d78a3b tools/ci/logging_retained_549.sh | sha256sum --check -
         printf '%s  %s\n' 33a29b54b7db56a11f8d4e40c1ab707800efdb5381c50a2273e852ba3e56ec8d rust/crates/dev-tools/src/native_logging_check.rs | sha256sum --check -
         printf '%s  %s\n' 7799202c6ea4fd2ece3676b8004528274cd6487923890bcba92325010e36d2b3 rust/crates/dev-tools/src/native_logging_check/retained.rs | sha256sum --check -
@@ -758,7 +758,7 @@ jobs:
         printf '%s  %s\n' 4ea04c748d57313ca746ae96df798683662c9fe589e781eaf9dd55dcf6722fda tools/ci/model_current_triplet_482.py | sha256sum --check -
         printf '%s  %s\n' f24908683c706b46102d4f5ffceca3b830e283a71e95ea01b629c0de28a0619c rust/crates/model-runtime/src/cpu/diagnostic_482_tests.rs | sha256sum --check -
         printf '%s  %s\n' 4df8b0ce31223799cd0838020776716e929b68990b9ebfc10c8070331f7e81be rust/crates/model-runtime/src/cpu.rs | sha256sum --check -
-        printf '%s  %s\n' deebf1d596d6266c1455869ef124b79bc15a45f23e588be0844c51a0ae10cbfa tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check -
+        printf '%s  %s\n' 303ed6814d90fe387f832023238b1393edd785acd975bb1ea1572ac3cdcc0825 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check -
         printf '%s  %s\n' de361d9066ef394ab2b3a6e9cff3d8316707d5cd2d08fc9eadbcf57c512b5572 .github/workflows/python-rust-523-controls-same-job.yml | sha256sum --check -
         printf '%s  %s\n' 38a708beea89ccd2faa0dbb3c32661f02c417dde0aa520bd2996b38e6acab355 tools/ci/controlsd_same_job_553.py | sha256sum --check -
         python - <<'MANIFEST'

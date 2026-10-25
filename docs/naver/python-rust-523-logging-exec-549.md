@@ -197,3 +197,23 @@ helper held-final/untraced/paired 최종 exit은0이고 실패 상태를 유지�
 후속은 그 기대 byte literal에 `.as_slice()`만 붙여 동일 bytes의 slice로 직렬화한다.
 새 parser/기대값·구조 Event·실제 동작을 바꾸지 않는다. 구문/format/diff만 확인했으며
 실제 compile과61개·15개 정책 검증은 새 Actions 결과 대기다.
+
+
+## 788의 실제61개 통과와 첫 prefix roster 경계 정정
+
+[40171227327/job121102273488](https://github.com/bin9208/openpilot-rust/actions/runs/40171227327/job/121102273488),
+source `78896f19db29d5cbe305d6f788bac9d0db4ce552`는 새 core21/import9/trace24/summary7을
+실제로 통과했다. 기존 traced14개 본문·untraced runtime INT1·retained-once도 완료했다.
+그 뒤 첫 `exec-policy-first_int`가 exit5/`summary counts/roster differ`로 실패했다.
+artifact12590267474는82,302,246B/SHA256 `f77efe071f9175d1fc8ed61bf2e6def0624eeff806b454e294e533e6a1af350d`,
+5,983CRC/전개1,104,190,736B다. download/전수CRC와 해당 원문 결과를 확인했다.
+
+원인은 summary의 `raw_files`는 선택 prefix50개, `directory_roster`는 전체 prefix의1,804개인데
+새 jq가 두 목록 전체를 같게 요구한 점이다. 후속은 directory roster 중 정확 `$prefix+"."` 항목을
+선택해 기존 raw name roster와 비교한다. 선택 prefix의 누락/추가와 event 합계·유일 PID 조건은
+그대로 거부한다. 다른 prefix bytes의 실행 수용을 추가하지 않으며 native 검사기의 원래 전체
+디렉터리 전후 metadata 불변 검사도 유지한다. 실제 raw/expected/fixture는 바꾸지 않는다.
+
+이번 실행에서 전체 exec15/음성4/새 cleanup은 미수용이다. helper 최종 held/untraced/paired
+exit0과 전체 job FAIL을 구분하며 새 source는 구문/diff만 확인했다. local 기능 실행0,
+old27/runtime2/R4/caller/원본 제거 credit0을 유지한다.
