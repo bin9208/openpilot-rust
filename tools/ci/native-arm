@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# #535 표준 ARM VM 전용 adapter. 원래 기능 명령은 현재 host에서 그대로 실행한다.
+set -euo pipefail
+fail() { printf '%s\n' "$*" >&2; exit 1; }
+[[ ${GITHUB_ACTIONS:-}:${GITHUB_REPOSITORY:-}:${GITHUB_EVENT_NAME:-} == true:bin9208/openpilot-rust:push &&
+   ${GITHUB_REF:-} == refs/heads/codex/feat-523-python-rust &&
+   ${RUNNER_ENVIRONMENT:-}:${RUNNER_OS:-}:${RUNNER_ARCH:-} == github-hosted:Linux:ARM64 &&
+   $(uname -s):$(uname -m) == Linux:aarch64 && ${LOCAL_CI_ARCH:-} == aarch64 ]] || fail 'Trusted hosted ARM64 source required'
+job=${CI_JOB_TEMP:?}; source_dir=${CI296_SOURCE:?}
+[[ $job == /tmp/openpilot-ci.?????? && -d $job && ! -L $job && $(realpath -e "$job") == "$job" &&
+   $(stat -c '%u:%a' "$job") == "$(id -u):700" &&
+   -f $job/owner && ! -L $job/owner && $(cat "$job/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]] || fail 'Owned job required'
+[[ -d $source_dir && ! -L $source_dir && $(realpath -e "$source_dir") == "$source_dir" &&
+   $GITHUB_SHA =~ ^[0-9a-f]{40}$ && $(git -C "$source_dir" --no-optional-locks rev-parse HEAD) == "$GITHUB_SHA" &&
+   ${HOME:-} == "$job/home" && ${CARGO_HOME:-} == "$job/cargo-home" &&
+   ${RUSTUP_HOME:-} == "$job/rustup-home" ]] || fail 'Private exact source and tool homes required'
+transport="$job/local-arm"
+case ${1:-} in
+  prepare)
+    umask 077
+    test ! -e "$transport" && test ! -L "$transport"
+    mkdir -m 700 "$transport"
+    if test ! -e "$job/bin" && test ! -L "$job/bin"; then mkdir -m 700 "$job/bin"; fi
+    test -d "$job/bin" && test ! -L "$job/bin"
+    test "$(realpath -e "$job/bin")" = "$job/bin"
+    test "$(stat -c '%u:%a' "$job/bin")" = "$(id -u):700"
+    test ! -e "$job/bin/openpilot-local-shell" && test ! -L "$job/bin/openpilot-local-shell"
+    ln -s "$source_dir/tools/ci/native-arm" "$job/bin/openpilot-local-shell"
+    printf '%s\n' "$job/bin" >> "$GITHUB_PATH"
+    printf 'LOCAL_CI_TARGET_DIR=%s/rust/target\nOPENPILOT_CI_EXECUTION_MODE=native-host\nOPENPILOT_CI_HOST_ARCH=aarch64\nOPENPILOT_CI_TARGET_ARCH=aarch64\n' "$source_dir" >> "$GITHUB_ENV"
+    printf '{"schema":1,"source_commit":"%s","execution_mode":"native-host","host_architecture":"aarch64","guest_architecture":null,"native_arm_vm":true,"device_validated":false,"bare_metal_verified":false}\n' "$GITHUB_SHA" > "$transport/execution.json"
+    uname -a > "$transport/kernel.txt"
+    df -PB1 "$source_dir" "$job" > "$transport/disk-before.txt"
+    ;;
+  finish)
+    test -f "$transport/execution.json" && test ! -L "$transport/execution.json"
+    cat "$transport/execution.json"
+    ;;
+  *)
+    [[ $# == 1 && -f $1 && ! -L $1 && $(realpath -e "$1") == "$1" && -O $1 ]] || fail 'One owned canonical Actions command file required'
+    test -f "$transport/execution.json" && test ! -L "$transport/execution.json"
+    test "$(readlink -e "$job/bin/openpilot-local-shell")" = "$source_dir/tools/ci/native-arm"
+    test "$(command -v python)" = "$job/venv/bin/python"
+    test "$(python --version)" = "Python 3.12.14"
+    exec /usr/bin/bash --noprofile --norc -e -o pipefail "$1"
+    ;;
+esac

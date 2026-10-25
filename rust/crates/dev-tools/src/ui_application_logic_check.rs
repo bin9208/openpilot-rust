@@ -23,6 +23,61 @@ pub enum Kind {
 fn sha(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
+fn application_source_matches(bytes: &[u8]) -> bool {
+    const ORIGINAL_SHA: &str = "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00";
+    if bytes.len() == 38593 && sha(bytes) == ORIGINAL_SHA {
+        return true;
+    }
+    if bytes.len() != 42048 {
+        return false;
+    }
+    // #557의 정확한 font 변경만 역투영한다. FPS/stack 외 source도 기존 full SHA로 묶는다.
+    let changes: [(&[u8], usize, &str, &[u8]); 3] = [
+        (
+            b"import datetime\n",
+            55,
+            "8a9a5a9e0ffcae3ade84cf1f1963d413f0386a668a6073def1127042ebe8012e",
+            b"import datetime\n",
+        ),
+        (
+            b"SOURCE_FONT_DIR = ASSETS_DIR.joinpath(\"fonts\")\n",
+            3342,
+            "05cae7f7d27b7197c55339220680abea2908aaa4999917925c35c30c3e195cd9",
+            b"FONT_DIR = ASSETS_DIR.joinpath(\"fonts\")\n",
+        ),
+        (
+            b"    if \"OPENPILOT_FONT_ROOT\" in os.environ:\n",
+            114,
+            "f00755b2aaaca701d75f1fada614f39b6e87ecfbbdcdaca28b08e377dae4aa1c",
+            b"",
+        ),
+    ];
+    let mut projected = Vec::with_capacity(38593);
+    let mut previous = 0;
+    for (anchor, length, expected, replacement) in changes {
+        let mut positions = bytes
+            .windows(anchor.len())
+            .enumerate()
+            .filter_map(|(index, value)| (value == anchor).then_some(index));
+        let Some(start) = positions.next() else {
+            return false;
+        };
+        if positions.next().is_some() || start < previous {
+            return false;
+        }
+        let Some(changed) = bytes.get(start..start + length) else {
+            return false;
+        };
+        if sha(changed) != expected {
+            return false;
+        }
+        projected.extend_from_slice(&bytes[previous..start]);
+        projected.extend_from_slice(replacement);
+        previous = start + length;
+    }
+    projected.extend_from_slice(&bytes[previous..]);
+    projected.len() == 38593 && sha(&projected) == ORIGINAL_SHA
+}
 fn load(bytes: &[u8], name: &str) -> Result<Vec<u8>> {
     let manifest: serde_json::Value = serde_json::from_str(include_str!(
         "../tests/fixtures/ui-application-logic/integrity.json"
@@ -137,10 +192,9 @@ pub fn check(
 ) -> Result<String> {
     fs::create_dir_all(output)?;
     let root = resolve_non_strict(root)?;
-    if sha(&fs::read(
+    if !application_source_matches(&fs::read(
         root.join("openpilot/system/ui/lib/application.py"),
-    )?) != "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00"
-    {
+    )?) {
         return Err(
             "GuiApplication source changed; independently recapture original corpus".into(),
         );

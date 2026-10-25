@@ -413,7 +413,10 @@ ok_test() {
 }
 extra_env=()
 for tool in bash sh env git find sort xargs sha256sum stat readlink readelf sed awk grep head od tr cat dd true cmp df du jq strace timeout setsid sleep curl clang++ g++ cc as ar ranlib ld nm pkg-config capnp tar xauth Xvfb xvfb-run ffmpeg ffprobe cp chmod mkdir id dirname basename cut rm ldd mktemp touch ps tail wc uname which getopt; do
-  bind_elf "$(command -v "$tool")"
+  # command -v true는 builtin 이름을 반환한다. 봉인할 외부 PATH provider를 선택한다.
+  path=$(type -P "$tool") || fail "external provider missing: $tool"
+  [[ $path == /* ]] || fail "external provider path is not absolute: $tool"
+  bind_elf "$path" || fail "provider admission failed: $tool ($path)"
 done
 for path in /bin/cat /bin/dd /bin/true /bin/sh /bin/bash;do bind_elf "$path";done
 for tool in cargo rustc rustdoc clippy-driver; do bind_elf "$sdk/bin/$tool";done

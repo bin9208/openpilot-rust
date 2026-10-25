@@ -47,7 +47,7 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
-      UI559_HELPER_SHA256: f75576d287391611b38e8c017609c739aa9ed42ca61a1fe862aa422062acc129
+      UI559_HELPER_SHA256: 2bf1d3861ff543c54aa3513750aae6fe76ea0cc9543cfd1b04468aeac610bb1d
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
       shell: bash

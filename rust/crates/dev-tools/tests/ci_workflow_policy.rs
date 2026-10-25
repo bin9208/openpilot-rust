@@ -1429,7 +1429,7 @@ fn full_private_jobs_reject_shared_checkouts_or_unsealed_cleanup() {
             assert!(validate_private_job_layout(&unsafe_alias).is_err());
         }
     }
-    assert_eq!(covered, 60, "maintained private source roster changed");
+    assert_eq!(covered, 61, "maintained private source roster changed");
 }
 
 #[test]
@@ -1747,7 +1747,11 @@ fn private_ownership_exact_guards_reject_missing_seal_or_admission() {
             if job["env"].get("LOCAL_CI_ARCH").is_some() {
                 arm += 1;
                 let admission = at("Admit exact private source and index");
-                let finish = at("Finish emulated architecture evidence");
+                let finish = at(if job["env"]["CI296_NATIVE_ARM"] == "1" {
+                    "Finish native ARM execution evidence"
+                } else {
+                    "Finish emulated architecture evidence"
+                });
                 let mut changed = job.clone();
                 changed["steps"][finish]["if"] = steps[finish]["if"]
                     .as_str()
@@ -1764,7 +1768,7 @@ fn private_ownership_exact_guards_reject_missing_seal_or_admission() {
             }
         }
     }
-    assert_eq!((sources, arm), (60, 8));
+    assert_eq!((sources, arm), (61, 9));
 }
 
 // Evaluate the actual restricted workflow condition, not a separately invented
@@ -2138,4 +2142,99 @@ fn flow_mapping_alias_keys_keep_an_explicit_colon_separator() {
     let value = parse(source).unwrap();
     assert_eq!(value["steps"][0]["run"], "cargo test");
     assert!(parse("{keys: [&key run], steps: [{*unknown : value}]}").is_err());
+}
+
+#[test]
+fn hosted_arm_requires_explicit_intent_and_actual_runner_guards() {
+    let original = parse(
+        &fs::read_to_string(root().join(".github/workflows/python-rust-523-hosted-arm.yml"))
+            .unwrap(),
+    )
+    .unwrap();
+    validate_local_routing(&original).unwrap();
+    for key in ["CI296_NATIVE_ARM", "SOURCE_ALLOWED"] {
+        let mut changed = original.clone();
+        let env = if key == "CI296_NATIVE_ARM" {
+            &mut changed["jobs"]["inventory"]["env"]
+        } else {
+            &mut changed["jobs"]["inventory"]["steps"][0]["env"]
+        };
+        env.as_object_mut().unwrap().remove(key);
+        assert!(validate_local_routing(&changed).is_err(), "missing {key}");
+    }
+    for guard in [
+        "test \"$RUNNER_ENVIRONMENT\" = github-hosted\n",
+        "test \"$RUNNER_ARCH\" = ARM64\n",
+        "test \"$(uname -m)\" = aarch64\n",
+        "test \"$GITHUB_REF\" = refs/heads/codex/feat-523-python-rust\n",
+    ] {
+        let mut changed = original.clone();
+        let body = changed["jobs"]["inventory"]["steps"][0]["run"]
+            .as_str()
+            .unwrap();
+        assert_eq!(body.matches(guard).count(), 1);
+        changed["jobs"]["inventory"]["steps"][0]["run"] = body.replace(guard, "").into();
+        assert!(validate_local_routing(&changed).is_err(), "missing {guard}");
+    }
+    let mut changed = original.clone();
+    changed["jobs"]["inventory"]["runs-on"] = "${{ matrix.runner }}".into();
+    assert!(validate_local_routing(&changed).is_err());
+}
+
+#[test]
+fn generated_asset_cleanup_requires_completed_real_consumers() {
+    use openpilot_dev_tools::ci_policy::validate_private_job_layout;
+    let workflow =
+        parse(&fs::read_to_string(root().join(".github/workflows/tests.yaml")).unwrap()).unwrap();
+    let job = &workflow["jobs"]["build_release"];
+    validate_private_job_layout(job).unwrap();
+    let steps = job["steps"].as_array().unwrap();
+    let generated = steps
+        .iter()
+        .position(|s| s["id"] == "generated_assets_check")
+        .unwrap();
+    let cleanup = steps
+        .iter()
+        .position(|s| s["id"] == "ci296_source_cleanup")
+        .unwrap();
+    let mut changed = job.clone();
+    changed["steps"][cleanup]["if"] = steps[cleanup]["if"]
+        .as_str()
+        .unwrap()
+        .replace(" && steps.generated_assets_check.outcome == 'success'", "")
+        .into();
+    assert!(validate_private_job_layout(&changed).is_err());
+    for mode in ["renamed", "continue", "always"] {
+        let mut changed = job.clone();
+        match mode {
+            "renamed" => changed["steps"][generated]["id"] = "unbound_assets".into(),
+            "continue" => changed["steps"][generated]["continue-on-error"] = "true".into(),
+            _ => changed["steps"][generated]["if"] = "${{ always() }}".into(),
+        }
+        assert!(validate_private_job_layout(&changed).is_err(), "{mode}");
+    }
+}
+
+#[test]
+fn native_arm_transport_rejects_unbound_or_shared_shell() {
+    use openpilot_dev_tools::ci_policy::validate_private_job_layout;
+    let workflow = parse(
+        &fs::read_to_string(root().join(".github/workflows/python-rust-523-native-arm.yml"))
+            .unwrap(),
+    )
+    .unwrap();
+    validate_local_routing(&workflow).unwrap();
+    let job = &workflow["jobs"]["carrot-man-runtime"];
+    validate_private_job_layout(job).unwrap();
+    let prepare = job["steps"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .position(|s| s["name"] == "Prepare native ARM command transport")
+        .unwrap();
+    for body in ["true\n", "/usr/bin/bash tools/ci/native-arm prepare\n"] {
+        let mut changed = job.clone();
+        changed["steps"][prepare]["run"] = body.into();
+        assert!(validate_private_job_layout(&changed).is_err());
+    }
 }

@@ -851,3 +851,61 @@ f55가 실제 수용한 developer_cli_original의 embedded 원본1행만 replace
 SHA를 대조했고 Focus 실행부의 기존 SHA `2a05a74b9bc4c5d4c4793ac11259d1c4f02b2fcaa599ebd03a3f92416e80c84a`는 그대로다.
 로컬은 YAML5/Bash76본문/Python AST10/shell1과 diff만 확인했다. 기능·RED/GREEN·빌드 성공은
 이 정적 확인에 포함되지 않는다. #554/SSH entry의 다른 agent WIP는 별도이며 이 후보에 섞지 않는다.
+
+## 202a 실제 실패 분리와 다음 수정 후보
+
+- [Fast40149186502](https://github.com/bin9208/openpilot-rust/actions/runs/40149186502)는
+  tools의 UI application 검사3개와 routing의 workflow 정책4개 때문에 실패했다. UI는
+  #557의 폰트 경로 변경을 과거 전체 source SHA가 거부한 것이며 FPS/stack 출력 차이가 아니다.
+  정확한 font 변경3구간의 길이·SHA·유일성·순서를 확인한 뒤 메모리에서만 역투영해
+  역사38593B/`d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00`을
+  다시 요구한다. 기존5개 본문/원문과 새 공개 check() 경계4개를 Actions에서 검증한다.
+- [build40149194155/job121036927945](https://github.com/bin9208/openpilot-rust/actions/runs/40149194155/job/121036927945)의
+  전체 SCons 빌드는 성공했으나 외부 font output의 .ready가 없어 consumer admission이 실패했다.
+  뒤의 native_models/camera/exposure/pytest570/생성물6회귀는 미실행이다.
+  artifact12582183272=4,575,380B/SHA `cd17d3851cfd12263ca274e54c52003a3e64dca6676fbc65ca836b6416ddc31b`,46CRC다.
+  source/index 전후는 동일하고 DBC103/manifest/.ready는 있으나 font root는 빈 directory였다.
+  staged font에만 `Default(Dir("#"), font_nodes)`를 추가해 기존 root default와 외부 font target을
+  함께 요구한다. 실제 새 build/consumer/동등성은 아직 UNRUN이다.
+- [UI40149186556/job121036901407](https://github.com/bin9208/openpilot-rust/actions/runs/40149186556/job/121036901407)는
+  preflight에서 `command -v true`의 builtin 이름을 외부 ELF 경로로 넘겨 실패했다.
+  artifact12582366637=339,380B/SHA `67d32f837e6aa80a758094dd7d95ce8e17996c83548b1000a600dd741c800d2a`,54CRC다.
+  새 후보는 provider loop만 `type -P`와 절대 경로 요구로 보정한다. RED/GREEN/빌드/원문5모드는
+  여전히 미수용이며 unknown provider 허용이나 불변 검사의 생략은 없다.
+- [diagnostic40149186523/job121036901448](https://github.com/bin9208/openpilot-rust/actions/runs/40149186523/job/121036901448)는
+  gh version/metadata/download가 각각 exit0·소유 자식 회수에 성공해 #561의 인증 경계를 통과했다.
+  전체 결과는 수치602 미재현으로 FAIL이다. artifact12581727858=89,703,307B/SHA
+  `e5106677eb853b4bba3024868be70a6be159ed885f7aee7e166f2639d05c0dff`,146CRC/해제368,022,203B다.
+  원문/native tap4call의2329bit는 동일하고 first_divergence는 null이다. 같은 held plain ELF·환경의
+  prefix600+target1도 현재 oneframe과 동일하며 과거602의 native 차이는 재현하지 못했다.
+  final-seals pass/실패0·all_owned_children_reaped true다. Python provider 전후 차이는
+  first_observed_after 관측 목록뿐이고 files/held/libpython은 동일했다. BLAS 실제 호출·kernel 및
+  과거 provider 전체 closure는 미관측이며 normal40 수용·수치 기대값 갱신·credit은0이다.
+
+표준 ARM inventory의 실제 결과와 원래 CarrotMan job 하나의 native VM 후보는
+`python-rust-523-native-arm.md`에 기록했다. 정책은 명시 intent와 실제 ARM source/runner 경계가
+있는 정확 label만 추가하며 inventory queue:max와 generated consumer cleanup의 더 강한 success
+조건을 검증한다. 기존 거부 경계와 source/provider seal은 유지한다.
+
+#495의 실제 ACK 뒤 stop 지연은 proof 완료보다 producer exit 관측을 늦게 기다린 경계였다.
+proof/inputs close 뒤 atomic 완료 marker를 게시하고 관측한 다음 기존20ms drain·strict100ms를
+유지한다. stop 뒤에도 producer의 실제 exit0를3초 안에 요구하며 kill/timeout은 성공이 아니다.
+기존8개 본문은 그대로이고 신규4함수11case는 미실행이다. #554의 한정 Git preload 환경3키와
+2048파일/4상태의 true/false 상태 동등성 후보도 기존17case·2초/600초·trace 기준을 보존한다.
+
+f55 PR Rust의 model-pipelines NumPy 누락은 lexical venv Python을 readlink로 base interpreter로
+바꾼 caller에서 발생했다. 그 env 한 필드만 lexical 경로로 보정한다. startup retirement의 고정
+/tmp helper2개는 현재 TMPDIR와 기존 /tmp 형식만 인정하도록 보정하고 음성 경계2개를 추가한다.
+model-family의 collector 원문은 기존 no-collector와 다른 provenance pair이므로 #562에서 별도
+검토한다. 기존 helper SHA를 무작정 갱신하거나 collector flag만 허용하지 않는다.
+
+이번 수정은 독립 source review 뒤 로컬 문법/서식/diff만 확인한 후보다. 새로운 기능·빌드·Clippy는
+Actions 전까지 UNRUN이며 실행-edge98행의 추가2개는 pending이다. baseline3580의293교체/3부분/
+3284대기와 전체 #523/#296·필수 PR/통합/전달/실기 미완료 상태를 유지한다.
+
+현재 index의 검토24파일만 선택했고 별도 SSH entry 및 #562 WIP는 포함하지 않았다.
+YAML6/Bash본문761/Python AST4/독립 Bash3과 선택 Rustfmt·diff를 확인했다.
+Focus exact 허용211경로/188literal pin 및 baseline delta211개가 일치하며 실행 영역 SHA는
+`2a05a74b9bc4c5d4c4793ac11259d1c4f02b2fcaa599ebd03a3f92416e80c84a`로 유지됐다.
+main Rust workflow498181B의 parsed 변경은 model-pipelines의 lexical Python env 한 필드뿐이다.
+이 정적 확인은 실제 compiler/test/원문 실행의 성공을 뜻하지 않는다.

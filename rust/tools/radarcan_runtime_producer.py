@@ -10,6 +10,20 @@ import time
 from radarcan_runtime_types import Action, Case
 
 
+def publish_completion(output: Path) -> None:
+  # 입력/proof의 write/close가 끝난 뒤에만 게시한다. Python teardown은 별도 exit 검사 대상이다.
+  proof = output.read_bytes()
+  record = json.loads(proof)
+  assert record['pid'] == os.getpid()
+  complete = output.with_name('producer-complete.json')
+  assert not complete.exists() and not complete.is_symlink(), 'stale producer completion'
+  pending = complete.with_suffix('.pending')
+  with pending.open('x') as stream:
+    stream.write(json.dumps({'schema': 1, 'pid': os.getpid(), 'completed_ns': time.monotonic_ns(),
+      'producer_sha256': hashlib.sha256(proof).hexdigest(), 'inputs_sha256': record['inputs_sha256']}) + '\n')
+  pending.replace(complete)
+
+
 def prepare(action: Action):
   from openpilot.cereal import messaging
   packets = []
@@ -113,6 +127,7 @@ def main() -> None:
     'origin_ns': origin, 'offset_ns': offset, 'encoded_done_ns': encoded_done,
     'final_ack_ns': final_ack, 'evidence_done_ns': time.monotonic_ns(), 'prefixes': args.prefix,
     'inputs_sha256': hashlib.sha256(inputs_path.read_bytes()).hexdigest()}) + '\n')
+  publish_completion(args.output)
 
 
 if __name__ == '__main__':

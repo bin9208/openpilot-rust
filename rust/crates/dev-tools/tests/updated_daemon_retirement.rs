@@ -153,20 +153,37 @@ fn json(bytes: &[u8]) -> Value {
     serde_json::from_slice(bytes).unwrap()
 }
 fn root_from_commands(bytes: &[u8]) -> String {
+    let current_prefix = std::env::temp_dir().join("updated-daemon-");
+    let prefixes = [
+        current_prefix
+            .to_str()
+            .expect("test temporary root is UTF8"),
+        "/tmp/updated-daemon-",
+    ];
     let text = String::from_utf8(bytes.to_vec()).unwrap();
     text.lines()
         .flat_map(|line| json(line.as_bytes()).as_array().unwrap().clone())
         .filter_map(|arg| arg.as_str().map(str::to_owned))
         .find_map(|arg| {
-            let start = arg.find("/tmp/updated-daemon-")?;
-            let end = start + arg[start..].find("/runtime/")? + "/runtime".len();
-            Some(arg[start..end].to_owned())
+            prefixes.into_iter().find_map(|prefix| {
+                let start = arg.find(prefix)?;
+                let end = start + arg[start..].find("/runtime/")? + "/runtime".len();
+                Some(arg[start..end].to_owned())
+            })
         })
         .expect("missing owned runtime root")
 }
 fn fixture_parent(root: &str) -> &str {
     let parent = root.strip_suffix("/runtime").unwrap();
-    let suffix = parent.strip_prefix("/tmp/updated-daemon-").unwrap();
+    let current_prefix = std::env::temp_dir().join("updated-daemon-");
+    let suffix = parent
+        .strip_prefix(
+            current_prefix
+                .to_str()
+                .expect("test temporary root is UTF8"),
+        )
+        .or_else(|| parent.strip_prefix("/tmp/updated-daemon-"))
+        .unwrap();
     assert!(!suffix.is_empty() && !suffix.contains('/'));
     parent
 }
@@ -1021,4 +1038,43 @@ fn actual_non_utf8_output_path_matches_original_full_observation() {
     if let Some(mut pin) = original_pin {
         pin.verify();
     }
+}
+
+#[test]
+fn owned_runtime_root_uses_private_temp_and_retains_historical_capture() {
+    let current = std::env::temp_dir().join("updated-daemon-current/runtime");
+    for root in [
+        current.to_str().unwrap(),
+        "/tmp/updated-daemon-historical/runtime",
+    ] {
+        let raw = serde_json::to_vec(&serde_json::json!([
+            "checker",
+            "--output",
+            format!("{root}/output")
+        ]))
+        .unwrap();
+        assert_eq!(root_from_commands(&raw), root);
+        assert_eq!(fixture_parent(root), root.strip_suffix("/runtime").unwrap());
+    }
+}
+
+#[test]
+fn owned_runtime_root_rejects_missing_suffix_and_foreign_parent() {
+    for root in [
+        "/foreign/updated-daemon-fixture/runtime",
+        "/tmp/updated-daemon-/runtime",
+        "/tmp/updated-daemon-parent/nested/runtime",
+    ] {
+        assert!(
+            std::panic::catch_unwind(|| fixture_parent(root)).is_err(),
+            "{root}"
+        );
+    }
+    let raw = serde_json::to_vec(&serde_json::json!([
+        "checker",
+        "--output",
+        "/foreign/updated-daemon-fixture/runtime/output"
+    ]))
+    .unwrap();
+    assert!(std::panic::catch_unwind(|| root_from_commands(&raw)).is_err());
 }

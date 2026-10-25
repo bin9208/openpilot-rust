@@ -136,6 +136,7 @@ pub fn uses_native_action(job: &Value, step: &Value, name: &str) -> bool {
 
 pub const LOCAL_RUNNER: [&str; 4] = ["self-hosted", "Linux", "X64", "dev-md-local"];
 pub const HOSTED_RUNNER: &str = "ubuntu-24.04";
+pub const HOSTED_ARM_RUNNER: &str = "ubuntu-24.04-arm";
 pub const DARWIN_RUNNER: &str = "macos-15";
 fn approved_runner(runner: &Value) -> bool {
     runner == &serde_json::json!(LOCAL_RUNNER) || runner.as_str() == Some(HOSTED_RUNNER)
@@ -146,12 +147,33 @@ fn source_boundary_name(name: &str) -> bool {
         "Deny fork source and require registered local runner"
             | "Deny fork source and require GitHub-hosted Linux X64"
             | "Deny fork source and require GitHub-hosted Ubuntu X64 runner"
+            | "Deny fork source and require GitHub-hosted Linux ARM64"
     )
 }
 pub const TRUSTED_SOURCE: &str = "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}";
 pub const TRUSTED_SUCCESS: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (success()) }}";
 pub const TRUSTED_ALWAYS: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}";
 pub const FORK_DENIAL: &str = "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }\n";
+const ARM_FORK_DENIAL: &str = "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied on hosted ARM' >&2; exit 1; }\n";
+fn validate_hosted_arm_boundary(job: &Value) -> Result<(), String> {
+    require(
+        job["env"]["CI296_NATIVE_ARM"] == "1" && job["runs-on"] == HOSTED_ARM_RUNNER,
+        "native ARM requires explicit intent and its exact hosted label",
+    )?;
+    let first = job["steps"]
+        .as_array()
+        .and_then(|steps| steps.first())
+        .ok_or("missing native ARM boundary")?;
+    source_result_binding(first)?;
+    let expected = format!("{ARM_FORK_DENIAL}set -euo pipefail\ntest \"$GITHUB_ACTIONS\" = true\ntest \"$GITHUB_REPOSITORY\" = bin9208/openpilot-rust\ntest \"$RUNNER_ENVIRONMENT\" = github-hosted\ntest \"$RUNNER_OS\" = Linux\ntest \"$RUNNER_ARCH\" = ARM64\ntest \"$(uname -s)\" = Linux\ntest \"$(uname -m)\" = aarch64\ntest \"$GITHUB_EVENT_NAME\" = push\ntest \"$GITHUB_REF\" = refs/heads/codex/feat-523-python-rust\n");
+    require(
+        first["name"] == "Deny fork source and require GitHub-hosted Linux ARM64"
+            && first["run"]
+                .as_str()
+                .is_some_and(|body| body.starts_with(&expected)),
+        "native ARM guards must execute immediately after fork refusal",
+    )
+}
 fn source_result_binding(step: &Value) -> Result<(), String> {
     absent(step, &["if", "continue-on-error"])?;
     require(
@@ -166,6 +188,8 @@ fn source_result_binding(step: &Value) -> Result<(), String> {
                 let s = s.strip_prefix("set -euo pipefail\n").unwrap_or(s);
                 [
                     FORK_DENIAL,
+                    ARM_FORK_DENIAL,
+                    "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for UI recording qualification' >&2; exit 1; }\n",
                     "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for trusted docs validation' >&2; exit 1; }\n",
                     "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for setup qualification' >&2; exit 1; }\n",
                     "test \"${SOURCE_ALLOWED:-}\" = true || { echo 'Fork PR source denied for normal40 qualification' >&2; exit 1; }\n",
@@ -260,6 +284,16 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
         "invalid private local-action alias",
     )?;
     let steps = job["steps"].as_array().ok_or("missing private job steps")?;
+    let native_arm = job["env"]["CI296_NATIVE_ARM"] == "1";
+    if native_arm {
+        validate_hosted_arm_boundary(job)?;
+        require(
+            job["env"]["LOCAL_CI_ARCH"] == "${{ matrix.arch }}"
+                && job["strategy"]["matrix"]["include"]
+                    == serde_json::json!([{"arch":"aarch64","runner":"hosted-arm64"}]),
+            "native ARM target matrix differs from its actual host",
+        )?;
+    }
     let position = |name: &str| {
         steps
             .iter()
@@ -357,6 +391,7 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
                 "Deny fork source and require registered local runner" |
                 "Deny fork source and require GitHub-hosted Linux X64" |
                 "Deny fork source and require GitHub-hosted Ubuntu X64 runner" |
+                "Deny fork source and require GitHub-hosted Linux ARM64" |
                 "Require unavailable Darwin execution interface" |
                 "Prepare GNU and Rust providers on native Darwin" |
                 "Allocate private source cache target and local action alias before checkout" |
@@ -379,7 +414,29 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
             steps[admission]["if"] == TRUSTED_SOURCE,
             "fresh ARM admission guard changed",
         )?;
-        let finish = position("Finish emulated architecture evidence")?;
+        let finish = position(if native_arm {
+            "Finish native ARM execution evidence"
+        } else {
+            "Finish emulated architecture evidence"
+        })?;
+        if native_arm {
+            let prepare = position("Prepare native ARM command transport")?;
+            require(
+                admission < prepare && prepare < finish,
+                "native ARM transport preparation order changed",
+            )?;
+            for (index, mode) in [(prepare, "prepare"), (finish, "finish")] {
+                require(
+                    steps[index]["run"]
+                        == format!("/usr/bin/bash \"$CI296_SOURCE/tools/ci/native-arm\" {mode}\n")
+                        && steps[index]["env"]["CI296_HOST_CONTROL"] == "1"
+                        && steps[index]["shell"] == "bash"
+                        && steps[index]["working-directory"] == "${{ env.CI296_SOURCE }}",
+                    "native ARM transport must use the admitted current source helper",
+                )?;
+                absent(&steps[index], &["continue-on-error"])?;
+            }
+        }
         require(admission < finish, "ARM finalizer precedes fresh admission")?;
         require(
             steps[finish]["if"]
@@ -488,6 +545,23 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
     let mut expected = private_upload_conditions(steps)?;
     expected.splice(1..1, native_success.iter().cloned());
     expected.push("steps.ci296_source_seal.outcome == 'success'".into());
+    if alias == ".ci296-source-tests--build_release" {
+        let generated =
+            position("Check actual generated asset consumers and unchanged output algorithms")?;
+        require(
+            generated < seal
+                && steps[generated]["id"] == "generated_assets_check"
+                && steps
+                    .iter()
+                    .filter(|step| step["id"] == "generated_assets_check")
+                    .count()
+                    == 1
+                && steps[generated]["if"] == TRUSTED_SOURCE,
+            "generated asset cleanup needs the bound real consumer outcome",
+        )?;
+        absent(&steps[generated], &["continue-on-error"])?;
+        expected.push("steps.generated_assets_check.outcome == 'success'".into());
+    }
     if alias == ".ci296-source-user-docs--check_user_docs" {
         let before = position("Prepare private Rust 1.94 SDK bound to the private docs source")?;
         let after = position("Verify prepared Rust SDK after all attempted docs commands")?;
@@ -655,8 +729,8 @@ pub fn validate_concurrency(workflow: &Value) -> Result<(), String> {
     Ok(())
 }
 
-/// 모든 workflow에 정적으로 승인한 legacy labels 또는 Ubuntu 24.04 scalar만 허용한다.
-/// matrix/expression/unknown runner는 hosted 전환 뒤에도 허용하지 않는다.
+/// 승인한 legacy/X64 label과 명시적 실제 호스트 경계를 가진 표준 ARM label을 검증한다.
+/// matrix/expression/unknown runner fallback은 허용하지 않는다.
 pub fn validate_local_routing(workflow: &Value) -> Result<(), String> {
     validate_concurrency(workflow)?;
     require(
@@ -675,9 +749,15 @@ pub fn validate_local_routing(workflow: &Value) -> Result<(), String> {
             continue;
         }
         let darwin = name == "dbc-darwin";
+        let native_arm = job["env"]["CI296_NATIVE_ARM"] == "1";
+        if native_arm {
+            validate_hosted_arm_boundary(job)?;
+        }
         require(
             if darwin {
                 job["runs-on"].as_str() == Some(DARWIN_RUNNER)
+            } else if native_arm {
+                job["runs-on"].as_str() == Some(HOSTED_ARM_RUNNER)
             } else {
                 approved_runner(&job["runs-on"])
             },

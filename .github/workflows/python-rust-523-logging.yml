@@ -185,6 +185,7 @@ jobs:
         set -euo pipefail
         umask 077
         # 첫 candidate의 실제 결과를 수집한다. old27/P2/closed-trace/caller/absence 수용은 별도다.
+        printf '%s  %s\n' a4738c0339fc7b82cc9ce3b1705b735a6c6dc95a344f18452650addd31a5845f tools/ci/logging_retained_549.sh | sha256sum --check --strict -
         /usr/bin/timeout --signal=TERM --kill-after=180s 60m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh
     - name: Seal source and index after all attempted contracts
       id: source_final

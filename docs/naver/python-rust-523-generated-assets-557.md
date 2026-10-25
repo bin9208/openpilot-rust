@@ -19,7 +19,7 @@
 | `opendbc_repo/opendbc/can/dbc.py` | 실제 named parser import의 staged admission | `5db064bb957f96706f7009255756f38271a9d14374ecf8e70628981abff2ae02` |
 | `opendbc_repo/opendbc/dbc/SConscript` | 작은 generator 사본과 완전103 출력 publish | `8fa9e182b8a0fc845828fe7263076ac1018aec9cb48d2ad6ce68730ae6bb1655` |
 | `openpilot/selfdrive/assets/fonts/process.py` | 출력 위치 분리와 glyph/provider provenance | `c71bd7b0c5f309481b3d2d759493cea894c0931ba1ca465c70af63bad96f91f8` |
-| `openpilot/selfdrive/ui/SConscript` | font output targets/argv/입력 dependency | `18e30c530d0a64c004afa901713f2e87c6747a9e6ede54e15585f1a70e0f4acf` |
+| `openpilot/selfdrive/ui/SConscript` | font output targets/argv/입력 dependency | `f297e932f32e7a2f65aac6f7ab831690fcebd3b0d7cd6065ee7995a53da25632` |
 | `openpilot/system/ui/lib/application.py` | 실제 GUI font root 및 명시 mode fallback 거부 | `c659ce3574276546da11a7bd25e373321b62226411b1eaadda37401fe3b2110d` |
 | `openpilot/tools/jotpluggler/SConscript` | 동일 stage를 실제 C++ consumer에 연결 | `679d792bdc1d92ff68d98ab61c774791dbedcb5ae59365074ac4f028bab405d7` |
 | `openpilot/tools/jotpluggler/layout.cc` | editor factory/사용자 편집 경로 선택 | `23950a7f01945cc88ce9a3294075add10d7ef433d06adf6477008e02aa1dfde9` |
@@ -112,3 +112,9 @@ open3/실제 stage parent 검사는 그대로이며 수정 재검토에서 추�
 실제 op setup은 venv bin을 GITHUB_PATH에 넣으므로 interpreter는 VIRTUAL_ENV 추측 대신
 현재 `$CI296_SOURCE/.venv/bin/python`으로 확인한다. stage/비교/GL 준비의 추가 예상 증가량은
 1.5GiB로 사전 검사하지만 실제 peak/fit이나 기능 성공은 아직 확인하지 않았다.
+
+## 202a actual: 외부 font default target 누락
+
+[tests40149194155/job121036927945](https://github.com/bin9208/openpilot-rust/actions/runs/40149194155/job/121036927945)의 기존 scons는 성공했으나 consumer 연결이 fonts/.ready 부재로 실패했다. artifact12582183272=4575380B/SHA `cd17d3851cfd12263ca274e54c52003a3e64dca6676fbc65ca836b6416ddc31b`/46CRC·해제15463160B다. source/index seal은 실제 동일하고 staged DBC103/ready/manifest는 존재하지만 fonts는 빈 directory뿐이었다. 새6consumer/원래 후속 native_models/camera/pytest는 미실행이다.
+
+[SCons 공식 FAQ](https://scons.org/faq.html)의 external target 규칙에 따라 root 밖의 font node는 암묵적 기본root 순회에 포함되지 않는다. staged mode에서만 Default(Dir("#"), font_nodes)를 추가해 원래 root의 모든 target과 외부 font를 함께 기본 선택한다. glyph/provider/출력 알고리즘·명시 CLI target은 바꾸지 않는다. 수정 후 실제 생성/실소비는 다음 Actions 전까지 UNRUN이다.

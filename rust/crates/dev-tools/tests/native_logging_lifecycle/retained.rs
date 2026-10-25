@@ -1,7 +1,100 @@
 //! New-mode cases only. No legacy resume or old C++ provider is used here.
 use super::*;
 use openpilot_dev_tools::seal::digest;
-use std::os::{fd::AsRawFd, unix::fs::PermissionsExt};
+use std::{
+    ffi::OsString,
+    os::{fd::AsRawFd, unix::fs::PermissionsExt},
+};
+
+fn fixed_git_preload_environment(
+    command: &mut Command,
+    values: &std::collections::BTreeMap<OsString, OsString>,
+) {
+    let fixed = [
+        ("GIT_CONFIG_COUNT", "1"),
+        ("GIT_CONFIG_KEY_0", "core.preloadIndex"),
+        ("GIT_CONFIG_VALUE_0", "false"),
+    ];
+    // 이 실험의 정확한 schema만 전달한다. 누락을 기본 true로 숨기지 않는다.
+    for (key, expected) in fixed {
+        assert_eq!(
+            values
+                .get(std::ffi::OsStr::new(key))
+                .map(OsString::as_os_str),
+            Some(std::ffi::OsStr::new(expected)),
+            "retained fixture requires fixed #554 {key}"
+        );
+    }
+    command.env_clear();
+    for name in ["PATH", "HOME", "TMPDIR", "TZ", "LANG", "LC_ALL"] {
+        if let Some(value) = values.get(std::ffi::OsStr::new(name)) {
+            command.env(name, value);
+        }
+    }
+    command.envs(fixed);
+}
+
+#[test]
+fn fixed_git_preload_environment_rejects_missing_or_mutated_schema() {
+    use std::collections::BTreeMap;
+    use std::panic::{catch_unwind, AssertUnwindSafe};
+    let selected = [
+        ("PATH", "/usr/bin:/bin"),
+        ("HOME", "/private-home"),
+        ("TMPDIR", "/private-tmp"),
+        ("TZ", "UTC"),
+        ("LANG", "C.UTF-8"),
+        ("LC_ALL", "C.UTF-8"),
+        ("GIT_CONFIG_COUNT", "1"),
+        ("GIT_CONFIG_KEY_0", "core.preloadIndex"),
+        ("GIT_CONFIG_VALUE_0", "false"),
+    ];
+    let expected: BTreeMap<OsString, OsString> = selected
+        .into_iter()
+        .map(|(key, value)| (key.into(), value.into()))
+        .collect();
+    let mut supplied = expected.clone();
+    for key in [
+        "GIT_CONFIG_KEY_1",
+        "GIT_CONFIG_VALUE_1",
+        "GIT_CONFIG_PARAMETERS",
+        "GIT_CONFIG_GLOBAL",
+        "GIT_CONFIG_SYSTEM",
+        "GIT_SSH_COMMAND",
+    ] {
+        supplied.insert(key.into(), "must-not-inherit".into());
+    }
+    let mut command = Command::new(CHECKER);
+    command.env("GIT_CONFIG_PARAMETERS", "must-be-cleared");
+    fixed_git_preload_environment(&mut command, &supplied);
+    let transmitted: BTreeMap<OsString, OsString> = command
+        .get_envs()
+        .map(|(key, value)| (key.to_owned(), value.unwrap().to_owned()))
+        .collect();
+    assert_eq!(transmitted, expected);
+    for (key, mutation) in [
+        ("GIT_CONFIG_COUNT", "2"),
+        ("GIT_CONFIG_KEY_0", "core.hooksPath"),
+        ("GIT_CONFIG_VALUE_0", "true"),
+    ] {
+        for replacement in [None, Some(mutation)] {
+            let mut invalid = expected.clone();
+            invalid.remove(std::ffi::OsStr::new(key));
+            if let Some(value) = replacement {
+                invalid.insert(key.into(), value.into());
+            }
+            assert!(catch_unwind(AssertUnwindSafe(|| {
+                fixed_git_preload_environment(&mut Command::new(CHECKER), &invalid);
+            }))
+            .is_err());
+        }
+    }
+    assert!(catch_unwind(AssertUnwindSafe(|| {
+        fixed_git_preload_environment(&mut Command::new(CHECKER), &BTreeMap::new());
+    }))
+    .is_err());
+    // 이 검사는 command metadata만 검사한다. checker/Git/원문을 실행하지 않는다.
+}
 
 struct Inputs {
     binary: PathBuf,
@@ -84,12 +177,7 @@ impl Inputs {
     }
     fn command(&self, output: &Path) -> Command {
         let mut command = Command::new(CHECKER);
-        command.env_clear();
-        for name in ["PATH", "HOME", "TMPDIR", "TZ", "LANG", "LC_ALL"] {
-            if let Some(value) = std::env::var_os(name) {
-                command.env(name, value);
-            }
-        }
+        fixed_git_preload_environment(&mut command, &std::env::vars_os().collect());
         command
             .args(["retained", "--root"])
             .arg(&self.source)

@@ -6,6 +6,8 @@ use openpilot_dev_tools::{
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{fs, io::Read, path::Path};
+#[path = "ui_application_logic_check/source_binding.rs"]
+mod source_binding;
 fn inflate(path: &Path) -> Vec<u8> {
     let mut out = vec![];
     flate2::read::GzDecoder::new(fs::File::open(path).unwrap())

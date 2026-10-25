@@ -118,7 +118,96 @@ printf '%s  %s\n' 05ff6420f05f8b51f457b85ecf34ad514bc75b6b6147e4abf5d8f78d7f8546
 hold "$archive"
 # 인증 다운로드 뒤의 실행/trace에는 허용한 비밀 없는 환경만 전달한다.
 unset GH_TOKEN GITHUB_TOKEN
-runtime=(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" TMPDIR="$TMPDIR" LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1 GITHUB_ACTIONS=true RUNNER_ENVIRONMENT=github-hosted RUNNER_OS=Linux RUNNER_ARCH=X64 GITHUB_REPOSITORY=bin9208/openpilot-rust)
+runtime=(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" TMPDIR="$TMPDIR" LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.preloadIndex GIT_CONFIG_VALUE_0=false GITHUB_ACTIONS=true RUNNER_ENVIRONMENT=github-hosted RUNNER_OS=Linux RUNNER_ARCH=X64 GITHUB_REPOSITORY=bin9208/openpilot-rust)
+# #554: 동일 Git provider의 의미 비교다. ptrace 성능 개선은 아직 가설이다.
+admit git-preload-fixture 16
+run git-preload-equivalence 90 "${runtime[@]}" /usr/bin/bash --noprofile --norc -euo pipefail -s -- "$proof/git-preload-554" <<'GIT_PRELOAD_554'
+umask 077
+base=$1
+[[ $base == /* && $(realpath -m -- "$base") == "$base" ]]
+available=$(df -PB1 -- "${base%/*}" | awk 'NR==2 {print $4}')
+[[ $available =~ ^[0-9]+$ ]]
+((available >= (16 + 512) * 1024 * 1024))
+mkdir -m 700 -- "$base"
+test "$(stat -c '%u:%a' -- "$base")" = "$UID:700"
+test "$GIT_CONFIG_COUNT:$GIT_CONFIG_KEY_0:$GIT_CONFIG_VALUE_0" = 1:core.preloadIndex:false
+mkdir -m 700 -- "$base/fixture"
+usage() {
+  local label=$1 bytes
+  bytes=$(du -sx --block-size=1 -- "$base" | cut -f1) || return 1
+  [[ $bytes =~ ^[0-9]+$ ]] || return 1
+  printf '%s\t%s\n' "$label" "$bytes" >> "$base/allocated.tsv" || return 1
+  ((bytes <= 16 * 1024 * 1024))
+}
+finish_fixture() {
+  local result=$?
+  trap - EXIT
+  if ! usage final; then
+    if ((result == 0)); then result=1; fi
+  fi
+  exit "$result"
+}
+trap finish_fixture EXIT
+printf '{"proof_filesystem_available_bytes":%s,"fixture_cap_bytes":16777216,"reserve_bytes":536870912}\n' "$available" > "$base/admission.json"
+cd "$base/fixture"
+/usr/bin/git init --quiet --initial-branch=preload-554 --template=
+for ((i=0; i<2048; i++)); do
+  printf -v name 'tracked-%04d' "$i"
+  printf 'fixed identical preload fixture bytes\n' > "$name"
+done
+usage authored-2048
+/usr/bin/git add -- .
+GIT_AUTHOR_NAME=preload-554 GIT_AUTHOR_EMAIL=preload-554@example.invalid \
+  GIT_COMMITTER_NAME=preload-554 GIT_COMMITTER_EMAIL=preload-554@example.invalid \
+  /usr/bin/git commit --quiet -m 'private preload equivalence fixture'
+/usr/bin/git ls-files --stage > "$base/index.txt"
+test "$(wc -l < "$base/index.txt")" -eq 2048
+awk 'NF != 4 || $1 != "100644" || $3 != "0" {exit 1}' "$base/index.txt"
+awk '{print $2}' "$base/index.txt" | sort -u > "$base/blob-oids.txt"
+test "$(wc -l < "$base/blob-oids.txt")" -eq 1
+test "$(/usr/bin/git config --bool --get core.fileMode)" = true
+usage indexed-2048
+matched=0
+compare_status() {
+  local state=$1 expected=$2 setting status
+  printf '%s' "$expected" > "$base/$state.expected"
+  usage "$state-before"
+  for setting in true false; do
+    if GIT_CONFIG_VALUE_0=$setting /usr/bin/git status --porcelain --untracked-files=normal \
+        > "$base/$state-$setting.stdout" 2> "$base/$state-$setting.stderr"; then
+      status=0
+    else
+      status=$?
+    fi
+    printf '%s\n' "$status" > "$base/$state-$setting.exit"
+    test "$status" -eq 0
+  done
+  cmp "$base/$state-true.stdout" "$base/$state-false.stdout"
+  cmp "$base/$state.expected" "$base/$state-true.stdout"
+  cmp "$base/$state-true.stderr" "$base/$state-false.stderr"
+  test ! -s "$base/$state-true.stderr"
+  sha256sum -- "$base/$state-true.stdout" "$base/$state-false.stdout" >> "$base/status.sha256"
+  matched=$((matched + 1))
+  usage "$state-after"
+}
+compare_status clean ''
+printf 'changed tracked fixture bytes\n' > tracked-0000
+compare_status tracked-content $' M tracked-0000\n'
+printf 'fixed identical preload fixture bytes\n' > tracked-0000
+printf 'untracked fixture bytes\n' > untracked-only
+compare_status untracked $'?? untracked-only\n'
+rm -- untracked-only
+chmod 700 tracked-0001
+compare_status tracked-mode $' M tracked-0001\n'
+test "$matched" -eq 4
+usage complete
+printf '{"schema":1,"tracked_files":2048,"unique_blobs":1,"states":4,"status_pairs":4,"status_bytes_equal":true,"fixture_cap_bytes":16777216,"performance_claim":false,"runtime_acceptance":false,"root_cause_fixed":false}\n' > "$base/complete.json"
+GIT_PRELOAD_554
+verify_held
+hold "$proof/git-preload-554/complete.json"
+hold "$proof/git-preload-554/status.sha256"
+run git-preload-env-controls 30 "${runtime[@]}" "$fixture" --exact retained::fixed_git_preload_environment_rejects_missing_or_mutated_schema --test-threads=1 --color=never
+test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/build/git-preload-env-controls.stdout")" -eq 1
 context=$proof/context
 run prepare-context 180 "${runtime[@]}" "$checker" prepare-context --root "$source" --archive "$archive" --output "$context"
 jq -e '.schema==1 and .members==108 and .member_bytes==700585 and .current_source_files==19 and .archive_members==107 and .r11_tar_members==70 and .nested_r3_members==37 and .fixed_current_reference_source_members==1 and .historical_executable_executions==0 and .python_executions==0 and .current_native_functional_acceptance==false and .historical_pass_inherited==false and .complete_cargo_dso_closure==false and .R4_acceptance==false and .retirement_credit==false' "$context.prepare.json" > "$proof/import-admission.txt"

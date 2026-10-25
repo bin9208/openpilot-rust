@@ -8,24 +8,37 @@ permissions:
 concurrency:
   group: python-rust-523-hosted-arm-${{ github.ref }}
   cancel-in-progress: false
+  queue: max
 jobs:
   inventory:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
+    env:
+      CI296_NATIVE_ARM: '1'
     steps:
-    - name: Require the standard hosted ARM VM
+    - name: Deny fork source and require GitHub-hosted Linux ARM64
       shell: bash
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on hosted ARM' >&2; exit 1; }
         set -euo pipefail
-        test "$GITHUB_ACTIONS:$GITHUB_REPOSITORY:$GITHUB_EVENT_NAME" = true:bin9208/openpilot-rust:push
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = ARM64
+        test "$(uname -s)" = Linux
+        test "$(uname -m)" = aarch64
+        test "$GITHUB_EVENT_NAME" = push
         test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
-        test "$RUNNER_ENVIRONMENT:$RUNNER_OS:$RUNNER_ARCH" = github-hosted:Linux:ARM64
-        test "$(uname -s):$(uname -m)" = Linux:aarch64
         [[ $GITHUB_SHA =~ ^[0-9a-f]{40}$ ]]
     - name: Allocate owned inventory output
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
     - name: Record capacity and installed tool identities without a project build
       id: inventory
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       shell: bash
       run: |
         set -euo pipefail
@@ -55,7 +68,7 @@ jobs:
         test "$(du -sb "$proof" | cut -f1)" -le 1048576
     - name: Upload bounded inventory even on failure
       id: evidence
-      if: ${{ always() && env.CI_JOB_TEMP != '' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
       uses: actions/upload-artifact@v6
       with:
         name: hosted-arm-inventory-${{ github.run_id }}-${{ github.run_attempt }}
@@ -63,7 +76,7 @@ jobs:
         if-no-files-found: error
         retention-days: 14
     - name: Clean only uploaded owned inventory
-      if: ${{ always() && steps.inventory.outcome == 'success' && steps.evidence.outcome == 'success' && steps.evidence.outputs.artifact-id != '' && steps.evidence.outputs.artifact-digest != '' }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.inventory.outcome == 'success' && steps.evidence.outcome == 'success' && steps.evidence.outputs.artifact-id != '' && steps.evidence.outputs.artifact-digest != '') }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       with:
         cleanup: 'true'
