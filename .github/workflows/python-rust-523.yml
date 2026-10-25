@@ -509,6 +509,8 @@ jobs:
             rust/crates/model-runtime/src/cpu.rs) ;;
             tools/ci/logging_retained_exec_policy_549.jq) ;;
             docs/naver/python-rust-523-logging-exec-549.md) ;;
+            .github/workflows/python-rust-523-controls-same-job.yml) ;;
+            tools/ci/controlsd_same_job_553.py) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
@@ -533,8 +535,8 @@ jobs:
         printf '%s  %s\n' 634559405e03be79cf66dfcf888bfc28a0b27a51e92b5335013dfe1b16836f59 .github/workflows/python-rust-523-model.yml | sha256sum --check -
         printf '%s  %s\n' 5ec87c23ae6dfdda2c64ce32c314da87197e3da702e3bbca710c0fc6d4477523 .github/workflows/python-rust-523-reclaim.yml | sha256sum --check -
         printf '%s  %s\n' b2b6c63dab892b9a2c0358daf5dd07771515781737c369e5407926e7df90b188 .github/workflows/python-rust-523-sanitizer.yml | sha256sum --check -
-        printf '%s  %s\n' 61ccb5c5bf6c5fa8c40080f90165ab48e355c53d4fd03ca4c2be20b1b81ebbd8 .github/workflows/python-rust-523-controls-diagnostic.yml | sha256sum --check -
-        printf '%s  %s\n' b035b10ac71f0e6ae6212f7a09312a8ab966e58a0bee660375eb54d6ca87d500 tools/ci/controlsd_diagnostic_553.py | sha256sum --check -
+        printf '%s  %s\n' 9003fd580f46250fea984dd89e6989cacb9b75d1e67dee8443c3e81515254faf .github/workflows/python-rust-523-controls-diagnostic.yml | sha256sum --check -
+        printf '%s  %s\n' 1fe4370e96a812b8127ecf8372f55567d4dd40dbe37ec140e1245a0abd04ae2e tools/ci/controlsd_diagnostic_553.py | sha256sum --check -
         printf '%s  %s\n' 52d4ca212c28cad44579360b8531c915f6fe8e3060c0b480f0f7ec1cdb659a79 tools/ci/logging_collision8_batches_549.sh | sha256sum --check -
         printf '%s  %s\n' 376b2a22d5d7e19b5e8d746f3e82c95bd839522baeb4f0f9e8241e8a0fe45fe6 rust/crates/control-policy/Cargo.toml | sha256sum --check -
         printf '%s  %s\n' cf3c55cb9b630db1a12bcd96839337a39c0af55d77ce300b19024feb3bc69563 rust/crates/control-policy/src/flux.rs | sha256sum --check -
@@ -723,8 +725,8 @@ jobs:
         printf '%s  %s\n' 18ebd11d7d87111116d813c50db1ffd75c130dbb35d0597aa6afdeacec51a0f3 tools/ci/tests/test_generated_assets_557.py | sha256sum --check -
         printf '%s  %s\n' 68b932bf23595e217d0b489e2f1267326a19ed4879523fc93f37ba5f28c3ae04 rust/crates/dev-tools/src/ui_application_lifecycle_recording.rs | sha256sum --check -
         printf '%s  %s\n' 4ffa6bc44d1cf2a9f41881541802b779eca279c228f12abaa3a705005b87a7c5 rust/crates/dev-tools/tests/ui_application_lifecycle_recording.rs | sha256sum --check -
-        printf '%s  %s\n' 84d52ee86601de5781775f16e98a1b549f0919ba99c33d4aa3558b1b1d05ce81 .github/workflows/python-rust-523-ui-recording.yml | sha256sum --check -
-        printf '%s  %s\n' 11ec34ceb71864283ce0716ed4e84322c71452ebac13724816beba8285d5e5ad tools/ci/ui_recording_559.sh | sha256sum --check -
+        printf '%s  %s\n' 5f9b67e1ccd3466278a33496d9130f9f3dffe10713527c9fd631d8359311bafb .github/workflows/python-rust-523-ui-recording.yml | sha256sum --check -
+        printf '%s  %s\n' 4f2d685beb9fb151d8e11cd55691f72b42a0b5fa8e89642fc121c98724dc2205 tools/ci/ui_recording_559.sh | sha256sum --check -
         printf '%s  %s\n' 0d516594bf5dc43ee9c000b43b59fc45ccfada008808239ca0589767930040aa tools/ci/fixtures/ui-recording-559-baseline.patch | sha256sum --check -
         printf '%s  %s\n' 6c039216f2bb3f6bfacb56074d593b4d6a071103146f224f64b2e8869948501b .github/workflows/python-rust-523-hosted-arm.yml | sha256sum --check -
         printf '%s  %s\n' 9428142ebc797ccb4d36a1f02f7de3d5232afb42371f2943618004802bab6e9c .github/workflows/python-rust-523-native-arm.yml | sha256sum --check -
@@ -757,6 +759,8 @@ jobs:
         printf '%s  %s\n' f24908683c706b46102d4f5ffceca3b830e283a71e95ea01b629c0de28a0619c rust/crates/model-runtime/src/cpu/diagnostic_482_tests.rs | sha256sum --check -
         printf '%s  %s\n' 4df8b0ce31223799cd0838020776716e929b68990b9ebfc10c8070331f7e81be rust/crates/model-runtime/src/cpu.rs | sha256sum --check -
         printf '%s  %s\n' deebf1d596d6266c1455869ef124b79bc15a45f23e588be0844c51a0ae10cbfa tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check -
+        printf '%s  %s\n' de361d9066ef394ab2b3a6e9cff3d8316707d5cd2d08fc9eadbcf57c512b5572 .github/workflows/python-rust-523-controls-same-job.yml | sha256sum --check -
+        printf '%s  %s\n' 38a708beea89ccd2faa0dbb3c32661f02c417dde0aa520bd2996b38e6acab355 tools/ci/controlsd_same_job_553.py | sha256sum --check -
         python - <<'MANIFEST'
         import hashlib,subprocess,tomllib
         from collections import Counter

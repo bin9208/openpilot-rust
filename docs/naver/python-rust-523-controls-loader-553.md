@@ -215,3 +215,22 @@ getter음성unit2가 실제 성공했고 original/native 각각4호출의 중간
 [NumPy2.5.3 원문](https://github.com/numpy/numpy/blob/v2.5.3/numpy/_core/src/umath/loops_exponent_log.dispatch.c.src)은 exp의AVX2/AVX512 경로를 같은 polynomial 구조로 생성한다. 따라서 CPU flags만으로 exp 구현을 바꾸거나 SVML 차이라고 단정하지 않는다. native numpy_exp는AVX2/FMA에서 현재 polynomial을 쓴다. CPU·BLAS/ufunc 선택 차이는 조사 가설이다.
 
 다음 최소 검토는 동일 job/VM의 실제 normal40 실패 ELF·provider·입력을 먼저 보존한 뒤, 같은 원본과 native의 제한된 재생을 수행해 고정 원문/현재 원본/현재 Rust 세 결과를 구분하는 것이다. 별도 VM의 nonreproduction을 성공으로 바꾸거나 CPU강제·tolerance·expected·수학을 수정하지 않는다. full40 원래700/600초와실패결과를 유지한다. 새로운 원본 관측은 frozen 기대값을 덮어쓰는 절차가 아니다. 구현은 아직0이다.
+
+
+## 같은 job의 fullnormal40 이후 한정 비교 후보
+
+2026-10-25. 기존 `controlsd_normal_523.py` SHA `9225692b3647a75983298ac92f84de91ea9f151f06921bcafcedb4de617cb553`는 그대로다.
+새 전용 workflow/controller가 실제 workflow/job/run/attempt/source를 환경과 read-only Actions API
+양쪽에서 확인한 뒤, 같은 controller의 기존 normal run/finish를 호출한다. 원래52분·auditor700초·
+native600초·40cases/원문 full gate·Clippy·음성2개는 바꾸지 않는다.
+
+목표 `controls[3].rows[0].state.lat_pid[0]` 실패와 native 최종 봉인 성공이 실제 확인된 경우에만,
+같은 held native ELF/provider와 input으로 oneframe/prefix601 및 current original1회를 관측한다.
+실패 trace3exec/argv의 strict parser와 변형 음성4개도 GHA에서 검사한다. 실패 후 normal proof 전체
+snapshot/FD·source/index/SDK를 보존하고 같은 boot_id/CPU·실제 입력·원본/frozen/native state bits를
+기록한다. source·provider·원본 수학·기대값·CPU 강제·허용오차·재시도는 추가하지 않는다.
+
+normal PASS 또는 다른 실패는 목표 미관측으로 구분한다. 목표 진단을 마쳐도 원래 normal FAIL은
+계속 FAIL이다. 기존 diag helper에는 이 명시 모드의 별도 완료 receipt6줄만 추가했으며 기본 경로의
+projection과 기존 workflow의 pin1개 이외 bytes는 동일하다. 새 Python 실행 edge6개는 pending이며
+credit0이다. 독립 source 검토 P1/P2 없음·구문/format/diff만 확인했고 기능은 GHA UNRUN이다.

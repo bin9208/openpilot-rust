@@ -169,3 +169,54 @@ baseline exact RED, CXX exact6 aliases·음성5와 독립 cache copy는 통과�
 완료 조건: 실제 첫 current의 전체 non-registry fresh:false 및 선택 source/ELF 경계, 독립 복사와 baseline/registry/source/SDK 봉인 확인. 이후 원문5mode·recording9/Clippy 등 전체 UI 수용은 #559에서 계속 별도로 추적한다. 현재 source syntax만 확인했으며 기능/기존 성공 승격/원본 삭제·credit0이다.
 
 이 후속 결함은 https://github.com/bin9208/openpilot-rust/issues/568 에 연결한다.
+
+## e856 #568 실제 CMake OUT_DIR 재사용 실패와 고정3 출력 정리 후보
+
+[e856 run40168818381/job121095302862](https://github.com/bin9208/openpilot-rust/actions/runs/40168818381/job/121095302862)은
+workspace fingerprint147개 정리 뒤 첫 current `recording-build`에서 Cargo101로 실패했다.
+기존 [artifact12589147465](https://github.com/bin9208/openpilot-rust/actions/runs/40168818381/artifacts/12589147465)
+ZIP25,464,633B/SHA256 `e27871c4423b9a406c9241233c0e2c2afdbe0ef9995d87ed0fda83cd0bf0cbc1`/15,192CRC는
+부모 감사 자료를 재사용했다. 추가 다운로드·전체 CRC 반복 없이 `ui559/logs/recording-build.stderr`3515B와
+baseline Cargo JSONL만 inert로 읽었다. 로컬 프로젝트/원본/컴파일/CMake 실행0이다.
+
+직접 오류는 candidate의 JPEG `out/jpeg/CMakeCache.txt`가 생성 당시의 baseline target 경로를
+기억하고 있고, source CMakeLists도 baseline checkout의 절대경로인 것이다. CMake는 현재
+candidate-target/current source 경로와 두 값이 달라 `Re-run cmake with a different source directory`로
+거부했다. fingerprint만 지워서 build script가 다시 실행돼도 기존 OUT_DIR 내용은 남는다.
+이 실패를 current-fresh guard 완화, CMakeCache 문자열 치환이나 기능 성공으로 처리하지 않는다.
+
+baseline JSONL의 non-registry `build-script-executed`는 정확3개이며 각각 같은 package의 유일한
+`compiler-artifact/custom-build`와 짝을 이룬다. `B=$job/build/baseline-target`일 때 실제 값은 다음과 같다.
+
+| 고정 path package / version | crate 경로 | 실제 baseline OUT_DIR |
+| --- | --- | --- |
+| `openpilot-params@0.1.0` | `rust/crates/params` | `B/debug/build/openpilot-params-963dcccc3d695b58/out` |
+| `openpilot-image-codecs@0.1.0` | `rust/crates/image-codecs` | `B/debug/build/openpilot-image-codecs-12d1075497bdecd9/out` |
+| `openpilot-jpeg@0.1.0` | `rust/crates/jpeg` | `B/debug/build/openpilot-jpeg-6a49348a96bf129c/out` |
+
+이16hex는 위 actual 관측값이다. 새 source 후보는 임의 과거 hash를 고정하거나 glob 전체를 지우지 않고,
+**이번 같은 job의 baseline 성공 JSONL**에서 exact path package ID/manifest/build.rs/custom-build/fresh=false/
+유일 OUT_DIR3개를 받아 고정 package명과 `debug/build/<name>-16hex/out` suffix를 확인한다.
+unknown/missing/duplicate/non-registry 추가 script는 실패다. registry 출력은 선택하지 않는다.
+
+기존 `prune_seeded_workspace_fingerprints()`에 bounded `workspace-build-outputs.json` plan을 추가했다.
+기존60초 owned prune 명령 안에서 workspace·registry package명 disjoint 확인과147 fingerprint 정리를
+유지하고, baseline OUT_DIR에 대응하는 **candidate의 package parent3개만** 정리한다.
+빌드 script 실행파일의 다른 hash parent나 `debug/build` 전체를 삭제하지 않는다.
+
+각 source/target parent는 canonical/nonsymlink·현재 UID·같은 job device여야 한다.
+baseline/candidate package parent의 inode는 달라야 하고, candidate dev/ino/UID는 입장 때 저장해 삭제 직전에
+재확인한다. 내부 node는 owned/same-device regular nlink1 또는 directory만 허용하므로 alias/외부 link를
+따라 지우지 않는다. plan64KiB, 후보 node metadata는 package당1MiB로 한정한다.
+삭제 전 `planned`와 실제 부재 확인 후 `removed`를 `workspace-build-pruned.tsv`에 보존한다.
+`workspace-build.before/expected/after.bin`은 정확3개만 제거된1-depth roster와 나머지 entry identity 불변을
+대조한다. 이 자료와 plan/node metadata는 성공 후 기존 held 목록에 넣으며 실패 시에도 생성된 원문은 남긴다.
+
+copy/seed 단계의 exact6 symlink 제외·regular bytes 일치·inode 독립·baseline 전체 전후 봉인은 그대로다.
+새 정리는 **독립 copy 입장 검증 후의 명시적 current output 무효화**이며 seed를 몰래 더 제외한 것이 아니다.
+registry build cache/source, baseline source/target, SDK에는 쓰지 않는다.
+첫 current artifact 전체 fresh=false, 실제 rustc cwd/current source·선택 ELF 검증과 기존 CMake build가
+이 후보의 regression gate다. 구현을 복사한 의미 없는 synthetic test는 추가하지 않는다.
+원래 RED/GREEN/recording9/source4/원문5 modes/Clippy·shared1200초·8GiB build/1GiB proof/512MiB file도
+바꾸지 않았다. 추가 작업의60초 fit과 실제 CMake/current 전체 성공은 **Actions UNRUN**이다.
+shared WF helper literal은 부모가 갱신하며, logging frozen5 source는 편집하지 않는다.

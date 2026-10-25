@@ -507,8 +507,8 @@ cache_alias_metadata() {
   hold "$case_source/rust/crates/jpeg/Cargo.toml";hold "$case_source/rust/crates/jpeg/build.rs"
 }
 prune_seeded_workspace_fingerprints() {
-  # 독립 복사의 검증은 유지한다. 최초 current Cargo 전에 non-registry 지문만 제거한다.
-  local plan=$proof/cache-copy/workspace-packages.json path
+  # 독립 복사의 검증은 유지한다. 최초 current Cargo 전에 non-registry 지문과 고정3 OUT_DIR만 제거한다.
+  local plan=$proof/cache-copy/workspace-packages.json outputs=$proof/cache-copy/workspace-build-outputs.json path
   jq -se --arg root "$baseline/rust/" --arg registry "$registry_source/" '
     if length<1 or .[-1]!={reason:"build-finished",success:true} then error("Cargo EOF") else . end |
     [.[]|select(.reason=="compiler-artifact")] |
@@ -531,14 +531,47 @@ prune_seeded_workspace_fingerprints() {
       then . else error("ambiguous workspace and registry fingerprint names") end
   ' "$proof/logs/baseline-build.stdout" > "$plan"
   hold "$plan"
+  # fingerprint를 지워도 CMake의 기존 OUT_DIR은 남는다. baseline Cargo가 실행한 정확3개만 bind한다.
+  jq -se --arg source "$baseline" --arg target "$build/baseline-target" --arg current "$build/candidate-target" '
+    if length<1 or .[-1]!={reason:"build-finished",success:true} or
+      ([.[]|select(.reason=="build-finished")]|length)!=1 then error("Cargo EOF") else . end |
+    . as $all |
+    [.[]|select(.reason=="build-script-executed" and ((.package_id|startswith("registry+"))|not))] as $executed |
+    [{name:"openpilot-params",directory:"params"},{name:"openpilot-image-codecs",directory:"image-codecs"},
+     {name:"openpilot-jpeg",directory:"jpeg"}] as $known |
+    if ($executed|length)!=3 or ($executed|map(.package_id)|unique|length)!=3 then error("exact workspace build-script roster required") else . end |
+    [$known[] | . as $known |
+      ("path+file://"+$source+"/rust/crates/"+$known.directory+"#"+$known.name+"@0.1.0") as $id |
+      [$executed[]|select(.package_id==$id)] as $run |
+      [$all[]|select(.reason=="compiler-artifact" and .package_id==$id and .target.kind==["custom-build"])] as $artifact |
+      if ($run|length)!=1 or ($artifact|length)!=1 or
+        $artifact[0].manifest_path!=($source+"/rust/crates/"+$known.directory+"/Cargo.toml") or
+        $artifact[0].target.name!="build-script-build" or
+        $artifact[0].target.src_path!=($source+"/rust/crates/"+$known.directory+"/build.rs") or
+        $artifact[0].profile.test!=false or $artifact[0].fresh!=false or
+        (($run[0].out_dir|startswith($target+"/debug/build/"+$known.name+"-"))|not)
+        then error("workspace build-script identity/output differs") else . end |
+      ($run[0].out_dir|ltrimstr($target+"/")) as $relative |
+      if ($relative|test("^debug/build/"+$known.name+"-[0-9a-f]{16}/out$")) then
+        {name:$known.name,source_kind:"workspace-path",package_id:$id,manifest_path:$artifact[0].manifest_path,
+         build_script:$artifact[0].target.src_path,baseline_out_dir:$run[0].out_dir,
+         relative_parent:($relative|rtrimstr("/out")),candidate_parent:($current+"/"+($relative|rtrimstr("/out")))}
+      else error("workspace build-script OUT_DIR suffix differs") end] |
+    {schema:1,baseline_source:$source,baseline_target:$target,candidate_target:$current,outputs:.}
+  ' "$proof/logs/baseline-build.stdout" > "$outputs"
+  [[ $(stat -c %s "$outputs") -le 65536 ]]
+  hold "$outputs"
   run cache-workspace-fingerprint-prune 60 0 /bin/bash -c '
     set -euo pipefail;umask 077
-    target=$1;plan=$2;output=$3;uid=$4
+    target=$1;plan=$2;output=$3;uid=$4;build_plan=$5;baseline=$6;owner=$7
     [[ $target == /tmp/openpilot-ci.??????/build/candidate-target ]]
     job=${target%/build/candidate-target}
     [[ $plan == "$job/proof/ui559/cache-copy/workspace-packages.json" &&
+       $build_plan == "$job/proof/ui559/cache-copy/workspace-build-outputs.json" &&
+       $baseline == "$job/ui559-baseline/source" &&
        $output == "$job/proof/ui559/cache-copy/workspace-pruned.tsv" &&
        ! -e $output && ! -L $output ]]
+    [[ -f $job/owner && ! -L $job/owner && $(cat "$job/owner") == "$owner" ]]
     root=$target/debug/.fingerprint
     [[ -d $root && ! -L $root && $(readlink -e "$root") == "$root" && $(stat -c %u "$root") == "$uid" ]]
     identity=$(stat -c "%d:%i:%u" "$root")
@@ -577,9 +610,82 @@ prune_seeded_workspace_fingerprints() {
     ((removed>0))
     for name in "${!workspace[@]}";do [[ -v seen[$name] ]];done
     [[ $(stat -c "%d:%i:%u" "$root") == "$identity" ]]
-  ' ui559-workspace-prune "$build/candidate-target" "$plan" "$proof/cache-copy/workspace-pruned.tsv" "$(id -u)"
+    # source JSONL의 baseline OUT_DIR을 같은 job의 독립 candidate copy에만 대응시킨다.
+    build_root=$target/debug/build
+    device=$(stat -c %d "$job/build")
+    for parent in "$job" "$job/build" "$target" "$target/debug" "$build_root" "$baseline" "$job/build/baseline-target" "$job/build/baseline-target/debug" "$job/build/baseline-target/debug/build";do
+      [[ -d $parent && ! -L $parent && $(readlink -e "$parent") == "$parent" && $(stat -c "%u:%d" "$parent") == "$uid:$device" ]]
+    done
+    build_identity=$(stat -c "%d:%i:%u" "$build_root")
+    [[ -f $build_plan && ! -L $build_plan && $(readlink -e "$build_plan") == "$build_plan" &&
+       $(stat -c "%u:%h" "$build_plan") == "$uid:1" && $(stat -c %s "$build_plan") -le 65536 ]]
+    build_rows=$job/proof/ui559/cache-copy/workspace-build-outputs.tsv
+    build_journal=$job/proof/ui559/cache-copy/workspace-build-pruned.tsv
+    build_before=$job/proof/ui559/cache-copy/workspace-build.before.bin
+    build_expected=$job/proof/ui559/cache-copy/workspace-build.expected.bin
+    build_after=$job/proof/ui559/cache-copy/workspace-build.after.bin
+    for file in "$build_rows" "$build_journal" "$build_before" "$build_expected" "$build_after";do [[ ! -e $file && ! -L $file ]];done
+    jq -er --arg baseline "$baseline" --arg target "$target" --arg old "$job/build/baseline-target" "
+      if .schema==1 and .baseline_source==\$baseline and .baseline_target==\$old and .candidate_target==\$target and
+        (.outputs|length)==3 and (.outputs|map(.name)|sort)==[\"openpilot-image-codecs\",\"openpilot-jpeg\",\"openpilot-params\"]
+      then .outputs[]|[.name,.package_id,.source_kind,.manifest_path,.build_script,.baseline_out_dir,.relative_parent,.candidate_parent]|@tsv
+      else error(\"build output plan binding differs\") end" "$build_plan" > "$build_rows"
+    declare -A selected_build=()
+    tab=$(printf "\t")
+    # 모두 검증한 뒤에만 세 package parent를 삭제한다. registry 이름/OUT_DIR은 선택하지 않는다.
+    while IFS="$tab" read -r name package kind manifest script old_out relative path;do
+      [[ -v workspace[$name] && ! -v registry[$name] && $kind == workspace-path ]]
+      case "$name" in openpilot-params) directory=params;;openpilot-image-codecs) directory=image-codecs;;openpilot-jpeg) directory=jpeg;;*) exit 1;;esac
+      [[ $package == "path+file://$baseline/rust/crates/$directory#$name@0.1.0" &&
+         $manifest == "$baseline/rust/crates/$directory/Cargo.toml" && $script == "$baseline/rust/crates/$directory/build.rs" ]]
+      [[ $relative =~ ^debug/build/$name-[0-9a-f]{16}$ &&
+         $old_out == "$job/build/baseline-target/$relative/out" && $path == "$target/$relative" ]]
+      leaf=${relative##*/};[[ ! -v selected_build[$leaf] ]]
+      for parent in "${old_out%/out}" "$old_out" "$path" "$path/out";do
+        [[ -d $parent && ! -L $parent && $(readlink -e "$parent") == "$parent" &&
+           $(stat -c "%u:%d" "$parent") == "$uid:$device" ]]
+      done
+      [[ $(stat -c "%d:%i" "$path") != "$(stat -c "%d:%i" "${old_out%/out}")" ]]
+      selected_build[$leaf]=$(stat -c "%d:%i:%u" "$path")
+      nodes=$job/proof/ui559/cache-copy/workspace-build-$name.nodes.bin
+      [[ ! -e $nodes && ! -L $nodes ]]
+      find -P "$path" -xdev -printf "%D\t%U\t%y\t%n\0" > "$nodes"
+      [[ $(stat -c %s "$nodes") -le 1048576 ]]
+      while IFS="$tab" read -r -d "" dev owner_id type links;do
+        [[ $dev == "$device" && $owner_id == "$uid" && ( $type == d || ( $type == f && $links == 1 ) ) ]]
+      done < "$nodes"
+    done < "$build_rows"
+    [[ ${#selected_build[@]} == 3 ]]
+    find -P "$build_root" -mindepth 1 -maxdepth 1 -printf "%f\t%y\t%D:%i:%U:%m:%n:%s:%T@:%C@\0" | sort -z > "$build_before"
+    [[ $(stat -c %s "$build_before") -le 65536 ]]
+    : > "$build_expected"
+    while IFS= read -r -d "" row;do
+      leaf=${row%%"$tab"*}
+      [[ -v selected_build[$leaf] ]] || printf "%s\0" "$row" >> "$build_expected"
+    done < "$build_before"
+    (set -o noclobber;printf "package\tbaseline_out_dir\tcandidate_parent\tidentity\tresult\n" > "$build_journal")
+    while IFS="$tab" read -r name package kind manifest script old_out relative path;do
+      leaf=${relative##*/}
+      [[ $(stat -c "%d:%i:%u" "$build_root") == "$build_identity" && -d $path && ! -L $path &&
+         $(readlink -e "$path") == "$path" && $(stat -c "%u:%d" "$path") == "$uid:$device" &&
+         $(stat -c "%d:%i:%u" "$path") == "${selected_build[$leaf]}" ]]
+      before=$(stat -c "%d:%i:%u" "$path")
+      printf "%s\t%s\t%s\t%s\tplanned\n" "$name" "$old_out" "$path" "$before" >> "$build_journal"
+      rm -r --one-file-system -- "$path"
+      [[ ! -e $path && ! -L $path ]]
+      printf "%s\t%s\t%s\t%s\tremoved\n" "$name" "$old_out" "$path" "$before" >> "$build_journal"
+    done < "$build_rows"
+    [[ $(stat -c "%d:%i:%u" "$build_root") == "$build_identity" ]]
+    find -P "$build_root" -mindepth 1 -maxdepth 1 -printf "%f\t%y\t%D:%i:%U:%m:%n:%s:%T@:%C@\0" | sort -z > "$build_after"
+    cmp "$build_expected" "$build_after"
+  ' ui559-workspace-prune "$build/candidate-target" "$plan" "$proof/cache-copy/workspace-pruned.tsv" "$(id -u)" \
+    "$outputs" "$baseline" "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
   for path in "$proof/cache-copy/workspace-pruned.tsv" "$proof/cache-copy/workspace-fingerprints.before.bin" \
-    "$proof/cache-copy/workspace-packages.txt" "$proof/cache-copy/registry-packages.txt";do hold "$path";done
+    "$proof/cache-copy/workspace-packages.txt" "$proof/cache-copy/registry-packages.txt" \
+    "$proof/cache-copy/workspace-build-outputs.tsv" "$proof/cache-copy/workspace-build-pruned.tsv" \
+    "$proof/cache-copy/workspace-build.before.bin" "$proof/cache-copy/workspace-build.expected.bin" \
+    "$proof/cache-copy/workspace-build.after.bin";do hold "$path";done
+  for path in openpilot-params openpilot-image-codecs openpilot-jpeg;do hold "$proof/cache-copy/workspace-build-$path.nodes.bin";done
 }
 verify_seeded_workspace() {
   local log=$proof/logs/recording-build.stdout

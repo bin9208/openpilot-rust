@@ -910,6 +910,12 @@ class Diagnostic:
             "error": error, "finalizer_errors": failures, "commands": self.commands,
             "immutable_seals_pass": not failures, "diagnostic": self.result, **FLAGS})
         if success:
+            if getattr(self, "same_job_normal_mode", False):
+                # 전용 controller의 관측 완료다. normal 실패/602 재현을 성공으로 바꾸지 않는다.
+                self.save("complete.json", {"schema": 1, "source": self.source,
+                    "diagnostic_only": True, "pass": True, "same_job_normal_mode": True,
+                    "normal_status_promoted": False, **FLAGS})
+                return success
             self.save("complete.json", {"schema": 1, "source": self.source, "diagnostic_only": True, "pass": True,
                 "cases": 1, "frames": 1, "plain_original_matches_historical": True, "plain_native_matches_602": True,
                 "tapped_original_equals_plain": True, "tapped_native_equals_plain": True, "kernel_observed": False,
