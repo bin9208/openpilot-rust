@@ -50,7 +50,7 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
-      UI559_HELPER_SHA256: 3f03286ce817961751a82b9308743f3e83f69d43068d5bfdc2e5565cc73b7d0f
+      UI559_HELPER_SHA256: ba513a0d7875f1f40501f10301375bafea48cf8d8aef6efbf02dacefa9a16b41
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
       shell: bash
@@ -183,7 +183,7 @@ jobs:
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
-        /usr/bin/timeout --signal=TERM --kill-after=180s 25m /usr/bin/bash tools/ci/ui_recording_559.sh run
+        /usr/bin/timeout --signal=TERM --kill-after=180s 35m /usr/bin/bash tools/ci/ui_recording_559.sh run
     - name: Verify whole SDK after all attempted checks
       id: prepared_rust_final
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}

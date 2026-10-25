@@ -241,3 +241,38 @@ fixture의 trace.96187은 원래 기대대로 test/dep-info,link다.
 기존 test2/bin1은 원래 emit을 유지한다. 미등록 조합은 거부한다. current cwd·정확 compiler/소스·
 출력 root·유일 exec·정상 종료와 기존 Cargo freshfalse/ELF 기준은 그대로다. 새로운 전체 기능
 성공은 Actions에서 확인하며 source/SDK 최종 봉인·관측 process 부재 성공과 구분한다.
+
+
+## 3c1 cache/source/ELF 수용과 남은 UI 검증
+
+source `3c1e70b689b3d017a352c06f2873f066fe4f3907`의
+[40172405889/job121105837855](https://github.com/bin9208/openpilot-rust/actions/runs/40172405889/job/121105837855)은
+첫 current144개 모두 fresh=false, exact rustc receipt4개·선택 ELF, baseline RED/candidate GREEN/
+recording9/source binding4를 통과했다. artifact12591287332는44,846,602B/
+SHA256 `101fdbba04b5ad01b4b8ff9f4d6ca39f18d3c813ef06deec1596db8ab407552c`/24,982CRC,
+전개233,003,619B다. source/index/SDK5쌍·baseline/registry·독립 copy/source copy 전후 등
+raw20쌍과 비공유 inode·남은 build roster를 직접 대조해 동일함을 확인했다.
+최종 immutable_seals/owned_processes_nonlive=true와 original/full pass=false를 구분한다.
+
+#568의 cache/source/ELF·봉인 완료 조건은 충족해 개별 종료한다. 전체 job은 Clippy137/watcher0으로
+실패했고 원본5mode는 미도달이다. Clippy는 전역20분의 남은66.8초만 사용하고 종료됐다.
+원래600초 Clippy 명령과 원문5mode300초 자체는 바뀌지 않았다. 전체 #559 수용/퇴역 credit은0이다.
+
+
+## 기능/원문 비교와 strict Clippy의 수명 분리 후보
+
+3c1의 전체20분 예산이 Clippy를66.8초에서 자른 실제 결과에 따라 단계 수명을 분리한다.
+기존 기능·원문 검사의 순서를 유지하며 원본5mode를 recording9 다음에 먼저 실행한다.
+빌드·baseline/독립 cache/current/source4/GREEN/recording9/원본5 전체는 기존1200초 안에
+완료해야 하고 그 실제 elapsed/완료 항목을 functional-window.json에 기록·봉인한다.
+
+그 다음 기존과 같은4target/feature/명령·환경의 strict Clippy에 기존600초를 별도로 배정한다.
+graphics용 환경 추가분은 저장한 이전 extra_env로 되돌려 Clippy 환경도 같게 유지한다.
+같은512MiB 추가 build cap·8GiB build/1GiB proof·모든 watcher/회수·원문 기대값과 개별 기능 제한은
+그대로다. Clippy-window에도 실제600초 이내 완료를 요구하고 기록·봉인한다.
+전체 PASS는 두 단계와 기존 최종 봉인/프로세스 부재가 모두 성공해야만 된다.
+
+전체 helper outer는25분에서35분으로 바꾸고 기존180초 kill-after와45분 job은 유지한다.
+이는 기능 기준을 늘리는 변경이 아니라 준비·기능1200초와 별도 정적600초·후검사를 담는
+운영 예산 변경이다. 기존 전체 shared1200초는 이 source부터 두 명시 수명으로 대체됐으며,
+이전 실행을 새 경계의 PASS로 다시 표기하지 않는다. 실제 원본5·Clippy/최종 전체 수용은 GHA 대기다.

@@ -140,7 +140,8 @@ printf '%s\n' "$(stat -c '%d:%i' "$base_owner")" > "$proof/baseline-owner.identi
 phase=preflight; passed=false; established=false; baseline_sealed=false; red=false; green=false; suite=false; graphics=false; clippy=false; source_controls=false
 cache_copied=false; cache_current_fresh=false
 active= active_identity= watcher= stop=
-deadline=$((SECONDS+1200))
+functional_started=$SECONDS
+deadline=$((functional_started+1200))
 ulimit -Sn 4096
 ulimit -c 0
 declare -A held_fd=() held_id=() held_sha=() aliases=() alias_id=() elf_seen=()
@@ -342,7 +343,7 @@ run() {
   shift 3
   phase=$label;admit
   [[ ! -e $job/proof/ui559-resource-stop ]]
-  remaining=$((deadline-SECONDS));((remaining>0)) || fail '20-minute execution deadline'
+  remaining=$((deadline-SECONDS));((remaining>0)) || fail 'current validation window exhausted'
   ((seconds<=remaining)) || seconds=$remaining
   # 세 current compiler phase에서만 상대 source 인자를 실제 cwd와 묶는다. 기능 trace는 그대로다.
   case $label in recording-build|reference-build|stager-build) trace_calls=process,chdir,fchdir;; esac
@@ -976,14 +977,28 @@ run candidate-green 180 0 "$proof/elfs/candidate-recording" --exact "$selector" 
 ok_test candidate-green 1;green=true
 run recording9 240 0 "$proof/elfs/candidate-recording" --nocapture --test-threads=1 --color=never
 ok_test recording9 9;suite=true
-read -r clippy_base clippy_apparent_base <<< "$(usage "$build" $((8*gib)))"
-run clippy 600 0 "$sdk/bin/cargo" clippy --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-dev-tools --features ui-application-lifecycle-native --lib --test ui_application_lifecycle_recording --test ui_application_lifecycle_reference --bin stage-startup-ui-raylib -- -D warnings
-read -r clippy_after clippy_apparent_after <<< "$(usage "$build" $((8*gib)))"
-((clippy_after-clippy_base<=512*1024*1024 && clippy_apparent_after-clippy_apparent_base<=512*1024*1024));clippy=true
+clippy_extra_env=("${extra_env[@]}")
 extra_env+=(STARTUP_UI_RAYLIB_ROOT="$tools/raylib" STARTUP_UI_RAYLIB_LIBRARY="$tools/raylib/lib/libopenpilot-raylib.so"
   UI_APPLICATION_FFPROBE=/usr/bin/ffprobe UI_FORMS_FAILURE_OUTPUT="$proof/failures")
 [[ -x /usr/bin/ffmpeg && -x /usr/bin/ffprobe && -x /usr/bin/Xvfb && -x /usr/bin/xauth ]]
 run five-modes 300 0 /usr/bin/xvfb-run -a -e "$proof/xvfb.stderr" -s '-screen 0 2160x1080x24 -noreset' \
   "$proof/elfs/candidate-reference" --exact five_original_modes_preserve_real_graphics_ticks_and_native_encoder --nocapture --test-threads=1 --color=never
 ok_test five-modes 1;graphics=true
+# 실제 기능/원문 비교는 원래1200초 안에 끝나야 한다. 정적 검사 시간을 더하지 않는다.
+functional_elapsed=$((SECONDS-functional_started))
+((functional_elapsed<=1200))
+printf '{"schema":1,"source":"%s","scope":"build_and_functional_original_comparison","limit_seconds":1200,"elapsed_seconds":%s,"baseline_red":true,"candidate_green":true,"recording9":true,"source_binding4":true,"original_five_modes":true}\n' "$GITHUB_SHA" "$functional_elapsed" > "$proof/functional-window.json"
+hold "$proof/functional-window.json"
+# 동일4개 target/명령/환경의 strict Clippy에 기존600초를 별도 배정한다.
+extra_env=("${clippy_extra_env[@]}")
+clippy_started=$SECONDS
+deadline=$((clippy_started+600))
+read -r clippy_base clippy_apparent_base <<< "$(usage "$build" $((8*gib)))"
+run clippy 600 0 "$sdk/bin/cargo" clippy --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-dev-tools --features ui-application-lifecycle-native --lib --test ui_application_lifecycle_recording --test ui_application_lifecycle_reference --bin stage-startup-ui-raylib -- -D warnings
+read -r clippy_after clippy_apparent_after <<< "$(usage "$build" $((8*gib)))"
+((clippy_after-clippy_base<=512*1024*1024 && clippy_apparent_after-clippy_apparent_base<=512*1024*1024));clippy=true
+clippy_elapsed=$((SECONDS-clippy_started))
+((clippy_elapsed<=600))
+printf '{"schema":1,"source":"%s","scope":"unchanged_four_target_strict_clippy","limit_seconds":600,"elapsed_seconds":%s,"same_command_and_environment":true}\n' "$GITHUB_SHA" "$clippy_elapsed" > "$proof/clippy-window.json"
+hold "$proof/clippy-window.json"
 passed=true
