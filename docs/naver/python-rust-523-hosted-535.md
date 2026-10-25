@@ -1139,3 +1139,32 @@ owner/source/index19469경로가 맞고 source tar SHA는
 literal1개와 그 helper의 WF/Focus pin만 현재 검토 source로 연결한다. fixture 검사를 제거하지 않고
 8case/selector/기능·원문·상한·시간·source/SDK/final·cleanup을 그대로 유지한다. 로컬은 source/구문/diff뿐,
 실제 현재8case 수용은 Actions 대기다. #549 전체와 원본2 제거·credit은 아직 미완료/0이다.
+
+
+### a1c logging 전체와 b240 collision8 수용, #554/#555 개별 종료
+
+[a1c40178153264/job121123232979](https://github.com/bin9208/openpilot-rust/actions/runs/40178153264/job/121123232979)은
+전체 SUCCESS다. artifact12593356573은129539458B/SHA
+`2009f4641f71fbc938c08cd975a2c17b0151c0af689d27ff60f173cc9aec1979`/9342CRC다.
+61개/14lifecycle/untraced1/retained-once/15 strict lexer·정확 exec정책/음성4와 원문108·현재19source,
+fresh250/697 대 retained249/694를 확인했다. 기존2초 내 INT1.425185815/TERM1.414696034/
+retained-once1.394692295/untraced0.399816829초이며 timer 시작점·trace scope·600초·상한을 유지했다.
+legacy INT/TERM 각1회는957794/957509events, aggregate97.01/600초로 상한 안이다. 각 actual130/143·
+foreign 보존·reap/owned directory 제거, source/index/SDK/held178·legacy provider16쌍과 upload/최종
+owned cleanup 성공을 감사했다. fixed-true-554-v1 qualification 범위로 #554를 종료하며 모든 host 성능·
+BPF 활성·인과 증명은 주장하지 않는다.
+
+#555의 실제 public CLI3회는 --builder/--reference/--source-hook 각각 exit2/child0/output부재,
+정확 option 이름만의 stderr+LF와 빈 stdout이다. core21의1 unit은3flags×분리/inline/비UTF8값 및
+required/help 순서를 유지했다. raw checker3의 fork/vfork/clone/clone3 attempt0과 exactexec를 확인해
+개별 종료했다. raw argv에 값이 기록된 것과 CLI 진단이 값을 누출하는 것은 구분한다.
+
+[b24040178436982/job121124091541](https://github.com/bin9208/openpilot-rust/actions/runs/40178436982/job/121124091541)의
+current collision8도 SUCCESS다. artifact12593441022는39271848B/SHA
+`fe01c88b7deaa74ebb493dd1bc3f315106d48ae662869916ea85872bcacea9f1`/9909CRC다.
+8case·actual checker8 exit1/child attempt0·foreign8쌍·source/index/SDK/held210개·upload/cleanup을 확인했다.
+fixture build raw1793파일의80batch는 독립 copy·누락/중복0과 strict inspector를 유지했다.
+a1c와b240의 핵심9 source파일은 byte 동일하다. old missing10의 current8 collision/legacy2 slot은
+각 정확 source에 연결되지만 old17을 재실행해 동일 epoch의 current27/R4를 수용했다고 하지 않는다.
+원본2는 계속 보존·retirement credit0이며 #549/#523/#296 전체는 미완료다. 로컬 기능 실행0,
+세부 감사는 ignored logging-a1c-12593356573-audit.md/collision-b240-12593441022-audit.md에 있다.

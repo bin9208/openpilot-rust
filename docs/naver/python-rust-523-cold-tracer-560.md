@@ -249,3 +249,23 @@ helper는 `1cab598c39a1bb5f113a192b7adfa744d94786f887bd66b10d5bb955aafbd9fa` 그
 정지/복귀의 group 소유성·deadline·실패 회수와 실제 syscall 관측에 대한 영향은 미검증이므로
 현재 구현이나 성공으로 쓰지 않는다. 상세 근거와 미확정은 ignored
 `hosted-e856-cold-root-plan.md`에 보존했다. 로컬 기능·빌드·테스트·Actions 조작0이다.
+
+
+## e856 build 경합의 최소 후속: 일회성 dependency tracking 비활성 후보
+
+Fast85540178341860/job121125371875의 cold raw201은 `2639  ???( <detached ...>`다.
+정상 exit0/debug EVENT_EXIT만으로 syscall/errno·exec 부재를 확정하지 않으며 strict parser 거부를 유지한다.
+고정 source 계측 observer의 실제 관측이 필요하지만 앞 절의 e856은 configure의 `.deps/*.Po-t`
+ENOENT3회 소진으로 provider build 전에 중단됐다. 이 둘을 같은 원인이라고 하지 않는다.
+
+[GNU Automake 공식 문서](https://www.gnu.org/software/automake/manual/html_node/Dependency-Tracking.html)에
+따라 일회성 private configure에 `--disable-dependency-tracking`만 추가한다. 인증된 Ubuntu orig
+SHAba6950a96824cdf93a584fa04f0a733896d2a6bc5f0ad9ffe505d9b41e970149의 configure1537 및4945–4948도
+같은 옵션과 AMDEP_TRUE 비활성 분기를 정의한다. 재빌드용 header dependency 생성을 끄는 선택이며,
+quilt/observer C postimage·CFLAGS/CPPFLAGS/LDFLAGS·원래 기능/최적화·수치 기준을 바꾸지 않는다.
+실제 generated config.status의 정확 비활성값·copy/SHA를 hold하고 make뒤 원문과 대조한다.
+추가 process STOP/새retry/부분합수용/du 제외·cap/시간 증대 없이 기존 allocated/apparent3attempt와
+source/SDK/provider/owned 회수·strict audit/unknown 실패를 유지한다. 다른 임시파일 경합이 있으면 그대로 실패한다.
+새 ELF는 source-instrumented diagnostic provider이며 system Ubuntu ELF와 동일하다고 하지 않는다.
+로컬은 고정 source/Bash/YAML/diff만 확인했고 build/옵션 적용/실제 ptrace 관측은 Actions UNRUN이다.
+이 변경 자체는 #560 syscall/errno 원인의 해결이나 원본 제거 credit이 아니다.

@@ -727,8 +727,13 @@ cflags=$(cat "$out/logs/flags-c.stdout");cppflags=$(cat "$out/logs/flags-cpp.std
 extra_env=(CC=/usr/bin/gcc CFLAGS="$cflags -Wall -g -O2" CPPFLAGS="$cppflags" LDFLAGS="$ldflags"
   CFLAGS_FOR_BUILD="$cflags -Wall -g -O2" CPPFLAGS_FOR_BUILD="$cppflags" LDFLAGS_FOR_BUILD="$ldflags")
 cd "$build/native-build"
-run configure 180 /bin/bash "$native/configure" --enable-mpers=check --prefix="$build/install" --build=x86_64-linux-gnu
+run configure 180 /bin/bash "$native/configure" --enable-mpers=check --disable-dependency-tracking --prefix="$build/install" --build=x86_64-linux-gnu
+[[ -f config.status && ! -L config.status && $(stat -c %s config.status) -le 1048576 ]]
+grep -Fx 'S["AMDEP_TRUE"]="#"' config.status > "$out/inputs/dependency-tracking.txt"
+cp -- config.status "$out/inputs/config.status"
+hold "$out/inputs/dependency-tracking.txt";hold "$out/inputs/config.status"
 run make 300 /usr/bin/make -j2
+cmp config.status "$out/inputs/config.status"
 cd "$source";extra_env=()
 cp "$build/native-build/config.log" "$out/inputs/config.log"
 cp "$build/native-build/src/config.h" "$out/inputs/config.h"
