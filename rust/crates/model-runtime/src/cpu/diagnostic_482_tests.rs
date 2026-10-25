@@ -422,6 +422,96 @@ fn receipt(job: &Path, name: &str, value: Value) {
     file.write_all(b"\n").unwrap();
 }
 
+// 인증된 전체 text의 관측일 뿐이다. production ISA/host admission을 대체하지 않는다.
+fn feature_census(images: &[(&[u8], usize)]) -> Result<Value, String> {
+    use iced_x86::{Code, Decoder, DecoderOptions};
+    if images.is_empty() || images.len() > 4096 {
+        return Err("feature census roster bound".into());
+    }
+    let total = images
+        .iter()
+        .try_fold(0usize, |total, (image, _)| total.checked_add(image.len()))
+        .ok_or("feature census image total overflow")?;
+    if total > 64 * MIB {
+        return Err("feature census image total bound".into());
+    }
+    let mut programs = Vec::new();
+    let mut first_seen = BTreeMap::new();
+    let mut invalid_ranges = Vec::new();
+    let mut instructions = 0usize;
+    let mut invalid_total = 0usize;
+    let mut text_total = 0usize;
+    for (index, (image, text)) in images.iter().enumerate() {
+        if image.len() > 16 * MIB || *text == 0 || *text > image.len() {
+            return Err("feature census executable extent bound".into());
+        }
+        text_total += *text;
+        let mut decoder = Decoder::with_ip(64, &image[..*text], 0, DecoderOptions::NONE);
+        let mut features = BTreeSet::new();
+        let mut count = 0usize;
+        let mut invalid = 0usize;
+        let mut privileged = 0usize;
+        while decoder.can_decode() {
+            if instructions >= 1_000_000 {
+                return Err("feature census total instruction count bound".into());
+            }
+            let start = decoder.position();
+            let instruction = decoder.decode();
+            let end = decoder.position();
+            if end <= start || end > *text || end - start > 15 {
+                return Err("feature census decoder progress bound".into());
+            }
+            instructions += 1;
+            count += 1;
+            let code = instruction.code();
+            if code == Code::INVALID {
+                invalid += 1;
+                invalid_total += 1;
+                if invalid_ranges.len() < 64 {
+                    invalid_ranges.push(json!({"program":index,"start":start,"end":end,
+                        "bytes":&image[start..end]}));
+                }
+                continue;
+            }
+            privileged += usize::from(code.is_privileged());
+            for feature in code.cpuid_features() {
+                let name = format!("{feature:?}");
+                first_seen.entry(name.clone()).or_insert_with(|| {
+                    json!({"program":index,"offset":start,
+                    "code":format!("{code:?}"),"bytes":&image[start..end]})
+                });
+                if first_seen.len() > 256 {
+                    return Err("feature census feature count bound".into());
+                }
+                features.insert(name);
+            }
+        }
+        if decoder.position() != *text {
+            return Err("feature census incomplete executable extent".into());
+        }
+        programs.push(
+            json!({"index":index,"image_bytes":image.len(),"image_sha256":sha(image),
+            "text_bytes":text,"instructions":count,"features":features,
+            "invalid_instructions":invalid,"privileged_instructions":privileged}),
+        );
+    }
+    let value = json!({"schema":1,"scope":"authenticated_text_feature_census_only",
+        "complete":true,"program_count":programs.len(),"text_bytes":text_total,
+        "instructions":instructions,"features":first_seen.keys().collect::<Vec<_>>(),
+        "first_seen":first_seen,"programs":programs,"invalid_instructions":invalid_total,
+        "invalid_ranges_truncated":invalid_total>invalid_ranges.len(),"invalid_ranges":invalid_ranges,
+        "all_decoded_valid":invalid_total==0,"is_isa_admission":false,
+        "generated_code_executed":false,"numeric_acceptance":false});
+    if serde_json::to_vec_pretty(&value)
+        .map_err(|e| e.to_string())?
+        .len()
+        > MIB
+    {
+        return Err("feature census metadata1MiB bound".into());
+    }
+    Ok(value)
+}
+
 #[test]
 #[ignore = "등록 hosted Actions의 current fresh complete roster/held source가 필요; inert decoder만 실행"]
 fn fresh_program_roster_triplets_and_host_isa_are_bound_without_execution() {
@@ -543,6 +633,11 @@ fn fresh_program_roster_triplets_and_host_isa_are_bound_without_execution() {
     } else {
         Err("ISA withheld after triplet rejection".into())
     };
+    let census = if failure.is_none() {
+        feature_census(&references)
+    } else {
+        Err("feature census withheld after triplet rejection".into())
+    };
     let proofs: Vec<_> = isa
         .as_ref()
         .map(|p| {
@@ -574,11 +669,14 @@ fn fresh_program_roster_triplets_and_host_isa_are_bound_without_execution() {
         json!({"source":request.source_sha256,
         "complete_roster":request.programs.len(),"calls":request.calls.len(),"triplet_error":failure,
         "strict_triplet_all":failure.is_none(),"host_isa_all":isa.is_ok(),"isa_error":isa.as_ref().err(),
+        "feature_census":census.as_ref().ok(),"feature_census_error":census.as_ref().err(),
+        "feature_census_is_admission":false,
         "host_features":host,"programs":proofs,"generated_code_executed":false,"scope":"this readonly selector only",
         "cached_issuer_invoked":false,"numeric_acceptance":false,"historical_provider_proven":false}),
     );
     assert!(failure.is_none(), "{failure:?}");
     isa.expect("whole current host ISA rejected; see readonly receipt");
+    let _ = census.expect("bounded feature census incomplete; see readonly receipt");
 }
 
 #[derive(Deserialize)]

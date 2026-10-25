@@ -779,3 +779,36 @@ ISA7/cached15/streamed5 수는 그대로다. 새 issuer/catalog/request/source�
 별도 PRbacda의 `same_elf_complete_fixture_survives_all_retired_python_absences`는 raw prediction 불일치로
 계속 실패다. 이를 ABI91·ISA 단위 성공이나 이번 지원으로 해결됐다고 주장하지 않는다. 전체128/R4,
 historical half/sNaN5와 runtime 수용·원본 제거 credit0은 계속 별도로 추적한다.
+
+
+### 9b 역사 readonly 수용과 855의 SSE4A·전체 feature 관측 후보
+
+[9b history40178086021/job121123033740](https://github.com/bin9208/openpilot-rust/actions/runs/40178086021/job/121123033740)은
+기본 GitHub runner의 자연 EPYC9V45에서 SUCCESS다. std F/VL/DQ/BW가 실제 true이며 원문
+image14442B/object15928B·text14244B의2410 instruction 전체 ISA가 통과했다. ISA7/cached15/streamed5,
+Clippy·catalog 소비자 compile·source/index/SDK raw7쌍·resource/upload/cleanup도 성공했다.
+artifact12592734144는5426269B/SHA
+`fe2db37f870f449741dc79c791356da1912f1cde63f23cf50d41caa64c9c3421`/84CRC다.
+readonly만이며 generated code/model/original Python 실행0과 수치/128/R4 수용false는 그대로다.
+
+같은9b의 current40178086039는 current-bins 감시에서 du exit1로 A 이전 실패했다. 부분 stdout/stderr가
+보존되지 않아 ENOENT/권한/I/O/용량 중 원인을 확정하지 못했다. #570으로 추적하고 helper에 phase/root/
+cap/kind/argv/status·timeout·부분 원문을 첫 실패 파일로 보존한다. 각 stream64KiB·index16KiB를 넘으면
+명시적으로 truncated를 기록한다. 기존10초·unknown FAIL/cap·512MiB reserve/finalizer를 유지하고
+retry/ignore를 추가하지 않는다. 과거 원인 불명을 ENOENT 또는 용량 부족으로 다시 표기하지 않는다.
+
+[855 current40178341964/job121123811451](https://github.com/bin9208/openpilot-rust/actions/runs/40178341964/job/121123811451)은
+whole91 triplet/ABI 뒤 program21 `ip=0x628`, `Insertq_xmm_xmm_imm8_imm8`, raw
+`f2 0f 78 d1 20 10`의 SSE4A에서 거부됐다. 이 실행은 du 실패가 아니며 immutable final-seals PASS/live0다.
+artifact12593310108은11669476B/SHA
+`626084c54c24e18feae9f568c84beb83ce82c3dd6d959eee7009702f32ccd183`/444CRC다.
+해당 실제 확장만 feature match와 current_host/로드 detector 양쪽에 연결했다. 원문 readonly 양성·
+feature 부재와91번째/ret 뒤 거부 회귀1개를 추가해 ISA7→8, cached15/streamed5는 유지한다.
+
+별도 test-only A 관측은 source/object/image 전체 인증 뒤 같은 fixed iced decoder로 **전체91 text**의
+실제 CPU feature 집합·프로그램별 길이/count·첫 Code/raw 예시·invalid 범위를 기록한다.
+1M instruction/256 feature/invalid 상세64/JSON1MiB와 기존 CPU60초/AS4GiB/명령90초 제한을 유지한다.
+census와 admission을 분리하며 기존 inspect/admit_all·host 검사와 첫 실패의 의미는 바꾸지 않는다.
+미수용 feature를 관측했다는 이유로 자동 지원하거나 수치/기대값/CPU flag·source10/guarded8을 바꾸지 않는다.
+새 source의 issuer/catalog/request 봉인이 필요하고 옛 receipt를 다시 표기하지 않는다.
+새 동작은 source/AST/Rustfmt/diff만 확인한 Actions UNRUN이며 #482 수치/전체 모델 수용은 계속 미완료다.

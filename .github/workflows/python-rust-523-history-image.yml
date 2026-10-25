@@ -278,7 +278,7 @@ jobs:
         set -euo pipefail
         unset RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER
         history_command isa-controls 900 "$HISTORY_RUST_ROOT/bin/cargo" test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --features cached-program-isa --lib cached_isa::instruction_isa::tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/cached-isa-controls.log"
-        grep -E '^test result: ok. 7 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/cached-isa-controls.log"
+        grep -E '^test result: ok. 8 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/cached-isa-controls.log"
         history_command cached-controls 900 "$HISTORY_RUST_ROOT/bin/cargo" test --manifest-path rust/Cargo.toml --locked -p openpilot-model-runtime --features cached-program-isa --lib cached_code::tests:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/cached-code-controls.log"
         # This includes the exact source-roster check, all prior cached-code contracts and five streamed model guards.
         grep -F 'test cached_code::tests::streamed_original_model_exceeds_source_limit_without_moving_fd_offset ... ok' "$CI_JOB_TEMP/proof/cached-code-controls.log"

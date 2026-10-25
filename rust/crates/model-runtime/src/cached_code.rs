@@ -208,6 +208,7 @@ fn host_has(feature: &str) -> bool {
         "ssse3" => std::is_x86_feature_detected!("ssse3"),
         "sse4.1" => std::is_x86_feature_detected!("sse4.1"),
         "sse4.2" => std::is_x86_feature_detected!("sse4.2"),
+        "sse4a" => std::is_x86_feature_detected!("sse4a"),
         "avx" => std::is_x86_feature_detected!("avx"),
         "avx2" => std::is_x86_feature_detected!("avx2"),
         "bmi1" => std::is_x86_feature_detected!("bmi1"),

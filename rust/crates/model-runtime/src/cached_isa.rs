@@ -114,6 +114,7 @@ mod instruction_isa {
             F::SSSE3 => "ssse3",
             F::SSE4_1 => "sse4.1",
             F::SSE4_2 => "sse4.2",
+            F::SSE4A => "sse4a",
             F::AVX => "avx",
             F::AVX2 => "avx2",
             F::BMI1 => "bmi1",
@@ -181,6 +182,7 @@ mod instruction_isa {
             ("ssse3", std::is_x86_feature_detected!("ssse3")),
             ("sse4.1", std::is_x86_feature_detected!("sse4.1")),
             ("sse4.2", std::is_x86_feature_detected!("sse4.2")),
+            ("sse4a", std::is_x86_feature_detected!("sse4a")),
             ("avx", std::is_x86_feature_detected!("avx")),
             ("avx2", std::is_x86_feature_detected!("avx2")),
             ("bmi1", std::is_x86_feature_detected!("bmi1")),
@@ -344,6 +346,36 @@ mod instruction_isa {
                 }
                 assert!(admit_all(&images[..90], 91, &capable).is_err());
             }
+        }
+
+        #[test]
+        fn observed_sse4a_image_requires_the_host_at_roster_end() {
+            // actual855 program21 INSERTQ bytes + synthetic ret; decode only.
+            let observed = [0xf2, 0x0f, 0x78, 0xd1, 0x20, 0x10, 0xc3];
+            let capable = BTreeSet::from(["sse4a"]);
+            let proofs = admit_all(&[(&observed, observed.len())], 1, &capable).unwrap();
+            assert_eq!(proofs[0].required, capable);
+            assert_eq!(proofs[0].instructions, 2);
+            let missing = BTreeSet::from([
+                "sse4.1", "sse4.2", "avx", "avx2", "avx512f", "avx512vl", "avx512dq", "avx512bw",
+            ]);
+            assert_eq!(
+                admit_all(&[(&observed, observed.len())], 1, &missing).unwrap_err(),
+                "cached program 0: host lacks sse4a"
+            );
+            let baseline = [0xc3];
+            let after_return = [0xc3, 0xf2, 0x0f, 0x78, 0xd1, 0x20, 0x10, 0xc3];
+            let mut images = vec![(&baseline[..], baseline.len()); 91];
+            images[90] = (&after_return, after_return.len());
+            let proofs = admit_all(&images, 91, &capable).unwrap();
+            assert_eq!(proofs.len(), 91);
+            assert_eq!(proofs[90].required, capable);
+            assert_eq!(proofs[90].instructions, 3);
+            assert_eq!(
+                admit_all(&images, 91, &missing).unwrap_err(),
+                "cached program 90: host lacks sse4a"
+            );
+            assert!(admit_all(&images[..90], 91, &capable).is_err());
         }
 
         #[test]

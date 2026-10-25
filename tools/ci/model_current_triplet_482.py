@@ -581,6 +581,34 @@ class Controller:
             XDG_CACHE_HOME=str(job / "cache"), CACHEDB=str(self.build / "original-cache.db"),
             CC=str(Path("/usr/bin/clang").resolve(strict=True)))
 
+    def du_failure(self, argv, path, cap, apparent, started, result, error):
+        # 첫 실패 원문만 보존한다. errno를 추정하거나 실패를 재시도하지 않는다.
+        status = getattr(error, "returncode", None) if result is None else result.returncode
+        timed_out = isinstance(error, subprocess.TimeoutExpired)
+        streams = {}
+        for name, attribute in (("stdout", "output"), ("stderr", "stderr")):
+            raw = getattr(error, attribute, None)
+            if raw is None:
+                raw = getattr(result, name, b"") if result is not None else b""
+            need(isinstance(raw, bytes), "du diagnostic requires original bytes")
+            retained = raw[:64*1024]
+            filename = f"budget-du-first-failure.{name}"
+            write(self.out / filename, retained)
+            streams[name] = {"file": filename, "captured_bytes": len(raw), "retained_bytes": len(retained),
+                "sha256": sha(retained), "truncated": len(raw) != len(retained),
+                "capture_complete": status is not None and not timed_out}
+        message = str(error)
+        value = {"schema": 1, "source": os.environ["GITHUB_SHA"], "phase": self.phase,
+            "root": str(path), "scope_cap_bytes": cap, "kind": "apparent" if apparent else "allocated",
+            "argv": argv, "returncode": status, "timed_out": timed_out, "timeout_seconds": 10,
+            "elapsed_seconds": time.monotonic()-started, "exception": type(error).__name__,
+            "exception_message": message[:4096], "exception_message_truncated": len(message) > 4096,
+            "raw_prefix_limit_bytes": 64*1024, "streams": streams, "retried": False, "failure_ignored": False}
+        raw = (json.dumps(value, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+        need(len(raw) <= 16*1024, "du diagnostic index16KiB limit")
+        # index는 두 원문 파일 뒤에 게시한다. 세 파일 모두 기존 O_EXCL/NOFOLLOW 경계다.
+        write(self.out / "budget-du-first-failure.json", raw)
+
     def budget(self, force=False):
         if not force and time.monotonic() - self.last_budget < 2:
             for path in (self.job, self.root):
@@ -598,10 +626,20 @@ class Controller:
             for path in paths:
                 if path.exists():
                     for option in ([], ["--apparent-size"]):
-                        raw = subprocess.check_output(["/usr/bin/du", "-sx", "--block-size=1", *option, "--", str(path)],
-                                                      stderr=subprocess.PIPE, timeout=10).decode()
-                        match = re.fullmatch(r"([0-9]+)\t" + re.escape(str(path)) + "\n", raw)
-                        need(match, "unknown scoped du output")
+                        argv = ["/usr/bin/du", "-sx", "--block-size=1", *option, "--", str(path)]
+                        started, result = time.monotonic(), None
+                        try:
+                            result = subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                                    check=True, timeout=10)
+                            raw = result.stdout.decode()
+                            match = re.fullmatch(r"([0-9]+)\t" + re.escape(str(path)) + "\n", raw)
+                            need(match, "unknown scoped du output")
+                        except BaseException as error:
+                            try:
+                                self.du_failure(argv, path, cap, bool(option), started, result, error)
+                            except BaseException as evidence_error:
+                                error.add_note(f"du failure evidence incomplete: {evidence_error}")
+                            raise
                         if option: apparent += int(match[1])
                         else: allocated += int(match[1])
             need(max(allocated, apparent) <= cap, f"scope cap: {paths}")
