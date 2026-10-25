@@ -27,7 +27,7 @@ import zipfile
 MIB = 1024**2
 GIB = 1024**3
 COMMON = "tools/ci/controlsd_normal_523.py"
-COMMON_SHA = "937f9a0adca788625e291b147be48445d14235a4c1a0c61e9f0b4d61881c113b"
+COMMON_SHA = "8a5da6caaf97dc00a0672e271130e0ce0ead8c055bee9883f7e503b9904b85a7"
 ARTIFACT = 12577798385
 ARTIFACT_RUN = 40137010441
 ACTUAL_SHA = "602ea095f7cd89769ffd9233a04a28983ca59d1f"
@@ -61,7 +61,7 @@ SOURCE_PINS = {
     "rust/crates/control-policy/src/numerics.rs": "f6c1516cf7990bd05d13f7aeffa7a45ae051517c5273e77dab26b82584585f44",
     "rust/crates/control-policy/src/numpy_exp.rs": "829c0ab3e3ba15857f87e2fa6f4e8207f3a31e4abe75be713e8b3480aa386a47",
     "rust/crates/controlsd/src/torque_neural.rs": "58894ebce7550555b765429d450c9ef2f2ff3510ba66d8a20fef7c4d47586744",
-    "rust/crates/controlsd/examples/controlsd_trace.rs": "bf74be75ec58db816f94d3f67ee413cdf8b6163c1ead27b7c600418c8b8c035f",
+    "rust/crates/controlsd/examples/controlsd_trace.rs": "c0fee266a3c293b428918595af6dffbee8ff3fc050b944eb896fc0bd3d63743b",
 }
 PACKAGES = {"numpy": "2.5.3", "pycapnp": "2.1.0", "zstandard": "0.25.0",
             "pycryptodome": "3.23.0", "cffi": "2.1.1", "pyzmq": "27.2.0", "pycparser": "3.0"}
@@ -132,6 +132,114 @@ def bits(value):
     if isinstance(value, dict):
         return {k: bits(value[k]) for k in sorted(value)}
     return (type(value).__name__, value)
+
+
+def typed_scalar(value, np=None):
+    """원래 scalar의 폭/타입을 보존한다. 계산에 사용할 값을 변환하지 않는다."""
+    runtime = type(value).__module__ + "." + type(value).__qualname__
+    if type(value) is float:
+        return {"dtype": "f64", "bits": f"{struct.unpack('<Q', struct.pack('<d', value))[0]:016x}",
+                "runtime_type": runtime}
+    if np is not None and type(value) in (np.float32, np.float64):
+        width = value.dtype.itemsize * 8
+        return {"dtype": f"f{width}", "bits": f"{int.from_bytes(value.tobytes(), sys.byteorder):0{width//4}x}",
+                "runtime_type": runtime}
+    need(type(value) is int and -(1 << 63) <= value < 1 << 63, "unknown/unbounded original input scalar")
+    return {"dtype": "int", "value": value, "runtime_type": runtime}
+
+
+def native_scalar_record(stderr):
+    prefix = b"CONTROLSD_553_SCALAR "
+    rows = []
+    for line in stderr.splitlines():
+        if b"CONTROLSD_553_SCALAR" in line:
+            need(line.startswith(prefix) and len(line)-len(prefix) <= 64*1024,
+                 "foreign/oversize native scalar marker")
+            rows.append(loads(line[len(prefix):]))
+    need(len(rows) == 1, "exactly one native target scalar receipt")
+    return rows[0]
+
+
+def target_reproduced(actual, oneframe, prefix):
+    return bits(actual) == bits(oneframe) == bits(prefix)
+
+
+def validate_target_scalars(original, native, original_state, native_state):
+    def floating(row, width=64):
+        need(isinstance(row, dict) and set(row) == {"dtype", "bits", "runtime_type"}
+             and row["dtype"] == f"f{width}" and type(row["bits"]) is str
+             and re.fullmatch(r"[0-9a-f]{"+str(width//4)+r"}", row["bits"])
+             and row["runtime_type"] in ({"builtins.float", "numpy.float64", "rust.f64"} if width == 64 else {"numpy.float32"}),
+             "typed scalar width/schema/runtime type")
+        return row["bits"]
+    for row, observer, extra in ((original, "original", {"inputs"}), (native, "native", {"gain_x", "gain_y"})):
+        need(isinstance(row, dict) and set(row) == {"schema", "observer", "case", "frame", "fields", "used_kp_scalar_observed"} | extra
+             and type(row["schema"]) is int and row["schema"] == 1 and row["observer"] == observer
+             and row["case"] == "HYUNDAI_PALISADE-torque" and type(row["frame"]) is int and row["frame"] == 0,
+             "exact target scalar case/frame/schema")
+    need(set(original["fields"]) == {"error", "error_cast", "used_kp", "p"}
+         and set(native["fields"]) == {"error", "p", "speed"}
+         and original["used_kp_scalar_observed"] is True and native["used_kp_scalar_observed"] is False,
+         "observed versus stored scalar fields")
+    for record, observer in ((original, "original"), (native, "native")):
+        for row in record["fields"].values():
+            floating(row)
+            need((row["runtime_type"] == "rust.f64") == (observer == "native"), "foreign scalar runtime origin")
+    for row, state in ((original, original_state), (native, native_state)):
+        need(type(state["lat_pid"][0]) is float
+             and floating(row["fields"]["p"]) == typed_scalar(state["lat_pid"][0])["bits"],
+             "typed p does not match its actual output state")
+    for key, expected in (("gain_x", "0000000000000000"), ("gain_y", "3ff0000000000000")):
+        need(isinstance(native[key], list) and len(native[key]) == 1 and floating(native[key][0]) == expected,
+             "target stored gain is not the bound constant one curve")
+        need(native[key][0]["runtime_type"] == "rust.f64", "native stored gain runtime origin")
+    need(floating(original["fields"]["used_kp"]) == "3ff0000000000000", "target original used gain differs")
+    need(isinstance(original["inputs"], list) and len(original["inputs"]) == 4, "four target original NN inputs")
+    for i, call in enumerate(original["inputs"]):
+        need(set(call) == {"call", "values"} and type(call["call"]) is int and call["call"] == i
+             and isinstance(call["values"], list) and 2 <= len(call["values"]) <= 18, "raw original NN input roster")
+        for value in call["values"]:
+            if value.get("dtype") == "int":
+                need(set(value) == {"dtype", "value", "runtime_type"} and value["runtime_type"] == "builtins.int"
+                     and type(value["value"]) is int and -(1 << 63) <= value["value"] < 1 << 63, "raw integer input")
+            else:
+                floating(value, 32 if value.get("dtype") == "f32" else 64)
+    need(len(json.dumps({"original": original, "native": native}, allow_nan=False).encode()) <= 64*1024,
+         "combined target scalar set exceeds 64KiB")
+    return {"p_bits_equal": original["fields"]["p"]["bits"] == native["fields"]["p"]["bits"],
+            "error_bits_equal": original["fields"]["error_cast"]["bits"] == native["fields"]["error"]["bits"],
+            "criteria": "exact width and bit pattern; original runtime types retained separately",
+            "native_used_gain_scalar_observed": False, "native_stored_gain_constant_one": True}
+
+
+def target_scalar_controls(original, native, original_state, native_state, stderr):
+    """실제 양성을 사용한 GHA-only 변조 통제. 원문/expected는 수정하지 않는다."""
+    import copy
+    def validate(row):
+        validate_target_scalars(original, row, original_state, native_state)
+    bad = []
+    for name, change in (
+            ("foreign_case", lambda r: r.update(case="FOREIGN")),
+            ("wrong_scalar_width", lambda r: r["fields"]["p"].update(dtype="f32")),
+            ("missing_p", lambda r: r["fields"].pop("p")),
+            ("p_output_mismatch", lambda r: r["fields"]["p"].update(bits=f"{int(r['fields']['p']['bits'],16)^1:016x}")),
+            ("wrong_gain_curve", lambda r: r["gain_y"][0].update(bits="4000000000000000"))):
+        row = copy.deepcopy(native)
+        change(row)
+        bad.append((name, lambda row=row: validate(row)))
+    marker = next(line for line in stderr.splitlines() if line.startswith(b"CONTROLSD_553_SCALAR "))
+    for name, raw in (("missing_marker", b""), ("duplicate_marker", marker+b"\n"+marker),
+                      ("malformed_marker", b"CONTROLSD_553_SCALAR {"),
+                      ("foreign_marker_prefix", b"foreign "+marker)):
+        bad.append((name, lambda raw=raw: native_scalar_record(raw)))
+    for name, reject in bad:
+        try:
+            reject()
+        except (RuntimeError, ValueError):
+            pass
+        else:
+            raise RuntimeError("target scalar mutation accepted: "+name)
+    return {"pass": True, "negative_controls": [name for name, _ in bad], "local_execution": False}
 
 
 def safe_zip(archive, count, expanded):
@@ -536,9 +644,17 @@ class Diagnostic:
     def build_trace(self, tapped):
         label = "tapped-build" if tapped else "plain-build"
         features = ["diagnostic-553", "native"] if tapped else ["native"]
+        target = self.target
+        env = self.env
+        if getattr(self, "same_job_normal_mode", False):
+            need(tapped, "same-job must reuse its held actual plain ELF")
+            # 원래 Cargo executable 경로는 이미 hold됐다. 다른 target에서만 observer를 빌드한다.
+            target = self.target / "same-job-observer"
+            need(not target.exists() and not target.is_symlink(), "fresh nested observer Cargo target")
+            env = {**self.env, "CARGO_TARGET_DIR": str(target)}
         raw = self.command([self.sdk / "bin/cargo", "build", "--manifest-path", self.root / "rust/Cargo.toml",
             "--locked", "-p", "openpilot-controlsd", "--no-default-features", "--features", ",".join(features),
-            "--example", "controlsd_trace", "--message-format=json", *self.c.SHA2_PROFILE_ARGS], label, seconds=1200)
+            "--example", "controlsd_trace", "--message-format=json", *self.c.SHA2_PROFILE_ARGS], label, seconds=1200, env=env)
         rows = [loads(line) for line in raw.splitlines()]
         need(rows and rows[-1] == {"reason": "build-finished", "success": True}
              and sum(r.get("reason") == "build-finished" for r in rows) == 1, "Cargo success JSONL")
@@ -553,7 +669,7 @@ class Diagnostic:
              and sorted(row["features"]) == features and row["profile"]["test"] is False
              and row["profile"]["opt_level"] == "0", "exact Cargo source/features/profile")
         path = Path(row["executable"])
-        need(path.is_absolute() and path.resolve(strict=True) == path and path.is_relative_to(self.target), "private Cargo ELF")
+        need(path.is_absolute() and path.resolve(strict=True) == path and path.is_relative_to(target), "private Cargo ELF")
         copied = self.bin / ("controlsd-trace-tapped" if tapped else "controlsd-trace-plain")
         before = self.c.regular(path, 512*MIB)
         self.c.copy_new(path, copied, 512*MIB)
@@ -563,6 +679,76 @@ class Diagnostic:
             "selected_before_copy": before, "private_copy": str(copied),
             "copy_sha256": before["sha256"], "copied_before_next_build": True})
         return copied
+
+    def observe_target_failure(self, plain_trace, original_trace, native_env):
+        """재현 admission 뒤에만 호출한다. 기존 Replay deadline을 새로 부여하지 않는다."""
+        need(getattr(self, "same_job_normal_mode", False), "target observation exact same-job mode")
+        self.budget(force=True)
+        self.phase = "same-job-tapped-build"
+        tapped = self.build_trace(True)
+        self.holds.verify()
+        config = self.out / "worker-config.json"
+        self.phase = "same-job-original-tapped"
+        self.command([self.python, "-I", "-B", "-S", self.root / "tools/ci/controlsd_diagnostic_553.py",
+                      "--worker", "original-tapped", "--config", config], "original-tapped", seconds=700,
+                     env={**self.env, "PATH": "/nonexistent", "LD_LIBRARY_PATH": str(self.python_lib)})
+        for suffix in (".json", "-seals.json", "-providers-before.json", "-providers-after.json", "-numpy-dispatch.json",
+                       "-layers.json", "-ast.json", "-pid-ast.json", "-scalars.json", "-getters.json"):
+            self.holds.add(self.out / ("original-tapped"+suffix))
+        seals = loads(self.c.read(self.out / "original-tapped-seals.json"))
+        need(seals["pass"] is True and seals["errors"] == [] and seals["worker_error"] is None,
+             "target original tapped provider seals")
+        output = self.out / "same-native-tapped.json"
+        self.phase = "same-job-native-tapped"
+        with self.request.open("rb") as stream:
+            need(self.c.ident(os.fstat(stream.fileno())) == self.holds.records()[str(self.request)]["identity"],
+                 "target tapped held input FD")
+            self.command([tapped, output], "same-native-tapped", seconds=600, env=native_env, stdin=stream)
+        self.holds.add(output)
+        original = loads(self.c.read(self.out / "original-tapped.json", 16*MIB))
+        native = loads(self.c.read(output, 16*MIB))
+        original_same, native_same = bits(original) == bits(original_trace), bits(native) == bits(plain_trace)
+        self.save("target-observer-effects.json", {"original_tapped_equals_plain": original_same,
+            "native_tapped_equals_same_held_plain_replay": native_same,
+            "same_native_elf": False, "actual_fullnormal_process_intermediates_observed": False, **FLAGS})
+        self.holds.add(self.out / "target-observer-effects.json")
+        need(original_same and native_same, "target one-frame observation changed output bits")
+        stderr = self.c.read(self.out / "same-native-tapped.stderr", 32*MIB)
+        native_layers, getters = [], []
+        for line in stderr.splitlines():
+            if line.startswith(b"CONTROLSD_553_LAYER "):
+                native_layers.append(loads(line.removeprefix(b"CONTROLSD_553_LAYER ")))
+            if line.startswith(b"CONTROLSD_553_GETTERS "):
+                raw = line.removeprefix(b"CONTROLSD_553_GETTERS ")
+                need(len(raw) <= 64*1024, "target getter receipt bound")
+                getters.append(loads(raw))
+        need(len(getters) == 1, "target native getter receipt once")
+        comparison = compare_layers(loads(self.c.read(self.out / "original-tapped-layers.json", 32*MIB)), native_layers)
+        getter_comparison = compare_getters(loads(self.c.read(self.out / "original-tapped-getters.json", 64*1024)),
+                                            getters[0], self.source, self.site, Path(native_env["CONTROLS_NUMERICS"]), comparison)
+        left = loads(self.c.read(self.out / "original-tapped-scalars.json", 64*1024))
+        right = native_scalar_record(stderr)
+        original_state, native_state = original[0]["rows"][0]["state"], native[0]["rows"][0]["state"]
+        scalar_comparison = validate_target_scalars(left, right, original_state, native_state)
+        need(len(left["inputs"]) == comparison["original_calls"] == comparison["native_calls"] == 4,
+             "target raw input and layer call binding")
+        controls = target_scalar_controls(left, right, original_state, native_state, stderr)
+        self.save("same-native-tapped-scalars.json", right)
+        self.holds.add(self.out / "same-native-tapped-scalars.json")
+        self.save("target-scalar-controls.json", controls)
+        self.holds.add(self.out / "target-scalar-controls.json")
+        result = {"schema": 1, "source": self.source, "diagnostic_only": True,
+            "case": "HYUNDAI_PALISADE-torque", "frame": 0,
+            "observation_valid": True, "scalar_layer_observed": True,
+            "actual_failure_reproduced_before_observation": True,
+            "original_tapped_equals_plain": original_same, "native_tapped_equals_plain": native_same,
+            "actual_fullnormal_process_intermediates_observed": False,
+            "original_scalars": left, "native_scalars": right, "scalar_comparison": scalar_comparison,
+            "layer_comparison": comparison, "same_instance_getters": getter_comparison,
+            "negative_controls": controls, "fullnormal_failure_preserved": True, **FLAGS}
+        self.save("target-scalar-layer-comparison.json", result)
+        self.holds.add(self.out / "target-scalar-layer-comparison.json")
+        return result
 
     def clippy(self):
         self.phase = "strict-current-clippy"
@@ -926,11 +1112,16 @@ class Diagnostic:
 
 class OriginalObservation:
     """원래 ndarray/scalar를 그대로 반환하며 계산에 기록 복사본을 돌려주지 않는다."""
-    def __init__(self, np):
+    def __init__(self, np, target_scalars=False):
         self.np = np
         self.calls = []
         self.current = None
         self.layer = None
+        self.target_scalars = target_scalars
+        self.inputs = []
+        self.pid_records = []
+        self.pid_pending = None
+        self.selected_pid = None
 
     def push(self, event):
         need(self.current is not None and len(self.current["events"]) < 512, "original observer event bound")
@@ -942,6 +1133,8 @@ class OriginalObservation:
         self.layer = None
         self.current = {"format": 553, "diagnostic_only": True, "call": len(self.calls),
             "input_f64_bits": [int.from_bytes(struct.pack("<d", float(v)), "little") for v in values], "events": []}
+        if self.target_scalars:
+            self.inputs.append({"call": len(self.calls), "values": [typed_scalar(v, self.np) for v in values]})
         self.array("mean", model.input_mean)
         self.array("std", model.input_std)
         self.push({"stage": "friction_before", "value": bool(model.friction_override)})
@@ -969,6 +1162,65 @@ class OriginalObservation:
         self.calls.append(self.current)
         self.current = None
         return value
+
+
+    def pid_scalar(self, stage, owner, value):
+        need(self.target_scalars and stage in ("error", "error_cast", "used_kp", "p"), "bound PID scalar stage")
+        if stage == "error":
+            need(self.pid_pending is None and len(self.pid_records) < 8, "one-frame PID observation bound")
+            self.pid_pending = {"owner": owner, "fields": {}}
+        need(self.pid_pending is not None and self.pid_pending["owner"] is owner
+             and stage not in self.pid_pending["fields"], "duplicate/foreign PID scalar")
+        self.pid_pending["fields"][stage] = typed_scalar(value, self.np)
+        if stage == "p":
+            need(set(self.pid_pending["fields"]) == {"error", "error_cast", "used_kp", "p"}, "complete PID operands")
+            self.pid_records.append(self.pid_pending)
+            self.pid_pending = None
+        return value
+
+    def select_pid(self, owner):
+        rows = [r for r in self.pid_records if r["owner"] is owner]
+        need(self.selected_pid is None and self.pid_pending is None and len(rows) == 1,
+             "exact actual lateral PID identity at snapshot")
+        self.selected_pid = rows[0]["fields"]
+        self.pid_records.clear()
+
+
+def instrument_pid(tree):
+    """PID p 식의 각 operand/result를 한 번 읽고 AST 원복 동등성을 검증한다."""
+    import copy
+    before = ast.dump(tree, include_attributes=False)
+    expected = ast.dump(ast.parse("self.p = float(error) * self.k_p").body[0], include_attributes=False)
+    changed = 0
+    def wrap(stage, value):
+        return ast.Call(func=ast.Attribute(value=ast.Name(id="_diag553", ctx=ast.Load()),
+                        attr="pid_scalar", ctx=ast.Load()),
+                        args=[ast.Constant(stage), ast.Name(id="self", ctx=ast.Load()), value], keywords=[])
+    for cls in tree.body:
+        if isinstance(cls, ast.ClassDef) and cls.name == "PIDController":
+            for method in cls.body:
+                if isinstance(method, ast.FunctionDef) and method.name == "update":
+                    for node in method.body:
+                        if isinstance(node, ast.Assign) and ast.dump(node, include_attributes=False) == expected:
+                            error = wrap("error", node.value.left.args[0])
+                            cast = ast.Call(func=node.value.left.func, args=[error], keywords=[])
+                            node.value = wrap("p", ast.BinOp(left=wrap("error_cast", cast), op=ast.Mult(),
+                                                              right=wrap("used_kp", node.value.right)))
+                            changed += 1
+    need(changed == 1, "exact original PID p expression once")
+    class Remove(ast.NodeTransformer):
+        def visit_Call(self, node):
+            if (isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name)
+                    and node.func.value.id == "_diag553" and node.func.attr == "pid_scalar"):
+                need(len(node.args) == 3 and not node.keywords, "identity PID tap shape")
+                return self.visit(node.args[-1])
+            return self.generic_visit(node)
+    tree = ast.fix_missing_locations(tree)
+    restored = ast.dump(Remove().visit(copy.deepcopy(tree)), include_attributes=False)
+    need(restored == before, "removing PID taps did not restore exact original AST")
+    return tree, {"original_ast_sha256": sha(before.encode()), "restored_ast_sha256": sha(restored.encode()),
+                  "restored_equals_original": True,
+                  "transformed_ast_sha256": sha(ast.dump(tree, include_attributes=False).encode())}
 
 
 def instrument_flux(tree):
@@ -1067,6 +1319,16 @@ def original_worker(args):
     holds.add(Path(config["input"]))
     error = None
     prefix = args.worker
+    # worker 환경은 원래 env-i 범위를 유지한다. 새 flag 대신 기존 owned job/source marker로 한정한다.
+    owner_path = Path(os.environ["HOME"]).parent / "owner"
+    source_owner = root.parent / ".diag296-owner"
+    holds.add(owner_path)
+    holds.add(source_owner)
+    owner = c.read(owner_path, 256).decode("ascii").strip()
+    need(re.fullmatch(r"[1-9][0-9]*:[1-9][0-9]*:[a-z0-9-]+", owner)
+         and c.read(source_owner, 256).decode("ascii").strip() == owner,
+         "original worker existing owned job/source binding")
+    target_scalars = args.worker == "original-tapped" and owner.endswith(":controls-same-job-553")
     before = None
     def provider_files():
         files = {str(Path(sys.executable).resolve())}
@@ -1101,18 +1363,33 @@ def original_worker(args):
         need(np.__version__ == "2.5.3" and Path(np.__file__).resolve().is_relative_to(site), "private pinned NumPy")
         for name, pin in DSOS.items():
             holds.add(site / "numpy.libs" / name, pin, elf=True)
-        observation = OriginalObservation(np)
+        observation = OriginalObservation(np, target_scalars)
         ast_record = None
+        pid_ast_record = None
         if args.worker == "original-tapped":
             from importlib import abc, machinery
             interfaces = root / "opendbc_repo/opendbc/car/interfaces.py"
+            pid_source = root / "openpilot/common/pid.py"
             class Loader(machinery.SourceFileLoader):
                 def get_code(self, fullname):
-                    nonlocal ast_record
-                    raw = c.read(interfaces, 4*MIB)
-                    need(sha(raw) == SOURCE_PINS[str(interfaces.relative_to(root))], "instrumented original source pin")
-                    tree, ast_record = instrument_flux(ast.parse(raw, filename=str(interfaces)))
-                    return compile(tree, str(interfaces), "exec")
+                    nonlocal ast_record, pid_ast_record
+                    path = pid_source if fullname == "openpilot.common.pid" else interfaces
+                    raw = c.read(path, 4*MIB)
+                    need(sha(raw) == SOURCE_PINS[str(path.relative_to(root))], "instrumented original source pin")
+                    tree = ast.parse(raw, filename=str(path))
+                    if path == pid_source:
+                        tree, pid_ast_record = instrument_pid(tree)
+                        changed = raw.replace(b"self.p = float(error) * self.k_p", b"self.p = float(error) + self.k_p")
+                        need(changed != raw, "PID operator negative source anchor")
+                        try:
+                            instrument_pid(ast.parse(changed))
+                        except RuntimeError:
+                            pid_ast_record["changed_p_operator_rejected"] = True
+                        else:
+                            raise RuntimeError("changed original PID p operator accepted")
+                    else:
+                        tree, ast_record = instrument_flux(tree)
+                    return compile(tree, str(path), "exec")
                 def exec_module(self, module):
                     module.__dict__["_diag553"] = observation
                     super().exec_module(module)
@@ -1120,8 +1397,12 @@ def original_worker(args):
                 def find_spec(self, fullname, path=None, target=None):
                     if fullname == "opendbc.car.interfaces":
                         return importlib.util.spec_from_file_location(fullname, interfaces, loader=Loader(fullname, str(interfaces)))
+                    if target_scalars and fullname == "openpilot.common.pid":
+                        return importlib.util.spec_from_file_location(fullname, pid_source, loader=Loader(fullname, str(pid_source)))
                     return None
             need("opendbc.car.interfaces" not in sys.modules, "original interfaces imported before observer")
+            if target_scalars:
+                need("openpilot.common.pid" not in sys.modules, "original PID imported before observer")
             sys.meta_path.insert(0, Finder())
         import controlsd_source as adapter
         original_load = adapter.load
@@ -1133,8 +1414,16 @@ def original_worker(args):
             c.save(out / (prefix+"-providers-before.json"), {**before, "held": holds.records()})
             return result
         adapter.load = load
+        if target_scalars:
+            original_snapshot = adapter.snapshot
+            def snapshot(controls):
+                observation.select_pid(controls.LaC.pid)
+                return original_snapshot(controls)
+            adapter.snapshot = snapshot
         request = loads(c.read(Path(config["input"]), MIB))
         need(len(request["cases"]) == 1 and len(request["cases"][0]["frames"]) == 1, "one-frame worker scope")
+        if target_scalars:
+            need(request["cases"][0]["name"] == "HYUNDAI_PALISADE-torque", "exact target scalar request")
         result = [adapter.trace(request["cases"][0])]
         need(before is not None, "actual original adapter was not reached")
         c.write_new(out / (prefix+".json"), (json.dumps(result, allow_nan=False)+"\n").encode())
@@ -1142,6 +1431,14 @@ def original_worker(args):
             need(ast_record is not None and observation.current is None and observation.calls, "complete original tap records")
             c.save(out / "original-tapped-layers.json", observation.calls)
             c.save(out / "original-tapped-ast.json", ast_record)
+            if target_scalars:
+                need(pid_ast_record is not None and observation.selected_pid is not None,
+                     "actual target PID AST and single selected record")
+                scalar = {"schema": 1, "observer": "original", "case": request["cases"][0]["name"], "frame": 0,
+                    "fields": observation.selected_pid, "inputs": observation.inputs, "used_kp_scalar_observed": True}
+                need(len(json.dumps(scalar, allow_nan=False).encode()) <= 64*1024, "original scalar 64KiB cap")
+                c.save(out / "original-tapped-scalars.json", scalar)
+                c.save(out / "original-tapped-pid-ast.json", pid_ast_record)
             need(len(observation.calls) == 4, "four completed calls before original getters")
             original_getters(c, holds, before, provider_files, site, out, config["source"])
         dispatch = np.lib.introspect.opt_func_info(func_name="^(exp|subtract|add|divide)$", signature="float32")

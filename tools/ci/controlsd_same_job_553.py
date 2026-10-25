@@ -14,9 +14,9 @@ import time
 import traceback
 
 COMMON = "tools/ci/controlsd_normal_523.py"
-COMMON_SHA = "937f9a0adca788625e291b147be48445d14235a4c1a0c61e9f0b4d61881c113b"
+COMMON_SHA = "8a5da6caaf97dc00a0672e271130e0ce0ead8c055bee9883f7e503b9904b85a7"
 DIAGNOSTIC = "tools/ci/controlsd_diagnostic_553.py"
-DIAGNOSTIC_SHA = "0a16fd670a0e573e681fa50f53bb1fb30c28a875e4eb57269becc0e2b51ac3c7"
+DIAGNOSTIC_SHA = "b050f59a60a0afa1450ec935f4d07ceb5d57b6ae7943d7eadeede14f2968dfa4"
 WORKFLOW = ".github/workflows/python-rust-523-controls-same-job.yml"
 JOB = "controls-same-job-553"
 JOB_NAME = "Same VM normal40 and frozen original native triage"
@@ -330,6 +330,55 @@ def replay_probe(c, d, normal, context, evidence):
             c.write_new(prefix_path, (json.dumps({"cases": prefix}, allow_nan=False)+"\n").encode())
             for path in (self.request, prefix_path):
                 self.holds.add(path)
+            replay = {}
+            for label, request in (("same-native-oneframe",self.request),("same-native-prefix",prefix_path)):
+                self.phase = label
+                output = self.out / (label+".json")
+                with request.open("rb") as stream:
+                    need(c.ident(os.fstat(stream.fileno())) == self.holds.records()[str(request)]["identity"], "held replay input FD")
+                    self.command([trace,output],label,seconds=600,env=native_env,stdin=stream)
+                self.holds.add(output)
+                replay[label] = d.loads(c.read(output,16*MIB))
+            need(len(replay["same-native-oneframe"])==1
+                 and len(replay["same-native-oneframe"][0]["rows"])==1
+                 and [len(x["rows"]) for x in replay["same-native-prefix"]]==[200,200,200,1], "replay exact case/frame roster")
+            for rows, cases in ((replay["same-native-oneframe"],[inputs[3]]),
+                                (replay["same-native-prefix"],prefix)):
+                need(all(isinstance(row,dict) and set(row)=={"name","printed","rows"} for row in rows)
+                     and [row["name"] for row in rows]==[case["name"] for case in cases],
+                     "original/current replay case names and output schema")
+            need(old_name==actual_name==inputs[3]["name"], "frozen/current case3 identity")
+            states = {"frozen":old_state,"actual_full_native":actual_state,
+                "same_native_oneframe":replay["same-native-oneframe"][0]["rows"][0]["state"],
+                "same_native_prefix":replay["same-native-prefix"][3]["rows"][0]["state"]}
+            reproduced = d.target_reproduced(actual_state, states["same_native_oneframe"], states["same_native_prefix"])
+            self.result = {"schema":1,"source":self.source,"same_vm":True,"actual_identity":context["identity"],
+                "same_native_elf":{k:context["normal_holds"][str(trace)][k] for k in ("identity","sha256")},
+                "native_path":str(trace),"native_environment":native_env,"native_argv_change":"output path only; bounded input subset/prefix explicitly recorded",
+                "normal_failure_preserved":True,"normal_pass":False,"state_bits":{k:d.bits(v) for k,v in states.items()},
+                "typed_equalities":{a+"__"+b:d.bits(states[a])==d.bits(states[b]) for a in states for b in states if a<b},
+                "reproduction_required_for_diagnostic_completion":False,
+                "actual_failure_reproduced":reproduced,"current_original_observed":False,
+                "scalar_layer_observed":False,"inference_stopped":not reproduced,**d.FLAGS}
+            self.save("same-job-triangulation.json",self.result)
+            if not reproduced:
+                # 원본은 실행하지 않았다. 비어 있는 owned 준비영역/기존 Python root도 finalizer에 봉인한다.
+                for label, root in (("originaldeps",self.deps),("packages",self.packages),("numerics",self.numerics),("python-provider",self.python_prefix)):
+                    self.baselines[label] = self.snapshot(root)
+                    self.save(label+"-before.json",self.baselines[label])
+                self.result["stop_reason"] = "same-held plain one-frame/prefix did not reproduce actual fullnormal state"
+                self.result["unused_original_provider_baseline_scope"] = "after plain replay, before finalizers; original not executed"
+                self.save("same-job-triangulation.json",self.result)
+                self.phase = "same-job-observed"
+                return
+            # 실제 실패의 상태가 달라진 replay로 layer 원인을 설명하는 우회를 거부한다.
+            foreign = dict(states["same_native_oneframe"], _foreign=True)
+            need(not d.target_reproduced(actual_state, foreign, states["same_native_prefix"])
+                 and not d.target_reproduced(actual_state, states["same_native_oneframe"], foreign),
+                 "target reproduction mutation controls")
+            self.result["reproduction_negative_controls"] = 2
+            self.save("same-job-triangulation.json",self.result)
+            self.holds.verify()
             c.copy_new(normal.out / "numerics-wheel.stdout", self.packages / d.NUMPY_WHEEL, 32*MIB)
             self.prepare_python()
             for label, root in (("originaldeps",self.deps),("packages",self.packages),("numerics",self.numerics),("python-provider",self.python_prefix)):
@@ -345,34 +394,18 @@ def replay_probe(c, d, normal, context, evidence):
                 self.holds.add(self.out / ("original-plain"+suffix))
             worker = d.loads(c.read(self.out / "original-plain-seals.json"))
             need(worker["pass"] and worker["errors"] == [] and worker["worker_error"] is None, "current original worker seals")
-            replay = {}
-            for label, request in (("same-native-oneframe",self.request),("same-native-prefix",prefix_path)):
-                self.phase = label
-                output = self.out / (label+".json")
-                with request.open("rb") as stream:
-                    need(c.ident(os.fstat(stream.fileno())) == self.holds.records()[str(request)]["identity"], "held replay input FD")
-                    self.command([trace,output],label,seconds=600,env=native_env,stdin=stream)
-                self.holds.add(output)
-                replay[label] = d.loads(c.read(output,16*MIB))
             original = d.loads(c.read(self.out / "original-plain.json",16*MIB))
-            need(len(original)==len(replay["same-native-oneframe"])==1
-                 and len(original[0]["rows"])==len(replay["same-native-oneframe"][0]["rows"])==1
-                 and [len(x["rows"]) for x in replay["same-native-prefix"]]==[200,200,200,1], "replay exact case/frame roster")
-            for rows, cases in ((original,[inputs[3]]),(replay["same-native-oneframe"],[inputs[3]]),
-                                (replay["same-native-prefix"],prefix)):
-                need(all(isinstance(row,dict) and set(row)=={"name","printed","rows"} for row in rows)
-                     and [row["name"] for row in rows]==[case["name"] for case in cases],
-                     "original/current replay case names and output schema")
-            need(old_name==actual_name==inputs[3]["name"], "frozen/current case3 identity")
-            states = {"frozen":old_state,"current_original":original[0]["rows"][0]["state"],
-                "actual_full_native":actual_state,"same_native_oneframe":replay["same-native-oneframe"][0]["rows"][0]["state"],
-                "same_native_prefix":replay["same-native-prefix"][3]["rows"][0]["state"]}
-            self.result = {"schema":1,"source":self.source,"same_vm":True,"actual_identity":context["identity"],
-                "same_native_elf":{k:context["normal_holds"][str(trace)][k] for k in ("identity","sha256")},
-                "native_path":str(trace),"native_environment":native_env,"native_argv_change":"output path only; bounded input subset/prefix explicitly recorded",
-                "normal_failure_preserved":True,"normal_pass":False,"state_bits":{k:d.bits(v) for k,v in states.items()},
-                "typed_equalities":{a+"__"+b:d.bits(states[a])==d.bits(states[b]) for a in states for b in states if a<b},
-                "reproduction_required_for_diagnostic_completion":False,**d.FLAGS}
+            need(len(original)==1 and set(original[0])=={"name","printed","rows"}
+                 and original[0]["name"]==inputs[3]["name"] and len(original[0]["rows"])==1,
+                 "target original exact one-frame output")
+            states["current_original"] = original[0]["rows"][0]["state"]
+            self.result.update(current_original_observed=True,
+                state_bits={k:d.bits(v) for k,v in states.items()},
+                typed_equalities={a+"__"+b:d.bits(states[a])==d.bits(states[b]) for a in states for b in states if a<b})
+            self.save("same-job-triangulation.json",self.result)
+            observation = self.observe_target_failure(replay["same-native-oneframe"], original, native_env)
+            self.result.update(scalar_layer_observed=True, target_observation=observation,
+                               reproduction_negative_controls=2)
             self.save("same-job-triangulation.json",self.result)
             self.phase = "same-job-observed"
 

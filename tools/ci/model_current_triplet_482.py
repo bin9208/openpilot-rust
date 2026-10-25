@@ -26,7 +26,7 @@ import traceback
 
 MIB, GIB = 1024**2, 1024**3
 COMMON = "tools/ci/controlsd_normal_523.py"
-COMMON_SHA = "937f9a0adca788625e291b147be48445d14235a4c1a0c61e9f0b4d61881c113b"
+COMMON_SHA = "8a5da6caaf97dc00a0672e271130e0ce0ead8c055bee9883f7e503b9904b85a7"
 LLVM_SHA = "5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0"
 STORE_SOURCE = "e223a2c36c6bde7cf676bb92fd2529858a723f9ecfa91c811b2b941756a9bea0"
 PREFIX = "cpu::diagnostic_482_tests::"

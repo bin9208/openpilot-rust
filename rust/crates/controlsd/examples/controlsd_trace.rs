@@ -100,6 +100,48 @@ fn snapshot(controls: &Controls) -> Value {
     }
     state
 }
+#[cfg(feature = "diagnostic-553")]
+fn scalar_553(value: f64) -> Value {
+    json!({"dtype":"f64", "bits":format!("{:016x}",value.to_bits()), "runtime_type":"rust.f64"})
+}
+
+#[cfg(feature = "diagnostic-553")]
+fn record_scalar_553(
+    case: &str,
+    controls: &Controls,
+    error: f64,
+    speed: f64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let pid = controls
+        .lateral
+        .pid
+        .as_ref()
+        .ok_or("#553 missing lateral PID")?;
+    if pid.gains.p.x.is_empty()
+        || pid.gains.p.x.len() > 256
+        || pid.gains.p.y.is_empty()
+        || pid.gains.p.y.len() > 256
+    {
+        return Err("#553 stored gain bound".into());
+    }
+    // 계산이 끝난 필드만 읽는다. Gain::at/PID/NN을 다시 호출하지 않는다.
+    let receipt = json!({"schema":1,"observer":"native","case":case,"frame":0,
+        "fields":{"error":scalar_553(error),"p":scalar_553(pid.p),"speed":scalar_553(speed)},
+        "gain_x":pid.gains.p.x.iter().copied().map(scalar_553).collect::<Vec<_>>(),
+        "gain_y":pid.gains.p.y.iter().copied().map(scalar_553).collect::<Vec<_>>(),
+        "used_kp_scalar_observed":false});
+    let raw = serde_json::to_vec(&receipt)?;
+    if raw.len() > 64 * 1024 {
+        return Err("#553 scalar receipt exceeds 64KiB".into());
+    }
+    writeln!(
+        std::io::stderr().lock(),
+        "CONTROLSD_553_SCALAR {}",
+        std::str::from_utf8(&raw)?
+    )?;
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = std::env::args().collect::<Vec<_>>();
     let output_path = args.get(1).ok_or("output path")?;
@@ -149,6 +191,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             state.update(frame.time, &frame.messages)?;
             let input = openpilot_controlsd::input_decode::decode(&state, frame.time)?;
             let command = controls.control(&input, &mut store)?;
+            #[cfg(feature = "diagnostic-553")]
+            record_scalar_553(&case.name, &controls, command.log.error, input.car.speed)?;
             logs.extend(command.errors.iter().map(|error| json!(["error", error])));
             let packets = openpilot_controlsd::publication::publish(
                 &mut controls,

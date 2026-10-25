@@ -288,3 +288,84 @@ raw512MiB·free admission·수치/expected/원문/40cases 기준과 final source
 로컬 AST·Bash 구문·정적 body 비교·diff만 확인한다. 통제3개와 heartbeat, 전체 normal40 실제 포착·
 성능·qualification은 **GHA UNRUN**이다. #553 수치 원인 해결이나 기존3393 전체 수용을 주장하지 않는다.
 COMMON3helper literal/WF/Focus/ledger의 새 SHA 연결·실행 및 실제 산출물 감사는 부모 후속이다.
+
+## 855 실제 관측 이후: 목표 실패에 연결하는 scalar/layer 후보
+
+2026-10-25. source `855625beeff017080b50e4e421bbe6b3e5af79ac`의 normal40178341813은 실제
+metadata3/같은 PID의 현재 ELF+OpenBLAS를 관측한 뒤 첫 `lat_pid[0]`에서 실패했다. 별도
+same-job40178341764는40cases/8655frames/705948비교/max error0과 최종 봉인까지 통과했다.
+standalone diagnostic40178341811은 현재 original/native의2329 layer bits가 같았지만 original의
+historical 재현 false로 기존 gate에서 실패했다. 세 VM의 CPU는 각각9V45/7763/9V74다.
+이는 mapping과 수치 실패를 분리하는 근거이며 CPU/kernel 원인 확정이나 #553 해결 근거는 아니다.
+
+승인된 후속 구현은 `controlsd_same_job_553.py`, `controlsd_diagnostic_553.py`,
+`controlsd/examples/controlsd_trace.rs` 및 이 문서뿐이다. 기준 HEAD는
+`a535db58f52c610a66dc11ff030d16be52d6a5bb`이며 원문4파일 SHA는 ignored
+`controls-553-target-failure-implementation/baseline.json`에 먼저 보존했다.
+
+### 실행 admission과 기존 실패 보존
+
+normal PASS/다른 root의 기존 분기와 target mismatch/fixture101/실패 봉인/실제 PID mapping
+admission은 그대로다. target이면 실제 normal이 사용한 동일 held plain ELF로 one-frame와
+prefix600+target1을 먼저 실행한다. 두 replay의 **전체 state typed bits**가 실제 실패 state와
+같을 때만 현재 original과 one-frame taps로 진행한다. 같지 않으면 `inference_stopped=true`,
+`scalar_layer_observed=false`와 원문 state/이유를 보존한다. 원본은 실행하지 않고 사용하지 않은
+owned 준비영역·기존 Python root를 finalizer 앞에서 별도로 봉인한다. 이 baseline의 범위도 기록한다.
+원래 normal FAIL은 성공으로 승격하지 않는다.
+
+재현되면 current original plain/tapped와 current native plain/tapped의 전체 출력 bits를 각각
+확인한다. native plain은 실제 normal의 같은 ELF이며 tapped는 다른 Cargo ELF다. tapped build는
+hold된 원래 Cargo 경로를 relink하지 않도록 기존 target 아래 `same-job-observer`를 사용한다.
+기존 build8GiB 분류에 함께 합산하며 새 예산을 만들지 않는다. Cargo JSONL의 source/feature/profile/
+정확 target 선택과 private ELF copy/held 검사는 유지한다.
+
+### 한 세트 typed scalar와 기존 layer 연결
+
+default-off `diagnostic-553` trace는 control 직후/publication 전에 이미 계산된
+`Command.log.error`, lateral PID의 `p`, 입력 speed와 저장된 gain x/y의 F64 `.to_bits()`만 읽는다.
+`CONTROLSD_553_SCALAR` 단일 marker를 출력하며 각 scalar의 dtype/bit pattern/runtime type을
+명시한다. 사용된 보간 gain scalar는 저장돼 있지 않아 `used_kp_scalar_observed=false`다.
+Gain::at/PID/NN 또는 수치식을 다시 호출하지 않는다. feature가 없으면 추가 함수/호출은 제거돼
+원래 trace source bytes와 같은 경로가 남는다.
+
+original worker는 pin된 `PIDController.update`의 정확 `self.p = float(error) * self.k_p` 식에
+identity AST taps를 붙인다. raw error/float(error)/실제 사용 k_p/실제 p를 원래 평가 순서대로
+각 한 번 기록하고 같은 객체를 반환한다. taps 제거 후 전체 AST가 원문과 같아야 한다.
+다른 PID의 기록을 lateral PID로 섞지 않도록 실제 adapter snapshot의 `controls.LaC.pid` 객체와
+동일한 기록 한 개를 선택한다. 원본 파일 bytes는 수정하지 않는다.
+
+child는 원래 env-i 범위를 유지한다. 새 CLI/env hook 대신 기존 held job `owner`와
+source `.diag296-owner`의 일치 및 `controls-same-job-553` 역할을 사용해 scalar 관측을 제한한다.
+standalone의602/historical 재현 AND gate와 LD A/B·prefix·기존 layer/getter 본문은 유지한다.
+
+기존 Flux observer에는 scalar 모드에서만 실제 NumPy 입력의 Python/NumPy scalar type·F32/F64
+raw bits 또는 정수값을 별도로 보존한다. cast/normalize/broadcast shape·strides·Fortran layout과
+기존 layer 순서는 그대로다. layer event schema/2329-field 비교를 줄이지 않는다.
+original/native scalar 쌍의 합계64KiB, marker 단일행64KiB, 기존16-call/256-element와 report/proof
+상한을 유지한다. 실제 p bits는 각각 자기 출력 state의 p bits와 같아야 하며 target의 저장 gain은
+정확 constant-one curve인지 확인한다. scalar의 타입을 지워 비교하거나 expected를 변환하지 않는다.
+
+`target-scalar-layer-comparison.json`은 이 한 세트·기존 layer 비교·같은 instance getter를 묶는다.
+다만 이는 실패 fullnormal의 과거 프로세스 중간값 직접 관측이 아니다. 실제 실패 state 재현과
+plain/tapped 무효과 확인으로 연결한 현재 replay 관측이다. historical/602에 없던 layer/kernel
+자료를 복원했다고 하지 않는다. BLAS 호출/kernel/전체·역사 provider closure 및 retirement flags는
+false/0을 유지한다.
+
+### GHA 전용 음성 / 통합 순서
+
+실제 양성 receipt를 복사해 foreign case, wrong width, missing p, 출력 p bit변조, wrong gain curve,
+missing/duplicate/malformed/foreign-prefix marker의 **9개**를 검사한다. 추가로 replay 상태 변조
+2개와 original PID 곱셈 연산자를 덧셈으로 바꾼 AST1개를 거부한다. 원문 결과/기대값은 바꾸지 않는다.
+이 통제와 추가 관측은 실제 목표 실패가 재현된 때만 기존 프로토콜에서 실행하며, normal PASS에
+성공 카운트를 덧붙이지 않는다. 별도 CLI/source파일/행렬 run/무작위 재시도는 추가하지 않았다.
+
+기존 Replay32분의 **잔여 시간**에서 build/worker/관측을 수행하며 deadline을 다시 부여하지 않는다.
+원래700초 worker/600초 native/command 및 전체 caps·source/SDK/provider/FD·회수/finalizer를 유지한다.
+로컬은 Python AST 구문·Rustfmt·원문 body projection·diff만 확인한다. compile/tests/Clippy/실제 재현/
+observer 무효과/새 음성12는 **GHA UNRUN**이다.
+
+부모가 trace postimage SHA를 COMMON CORE literal과 diagnostic SOURCE_PINS에 먼저 연결해야 한다.
+그 뒤 COMMON의 새 SHA를 diagnostic/same-job/model helper의 COMMON literal에 연결하고, diagnostic의
+최종 SHA를 same-job DIAGNOSTIC literal에 연결한다. 마지막에 세 helper의 WF/Focus/원장 literal을
+위상 순서로 갱신한다. heartbeat/COMMON 본문은 변경하지 않는다. 본 작업은 이 연쇄 pin/WF를
+편집하지 않았으므로 source 동결은 parent pin 통합 전 postimage이며 기능 수용을 주장하지 않는다.
