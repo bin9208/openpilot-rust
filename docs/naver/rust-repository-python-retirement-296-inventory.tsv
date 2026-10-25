@@ -2541,7 +2541,7 @@ rust/tools/tests/test_native_reference_architecture.py	2c291c88bdbaaa1ac5c294367
 rust/tools/tests/test_offline_qcom_compiler.py	bfbef75e39f7a2ae7f062e6e1c82270e2d483a61	pending	-
 rust/tools/tests/test_offline_qcom_constants.py	d513137c77251f479b0d9e71a34142fa94d4cff8	pending	-
 rust/tools/tests/test_offline_qcom_devices.py	3d6cd43dfdb1c3fcfd2d9b487e59db8a55dddf96	pending	-
-rust/tools/tests/test_offline_qcom_launch.py	4fa9bebbff3f4ef5f5fb262fe7a909c5be8ef851	pending	-
+rust/tools/tests/test_offline_qcom_launch.py	4fa9bebbff3f4ef5f5fb262fe7a909c5be8ef851	pending	sourcea621 실제 native9/원본4411/Clippy 후 삭제 후보. 기존31 전 범위 mapping 보존, 삭제 후 working/index 부재와 exact-source native 수용 전 pending.
 rust/tools/tests/test_offline_qcom_onnx.py	adeb265d0e1925d12ba3eab4c03e47dd78052a92	pending	-
 rust/tools/tests/test_offline_qcom_pipeline.py	5e4c02bb3897e22138aeee6bf2b82bbc3433c248	pending	-
 rust/tools/tests/test_offline_qcom_publish.py	e1207abcc04e8be7212a39d93bbaa2406e4ebc71	pending	-

@@ -1,7 +1,9 @@
 //! Live offline exporter bookkeeping. Tensor/UOp lowering and the genuine
 //! compiler remain upstream of this byte/identity boundary.
 use crate::{
-    compiler_buffers::{descriptor, Allocation, Buffer, Descriptor, OfflineBufferTable, View},
+    compiler_buffers::{
+        descriptor, Allocation, Buffer, BufferTable, Descriptor, OfflineBufferTable, View,
+    },
     compiler_launch::{launch_dimensions, Dimension},
     compiler_schedule::{pipeline_entrypoints, PipelineStage},
     entrypoint::Entrypoint,
@@ -110,6 +112,23 @@ pub struct StageEnd {
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct RawStage {
+    name: String,
+    calls: Vec<u64>,
+}
+
+// Missing fields select the version's schema; explicit null is never a synonym
+// for absence. In particular, v2 must not silently consume a v1 stage_ends field.
+fn present<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    T::deserialize(deserializer).map(Some)
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Request {
     version: u32,
     initialized: Vec<Initializer>,
@@ -118,7 +137,12 @@ pub struct Request {
     launches: Vec<Launch>,
     /// Genuine post-planning emission counts; constant pruning precedes this boundary.
     emitted_by_source: Vec<usize>,
-    stage_ends: Vec<StageEnd>,
+    #[serde(default, deserialize_with = "present")]
+    stage_ends: Option<Vec<StageEnd>>,
+    #[serde(default, deserialize_with = "present")]
+    stages: Option<Vec<RawStage>>,
+    #[serde(default, deserialize_with = "present")]
+    retained_calls: Option<Vec<u64>>,
 }
 #[derive(Serialize)]
 pub struct LaunchResult {
@@ -164,14 +188,37 @@ fn hex(value: &[u8]) -> String {
         .collect()
 }
 
+fn resolve_launch(
+    global: &[Number],
+    local: Option<&[Number]>,
+    source: &str,
+    binary: &[u8],
+) -> Result<LaunchResult, String> {
+    let global = global
+        .iter()
+        .map(Number::dimension)
+        .collect::<Result<Vec<_>, _>>()?;
+    let local = local
+        .map(|values| {
+            values
+                .iter()
+                .map(Number::dimension)
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?;
+    let (global, local) = launch_dimensions(&global, local.as_deref(), source, binary)?;
+    Ok(LaunchResult {
+        global: global.into_iter().map(Number::from).collect(),
+        local: local.into_iter().map(Number::from).collect(),
+    })
+}
+
 pub fn prepare(request: Request) -> Result<Plan, String> {
-    if request.version != 1
-        || request.events.len() > 1_048_576
+    if request.events.len() > 1_048_576
         || [
             request.initialized.len(),
             request.programs.len(),
             request.launches.len(),
-            request.stage_ends.len(),
         ]
         .iter()
         .any(|n| *n > 65536)
@@ -180,6 +227,57 @@ pub fn prepare(request: Request) -> Result<Plan, String> {
     {
         return Err("unsupported export-plan version/count".into());
     }
+    let (stages, retained) = match (
+        request.version,
+        request.stage_ends,
+        request.stages,
+        request.retained_calls,
+    ) {
+        // Explicit historical wire support, never a retry/fallback from v2.
+        (1, Some(ends), None, None) if ends.len() <= 65536 => {
+            let retained = (0..request.emitted_by_source.len() - 1)
+                .map(|id| id as u64)
+                .collect::<Vec<_>>();
+            let mut stages = Vec::new();
+            let mut start = 0;
+            let mut names = BTreeSet::new();
+            for stage in ends {
+                if stage.end < start
+                    || stage.end > retained.len()
+                    || !names.insert(stage.name.clone())
+                {
+                    return Err("invalid prepared stage boundary".into());
+                }
+                stages.push(PipelineStage {
+                    name: stage.name,
+                    calls: retained[start..stage.end].to_vec(),
+                });
+                start = stage.end;
+            }
+            (stages, retained)
+        }
+        (2, None, Some(stages), Some(retained))
+            if stages.len() <= 65536 && retained.len() <= 65536 =>
+        {
+            stages.iter().try_fold(0usize, |sum, stage| {
+                sum.checked_add(stage.calls.len())
+                    .filter(|sum| *sum <= 1_048_576)
+                    .ok_or("raw stage occurrences exceed bound")
+            })?;
+            (
+                stages
+                    .into_iter()
+                    .map(|stage| PipelineStage {
+                        name: stage.name,
+                        calls: stage.calls,
+                    })
+                    .collect(),
+                retained,
+            )
+        }
+        _ => return Err("unsupported export-plan version/stage contract".into()),
+    };
+    let entries = pipeline_entrypoints(&stages, &retained, &request.emitted_by_source)?;
     if request.launches.len() > *request.emitted_by_source.last().unwrap() {
         return Err("export launches exceed emitted calls".into());
     }
@@ -222,48 +320,13 @@ pub fn prepare(request: Request) -> Result<Plan, String> {
             .programs
             .get(launch.program)
             .ok_or("export launch program out of range")?;
-        let global = launch
-            .global
-            .iter()
-            .map(Number::dimension)
-            .collect::<Result<Vec<_>, _>>()?;
-        let local = launch
-            .local
-            .as_ref()
-            .map(|v| {
-                v.iter()
-                    .map(Number::dimension)
-                    .collect::<Result<Vec<_>, _>>()
-            })
-            .transpose()?;
-        let (global, local) = launch_dimensions(
-            &global,
-            local.as_deref(),
+        launches.push(resolve_launch(
+            &launch.global,
+            launch.local.as_deref(),
             &program.source,
             &bytes(&program.binary)?,
-        )?;
-        launches.push(LaunchResult {
-            global: global.into_iter().map(Number::from).collect(),
-            local: local.into_iter().map(Number::from).collect(),
-        });
+        )?);
     }
-    let retained = (0..request.emitted_by_source.len() - 1)
-        .map(|id| id as u64)
-        .collect::<Vec<_>>();
-    let mut stages = Vec::new();
-    let mut start = 0;
-    let mut names = BTreeSet::new();
-    for stage in request.stage_ends {
-        if stage.end < start || stage.end > retained.len() || !names.insert(stage.name.clone()) {
-            return Err("invalid prepared stage boundary".into());
-        }
-        stages.push(PipelineStage {
-            name: stage.name,
-            calls: retained[start..stage.end].to_vec(),
-        });
-        start = stage.end;
-    }
-    let entries = pipeline_entrypoints(&stages, &retained, &request.emitted_by_source)?;
     let (allocations, packed) = table.weights();
     if packed.len() > MAX_MESSAGE / 2 {
         return Err("export-plan weights exceed wire bound".into());
@@ -286,4 +349,250 @@ pub fn prepare(request: Request) -> Result<Plan, String> {
         launches,
         entrypoints: entries.entrypoints,
     })
+}
+
+// Distinct ordered protocol. A checkpoint is never a completed export Plan.
+pub const MAX_STREAM_FRAMES: usize = 1_048_576 + 2 * 65536 + 2;
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StreamFrame {
+    session: String,
+    sequence: u64,
+    command: StreamCommand,
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
+enum StreamCommand {
+    Begin {
+        version: u32,
+        initialized: Vec<Initializer>,
+    },
+    Event {
+        event: Event,
+    },
+    Program {
+        key: u64,
+        program: Program,
+    },
+    Launch {
+        key: u64,
+        global: Vec<Number>,
+        local: Option<Vec<Number>>,
+    },
+    Finish {
+        emitted_by_source: Vec<usize>,
+        stages: Vec<RawStage>,
+        retained_calls: Vec<u64>,
+    },
+}
+
+#[derive(Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum StreamReply {
+    Checkpoint {
+        session: String,
+        sequence: u64,
+        complete: bool,
+    },
+    Final {
+        session: String,
+        sequence: u64,
+        complete: bool,
+        plan: Plan,
+    },
+}
+impl StreamReply {
+    pub fn is_final(&self) -> bool {
+        matches!(self, Self::Final { .. })
+    }
+}
+
+#[derive(Default)]
+pub struct StreamSession {
+    session: Option<String>,
+    sequence: u64,
+    failed: bool,
+    finished: bool,
+    initialized: BTreeMap<u64, Vec<u8>>,
+    table: BufferTable,
+    bases: BTreeMap<u64, usize>,
+    storage_bytes: usize,
+    held_bytes: usize,
+    event_views: Vec<usize>,
+    programs: BTreeMap<u64, (String, Vec<u8>)>,
+    launches: Vec<LaunchResult>,
+}
+
+impl StreamSession {
+    pub fn handle(&mut self, frame: StreamFrame) -> Result<StreamReply, String> {
+        if self.failed || self.finished {
+            return Err("export stream is failed or finished".into());
+        }
+        let result = self.apply(frame);
+        if result.is_err() {
+            self.failed = true;
+        }
+        result
+    }
+
+    fn retain(&mut self, length: usize) -> Result<(), String> {
+        self.held_bytes = self
+            .held_bytes
+            .checked_add(length)
+            .filter(|total| *total <= MAX_MESSAGE)
+            .ok_or("export stream retained bytes exceed bound")?;
+        Ok(())
+    }
+
+    fn apply(&mut self, frame: StreamFrame) -> Result<StreamReply, String> {
+        if frame.sequence != self.sequence
+            || self.sequence >= MAX_STREAM_FRAMES as u64
+            || frame.session.len() != 32
+            || !frame
+                .session
+                .bytes()
+                .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
+        {
+            return Err("invalid export stream session/sequence".into());
+        }
+        if let Some(session) = &self.session {
+            if *session != frame.session {
+                return Err("export stream owner differs".into());
+            }
+        } else if !matches!(&frame.command, StreamCommand::Begin { .. }) {
+            return Err("export stream must begin explicitly".into());
+        }
+        match frame.command {
+            StreamCommand::Begin {
+                version,
+                initialized,
+            } => {
+                if self.session.is_some() || version != 1 || initialized.len() > 65536 {
+                    return Err("invalid export stream begin".into());
+                }
+                for item in initialized {
+                    let data = bytes(&item.data)?;
+                    self.retain(data.len())?;
+                    // Length/base admission remains lazy, at the actual read.
+                    self.initialized.insert(item.key, data);
+                }
+                self.session = Some(frame.session.clone());
+            }
+            StreamCommand::Event { event } => {
+                if self.event_views.len() >= 1_048_576 {
+                    return Err("export stream event bound".into());
+                }
+                let buffer = event.buffer.buffer()?;
+                if let Some(length) = self.bases.get(&buffer.base) {
+                    if *length != buffer.allocation_bytes {
+                        return Err("base identity changed size".into());
+                    }
+                } else {
+                    self.storage_bytes = self
+                        .storage_bytes
+                        .checked_add(buffer.allocation_bytes)
+                        .filter(|sum| *sum <= 1024 * 1024 * 1024)
+                        .ok_or("export-plan storage exceeds 1 GiB")?;
+                    self.bases.insert(buffer.base, buffer.allocation_bytes);
+                }
+                let index = self.table.view(buffer)?;
+                match event.op {
+                    Operation::View => (),
+                    Operation::Read => self.table.read_initialized(
+                        buffer,
+                        self.initialized.get(&buffer.base).map(Vec::as_slice),
+                    )?,
+                    Operation::Write => self.table.write(buffer)?,
+                }
+                self.event_views.push(index);
+            }
+            StreamCommand::Program { key, program } => {
+                if self.programs.len() >= 65536 || self.programs.contains_key(&key) {
+                    return Err("duplicate/excess export stream program".into());
+                }
+                let binary = bytes(&program.binary)?;
+                self.retain(program.source.len())?;
+                self.retain(binary.len())?;
+                self.programs.insert(key, (program.source, binary));
+            }
+            StreamCommand::Launch { key, global, local } => {
+                if self.launches.len() >= 65536 {
+                    return Err("export stream launch bound".into());
+                }
+                let (source, binary) = self
+                    .programs
+                    .get(&key)
+                    .ok_or("unknown export stream program")?;
+                self.launches
+                    .push(resolve_launch(&global, local.as_deref(), source, binary)?);
+            }
+            StreamCommand::Finish {
+                emitted_by_source,
+                stages,
+                retained_calls,
+            } => {
+                // Original final boundary: weights first, then stage projection.
+                let (allocations, packed) = self.table.weights();
+                if packed.len() > MAX_MESSAGE / 2 {
+                    return Err("export-plan weights exceed wire bound".into());
+                }
+                if stages.len() > 65536
+                    || retained_calls.len() > 65536
+                    || emitted_by_source.is_empty()
+                    || emitted_by_source.len() > 65537
+                    || self.launches.len() > *emitted_by_source.last().unwrap()
+                {
+                    return Err("invalid export stream final counts".into());
+                }
+                stages.iter().try_fold(0usize, |sum, stage| {
+                    sum.checked_add(stage.calls.len())
+                        .filter(|sum| *sum <= 1_048_576)
+                        .ok_or("raw stage occurrences exceed bound")
+                })?;
+                let stages = stages
+                    .into_iter()
+                    .map(|stage| PipelineStage {
+                        name: stage.name,
+                        calls: stage.calls,
+                    })
+                    .collect::<Vec<_>>();
+                let entries = pipeline_entrypoints(&stages, &retained_calls, &emitted_by_source)?;
+                let plan = Plan {
+                    version: entries.version,
+                    allocations,
+                    views: self
+                        .table
+                        .views
+                        .iter()
+                        .map(|v| View {
+                            allocation: v.allocation,
+                            offset: v.offset,
+                            bytes: v.bytes,
+                        })
+                        .collect(),
+                    event_views: std::mem::take(&mut self.event_views),
+                    weights: hex(&packed),
+                    weights_sha256: format!("{:x}", Sha256::digest(&packed)),
+                    launches: std::mem::take(&mut self.launches),
+                    entrypoints: entries.entrypoints,
+                };
+                self.finished = true;
+                self.sequence += 1;
+                return Ok(StreamReply::Final {
+                    session: frame.session,
+                    sequence: frame.sequence,
+                    complete: true,
+                    plan,
+                });
+            }
+        }
+        self.sequence += 1;
+        Ok(StreamReply::Checkpoint {
+            session: frame.session,
+            sequence: frame.sequence,
+            complete: false,
+        })
+    }
 }

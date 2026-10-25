@@ -1,0 +1,490 @@
+name: Python Rust 523 genuine compiler emission
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-compiler-emission.yml
+    - rust/tools/model_export/offline_schedule.py
+    - rust/crates/model-runtime/src/compiler_schedule/export.rs
+    - rust/crates/model-runtime/src/bin/offline-qcom-compile.rs
+    - rust/crates/model-runtime/tests/compiler_export_caller.rs
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: python-rust-523-compiler-emission-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  workspace:
+    name: Genuine offline compiler emission and original bookkeeping
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CPU_COUNT: '2'
+      DEV: CPU:LLVM
+      JIT: '2'
+      CI296_ALIAS_BASENAME: .ci296-source-rust--workspace
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
+    steps:
+    - name: Deny fork source and require GitHub-hosted Linux X64
+      shell: bash
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name
+          == github.repository }}
+        CI296_HOST_CONTROL: '1'
+      run: 'test "${SOURCE_ALLOWED:-}" = true || { echo ''Fork PR source denied on persistent bin-actions'' >&2;
+        exit 1; }
+
+        set -euo pipefail
+
+        test "$GITHUB_ACTIONS" = true
+
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+
+        test "$RUNNER_OS" = Linux
+
+        test "$RUNNER_ARCH" = X64
+
+        test "$(uname -s)" = Linux
+
+        test "$(uname -m)" = x86_64
+
+        '
+      working-directory: ${{ github.workspace }}
+    - name: Common owned job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      env:
+        CI296_HOST_CONTROL: '1'
+    - name: Allocate private source cache target and local action alias before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: 'set -euo pipefail
+
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+
+        job=$CI_JOB_TEMP
+
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+
+        test "$(cat "$job/owner")" = "$owner"
+
+        umask 077
+
+        mkdir "$job/proof" "$job/home" "$job/cache"
+
+        # Source capacity is checked on the actual source filesystem BEFORE checkout.
+
+        available=$(df -PB1 "$workspace" | awk ''NR == 2 {print $4}'')
+
+        [[ $available =~ ^[0-9]+$ ]]
+
+        required=$((2 * 1024 * 1024 * 1024))
+
+        printf ''{"available_bytes":%s,"planned_source_growth_bytes":%s}\n'' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+
+        ((available >= required))
+
+        source_owner=$(mktemp -d "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+
+        printf ''%s\n'' "$owner" > "$source_owner/.ci296-owner"
+
+        mkdir "$source_owner/source"
+
+        source="$source_owner/source"
+
+        # Preserve Actions'' real workspace separately. Only Bash consumers see the
+
+        # unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.
+
+        printf ''source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n'' "$BASH_ENV"
+        "$workspace" "$source" > "$job/ci296-shell-env"
+
+        printf ''%s\n'' "CI296_ACTIONS_WORKSPACE=$workspace" "CI296_SOURCE_OWNER=$source_owner" "CI296_SOURCE_IDENTITY=$(stat
+        -c ''%d:%i'' -- "$source_owner")" "CI296_SOURCE=$source" "CI296_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home"
+        "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache"
+        "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/ci296-shell-env"
+        >> "$GITHUB_ENV"
+
+        printf ''owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n''
+        "$owner" "$job" "$workspace" "$source_owner" "$(stat -c ''%d:%i'' -- "$source_owner")" "$source" "$GITHUB_SHA"
+        > "$job/proof/ownership.txt"
+
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt";
+        fi
+
+        printf ''%s\n'' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+
+
+        alias_path="$workspace/$CI296_ALIAS_BASENAME"
+
+        case "$CI296_ALIAS_BASENAME" in .ci296-source-*) ;; *) exit 1 ;; esac
+
+        [[ $CI296_ALIAS_BASENAME != */* ]]
+
+        # -T makes this an exclusive atomic link, never traversal into a stale directory.
+
+        ln -sT -- "$source_owner" "$alias_path"
+
+        printf ''%s\n'' "CI296_SOURCE_ALIAS=$alias_path" "CI296_ALIAS_IDENTITY=$(stat -c ''%d:%i'' -- "$alias_path")"
+        "LOCAL_CI_SOURCE_ROOT=$source" >> "$GITHUB_ENV"
+
+        printf ''source_alias=%s\nalias_identity=%s\n'' "$alias_path" "$(stat -c ''%d:%i'' -- "$alias_path")" >>
+        "$job/proof/ownership.txt"
+
+        '
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        set-safe-directory: false
+        clean: false
+        lfs: false
+        path: ${{ env.CI296_CHECKOUT_PATH }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+    - name: Admit exact private source and index
+      id: ci296_source_admission
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: 'set -euo pipefail
+
+        test "$PWD" = "$CI296_SOURCE"
+
+        test "$GITHUB_WORKSPACE" = "$CI296_SOURCE"
+
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
+        git diff --exit-code
+
+        git diff --cached --exit-code
+
+        printf ''%s\n'' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime=''UTC
+        1970-01-01'' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+
+        '
+    - name: Require reviewed maintained compiler staging source
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      run: 'printf ''%s  %s\n'' b51def7342359305c818f15ec59e9002d6b7c1ee73752dc08e91442444cfface .github/workflows/rust.yml
+        | sha256sum --check -
+
+        '
+    - name: Configure source-dependent job environment on private paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_LATE_PYTHONPATH: ${{ env.CI296_SOURCE }}:${{ env.CI296_SOURCE }}/opendbc_repo:${{ env.CI296_SOURCE
+          }}/tinygrad_repo:${{ env.CI296_SOURCE }}/rust/tools
+        CI296_LATE_MODEL_RUN_BINARY: ${{ env.CI296_SOURCE }}/rust/target/debug/model-run
+        CI296_HOST_CONTROL: '1'
+      run: 'set -euo pipefail
+
+        printf ''%s\n'' "PYTHONPATH=$CI296_LATE_PYTHONPATH" >> "$GITHUB_ENV"
+
+        printf ''%s\n'' "MODEL_RUN_BINARY=$CI296_LATE_MODEL_RUN_BINARY" >> "$GITHUB_ENV"
+
+        '
+    - name: Expose provisioned Rust shims
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      env:
+        CI296_HOST_CONTROL: '1'
+    - name: Admit compiler operation growth before private SDK and providers
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Source checkout already has its separate2GiB admission. Reserve remaining
+        # SDK/host+ARM target/registry/apt/provider/proof growth on every actual FS.
+        for root in "$CI296_SOURCE" "$CI_JOB_TEMP" /; do
+          free=$(df --output=avail -B1 -- "$root" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+          ((free >= 12 * 1024 * 1024 * 1024))
+          printf '%s\t%s\t%s\n' "$root" "$free" 12884901888 >> "$CI_JOB_TEMP/proof/compiler-initial-admission.tsv"
+        done
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+    - name: Keep original Python installations private
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: 'set -euo pipefail
+
+        available=$(df -PB1 "$CI_JOB_TEMP" | awk ''NR == 2 {print $4}'')
+
+        [[ $available =~ ^[0-9]+$ ]]
+
+        ((available >= 512 * 1024 * 1024))
+
+        python -m venv "$CI_JOB_TEMP/venv"
+
+        printf ''%s\n'' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
+
+        '
+    - run: 'rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+
+        rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+
+        '
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      working-directory: ${{ env.CI296_SOURCE }}/rust
+    - name: Install only genuine offline compiler host dependencies
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      working-directory: ${{ env.CI296_SOURCE }}/rust
+      run: 'set -euo pipefail
+
+        sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" update
+
+        sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y --no-install-recommends capnproto
+        libcapnp-dev g++ pkg-config clang-18 libllvm18 qemu-user-static gcc-aarch64-linux-gnu libc6-arm64-cross
+        libstdc++6-arm64-cross
+
+        python -m pip install numpy==2.5.3
+
+        llvm=$(readlink -e -- /usr/lib/x86_64-linux-gnu/libLLVM-18.so.1)
+
+        test -f "$llvm" && test ! -L "$llvm"
+
+        printf ''%s\n'' "LLVM_PATH=$llvm" >> "$GITHUB_ENV"
+
+        sha256sum "$llvm" > "$CI_JOB_TEMP/proof/compiler-llvm.before.sha256"
+
+        '
+      timeout-minutes: 12
+    - name: Seal the private complete host and ARM Rust SDK before compilation
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      working-directory: ${{ env.CI296_SOURCE }}/rust
+      run: 'set -euo pipefail
+
+        sdk="$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu"
+
+        test -d "$sdk" && test ! -L "$sdk"
+
+        printf ''%s\n'' "COMPILER_EMISSION_SDK=$sdk" >> "$GITHUB_ENV"
+
+        cargo +1.94.0 -V > "$CI_JOB_TEMP/proof/compiler-cargo.version"
+
+        rustc +1.94.0 -vV > "$CI_JOB_TEMP/proof/compiler-rustc.version"
+
+        grep -Fx ''release: 1.94.0'' "$CI_JOB_TEMP/proof/compiler-rustc.version"
+
+        grep -Fx ''host: x86_64-unknown-linux-gnu'' "$CI_JOB_TEMP/proof/compiler-rustc.version"
+
+        find "$sdk" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/compiler-sdk.before.sha256"
+
+        find "$sdk" -printf ''%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0'' | sort -z > "$CI_JOB_TEMP/proof/compiler-sdk.before.roster"
+
+        '
+      id: compiler_sdk_before
+    - name: Stage the genuine pinned ARM A630 compiler for offline model tests
+      run: "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$RUNNER_TEMP\" --growth-mib 1024\nmkdir -p\
+        \ \"$RUNNER_TEMP/qcom-downloads\"\nCARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo\
+        \ +1.94.0 build --locked -p openpilot-model-runtime --target aarch64-unknown-linux-gnu --bin offline-qcom-compile\n\
+        curl --fail --location --retry 3 --max-time 180 --max-filesize 67108864 \\\n  'https://raw.githubusercontent.com/commaai/agnos-builder/ec1cf237a84565a056dbbc6f433b1b1c20c07a2c/userspace/root/usr/lib/aarch64-linux-gnu/libllvm-qcom.so'\
+        \ \\\n  --output \"$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so\"\ncargo +1.94.0 run --locked -p openpilot-dev-tools\
+        \ --bin stage-qcom-compiler -- \"$RUNNER_TEMP/qcom-compiler\" \\\n  \"${CARGO_TARGET_DIR:-target}/aarch64-unknown-linux-gnu/debug/offline-qcom-compile\"\
+        \ \"$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so\" \\\n  /usr/bin/qemu-aarch64-static /usr/aarch64-linux-gnu/lib\n\
+        printf 'QCOM_COMPILER_COMMAND=%s\\n' \"$(cat \"$RUNNER_TEMP/qcom-compiler/command.json\")\" >> \"$GITHUB_ENV\"\
+        \n"
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      working-directory: ${{ env.CI296_SOURCE }}/rust
+      id: compiler_provider
+      timeout-minutes: 20
+    - name: Admit independent original emitter and the actual Python executable
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      working-directory: ${{ env.CI296_SOURCE }}/rust
+      run: 'set -euo pipefail
+
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$CI_JOB_TEMP" --growth-mib 128
+
+        reference="$CI_JOB_TEMP/proof/compiler-emission-reference.txt"
+
+        test ! -e "$reference" && test ! -L "$reference"
+
+        git fetch --no-tags --depth=1 origin 7a928cefe22e3c81bcb941f6ed20eaa80eeabc59
+
+        git show 7a928cefe22e3c81bcb941f6ed20eaa80eeabc59:rust/tools/model_export/offline_schedule.py > "$reference"
+
+        printf ''%s  %s\n'' bc1b7b572c8dd2f84f3ea0ca38b1744e4c7120155c33f3dabb633eabaf7f0144 "$reference" | sha256sum
+        --check -
+
+        python_path=$(readlink -e -- "$(command -v python)")
+
+        test -f "$python_path" && test -x "$python_path" && test ! -L "$python_path"
+
+        sha256sum "$python_path" > "$CI_JOB_TEMP/proof/stage-oracle-python.sha256"
+
+        "$python_path" -I -B -S --version > "$CI_JOB_TEMP/proof/stage-oracle-python.version"
+
+        printf ''%s\n'' "STAGE_REFERENCE_PYTHON=$python_path" "COMPILER_EMISSION_REFERENCE_SCHEDULE=$reference"
+        "COMPILER_EMISSION_EVIDENCE=$CI_JOB_TEMP/compiler-emission-original-comparison" >> "$GITHUB_ENV"
+
+        '
+      id: compiler_reference
+    - name: Compare the ordered native emitter with independent original bookkeeping
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      working-directory: ${{ env.CI296_SOURCE }}/rust
+      run: "set -euo pipefail\nproof=\"$CI_JOB_TEMP/proof/compiler-emission-checks\"\nmkdir -m 700 \"$proof\"\n\
+        failed=0\nrun_once() {\n  local label=$1;shift\n  \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path\
+        \ \"$GITHUB_WORKSPACE\" --growth-mib 2048\n  rc=0\n  /usr/bin/timeout --signal=TERM --kill-after=15s 12m\
+        \ \"$@\" > \"$proof/$label.stdout\" 2> \"$proof/$label.stderr\" || rc=$?\n  printf '%s=%s\\n' \"$label\"\
+        \ \"$rc\" >> \"$proof/exit-codes.txt\"\n  tail -n 40 \"$proof/$label.stdout\" \"$proof/$label.stderr\"\n\
+        \  test \"$rc\" = 0 || failed=1\n}\nargs=(test --manifest-path Cargo.toml --locked --no-default-features\
+        \ --features native-skip-miri -p openpilot-model-runtime --test compiler_export_caller)\nrun_once native-v1-v2\
+        \ cargo +1.94.0 \"${args[@]}\"\ngrep -F 'test result: ok. 10 passed; 0 failed; 2 ignored;' \"$proof/native-v1-v2.stdout\"\
+        \ || failed=1\nrun_once actual-copy cargo +1.94.0 \"${args[@]}\" maintained_python_export_calls_native_plan_without_fallback\
+        \ -- --ignored --exact --nocapture\ngrep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' \"$proof/actual-copy.stdout\"\
+        \ || failed=1\nrun_once actual-mixed cargo +1.94.0 \"${args[@]}\" maintained_python_mixed_emission_matches_original_bookkeeping\
+        \ -- --ignored --exact --nocapture\ngrep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' \"$proof/actual-mixed.stdout\"\
+        \ || failed=1\nrun_once strict-clippy cargo +1.94.0 clippy --manifest-path Cargo.toml --locked --no-default-features\
+        \ --features native-skip-miri -p openpilot-model-runtime --lib --bin offline-qcom-compile --test compiler_export_caller\
+        \ -- -D warnings\nsha256sum --check --strict \"$CI_JOB_TEMP/proof/stage-oracle-python.sha256\" || failed=1\n\
+        test \"$failed\" = 0\n"
+      id: compiler_comparison
+      timeout-minutes: 35
+    - uses: actions/upload-artifact@v6
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always()) }}
+      with:
+        name: native-compiler-emission-${{ github.run_id }}-${{ github.run_attempt }}
+        path: '${{ env.CI_JOB_TEMP }}/compiler-emission-original-comparison
+
+          ${{ env.CI_JOB_TEMP }}/qcom-compiler/provenance.json
+
+          ${{ env.CI_JOB_TEMP }}/proof/compiler-emission-checks
+
+          '
+        if-no-files-found: error
+        retention-days: 14
+      id: local_evidence_1
+    - name: Seal private source and index after maintained checks
+      id: ci296_source_seal
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI296_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env: &id001
+        CI296_HOST_CONTROL: '1'
+      run: 'set -euo pipefail
+
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime=''UTC
+        1970-01-01'' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+
+        git diff --exit-code
+
+        git diff --cached --exit-code
+
+        df -PB1 "$CI296_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+
+        set -euo pipefail
+
+        sdk="$COMPILER_EMISSION_SDK"
+
+        find "$sdk" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/compiler-sdk.after.sha256"
+
+        find "$sdk" -printf ''%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0'' | sort -z > "$CI_JOB_TEMP/proof/compiler-sdk.after.roster"
+
+        cmp "$CI_JOB_TEMP/proof/compiler-sdk.before.sha256" "$CI_JOB_TEMP/proof/compiler-sdk.after.sha256"
+
+        cmp "$CI_JOB_TEMP/proof/compiler-sdk.before.roster" "$CI_JOB_TEMP/proof/compiler-sdk.after.roster"
+
+        sha256sum --check --strict "$CI_JOB_TEMP/proof/compiler-llvm.before.sha256"
+
+        '
+    - name: Retain private job ownership and source evidence
+      id: ci296_private_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: private-rust-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_id }}-${{ github.run_attempt
+          }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        retention-days: 14
+        if-no-files-found: error
+    - name: Clean only uploaded owned source alias and target
+      id: ci296_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id
+        != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome ==
+        'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest
+        != '' && steps.ci296_source_seal.outcome == 'success' && env.CI296_SOURCE_OWNER != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        UPLOAD_ID: ${{ steps.ci296_private_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.ci296_private_evidence.outputs.artifact-digest }}
+      run: "set -euo pipefail\n[[ $UPLOAD_ID =~ ^[0-9]+$ ]]\n[[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]\nworkspace=$CI296_ACTIONS_WORKSPACE\n\
+        p=$CI296_SOURCE_OWNER\ncase \"$p\" in \"$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.\"\
+        ??????) ;; *) exit 1 ;; esac\ntest -d \"$p\" && test ! -L \"$p\"\ntest \"$(realpath -e -- \"$p\")\" = \"\
+        $p\"\ntest \"$(stat -c '%u' -- \"$p\")\" = \"$(id -u)\"\ntest \"$(stat -c '%d:%i' -- \"$p\")\" = \"$CI296_SOURCE_IDENTITY\"\
+        \ntest -f \"$p/.ci296-owner\" && test ! -L \"$p/.ci296-owner\"\ntest \"$(cat \"$p/.ci296-owner\")\" = \"\
+        $GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB\"\ntest \"$CI296_SOURCE\" = \"$p/source\"\ntest -d \"$p/source\"\
+        \ && test ! -L \"$p/source\"\ntest \"$(realpath -e -- \"$p/source\")\" = \"$p/source\"\nalias_path=\"$CI296_ACTIONS_WORKSPACE/$CI296_ALIAS_BASENAME\"\
+        \ntest \"$CI296_SOURCE_ALIAS\" = \"$alias_path\"\ntest -L \"$alias_path\"\ntest \"$(readlink -- \"$alias_path\"\
+        )\" = \"$p\"\ntest \"$(stat -c '%d:%i' -- \"$alias_path\")\" = \"$CI296_ALIAS_IDENTITY\"\nrm -- \"$alias_path\"\
+        \nif ! rm -rf --one-file-system -- \"$p\"; then\n  sudo -n rm -rf --one-file-system -- \"$p\"\nfi\n"
+    - name: Clean common owned temporary paths after uploaded source
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id
+        != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome ==
+        'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest
+        != '' && steps.ci296_source_cleanup.outcome == 'success') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'
+      env: *id001

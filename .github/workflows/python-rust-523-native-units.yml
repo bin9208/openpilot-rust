@@ -324,6 +324,22 @@ jobs:
           --no-default-features -p openpilot-control-policy --lib --test drive --test math -- -D warnings
             ;;
           model)
+        launch_absence() {
+          local phase=$1 retired absent_rc
+          retired=rust/tools/tests/test_offline_qcom_launch.py
+          test "$(realpath -e -- rust/tools/tests)" = "$DIAG_SOURCE/rust/tools/tests"
+          test ! -e "$retired" && test ! -L "$retired"
+          if git ls-files --error-unmatch -- "$retired" > "$CI_JOB_TEMP/proof/retired-launch-$phase-index.bin" 2> "$CI_JOB_TEMP/proof/retired-launch-$phase-index.stderr"; then
+            absent_rc=0
+          else
+            absent_rc=$?
+          fi
+          test "$absent_rc" = 1
+          test ! -s "$CI_JOB_TEMP/proof/retired-launch-$phase-index.bin"
+          printf 'source=%s\nremoved_source=%s\nworking_absent=true\nindex_absent=true\nwhole_python_absence=false\n' \
+            "$GITHUB_SHA" "$retired" > "$CI_JOB_TEMP/proof/retired-launch-$phase-source.txt"
+        }
+        launch_absence before
         run_once model-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_launch --test compiler_schedule
         grep -F 'test result: ok. 9 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/model-units.log" || failed=1
@@ -338,6 +354,7 @@ jobs:
         grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/launch-frozen-corpus.log" || failed=1
         run_once model-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --lib --test compiler_launch --test compiler_schedule --test compiler_corpus -- -D warnings
+        launch_absence after
             ;;
           buffers)
         run_once compiler-buffer-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
@@ -356,7 +373,7 @@ jobs:
           compiler-export)
         run_once compiler-export-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_export_caller
-        grep -F 'test result: ok. 4 passed; 0 failed; 1 ignored;' "$CI_JOB_TEMP/proof/compiler-export-units.log" || failed=1
+        grep -F 'test result: ok. 10 passed; 0 failed; 2 ignored;' "$CI_JOB_TEMP/proof/compiler-export-units.log" || failed=1
         run_once maintained-compiler-export "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_export_caller \
           maintained_python_export_calls_native_plan_without_fallback -- --ignored --exact --nocapture
@@ -547,4 +564,4 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: "${{ fromJSON(github.event_name == 'push' && '[\"planner-client\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\",\"planner-client\"]' || inputs.crate == 'planner-client' && '[\"planner-client\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"
+        crate: "${{ fromJSON(github.event_name == 'push' && '[\"model\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\",\"planner-client\"]' || inputs.crate == 'planner-client' && '[\"planner-client\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"
