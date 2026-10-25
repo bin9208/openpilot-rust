@@ -1,0 +1,69 @@
+name: Python Rust 523 standard ARM runner inventory
+'on':
+  push:
+    branches: [codex/feat-523-python-rust]
+    paths: [.github/workflows/python-rust-523-hosted-arm.yml]
+permissions:
+  contents: read
+concurrency:
+  group: python-rust-523-hosted-arm-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    steps:
+    - name: Require the standard hosted ARM VM
+      shell: bash
+      run: |
+        set -euo pipefail
+        test "$GITHUB_ACTIONS:$GITHUB_REPOSITORY:$GITHUB_EVENT_NAME" = true:bin9208/openpilot-rust:push
+        test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
+        test "$RUNNER_ENVIRONMENT:$RUNNER_OS:$RUNNER_ARCH" = github-hosted:Linux:ARM64
+        test "$(uname -s):$(uname -m)" = Linux:aarch64
+        [[ $GITHUB_SHA =~ ^[0-9a-f]{40}$ ]]
+    - name: Allocate owned inventory output
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Record capacity and installed tool identities without a project build
+      id: inventory
+      shell: bash
+      run: |
+        set -euo pipefail
+        umask 077
+        ulimit -f 512
+        test "$(cat "$CI_JOB_TEMP/owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        mkdir -m 700 "$CI_JOB_TEMP/proof"
+        proof="$CI_JOB_TEMP/proof"
+        printf '%s\n' "$GITHUB_SHA" > "$proof/WORKFLOW_COMMIT"
+        printf 'source_checkout=false\nproject_execution=false\nfunctional_acceptance=false\nretirement_credit=0\n' > "$proof/scope.txt"
+        uname -a > "$proof/kernel.txt"
+        lscpu > "$proof/cpu.txt"
+        cat /proc/meminfo > "$proof/memory.txt"
+        df -PB1 "$GITHUB_WORKSPACE" "$CI_JOB_TEMP" / > "$proof/disk.txt"
+        df -Pi "$GITHUB_WORKSPACE" "$CI_JOB_TEMP" / > "$proof/inodes.txt"
+        cat /etc/os-release > "$proof/os-release.txt"
+        for tool in bash git gcc clang cmake make python3 rustup cargo rustc; do
+          if path=$(command -v "$tool"); then
+            resolved=$(realpath -e "$path")
+            printf '%s\t%s\t%s\n' "$tool" "$path" "$resolved" >> "$proof/tool-paths.tsv"
+            sha256sum "$resolved" >> "$proof/tool-files.sha256"
+            stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$resolved" >> "$proof/tool-files.stat"
+          else
+            printf '%s\n' "$tool" >> "$proof/missing-tools.txt"
+          fi
+        done
+        test "$(du -sb "$proof" | cut -f1)" -le 1048576
+    - name: Upload bounded inventory even on failure
+      id: evidence
+      if: ${{ always() && env.CI_JOB_TEMP != '' }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: hosted-arm-inventory-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        if-no-files-found: error
+        retention-days: 14
+    - name: Clean only uploaded owned inventory
+      if: ${{ always() && steps.inventory.outcome == 'success' && steps.evidence.outcome == 'success' && steps.evidence.outputs.artifact-id != '' && steps.evidence.outputs.artifact-digest != '' }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'

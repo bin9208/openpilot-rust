@@ -1,0 +1,55 @@
+--- a/rust/crates/dev-tools/src/ui_application_lifecycle_recording.rs
++++ b/rust/crates/dev-tools/src/ui_application_lifecycle_recording.rs
+@@ -223,6 +223,7 @@
+     Closed,
+ }
+ struct Shared {
++    detached: AtomicBool,
+     stopped: AtomicBool,
+     frames: AtomicUsize,
+     input: Mutex<Option<BufWriter<ChildStdin>>>,
+@@ -244,6 +245,9 @@
+ }
+ impl WriterPeer for FrameWriter {
+     fn read(&mut self, timeout: Duration) -> Result<WriterRead, WriterError> {
++        if self.shared.detached.load(Ordering::Acquire) {
++            return Err(WriterError::Failure);
++        }
+         let receiver = self
+             .shared
+             .receiver
+@@ -257,9 +261,15 @@
+         }
+     }
+     fn stopped(&mut self) -> Result<bool, WriterError> {
++        if self.shared.detached.load(Ordering::Acquire) {
++            return Err(WriterError::Failure);
++        }
+         Ok(self.shared.stopped.load(Ordering::Acquire))
+     }
+     fn write(&mut self, bytes: &[u8]) -> Result<usize, WriterError> {
++        if self.shared.detached.load(Ordering::Acquire) {
++            return Err(WriterError::Failure);
++        }
+         let mut input = self.shared.input.lock().map_err(|_| WriterError::Failure)?;
+         input
+             .as_mut()
+@@ -295,8 +305,8 @@
+ }
+ impl ClosePeer for OwnedEncoder {
+     fn detach(&mut self) {
+-        // Encoder::close가 active.take()로 public owner를 이미 분리했다.
+-        // retained worker endpoint는 sentinel/join까지 취소하지 않는다.
++        // #559 negative overlay: 과거 취소 동작만 복원하고 ACK는 유지한다.
++        self.shared.detached.store(true, Ordering::Release);
+         #[cfg(test)]
+         if let Some(entered) = self.close_entered.take() {
+             let _ = entered.send(());
+@@ -411,6 +421,7 @@
+         let (sender, receiver) = mpsc::sync_channel(capacity);
+         // Python subprocess stdin is a buffered binary stream.
+         let shared = Arc::new(Shared {
++            detached: AtomicBool::new(false),
+             stopped: AtomicBool::new(false),
+             frames: AtomicUsize::new(0),
+             input: Mutex::new(Some(BufWriter::new(input))),

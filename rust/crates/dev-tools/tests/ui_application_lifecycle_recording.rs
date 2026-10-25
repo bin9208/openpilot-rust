@@ -519,3 +519,79 @@ fn actual_short_reading_encoder_rejects_partial_frame_and_keeps_queue_capacity()
     encoder.close();
     assert!(!std::path::Path::new(&format!("/proc/{pid}")).exists());
 }
+
+// private cfg(test) ACK 제어를 포함한 동일 native source를 사용한다.
+// 위 기존 8개 test의 public-crate 호출/원문 assertion은 바꾸지 않는다.
+#[allow(dead_code)]
+#[path = "../src/ui_application_lifecycle_recording.rs"]
+mod pending_close_native;
+
+#[test]
+fn actual_pending_close_drains_three_frames_after_first_write_ack_and_reaps() {
+    use pending_close_native::{pending_close_control, Encoder, SubmitError};
+    use std::{
+        fs,
+        process::{Command, Stdio},
+        sync::mpsc,
+        thread,
+    };
+
+    let temp = tempfile::tempdir().unwrap();
+    let output = temp.path().join("pending-close.bin");
+    let mut command = Command::new("/bin/cat");
+    command.stdout(Stdio::from(fs::File::create(&output).unwrap()));
+    let mut encoder = Encoder::spawn(&mut command, 60).unwrap();
+    let raw_pid = encoder.pid().unwrap();
+    let pid = rustix::process::Pid::from_raw(i32::try_from(raw_pid).unwrap()).unwrap();
+    let mut control = pending_close_control(&mut encoder);
+    let frames: Vec<_> = (1..=3u8).map(|byte| vec![byte; 536 * 240 * 4]).collect();
+    let expected: Vec<_> = frames.iter().flatten().copied().collect();
+    let mut frames = frames.into_iter();
+
+    encoder.submit(frames.next().unwrap()).unwrap();
+    control
+        .write_entered
+        .recv_timeout(Duration::from_secs(10))
+        .expect("first native write_all did not reach the pending callback ACK");
+    assert_eq!(encoder.written_frames(), 0);
+    // 첫 실제 write_all은 끝났지만 callback은 ACK 대기 중이므로 두 frame이
+    // worker에게 소비되지 않은 상태로 FIFO에 남는 것이 결정적이다.
+    for frame in frames {
+        encoder.submit(frame).unwrap();
+    }
+    let (closed, closing) = mpsc::sync_channel(1);
+    let closer = thread::spawn(move || {
+        encoder.close();
+        closed.send(encoder).unwrap();
+    });
+    control
+        .close_entered
+        .recv_timeout(Duration::from_secs(10))
+        .expect("actual close did not take its owner and enter detach");
+    assert!(matches!(closing.try_recv(), Err(mpsc::TryRecvError::Empty)));
+    control.release();
+    let mut encoder = closing
+        .recv_timeout(Duration::from_secs(50))
+        .expect("native close exceeded its unchanged join/wait/terminate bounds");
+    closer.join().unwrap();
+
+    // cat는 stdin EOF 뒤에만 종료한다. waitpid ECHILD는 owner가 직접 reap한
+    // 사실을 검사하며, 파일 전체 비교는 frame 순서/부분 쓰기/누락을 숨기지 않는다.
+    assert!(control.exited_successfully(), "cat did not exit with EOF/0");
+    assert!(matches!(
+        rustix::process::waitpid(Some(pid), rustix::process::WaitOptions::NOHANG),
+        Err(rustix::io::Errno::CHILD)
+    ));
+    assert!(!std::path::Path::new(&format!("/proc/{raw_pid}")).exists());
+    let actual = fs::read(&output).unwrap();
+    assert!(
+        actual == expected,
+        "pending close lost or changed frame bytes: actual={} expected={}",
+        actual.len(),
+        expected.len()
+    );
+    assert_eq!(control.written_frames(), 3);
+    assert_eq!(encoder.pid(), None);
+    assert_eq!(encoder.submit(vec![4]), Err(SubmitError::Closed));
+    encoder.close();
+}

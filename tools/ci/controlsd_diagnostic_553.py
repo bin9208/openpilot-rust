@@ -329,7 +329,18 @@ class Diagnostic:
                     if not self.finalizing:
                         self.budget()
                     if process.returncode is not None:
-                        need(not self.children.scan(), "live child after command")
+                        remaining = self.children.scan()
+                        if remaining:
+                            observed = []
+                            for pid, row in remaining.items():
+                                entry = {k: v for k, v in row.items() if k != "fd"}
+                                try:
+                                    entry["executable"] = os.readlink(f"/proc/{pid}/exe")
+                                except OSError as problem:
+                                    entry["executable_read_error"] = type(problem).__name__
+                                observed.append(entry)
+                            self.save("live-children-after-command.json", {"label": label, "children": observed})
+                        need(not remaining, "live child after command")
                         need(process.returncode == 0, f"{label}: exit {process.returncode}")
                         break
                     time.sleep(0.02)
@@ -374,7 +385,9 @@ class Diagnostic:
 
     def import_actual(self):
         self.phase = "authenticated-602-data"
-        auth = {**self.env, "GH_TOKEN": os.environ["GH_TOKEN"]}
+        # 인증 다운로드에만 공식 telemetry opt-out을 고정한다. 수치 실행 환경은 그대로다.
+        auth = {**self.env, "GH_TOKEN": os.environ["GH_TOKEN"], "GH_TELEMETRY": "false"}
+        self.command([self.tools["gh"], "--version"], "artifact-gh-version", env=auth, seconds=30)
         raw = self.command([self.tools["gh"], "api", f"repos/bin9208/openpilot-rust/actions/artifacts/{ARTIFACT}"],
                            "artifact-metadata", env=auth, seconds=180)
         metadata = loads(raw)

@@ -806,3 +806,48 @@ PR343을 force 없이 f55로 fast-forward 했다. base dev는
 현재 oneframe의602 미재현 FAIL·기대값/normal40/tap16·기존 상한은 유지한다. #559 UI pending-close
 경쟁의 deterministic RED/GREEN 후보와 #554 Git index preload의 한 변수 관측도 기능 검증 전이다.
 baseline3580=293교체/3부분/3284대기와 전체 #523/#296 미완료 상태를 유지한다.
+
+## ca8 진단 준비 실패와 다음 기본 runner 후보
+
+[40148461061/job121034763604](https://github.com/bin9208/openpilot-rust/actions/runs/40148461061/job/121034763604),
+source `ca8fd1119ca16aaefe0f99676d5b3ed7d5874df2`는 artifact metadata의 gh exit0 뒤
+살아 있는 adopted child가 남아 실패했다. 수치1frame/prefix601/빌드에는 도달하지 않았다.
+artifact12581955912=3,733,770B/SHA `9e0ff4ab02fb199ec6cd0ac2b049e48fc9bd2d3173b3e52f0329acb3b9859473`/68CRC·해제20,321,232B다.
+PID3217(exit0) 뒤 같은 session의 PID3224/PGID3224/stateR을 발견했고 오류 cleanup이-15로 회수했다.
+최종 all_owned_children_reaped true지만 numerics/originaldeps/packages/python-provider baseline 미준비로
+final-seals false다. 원본부재·수치 성공으로 해석하지 않는다. [#561](https://github.com/bin9208/openpilot-rust/issues/561)에 분리했다.
+
+공식 [GitHub CLI 환경 문서](https://cli.github.com/manual/gh_help_environment)의 GH_TELEMETRY=false를
+인증 전용 env에만 고정하고 실제 gh --version을 남기는 최소 후보다. 공식 source의 telemetry
+flusher는 detached gh send-telemetry/Setpgid를 쓰지만 실제3224의 exe가 없어 이 attribution은 가설이다.
+수치 실행 환경·기대값·시간/자원 상한과 살아 있는 자식의 즉시 거부를 유지한다. 재발 시
+환경/argv를 수집하지 않고 PID stat/exe만 실패 proof에 남긴다. 사용자/global gh 설정과 provider는 바꾸지 않는다.
+
+#557 후보는 기존 scons/native_models/camera/exposure/pytest570을 유지하면서 external producer와
+완료 후 consumer root2개 및 실제 회귀6개를 build_release에 연결한다. 실패 시 manifest/atlas4와
+stage roster/SHA를 보존하고 검사 성공·source seal·업로드 뒤에만 소유 source를 정리한다.
+독립 검토가 찾은 GitHub 미지원 YAML merge key는 명시적인 해당 cleanup step 복사로 보정했다.
+이후 실제 빌드·동등성·전달은 대기이며 release pack overlay도 여전히 미구현이다.
+
+#559 후보는 기존 writer8과 close의30/10/5·FIFO60/8·write_all을 유지하고 worker의 detach 취소만
+제거한다. 새 ACK는 실제 첫 write_all 완료를 보류하고 닫기 뒤 queued frame2개가 끝까지 전달되는지
+검사한다. 별도 clone의 과거 취소 overlay가 정확514560/1543680bytes·exit101로 RED여야 하고,
+현재 selector1/전체9/Clippy/원문5mode의 실제 record·dynamic3frame GREEN을 새45분 job에서 요구한다.
+합산20.5GiB admission/두 target8GiB/proof1GiB·20분 실행구간은 추정치이며 실제 fit은 대기다.
+원래 record2/expected3의 실행 순서 자체를 아직 관측하지 못했으므로 root 확정이나 차량 수용은 아니다.
+
+이전 e882의 planner/WebRTC90분·Xiaoge75분 취소는 check-run annotation으로 실제 timeout을 확인했다.
+[공식 표준 runner 문서](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)는
+공개 저장소에 ubuntu-24.04-arm을 제공한다. 신규 inventory workflow는 이 표준 ARM VM의
+identity/df/memory/OS/설치 tool path·SHA만 최대1MiB로 읽는다. checkout/프로젝트/원본 실행이나
+기존 ARM gate 전환은 아직 없으며 actual 기능·physical bare-metal·기기 수용을 주장하지 않는다.
+
+실행-edge는96행(26replaced-local/66pending/1native-existing/2non-executing-text/1removed)이다.
+f55가 실제 수용한 developer_cli_original의 embedded 원본1행만 replaced-local로 바꾸고,
+#557 새 Python test/embedded stage 검증2개는 pending으로 추가했다. baseline3580 파일 교체는
+293/3/3284로 유지하며 #523/#296 전체 완료는 아니다.
+
+현재 후보의 exact reuse 명단은201경로/179literal SHA다. staged source 기준으로 모든 변경경로와
+SHA를 대조했고 Focus 실행부의 기존 SHA `2a05a74b9bc4c5d4c4793ac11259d1c4f02b2fcaa599ebd03a3f92416e80c84a`는 그대로다.
+로컬은 YAML5/Bash76본문/Python AST10/shell1과 diff만 확인했다. 기능·RED/GREEN·빌드 성공은
+이 정적 확인에 포함되지 않는다. #554/SSH entry의 다른 agent WIP는 별도이며 이 후보에 섞지 않는다.

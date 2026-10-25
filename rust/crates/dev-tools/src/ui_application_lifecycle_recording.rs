@@ -223,22 +223,27 @@ pub enum SubmitError {
     Closed,
 }
 struct Shared {
-    detached: AtomicBool,
     stopped: AtomicBool,
     frames: AtomicUsize,
     input: Mutex<Option<BufWriter<ChildStdin>>>,
     // The original application owns its Queue independently of the writer
     // thread; a broken pipe must not turn subsequent put_nowait into disconnect.
     receiver: Mutex<Receiver<Option<Vec<u8>>>>,
+    #[cfg(test)]
+    pending_write: Mutex<Option<PendingWrite>>,
+    #[cfg(test)]
+    exit_success: AtomicBool,
+}
+#[cfg(test)]
+struct PendingWrite {
+    entered: SyncSender<()>,
+    release: Receiver<()>,
 }
 struct FrameWriter {
     shared: Arc<Shared>,
 }
 impl WriterPeer for FrameWriter {
     fn read(&mut self, timeout: Duration) -> Result<WriterRead, WriterError> {
-        if self.shared.detached.load(Ordering::Acquire) {
-            return Err(WriterError::Failure);
-        }
         let receiver = self
             .shared
             .receiver
@@ -252,21 +257,30 @@ impl WriterPeer for FrameWriter {
         }
     }
     fn stopped(&mut self) -> Result<bool, WriterError> {
-        if self.shared.detached.load(Ordering::Acquire) {
-            return Err(WriterError::Failure);
-        }
         Ok(self.shared.stopped.load(Ordering::Acquire))
     }
     fn write(&mut self, bytes: &[u8]) -> Result<usize, WriterError> {
-        if self.shared.detached.load(Ordering::Acquire) {
-            return Err(WriterError::Failure);
-        }
         let mut input = self.shared.input.lock().map_err(|_| WriterError::Failure)?;
         input
             .as_mut()
             .ok_or(WriterError::Failure)?
             .write_all(bytes)
             .map_err(|_| WriterError::Failure)?;
+        // 테스트에서만 실제 write_all 뒤, 첫 write callback 반환을 보류한다.
+        #[cfg(test)]
+        if let Some(pending) = self
+            .shared
+            .pending_write
+            .lock()
+            .map_err(|_| WriterError::Failure)?
+            .take()
+        {
+            pending.entered.send(()).map_err(|_| WriterError::Failure)?;
+            pending
+                .release
+                .recv_timeout(Duration::from_secs(30))
+                .map_err(|_| WriterError::Failure)?;
+        }
         self.shared.frames.fetch_add(1, Ordering::Release);
         Ok(bytes.len())
     }
@@ -276,10 +290,17 @@ struct OwnedEncoder {
     sender: Option<SyncSender<Option<Vec<u8>>>>,
     writer: Option<JoinHandle<()>>,
     shared: Arc<Shared>,
+    #[cfg(test)]
+    close_entered: Option<SyncSender<()>>,
 }
 impl ClosePeer for OwnedEncoder {
     fn detach(&mut self) {
-        self.shared.detached.store(true, Ordering::Release);
+        // Encoder::close가 active.take()로 public owner를 이미 분리했다.
+        // retained worker endpoint는 sentinel/join까지 취소하지 않는다.
+        #[cfg(test)]
+        if let Some(entered) = self.close_entered.take() {
+            let _ = entered.send(());
+        }
     }
     fn has_thread(&self) -> bool {
         self.writer.is_some()
@@ -346,7 +367,15 @@ impl ClosePeer for OwnedEncoder {
         let start = Instant::now();
         loop {
             match self.child.try_wait() {
-                Ok(Some(_)) => return Ok(()),
+                Ok(Some(status)) => {
+                    #[cfg(test)]
+                    self.shared
+                        .exit_success
+                        .store(status.success(), Ordering::Release);
+                    #[cfg(not(test))]
+                    let _ = status;
+                    return Ok(());
+                }
                 Ok(None) if start.elapsed() < timeout => {
                     thread::sleep(Duration::from_millis(2));
                 }
@@ -382,11 +411,14 @@ impl Encoder {
         let (sender, receiver) = mpsc::sync_channel(capacity);
         // Python subprocess stdin is a buffered binary stream.
         let shared = Arc::new(Shared {
-            detached: AtomicBool::new(false),
             stopped: AtomicBool::new(false),
             frames: AtomicUsize::new(0),
             input: Mutex::new(Some(BufWriter::new(input))),
             receiver: Mutex::new(receiver),
+            #[cfg(test)]
+            pending_write: Mutex::new(None),
+            #[cfg(test)]
+            exit_success: AtomicBool::new(false),
         });
         let mut peer = FrameWriter {
             shared: Arc::clone(&shared),
@@ -409,6 +441,8 @@ impl Encoder {
                 sender: Some(sender),
                 writer: Some(writer),
                 shared,
+                #[cfg(test)]
+                close_entered: None,
             }),
         })
     }
@@ -454,5 +488,57 @@ impl Encoder {
 impl Drop for Encoder {
     fn drop(&mut self) {
         self.close();
+    }
+}
+
+// 기존 integration target이 이 소스를 private module로 포함할 때만 사용한다.
+// production API/환경변수/자식 프로토콜에는 제어 입구를 추가하지 않는다.
+#[cfg(test)]
+#[allow(dead_code)]
+pub(super) struct PendingCloseControl {
+    pub(super) write_entered: Receiver<()>,
+    pub(super) close_entered: Receiver<()>,
+    release: Option<SyncSender<()>>,
+    shared: Arc<Shared>,
+}
+#[cfg(test)]
+#[allow(dead_code)]
+impl PendingCloseControl {
+    pub(super) fn release(&mut self) {
+        self.release.take().unwrap().send(()).unwrap();
+    }
+    pub(super) fn written_frames(&self) -> usize {
+        self.shared.frames.load(Ordering::Acquire)
+    }
+    pub(super) fn exited_successfully(&self) -> bool {
+        self.shared.exit_success.load(Ordering::Acquire)
+    }
+}
+#[cfg(test)]
+impl Drop for PendingCloseControl {
+    fn drop(&mut self) {
+        // 회귀 assertion 실패 때도 worker를 보류한 채 남기지 않는다.
+        if let Some(release) = self.release.take() {
+            let _ = release.send(());
+        }
+    }
+}
+#[cfg(test)]
+#[allow(dead_code)]
+pub(super) fn pending_close_control(encoder: &mut Encoder) -> PendingCloseControl {
+    let (write_entered, writing) = mpsc::sync_channel(1);
+    let (release, released) = mpsc::sync_channel(1);
+    let (close_entered, closing) = mpsc::sync_channel(1);
+    let active = encoder.active.as_mut().unwrap();
+    *active.shared.pending_write.lock().unwrap() = Some(PendingWrite {
+        entered: write_entered,
+        release: released,
+    });
+    active.close_entered = Some(close_entered);
+    PendingCloseControl {
+        write_entered: writing,
+        close_entered: closing,
+        release: Some(release),
+        shared: Arc::clone(&active.shared),
     }
 }

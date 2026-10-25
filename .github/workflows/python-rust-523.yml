@@ -395,6 +395,26 @@ jobs:
             rust/tools/check_plannerd_lifecycle.py) ;;
             rust/crates/dev-tools/tests/developer_cli_original/ssh_frozen.rs) ;;
             docs/naver/python-rust-523-ssh-retirement.md) ;;
+            SConstruct) ;;
+            opendbc_repo/opendbc/__init__.py) ;;
+            opendbc_repo/opendbc/can/dbc.py) ;;
+            opendbc_repo/opendbc/dbc/SConscript) ;;
+            openpilot/selfdrive/assets/fonts/process.py) ;;
+            openpilot/selfdrive/ui/SConscript) ;;
+            openpilot/system/ui/lib/application.py) ;;
+            openpilot/tools/jotpluggler/SConscript) ;;
+            openpilot/tools/jotpluggler/layout.cc) ;;
+            openpilot/tools/jotpluggler/sketch_layout.cc) ;;
+            openpilot/tools/jotpluggler/dbc_paths.h) ;;
+            openpilot/tools/jotpluggler/tests/dbc_paths_557.cc) ;;
+            tools/ci/tests/test_generated_assets_557.py) ;;
+            docs/naver/python-rust-523-generated-assets-557.md) ;;
+            rust/crates/dev-tools/src/ui_application_lifecycle_recording.rs) ;;
+            rust/crates/dev-tools/tests/ui_application_lifecycle_recording.rs) ;;
+            .github/workflows/python-rust-523-ui-recording.yml) ;;
+            tools/ci/ui_recording_559.sh) ;;
+            tools/ci/fixtures/ui-recording-559-baseline.patch) ;;
+            .github/workflows/python-rust-523-hosted-arm.yml) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
@@ -405,8 +425,8 @@ jobs:
         printf '%s  %s\n' 634559405e03be79cf66dfcf888bfc28a0b27a51e92b5335013dfe1b16836f59 .github/workflows/python-rust-523-model.yml | sha256sum --check -
         printf '%s  %s\n' 5ec87c23ae6dfdda2c64ce32c314da87197e3da702e3bbca710c0fc6d4477523 .github/workflows/python-rust-523-reclaim.yml | sha256sum --check -
         printf '%s  %s\n' b2b6c63dab892b9a2c0358daf5dd07771515781737c369e5407926e7df90b188 .github/workflows/python-rust-523-sanitizer.yml | sha256sum --check -
-        printf '%s  %s\n' 3f631b2f3e6ba110dcf0290af9d2922eedde2437aded02dabff84b6370bb6d93 .github/workflows/python-rust-523-controls-diagnostic.yml | sha256sum --check -
-        printf '%s  %s\n' c21486322c3daaf25e0ec67d9480a0f4c661f26ef732a1d048007ec4fbedcdc7 tools/ci/controlsd_diagnostic_553.py | sha256sum --check -
+        printf '%s  %s\n' a53aaae5c1c7ec1040022fb1265fa97912301201962332d7a656c60ad1e5ce34 .github/workflows/python-rust-523-controls-diagnostic.yml | sha256sum --check -
+        printf '%s  %s\n' b341987be5758acaa44b5f6eb02630e087a90c96832c85be0af9d43ec2676a33 tools/ci/controlsd_diagnostic_553.py | sha256sum --check -
         printf '%s  %s\n' 52d4ca212c28cad44579360b8531c915f6fe8e3060c0b480f0f7ec1cdb659a79 tools/ci/logging_collision8_batches_549.sh | sha256sum --check -
         printf '%s  %s\n' 376b2a22d5d7e19b5e8d746f3e82c95bd839522baeb4f0f9e8241e8a0fe45fe6 rust/crates/control-policy/Cargo.toml | sha256sum --check -
         printf '%s  %s\n' cf3c55cb9b630db1a12bcd96839337a39c0af55d77ce300b19024feb3bc69563 rust/crates/control-policy/src/flux.rs | sha256sum --check -
@@ -529,7 +549,7 @@ jobs:
         printf '%s  %s\n' 8ee22b6d42d58d23856a0d7c74473a9510a93290af5fc0e930bb69f9bdfc997e .github/workflows/naver-ci.yml | sha256sum --check -
         printf '%s  %s\n' 96885476f165d7614a03e0e9f29c019b75b216843694439981f047c9e7d22c8f .github/workflows/rust-dbc-darwin.yml | sha256sum --check -
         printf '%s  %s\n' d66923d925e056f82f61d20b52957f1ab8812b4f5156f0509e9ad0c34c598b30 .github/workflows/rust.yml | sha256sum --check -
-        printf '%s  %s\n' 613d4ee45b30df7ac4c2d3a3f14e0a1c5e5a104432c41df1f28ab0be3f462843 .github/workflows/tests.yaml | sha256sum --check -
+        printf '%s  %s\n' 9215c2d98492683f7f3c87fe549339cb584588fe754a8589d661415d95244c97 .github/workflows/tests.yaml | sha256sum --check -
         printf '%s  %s\n' 25de28dc0d6294a71ad1ceeb67833875f18afc46df9a867383ac719ec236f49b rust/crates/dev-tools/tests/ci_rust_isolation.rs | sha256sum --check -
         printf '%s  %s\n' 6030e76ba176d3d50b9191b98adf081f123bb2208185380749d8139689bbef75 tools/ci/diagnostic-296-contract.json | sha256sum --check -
         printf '%s  %s\n' a286863a38d2d122bd97b7f648086c1763e3aa863fe36fe7101f2f7a6ae7ada0 tools/ci/local-arm | sha256sum --check -
@@ -580,6 +600,25 @@ jobs:
         git ls-files -z -- tools/scripts/setup_ssh_keys.py > "$CI_JOB_TEMP/proof/setup-original-index.bin"
         test ! -s "$CI_JOB_TEMP/proof/setup-original-tree.bin"
         test ! -s "$CI_JOB_TEMP/proof/setup-original-index.bin"
+        printf '%s  %s\n' b285aaaaedec301715e7de1af929f5b81389e7ca59f288bed9f1c0ba621a9e0a SConstruct | sha256sum --check -
+        printf '%s  %s\n' 20ac3f3bd0942e48a28c7a82e4e6b011f915825281809930ffff7979f26656d0 opendbc_repo/opendbc/__init__.py | sha256sum --check -
+        printf '%s  %s\n' 5db064bb957f96706f7009255756f38271a9d14374ecf8e70628981abff2ae02 opendbc_repo/opendbc/can/dbc.py | sha256sum --check -
+        printf '%s  %s\n' 8fa9e182b8a0fc845828fe7263076ac1018aec9cb48d2ad6ce68730ae6bb1655 opendbc_repo/opendbc/dbc/SConscript | sha256sum --check -
+        printf '%s  %s\n' c71bd7b0c5f309481b3d2d759493cea894c0931ba1ca465c70af63bad96f91f8 openpilot/selfdrive/assets/fonts/process.py | sha256sum --check -
+        printf '%s  %s\n' 18e30c530d0a64c004afa901713f2e87c6747a9e6ede54e15585f1a70e0f4acf openpilot/selfdrive/ui/SConscript | sha256sum --check -
+        printf '%s  %s\n' c659ce3574276546da11a7bd25e373321b62226411b1eaadda37401fe3b2110d openpilot/system/ui/lib/application.py | sha256sum --check -
+        printf '%s  %s\n' 679d792bdc1d92ff68d98ab61c774791dbedcb5ae59365074ac4f028bab405d7 openpilot/tools/jotpluggler/SConscript | sha256sum --check -
+        printf '%s  %s\n' 23950a7f01945cc88ce9a3294075add10d7ef433d06adf6477008e02aa1dfde9 openpilot/tools/jotpluggler/layout.cc | sha256sum --check -
+        printf '%s  %s\n' cab0d2883ed7f63bf541c04eb857e6e55b44e2438ccad6e4eee69301552a5aef openpilot/tools/jotpluggler/sketch_layout.cc | sha256sum --check -
+        printf '%s  %s\n' 89d67af70cccdf0411ab4f5f6fa2f171e4b188ab27287c86c046cd4b817e0595 openpilot/tools/jotpluggler/dbc_paths.h | sha256sum --check -
+        printf '%s  %s\n' e860bf826791dfc63710365a5416a272c9e99d52eb00e6394bf2c4d24528ca74 openpilot/tools/jotpluggler/tests/dbc_paths_557.cc | sha256sum --check -
+        printf '%s  %s\n' 18ebd11d7d87111116d813c50db1ffd75c130dbb35d0597aa6afdeacec51a0f3 tools/ci/tests/test_generated_assets_557.py | sha256sum --check -
+        printf '%s  %s\n' 68b932bf23595e217d0b489e2f1267326a19ed4879523fc93f37ba5f28c3ae04 rust/crates/dev-tools/src/ui_application_lifecycle_recording.rs | sha256sum --check -
+        printf '%s  %s\n' 4ffa6bc44d1cf2a9f41881541802b779eca279c228f12abaa3a705005b87a7c5 rust/crates/dev-tools/tests/ui_application_lifecycle_recording.rs | sha256sum --check -
+        printf '%s  %s\n' dcbaabbcb5ef96195d5716d751052b3ebe009f2af85c74530796df52b220b2a0 .github/workflows/python-rust-523-ui-recording.yml | sha256sum --check -
+        printf '%s  %s\n' f75576d287391611b38e8c017609c739aa9ed42ca61a1fe862aa422062acc129 tools/ci/ui_recording_559.sh | sha256sum --check -
+        printf '%s  %s\n' 0d516594bf5dc43ee9c000b43b59fc45ccfada008808239ca0589767930040aa tools/ci/fixtures/ui-recording-559-baseline.patch | sha256sum --check -
+        printf '%s  %s\n' 21dcf20af3f31f09822a7868a5a7e9645696be7a2291217afba7175d0b0f92bc .github/workflows/python-rust-523-hosted-arm.yml | sha256sum --check -
         python - <<'MANIFEST'
         import hashlib,subprocess,tomllib
         from collections import Counter

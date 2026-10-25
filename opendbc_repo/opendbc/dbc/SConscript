@@ -1,23 +1,31 @@
-Import("env")
+Import("env", "generated_asset_root")
 
 from pathlib import Path
 import json
 import subprocess
-from opendbc import prepare_native_dbc_generator, run_dbc_generator
+import os
+import shutil
+import tempfile
+import stat
+from opendbc import prepare_native_dbc_generator, run_dbc_generator, SOURCE_DBC_PATH, _asset_hash, _dbc_inputs
 
 generator = File(str(prepare_native_dbc_generator()))
-source_root = Path("generator").resolve()
-output_root = Path.cwd()
+source_root = Path(SOURCE_DBC_PATH).resolve() / "generator"
+output_root = generated_asset_root / "dbc" if generated_asset_root else Path.cwd()
+if generated_asset_root:
+  if output_root.is_symlink():
+    raise ValueError("DBC output must be canonical")
+  output_root.mkdir(mode=0o700, exist_ok=True)
 
 source_files = [
   File(str(f))
-  for f in Path("generator").rglob("*")
+  for f in source_root.rglob("*")
   if f.is_file() and f.suffix in {".py", ".dbc"}
 ]
 
 output_files = [
   f.name.replace(".dbc", "_generated.dbc")
-  for f in Path("generator").rglob("*.dbc")
+  for f in source_root.rglob("*.dbc")
   if not f.name.startswith("_")
 ]
 
@@ -25,12 +33,91 @@ output_files = [
 output_files += json.loads(run_dbc_generator("program-outputs"))
 
 
-def generate_native_dbcs(target, source, env):
-  subprocess.check_call([generator.abspath, "create-all", str(output_root),
-                         "--source", str(source_root), "--all-programs"])
+def admit_previous_output():
+  metadata = output_root.lstat()
+  source_metadata = Path(SOURCE_DBC_PATH).stat()
+  if (metadata.st_dev, metadata.st_ino) == (source_metadata.st_dev, source_metadata.st_ino):
+    raise ValueError("DBC output aliases source identity")
+  if not stat.S_ISDIR(metadata.st_mode) or metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != 0o700:
+    raise ValueError("DBC output must be an owned private directory")
+  entries = {path.name for path in output_root.iterdir()}
+  if entries:
+    path = output_root / "manifest.json"
+    _asset_hash(path)
+    if path.stat().st_size > 4 * 1024 * 1024:
+      raise ValueError("previous DBC manifest exceeds bound")
+    old = json.loads(path.read_bytes())
+    owned = old.get("asset_sha256", {})
+    if not isinstance(owned, dict) or not all(Path(name).name == name and name.endswith(".dbc") for name in owned):
+      raise ValueError("previous DBC roster is invalid")
+    if old.get("kind") != "scons-dbc" or entries - {".ready"} != set(owned) | {"manifest.json"}:
+      raise ValueError("DBC output contains unowned entries")
+    if any(_asset_hash(output_root / name) != digest for name, digest in owned.items()):
+      raise ValueError("previous DBC output changed")
+    if ".ready" in entries:
+      ready = output_root / ".ready"
+      _asset_hash(ready)
+      if ready.stat().st_size != len(b"openpilot-scons-dbc-v1\n") or ready.read_bytes() != b"openpilot-scons-dbc-v1\n":
+        raise ValueError("previous DBC ready role differs")
+  return metadata.st_dev, metadata.st_ino
 
+
+def generate_native_dbcs(target, source, env):
+  if generated_asset_root is None:
+    subprocess.check_call([generator.abspath, "create-all", str(output_root),
+                           "--source", str(source_root), "--all-programs"])
+    return
+  before = _dbc_inputs()
+  executable_sha = _asset_hash(Path(generator.abspath))
+  previous_identity = admit_previous_output()
+  # 성공한 이전 output도 새 generation 중에는 ready로 보지 않는다.
+  if output_root.is_symlink():
+    raise ValueError("DBC output must be canonical")
+  if output_root.exists():
+    (output_root / ".ready").unlink(missing_ok=True)
+  with tempfile.TemporaryDirectory(prefix="dbc-stage-", dir=generated_asset_root) as temporary:
+    private = Path(temporary)
+    copied = private / "generator"
+    shutil.copytree(source_root, copied, symlinks=False)
+    copied_sha256 = {str(path.relative_to(copied)): _asset_hash(path)
+                     for path in sorted(copied.rglob("*")) if path.is_file()}
+    if copied_sha256 != {str(path.relative_to(source_root)): _asset_hash(path)
+                         for path in sorted(source_root.rglob("*")) if path.is_file()}:
+      raise ValueError("DBC private input copy differs from source")
+    output = private / "dbc"
+    output.mkdir(mode=0o700)
+    for original in Path(SOURCE_DBC_PATH).glob("*.dbc"):
+      shutil.copyfile(original, output / original.name)
+    command = [generator.abspath, "create-all", str(output), "--source", str(copied), "--all-programs"]
+    subprocess.check_call(command)
+    after = _dbc_inputs()
+    executable_after = _asset_hash(Path(generator.abspath))
+    if before != after or executable_sha != executable_after:
+      raise ValueError("DBC source or generator changed during staging")
+    manifest = {"format_version": 1, "kind": "scons-dbc", "source_sha256": before,
+                "source_after_sha256": after, "generator_after_sha256": executable_after,
+                "generator_sha256": executable_sha, "argv": command, "private_input_sha256": copied_sha256,
+                "asset_sha256": {file.name: _asset_hash(file) for file in sorted(output.glob("*.dbc"))}}
+    (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True, indent=2) + "\n")
+    (output / ".ready").write_text("openpilot-scons-dbc-v1\n")
+    if output_root.exists():
+      if previous_identity != admit_previous_output():
+        raise ValueError("DBC output directory identity changed")
+      shutil.rmtree(output_root)
+    os.rename(output, output_root)
+
+if generated_asset_root:
+  output_files += [path.name for path in Path(SOURCE_DBC_PATH).glob("*.dbc")]
+  targets = [str(output_root / name) for name in sorted(set(output_files))] + [str(output_root / "manifest.json"), str(output_root / ".ready")]
+else:
+  targets = list(set(output_files))
 generated = env.Command(
-  target=list(set(output_files)),
-  source=[generator] + source_files,
+  target=targets,
+  source=[generator, File("#opendbc_repo/opendbc/dbc/SConscript")] + source_files +
+         ([File(str(Path(SOURCE_DBC_PATH).resolve().parents[2] / path)) for path in _dbc_inputs()] if generated_asset_root else []),
   action=generate_native_dbcs,
 )
+staged_dbc_nodes = generated
+if generated_asset_root:
+  NoCache(staged_dbc_nodes)
+Export('staged_dbc_nodes')

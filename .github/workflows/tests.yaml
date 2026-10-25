@@ -412,10 +412,49 @@ jobs:
           printf 'OPENPILOT_DBC_GENERATOR=%s/rust/target/debug/dbc-generator\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.CI296_SOURCE }}
+      - name: Admit external generated asset output before the unchanged SCons build
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        working-directory: ${{ env.CI296_SOURCE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          test "$(cat "$CI_JOB_TEMP/owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+          test ! -v OPENPILOT_DBC_ROOT && test ! -v OPENPILOT_FONT_ROOT
+          # stage/비교 출력/GL 준비의 예상 증가량이며 실측 peak 보장은 아니다.
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$CI_JOB_TEMP" --growth-mib 1536
+          build="$CI_JOB_TEMP/build"
+          if test ! -e "$build" && test ! -L "$build"; then mkdir -m 700 "$build"; fi
+          test -d "$build" && test ! -L "$build"
+          test "$(realpath -e "$build")" = "$build"
+          test "$(stat -c %u "$build")" = "$(id -u)"
+          test "$(stat -c %a "$build")" = 700
+          base="$build/generated-assets"
+          test ! -e "$base" && test ! -L "$base"
+          mkdir -m 700 "$base"
+          printf 'OPENPILOT_BUILD_ASSET_ROOT=%s\n' "$base" >> "$GITHUB_ENV"
+          printf 'source=%s\nbase=%s\nplanned_growth_bytes=1610612736\nmeasured_peak_guarantee=false\n' "$GITHUB_SHA" "$base" > "$CI_JOB_TEMP/proof/generated-assets-admission.txt"
       - name: Build openpilot
         run: scons
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.CI296_SOURCE }}
+      - name: Bind consumers to the completed external DBC and font outputs
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        working-directory: ${{ env.CI296_SOURCE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$OPENPILOT_BUILD_ASSET_ROOT"
+          test "$base" = "$CI_JOB_TEMP/build/generated-assets"
+          test "$(cat "$base/dbc/.ready")" = openpilot-scons-dbc-v1
+          test "$(cat "$base/fonts/.ready")" = openpilot-font-stage-v1
+          test -s "$base/dbc/manifest.json" && test -s "$base/fonts/manifest.json"
+          export OPENPILOT_DBC_ROOT="$base/dbc" OPENPILOT_FONT_ROOT="$base/fonts"
+          python - <<'DBC_STAGE'
+          from opendbc import _validate_dbc_stage
+          _validate_dbc_stage()
+          DBC_STAGE
+          printf 'OPENPILOT_DBC_ROOT=%s\nOPENPILOT_FONT_ROOT=%s\n' "$OPENPILOT_DBC_ROOT" "$OPENPILOT_FONT_ROOT" >> "$GITHUB_ENV"
       - name: Convert the original build artifacts to native model pipelines
         run: scons native_models
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -458,6 +497,74 @@ jobs:
             openpilot/system/tests/test_c3_agnos_manifest.py
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.CI296_SOURCE }}
+      - name: Check actual generated asset consumers and unchanged output algorithms
+        id: generated_assets_check
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        working-directory: ${{ env.CI296_SOURCE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          proof="$CI_JOB_TEMP/proof/generated-assets-557"
+          mkdir -m 700 "$proof"
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$CI_JOB_TEMP" --growth-mib 1536
+          if ! command -v xvfb-run >/dev/null || ! command -v xauth >/dev/null; then
+            /usr/bin/timeout --signal=TERM --kill-after=30s 300s sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install --no-install-recommends -y xvfb xauth
+          fi
+          compiler=$(realpath -e "$(command -v c++)")
+          test -x "$compiler" && test ! -L "$compiler"
+          sha256sum "$compiler" > "$proof/compiler.before.sha256"
+          stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$compiler" > "$proof/compiler.before.stat"
+          printf '%s\n' "$compiler" -std=c++17 -Wall -Wextra -Werror -I "$CI296_SOURCE" "$CI296_SOURCE/openpilot/tools/jotpluggler/tests/dbc_paths_557.cc" -o "$CI_JOB_TEMP/build/dbc-paths-557" > "$proof/compiler.argv"
+          /usr/bin/timeout --signal=TERM --kill-after=30s 180s "$compiler" -std=c++17 -Wall -Wextra -Werror -I "$CI296_SOURCE" \
+            "$CI296_SOURCE/openpilot/tools/jotpluggler/tests/dbc_paths_557.cc" -o "$CI_JOB_TEMP/build/dbc-paths-557"
+          sha256sum "$compiler" > "$proof/compiler.after.sha256"
+          stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$compiler" > "$proof/compiler.after.stat"
+          cmp "$proof/compiler.before.sha256" "$proof/compiler.after.sha256"
+          cmp "$proof/compiler.before.stat" "$proof/compiler.after.stat"
+          export GENERATED_ASSETS_JOT_LEAF="$CI_JOB_TEMP/build/dbc-paths-557"
+          sha256sum "$GENERATED_ASSETS_JOT_LEAF" > "$proof/jot-leaf.before.sha256"
+          interpreter=$(command -v python)
+          test "$interpreter" = "$CI296_SOURCE/.venv/bin/python"
+          "$interpreter" -c 'import sys; print(sys.version); print(sys.executable)' > "$proof/interpreter.txt"
+          /usr/bin/timeout --signal=TERM --kill-after=30s 900s env OFFSCREEN=1 xvfb-run -a "$interpreter" -m pytest -o addopts='' -q \
+            --basetemp="$CI_JOB_TEMP/build/generated-assets-557-tests" \
+            tools/ci/tests/test_generated_assets_557.py::test_scons_dbc_catalog_matches_frozen_reference \
+            tools/ci/tests/test_generated_assets_557.py::test_named_dbc_parser_reads_published_output \
+            tools/ci/tests/test_generated_assets_557.py::test_font_output_directory_preserves_bytes_and_glyphs \
+            tools/ci/tests/test_generated_assets_557.py::test_explicit_roots_and_partial_publication_are_rejected \
+            tools/ci/tests/test_generated_assets_557.py::test_gui_font_loader_uses_published_atlas \
+            tools/ci/tests/test_generated_assets_557.py::test_jotpluggler_shared_resolver_reads_current_variants \
+            2>&1 | tee "$proof/pytest.log"
+          test "$(grep -Ec '^6 passed in [0-9.]+s' "$proof/pytest.log")" -eq 1
+          sha256sum "$GENERATED_ASSETS_JOT_LEAF" > "$proof/jot-leaf.after.sha256"
+          cmp "$proof/jot-leaf.before.sha256" "$proof/jot-leaf.after.sha256"
+      - name: Preserve generated asset manifests and changed font output bytes after attempts
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.OPENPILOT_BUILD_ASSET_ROOT != '') }}
+        working-directory: ${{ env.CI296_SOURCE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          proof="$CI_JOB_TEMP/proof/generated-assets-557"
+          if test ! -d "$proof"; then mkdir -m 700 "$proof"; fi
+          base="$OPENPILOT_BUILD_ASSET_ROOT"
+          test "$base" = "$CI_JOB_TEMP/build/generated-assets"
+          find -P "$base" -printf '%P\t%y\t%D\t%i\t%m\t%U\t%G\t%n\t%s\t%T@\t%C@\n' | sort > "$proof/stage.roster.tsv"
+          find -P "$base" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$proof/stage.sha256"
+          du -sx --block-size=1 "$base" "$CI_JOB_TEMP/build" > "$proof/allocated-output-bytes.txt"
+          for role in dbc fonts; do
+            if test -f "$base/$role/manifest.json" && test ! -L "$base/$role/manifest.json"; then
+              test "$(stat -c %s "$base/$role/manifest.json")" -le 4194304
+              cp -- "$base/$role/manifest.json" "$proof/$role-manifest.json"
+            fi
+          done
+          for name in Pretendard-Medium.fnt Pretendard-Medium.png Pretendard-SemiBold.fnt Pretendard-SemiBold.png; do
+            if test -f "$base/fonts/$name" && test ! -L "$base/fonts/$name"; then
+              test "$(stat -c %s "$base/fonts/$name")" -le 16777216
+              cp -- "$base/fonts/$name" "$proof/$name"
+            fi
+          done
       - name: Seal private source and index after maintained checks
         id: ci296_source_seal
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI296_SOURCE != '') }}
@@ -512,7 +619,40 @@ jobs:
           df -PB1 "$CI296_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
           cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
       - *id006
-      - *id007
+      - name: Clean only uploaded owned source alias and target
+        id: ci296_source_cleanup
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success' && steps.generated_assets_check.outcome == 'success' && env.CI296_SOURCE_OWNER != '') }}
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        env:
+          CI296_HOST_CONTROL: '1'
+          UPLOAD_ID: ${{ steps.ci296_private_evidence.outputs.artifact-id }}
+          UPLOAD_DIGEST: ${{ steps.ci296_private_evidence.outputs.artifact-digest }}
+        run: |
+          set -euo pipefail
+          [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+          [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+          workspace=$CI296_ACTIONS_WORKSPACE
+          p=$CI296_SOURCE_OWNER
+          case "$p" in "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+          test -d "$p" && test ! -L "$p"
+          test "$(realpath -e -- "$p")" = "$p"
+          test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+          test "$(stat -c '%d:%i' -- "$p")" = "$CI296_SOURCE_IDENTITY"
+          test -f "$p/.ci296-owner" && test ! -L "$p/.ci296-owner"
+          test "$(cat "$p/.ci296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+          test "$CI296_SOURCE" = "$p/source"
+          test -d "$p/source" && test ! -L "$p/source"
+          test "$(realpath -e -- "$p/source")" = "$p/source"
+          alias_path="$CI296_ACTIONS_WORKSPACE/$CI296_ALIAS_BASENAME"
+          test "$CI296_SOURCE_ALIAS" = "$alias_path"
+          test -L "$alias_path"
+          test "$(readlink -- "$alias_path")" = "$p"
+          test "$(stat -c '%d:%i' -- "$alias_path")" = "$CI296_ALIAS_IDENTITY"
+          rm -- "$alias_path"
+          if ! rm -rf --one-file-system -- "$p"; then
+            sudo -n rm -rf --one-file-system -- "$p"
+          fi
       - *id008
     env:
       CI296_ALIAS_BASENAME: .ci296-source-tests--build_release

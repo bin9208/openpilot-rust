@@ -4,7 +4,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from functools import cache
 
-from opendbc import DBC_PATH
+from opendbc import DBC_PATH, _validate_dbc_stage
+
+_validate_dbc_stage()
 
 # TODO: these should just be passed in along with the DBC file
 from opendbc.car.honda.hondacan import honda_checksum
