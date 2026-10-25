@@ -905,3 +905,30 @@ D2는 같은 D1 catalog generation/bundle/held native ELF와 원래 warmup prepa
 별도 최신 PR9ae run40187340482/job121150826818의 부모 직접 감사는 `check_pipeline_reference.py:176`의 road1928 두 번째 frame `model-1.bin`에서 최초 실패했다. 원문10304B/2576 중 indices100/101/1349 세 개만 original LE `00000080`(-0)/native `00000000`(+0)이고 original SHA `7fe2075ebcc4048be72666c5fc101238df672d438dfb849507251293d4c43242`, native SHA `bbebf82fb3e5c20efd6011d5c538b005464e4f9a7eaccc1f2cd1338f44f2732f`다. 부모 raw artifact12597251454(18,301B/5CRC)와 guarded artifact12597046785(14,909,437B/47CRC) 감사에서 실제 CPU Intel Xeon6973P-C, LLVM CPU `graniterapids`, LLVM18 provider SHA `5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0` 및 전후 provider/source 봉인이 확인되었다. complete-sidecars.tar의 road-pipeline-1928/kernel92 원문166,049B SHA `e223a2c36c6bde7cf676bb92fd2529858a723f9ecfa91c811b2b941756a9bea0`, compiled.ll166,727B SHA `ffc2206baa1f05f49a5c9d07b68de71da1a1437485da87d8e4a75d0692a31b52`, guarded receipt4rewrites도 부모가 정적으로 확인했다. PR의128frame1928 첫 비교에서 실패했으므로 PR1344에는 도달하지 않았다. 근거는 private `pr9ae-model1928-frame1-raw-audit.json`, `pr9ae-model-guarded-inert-audit.json`, `pr9ae-model1928-firstfailure-audit.md`다. D0 index99/과거593/다른 자연 CPU의 B 성공과 숫자 원인을 합치지 않으며 AMD 가정·CPU 강제·zero 정규화·허용오차 변경은 없다. 이 작업자는 해당 새 ZIP을 중복 다운로드하지 않았다.
 
 로컬 확인은 소스/AST/YAML/Bash 문법/rustfmt/diff만이다. 새 Rust 컴파일·Clippy·원본/PKL·모델/CLI·수치·실제GHA fit은 모두 UNRUN이다. COMMON/base pin의 마지막 결합, Focus allow/pins와 새 Python execution-edge 원장은 부모가 소유한다.
+
+## #578: source56f 두 진단의 실제 Clippy 실패와 private 별칭 후보
+
+source `56f6bc237c739f60df60f1d227697302407260af`의
+[current40191173025/job121162317311](https://github.com/bin9208/openpilot-rust/actions/runs/40191173025/job/121162317311)과
+[PR1344 replay40191173098/job121162317587](https://github.com/bin9208/openpilot-rust/actions/runs/40191173098/job/121162317587)은
+모두 새 private leaf `cpu/diagnostic_482_pr1344.rs:48`의 `events` tuple에 대한
+`clippy::type_complexity` 한 건으로 실패했다. current의 bin/libtest NO-RUN과 replay의
+model/dev-tools/daemon build·retirement NO-RUN은 실제 exit0이다. fatal1은 Cargo JSONL 원문에서
+확인했으며 A/B/D1/D2·whole-host ISA·모델 수치 실행은 모두 미도달이다.
+
+artifact12598765423은 7,158,930B/SHA256 `2272bdfbdb977abbc4f7ed8d4c7d34363ab49e899861e5f67309bf232e98ffc4`/91CRC,
+artifact12598521616은 3,959,331B/SHA256 `a15fbdcdc72c11db7e0f2caae6ea6fb7682eabc08591642ebbb49bb9690bd158`/82CRC로
+각1회 단독 다운로드·전수 감사했다. 두 실행의 source/SDK/Python venv/Python base4쌍 snapshot과
+outer source/index/SDK6쌍은 동일하고 child live0/회수true·업로드 성공이다. 내부 final-seals는
+Clippy 뒤 설정할 registry baseline이 없어 false이며 cleanup은 모두 skipped다. 이를 source drift나
+모델/ISA 실패로 해석하거나 registry baseline 없는 상태를 성공으로 올리지 않는다.
+
+[#578](https://github.com/bin9208/openpilot-rust/issues/578)의 최소 수정은 같은 tuple을 private
+`WriterEvent`로 명명하고 field를 `Vec<WriterEvent>`로 표기하는 것뿐이다. tuple 자료형·순서,
+기존 직렬화·callback ABI·계산/기대값·CACHED10/guarded8·unknown ISA 거부·시간/용량 한도는 그대로다.
+helper가 현재 leaf의 SHA를 읽어 `MODEL482_NATIVE_TEST_SHA256`에 전달하고 Rust는 자기
+`include_bytes!` SHA와 대조하므로 helper/WF literal 갱신은 필요 없다. Focus source pin은 부모가 갱신한다.
+별칭 두 표현을 역투영하면 leaf 전체가 source56f와 byte 동일하며 문서는 append-only다.
+로컬 rustfmt·source/diff만 확인했고 수정 후 Clippy 및 A/B/D1/D2 실제 수용은 **GHA UNRUN**이다.
+private 전체 감사는 `model-56f-two-runs-audit.md`에 보존했다. road1928의3개 signedzero와
+PR1344의 index99, historical half/sNaN5·normal128 및 전체 모델/runtime 수용은 계속 구별한다.

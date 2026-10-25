@@ -42,10 +42,12 @@ struct Replay {
     files: BTreeMap<String, Input>,
     bundle_files: BTreeMap<String, Input>,
 }
+type WriterEvent = (usize, [u8; 4], [u8; 4], [usize; 10]);
+
 struct State {
     function: KernelFn,
     address: usize,
-    events: Vec<(usize, [u8; 4], [u8; 4], [usize; 10])>,
+    events: Vec<WriterEvent>,
     error: bool,
 }
 thread_local! { static WRITER: RefCell<Option<State>> = const { RefCell::new(None) }; }
