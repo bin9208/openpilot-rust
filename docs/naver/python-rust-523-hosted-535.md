@@ -1128,3 +1128,14 @@ owner/source/index19469경로가 맞고 source tar SHA는
 [#566 완료 댓글6395356795](https://github.com/bin9208/openpilot-rust/issues/566#issuecomment-6395356795)로 개별 종료했다.
 이 성공은 전체 PR/#523/#296·Python retirement·기기 수용으로 확대하지 않는다. 기존 단독 artifact를
 재사용했으며 새 다운로드·로컬 기능 실행·옛 receipt 재도장은 없다.
+
+
+### a1c collision8의 검토된 fixture SHA 연결
+
+[40178153221/job121123233098](https://github.com/bin9208/openpilot-rust/actions/runs/40178153221/job/121123233098)은
+빌드 전에 `native_logging_lifecycle.rs` checksum mismatch로 실패했다. a1c의 test-only INT/TERM 선택을
+추가한 현재 fixture는 `b6031484652376dd40eeb8074f3449ebdfb5c4fc225c5441f8d01ed78058f4a8`이며
+선택 없는 기존 본문은 byte 동일하고 독립 P1/P2 검토도 완료했다. collision8 helper의 예전95bad9d0
+literal1개와 그 helper의 WF/Focus pin만 현재 검토 source로 연결한다. fixture 검사를 제거하지 않고
+8case/selector/기능·원문·상한·시간·source/SDK/final·cleanup을 그대로 유지한다. 로컬은 source/구문/diff뿐,
+실제 현재8case 수용은 Actions 대기다. #549 전체와 원본2 제거·credit은 아직 미완료/0이다.
