@@ -145,3 +145,9 @@ source/SDK 보존·artifact 및 실제 회수는 아직 검증되지 않았다.
 기존 CI 정책의 정확 source trust binding을 첫 단계 env에 연결하고 모든 후속 단계는 같은 trusted expression 안에서 기존 실행/정리 조건을 유지한다. 순수 단위·Clippy·원본73개 검증은 새 로컬 job에 배정했으며 다음 hosted Focus에서는 중복 명령을 제거했다. 이미 실행 중인 기존 snapshot은 취소하지 않는다. 새 workflow의 실제 admission helper는 추가 실행 원장에 pending으로 등록했고, Python 전체 제거 완료로 계산하지 않는다.
 
 로컬은 YAML parse와 Bash syntax만 확인했다. 실제 RAM2GiB 여유/target4GiB·registry1GiB·proof0.5GiB·source2GiB의 적합성, global SDK 전후 무변경, 단위·Clippy·원본 비교·회수는 exact-SHA Actions 결과를 확인해야 한다.
+
+## 최초 local Actions 실제 결과와 #589 후보 — 2026-10-26
+
+source `5c1b1bfe8ececc2a71401c92925e9ef865ff7409`의 [40206335771/job121207961840](https://github.com/bin9208/openpilot-rust/actions/runs/40206335771/job/121207961840)은 bin-actions에서94초에 종료했다. control drive4/math5, compiler launch9/stage7, 원본73개를 비교하는 ignored1과 control strictClippy는 실제 성공했다. 모델 strictClippy는 기능 비활성 구성의 private 미사용10개로 실패해 전체job은 FAIL이다. source/index·전체기존SDK·업로드·소유source와temp 정리는 성공했다. artifact12603634047=1579436B/SHAa3359b632c3894accf5358239b0a92070fdddcbaba09df19f69c1fb9141935c9이며 실패로그·exit5개와 실제입력SHA를 읽었다.
+
+[#589](https://github.com/bin9208/openpilot-rust/issues/589) 후보는 entrypoint::find를 native backend feature, QCOM device를 native feature 또는 test, physical half-storage를 native Unix CPU backend와 같은 cfg에 연결한다. 기능 활성 구성의 본문은 바꾸지 않고 Miri용 device test 경로를 유지한다. 경고 허용이나 strictClippy 제거는 하지 않는다. 이후 control/model을 독립 matrix job으로 나눠 실패 crate만 재검증할 수 있게 했다. 새 cfg·caller 조합의 실제 GHA 수용은 대기다.

@@ -23,7 +23,7 @@ concurrency:
   queue: max
 jobs:
   native-units:
-    name: F01 F02 pure Rust units on registered local runner
+    name: Native ${{ matrix.crate }} units on registered local runner
     if: ${{ github.repository == 'bin9208/openpilot-rust' }}
     runs-on:
     - self-hosted
@@ -44,6 +44,7 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
       RUST_TEST_THREADS: '1'
+      NATIVE_UNITS_CRATE: ${{ matrix.crate }}
     steps:
     - name: Deny fork source and require registered local runner
       id: trust
@@ -301,8 +302,14 @@ jobs:
           printf '%s=%s\n' "$label" "$rc" >> "$CI_JOB_TEMP/proof/native-exit-codes.txt"
           tail -n 35 "$CI_JOB_TEMP/proof/$label.log"
         }
+        case "$NATIVE_UNITS_CRATE" in
+          control)
         run_once control-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-control-policy --test drive --test math
+        run_once control-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-control-policy --lib --test drive --test math -- -D warnings
+            ;;
+          model)
         run_once model-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-model-runtime --test compiler_launch --test compiler_schedule
         run_once original-boundaries "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
@@ -310,10 +317,11 @@ jobs:
           original_python_pipeline_boundaries_match_native -- --ignored --exact --nocapture
         # Prevent a renamed/missing ignored test from silently accepting zero tests.
         grep -F 'test result: ok. 1 passed; 0 failed;' "$CI_JOB_TEMP/proof/original-boundaries.log" || failed=1
-        run_once control-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
-          --no-default-features -p openpilot-control-policy --lib --test drive --test math -- -D warnings
         run_once model-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-model-runtime --lib --test compiler_launch --test compiler_schedule -- -D warnings
+            ;;
+          *) echo "unknown native crate" >&2; exit 1 ;;
+        esac
         /usr/bin/python3 -I -B -S "$CI_JOB_TEMP/admit-native-units.py" after-native
         test "$failed" = 0
     - name: Seal source and tracked index after every attempted native check
@@ -374,7 +382,7 @@ jobs:
         != '' && env.DIAG_JOB_IDENTITY != '') }}
       uses: actions/upload-artifact@v6
       with:
-        name: native-units-${{ github.run_id }}-${{ github.run_attempt }}
+        name: native-units-${{ matrix.crate }}-${{ github.run_id }}-${{ github.run_attempt }}
         path: ${{ env.CI_JOB_TEMP }}/proof
         if-no-files-found: error
         retention-days: 14
@@ -436,3 +444,9 @@ jobs:
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       with:
         cleanup: 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+        - control
+        - model

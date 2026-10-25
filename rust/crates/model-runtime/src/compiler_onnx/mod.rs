@@ -11,6 +11,7 @@ pub mod render;
 pub mod scalar;
 pub mod schedule;
 pub mod storage;
+#[cfg(all(feature = "native-skip-miri", unix))]
 pub(crate) mod storage_half;
 use std::{collections::BTreeMap, path::Path};
 pub const STATIC_OPERATORS: &[&str] = &[

@@ -1,5 +1,6 @@
 mod arguments;
 mod descriptor;
+#[cfg(any(test, feature = "native-skip-miri"))]
 mod device;
 mod graph;
 mod packet;
