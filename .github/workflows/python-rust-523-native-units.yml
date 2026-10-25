@@ -158,7 +158,9 @@ jobs:
           rust/crates/model-runtime/Cargo.toml rust/crates/model-runtime/src/compiler_launch.rs \
           rust/crates/model-runtime/src/compiler_schedule.rs rust/crates/model-runtime/tests/compiler_launch.rs \
           rust/crates/model-runtime/tests/compiler_schedule.rs rust/tools/model_export/offline_schedule.py \
-          rust/tools/model_export/schema.py rust/tools/prepare-readonly-ci-rust > "$CI_JOB_TEMP/proof/focused-source.sha256"
+          rust/tools/model_export/schema.py rust/tools/prepare-readonly-ci-rust \
+          rust/crates/model-runtime/tests/compiler_corpus.rs \
+          rust/crates/model-runtime/tests/fixtures/compiler-stage-original/* > "$CI_JOB_TEMP/proof/focused-source.sha256"
         allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
         [[ $allocated =~ ^[0-9]+$ ]]
         printf '{"allocated_private_source_bytes":%s,"planned_source_growth_bytes":2147483648}\n' \
@@ -319,18 +321,18 @@ jobs:
           model)
         run_once model-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_launch --test compiler_schedule
-        stage_python=$(readlink -e -- /usr/bin/python3)
-        test -f "$stage_python" && test -x "$stage_python" && test ! -L "$stage_python"
-        sha256sum "$stage_python" > "$CI_JOB_TEMP/proof/stage-oracle-python.sha256"
-        "$stage_python" -I -B -S --version > "$CI_JOB_TEMP/proof/stage-oracle-python.version"
-        run_once original-boundaries /usr/bin/env STAGE_REFERENCE_PYTHON="$stage_python" "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
-          --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_schedule \
-          original_python_pipeline_boundaries_match_native -- --ignored --exact --nocapture
-        # Prevent a renamed/missing ignored test from silently accepting zero tests.
-        grep -F 'test result: ok. 1 passed; 0 failed;' "$CI_JOB_TEMP/proof/original-boundaries.log" || failed=1
-        sha256sum --check --strict "$CI_JOB_TEMP/proof/stage-oracle-python.sha256" || failed=1
+        grep -F 'test result: ok. 9 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/model-units.log" || failed=1
+        grep -F 'test result: ok. 8 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/model-units.log" || failed=1
+        run_once stage-order-union "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features --features native-skip-miri,serde_json/preserve_order -p openpilot-model-runtime --test compiler_schedule \
+          frozen_original_pipeline_boundaries_match_native -- --exact --nocapture
+        grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/stage-order-union.log" || failed=1
+        run_once launch-frozen-corpus "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_corpus \
+          original_launch_captures_preserve_all_4411_inputs_without_python -- --exact --nocapture
+        grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/launch-frozen-corpus.log" || failed=1
         run_once model-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
-          --no-default-features --features native-skip-miri -p openpilot-model-runtime --lib --test compiler_launch --test compiler_schedule -- -D warnings
+          --no-default-features --features native-skip-miri -p openpilot-model-runtime --lib --test compiler_launch --test compiler_schedule --test compiler_corpus -- -D warnings
             ;;
           buffers)
         run_once compiler-buffer-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
@@ -533,4 +535,4 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: "${{ fromJSON(github.event_name == 'push' && '[\"tools\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"
+        crate: "${{ fromJSON(github.event_name == 'push' && '[\"model\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"

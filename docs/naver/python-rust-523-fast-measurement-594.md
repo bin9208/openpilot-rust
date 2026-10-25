@@ -125,3 +125,34 @@ source7a928의 tools job121300012517은 새 fixture의 `env_remove`가 `Vec<OsSt
 새 literal로 연결하고, recovery 조건은 기존 source-trust 괄호 형식 안에 모두 넣었다.
 신뢰 policy 함수를 완화하거나 cap·상한·기한을 바꾸지 않았다. 이 보완의 실제8개/Clippy/정책42와
 Fast provider/first Rust/after 수용은 다음 exact-source Actions에서 확인한다.
+
+
+## 실제 원격 수용 — 51fd 회귀와 3f532 Fast
+
+[새 회귀40237673607/job121305748955](https://github.com/bin9208/openpilot-rust/actions/runs/40237673607/job/121305748955)의
+source는 `51fd430f76dd6bd28776ac1fbd04c16955bd977e`다. 새8개/0실패/0ignored와
+strict Clippy가 실제 성공했다. 원래42 Bash fixture roster는 그대로이며 native-exit-codes의
+7개 명령이 모두0이다. source/index, SDK file/roster/program before/after는 byte 동일하고
+SDK installation0이다. artifact12616591265는1,589,989B, SHA256
+`a2f0166dcb49af6360e3348a9932a132635d9a8797061a99faa2758765d0475d`,
+46 safe unique regular member/전체 CRC, expanded6,948,613B다.
+
+[Fast40240059299](https://github.com/bin9208/openpilot-rust/actions/runs/40240059299)의
+source는 `3f5329dcf76f461bde804d09dfef0c4e5980893b`다. 8개 worker와 aggregate가
+모두 성공했다. native job121309737347은 private provider prepare0, cold original0/finalizer0,
+after original0/finalizer0와 두 phase의 owned_groups_nonlive=true를 기록했다.
+first actual trace181 exec attempts 중 absolute Cargo1/rustc37이 성공했고
+Python/rustup exec attempt는 각각0이다. strict native cold audit1/0실패/0ignored도 성공했다.
+
+artifact12616217004는13,279,909B, SHA256
+`3a0672a60be56f39110a75ff7ce9c04a74a2bcd8478fbb9723f2a5fb5c842170`,
+1,408 safe unique regular member/전체 CRC, expanded71,268,466B다.
+source/index와 SDK file/roster/program before/after는 byte 동일하다. provider의 build 완료
+기준에서 after-cold/after-fast까지 file SHA/roster/stable548쌍도 byte 동일하다.
+provider ELF SHA256은 `3169f3b03845d655b79b29dae8e06093f9f92fead9fee87d20925f3e2f57b15d`다.
+raw trace SHA256은 `3efae74b67fe4aa29601c393d90702001f5478753a7a59ee5150a544c711a678`다.
+업로드 뒤 source/owned temporary cleanup까지 두 job의 모든 step이 성공했다.
+
+51fd→3f532의 새8개 source, Fast helper/preparer는 byte 동일하다. 이전 절의 대기 상태는
+이 두 actual run으로 충족했다. 원래 owner6GiB/provider512MiB·메모리·기한·hardlink 합계와
+strict audit/회수 계약을 유지한 #594 범위 수용이며, #560 전체 진단이나 #523 전체 완료는 아니다.

@@ -1,0 +1,597 @@
+{
+  "argv": [
+    "/usr/bin/python3.12",
+    "-I",
+    "-c",
+    "\nimport ast, dataclasses, hashlib, json, pathlib, sys, types\nroot = pathlib.Path(sys.argv[1])\nschema_path = root / 'rust/tools/model_export/schema.py'\nschedule_path = root / 'rust/tools/model_export/offline_schedule.py'\nschema_bytes, schedule_bytes = schema_path.read_bytes(), schedule_path.read_bytes()\nschema = ast.parse(schema_bytes, filename=str(schema_path))\nschedule = ast.parse(schedule_bytes, filename=str(schedule_path))\nscope = {'__name__': '__main__', 'dataclass': dataclasses.dataclass, 'ExportError': RuntimeError}\nfor name in ('Entrypoint', 'entrypoint_version'):\n    node = next(node for node in schema.body if getattr(node, 'name', None) == name)\n    exec(compile(ast.Module(body=[node], type_ignores=[]), str(schema_path), 'exec'), scope)\ndef function(name):\n    return next(node for node in schedule.body if getattr(node, 'name', None) == name)\ndef assigned(node, name):\n    return isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == name for target in node.targets)\nbody = function('export_pipeline').body\nfirst = next(i for i, node in enumerate(body) if assigned(node, 'retained'))\nlast = next(i for i, node in enumerate(body) if assigned(node, 'model'))\nretained_code = compile(ast.Module(body=body[first:last], type_ignores=[]), str(schedule_path), 'exec')\nbody = function('emit_schedule').body\nfirst = next(i for i, node in enumerate(body) if assigned(node, 'entries'))\nlast = next(i for i, node in enumerate(body) if assigned(node, 'manifest'))\nemitted_code = compile(ast.Module(body=body[first:last], type_ignores=[]), str(schedule_path), 'exec')\nmanifest = body[last].value\nassert isinstance(manifest, ast.Call) and isinstance(manifest.func, ast.Name) and manifest.func.id == 'Manifest'\nversion_code = compile(ast.Expression(body=manifest.args[0]), str(schedule_path), 'eval')\nresults = []\nfor case in json.load(sys.stdin):\n    local = dict(scope, pipeline=types.SimpleNamespace(stages=[types.SimpleNamespace(\n        name=stage['name'], linear=types.SimpleNamespace(src=stage['calls'])) for stage in case['stages']]),\n        prepared=types.SimpleNamespace(linear=types.SimpleNamespace(src=case['retained'])))\n    try:\n        exec(retained_code, local)\n        local.update(schedule=types.SimpleNamespace(stage_ends=local['ends']),\n                     emitted_by_source=case['prefix'], calls=range(case['prefix'][-1]))\n        exec(emitted_code, local)\n        version = eval(version_code, local)\n        results.append({'version': version, 'entrypoints': [dataclasses.asdict(entry) for entry in local['entries']]})\n    except (RuntimeError, IndexError):\n        results.append({'error': True})\nprint(json.dumps({'source_sha256': {'schema.py': hashlib.sha256(schema_bytes).hexdigest(),\n                                  'offline_schedule.py': hashlib.sha256(schedule_bytes).hexdigest()}, 'results': results}))\n",
+    "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/crates/model-runtime/../../.."
+  ],
+  "binding_unchanged": true,
+  "case_count": 73,
+  "collector_only": true,
+  "github_sha": "7a928cefe22e3c81bcb941f6ed20eaa80eeabc59",
+  "kind": "independent-python-stage-observation",
+  "original": {
+    "exit_code": 0,
+    "file_size_limit_signal": false,
+    "input_error": null,
+    "returncode": 0,
+    "signal": null,
+    "stderr": {
+      "bytes": 0,
+      "record": "stderr.bin",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stdout": {
+      "bytes": 3079930,
+      "record": "stdout.bin",
+      "sha256": "67596fc5e6cde23b1df9b08d3d93dc932e17aefa512a4aa2805f9c21731ede32"
+    }
+  },
+  "original_source_sha_bound": true,
+  "record_limit_bytes": 16777216,
+  "request": {
+    "bytes": 4444067,
+    "record": "request.json",
+    "record_unchanged": true,
+    "sha256": "e00ad79756d2e51bc63eb87b13b12832177faf7bdab4cda92526e1c044e5bf85"
+  },
+  "retirement_credit": 0,
+  "schema_version": 1,
+  "scope": "같은 원본 프로세스 1회의 stage73 raw 관측과 선택 source/Python 전후 binding. 기존 native 비교는 별도로 수행하며 전체 import closure/모델 수용이 아니다.",
+  "source_root": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source",
+  "stderr_limit_reached": false,
+  "stdout_limit_reached": false,
+  "stream_limit_bytes": 16777216,
+  "total_limit_bytes": 67108864,
+  "witnesses_after": {
+    "SOURCE_COMMIT": {
+      "identity": {
+        "bytes": 41,
+        "ctime": [
+          1792965386,
+          121821902
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3038382,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965386,
+          121821902
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.oTOw0T/proof/SOURCE_COMMIT",
+      "sha256": "5c971aec0fe8bbaf27c30c9ab28ceb9f6b5b147c71920e3c170c75d9b42bbe9a"
+    },
+    "admitted-python": {
+      "identity": {
+        "bytes": 8020928,
+        "ctime": [
+          1792495150,
+          427621543
+        ],
+        "device": 64521,
+        "gid": 0,
+        "inode": 2755469,
+        "links": 1,
+        "mode": 33261,
+        "mtime": [
+          1788171506,
+          0
+        ],
+        "uid": 0
+      },
+      "path": "/usr/bin/python3.12",
+      "sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f"
+    },
+    "job-owner": {
+      "identity": {
+        "bytes": 26,
+        "ctime": [
+          1792965359,
+          804835784
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3038350,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965359,
+          804835784
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.oTOw0T/owner",
+      "sha256": "530759f76f595fa54069f2d8420858472453d21c4b08900018f4044ed79a75df"
+    },
+    "native-entrypoint": {
+      "identity": {
+        "bytes": 1408,
+        "ctime": [
+          1792965382,
+          895795795
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1198654,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965382,
+          895795795
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/crates/model-runtime/src/entrypoint.rs",
+      "sha256": "ab651a93d6fa2425c3a7f2725c20fa0fb7df39c308f13a6f910d07f4046d3712"
+    },
+    "native-lib": {
+      "identity": {
+        "bytes": 1118,
+        "ctime": [
+          1792965382,
+          896159344
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1198659,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965382,
+          896159344
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/crates/model-runtime/src/lib.rs",
+      "sha256": "9c18a2434644ea72ebbd5d2d23c706084391775995e0567c6a0d1809f8f1d741"
+    },
+    "native-lock": {
+      "identity": {
+        "bytes": 159864,
+        "ctime": [
+          1792965381,
+          906151518
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1091241,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965381,
+          906151518
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/Cargo.lock",
+      "sha256": "9586516b4adda7abc3f739f2c3360a6cd2370e8f2d785a6b36a4adfcf54f6b9a"
+    },
+    "native-manifest": {
+      "identity": {
+        "bytes": 1605,
+        "ctime": [
+          1792965382,
+          889159288
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1198572,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965382,
+          889159288
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/crates/model-runtime/Cargo.toml",
+      "sha256": "53d766c5fa51dab5e4be7c7b793e82d591a0bf7970784b68638c9b5159e56866"
+    },
+    "native-schedule": {
+      "identity": {
+        "bytes": 2686,
+        "ctime": [
+          1792965382,
+          895159336
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1198646,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965382,
+          895159336
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/crates/model-runtime/src/compiler_schedule.rs",
+      "sha256": "0447c3a4213dc278b62505e4875ab24ce53fbf2c596aa712490a9e69c6aeafb3"
+    },
+    "native-test": {
+      "identity": {
+        "bytes": 24499,
+        "ctime": [
+          1792965382,
+          901159383
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1198730,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965382,
+          901159383
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/crates/model-runtime/tests/compiler_schedule.rs",
+      "sha256": "a065d00bab2accb1aae19ec89d5293ee321829b85dc0cbd654a84b0535d26f6a"
+    },
+    "offline_schedule.py": {
+      "identity": {
+        "bytes": 16463,
+        "ctime": [
+          1792965383,
+          172161526
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1201864,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965383,
+          172161526
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/tools/model_export/offline_schedule.py",
+      "sha256": "bc1b7b572c8dd2f84f3ea0ca38b1744e4c7120155c33f3dabb633eabaf7f0144"
+    },
+    "schema.py": {
+      "identity": {
+        "bytes": 2611,
+        "ctime": [
+          1792965383,
+          173161534
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1201869,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965383,
+          173161534
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/tools/model_export/schema.py",
+      "sha256": "720abcc396852a395689c4d37f9487822f951166a36b5efe8586dce5f656c6a9"
+    },
+    "stage-oracle-python.sha256": {
+      "identity": {
+        "bytes": 86,
+        "ctime": [
+          1792965432,
+          37547815
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3042052,
+        "links": 1,
+        "mode": 33152,
+        "mtime": [
+          1792965432,
+          37547815
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.oTOw0T/proof/stage-oracle-python.sha256",
+      "sha256": "74a2bf284a5116d43270762ab1766fe74421da338fa0889fcd2c188202eae773"
+    },
+    "stage-oracle-python.version": {
+      "identity": {
+        "bytes": 14,
+        "ctime": [
+          1792965432,
+          39547831
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3042053,
+        "links": 1,
+        "mode": 33152,
+        "mtime": [
+          1792965432,
+          39547831
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.oTOw0T/proof/stage-oracle-python.version",
+      "sha256": "5b3e43dc38ca01e3f5a7854ba50d4330864b0c1e0f646650b2c78cf072acc366"
+    }
+  },
+  "witnesses_before": {
+    "SOURCE_COMMIT": {
+      "identity": {
+        "bytes": 41,
+        "ctime": [
+          1792965386,
+          121821902
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3038382,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965386,
+          121821902
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.oTOw0T/proof/SOURCE_COMMIT",
+      "sha256": "5c971aec0fe8bbaf27c30c9ab28ceb9f6b5b147c71920e3c170c75d9b42bbe9a"
+    },
+    "admitted-python": {
+      "identity": {
+        "bytes": 8020928,
+        "ctime": [
+          1792495150,
+          427621543
+        ],
+        "device": 64521,
+        "gid": 0,
+        "inode": 2755469,
+        "links": 1,
+        "mode": 33261,
+        "mtime": [
+          1788171506,
+          0
+        ],
+        "uid": 0
+      },
+      "path": "/usr/bin/python3.12",
+      "sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f"
+    },
+    "job-owner": {
+      "identity": {
+        "bytes": 26,
+        "ctime": [
+          1792965359,
+          804835784
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3038350,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965359,
+          804835784
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.oTOw0T/owner",
+      "sha256": "530759f76f595fa54069f2d8420858472453d21c4b08900018f4044ed79a75df"
+    },
+    "native-entrypoint": {
+      "identity": {
+        "bytes": 1408,
+        "ctime": [
+          1792965382,
+          895795795
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1198654,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965382,
+          895795795
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/crates/model-runtime/src/entrypoint.rs",
+      "sha256": "ab651a93d6fa2425c3a7f2725c20fa0fb7df39c308f13a6f910d07f4046d3712"
+    },
+    "native-lib": {
+      "identity": {
+        "bytes": 1118,
+        "ctime": [
+          1792965382,
+          896159344
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1198659,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965382,
+          896159344
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/crates/model-runtime/src/lib.rs",
+      "sha256": "9c18a2434644ea72ebbd5d2d23c706084391775995e0567c6a0d1809f8f1d741"
+    },
+    "native-lock": {
+      "identity": {
+        "bytes": 159864,
+        "ctime": [
+          1792965381,
+          906151518
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1091241,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965381,
+          906151518
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/Cargo.lock",
+      "sha256": "9586516b4adda7abc3f739f2c3360a6cd2370e8f2d785a6b36a4adfcf54f6b9a"
+    },
+    "native-manifest": {
+      "identity": {
+        "bytes": 1605,
+        "ctime": [
+          1792965382,
+          889159288
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1198572,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965382,
+          889159288
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/crates/model-runtime/Cargo.toml",
+      "sha256": "53d766c5fa51dab5e4be7c7b793e82d591a0bf7970784b68638c9b5159e56866"
+    },
+    "native-schedule": {
+      "identity": {
+        "bytes": 2686,
+        "ctime": [
+          1792965382,
+          895159336
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1198646,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965382,
+          895159336
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/crates/model-runtime/src/compiler_schedule.rs",
+      "sha256": "0447c3a4213dc278b62505e4875ab24ce53fbf2c596aa712490a9e69c6aeafb3"
+    },
+    "native-test": {
+      "identity": {
+        "bytes": 24499,
+        "ctime": [
+          1792965382,
+          901159383
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1198730,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965382,
+          901159383
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/crates/model-runtime/tests/compiler_schedule.rs",
+      "sha256": "a065d00bab2accb1aae19ec89d5293ee321829b85dc0cbd654a84b0535d26f6a"
+    },
+    "offline_schedule.py": {
+      "identity": {
+        "bytes": 16463,
+        "ctime": [
+          1792965383,
+          172161526
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1201864,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965383,
+          172161526
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/tools/model_export/offline_schedule.py",
+      "sha256": "bc1b7b572c8dd2f84f3ea0ca38b1744e4c7120155c33f3dabb633eabaf7f0144"
+    },
+    "schema.py": {
+      "identity": {
+        "bytes": 2611,
+        "ctime": [
+          1792965383,
+          173161534
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1201869,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792965383,
+          173161534
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40236805936-1.iO4Nek/source/rust/tools/model_export/schema.py",
+      "sha256": "720abcc396852a395689c4d37f9487822f951166a36b5efe8586dce5f656c6a9"
+    },
+    "stage-oracle-python.sha256": {
+      "identity": {
+        "bytes": 86,
+        "ctime": [
+          1792965432,
+          37547815
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3042052,
+        "links": 1,
+        "mode": 33152,
+        "mtime": [
+          1792965432,
+          37547815
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.oTOw0T/proof/stage-oracle-python.sha256",
+      "sha256": "74a2bf284a5116d43270762ab1766fe74421da338fa0889fcd2c188202eae773"
+    },
+    "stage-oracle-python.version": {
+      "identity": {
+        "bytes": 14,
+        "ctime": [
+          1792965432,
+          39547831
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3042053,
+        "links": 1,
+        "mode": 33152,
+        "mtime": [
+          1792965432,
+          39547831
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.oTOw0T/proof/stage-oracle-python.version",
+      "sha256": "5b3e43dc38ca01e3f5a7854ba50d4330864b0c1e0f646650b2c78cf072acc366"
+    }
+  }
+}

@@ -1,0 +1,43 @@
+
+import ast, dataclasses, hashlib, json, pathlib, sys, types
+root = pathlib.Path(sys.argv[1])
+schema_path = root / 'rust/tools/model_export/schema.py'
+schedule_path = root / 'rust/tools/model_export/offline_schedule.py'
+schema_bytes, schedule_bytes = schema_path.read_bytes(), schedule_path.read_bytes()
+schema = ast.parse(schema_bytes, filename=str(schema_path))
+schedule = ast.parse(schedule_bytes, filename=str(schedule_path))
+scope = {'__name__': '__main__', 'dataclass': dataclasses.dataclass, 'ExportError': RuntimeError}
+for name in ('Entrypoint', 'entrypoint_version'):
+    node = next(node for node in schema.body if getattr(node, 'name', None) == name)
+    exec(compile(ast.Module(body=[node], type_ignores=[]), str(schema_path), 'exec'), scope)
+def function(name):
+    return next(node for node in schedule.body if getattr(node, 'name', None) == name)
+def assigned(node, name):
+    return isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == name for target in node.targets)
+body = function('export_pipeline').body
+first = next(i for i, node in enumerate(body) if assigned(node, 'retained'))
+last = next(i for i, node in enumerate(body) if assigned(node, 'model'))
+retained_code = compile(ast.Module(body=body[first:last], type_ignores=[]), str(schedule_path), 'exec')
+body = function('emit_schedule').body
+first = next(i for i, node in enumerate(body) if assigned(node, 'entries'))
+last = next(i for i, node in enumerate(body) if assigned(node, 'manifest'))
+emitted_code = compile(ast.Module(body=body[first:last], type_ignores=[]), str(schedule_path), 'exec')
+manifest = body[last].value
+assert isinstance(manifest, ast.Call) and isinstance(manifest.func, ast.Name) and manifest.func.id == 'Manifest'
+version_code = compile(ast.Expression(body=manifest.args[0]), str(schedule_path), 'eval')
+results = []
+for case in json.load(sys.stdin):
+    local = dict(scope, pipeline=types.SimpleNamespace(stages=[types.SimpleNamespace(
+        name=stage['name'], linear=types.SimpleNamespace(src=stage['calls'])) for stage in case['stages']]),
+        prepared=types.SimpleNamespace(linear=types.SimpleNamespace(src=case['retained'])))
+    try:
+        exec(retained_code, local)
+        local.update(schedule=types.SimpleNamespace(stage_ends=local['ends']),
+                     emitted_by_source=case['prefix'], calls=range(case['prefix'][-1]))
+        exec(emitted_code, local)
+        version = eval(version_code, local)
+        results.append({'version': version, 'entrypoints': [dataclasses.asdict(entry) for entry in local['entries']]})
+    except (RuntimeError, IndexError):
+        results.append({'error': True})
+print(json.dumps({'source_sha256': {'schema.py': hashlib.sha256(schema_bytes).hexdigest(),
+                                  'offline_schedule.py': hashlib.sha256(schedule_bytes).hexdigest()}, 'results': results}))
