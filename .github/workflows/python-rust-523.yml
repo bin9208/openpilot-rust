@@ -562,7 +562,7 @@ jobs:
         printf '%s  %s\n' 8c88af8b3750b9bc9c3c1d77190108cabda7b7e077a5e56f6714a90769c9bff1 .github/workflows/fast-checks.yml | sha256sum --check -
         printf '%s  %s\n' 071b0b65463597677ab634454db98670f4740bcf22363cfc1c19125c7729dc73 rust/tools/tests/test_ui_ci.py | sha256sum --check -
         printf '%s  %s\n' ada137e1a1bbe957903a930c49dc5496f5d685193b8d09970accd90f632c2a0c .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
-        printf '%s  %s\n' e7718884de7e2b3f25a31d7c1fdf23f11f1a1ece82c4f86d1e84e6a9673d6388 .github/workflows/python-rust-523-capacity.yml | sha256sum --check -
+        printf '%s  %s\n' 47df95c7bee23624b65722bcf6f4633429dbae55697d24d32c1a2e6aa9dfc850 .github/workflows/python-rust-523-capacity.yml | sha256sum --check -
         printf '%s  %s\n' 634559405e03be79cf66dfcf888bfc28a0b27a51e92b5335013dfe1b16836f59 .github/workflows/python-rust-523-model.yml | sha256sum --check -
         printf '%s  %s\n' 5ec87c23ae6dfdda2c64ce32c314da87197e3da702e3bbca710c0fc6d4477523 .github/workflows/python-rust-523-reclaim.yml | sha256sum --check -
         printf '%s  %s\n' b2b6c63dab892b9a2c0358daf5dd07771515781737c369e5407926e7df90b188 .github/workflows/python-rust-523-sanitizer.yml | sha256sum --check -

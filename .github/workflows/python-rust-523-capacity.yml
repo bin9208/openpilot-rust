@@ -163,3 +163,5 @@ jobs:
     - codex/feat-523-python-rust
     paths:
     - .github/workflows/python-rust-523-capacity.yml
+  # 2026-10-25: 복구된80GB 러너의 후속 읽기 전용 용량 확인도 지원한다.
+  workflow_dispatch: {}
