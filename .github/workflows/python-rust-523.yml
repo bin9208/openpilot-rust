@@ -652,7 +652,7 @@ jobs:
         printf '%s  %s\n' 9091d941bd67823844a62f9aae4525eef019cb8f20486105caa9b4849193c0ca tools/ci/fixtures/strace-6.8-560-inherited-filter.patch | sha256sum --check -
         printf '%s  %s\n' e012d523f41a1a51cb49fd05cd334e04085ab562873f17303fffff6b10ad15fd tools/ci/fixtures/cold560_exec_inheritance.rs | sha256sum --check -
         printf '%s  %s\n' 68f0f800ef5fbb456a06986a8695a5c3aaa2cbdf86160b47826e913edd792f85 .github/workflows/carrot-route-vault-publish.yaml | sha256sum --check -
-        printf '%s  %s\n' 2c35ef97ca35e35d4dc5488714487f6cb00c01d08fad84cfa223d25a2e5d13cc .github/workflows/fast-checks.yml | sha256sum --check -
+        printf '%s  %s\n' 7660dd599e42b21c99495b26f4ae4c51d8ee89b0cef368e1bdfffb573dc1d0f2 .github/workflows/fast-checks.yml | sha256sum --check -
         printf '%s  %s\n' 071b0b65463597677ab634454db98670f4740bcf22363cfc1c19125c7729dc73 rust/tools/tests/test_ui_ci.py | sha256sum --check -
         printf '%s  %s\n' ada137e1a1bbe957903a930c49dc5496f5d685193b8d09970accd90f632c2a0c .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
         printf '%s  %s\n' 47df95c7bee23624b65722bcf6f4633429dbae55697d24d32c1a2e6aa9dfc850 .github/workflows/python-rust-523-capacity.yml | sha256sum --check -
@@ -714,7 +714,7 @@ jobs:
         printf '%s  %s\n' b47da7e2bda55afe1c6229f8b55ab539bdb72a87490a169049c77fc2b9c94ff2 rust/crates/dev-tools/src/bin/prepare_changed_files_context.rs | sha256sum --check -
         printf '%s  %s\n' f6e9bdba494dba9307a34269c0ac199e855e52b8c3d307e69e2d68d61270f7c9 rust/crates/dev-tools/src/driver_daemon_current_catalog.rs | sha256sum --check -
         printf '%s  %s\n' b757dbb0cbc65cf802c34f4b4fda04b19a5ac4fa3ae4661d02ac7519adf3acf0 rust/crates/dev-tools/src/model_family_prepare/catalog.rs | sha256sum --check -
-        printf '%s  %s\n' 702c583da057bd9f8f664129a68879b6f5000e8079e5b85819d4fa6c3aafc859 rust/crates/dev-tools/tests/changed_files_caller.rs | sha256sum --check -
+        printf '%s  %s\n' 68a713670add81cd2707541f9d1f7f4de459ebde2601ee68793173b826c816c4 rust/crates/dev-tools/tests/changed_files_caller.rs | sha256sum --check -
         printf '%s  %s\n' d497fbd9fd16f0840cb391d7fc0aa76f2982fdee6a0c2dccaa65e4233bcfeabe rust/crates/dev-tools/tests/changed_files_caller/absence.rs | sha256sum --check -
         printf '%s  %s\n' 5e545050129b2ba24499d8cbed1b04db2f7d980dda94774ef008615a21acfa44 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/README.md | sha256sum --check -
         printf '%s  %s\n' 76240cd14a66a55b7ef91459b49919cdbd582d19161437221a6f65f7d22a362b rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/manifest.json | sha256sum --check -

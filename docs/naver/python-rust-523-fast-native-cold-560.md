@@ -272,3 +272,19 @@ provider/source를 검사하므로 이번 좁은 등록에서 수정하지 않�
 확인했다. 파일 전체를 rustfmt하지 않았다. 새 함수 구간을 제거하면 기준 commit의 파일
 **전체 bytes**가 일치하므로, 부모가 방금 반영한 SDK escape18을 포함한 기존 함수/검사/
 baseline 형식은 변경0이다. Cargo/기능/GHA 실행, WF/Focus/ci_policy/SDK helper 수정은0이다.
+
+
+### 6d0bd2 분리 변경의 후속 소스 보정
+
+source `6d0bd2aaef1bcc0117f1419b9d93ddb7fb603b21`의 hosted routing
+[121261950443](https://github.com/bin9208/openpilot-rust/actions/runs/40224180778/job/121261950443)은
+changed-files 실제5개 중4개 성공 뒤 caller policy1개에서 실패했다. 회귀가 아직 기존
+`native` step에서 자기 호출을 찾고 있었다. 실제 옮긴 `native-routing`으로 양성/변조 대상
+두 곳을 함께 바꾸며 기존8종 음성과 실제 initial-push/absence/whitespace 검사는 보존한다.
+이 실패 뒤 나머지 routing suite가 실행됐다고 주장하지 않는다.
+
+Focus도 admission 단계에서 실패 상태다. 새 routing YAML의 parsed run과 모든 명령은
+같았으나 emitter가 기존10-space Cargo raw 행을8-space로 출력했다. 원래 바이트 보존 조건을
+그대로 두고 새 job의 sequence 들여쓰기를 원래 형식으로 복구했다. 소스 diff에서 baseline의
+모든 보호 Cargo 행/count(기존 prefix 추가1 포함)가 그대로임을 확인했다. 이 정적 대조는
+새 GHA 기능/전체 fit 결과를 대신하지 않는다. helper/감사 모듈/기한/자원은 변경0이다.

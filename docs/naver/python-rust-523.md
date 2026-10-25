@@ -1401,3 +1401,10 @@ controller runtime/memory exit0이다. functional artifact12609249847은55,184,9
 원본/native policy/main/real IPC/lifecycle PASS와 sanitizer subset abi/owner/fault3행 exit0을
 본문에서 확인했다. sanitizer의 계측 범위는 generated solver C이고 Rust/external solver
 전체가 계측됐다는 뜻은 아니다. ARM·기기 수용과는 구분한다.
+
+
+6d0bd2의 새 hosted routing은 changed-files 양성 policy가 여전히 옛 `native` job을 찾는
+잔여 연결 때문에5개 중1개 실패했다. 양성/음성 대상 두 곳을 실제 `native-routing`으로
+맞춘다. Focus의 기존 raw Cargo 행 보존도 유지하도록 새 YAML 들여쓰기만 복구한다.
+검사를 삭제하거나 성공으로 우회하지 않으며 실제 local cold·ARM·다른 진행 중 job은
+그대로 완료를 기다린다.

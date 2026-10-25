@@ -30,7 +30,7 @@ fn caller_policy(workflow: &Value) -> bool {
     {
         return false;
     }
-    let Some(native) = workflow["jobs"]["native"]["steps"].as_array() else {
+    let Some(native) = workflow["jobs"]["native-routing"]["steps"].as_array() else {
         return false;
     };
     let regressions: Vec<_> = native
@@ -101,7 +101,10 @@ fn maintained_caller_and_native_initial_push_regression_are_mandatory() {
             "private-path" => step["working-directory"] = "${{ github.workspace }}".into(),
             "fork" => step["if"] = "true".into(),
             "regression" => {
-                for step in changed["jobs"]["native"]["steps"].as_array_mut().unwrap() {
+                for step in changed["jobs"]["native-routing"]["steps"]
+                    .as_array_mut()
+                    .unwrap()
+                {
                     if let Some(run) = step["run"].as_str() {
                         step["run"] = run.replace(REGRESSION, "true").into();
                     }
