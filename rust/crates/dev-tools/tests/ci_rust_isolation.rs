@@ -504,6 +504,8 @@ fn private_infrastructure(step: &Value) -> bool {
             | "Admit exact private source and index"
             | "Configure source-dependent job environment on private paths"
             | "Keep original Python installations private"
+            | "Prepare exact fresh x64 SDK before CarrotMan cold bootstrap"
+            | "Verify whole x64 SDK after every attempted CarrotMan check"
             | "Seal private source and index after maintained checks"
             | "Clean only uploaded owned source alias and target"
     )
@@ -513,6 +515,89 @@ fn private_local_action(step: &Value, name: &str) -> bool {
         value.starts_with("./.ci296-source-")
             && value.ends_with(&format!("/source/.github/actions/{name}"))
     })
+}
+
+#[test]
+fn carrot_x64_cold_bootstrap_rejects_partial_sdk_proxy_and_cleanup_escapes() {
+    use openpilot_dev_tools::ci_policy::validate_private_job_layout;
+    let original = workflow()["jobs"]["carrot-man-runtime"].clone();
+    validate_private_job_layout(&original).unwrap();
+    for mode in 0..12 {
+        let mut job = original.clone();
+        let steps = job["steps"].as_array_mut().unwrap();
+        let before = steps
+            .iter()
+            .position(|s| s["id"] == "carrot530_sdk")
+            .unwrap();
+        let after = steps
+            .iter()
+            .position(|s| s["id"] == "carrot530_sdk_final")
+            .unwrap();
+        match mode {
+            0 => {
+                steps.remove(before);
+            }
+            1 => {
+                steps.remove(after);
+            }
+            2..=5 => {
+                let (from, to) = match mode {
+                    2 => ("[[ ! -e $path && ! -L $path ]]", "true"),
+                    3 => ("((free>=required))", "true"),
+                    4 => ("RUSTUP_AUTO_INSTALL=0", "RUSTUP_AUTO_INSTALL=1"),
+                    _ => (
+                        "cmp \"$CI_JOB_TEMP/rust-bootstrap/rustup-init\" \"$path\"",
+                        "true",
+                    ),
+                };
+                let body = steps[before]["run"].as_str().unwrap();
+                assert_eq!(body.matches(from).count(), 1);
+                steps[before]["run"] = body.replace(from, to).into();
+            }
+            6 => steps[after]["if"] = TRUSTED_SOURCE.into(),
+            7 => steps[before]["env"]["CI296_HOST_CONTROL"] = "0".into(),
+            8 => {
+                let step = steps
+                    .iter_mut()
+                    .find(|s| {
+                        s["name"] == "Reserve runner capacity and install pinned dependencies"
+                    })
+                    .unwrap();
+                step["run"] = format!(
+                    "{}rustup toolchain install 1.94.0 --profile minimal\n",
+                    step["run"].as_str().unwrap()
+                )
+                .into();
+            }
+            9 | 10 => {
+                let step = steps
+                    .iter_mut()
+                    .find(|s| {
+                        if mode == 9 {
+                            s["id"] == "ci296_source_cleanup"
+                        } else {
+                            s["name"] == "Clean common owned temporary paths after uploaded source"
+                        }
+                    })
+                    .unwrap();
+                let condition = step["if"].as_str().unwrap();
+                let needle = " && steps.carrot530_sdk_final.outcome == 'success'";
+                assert_eq!(condition.matches(needle).count(), 1);
+                step["if"] = condition.replace(needle, "").into();
+            }
+            _ => {
+                let seal = steps
+                    .iter()
+                    .position(|s| s["id"] == "ci296_source_seal")
+                    .unwrap();
+                steps.swap(after, seal);
+            }
+        }
+        assert!(
+            validate_private_job_layout(&job).is_err(),
+            "accepted SDK escape {mode}"
+        );
+    }
 }
 
 fn native_functional_job(main: &Value, name: &str) -> Value {

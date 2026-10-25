@@ -1241,3 +1241,19 @@ source56f PR의 selfdrived121174299458은 새 cfg(test) 회귀의 `Errno::ACCES`
 Fast native-tools에 기존 feature-gated `selfdrive_params_check::process::tests::`5개를 별도선택하고 정확5PASS/0FAIL/0ignored를 요구한다. 기존70여 native target/선택/순서·초기예산·source/SDK후검사·업로드·cleanup은 유지한다. 기본feature에서미컴파일됐던단위모듈을실제GHA에서검증하는연결이며 새테스트/production동작/기기접근/전체PR성공을추가하지 않는다. 로컬rustfmt/diff만하며 이교정의기능은GHA_UNRUN, #574는열린상태다.
 
 Fast 정책의 기존73개 suite 선택과 baseline command signature는 유지하고, 추가 selfdrive-params-native library5 command·결과5PASS grep을 native-tools에서 정확히1회씩 service suite 뒤 실행하도록 검증한다. 기본 feature에서 빠지는 cfg(test) 컴파일을 이 좁은 실제 CI가 담당하며 로컬 기능 검증은 실행하지 않았다.
+
+## GitHub 기본 러너 후속 — 2026-10-25
+
+source `5bee0d30b3a824cc4f2dbcc23c4caba2fa813a64`의logging#582/cold#583/selfdrived#574후속을push했다. [logging40199544123](https://github.com/bin9208/openpilot-rust/actions/runs/40199544123), [cold40199544139](https://github.com/bin9208/openpilot-rust/actions/runs/40199544139), [Fast40199544187](https://github.com/bin9208/openpilot-rust/actions/runs/40199544187)은실행중이며수용을미리부여하지않는다. #585 exactfont Network source경계와새4는 `febb3917e`에추가했고기존8/full12·실제CLI·Clippy는다음PR정확source수용이필요하다.
+
+#579는68acurrent2frame원본/native whole-output12개와PR1344의402동시metadata검사,2양성12음성/raw GNUdu2일치·strictClippy로개별종료했다. actual ENOENT재시도는0이며race_recovered=false다. PR1344 D1은첫ModelV2파일1개뒤180초제한실패(#584)로원래12frame/33publication과D2는미수용이다. #578는lint수정성공과D2미도달을분리하여열린상태다. #576/#577은8acontrols4양성12음성/40실제case·8655frame·705948비교와타이머7단계,fullartifact/immutable/회수/후검사로개별종료했다. 전체109target재실행·half5·정확source필수PR·3580인벤토리294/3/3283·전달/기기수용은완료하지않았다.
+
+## #530 CarrotMan x64 호출부 후속 후보 — 2026-10-25
+
+PR56 actual merge f8c781ede/job121174299331은 첫 disk guard의 non-prepared bootstrap에서 Rustup 부분 설치 복구·cargo-clippy 충돌로 실패했다. APT/PIP·마지막 명시 installer·CarrotMan 기능은 미도달이었다. 설치 전 partial 상태의 최초 생성 원인은 여전히 미확정이다. 현재 OPEN #530에 연결하며 새 알고리즘 결함으로 분류하지 않는다.
+
+main의 x64 CarrotMan 한 job에만 fresh SDK before와 독립 always after를 넣고, 마지막 installer 한 명령을 준비된 전체 manifest 검증으로 바꿨다. 기존 helper/일반 bootstrap·다른43 job·native ARM8·25분·원래 기능/빌드 argv는 보존한다. private SDK/Cargo/bootstrap prefix가 이미 있으면 채택·수리하지 않고 거절한다. source 잔여2GiB+SDK3+원래 operation8+guard1+registry1+reserve0.5GiB를 같은 filesystem의 동시 잔여 growth로 승인한다.
+
+기존 native-json11의 +1.94.0 argv를 유지하기 위해 helper가 내보내는 SDK PATH는 private proof에 기록하고, 공식 init과 byte가 같은 private rustup/cargo/rustc proxy만 실제 PATH에 앞세운다. guard는 prepared root/manifest로 절대 Cargo/rustc를 사용한다. 자동 설치는0, SDK after 성공은 두 cleanup의 필수조건이다. 새 exact caller 정책과 partial/admission/자동설치/proxy/순서/cleanup 변조12개 거부 회귀를 추가했다. 로컬은 구문/서식/소스 역투영만 확인했으며 실제 설치·cold bootstrap·기능·전체 봉인/시간/공간 적합성은 GHA UNRUN이다. main은498470B이고500000B 한도 안이다.
+
+#574 후속 Fast [40199544187/job121187581139](https://github.com/bin9208/openpilot-rust/actions/runs/40199544187/job/121187581139)는 source5bee에서 process library5개를 실제0FAIL/0ignored/88filtered로 통과했다. 새 dead/missing 판정과 finish/error-Drop 회귀를 모두 포함하며 전체 Fast도 성공했다. 부모는 artifact12601940985(321672B/SHA `73e236c3ea5b64f7f18a34ba041566d904c902578a0d52259b27283327c8ebde`/35safeunique+CRC)의 source/index·SDK files/roster/rejected 전후5쌍과 실제 test log를 감사했다. 이 결과는 cfg(test) 오타와 좁은 회귀 범위의 수용이며 selfdrived 전체 seam/IPC/정책·원본 비교의 후속 PR 수용은 남아 있다.

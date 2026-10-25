@@ -387,3 +387,13 @@ helper/C patch/BPF/observer·시간/공간 cap은 변경하지 않는다. 부모
 로컬은 source text 역투영·Rustfmt·diff만 확인한다. parser/fixture/원본/프로젝트·compile/test/CI
 실행0이다. 이 후보의 semantic nonleader PASS·전체18통제/cold/auditor는 **GHA UNRUN**이며
 #583/#560 해결·전체 runtime/기기 수용이나 retirement credit으로 올리지 않는다.
+
+## #581/#583 실제 후속 수용 — 2026-10-25
+
+source `5bee0d30b3a824cc4f2dbcc23c4caba2fa813a64`의 [40199544139/job121187580718](https://github.com/bin9208/openpilot-rust/actions/runs/40199544139/job/121187580718)가 성공했습니다. nonleader 원문은 `<... execve resumed>)             = 0`, observer는 seccomp2/exit2/abnormal0이고, strict semantic verifier도 initial1/leaf1/failed0 PASS입니다. #581의 TCB 전환과 #583의 공백 파싱 수정을 각각 실제 증거로 확인했습니다.
+
+기존7양성+4binding음성+7context음성18개, protocol3/marker10, 새 cold1회와 native strict audit가 모두 성공했습니다. cold 감사는 exec180/실패exec29 중 절대Cargo1·절대rustc37, Python/Rustup 실행시도0을 확인했고 원문 trace SHA도 대조했습니다. 원래 기한·자원·unknown/=? 거부·실패 sticky 기준은 유지했습니다.
+
+부모는 artifact12601267560=11493554B/SHA256 `712c8aa9192b8bdfa6608cda2b211fee32ed5ef6793c4081784255a39a48a755`의969 safe unique/969CRC, 전후30쌍 byte동일, held219→425의 기존항목 불변, finalizer21개0/immutable·nonlive true, source/index·SDK 후검사·upload·cleanup2 성공을 감사했습니다. command actual/expected status도 모두 일치합니다.
+
+이 두 결함의 수용 조건을 충족해 종료합니다. #560의 원래 ESRCH root-fixed=false, Ubuntu ELF 동등=false, parent-link/옛seccomp환경/전체reap·closedDSO·peak guarantee 미측정과 retirement credit0은 그대로입니다. 전체 #523/#296 완료로 올리지 않습니다.

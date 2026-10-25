@@ -2,6 +2,7 @@
 //! the former PyYAML BaseLoader rather than YAML's implicit type resolution.
 use crate::qa_process::{CommandSpec, NativeRunner, Runner};
 use serde_json::{Map, Value};
+use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
     io,
@@ -327,6 +328,71 @@ fn arm_sdk530_role(job: &Value) -> bool {
     }
 }
 
+fn validate_carrot_x64_sdk530_steps(steps: &[Value]) -> Result<(), String> {
+    let stage = |id: &str| {
+        let found = steps
+            .iter()
+            .enumerate()
+            .filter(|(_, s)| s["id"] == id)
+            .collect::<Vec<_>>();
+        require(
+            found.len() == 1,
+            format!("CarrotMan SDK stage missing or duplicated: {id}"),
+        )?;
+        Ok::<_, String>(found[0])
+    };
+    let (before, first) = stage("carrot530_sdk")?;
+    let (after, last) = stage("carrot530_sdk_final")?;
+    for (step, name, condition, digest) in [
+        (
+            first,
+            "Prepare exact fresh x64 SDK before CarrotMan cold bootstrap",
+            TRUSTED_SOURCE.to_owned(),
+            "ae5fc6a75f44aa66152666f03584f9153304204d8877c584c2366d6e026ef142",
+        ),
+        (
+            last,
+            "Verify whole x64 SDK after every attempted CarrotMan check",
+            private_source_condition(
+                "always() && steps.carrot530_sdk.outcome != 'skipped' && env.CI296_SOURCE != ''",
+            ),
+            "4d7305f25cbb9f9de394305c1aa4514c222aa2d6f3d02b623d0ad201bac161c7",
+        ),
+    ] {
+        absent(step, &["continue-on-error", "uses"])?;
+        let body = step["run"]
+            .as_str()
+            .ok_or("missing CarrotMan SDK command")?;
+        require(
+            step["name"] == name
+                && step["if"] == condition
+                && step["shell"] == "bash"
+                && step["working-directory"] == "${{ env.CI296_SOURCE }}"
+                && step["env"] == serde_json::json!({"CI296_HOST_CONTROL":"1"})
+                && format!("{:x}", Sha256::digest(body.as_bytes())) == digest,
+            "CarrotMan SDK source/owner/freshness/admission/proxy/seal boundary changed",
+        )?;
+    }
+    let dependency = steps
+        .iter()
+        .position(|s| s["name"] == "Reserve runner capacity and install pinned dependencies")
+        .ok_or("missing CarrotMan dependency stage")?;
+    let seal = steps
+        .iter()
+        .position(|s| s["id"] == "ci296_source_seal")
+        .ok_or("missing CarrotMan source seal")?;
+    require(
+        before < dependency && dependency < after && after < seal,
+        "CarrotMan SDK must surround maintained work before the source seal",
+    )?;
+    let body = steps[dependency]["run"]
+        .as_str()
+        .ok_or("missing CarrotMan dependencies")?;
+    require(body.ends_with("test \"$CI_PREPARED_RUST_ROOT\" = \"$OPENPILOT_CI_PREPARED_RUST_ROOT\"\ntest \"$CI_PREPARED_RUST_MANIFEST\" = \"$OPENPILOT_CI_PREPARED_RUST_MANIFEST\"\nsha256sum --check --strict --quiet -- \"$CI_PREPARED_RUST_MANIFEST\"\n")
+        && !body.contains("rustup toolchain install"),
+        "CarrotMan dependencies must verify the prepared SDK without reinstalling it")
+}
+
 fn validate_arm_sdk530_steps(job: &Value, steps: &[Value]) -> Result<(), String> {
     let index = |label: &str| {
         let positions = steps
@@ -442,6 +508,10 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
     )?;
     let steps = job["steps"].as_array().ok_or("missing private job steps")?;
     let native_arm = job["env"]["CI296_NATIVE_ARM"] == "1";
+    let carrot_x64_sdk530 = alias == ".ci296-source-rust--carrot-man-runtime" && !native_arm;
+    if carrot_x64_sdk530 {
+        validate_carrot_x64_sdk530_steps(steps)?;
+    }
     let arm_sdk530 = arm_sdk530_role(job);
     if arm_sdk530 {
         validate_arm_sdk530_steps(job, steps)?;
@@ -834,6 +904,9 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
     if arm_sdk530 {
         expected.push("steps.arm530_sdk_final.outcome == 'success'".into());
     }
+    if carrot_x64_sdk530 {
+        expected.push("steps.carrot530_sdk_final.outcome == 'success'".into());
+    }
     expected.push("env.CI296_SOURCE_OWNER != ''".into());
     require(
         condition == private_source_condition(&expected.join(" && ")),
@@ -844,6 +917,9 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
     expected.splice(1..1, native_success.iter().cloned());
     if arm_sdk530 {
         expected.push("steps.arm530_sdk_final.outcome == 'success'".into());
+    }
+    if carrot_x64_sdk530 {
+        expected.push("steps.carrot530_sdk_final.outcome == 'success'".into());
     }
     expected.push("steps.ci296_source_cleanup.outcome == 'success'".into());
     require(
