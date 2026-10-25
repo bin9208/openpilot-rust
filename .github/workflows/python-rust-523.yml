@@ -110,7 +110,7 @@ jobs:
         printf '%s  %s\n' efe6b3040bc822369fc86a159cff5f1d17f24b33045e442fadaefe6825183864 rust/crates/model-runtime/src/bin/offline-qcom-compile.rs | sha256sum --check -
         printf '%s  %s\n' bc1b7b572c8dd2f84f3ea0ca38b1744e4c7120155c33f3dabb633eabaf7f0144 rust/tools/model_export/offline_schedule.py | sha256sum --check -
         printf '%s  %s\n' fbd48f5a9e98b602aaa1cfb8e44158ca2ffc37a67e2eac56641479eeead7c329 .github/workflows/python-rust-523-driver-retained.yml | sha256sum --check -
-        printf '%s  %s\n' 0e41dabaab53bc6383f640df5928fa67ceeb78118bfa244a36da19dec6aff7fd .github/workflows/python-rust-523-recovery-lanes.yml | sha256sum --check -
+        printf '%s  %s\n' af6ee1eb9fac58716937f5cc100132ec1c12048114273e7aca0eaa92f6d56278 .github/workflows/python-rust-523-recovery-lanes.yml | sha256sum --check -
         printf '%s  %s\n' 5420fdab0317a8083306075b503208282db42ee66a358bb0c42caf4a637e4881 rust/crates/dev-tools/src/planner_ci_controller/memory.rs | sha256sum --check -
         printf '%s  %s\n' a3da18546ea67f9a5cae541eed5ebd9108da2926079ddae65124ff0d263c3419 rust/crates/dev-tools/tests/fixtures/planner-controller-original/PROVENANCE.md | sha256sum --check -
         printf '%s  %s\n' dddc951fd972043d0170e9ad3f90988245099974f594d2f7e52b61ea0aeccd3f rust/crates/dev-tools/tests/fixtures/planner-controller-original/failure-forward.json | sha256sum --check -
@@ -1028,7 +1028,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='b69bddf518597a9be91523059b7aa5ec7fcfdff478335e4fc6dbf9ec2c93a65c', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='33c5bc80f9e2ef0c20582dd8f7dc93c2dd939d9366ed3ba89f6cf870f0a5f27e', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile

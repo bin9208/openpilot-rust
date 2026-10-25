@@ -43,3 +43,10 @@ SDK는 기존 private read-only before/after helper와 절대 toolchain 경로�
 이 문서는 구성/예상만 기록한다. 로컬은 YAML·Bash 구문/diff 검토에 한정하며 Cargo/build/
 기능/원본/tracer 실행은0이다. 실제 exact-source GHA의 두 lane과 산출물을 모두 감사하기 전
 #474 또는 recovery Python 원본 전체 퇴역을 완료 처리하지 않는다.
+
+
+source425f29의 첫 [run40227415644/job121271640979](https://github.com/bin9208/openpilot-rust/actions/runs/40227415644/job/121271640979)은
+Set up job에서 defaults의 동적 `env.DIAG_SOURCE`가 아직 빈 값이어서 GitHub template admission에
+실패했다. worker run command/build/기능은 시작하지 않았다. job defaults에는 shell만 두고,
+DIAG_SOURCE 할당 뒤 실행하는 네 step에 working-directory를 각각 명시했다. source/SDK/
+하드링크/기한·성장량·두 lane·실패/cleanup 계약은 변경0이다. 수정본 GHA에서 다시 확인한다.

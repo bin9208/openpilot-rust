@@ -125,6 +125,7 @@ jobs:
           sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" update
           sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y --no-install-recommends g++ pkg-config capnproto libcapnp-dev tmux util-linux strace binutils
         timeout-minutes: 10
+        working-directory: ${{ env.DIAG_SOURCE }}
       - name: Build and select one exact native recovery cohort
         id: recovery_build
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -165,6 +166,7 @@ jobs:
               *) stat -c '%h:%Z %n' -- "$path" >> "$proof/fixed-ctime-before.stat" ;;
             esac
           done < "$proof/selected-paths.txt" > "$proof/selected-before.sha256"
+        working-directory: ${{ env.DIAG_SOURCE }}
       - name: Run all eight native functional controllers without ptrace
         id: recovery_functional
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.recovery_build.outcome == 'success') }}
@@ -194,6 +196,7 @@ jobs:
           grep -F '1 passed; 0 failed' "$proof/harness.stdout"
           du -sm "$proof" > "$proof/artifact-size-mib.txt"
           test "$(cut -f1 "$proof/artifact-size-mib.txt")" -le 200
+        working-directory: ${{ env.DIAG_SOURCE }}
       - name: Run the separate complete exec trace with the same selected ELFs
         id: recovery_trace
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.recovery_build.outcome == 'success') }}
@@ -228,6 +231,7 @@ jobs:
           rust/target/debug/audit-recovery-exec post --receipt "$proof/exec-preflight.json" --receipt-sha256 "$pre_sha" --trace-dir "$proof" --output "$proof/exec-audit.json" --harness-exit "$status"
           du -sm "$proof" > "$proof/artifact-size-mib.txt"
           test "$(cut -f1 "$proof/artifact-size-mib.txt")" -le 200
+        working-directory: ${{ env.DIAG_SOURCE }}
       - name: Verify read-only Rust SDK contents and identities after maintained checks
         id: prepared_rust_final
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}
@@ -296,4 +300,3 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ${{ env.DIAG_SOURCE }}
