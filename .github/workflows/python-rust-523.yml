@@ -102,6 +102,11 @@ jobs:
         ssh_helper_pid=$BASHPID
         test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
         test ! -e rust/tools/check_plannerd_ci.py && test ! -L rust/tools/check_plannerd_ci.py
+        printf '%s  %s\n' 4f9ec7a00b8ec00dfcb9ed518f10f995b5c0420c74271cca78d34d39b96dfd66 rust/crates/dev-tools/tests/planner_scheduler_client.rs | sha256sum --check -
+        printf '%s  %s\n' afe5ea47497bf9ea1af07231400055f348c3c8e555020c1f747c97eb51168acd rust/crates/dev-tools/tests/fixtures/planner-scheduler-original/observations.json | sha256sum --check -
+        printf '%s  %s\n' 12a824ce752fa30efad8af0e00a7fb9466474708b61b9e5dad5824980a4fb926 rust/crates/dev-tools/tests/fixtures/planner-scheduler-original/README.md | sha256sum --check -
+        printf '%s  %s\n' a15de8f4509c395850052084447575b48d6ed5db60df09a6799e0943af653d6b rust/crates/dev-tools/src/planner_ci_controller/scheduler_client.rs | sha256sum --check -
+        printf '%s  %s\n' 0cfde82d09829f10a07c721ab2fc1bfbc3d19c3bbf1ed84ceae3510de560d63f rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/frame_loop.rs | sha256sum --check -
         printf '%s  %s\n' d9c1e8c2ea095b7e197cfdcf190cec48330d6a9a59ad1d4c8cd0b56e76997eb4 rust/crates/model-runtime/src/cpu/diagnostic_482_cached.rs | sha256sum --check -
         printf '%s  %s\n' 67596fc5e6cde23b1df9b08d3d93dc932e17aefa512a4aa2805f9c21731ede32 rust/crates/model-runtime/tests/fixtures/compiler-stage-original/stdout.bin | sha256sum --check -
         printf '%s  %s\n' e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 rust/crates/model-runtime/tests/fixtures/compiler-stage-original/stderr.bin | sha256sum --check -
@@ -110,7 +115,7 @@ jobs:
         printf '%s  %s\n' 74a2bf284a5116d43270762ab1766fe74421da338fa0889fcd2c188202eae773 rust/crates/model-runtime/tests/fixtures/compiler-stage-original/python.sha256 | sha256sum --check -
         printf '%s  %s\n' f47b29f458a1f143926fd16e00d5861cfd92c97bce0c3bb1d3536b9c4e992d5f rust/crates/model-runtime/tests/fixtures/compiler-stage-original/oracle.txt | sha256sum --check -
         printf '%s  %s\n' e128237987e14b4ed20d3514fb25f2f243736815d8e784b0ff99fd4fd5e2d39c rust/crates/model-runtime/tests/fixtures/compiler-stage-original/observation.json | sha256sum --check -
-        printf '%s  %s\n' 7c254dc63120ec3dcd99948bc05af9de1a657cff0fc2312625ae8887da294bdd rust/crates/model-runtime/tests/fixtures/compiler-stage-original/README.md | sha256sum --check -
+        printf '%s  %s\n' 77bb8257ebca4245c1d0a81dd5b8e4f8a6f91f5e7fee00dd6f546c85129a6265 rust/crates/model-runtime/tests/fixtures/compiler-stage-original/README.md | sha256sum --check -
         printf '%s  %s\n' 1c37bf09742aa37ccbe671a781f686dec5acefddeccf7b06c79f948435387223 rust/crates/carrot-recovery/src/terminal/pty_tests.rs | sha256sum --check -
         printf '%s  %s\n' 9f67c7a017b0cbdf25a756ecc88595fbac54987e13583553977aa66e68fff64a rust/crates/dev-tools/tests/fast_cold_measure.rs | sha256sum --check -
         printf '%s  %s\n' 952adc3a2a68af3521dd7fa05bb68ad3b68862e063dd8c553ea1e010b8eca64a rust/crates/model-runtime/tests/fixtures/compiler-buffer-original/README.md | sha256sum --check -
@@ -181,7 +186,7 @@ jobs:
         printf '%s  %s\n' 113ea5c869276176f47a79c937594bcf0aa03ceb43481a934e707c80134ef6f7 rust/crates/model-runtime/src/compiler_onnx/mod.rs | sha256sum --check -
         printf '%s  %s\n' 6c586aa3432fd650e2e9942d96a033c885b6f9fcd62c1684f87264da3d3a575e rust/crates/model-runtime/src/qcom/mod.rs | sha256sum --check -
         printf '%s  %s\n' ab651a93d6fa2425c3a7f2725c20fa0fb7df39c308f13a6f910d07f4046d3712 rust/crates/model-runtime/src/entrypoint.rs | sha256sum --check -
-        printf '%s  %s\n' 1ea6af71e6836f8e74f0512ba9e1d48b23ea5dfe52242f93d7ecc5474c7a57d3 .github/workflows/python-rust-523-native-units.yml | sha256sum --check -
+        printf '%s  %s\n' bf0d72e8d48e549f075b1da74375a510e863a41e6979e9030146364412dc2e7c .github/workflows/python-rust-523-native-units.yml | sha256sum --check -
         printf '%s  %s\n' 7550f9299bf323106eb1fd6352c9ccf257d38aeca7b1ec2cf15dbf81dcf1bf66 rust/crates/control-policy/tests/drive.rs | sha256sum --check -
         printf '%s  %s\n' 2411aa2d77de51fd2c1552f3955032e6a734301e4ed692330b4cd4e5e13463b4 rust/crates/control-policy/src/drive.rs | sha256sum --check -
         printf '%s  %s\n' 85df87035e87ebc6d97d1d18544a1d6b00d417d698719226a365d6106c9b9b52 rust/crates/model-runtime/tests/compiler_schedule.rs | sha256sum --check -
@@ -356,6 +361,12 @@ jobs:
             docs/naver/python-rust-523-evidence-retention.md) ;;
             docs/naver/python-rust-523-model-cached-context.md) ;;
             rust/crates/model-runtime/src/cpu/diagnostic_482_cached.rs) ;;
+            docs/naver/python-rust-523-planner-client-native.md) ;;
+            rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/frame_loop.rs) ;;
+            rust/crates/dev-tools/src/planner_ci_controller/scheduler_client.rs) ;;
+            rust/crates/dev-tools/tests/fixtures/planner-scheduler-original/README.md) ;;
+            rust/crates/dev-tools/tests/fixtures/planner-scheduler-original/observations.json) ;;
+            rust/crates/dev-tools/tests/planner_scheduler_client.rs) ;;
             docs/naver/python-rust-523-fast-measurement-594.md) ;;
             docs/naver/python-rust-523-recovery-provider-474.md) ;;
             rust/crates/dev-tools/tests/fast_cold_measure.rs) ;;
@@ -1095,7 +1106,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='1857581866f1448971ecd6ca57dfb85f73dbd0418b9f75919cd7f31c9d9834dd', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='3cad7ea041b76b0ce1be23810623257495a9c7067de537d6263c096053d605f5', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile

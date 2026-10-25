@@ -83,3 +83,21 @@ commit/push/CI 실행은 모두 0회다.
 대기: 부모의 공유 모듈·compiler 호출부 등록, exact-SHA GHA 두 명령과 기존 필수
 gate 수용, 결과 링크 기록. 원본 삭제는 실제 GHA 수용 뒤 부모가 판단한다.
 기존 `compiler_launch.rs`와 테스트 및 다른 작업자 소스는 수정하지 않았다.
+
+
+## 2026-10-26 stage73의 실제 native 수용
+
+source `a62109fa706012b91b24206e7d8c875653746aec`의
+[run40241338985/job121313583472](https://github.com/bin9208/openpilot-rust/actions/runs/40241338985/job/121313583472)은
+launch9·stage8/0ignored, preserve_order union1, 원본launch4411 corpus1과 strict Clippy를 모두
+성공했다. 새 Python subprocess/현재 원본 AST 조회가 없는 고정 reader다. 원본73 raw 입력·
+기대값·SHA와 과거13 witness를 유지했으며 native 결과로 expected를 만들지 않았다.
+artifact12616208518은1,583,513B/SHA256
+`ece5ed6e6be36855b4180fe3400b97bbf9aed2d9bb55eb0a72a5b42c0018acc4`,
+40 safe unique regular member/전체 CRC, expanded6,929,918B다. command4개 exit0,
+source/index/index-stage와 whole SDK file/program/roster 전후 동일, SDK install0,
+업로드 뒤 source/owned temp cleanup까지 실제 성공했다.
+
+추가 실행 원장은 **162개 =32교체/126대기/1기존native/2비실행/1제거**다.
+기준3580은 **299교체/3부분/3278대기**, production offline emitter와 전체 F02 수용은 그대로
+미완료다. 이 좁은 비교 실행경계의 제거만 인정하며 source-file baseline credit은0이다.

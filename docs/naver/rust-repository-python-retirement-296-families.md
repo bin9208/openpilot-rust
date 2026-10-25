@@ -282,3 +282,21 @@ source7a928의 buffers 일반7/ignored0, serde_json/preserve_order union1과 str
 source/index/SDK 봉인이 실제 통과했다. [원문 감사와 후속 증거](python-rust-523-buffer-corpus-100-audit.md)를
 근거로 추가 원장 한 행만 갱신했다. 최신 추가 원장162개는31교체/127대기/1기존native/2비실행/1제거다.
 기준3580의299교체/3부분/3278대기와 production Python buffer/compiler 상태는 그대로다.
+
+
+## 2026-10-26 stage73의 실제 native 수용
+
+source `a62109fa706012b91b24206e7d8c875653746aec`의
+[run40241338985/job121313583472](https://github.com/bin9208/openpilot-rust/actions/runs/40241338985/job/121313583472)은
+launch9·stage8/0ignored, preserve_order union1, 원본launch4411 corpus1과 strict Clippy를 모두
+성공했다. 새 Python subprocess/현재 원본 AST 조회가 없는 고정 reader다. 원본73 raw 입력·
+기대값·SHA와 과거13 witness를 유지했으며 native 결과로 expected를 만들지 않았다.
+artifact12616208518은1,583,513B/SHA256
+`ece5ed6e6be36855b4180fe3400b97bbf9aed2d9bb55eb0a72a5b42c0018acc4`,
+40 safe unique regular member/전체 CRC, expanded6,929,918B다. command4개 exit0,
+source/index/index-stage와 whole SDK file/program/roster 전후 동일, SDK install0,
+업로드 뒤 source/owned temp cleanup까지 실제 성공했다.
+
+추가 실행 원장은 **162개 =32교체/126대기/1기존native/2비실행/1제거**다.
+기준3580은 **299교체/3부분/3278대기**, production offline emitter와 전체 F02 수용은 그대로
+미완료다. 이 좁은 비교 실행경계의 제거만 인정하며 source-file baseline credit은0이다.

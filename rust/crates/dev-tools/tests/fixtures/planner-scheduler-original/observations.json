@@ -1,0 +1,295 @@
+{
+  "cases": [
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "302e30",
+      "line_type": "bytearray",
+      "name": "zero",
+      "result_bits_be_hex": "0000000000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "2d302e30",
+      "line_type": "bytearray",
+      "name": "negative-zero",
+      "result_bits_be_hex": "8000000000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "2b302e30",
+      "line_type": "bytearray",
+      "name": "positive-sign",
+      "result_bits_be_hex": "0000000000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "31",
+      "line_type": "bytearray",
+      "name": "integer",
+      "result_bits_be_hex": "3ff0000000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "20312e323520",
+      "line_type": "bytearray",
+      "name": "space",
+      "result_bits_be_hex": "3ff4000000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "09312e323509",
+      "line_type": "bytearray",
+      "name": "tab",
+      "result_bits_be_hex": "3ff4000000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "0b312e32350c",
+      "line_type": "bytearray",
+      "name": "vertical-tab",
+      "result_bits_be_hex": "3ff4000000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "312e32350d",
+      "line_type": "bytearray",
+      "name": "carriage-return",
+      "result_bits_be_hex": "3ff4000000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "312e3235652b32",
+      "line_type": "bytearray",
+      "name": "exponent",
+      "result_bits_be_hex": "405f400000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "2d312e3235452d32",
+      "line_type": "bytearray",
+      "name": "negative-exponent",
+      "result_bits_be_hex": "bf8999999999999a"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "315f302e30",
+      "line_type": "bytearray",
+      "name": "underscore",
+      "result_bits_be_hex": "4024000000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "3165315f30",
+      "line_type": "bytearray",
+      "name": "underscore-exponent",
+      "result_bits_be_hex": "4202a05f20000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "2e35",
+      "line_type": "bytearray",
+      "name": "leading-dot",
+      "result_bits_be_hex": "3fe0000000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "352e",
+      "line_type": "bytearray",
+      "name": "trailing-dot",
+      "result_bits_be_hex": "4014000000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "312e3739373639333133343836323331353765333038",
+      "line_type": "bytearray",
+      "name": "maximum-finite",
+      "result_bits_be_hex": "7fefffffffffffff"
+    },
+    {
+      "exception_message": "native scheduler returned a nonfinite target",
+      "exception_type": "RuntimeError",
+      "line_hex": "312e3739373639333133343836323331353965333038",
+      "line_type": "bytearray",
+      "name": "overflow",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "native scheduler returned a nonfinite target",
+      "exception_type": "RuntimeError",
+      "line_hex": "3165333039",
+      "line_type": "bytearray",
+      "name": "large-overflow",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "native scheduler returned a nonfinite target",
+      "exception_type": "RuntimeError",
+      "line_hex": "2d3165333039",
+      "line_type": "bytearray",
+      "name": "negative-overflow",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "31652d34303030",
+      "line_type": "bytearray",
+      "name": "underflow",
+      "result_bits_be_hex": "0000000000000000"
+    },
+    {
+      "exception_message": null,
+      "exception_type": null,
+      "line_hex": "2d31652d34303030",
+      "line_type": "bytearray",
+      "name": "negative-underflow",
+      "result_bits_be_hex": "8000000000000000"
+    },
+    {
+      "exception_message": "native scheduler returned a nonfinite target",
+      "exception_type": "RuntimeError",
+      "line_hex": "6e616e",
+      "line_type": "bytearray",
+      "name": "nan",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "native scheduler returned a nonfinite target",
+      "exception_type": "RuntimeError",
+      "line_hex": "2d4e614e",
+      "line_type": "bytearray",
+      "name": "signed-nan",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "native scheduler returned a nonfinite target",
+      "exception_type": "RuntimeError",
+      "line_hex": "696e66",
+      "line_type": "bytearray",
+      "name": "inf",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "native scheduler returned a nonfinite target",
+      "exception_type": "RuntimeError",
+      "line_hex": "2b496e66696e697479",
+      "line_type": "bytearray",
+      "name": "infinity",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "could not convert string to float: ''",
+      "exception_type": "ValueError",
+      "line_hex": "",
+      "line_type": "bytearray",
+      "name": "empty",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "could not convert string to float: ' \\t'",
+      "exception_type": "ValueError",
+      "line_hex": "2009",
+      "line_type": "bytearray",
+      "name": "whitespace-only",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "could not convert string to float: 'invalid'",
+      "exception_type": "ValueError",
+      "line_hex": "696e76616c6964",
+      "line_type": "bytearray",
+      "name": "invalid",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "could not convert string to float: '1__0'",
+      "exception_type": "ValueError",
+      "line_hex": "315f5f30",
+      "line_type": "bytearray",
+      "name": "double-underscore",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "could not convert string to float: '_1'",
+      "exception_type": "ValueError",
+      "line_hex": "5f31",
+      "line_type": "bytearray",
+      "name": "leading-underscore",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "could not convert string to float: '1_'",
+      "exception_type": "ValueError",
+      "line_hex": "315f",
+      "line_type": "bytearray",
+      "name": "trailing-underscore",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "could not convert string to float: '0x1p0'",
+      "exception_type": "ValueError",
+      "line_hex": "3078317030",
+      "line_type": "bytearray",
+      "name": "hex-float",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "could not convert string to float: '1\\x00'",
+      "exception_type": "ValueError",
+      "line_hex": "3100",
+      "line_type": "bytearray",
+      "name": "nul",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "'ascii' codec can't decode byte 0xff in position 0: ordinal not in range(128)",
+      "exception_type": "UnicodeDecodeError",
+      "line_hex": "ff",
+      "line_type": "bytearray",
+      "name": "nonascii",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "'ascii' codec can't decode byte 0xc2 in position 0: ordinal not in range(128)",
+      "exception_type": "UnicodeDecodeError",
+      "line_hex": "c2a0312e30",
+      "line_type": "bytearray",
+      "name": "utf8-space",
+      "result_bits_be_hex": null
+    },
+    {
+      "exception_message": "could not convert string to float: '0.0\\n1.0'",
+      "exception_type": "ValueError",
+      "line_hex": "302e300a312e30",
+      "line_type": "bytearray",
+      "name": "two-lines-stage",
+      "result_bits_be_hex": null
+    }
+  ],
+  "github_sha": "aa79c7cd21a4b9bbb6bfb4c68ded9e857511f1cf",
+  "kind": "independent-original-planner-parser-stage",
+  "python_executable": "/usr/bin/python3",
+  "python_executable_sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f",
+  "python_version": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "scheduler_class_sha256": "818e06d38749c45bd18692538dfc6f2815c4052a820bc3d9449f151e56b7f124",
+  "schema_version": 1,
+  "scope": "exact float(ASCII decode)+finite AST stage only; not full client, framing, latch or lifecycle acceptance",
+  "source_sha256": "a4aec1991a6751af60f5616698e75e0861b0a1f8b1c478e5382889681598c8dc",
+  "stage_ast_sha256": "dcaa9f8ca1c73b6a3e3e32f46edc8c1dc2b614a1268144d53dc5807698e0d63f",
+  "test_source_sha256": "bc9e2beb046308aab5c017950e90fabc627bf11a175bdda0799341be8349f32c"
+}

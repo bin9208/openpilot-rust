@@ -422,3 +422,127 @@ actual readiness receipt/CWP cleanup/PTY STOP·CONT와 full traced8/strict post/
 부모 검토 후 이 PTY source와 문서를 batch12 인계 상태로 동결했다. 부모가 SSH595의 별도
 한 경로 수정과 함께 통합한다. 추가 testcase/count/selector 변경과 stage/commit/push는0이다.
 새 genuine compiler WF는 다음 batch의 부모 작업이며 이 후속에서는 읽거나 수정·stage하지 않았다.
+
+## source3f532 실제 성공과 원본 artifact 감사
+
+2026-10-26 후속 읽기 전용 감사다. 앞 절의 실패/UNRUN은 각 source 당시 기록이며,
+이번 결과는 source `3f5329dcf76f461bde804d09dfef0c4e5980893b`의
+[run40240111863/job121309898098](https://github.com/bin9208/openpilot-rust/actions/runs/40240111863/job/121309898098)에
+한정한다. API의 job/모든 step 결과는 success다. 사용자 최신 지시에 따라 `51fd` 성공 run의
+추가 artifact 감사는 생략했다. 부모의 Focus/Fast8 감사와도 범위를 분리했다.
+
+원본 artifact는 `recovery-native-lanes-40240111863-1`, ID `12616648753`이다.
+ZIP90,226,398B, unique/safe/CRC 정상14,107 members, expanded315,212,974B를 확인했다.
+raw 파일을 추출·정규화하거나 실행하지 않고 ZIP member bytes를 직접 읽었다.
+보관 경로는 `.analysis/scratch/2026-10-25-523-completion/ci/12616648753.zip`이다.
+
+| 원본 산출물 | SHA256 |
+| --- | --- |
+| artifact ZIP | `3c2d6dd70c34118248cff2fb53e1a4513a3a513620c69aaa4ddbbc51f3383f57` |
+| 실제 private strace ELF | `5c48a2f14563b3b4a7d7a611ea338f2a92a20be06aca34e062933b99cfb4b012` |
+| 실제 approve-launch ELF | `74ed503c1527fa822e9d3e63d9ff78a52352413c7dab219122d6d386267ea71b` |
+| `recovery-trace/exec-preflight.json` | `acd9823d1541389c0acd73b7c815b83aa025fb9a1b00aa1c593fb98e6b987bdc` |
+| `recovery-trace/exec-audit.json` | `60967023925f129b692ec3d653f9236ee469e9073810dbcd6500f01f4684bd51` |
+| `recovery-trace/direct-root-audit.json` | `202328de94123edd60af062b03ffe93665ca53654117299eaf2d827fb7c9cd7c` |
+| 실제 CWP `pty/pty.exec` | `e6f4a0f457f5b6ba13338dd4a6a4e18df0bd169a2496abef1ff4863efa1172b0` |
+| 별도 `pty/pty-stop-cont.exec` | `06fd1de34a0aa8ad2f918d3d685552d5a77296403b2f9e12852e23ac71cac788` |
+
+### 예정26개와 실제 실행 구분
+
+| 대상 | 원본 evidence에서 확인한 실제 결과 |
+| --- | --- |
+| context 음성3 | 정확한3행 PASS와 command/direct wait 각각1/1. provider 준비는0/0 |
+| 원래 closure18 | 7양성/4binding 음성/7context 음성의18행 모두 PASS. 추출 recipe11,145B SHA는 기존 `6cc97850…`와 동일 |
+| 원래 STOP/CONT protocol3 | childless0/0, original exit7/direct wait7, genuine live member 거부1/회수 wait137의3행 PASS |
+| 실제 CWP HUP→KILL PTY1 | 고정 selector의1 test PASS, tracer/direct wait0/0. readiness와 원래 cleanup assertion 모두 실제 출력됨 |
+| 실제 controlling PTY STOP/CONT1 | C probe compile0/0, 실행0/0. raw SIGSTOP/SIGCONT와 child 직접 reap0 PASS |
+
+따라서 **예정26개가 실제26개 모두 통과**했다. marker10/cold 본체 통제는 이 recovery job의
+대상이 아니며26개에 끼워 세지 않았다. 준비 시점의 `provider.txt`에 남은
+`actual_cold_run=false`/`controls18_run=false`도 바꾸지 않았다. 후속 통과는 별도의 실제
+통제 receipt와 완료 marker로 확인했다.
+
+CWP stdout의 실제 준비 완료 행은 다음과 같다.
+
+```text
+PTY474_SLEEP_READY pid=36145 pgid=36142 start=64801 state=S syscall=230 dev=66305 ino=1951
+```
+
+동일 출력의 leader36142는 Z 상태/exit23로 예약돼 있었고, cleanup 뒤 leader_reaped=true,
+descendant_after=null이다. 별도 probe는 child36394의 실제 SIGSTOP 뒤 parent36391의
+SIGCONT와 `RECOVERY474_PTY_STOP_CONT PASS ... reaped=0`를 남겼다. 세 launch의 binding은
+모두 실제 source3f532/common library `1d5d0ab9…`/위 provider ELF SHA와 exact timeout
+parent/argv 검증에 결합돼 있다. 추가 승인 program을 full trace에 넣지 않았다.
+
+### untraced8, traced8 및 원본 reference 범위
+
+untraced harness는 exit0/181.40s, traced harness는 exit0/182.70s이며 driver도0이다.
+각 native admission은 `pass=true`, failures는 빈 배열이다. 각 lane의 checkout/private
+두 root에서 http/terminal/lifecycle/support/shutdown/actions/upload/cwp8개 family의
+result/admission이 모두 `pass=true`다. 동일 worker ELF6개의 digest가 양 lane에서 같고,
+harness를 포함한 선정7개의 전후 stat/fixed-ctime 대조도 통과했다.
+
+현재 WF의 `RECOVERY_FAMILY_HISTORICAL_PRESENT=0`에 따라 checkout/private는 모두
+역사적 helper13개가 없는 경계다. selector 이름에 present/absent가 남아 있다는 이유로
+이번 run에서 helper13개가 존재하는 추가 조합까지 실행했다고 주장하지 않는다.
+
+원본 기대값은 `recovery-original/observations.json`의 data-only frozen fixture다.
+SHA256 `db82220fc911ad6ee0d0b960a7c4f1bf7665c6e6d3404fc3c9135d80eb1495e9`,
+source `73cb4466e9ee9a426911d4ba0c0040e68d988c5f`, 원본 artifact12367729913/
+ZIP SHA `73dbb9fac31c64ad61e3e08c19ac965571834ed036c8222c1e2c936573c38eba`에 결합된다.
+fixture213개 decoded bytes의 길이/SHA를 inert하게 대조했고 source input15/missing0도
+확인했다. 213개는 source-observation207, controller-execution-receipt1,
+native-only-controller-contract5다. 이를 모두 Python 원본 관측으로 묶어 주장하지 않는다.
+이번 GHA가 기존 Python 원본을 다시 실행한 것은 아니다.
+
+### strict audit와 직접 root, 전후 봉인
+
+native strict audit는 passed=true이며 attempts5,033개 중 Success2,393/명시 Errno2,640이다.
+raw trace2,510개/2,910,370B/7,146행의 파일 집합·길이·SHA가 native receipt와 하나도 빠짐없이
+일치했다. raw의 `???`/`= ?` 표시는0개다. preflight 원문 SHA도 보관한 receipt와 일치하고,
+audit의 admission SHA는 실제 native admission bytes와 일치한다.
+
+full traced8의 실제 root37109는 첫 exec(line1)에서 원래 harness/고정5개 argv/Success다.
+direct-root passed=true, trace_modified=false, extra_program_rule=false다. approval fixture와
+PTY probe executable은 이 full trace의 attempt에 없다. inheritance receipt는
+root_seccomp1/fresh2509/inherited2509/additional_ptrace0/parent_link_observed0이며
+observer도 seccomp5033/exit5033/io_error0/overflow0이다. 이번 감사는 native parser를
+로컬에서 다시 실행한 것이 아니며, 기존 native receipt와 raw bytes를 대조한 것이다.
+7a928→3f532의 strict parser/policy/common launcher/fixture/provider patch source diff도0이다.
+
+provider의 after-build/after-cold/after-fast에서 SDK 전체, provider inputs/source/build/bin,
+tracked source/index/stage, compiler input tree6개, tool/ELF/DSO120행, ld cache와 outer
+admission receipt의 before/after813쌍을 byte 대조했다. workflow SDK165 files/programs/전체
+roster, index와 source seal도 전후 동일하다. source tar digest는
+`813c30613d51794fc0603ee4b52c4d4032a0d086953a725a8480304e0af0fc53`다.
+native program seal25쌍도 전후 동일하다.
+
+held FD/path/stat/SHA의 고유 행 집합은 prepare6/controls78/PTY32/trace16/after7 각각
+전후 동일했다. controls after156행은 각 행의 두 차례 검증이며 다른 값은 없다.
+모든 phase status는 original_exit0/finalizer_exit0/owned_groups_nonlive=true다.
+artifact upload ID/digest가 이번 ZIP과 일치한 뒤 source cleanup과 common job cleanup
+모두 실제 step success다. archive는 cleanup 전 증거이며, cleanup 성공은 API/job log와
+소유성 검증을 포함한 원래 run body에 근거한다.
+
+실제 provider runner는 GitHub Actions1000029676/github-hosted/Linux/X64,
+kernel6.17.0-1022-azure다. sampled provider/proof 최대 allocated224,124,928B,
+apparent180,193,703B는512MiB 이하이고 after-fast available86,618,689,536B였다.
+이 한 recovery 실행의 관측이며 Fast7분/6GiB 또는 다른 runner/장치의 peak 보장이 아니다.
+
+### 남은 증거와 이번 기록의 한계
+
+readiness marker는 **private-provider traced CWP PTY**에서 확인했다. untraced8의 CWP
+family는 별도 `cwp::tests::child_driver`를 사용한다. 양 lane native evidence에 standalone
+`PTY474_SLEEP_READY`는 없으므로, untraced8 PASS를 readiness barrier 자체의 untraced
+`/proc/<pid>/syscall` 가시성 증거로 확대하지 않는다. 해당 exact unit의 별도 untraced GHA
+증거와 aarch64/다른 보안 설정의 이식성은 여전히 미확인이다.
+
+이 recovery job의 Clippy는 dev-tools lib/audit CLI/recovery_family_frozen 대상이다.
+그 성공을 변경한 carrot-recovery PTY test module 자체의 strict Clippy 성공으로 바꾸어
+주장하지 않는다. 부모의 별도 Fast 검증 결과와도 합쳐 추정하지 않았다.
+
+이번 감사에서 새 실행 source 결함은 발견하지 못했다. 기존 기록 끝에 이 절만 추가했고
+코드/WF/preparer/pin/Focus/원장 수정은0이다. 로컬은 source/원본 ZIP의 CRC/SHA/JSON·텍스트
+및 diff 검사만 수행했다. 프로젝트 CLI/테스트/Cargo/strace 실행과 GHA dispatch/cancel/rerun,
+stage/commit/push는0이다. 한 실행의 성공으로 원래 PTRACE_LISTEN 문제의 전역 해결 또는
+#474/#560 종료·퇴역 credit을 주장하지 않는다.

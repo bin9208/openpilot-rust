@@ -19,6 +19,7 @@ name: Python Rust 523 native units
         - buffers
         - planner
         - compiler-export
+        - planner-client
 permissions:
   contents: read
 concurrency:
@@ -160,6 +161,10 @@ jobs:
           rust/crates/model-runtime/tests/compiler_schedule.rs rust/tools/model_export/offline_schedule.py \
           rust/tools/model_export/schema.py rust/tools/prepare-readonly-ci-rust \
           rust/crates/model-runtime/tests/compiler_corpus.rs \
+          rust/crates/dev-tools/src/planner_ci_controller/scheduler_client.rs \
+          rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/frame_loop.rs \
+          rust/crates/dev-tools/tests/planner_scheduler_client.rs \
+          rust/crates/dev-tools/tests/fixtures/planner-scheduler-original/* \
           rust/crates/model-runtime/tests/fixtures/compiler-stage-original/* > "$CI_JOB_TEMP/proof/focused-source.sha256"
         allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
         [[ $allocated =~ ^[0-9]+$ ]]
@@ -360,6 +365,13 @@ jobs:
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --lib \
           --bin offline-qcom-compile --test compiler_export_caller -- -D warnings
             ;;
+          planner-client)
+        run_once planner-client-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --test planner_scheduler_client
+        grep -F 'test result: ok. 15 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-client-units.log" || failed=1
+        run_once planner-client-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --lib --test planner_scheduler_client -- -D warnings
+            ;;
           planner)
         run_once planner-controller-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-dev-tools --test planner_ci_controller
@@ -535,4 +547,4 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: "${{ fromJSON(github.event_name == 'push' && '[\"model\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"
+        crate: "${{ fromJSON(github.event_name == 'push' && '[\"planner-client\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\",\"planner-client\"]' || inputs.crate == 'planner-client' && '[\"planner-client\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"
