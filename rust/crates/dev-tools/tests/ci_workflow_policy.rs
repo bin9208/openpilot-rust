@@ -398,10 +398,20 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "native-alert-manager",
     ] {
         let job = &workflow["jobs"][worker];
-        assert_eq!(job["runs-on"], serde_json::json!(HOSTED_RUNNER));
+        assert_eq!(
+            job["runs-on"],
+            if worker == "native" {
+                serde_json::json!(LOCAL_RUNNER)
+            } else {
+                serde_json::json!(HOSTED_RUNNER)
+            }
+        );
         for (key, value) in [
             ("RUSTUP_TOOLCHAIN", "1.94.0"),
-            ("CARGO_BUILD_JOBS", "2"),
+            (
+                "CARGO_BUILD_JOBS",
+                if worker == "native" { "1" } else { "2" },
+            ),
             ("CARGO_INCREMENTAL", "0"),
             ("CARGO_PROFILE_DEV_DEBUG", "0"),
             ("CARGO_PROFILE_TEST_DEBUG", "0"),
@@ -954,7 +964,14 @@ fn diagnostic_fast_slice_keeps_private_paths_and_explicit_fork_failure() {
             .unwrap();
     validate_fast_gate(&workflow).unwrap();
     for (name, worker) in workflow["jobs"].as_object().unwrap() {
-        assert_eq!(worker["runs-on"], serde_json::json!(HOSTED_RUNNER));
+        assert_eq!(
+            worker["runs-on"],
+            if name == "native" {
+                serde_json::json!(LOCAL_RUNNER)
+            } else {
+                serde_json::json!(HOSTED_RUNNER)
+            }
+        );
         if name == "fast" {
             continue;
         }

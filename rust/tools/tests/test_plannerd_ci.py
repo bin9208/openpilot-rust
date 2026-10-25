@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import ast
+import hashlib
 from copy import deepcopy
 import os
 from pathlib import Path
@@ -129,13 +130,15 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
         assert row["run"].count("${{ matrix.machine }}") == 1
         row["run"] = row["run"].replace("${{ matrix.machine }}", "${{ matrix.arch }}")
     if name in NATIVE_ARM_FAMILIES:
-      # 각 role의 기존 설치 문자열만 바꾸고 모든 기능 명령의 동등 비교를 유지한다.
+      # 각 role의 기존 SDK 검증/설치 명령만 바꾸고 모든 기능 명령의 동등 비교를 유지한다.
       clippy = 'rustup toolchain install 1.94.0 --profile minimal --component clippy\n'
       minimal = 'rustup toolchain install 1.94.0 --profile minimal\n'
       target = 'rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu\n'
-      old_sdk = {
+      reference_sdk = {
           "planner-runtime": clippy,
-          "carrot-man-runtime": minimal,
+          "carrot-man-runtime": ('test "$CI_PREPARED_RUST_ROOT" = "$OPENPILOT_CI_PREPARED_RUST_ROOT"\n'
+                                 'test "$CI_PREPARED_RUST_MANIFEST" = "$OPENPILOT_CI_PREPARED_RUST_MANIFEST"\n'
+                                 'sha256sum --check --strict --quiet -- "$CI_PREPARED_RUST_MANIFEST"\n'),
           "webrtc-runtime": clippy,
           "webcam-runtime": clippy,
           "xiaoge-runtime": clippy,
@@ -155,14 +158,41 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
       }[name]
       dependency = next(step for step in original if step["name"] == dependency_name)
       verify = '/usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" verify\n'
+      if name == "carrot-man-runtime":
+        # x64도 이미 sealed SDK다. ci_policy::validate_carrot_x64_sdk530_steps의
+        # 정식 before/after 본문 pin으로 fresh 경로·manifest·자동 설치 금지를 확인한다.
+        x64_before = named_step(reference, "Prepare exact fresh x64 SDK before CarrotMan cold bootstrap")
+        x64_after = named_step(reference, "Verify whole x64 SDK after every attempted CarrotMan check")
+        for step, identifier, condition, digest in (
+            (x64_before, "carrot530_sdk", TRUSTED_SOURCE,
+             "3ac35298662ca18b12658fead672e2b4deacbb2f72e1ec68699794e167f2502f"),
+            (x64_after, "carrot530_sdk_final",
+             "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) "
+             + "&& (always() && steps.carrot530_sdk.outcome != 'skipped' && env.CI296_SOURCE != '') }}",
+             "4d7305f25cbb9f9de394305c1aa4514c222aa2d6f3d02b623d0ad201bac161c7")):
+          assert step["id"] == identifier and step["if"] == condition
+          assert step["shell"] == "bash" and step["working-directory"] == "${{ env.CI296_SOURCE }}"
+          assert step["env"] == {"CI296_HOST_CONTROL": "1"}
+          assert "continue-on-error" not in step and "uses" not in step
+          assert hashlib.sha256(step["run"].encode()).hexdigest() == digest
+        reference_steps = reference["steps"]
+        x64_venv = named_step(reference, "Keep original Python installations private")
+        seal = next(step for step in reference_steps if step.get("id") == "ci296_source_seal")
+        assert reference_steps.index(x64_venv) < reference_steps.index(x64_before)
+        assert reference_steps.index(x64_before) < reference_steps.index(original[0])
+        assert reference_steps.index(original[-1]) < reference_steps.index(x64_after) < reference_steps.index(seal)
+        assert dependency["run"].endswith(reference_sdk)
+        for step in (*reference_steps, *steps):
+          assert 'rustup toolchain install' not in step.get("run", "")
+          assert 'rustup target add' not in step.get("run", "")
       if name in ("radar-arm", "carrot-navi-arm"):
         # #572 candidate도 이미 canonical SDK를 사용하므로 중복 투영하지 않는다.
         assert dependency["run"].count(verify) == 1
         assert 'rustup toolchain install' not in dependency["run"]
         assert 'rustup target add' not in dependency["run"]
       else:
-        assert dependency["run"].count(old_sdk) == 1
-        dependency["run"] = dependency["run"].replace(old_sdk, verify)
+        assert dependency["run"].count(reference_sdk) == 1
+        dependency["run"] = dependency["run"].replace(reference_sdk, verify)
       before = named_step(job, "Prepare exact fresh ARM 1.94 SDK for all eight admitted roles")
       after = named_step(job, "Verify ARM SDK after every attempted maintained command")
       assert before["if"] == TRUSTED_SOURCE

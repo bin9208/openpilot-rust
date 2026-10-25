@@ -397,3 +397,82 @@ source `5bee0d30b3a824cc4f2dbcc23c4caba2fa813a64`의 [40199544139/job12118758071
 부모는 artifact12601267560=11493554B/SHA256 `712c8aa9192b8bdfa6608cda2b211fee32ed5ef6793c4081784255a39a48a755`의969 safe unique/969CRC, 전후30쌍 byte동일, held219→425의 기존항목 불변, finalizer21개0/immutable·nonlive true, source/index·SDK 후검사·upload·cleanup2 성공을 감사했습니다. command actual/expected status도 모두 일치합니다.
 
 이 두 결함의 수용 조건을 충족해 종료합니다. #560의 원래 ESRCH root-fixed=false, Ubuntu ELF 동등=false, parent-link/옛seccomp환경/전체reap·closedDSO·peak guarantee 미측정과 retirement credit0은 그대로입니다. 전체 #523/#296 완료로 올리지 않습니다.
+
+## 2026-10-26: Fast native 한 worker의 등록 local runner 이관 후보
+
+사용자는 최신 runner 자원을 디스크80GB/4core/RAM4GB로 명시하고 등록 `bin-actions`의
+우선 활용을 승인했다. 기준 HEAD는 `5c1b1bfe8ececc2a71401c92925e9ef865ff7409`다.
+실패 source `3b819ccc5eb788b319d6b150a3288b6635c0e16f`의
+[Fast40205298711](https://github.com/bin9208/openpilot-rust/actions/runs/40205298711) routing은
+사용자 제공 상태상 `unrecognized trace line 238`인 기존 #560이다. 아래 이관은 그 unknown을
+허용하거나 Ubuntu 원인을 해결하는 변경이 아니다. local에서 strict cold와 routing의 실제
+성공은 별도 정확 SHA GitHub Actions 증거가 필요하며 현재 **GHA UNRUN**이다.
+
+변경은 `.github/workflows/fast-checks.yml`의 `jobs.native`에만 한정했다.
+
+- `runs-on: [self-hosted, Linux, X64, dev-md-local]`로 정확 label 네 개를 지정한다.
+  첫 guard는 fork 거부 뒤 실제 `RUNNER_NAME=bin-actions`,
+  `RUNNER_ENVIRONMENT=self-hosted`, Linux/X64 및 `uname -m=x86_64`를 요구한다.
+  hosted 선언용 `GH_HOSTED`만 이 worker에서 제거한다. runner 이름·환경·경로를 위장하지 않는다.
+- worker의 `CARGO_BUILD_JOBS`만 `2`에서 `1`로 바꾼다. 다른 worker와 global 환경은 그대로다.
+  실제 cold 원문 `rust/tools/check-disk-space:176`은
+  `CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 "${bootstrap_cargo[@]}" build`를 고정하므로
+  그 실행은 계속2다. 임의 argv/환경 덮어쓰기나 wrapper 변경은 하지 않았다.
+  따라서 모든 compile의 병렬1이나 RAM4GB 적합성/peak 보장을 주장하지 않는다.
+- 기존 `prepare-readonly-ci-rust before/after`를 재사용한다. helper는 self-hosted에서 실제
+  `/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu`를 선택하며, 공식 program
+  SHA/소유자/type/공유 쓰기 거부와 전체 SDK 내용·roster 전후 비교를 유지한다.
+  workflow의 추가 permission 봉인 두 곳도 이 실제 경로에 맞춘다. job의 private
+  `RUSTUP_HOME`/`CARGO_HOME`과 `CI_PREPARED_RUST_ROOT` binding 검사는 유지한다.
+  공유 SDK의 복사·symlink·chmod·설치/수리와 helper 수정은 없다.
+
+다른6worker와 aggregate/필수 check명 `fast checks`, 전체 selector/순서/케이스,
+source/owner/upload/cleanup 조건,7분 bound, cold2048MiB와 routing6144MiB admission,
+stderr512MiB·metadata64KiB 및 기존 수집기 회수, SDK/source 전후 봉인, strict unknown 거부는
+그대로다. 실제 자원 적합성은 기존 admission과 실행 증거로 확인해야 한다.
+`cancel-in-progress: false`와 `queue: max`도 불변이며 실행 중 CI에는 조작하지 않았다.
+앞선 release fixture 두 파일은 동결 상태 그대로다.
+
+### 부모가 연결해야 하는 범위 밖 차단 지점
+
+이 후보만으로는 현재 strict 감사와 정책 테스트를 통과할 수 없다. 아래 파일은 수정하지 않았다.
+
+1. `rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs:614`의 `actual_receipt`는
+   `RUNNER_ENVIRONMENT=github-hosted`만 허용하여 local에서 먼저 거부한다.
+   `private_hosted_sdk`의592–608행은 private SDK만 허용하고,649행의 호출도 그대로며,
+   713행 receipt는 환경을 `github-hosted`로 고정한다. 부모가 실제 self-hosted/local SDK
+   경계를 명시적으로 추가하고 모든 기존 소유·SHA·source/trace·strict 검증을 보존해야 한다.
+   이 후보에서는 환경 위장·SDK 경로 alias·감사 skip으로 우회하지 않는다.
+2. `rust/crates/dev-tools/tests/ci_workflow_policy.rs`의
+   `native_fast_split_preserves_every_suite_and_build_check_once`는401행에서 모든 native
+   worker를 `HOSTED_RUNNER`로,404–409행에서 `CARGO_BUILD_JOBS=2`로 고정한다.
+   `diagnostic_fast_slice_keeps_private_paths_and_explicit_fork_failure`도957행에서
+   모든 job을 hosted로 고정한다. 부모가 `native` 하나의 승인한 local/1 예외와 나머지
+   worker 불변을 검증하도록 연결해야 한다. 기존 selector/count/분할 검사는 그대로 둔다.
+3. 공유 `ci_policy.rs:141`의 `approved_runner`와1297행 `validate_fast_gate`는 이미 정확
+   local label을 허용하므로 runner enum 확대는 필요 없다. 대신 실제 첫 guard의
+   이름/환경/아키텍처 거부를 강화할지는 부모가 현재 정책 테스트 범위에서 판단한다.
+   공유 `ci_policy.rs`는 이번 작업에서 수정하지 않았다.
+4. Focus `.github/workflows/python-rust-523.yml:576`은 Fast workflow 전체 SHA256을
+   `8c88af8b3750b9bc9c3c1d77190108cabda7b7e077a5e56f6714a90769c9bff1`로 고정해
+   이 후보를 거부한다. 새 후보 SHA256은
+   `d5e23b4b472b334accd572efb7ffb4860abf3aa8cc772b6ebea2a592d0b2adfe`다.
+   같은 Focus의597/609/610행은 공유 policy/actual audit/정책 테스트 원문도 고정하므로
+   부모가 그 파일을 변경하면 함께 검토해야 한다. 877–884행의 기존 Cargo 명령 cohort
+   count는 이 후보에서 명령을 바꾸지 않았으므로 그대로다. Focus/workflow pin은 수정하지 않았다.
+
+### 로컬 확인 및 실행 인계
+
+로컬 YAML 구문·native `run` block의 `bash -n`·diff 검토와 정확 source 역투영을 수행했다.
+검토한 native 내 치환만 기준 workflow에 적용하면 현재 원문과 바이트 단위로 같고,
+다른6worker/aggregate 및 cold/routing 실행 block은 모두 동일하다.
+release fixture source/기록의 SHA256도 동결 값과 같았다. 프로젝트 CLI/Cargo/기능 테스트/
+build/원본 실행과 CI 조작은0회다.
+
+부모는 위 actual audit/정책/Focus 연결 후 정확 통합 SHA의 Fast `native` worker를
+GitHub Actions에서 검증한다. 기존 첫 strict selector
+`ci_disk_bootstrap::prepared_audit::prepared_audit_actual_cold_bootstrap_receipt`
+(`--ignored --exact --nocapture`)와 `ci_workflow_policy`/`ci_rust_isolation`/
+`ci_disk_bootstrap`/`ci_process_probe`, changed-files caller 및 Navi exact2를 모두 유지한다.
+local에서 unknown이 사라져도 Ubuntu의 원인 해결·일반 syscall 수치·프레임 수치·기기/주행 수용이나
+#523 전체 완료 증거로 확대하지 않는다. 실행 성공과 자원 적합성은 아직 미확정이다.

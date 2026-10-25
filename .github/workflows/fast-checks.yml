@@ -14,12 +14,11 @@ concurrency:
 jobs:
   native:
     name: fast native routing checks
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 7
     env:
-      GH_HOSTED: '1'
       RUSTUP_TOOLCHAIN: 1.94.0
-      CARGO_BUILD_JOBS: '2'
+      CARGO_BUILD_JOBS: '1'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -34,8 +33,8 @@ jobs:
           set -euo pipefail
           test "$GITHUB_ACTIONS" = true
           test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
-          test "$GH_HOSTED" = 1
-          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_NAME" = bin-actions
+          test "$RUNNER_ENVIRONMENT" = self-hosted
           test "$RUNNER_OS" = Linux
           test "$RUNNER_ARCH" = X64
           test "$(uname -m)" = x86_64
@@ -127,7 +126,7 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
-          sdk=$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu
+          sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
           test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
           test "$CI_PREPARED_RUST_ROOT" = "$sdk"
           test -d "$sdk" && test ! -L "$sdk"
@@ -149,7 +148,7 @@ jobs:
           LC_ALL=C find "$sdk" -xdev -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/sdk-permission-roster.before.bin"
           find "$sdk" -xdev \( -type d -o -type f \) -perm /0022 -print0 > "$CI_JOB_TEMP/proof/sdk-permission-candidates.bin"
           : > "$CI_JOB_TEMP/proof/sdk-permission-journal.tsv"
-          # hosted SDK는 처음부터 private다. 권한을 고치지 않고 기존 0022 거부를 검증한다.
+          # 공유 SDK를 수정하지 않고 기존 0022 거부를 검증한다.
           test ! -s "$CI_JOB_TEMP/proof/sdk-permission-candidates.bin"
       - name: Verify SDK contents after permission preparation even on failure
         id: sdk_permissions_final
@@ -158,7 +157,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sdk=$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu
+          sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
           test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
           test "$CI_PREPARED_RUST_ROOT" = "$sdk"
           LC_ALL=C find "$sdk" -xdev -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/sdk-permission-content.after.sha256"

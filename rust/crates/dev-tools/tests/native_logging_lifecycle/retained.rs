@@ -6,6 +6,17 @@ use std::{
     os::{fd::AsRawFd, unix::fs::PermissionsExt},
 };
 
+pub(super) fn source_policy(command: &mut Command) {
+    match std::env::var_os("NATIVE_LOGGING_SOURCE_POLICY") {
+        None => {}
+        Some(value) if value == "present" => {}
+        Some(value) if value == "absent" => {
+            command.args(["--source-policy", "absent"]);
+        }
+        value => panic!("unknown logging source policy: {value:?}"),
+    }
+}
+
 fn fixed_git_preload_environment(
     command: &mut Command,
     values: &std::collections::BTreeMap<OsString, OsString>,
@@ -209,6 +220,7 @@ impl Inputs {
             .arg(&self.commit)
             .arg("--binary-sha256")
             .arg(&self.binary_sha256);
+        source_policy(&mut command);
         command
     }
 }

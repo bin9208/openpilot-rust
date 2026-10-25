@@ -607,11 +607,42 @@ fn private_hosted_sdk(job: &Path, sdk: &str, rustup: &str, cargo: &str) -> Resul
     }
     Ok(expected)
 }
+fn actual_sdk(
+    job: &Path,
+    environment: &str,
+    runner: &str,
+    sdk: &str,
+    rustup: &str,
+    cargo: &str,
+) -> Result<PathBuf> {
+    match environment {
+        "github-hosted" => private_hosted_sdk(job, sdk, rustup, cargo),
+        "self-hosted" if runner == "bin-actions" => {
+            let expected =
+                PathBuf::from("/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu");
+            if sdk != expected.to_str().ok_or("non-UTF8 registered SDK")?
+                || rustup
+                    != job
+                        .join("rustup-home")
+                        .to_str()
+                        .ok_or("non-UTF8 Rustup home")?
+                || cargo
+                    != job
+                        .join("cargo-home")
+                        .to_str()
+                        .ok_or("non-UTF8 Cargo home")?
+            {
+                return Err("unapproved registered SDK/private tool homes".into());
+            }
+            Ok(expected)
+        }
+        _ => Err("unapproved actual-proof runner environment/name".into()),
+    }
+}
 fn actual_receipt() -> Result<Value> {
     for (name, expected) in [
         ("GITHUB_ACTIONS", "true"),
         ("GITHUB_REPOSITORY", "bin9208/openpilot-rust"),
-        ("RUNNER_ENVIRONMENT", "github-hosted"),
         ("RUNNER_OS", "Linux"),
         ("RUNNER_ARCH", "X64"),
     ] {
@@ -646,8 +677,10 @@ fn actual_receipt() -> Result<Value> {
     }
     let output = proof.join("prepared-cold-bootstrap.json");
     invalidate_owned_receipt(&output)?;
-    let sdk = private_hosted_sdk(
+    let sdk = actual_sdk(
         &job,
+        &env("RUNNER_ENVIRONMENT")?,
+        &env("RUNNER_NAME")?,
         &env("CI_PREPARED_RUST_ROOT")?,
         &env("RUSTUP_HOME")?,
         &env("CARGO_HOME")?,
@@ -710,7 +743,7 @@ fn actual_receipt() -> Result<Value> {
     }
     let receipt = json!({
         "source_commit":source_sha, "absolute_cargo":sdk.join("bin/cargo"), "absolute_rustc":sdk.join("bin/rustc"),
-        "runner_environment":"github-hosted", "runner_name":env("RUNNER_NAME")?,
+        "runner_environment":env("RUNNER_ENVIRONMENT")?, "runner_name":env("RUNNER_NAME")?,
         "exec_attempts":audit.calls.len(), "observed_rustup_exec_attempts":0, "observed_python_exec_attempts":0,
         "successful_absolute_cargo_execs":audit.cargo_successes, "successful_absolute_rustc_execs":audit.rustc_successes,
         "failed_exec_attempts":audit.calls.iter().filter(|call| !call.success).count(),
@@ -877,7 +910,7 @@ fn prepared_audit_c_strings_have_an_explicit_fail_closed_ascii_scope() {
     }
 }
 #[test]
-#[ignore = "실제 github-hosted cold strace와 소유 private source/SDK manifest 필요; 합성 자료 qualification 금지"]
+#[ignore = "실제 승인된 Actions cold strace와 소유 private source/SDK manifest 필요; 합성 자료 qualification 금지"]
 fn prepared_audit_actual_cold_bootstrap_receipt() {
     let receipt = actual_receipt()
         .unwrap_or_else(|error| panic!("actual prepared SDK audit rejected: {error}"));
@@ -911,4 +944,51 @@ fn prepared_audit_hosted_sdk_rejects_legacy_other_job_and_tool_homes() {
     assert!(audit_trace_for_sdk(&trace, Path::new(sdk)).is_ok());
     assert!(audit_trace_for_sdk(&synthetic_trace(), Path::new(sdk)).is_err());
     assert!(audit_trace_for_sdk(&trace.replace("abcdef", "uvwxyz"), Path::new(sdk)).is_err());
+}
+
+#[test]
+fn prepared_audit_admits_only_registered_local_sdk_and_private_tool_homes() {
+    let job = Path::new("/tmp/openpilot-ci.ABC123");
+    let sdk = "/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu";
+    let rustup = "/tmp/openpilot-ci.ABC123/rustup-home";
+    let cargo = "/tmp/openpilot-ci.ABC123/cargo-home";
+    assert_eq!(
+        actual_sdk(job, "self-hosted", "bin-actions", sdk, rustup, cargo).unwrap(),
+        Path::new(sdk)
+    );
+    for (environment, runner, sdk, rustup, cargo) in [
+        ("self-hosted", "other", sdk, rustup, cargo),
+        ("unknown", "bin-actions", sdk, rustup, cargo),
+        ("github-hosted", "bin-actions", sdk, rustup, cargo),
+        (
+            "self-hosted",
+            "bin-actions",
+            "/tmp/openpilot-ci.ABC123/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu",
+            rustup,
+            cargo,
+        ),
+        (
+            "self-hosted",
+            "bin-actions",
+            "/home/actions/.rustup/toolchains/stable-x86_64-unknown-linux-gnu",
+            rustup,
+            cargo,
+        ),
+        (
+            "self-hosted",
+            "bin-actions",
+            sdk,
+            "/home/actions/.rustup",
+            cargo,
+        ),
+        (
+            "self-hosted",
+            "bin-actions",
+            sdk,
+            rustup,
+            "/home/actions/.cargo",
+        ),
+    ] {
+        assert!(actual_sdk(job, environment, runner, sdk, rustup, cargo).is_err());
+    }
 }

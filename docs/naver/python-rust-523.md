@@ -1273,3 +1273,37 @@ main의 x64 CarrotMan 한 job에만 fresh SDK before와 독립 always after를 �
 사용자는 로컬 Actions 러너의 속도 이점과 디스크80GB/i9 할당4core/RAM4GB를 명시했다. API에서 runner22 `bin-actions`의 online/idle 및 `self-hosted/Linux/X64/dev-md-local`을 확인했다. [40202955990](https://github.com/bin9208/openpilot-rust/actions/runs/40202955990)의 읽기 전용 inventory artifact12603175511은 여유38786977792B와 기존 공식Rust1.94 SDK의321entry를 기록했다. 현재의 영구 가용량 보장으로 해석하지 않는다.
 
 F01/F02의 순수 native 검사부터 작업별 디스크·메모리 admission과 `CARGO_BUILD_JOBS=1`을 사용해 별도로 실행한다. 모델 수치·CPU ISA·전체 PR 요구는 해당 검사에 맞는 플랫폼에서 유지한다. 기존 원격 실행은 취소하거나 러너 변경만을 위해 반복하지 않는다.
+
+### 집중 검사 수용과 다음 호출부 묶음 — 2026-10-26
+
+source `0e521792e8473be142d6c8bbc7aaaa9457e32a56`의
+[40207816621](https://github.com/bin9208/openpilot-rust/actions/runs/40207816621)은
+등록된 로컬 러너에서 control/model 두 job 모두 성공했다. 모델 artifact12604721803은
+1574408B/SHA256 `479bdd4bfd2d25561f8459d94e9fabb882c33d579418774350cd95cc8639b76d`,
+38개 unique/safe 멤버와 전체 CRC가 일치한다. native 단위, 실제 원본 schedule73개,
+strictClippy의 세 returncode가0이며 source/index·전체 SDK 전후 확인·업로드·소유 회수가 성공했다.
+#589의 feature-off private 선언 경계 수정을 검증하며 전체 모델 수치 수용을 뜻하지 않는다.
+동일 source의 history job은 native feature를 포함한 ISA11개까지 성공했으나
+결과 grep의 옛8개 고정 때문에 실패했다. 다음 묶음에서 실제11개로 연결한다.
+
+#587은 [40205795864](https://github.com/bin9208/openpilot-rust/actions/runs/40205795864)의
+동일 SHA profile을 사용하는5개 빌드/검사와2개 strictClippy, 불변 ELF·SDK·회수 증거로 개별 해결했다.
+해당 run 전체는 AVX512_FP16 admission에서 실패했고 #590의 ISA 보강을 적용했다.
+후속 모델 run40207816680 역시 전체 실패이며 실제 후속 원인을 조사 중이다.
+수치·타이머·기대값을 바꾸거나 모델 전체 성공으로 합산하지 않는다.
+
+다음 묶음은 로깅 원본2의 실제 부재와 재등장 거부, retained/schema14/collision8 검증,
+유지되는 main logger 호출부, uploader 사후 실패 전 실제 종료 receipt를 연결한다.
+Planner native 구조계약21개와 release fixture3개도 별도 local Actions tools role에 연결한다.
+Fast의 native 한 worker는 실제 local runner/SDK를 검증하고 Cargo 병렬1을 사용한다.
+나머지 worker·cold bootstrap 명령·strict trace parser·시간/용량 기준은 보존한다.
+
+부모 소스 검토에서 Focus의 module 정렬 역투영과 block 밖 pin 변경의 기존 봉인 불일치를
+확인해 수정했다. 현재263개 source pin은 모두 실제 바이트와 일치하며 main workflow는
+499477B다. 기존44 job 중 CarrotMan SDK 진단, support uploader 회귀, logger 부재정책의
+세 step만 변경했다. 로컬은 YAML7/Python1/Bash887+shell2의 문법과 Rust10의 서식,
+소스 역투영/diff만 확인했다. 새 기능 결과는 GHA 대기다.
+
+baseline3580의294교체/3부분/3283대기는 그대로이고 추가 실행 원장은144개
+(26교체/114대기/1기존native/2비실행/1제거)다. 로깅 실제 삭제 WIP와 사용되지 않는
+새 API에 선행 수용 실적을 부여하지 않는다. 필수 PR/통합·전달·사용자 실기 수용은 남아 있다.

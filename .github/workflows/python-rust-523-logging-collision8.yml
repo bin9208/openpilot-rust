@@ -59,7 +59,8 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
       RUSTUP_TOOLCHAIN: 1.94.0
-      COLLISION8_HELPER_SHA256: ad5cd1483930fa1f815e47b93a6f69ec4d96e7d78288a450be094f7c23705234
+      NATIVE_LOGGING_SOURCE_POLICY: absent
+      COLLISION8_HELPER_SHA256: 3b9ebc5937a412f6f68090dbf81bdaf12ad1b8cc002d1ffa029e4533dd6395bd
       COLLISION8_BATCHES_SHA256: 52d4ca212c28cad44579360b8531c915f6fe8e3060c0b480f0f7ec1cdb659a79
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
@@ -242,11 +243,40 @@ jobs:
         test "$SOURCE_OUTCOME" = success
         test "$SDK_OUTCOME" = success
         proof=$CI_JOB_TEMP/proof/c8
-        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .collision8_current_pass==true and .immutable_seals==true and .command_exit==0 and .finalizer_exit==0 and .old27_admitted==false and .retirement_credit==0' "$proof/outcome.json"
-        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .selector_count==1 and .logical_cases==8 and .checker_execs==8 and .checker_exit1==8 and .checker_spawn_attempts==0 and .original_cpp_executions==0 and .probe_executions==0 and .foreign_before_after_equal==true and .historical_pass_inherited==false and .old27_admitted==false and .runtime2_admitted==false and .caller_admitted==false and .source_absence_admitted==false and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .retirement_credit==0' "$proof/collision8.candidate.json"
+        # helper가 최초 관측한 부모 baseline을 그대로 비교한다. 새 baseline을 만들지 않는다.
+        test "$NATIVE_LOGGING_SOURCE_POLICY" = absent
+        absence=$CI_JOB_TEMP/proof/c8-source-policy
+        test ! -e "$absence.failed" && test ! -L "$absence.failed"
+        for policy_file in "$absence.parents.tsv" "$absence.json"; do
+          test -f "$policy_file" && test ! -L "$policy_file"
+          test "$(realpath -e -- "$policy_file")" = "$policy_file"
+          test "$(stat -c '%u:%h' -- "$policy_file")" = "$UID:1"
+          (($(stat -c %s -- "$policy_file") <= 4096))
+        done
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .source_policy=="absent" and .scope=="sampled source checkpoints; CLI owns NOFOLLOW/ENOENT checks" and .postdelete_full_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$absence.json" > /dev/null
+        parent_rows=
+        for directory in "$DIAG_SOURCE" "$DIAG_SOURCE/rust" "$DIAG_SOURCE/rust/tools"; do
+          test -d "$directory" && test ! -L "$directory"
+          test "$(realpath -e -- "$directory")" = "$directory"
+          test "$(stat -c %u -- "$directory")" = "$UID"
+          identity=$(stat -c '%d:%i:%f:%u:%g' -- "$directory")
+          printf -v parent_rows '%s%s\t%s\n' "$parent_rows" "$directory" "$identity"
+        done
+        printf '%s' "$parent_rows" | cmp - "$absence.parents.tsv"
+        for leaf in check_native_logging.py native_logging_transport.py; do
+          test ! -e "$DIAG_SOURCE/rust/tools/$leaf" && test ! -L "$DIAG_SOURCE/rust/tools/$leaf"
+        done
+        source_index=$(git --no-optional-locks -C "$DIAG_SOURCE" ls-files -- rust/tools/check_native_logging.py rust/tools/native_logging_transport.py)
+        source_head=$(git --no-optional-locks -C "$DIAG_SOURCE" ls-tree -r --name-only HEAD -- rust/tools/check_native_logging.py rust/tools/native_logging_transport.py)
+        test -z "$source_index" && test -z "$source_head"
+        test ! -e "$absence.failed" && test ! -L "$absence.failed"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_policy=="absent" and .source_commit==$source and .collision8_current_pass==true and .immutable_seals==true and .command_exit==0 and .finalizer_exit==0 and .old27_admitted==false and .retirement_credit==0' "$proof/outcome.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_policy=="absent" and .source_commit==$source and .selector_count==1 and .logical_cases==8 and .checker_execs==8 and .checker_exit1==8 and .checker_spawn_attempts==0 and .original_cpp_executions==0 and .probe_executions==0 and .foreign_before_after_equal==true and .historical_pass_inherited==false and .old27_admitted==false and .runtime2_admitted==false and .caller_admitted==false and .source_absence_admitted==false and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .retirement_credit==0' "$proof/collision8.candidate.json"
         jq -e --arg source "$GITHUB_SHA" --arg worker "$COLLISION8_BATCHES_SHA256" '.schema==1 and .source_commit==$source and .worker_sha256==$worker and .all_batches_pass==true and .coverage_exact_once==true and .counts.root_count==1 and .counts.files>0 and .counts.files<=8192 and .counts.raw_bytes<=1073741824 and .counts.events<=1000000 and .counts.physical_lines<=2000000 and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .retirement_credit==0' "$proof/fixture-batches/complete.json"
         printf '%s  %s\n' "$(jq -er '.fixture_batches_sha256|select(test("^[a-f0-9]{64}$"))' "$proof/collision8.candidate.json")" "$proof/fixture-batches/complete.json" | sha256sum --check --strict --quiet -
         /usr/bin/bash "$DIAG_SOURCE/tools/ci/logging_collision8_549.sh" admit
+        sha256sum -- "$absence.parents.tsv" "$absence.json" "$proof/outcome.json" "$proof/collision8.candidate.json" \
+          "$proof/fixture-batches/complete.json" > "$proof/closure.sha256"
         ln -- "$proof/collision8.candidate.json" "$proof/collision8.json"
         if ! /usr/bin/bash "$DIAG_SOURCE/tools/ci/logging_collision8_549.sh" admit; then
           rm -- "$proof/collision8.json"
@@ -259,6 +289,7 @@ jobs:
       with:
         name: logging-collision8-549-${{ github.run_id }}-${{ github.run_attempt }}
         path: ${{ env.CI_JOB_TEMP }}/proof
+        # c8-source-policy.parents.tsv/.json과 closure.sha256도 global proof 전체에 포함한다.
         if-no-files-found: error
         retention-days: 7
         include-hidden-files: true
@@ -285,6 +316,39 @@ jobs:
         test "$DIAG_SOURCE" = "$p/source"
         test -d "$p/source" && test ! -L "$p/source"
         test "$(realpath -e "$p/source")" = "$p/source"
+        # helper가 최초 관측한 부모 baseline을 그대로 비교한다. 새 baseline을 만들지 않는다.
+        test "$NATIVE_LOGGING_SOURCE_POLICY" = absent
+        absence=$CI_JOB_TEMP/proof/c8-source-policy
+        test ! -e "$absence.failed" && test ! -L "$absence.failed"
+        for policy_file in "$absence.parents.tsv" "$absence.json"; do
+          test -f "$policy_file" && test ! -L "$policy_file"
+          test "$(realpath -e -- "$policy_file")" = "$policy_file"
+          test "$(stat -c '%u:%h' -- "$policy_file")" = "$UID:1"
+          (($(stat -c %s -- "$policy_file") <= 4096))
+        done
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .source_policy=="absent" and .scope=="sampled source checkpoints; CLI owns NOFOLLOW/ENOENT checks" and .postdelete_full_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$absence.json" > /dev/null
+        parent_rows=
+        for directory in "$DIAG_SOURCE" "$DIAG_SOURCE/rust" "$DIAG_SOURCE/rust/tools"; do
+          test -d "$directory" && test ! -L "$directory"
+          test "$(realpath -e -- "$directory")" = "$directory"
+          test "$(stat -c %u -- "$directory")" = "$UID"
+          identity=$(stat -c '%d:%i:%f:%u:%g' -- "$directory")
+          printf -v parent_rows '%s%s\t%s\n' "$parent_rows" "$directory" "$identity"
+        done
+        printf '%s' "$parent_rows" | cmp - "$absence.parents.tsv"
+        for leaf in check_native_logging.py native_logging_transport.py; do
+          test ! -e "$DIAG_SOURCE/rust/tools/$leaf" && test ! -L "$DIAG_SOURCE/rust/tools/$leaf"
+        done
+        source_index=$(git --no-optional-locks -C "$DIAG_SOURCE" ls-files -- rust/tools/check_native_logging.py rust/tools/native_logging_transport.py)
+        source_head=$(git --no-optional-locks -C "$DIAG_SOURCE" ls-tree -r --name-only HEAD -- rust/tools/check_native_logging.py rust/tools/native_logging_transport.py)
+        test -z "$source_index" && test -z "$source_head"
+        test ! -e "$absence.failed" && test ! -L "$absence.failed"
+        proof=$CI_JOB_TEMP/proof/c8
+        test -f "$proof/closure.sha256" && test ! -L "$proof/closure.sha256"
+        test "$(stat -c '%u:%h' -- "$proof/closure.sha256")" = "$UID:1"
+        (($(stat -c %s -- "$proof/closure.sha256") <= 4096))
+        sha256sum --check --strict --quiet "$proof/closure.sha256"
+        cmp "$proof/collision8.candidate.json" "$proof/collision8.json"
         rm -rf --one-file-system -- "$p"
     - name: Clean common owned job temporary paths after evidence upload
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}

@@ -9,6 +9,10 @@ export PATH=/usr/bin:/bin
 fail() { printf 'logging collision8: %s\n' "$*" >&2; exit 1; }
 [[ $# == 1 && ( $1 == admit || $1 == oversize-controls || $1 == run || $1 == final-source ) ]] || fail 'admit, oversize-controls, run or final-source required'
 mode=$1
+source_policy=${NATIVE_LOGGING_SOURCE_POLICY-present}
+case $source_policy in present|absent) ;; *) fail 'NATIVE_LOGGING_SOURCE_POLICY must be present or absent' ;; esac
+source_policy_env=()
+if [[ $source_policy == absent ]]; then source_policy_env=(NATIVE_LOGGING_SOURCE_POLICY=absent); fi
 [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust &&
    ${GITHUB_EVENT_NAME:-} == push && ${GITHUB_REF:-} == refs/heads/codex/feat-523-python-rust &&
    ${RUNNER_ENVIRONMENT:-}:${RUNNER_OS:-}:${RUNNER_ARCH:-} == github-hosted:Linux:X64 &&
@@ -43,6 +47,71 @@ unset GH_TOKEN GITHUB_TOKEN NATIVE_LOGGING_LIFECYCLE_RESUME NATIVE_LOGGING_TEST_
 unset LD_PRELOAD LD_LIBRARY_PATH BASH_ENV ENV RUSTFLAGS CARGO_ENCODED_RUSTFLAGS CARGO_BUILD_TARGET RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER
 export GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1
 proof=$job/proof/c8
+source_policy_baseline=$job/proof/c8-source-policy.parents.tsv
+source_policy_metadata=$job/proof/c8-source-policy.json
+source_policy_failure=$job/proof/c8-source-policy.failed
+# 실제 absent phase의 checkpoint guard다. CLI 내부 SourceGuard의 NOFOLLOW/ENOENT 검사를 대신하지 않는다.
+source_policy_ready=false
+source_policy_paths=() source_policy_fds=() source_policy_ids=()
+source_policy_observe() {
+  local i path current nodes index_entries head_entries
+  [[ $source_policy_ready == true && ! -e $source_policy_failure && ! -L $source_policy_failure ]] || return 1
+  for i in "${!source_policy_paths[@]}"; do
+    path=${source_policy_paths[i]}
+    [[ -d $path && ! -L $path && $(realpath -e -- "$path") == "$path" ]] || return 1
+    current=$(stat -c '%d:%i:%f:%u:%g' -- "$path") || return 1
+    [[ $current == "${source_policy_ids[i]}" &&
+       $(stat -Lc '%d:%i:%f:%u:%g' -- "/proc/$$/fd/${source_policy_fds[i]}") == "$current" ]] || return 1
+  done
+  # complete name scan은 모든 오류를 거부한다. dangling symlink도 이름이 있으면 재등장이다.
+  nodes=$(/usr/bin/find -P "$source/rust/tools" -mindepth 1 -maxdepth 1 \
+    \( -name check_native_logging.py -o -name native_logging_transport.py \) -printf '%f\n') || return 1
+  [[ -z $nodes ]] || return 1
+  index_entries=$(/usr/bin/git --no-optional-locks -C "$source" ls-files -- rust/tools/check_native_logging.py rust/tools/native_logging_transport.py) || return 1
+  head_entries=$(/usr/bin/git --no-optional-locks -C "$source" ls-tree -r --name-only HEAD -- rust/tools/check_native_logging.py rust/tools/native_logging_transport.py) || return 1
+  [[ -z $index_entries && -z $head_entries ]] || return 1
+  for i in "${!source_policy_paths[@]}"; do
+    [[ ! -L ${source_policy_paths[i]} &&
+       $(stat -c '%d:%i:%f:%u:%g' -- "${source_policy_paths[i]}") == "${source_policy_ids[i]}" &&
+       $(stat -Lc '%d:%i:%f:%u:%g' -- "/proc/$$/fd/${source_policy_fds[i]}") == "${source_policy_ids[i]}" ]] || return 1
+  done
+}
+source_policy_checkpoint() {
+  [[ $source_policy == absent ]] || return 0
+  if ! source_policy_observe; then
+    # 첫 관측 실패는 다른 checkpoint/프로세스가 성공해도 지우거나 덮어쓰지 않는다.
+    (set -C; printf 'source_policy=absent\nsource_commit=%s\nphase=%s\nresult=FAIL\n' "$GITHUB_SHA" "${phase:-admission}" > "$source_policy_failure") 2>/dev/null || true
+    printf 'logging source absence checkpoint failed\n' >&2
+    return 1
+  fi
+}
+source_policy_init() {
+  local path fd identity rows= mode_value actual expected
+  [[ $source_policy == absent ]] || return 0
+  for path in "$source" "$source/rust" "$source/rust/tools"; do
+    [[ -d $path && ! -L $path && $(realpath -e -- "$path") == "$path" && $(stat -c %u -- "$path") == "$UID" ]] || return 1
+    mode_value=$(stat -c %a -- "$path") || return 1
+    (( (8#$mode_value & 0022) == 0 )) || return 1
+    exec {fd}< "$path" || return 1
+    identity=$(stat -Lc '%d:%i:%f:%u:%g' -- "/proc/$$/fd/$fd") || return 1
+    [[ $(stat -c '%d:%i:%f:%u:%g' -- "$path") == "$identity" ]] || return 1
+    source_policy_paths+=("$path"); source_policy_fds+=("$fd"); source_policy_ids+=("$identity")
+    printf -v rows '%s%s\t%s\n' "$rows" "$path" "$identity"
+  done
+  expected=$(printf '{"schema":1,"source_commit":"%s","source_policy":"absent","scope":"sampled source checkpoints; CLI owns NOFOLLOW/ENOENT checks","postdelete_full_acceptance":false,"R4_acceptance":false,"retirement_credit":0}' "$GITHUB_SHA")
+  for path in "$source_policy_baseline" "$source_policy_metadata"; do
+    if [[ -e $path || -L $path ]]; then
+      [[ -f $path && ! -L $path && $(stat -c '%u:%h' -- "$path") == "$UID:1" && $(stat -c %s -- "$path") -le 4096 ]] || return 1
+    fi
+  done
+  if [[ ! -e $source_policy_baseline ]]; then (set -C; printf '%s' "$rows" > "$source_policy_baseline") || return 1; fi
+  if [[ ! -e $source_policy_metadata ]]; then (set -C; printf '%s\n' "$expected" > "$source_policy_metadata") || return 1; fi
+  actual=$(cat -- "$source_policy_baseline") || return 1
+  [[ "$actual" == "${rows%$'\n'}" && $(cat -- "$source_policy_metadata") == "$expected" ]] || return 1
+  source_policy_ready=true
+  source_policy_checkpoint
+}
+
 build=$job/build
 sdk=$job/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu
 gib=$((1024 * 1024 * 1024))
@@ -248,6 +317,10 @@ usage() {
   return 1
 }
 admit() {
+  if ! source_policy_checkpoint; then
+    admission_failure 1 admit.source-policy "$source" 'absent source checkpoint failed'
+    return 1
+  fi
   local path cap used apparent remaining device available n sdk_used=0 sdk_apparent=0
   local -A needs=() representatives=()
   local -a paths=("$owner" "$build" "$job/proof") caps=($((2*gib)) $((8*gib)) "$gib")
@@ -292,6 +365,7 @@ admit() {
   done
 }
 originals() {
+  if [[ $source_policy == absent ]]; then source_policy_checkpoint; return; fi
   local relative
   for relative in rust/tools/check_native_logging.py rust/tools/native_logging_transport.py; do
     [[ -f $source/$relative && ! -L $source/$relative ]] || return 1
@@ -312,6 +386,7 @@ source_final() {
   admit || status=1
   return "$status"
 }
+source_policy_init
 if [[ $mode == admit ]]; then admit; exit; fi
 if [[ $mode == oversize-controls ]]; then admit; oversize_controls; admit; exit; fi
 if [[ $mode == final-source ]]; then source_final; exit; fi
@@ -453,9 +528,9 @@ finish() {
   admit || status=1
   [[ ! -e $job/proof/c8-resource-stop ]] || status=1
   [[ $baseline == true && $status == 0 ]] && sealed=true
-  jq -n --arg source "$GITHUB_SHA" --arg phase "$phase" --argjson code "$original" --argjson final "$status" \
+  jq -n --arg source_policy "$source_policy" --arg source "$GITHUB_SHA" --arg phase "$phase" --argjson code "$original" --argjson final "$status" \
     --argjson sealed "$sealed" --argjson pass "$passed" \
-    '{schema:1,source_commit:$source,phase:$phase,command_exit:$code,finalizer_exit:$final,immutable_seals:$sealed,
+    '{schema:1,source_policy:$source_policy,source_commit:$source,phase:$phase,command_exit:$code,finalizer_exit:$final,immutable_seals:$sealed,
       collision8_current_pass:($code==0 and $final==0 and $sealed and $pass),logical_cases:(if $pass then 8 else 0 end),
       original_cpp_executions:(if $pass then 0 else null end),probe_executions:(if $pass then 0 else null end),historical_pass_inherited:false,old27_admitted:false,
       runtime2_admitted:false,caller_admitted:false,source_absence_admitted:false,retirement_credit:0,
@@ -560,6 +635,7 @@ bind_elf "$job/cargo-home/bin/rustup"
 bind_elf "$job/rust-bootstrap/rustup-init"
 hold /etc/ld.so.cache
 hold "$source/tools/ci/logging_collision8_549.sh"
+if [[ $source_policy == absent ]]; then hold "$source_policy_baseline"; hold "$source_policy_metadata"; fi
 hold "$batch_worker"
 hold "$CI_PREPARED_RUST_MANIFEST"
 hold "$source/.github/workflows/python-rust-523-logging-collision8.yml"
@@ -657,7 +733,7 @@ jq -e --slurpfile rows "$proof/reference-sources.expected.jsonl" '.sources==($ro
 # 현재 fixture에는 process_group/pre_exec가 없다. 알려진 setup 추가는 별도 source 심사 대상이다.
 selector=actual_cli_foreign_output_collisions_precede_builder_or_provider_work
 case_env=(NATIVE_LOGGING_TEST_BINARY="$probe" NATIVE_LOGGING_TEST_BUILDER="$builder" NATIVE_LOGGING_TEST_REFERENCE="$fresh_reference"
-  NATIVE_LOGGING_LIFECYCLE_EVIDENCE="$proof/cases" NATIVE_LOGGING_LIFECYCLE_RESUME=39833849895)
+  NATIVE_LOGGING_LIFECYCLE_EVIDENCE="$proof/cases" NATIVE_LOGGING_LIFECYCLE_RESUME=39833849895 "${source_policy_env[@]}")
 socket_max=$proof/cases/logging-lifecycle-XXXXXX/output/s
 (( ${#socket_max} < 108 ))
 printf '%s\n' "${runtime_env[@]}" "${case_env[@]}" | jq -Rs 'split("\n")[:-1]' > "$proof/fixture-env.expected.json"
@@ -701,11 +777,12 @@ jq -se --slurpfile expected "$proof/case-roster.expected.json" \
   'length==8 and ([.[]|[.prebuilt,.kind]]|sort)==($expected[0]|sort)' "$proof/case-manifest.jsonl" > "$proof/case-roster.check"
 run inspect-collision 180 none unused unused build "$checker" inspect-trace --directory "$proof/case-trace" --prefix collision --output "$proof/inspect/collision.json"
 # raw trace에서 expected를 만들지 않는다. 현재 source의 argv/env recipe를 case root별로 독립 생성한다.
-jq -n --arg source "$source" --arg checker "$checker" --arg probe "$probe" --arg builder "$builder" --arg ref "$fresh_reference" \
+jq -n --arg source_policy "$source_policy" --arg source "$source" --arg checker "$checker" --arg probe "$probe" --arg builder "$builder" --arg ref "$fresh_reference" \
   --slurpfile cases "$proof/case-manifest.jsonl" --slurpfile env "$proof/fixture-env.expected.json" '
   [$cases[]|{root:.root,key:[.prebuilt,.kind],program:$checker,
     argv:([$checker,"--binary",$probe,"--builder",$builder,"--root",$source+"/rust/crates/dev-tools/../../..","--output",.root+"/output"]+
-      (if .prebuilt then ["--reference",$ref] else [] end)),
+      (if .prebuilt then ["--reference",$ref] else [] end)+
+      (if $source_policy=="absent" then ["--source-policy","absent"] else [] end)),
     env:($env[0]+["NATIVE_LOGGING_QA_HOLD=first","NATIVE_LOGGING_QA_RECORDS="+.root+"/unexpected-child"])}]' > "$proof/checkers.expected.json"
 jq -e --arg fixture "$fixture" --arg selector "$selector" --arg checker "$checker" \
   --slurpfile wanted "$proof/checkers.expected.json" --slurpfile fixture_env "$proof/fixture-env.expected.json" \
@@ -939,13 +1016,13 @@ for prefix in checker probe reference; do audit_build_programs "$proof/inspect/$
 verify_held
 phase=collision8-observed
 for path in "$proof/inspect/collision.json" "$proof/case-manifest.jsonl" "$proof/current-artifacts.json"; do hold "$path"; done
-jq -n --arg source "$GITHUB_SHA" --arg checker "$checker" --arg fixture "$fixture" \
+jq -n --arg source_policy "$source_policy" --arg source "$GITHUB_SHA" --arg checker "$checker" --arg fixture "$fixture" \
   --arg lexical_sha "${held_sha[$proof/inspect/collision.json]}" \
   --arg cases_sha "${held_sha[$proof/case-manifest.jsonl]}" \
   --arg artifacts_sha "${held_sha[$proof/current-artifacts.json]}" \
   --arg batches_sha "${held_sha[$proof/fixture-batches/complete.json]}" \
   --slurpfile cases "$proof/case-manifest.jsonl" \
-  '{schema:1,source_commit:$source,selector:"actual_cli_foreign_output_collisions_precede_builder_or_provider_work",
+  '{schema:1,source_policy:$source_policy,source_commit:$source,selector:"actual_cli_foreign_output_collisions_precede_builder_or_provider_work",
     selector_count:1,logical_cases:8,case_keys:[$cases[]|[.prebuilt,.kind]],checker:$checker,fixture:$fixture,
     checker_execs:8,checker_exit1:8,checker_spawn_attempts:0,harness_pre_exec_session_setup:"none in pinned fixture",
     original_cpp_executions:0,probe_executions:0,

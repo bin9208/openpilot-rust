@@ -1,7 +1,7 @@
 //! Fault and typed Params controllers using immutable source-only observations.
 use super::{corpus, file, marked, require, Namespace, Result};
 use crate::{
-    qa_process::{CommandSpec, NativeRunner, Runner},
+    qa_process::{CaptureError, Captured, CommandSpec, NativeRunner, Runner},
     uploader_logging_check::{
         ipc::{ownership::Permission, Peer},
         normalized,
@@ -11,8 +11,10 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
-    fs,
-    os::unix::fs::symlink,
+    ffi::OsStr,
+    fs::{self, File},
+    io::Write,
+    os::unix::{ffi::OsStrExt, fs::symlink, fs::MetadataExt},
     path::{Path, PathBuf},
     time::Duration,
 };
@@ -56,6 +58,132 @@ pub struct Request {
     pub fault: bool,
     pub expected: Value,
 }
+
+// #511: NativeRunner 반환과 이후 실패 사이의 실제 상태만 보존한다.
+const EXIT_RECEIPT_BYTES: usize = 64 * 1024;
+const EXIT_ARGV_COUNT: usize = 8;
+const EXIT_ARGV_BYTES: usize = 8192;
+fn exit_os_value(value: &OsStr) -> Result<Value> {
+    let bytes = value.as_bytes();
+    require(bytes.len() <= 4096, "uploader exit OS value exceeds bound")?;
+    Ok(
+        json!({"os_hex":bytes.iter().map(|v|format!("{v:02x}")).collect::<String>(),
+        "utf8":value.to_str()}),
+    )
+}
+fn exit_worker_context() -> Value {
+    let tici = match fs::symlink_metadata("/TICI") {
+        Ok(meta) => json!({"state":"present","regular_file":meta.is_file(),
+            "symlink":meta.file_type().is_symlink()}),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            json!({"state":"absent"})
+        }
+        Err(error) => json!({"state":"unknown","io_kind":format!("{:?}",error.kind()),
+            "raw_os_error":error.raw_os_error()}),
+    };
+    let affinity = match rustix::thread::sched_getaffinity(None) {
+        Ok(cpus) => json!({"observed":true,
+            "allowed_cpus":(0..rustix::thread::CpuSet::MAX_CPU)
+                .filter(|cpu|cpus.is_set(*cpu)).collect::<Vec<_>>()}),
+        Err(error) => json!({"observed":false,"raw_os_error":error.raw_os_error()}),
+    };
+    json!({"scope":"records-worker/current-thread; uploader child not sampled",
+        "os":std::env::consts::OS,"arch":std::env::consts::ARCH,
+        "worker_pid":std::process::id(),"tici":tici,"affinity":affinity})
+}
+fn write_exit_receipt(
+    request: &Request,
+    command: &CommandSpec,
+    result: &Result<Captured>,
+    ipc_root: &Path,
+) -> Result<()> {
+    let argv = command.child_argv();
+    require(
+        argv.len() <= EXIT_ARGV_COUNT,
+        "uploader exit argv count exceeds bound",
+    )?;
+    let mut total = 0usize;
+    for value in &argv {
+        total = total
+            .checked_add(value.as_bytes().len())
+            .ok_or("uploader exit argv overflow")?;
+        require(total <= EXIT_ARGV_BYTES, "uploader exit argv exceeds bound")?;
+    }
+    let capture = match result {
+        Ok(output) => json!({"state":"captured","exit_code":output.code,
+            "spawn_status":"completed_native_capture","stdout_bytes":output.stdout.len(),
+            "stderr_bytes":output.stderr.len()}),
+        Err(error) => {
+            let mut capture = json!({"state":"runner_error","exit_code":null,
+                "spawn_status":"unobserved",
+                "error_prefix":error.to_string().chars().take(512).collect::<String>()});
+            if let Some(error) = error.downcast_ref::<CaptureError>() {
+                match error {
+                    CaptureError::Timeout {
+                        timeout,
+                        stdout,
+                        stderr,
+                    } => {
+                        capture["state"] = json!("timeout");
+                        capture["timeout_ms"] = json!(timeout.as_millis());
+                        capture["partial_stdout_bytes"] = json!(stdout.len());
+                        capture["partial_stderr_bytes"] = json!(stderr.len());
+                    }
+                    CaptureError::Limit { stream, limit } => {
+                        capture["state"] = json!("limit");
+                        capture["stream"] = json!(stream);
+                        capture["limit"] = json!(limit);
+                    }
+                }
+            } else if let Some(error) = error.downcast_ref::<std::io::Error>() {
+                // capture IO도 같은 타입이므로 spawn 실패로 단정하지 않는다.
+                capture["state"] = json!("io_error");
+                capture["io_kind"] = json!(format!("{:?}", error.kind()));
+                capture["raw_os_error"] = json!(error.raw_os_error());
+            }
+            capture
+        }
+    };
+    let receipt = json!({"schema":1,"boundary":"NativeRunner return before downstream checks",
+        "capture":capture,"argv":argv.iter().map(|v|exit_os_value(v)).collect::<Result<Vec<_>>>()?,
+        "cwd":command.cwd.as_ref().map(|p|exit_os_value(p.as_os_str())).transpose()?,
+        "command_timeout_ms":command.timeout.as_millis(),"worker_host_context":exit_worker_context(),
+        "namespace":{"prefix":request.prefix,"ipc_root":exit_os_value(ipc_root.as_os_str())?}});
+    let bytes = serde_json::to_vec_pretty(&receipt)?;
+    require(
+        bytes.len() <= EXIT_RECEIPT_BYTES,
+        "uploader exit receipt exceeds bound",
+    )?;
+    let path = request.output.join("uploader-exit.json");
+    let mut file = File::from(rustix::fs::open(
+        &path,
+        rustix::fs::OFlags::WRONLY
+            | rustix::fs::OFlags::CREATE
+            | rustix::fs::OFlags::EXCL
+            | rustix::fs::OFlags::NOFOLLOW
+            | rustix::fs::OFlags::NONBLOCK
+            | rustix::fs::OFlags::CLOEXEC,
+        rustix::fs::Mode::from_raw_mode(0o600),
+    )?);
+    file.write_all(&bytes)?;
+    file.sync_all()?;
+    let held = file.metadata()?;
+    let named = fs::symlink_metadata(&path)?;
+    require(
+        held.is_file()
+            && held.nlink() == 1
+            && held.mode() & 0o7777 == 0o600
+            && held.uid() == rustix::process::geteuid().as_raw()
+            && held.len() == bytes.len() as u64
+            && named.is_file()
+            && !named.file_type().is_symlink()
+            && (held.dev(), held.ino()) == (named.dev(), named.ino()),
+        "uploader exit receipt identity/mode changed",
+    )?;
+    Ok(())
+}
+// #511: 반환 receipt 구현 끝.
+
 fn fault_settings(name: &str) -> Result<(&'static str, Value)> {
     Ok(match name {
         "normal" => ("", json!({})),
@@ -309,7 +437,9 @@ pub fn worker(path: &Path) -> Result<Value> {
             &json!({"root":request.work,"endpoint":peer.endpoint,"target":target,"api":server.url,"persist":persist,"version":request.root.join("openpilot/common/version.h"),"action":settings["action"].as_str().unwrap_or("step"),"fail_mark":settings["fail_mark"]==true,"persistent":settings["persistent"]==true}),
         )?);
     }
-    let output = NativeRunner.run_in_current_group(&command)?;
+    let output = NativeRunner.run_in_current_group(&command);
+    write_exit_receipt(&request, &command, &output, &peer.ipc_root)?;
+    let output = output?;
     fs::write(request.output.join("uploader.stdout"), &output.stdout)?;
     fs::write(request.output.join("uploader.stderr"), &output.stderr)?;
     _permission.mode(0o755)?;

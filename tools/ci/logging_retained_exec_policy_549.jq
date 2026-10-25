@@ -32,9 +32,11 @@ def terminal($events; $pid; $allowed):
   ($terms|length)==1 and ($allowed|index($terms[0].result|implode))!=null;
 def command($program; $argv; $env; $pid; $end; $parent; $role):
   {program:$program,argv:$argv,env:$env,pid:$pid,end:$end,parent:$parent,role:$role};
+# present와 historical788은 기존 argv다. 현재 absent만 명시flag를 더한다.
+def source_args($b): if $b.source_policy=="absent" then ["--source-policy","absent"] else [] end;
 def checker_argv($b; $root):
   [$b.checker,"retained","--root",$b.source,"--binary",$b.probe,"--context",$b.context,
-   "--output",$root+"/output","--source-commit",$b.commit,"--binary-sha256",$b.binary_sha];
+   "--output",$root+"/output","--source-commit",$b.commit,"--binary-sha256",$b.binary_sha]+source_args($b);
 def fixture_argv($b):
   [$b.fixture,"--ignored","--exact","retained::"+$prefix,"--test-threads=1","--color=never"];
 def lifecycle_recipe:
@@ -112,7 +114,7 @@ def native_sequence($row; $b; $env; $parent; $full; $held):
 def reachable($edges; $from; $to; $depth):
   $from==$to or ($depth>0 and any($edges[]|select(.parent==$from); reachable($edges;.child;$to;$depth-1)));
 
-# 원본2는 실제 source에 보존된다. private absent copy의 거부만20회 검사한다.
+# 실제 source policy와 별개로 private absent copy의 거부20회를 검사한다.
 # commands/env는 Rust source의 유한 recipe이며 원문 trace에서 expected를 생성하지 않는다.
 def source_guard_policy($b; $trace; $edges; $execs):
   .events as $events |
@@ -164,7 +166,16 @@ def source_guard_policy($b; $trace; $edges; $execs):
    postdelete_full_acceptance:false,old27_accepted:false,R4_acceptance:false,retirement_credit:0};
 
 need(($binding|length)==1;"one source binding required") |
+(if $ARGS.named|has("source_policy") then $ARGS.named.source_policy else "present" end) as $source_policy |
+(if $ARGS.named|has("policy_scope") then $ARGS.named.policy_scope else "current" end) as $policy_scope |
 $binding[0] as $b | . as $trace | .events as $events |
+need(($source_policy=="present" or $source_policy=="absent") and
+  (if $policy_scope=="historical-788" then
+    $source_policy=="present" and $prefix=="first_int" and
+    $b.commit=="78896f19db29d5cbe305d6f788bac9d0db4ce552" and ($b|has("source_policy")|not)
+   elif $policy_scope=="current" then $b.source_policy==$source_policy and
+    $b.commit!="78896f19db29d5cbe305d6f788bac9d0db4ce552"
+   else false end);"source policy/scope binding differs") |
 need($b.schema==1 and $b.providers.probe.path==$b.probe and $b.providers.probe.sha256==$b.binary_sha and
   $b.providers.checker.path==$b.checker and $b.providers.probe.uid==$b.uid and $b.providers.checker.uid==$b.uid;
   "current held provider binding differs") |
@@ -220,7 +231,7 @@ need(($rows|length)==(if $prefix=="forbidden_executable_options" then 3 else 1 e
         + (if $escaped then ["NATIVE_LOGGING_QA_ESCAPED=1"] else [] end)
       elif $positive==false and $forbid==false then ["NATIVE_LOGGING_QA_HOLD=first","NATIVE_LOGGING_QA_RECORDS="+$row.root+"/unexpected-child"] else [] end)) as $env |
    (if $normal then [$b.checker,"retained","--root",$b.source,"--binary",$b.probe,"--context",$b.context,
-      "--output",$b.proof+"/native","--source-commit",$b.commit,"--binary-sha256",$b.binary_sha]
+      "--output",$b.proof+"/native","--source-commit",$b.commit,"--binary-sha256",$b.binary_sha]+source_args($b)
     else checker_argv($b;$row.root)+(if $forbid then ["--"+($r.case_key|ltrimstr("retained-reject-")),$b.probe] else [] end) end) as $argv |
    [$checks[]|select(.exec.argv!=null and (.exec.argv|vector)==($argv|map(bytes)))] as $match |
    need(($match|length)==1;"checker source argv differs") |
@@ -303,4 +314,5 @@ need(all($policy.escaped[]|select(.role=="escaped"); .pid as $pid |
  python_exec_attempts:0,cpp_exec_attempts:0,zero_child_checker_attempts:(if $prefix|startswith("output_") then 1 elif $prefix=="forbidden_executable_options" then 3 else 0 end),
  full_event_index:false,closed_pid:false,closed_cwd:false,closed_fd:false,closed_dso:false,
  all_adopted_reaped:false,old27_accepted:false,pending_runtime2_accepted:false,R4_acceptance:false,retirement_credit:0}
-end
+end |
+. + {source_policy:$source_policy,policy_scope:$policy_scope,historical_data_only:($policy_scope=="historical-788")}

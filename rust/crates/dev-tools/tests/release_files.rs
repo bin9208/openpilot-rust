@@ -97,7 +97,8 @@ chmod +x "$cache/$target/debug/release-files"
     }
     let trace = temp.path().join("trace");
     let run = |status: &str, cache: &std::path::Path| {
-        Command::new(&bootstrap)
+        Command::new("/bin/bash")
+            .arg(&bootstrap)
             .env("PATH", format!("{}:/usr/bin:/bin", tools.display()))
             .env("OPENPILOT_RELEASE_TOOLS_CACHE", cache)
             .env("TRACE", &trace)
@@ -128,7 +129,8 @@ chmod +x "$cache/$target/debug/release-files"
     fs::remove_file(&trace).unwrap();
     assert!(!run("0", &root.join("cache")).status.success());
     assert!(!trace.exists());
-    let failed = Command::new(&bootstrap)
+    let failed = Command::new("/bin/bash")
+        .arg(&bootstrap)
         .env("PATH", format!("{}:/usr/bin:/bin", tools.display()))
         .env("OPENPILOT_RELEASE_TOOLS_CACHE", &cache)
         .env("TRACE", &trace)

@@ -227,3 +227,103 @@ canonicalTAR/전체Git metadata checksum은 계속 필수AND다. status1만으�
 조건은 그대로다. 로컬 Bash 문법·변경span 역투영·diff만 확인하고 Git/fixture 실행0이다.
 콘텐츠/name-only/actual exit1/index불변과 CLI20/raw21/policy3·전체closure/cleanup은 새 source의
 **GHA UNRUN**이며 원본2보존·R4false/retirement credit0을 유지한다.
+
+## #582 실제 수용 및 pre-delete 경계 — 2026-10-25
+
+source `5bee0d30b3a824cc4f2dbcc23c4caba2fa813a64`의 [40199544123/job121187580810](https://github.com/bin9208/openpilot-rust/actions/runs/40199544123/job/121187580810)가 전체 성공했고 단독 원문 감사를 마쳤습니다. artifact12602016721은133573683B/SHA256 `65452f43e3093f5e09dad47bffaba586a8b273a26f869c01cff0fad5bda194f8`,9594 safe unique/9594CRC입니다. 부모가 중복 다운로드하거나 재CRC하지 않았습니다.
+
+source/copy rawindex는6checkpoint 전체에서 각 identity와 SHA를 유지했습니다. journal30행/10836B이고 고정 copied diff만 expected1/actual1, 나머지 명령은0입니다. stdout은 정확한 원본2삭제 NUL 목록이며 canonical TAR와 전체.git34 checksum도 일치했습니다. 정규화·재hold·복원·waiver는 없습니다.
+
+실제 CLI20의 정확 argv/env·exit1·producer 전 거부, rawexec21과 정책음성3을 확인했습니다. 기존67unit·14lifecycle+untraced1·retained-once/current15·strictClippy·legacy INT/TERM2도 성공했습니다. raw108과 summary19/raw3521의 실제 ZIP bytes/size/SHA, immutable17쌍·held/provider·source/SDK 후검사·closure·업로드·소유cleanup2를 감사했습니다.
+
+#582의 복사본 인덱스 변경 결함 수용 조건을 충족해 종료합니다. 저장소의 원본 Python2개는 아직 보존하며 post-delete full/R4/전체 #549/#523/retirement credit은0입니다. live UNIX socket1개는 업로더가 raw payload를 전송하지 않았고 해당 metadata/sentinel/필수 raw·report는 보존됐습니다. closed PID/cwd/FD/DSO·all-adopted-reaped 수용으로 확대하지 않습니다. 상세 기록은 docs/naver/python-rust-523-logging-source-guard-549.md와 private logging-5bee-audit.md입니다.
+
+## #554 개별 타이밍 수용 — 2026-10-25
+
+source `5bee0d30b3a824cc4f2dbcc23c4caba2fa813a64`의 [40199544123/job121187580810](https://github.com/bin9208/openpilot-rust/actions/runs/40199544123/job/121187580810)에서 원래 Git status를 포함하는2초 경계와 기존14 lifecycle·retained raw비교·각prefix lexer·source/SDK/provider 봉인·업로드/cleanup이 모두 성공했습니다. 독립 전수감사도 이 개별 완료조건의 충족을 확인했습니다.
+
+actual INT backpressure0.892221514초/TERM0.860565187초이며 timer 이동·2초/600초·trace class·신호/packet·자원 상한 변경은 없습니다. 67unit·untraced1/retained-once/current15·legacy INT/TERM2를 보존했고 summary19/raw3521의 실제size/SHA 및 unknown/truncated 거부를 확인했습니다. artifact12602016721=133573683B/SHA `65452f43e3093f5e09dad47bffaba586a8b273a26f869c01cff0fad5bda194f8`의9594CRC와 immutable17쌍, 후검사·cleanup2도 통과했습니다.
+
+#554를 이 검증 범위에서 종료합니다. CPU·Git·BPF 하나의 성능 인과나 다른 호스트에서의 시간 보장은 입증하지 않았습니다. 원본2 실제삭제·post-delete full/R4·전체 #549/#523/retirement credit0은 별도입니다. 자세한 근거는 private logging-5bee-audit.md와 docs/naver/python-rust-523-logging-source-guard-549.md에 연결합니다.
+
+## #549 postdelete WIP 보완 및 부모 인계 — 2026-10-25
+
+작업 루트는 `/home/fma1/.codex/worktrees/python-rust-523-completion/openpilot-rust`다.
+`imported/continuation-523-pause-20261025-volta.md`는 이 루트의
+`.analysis/scratch/2026-10-25-523-completion/imported/`에서 읽었다. 이전 checkout과
+기본 dev-md checkout은 변경하지 않았다. 앞선 #582/#554 실제 결과와 본문은 유지하며,
+이번 소스는 **postdelete 기능·빌드·Clippy·Actions UNRUN인 후보**다.
+
+인계 WIP에서 실행을 막던 두 누락을 실제 수정했다. root fixture의 `command_reference`는
+prebuilt/reference argv 뒤에 `retained::source_policy(&mut command)`를 호출한다.
+따라서 legacy INT/TERM과 collision8도 retained fixture와 같은 finite 정책을 사용한다.
+collision helper의 미정의 `source_policy`/`source_policy_env`도 초기화했다. 미설정 또는
+`present`는 기존 argv를 유지하며 `absent`만 `--source-policy absent`와 fixture env를
+추가한다. empty/unknown은 거부하며 파일 존재에 따라 정책을 자동 선택하지 않는다.
+child `retained.rs`의 인계 구현은 그대로 유지했다. root 수정은 이 호출 한 줄뿐이다.
+
+jq 기본값은 `//`에서 `has` 분기로 바꿨다. 인자가 없을 때만 present/current를 기본값으로
+사용하며 명시적 null/false/empty/unknown은 거부한다. current binding은 같은 source_policy를
+명시해야 하고 `78896f19db29d5cbe305d6f788bac9d0db4ce552`는 current로 수용하지 않는다.
+과거 788의 missing-field binding은 `policy_scope=historical-788`, `source_policy=present`,
+`prefix=first_int`, 정확한 고정 commit일 때만 허용한다. 과거 원문 argv/env/binding은 수정하지
+않는다. 출력의 `historical_data_only`와 scope/policy를 통해 현재 absent 결과와 구분한다.
+
+retained→legacy→source-guard의 재사용 outcome/receipt와 native raw 비교에도 정책 일치를
+추가했다. legacy complete와 collision candidate에 source_policy를 기록한다. sampled source
+checkpoint는 실제 root/rust/tools FD·identity, 이름 전체 scan, HEAD/index의 원본2 부재와
+첫 실패 marker를 검사한다. 이것은 연속 부재 또는 closed PID/cwd/FD/DSO 증명이 아니다.
+private copy diff는 present에서만 고정 exit1/정확2 NUL 삭제 목록, absent에서는 고정
+exit0/정확 empty를 요구한다. 실제 exit를 보고 expected를 선택하지 않는다.
+
+새 schema 음성 통제는 actual first_int와 source-absence의 양성 report/binding 각각에 대해
+정책 인자4(null/false/empty/unknown), scope 인자4, binding 필드5(missing/null/false/empty/unknown),
+현재 binding의 historical scope 오사용1, 총14개다. 각각 jq exit5·stdout empty·정확한 정책 오류를
+함께 요구한다. 각 묶음 전체를 기존 `run`의 60초 timeout/자원 admission으로 제한한다.
+기존 trace 음성4/3과 별도 `source-policy-controls/complete.json`을 남기며 기능은 GHA에서만
+검증한다. 기존 67unit·14 lifecycle 본문+untraced1·retained-once/current15·108raw/700585B·
+current19·legacy2·CLI20/raw21·collision8·2초/600초·cap·unknown/truncated strict 거부는
+유지했다. 새 통제는 lifecycle 타이머 바깥의 정책 단계다. 원본2 삭제 WIP는 그대로이며
+복원본/stub/encoded 본문을 추가하지 않았다. R4false/retirement credit0을 유지한다.
+
+부모가 수행할 통합은 다음과 같다. 이 작업자는 workflow/main/Focus/pins/ledger/Cargo를
+변경하지 않았고 stage/commit/push/이슈 갱신/GHA 실행도 하지 않았다.
+
+1. `.github/workflows/python-rust-523-logging.yml`의 actual retained/legacy-runtime2/source-guard에
+   `NATIVE_LOGGING_SOURCE_POLICY=absent`를 고정한다. 현재 policy 호출은 helper가 전달한다.
+   과거 788 replay 호출에는 `--arg policy_scope historical-788 --arg source_policy present`를
+   추가한다. replay 출력도 present/historical-788/historical_data_only=true를 요구하고,
+   current 정책 출력에는 absent/current/historical_data_only=false를 요구한다. 과거 두 JSON과
+   ZIP/member SHA·literal 경로·historical-only/current15_accepted=false 조건은 유지한다.
+2. 같은 workflow의 helper literal pin(qualify/legacy/source-guard/cleanup의 CURRENT_HELPER_SHA256),
+   jq literal pin(replay policy_sha/qualify/source-guard)을 아래 최종 SHA로 교체한다.
+   `.github/workflows/python-rust-523-logging-collision8.yml`의 `COLLISION8_HELPER_SHA256`도 교체한다.
+   `COLLISION8_BATCHES_SHA256`와 batch worker는 변경하지 않는다.
+3. collision workflow의 admit/oversize-controls/run/final-source/cleanup admit 모두 같은
+   `NATIVE_LOGGING_SOURCE_POLICY=absent`가 필요하다. current outcome/candidate/reuse의 정책
+   일치와 기존 source/SDK/final/upload/cleanup AND를 유지한다. logging global proof의
+   `logging-source-policy.parents.tsv`, `logging-source-policy.json`, collision global proof의
+   `c8-source-policy.parents.tsv`, `c8-source-policy.json`을 봉인·업로드·closure에 연결하고
+   동일 prefix `.failed`가 부재인지(정상 노드와 dangling symlink 모두) 확인한다. 새 schema
+   complete14 두 개도 closure에 연결하며 기존 trace controls4/3을 대체하지 않는다.
+4. `.github/workflows/rust.yml`의 `logger-runtime` step19 기존 Rust CLI argv에
+   `--source-policy absent`를 추가한다. fresh CPP step18과 나머지 job/조건/타이머는 유지한다.
+   별도 maintained caller 실제 성공은 dedicated legacy2로 대체하지 않는다.
+5. `.github/workflows/python-rust-523.yml`의 허용 범위/Focus pin과 부모 ledger를 갱신한다.
+   root fixture 한 줄 변경도 포함한다. 기존 MEMBERS108/current SOURCE_FILES19 및 역사 자료의
+   marker/pin은 삭제하지 않는다. 새 삭제 commit의 clean HEAD/index/literal absence에서
+   fresh checker/probe/fixture/builder와 기존 전체 GHA gate를 검증하고 exact SHA 결과를 감사한다.
+
+| 대상 파일 | 이번 최종 SHA256 |
+| --- | --- |
+| `tools/ci/logging_retained_549.sh` | `1504c949d8a8f39c7e821b87db0601f5f3ce3dd7aa0eb84be13ff2f411c9d59b` |
+| `tools/ci/logging_retained_exec_policy_549.jq` | `3b84adc7a2f1bd147841382fc35a9f0e456d357005206966c586308061f492b7` |
+| `tools/ci/logging_collision8_549.sh` | `3b9ebc5937a412f6f68090dbf81bdaf12ad1b8cc002d1ffa029e4533dd6395bd` |
+| `rust/crates/dev-tools/tests/native_logging_lifecycle.rs` | `5a029df81ef9216c9d5d920c6747b7c01d1cb238245bd4fd3b8a3041510aced0` |
+| `rust/crates/dev-tools/tests/native_logging_lifecycle/retained.rs` | `9f7439a21aed62402ea4df6fb69f5ee56c0fc57a1fdaf6c272d6ffdcb6d3e46f` |
+
+로컬에서는 두 helper의 `bash -n`, 새 schema 통제의 인용을 푼 내부 Bash 본문 `bash -n`,
+root/child 두 파일의 `rustfmt --edition 2021 --check --config skip_children=true`, 소스/diff와
+`git diff --check`만 확인했다. 모두 PASS이며 jq 평가/프로젝트 CLI/Cargo/build/test/Clippy/
+원본·모델 실행/GHA 실행은0이다. 새 strict 정책의 실제 거부와 postdelete 전체 수용은 아직
+**GHA UNRUN**이다. 다른 기능군의 동시 WIP는 보존했다.

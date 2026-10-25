@@ -14,6 +14,10 @@ name: Python Rust 523 native units
     - rust/tools/prepare-readonly-ci-rust
     - rust/tools/model_export/offline_schedule.py
     - rust/tools/model_export/schema.py
+    - rust/crates/dev-tools/tests/planner_ci_policy.rs
+    - rust/crates/dev-tools/tests/planner_ci_policy/**
+    - rust/crates/dev-tools/tests/release_files.rs
+    - rust/crates/dev-tools/src/ci_policy.rs
   workflow_dispatch: null
 permissions:
   contents: read
@@ -320,6 +324,14 @@ jobs:
         run_once model-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-model-runtime --lib --test compiler_launch --test compiler_schedule -- -D warnings
             ;;
+          tools)
+        run_once planner-policy "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --test planner_ci_policy --test release_files
+        grep -F 'test result: ok. 21 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-policy.log" || failed=1
+        grep -F 'test result: ok. 3 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-policy.log" || failed=1
+        run_once planner-policy-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --test planner_ci_policy --test release_files -- -D warnings
+            ;;
           *) echo "unknown native crate" >&2; exit 1 ;;
         esac
         /usr/bin/python3 -I -B -S "$CI_JOB_TEMP/admit-native-units.py" after-native
@@ -450,3 +462,4 @@ jobs:
         crate:
         - control
         - model
+        - tools

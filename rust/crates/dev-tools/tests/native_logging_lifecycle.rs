@@ -70,6 +70,7 @@ fn command_reference(output: &Path, prebuilt: bool) -> Command {
             .arg("--reference")
             .arg(provider("NATIVE_LOGGING_TEST_REFERENCE"));
     }
+    retained::source_policy(&mut command);
     command
 }
 struct Checker {

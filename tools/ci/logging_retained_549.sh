@@ -8,6 +8,13 @@ case $# in
   1) [[ $1 == legacy-runtime2 || $1 == source-guard ]] || { echo 'expected no arguments, legacy-runtime2 or source-guard' >&2; exit 64; }; mode=$1 ;;
   *) echo 'expected no arguments, legacy-runtime2 or source-guard' >&2; exit 64 ;;
 esac
+source_policy=${NATIVE_LOGGING_SOURCE_POLICY-present}
+case $source_policy in present|absent) ;; *) echo 'NATIVE_LOGGING_SOURCE_POLICY must be present or absent' >&2; exit 64 ;; esac
+source_policy_args=(); source_policy_env=()
+if [[ $source_policy == absent ]]; then
+  source_policy_args=(--source-policy absent)
+  source_policy_env=(NATIVE_LOGGING_SOURCE_POLICY=absent)
+fi
 test "$GITHUB_ACTIONS" = true
 test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
 test "$GITHUB_EVENT_NAME" = push
@@ -30,6 +37,70 @@ proof=$CI_JOB_TEMP/proof/logging
 sdk=$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin
 mkdir "$proof" "$proof/build" "$proof/trace" "$proof/bin" "$proof/lifecycle"
 phase=admission
+source_policy_baseline=$CI_JOB_TEMP/proof/logging-source-policy.parents.tsv
+source_policy_metadata=$CI_JOB_TEMP/proof/logging-source-policy.json
+source_policy_failure=$CI_JOB_TEMP/proof/logging-source-policy.failed
+# 실제 absent phase의 checkpoint guard다. CLI 내부 SourceGuard의 NOFOLLOW/ENOENT 검사를 대신하지 않는다.
+source_policy_ready=false
+source_policy_paths=() source_policy_fds=() source_policy_ids=()
+source_policy_observe() {
+  local i path current nodes index_entries head_entries
+  [[ $source_policy_ready == true && ! -e $source_policy_failure && ! -L $source_policy_failure ]] || return 1
+  for i in "${!source_policy_paths[@]}"; do
+    path=${source_policy_paths[i]}
+    [[ -d $path && ! -L $path && $(realpath -e -- "$path") == "$path" ]] || return 1
+    current=$(stat -c '%d:%i:%f:%u:%g' -- "$path") || return 1
+    [[ $current == "${source_policy_ids[i]}" &&
+       $(stat -Lc '%d:%i:%f:%u:%g' -- "/proc/$$/fd/${source_policy_fds[i]}") == "$current" ]] || return 1
+  done
+  # complete name scan은 모든 오류를 거부한다. dangling symlink도 이름이 있으면 재등장이다.
+  nodes=$(/usr/bin/find -P "$source/rust/tools" -mindepth 1 -maxdepth 1 \
+    \( -name check_native_logging.py -o -name native_logging_transport.py \) -printf '%f\n') || return 1
+  [[ -z $nodes ]] || return 1
+  index_entries=$(/usr/bin/git --no-optional-locks -C "$source" ls-files -- rust/tools/check_native_logging.py rust/tools/native_logging_transport.py) || return 1
+  head_entries=$(/usr/bin/git --no-optional-locks -C "$source" ls-tree -r --name-only HEAD -- rust/tools/check_native_logging.py rust/tools/native_logging_transport.py) || return 1
+  [[ -z $index_entries && -z $head_entries ]] || return 1
+  for i in "${!source_policy_paths[@]}"; do
+    [[ ! -L ${source_policy_paths[i]} &&
+       $(stat -c '%d:%i:%f:%u:%g' -- "${source_policy_paths[i]}") == "${source_policy_ids[i]}" &&
+       $(stat -Lc '%d:%i:%f:%u:%g' -- "/proc/$$/fd/${source_policy_fds[i]}") == "${source_policy_ids[i]}" ]] || return 1
+  done
+}
+source_policy_checkpoint() {
+  [[ $source_policy == absent ]] || return 0
+  if ! source_policy_observe; then
+    # 첫 관측 실패는 다른 checkpoint/프로세스가 성공해도 지우거나 덮어쓰지 않는다.
+    (set -C; printf 'source_policy=absent\nsource_commit=%s\nphase=%s\nresult=FAIL\n' "$GITHUB_SHA" "${phase:-admission}" > "$source_policy_failure") 2>/dev/null || true
+    printf 'logging source absence checkpoint failed\n' >&2
+    return 1
+  fi
+}
+source_policy_init() {
+  local path fd identity rows= mode_value actual expected
+  [[ $source_policy == absent ]] || return 0
+  for path in "$source" "$source/rust" "$source/rust/tools"; do
+    [[ -d $path && ! -L $path && $(realpath -e -- "$path") == "$path" && $(stat -c %u -- "$path") == "$UID" ]] || return 1
+    mode_value=$(stat -c %a -- "$path") || return 1
+    (( (8#$mode_value & 0022) == 0 )) || return 1
+    exec {fd}< "$path" || return 1
+    identity=$(stat -Lc '%d:%i:%f:%u:%g' -- "/proc/$$/fd/$fd") || return 1
+    [[ $(stat -c '%d:%i:%f:%u:%g' -- "$path") == "$identity" ]] || return 1
+    source_policy_paths+=("$path"); source_policy_fds+=("$fd"); source_policy_ids+=("$identity")
+    printf -v rows '%s%s\t%s\n' "$rows" "$path" "$identity"
+  done
+  expected=$(printf '{"schema":1,"source_commit":"%s","source_policy":"absent","scope":"sampled source checkpoints; CLI owns NOFOLLOW/ENOENT checks","postdelete_full_acceptance":false,"R4_acceptance":false,"retirement_credit":0}' "$GITHUB_SHA")
+  for path in "$source_policy_baseline" "$source_policy_metadata"; do
+    if [[ -e $path || -L $path ]]; then
+      [[ -f $path && ! -L $path && $(stat -c '%u:%h' -- "$path") == "$UID:1" && $(stat -c %s -- "$path") -le 4096 ]] || return 1
+    fi
+  done
+  if [[ ! -e $source_policy_baseline ]]; then (set -C; printf '%s' "$rows" > "$source_policy_baseline") || return 1; fi
+  if [[ ! -e $source_policy_metadata ]]; then (set -C; printf '%s\n' "$expected" > "$source_policy_metadata") || return 1; fi
+  actual=$(cat -- "$source_policy_baseline") || return 1
+  [[ "$actual" == "${rows%$'\n'}" && $(cat -- "$source_policy_metadata") == "$expected" ]] || return 1
+  source_policy_ready=true
+  source_policy_checkpoint
+}
 untraced_status=0
 paired_active=
 finish() {
@@ -43,16 +114,20 @@ finish() {
     printf '%s\n' "$paired_final_result" > "$proof/paired-554/$paired_active/final-snapshot.exit"
     if ((result == 0 && paired_final_result != 0)); then result=$paired_final_result; fi
   fi
+  source_policy_checkpoint
+  source_policy_result=$?
+  if ((result == 0 && source_policy_result != 0)); then result=$source_policy_result; fi
   verify_held > "$proof/held-final.stdout" 2> "$proof/held-final.stderr"
   held_result=$?
   if ((result == 0 && held_result != 0)); then result=$held_result; fi
   if ((result == 0 && untraced_status != 0)); then result=$untraced_status; phase=lifecycle-untraced-failed; fi
-  printf '{"phase":"%s","exit_code":%s,"held_final_exit_code":%s,"untraced_exit_code":%s,"paired_final_exit_code":%s,"retirement_credit":0,"closed_trace_admitted":false,"old27_admitted":false}\n' "$phase" "$result" "$held_result" "$untraced_status" "$paired_final_result" > "$proof/outcome.json"
+  printf '{"source_policy":"%s","phase":"%s","exit_code":%s,"held_final_exit_code":%s,"untraced_exit_code":%s,"paired_final_exit_code":%s,"retirement_credit":0,"closed_trace_admitted":false,"old27_admitted":false}\n' "$source_policy" "$phase" "$result" "$held_result" "$untraced_status" "$paired_final_result" > "$proof/outcome.json"
   exit "$result"
 }
 trap finish EXIT
 admit() {
   local label=$1 growth_mib=$2 available target_bytes=0 proof_bytes
+  source_policy_checkpoint
   available=$(df -PB1 "$source" | awk 'NR==2 {print $4}')
   if test -d "$CARGO_TARGET_DIR"; then target_bytes=$(du -sx --block-size=1 "$CARGO_TARGET_DIR" | cut -f1); fi
   proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
@@ -98,6 +173,38 @@ run() {
     (ulimit -f 524288; /usr/bin/timeout --signal=TERM --kill-after=30s "${seconds}s" "$@") > "$proof/build/$label.stdout" 2> "$proof/build/$label.stderr"
   fi
   admit "$label-after" 0
+}
+# 실제 양성 report/binding에서 정책 인자 또는 필드 하나만 바꾼다. 기존 trace 음성4/3과 분리한다.
+source_policy_controls() {
+  local prefix=$1 binding=$2 report=$3 directory=$4
+  mkdir -m 700 -- "$directory"
+  run source-policy-schema-controls 60 "${runtime[@]}" /usr/bin/bash --noprofile --norc -euo pipefail -c '
+    prefix=$1; binding=$2; report=$3; policy=$4; directory=$5; source_policy=$6
+    count=0
+    reject() {
+      local name=$1 selected=$2 status=0; shift 2
+      /usr/bin/jq -e --arg prefix "$prefix" --slurpfile binding "$selected" "$@" -f "$policy" "$report" \
+        > "$directory/$name.stdout" 2> "$directory/$name.stderr" || status=$?
+      printf "%s\n" "$status" > "$directory/$name.exit"
+      test "$status" -eq 5 && test ! -s "$directory/$name.stdout"
+      grep -F -- "source policy/scope binding differs" "$directory/$name.stderr"
+      count=$((count+1))
+    }
+    for value in null false '\''""'\'' '\''"unknown"'\''; do
+      reject "source-arg-$count" "$binding" --argjson source_policy "$value"
+      reject "scope-arg-$count" "$binding" --arg source_policy "$source_policy" --argjson policy_scope "$value"
+    done
+    for mutation in '\''del(.source_policy)'\'' '\''.source_policy=null'\'' '\''.source_policy=false'\'' \
+      '\''.source_policy=""'\'' '\''.source_policy="unknown"'\''; do
+      /usr/bin/jq "$mutation" "$binding" > "$directory/binding-$count.json"
+      reject "binding-$count" "$directory/binding-$count.json" --arg source_policy "$source_policy"
+    done
+    reject historical-current-binding "$binding" --arg source_policy "$source_policy" --arg policy_scope historical-788
+    test "$count" -eq 14
+    printf '\''{"schema":1,"controls":14,"each_source_policy_exact_error":true,"actual_raw_changed":false,"R4_acceptance":false,"retirement_credit":0}\n'\'' \
+      > "$directory/complete.json"
+  ' source-policy-schema-controls "$prefix" "$binding" "$report" "$source/tools/ci/logging_retained_exec_policy_549.jq" "$directory" "$source_policy"
+  hold "$directory/complete.json"
 }
 declare -a held_paths=() held_fds=() held_ids=() held_hashes=()
 hold() {
@@ -177,10 +284,10 @@ legacy_publish_reuse() {
   legacy_file "$proof/legacy-reuse.held.tsv"
   (set -C; jq -n --arg source "$source" --arg sha "$GITHUB_SHA" --arg prior "$proof" \
     --arg owner "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" \
-    --arg root_identity "$(stat -c '%d:%i:%f:%u:%g' "$source")" \
+    --arg source_policy "$source_policy" --arg root_identity "$(stat -c '%d:%i:%f:%u:%g' "$source")" \
     --arg proof_identity "$(stat -c '%d:%i:%f:%u:%g' "$proof")" --arg held_roster "$proof/legacy-reuse.held.tsv" \
     --arg held_sha "$(sha256sum "$proof/legacy-reuse.held.tsv" | cut -d' ' -f1)" --slurpfile roles "$rows" \
-    '{schema:1,mode:"retained",source:$source,source_commit:$sha,prior:$prior,owner:$owner,
+    '{schema:1,mode:"retained",source_policy:$source_policy,source:$source,source_commit:$sha,prior:$prior,owner:$owner,
       root_identity:$root_identity,proof_identity:$proof_identity,roles:$roles,held_roster:$held_roster,held_roster_sha256:$held_sha,
       prior_fd_continuity_claimed:false,historical_reuse:false,R4_acceptance:false,retirement_credit:0}' > "$reuse")
   legacy_file "$reuse"
@@ -241,8 +348,8 @@ legacy_finish() {
   (set -e; admit legacy-runtime2-exit 0) > "$proof/resource-final.stdout" 2> "$proof/resource-final.stderr"
   resource_result=$?
   if ((result == 0 && (sealed != 0 || held_result != 0 || alias_result != 0 || resource_result != 0))); then result=1; fi
-  printf '{"schema":1,"mode":"legacy-runtime2","phase":"%s","exit_code":%s,"source_sdk_final_exit_code":%s,"source_final_exit_code":%s,"sdk_final_exit_code":%s,"held_final_exit_code":%s,"provider_alias_final_exit_code":%s,"resource_final_exit_code":%s,"old27_admitted":false,"R4_acceptance":false,"retirement_credit":0}\n' \
-    "$phase" "$result" "$sealed" "$source_result" "$sdk_result" "$held_result" "$alias_result" "$resource_result" > "$proof/outcome.json"
+  printf '{"schema":1,"mode":"legacy-runtime2","source_policy":"%s","phase":"%s","exit_code":%s,"source_sdk_final_exit_code":%s,"source_final_exit_code":%s,"sdk_final_exit_code":%s,"held_final_exit_code":%s,"provider_alias_final_exit_code":%s,"resource_final_exit_code":%s,"old27_admitted":false,"R4_acceptance":false,"retirement_credit":0}\n' \
+    "$source_policy" "$phase" "$result" "$sealed" "$source_result" "$sdk_result" "$held_result" "$alias_result" "$resource_result" > "$proof/outcome.json"
   exit "$result"
 }
 legacy_alias() {
@@ -281,12 +388,12 @@ reuse_retained() {
     "$CI_PREPARED_RUST_MANIFEST" "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256" "$CI_JOB_TEMP/proof/prepared-rust-roster.before.bin"; do
     legacy_file "$path" 33554432
   done
-  jq -e '.phase=="candidate-observed" and .exit_code==0 and .held_final_exit_code==0 and .untraced_exit_code==0 and .paired_final_exit_code==0' "$prior/outcome.json" > "$proof/prior-success.txt"
-  jq -e --arg source "$source" --arg sha "$GITHUB_SHA" --arg prior "$prior" \
+  jq -e --arg source_policy "$source_policy" '.source_policy==$source_policy and .phase=="candidate-observed" and .exit_code==0 and .held_final_exit_code==0 and .untraced_exit_code==0 and .paired_final_exit_code==0' "$prior/outcome.json" > "$proof/prior-success.txt"
+  jq -e --arg source_policy "$source_policy" --arg source "$source" --arg sha "$GITHUB_SHA" --arg prior "$prior" \
     --arg owner "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" --arg root_identity "$legacy_source_identity" \
     --arg proof_identity "$(stat -c '%d:%i:%f:%u:%g' "$prior")" \
     --arg held_roster "$prior/legacy-reuse.held.tsv" --arg held_sha "$(sha256sum "$prior/legacy-reuse.held.tsv" | cut -d' ' -f1)" '
-    .schema==1 and .mode=="retained" and .source==$source and .source_commit==$sha and .prior==$prior and
+    .schema==1 and .mode=="retained" and .source_policy==$source_policy and .source==$source and .source_commit==$sha and .prior==$prior and
     .owner==$owner and .root_identity==$root_identity and .proof_identity==$proof_identity and
     .held_roster==$held_roster and .held_roster_sha256==$held_sha and
     .prior_fd_continuity_claimed==false and .historical_reuse==false and .R4_acceptance==false and .retirement_credit==0 and
@@ -409,7 +516,7 @@ legacy_runtime2() {
   legacy_tree "$proof/reference-build" "$proof/reference-before"
   selector=actual_cli_int_term_reap_held_producer_and_preserve_runtime_foreign_replacement
   legacy_env=(NATIVE_LOGGING_TEST_BINARY="$probe" NATIVE_LOGGING_TEST_BUILDER="$builder" NATIVE_LOGGING_TEST_REFERENCE="$reference"
-    NATIVE_LOGGING_LIFECYCLE_EVIDENCE="$proof/lifecycle" NATIVE_LOGGING_LIFECYCLE_RESUME=39833849895)
+    NATIVE_LOGGING_LIFECYCLE_EVIDENCE="$proof/lifecycle" NATIVE_LOGGING_LIFECYCLE_RESUME=39833849895 "${source_policy_env[@]}")
   read -r started _ < /proc/uptime
   for signal in INT TERM; do
     label=legacy-runtime2-${signal,,}
@@ -491,9 +598,9 @@ legacy_runtime2() {
   verify_held
   admit legacy-runtime2-final 0
   phase=legacy-runtime2-observed
-  jq -n --arg source "$GITHUB_SHA" --arg selector "$selector" --arg reference "$reference" \
+  jq -n --arg source_policy "$source_policy" --arg source "$GITHUB_SHA" --arg selector "$selector" --arg reference "$reference" \
     --arg reference_sha "$(sha256sum "$reference" | cut -d' ' -f1)" \
-    '{schema:1,mode:"legacy-runtime2",source_commit:$source,selector:$selector,logical_cases:2,logical_commands:2,libtest_passed:2,
+    '{schema:1,mode:"legacy-runtime2",source_policy:$source_policy,source_commit:$source,selector:$selector,logical_cases:2,logical_commands:2,libtest_passed:2,
       signal_order:["INT","TERM"],trace_prefixes:["legacy-runtime2-int","legacy-runtime2-term"],aggregate_limit_seconds:600,
       resume:"39833849895",fresh_reference:$reference,fresh_reference_sha256:$reference_sha,
       prior_fd_continuity_claimed:false,old17_reexecuted:false,collision8_reexecuted:false,retained14_reexecuted:false,
@@ -594,8 +701,8 @@ source_guard_finish() {
   (set -e; ulimit -f 524288; source_guard_copy_seal after) > "$proof/copy-final.stdout" 2> "$proof/copy-final.stderr"; copy_result=$?
   (set -e; admit source-guard-exit 0) > "$proof/resource-final.stdout" 2> "$proof/resource-final.stderr"; resource_result=$?
   if ((result == 0 && (source_result || sdk_result || held_result || copy_result || resource_result))); then result=1; fi
-  printf '{"schema":1,"mode":"source-guard","phase":"%s","exit_code":%s,"source_final_exit_code":%s,"sdk_final_exit_code":%s,"held_final_exit_code":%s,"copy_final_exit_code":%s,"resource_final_exit_code":%s,"postdelete_full_acceptance":false,"R4_acceptance":false,"retirement_credit":0}\n' \
-    "$phase" "$result" "$source_result" "$sdk_result" "$held_result" "$copy_result" "$resource_result" > "$proof/outcome.json"
+  printf '{"schema":1,"mode":"source-guard","source_policy":"%s","phase":"%s","exit_code":%s,"source_final_exit_code":%s,"sdk_final_exit_code":%s,"held_final_exit_code":%s,"copy_final_exit_code":%s,"resource_final_exit_code":%s,"postdelete_full_acceptance":false,"R4_acceptance":false,"retirement_credit":0}\n' \
+    "$source_policy" "$phase" "$result" "$source_result" "$sdk_result" "$held_result" "$copy_result" "$resource_result" > "$proof/outcome.json"
   exit "$result"
 }
 # source-guard의 고정 Git 관측 네 개만 진단한다. index 기준을 갱신하지 않는다.
@@ -695,7 +802,7 @@ source_guard_index_check() {
     [[ $root == "$CI_JOB_TEMP/logging-source-absence-copy/source" && $# == 10 &&
        $1 == git && $2 == --no-optional-locks && $3 == -c && $4 == diff.autoRefreshIndex=false &&
        $5 == -C && $6 == "$root" && $7 == diff && $8 == --exit-code && $9 == --name-only && ${10} == -z ]]
-    expected_code=1
+    if [[ $source_policy == present ]]; then expected_code=1; else expected_code=0; fi
     source_guard_index_record expected-exit "$stage" "$expected_code" actual-exit "$command_code" "$command"
   fi
   source_guard_index_budget "index-$stage" 16809984
@@ -772,8 +879,8 @@ source_guard() {
   trap source_guard_finish EXIT
   phase=source-guard-reuse
   for path in "$legacy/outcome.json" "$legacy/complete.json" "$legacy/build/legacy-builder-build.stdout" "$legacy/held-before.tsv"; do legacy_file "$path" 536870912; done
-  jq -e '.mode=="legacy-runtime2" and .phase=="legacy-runtime2-observed" and .exit_code==0 and .source_sdk_final_exit_code==0 and .held_final_exit_code==0 and .provider_alias_final_exit_code==0 and .resource_final_exit_code==0' "$legacy/outcome.json" > "$proof/legacy-success.check"
-  jq -e --arg sha "$GITHUB_SHA" '.source_commit==$sha and .logical_cases==2 and .logical_commands==2 and .signal_order==["INT","TERM"] and .R4_acceptance==false and .retirement_credit==0' "$legacy/complete.json" > "$proof/legacy-cases.check"
+  jq -e --arg source_policy "$source_policy" '.source_policy==$source_policy and .mode=="legacy-runtime2" and .phase=="legacy-runtime2-observed" and .exit_code==0 and .source_sdk_final_exit_code==0 and .held_final_exit_code==0 and .provider_alias_final_exit_code==0 and .resource_final_exit_code==0' "$legacy/outcome.json" > "$proof/legacy-success.check"
+  jq -e --arg source_policy "$source_policy" --arg sha "$GITHUB_SHA" '.source_policy==$source_policy and .source_commit==$sha and .logical_cases==2 and .logical_commands==2 and .signal_order==["INT","TERM"] and .R4_acceptance==false and .retirement_credit==0' "$legacy/complete.json" > "$proof/legacy-cases.check"
   while IFS=$'\t' read -r prior_fd hash identity path; do
     [[ $prior_fd =~ ^[0-9]+$ && $hash =~ ^[a-f0-9]{64}$ && $path == /* && $(realpath -e "$path") == "$path" && -f $path && ! -L $path ]]
     [[ $(legacy_identity "$path") == "$identity" && $(sha256sum "$path" | cut -d' ' -f1) == "$hash" ]]
@@ -790,8 +897,10 @@ source_guard() {
   legacy_file "$context"
   for path in /usr/bin/dd /usr/bin/mv /usr/bin/rm; do elf "source-guard-index-${path##*/}" "$path"; done
   legacy_tree "$source/.git" "$proof/original-git-before"
+  if [[ $source_policy == present ]]; then
   printf '%s  %s\n' adee1d45e299bfd6448e8f5584b194b2dbbb53622ee3c1d57c02538d0b0d1fc4 "$source/rust/tools/check_native_logging.py" \
     288a4fd0f9aca05d82a3f415e6632ef3e62b92f2d73f01d7a2f1b5263cdb7ad1 "$source/rust/tools/native_logging_transport.py" | sha256sum --check --strict - > "$proof/originals-present.txt"
+  else source_policy_checkpoint; fi
   [[ ! -e $copy && ! -L $copy ]]
   # 실제 Git/index와 tracked payload만 복사한다. target/SDK/archive를 복제하지 않는다.
   git --no-optional-locks ls-files -z > "$proof/copy-index.bin"
@@ -831,7 +940,11 @@ source_guard() {
   cmp "$proof/copy-index.bin" "$proof/copied-index.bin"
   source_guard_index_git after-diff-cached "$proof/copy-cached.diff" git --no-optional-locks -C "$root" diff --cached --exit-code
   source_guard_index_git after-diff-files "$proof/copy-deletions.bin" git --no-optional-locks -c diff.autoRefreshIndex=false -C "$root" diff --exit-code --name-only -z
-  printf 'rust/tools/check_native_logging.py\0rust/tools/native_logging_transport.py\0' > "$proof/copy-deletions.expected.bin"
+  if [[ $source_policy == present ]]; then
+    printf 'rust/tools/check_native_logging.py\0rust/tools/native_logging_transport.py\0' > "$proof/copy-deletions.expected.bin"
+  else
+    : > "$proof/copy-deletions.expected.bin"
+  fi
   cmp "$proof/copy-deletions.expected.bin" "$proof/copy-deletions.bin"
   # canonical tar와 Git metadata bytes를 source->copy 대조한다. raw index 변경도 숨기지 않는다.
   for path in "$source" "$root"; do
@@ -883,10 +996,10 @@ source_guard() {
     GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.preloadIndex GIT_CONFIG_VALUE_0=true | jq -Rs 'split("\u0000")[:-1]' > "$proof/checker-env.json"
   jq -n --arg proof "$proof" --arg copy "$root" --arg source "$source" --arg commit "$GITHUB_SHA" --arg fixture "$fixture" \
     --arg checker "$checker" --arg probe "$probe" --arg builder "$builder" --arg context "$context" --arg selector "$selector" \
-    --arg binary_sha "$NATIVE_LOGGING_RETAINED_BINARY_SHA256" --argjson uid "$UID" \
+    --arg source_policy "$source_policy" --arg binary_sha "$NATIVE_LOGGING_RETAINED_BINARY_SHA256" --argjson uid "$UID" \
     --slurpfile prior "$prior/exec-policy/binding.json" --slurpfile complete "$proof/complete.json" \
     --slurpfile fixture_env "$proof/fixture-env.json" --slurpfile checker_env "$proof/checker-env.json" '
-    {schema:1,mode:"source-guard",source:$source,proof:$proof,copy:$copy,commit:$commit,fixture:$fixture,checker:$checker,
+    {schema:1,mode:"source-guard",source_policy:$source_policy,source:$source,proof:$proof,copy:$copy,commit:$commit,fixture:$fixture,checker:$checker,
      probe:$probe,builder:$builder,context:$context,selector:$selector,binary_sha:$binary_sha,uid:$uid,providers:$prior[0].providers,
      cases:$complete[0].cases,fixture_env:$fixture_env[0],checker_env:$checker_env[0]}' > "$proof/binding.json"
   legacy_file "$proof/binding.json"
@@ -894,7 +1007,7 @@ source_guard() {
   legacy_file "$source/tools/ci/logging_retained_exec_policy_549.jq"
   run inspect-source-absence 180 "${runtime[@]}" "$checker" inspect-trace-summary --directory "$proof/trace" --prefix source-absence --output "$proof/inspect.json"
   legacy_file "$proof/inspect.json" 67108864
-  run exec-source-absence 60 "${runtime[@]}" /usr/bin/jq -e --arg prefix source-absence --slurpfile binding "$proof/binding.json" \
+  run exec-source-absence 60 "${runtime[@]}" /usr/bin/jq -e --arg source_policy "$source_policy" --arg prefix source-absence --slurpfile binding "$proof/binding.json" \
     -f "$source/tools/ci/logging_retained_exec_policy_549.jq" "$proof/inspect.json"
   mv "$proof/build/exec-source-absence.stdout" "$proof/exec-policy.json"
   legacy_file "$proof/exec-policy.json"
@@ -913,28 +1026,33 @@ source_guard() {
     /usr/bin/jq --arg checker "$checker" "$mutation" "$proof/inspect.json" > "$proof/control-$control.input.json"
     run "policy-control-$control" 60 "${runtime[@]}" /usr/bin/bash --noprofile --norc -euo pipefail -c '
       status=0
-      /usr/bin/jq -e --arg prefix source-absence --slurpfile binding "$1" -f "$2" "$3" > "$4.stdout" 2> "$4.stderr" || status=$?
+      /usr/bin/jq -e --arg source_policy "$6" --arg prefix source-absence --slurpfile binding "$1" -f "$2" "$3" > "$4.stdout" 2> "$4.stderr" || status=$?
       printf "%s\n" "$status" > "$4.exit"
       test "$status" -eq 5 && test ! -s "$4.stdout"
       grep -F -- "$5" "$4.stderr"
-    ' source-policy-control "$proof/binding.json" "$source/tools/ci/logging_retained_exec_policy_549.jq" "$proof/control-$control.input.json" "$proof/control-$control" "$expected_error"
+    ' source-policy-control "$proof/binding.json" "$source/tools/ci/logging_retained_exec_policy_549.jq" "$proof/control-$control.input.json" "$proof/control-$control" "$expected_error" "$source_policy"
   done
   printf '{"schema":1,"controls":3,"each_guard_exact_error":true,"actual_raw_changed":false,"R4_acceptance":false}\n' > "$proof/controls.json"
   legacy_file "$proof/controls.json"
+  source_policy_controls source-absence "$proof/binding.json" "$proof/inspect.json" "$proof/source-policy-controls"
   legacy_tree "$source/.git" "$proof/original-git-after"
   cmp "$proof/original-git-before.roster" "$proof/original-git-after.roster"
   cmp "$proof/original-git-before.sha256" "$proof/original-git-after.sha256"
   verify_held
   phase=source-guard-observed
 }
+source_policy_init
+if [[ $source_policy == absent ]]; then hold "$source_policy_baseline"; hold "$source_policy_metadata"; fi
 if [[ $mode == source-guard ]]; then source_guard; exit; fi
 
 if [[ $mode == legacy-runtime2 ]]; then legacy_runtime2; exit; fi
 
 for path in "$source/tools/ci/logging_retained_549.sh" "$source/tools/ci/logging_retained_exec_policy_549.jq" "$source/.github/workflows/python-rust-523-logging.yml" "$sdk/cargo" "$sdk/rustc" "$sdk/clippy-driver" /usr/bin/git /usr/bin/strace /usr/bin/timeout; do hold "$path"; done
 elf exec-policy-jq /usr/bin/jq
+if [[ $source_policy == present ]]; then
 printf '%s  %s\n' adee1d45e299bfd6448e8f5584b194b2dbbb53622ee3c1d57c02538d0b0d1fc4 rust/tools/check_native_logging.py \
   288a4fd0f9aca05d82a3f415e6632ef3e62b92f2d73f01d7a2f1b5263cdb7ad1 rust/tools/native_logging_transport.py | sha256sum --check --strict - > "$proof/originals-present.txt"
+else source_policy_checkpoint; fi
 admit initial-build 8192
 common=(--manifest-path "$source/rust/Cargo.toml" -p openpilot-dev-tools --locked --no-default-features --features native-logging-check-native)
 run checker-build 1800 "$sdk/cargo" build "${common[@]}" --bin check-native-logging --message-format=json
@@ -1417,7 +1535,7 @@ export NATIVE_LOGGING_RETAINED_BINARY_SHA256 NATIVE_LOGGING_RETAINED_CONTEXT_SHA
 NATIVE_LOGGING_RETAINED_BINARY_SHA256=$(sha256sum "$probe" | cut -d' ' -f1)
 NATIVE_LOGGING_RETAINED_CONTEXT_SHA256=$(sha256sum "$context" | cut -d' ' -f1)
 export NATIVE_LOGGING_LIFECYCLE_EVIDENCE=$proof/lifecycle
-lifecycle_env=(NATIVE_LOGGING_RETAINED_BINARY="$NATIVE_LOGGING_RETAINED_BINARY" NATIVE_LOGGING_RETAINED_CONTEXT="$NATIVE_LOGGING_RETAINED_CONTEXT" NATIVE_LOGGING_RETAINED_SOURCE_COMMIT="$NATIVE_LOGGING_RETAINED_SOURCE_COMMIT" NATIVE_LOGGING_RETAINED_BINARY_SHA256="$NATIVE_LOGGING_RETAINED_BINARY_SHA256" NATIVE_LOGGING_RETAINED_CONTEXT_SHA256="$NATIVE_LOGGING_RETAINED_CONTEXT_SHA256" NATIVE_LOGGING_LIFECYCLE_EVIDENCE="$NATIVE_LOGGING_LIFECYCLE_EVIDENCE")
+lifecycle_env=(NATIVE_LOGGING_RETAINED_BINARY="$NATIVE_LOGGING_RETAINED_BINARY" NATIVE_LOGGING_RETAINED_CONTEXT="$NATIVE_LOGGING_RETAINED_CONTEXT" NATIVE_LOGGING_RETAINED_SOURCE_COMMIT="$NATIVE_LOGGING_RETAINED_SOURCE_COMMIT" NATIVE_LOGGING_RETAINED_BINARY_SHA256="$NATIVE_LOGGING_RETAINED_BINARY_SHA256" NATIVE_LOGGING_RETAINED_CONTEXT_SHA256="$NATIVE_LOGGING_RETAINED_CONTEXT_SHA256" NATIVE_LOGGING_LIFECYCLE_EVIDENCE="$NATIVE_LOGGING_LIFECYCLE_EVIDENCE" "${source_policy_env[@]}")
 monotonic_cs() {
   local stamp unused whole fraction
   read -r stamp unused < /proc/uptime
@@ -1640,8 +1758,8 @@ for name in first_int first_term first_eof runtime_directory_int runtime_directo
   verify_held
 done
 (( $(monotonic_cs) - started <= 60000 ))
-run retained-once 360 "${runtime[@]}" /usr/bin/strace --seccomp-bpf --kill-on-exit -ff -ttt -x -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/retained-once" "$checker" retained --root "$source" --binary "$probe" --context "$context" --output "$proof/native" --source-commit "$GITHUB_SHA" --binary-sha256 "$NATIVE_LOGGING_RETAINED_BINARY_SHA256"
-jq -e --arg source "$GITHUB_SHA" '.fresh_native_packets==250 and .fresh_native_responses==697 and .retained_cpp_packets==249 and .retained_cpp_responses==694 and .cpp_executions==0 and .source_commit==$source and .R4_acceptance==false and .lifecycle_reuse_granted==false and (.historical_to_recovered_console|length)==7 and (.recovered_to_fresh_console|length)==7 and all(.historical_to_recovered_console[]; .projected_equal==true) and all(.recovered_to_fresh_console[]; .projected_equal==true)' "$proof/native/report.json" > "$proof/raw-comparison.txt"
+run retained-once 360 "${runtime[@]}" /usr/bin/strace --seccomp-bpf --kill-on-exit -ff -ttt -x -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/retained-once" "$checker" retained --root "$source" --binary "$probe" --context "$context" --output "$proof/native" --source-commit "$GITHUB_SHA" --binary-sha256 "$NATIVE_LOGGING_RETAINED_BINARY_SHA256" "${source_policy_args[@]}"
+jq -e --arg source_policy "$source_policy" --arg source "$GITHUB_SHA" '.source_policy==$source_policy and .fresh_native_packets==250 and .fresh_native_responses==697 and .retained_cpp_packets==249 and .retained_cpp_responses==694 and .cpp_executions==0 and .source_commit==$source and .R4_acceptance==false and .lifecycle_reuse_granted==false and (.historical_to_recovered_console|length)==7 and (.recovered_to_fresh_console|length)==7 and all(.historical_to_recovered_console[]; .projected_equal==true) and all(.recovered_to_fresh_console[]; .projected_equal==true)' "$proof/native/report.json" > "$proof/raw-comparison.txt"
 for stem in providers context-inputs source-state; do cmp "$proof/native/$stem.before.json" "$proof/native/$stem.after.json"; done
 # 정책 expected는 raw exec에서 복사하지 않는다. source command 배열과 fixture가 실제
 # assertion 뒤 create_new한 작은 receipt/invocation만 현재 held provider에 연결한다.
@@ -1728,13 +1846,13 @@ test "$(readlink -e -- /usr/bin/git)" = /usr/bin/git
 policy_json "$proof/native/report.json" > "$proof/exec-policy/native.report.json"
 /usr/bin/jq -cn --arg source "$source" --arg proof "$proof" --arg checker "$checker" --arg fixture "$fixture" --arg probe "$probe" \
   --arg context "$context" --arg commit "$GITHUB_SHA" --arg binary_sha "$NATIVE_LOGGING_RETAINED_BINARY_SHA256" \
-  --arg context_sha "$NATIVE_LOGGING_RETAINED_CONTEXT_SHA256" --argjson uid "$UID" \
+  --arg source_policy "$source_policy" --arg context_sha "$NATIVE_LOGGING_RETAINED_CONTEXT_SHA256" --argjson uid "$UID" \
   --slurpfile cases "$proof/exec-policy/cases.jsonl" --slurpfile native "$proof/exec-policy/native.json" \
   --slurpfile fixture_env "$proof/exec-policy/fixture-env.json" --slurpfile direct_env "$proof/exec-policy/direct-env.json" \
   --slurpfile checker_env "$proof/exec-policy/checker-env.json" --slurpfile provider "$proof/exec-policy/probe.json" \
   --slurpfile native_report "$proof/exec-policy/native.report.json" \
   --slurpfile checker_provider "$proof/exec-policy/checker.json" '
-  {schema:1,source:$source,proof:$proof,checker:$checker,fixture:$fixture,probe:$probe,git:"/usr/bin/git",
+  {schema:1,source_policy:$source_policy,source:$source,proof:$proof,checker:$checker,fixture:$fixture,probe:$probe,git:"/usr/bin/git",
    context:$context,commit:$commit,binary_sha:$binary_sha,context_sha:$context_sha,uid:$uid,
    fixture_env:$fixture_env[0],direct_env:$direct_env[0],checker_env:$checker_env[0],cases:$cases,native:$native[0],
    native_report:$native_report[0],providers:{probe:$provider[0],checker:$checker_provider[0]}}' > "$proof/exec-policy/binding.json"
@@ -1747,7 +1865,7 @@ for name in first_int first_term first_eof runtime_directory_int runtime_directo
   run "inspect-$name" 180 "${runtime[@]}" "$checker" inspect-trace-summary --directory "$proof/trace" --prefix "$name" --output "$proof/inspect/$name.json"
   jq -e '.schema==2 and .raw_immutable==true and .requires_exit_status_zero==true and .full_event_index==false and .lexically_checked_all_events==true and .event_count>0 and .event_count<=1000000 and .physical_lines>=.event_count and .physical_lines<=2000000 and ((.event_counts|to_entries|map(.value)|add)==.event_count) and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .full_acceptance==false and .retirement_credit==false' "$proof/inspect/$name.json" > "$proof/inspect/$name.scope.txt"
   hold "$proof/inspect/$name.json"
-  run "exec-policy-$name" 60 "${runtime[@]}" /usr/bin/jq -e --arg prefix "$name" --slurpfile binding "$proof/exec-policy/binding.json" \
+  run "exec-policy-$name" 60 "${runtime[@]}" /usr/bin/jq -e --arg source_policy "$source_policy" --arg prefix "$name" --slurpfile binding "$proof/exec-policy/binding.json" \
     -f "$policy" "$proof/inspect/$name.json"
   mv -- "$proof/build/exec-policy-$name.stdout" "$proof/exec-policy/$name.json"
   hold "$proof/exec-policy/$name.json"
@@ -1772,15 +1890,16 @@ for name in first_int first_term first_eof runtime_directory_int runtime_directo
       # run 함수는 조건문 안에서 호출하지 않는다. 실제 exit5+해당 guard의 오류를 함께 요구한다.
       run "exec-policy-control-$control" 60 "${runtime[@]}" /usr/bin/bash --noprofile --norc -euo pipefail -c '
         status=0
-        /usr/bin/jq -e --arg prefix first_int --slurpfile binding "$1" -f "$2" "$3" > "$4.stdout" 2> "$4.stderr" || status=$?
+        /usr/bin/jq -e --arg source_policy "$6" --arg prefix first_int --slurpfile binding "$1" -f "$2" "$3" > "$4.stdout" 2> "$4.stderr" || status=$?
         printf "%s\n" "$status" > "$4.exit"
         test "$status" -eq 5 && test ! -s "$4.stdout"
         grep -F -- "$5" "$4.stderr"
       ' policy-control "$proof/exec-policy/binding.json" "$policy" "$proof/exec-policy/control-$control.input.json" \
-        "$proof/exec-policy/control-$control" "$expected_error"
+        "$proof/exec-policy/control-$control" "$expected_error" "$source_policy"
     done
     printf '{"schema":1,"controls":4,"each_guard_exact_error":true,"actual_raw_changed":false,"R4_acceptance":false}\n' > "$proof/exec-policy/controls.json"
     hold "$proof/exec-policy/controls.json"
+    source_policy_controls first_int "$proof/exec-policy/binding.json" "$proof/inspect/first_int.json" "$proof/exec-policy/source-policy-controls"
   fi
 done
 verify_held
