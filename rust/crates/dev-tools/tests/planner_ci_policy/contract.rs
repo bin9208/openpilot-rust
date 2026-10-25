@@ -1,4 +1,4 @@
-//! test_plannerd_ci.py의 구조 계약. YAML scalar는 ci_policy::parse처럼 문자열이다.
+//! maintained native Planner CI의 구조 계약. YAML scalar는 ci_policy::parse처럼 문자열이다.
 use openpilot_dev_tools::ci_policy::{parse, validate_private_job_layout, TRUSTED_SOURCE};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -381,8 +381,7 @@ pub fn assert_contract(main: &Value, native: &Value) {
         assert_eq!(budgets.as_slice(), expected);
     }
     assert_eq!(named_step(planner, stages[3])["run"].as_str().unwrap().lines().filter(|s| s.starts_with("python ") || s.starts_with("cargo ")).collect::<Vec<_>>(), [
-        "python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_plannerd_ci.py",
-        "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --target \"$NATIVE_TOOLS_HOST\" --test native_build_closure",
+        "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --target \"$NATIVE_TOOLS_HOST\" --test native_build_closure --test planner_ci_policy --test planner_ci_controller --test planner_controller_frozen --test planner_controller_retirement",
         "cargo test --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked",
         "cargo build --manifest-path rust/Cargo.toml -p openpilot-plannerd --bins --examples --locked",
         "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked -- -D warnings",

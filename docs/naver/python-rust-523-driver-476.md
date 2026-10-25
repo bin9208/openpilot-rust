@@ -6,7 +6,8 @@
 상태: 사용자 소유 확대 승인 뒤 실제 cached-driver prestate/dispatch API와 독립 original
 관측 후보를 구현했다. 고정 PKL과 인증된 과거 object로 whole44 요청을 준비하는 DAG까지
 연결했다. 아래 차단 prototype·7개 외부 입력 기록은 역사적 상태이며 마지막 절이 현재 계약이다.
-기능·repair 수용은 GHA UNRUN이다. 로컬 기능 실행은 하지 않았다.
+source425의 GHA에서 새4unit과 fresh driver4case는 성공했다. retained/prestate 실행은
+fresh 실패 미재현으로 미도달이며 repair 수용은 미완료다. 로컬 기능 실행은 하지 않았다.
 
 ## 실제 실패의 정확한 범위
 
@@ -745,3 +746,84 @@ helper AST/YAML/12개 Bash run의 `bash -n`/embedded Python3개 AST/embedded Rus
 source/diff만 로컬 확인했다. 실제 Rust compile·4unit·retained collection·native full44 decoder/
 ABI/host ISA·원본 warp1 preflight·cached/original prestate와 수치 비교는 **모두 GHA UNRUN**이다. 새 GHA/commit/push0,
 James D2/PR1344·buffer/compiler·부모 SDK/logging/CI/ledger 파일 수정0이다.
+
+## 2026-10-26 source425 실제 driver run: fresh 미재현과 후속 seal 기록 보완
+
+[run40227415638/job121271641246](https://github.com/bin9208/openpilot-rust/actions/runs/40227415638/job/121271641246)은
+source `425f29d5ffa4ae0e603ceddf5dce8c605e49bc35`에서 completed/failure다.
+실제 시작/종료는 `2026-10-25T19:44:03Z`/`19:54:55Z`다. 현재 검토 HEAD는 부모의 별도
+recovery/Focus 변경이 들어간 `dd3a41f44fadda755c90224785a84554fa62318d`이며 driver helper/WF/Rust는
+실행 source와 같았다. 이번에는 새 실행 없이 완료 로그와 artifact만 읽었다.
+
+### 최초 원인과 독립 seal 오류의 구분
+
+4unit은 실제 `4 passed; 0 failed; 0 ignored; 68 filtered out`이다. runtime/tools/consumers/
+selector build도 모두 성공했다. `fresh-driver`의 실제 command 종료는 **0**이고 stderr는0B다.
+stdout6173B는1344x760·1928x1208 각각 raw on/off의4개 성공 report다. raw-on은 각각4frame/
+compared_fields188, raw-off는 각각1frame/47이며 report의 parsed_float_tolerance는1e-6,
+raw_comparison은 exact bytes다. 이 범위의 driver checker 성공이며 원본 six-source 전체 수용이나
+retained PROGRAM/prestate API 실행 성공으로 확대하지 않는다. timing 값으로 성능도 주장하지 않는다.
+
+최초 Python 예외는 `fresh driver did not reproduce a failure; no cached execution`이다.
+failure-only WF가 비영 fresh 실패를 요구했으므로 retained 준비 전에 의도대로 중단했다.
+unit 실패·ABI/ISA 실패·메모리 prestate 차이가 아니다. selector_invocations=0,
+candidate_prepared=false, runtime_prestate_available=false, candidate_numeric_observed=false다.
+
+후속 `independent finalizer failed`에는 실제 bytes/FD 변화 오류가 없다. 기록된 오류5개는
+`missing baseline: cached-inputs`, `driver-catalog`, `driver-first-frame-diagnostic`,
+`driver-fixture`, `peer`다. 이 baseline들은 기존 `Candidate.admit()` 진입 뒤에야 등록됐는데,
+finish는 retained 미도달에도 모두 요구했다. 실제 fresh exit0도 비영 guard **뒤**에서만
+args/receipt에 옮기므로 기존 outcome은 `fresh_gate_exit=null`, `fresh_exit_observed=false`로 잘못
+남겼다. 독립 마지막 단계는 그 `final_seals_passed=false`에서 AssertionError다.
+
+원래 source/index after와 whole SDK after step은 success, outcome의 all_owned_children_reaped=true다.
+snapshot/held 재검사 오류가 없다는 사실과 미래 단계 baseline 미등록을 구분한다. 이 조사로
+실행되지 않은 retained input이나 관측 prestate를 존재하는 자료로 취급하지 않았다.
+
+근거 [artifact12612441493](https://github.com/bin9208/openpilot-rust/actions/runs/40227415638/artifacts/12612441493)는
+42099934B/SHA256 `cbc56ca968048ffe799ca6939334ff895d193f887970e74163bbe0fdc672276a`다.
+메모리에서 ZIP 전체 SHA와290개 member CRC를 확인하고 outcome/commands/4unit stdout/fresh stdout·
+stderr를 읽었다. archived helper/model/테스트 코드를 실행하지 않았다.
+
+### bounded 수정과 그대로 유지한 실행 기준
+
+수정은 본인 helper/WF와 이 기록3파일이다. Rust production/prestate/tests는 변경하지 않았다.
+
+1. 실제 fresh command 종료를 비영 admission 검사 **전** args와 `fresh-status.json`에 기록한다.
+   정상 exit0도 `fresh_exit_observed=true`, `fresh_failure_observed=false`로 구분한다.
+   비영1..255만 retained 경로를 허용하는 guard와 최종 sticky 반환은 그대로다. exit0이면 여전히
+   원래 미재현 예외와 primary exit1이며 cached/original을 실행하지 않는다.
+2. 기본 source/SDK/venv/base Python baseline은 계속 필수다. fresh 준비를 시작하기 전에
+   fixture/catalog/peer도 필수로 선언하고 각각 완성 직후 **첫 사용 전** snapshot한다.
+   postmortem/retained 수집에 진입할 때만 해당 단계의 baseline을 추가로 요구한다.
+   `Candidate.admit()`에 진입하면 기존9개 전부가 필수다. 시작한 단계의 누락은 계속 실패다.
+   모든 등록 snapshot의 before/after·FD/내용·소유 회수 검사는 원문 그대로이고,
+   같은 이름의 baseline을 덮어쓸 수 없다는 기존 검사도 유지한다.
+3. 독립 seal 단계는 fresh exit0일 때 실제 도달한7개 필수 baseline 및 registry의 정확한 집합을
+   요구한다. source/provider/SDK/children 검사를 통과해야 하며 미재현 오류·실제 command exit0·
+   모든 candidate flag=false·selector0회도 대조한다. postmortem/collection/native admission/
+   cached/original의 command0회와 각 미도달 경로의 파일·symlink 부재까지 확인한다.
+   retained가 허용된 비영 경로는 기존9개와 registry, whole44 admission/collection 각1회 조건을
+   유지한다. seal 성공이 primary 미재현 실패를 지우거나 전체 기능 성공을 만드는 경로는 없다.
+
+whole2212B/frozen SHA/1e-6·whole44+원본 warp1·자연 host ISA/ABI·필수 source/provider/SDK 전후 봉인·
+owned subreaper·shared2400초/40분VM/2GiB proof/cap은 변경하지 않았다. source 재컴파일로 기대 image를
+바꾸거나 새 수학·skip/retry/fallback을 추가하지 않았다. changed-files의 source425 성공은
+부모가 수용한 별도 결과이며 해당 helper/WF/tests를 다시 수정하지 않았다.
+
+### 부모 stage/pin 및 검증 인계
+
+| 파일 | bytes | SHA256 |
+| --- | ---: | --- |
+| `tools/ci/driver_retained_program_476.py` | 72901 | `1b69287de0a8f5045da82f008788bf79dceac2587d9f79f2a5810212ef4ee1cf` |
+| `.github/workflows/python-rust-523-driver-retained.yml` | 52980 | `5662ad3f13321685a8cae67f2740cb3b889895d007085402a1ab3f2e6a88f5d7` |
+| `docs/naver/python-rust-523-driver-476.md` | 본 기록 | 부모 source index로 봉인 |
+
+WF 내부 helper pin도 위 값으로 맞췄다. Focus/ledger/공유 pin·stage/commit/push/GHA는 부모 소유이며
+이번에 실행하거나 수정하지 않았다. 부모의 최종 source SHA에 대한 GHA에서 수정한 exit0 기록과
+실제 fresh output 봉인을 확인해야 한다. fresh가 다시0이면 primary는 계속 미재현 실패이고
+retained 부분은 미도달이다. retained 실행 증거가 필요하다고 fresh 실패를 만들지 않는다.
+
+로컬은 helper AST, YAML,12개 run의 `bash -n`, embedded Python3개 AST, source/diff만 확인했다.
+프로젝트 CLI/Cargo/test/build/model/oracle/Clippy 실행0, GHA dispatch/재실행0이다.
+실제 source425의4unit/fresh 성공과 이 기록 수정 후의 **GHA UNRUN**을 분리한다.

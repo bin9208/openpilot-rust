@@ -195,7 +195,7 @@ jobs:
         CI296_HOST_CONTROL: '1'
       run: 'set -euo pipefail
 
-        printf ''%s  %s\n'' cdadd4a902157aa5381fad7eb99e0da910d9b0d207f98934dea35645e631ec07 .github/workflows/rust.yml
+        printf ''%s  %s\n'' b51def7342359305c818f15ec59e9002d6b7c1ee73752dc08e91442444cfface .github/workflows/rust.yml
         | sha256sum --check --strict -
 
         '
@@ -334,26 +334,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
     - name: Compile and check the complete native planner
-      run: 'python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_plannerd_ci.py
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --target "$NATIVE_TOOLS_HOST"
-        --test native_build_closure
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
-
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-
-        cargo build --manifest-path rust/Cargo.toml -p openpilot-plannerd --bins --examples --locked
-
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-
-        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked -- -D warnings
-
-        '
+      run: "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\ncargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --target \"$NATIVE_TOOLS_HOST\" --test native_build_closure --test planner_ci_policy --test planner_ci_controller --test planner_controller_frozen --test planner_controller_retirement\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 4096\ncargo test --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\ncargo build --manifest-path rust/Cargo.toml -p openpilot-plannerd --bins --examples --locked\n\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024\ncargo clippy --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked -- -D warnings\n"
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
       working-directory: ${{ env.CI296_SOURCE }}

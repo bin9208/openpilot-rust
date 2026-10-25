@@ -15,6 +15,22 @@ const ASAN_OPTIONS: &str = "detect_leaks=1:abort_on_error=1:strict_string_checks
 const UBSAN_OPTIONS: &str = "halt_on_error=1:print_stacktrace=1";
 const SCOPE: &str = "generated solver C is instrumented; allocator leak/ownership checks enabled; Rust and pinned external solver libraries are not instrumented";
 
+fn require_retired_sources_absent(root: &Path) -> Result<()> {
+    for relative in [
+        "rust/tools/check_plannerd_native_memory.py",
+        "rust/tools/tests/test_plannerd_native_memory_controller.py",
+    ] {
+        match fs::symlink_metadata(root.join(relative)) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Ok(_) => {
+                return Err(format!("retired Planner memory source reappeared: {relative}").into())
+            }
+            Err(error) => return Err(error.into()),
+        }
+    }
+    Ok(())
+}
+
 // Python shlex.quote와 같은 ASCII safe 문자 및 작은따옴표 escape다.
 fn quote(value: &str) -> String {
     if !value.is_empty()
@@ -49,6 +65,7 @@ pub fn run(
     timeout: Duration,
     runner: &mut dyn Runner,
 ) -> Result<Value> {
+    require_retired_sources_absent(&inputs.root)?;
     let mut sanitized = inputs.clone();
     sanitized.artifact = resolve_non_strict(&inputs.artifact)?;
     sanitized.source = resolve_non_strict(&inputs.source)?;
@@ -101,7 +118,10 @@ pub fn run(
     }
     sanitized.binaries = output.join("wrappers");
     let checks = plan::memory_checks(&sanitized, growth, timeout)?;
-    run_checks(&checks, &output.join("comparison"), &sanitized.root, runner)?;
+    let checked = run_checks(&checks, &output.join("comparison"), &sanitized.root, runner);
+    // 실패 행을 보존한 뒤에도 같은 두 경로의 재등장을 거부한다.
+    require_retired_sources_absent(&inputs.root)?;
+    checked?;
     write_receipt(&sanitized.artifact, &asan, &output, &identities)
 }
 

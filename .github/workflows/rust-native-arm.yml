@@ -221,9 +221,8 @@ jobs:
       shell: openpilot-local-shell {0}
     - name: Compile and check the complete native planner
       run: |
-        python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_plannerd_ci.py
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --target "$NATIVE_TOOLS_HOST" --test native_build_closure
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --target "$NATIVE_TOOLS_HOST" --test native_build_closure --test planner_ci_policy --test planner_ci_controller --test planner_controller_frozen --test planner_controller_retirement
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
         cargo test --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024

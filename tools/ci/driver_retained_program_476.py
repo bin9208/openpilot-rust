@@ -767,6 +767,7 @@ class Candidate:
         self.proof.mkdir(mode=0o700)
         self.holds, self.children = m.Holds(), m.Children(self.proof / "children.jsonl")
         self.baselines, self.commands = {}, []
+        self.required_baselines = {"source", "sdk", "venv", "python-base"}
         self.selector_runs, self.prepared = 0, False
         self.prestate_verified, self.candidate_numeric = False, False
         self.phase = "admission"
@@ -845,6 +846,8 @@ class Candidate:
         return self.m.read(self.proof/f"{label}.stdout", 32*MIB)
 
     def admit(self):
+        self.required_baselines.update({"driver-fixture", "driver-catalog",
+                                        "driver-first-frame-diagnostic", "peer", "cached-inputs"})
         request_path = canonical(self.args.request)
         need(request_path.is_relative_to(self.job/"proof"), "parent-owned request proof required")
         self.pin({"path": str(request_path), "sha256": self.args.request_sha256}, limit=4*MIB)
@@ -1144,9 +1147,7 @@ class Candidate:
     def finish(self, error):
         failures = []
         reaped = False
-        required = {"source", "sdk", "venv", "python-base", "driver-fixture", "driver-catalog",
-                    "driver-first-frame-diagnostic", "peer", "cached-inputs"}
-        failures.extend(f"missing baseline: {name}" for name in sorted(required-set(self.baselines)))
+        failures.extend(f"missing baseline: {name}" for name in sorted(self.required_baselines-set(self.baselines)))
         try:
             self.children.stop()
             need(not self.children.scan(), "owned descendants remain")
@@ -1166,7 +1167,9 @@ class Candidate:
             failures.append(f"held: {e}")
         self.m.save(self.proof/"outcome.json", {"source": os.environ["GITHUB_SHA"], "phase": self.phase,
             "fresh_gate_exit": self.args.fresh_exit_status, "fresh_failure_sticky": True,
-            "fresh_exit_observed": type(self.args.fresh_exit_status) is int and 1 <= self.args.fresh_exit_status <= 255,
+            "fresh_exit_observed": type(self.args.fresh_exit_status) is int and 0 <= self.args.fresh_exit_status <= 255,
+            "fresh_failure_observed": type(self.args.fresh_exit_status) is int and 1 <= self.args.fresh_exit_status <= 255,
+            "required_baselines": sorted(self.required_baselines), "registered_baselines": sorted(self.baselines),
             "candidate_prepared": self.prepared, "selector_invocations": self.selector_runs,
             "runtime_prestate_available": self.prestate_verified,
             "candidate_numeric_observed": self.candidate_numeric,

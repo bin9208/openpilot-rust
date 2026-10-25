@@ -1,7 +1,7 @@
 # #523 F02 maintained offline exporter의 native bookkeeping 연결
 
 작성: 2026-10-26. 읽기 기준 HEAD: `73e17ff10ec9be7a7001ab9cbf415a779c436f78`.
-상태: **실제 caller 연결 patch 구현, native 절대 원본 동등성·Rust build/test/Clippy·GHA UNRUN**.
+상태: **source425의 native4·실제 Python caller1·strict Clippy PASS. 전체 모델 export/타깃 기능은 미완료**.
 전체 tinygrad/frontend/compiler 전환 완료가 아니며 Python source 삭제 credit는0이다.
 
 ## 실제 소비자와 선택한 최소 경계
@@ -188,3 +188,19 @@ entrypoint/version AST 비교 구간은 기준73 source와 동일하다. `buffer
 | `rust/crates/model-runtime/src/bin/offline-qcom-compile.rs` | `efe6b3040bc822369fc86a159cff5f1d17f24b33045e442fadaefe6825183864` |
 | `rust/crates/model-runtime/tests/compiler_export_caller.rs` | `a5f0a9288aaaf121cbeaabfcaa569ba3511301db43c290b918896bbd4c1e1c24` |
 | `rust/tools/model_export/offline_schedule.py` | `bc1b7b572c8dd2f84f3ea0ca38b1744e4c7120155c33f3dabb633eabaf7f0144` |
+
+
+## source425 실제 caller 수용 — 2026-10-26
+
+[run40227415620/job121271641076](https://github.com/bin9208/openpilot-rust/actions/runs/40227415620/job/121271641076)의
+source는 `425f29d5ffa4ae0e603ceddf5dce8c605e49bc35`다. native4/ignored1, 실제 maintained
+Python `emit_schedule`→동일 staged native CLI의 COPY1, strict Clippy가 모두0이다.
+일반 회귀는 명시 LOCAL/F64 `51.248178375505404`의 exact bits와 raw decimal/type 보존도 검사한다.
+실제 caller 성공은 기존 independent Python 계산과 native plan의 비교 및 native writer 사용
+경계다. genuine 큰 모델 fit·QCOM 컴파일·전체 frontend 퇴역을 대신하지 않는다.
+
+artifact12611622471은1,579,008B/SHA256
+`cbfe46a2a783526c5267da7776f14b3f6447fd595f80f2e301211fcf1cccbdb9`다.
+38 unique/canonical-relative/nosymlink ZIP member CRC와 expanded6,913,157B,
+정확 SOURCE_COMMIT 및 source/index/SDK 전후6쌍과 program 봉인 동일을 inert 감사했다.
+원래 입력/허용 오차/수학과 cap을 바꾸지 않았다. Python frontend와 독립 계산은 남으며 credit0이다.

@@ -331,10 +331,15 @@ jobs:
         run_once compiler-buffer-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_buffers
         grep -F 'test result: ok. 6 passed; 0 failed; 1 ignored;' "$CI_JOB_TEMP/proof/compiler-buffer-units.log" || failed=1
-        run_once original-buffers "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+        buffer_python=$(readlink -e -- /usr/bin/python3)
+        test -f "$buffer_python" && test -x "$buffer_python" && test ! -L "$buffer_python"
+        sha256sum "$buffer_python" > "$CI_JOB_TEMP/proof/buffer-oracle-python.sha256"
+        "$buffer_python" -I -B -S --version > "$CI_JOB_TEMP/proof/buffer-oracle-python.version"
+        run_once original-buffers /usr/bin/env BUFFER_REFERENCE_PYTHON="$buffer_python" "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_buffers \
           original_python_buffer_tables_match_native -- --ignored --exact --nocapture
         grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/original-buffers.log" || failed=1
+        sha256sum --check --strict "$CI_JOB_TEMP/proof/buffer-oracle-python.sha256" || failed=1
         run_once compiler-buffer-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --lib --test compiler_buffers -- -D warnings
             ;;
@@ -353,15 +358,10 @@ jobs:
           planner)
         run_once planner-controller-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-dev-tools --test planner_ci_controller
-        grep -F 'test result: ok. 14 passed; 0 failed; 5 ignored;' "$CI_JOB_TEMP/proof/planner-controller-units.log" || failed=1
-        oracle_python=$(readlink -e -- /usr/bin/python3)
-        test -f "$oracle_python" && test -x "$oracle_python" && test ! -L "$oracle_python"
-        sha256sum "$oracle_python" > "$CI_JOB_TEMP/proof/planner-oracle-python.sha256"
-        "$oracle_python" -I -B -S --version > "$CI_JOB_TEMP/proof/planner-oracle-python.version"
-        run_once original-planner-controller /usr/bin/env PLANNER_REFERENCE_PYTHON="$oracle_python" "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
-          --no-default-features -p openpilot-dev-tools --test planner_ci_controller source_ -- --ignored --nocapture --test-threads=1
-        grep -F 'test result: ok. 5 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/original-planner-controller.log" || failed=1
-        sha256sum --check --strict "$CI_JOB_TEMP/proof/planner-oracle-python.sha256" || failed=1
+        grep -F 'test result: ok. 14 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-controller-units.log" || failed=1
+        run_once planner-controller-retirement "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --test planner_controller_retirement
+        grep -F 'test result: ok. 6 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-controller-retirement.log" || failed=1
         run_once planner-scheduler-adapter /usr/bin/env \
           PLANNER_NATIVE_SCHEDULER_TEST_BIN="$CARGO_TARGET_DIR/debug/check-plannerd-ci" \
           /usr/bin/python3 -I -B -m unittest discover -s rust/tools/tests -p test_plannerd_native_scheduler.py -v
@@ -369,22 +369,14 @@ jobs:
         grep -Fx 'OK' "$CI_JOB_TEMP/proof/planner-scheduler-adapter.log" || failed=1
         grep -E '^test_real_native_binary_receives_all_160_calls_with_matching_targets .* \.\.\. ok$' \
           "$CI_JOB_TEMP/proof/planner-scheduler-adapter.log" || failed=1
-        run_once planner-memory-wrapper "$oracle_python" -I -B -S -m unittest discover -s rust/tools/tests -p test_plannerd_native_memory_controller.py -v
-        grep -E '^Ran 5 tests in ' "$CI_JOB_TEMP/proof/planner-memory-wrapper.log" || failed=1
-        grep -Fx 'OK' "$CI_JOB_TEMP/proof/planner-memory-wrapper.log" || failed=1
         run_once planner-controller-frozen "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-dev-tools --test planner_controller_frozen -- --nocapture
         grep -F 'test result: ok. 5 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-controller-frozen.log" || failed=1
         run_once planner-native-memory-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-dev-tools --test planner_memory_controller
-        grep -F 'test result: ok. 8 passed; 0 failed; 1 ignored;' "$CI_JOB_TEMP/proof/planner-native-memory-units.log" || failed=1
-        run_once original-planner-memory /usr/bin/env PLANNER_REFERENCE_PYTHON="$oracle_python" "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
-          --no-default-features -p openpilot-dev-tools --test planner_memory_controller \
-          source_memory_wrapper_five_boundaries_match_native_and_capture_original_results -- --ignored --exact --nocapture
-        grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/original-planner-memory.log" || failed=1
-        sha256sum --check --strict "$CI_JOB_TEMP/proof/planner-oracle-python.sha256" || failed=1
+        grep -F 'test result: ok. 15 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-native-memory-units.log" || failed=1
         run_once planner-controller-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
-          --no-default-features -p openpilot-dev-tools --lib --bin check-plannerd-ci --test planner_ci_controller --test planner_controller_frozen --test planner_memory_controller -- -D warnings
+          --no-default-features -p openpilot-dev-tools --lib --bin check-plannerd-ci --test planner_ci_controller --test planner_controller_frozen --test planner_controller_retirement --test planner_memory_controller -- -D warnings
             ;;
           tools)
         run_once planner-policy "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
@@ -534,4 +526,4 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: "${{ fromJSON(github.event_name == 'push' && '[\"planner\",\"compiler-export\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"
+        crate: "${{ fromJSON(github.event_name == 'push' && '[\"tools\",\"buffers\",\"planner\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"

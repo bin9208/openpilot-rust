@@ -27,7 +27,7 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
       PYTHONDONTWRITEBYTECODE: '1'
-      DRIVER476_HELPER_SHA256: 1d58aa2b2e2eb9b911c61051da116def2b2ac3a7f1b9b134e6fe4525c59f0202
+      DRIVER476_HELPER_SHA256: 1b69287de0a8f5045da82f008788bf79dceac2587d9f79f2a5810212ef4ee1cf
       DRIVER476_SOURCE_ALLOWED: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/codex/feat-523-python-rust' }}
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
@@ -371,6 +371,7 @@ jobs:
             'rust/crates/dev-tools/tests/model_family_retirement.rs',feat['dev-tools'],True,'test')
           c.baseline('registry',job/'cargo-home/registry')
           for i,p in enumerate(elfs.values()): dso(p,'native-dso-'+str(i))
+          c.required_baselines.update({'driver-fixture','driver-catalog','peer'})
           preparation.mkdir(mode=0o700); (preparation/'peer').mkdir(mode=0o700)
           header=command([elfs['generate-services-header']],'services-header',30)
           m.write_new(preparation/'peer/services.h',header)
@@ -380,7 +381,9 @@ jobs:
           command([tools['g++'],'-std=c++17','-pthread','-I'+str(root/'msgq_repo'),'-I'+str(preparation/'peer'),
             root/'rust/tools/driver_daemon_peer.cc',*cpp,'-o',peer],'build-peer',120)
           dso(peer,'peer-dso')
+          c.baseline('peer',preparation/'peer')
           command([elfs['stage-driver-daemon-fixture'],'--root',root,'--output',preparation/'driver-fixture'],'stage-driver',120)
+          c.baseline('driver-fixture',preparation/'driver-fixture')
           family=root/'rust/crates/dev-tools/tests/fixtures/model-family-original'
           c.env.update(MODEL_FAMILY_GATE_ROOT=str(root),MODEL_FAMILY_GATE_PREPARATION=str(preparation),MODEL_FAMILY_GATE_ORIGINAL=str(family),
             MODEL_FAMILY_STARTUP_MANIFEST_SHA256=sha(m.read(family/'startup/original/manifest.json')),
@@ -392,6 +395,7 @@ jobs:
             '--expected-model-manifest',preparation/'driver-fixture/no-collector/observations/reference-manifest.json',
             '--expected-model-manifest-sha256',h.MANIFEST_SHA,'--kind','driver','--python',os.environ['ORIGINAL_PYTHON'],
             '--llvm',os.environ['LLVM_PATH'],'--output',preparation/'driver-catalog'],'fresh-catalog',900,False,c.env)
+          c.baseline('driver-catalog',preparation/'driver-catalog')
           receipt=preparation/'driver-catalog/current-catalog-receipt.json'
           failed=preparation/'grouped-native/root-0/driver-collector-ordinary-output'
           failed.parent.mkdir(parents=True,mode=0o700)
@@ -402,11 +406,13 @@ jobs:
             '--native-current-catalog-receipt',receipt,'--native-current-catalog-receipt-sha256',pin(receipt)['sha256'],
             '--collector',elfs['openpilot-logmessaged']],'fresh-driver',1200,True,c.env)
           fresh_status=c.commands[-1]['returncode']
-          need(type(fresh_status) is int and 1<=fresh_status<=255,'fresh driver did not reproduce a failure; no cached execution')
           args.fresh_exit_status=fresh_status
           m.save(job/'proof/fresh-status.json',{'exit':fresh_status,'source':os.environ['GITHUB_SHA'],'full_six_source_acceptance':False})
+          need(type(fresh_status) is int and 1<=fresh_status<=255,'fresh driver did not reproduce a failure; no cached execution')
+          c.required_baselines.add('driver-first-frame-diagnostic')
           command([elfs['model_family_retirement'],'--ignored','--exact','diagnose_first_driver_frame_on_same_host_and_catalog',
             '--nocapture','--test-threads=1'],'fresh-postmortem',130,False,c.env)
+          c.baseline('driver-first-frame-diagnostic',preparation/'driver-first-frame-diagnostic')
           # 고정 retired PKL의 원문 metadata와 #476의 보존 object를 별도로 인증한다.
           # archive/source pin은 기존 이슈/실제 artifact에서 확인한 literal이며 신규 입력은 없다.
           witness=h.RETAINED_OBJECTS
@@ -426,6 +432,7 @@ jobs:
           c.holds.add(frozen/'artifact.zip',witness['sha256'])
           collect_request=job/'proof/driver476-collection-request.json'
           m.save(collect_request,{'source_commit':os.environ['GITHUB_SHA'],'preparation':str(preparation)})
+          c.required_baselines.add('cached-inputs')
           command([Path(os.environ['ORIGINAL_PYTHON']),root/'tools/ci/driver_retained_program_476.py',
             '--collect-retained','--request',collect_request,'--request-sha256',pin(collect_request)['sha256']],
             'retained-collection',120,False,c.env)
@@ -524,6 +531,7 @@ jobs:
               'image':p['image']['path'],'reconstruction_object':p['object']['path']} for p in collection['programs']],
             'library':None,'graph':None}
           m.save(inputs/'request.json',q)
+          c.baseline('cached-inputs',inputs)
           m.copy_new(inputs/'isa.json',job/'proof/whole44-isa.receipt.json',4*MIB)
           m.copy_new(inputs/'native-api-binding.json',job/'proof/whole44-native-api-binding.json',4*MIB)
           m.copy_new(collection_path,job/'proof/retained-collection.json',4*MIB)
@@ -603,16 +611,37 @@ jobs:
         assert q['source']==os.environ['GITHUB_SHA'] and q['all_owned_children_reaped'] is True
         assert q['final_seals_passed'] is True and q['finalizer_failures']==[]
         assert q['full_six_source_acceptance'] is False and q['retirement_credit']==0
-        assert q['fresh_exit_observed'] is True and q['fresh_failure_sticky'] is True and 1<=q['fresh_gate_exit']<=255
+        assert q['fresh_exit_observed'] is True and q['fresh_failure_sticky'] is True
+        assert type(q['fresh_gate_exit']) is int and 0<=q['fresh_gate_exit']<=255
         f=json.loads((job/'proof/fresh-status.json').read_bytes())
         assert f['exit']==q['fresh_gate_exit'] and f['source']==q['source']
         assert q['selector_invocations']<=1
         commands=q['commands']
-        assert sum(c['label']=='fresh-driver' for c in commands)==1
+        fresh=[c for c in commands if c['label']=='fresh-driver']
+        assert len(fresh)==1 and fresh[0]['returncode']==q['fresh_gate_exit']
         assert sum(c['label']=='original-prestate' for c in commands)<=1
         assert sum(c['label']=='cached-driver' for c in commands)<=1
-        assert sum(c['label']=='retained-collection' for c in commands)==1
-        assert sum(c['label']=='whole44-native-admission' for c in commands)==1
+        required={'source','sdk','venv','python-base','driver-fixture','driver-catalog','peer'}
+        if q['fresh_gate_exit']==0:
+          # fresh 미재현은 primary 실패다. 실제 도달한 모든 봉인만 독립 확인하며 retained 증거를 만들지 않는다.
+          assert q['fresh_failure_observed'] is False and q['phase']=='fresh-driver'
+          assert q['error'].endswith('RuntimeError: fresh driver did not reproduce a failure; no cached execution\n')
+          assert q['candidate_prepared'] is False and q['selector_invocations']==0
+          assert q['runtime_prestate_available'] is False and q['candidate_numeric_observed'] is False
+          assert q['candidate_numeric_accepted'] is False
+          for label in ('fresh-postmortem','retained-collection','whole44-native-admission','cached-driver','original-prestate'):
+            assert sum(c['label']==label for c in commands)==0
+          for path in (job/'driver476-fresh/driver-first-frame-diagnostic',job/'driver476-original-request',
+                       job/'driver476-frozen',job/'driver-retained476/preparation'):
+            assert not path.exists() and not path.is_symlink()
+        else:
+          assert q['fresh_failure_observed'] is True
+          required.update({'driver-first-frame-diagnostic','cached-inputs'})
+          assert sum(c['label']=='fresh-postmortem' for c in commands)==1
+          assert sum(c['label']=='retained-collection' for c in commands)==1
+          assert sum(c['label']=='whole44-native-admission' for c in commands)==1
+        assert set(q['required_baselines'])==required
+        assert set(q['registered_baselines'])==required|{'registry'}
         CHECK
     - name: Retain driver fresh failure raw/prestate and bounded authentication evidence
       id: fast_evidence

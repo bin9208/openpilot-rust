@@ -1,0 +1,216 @@
+{
+  "argv": [
+    "/usr/bin/python3.12",
+    "-I",
+    "-B",
+    "-S",
+    "-c",
+    "\nimport json, pathlib, runpy, sys, types\nfrom unittest.mock import patch\nrepository, work = map(pathlib.Path, sys.argv[1:])\nnamespace = runpy.run_path(str(repository / 'rust/tools/tests/test_plannerd_native_memory_controller.py'))\nobservations = []\nfor mode in ('success', 'failure', 'empty', 'incomplete', 'unsanitized'):\n    directory = work / mode\n    directory.mkdir()\n    case = namespace['NativeMemoryControllerTests']()\n    with patch.object(namespace['tempfile'], 'TemporaryDirectory', lambda **kw: types.SimpleNamespace(name=str(directory), cleanup=lambda: None)):\n        case.setUp()\n    try:\n        if mode == 'unsanitized':\n            (case.artifact / 'provenance.json').write_text(json.dumps({'sanitizers': False}))\n        result, error, code = None, None, None\n        try:\n            result = case.invoke('success' if mode == 'unsanitized' else mode)\n        except (SystemExit, AssertionError, FileNotFoundError) as exception:\n            error = type(exception).__name__\n            code = exception.code if isinstance(exception, SystemExit) else None\n        wrappers = case.output / 'wrappers/examples'\n        observations.append({'case': mode, 'result': result, 'error': error, 'exit_code': code,\n            'calls': json.loads(case.calls.read_text()) if case.calls.exists() else None,\n            'wrappers': {p.name: p.read_text() for p in wrappers.iterdir()} if wrappers.exists() else {}})\n    finally:\n        case.doCleanups()\nprint(json.dumps(observations))\n",
+    "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40227415620-1.Wr510j/source",
+    "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글"
+  ],
+  "cases": [
+    "success",
+    "failure",
+    "empty",
+    "incomplete",
+    "unsanitized"
+  ],
+  "github_sha": "425f29d5ffa4ae0e603ceddf5dce8c605e49bc35",
+  "kind": "independent-python-memory-observation",
+  "native_comparison": "following parity assertions must pass; capture alone is not acceptance",
+  "original_results": [
+    {
+      "calls": [
+        "memory",
+        "--root",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/success",
+        "--python",
+        "/usr/bin/python3.12",
+        "--bin-dir",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/success/output/wrappers",
+        "--artifact",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/success/artifact",
+        "--source-native",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/success/source",
+        "--binding",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/success/params.so",
+        "--output",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/success/output/comparison",
+        "--timeout-seconds",
+        "2700",
+        "--growth-mib",
+        "abi=128",
+        "--growth-mib",
+        "owner=1024",
+        "--growth-mib",
+        "fault=1024"
+      ],
+      "case": "success",
+      "error": null,
+      "exit_code": null,
+      "result": {
+        "artifact_sha256": "ef6c8c89b312ece649983ee078f9fe95ed8a744d8e5ed9b0f5d471fe6cfb9eb5",
+        "asan_sha256": "9dc6b4b5e54fc4a9b1ff13d5420b65cda5c3e706b66c9f2f529363c76da69bef",
+        "binary_sha256": {
+          "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/success/bin/examples/plannerd_owner_trace": "4c1029697ee358715d3a14a2add817c4b01651440de808371f78165ac90dc581",
+          "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/success/bin/examples/plannerd_runtime_trace": "d92c6a81b2ff50096bcda80885427d1f59a25b5f483f7055523504925d16ab23",
+          "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/success/bin/examples/plannerd_solver_trace": "b8789db0c2da6b48ff31471423dc7ffa2386902c666fa2691e636c29b539936a"
+        },
+        "checks": [
+          "abi",
+          "owner",
+          "fault"
+        ],
+        "scope": "generated solver C is instrumented; allocator leak/ownership checks enabled; Rust and pinned external solver libraries are not instrumented",
+        "status": "PASS"
+      },
+      "wrappers": {
+        "plannerd_owner_trace": "#!/bin/sh\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/success/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/success/bin/examples/plannerd_owner_trace' \"$@\"\n",
+        "plannerd_runtime_trace": "#!/bin/sh\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/success/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/success/bin/examples/plannerd_runtime_trace' \"$@\"\n",
+        "plannerd_solver_trace": "#!/bin/sh\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/success/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/success/bin/examples/plannerd_solver_trace' \"$@\"\n"
+      }
+    },
+    {
+      "calls": [
+        "memory",
+        "--root",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/failure",
+        "--python",
+        "/usr/bin/python3.12",
+        "--bin-dir",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/failure/output/wrappers",
+        "--artifact",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/failure/artifact",
+        "--source-native",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/failure/source",
+        "--binding",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/failure/params.so",
+        "--output",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/failure/output/comparison",
+        "--timeout-seconds",
+        "2700",
+        "--growth-mib",
+        "abi=128",
+        "--growth-mib",
+        "owner=1024",
+        "--growth-mib",
+        "fault=1024"
+      ],
+      "case": "failure",
+      "error": "SystemExit",
+      "exit_code": 42,
+      "result": null,
+      "wrappers": {
+        "plannerd_owner_trace": "#!/bin/sh\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/failure/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/failure/bin/examples/plannerd_owner_trace' \"$@\"\n",
+        "plannerd_runtime_trace": "#!/bin/sh\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/failure/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/failure/bin/examples/plannerd_runtime_trace' \"$@\"\n",
+        "plannerd_solver_trace": "#!/bin/sh\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/failure/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/failure/bin/examples/plannerd_solver_trace' \"$@\"\n"
+      }
+    },
+    {
+      "calls": [
+        "memory",
+        "--root",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/empty",
+        "--python",
+        "/usr/bin/python3.12",
+        "--bin-dir",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/empty/output/wrappers",
+        "--artifact",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/empty/artifact",
+        "--source-native",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/empty/source",
+        "--binding",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/empty/params.so",
+        "--output",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/empty/output/comparison",
+        "--timeout-seconds",
+        "2700",
+        "--growth-mib",
+        "abi=128",
+        "--growth-mib",
+        "owner=1024",
+        "--growth-mib",
+        "fault=1024"
+      ],
+      "case": "empty",
+      "error": "FileNotFoundError",
+      "exit_code": null,
+      "result": null,
+      "wrappers": {
+        "plannerd_owner_trace": "#!/bin/sh\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/empty/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/empty/bin/examples/plannerd_owner_trace' \"$@\"\n",
+        "plannerd_runtime_trace": "#!/bin/sh\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/empty/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/empty/bin/examples/plannerd_runtime_trace' \"$@\"\n",
+        "plannerd_solver_trace": "#!/bin/sh\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/empty/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/empty/bin/examples/plannerd_solver_trace' \"$@\"\n"
+      }
+    },
+    {
+      "calls": [
+        "memory",
+        "--root",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/incomplete",
+        "--python",
+        "/usr/bin/python3.12",
+        "--bin-dir",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/incomplete/output/wrappers",
+        "--artifact",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/incomplete/artifact",
+        "--source-native",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/incomplete/source",
+        "--binding",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/incomplete/params.so",
+        "--output",
+        "/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' 한글/incomplete/output/comparison",
+        "--timeout-seconds",
+        "2700",
+        "--growth-mib",
+        "abi=128",
+        "--growth-mib",
+        "owner=1024",
+        "--growth-mib",
+        "fault=1024"
+      ],
+      "case": "incomplete",
+      "error": "AssertionError",
+      "exit_code": null,
+      "result": null,
+      "wrappers": {
+        "plannerd_owner_trace": "#!/bin/sh\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/incomplete/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/incomplete/bin/examples/plannerd_owner_trace' \"$@\"\n",
+        "plannerd_runtime_trace": "#!/bin/sh\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/incomplete/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/incomplete/bin/examples/plannerd_runtime_trace' \"$@\"\n",
+        "plannerd_solver_trace": "#!/bin/sh\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/incomplete/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\"'\"' 한글/incomplete/bin/examples/plannerd_solver_trace' \"$@\"\n"
+      }
+    },
+    {
+      "calls": null,
+      "case": "unsanitized",
+      "error": "AssertionError",
+      "exit_code": null,
+      "result": null,
+      "wrappers": {}
+    }
+  ],
+  "original_returncode": 0,
+  "original_stderr_utf8": "",
+  "original_stdout_utf8": "[{\"case\": \"success\", \"result\": {\"status\": \"PASS\", \"checks\": [\"abi\", \"owner\", \"fault\"], \"binary_sha256\": {\"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/success/bin/examples/plannerd_solver_trace\": \"b8789db0c2da6b48ff31471423dc7ffa2386902c666fa2691e636c29b539936a\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/success/bin/examples/plannerd_owner_trace\": \"4c1029697ee358715d3a14a2add817c4b01651440de808371f78165ac90dc581\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/success/bin/examples/plannerd_runtime_trace\": \"d92c6a81b2ff50096bcda80885427d1f59a25b5f483f7055523504925d16ab23\"}, \"artifact_sha256\": \"ef6c8c89b312ece649983ee078f9fe95ed8a744d8e5ed9b0f5d471fe6cfb9eb5\", \"asan_sha256\": \"9dc6b4b5e54fc4a9b1ff13d5420b65cda5c3e706b66c9f2f529363c76da69bef\", \"scope\": \"generated solver C is instrumented; allocator leak/ownership checks enabled; Rust and pinned external solver libraries are not instrumented\"}, \"error\": null, \"exit_code\": null, \"calls\": [\"memory\", \"--root\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/success\", \"--python\", \"/usr/bin/python3.12\", \"--bin-dir\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/success/output/wrappers\", \"--artifact\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/success/artifact\", \"--source-native\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/success/source\", \"--binding\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/success/params.so\", \"--output\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/success/output/comparison\", \"--timeout-seconds\", \"2700\", \"--growth-mib\", \"abi=128\", \"--growth-mib\", \"owner=1024\", \"--growth-mib\", \"fault=1024\"], \"wrappers\": {\"plannerd_runtime_trace\": \"#!/bin/sh\\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/success/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/success/bin/examples/plannerd_runtime_trace' \\\"$@\\\"\\n\", \"plannerd_solver_trace\": \"#!/bin/sh\\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/success/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/success/bin/examples/plannerd_solver_trace' \\\"$@\\\"\\n\", \"plannerd_owner_trace\": \"#!/bin/sh\\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/success/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/success/bin/examples/plannerd_owner_trace' \\\"$@\\\"\\n\"}}, {\"case\": \"failure\", \"result\": null, \"error\": \"SystemExit\", \"exit_code\": 42, \"calls\": [\"memory\", \"--root\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/failure\", \"--python\", \"/usr/bin/python3.12\", \"--bin-dir\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/failure/output/wrappers\", \"--artifact\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/failure/artifact\", \"--source-native\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/failure/source\", \"--binding\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/failure/params.so\", \"--output\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/failure/output/comparison\", \"--timeout-seconds\", \"2700\", \"--growth-mib\", \"abi=128\", \"--growth-mib\", \"owner=1024\", \"--growth-mib\", \"fault=1024\"], \"wrappers\": {\"plannerd_runtime_trace\": \"#!/bin/sh\\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/failure/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/failure/bin/examples/plannerd_runtime_trace' \\\"$@\\\"\\n\", \"plannerd_solver_trace\": \"#!/bin/sh\\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/failure/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/failure/bin/examples/plannerd_solver_trace' \\\"$@\\\"\\n\", \"plannerd_owner_trace\": \"#!/bin/sh\\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/failure/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/failure/bin/examples/plannerd_owner_trace' \\\"$@\\\"\\n\"}}, {\"case\": \"empty\", \"result\": null, \"error\": \"FileNotFoundError\", \"exit_code\": null, \"calls\": [\"memory\", \"--root\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/empty\", \"--python\", \"/usr/bin/python3.12\", \"--bin-dir\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/empty/output/wrappers\", \"--artifact\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/empty/artifact\", \"--source-native\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/empty/source\", \"--binding\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/empty/params.so\", \"--output\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/empty/output/comparison\", \"--timeout-seconds\", \"2700\", \"--growth-mib\", \"abi=128\", \"--growth-mib\", \"owner=1024\", \"--growth-mib\", \"fault=1024\"], \"wrappers\": {\"plannerd_runtime_trace\": \"#!/bin/sh\\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/empty/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/empty/bin/examples/plannerd_runtime_trace' \\\"$@\\\"\\n\", \"plannerd_solver_trace\": \"#!/bin/sh\\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/empty/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/empty/bin/examples/plannerd_solver_trace' \\\"$@\\\"\\n\", \"plannerd_owner_trace\": \"#!/bin/sh\\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/empty/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/empty/bin/examples/plannerd_owner_trace' \\\"$@\\\"\\n\"}}, {\"case\": \"incomplete\", \"result\": null, \"error\": \"AssertionError\", \"exit_code\": null, \"calls\": [\"memory\", \"--root\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/incomplete\", \"--python\", \"/usr/bin/python3.12\", \"--bin-dir\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/incomplete/output/wrappers\", \"--artifact\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/incomplete/artifact\", \"--source-native\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/incomplete/source\", \"--binding\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/incomplete/params.so\", \"--output\", \"/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory ' \\ud55c\\uae00/incomplete/output/comparison\", \"--timeout-seconds\", \"2700\", \"--growth-mib\", \"abi=128\", \"--growth-mib\", \"owner=1024\", \"--growth-mib\", \"fault=1024\"], \"wrappers\": {\"plannerd_runtime_trace\": \"#!/bin/sh\\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/incomplete/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/incomplete/bin/examples/plannerd_runtime_trace' \\\"$@\\\"\\n\", \"plannerd_solver_trace\": \"#!/bin/sh\\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/incomplete/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/incomplete/bin/examples/plannerd_solver_trace' \\\"$@\\\"\\n\", \"plannerd_owner_trace\": \"#!/bin/sh\\nexec env 'LD_PRELOAD=/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/incomplete/libasan.so' ASAN_OPTIONS=detect_leaks=1:abort_on_error=1:strict_string_checks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 '/tmp/openpilot-ci.4qveQz/.tmpboaa2r/original memory '\\\"'\\\"' \\ud55c\\uae00/incomplete/bin/examples/plannerd_owner_trace' \\\"$@\\\"\\n\"}}, {\"case\": \"unsanitized\", \"result\": null, \"error\": \"AssertionError\", \"exit_code\": null, \"calls\": null, \"wrappers\": {}}]\n",
+  "python": {
+    "executable": "/usr/bin/python3.12",
+    "executable_sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f",
+    "sha256_proof": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f  /usr/bin/python3.12\n",
+    "version_proof": "Python 3.12.3\n"
+  },
+  "schema_version": 1,
+  "source_sha256": {
+    "rust/crates/dev-tools/src/bin/check_plannerd_ci.rs": "32d2b777eec4ff960ea70195aa0d7b6ac553aee8621658462033ddcf933985d9",
+    "rust/crates/dev-tools/src/path_resolve.rs": "952414a69cb4e0eba3a76279ae2d59605b99ef5b9179a39e4dc8d73aa7eb7b8b",
+    "rust/crates/dev-tools/src/planner_ci_controller.rs": "ca36ec936776d6ccc8e84694ecb42d860f377655c59a8db9bd44b888a31aadcc",
+    "rust/crates/dev-tools/src/planner_ci_controller/cli.rs": "b06b4fed1e59cf63c449c7dbec34b221e9cfba0ec74d8bdaa65544127d147680",
+    "rust/crates/dev-tools/src/planner_ci_controller/memory.rs": "5420fdab0317a8083306075b503208282db42ee66a358bb0c42caf4a637e4881",
+    "rust/crates/dev-tools/src/planner_ci_controller/plan.rs": "c1dddd235346b8f415c9b131aba7a371cb67ae80d0db5f13a86b450c4d0a8b44",
+    "rust/crates/dev-tools/src/qa_process.rs": "aa9fda1ed867fe6dcf7befb19fc6857fa419bbaa33fcc518264276abef7c6633",
+    "rust/crates/dev-tools/src/seal.rs": "61acb2852b7b000b84ab179fcf7bdde4e062bb5055e1759ef0c4fa7523837c54",
+    "rust/crates/dev-tools/tests/planner_memory_controller.rs": "7dc897ad2d4ff28dfc06bc411d5ddd5e94f0a63b0ed2d02e0151e0608bdc0c1d",
+    "rust/crates/disk-space/src/lib.rs": "fa920db8d68ffbe2772c8c60a7e793346427b5d9add0a81184d3fa162ea34bd0",
+    "rust/tools/check_plannerd_native_memory.py": "4f36c97c584d11cccafa53a327893f0d0155f2da0e988ea774d2615396110782",
+    "rust/tools/tests/test_plannerd_native_memory_controller.py": "67006fee5e1a81e8350a4b514debd6f7e170af3541afa740c797fe0086016fb4",
+    "tools/ci/planner_native_controller_523.sh": "32cfc4a9b57010c57bf3bdd112c4339ee22ea2ecd5618c39f6b1aa441de5ea63"
+  }
+}

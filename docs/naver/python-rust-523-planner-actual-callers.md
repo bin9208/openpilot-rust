@@ -1,4 +1,29 @@
-# #523 Planner actual caller와 memory native 연결 — 미stage 인계
+# #523 Planner actual caller와 memory native 연결
+
+## 최신 수용과 삭제 후 후보 — 2026-10-26
+
+source425의 [actual host40227447987](https://github.com/bin9208/openpilot-rust/actions/runs/40227447987)은
+native runtime12와 native memory ASan3 모두 실제0/PASS다. functional12612670103
+55,186,524B/SHA256 `96b275577f6d9eec3fe106d65b258e00cbfcd3be8421d0659122e73a6f007252`의
+34,282 safe/CRC, private12612575557 296,340B/SHA256
+`73a1c564eec4b5f05b7894b505fcd90a84e5d0bc640c17b6eb7ec395ba62e845`의29 CRC와
+source/index 전후2쌍·source425/exit0를 감사했다. generated C 계측 범위는 기존대로다.
+ARM runtime12의 삭제 전 source6d 성공도 별도 기존 기록대로 유지한다.
+
+현재 후보는 두 controller와 memory wrapper의 Python 실행 소스·테스트4경로를 제거한다.
+이 중 baseline3580에는3경로, 추가 실행 원장에는 나머지 memory wrapper unittest가 있다.
+따라서 삭제4개를 baseline credit4개로 세지 않는다. 현재 baseline296/3/3281과 추가 원장161개는
+삭제 후 native14/frozen5/runtime guard6/memory15·strict Clippy·actual host/ARM 검증 전까지 유지한다.
+
+main/reusable ARM/standalone ARM/host exact-copy의 pytest 실행은 같은 기존1024MiB admission
+뒤 native_build_closure와 함께 policy21/controller14/frozen5/runtime guard6을 실행하도록 바꿨다.
+나머지 native Planner test/build/Clippy·네 성장량·ASan/Miri 조건·기한·IPC160·실제12/3 leaf는 보존한다.
+main499,336B이며 세 진단 copy는 기존 reviewed-source SHA step 하나를 제외하면 현재 main의
+job/env와 전체 object가 동일하다. 새 source의 GHA는 아직 미실행이며 삭제 credit0이다.
+
+아래는 최초 연결 당시의 역사 인계다. wrapper를 호출한다는 설명은 지금의 native
+`memory --asan-library` 구현과 [후속 기록](python-rust-523-planner-native-memory.md)이 대체한다.
+
 
 2026-10-26. 작업 루트는
 `/home/fma1/.codex/worktrees/python-rust-523-completion/openpilot-rust`다.

@@ -50,3 +50,20 @@ Set up job에서 defaults의 동적 `env.DIAG_SOURCE`가 아직 빈 값이어서
 실패했다. worker run command/build/기능은 시작하지 않았다. job defaults에는 shell만 두고,
 DIAG_SOURCE 할당 뒤 실행하는 네 step에 working-directory를 각각 명시했다. source/SDK/
 하드링크/기한·성장량·두 lane·실패/cleanup 계약은 변경0이다. 수정본 GHA에서 다시 확인한다.
+
+
+## source dd3 실제 두 harness 성공·추적 감사 실패 — 2026-10-26
+
+[run40227564162/job121272080733](https://github.com/bin9208/openpilot-rust/actions/runs/40227564162/job/121272080733)의
+source는 `dd3a41f44fadda755c90224785a84554fa62318d`다. 같은 빌드 실행물의 untraced8과
+traced8 전체 harness가 모두 성공했다. 두 번째 harness는318.68초였다. 그 뒤 원래 strict
+`audit-recovery-exec`가 `unclassified strace line`으로 실패해 exec lane은 수용하지 않는다.
+원래 source/SDK 최종 봉인과 upload는 성공, cleanup은 올바르게 생략됐다.
+
+artifact12612666505는69,256,924B/SHA256
+`caed9ba3737ea19a60dea46e4f0265880b77e5b062dcd64e0ab9d6b31ef1d696`,
+12,211 members/expanded219,753,266B다. 원문 `recovery-trace/exec.16876`의5행은
+`???( <unfinished ...>`이며 허용된 exec/signal/exit 문법 밖의 행은 이것 하나다.
+unknown 행을 무시하거나 parser 허용 목록에 추가하지 않는다. ptrace provider/종료 상태의
+실제 원인을 계속 조사한다. 이 cohort에서 과거 `PTRACE_LISTEN` EIO는 관측되지 않았으나
+옛 재현 문제가 해결됐다는 증거로 쓰지 않는다. #474는 OPEN이다.

@@ -4,9 +4,37 @@ use super::{
     run_checks, scheduler,
 };
 use crate::{qa_process::NativeRunner, seal::Result};
-use std::{collections::BTreeMap, ffi::OsString, fs::OpenOptions, path::PathBuf, time::Duration};
+use std::{
+    collections::BTreeMap,
+    ffi::OsString,
+    fs::{self, OpenOptions},
+    io::ErrorKind,
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 const HELP: &str = "check-plannerd-ci schedule\ncheck-plannerd-ci [memory [--asan-library PATH]] --root PATH --python PATH --bin-dir PATH --artifact PATH --source-native PATH --binding PATH --output PATH --timeout-seconds N --growth-mib NAME=MIB (all 12 operations, or abi/owner/fault in memory mode; --asan-library prepares sanitizer wrappers and writes the memory receipt)";
+
+fn require_retired_controller_absent(root: &Path) -> Result<()> {
+    for relative in [
+        "rust/tools/check_plannerd_ci.py",
+        "rust/tools/tests/test_plannerd_ci.py",
+    ] {
+        match fs::symlink_metadata(root.join(relative)) {
+            Err(error) if error.kind() == ErrorKind::NotFound => {}
+            Err(error) => {
+                return Err(format!(
+                    "cannot verify retired Planner controller path {relative}: {error}"
+                )
+                .into());
+            }
+            Ok(_) => {
+                return Err(format!("retired Planner controller path exists: {relative}").into());
+            }
+        }
+    }
+    Ok(())
+}
 
 pub fn cli() -> Result<()> {
     let mut arguments = std::env::args_os().skip(1).peekable();
@@ -109,7 +137,15 @@ pub fn cli() -> Result<()> {
     } else {
         plan::runtime_checks(&inputs, &growth, Duration::from_secs(timeout))?
     };
-    run_checks(&checks, &output, &inputs.root, &mut runner)?;
+    if !memory {
+        require_retired_controller_absent(&inputs.root)?;
+    }
+    let checked = run_checks(&checks, &output, &inputs.root, &mut runner);
+    // 첫 leaf 실패 뒤에도 복원 여부를 확인한다. commands.json의 실제 실패 행은 보존한다.
+    if !memory {
+        require_retired_controller_absent(&inputs.root)?;
+    }
+    checked?;
     if !memory {
         let receipt = plan::write_receipt(&inputs, &checks, &output, &mut runner)?;
         println!("{receipt}");

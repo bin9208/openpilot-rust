@@ -1445,3 +1445,28 @@ orchestration/PKL metadata/original retained worker3과 CI heredoc3을 모두 pe
 유지하며 새 native8·frozen5·compiler4+1·실제 memory3 및 driver/recovery 수용 전 삭제하지 않는다.
 source3b7492의 Focus40224700438도 성공했다. 이후 helper/feature/실제 caller 변경은 새 source에서
 검증하며 이전 성공을 새 기능의 수용으로 바꾸지 않는다.
+
+
+## 2026-10-26 Planner 소스4개 퇴역 후보·buffer 원문 보존
+
+source425의 actual host runtime12/ASan3, native controller14/source5/frozen5/memory8+
+원본 memory1, compiler native4/maintained caller1/strict Clippy 성공을 각각의 원문 artifact로
+확인했다. source dd3의 Fast40227564050도 전체 성공이다. 세부 SHA/범위는
+[Planner 호출](python-rust-523-planner-actual-callers.md),
+[memory 원문](python-rust-523-planner-native-memory.md),
+[compiler 실제 caller](python-rust-523-compiler-export-caller.md)에 남겼다.
+
+새 후보는 Planner controller/pytest 및 memory wrapper/unittest의 정확4경로를 삭제하고
+원래 raw 관측5+5를 frozen 자료로 사용한다. main/ARM/진단 copy의 실제 pytest 소비자도
+maintained native policy/controller/frozen/absence 검사로 닫았다. 삭제 전 성공을 삭제 후
+수용으로 세지 않으며 현재3580 중296교체/3부분/3281대기와 추가161개 원장은 유지한다.
+4개 중baseline은3개, 나머지1개는 추가 실행 경계다. 실제 삭제 후 host/ARM·native15/guard6은 대기다.
+
+buffer의 기존 original179경계 비교는 같은 원본 프로세스1회의 request/raw stdout/stderr/
+종료/source/Python 전후 binding을 bounded 자료로 남기도록 연결했다. native6+original1과
+179경계 수는 유지한다. 새 자료가 수용되기 전 원본 모듈은 삭제하지 않는다.
+
+복구는 같은 실행물의 두 full harness가 성공했지만 strace unknown 행1개 때문에 strict audit가
+실패해 #474를 유지한다. driver source425는 fresh4case가 성공하여 failure-only retained
+진단이 미도달했다. 실제 exit0과 미도달 baseline을 구분하도록 기록을 보완하며 fresh 미재현을
+억지 실패나 cached 수용으로 바꾸지 않는다. #476/#482/전체 PR·대단원 완료 조건은 계속 남는다.

@@ -293,11 +293,290 @@ fn op(name: &str, base: u64, offset: usize, bytes: usize) -> Value {
     json!({"op":name,"base":base,"offset":offset,"bytes":bytes})
 }
 
+const RECORD_LIMIT: usize = 1024 * 1024;
+const CORPUS_LIMIT: u64 = 8 * 1024 * 1024;
+// 실제 snippet의 import와 CPU copy 경로에 대한 선택 source witness다.
+// 전체 Python import/DSO closure 또는 모델 실행 증거로 확대하지 않는다.
+const BUFFER_WITNESSES: &[&str] = &[
+    "rust/tools/model_export/buffers.py",
+    "rust/tools/model_export/offline_buffers.py",
+    "rust/tools/model_export/schema.py",
+    "tinygrad_repo/tinygrad/__init__.py",
+    "tinygrad_repo/tinygrad/device.py",
+    "tinygrad_repo/tinygrad/dtype.py",
+    "tinygrad_repo/tinygrad/helpers.py",
+    "tinygrad_repo/tinygrad/uop/__init__.py",
+    "tinygrad_repo/tinygrad/uop/ops.py",
+    "tinygrad_repo/tinygrad/runtime/ops_cpu.py",
+    "tinygrad_repo/tinygrad/runtime/support/hcq.py",
+    "tinygrad_repo/tinygrad/runtime/support/memory.py",
+    "tinygrad_repo/tinygrad/runtime/support/elf.py",
+    "tinygrad_repo/tinygrad/runtime/autogen/libc.py",
+    "tinygrad_repo/tinygrad/renderer/__init__.py",
+    "tinygrad_repo/tinygrad/renderer/cstyle.py",
+    "rust/crates/model-runtime/src/compiler_buffers.rs",
+    "rust/crates/model-runtime/src/export.rs",
+    "rust/crates/model-runtime/src/lib.rs",
+    "rust/crates/model-runtime/tests/compiler_buffers.rs",
+    "rust/crates/model-runtime/Cargo.toml",
+    "rust/Cargo.lock",
+];
+
+fn file_identity(metadata: &std::fs::Metadata) -> Value {
+    use std::os::unix::fs::MetadataExt;
+    json!({"device":metadata.dev(),"inode":metadata.ino(),"bytes":metadata.len(),
+        "mode":metadata.mode(),"uid":metadata.uid(),"gid":metadata.gid(),"links":metadata.nlink(),
+        "mtime":[metadata.mtime(),metadata.mtime_nsec()],"ctime":[metadata.ctime(),metadata.ctime_nsec()]})
+}
+
+fn file_witness(path: &std::path::Path) -> std::io::Result<Value> {
+    use sha2::{Digest, Sha256};
+    use std::{fs::OpenOptions, io::Read, os::unix::fs::OpenOptionsExt};
+    if !path.is_absolute() || path.canonicalize()? != path {
+        return Err(std::io::Error::other(
+            "witness path must be canonical and absolute",
+        ));
+    }
+    let mut file = OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(path)?;
+    let before = file.metadata()?;
+    const FILE_LIMIT: u64 = 64 * 1024 * 1024;
+    if !before.is_file() || before.len() > FILE_LIMIT {
+        return Err(std::io::Error::other(
+            "witness must be a bounded regular file",
+        ));
+    }
+    let mut digest = Sha256::new();
+    let mut bytes = [0; 65536];
+    let mut read = 0u64;
+    loop {
+        let count = file.read(&mut bytes)?;
+        if count == 0 {
+            break;
+        }
+        read += count as u64;
+        if read > FILE_LIMIT {
+            return Err(std::io::Error::other("witness grew beyond bound"));
+        }
+        digest.update(&bytes[..count]);
+    }
+    let identity = file_identity(&before);
+    if read != before.len()
+        || file_identity(&file.metadata()?) != identity
+        || file_identity(&std::fs::symlink_metadata(path)?) != identity
+    {
+        return Err(std::io::Error::other("witness changed while hashing"));
+    }
+    Ok(json!({"path":path,"sha256":format!("{:x}",digest.finalize()),"identity":identity}))
+}
+
+struct BufferObservation {
+    directory: std::path::PathBuf,
+    root: std::path::PathBuf,
+    python: std::path::PathBuf,
+    files: BTreeMap<String, std::path::PathBuf>,
+    before: BTreeMap<String, Value>,
+    source: String,
+    request_sha256: String,
+}
+
+impl BufferObservation {
+    fn start(root: &std::path::Path, request: &[u8]) -> Self {
+        use sha2::{Digest, Sha256};
+        use std::{
+            fs,
+            os::unix::fs::{DirBuilderExt, MetadataExt},
+            path::PathBuf,
+        };
+        let root = root.canonicalize().unwrap();
+        assert_eq!(
+            root,
+            PathBuf::from(std::env::var_os("DIAG_SOURCE").expect("admitted DIAG_SOURCE required"))
+                .canonicalize()
+                .unwrap()
+        );
+        let job =
+            PathBuf::from(std::env::var_os("CI_JOB_TEMP").expect("owned CI_JOB_TEMP required"));
+        assert!(job.is_absolute());
+        assert_eq!(job.canonicalize().unwrap(), job);
+        let owner = format!(
+            "{}:{}:{}\n",
+            std::env::var("GITHUB_RUN_ID").unwrap(),
+            std::env::var("GITHUB_RUN_ATTEMPT").unwrap(),
+            std::env::var("GITHUB_JOB").unwrap()
+        );
+        assert_eq!(fs::read_to_string(job.join("owner")).unwrap(), owner);
+        let proof = job.join("proof");
+        assert_eq!(proof.canonicalize().unwrap(), proof);
+        assert!(fs::metadata(&proof).unwrap().is_dir());
+        // SAFETY: geteuid는 인자나 메모리 접근이 없는 조회다.
+        assert_eq!(fs::metadata(&proof).unwrap().uid(), unsafe {
+            libc::geteuid()
+        });
+        let python = PathBuf::from(
+            std::env::var_os("BUFFER_REFERENCE_PYTHON")
+                .expect("admitted canonical BUFFER_REFERENCE_PYTHON required; no PATH fallback"),
+        );
+        let source = std::env::var("GITHUB_SHA").unwrap();
+        assert!(
+            source.len() == 40
+                && source
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        );
+        assert_eq!(
+            fs::read_to_string(proof.join("SOURCE_COMMIT")).unwrap(),
+            format!("{source}\n")
+        );
+        let mut files = BUFFER_WITNESSES
+            .iter()
+            .map(|name| ((*name).to_owned(), root.join(name)))
+            .collect::<BTreeMap<_, _>>();
+        files.insert("admitted-python".into(), python.clone());
+        files.insert("job-owner".into(), job.join("owner"));
+        for name in [
+            "SOURCE_COMMIT",
+            "buffer-oracle-python.sha256",
+            "buffer-oracle-python.version",
+        ] {
+            files.insert(name.into(), proof.join(name));
+        }
+        let before = files
+            .iter()
+            .map(|(name, path)| (name.clone(), file_witness(path).unwrap()))
+            .collect::<BTreeMap<_, _>>();
+        let hash_proof = fs::read(proof.join("buffer-oracle-python.sha256")).unwrap();
+        let version_proof = fs::read(proof.join("buffer-oracle-python.version")).unwrap();
+        assert!(hash_proof.len() <= 4096 && version_proof.len() <= 4096);
+        assert_eq!(
+            std::str::from_utf8(&hash_proof).unwrap(),
+            format!(
+                "{}  {}\n",
+                before["admitted-python"]["sha256"].as_str().unwrap(),
+                python.to_str().unwrap()
+            )
+        );
+        let version = std::str::from_utf8(&version_proof).unwrap().trim_end();
+        assert!(version.starts_with("Python ") && !version.contains(['\n', '\r']));
+        let directory = proof.join("compiler-buffer-original");
+        fs::DirBuilder::new()
+            .mode(0o700)
+            .create(&directory)
+            .unwrap();
+        let this = Self {
+            directory,
+            root,
+            python,
+            files,
+            before,
+            source,
+            request_sha256: format!("{:x}", Sha256::digest(request)),
+        };
+        this.record("request.json", request);
+        this.record("oracle.py", ORIGINAL_BUFFERS.as_bytes());
+        this.record("python.sha256", &hash_proof);
+        this.record("python.version", &version_proof);
+        this
+    }
+
+    fn record_file(&self, name: &str) -> std::fs::File {
+        use std::{fs::OpenOptions, os::unix::fs::OpenOptionsExt};
+        OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW)
+            .open(self.directory.join(name))
+            .unwrap()
+    }
+
+    fn total(&self) -> u64 {
+        std::fs::read_dir(&self.directory)
+            .unwrap()
+            .map(|entry| {
+                let metadata = std::fs::symlink_metadata(entry.unwrap().path()).unwrap();
+                assert!(metadata.is_file() && metadata.len() <= RECORD_LIMIT as u64);
+                metadata.len()
+            })
+            .sum()
+    }
+
+    fn record(&self, name: &str, bytes: &[u8]) {
+        use std::io::Write;
+        assert!(bytes.len() <= RECORD_LIMIT && self.total() + bytes.len() as u64 <= CORPUS_LIMIT);
+        let mut file = self.record_file(name);
+        file.write_all(bytes).unwrap();
+        file.sync_all().unwrap();
+    }
+
+    fn finish(
+        &self,
+        status: std::process::ExitStatus,
+        input_error: Option<String>,
+        root: &std::path::Path,
+    ) -> std::process::Output {
+        use sha2::{Digest, Sha256};
+        use std::{fs, os::unix::process::ExitStatusExt};
+        assert!(self.total() <= CORPUS_LIMIT);
+        let stdout = fs::read(self.directory.join("stdout.bin")).unwrap();
+        let stderr = fs::read(self.directory.join("stderr.bin")).unwrap();
+        let after = self
+            .files
+            .iter()
+            .map(|(name, path)| {
+                (
+                    name.clone(),
+                    file_witness(path).unwrap_or_else(|error| json!({"error":error.to_string()})),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let unchanged = after == self.before;
+        let request_unchanged = format!(
+            "{:x}",
+            Sha256::digest(fs::read(self.directory.join("request.json")).unwrap())
+        ) == self.request_sha256;
+        let receipt = json!({"schema_version":1,"kind":"independent-python-buffer-observation",
+            "collector_only":true,"retirement_credit":0,"github_sha":self.source,"source_root":self.root,
+            "argv":[self.python.to_str().unwrap(),"-I","-B","-c",ORIGINAL_BUFFERS,root.to_str().unwrap()],
+            "request":{"record":"request.json","sha256":self.request_sha256,"record_unchanged":request_unchanged},
+            "original":{"returncode":status.code().or_else(|| status.signal().map(|signal| -signal)),"exit_code":status.code(),"signal":status.signal(),
+                "file_size_limit_signal":status.signal() == Some(libc::SIGXFSZ),
+                "stdout":{"record":"stdout.bin","bytes":stdout.len(),"sha256":format!("{:x}",Sha256::digest(&stdout))},
+                "stderr":{"record":"stderr.bin","bytes":stderr.len(),"sha256":format!("{:x}",Sha256::digest(&stderr))},"input_error":input_error},
+            "record_limit_bytes":RECORD_LIMIT,"total_limit_bytes":CORPUS_LIMIT,"binding_unchanged":unchanged,
+            "witnesses_before":self.before,"witnesses_after":after,
+            "scope":"선택 source/Python binding과 기존 원본 프로세스 1회의 관측 원문. 아래 기존 native parity assertions까지 성공해야 비교 수용이며, 모델/컴파일/전체 import closure 수용이 아니다."});
+        let mut bytes = serde_json::to_vec_pretty(&receipt).unwrap();
+        bytes.push(b'\n');
+        self.record("observation.json", &bytes);
+        assert!(
+            unchanged,
+            "source/Python/proof binding changed; raw observation retained"
+        );
+        assert!(
+            request_unchanged,
+            "original request record changed; raw observation retained"
+        );
+        assert!(
+            input_error.is_none(),
+            "original request write failed; raw observation retained"
+        );
+        std::process::Output {
+            status,
+            stdout,
+            stderr,
+        }
+    }
+}
+
 #[test]
 #[ignore = "GHA-only: genuine Python buffer table methods, CPU byte copies only, no kernel/model execution"]
 fn original_python_buffer_tables_match_native() {
     use std::{
         io::Write,
+        os::unix::process::CommandExt,
         process::{Command, Stdio},
     };
     assert_eq!(std::env::var("GITHUB_ACTIONS").as_deref(), Ok("true"));
@@ -370,27 +649,60 @@ fn original_python_buffer_tables_match_native() {
     assert_eq!(cases.len(), 147);
     let request = json!({"descriptors":descriptors,"cases":cases});
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let mut child = Command::new("python3")
+    let request_bytes = serde_json::to_vec(&request).unwrap();
+    let observation = BufferObservation::start(&root, &request_bytes);
+    let mut command = Command::new(&observation.python);
+    command
         .args(["-I", "-B", "-c", ORIGINAL_BUFFERS])
-        .arg(root)
+        .arg(&root)
         .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stdout(Stdio::from(observation.record_file("stdout.bin")))
+        .stderr(Stdio::from(observation.record_file("stderr.bin")));
+    // SAFETY: fork 뒤에는 setrlimit syscall과 실패 시 errno 조회만 한다.
+    // 이 제한은 child의 raw 파일을 실행 중부터 제한하며 부모에는 적용하지 않는다.
+    unsafe {
+        command.pre_exec(|| {
+            let limit = libc::rlimit {
+                rlim_cur: RECORD_LIMIT as libc::rlim_t,
+                rlim_max: RECORD_LIMIT as libc::rlim_t,
+            };
+            let no_core = libc::rlimit {
+                rlim_cur: 0,
+                rlim_max: 0,
+            };
+            if libc::setrlimit(libc::RLIMIT_CORE, &no_core) == 0
+                && libc::setrlimit(libc::RLIMIT_FSIZE, &limit) == 0
+            {
+                Ok(())
+            } else {
+                Err(std::io::Error::last_os_error())
+            }
+        });
+    }
+    let mut child = command
         .spawn()
-        .expect("Actions must provide python3");
-    child
+        .expect("Actions must provide the admitted canonical Python");
+    let input_error = child
         .stdin
         .take()
         .unwrap()
-        .write_all(&serde_json::to_vec(&request).unwrap())
-        .unwrap();
-    let output = child.wait_with_output().unwrap();
+        .write_all(&request_bytes)
+        .err()
+        .map(|error| error.to_string());
+    let status = child.wait().unwrap();
+    let output = observation.finish(status, input_error, &root);
     assert!(
         output.status.success(),
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
     let reference: Value = serde_json::from_slice(&output.stdout).unwrap();
+    for (name, digest) in reference["source_sha256"].as_object().unwrap() {
+        assert_eq!(
+            *digest, observation.before[name]["sha256"],
+            "original source binding: {name}"
+        );
+    }
     eprintln!("original buffer sources: {}", reference["source_sha256"]);
     assert_eq!(reference["opened_devices"], json!(["CPU"]));
     assert_eq!(
