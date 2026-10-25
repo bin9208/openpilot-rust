@@ -6,6 +6,7 @@ name: Python Rust 523 shared logging retained candidate
     paths:
     - .github/workflows/python-rust-523-logging.yml
     - tools/ci/logging_retained_549.sh
+    - tools/ci/logging_retained_exec_policy_549.jq
     - docs/naver/python-rust-523-logging-cache-554.md
     - rust/crates/dev-tools/src/native_logging_check.rs
     - rust/crates/dev-tools/src/native_logging_check/**
@@ -90,6 +91,12 @@ jobs:
         cat /proc/meminfo > "$job/proof/memory-before.txt"
         if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
         printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+        # job root를 최초 allocation 시점에 bind한다. cleanup 순간의 stat을 baseline으로 쓰지 않는다.
+        test -d "$CI_JOB_TEMP" && test ! -L "$CI_JOB_TEMP"
+        test "$(realpath -e -- "$CI_JOB_TEMP")" = "$CI_JOB_TEMP"
+        test "$(stat -c '%u:%a' -- "$CI_JOB_TEMP")" = "$UID:700"
+        printf 'LOGGING_JOB_IDENTITY=%s\n' "$(stat -c '%d:%i:%f:%u:%g' -- "$CI_JOB_TEMP")" >> "$GITHUB_ENV"
+        printf 'job_identity=%s\n' "$(stat -c '%d:%i:%f:%u:%g' -- "$CI_JOB_TEMP")" >> "$CI_JOB_TEMP/proof/ownership.txt"
     - uses: actions/checkout@v7
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
@@ -186,7 +193,8 @@ jobs:
         set -euo pipefail
         umask 077
         # 첫 candidate의 실제 결과를 수집한다. old27/P2/closed-trace/caller/absence 수용은 별도다.
-        printf '%s  %s\n' 0781d4a13b78bc4125d3903751466a33431176e118f41469596723a8d3ed5109 tools/ci/logging_retained_549.sh | sha256sum --check --strict -
+        printf '%s  %s\n' 53f8108dfc715ca59fc0ab1dcd2b16ba20994ec3025f119a35f79e0813d78a3b tools/ci/logging_retained_549.sh | sha256sum --check --strict -
+        printf '%s  %s\n' deebf1d596d6266c1455869ef124b79bc15a45f23e588be0844c51a0ae10cbfa tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check --strict -
         /usr/bin/timeout --signal=TERM --kill-after=180s 60m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh
         jq -e '.schema==1 and .states==8 and .status_pairs==8 and .authored_status_equal==true and .fs_check_passed==true and .fixture_cap_bytes==16777216 and .source_prime==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-cache-554/complete.json"
         jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .fs_check_passed==true and .source_prime_statuses==1 and .status_channels_equal==true and .tracked_source_entries_flags_equal==true and .source_config_unchanged==true and .sdk_equal==true and .raw_index_immutable==false and .fixture_child_optional_locks_zero==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-source-cache-554/complete.json"
@@ -261,3 +269,161 @@ jobs:
       run: |
         set -euo pipefail
         printf '%s\n' '이 실행은 원본을 보존한 shared logging 후보 검증이다.' 'old27/P2/전체 trace·FD 폐쇄/caller·absence/퇴역 수용은 별도이며 원본 교체 credit은 0이다.' >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Clean only uploaded unchanged owned logging source and private job
+      id: logging_owned_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.source_before.outcome
+        == 'success' && steps.prepared_rust.outcome == 'success' && steps.qualify.outcome == 'success' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome
+        == 'success' && steps.proof_upload.outcome == 'success' && steps.proof_upload.outputs.artifact-id != '' && steps.proof_upload.outputs.artifact-digest != '' &&
+        env.DIAG_SOURCE_OWNER != '' && env.CI_JOB_TEMP != '') }}
+      shell: bash
+      timeout-minutes: 5
+      working-directory: ${{ env.DIAG_ACTIONS_WORKSPACE }}
+      env:
+        UPLOAD_ID: ${{ steps.proof_upload.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.proof_upload.outputs.artifact-digest }}
+        CURRENT_HELPER_SHA256: 53f8108dfc715ca59fc0ab1dcd2b16ba20994ec3025f119a35f79e0813d78a3b
+      run: |
+        set -euo pipefail
+        umask 077
+        [[ $UPLOAD_ID =~ ^[0-9]+$ && $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ && $GITHUB_SHA =~ ^[a-f0-9]{40}$ ]]
+        test "$GITHUB_ACTIONS:$GITHUB_REPOSITORY:$RUNNER_ENVIRONMENT:$RUNNER_OS:$RUNNER_ARCH" = true:bin9208/openpilot-rust:github-hosted:Linux:X64
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        job=$CI_JOB_TEMP
+        proof=$job/proof
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        [[ $workspace == /* && -d $workspace && ! -L $workspace && $(realpath -e -- "$workspace") == "$workspace" ]]
+        [[ $p == "$workspace/.logging549-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."?????? ]]
+        [[ $job == /tmp/openpilot-ci.?????? && ${job%/*} == /tmp ]]
+        [[ $p != "$job" && $p != "$job/"* && $job != "$p/"* ]]
+        roots() {
+          test -d "$p" && test ! -L "$p" && test "$(realpath -e -- "$p")" = "$p"
+          test "$(stat -c '%u:%a' -- "$p")" = "$UID:700"
+          test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+          test -d "$job" && test ! -L "$job" && test "$(realpath -e -- "$job")" = "$job"
+          test "$(stat -c '%u:%a' -- "$job")" = "$UID:700"
+          test "$(stat -c '%d:%i:%f:%u:%g' -- "$job")" = "$LOGGING_JOB_IDENTITY"
+          for marker in "$p/.diag296-owner" "$job/owner"; do
+            test -f "$marker" && test ! -L "$marker"
+            test "$(stat -c '%u:%h' -- "$marker")" = "$UID:1"
+            test "$(cat -- "$marker")" = "$owner"
+          done
+          test "$DIAG_SOURCE" = "$p/source"
+          test -d "$DIAG_SOURCE" && test ! -L "$DIAG_SOURCE"
+          test "$(realpath -e -- "$DIAG_SOURCE")" = "$DIAG_SOURCE"
+          test "$CARGO_TARGET_DIR" = "$DIAG_SOURCE/rust/target"
+          test "$RUSTUP_HOME" = "$job/rustup-home"
+          test "$CARGO_HOME" = "$job/cargo-home"
+        }
+        roots
+        required_file() {
+          test -f "$1" && test ! -L "$1"
+          test "$(realpath -e -- "$1")" = "$1"
+          test "$(stat -c '%u:%h' -- "$1")" = "$UID:1"
+          (($(stat -c %s -- "$1") <= 67108864))
+        }
+        required_file "$proof/SOURCE_COMMIT"
+        test "$(cat -- "$proof/SOURCE_COMMIT")" = "$GITHUB_SHA"
+        required_file "$DIAG_SOURCE/tools/ci/logging_retained_549.sh"
+        printf '%s  %s\n' "$CURRENT_HELPER_SHA256" "$DIAG_SOURCE/tools/ci/logging_retained_549.sh" | sha256sum --check --strict --quiet -
+        required_file "$proof/logging/outcome.json"
+        jq -e '.phase=="candidate-observed" and .exit_code==0 and .held_final_exit_code==0 and .untraced_exit_code==0 and .paired_final_exit_code==0 and .retirement_credit==0 and .closed_trace_admitted==false and .old27_admitted==false' "$proof/logging/outcome.json"
+        required_file "$proof/logging/held-after.txt"
+        grep -Fx 'current held files and bytes unchanged' "$proof/logging/held-after.txt"
+        # 이미 업로드한 proof를 수정하지 않는다. 마지막 검증 scratch도 삭제될 private job 안이다.
+        scratch=$job/logging-cleanup-check
+        mkdir -m 700 -- "$scratch"
+        test "$(git --no-optional-locks -C "$DIAG_SOURCE" rev-parse HEAD)" = "$GITHUB_SHA"
+        git --no-optional-locks -C "$DIAG_SOURCE" diff --exit-code
+        git --no-optional-locks -C "$DIAG_SOURCE" diff --cached --exit-code
+        git --no-optional-locks -C "$DIAG_SOURCE" ls-files -z > "$scratch/index.bin"
+        cmp "$proof/index-before.bin" "$proof/index-after.bin"
+        cmp "$proof/index-after.bin" "$scratch/index.bin"
+        (cd -- "$DIAG_SOURCE"; tar --null --no-recursion --verbatim-files-from -T "$proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner) | sha256sum > "$scratch/source.sha256"
+        cmp "$proof/source-before.sha256" "$proof/source-after.sha256"
+        cmp "$proof/source-after.sha256" "$scratch/source.sha256"
+        sdk=$job/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu
+        test "$CI_PREPARED_RUST_ROOT" = "$sdk"
+        test "$CI_PREPARED_RUST_MANIFEST" = "$proof/prepared-rust-files.before.sha256"
+        test -d "$sdk" && test ! -L "$sdk" && test "$(realpath -e -- "$sdk")" = "$sdk"
+        for leaf in prepared-rust-programs.sha256 prepared-rust-programs.after.sha256 prepared-rust-files.before.sha256 prepared-rust-files.after.sha256 prepared-rust-roster.before.bin prepared-rust-roster.after.bin; do required_file "$proof/$leaf"; done
+        cmp "$proof/prepared-rust-programs.sha256" "$proof/prepared-rust-programs.after.sha256"
+        cmp "$proof/prepared-rust-files.before.sha256" "$proof/prepared-rust-files.after.sha256"
+        cmp "$proof/prepared-rust-roster.before.bin" "$proof/prepared-rust-roster.after.bin"
+        sha256sum --check --strict --quiet "$proof/prepared-rust-programs.sha256"
+        sha256sum --check --strict --quiet "$CI_PREPARED_RUST_MANIFEST"
+        LC_ALL=C find -P "$sdk" -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$scratch/sdk-roster.bin"
+        cmp "$proof/prepared-rust-roster.after.bin" "$scratch/sdk-roster.bin"
+        # 필수 raw/report는 실제 regular bytes로 있어야 한다. socket은 receipt metadata와 구분한다.
+        for leaf in logging/native/report.json logging/context/context.json logging/context.prepare.json logging/raw-comparison.txt; do required_file "$proof/$leaf"; done
+        declare -A observed_pids=() observed_groups=()
+        for prefix in first_int first_term first_eof runtime_directory_int runtime_directory_term escaped_descendant_int escaped_descendant_term escaped_descendant_eof output_file output_directory output_live_directory output_symlink output_dangling_symlink forbidden_executable_options retained-once; do
+          report=$proof/logging/inspect/$prefix.json
+          required_file "$report"
+          jq -e --arg prefix "$prefix" '.schema==2 and .prefix==$prefix and .raw_immutable==true and .lexically_checked_all_events==true and (.raw_files|length)>0' "$report" > /dev/null
+          jq -er '.raw_files[]|[.name,.sha256,(.pid|tostring)]|@tsv' "$report" > "$scratch/raw.tsv"
+          while IFS=$'\t' read -r name digest pid; do
+            [[ $pid =~ ^[1-9][0-9]*$ && $name == "$prefix.$pid" && $digest =~ ^[a-f0-9]{64}$ ]]
+            raw=$proof/logging/trace/$name
+            test -f "$raw" && test ! -L "$raw"
+            test "$(realpath -e -- "$raw")" = "$raw"
+            test "$(stat -c '%u:%h' -- "$raw")" = "$UID:1"
+            (($(stat -c %s -- "$raw") <= 536870912))
+            printf '%s  %s\n' "$digest" "$raw" | sha256sum --check --strict --quiet -
+            observed_pids[$pid]=1
+          done < "$scratch/raw.tsv"
+          policy=$proof/logging/exec-policy/$prefix.json
+          required_file "$policy"
+          jq -e --arg prefix "$prefix" --arg source "$GITHUB_SHA" '.schema==1 and .prefix==$prefix and .source_commit==$source and .exact_exec_argv_env==true and .structural_detail_counts_equal==true and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .all_adopted_reaped==false and .R4_acceptance==false and .retirement_credit==0' "$policy" > /dev/null
+        done
+        required_file "$proof/logging/exec-policy/binding.json"
+        jq -er '.cases[].receipt|(.held.checker_observation.live_identity.group?,.held.peer_observation.live_identity.group?,.escaped_descendants[]?.group)|select(.!=null)|if type=="number" and .>1 and floor==. then . else error("group identity invalid") end' "$proof/logging/exec-policy/binding.json" > "$scratch/groups.txt"
+        while IFS= read -r group; do [[ $group =~ ^[1-9][0-9]*$ ]]; observed_groups[$group]=1; done < "$scratch/groups.txt"
+        ((${#observed_groups[@]} > 0 && ${#observed_pids[@]} > 0))
+        # collision8 group_empty와 같은 all-UID /proc/stat 검사. 새 signal/reap 동작은 없다.
+        observed_absent() {
+          local entry line rest pid
+          local -a fields
+          for entry in /proc/[0-9]*/stat; do
+            if ! IFS= read -r line < "$entry"; then [[ ! -e $entry ]] && continue; return 1; fi
+            pid=${entry#/proc/}; pid=${pid%/stat}
+            rest=${line##*) }; read -r -a fields <<< "$rest"
+            [[ ${#fields[@]} -ge 20 && ${fields[2]} =~ ^[0-9]+$ ]]
+            [[ ! -v observed_pids[$pid] && ! -v observed_groups[${fields[2]}] ]] || { printf 'cleanup blocked pid=%s pgid=%s state=%s\n' "$pid" "${fields[2]}" "${fields[0]}" >&2; return 1; }
+          done
+          printf 'LOGGING_CLEANUP observed_pids=%s observed_groups=%s absent=true all_adopted_reaped=false\n' "${#observed_pids[@]}" "${#observed_groups[@]}"
+        }
+        observed_absent
+        roots
+        # 모든 directory만 먼저 검증한다. -P/-xdev, canonical root/UID/dev 확인 뒤에만 u+w.
+        for root in "$p" "$job"; do
+          device=$(stat -c %d -- "$root")
+          find -P "$root" -xdev -type d -print0 > "$scratch/directories.bin"
+          while IFS= read -r -d '' directory; do
+            [[ $directory == "$root" || $directory == "$root/"* ]]
+            (cd -P -- "$directory"; test "$(pwd -P)" = "$directory"; test "$(stat -c '%u:%d' .)" = "$UID:$device")
+          done < "$scratch/directories.bin"
+        done
+        for root in "$p" "$job"; do
+          device=$(stat -c %d -- "$root")
+          find -P "$root" -xdev -type d -print0 > "$scratch/directories.bin"
+          while IFS= read -r -d '' directory; do
+            [[ $directory == "$root" || $directory == "$root/"* ]]
+            (cd -P -- "$directory"; test "$(pwd -P)" = "$directory"; test "$(stat -c '%u:%d' .)" = "$UID:$device"; chmod u+w -- .)
+          done < "$scratch/directories.bin"
+        done
+        # SDK roster/원본 source의 마지막 비교는 permission 변경 전이다. 이후는 삭제할 root만 다룬다.
+        roots
+        cd -- "$workspace"
+        observed_absent
+        rm -rf --one-file-system -- "$p"
+        test ! -e "$p" && test ! -L "$p"
+        printf 'LOGGING_CLEANUP source=%s root=%s absent=true artifact_id=%s digest=%s\n' "$GITHUB_SHA" "$p" "$UPLOAD_ID" "$UPLOAD_DIGEST"
+        observed_absent
+        test "$(stat -c '%d:%i:%f:%u:%g' -- "$job")" = "$LOGGING_JOB_IDENTITY"
+        test "$(cat -- "$job/owner")" = "$owner"
+        rm -rf --one-file-system -- "$job"
+        test ! -e "$job" && test ! -L "$job"
+        printf 'LOGGING_CLEANUP source=%s root=%s absent=true global_sdk_touched=false\n' "$GITHUB_SHA" "$job"
+        printf '%s\n' 'logging owned source/job cleanup verified; all-PID/FD/DSO/R4/retirement acceptance unchanged' >> "$GITHUB_STEP_SUMMARY"

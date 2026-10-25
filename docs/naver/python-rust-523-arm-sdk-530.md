@@ -134,3 +134,25 @@ caller job/8개 role의 유사 이름을 거부하고 installer와 cold cache가
 부모 소유 ci_policy/ci_workflow_policy/Python planner fixture/Focus/ledger 및 다른 소비자 literal pin은
 이 변경에서 수정하지 않는다. 이들의 정확8role 연결과 기존 negative 보존이 뒤따라야 한다.
 retirement credit이나 partial prefix root 해결 입증은0이다.
+
+
+## a483 PR의 whole-job 검사 정정 후보
+
+2026-10-25 PR343 source `a4838fc4e7d09499d1dbc50045ec049af995ffbc`의
+[workspace job](https://github.com/bin9208/openpilot-rust/actions/runs/40166518729/job/121088724945)은
+`ci_rust_isolation` 87개 중86 PASS 뒤 `native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows`
+1개가 실패했다. 기존 pilot whole-job에는 새 SDK before/after가 없는데 actual reusable만 비교한
+기대식의 누락이다. 설치 자체의 실패나 source seal 성공으로 해석하지 않는다.
+
+후속 후보는 그 검사 한 함수에만 정확8role의 기존 dependency label/설치 문자열을 명시하고,
+verify 1회 치환·before20분/after10분·정확 helper pin·trusted 조건·cleanup 두 success 조건을
+기대 whole-job에 반영한다. 나머지 command/env/condition/holds 전체 동등, x64 여섯 행과
+main fast42/native8 gate를 그대로 검사한다. 별도 role 허용이나 expected 생략은 없다.
+로컬은 source·Rust 구문/format·diff만 확인했으며 새87개 기능 결과와 PR source seal은 GHA 대기다.
+
+
+같은 source의 Fast routing에서도 기존 Clippy 문자열 기대가 별도로 실패했다. 따라서
+`native-arm` caller에만 기존 `validate_native_arm_reuse(main, callee)` 전체 검증을 선행한다.
+이 검사는8role의 fresh SDK before/after·정확 provider pin·순서·cleanup 조건을 필수로 하며,
+다른 job의 기존 Clippy install-before-use 조건은 그대로다. e856 Focus의 최초 실패는 SDK 음성
+입력 vec의 rustfmt 줄바꿈뿐이다. 값3개·순서와39 default/1 ignored를 보존하고5줄로 정리했다.

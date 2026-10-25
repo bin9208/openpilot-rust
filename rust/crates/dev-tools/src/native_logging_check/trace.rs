@@ -24,6 +24,9 @@ const MAX_LINES: usize = 2_000_000;
 const MAX_EVENTS: usize = 1_000_000;
 const MAX_STRING: usize = 65_536;
 const MAX_DEPTH: usize = 128;
+const SUMMARY_DETAIL_OPERATIONS: [&str; 8] = [
+    "fork", "vfork", "clone", "clone3", "setpgid", "setsid", "unshare", "setns",
+];
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 struct Identity {
@@ -417,7 +420,13 @@ impl EventSummary {
         )?;
         *self.counts.entry(key).or_default() += 1;
         // 모든 줄은 같은 parser를 거친다. syscall 세부 Event의 영속 출력 범위만 명시적으로 줄인다.
-        if row.exec.is_some() || row.kind != "syscall" {
+        if row.exec.is_some()
+            || row.kind != "syscall"
+            || row
+                .operation
+                .as_deref()
+                .is_some_and(|name| SUMMARY_DETAIL_OPERATIONS.contains(&name))
+        {
             push(&mut self.events, &mut self.budget, row)?;
         }
         Ok(())
@@ -1245,6 +1254,7 @@ struct SummaryReport<'a> {
     event_count: usize,
     physical_lines: usize,
     event_counts: &'a std::collections::BTreeMap<String, usize>,
+    detailed_operations: &'static [&'static str],
 }
 #[derive(Default)]
 struct ReportBytes(Vec<u8>);
@@ -1377,10 +1387,11 @@ fn inspect_mode(path: &Path, prefix: &str, output: &Path, summarized: bool) -> R
                 report,
                 full_event_index: false,
                 lexically_checked_all_events: true,
-                event_index_scope: "all exec attempts, signals, terminals and aborted calls; other syscall details remain in immutable raw files",
+                event_index_scope: "all exec attempts, fixed process/session operations, signals, terminals and aborted calls; other syscall details remain in immutable raw files",
                 event_count: summary.event_count,
                 physical_lines,
                 event_counts: &summary.counts,
+                detailed_operations: &SUMMARY_DETAIL_OPERATIONS,
             },
         )?;
     } else {

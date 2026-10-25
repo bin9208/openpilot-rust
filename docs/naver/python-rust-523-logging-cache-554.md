@@ -383,3 +383,15 @@ source `7b277494164da62b8c1971019ad9043de86b864a`의 [logging40166934406/job1210
 기존20+shift 관련4=trace24 및 summary6, 실제14 lifecycle·retained250/697 대 원문249/694와15 raw prefix 전체 strict lexer가 통과했습니다. 실제 `logging/trace/runtime_directory_int.24520:102063`의 `udiag_states=1<<TCP_LISTEN` 행을 보존했고, 해당 raw SHA `ba3694a6827447da774cc9f721277d3fd80c707dd02b924484d4c8e078af4364`를 포함한 성공 inspection에 연결했습니다. FD annotation·기형 shift/operand·unknown 거부는 유지합니다.
 
 source/index/SDK/provider·관측한 owned peer/IPC 회수 및 업로드를 확인했습니다. 현재 PR head e856의 lexer Git blob도 실제 성공7b와 동일합니다. 이 lexical 오인 결함의 수용 조건을 충족해 #565를 종료합니다. 전체 PID/cwd/FD/DSO 폐쇄나 old27/R4/caller/원본2 퇴역은 false/0을 유지하며 #549/#554/#523/#296에서 계속 추적합니다. 별도 job/source/SDK 삭제 cleanup은 당시 workflow에 없었고, 전체 후속 수용과 구분합니다.
+
+
+## 다음 source의 업로드 후 소유 경로 정리 후보
+
+2026-10-25. `7b277494...` SUCCESS에는 명시 source/job cleanup step이 없었으므로 그 성공에
+정리 완료를 소급하지 않는다. 후속 source는 allocation 시점 private job dev/ino/mode/UID/GID를
+저장하고, qualify·source/SDK 최종 봉인·artifact upload가 모두 성공한 경우에만 마지막 cleanup을
+시도한다. 정확 namespace/초기 identity/owner marker와 현재 Git/source/index/SDK 전체 SHA·roster,
+15개 regular raw/summary/새 exec-policy·기존 report/context를 확인한다. 실제 관측 PID/PGID의
+부재를 확인한 뒤 private 두 root 내부의 자기 소유 디렉터리만 쓰기 가능하게 하고 삭제한다.
+두 root의 literal 부재와 artifact ID/digest는 마지막 step 로그에 남긴다. 전체 PID/FD/DSO/R4/퇴역
+수용은 그대로 false/0이며, 새 source의 실제 cleanup/regular ZIP bytes 감사는 아직 GHA 대기다.

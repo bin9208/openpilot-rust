@@ -2526,7 +2526,11 @@ fn prepared_arm_rejects_nonleaf_and_near_match_roles_before_installation() {
         "radar-arm",
         "carrot-navi-arm",
     ];
-    let mut rejected = vec![String::new(), "native-arm-checks".into(), "native-arm".into()];
+    let mut rejected = vec![
+        String::new(),
+        "native-arm-checks".into(),
+        "native-arm".into(),
+    ];
     rejected.extend(roles.map(|role| format!("{role}-unreviewed")));
     for role in rejected {
         let mut f = Fixture::new("999999999999");

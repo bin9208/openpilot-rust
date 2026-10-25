@@ -209,3 +209,43 @@ reader EOF/overflow 결과와 실제 admission exit를 별도로 보존한다. t
 **Actions UNRUN**이다. 로컬은 source/Bash 문법/diff/불변 body 대조만 수행한다.
 이 후보는 errno/syscall 번호/root fix/retirement 성공의 근거가 아니다. workflow/Focus/ledger와
 helper literal pin 갱신은 부모 소유로 남긴다.
+
+## e856 실제 최초 admission 거부: configure depfiles 경합
+
+2026-10-25. [격리 run40168818259/job121095302045](https://github.com/bin9208/openpilot-rust/actions/runs/40168818259/job/121095302045),
+source `e85603a02ca3b3a3ce77385f6d49e0fb5cdbe71a`는 실제 FAIL이다.
+artifact12589572168은11,146,508B/SHA256
+`8164a9781e68f44fc4dd44f616ebb0adb58694d0bd2efe7771f1f75d9ca89fe7`,
+551/551 CRC·중복0·expanded57,742,723B다. 다운로드는1회이며 프로젝트/원본 실행 없이 읽었다.
+
+이번 `cold560-first-admission-failure.tsv`는 최초 거부를 확정한다.
+phase=`configure`, reason=`du-three-attempts-exhausted`, root=`/tmp/openpilot-ci.k23Eif/build`,
+cap8,589,934,592B, kind=`--apparent-size`, du_exit1, 부분합37,672,072B, attempt3이다.
+별도 보존 stderr는 `native-build/tests/.deps/xettimeofday.Po-t`의 실제 ENOENT이며,
+누적 races 원문에는 `.deps` 아래 다른 `.Po-t`5개가 더 있다. configure stdout은
+`config.status: executing depfiles commands`에서 끝나고 stderr는0B다.
+실제 용량 초과나 provider 컴파일 오류로 해석하지 않는다. 불완전 du 부분합이 cap 미만인 것만으로
+성공할 수 없으므로 기존3회 소진의 FAIL도 유지한다.
+
+protocol3과 새 marker10은 실제 통과했다. observer patch 적용은0이나 configure가 중단돼
+make/새 tracer ELF/ptrace observer/cold bootstrap/native audit는 미도달이다.
+실패 후 owned KILL/direct wait137/group0,9개 source/SDK/provider tree의 SHA·roster18쌍,
+provider metadata·held·source-index·최종 resource admission0이 확인된다.
+final trace34,784B/reader=`complete`/admission exit0으로 진단 경로도 통과했다.
+outcome의 command_exit1/finalizer_exit0/immutable_seals=true/owned_processes_nonlive=true와
+observer_complete=false/strict_cold_audit=false/pass=false를 함께 보존한다.
+최종 admission 성공은 configure 중 최초 실패를 취소하지 않는다.
+
+같은 source의 [Fast40168818313/job121095302775](https://github.com/bin9208/openpilot-rust/actions/runs/40168818313/job/121095302775)는
+prepared cold 실제1개와 disk39개를 통과한 뒤 `ci_rust_isolation`85 PASS/2 FAIL이다.
+기존 pilot whole-job 비교와 aggregate Clippy 설치 literal 기대가 SDK8 전환을 반영하지 못한
+별도 source 검사 실패이며 이번 격리 configure 실패나 미확정 syscall 원인으로 합치지 않는다.
+
+helper는 `1cab598c39a1bb5f113a192b7adfa744d94786f887bd66b10d5bb955aafbd9fa` 그대로다.
+원래3attempt/모든 cap·strict·공식 provider/C postimage·timeout·source/SDK/process gate 변경0이다.
+관측만으로 ENOENT 무시·부분합 수용·재시도 확대·provider configure 변경을 넣지 않았다.
+후속 최소 설계는 변동하는 configure build를 같은 소유 command group의 제한된 정지 구간에서
+기존 allocated/apparent 검사를 그대로 수행할 수 있는지 별도 검토하는 것이다.
+정지/복귀의 group 소유성·deadline·실패 회수와 실제 syscall 관측에 대한 영향은 미검증이므로
+현재 구현이나 성공으로 쓰지 않는다. 상세 근거와 미확정은 ignored
+`hosted-e856-cold-root-plan.md`에 보존했다. 로컬 기능·빌드·테스트·Actions 조작0이다.

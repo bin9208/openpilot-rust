@@ -167,3 +167,86 @@ fn summary_cli_is_explicit_and_full_report_contract_remains_schema_one() {
     assert_eq!(summary["schema"], 2);
     assert!(!selected(&[OsString::from("inspect-trace-summary-extra")]));
 }
+
+#[test]
+fn summary_keeps_successful_and_failed_process_session_details_with_exact_counts() {
+    let calls = [
+        ("fork", "fork() = 22"),
+        ("vfork", "vfork() = 23"),
+        ("clone", "clone(child_stack=NULL, flags=SIGCHLD) = 24"),
+        (
+            "clone3",
+            "clone3({flags=CLONE_VM|CLONE_VFORK, exit_signal=SIGCHLD}, 88) = 25",
+        ),
+        ("setpgid", "setpgid(0, 0) = 0"),
+        ("setsid", "setsid() = 21"),
+        ("unshare", "unshare(CLONE_NEWNS) = 0"),
+        ("setns", "setns(3, CLONE_NEWNS) = 0"),
+    ];
+    let mut raw = b"1.000000 execve(\"/bin/tool\", [\"tool\"], []) = 0\n".to_vec();
+    for (index, (_, call)) in calls.iter().enumerate() {
+        raw.extend_from_slice(format!("1.{:06} {call}\n", index * 2 + 1).as_bytes());
+        let (args, _) = call.rsplit_once(" = ").unwrap();
+        raw.extend_from_slice(
+            format!(
+                "1.{:06} {args} = -1 EPERM (Operation not permitted)\n",
+                index * 2 + 2
+            )
+            .as_bytes(),
+        );
+    }
+    raw.extend_from_slice(b"2.000001 read(3, \"abc\", 3) = 3\n2.000002 wait4(22, NULL, WNOHANG, NULL) = 0\n2.000003 +++ exited with 0 +++\n");
+    let (_temp, directory, output) = fixture(&raw);
+    inspect_mode(&directory, "case", &output, true).unwrap();
+    let report: Value = serde_json::from_slice(&fs::read(output).unwrap()).unwrap();
+    assert_eq!(
+        report["detailed_operations"],
+        json!(SUMMARY_DETAIL_OPERATIONS)
+    );
+    assert_eq!(report["event_count"], 20);
+    assert_eq!(report["physical_lines"], 20);
+    assert_eq!(report["events"].as_array().unwrap().len(), 18);
+    for (operation, call) in calls {
+        let rows = report["events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| row["operation"] == operation)
+            .collect::<Vec<_>>();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0]["outcome"], "returned");
+        assert_eq!(rows[1]["outcome"], "failed");
+        assert_eq!(
+            rows[0]["result"],
+            json!(call.rsplit_once(" = ").unwrap().1.as_bytes())
+        );
+        assert_eq!(
+            rows[1]["result"],
+            json!(b"-1 EPERM (Operation not permitted)")
+        );
+        for outcome in ["returned", "failed"] {
+            assert_eq!(
+                report["event_counts"][format!("syscall:{operation}:{outcome}")],
+                1
+            );
+        }
+        assert!(rows
+            .iter()
+            .all(|row| row["source"].as_array().unwrap().len() == 1));
+    }
+    assert_eq!(report["event_counts"]["syscall:read:returned"], 1);
+    assert_eq!(report["event_counts"]["syscall:wait4:returned"], 1);
+    assert_eq!(report["full_event_index"], false);
+    assert_eq!(report["lexically_checked_all_events"], true);
+    for flag in [
+        "closed_pid",
+        "closed_cwd",
+        "closed_fd",
+        "closed_dso",
+        "full_acceptance",
+        "retirement_credit",
+    ] {
+        assert_eq!(report[flag], false);
+    }
+    assert_eq!(fs::read(directory.join("case.21")).unwrap(), raw);
+}

@@ -129,7 +129,8 @@ artifact() {
     [.[] | select(.reason=="compiler-artifact" and .target.name==$name and (.target.kind|index($kind))!=null and .target.src_path==$src and .profile.test==$is_test and .executable!=null) | .executable] |
     if length==1 and (.[0]|startswith("/")) then .[0] else error("ambiguous Cargo executable") end' "$proof/build/$label.stdout"
 }
-for path in "$source/tools/ci/logging_retained_549.sh" "$source/.github/workflows/python-rust-523-logging.yml" "$sdk/cargo" "$sdk/rustc" "$sdk/clippy-driver" /usr/bin/git /usr/bin/strace /usr/bin/timeout; do hold "$path"; done
+for path in "$source/tools/ci/logging_retained_549.sh" "$source/tools/ci/logging_retained_exec_policy_549.jq" "$source/.github/workflows/python-rust-523-logging.yml" "$sdk/cargo" "$sdk/rustc" "$sdk/clippy-driver" /usr/bin/git /usr/bin/strace /usr/bin/timeout; do hold "$path"; done
+elf exec-policy-jq /usr/bin/jq
 printf '%s  %s\n' adee1d45e299bfd6448e8f5584b194b2dbbb53622ee3c1d57c02538d0b0d1fc4 rust/tools/check_native_logging.py \
   288a4fd0f9aca05d82a3f415e6632ef3e62b92f2d73f01d7a2f1b5263cdb7ad1 rust/tools/native_logging_transport.py | sha256sum --check --strict - > "$proof/originals-present.txt"
 admit initial-build 8192
@@ -431,10 +432,11 @@ NAMES
 sed -nE 's/^test (native_logging_check::trace::tests::[a-z0-9_]+) \.\.\. ok$/\1/p' "$proof/build/trace-controls.stdout" | LC_ALL=C sort > "$proof/trace-controls.actual.txt"
 cmp "$proof/trace-controls.expected.txt" "$proof/trace-controls.actual.txt"
 run summary-controls 180 "${runtime[@]}" "$unit" native_logging_check::trace::summary_tests:: --test-threads=1 --color=never
-test "$(grep -Ec '^test result: ok\. 6 passed; 0 failed; 0 ignored;' "$proof/build/summary-controls.stdout")" -eq 1
+test "$(grep -Ec '^test result: ok\. 7 passed; 0 failed; 0 ignored;' "$proof/build/summary-controls.stdout")" -eq 1
 cat > "$proof/summary-controls.expected.txt" <<'NAMES'
 native_logging_check::trace::summary_tests::summary_cli_is_explicit_and_full_report_contract_remains_schema_one
 native_logging_check::trace::summary_tests::summary_keeps_every_exec_signal_terminal_and_all_event_counts
+native_logging_check::trace::summary_tests::summary_keeps_successful_and_failed_process_session_details_with_exact_counts
 native_logging_check::trace::summary_tests::summary_preserves_event_retained_model_and_key_bounds
 native_logging_check::trace::summary_tests::summary_rejects_malformed_unretained_calls_resumes_and_post_terminal_rows
 native_logging_check::trace::summary_tests::summary_shares_held_raw_hash_and_identity_rejection
@@ -828,12 +830,145 @@ done
 run retained-once 360 "${runtime[@]}" /usr/bin/strace --seccomp-bpf --kill-on-exit -ff -ttt -x -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 -o "$proof/trace/retained-once" "$checker" retained --root "$source" --binary "$probe" --context "$context" --output "$proof/native" --source-commit "$GITHUB_SHA" --binary-sha256 "$NATIVE_LOGGING_RETAINED_BINARY_SHA256"
 jq -e --arg source "$GITHUB_SHA" '.fresh_native_packets==250 and .fresh_native_responses==697 and .retained_cpp_packets==249 and .retained_cpp_responses==694 and .cpp_executions==0 and .source_commit==$source and .R4_acceptance==false and .lifecycle_reuse_granted==false and (.historical_to_recovered_console|length)==7 and (.recovered_to_fresh_console|length)==7 and all(.historical_to_recovered_console[]; .projected_equal==true) and all(.recovered_to_fresh_console[]; .projected_equal==true)' "$proof/native/report.json" > "$proof/raw-comparison.txt"
 for stem in providers context-inputs source-state; do cmp "$proof/native/$stem.before.json" "$proof/native/$stem.after.json"; done
+# 정책 expected는 raw exec에서 복사하지 않는다. source command 배열과 fixture가 실제
+# assertion 뒤 create_new한 작은 receipt/invocation만 현재 held provider에 연결한다.
+# paired untraced1의 evidence는 별도 root다. 아래16개는 traced14 logical selector만의 receipt다.
+phase=exec-policy-binding
+policy=$source/tools/ci/logging_retained_exec_policy_549.jq
+[[ -f $policy && ! -L $policy && $(realpath -e -- "$policy") == "$policy" ]]
+mkdir -m 700 -- "$proof/exec-policy"
+policy_json() {
+  local path=$1 fd
+  [[ $path == "$proof/"* && -f $path && ! -L $path && $(realpath -e -- "$path") == "$path" ]]
+  test "$(stat -c '%u:%h' -- "$path")" = "$UID:1"
+  (($(stat -c %s -- "$path") <= 1048576))
+  hold "$path"
+  fd=${held_fds[${#held_fds[@]}-1]}
+  /usr/bin/jq -ce . "/proc/$$/fd/$fd"
+}
+policy_output() {
+  local root=$1 full=$2 destination=$3 role
+  local -a roles=(console-0/rust)
+  if [[ $full == true ]]; then
+    roles=(console-0/rust console-1/rust console-2/rust console-3/rust console-4/rust console-5/rust console-6/rust rate/rust transport/rust/backpressure transport/rust/threads transport/rust/console-failure transport/rust/SIGINT transport/rust/SIGTERM transport/runtime-prefix)
+  fi
+  : > "$destination.invocations.jsonl"
+  for role in "${roles[@]}"; do
+    policy_json "$root/$role/invocation.json" > "$destination.value.json"
+    /usr/bin/jq -c --arg role "$role" '{role:$role,value:.}' "$destination.value.json" >> "$destination.invocations.jsonl"
+  done
+  if [[ $full == true ]]; then policy_json "$root/transport/runtime-endpoint.json" > "$destination.runtime.json";
+  else printf 'null\n' > "$destination.runtime.json"; fi
+  policy_json "$root/providers.before.json" > "$destination.provider.json"
+  /usr/bin/jq -cn --slurpfile inv "$destination.invocations.jsonl" --slurpfile runtime "$destination.runtime.json" \
+    --slurpfile provider "$destination.provider.json" '{invocations:$inv,runtime_endpoint:$runtime[0],provider_before:$provider[0]}' > "$destination.json"
+}
+find -P "$proof/lifecycle" -mindepth 1 -maxdepth 1 -printf '%p\n' | LC_ALL=C sort > "$proof/exec-policy/roots.before.txt"
+test "$(wc -l < "$proof/exec-policy/roots.before.txt")" -eq 16
+: > "$proof/exec-policy/cases.jsonl"
+while IFS= read -r root; do
+  [[ $root == "$proof/lifecycle/logging-lifecycle-"?????? && ${root##*/} =~ ^logging-lifecycle-[A-Za-z0-9]{6}$ ]]
+  [[ -d $root && ! -L $root && $(realpath -e -- "$root") == "$root" ]]
+  test "$(stat -c '%u:%a' -- "$root")" = "$UID:700"
+  identity=$(stat -c '%d:%i:%f:%u:%g' -- "$root")
+  receipts=()
+  for leaf in retained-case.json retained-collision.json retained-control.json; do
+    if [[ -e $root/$leaf || -L $root/$leaf ]]; then receipts+=("$root/$leaf"); fi
+  done
+  test "${#receipts[@]}" -eq 1
+  base=$proof/exec-policy/${root##*/}
+  policy_json "${receipts[0]}" > "$base.receipt.json"
+  if [[ ${receipts[0]} == */retained-case.json ]]; then
+    full=$(/usr/bin/jq -er '.hold|if .=="runtime" then "true" elif .=="first" then "false" else error("unknown hold") end' "$base.receipt.json")
+    policy_output "$root/output" "$full" "$base"
+  else printf '{"invocations":[],"runtime_endpoint":null,"provider_before":null}\n' > "$base.json"; fi
+  /usr/bin/jq -cn --arg root "$root" --slurpfile receipt "$base.receipt.json" --slurpfile observed "$base.json" \
+    '$observed[0]+{root:$root,receipt:$receipt[0]}' >> "$proof/exec-policy/cases.jsonl"
+  test "$(stat -c '%d:%i:%f:%u:%g' -- "$root")" = "$identity"
+done < "$proof/exec-policy/roots.before.txt"
+find -P "$proof/lifecycle" -mindepth 1 -maxdepth 1 -printf '%p\n' | LC_ALL=C sort > "$proof/exec-policy/roots.after.txt"
+cmp "$proof/exec-policy/roots.before.txt" "$proof/exec-policy/roots.after.txt"
+# 고유16 logical case. 별도 untraced receipt로 누락을 채우거나 key 중복을 skip하지 않는다.
+/usr/bin/jq -se '
+  map(.receipt.case_key)|sort==(["retained-first-int","retained-first-term","retained-first-eof",
+  "retained-runtime-directory-int","retained-runtime-directory-term",
+  "retained-escaped-descendant-int","retained-escaped-descendant-term","retained-escaped-descendant-eof",
+  "retained-output-file","retained-output-directory","retained-output-live-directory","retained-output-symlink",
+  "retained-output-dangling-symlink","retained-reject-builder","retained-reject-reference","retained-reject-source-hook"]|sort)
+  ' "$proof/exec-policy/cases.jsonl" > "$proof/exec-policy/roster.check"
+policy_output "$proof/native" true "$proof/exec-policy/native"
+printf '%s\0' "${runtime[@]:2}" "${lifecycle_env[@]}" | /usr/bin/jq -Rs 'split("\u0000")[:-1]' > "$proof/exec-policy/fixture-env.json"
+printf '%s\0' "${runtime[@]:2}" | /usr/bin/jq -Rs 'split("\u0000")[:-1]' > "$proof/exec-policy/direct-env.json"
+printf '%s\0' PATH=/usr/bin:/bin HOME="$HOME" TMPDIR="$TMPDIR" TZ=UTC LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+  GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.preloadIndex GIT_CONFIG_VALUE_0=true |
+  /usr/bin/jq -Rs 'split("\u0000")[:-1]' > "$proof/exec-policy/checker-env.json"
+for pair in "probe:$probe" "checker:$checker"; do
+  label=${pair%%:*}; path=${pair#*:}
+  [[ ! -L $path && $(realpath -e -- "$path") == "$path" ]]
+  read -r dev ino size owner mode < <(stat -c '%d %i %s %u %f' -- "$path")
+  /usr/bin/jq -cn --arg path "$path" --arg sha "$(sha256sum -- "$path" | cut -d' ' -f1)" \
+    --argjson dev "$dev" --argjson ino "$ino" --argjson size "$size" --argjson uid "$owner" --argjson mode "$((16#$mode))" \
+    '{path:$path,dev:$dev,ino:$ino,size:$size,uid:$uid,mode:$mode,sha256:$sha}' > "$proof/exec-policy/$label.json"
+done
+test "$(realpath -e -- "$fixture")" = "$fixture"
+test "$(readlink -e -- /usr/bin/git)" = /usr/bin/git
+policy_json "$proof/native/report.json" > "$proof/exec-policy/native.report.json"
+/usr/bin/jq -cn --arg source "$source" --arg proof "$proof" --arg checker "$checker" --arg fixture "$fixture" --arg probe "$probe" \
+  --arg context "$context" --arg commit "$GITHUB_SHA" --arg binary_sha "$NATIVE_LOGGING_RETAINED_BINARY_SHA256" \
+  --arg context_sha "$NATIVE_LOGGING_RETAINED_CONTEXT_SHA256" --argjson uid "$UID" \
+  --slurpfile cases "$proof/exec-policy/cases.jsonl" --slurpfile native "$proof/exec-policy/native.json" \
+  --slurpfile fixture_env "$proof/exec-policy/fixture-env.json" --slurpfile direct_env "$proof/exec-policy/direct-env.json" \
+  --slurpfile checker_env "$proof/exec-policy/checker-env.json" --slurpfile provider "$proof/exec-policy/probe.json" \
+  --slurpfile native_report "$proof/exec-policy/native.report.json" \
+  --slurpfile checker_provider "$proof/exec-policy/checker.json" '
+  {schema:1,source:$source,proof:$proof,checker:$checker,fixture:$fixture,probe:$probe,git:"/usr/bin/git",
+   context:$context,commit:$commit,binary_sha:$binary_sha,context_sha:$context_sha,uid:$uid,
+   fixture_env:$fixture_env[0],direct_env:$direct_env[0],checker_env:$checker_env[0],cases:$cases,native:$native[0],
+   native_report:$native_report[0],providers:{probe:$provider[0],checker:$checker_provider[0]}}' > "$proof/exec-policy/binding.json"
+verify_held
+hold "$proof/exec-policy/binding.json"
 # 같은 lexer로 모든 원문 줄을 검사하되 세부 syscall Event는 집계로 출력한다.
 # 전체 raw는 그대로 보존한다. full event index와 PID/cwd/FD/DSO 정책 수용은 아니다.
 mkdir "$proof/inspect"
 for name in first_int first_term first_eof runtime_directory_int runtime_directory_term escaped_descendant_int escaped_descendant_term escaped_descendant_eof output_file output_directory output_live_directory output_symlink output_dangling_symlink forbidden_executable_options retained-once; do
   run "inspect-$name" 180 "${runtime[@]}" "$checker" inspect-trace-summary --directory "$proof/trace" --prefix "$name" --output "$proof/inspect/$name.json"
   jq -e '.schema==2 and .raw_immutable==true and .requires_exit_status_zero==true and .full_event_index==false and .lexically_checked_all_events==true and .event_count>0 and .event_count<=1000000 and .physical_lines>=.event_count and .physical_lines<=2000000 and ((.event_counts|to_entries|map(.value)|add)==.event_count) and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .full_acceptance==false and .retirement_credit==false' "$proof/inspect/$name.json" > "$proof/inspect/$name.scope.txt"
+  hold "$proof/inspect/$name.json"
+  run "exec-policy-$name" 60 "${runtime[@]}" /usr/bin/jq -e --arg prefix "$name" --slurpfile binding "$proof/exec-policy/binding.json" \
+    -f "$policy" "$proof/inspect/$name.json"
+  mv -- "$proof/build/exec-policy-$name.stdout" "$proof/exec-policy/$name.json"
+  hold "$proof/exec-policy/$name.json"
+  if [[ $name == first_int ]]; then
+    # 실제 positive report의 한 요소만 바꾼 음성이다. raw/expected/원문 fixture는 건드리지 않는다.
+    for control in missing-structure wrong-argv wrong-env extra-exec; do
+      case "$control" in
+        missing-structure)
+          mutation='.events|=map(select(.operation as $op|(["fork","vfork","clone","clone3","setpgid","setsid","unshare","setns"]|index($op))==null))'
+          expected_error='process/session detail cardinality differs' ;;
+        wrong-argv)
+          mutation='(.events[]|select(.exec.program.bytes==($checker|explode))|.exec.argv)+=[{bytes:[120],source:{start:0,end:1}}]'
+          expected_error='checker source argv differs' ;;
+        wrong-env)
+          mutation='(.events[]|select(.exec.program.bytes==($checker|explode))|.exec.environment.entries)+=[{bytes:[88,61,49],source:{start:0,end:3}}]'
+          expected_error='ordered exec/argv/env/terminal/creation differs' ;;
+        extra-exec)
+          mutation='.events+=[.events[]|select(.exec.program.bytes==($checker|explode))]'
+          expected_error='unsupported exec attempt' ;;
+      esac
+      /usr/bin/jq --arg checker "$checker" "$mutation" "$proof/inspect/$name.json" > "$proof/exec-policy/control-$control.input.json"
+      # run 함수는 조건문 안에서 호출하지 않는다. 실제 exit5+해당 guard의 오류를 함께 요구한다.
+      run "exec-policy-control-$control" 60 "${runtime[@]}" /usr/bin/bash --noprofile --norc -euo pipefail -c '
+        status=0
+        /usr/bin/jq -e --arg prefix first_int --slurpfile binding "$1" -f "$2" "$3" > "$4.stdout" 2> "$4.stderr" || status=$?
+        printf "%s\n" "$status" > "$4.exit"
+        test "$status" -eq 5 && test ! -s "$4.stdout"
+        grep -F -- "$5" "$4.stderr"
+      ' policy-control "$proof/exec-policy/binding.json" "$policy" "$proof/exec-policy/control-$control.input.json" \
+        "$proof/exec-policy/control-$control" "$expected_error"
+    done
+    printf '{"schema":1,"controls":4,"each_guard_exact_error":true,"actual_raw_changed":false,"R4_acceptance":false}\n' > "$proof/exec-policy/controls.json"
+    hold "$proof/exec-policy/controls.json"
+  fi
 done
 verify_held
 printf '%s\n' 'current held files and bytes unchanged' > "$proof/held-after.txt"
