@@ -1,0 +1,3535 @@
+[
+  {
+    "kind": "reference",
+    "mode": "spawn",
+    "exit": 1,
+    "called": false,
+    "stdout_blob": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_blob": "bf63e02e6a45784edc80ba4d84f463701575d2cf24e10aa8f57a35b43bfa84b1",
+    "files": {
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      }
+    },
+    "directories": [
+      "original"
+    ],
+    "candidate_reply_blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-ek3wviwx/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "43851e5f5a577596ebaac9f0e3ec2abb4bf7e879490f9e036ac925c2893a4ba9",
+    "binary_sha256_after": null,
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "success",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "baca7f9e6ef7a5af87d6b0cb1854337fd8d978d8682edb1fe713dd9c373a455d",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64904,
+        "sha256": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+        "blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "report.json": {
+        "bytes": 140,
+        "sha256": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31",
+        "blob": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-l93j2d62/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "52fd04acb96adf21de856524d0ad2dc643c74158ff0f0827eb064f53cac663c5",
+    "binary_sha256_after": "52fd04acb96adf21de856524d0ad2dc643c74158ff0f0827eb064f53cac663c5",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "nonzero",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "bc08b45af6a6900afb43307d229789f1e45bfc2459d953fe42427bee912251ef",
+    "files": {
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+    "candidate_exit": 7,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-nmg6kb97/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "ef28ea464e6046ba05070d3ef5e90baca659510406df5cf36658f8b428150107",
+    "binary_sha256_after": "ef28ea464e6046ba05070d3ef5e90baca659510406df5cf36658f8b428150107",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "partial-nonzero",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "16eddd7d9a2a0e856770368301e0c7736e2fc7376ececbc0d6b510bb67cb68b3",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64904,
+        "sha256": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+        "blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+    "candidate_exit": 7,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-leelosqq/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "bc0cf992d01d654d22deb119b7c0a4baa3c4bca140f6746ea46e7c05b1aca1ec",
+    "binary_sha256_after": "bc0cf992d01d654d22deb119b7c0a4baa3c4bca140f6746ea46e7c05b1aca1ec",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "missing-actual",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "3860493236ea315590e0066869fe4f33d8680a16942aade7402843a7fcb1ab2e",
+    "files": {
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-qms20ksb/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "4b6159d26c46a1e066d4fdcf82de5ad2620cdcd40a90ccc17b208afc2d7149bb",
+    "binary_sha256_after": "4b6159d26c46a1e066d4fdcf82de5ad2620cdcd40a90ccc17b208afc2d7149bb",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "malformed",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "2827033375b150583ca351cda55cb419075e02516f8ba4d026673058379bba6e",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 2,
+        "sha256": "a6fb08fda1acb957b6116bd37811a1fe41a01611c0631edbf786d6889a27a55c",
+        "blob": "a6fb08fda1acb957b6116bd37811a1fe41a01611c0631edbf786d6889a27a55c"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "a6fb08fda1acb957b6116bd37811a1fe41a01611c0631edbf786d6889a27a55c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-6q8tyx07/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "88efcd939c79da1be1354a0a268b83f9218c7a059f7c42d1622ca1add2d09d83",
+    "binary_sha256_after": "88efcd939c79da1be1354a0a268b83f9218c7a059f7c42d1622ca1add2d09d83",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "blank-line",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "33b6c4a61e677d3699b2fe13c4c9fd1545e0661f749a66aeafd4304cbd6c0378",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64905,
+        "sha256": "e8232f8db8ad5a5043bfd4c28fe9a33d83942bb2eddcc8b61861c03ade5086b5",
+        "blob": "e8232f8db8ad5a5043bfd4c28fe9a33d83942bb2eddcc8b61861c03ade5086b5"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "e8232f8db8ad5a5043bfd4c28fe9a33d83942bb2eddcc8b61861c03ade5086b5",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-zb5dq2e7/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "bd566128c9fe7f7f2e1c5c7b55bb0e05198c73c8c4227226ae2d7a889c17f021",
+    "binary_sha256_after": "bd566128c9fe7f7f2e1c5c7b55bb0e05198c73c8c4227226ae2d7a889c17f021",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "scalar-row",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "f2355e821f849aa15c04822a674c5a8983f32a5d84d29ce3d0c0e745389f3580",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64855,
+        "sha256": "9b24c8f720b70259c2077b4363f6168b99784722178406109a5c7ef8f00724bd",
+        "blob": "9b24c8f720b70259c2077b4363f6168b99784722178406109a5c7ef8f00724bd"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "9b24c8f720b70259c2077b4363f6168b99784722178406109a5c7ef8f00724bd",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-osgbctmq/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "565d0d127d527b16d50c8cbfb47875dfc3bf7afc9d80983b161ad09c3376b8de",
+    "binary_sha256_after": "565d0d127d527b16d50c8cbfb47875dfc3bf7afc9d80983b161ad09c3376b8de",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "short",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "dec24f80083366867e4b6c789f5fb657446135b80375825b236bc3298ebb61af",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64846,
+        "sha256": "3bfb767b428fa6fc4b3703a05d9de46e7964dc7ba0a8e673dcec6397e06422c5",
+        "blob": "3bfb767b428fa6fc4b3703a05d9de46e7964dc7ba0a8e673dcec6397e06422c5"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "3bfb767b428fa6fc4b3703a05d9de46e7964dc7ba0a8e673dcec6397e06422c5",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-58qgxw68/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "bac5942c60466f437404adc3c5ebcf61d4e9fcd7a1895dc9ac914256ffb7dc9b",
+    "binary_sha256_after": "bac5942c60466f437404adc3c5ebcf61d4e9fcd7a1895dc9ac914256ffb7dc9b",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "extra",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "45392ac0e9dfbc7b850a376014f554b62f1eeb32df54abcc62c9db98b82bbc35",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64955,
+        "sha256": "1af98139474fe95673c70fd11b910e4c6cdff8f9250719749bda00db81f5c9bf",
+        "blob": "1af98139474fe95673c70fd11b910e4c6cdff8f9250719749bda00db81f5c9bf"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "1af98139474fe95673c70fd11b910e4c6cdff8f9250719749bda00db81f5c9bf",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-zlwqlvib/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "e6a42684a8c5f55a6ca0e54bc16d8c5c8353dd4735274893848072a4e6c7dcd0",
+    "binary_sha256_after": "e6a42684a8c5f55a6ca0e54bc16d8c5c8353dd4735274893848072a4e6c7dcd0",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "wrong-action",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "56c4f1ae1a4e63d36011884fc3abc1e20e66329f84417313e214dd4cd34007ac",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64907,
+        "sha256": "f4d886ed195c1e37dd38e2d9f7807e4479e55dcf2977df2c8d8305e8d629b2b2",
+        "blob": "f4d886ed195c1e37dd38e2d9f7807e4479e55dcf2977df2c8d8305e8d629b2b2"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "f4d886ed195c1e37dd38e2d9f7807e4479e55dcf2977df2c8d8305e8d629b2b2",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-o_qbii9v/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "86973e964b3f49904d9c49848f0c73aaeb89e22369f5fb6e379c3804338f7421",
+    "binary_sha256_after": "86973e964b3f49904d9c49848f0c73aaeb89e22369f5fb6e379c3804338f7421",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "wrong-id",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "e104f3ef3b63148c965496301866d671367f9801b48b0475e4c446535be02e93",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64907,
+        "sha256": "f82440ff4d56652e00e22f4672157ae9fcab3acebaa360af5d8fb4b48d1df7e2",
+        "blob": "f82440ff4d56652e00e22f4672157ae9fcab3acebaa360af5d8fb4b48d1df7e2"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "f82440ff4d56652e00e22f4672157ae9fcab3acebaa360af5d8fb4b48d1df7e2",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-9uobyg4s/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "dc3501c6eab9d088fa302d807679a05b4cb1a2584107a2d38046a0686a3ecf36",
+    "binary_sha256_after": "dc3501c6eab9d088fa302d807679a05b4cb1a2584107a2d38046a0686a3ecf36",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "missing-key",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "2584751b6aba35f9afc2e99d7d65fe9063493addf1abf54f5a501e868139ec4d",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64887,
+        "sha256": "761dbd28abef09492d7fddf804c1923cba1a66371397697541ba6269c1c156cd",
+        "blob": "761dbd28abef09492d7fddf804c1923cba1a66371397697541ba6269c1c156cd"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "761dbd28abef09492d7fddf804c1923cba1a66371397697541ba6269c1c156cd",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-79oqz6l2/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "88820250917cafa7a41b59223e5ead1bcb42f91a93b08ee0f4fc8277f4d91576",
+    "binary_sha256_after": "88820250917cafa7a41b59223e5ead1bcb42f91a93b08ee0f4fc8277f4d91576",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "extra-key",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "a1a2eeed50c980f93b2f731735dd996837c87cebdccc8fe56f7acff0a932e76f",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64916,
+        "sha256": "c8111eb56671d9c7fdf3d916115adf65f631a8af6c2c46ac70a4d4d6faf05483",
+        "blob": "c8111eb56671d9c7fdf3d916115adf65f631a8af6c2c46ac70a4d4d6faf05483"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "c8111eb56671d9c7fdf3d916115adf65f631a8af6c2c46ac70a4d4d6faf05483",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-ppvbgh3c/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "996f54d26fa85a3707c0955f3ab959d6ba3c3da1ed2d1f5265ce6732ce01b241",
+    "binary_sha256_after": "996f54d26fa85a3707c0955f3ab959d6ba3c3da1ed2d1f5265ce6732ce01b241",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "bool-numeric",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "baca7f9e6ef7a5af87d6b0cb1854337fd8d978d8682edb1fe713dd9c373a455d",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 60802,
+        "sha256": "46bda92e916b0ffd0299d205570a3306606fe31044b469643634c78374af28a0",
+        "blob": "46bda92e916b0ffd0299d205570a3306606fe31044b469643634c78374af28a0"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "report.json": {
+        "bytes": 140,
+        "sha256": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31",
+        "blob": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "46bda92e916b0ffd0299d205570a3306606fe31044b469643634c78374af28a0",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-6dm58h8e/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "3d7da0c7b1d648efb38a7066c0aaa0e6c667789ede6424879d0ad6a5150829b8",
+    "binary_sha256_after": "3d7da0c7b1d648efb38a7066c0aaa0e6c667789ede6424879d0ad6a5150829b8",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "key-order",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "baca7f9e6ef7a5af87d6b0cb1854337fd8d978d8682edb1fe713dd9c373a455d",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64904,
+        "sha256": "d905c019776bff54be0748138a4674ff550828b1dd55195649b5adf4059b3e7c",
+        "blob": "d905c019776bff54be0748138a4674ff550828b1dd55195649b5adf4059b3e7c"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "report.json": {
+        "bytes": 140,
+        "sha256": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31",
+        "blob": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "d905c019776bff54be0748138a4674ff550828b1dd55195649b5adf4059b3e7c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-p_p0yitu/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "cb708592e33a3f63fbaaa6602741820ad50917565535df5d28482adaa25f3b84",
+    "binary_sha256_after": "cb708592e33a3f63fbaaa6602741820ad50917565535df5d28482adaa25f3b84",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "newlines",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "baca7f9e6ef7a5af87d6b0cb1854337fd8d978d8682edb1fe713dd9c373a455d",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 65930,
+        "sha256": "6583547fd89d4fcb80558d52b0544b92ce19bc6f1331bfdb3c0f62a91b149761",
+        "blob": "6583547fd89d4fcb80558d52b0544b92ce19bc6f1331bfdb3c0f62a91b149761"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "report.json": {
+        "bytes": 140,
+        "sha256": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31",
+        "blob": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "6583547fd89d4fcb80558d52b0544b92ce19bc6f1331bfdb3c0f62a91b149761",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-jrh630t6/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "bc2fe8eae4070a5d8f44a429543aa84c3660806c460f02996d6dac1580fb2528",
+    "binary_sha256_after": "bc2fe8eae4070a5d8f44a429543aa84c3660806c460f02996d6dac1580fb2528",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "unicode-lines",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "baca7f9e6ef7a5af87d6b0cb1854337fd8d978d8682edb1fe713dd9c373a455d",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 66956,
+        "sha256": "66bcb121f4d66f844bcbd7996534f49b2d04d19dbf80c73dbfb18424cc0f4923",
+        "blob": "66bcb121f4d66f844bcbd7996534f49b2d04d19dbf80c73dbfb18424cc0f4923"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "report.json": {
+        "bytes": 140,
+        "sha256": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31",
+        "blob": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "66bcb121f4d66f844bcbd7996534f49b2d04d19dbf80c73dbfb18424cc0f4923",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-yqv6l8w4/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "543586940a810269e6c90a9bcb07327cd17dd4dd95668a2783691ecb4e79a330",
+    "binary_sha256_after": "543586940a810269e6c90a9bcb07327cd17dd4dd95668a2783691ecb4e79a330",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "invalid-file-utf8",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "a8813bfce1425d51964cdc36b4617cdfe52b03ed2b1ce6c22fea16272f7ad39b",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1,
+        "sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+        "blob": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-12566vmf/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "901f240aecc5764d3f108b47c53f68e3d7590382cd09a80b898e74c8d04c8091",
+    "binary_sha256_after": "901f240aecc5764d3f108b47c53f68e3d7590382cd09a80b898e74c8d04c8091",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "bom",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "3d238863e6fb77589e08ff9aa86d17adbb95551d1a16c00f8d7e7202434c01ee",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64907,
+        "sha256": "399faf4255c5462a6639e2eb989201be11bc63c33c04ae6df5e2e3eb161de4ea",
+        "blob": "399faf4255c5462a6639e2eb989201be11bc63c33c04ae6df5e2e3eb161de4ea"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "399faf4255c5462a6639e2eb989201be11bc63c33c04ae6df5e2e3eb161de4ea",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-s_j7uh8n/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "3470ca9d5b6ac71ccf3093311aabb05f39c5b9f1164cb65e12599a23319db0f4",
+    "binary_sha256_after": "3470ca9d5b6ac71ccf3093311aabb05f39c5b9f1164cb65e12599a23319db0f4",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "empty",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "dec24f80083366867e4b6c789f5fb657446135b80375825b236bc3298ebb61af",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "blob": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-3dvcgrg3/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "e0c004f16692dba8b4d3146ed8725cf4eb152af5d95047f10334b1db6f845a64",
+    "binary_sha256_after": "e0c004f16692dba8b4d3146ed8725cf4eb152af5d95047f10334b1db6f845a64",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "candidate-root-owned",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "baca7f9e6ef7a5af87d6b0cb1854337fd8d978d8682edb1fe713dd9c373a455d",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64904,
+        "sha256": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+        "blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "report.json": {
+        "bytes": 140,
+        "sha256": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31",
+        "blob": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-brfdf3qw/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "d673fae5257b972810e0a155cef98d1ae367d8d587e5475d65d74eeefb4f7a94",
+    "binary_sha256_after": "d673fae5257b972810e0a155cef98d1ae367d8d587e5475d65d74eeefb4f7a94",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "existing-output",
+    "exit": 1,
+    "called": false,
+    "stdout_blob": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_blob": "5beca191de1d7fd9b0c937a2464faa8780858fa93519e226ebd82482742959c7",
+    "files": {
+      "untouched": {
+        "bytes": 4,
+        "sha256": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f",
+        "blob": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f"
+      }
+    },
+    "directories": [],
+    "candidate_reply_blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-ypf7q9dt/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "a14b778b42564e136b4bff0ecd210dd5236431b1b1e89379509e60dd5d58c123",
+    "binary_sha256_after": "a14b778b42564e136b4bff0ecd210dd5236431b1b1e89379509e60dd5d58c123",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "output-file",
+    "exit": 1,
+    "called": false,
+    "stdout_blob": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_blob": "ec349c37837869ad4e5a0ab02562332ecaadf3531ee7be1f2b08b91708083e74",
+    "files": {},
+    "directories": [],
+    "candidate_reply_blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-a_25as5t/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "f693f9e9a8b6af8a7aa7e5dd677dba5cfb1e63c58c2fd5d8542d575efe8654f0",
+    "binary_sha256_after": "f693f9e9a8b6af8a7aa7e5dd677dba5cfb1e63c58c2fd5d8542d575efe8654f0",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "request-directory",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "baca7f9e6ef7a5af87d6b0cb1854337fd8d978d8682edb1fe713dd9c373a455d",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64904,
+        "sha256": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+        "blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "report.json": {
+        "bytes": 140,
+        "sha256": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31",
+        "blob": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "request.jsonl",
+      "rust"
+    ],
+    "candidate_reply_blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-wv4les6z/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "ab656483ab601ee534773f605075d72f516b6d8aa908a9eda0bf4fa3609db0b3",
+    "binary_sha256_after": "ab656483ab601ee534773f605075d72f516b6d8aa908a9eda0bf4fa3609db0b3",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "actual-directory",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "6224e99ffee2ac99125da20edfad5da1f09332ec3c1f40c8e0c6cf1bd6bca5e4",
+    "files": {
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "actual.jsonl",
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-ati2zl0j/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "702ed7766d17804ea056682a809ea738730dd4f5a34f0e8e81d790c33155d38f",
+    "binary_sha256_after": "702ed7766d17804ea056682a809ea738730dd4f5a34f0e8e81d790c33155d38f",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "depth9996",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "b1bc7dd357edf687c2ab71665de7818edab0d890ce6e9c7cb2c7ec3757801a74",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 84907,
+        "sha256": "5a29966abdcc03f06cd4f0d8b96f67b762fe05c473c00e2dd465e150937a1dc9",
+        "blob": "5a29966abdcc03f06cd4f0d8b96f67b762fe05c473c00e2dd465e150937a1dc9"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "5a29966abdcc03f06cd4f0d8b96f67b762fe05c473c00e2dd465e150937a1dc9",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-6t_e_ruh/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "6ec46eeef8d885ce8e433ea9a963c2ccbaf7013c605aae58e61815d450f84d78",
+    "binary_sha256_after": "6ec46eeef8d885ce8e433ea9a963c2ccbaf7013c605aae58e61815d450f84d78",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "depth9997",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "a4f2f44a1b3ae3492444b4c6d2b12e2f7a2c6a796867e1a8bce106b06299648b",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 84909,
+        "sha256": "0f614808229d1c36eadba341a46bd784733141c548a2acf0a812edc523e03e98",
+        "blob": "0f614808229d1c36eadba341a46bd784733141c548a2acf0a812edc523e03e98"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "0f614808229d1c36eadba341a46bd784733141c548a2acf0a812edc523e03e98",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-1h63pvwg/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "eb6d84917f700d6576c13411534abcd06d4f8df1e8a20d3cdac0f553b79bf2e8",
+    "binary_sha256_after": "eb6d84917f700d6576c13411534abcd06d4f8df1e8a20d3cdac0f553b79bf2e8",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "reference-file-edit",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "baca7f9e6ef7a5af87d6b0cb1854337fd8d978d8682edb1fe713dd9c373a455d",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64904,
+        "sha256": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+        "blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 78,
+        "sha256": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66",
+        "blob": "6cd94e578495ad5b6ee5b93440ea06c5c39c873e99e4acd5852be25e8b375f66"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 7,
+        "sha256": "d67e2e944994496c8d8ec76eed0cf9f09679448d584b532bebf941852a37f5ed",
+        "blob": "d67e2e944994496c8d8ec76eed0cf9f09679448d584b532bebf941852a37f5ed"
+      },
+      "report.json": {
+        "bytes": 140,
+        "sha256": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31",
+        "blob": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-8wn10ke2/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "a01fd521acf85f7e02b2353b603d4f0a7ba687d5fcd67f0ac74e01a1248a154c",
+    "binary_sha256_after": "a01fd521acf85f7e02b2353b603d4f0a7ba687d5fcd67f0ac74e01a1248a154c",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "reference",
+    "mode": "root-file-edit",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "baca7f9e6ef7a5af87d6b0cb1854337fd8d978d8682edb1fe713dd9c373a455d",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 64904,
+        "sha256": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+        "blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522"
+      },
+      "original/cancelled.json": {
+        "bytes": 17,
+        "sha256": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60",
+        "blob": "2e7fdcd2e582bc8aee49d30ec5c88cb00442a36e55d38b93bff12be3d9671a60"
+      },
+      "original/lane.json": {
+        "bytes": 7,
+        "sha256": "d67e2e944994496c8d8ec76eed0cf9f09679448d584b532bebf941852a37f5ed",
+        "blob": "d67e2e944994496c8d8ec76eed0cf9f09679448d584b532bebf941852a37f5ed"
+      },
+      "original/learn.json": {
+        "bytes": 37,
+        "sha256": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e",
+        "blob": "21a8f1821388fa3ef2b0c9a805d047c28988287284454884e46de463d293379e"
+      },
+      "reference.json": {
+        "bytes": 84401,
+        "sha256": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc",
+        "blob": "064be6fba2e7fbd0f2ad301387feeddba1ec66d9a1a01448e987f8de408496fc"
+      },
+      "report.json": {
+        "bytes": 140,
+        "sha256": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31",
+        "blob": "0bcfd8ca4b34aec52fc2665f2b18e2108864607e4dfa18822fc72aad14d50d31"
+      },
+      "request.jsonl": {
+        "bytes": 253492,
+        "sha256": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45",
+        "blob": "7f19be877c30d839754aaa6b35b8b509c4bd5f09bddb95187466809b4830df45"
+      },
+      "rust/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      }
+    },
+    "directories": [
+      "original",
+      "rust"
+    ],
+    "candidate_reply_blob": "cf44fac03488554f6ef1acd8af6060159b26bef8b1ecbb5986f6e1971b537522",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/reference-mc_pk17w/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "dfb134cd1f43ab83e2109a6ba1c6d89dae7918901871293b0d2da5c63548fb43",
+    "binary_sha256_after": "dfb134cd1f43ab83e2109a6ba1c6d89dae7918901871293b0d2da5c63548fb43",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "spawn",
+    "exit": 1,
+    "called": false,
+    "stdout_blob": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_blob": "0432836bb92c266cf9f8edc8518bdef4843fb7e37d9839b65728b3c6274242a3",
+    "files": {
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-l7lwxk9b/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "8d3b843d741af11aa966c0510320b2a1b3c51dd3dd9c3fd188ad2042036b94cd",
+    "binary_sha256_after": null,
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "success",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "c47912cdafc85d4e7fadcd9ad60c3b5359d8733d65dbe09cc6b1733761431d81",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1354,
+        "sha256": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+        "blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 415,
+        "sha256": "f50168e11d826b3b37238aa73fe1c1eb7d4213e7cca932245bf8c6f3a1bcb26a",
+        "blob": "f50168e11d826b3b37238aa73fe1c1eb7d4213e7cca932245bf8c6f3a1bcb26a"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-z85ihiib/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "00557f02bad7fa1f1340912c1936744059891c2ce94461d85dbc233a6d579b89",
+    "binary_sha256_after": "00557f02bad7fa1f1340912c1936744059891c2ce94461d85dbc233a6d579b89",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "nonzero",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "e6adb149a0f54edf38196762615fc9fc240225e027af04874ea2a5928b961713",
+    "files": {
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 7,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-uhzbs9d4/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "ec6b23b993c120c12bf200778281549b10f4ab18ccc66045a9d925599d9ccb5f",
+    "binary_sha256_after": "ec6b23b993c120c12bf200778281549b10f4ab18ccc66045a9d925599d9ccb5f",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "partial-nonzero",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "c558692ef9102b41549af39211a21b2131ae5369fd296b465b308cd1232ddc70",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1354,
+        "sha256": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+        "blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 7,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-202bgix1/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "624308c3e29aa85956eb59deaf386c7e898f1fe7cffc0d3d52daa31b52c202ad",
+    "binary_sha256_after": "624308c3e29aa85956eb59deaf386c7e898f1fe7cffc0d3d52daa31b52c202ad",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "missing-actual",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "1bc7ef77bf717f9febd54cb7900673e91c2034e8ea7b65f13be2efd9e7dca27c",
+    "files": {
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-f8b1slro/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "6b3ad3ebb71d168301deb587e19ee41f09c1cfd1079a3c0c9786d127af445271",
+    "binary_sha256_after": "6b3ad3ebb71d168301deb587e19ee41f09c1cfd1079a3c0c9786d127af445271",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "malformed",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "a2faf67a51ef27842c1eff6dcf1dcab8f16401feaf0e34ba209719a4758f8f4a",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 2,
+        "sha256": "a6fb08fda1acb957b6116bd37811a1fe41a01611c0631edbf786d6889a27a55c",
+        "blob": "a6fb08fda1acb957b6116bd37811a1fe41a01611c0631edbf786d6889a27a55c"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "a6fb08fda1acb957b6116bd37811a1fe41a01611c0631edbf786d6889a27a55c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-duz1h6za/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "178572fa85c82291bfabc4162ee921be2c55e4628c1b46a8bf46119ea55b3652",
+    "binary_sha256_after": "178572fa85c82291bfabc4162ee921be2c55e4628c1b46a8bf46119ea55b3652",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "blank-line",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "21013c17dc4b1e4c958232beba5dd07f488f5a9bcc9e4dfa0b2d60680d9bd575",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1355,
+        "sha256": "4965d1ce362714200a9a6ab31e21ae2476d54e8febbede01b71dbce4b88c5291",
+        "blob": "4965d1ce362714200a9a6ab31e21ae2476d54e8febbede01b71dbce4b88c5291"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "4965d1ce362714200a9a6ab31e21ae2476d54e8febbede01b71dbce4b88c5291",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-a4ptgg5_/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "1406ba4914647e416066b8360de8592fe3bd60d3e4a4e9a8483c4902b122f769",
+    "binary_sha256_after": "1406ba4914647e416066b8360de8592fe3bd60d3e4a4e9a8483c4902b122f769",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "scalar-row",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "6ec2a3b72428540baaab2c64b342ba5ae6b9bcd166dff8937a87b0081a01f05c",
+    "stderr_blob": "41ca15fcaad524abdefe2328f19b6db0a554f30d1660e690ebe2a0292bbc211e",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1301,
+        "sha256": "c959c52d03fdb89cdd14c7415e7228d825a40e9b74df96c431490a4b0b349668",
+        "blob": "c959c52d03fdb89cdd14c7415e7228d825a40e9b74df96c431490a4b0b349668"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 572,
+        "sha256": "1d15267a5e90bf74babea03eeaa227e39c39d9dec01f7cfbd3f09d4c357194f1",
+        "blob": "1d15267a5e90bf74babea03eeaa227e39c39d9dec01f7cfbd3f09d4c357194f1"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "c959c52d03fdb89cdd14c7415e7228d825a40e9b74df96c431490a4b0b349668",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-jaxsw8p8/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "f4ec9b63060182807e2e4ec1225ce3dfea564f2ae4eaef1d7d1aa41839ecf956",
+    "binary_sha256_after": "f4ec9b63060182807e2e4ec1225ce3dfea564f2ae4eaef1d7d1aa41839ecf956",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "short",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "0f1ec75bc379cc4300771d8c91b65dde7026ae06420a65cacaabb4898f99acbf",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1293,
+        "sha256": "ee3aaa2760f4a05513efcdf20adfd227aac2d97433a8bfe2db3ed5b714bc32a8",
+        "blob": "ee3aaa2760f4a05513efcdf20adfd227aac2d97433a8bfe2db3ed5b714bc32a8"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "ee3aaa2760f4a05513efcdf20adfd227aac2d97433a8bfe2db3ed5b714bc32a8",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-dvj3onjg/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "cd8bc1b2a3c6675d810b4be0101320670b8ef06be9283a4293db7213da2f565d",
+    "binary_sha256_after": "cd8bc1b2a3c6675d810b4be0101320670b8ef06be9283a4293db7213da2f565d",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "extra",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "7c02b74a0c472372377ca0211dacac2ec47e1d7f4ea6cbad6d62d56e64c0fbdd",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1409,
+        "sha256": "9def2ddebb57d101b0672ea0cb0c9ac0d35c0f801820c43fada7824e61074849",
+        "blob": "9def2ddebb57d101b0672ea0cb0c9ac0d35c0f801820c43fada7824e61074849"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "9def2ddebb57d101b0672ea0cb0c9ac0d35c0f801820c43fada7824e61074849",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-ekskjp6w/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "8e4f7588a7750b34fe457456ef5f1343c6537c4987ab15df8456905436f7e36a",
+    "binary_sha256_after": "8e4f7588a7750b34fe457456ef5f1343c6537c4987ab15df8456905436f7e36a",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "wrong-action",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "c0825a6634e818828a8f2bf34e1c1c794d9aa00be7acd0426d77598f7dfd45f2",
+    "stderr_blob": "0ce416254924340a9f6e53b6b7aaf2e719be23c1e45e4899fa9d7a1637a564af",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1357,
+        "sha256": "c61cd3d6b59356c18fd9799bf7b1390b8cf29a1bb914eeef694ed0d354e58b19",
+        "blob": "c61cd3d6b59356c18fd9799bf7b1390b8cf29a1bb914eeef694ed0d354e58b19"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 660,
+        "sha256": "1bddaf78c70aa1aeff99e4c9bd2dac33ddbffb96cb927540a33d6a08b8b9bfd5",
+        "blob": "1bddaf78c70aa1aeff99e4c9bd2dac33ddbffb96cb927540a33d6a08b8b9bfd5"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "c61cd3d6b59356c18fd9799bf7b1390b8cf29a1bb914eeef694ed0d354e58b19",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-38esy118/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "38095aea083c6e741f126379a1e80c7f689b432ceb44bc4dbbc17333d3995259",
+    "binary_sha256_after": "38095aea083c6e741f126379a1e80c7f689b432ceb44bc4dbbc17333d3995259",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "wrong-id",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "48a5b2cb95dc536ce41bb4608445c8e35e02ac9cd2aba1e6eeaeb743bb0047c4",
+    "stderr_blob": "c7a8ac48ecd71b2f92bfd29396ce65719b52a355bd2d69589788c7d720d8a261",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1353,
+        "sha256": "c19ed3552cc583af329a96aa5ea471b521493f699ab9b4a05e542b43263d3209",
+        "blob": "c19ed3552cc583af329a96aa5ea471b521493f699ab9b4a05e542b43263d3209"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 656,
+        "sha256": "db186ff4e5ca52b2e87b57936a6ac7c79f5f5ed81047cb23fd0a981750aa68e3",
+        "blob": "db186ff4e5ca52b2e87b57936a6ac7c79f5f5ed81047cb23fd0a981750aa68e3"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "c19ed3552cc583af329a96aa5ea471b521493f699ab9b4a05e542b43263d3209",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-nviuakl2/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "3d80fa8bfa0fef5ae5ccca2971c552ce06753cf6cf61cea5fef00ff07f522288",
+    "binary_sha256_after": "3d80fa8bfa0fef5ae5ccca2971c552ce06753cf6cf61cea5fef00ff07f522288",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "missing-key",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "e7a64d1127740d4143dd764b7d3cca563fcf0a612f8fd273d22fa4a37233b8bf",
+    "stderr_blob": "db931e513a1e66eac2c9f00310c0c7caf1e7e1bf329e3b76f3f76f0ac65a7462",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1337,
+        "sha256": "6f068eedcbaf24f74d570202a8e8c977ac931ffba7862a603a46499d1d741f43",
+        "blob": "6f068eedcbaf24f74d570202a8e8c977ac931ffba7862a603a46499d1d741f43"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 632,
+        "sha256": "29217f1da080f81bfd686f3cb320d387516d7f99c07f106c301026e90bf3dde5",
+        "blob": "29217f1da080f81bfd686f3cb320d387516d7f99c07f106c301026e90bf3dde5"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "6f068eedcbaf24f74d570202a8e8c977ac931ffba7862a603a46499d1d741f43",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-31_2qoc1/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "3ceb45949e52dff3cbf4ef7a515fb282c8090da9413a9286e4accf6737347fee",
+    "binary_sha256_after": "3ceb45949e52dff3cbf4ef7a515fb282c8090da9413a9286e4accf6737347fee",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "extra-key",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "c1f6341dcc20898317c2f8588037bbfc91074bcbe451ae9ffd293acbcc9961d4",
+    "stderr_blob": "3880b570734b122dd204891755265cb0b43c89ae3c322675b65000139f7b0c98",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1366,
+        "sha256": "962111d3a5f016f07bca7924a1198dafd0c3b10e03d12b408dfadf642cb08b24",
+        "blob": "962111d3a5f016f07bca7924a1198dafd0c3b10e03d12b408dfadf642cb08b24"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 677,
+        "sha256": "34b326cfe866c65082ec91765899f739be1ef3c4c42490dd2eb5f46cb26882fe",
+        "blob": "34b326cfe866c65082ec91765899f739be1ef3c4c42490dd2eb5f46cb26882fe"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "962111d3a5f016f07bca7924a1198dafd0c3b10e03d12b408dfadf642cb08b24",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-eiapzmkw/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "c03a4ae2a5680c40ff510d805c33ed47d7c2588c7f49a547e3d6d39aad961c16",
+    "binary_sha256_after": "c03a4ae2a5680c40ff510d805c33ed47d7c2588c7f49a547e3d6d39aad961c16",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "bool-numeric",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "03237ac5f0abc54ec60cdaba820d39856ecb6feab3693cf96eb464e1cf223201",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1264,
+        "sha256": "d57da62800f9c5fca1386c56ebb9af838e2433a2111274728385fc3d4255ba2d",
+        "blob": "d57da62800f9c5fca1386c56ebb9af838e2433a2111274728385fc3d4255ba2d"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 415,
+        "sha256": "f9a1cace5e5a9f5f0f08b12593aadac832e7450c47906da70305bcde5d014253",
+        "blob": "f9a1cace5e5a9f5f0f08b12593aadac832e7450c47906da70305bcde5d014253"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "d57da62800f9c5fca1386c56ebb9af838e2433a2111274728385fc3d4255ba2d",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-u_bmcyhn/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "ef3a5169ca0d456e40cad9c06e342f7752eca6dfc9eb1ebf741e6685c3a4a03a",
+    "binary_sha256_after": "ef3a5169ca0d456e40cad9c06e342f7752eca6dfc9eb1ebf741e6685c3a4a03a",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "key-order",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "4b3af9ac5b01085f867d15bbd5fd775207276d4ba37290e1579b581bb1f4dcee",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1354,
+        "sha256": "045af60593f540f086816c4f814c6d3211186015bf1b4826dd738f6db1f9a766",
+        "blob": "045af60593f540f086816c4f814c6d3211186015bf1b4826dd738f6db1f9a766"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 415,
+        "sha256": "21d1296a926cba44f4c66aaaecd4ef0bc4763d013ef18fc852db58bafffa861d",
+        "blob": "21d1296a926cba44f4c66aaaecd4ef0bc4763d013ef18fc852db58bafffa861d"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "045af60593f540f086816c4f814c6d3211186015bf1b4826dd738f6db1f9a766",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-c_1h_0uu/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "5dbb2b7a5aab56c1713976e8de606cf780c7cbf2050a33a6b45dbac0377b39f1",
+    "binary_sha256_after": "5dbb2b7a5aab56c1713976e8de606cf780c7cbf2050a33a6b45dbac0377b39f1",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "newlines",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "f36eac25dd258f1669e59cfcf85a2d21df586f1fe2fb4088aa05059f684d56bd",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1377,
+        "sha256": "3bedfdea403e681881e4e3eefe51fb3e28d9a8d197ad12308ec43af81e6683be",
+        "blob": "3bedfdea403e681881e4e3eefe51fb3e28d9a8d197ad12308ec43af81e6683be"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 415,
+        "sha256": "1ce2a74b7d89a067cce95ef3be8a14999a000044acacfeb23aec94965e97a56c",
+        "blob": "1ce2a74b7d89a067cce95ef3be8a14999a000044acacfeb23aec94965e97a56c"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "3bedfdea403e681881e4e3eefe51fb3e28d9a8d197ad12308ec43af81e6683be",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-cfif6gil/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "24c628e526281702cf406ca5f3754c666c13a28e6c870fdd96f857a50ffe9b5d",
+    "binary_sha256_after": "24c628e526281702cf406ca5f3754c666c13a28e6c870fdd96f857a50ffe9b5d",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "unicode-lines",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "67c333c3019f08753136e13a9710e63c73b4f9073fcb5839c0fca9cb92a57ef7",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1400,
+        "sha256": "262fd37d2579c34ff6d7a7b9805981ef71cd890c6f9c7281302f843d50310762",
+        "blob": "262fd37d2579c34ff6d7a7b9805981ef71cd890c6f9c7281302f843d50310762"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 415,
+        "sha256": "cee427eeb30150b393c10be3aa7ebc59a7dbeb811e26078ee20671f1f0ac885b",
+        "blob": "cee427eeb30150b393c10be3aa7ebc59a7dbeb811e26078ee20671f1f0ac885b"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "262fd37d2579c34ff6d7a7b9805981ef71cd890c6f9c7281302f843d50310762",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-p5bvx2h6/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "7e45be5022d769f7d3f9e3fdb9567e618ab4c83be11c4f8014bb33b8585dfa44",
+    "binary_sha256_after": "7e45be5022d769f7d3f9e3fdb9567e618ab4c83be11c4f8014bb33b8585dfa44",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "invalid-file-utf8",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "9c6f82a41ce4625c1e0f9db06a7319464d2f5632ff50b03a86d1ad1c3a3412ad",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1,
+        "sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+        "blob": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-d5hrnaln/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "37f8ce631bc536cbd6f9c560f7a5129fa51eb94b4802d45449d5b961002164b5",
+    "binary_sha256_after": "37f8ce631bc536cbd6f9c560f7a5129fa51eb94b4802d45449d5b961002164b5",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "bom",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "404e6a46a01ae47e4696306b52306b6685caaa4f36d1684e7db9166ed6731d29",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1357,
+        "sha256": "e47233e857d3464492fa9ef89bb6091aed16d2c30e439f04182ecda51d5e1180",
+        "blob": "e47233e857d3464492fa9ef89bb6091aed16d2c30e439f04182ecda51d5e1180"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "e47233e857d3464492fa9ef89bb6091aed16d2c30e439f04182ecda51d5e1180",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-x4_f727u/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "8db421156fdb8c5d926d9c448eb4c802da41a240877bb7bfc3ec6232722defe7",
+    "binary_sha256_after": "8db421156fdb8c5d926d9c448eb4c802da41a240877bb7bfc3ec6232722defe7",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "empty",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "0f1ec75bc379cc4300771d8c91b65dde7026ae06420a65cacaabb4898f99acbf",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "blob": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-zqonh03m/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "103c9e44c55e84c0ff54c92707a8146b2b0965da957be89e36c3a4209e84bf23",
+    "binary_sha256_after": "103c9e44c55e84c0ff54c92707a8146b2b0965da957be89e36c3a4209e84bf23",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "candidate-root-owned",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "64dccb109883281fa78c4c789908c6ef7080d6087cb388fed4b709cd95457c22",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1354,
+        "sha256": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+        "blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 415,
+        "sha256": "06695879098b8f83bdb5e198088f1ae7b5f15dccdf5b64c6b6221c5d468d11c1",
+        "blob": "06695879098b8f83bdb5e198088f1ae7b5f15dccdf5b64c6b6221c5d468d11c1"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-2ugl5g8n/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "82cba22b51eb1cf499d3f14893caa2b69c06b2c78eef1576120ce0f47b5ce270",
+    "binary_sha256_after": "82cba22b51eb1cf499d3f14893caa2b69c06b2c78eef1576120ce0f47b5ce270",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "existing-output",
+    "exit": 1,
+    "called": false,
+    "stdout_blob": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_blob": "039938eb2f057f98bc0c9f0abd41fac879d20eb026dda2ae1b5fffb82ceae553",
+    "files": {
+      "untouched": {
+        "bytes": 4,
+        "sha256": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f",
+        "blob": "6ca7ea2feefc88ecb5ed6356ed963f47dc9137f82526fdd25d618ea626d0803f"
+      }
+    },
+    "directories": [],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-yd38sdfw/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "07edf4c5c948dd821344adbc2ac26b75361c99f41a2d2600820fb4f06a298754",
+    "binary_sha256_after": "07edf4c5c948dd821344adbc2ac26b75361c99f41a2d2600820fb4f06a298754",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "output-file",
+    "exit": 1,
+    "called": false,
+    "stdout_blob": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_blob": "2dd6f0a9c0f5dd8b1356547ca18fec26bba47c7189114817f6ba87a49fd47d6e",
+    "files": {},
+    "directories": [],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-iomg11zq/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "a411964a9373192bf85145ac3f537e3ac8e9b6b8602aeed837a3d3b4eb0e86a4",
+    "binary_sha256_after": "a411964a9373192bf85145ac3f537e3ac8e9b6b8602aeed837a3d3b4eb0e86a4",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "request-directory",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "cf8f54b8cef1ae35086072d453020db8cbb45f0c8f2f5aba035a6b496df0486b",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1354,
+        "sha256": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+        "blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "result.json": {
+        "bytes": 415,
+        "sha256": "d2b57b64c1ea6965aaaa6c416f5f4746ab7e1c52005dde13226d6361d5f9cf8c",
+        "blob": "d2b57b64c1ea6965aaaa6c416f5f4746ab7e1c52005dde13226d6361d5f9cf8c"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "request.jsonl",
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-dik404dq/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "72a605f39b0e22c9be259e1bb6f9abcb1d37335853754abf480b28a3f79507da",
+    "binary_sha256_after": "72a605f39b0e22c9be259e1bb6f9abcb1d37335853754abf480b28a3f79507da",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "actual-directory",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "c6d0f5c8ec154e27182c9356733792be5c5ba710ad10fec224dd51f78db30110",
+    "files": {
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "actual.jsonl",
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-1v7cggk2/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "864f8a716c650c5936fa21823dc11943206ab70452d7cfc9b94d9bb2ef130dc4",
+    "binary_sha256_after": "864f8a716c650c5936fa21823dc11943206ab70452d7cfc9b94d9bb2ef130dc4",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "depth990",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "38e78b6e4be0ed3259abdb85be7dd23b1db484a9b1a34fe8645f0b218747e5a7",
+    "stderr_blob": "3c95324569c056c41e82990efc75eaac114195cd2cee58a58ca4f03bcd9f7c31",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 3345,
+        "sha256": "f9218e78ccce22c730fa372fefb9b709510ac7e33cb3f25946b6fe572a21c5a6",
+        "blob": "f9218e78ccce22c730fa372fefb9b709510ac7e33cb3f25946b6fe572a21c5a6"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 1980677,
+        "sha256": "9e99a913ddc82e743d0df95a1497ca2d629e6c2f746b09e5467cf16a1fd975ba",
+        "blob": "9e99a913ddc82e743d0df95a1497ca2d629e6c2f746b09e5467cf16a1fd975ba"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "f9218e78ccce22c730fa372fefb9b709510ac7e33cb3f25946b6fe572a21c5a6",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-si0pb5dp/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "aa365a05bf7baa29f7cc72f4e2db4e6cb660f71e82387b8bb02c19bbde0b5c99",
+    "binary_sha256_after": "aa365a05bf7baa29f7cc72f4e2db4e6cb660f71e82387b8bb02c19bbde0b5c99",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "depth991",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "af06aa539f4cf479bd4ff6e10b2f24980d2af1160abc1bbf22865f83a560dd9e",
+    "stderr_blob": "3ba9980fcd9fa245588135dd244fd6f7e046c6b9c6fdf33610c984f63725ea26",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 3347,
+        "sha256": "98f48d35f40c1337de699599ba2e24f1b66cbbc6c3a5b0d47a8a978b6effffe0",
+        "blob": "98f48d35f40c1337de699599ba2e24f1b66cbbc6c3a5b0d47a8a978b6effffe0"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 1984659,
+        "sha256": "92f70ecdc7c5f08f7be202a3babc73d0216678735d5cdd7a9c03efaa49fe32ab",
+        "blob": "92f70ecdc7c5f08f7be202a3babc73d0216678735d5cdd7a9c03efaa49fe32ab"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "98f48d35f40c1337de699599ba2e24f1b66cbbc6c3a5b0d47a8a978b6effffe0",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-d9uci72h/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "e2e55ad0abfdedd6fba72a02109ea85d0f0f526bffa65a122f8ca48b3f8811fe",
+    "binary_sha256_after": "e2e55ad0abfdedd6fba72a02109ea85d0f0f526bffa65a122f8ca48b3f8811fe",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "depth992",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "f4e9c1018c723541cbc83187b01d7c247cbd31268cd2f6165a025c45fed5472b",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 3349,
+        "sha256": "4f8a59d787b1c185e1ad90405f76e2080e686d490ede2b888a0bbabbb2a51756",
+        "blob": "4f8a59d787b1c185e1ad90405f76e2080e686d490ede2b888a0bbabbb2a51756"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "4f8a59d787b1c185e1ad90405f76e2080e686d490ede2b888a0bbabbb2a51756",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-h9if2y8e/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "a0a6882602a5921a3f65e226295b517e6eee43e3f88669a611117ca73f007862",
+    "binary_sha256_after": "a0a6882602a5921a3f65e226295b517e6eee43e3f88669a611117ca73f007862",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "depth993",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "f4e9c1018c723541cbc83187b01d7c247cbd31268cd2f6165a025c45fed5472b",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 3351,
+        "sha256": "f78a88353b4c880605c6d9c6f2e383ce34c22d498b6f241ff50f2108f2cac198",
+        "blob": "f78a88353b4c880605c6d9c6f2e383ce34c22d498b6f241ff50f2108f2cac198"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "f78a88353b4c880605c6d9c6f2e383ce34c22d498b6f241ff50f2108f2cac198",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-w0e8pm35/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "b02f63c3eddc92c8f676ee6463ce4bb2a7cdbbf53dea88d6021321b062a7b13b",
+    "binary_sha256_after": "b02f63c3eddc92c8f676ee6463ce4bb2a7cdbbf53dea88d6021321b062a7b13b",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "depth994",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "f4e9c1018c723541cbc83187b01d7c247cbd31268cd2f6165a025c45fed5472b",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 3353,
+        "sha256": "81959b7967d43666fdf0f3ec4e4e27fabfb5aa931227c2eba472fec5c3a84f38",
+        "blob": "81959b7967d43666fdf0f3ec4e4e27fabfb5aa931227c2eba472fec5c3a84f38"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "81959b7967d43666fdf0f3ec4e4e27fabfb5aa931227c2eba472fec5c3a84f38",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-sc2o13aw/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "b90dd5ced68f96be41eb57dee1eb3a5910ab6e04588485525016089fa378c5cc",
+    "binary_sha256_after": "b90dd5ced68f96be41eb57dee1eb3a5910ab6e04588485525016089fa378c5cc",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "depth995",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "f4e9c1018c723541cbc83187b01d7c247cbd31268cd2f6165a025c45fed5472b",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 3355,
+        "sha256": "60d131797a4454921edddcd9d79979ffaca51daee1c597c906c62eeca90221db",
+        "blob": "60d131797a4454921edddcd9d79979ffaca51daee1c597c906c62eeca90221db"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "60d131797a4454921edddcd9d79979ffaca51daee1c597c906c62eeca90221db",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-zalsiopo/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "32891c13f5a42e05db0d7c5e6dca84893d2bb4a2d39d1573201e129b97d31f2a",
+    "binary_sha256_after": "32891c13f5a42e05db0d7c5e6dca84893d2bb4a2d39d1573201e129b97d31f2a",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "depth9996",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "f4e9c1018c723541cbc83187b01d7c247cbd31268cd2f6165a025c45fed5472b",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 21357,
+        "sha256": "51bf8e0d1dfd0626721b9989563b4919894426e666f0d67c65ef512c726acfbb",
+        "blob": "51bf8e0d1dfd0626721b9989563b4919894426e666f0d67c65ef512c726acfbb"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "51bf8e0d1dfd0626721b9989563b4919894426e666f0d67c65ef512c726acfbb",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-gvomrjq2/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "b897c3deabcfa2f8ae361f541316361fdd4d4c1b7b45010242ffd20253e2876e",
+    "binary_sha256_after": "b897c3deabcfa2f8ae361f541316361fdd4d4c1b7b45010242ffd20253e2876e",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "depth9997",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "4769c195b1e8d686d317aee778537f854fe0f3bb4c00c2e781f6d742e6d887c0",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 21359,
+        "sha256": "348857411c18cd39ff2a2d19c40ec0f7b7387a28722f3594f3fe2521322dedf8",
+        "blob": "348857411c18cd39ff2a2d19c40ec0f7b7387a28722f3594f3fe2521322dedf8"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "348857411c18cd39ff2a2d19c40ec0f7b7387a28722f3594f3fe2521322dedf8",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-5lko62ph/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "21cb276b086419ee10ba41f1d4244a3cc1a3731a96e573fdf8cfb7854daa7dc2",
+    "binary_sha256_after": "21cb276b086419ee10ba41f1d4244a3cc1a3731a96e573fdf8cfb7854daa7dc2",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "source-mutate",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "7b8da7238c9562bc389e14e03c2089c17b6aa8197be0e43149a9b34778e709b0",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1354,
+        "sha256": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+        "blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 415,
+        "sha256": "eb43990316cb6d58caa4598427145bb323eb4a927d400df7743954b122775be6",
+        "blob": "eb43990316cb6d58caa4598427145bb323eb4a927d400df7743954b122775be6"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-tkezosy3/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "ec67306875cac62ab09485ae1e61913d43590fb0142e8a7270652543f3088f49",
+    "binary_sha256_after": "ec67306875cac62ab09485ae1e61913d43590fb0142e8a7270652543f3088f49",
+    "source_sha256_after": "d67e2e944994496c8d8ec76eed0cf9f09679448d584b532bebf941852a37f5ed"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "source-delete",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "2e504719467081f15cd8fb18977494076666e593c6aa38303787eb95c4efa3d7",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1354,
+        "sha256": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+        "blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-dk7f3vh0/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "ef0e207430891e3725c842594a8fb5bad437d03623f0c0f1f0ae7597b65d688d",
+    "binary_sha256_after": "ef0e207430891e3725c842594a8fb5bad437d03623f0c0f1f0ae7597b65d688d",
+    "source_sha256_after": null
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "binary-mutate",
+    "exit": 0,
+    "called": true,
+    "stdout_blob": "3e89f7a1e19b1a66690c6c6a585935ad4ccea33b56ddb0f354176575ab07f63f",
+    "stderr_blob": "62ecdad5f6c8273d70424fb3f9b0b1d5d4a7aec48491a2c2cec12a60ef27327c",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1354,
+        "sha256": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+        "blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "result.json": {
+        "bytes": 415,
+        "sha256": "80af7cf6f7a36f047ea631d7db198516e47ffc5479ae9954e3243dc0fd2eb6c9",
+        "blob": "80af7cf6f7a36f047ea631d7db198516e47ffc5479ae9954e3243dc0fd2eb6c9"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-7emiy0r9/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "41784981595c380af585fa180d74022a68591b00a561f95bfc2333cdcf3c781c",
+    "binary_sha256_after": "d67e2e944994496c8d8ec76eed0cf9f09679448d584b532bebf941852a37f5ed",
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "binary-delete",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "7d1bd1b111b22276708e7ab9b32ac41363e8e13bbe9de88fedaf807311209f87",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1354,
+        "sha256": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+        "blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-_u64suvd/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "aa845811e2f0ae1b029d1573dd8232f4820fa03ea4f0230c4f01f9598eadf6da",
+    "binary_sha256_after": null,
+    "source_sha256_after": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633"
+  },
+  {
+    "kind": "json-boundary",
+    "mode": "source-unreadable-directory",
+    "exit": 1,
+    "called": true,
+    "stdout_blob": "0b866f32428a81df4aa5d2d177bc929c8b8518bd19f2365c5c332b1907e8cdd4",
+    "stderr_blob": "0d614873da276725e1f80396d5529c89d097670e5bcabb07a09715d0d59411d9",
+    "files": {
+      "actual.jsonl": {
+        "bytes": 1354,
+        "sha256": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+        "blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c"
+      },
+      "native/owned": {
+        "bytes": 9,
+        "sha256": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7",
+        "blob": "dda18a0e21ae47c53b4309434cbc02ae8bf764fa83a6defbb719431242722aa7"
+      },
+      "request.jsonl": {
+        "bytes": 5487,
+        "sha256": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80",
+        "blob": "f0974b0333b6479eabda739d1a6c2da9721b4be08cb121c557ebad3e5d15cd80"
+      },
+      "source/cancelled.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "source/lane.json": {
+        "bytes": 74,
+        "sha256": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e",
+        "blob": "86f1332fb727c1a1e8265e287a14abf37ed58f4ce39c38cdfcdc4891e8fc1d2e"
+      },
+      "source/learn.json": {
+        "bytes": 2,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "blob": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "directories": [
+      "native",
+      "source"
+    ],
+    "candidate_reply_blob": "2d3798d7428d88e83dc0111af4cedcb676b51316ca86cfbae1daad4df4cc7b2c",
+    "candidate_exit": 0,
+    "model_path": "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-16-command-reference/json-boundary-bbzy9ng5/root/openpilot/selfdrive/carrot/bluetooth/model.py",
+    "binary_sha256_before": "9823e6e53fb17000fc3cfd8af54534acbfdebce2427edc3d33e366885b0617e2",
+    "binary_sha256_after": "9823e6e53fb17000fc3cfd8af54534acbfdebce2427edc3d33e366885b0617e2",
+    "source_sha256_after": null
+  }
+]

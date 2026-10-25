@@ -1,0 +1,783 @@
+{
+  "capture_wrapper": {
+    "bytes": 11980,
+    "sha256": "95128a39966819e738e76bcd63e16fe5195385b6c3f17ed1424c10200ee65e1e"
+  },
+  "cases": [
+    {
+      "frame_count": 4,
+      "height": 760,
+      "name": "1344-raw-1",
+      "raw": true,
+      "reference_count": 5,
+      "width": 1344
+    },
+    {
+      "frame_count": 1,
+      "height": 760,
+      "name": "1344-raw-0",
+      "raw": false,
+      "reference_count": 2,
+      "width": 1344
+    },
+    {
+      "frame_count": 4,
+      "height": 1208,
+      "name": "1928-raw-1",
+      "raw": true,
+      "reference_count": 5,
+      "width": 1928
+    },
+    {
+      "frame_count": 1,
+      "height": 1208,
+      "name": "1928-raw-0",
+      "raw": false,
+      "reference_count": 2,
+      "width": 1928
+    }
+  ],
+  "files": {
+    "1344-raw-0/frame-0.bin": {
+      "bytes": 2428928,
+      "sha256": "06edc0ba7b1ed1d7a83e616c943a615a9ae2b88a578dd8a48b16e761643797c4"
+    },
+    "1344-raw-0/reference/expected-0.bin": {
+      "bytes": 360,
+      "sha256": "8717af694b9794ff1eb5b26578079bf858285f4b1154870c4a04bcb151d239ef"
+    },
+    "1344-raw-0/reference/expected-1.bin": {
+      "bytes": 360,
+      "sha256": "9d8cb71d1135f20c186a058b853685e453e61bbad46bc1bfb345d67f061e78a1"
+    },
+    "1344-raw-0/report.json": {
+      "bytes": 1242,
+      "sha256": "8cebaaa8cdc0a2b14a79e800fc65748e326276edc0014e2dadb52227151471ea"
+    },
+    "1344-raw-0/warmup-expected.bin": {
+      "bytes": 360,
+      "sha256": "8717af694b9794ff1eb5b26578079bf858285f4b1154870c4a04bcb151d239ef"
+    },
+    "1344-raw-0/warmup.bin": {
+      "bytes": 2428928,
+      "sha256": "c93662152aaf108e3a0cadfebadfba4fd1d0e951fed4ac0168ff2cc66b0141aa"
+    },
+    "1344-raw-1/calib-1.bin": {
+      "bytes": 136,
+      "sha256": "a9b3132c17f0e4acab83660bfbea445eefbe0c2a5cea05de210ad7c6d0170f29"
+    },
+    "1344-raw-1/calib-3.bin": {
+      "bytes": 128,
+      "sha256": "7497a68e74e973d0023f25a12be10e6077d61fae5c75ddae061dc99d912f5b22"
+    },
+    "1344-raw-1/frame-0.bin": {
+      "bytes": 2428928,
+      "sha256": "06edc0ba7b1ed1d7a83e616c943a615a9ae2b88a578dd8a48b16e761643797c4"
+    },
+    "1344-raw-1/frame-1.bin": {
+      "bytes": 2428928,
+      "sha256": "4a96b3fb724c1b72eb3e83db64d15edc6f0d25ffaecfb005e112c466decfcea6"
+    },
+    "1344-raw-1/frame-2.bin": {
+      "bytes": 2428928,
+      "sha256": "b8a9d9312979509c88f1dccb3b6cf6c8778c4a63e283368b22eea7a10ede9cce"
+    },
+    "1344-raw-1/frame-3.bin": {
+      "bytes": 2428928,
+      "sha256": "0dffc62e759976b4d3be090596b8d693b2904c33eb15b82245e85fb3cd5d2915"
+    },
+    "1344-raw-1/invalid-calib.bin": {
+      "bytes": 128,
+      "sha256": "4e21448aa93ca8f10fa1aa1e7e421365d15be42aec548f2c31ced6f32d7f2a5f"
+    },
+    "1344-raw-1/reference/expected-0.bin": {
+      "bytes": 2576,
+      "sha256": "afa54fdae9b25ffc72339e7cfee275b7274ddc301de08c1ee08e7e46f705c77a"
+    },
+    "1344-raw-1/reference/expected-1.bin": {
+      "bytes": 2576,
+      "sha256": "36f92ee4af56a7b549ce20cc67275792f8e885ec3132ef8275ce223d13a161fb"
+    },
+    "1344-raw-1/reference/expected-2.bin": {
+      "bytes": 2576,
+      "sha256": "8c6cdd8d4e41370b0ddff701ed24fe3b792a23ad221b2c8231c92cd2da241858"
+    },
+    "1344-raw-1/reference/expected-3.bin": {
+      "bytes": 2576,
+      "sha256": "718f01b7003e53644b3f02abe15433cbe831fd768fdc858569a3f17ebfa14069"
+    },
+    "1344-raw-1/reference/expected-4.bin": {
+      "bytes": 2576,
+      "sha256": "1883fc56ba33c40bb60f7838f8a2349e00a97b6894123dbf248a8f367216e93f"
+    },
+    "1344-raw-1/report.json": {
+      "bytes": 1342,
+      "sha256": "302776c740647c1519fe27ab66c0d040fc622ff50d4576e8b2ac8302a0507bbc"
+    },
+    "1344-raw-1/warmup-expected.bin": {
+      "bytes": 2576,
+      "sha256": "afa54fdae9b25ffc72339e7cfee275b7274ddc301de08c1ee08e7e46f705c77a"
+    },
+    "1344-raw-1/warmup.bin": {
+      "bytes": 2428928,
+      "sha256": "c93662152aaf108e3a0cadfebadfba4fd1d0e951fed4ac0168ff2cc66b0141aa"
+    },
+    "1928-raw-0/frame-0.bin": {
+      "bytes": 4804608,
+      "sha256": "3f074730ed676d3d7cf2af45bd06a279f50e73f4561d664b69e99d3aa7719a16"
+    },
+    "1928-raw-0/reference/expected-0.bin": {
+      "bytes": 360,
+      "sha256": "72abc601645107df81f43fd3ed7b052bee5ff81d1dc8458a42e79d79441e091c"
+    },
+    "1928-raw-0/reference/expected-1.bin": {
+      "bytes": 360,
+      "sha256": "6d2491225342eca6ec241ae1ba7722e0fd9c9a24bf4daa738f62363f554744d9"
+    },
+    "1928-raw-0/report.json": {
+      "bytes": 1243,
+      "sha256": "af05b08c99a0372c60a01093f5192e71b1260def5a479663fbabe5b2ce845b2c"
+    },
+    "1928-raw-0/warmup-expected.bin": {
+      "bytes": 360,
+      "sha256": "72abc601645107df81f43fd3ed7b052bee5ff81d1dc8458a42e79d79441e091c"
+    },
+    "1928-raw-0/warmup.bin": {
+      "bytes": 4804608,
+      "sha256": "fab4331c81050f04e53aa9d2a43d5a786d0438a626b6cba9cee746efe3d657e9"
+    },
+    "1928-raw-1/calib-1.bin": {
+      "bytes": 136,
+      "sha256": "a9b3132c17f0e4acab83660bfbea445eefbe0c2a5cea05de210ad7c6d0170f29"
+    },
+    "1928-raw-1/calib-3.bin": {
+      "bytes": 128,
+      "sha256": "7497a68e74e973d0023f25a12be10e6077d61fae5c75ddae061dc99d912f5b22"
+    },
+    "1928-raw-1/frame-0.bin": {
+      "bytes": 4804608,
+      "sha256": "3f074730ed676d3d7cf2af45bd06a279f50e73f4561d664b69e99d3aa7719a16"
+    },
+    "1928-raw-1/frame-1.bin": {
+      "bytes": 4804608,
+      "sha256": "2aed2d443fee4ef1ed0ac3b5a05e2b715a5373327e0ac453b5d61a441acd4666"
+    },
+    "1928-raw-1/frame-2.bin": {
+      "bytes": 4804608,
+      "sha256": "7fa0b33d93e89bed27237c94c012d3d9caa54734e74eb8a665ef2e0cd7a6bccc"
+    },
+    "1928-raw-1/frame-3.bin": {
+      "bytes": 4804608,
+      "sha256": "4e237fb6bffdb6498b97b315b7a4314c9c3356ac32e64c5a231dcea2071c3b66"
+    },
+    "1928-raw-1/invalid-calib.bin": {
+      "bytes": 128,
+      "sha256": "4e21448aa93ca8f10fa1aa1e7e421365d15be42aec548f2c31ced6f32d7f2a5f"
+    },
+    "1928-raw-1/reference/expected-0.bin": {
+      "bytes": 2576,
+      "sha256": "3297d8b0b03bda4c9e1608acacde75c2f37aed16ab47552da8cd0fa26702293f"
+    },
+    "1928-raw-1/reference/expected-1.bin": {
+      "bytes": 2576,
+      "sha256": "e8356a340e911d43451a75c6a2819a21b19a03bbce6b89d95bfaba3601edb0c7"
+    },
+    "1928-raw-1/reference/expected-2.bin": {
+      "bytes": 2576,
+      "sha256": "3bd61de246dc857cd3874c6c89c1f27aba6b1d2698eab937b1143d85d2d29a08"
+    },
+    "1928-raw-1/reference/expected-3.bin": {
+      "bytes": 2576,
+      "sha256": "cf0c1c148a9b9ae72ba2c2d86220060fa02b37c7c0f047a3045dddff0f459cae"
+    },
+    "1928-raw-1/reference/expected-4.bin": {
+      "bytes": 2576,
+      "sha256": "5d2012e4b203acde4ca5c74ae38d16c73b107d9c42958962dbe6c22d82c58589"
+    },
+    "1928-raw-1/report.json": {
+      "bytes": 1343,
+      "sha256": "1da1de2f3366a4d7521fba629cadb97efc24b33a9aa792c679b8a3db63530e71"
+    },
+    "1928-raw-1/warmup-expected.bin": {
+      "bytes": 2576,
+      "sha256": "3297d8b0b03bda4c9e1608acacde75c2f37aed16ab47552da8cd0fa26702293f"
+    },
+    "1928-raw-1/warmup.bin": {
+      "bytes": 4804608,
+      "sha256": "fab4331c81050f04e53aa9d2a43d5a786d0438a626b6cba9cee746efe3d657e9"
+    },
+    "report.json": {
+      "bytes": 6143,
+      "sha256": "4bfa5d2406b16ebb9a05e764ed9c552486801e58e4aa21c6f10f60fb9d2e8a27"
+    }
+  },
+  "loaded_python_sources": {
+    "msgq_repo/msgq/__init__.py": {
+      "bytes": 2022,
+      "sha256": "9b9e5e26cf4190e9aaf056cd90771fb95228f665d1171a9ee919b432a0d2d368"
+    },
+    "openpilot/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/cereal/__init__.py": {
+      "bytes": 992,
+      "sha256": "c8e54d7417631916d8c5842d0d509d8c573ca8089e9cad6fc7acad849503fb60"
+    },
+    "openpilot/cereal/messaging/__init__.py": {
+      "bytes": 11412,
+      "sha256": "1938c80c71dba0855700015bc03371786a711c67bfe3a0c5e073ed790d5e10a9"
+    },
+    "openpilot/cereal/services.py": {
+      "bytes": 5725,
+      "sha256": "a0745e2ef00036f0eef08b453a4798b4281549ea9ac6dc91c8b348ef76131edb"
+    },
+    "openpilot/common/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/common/file_chunker.py": {
+      "bytes": 2584,
+      "sha256": "4751931e77263cceca46fae0cc5d5803bb02b262f440da8d502990ce1290dc5c"
+    },
+    "openpilot/common/transformations/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/common/transformations/camera.py": {
+      "bytes": 6141,
+      "sha256": "3ac87fd236aa9c9e284059c47c9eb96a7c6e0be5106f514a95e6ec06e1060fb5"
+    },
+    "openpilot/common/transformations/model.py": {
+      "bytes": 2766,
+      "sha256": "c87aad27074362fe9fe361a71da92c1fc90daf63bcfd4d8c47d65d3a936ec15e"
+    },
+    "openpilot/common/transformations/orientation.py": {
+      "bytes": 1981,
+      "sha256": "b2e28a8d24b4c114cb08fb88f6624f41acf4e3dc6d53f57d3727386e3346c014"
+    },
+    "openpilot/common/transformations/transformations.py": {
+      "bytes": 9592,
+      "sha256": "5c2e2b43c0ea5ce07550a37b0594edc2b680f042ecd88824e9134e63c30efbd8"
+    },
+    "openpilot/common/usbgpu_bus_lock.py": {
+      "bytes": 1562,
+      "sha256": "b4d3a858fc8426b8f1619383cb81d2ec45e07579eaec7df7d8f4fb5dbb71bbab"
+    },
+    "openpilot/common/utils.py": {
+      "bytes": 8190,
+      "sha256": "b1cc68b63cff1386ba397c0cc527dbb38fb50b154043ffcb066ed7acce65ec83"
+    },
+    "openpilot/selfdrive/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/selfdrive/modeld/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/selfdrive/modeld/big_model.py": {
+      "bytes": 15272,
+      "sha256": "24b579ec2d050b754799e8a06f7e15059490bdb622c6a91824f4803d3749e582"
+    },
+    "openpilot/selfdrive/modeld/big_model_status.py": {
+      "bytes": 3511,
+      "sha256": "a704e3cc2a8f87997169c386dc487a7188be93c9a1385019a1738ba56d59b16e"
+    },
+    "openpilot/selfdrive/modeld/compile_modeld.py": {
+      "bytes": 14016,
+      "sha256": "7bbcb18cd4499867a680268199a2f165584c34615f8f3e1359a74c94efc776c0"
+    },
+    "openpilot/selfdrive/modeld/constants.py": {
+      "bytes": 2164,
+      "sha256": "5d597d287df626d08b234a17db05e884302fead646ff4e7f0153079547c8010c"
+    },
+    "openpilot/selfdrive/modeld/helpers.py": {
+      "bytes": 7373,
+      "sha256": "a4b16233d71809d32467231743642e84f7b889f1fd649cef604e83258fcdce1d"
+    },
+    "openpilot/selfdrive/modeld/parse_model_outputs.py": {
+      "bytes": 5224,
+      "sha256": "45b38da9f929bd59ca28ff9e19f64e8718286ae3ccbeccddb7868ffbcd88fc85"
+    },
+    "openpilot/system/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/system/camerad/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "openpilot/system/camerad/cameras/nv12_info.py": {
+      "bytes": 809,
+      "sha256": "3a16d167e489b6862d67641bdbe681a1e751a90edf7e60e2eb6d9743000863be"
+    },
+    "rust/tools/check_pipeline_reference.py": {
+      "bytes": 7115,
+      "sha256": "63e8d880b79603215d7319011809dd3b5ec6699dae1e10c79c105b7dc5cc258b"
+    },
+    "rust/tools/model_export/__init__.py": {
+      "bytes": 127,
+      "sha256": "c2b8cc27e694046b3cab7822dc188562b31e205531e3f8fd8abee0465dc9ca07"
+    },
+    "rust/tools/model_export/binding_order.py": {
+      "bytes": 684,
+      "sha256": "d9ac0c34b3b071eff0e7d3c9192c7ded63879dd779530083f1c0e9e2e64c53e1"
+    },
+    "rust/tools/model_export/buffers.py": {
+      "bytes": 2577,
+      "sha256": "9429df49f408cda89f5b862fc0d51982668234cc18cb28ca0e83fd3d1a5bc7de"
+    },
+    "rust/tools/model_export/capture.py": {
+      "bytes": 6181,
+      "sha256": "4ac75eaf71a3f6e56339ce4f9da0d0c373bd04838dee914755e8317734d697f8"
+    },
+    "rust/tools/model_export/compile.py": {
+      "bytes": 1971,
+      "sha256": "81c97a51d349e54cf517dd1b0d060808fee9655cb52fd60a11642433a295465a"
+    },
+    "rust/tools/model_export/native.py": {
+      "bytes": 1523,
+      "sha256": "30bf9783119cd92071def6f6e8870be002475f2ec3eff0212f2e614550738e38"
+    },
+    "rust/tools/model_export/original.py": {
+      "bytes": 5656,
+      "sha256": "74bcbca40b112ec3e56327c001d920d3004b2f837a1b0fee87908fd315c9e337"
+    },
+    "rust/tools/model_export/pipeline.py": {
+      "bytes": 6686,
+      "sha256": "dcef9cf236031f634a44d2733a6b9b78fc274090390eec96d17ceecbd908df6d"
+    },
+    "rust/tools/model_export/schema.py": {
+      "bytes": 2247,
+      "sha256": "382e99fd03955b0621bf67208ac399928b9ed4882ee23f4029f915c883c92933"
+    },
+    "rust/tools/model_logging_capture.py": {
+      "bytes": 6644,
+      "sha256": "f00fa03c10597fce6c53931b45cf8867baded88a75948c664ffd075f3042535d"
+    },
+    "rust/tools/model_logging_reference.py": {
+      "bytes": 6052,
+      "sha256": "ced29c79268f0df83bd9f741c8c840c6111521909592bfd7ad7b5602f0182910"
+    },
+    "rust/tools/model_output_reference.py": {
+      "bytes": 3115,
+      "sha256": "b9661c8fc72c072cfdf8391373c260c29d3c28b1931e869bc446d8595432408b"
+    },
+    "tinygrad_repo/tinygrad/__init__.py": {
+      "bytes": 674,
+      "sha256": "fc24d5d0df1b1a14bbee0bd2641a61ca5f34ec7d83f1b0b755adf6eb83d5c0be"
+    },
+    "tinygrad_repo/tinygrad/callify.py": {
+      "bytes": 11332,
+      "sha256": "dfad896126caf69456677b74a2ca3374e72bda1e969be0c7ffe2358a4ba56253"
+    },
+    "tinygrad_repo/tinygrad/codegen/__init__.py": {
+      "bytes": 13163,
+      "sha256": "3e137459c3c1c7a7d8bc7aa67da9a067ff7e0a9dd547d327a5f42b0c10c86357"
+    },
+    "tinygrad_repo/tinygrad/codegen/gpudims.py": {
+      "bytes": 5583,
+      "sha256": "e1d6330e42bac058ad16746e8561ec128e0abc30b0489c1a90be688b95773f38"
+    },
+    "tinygrad_repo/tinygrad/codegen/late/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tinygrad_repo/tinygrad/codegen/late/devectorizer.py": {
+      "bytes": 20572,
+      "sha256": "54fcfa351cfcd9d8e22e9e9cade7a4970f635b5cb3d0f7924a795b76af92cfa1"
+    },
+    "tinygrad_repo/tinygrad/codegen/late/expander.py": {
+      "bytes": 8374,
+      "sha256": "0283354382ab32a083351fce0b43af964a3f98c281bdb96d49dbca808aab7490"
+    },
+    "tinygrad_repo/tinygrad/codegen/late/gater.py": {
+      "bytes": 2015,
+      "sha256": "3070e1c269271669161ab482c47c9a0b7fb03f2700773545bfa6566d3dd088e8"
+    },
+    "tinygrad_repo/tinygrad/codegen/late/linearizer.py": {
+      "bytes": 3950,
+      "sha256": "7ad3cac2aa660ff9ec165ab867fd40373a44211bceec3ee07b31bd06d6d3229e"
+    },
+    "tinygrad_repo/tinygrad/codegen/late/regalloc.py": {
+      "bytes": 7140,
+      "sha256": "de885b792983e2401b8293136c50b3d2630dd55f93b3de1ee60498d26ac1680d"
+    },
+    "tinygrad_repo/tinygrad/codegen/opt/__init__.py": {
+      "bytes": 780,
+      "sha256": "095c83555f7d781f20d7ab14c399e6128711ba20bd3f3e52b9d76570ad864b1d"
+    },
+    "tinygrad_repo/tinygrad/codegen/opt/postrange.py": {
+      "bytes": 20670,
+      "sha256": "17af91a317d5851637a8f6de32ac8693c35e591e52777c9bf1f44011469018a0"
+    },
+    "tinygrad_repo/tinygrad/codegen/opt/tc.py": {
+      "bytes": 10314,
+      "sha256": "a7f89d15b446098a46adab53da0186a491043c2ced39b2f1db75bfac874da8d1"
+    },
+    "tinygrad_repo/tinygrad/codegen/simplify.py": {
+      "bytes": 8667,
+      "sha256": "97f219e1900f7998a08248821e4cf0b72b178adc6e3cfe22b90f802c2340f9fb"
+    },
+    "tinygrad_repo/tinygrad/device.py": {
+      "bytes": 20639,
+      "sha256": "7c28ae3854a3f009fc6eddfb52f03b3d382a23b581d94a3c4741a12bdc79f008"
+    },
+    "tinygrad_repo/tinygrad/dtype.py": {
+      "bytes": 20162,
+      "sha256": "de4bb7980fac9c09f851374fc6e8c57441071fca6d98dc92c6e984170bc58008"
+    },
+    "tinygrad_repo/tinygrad/engine/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tinygrad_repo/tinygrad/engine/jit.py": {
+      "bytes": 16717,
+      "sha256": "61bd488758f233710d86a1a49803fe28139ae3e6771b2aef125e741f8150558b"
+    },
+    "tinygrad_repo/tinygrad/engine/realize.py": {
+      "bytes": 17344,
+      "sha256": "362a666b89a29df9fbd8e7cb267ef3f5b4136f5cbad9cf6e88fabc25c1b4bcda"
+    },
+    "tinygrad_repo/tinygrad/function.py": {
+      "bytes": 4954,
+      "sha256": "212c471f5dccab98527b9d5206c99e67dd68bd2cbf272e7043ba6ef59c819da9"
+    },
+    "tinygrad_repo/tinygrad/helpers.py": {
+      "bytes": 32632,
+      "sha256": "24c347d2137c92e1dc35d78cd9df45b38d31cc4d34729a35215f8822b3f2f6fb"
+    },
+    "tinygrad_repo/tinygrad/mixin/__init__.py": {
+      "bytes": 87287,
+      "sha256": "1a9c8438c33a67e13c9ff684da24281f9e74e5ebbab48ce3b43731777225fb73"
+    },
+    "tinygrad_repo/tinygrad/mixin/creation.py": {
+      "bytes": 6101,
+      "sha256": "f4292455ae67b638f05d5c9def2735fe785332aeb9638fff8828d435d7635974"
+    },
+    "tinygrad_repo/tinygrad/mixin/dtype.py": {
+      "bytes": 3727,
+      "sha256": "be929b3f27165f98e8e6df1021264ba42d55f6e757b9170822b18cbb09447a9c"
+    },
+    "tinygrad_repo/tinygrad/mixin/elementwise.py": {
+      "bytes": 37329,
+      "sha256": "648b15352bbad5a62fc50b1129d23c30ec5a068aab7a4c70aff8325e87b1bcd2"
+    },
+    "tinygrad_repo/tinygrad/mixin/movement.py": {
+      "bytes": 28839,
+      "sha256": "1ad522ac11b19e800e4ba870775f31713e2c4dcf7b3034162abc45cc1e0db248"
+    },
+    "tinygrad_repo/tinygrad/mixin/rand.py": {
+      "bytes": 15495,
+      "sha256": "f0d59c6d533fcf47c4baa31b2e0a76c0ff9d9e8305be820b41652abc68d56ecb"
+    },
+    "tinygrad_repo/tinygrad/mixin/reduce.py": {
+      "bytes": 5836,
+      "sha256": "865a0232e1eb57e08a6208a714b4f47e6b1e83b3af10d1efe5ab763a8ab87dda"
+    },
+    "tinygrad_repo/tinygrad/nn/__init__.py": {
+      "bytes": 18555,
+      "sha256": "1f8bf0e7584c3cc51f4c73189fe9c3a63a14df32897ab51c0504372fa0d3d4d7"
+    },
+    "tinygrad_repo/tinygrad/nn/datasets.py": {
+      "bytes": 1042,
+      "sha256": "c1c4f442b969c3f47333bb81cbcba98732808c64fe644e3c7e23fed20dd6bc8d"
+    },
+    "tinygrad_repo/tinygrad/nn/optim.py": {
+      "bytes": 9357,
+      "sha256": "650219d27037b9c9fa2d9006275110f3994879d71189db87e5d7a6e837680fa1"
+    },
+    "tinygrad_repo/tinygrad/nn/state.py": {
+      "bytes": 13836,
+      "sha256": "62ce0787de89569e00a05a94a51d31efaa501c5f75235227b8e9fb0d1f56b2bc"
+    },
+    "tinygrad_repo/tinygrad/renderer/__init__.py": {
+      "bytes": 4405,
+      "sha256": "22b219d73973e2591201662ae4a5c4ebd8688e51313a0ad4f55d50ae513828f7"
+    },
+    "tinygrad_repo/tinygrad/renderer/cstyle.py": {
+      "bytes": 37506,
+      "sha256": "13d806a4674ec87ffc94959b5825bb5915a7581b9c6652a3ddfe8a52120470be"
+    },
+    "tinygrad_repo/tinygrad/renderer/isa/__init__.py": {
+      "bytes": 1804,
+      "sha256": "4aed9e19dfb40dc9aad10a5fec8005a561878f218fc46600e91bb802d2ab5f12"
+    },
+    "tinygrad_repo/tinygrad/renderer/isa/x86.py": {
+      "bytes": 69618,
+      "sha256": "4e069768fcb4a612992d067b7a5b61e992f52c2d274a4d2823cd6efe7366ead0"
+    },
+    "tinygrad_repo/tinygrad/renderer/llvmir.py": {
+      "bytes": 18754,
+      "sha256": "34fc242484fed32a645fac6ad855064081ac0de5b01a291a071c1bbc92cdf29e"
+    },
+    "tinygrad_repo/tinygrad/renderer/nir.py": {
+      "bytes": 20828,
+      "sha256": "fa7058a5110234d9301ab1daa488c22ca4ad850b57c037da7ff224e026e371c7"
+    },
+    "tinygrad_repo/tinygrad/runtime/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tinygrad_repo/tinygrad/runtime/autogen/__init__.py": {
+      "bytes": 18322,
+      "sha256": "b20692a047e9229d24a8873cef046f1b6f6f63ad05a5e7bb127502014131eda5"
+    },
+    "tinygrad_repo/tinygrad/runtime/autogen/corefoundation.py": {
+      "bytes": 26037,
+      "sha256": "56795809f590e21234877a256681371ee32d8cf5a597417e784988e31622087f"
+    },
+    "tinygrad_repo/tinygrad/runtime/autogen/iokit.py": {
+      "bytes": 23437,
+      "sha256": "d0033fb9bd4ecf4a796ac01e280d6fb3289614c8008d6e62b312d09894189162"
+    },
+    "tinygrad_repo/tinygrad/runtime/autogen/libc.py": {
+      "bytes": 124407,
+      "sha256": "89004d7b83537131ef45a55191eb1ce2708ef5e3f649abf656abdeeb193d42db"
+    },
+    "tinygrad_repo/tinygrad/runtime/autogen/libusb.py": {
+      "bytes": 41559,
+      "sha256": "f234ee7c90cc4ac1c7d97724db665f2dba466580bc1205deab1a58de99992a6e"
+    },
+    "tinygrad_repo/tinygrad/runtime/autogen/llvm.py": {
+      "bytes": 265275,
+      "sha256": "b9bca21686da3f55612f128d8f8170b7544cee72a23352049c526d3694488a0d"
+    },
+    "tinygrad_repo/tinygrad/runtime/autogen/mesa.py": {
+      "bytes": 857704,
+      "sha256": "59b23eb07ba1e234298eecf59df9dcd55a401c0c612cef67ea0a0cd91369f2a2"
+    },
+    "tinygrad_repo/tinygrad/runtime/autogen/mlx5.py": {
+      "bytes": 1025137,
+      "sha256": "7b1782a5ec4aed44cf849b3e574d15b85924390b24f9368cc17014ac4ffc1e99"
+    },
+    "tinygrad_repo/tinygrad/runtime/autogen/pci.py": {
+      "bytes": 31995,
+      "sha256": "baceb6b8c4e45429c8dc3b7eff17259aaed30d30d6ea50935ce28d69534d8bac"
+    },
+    "tinygrad_repo/tinygrad/runtime/autogen/vfio.py": {
+      "bytes": 26409,
+      "sha256": "c501177743326af85725911c225ebe7dbc50f56e8882913ae22ad2d50fa33c27"
+    },
+    "tinygrad_repo/tinygrad/runtime/graph/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tinygrad_repo/tinygrad/runtime/graph/hcq.py": {
+      "bytes": 20947,
+      "sha256": "abbfee572596e219d692d62c0b8efeaeaae4682f2e243b992ca74635b4cd7171"
+    },
+    "tinygrad_repo/tinygrad/runtime/ops_cpu.py": {
+      "bytes": 8395,
+      "sha256": "012f3d932abba9e14f82aedefe0ca52243eba1728f847c38cae54ae05b171a16"
+    },
+    "tinygrad_repo/tinygrad/runtime/ops_npy.py": {
+      "bytes": 557,
+      "sha256": "7a34eea401b1925a775540d6d4d8332a44b26f07b5c0d88a3c17b2083c4f31d9"
+    },
+    "tinygrad_repo/tinygrad/runtime/ops_rdma.py": {
+      "bytes": 6154,
+      "sha256": "b39ca906f16e6a260bee6992bc53da66bdcd5a65ca7309769bee418d71f9fed2"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/c.py": {
+      "bytes": 7397,
+      "sha256": "0899ca9748d7150e55afd05e0de9443cbba2ac3bbf5b80807723b17b79fbc684"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/compiler_cpu.py": {
+      "bytes": 6679,
+      "sha256": "db106591197315ecf28f0e15de99d2841c9892e6e58290213c62c598e7014139"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/elf.py": {
+      "bytes": 5263,
+      "sha256": "ed0340b507c8fb23f1fa1ae1b3ca1297006d70c289a016233d9f1d5291801aa8"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/hcq.py": {
+      "bytes": 32420,
+      "sha256": "86ccce42fce7fe59f4cd2e345d9186b7241e44a00763ee51712c16a10b521bff"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/memory.py": {
+      "bytes": 15268,
+      "sha256": "0457d300a3f149ba11b2da97240f7c7b6c0bb952e7ac4779dea2cfc0c44c81e2"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/mlx/__init__.py": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/mlx/mlxdev.py": {
+      "bytes": 15297,
+      "sha256": "3e2b8da9ab43a7930727cd92b37694f1b68e70ce6d3ed6edf6304388ceafd69d"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/system.py": {
+      "bytes": 28553,
+      "sha256": "5e7034f3bebfc10874d3adf3ee23c24ffca22da1e810edba10b254a563202e33"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/usb.py": {
+      "bytes": 29141,
+      "sha256": "f94da7ba6f959ab7ac75dc6d2b554e8ca975b01a6d826ce14dc2bfe351f053b1"
+    },
+    "tinygrad_repo/tinygrad/schedule/__init__.py": {
+      "bytes": 7002,
+      "sha256": "9b8170b2a424929f9b461bef1f4d3fe3b8f03deec2e117c129c61f61c3cbeb45"
+    },
+    "tinygrad_repo/tinygrad/schedule/allreduce.py": {
+      "bytes": 3403,
+      "sha256": "23ec02d36e61da33ad8f69ed9d2b7b70c0e56b546b778767ad16a50fd2f4228e"
+    },
+    "tinygrad_repo/tinygrad/schedule/indexing.py": {
+      "bytes": 14317,
+      "sha256": "786a74d919cee9dbb0d089bbf305486f6da9d1a6a03dc2da0d993d08a58b5b9b"
+    },
+    "tinygrad_repo/tinygrad/schedule/memory.py": {
+      "bytes": 3315,
+      "sha256": "5208f60a013dc79a2dc5752fa8f41af0067583aaac93ce626fa1c47b25861ac0"
+    },
+    "tinygrad_repo/tinygrad/schedule/multi.py": {
+      "bytes": 10633,
+      "sha256": "fa4a20fc2f129a4d6eb6f489502b4beec6f0f07862824f6fb8678a682124a1aa"
+    },
+    "tinygrad_repo/tinygrad/schedule/rangeify.py": {
+      "bytes": 32650,
+      "sha256": "52bad522c3660171a708769999373a5177ac60d2ecde8c3db555769b677d2035"
+    },
+    "tinygrad_repo/tinygrad/tensor.py": {
+      "bytes": 47920,
+      "sha256": "c825e67e3e7d237cbbb4bf32cb30255422fb1feec6d0f769a1e7a5cb45573b99"
+    },
+    "tinygrad_repo/tinygrad/uop/__init__.py": {
+      "bytes": 4829,
+      "sha256": "8de567435d8c37f5472650e96409660063890d7a1a6dea32054396da6b6749ac"
+    },
+    "tinygrad_repo/tinygrad/uop/decompositions.py": {
+      "bytes": 35183,
+      "sha256": "907e0660b37758b3dea3324c99292ad73590ea09fdefd1bbd831c4e78068c7e3"
+    },
+    "tinygrad_repo/tinygrad/uop/divandmod.py": {
+      "bytes": 5199,
+      "sha256": "6194be2f8f2dcb454fa9909e3116bb2d0003d881a44cd8227729ce8786fc86da"
+    },
+    "tinygrad_repo/tinygrad/uop/ops.py": {
+      "bytes": 94967,
+      "sha256": "d4b454cc4577a23be8d688aed874b9911992332e21bea7d7567974c9dc7c197a"
+    },
+    "tinygrad_repo/tinygrad/uop/render.py": {
+      "bytes": 9599,
+      "sha256": "82bd6f09a018cebc4fae460a8774f7199b4e158c16ad56dd7e06585ff1df0159"
+    },
+    "tinygrad_repo/tinygrad/uop/spec.py": {
+      "bytes": 14307,
+      "sha256": "997c04a8dfe409e885b89739b3d7056da1028b6a6c26bdcbe87982271e6db6fe"
+    },
+    "tinygrad_repo/tinygrad/uop/symbolic.py": {
+      "bytes": 32525,
+      "sha256": "060cc88a25a746a5186b9f592e9a43ef4425e5bc37b361eec66c175e14362c39"
+    },
+    "tinygrad_repo/tinygrad/uop/upat.py": {
+      "bytes": 7783,
+      "sha256": "195c89bfc86b1647e2bc721111a43cf6a64ae2b5f2e37136562c20f5c0851db7"
+    }
+  },
+  "original_checker": {
+    "bytes": 14277,
+    "sha256": "ea1266dc395dab662319bd3637ad90440989db3d2937756dbf07fbb993520f5b"
+  },
+  "original_models": {
+    "dm_warp_1344x760_tinygrad.pkl": {
+      "bytes": 1413261,
+      "sha256": "a860848b8e91f9739496b21b6cb1b7155212831aca288dd84963d05a3624df2d"
+    },
+    "dm_warp_1928x1208_tinygrad.pkl": {
+      "bytes": 1413224,
+      "sha256": "11315cf0b50c3177ea0601391e3a5965b4feb02144d130d31e66050b1e349b1c"
+    },
+    "dmonitoring_model_metadata.pkl": {
+      "bytes": 818,
+      "sha256": "8139895b0f810e351b1e3e9fd649ffcc80d7fe26583e8482f58f341c7d2900d5"
+    },
+    "dmonitoring_model_tinygrad.pkl": {
+      "bytes": 13056699,
+      "sha256": "33a8ae999035383fd33954483a2e7292a7193fad0baf7126b14a4061ce3e405c"
+    }
+  },
+  "original_msgq_binding_extensions": {
+    "msgq/ipc_pyx.cpython-312-x86_64-linux-gnu.so": {
+      "bytes": 1614992,
+      "sha256": "9c80ed9b7c5148b6106b3d9f4bb2d81543e98796455b905b7091c173b800ec04"
+    },
+    "msgq/visionipc/visionipc_pyx.cpython-312-x86_64-linux-gnu.so": {
+      "bytes": 2911568,
+      "sha256": "1b5bdf1cf18f37884e7d04ae6ee7fc5d22ac385c49660567a16486edbf264a8e"
+    }
+  },
+  "original_source_inputs": {
+    "openpilot/common/transformations/camera.py": {
+      "bytes": 6141,
+      "sha256": "3ac87fd236aa9c9e284059c47c9eb96a7c6e0be5106f514a95e6ec06e1060fb5"
+    },
+    "openpilot/common/transformations/model.py": {
+      "bytes": 2766,
+      "sha256": "c87aad27074362fe9fe361a71da92c1fc90daf63bcfd4d8c47d65d3a936ec15e"
+    },
+    "openpilot/selfdrive/modeld/constants.py": {
+      "bytes": 2164,
+      "sha256": "5d597d287df626d08b234a17db05e884302fead646ff4e7f0153079547c8010c"
+    },
+    "openpilot/selfdrive/modeld/dmonitoringmodeld.py": {
+      "bytes": 7167,
+      "sha256": "62c4ea132d62b6f9aa399db27fcf72eceadfd05477c178ece251d73d09659d03"
+    },
+    "openpilot/selfdrive/modeld/parse_model_outputs.py": {
+      "bytes": 5224,
+      "sha256": "45b38da9f929bd59ca28ff9e19f64e8718286ae3ccbeccddb7868ffbcd88fc85"
+    },
+    "openpilot/system/camerad/cameras/nv12_info.py": {
+      "bytes": 809,
+      "sha256": "3a16d167e489b6862d67641bdbe681a1e751a90edf7e60e2eb6d9743000863be"
+    },
+    "rust/tools/check_driver_daemon.py": {
+      "bytes": 14277,
+      "sha256": "ea1266dc395dab662319bd3637ad90440989db3d2937756dbf07fbb993520f5b"
+    },
+    "rust/tools/check_pipeline_reference.py": {
+      "bytes": 7115,
+      "sha256": "63e8d880b79603215d7319011809dd3b5ec6699dae1e10c79c105b7dc5cc258b"
+    },
+    "rust/tools/driver_daemon_peer.cc": {
+      "bytes": 3666,
+      "sha256": "002b8e5a6449d6ece86e1c86f2c1e35bffb3243d4206ad6ed40b7c27866628cd"
+    },
+    "rust/tools/model_export/original.py": {
+      "bytes": 5656,
+      "sha256": "74bcbca40b112ec3e56327c001d920d3004b2f837a1b0fee87908fd315c9e337"
+    },
+    "rust/tools/model_export/pipeline.py": {
+      "bytes": 6686,
+      "sha256": "dcef9cf236031f634a44d2733a6b9b78fc274090390eec96d17ceecbd908df6d"
+    },
+    "rust/tools/model_export/schema.py": {
+      "bytes": 2247,
+      "sha256": "382e99fd03955b0621bf67208ac399928b9ed4882ee23f4029f915c883c92933"
+    },
+    "rust/tools/model_logging_capture.py": {
+      "bytes": 6644,
+      "sha256": "f00fa03c10597fce6c53931b45cf8867baded88a75948c664ffd075f3042535d"
+    },
+    "rust/tools/model_logging_reference.py": {
+      "bytes": 6052,
+      "sha256": "ced29c79268f0df83bd9f741c8c840c6111521909592bfd7ad7b5602f0182910"
+    },
+    "rust/tools/model_output_reference.py": {
+      "bytes": 3115,
+      "sha256": "b9661c8fc72c072cfdf8391373c260c29d3c28b1931e869bc446d8595432408b"
+    }
+  },
+  "policy": {
+    "candidate_message_files_are_not_oracle": true,
+    "expected_packet_origin": "unchanged Python reference.get_driverstate_packet"
+  },
+  "source_commit": "2ecf3f6813f601ea52e7a61ccf75219952daefa0"
+}

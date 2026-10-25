@@ -1,4 +1,7 @@
-use crate::{diagnostics::python_text, Event, EventSink, Transfer, TransferError, UploadResponse};
+use crate::{
+    diagnostics::python_text, Event, EventSink, Transfer, TransferError, UploadResponse,
+    UploadedSource,
+};
 use jsonwebtoken::{Algorithm, EncodingKey, Header};
 use openpilot_http_transport::socket_timeout_agent;
 use openpilot_logging::{log_site, record::Level, Value};
@@ -67,34 +70,39 @@ pub struct HttpTransfer {
     pub socket_timeout: Duration,
 }
 enum Body {
-    File(File),
-    Compressed(Cursor<Vec<u8>>),
+    File(UploadedSource),
+    Compressed(UploadedSource, Cursor<Vec<u8>>),
 }
 impl Read for Body {
     fn read(&mut self, output: &mut [u8]) -> io::Result<usize> {
         match self {
-            Self::File(f) => f.read(output),
-            Self::Compressed(f) => f.read(output),
+            Self::File(source) => source.file.read(output),
+            Self::Compressed(_, f) => f.read(output),
         }
     }
 }
 impl Seek for Body {
     fn seek(&mut self, position: SeekFrom) -> io::Result<u64> {
         match self {
-            Self::File(f) => f.seek(position),
-            Self::Compressed(f) => f.seek(position),
+            Self::File(source) => source.file.seek(position),
+            Self::Compressed(_, f) => f.seek(position),
         }
     }
 }
 impl Body {
     fn open(path: &Path, compress: bool) -> io::Result<Self> {
-        let mut file = File::open(path)?;
+        let mut source = UploadedSource::new(File::open(path)?)?;
         if compress {
             let mut encoder = zstd::stream::write::Encoder::new(Vec::new(), 10)?;
-            io::copy(&mut file, &mut encoder)?;
-            Ok(Self::Compressed(Cursor::new(encoder.finish()?)))
+            io::copy(&mut source.file, &mut encoder)?;
+            Ok(Self::Compressed(source, Cursor::new(encoder.finish()?)))
         } else {
-            Ok(Self::File(file))
+            Ok(Self::File(source))
+        }
+    }
+    fn into_source(self) -> UploadedSource {
+        match self {
+            Self::File(source) | Self::Compressed(source, _) => source,
         }
     }
     fn length(&mut self) -> io::Result<u64> {
@@ -241,6 +249,7 @@ impl HttpTransfer {
             return Ok(UploadResponse {
                 status: 412,
                 content_length: response.length,
+                source: None,
             });
         }
         let value: Value = serde_json::from_slice(&response.body)?;
@@ -266,6 +275,7 @@ impl HttpTransfer {
             return Ok(UploadResponse {
                 status: 200,
                 content_length: "0".into(),
+                source: None,
             });
         }
         let Value::Text(url) = url else {
@@ -295,6 +305,7 @@ impl HttpTransfer {
         Ok(UploadResponse {
             status: response.status,
             content_length: response.length,
+            source: Some(body.into_source()),
         })
     }
 }

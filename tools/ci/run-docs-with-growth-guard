@@ -1,0 +1,227 @@
+#!/usr/bin/env bash
+# #534 docs 두 phase 전용. 원인/개별 경로의 증가량을 추정하지 않는다.
+# 기능/저장공간 부족/df 실패/signal 통제는 Actions에서 검증해야 한다: UNRUN.
+set -euo pipefail
+set +m
+umask 077
+fail() { printf 'docs growth guard: %s\n' "$*" >&2; exit 1; }
+[[ $# == 1 && ( $1 == mapped || $1 == user-docs-tests ) ]] || fail 'mapped or user-docs-tests required'
+phase=$1
+[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${GH_HOSTED:-} == 1 && ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $(uname -m) == x86_64 ]] || fail 'trusted GitHub-hosted Linux/X64 CI required'
+uid=$(id -u)
+validate() {
+  local path=$1 kind=$2 owner mode
+  [[ $path == /* && ! -L $path && $(readlink -e -- "$path") == "$path" ]] || fail 'canonical nonsymlink path required'
+  if [[ $kind == directory ]]; then [[ -d $path ]] || fail 'directory required'
+  else [[ -f $path ]] || fail 'regular file required'; fi
+  read -r owner mode < <(stat -c '%u %a' -- "$path")
+  [[ $owner == "$uid" ]] && (( (8#$mode & 0022) == 0 )) || fail 'owned path without shared write permission required'
+}
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)
+[[ $root == "${CI296_SOURCE:?}" && $root == "${DIAG_SOURCE:?}" && $root == "${GITHUB_WORKSPACE:?}" && $PWD == "$root" ]] || fail 'private source binding differs'
+validate "$root" directory
+source_owner=${CI296_SOURCE_OWNER:?}
+validate "$source_owner" directory
+case "$source_owner" in "${CI296_ACTIONS_WORKSPACE:?}/.ci296-source-${GITHUB_RUN_ID:?}-${GITHUB_RUN_ATTEMPT:?}."??????) ;; *) fail 'unexpected private source owner path' ;; esac
+[[ $root == "$source_owner/source" && $(stat -c '%d:%i' -- "$source_owner") == "${CI296_SOURCE_IDENTITY:?}" ]] || fail 'source owner identity differs'
+job=${CI_JOB_TEMP:?}
+[[ $job == /tmp/openpilot-ci.?????? && ${job%/*} == /tmp ]] || fail 'unexpected common job path'
+validate "$job" directory
+validate "$job/owner" file
+validate "$source_owner/.ci296-owner" file
+owner="${GITHUB_RUN_ID:?}:${GITHUB_RUN_ATTEMPT:?}:${GITHUB_JOB:?}"
+[[ $(cat -- "$job/owner") == "$owner" && $(cat -- "$source_owner/.ci296-owner") == "$owner" ]] || fail 'owner marker differs'
+[[ ${GITHUB_SHA:-} =~ ^[0-9a-f]{40}$ && $(git -C "$root" rev-parse HEAD) == "$GITHUB_SHA" ]] || fail 'current source differs'
+[[ ${CARGO_TARGET_DIR:-} == "$root/rust/target" && ${CARGO_HOME:-} == "$job/cargo-home" && ${HOME:-} == "$job/home" && ${TMPDIR:-} == "$job" ]] || fail 'private output paths differ'
+[[ ${CARGO_PROFILE_DEV_DEBUG:-} == 0 && ${CARGO_PROFILE_TEST_DEBUG:-} == 0 && ${CARGO_BUILD_JOBS:-} == 2 && ${CARGO_INCREMENTAL:-} == 0 && ${RUSTUP_TOOLCHAIN:-} == 1.94.0 ]] || fail 'docs build profile differs'
+sdk=${CI_PREPARED_RUST_ROOT:?prepared SDK root required}
+[[ ${RUSTUP_HOME:-} == "$job/rustup-home" && $sdk == "$job/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu" && ${CI_PREPARED_RUST_MANIFEST:-} == "$job/proof/prepared-rust-files.before.sha256" && ${RUSTC:-} == "$sdk/bin/rustc" && ${RUSTDOC:-} == "$sdk/bin/rustdoc" ]] || fail 'private prepared SDK binding required'
+validate "$sdk" directory
+validate "$sdk/bin/cargo" file
+validate "$CI_PREPARED_RUST_MANIFEST" file
+[[ -s $CI_PREPARED_RUST_MANIFEST && -x $sdk/bin/cargo ]] || fail 'prepared SDK baseline unavailable'
+validate "$job/proof" directory
+proof=$job/proof/docs-growth-$phase
+mkdir -m 700 -- "$proof"
+validate "$proof" directory
+case $phase in
+  mapped)
+    [[ ${DOCS_EVENT_NAME:-} == "${GITHUB_EVENT_NAME:?}" ]] || fail 'docs event binding differs'
+    args=(--base "${DOCS_BASE_SHA-}")
+    if [[ $DOCS_EVENT_NAME == push ]]; then args+=(--commit-overrides); fi
+    command=("$sdk/bin/cargo" run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin check-user-docs -- "${args[@]}")
+    ;;
+  user-docs-tests)
+    command=("$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test user_docs)
+    ;;
+esac
+printf '%s\0' "${command[@]}" > "$proof/argv.bin"
+printf 'phase=%s\nsource=%s\nowner=%s\nsdk=%s\n' "$phase" "$GITHUB_SHA" "$owner" "$sdk" > "$proof/context.txt"
+printf '%s\n' '성장 범위: 두 docs phase가 공유하는 filesystem free 감소량이며 다른 작업의 증감도 포함한다.' \
+  '관측 범위: nominal 100 ms + df 실행 시간. 경로별 원인/실제 peak/하드 quota를 증명하지 않는다.' \
+  '회수 범위: 소유 PGID KILL, direct leader wait, non-live group 확인. adopted 자손 wait는 주장하지 않는다.' \
+  'before/after free의 -1은 미확정이며 성공으로 취급하지 않는다.' > "$proof/scope.txt"
+# 동시 쓰기 2파일 각512 MiB를 포함한다. 전체296/ARM의 예산이 아니다.
+growth=$((8 * 1024 * 1024 * 1024))
+finish_reserve=$((512 * 1024 * 1024))
+inflight_reserve=$((2 * 512 * 1024 * 1024))
+reserve=$((finish_reserve + inflight_reserve))
+admission=$((growth + reserve))
+before_root=-1 before_job=-1 last_root=-1 last_job=-1 min_root=-1 min_job=-1 samples=0
+root_device=$(stat -c '%d' -- "$root") job_device=$(stat -c '%d' -- "$job")
+[[ $root_device =~ ^[0-9]+$ && $job_device =~ ^[0-9]+$ ]] || fail 'filesystem identity unavailable'
+used_growth=0
+leader=0 leader_start= verified=0 waited=0 non_live=0 child_started=0 command_status=-1
+reason=setup started=$EPOCHREALTIME start_seconds=$SECONDS
+
+free_bytes() {
+  local raw header value
+  raw=$(LC_ALL=C /usr/bin/timeout --signal=KILL 2s /usr/bin/df --output=avail -B1 -- "$1") || return 1
+  # 헤더 한 줄 + unsigned 값 한 줄만 허용한다. awk/부분 tree scan은 없다.
+  [[ $raw == *$'\n'* ]] || return 1
+  header=${raw%%$'\n'*}
+  [[ ${header//[[:blank:]]/} == Avail ]] || return 1
+  value=${raw#*$'\n'}
+  value=${value//[[:blank:]]/}
+  [[ $value =~ ^[0-9]{1,18}$ ]] || return 1
+  printf '%s\n' "$((10#$value))"
+}
+sample() {
+  last_root=-1 last_job=-1
+  ((samples += 1))
+  last_root=$(free_bytes "$root") || { last_root=-1; reason=df-unavailable; return 1; }
+  if ((min_root < 0 || last_root < min_root)); then min_root=$last_root; fi
+  if ((last_root < reserve)); then reason=finish-or-inflight-reserve; return 1; fi
+  last_job=$(free_bytes "$job") || { last_job=-1; reason=df-unavailable; return 1; }
+  if ((min_job < 0 || last_job < min_job)); then min_job=$last_job; fi
+  if ((last_job < reserve)); then reason=finish-or-inflight-reserve; return 1; fi
+  if ((before_root >= 0)); then
+    local root_drop=$((before_root - last_root)) job_drop=$((before_job - last_job))
+    if ((root_drop < 0)); then root_drop=0; fi
+    if ((job_drop < 0)); then job_drop=0; fi
+    if [[ $root_device == "$job_device" ]]; then
+      used_growth=$root_drop
+      if ((job_drop > used_growth)); then used_growth=$job_drop; fi
+    else used_growth=$((root_drop + job_drop)); fi
+    if ((used_growth > growth)); then reason=filesystem-free-decrease-over-docs-growth; return 1; fi
+  fi
+}
+group_non_live() {
+  local raw pg state extra
+  raw=$(/usr/bin/ps -eo pgid=,stat=) || return 1
+  [[ -n $raw ]] || return 1
+  while read -r pg state extra; do
+    [[ $pg =~ ^[0-9]+$ && $state =~ ^[a-zA-Z+\<]+$ && -z $extra ]] || return 1
+    if [[ $pg == "$leader" && ${state:0:1} != Z && ${state:0:1} != X ]]; then return 1; fi
+  done <<< "$raw"
+}
+leader_owned() {
+  local row
+  local -a fields
+  [[ $leader_start =~ ^[0-9]+$ ]] || return 1
+  IFS= read -r row < "/proc/$leader/stat" || return 1
+  [[ $row == "$leader ("* ]] || return 1
+  read -r -a fields <<< "${row##*) }"
+  [[ ${#fields[@]} -ge 20 && ${fields[1]} == "$$" && ${fields[2]} == "$leader" &&
+     ${fields[3]} == "$leader" && ${fields[19]} == "$leader_start" ]]
+}
+finalize() {
+  local status=$?
+  trap - EXIT
+  trap '' TERM INT HUP
+  set +e
+  if ((leader > 0)); then
+    if ((waited == 0)); then
+      # 미회수 leader의 현재 PPID/PGID/SID/starttime까지 일치할 때만 신호를 보낸다.
+      # 준비 중에는 exec gate가 닫혀 있다. 소유성이 미확정이면 PID fallback으로 kill하지 않는다.
+      if ((verified)) && leader_owned; then kill -KILL -- "-$leader" 2>/dev/null; fi
+      wait "$leader"
+      command_status=$?
+      waited=1
+    fi
+    # wait 뒤에는 과거 verified 값으로 신호를 보내지 않는다. 잔여 group은 실패로 보존한다.
+    if ((verified)) && group_non_live; then non_live=1; fi
+  else
+    # admission 단계에서 child를 시작하지 않은 경우다.
+    non_live=1
+  fi
+  if ((non_live == 0)); then reason=group-recovery-unconfirmed; status=1; fi
+  if [[ $reason == command-complete ]] && ((command_status != 0)); then reason=command-failed; fi
+  if ((status == 0 && command_status != 0)); then reason=command-failed; status=1; fi
+  sample || status=1
+  printf '{"phase":"%s","source":"%s","exit_status":%s,"command_status":%s,"reason":"%s","started_epoch":%s,"finished_epoch":%s,"elapsed_seconds":%s,"before_source_free":%s,"before_job_free":%s,"after_source_free":%s,"after_job_free":%s,"minimum_source_free":%s,"minimum_job_free":%s,"samples":%s,"growth_bytes":%s,"finish_reserve_bytes":%s,"inflight_reserve_bytes":%s,"child_file_limit_bytes":536870912,"child_started":%s,"direct_leader_waited":%s,"group_non_live":%s,"all_adopted_children_reaped_claim":false}\n' \
+    "$phase" "$GITHUB_SHA" "$status" "$command_status" "$reason" "$started" "$EPOCHREALTIME" "$((SECONDS - start_seconds))" "$before_root" "$before_job" "$last_root" "$last_job" "$min_root" "$min_job" "$samples" "$growth" "$finish_reserve" "$inflight_reserve" "$child_started" "$waited" "$non_live" > "$proof/result.json" || exit 1
+  if ((non_live && (leader == 0 || waited))); then
+    printf 'phase=%s\nsource=%s\nowner=%s\nrecovery=pass\n' "$phase" "$GITHUB_SHA" "$owner" > "$proof/recovery.txt" || exit 1
+  fi
+  printf 'docs growth guard: phase=%s status=%s reason=%s proof=%s\n' "$phase" "$status" "$reason" "$proof"
+  exit "$status"
+}
+trap finalize EXIT
+trap 'reason=signal-TERM; exit 143' TERM
+trap 'reason=signal-INT; exit 130' INT
+trap 'reason=signal-HUP; exit 129' HUP
+sample || exit 1
+printf 'docs growth admission: phase=%s source_available_bytes=%s job_available_bytes=%s shared_growth_bytes=%s finish_reserve_bytes=%s inflight_reserve_bytes=%s\n' \
+  "$phase" "$last_root" "$last_job" "$growth" "$finish_reserve" "$inflight_reserve"
+# mapped/test가 각각8 GiB를 더 받지 않도록 한 docs leaf의 기준을 공유한다.
+baseline=$job/proof/docs-growth-baseline.txt
+if [[ $phase == mapped ]]; then
+  before_root=$last_root before_job=$last_job
+  ((before_root >= admission && before_job >= admission)) || { reason=docs-growth-admission; exit 1; }
+  (set -C; printf '%s\n' "$GITHUB_SHA" "$owner" "$root_device" "$job_device" "$before_root" "$before_job" > "$baseline")
+else
+  validate "$baseline" file
+  (( $(stat -c '%s' -- "$baseline") <= 1024 )) || { reason=docs-growth-baseline-size; exit 1; }
+  mapfile -t saved < "$baseline"
+  [[ ${#saved[@]} == 6 && ${saved[0]} == "$GITHUB_SHA" && ${saved[1]} == "$owner" && ${saved[2]} == "$root_device" && ${saved[3]} == "$job_device" && ${saved[4]} =~ ^[0-9]{1,18}$ && ${saved[5]} =~ ^[0-9]{1,18}$ ]] || { reason=docs-growth-baseline-differs; exit 1; }
+  before_root=${saved[4]} before_job=${saved[5]}
+  sample || exit 1
+  remaining=$((growth - used_growth + reserve))
+  ((last_root >= remaining && last_job >= remaining)) || { reason=docs-remaining-growth-admission; exit 1; }
+fi
+# stdout/stderr는 artifact에 보존한다. 큰 로그를 worker 로그에 재전송하지 않는다.
+# child만512 MiB로 제한한다. 부모 guard/Actions worker의 rlimit은 변경하지 않는다.
+/usr/bin/env -u POSIXLY_CORRECT -u SHELLOPTS -u BASHOPTS -u LD_PRELOAD -u LD_LIBRARY_PATH BASH_ENV=/dev/null \
+  /usr/bin/setsid /bin/bash --noprofile --norc -c '
+    set -euo pipefail
+    umask 077
+    ulimit -f 524288
+    proof=$1; shift
+    set -C
+    IFS= read -r self_stat < "/proc/$$/stat"
+    read -r -a self_fields <<< "${self_stat##*) }"
+    printf "%s %s\n" "$$" "${self_fields[19]}" > "$proof/leader-ready"
+    for ((i=0; i<100; i++)); do
+      if [[ -f $proof/start && ! -L $proof/start ]]; then exec "$@"; fi
+      /usr/bin/sleep 0.1
+    done
+    exit 125
+  ' docs-child "$proof" "${command[@]}" > "$proof/command.stdout" 2> "$proof/command.stderr" &
+leader=$! child_started=1
+for ((i=0; i<50; i++)); do
+  sample || exit 1
+  if [[ -f $proof/leader-ready && ! -L $proof/leader-ready ]]; then
+    read -r ready_pid leader_start extra < "$proof/leader-ready"
+    [[ $ready_pid == "$leader" && -z $extra ]] || { reason=setsid-leader-differs; exit 1; }
+    leader_owned || { reason=leader-identity-unconfirmed; exit 1; }
+    verified=1
+    printf 'start\n' > "$proof/start"
+    break
+  fi
+  /usr/bin/sleep 0.1
+done
+((verified)) || { reason=leader-ready-timeout; exit 1; }
+reason=running
+while [[ $(jobs -pr) == "$leader" ]]; do
+  sample || exit 1
+  /usr/bin/sleep 0.1
+done
+set +e
+wait "$leader"
+command_status=$?
+set -e
+waited=1
+reason=command-complete
+sample || exit 1
+exit "$command_status"

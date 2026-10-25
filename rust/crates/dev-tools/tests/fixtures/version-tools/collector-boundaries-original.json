@@ -1,0 +1,227 @@
+{
+  "scope": "Unchanged original checker actual CLI/process failures; candidates only observations",
+  "source_sha256": {
+    "rust/tools/check_version_collector.py": "4daebbf121dceef9aec57b0ba35ac7aea2b827ec85bc2cb49760b6ce0e2f9a22",
+    "rust/tools/check_version_reference.py": "d0ad5fbec23e1ba4a2507ae6dbc68856141d03eda07dadebab3280d5731525d5",
+    "rust/tools/logmessaged_native.py": "3366e64eb36b0bad9b10023c46217f61c66aae0fe823120ae23d597d2456c872",
+    "rust/tools/logmessaged_reference.py": "ce6d6764911daaab1e9e5ce70152d9f5efc9b5ea006482064bb8192d36f735e3"
+  },
+  "observation_elf_sha256": {
+    "/home/fma1/rust/cache/cargo-target-retirement-296/debug/examples/version_trace": "26be90b3fa86020cb32a50096f5970c28c2e69d3545ddffa613ffd5fa4bff191",
+    "/home/fma1/rust/cache/cargo-target-retirement-296/debug/openpilot-logmessaged": "ba50cf5690b911e25fb8ff69b44512a1144634df6b30b720fc67c6f97bc49512"
+  },
+  "binding_sha256": "0e00c7169b105b345e051ec613638e8a4036b67e9f9f2bc3559db79787d97e73",
+  "cases": [
+    {
+      "name": "arity-0",
+      "argv": [],
+      "exit": 1,
+      "timeout": false,
+      "seconds": 0.17242355199414305,
+      "stdout_hex": "",
+      "final_stderr_line": [
+        "ValueError: not enough values to unpack (expected 3, got 0)"
+      ],
+      "output_exists": false,
+      "artifacts": {},
+      "owned_shm_remaining": false,
+      "owned_endpoint_remaining": false
+    },
+    {
+      "name": "arity-1",
+      "argv": [
+        "absent"
+      ],
+      "exit": 1,
+      "timeout": false,
+      "seconds": 0.15274175300146453,
+      "stdout_hex": "",
+      "final_stderr_line": [
+        "ValueError: not enough values to unpack (expected 3, got 1)"
+      ],
+      "output_exists": false,
+      "artifacts": {},
+      "owned_shm_remaining": false,
+      "owned_endpoint_remaining": false
+    },
+    {
+      "name": "arity-2",
+      "argv": [
+        "absent",
+        "absent"
+      ],
+      "exit": 1,
+      "timeout": false,
+      "seconds": 0.17004325200105086,
+      "stdout_hex": "",
+      "final_stderr_line": [
+        "ValueError: not enough values to unpack (expected 3, got 2)"
+      ],
+      "output_exists": false,
+      "artifacts": {},
+      "owned_shm_remaining": false,
+      "owned_endpoint_remaining": false
+    },
+    {
+      "name": "arity-4",
+      "argv": [
+        "absent",
+        "absent",
+        "absent",
+        "absent"
+      ],
+      "exit": 1,
+      "timeout": false,
+      "seconds": 0.17473329999484122,
+      "stdout_hex": "",
+      "final_stderr_line": [
+        "ValueError: too many values to unpack (expected 3)"
+      ],
+      "output_exists": false,
+      "artifacts": {},
+      "owned_shm_remaining": false,
+      "owned_endpoint_remaining": false
+    },
+    {
+      "name": "missing-collector",
+      "argv": [
+        "/home/fma1/rust/cache/cargo-target-retirement-296/debug/examples/version_trace",
+        "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-19-version-tools/collector-boundaries-original-090yj6hj/absent-collector",
+        "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-19-version-tools/collector-boundaries-original-090yj6hj/missing-collector/evidence"
+      ],
+      "exit": 1,
+      "timeout": false,
+      "seconds": 0.17242426201119088,
+      "stdout_hex": "",
+      "final_stderr_line": [
+        "FileNotFoundError: [Errno 2] No such file or directory: '/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-19-version-tools/collector-boundaries-original-090yj6hj/absent-collector'"
+      ],
+      "output_exists": true,
+      "artifacts": {
+        "collector/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "collector/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "owned_shm_remaining": false,
+      "owned_endpoint_remaining": false
+    },
+    {
+      "name": "collector-early-zero",
+      "argv": [
+        "/home/fma1/rust/cache/cargo-target-retirement-296/debug/examples/version_trace",
+        "/bin/true",
+        "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-19-version-tools/collector-boundaries-original-090yj6hj/collector-early-zero/evidence"
+      ],
+      "exit": 1,
+      "timeout": false,
+      "seconds": 0.18422531100804918,
+      "stdout_hex": "",
+      "final_stderr_line": [
+        "RuntimeError: (['/usr/bin/true'], 0, '')"
+      ],
+      "output_exists": true,
+      "artifacts": {
+        "collector/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "collector/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "owned_shm_remaining": false,
+      "owned_endpoint_remaining": false
+    },
+    {
+      "name": "collector-early-nonzero",
+      "argv": [
+        "/home/fma1/rust/cache/cargo-target-retirement-296/debug/examples/version_trace",
+        "/bin/false",
+        "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-19-version-tools/collector-boundaries-original-090yj6hj/collector-early-nonzero/evidence"
+      ],
+      "exit": 1,
+      "timeout": false,
+      "seconds": 0.180091738991905,
+      "stdout_hex": "",
+      "final_stderr_line": [
+        "RuntimeError: (['/usr/bin/false'], 1, '')"
+      ],
+      "output_exists": true,
+      "artifacts": {
+        "collector/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "collector/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "owned_shm_remaining": false,
+      "owned_endpoint_remaining": false
+    },
+    {
+      "name": "missing-probe",
+      "argv": [
+        "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-19-version-tools/collector-boundaries-original-090yj6hj/absent-probe",
+        "/home/fma1/rust/cache/cargo-target-retirement-296/debug/openpilot-logmessaged",
+        "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-19-version-tools/collector-boundaries-original-090yj6hj/missing-probe/evidence"
+      ],
+      "exit": 1,
+      "timeout": false,
+      "seconds": 0.24224025302100927,
+      "stdout_hex": "",
+      "final_stderr_line": [
+        "FileNotFoundError: [Errno 2] No such file or directory: '/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-19-version-tools/collector-boundaries-original-090yj6hj/absent-probe'"
+      ],
+      "output_exists": true,
+      "artifacts": {
+        "collector/invocation.json": "56824c184dbb429a894b43cf26122d79d74cacee487239abd1dea7bceb8cd6a7",
+        "collector/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "collector/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "collector/home/.commalog-qa-4038475-collector/log/swaglog.0000000000": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "owned_shm_remaining": false,
+      "owned_endpoint_remaining": false
+    },
+    {
+      "name": "probe-early-zero",
+      "argv": [
+        "/bin/true",
+        "/home/fma1/rust/cache/cargo-target-retirement-296/debug/openpilot-logmessaged",
+        "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-19-version-tools/collector-boundaries-original-090yj6hj/probe-early-zero/evidence"
+      ],
+      "exit": 1,
+      "timeout": false,
+      "seconds": 0.23689224300323986,
+      "stdout_hex": "",
+      "final_stderr_line": [
+        "json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)"
+      ],
+      "output_exists": true,
+      "artifacts": {
+        "probe.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "probe.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "source.json": "dacaf44f6989aba118df5410acf4b493c8864ff43e348a0c42e819098817e42b",
+        "collector/invocation.json": "fabf2a635c1b3f63c13d70b8970d158b286a83f8ef6193373546ac3d53bff2d5",
+        "collector/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "collector/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "collector/home/.commalog-qa-4038500-collector/log/swaglog.0000000000": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "owned_shm_remaining": false,
+      "owned_endpoint_remaining": false
+    },
+    {
+      "name": "probe-early-nonzero",
+      "argv": [
+        "/bin/false",
+        "/home/fma1/rust/cache/cargo-target-retirement-296/debug/openpilot-logmessaged",
+        "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-19-version-tools/collector-boundaries-original-090yj6hj/probe-early-nonzero/evidence"
+      ],
+      "exit": 1,
+      "timeout": false,
+      "seconds": 0.2457487920182757,
+      "stdout_hex": "",
+      "final_stderr_line": [
+        "subprocess.CalledProcessError: Command '['/usr/bin/false']' returned non-zero exit status 1."
+      ],
+      "output_exists": true,
+      "artifacts": {
+        "collector/invocation.json": "02cb1e09d5bb8ca72fdfc37358637aacb98180380bb99099b81dd4ee287af05e",
+        "collector/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "collector/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "collector/home/.commalog-qa-4038528-collector/log/swaglog.0000000000": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "owned_shm_remaining": false,
+      "owned_endpoint_remaining": false
+    }
+  ]
+}

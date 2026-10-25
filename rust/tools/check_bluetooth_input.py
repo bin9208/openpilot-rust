@@ -4,11 +4,43 @@ import json
 import os
 from pathlib import Path
 import select
+import stat
 import struct
 import subprocess
 import sys
 
 WIRE = struct.Struct('@llHHi')
+
+
+def install_native_sudo(sudo: Path) -> None:
+  configured = os.environ['BLUETOOTH_SUDO_NATIVE_BINARY']
+  expected = os.environ['BLUETOOTH_SUDO_NATIVE_SHA256']
+  binary = Path(configured)
+  if not binary.is_absolute():
+    raise ValueError('Bluetooth sudo native binary must be absolute')
+  fd = os.open(binary, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC | os.O_NOFOLLOW)
+  with os.fdopen(fd, 'rb') as source:
+    before = os.fstat(source.fileno())
+    if not stat.S_ISREG(before.st_mode) or not before.st_mode & 0o111:
+      raise ValueError('Bluetooth sudo native binary must be an executable regular file')
+    identity = lambda current: (current.st_dev, current.st_ino, current.st_mode, current.st_size,
+                                current.st_mtime_ns, current.st_ctime_ns)
+    if identity(before) != identity(binary.lstat()):
+      raise ValueError('Bluetooth sudo native binary identity changed')
+    payload = source.read()
+    if not payload.startswith(b'\x7fELF'):
+      raise ValueError('Bluetooth sudo native binary is not ELF')
+    if hashlib.sha256(payload).hexdigest() != expected or identity(before) != identity(os.fstat(source.fileno())):
+      raise ValueError('Bluetooth sudo native binary digest or identity changed')
+    with sudo.open('xb') as target:
+      target.write(payload)
+    sudo.chmod(0o700)
+    source.seek(0)
+    if (hashlib.sha256(source.read()).hexdigest() != expected or
+        identity(before) != identity(os.fstat(source.fileno())) or
+        identity(before) != identity(binary.lstat()) or
+        hashlib.sha256(sudo.read_bytes()).hexdigest() != expected):
+      raise ValueError('Bluetooth sudo native binary changed while copying')
 
 
 def line(process: subprocess.Popen[str]) -> str:
@@ -27,11 +59,9 @@ def run_case(command: list[str], directory: Path, shim: Path, flags: dict[str, s
   keeper = os.open(fifo, os.O_RDWR | os.O_NONBLOCK)
   fake = directory / 'commands'
   fake.mkdir()
-  script = Path(__file__).with_name('bluetooth_sudo_fixture.py')
   sudo = fake / 'sudo'
   if flags.get('INPUT_FIXTURE_SUDO_MODE') != 'missing':
-    sudo.write_bytes(script.read_bytes())
-    sudo.chmod(0o700)
+    install_native_sudo(sudo)
   logical = '/dev/input/event99999' if flags.get('INPUT_FIXTURE_DENIED') else str(directory / 'logical-input')
   if flags.get('INPUT_FIXTURE_BAD_PARENT'):
     logical = str(directory / 'event99999')

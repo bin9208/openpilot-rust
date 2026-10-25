@@ -1,0 +1,2158 @@
+{
+  "sources": {
+    "rust/tools/check_bootlog.py": "a3cc60c6353d2ec374f48953b59d392e08670b6e0a1f255e58faa1924c151592",
+    "rust/tools/check_uploader.py": "b90a41b13ed1a9a99e23c771feaea3ad97ff9999c394e309e9d714f69f10a291",
+    "rust/tools/bootlog_output_fault.c": "df2e803d963ad93ded7f4044085e8a956583f08a081b493cd88eda6f9849137f",
+    "openpilot/system/loggerd/uploader.py": "8af80c2411a3303d9f3e9e2255dd0732177d9af280abab6e7f568c7576e3a02e",
+    "openpilot/system/loggerd/xattr_cache.py": "35b6460ce0d1ea99066d86d6e81ef10edcd989a2f0967f07a8bae3957720e631",
+    "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+    "openpilot/cereal/custom.capnp": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693",
+    "openpilot/cereal/deprecated.capnp": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355",
+    "opendbc_repo/opendbc/car/car.capnp": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda"
+  },
+  "result": {
+    "result": "PASS",
+    "cases": [
+      {
+        "scenario": "ordinary",
+        "result": "PASS"
+      },
+      {
+        "scenario": "missing_pstore",
+        "result": "PASS"
+      },
+      {
+        "scenario": "missing_launch",
+        "result": "PASS"
+      },
+      {
+        "scenario": "missing_journal",
+        "result": "PASS"
+      },
+      {
+        "scenario": "nonexec_journal",
+        "result": "PASS"
+      },
+      {
+        "scenario": "nonzero_journal",
+        "result": "PASS"
+      },
+      {
+        "scenario": "nul_journal",
+        "result": "PASS"
+      },
+      {
+        "scenario": "logs_not_directory",
+        "result": "PASS"
+      },
+      {
+        "scenario": "counter_directory",
+        "result": "PASS"
+      },
+      {
+        "scenario": "current_directory",
+        "result": "PASS"
+      },
+      {
+        "scenario": "counter_",
+        "result": "PASS"
+      },
+      {
+        "scenario": "counter_6a756e6b",
+        "result": "PASS"
+      },
+      {
+        "scenario": "counter_202d31737566666978",
+        "result": "PASS"
+      },
+      {
+        "scenario": "counter_34323934393637323935",
+        "result": "PASS"
+      },
+      {
+        "scenario": "counter_3138343436373434303733373039353531363136",
+        "result": "PASS"
+      },
+      {
+        "scenario": "counter_20202b353572657374",
+        "result": "PASS"
+      }
+    ]
+  },
+  "cases": {
+    "ordinary": {
+      "success": true,
+      "counter": "3433",
+      "current_exists": true,
+      "identifier_prefix": "0000002a",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "3432"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6a6f75726e616c20666978747572650a"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/0000002a--RANDOM.zst"
+    },
+    "missing_pstore": {
+      "success": true,
+      "counter": "3433",
+      "current_exists": true,
+      "identifier_prefix": "0000002a",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "3432"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": []
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6a6f75726e616c20666978747572650a"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/0000002a--RANDOM.zst"
+    },
+    "missing_launch": {
+      "success": true,
+      "counter": "3433",
+      "current_exists": true,
+      "identifier_prefix": "0000002a",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "3432"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6a6f75726e616c20666978747572650a"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/0000002a--RANDOM.zst"
+    },
+    "missing_journal": {
+      "success": true,
+      "counter": "3433",
+      "current_exists": true,
+      "identifier_prefix": "0000002a",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "3432"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/0000002a--RANDOM.zst"
+    },
+    "nonexec_journal": {
+      "success": true,
+      "counter": "3433",
+      "current_exists": true,
+      "identifier_prefix": "0000002a",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "3432"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/0000002a--RANDOM.zst"
+    },
+    "nonzero_journal": {
+      "success": true,
+      "counter": "3433",
+      "current_exists": true,
+      "identifier_prefix": "0000002a",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "3432"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6a6f75726e616c20666978747572650a"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/0000002a--RANDOM.zst"
+    },
+    "nul_journal": {
+      "success": true,
+      "counter": "3433",
+      "current_exists": true,
+      "identifier_prefix": "0000002a",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "3432"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6163717171717171717171717171717171710a6c617374"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/0000002a--RANDOM.zst"
+    },
+    "logs_not_directory": {
+      "success": false,
+      "counter": "3433",
+      "current_exists": false
+    },
+    "counter_directory": {
+      "success": true,
+      "counter": "<directory>",
+      "current_exists": true,
+      "identifier_prefix": "00000000",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "3432"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6a6f75726e616c20666978747572650a"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/00000000--RANDOM.zst"
+    },
+    "current_directory": {
+      "success": true,
+      "counter": "3433",
+      "current_exists": true,
+      "identifier_prefix": "0000002a",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "3432"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6a6f75726e616c20666978747572650a"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/0000002a--RANDOM.zst"
+    },
+    "counter_": {
+      "success": true,
+      "counter": "31",
+      "current_exists": true,
+      "identifier_prefix": "00000000",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6a6f75726e616c20666978747572650a"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/00000000--RANDOM.zst"
+    },
+    "counter_6a756e6b": {
+      "success": true,
+      "counter": "31",
+      "current_exists": true,
+      "identifier_prefix": "00000000",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "6a756e6b"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6a6f75726e616c20666978747572650a"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/00000000--RANDOM.zst"
+    },
+    "counter_202d31737566666978": {
+      "success": true,
+      "counter": "30",
+      "current_exists": true,
+      "identifier_prefix": "ffffffff",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "202d31737566666978"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6a6f75726e616c20666978747572650a"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/ffffffff--RANDOM.zst"
+    },
+    "counter_34323934393637323935": {
+      "success": true,
+      "counter": "30",
+      "current_exists": true,
+      "identifier_prefix": "ffffffff",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "34323934393637323935"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6a6f75726e616c20666978747572650a"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/ffffffff--RANDOM.zst"
+    },
+    "counter_3138343436373434303733373039353531363136": {
+      "success": true,
+      "counter": "31",
+      "current_exists": true,
+      "identifier_prefix": "00000000",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "3138343436373434303733373039353531363136"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6a6f75726e616c20666978747572650a"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/00000000--RANDOM.zst"
+    },
+    "counter_20202b353572657374": {
+      "success": true,
+      "counter": "3536",
+      "current_exists": true,
+      "identifier_prefix": "00000037",
+      "events": [
+        {
+          "initData": {
+            "kernelArgs": [
+              "BOOT_IMAGE=/boot/vmlinuz-7.0.0-38-generic",
+              "root=UUID=b9f19526-bb86-43d6-a6bb-72f5b9e9229e",
+              "ro",
+              "quiet",
+              "splash",
+              "vt.handoff=7"
+            ],
+            "deprecated": {},
+            "dongleId": "snapshot-fixture",
+            "deviceType": "pc",
+            "version": "0.11.1",
+            "dirty": false,
+            "gitCommit": "1111111111111111111111111111111111111111",
+            "gitBranch": "",
+            "passive": false,
+            "gitRemote": "",
+            "kernelVersion": "Linux version 7.0.0-38-generic (buildd@lcy02-amd64-063) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2\n",
+            "params": {
+              "entries": [
+                {
+                  "key": "AccessToken"
+                },
+                {
+                  "key": "BootCount",
+                  "value": {
+                    "hex": "20202b353572657374"
+                  }
+                },
+                {
+                  "key": "DongleId",
+                  "value": {
+                    "hex": "736e617073686f742d66697874757265"
+                  }
+                },
+                {
+                  "key": "GitBranch",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitCommit",
+                  "value": {
+                    "hex": "31313131313131313131313131313131313131313131313131313131313131313131313131313131"
+                  }
+                },
+                {
+                  "key": "GitCommitDate",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "GitRemote",
+                  "value": {
+                    "hex": ""
+                  }
+                }
+              ]
+            },
+            "osVersion": "",
+            "commands": {
+              "entries": [
+                {
+                  "key": "df -h",
+                  "value": {
+                    "hex": "73796e7468657469632064660a"
+                  }
+                }
+              ]
+            },
+            "gitCommitDate": "",
+            "gitSrcCommit": "source-commit\n",
+            "gitSrcCommitDate": "source-date\n"
+          },
+          "valid": true
+        },
+        {
+          "boot": {
+            "deprecated": {},
+            "launchLog": "launch\u0000log\n",
+            "pstore": {
+              "entries": [
+                {
+                  "key": "a-crash",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "broken",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-dir",
+                  "value": {
+                    "hex": ""
+                  }
+                },
+                {
+                  "key": "linked-file",
+                  "value": {
+                    "hex": "66697273740a"
+                  }
+                },
+                {
+                  "key": "z-crash",
+                  "value": {
+                    "hex": "637261736800ff0a"
+                  }
+                }
+              ]
+            },
+            "commands": {
+              "entries": [
+                {
+                  "key": "[ -x \"$(command -v journalctl)\" ] && journalctl -o short-monotonic",
+                  "value": {
+                    "hex": "6a6f75726e616c20666978747572650a"
+                  }
+                }
+              ]
+            }
+          },
+          "valid": true
+        }
+      ],
+      "upload_key": "boot/00000037--RANDOM.zst"
+    }
+  }
+}

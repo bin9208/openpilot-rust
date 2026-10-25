@@ -1,0 +1,166 @@
+{
+  "scope": "Remaining unchanged original242 source schedule; no native expected answers. Full Worker loop uses actual monkeypatched sleep(5)/queue boundary. Raw stdout retained; cycle logs alone may be sorted exactly as originalPair comparator.",
+  "source_receipt_sha256": "c671daefb4a829089b7685382fbd7e6aa0f911b305fc6d41ad509d445bd76d5b",
+  "setup": [
+    {
+      "op": "write",
+      "hex": "6865616465720a2330203078646561642073797374656d2028703d30783129206174207379732e630a233120307862656566206d6f64656c2028613d31292061742073656c6664726976652f6d6f64656c642e63633a370a",
+      "mode": null,
+      "path": "trace"
+    },
+    {
+      "op": "write",
+      "hex": "6e6f726d616c",
+      "mode": null,
+      "path": "mode"
+    },
+    {
+      "op": "write",
+      "hex": "7b226368616e6e656c223a20226e696768746c79222c20226f70656e70696c6f74223a207b226769745f6f726967696e223a2022676974406769746875622e636f6d3a636f6d6d6161692f6f70656e70696c6f742e676974222c20226769745f636f6d6d6974223a20226162636465666768696a6b222c202276657273696f6e223a20226d657461646174612d76657273696f6e227d7d",
+      "mode": null,
+      "path": "base/build.json"
+    },
+    {
+      "op": "write",
+      "hex": "666978747572652d646576696365",
+      "mode": null,
+      "path": "params/fixture/DongleId"
+    },
+    {
+      "op": "write",
+      "hex": "23646566696e652056455253494f4e2022666978747572652d312e32220a",
+      "mode": null,
+      "path": "base/openpilot/common/version.h"
+    }
+  ],
+  "cases": [
+    {
+      "index": 0,
+      "before": [],
+      "request": "{\"op\": \"configure\", \"base\": \"$FIXTURE/base\", \"params\": \"$FIXTURE/params\", \"pc\": false, \"device\": \"tici\"}",
+      "original_stdout": "{\"result\": {\"value\": true}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": true}, \"calls\": [], \"logs\": []}\n",
+      "source_files_json": null,
+      "cycle_log_sort_only": false,
+      "after": []
+    },
+    {
+      "index": 1,
+      "before": [
+        {
+          "op": "write",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416,
+          "path": "apport/old.crash"
+        },
+        {
+          "op": "write",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416,
+          "path": "apport/.old.crash"
+        }
+      ],
+      "request": "{\"op\": \"start\", \"apport\": \"$FIXTURE/apport\", \"root\": \"$FIXTURE/logs\", \"stamp\": \"2020-01-02--03-04-05\"}",
+      "original_stdout": "{\"result\": {\"value\": true}, \"calls\": [{\"op\": \"init\", \"fields\": {\"project\": \"selfdrive_native\", \"release\": \"fixture-1.2\", \"environment\": \"release\", \"default_integrations\": false, \"threading_requested\": false, \"traces_sample_rate\": 1.0, \"max_value_length\": 8192}, \"carrot_exception\": null, \"created\": 1792345910.664403}, {\"op\": \"set_user\", \"fields\": {\"id\": \"fixture-device\"}, \"carrot_exception\": null, \"created\": 1792345910.6644166}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"dirty\", \"value_json\": \"false\"}, \"carrot_exception\": null, \"created\": 1792345910.6644344}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"origin\", \"value_json\": \"\\\"git@github.com:commaai/openpilot.git\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.6644444}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"branch\", \"value_json\": \"\\\"nightly\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.664454}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"commit\", \"value_json\": \"\\\"abcdefghijk\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.664465}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"device\", \"value_json\": \"\\\"tici\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.664473}], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": true}, \"calls\": [{\"op\": \"init\", \"fields\": {\"project\": \"selfdrive_native\", \"release\": \"fixture-1.2\", \"environment\": \"release\", \"default_integrations\": false, \"threading_requested\": false, \"traces_sample_rate\": 1.0, \"max_value_length\": 8192}, \"carrot_exception\": null, \"created\": 1792345910.664403}, {\"op\": \"set_user\", \"fields\": {\"id\": \"fixture-device\"}, \"carrot_exception\": null, \"created\": 1792345910.6644166}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"dirty\", \"value_json\": \"false\"}, \"carrot_exception\": null, \"created\": 1792345910.6644344}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"origin\", \"value_json\": \"\\\"git@github.com:commaai/openpilot.git\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.6644444}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"branch\", \"value_json\": \"\\\"nightly\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.664454}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"commit\", \"value_json\": \"\\\"abcdefghijk\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.664465}, {\"op\": \"set_tag\", \"fields\": {\"key\": \"device\", \"value_json\": \"\\\"tici\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.664473}], \"logs\": []}\n",
+      "source_files_json": "{\"apport/.old.crash\": {\"size\": 122, \"sha256\": \"10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd\", \"mode\": 416}, \"CarrotException\": null}",
+      "cycle_log_sort_only": false,
+      "after": []
+    },
+    {
+      "index": 2,
+      "before": [
+        {
+          "op": "write",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6d6f64656c642f6d6f64656c640a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416,
+          "path": "apport/new.crash"
+        },
+        {
+          "op": "write",
+          "hex": "756e6b6e6f776e",
+          "mode": 384,
+          "path": "apport/tombstone-unknown"
+        },
+        {
+          "op": "write",
+          "hex": "626164ff",
+          "mode": 416,
+          "path": "apport/invalid.crash"
+        }
+      ],
+      "request": "{\"op\": \"cycle\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/new.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.671882}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.6718986}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.6719098}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.6719186}], \"logs\": [{\"levelnum\": 20, \"msg\": \"reporting new tombstone $FIXTURE/apport/tombstone-unknown\", \"exception\": false, \"created\": 1792345910.6658335}, {\"levelnum\": 40, \"msg\": \"unknown crash type: $FIXTURE/apport/tombstone-unknown\", \"exception\": false, \"created\": 1792345910.665835}, {\"levelnum\": 20, \"msg\": \"reporting new tombstone $FIXTURE/apport/invalid.crash\", \"exception\": false, \"created\": 1792345910.6658359}, {\"levelnum\": 40, \"msg\": \"Error reporting tombstone $FIXTURE/apport/invalid.crash\", \"exception\": true, \"created\": 1792345910.6658666}, {\"levelnum\": 20, \"msg\": \"reporting new tombstone $FIXTURE/apport/new.crash\", \"exception\": false, \"created\": 1792345910.665868}, {\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.6718435}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-88cdhy1e/source/apport/new.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.671882}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/modeld/modeld\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.6718986}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.6719098}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.6719186}], \"logs\": [{\"levelnum\": 20, \"msg\": \"reporting new tombstone /tmp/tombstone-source-capture-88cdhy1e/source/apport/tombstone-unknown\", \"exception\": false, \"created\": 1792345910.6658335}, {\"levelnum\": 40, \"msg\": \"unknown crash type: /tmp/tombstone-source-capture-88cdhy1e/source/apport/tombstone-unknown\", \"exception\": false, \"created\": 1792345910.665835}, {\"levelnum\": 20, \"msg\": \"reporting new tombstone /tmp/tombstone-source-capture-88cdhy1e/source/apport/invalid.crash\", \"exception\": false, \"created\": 1792345910.6658359}, {\"levelnum\": 40, \"msg\": \"Error reporting tombstone /tmp/tombstone-source-capture-88cdhy1e/source/apport/invalid.crash\", \"exception\": true, \"created\": 1792345910.6658666}, {\"levelnum\": 20, \"msg\": \"reporting new tombstone /tmp/tombstone-source-capture-88cdhy1e/source/apport/new.crash\", \"exception\": false, \"created\": 1792345910.665868}, {\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/modeld/modeld - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.6718435}]}\n",
+      "source_files_json": "{\"apport/.old.crash\": {\"size\": 122, \"sha256\": \"10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd\", \"mode\": 416}, \"apport/invalid.crash\": {\"size\": 4, \"sha256\": \"69f5f0e0fa0fda78f93925cc50aef69d8e4f4973e8ca5e23d4121bc8696178a5\", \"mode\": 416}, \"apport/tombstone-unknown\": {\"size\": 7, \"sha256\": \"b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc\", \"mode\": 384}, \"logs/crash\": {\"directory\": true, \"mode\": 509}, \"logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld\": {\"size\": 122, \"sha256\": \"10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd\", \"mode\": 416}, \"CarrotException\": null}",
+      "cycle_log_sort_only": true,
+      "after": []
+    },
+    {
+      "index": 3,
+      "before": [],
+      "request": "{\"op\": \"cycle\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [], \"logs\": []}\n",
+      "source_files_json": "{\"apport/.old.crash\": {\"size\": 122, \"sha256\": \"10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd\", \"mode\": 416}, \"apport/invalid.crash\": {\"size\": 4, \"sha256\": \"69f5f0e0fa0fda78f93925cc50aef69d8e4f4973e8ca5e23d4121bc8696178a5\", \"mode\": 416}, \"apport/tombstone-unknown\": {\"size\": 7, \"sha256\": \"b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc\", \"mode\": 384}, \"logs/crash\": {\"directory\": true, \"mode\": 509}, \"logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld\": {\"size\": 122, \"sha256\": \"10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd\", \"mode\": 416}, \"CarrotException\": null}",
+      "cycle_log_sort_only": true,
+      "after": []
+    },
+    {
+      "index": 4,
+      "before": [
+        {
+          "op": "write",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f7261772f7261770a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416,
+          "path_hex": "6170706f72742f7261772dff2ded959c2de2822e6372617368"
+        },
+        {
+          "op": "write",
+          "hex": "756e6b6e6f776e",
+          "mode": 416,
+          "path_hex": "6170706f72742f746f6d6273746f6e652d802d726177"
+        },
+        {
+          "op": "write",
+          "hex": "626164ff",
+          "mode": 416,
+          "path_hex": "6170706f72742f696e76616c69642dfe2e6372617368"
+        }
+      ],
+      "request": "{\"op\": \"cycle\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/raw-\\\\udcff-\\\\ud55c-\\\\udce2\\\\udc82.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.682569}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/raw/raw\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.682585}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/raw/raw - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.6825953}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.6826038}], \"logs\": [{\"levelnum\": 20, \"msg\": \"reporting new tombstone $FIXTURE/apport/tombstone-\\udc80-raw\", \"exception\": false, \"created\": 1792345910.6770597}, {\"levelnum\": 40, \"msg\": \"unknown crash type: $FIXTURE/apport/tombstone-\\udc80-raw\", \"exception\": false, \"created\": 1792345910.6770616}, {\"levelnum\": 20, \"msg\": \"reporting new tombstone $FIXTURE/apport/invalid-\\udcfe.crash\", \"exception\": false, \"created\": 1792345910.6770625}, {\"levelnum\": 40, \"msg\": \"Error reporting tombstone $FIXTURE/apport/invalid-\\udcfe.crash\", \"exception\": true, \"created\": 1792345910.6770937}, {\"levelnum\": 20, \"msg\": \"reporting new tombstone $FIXTURE/apport/raw-\\udcff-\\ud55c-\\udce2\\udc82.crash\", \"exception\": false, \"created\": 1792345910.6771002}, {\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/raw/raw - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.6825328}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-88cdhy1e/source/apport/raw-\\\\udcff-\\\\ud55c-\\\\udce2\\\\udc82.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.682569}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/raw/raw\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.682585}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/raw/raw - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.6825953}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.6826038}], \"logs\": [{\"levelnum\": 20, \"msg\": \"reporting new tombstone /tmp/tombstone-source-capture-88cdhy1e/source/apport/tombstone-\\udc80-raw\", \"exception\": false, \"created\": 1792345910.6770597}, {\"levelnum\": 40, \"msg\": \"unknown crash type: /tmp/tombstone-source-capture-88cdhy1e/source/apport/tombstone-\\udc80-raw\", \"exception\": false, \"created\": 1792345910.6770616}, {\"levelnum\": 20, \"msg\": \"reporting new tombstone /tmp/tombstone-source-capture-88cdhy1e/source/apport/invalid-\\udcfe.crash\", \"exception\": false, \"created\": 1792345910.6770625}, {\"levelnum\": 40, \"msg\": \"Error reporting tombstone /tmp/tombstone-source-capture-88cdhy1e/source/apport/invalid-\\udcfe.crash\", \"exception\": true, \"created\": 1792345910.6770937}, {\"levelnum\": 20, \"msg\": \"reporting new tombstone /tmp/tombstone-source-capture-88cdhy1e/source/apport/raw-\\udcff-\\ud55c-\\udce2\\udc82.crash\", \"exception\": false, \"created\": 1792345910.6771002}, {\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/raw/raw - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.6825328}]}\n",
+      "source_files_json": "{\"apport/.old.crash\": {\"size\": 122, \"sha256\": \"10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd\", \"mode\": 416}, \"apport/invalid-\\udcfe.crash\": {\"size\": 4, \"sha256\": \"69f5f0e0fa0fda78f93925cc50aef69d8e4f4973e8ca5e23d4121bc8696178a5\", \"mode\": 416}, \"apport/invalid.crash\": {\"size\": 4, \"sha256\": \"69f5f0e0fa0fda78f93925cc50aef69d8e4f4973e8ca5e23d4121bc8696178a5\", \"mode\": 416}, \"apport/tombstone-unknown\": {\"size\": 7, \"sha256\": \"b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc\", \"mode\": 384}, \"apport/tombstone-\\udc80-raw\": {\"size\": 7, \"sha256\": \"b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc\", \"mode\": 416}, \"logs/crash\": {\"directory\": true, \"mode\": 509}, \"logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld\": {\"size\": 122, \"sha256\": \"10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd\", \"mode\": 416}, \"logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_raw_raw\": {\"size\": 116, \"sha256\": \"9b20195775e679c7e47ffae3995a5d1401b6a3e4e32c88fd3cbff529e04992ca\", \"mode\": 416}, \"CarrotException\": null}",
+      "cycle_log_sort_only": true,
+      "after": []
+    },
+    {
+      "index": 5,
+      "before": [],
+      "request": "{\"op\": \"cycle\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [], \"logs\": []}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [], \"logs\": []}\n",
+      "source_files_json": "{\"apport/.old.crash\": {\"size\": 122, \"sha256\": \"10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd\", \"mode\": 416}, \"apport/invalid-\\udcfe.crash\": {\"size\": 4, \"sha256\": \"69f5f0e0fa0fda78f93925cc50aef69d8e4f4973e8ca5e23d4121bc8696178a5\", \"mode\": 416}, \"apport/invalid.crash\": {\"size\": 4, \"sha256\": \"69f5f0e0fa0fda78f93925cc50aef69d8e4f4973e8ca5e23d4121bc8696178a5\", \"mode\": 416}, \"apport/tombstone-unknown\": {\"size\": 7, \"sha256\": \"b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc\", \"mode\": 384}, \"apport/tombstone-\\udc80-raw\": {\"size\": 7, \"sha256\": \"b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc\", \"mode\": 416}, \"logs/crash\": {\"directory\": true, \"mode\": 509}, \"logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld\": {\"size\": 122, \"sha256\": \"10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd\", \"mode\": 416}, \"logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_raw_raw\": {\"size\": 116, \"sha256\": \"9b20195775e679c7e47ffae3995a5d1401b6a3e4e32c88fd3cbff529e04992ca\", \"mode\": 416}, \"CarrotException\": null}",
+      "cycle_log_sort_only": true,
+      "after": []
+    },
+    {
+      "index": 6,
+      "before": [
+        {
+          "op": "write",
+          "hex": "45786563757461626c65506174683a202f646174612f6f70656e70696c6f742f73656c6664726976652f6e657765722f6e657765720a5369676e616c3a2031310a50726f634d6170733a0a206f6d69747465640a50726f635374617475733a0a206b6570740a436f726544756d703a206f6d69747465640a",
+          "mode": 416,
+          "path": "apport/newer.crash"
+        }
+      ],
+      "request": "{\"op\": \"cycle\"}",
+      "original_stdout": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"$FIXTURE/apport/newer.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.6915903}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/newer/newer\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.6916053}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/newer/newer - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.6916142}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.6916223}], \"logs\": [{\"levelnum\": 20, \"msg\": \"reporting new tombstone $FIXTURE/apport/newer.crash\", \"exception\": false, \"created\": 1792345910.6862016}, {\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/newer/newer - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.6915433}]}\n",
+      "original_stdout_raw": "{\"result\": {\"value\": null}, \"calls\": [{\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone_fn\", \"value_json\": \"\\\"/tmp/tombstone-source-capture-88cdhy1e/source/apport/newer.crash\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.6915903}, {\"op\": \"set_extra\", \"fields\": {\"key\": \"tombstone\", \"value_json\": \"\\\"header\\\\n#0 0xdead system (p=0x1) at sys.c\\\\n#1 0xbeef model (a=1) at selfdrive/modeld.cc:7\\\\n\\\\n\\\\nExecutablePath: /data/openpilot/selfdrive/newer/newer\\\\nSignal: 11\\\\nProcStatus:\\\\n kept\\\\n\\\"\"}, \"carrot_exception\": null, \"created\": 1792345910.6916053}, {\"op\": \"capture_message\", \"fields\": {\"message\": \"selfdrive/newer/newer - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"carrot_exception\": null, \"created\": 1792345910.6916142}, {\"op\": \"flush\", \"fields\": null, \"carrot_exception\": null, \"created\": 1792345910.6916223}], \"logs\": [{\"levelnum\": 20, \"msg\": \"reporting new tombstone /tmp/tombstone-source-capture-88cdhy1e/source/apport/newer.crash\", \"exception\": false, \"created\": 1792345910.6862016}, {\"levelnum\": 40, \"msg\": {\"tombstone\": \"selfdrive/newer/newer - Signal: 11 (SIGSEGV) - model  at selfdrive/modeld.cc:7\"}, \"exception\": false, \"created\": 1792345910.6915433}]}\n",
+      "source_files_json": "{\"apport/.old.crash\": {\"size\": 122, \"sha256\": \"10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd\", \"mode\": 416}, \"apport/invalid-\\udcfe.crash\": {\"size\": 4, \"sha256\": \"69f5f0e0fa0fda78f93925cc50aef69d8e4f4973e8ca5e23d4121bc8696178a5\", \"mode\": 416}, \"apport/invalid.crash\": {\"size\": 4, \"sha256\": \"69f5f0e0fa0fda78f93925cc50aef69d8e4f4973e8ca5e23d4121bc8696178a5\", \"mode\": 416}, \"apport/tombstone-unknown\": {\"size\": 7, \"sha256\": \"b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc\", \"mode\": 384}, \"apport/tombstone-\\udc80-raw\": {\"size\": 7, \"sha256\": \"b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc\", \"mode\": 416}, \"logs/crash\": {\"directory\": true, \"mode\": 509}, \"logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_modeld_modeld\": {\"size\": 122, \"sha256\": \"10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd\", \"mode\": 416}, \"logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_newer_newer\": {\"size\": 120, \"sha256\": \"03cfb70ec4f5eb2e3a64d3c00631482e2215ac98962ef44c55155993c42c5413\", \"mode\": 416}, \"logs/crash/2020-01-02--03-04-05_abcdefgh_selfdrive_raw_raw\": {\"size\": 116, \"sha256\": \"9b20195775e679c7e47ffae3995a5d1401b6a3e4e32c88fd3cbff529e04992ca\", \"mode\": 416}, \"CarrotException\": null}",
+      "cycle_log_sort_only": true,
+      "after": []
+    }
+  ]
+}

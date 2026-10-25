@@ -1,0 +1,7 @@
+{
+  "source_sha256": "4641d2e73a12c476a67b418210148a54e178129b94abf65b968a107f302b1920",
+  "outcome": "PermissionError",
+  "errno": 13,
+  "report_present": false,
+  "scope": "unchanged original real FIFO exec rejection before binary digest; Linux host observation"
+}

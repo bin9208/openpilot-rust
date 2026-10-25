@@ -261,14 +261,14 @@ impl State {
         self.update_with_clock(messages, || now)
     }
 
-    pub fn update_with_clock(
+    pub fn update_with_clock<B: AsRef<[u8]>>(
         &mut self,
-        messages: &[Vec<u8>],
+        messages: impl IntoIterator<Item = B>,
         clock: impl FnOnce() -> f64,
     ) -> Result<(), Error> {
         let messages: Vec<_> = messages
-            .iter()
-            .map(|bytes| read_message(bytes))
+            .into_iter()
+            .map(|bytes| read_message(bytes.as_ref()))
             .collect::<Result<_, _>>()?;
         let now = clock();
         self.frame = self.frame.saturating_add(1);

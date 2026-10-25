@@ -30,7 +30,7 @@ pub enum Error {
 #[cfg(feature = "native")]
 #[expect(
     unsafe_code,
-    reason = "audited CXX boundary to the existing external raylib"
+    reason = "audited CXX boundaries to external raylib and raw EGL ABIs"
 )]
 mod bridge;
 #[cfg(feature = "native")]
@@ -68,3 +68,9 @@ pub mod egl;
 pub mod logging;
 #[cfg(feature = "native")]
 mod renderer_polygon;
+
+#[cfg(feature = "native")]
+pub mod egl_reference_abi;
+
+#[cfg(feature = "native")]
+pub mod polygon_reference_abi;

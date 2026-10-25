@@ -1,0 +1,54 @@
+{
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "source_sha256": "3ad9924ccb8e135c0f8dcd31acb1a3866158ee9301aec5ce6e0fdacedcf9c679",
+  "cases": [
+    {
+      "case": "crlf",
+      "payload_hex": "34330d0a",
+      "yielded": ":43",
+      "error": null,
+      "alive_after": false,
+      "receipt": true
+    },
+    {
+      "case": "python-whitespace",
+      "payload_hex": "1c34331f0a",
+      "yielded": ":43",
+      "error": null,
+      "alive_after": false,
+      "receipt": true
+    },
+    {
+      "case": "blank",
+      "payload_hex": "200a",
+      "yielded": null,
+      "error": "RuntimeError",
+      "alive_after": false,
+      "receipt": false
+    },
+    {
+      "case": "superscript",
+      "payload_hex": "c2b20a",
+      "yielded": null,
+      "error": "RuntimeError",
+      "alive_after": false,
+      "receipt": false
+    },
+    {
+      "case": "invalid-utf8",
+      "payload_hex": "ff0a",
+      "yielded": null,
+      "error": "UnicodeDecodeError",
+      "alive_after": false,
+      "receipt": false
+    },
+    {
+      "case": "multiple-lines",
+      "payload_hex": "34330a39390a",
+      "yielded": ":43",
+      "error": null,
+      "alive_after": false,
+      "receipt": true
+    }
+  ]
+}

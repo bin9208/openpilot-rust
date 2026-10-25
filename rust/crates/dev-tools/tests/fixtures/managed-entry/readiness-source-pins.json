@@ -1,0 +1,30 @@
+{
+  "description": "Unchanged original input source bytes captured before managed retirement; no runtime/candidate answers. Mandatory list is fixed independently of future source_provenance output.",
+  "sha256": {
+    "openpilot/system/tombstoned.py": "a7a5f32535fe7c3a74593b3252366db5ac1c8b43f64837293e1c192f517527a5",
+    "openpilot/system/sentry.py": "fec900bf600e7a714460d8494472d6cc648759abf36ff72b79158bff61135fd8",
+    "openpilot/system/athena/registration.py": "461b5976d0e0ad7849c8096e5372dc3514da24fcd7c1924c97027cdcb62a0924",
+    "openpilot/system/version.py": "69b91ce6fc8fe3b164c4f6c23e9514c89a4b6759043cfb607b733c7e006144d7",
+    "openpilot/common/git.py": "68a68daab8137ba307753b6f1dbc18a4a8c736ed118383800ad6bfd8690140d9",
+    "openpilot/common/utils.py": "b1cc68b63cff1386ba397c0cc527dbb38fb50b154043ffcb066ed7acce65ec83",
+    "rust/tools/check_version_reference.py": "d0ad5fbec23e1ba4a2507ae6dbc68856141d03eda07dadebab3280d5731525d5",
+    "rust/tools/tombstoned_reference.py": "7b647dba322d93e5d2bd9c5692356b10d3f85f2a2e0f9da8b982e05206c8e781",
+    "rust/tools/check_tombstoned_reference.py": "6271ece66356f377357ffc2b37bf3d98fcdb4c8231c8c07f556ed0294c261cd4",
+    "rust/tools/logmessaged_reference.py": "ce6d6764911daaab1e9e5ce70152d9f5efc9b5ea006482064bb8192d36f735e3",
+    "rust/tools/logmessaged_native.py": "3366e64eb36b0bad9b10023c46217f61c66aae0fe823120ae23d597d2456c872",
+    "openpilot/system/logmessaged.py": "93d94801185350ef4470bd482d37ed7f6d466e9b100ad10aa16fa6e8570fb02a",
+    "openpilot/common/logging_extra.py": "ce9b3b3d8498d76e1c4c0352a3e98e72759bb7f367ff8629c1329c46040595c3",
+    "openpilot/common/swaglog.py": "d37b623bd9418b72ffd3c4800a1da192c49856cb63bbbc1c09bb24a5ec6f8616",
+    "openpilot/cereal/services.py": "a0745e2ef00036f0eef08b453a4798b4281549ea9ac6dc91c8b348ef76131edb",
+    "openpilot/cereal/messaging/__init__.py": "1938c80c71dba0855700015bc03371786a711c67bfe3a0c5e073ed790d5e10a9",
+    "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+    "msgq_repo/msgq/msgq.cc": "5910ffb3bc2a4f023b4bbc612e41b76ddeaace2eb84ae8b127e8736905d7a6c2",
+    "rust/tools/check_managed_entry_readiness.py": "d353d34ce4a6d633710c981d66bd571700f919c9ffb8800c6fd1273acabe732e",
+    "msgq_repo/msgq/msgq.h": "ee16b5b2cccd5fceb526f2f3e85a3ffe0fd523b25fdb0a9cde72fb03ee0183bc",
+    "rust/tools/check_managed_entry.py": "89d2ce945fe94955d9b764f6a71434ac02298713a8983513bb9990318e6acc44",
+    "rust/tools/managed_entry_reference.py": "3f502d9c478e5f801f84b52ab5b613cb55f5d161b68434568e3942a72ac642d8",
+    "rust/tools/logging_producer_reference.py": "ac89bd78f4a2eed348317e374c4f21a9d2e28500abbeab10b50313ef3677a536",
+    "openpilot/system/manager/process.py": "c824eded96e88533f4d150a1b2ea0262cfd076cffea0692fad52ef4ba3bf5c8e",
+    "openpilot/common/params_pyx.pyx": "a8cc5e5296dd38a012c55b0867c4563f8e320d25960260d897675dd90f0ea544"
+  }
+}

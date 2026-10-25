@@ -1,0 +1,52 @@
+{
+  "python": "3.12.15",
+  "pycapnp": "2.1.0",
+  "schema_sha256": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+  "source": "Actual original pycapnp Event.from_bytes(...).to_dict; original live runtime wire and independently corrupted out-of-bounds root pointer. External native capnp process protocol is separately observed.",
+  "cases": [
+    {
+      "name": "valid",
+      "wire": "000000001700000000000000020001000372dbcb8c9f00004800000000000000000000000c0007000000000000000000ace302ca8c9f000000000000050000000000000000000000ec0a5bc98c9f0000000000000000000000000000000000000000000000000000000000000000003e84c7fb3c000000000300000008e2753c02000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "original": {
+        "wideRoadCameraState": {
+          "frameId": 0,
+          "encodeId": 0,
+          "timestampEof": 175427033424812,
+          "deprecated": {
+            "frameLength": 0,
+            "globalGain": 0,
+            "frameType": "unknown",
+            "lensPos": 0,
+            "lensSag": 0.0,
+            "lensErr": 0.0,
+            "lensTruePos": 0.0,
+            "recoverState": 0
+          },
+          "integLines": 5,
+          "timestampSof": 175427022424812,
+          "gain": 0.0,
+          "highConversionGain": false,
+          "measuredGreyFraction": 0.0,
+          "targetGreyFraction": 0.125,
+          "processingTime": 0.03073478490114212,
+          "frameIdSensor": 0,
+          "sensor": "os04c10",
+          "exposureValPercent": 0.01500750333070755,
+          "requestId": 2
+        },
+        "logMonoTime": 175427064394243,
+        "valid": true
+      },
+      "error": null
+    },
+    {
+      "name": "invalid-root",
+      "wire": "0000000017000000fcff3f00020001000372dbcb8c9f00004800000000000000000000000c0007000000000000000000ace302ca8c9f000000000000050000000000000000000000ec0a5bc98c9f0000000000000000000000000000000000000000000000000000000000000000003e84c7fb3c000000000300000008e2753c02000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "original": null,
+      "error": "KjException"
+    }
+  ],
+  "batch_exit": 1,
+  "batch_json_lines": 3,
+  "batch_stdout": "{\"logMonoTime\":\"175427064394243\",\"valid\":true,\"wideRoadCameraState\":{\"frameId\":0,\"encodeId\":0,\"timestampEof\":\"175427033424812\",\"deprecated\":{\"frameLength\":0,\"globalGain\":0,\"frameType\":\"unknown\",\"lensPos\":0,\"lensSag\":0,\"lensErr\":0,\"lensTruePos\":0,\"recoverState\":0},\"integLines\":5,\"timestampSof\":\"175427022424812\",\"gain\":0,\"highConversionGain\":false,\"measuredGreyFraction\":0,\"targetGreyFraction\":0.125,\"processingTime\":0.03073478490114212,\"frameIdSensor\":0,\"sensor\":\"os04c10\",\"exposureValPercent\":0.01500750333070755,\"requestId\":2}}\n{\"logMonoTime\":\"0\",\"valid\":true,\"initData\":{\"deprecated\":{},\"deviceType\":\"unknown\",\"dirty\":false,\"passive\":false,\"wallTimeNanos\":\"0\"}}\n{\"logMonoTime\":\"175427064394243\",\"valid\":true,\"wideRoadCameraState\":{\"frameId\":0,\"encodeId\":0,\"timestampEof\":\"175427033424812\",\"deprecated\":{\"frameLength\":0,\"globalGain\":0,\"frameType\":\"unknown\",\"lensPos\":0,\"lensSag\":0,\"lensErr\":0,\"lensTruePos\":0,\"recoverState\":0},\"integLines\":5,\"timestampSof\":\"175427022424812\",\"gain\":0,\"highConversionGain\":false,\"measuredGreyFraction\":0,\"targetGreyFraction\":0.125,\"processingTime\":0.03073478490114212,\"frameIdSensor\":0,\"sensor\":\"os04c10\",\"exposureValPercent\":0.01500750333070755,\"requestId\":2}}\n"
+}

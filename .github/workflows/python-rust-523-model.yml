@@ -1,0 +1,244 @@
+name: Python Rust 523 model original cache probe
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-model.yml
+    - tools/ci/model_cache_probe_482.sh
+    - tools/ci/model-cache-482-natural-config.json
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: python-rust-523-model-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  cache_probe:
+    name: Original LLVM cache miss hit and runtime image linkage
+    runs-on:
+    - self-hosted
+    - Linux
+    - X64
+    - dev-md-local
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+    - name: Deny fork source and require registered local runner
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name
+          == github.repository }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        test "$RUNNER_NAME" = bin-actions
+        test "$RUNNER_ENVIRONMENT" = self-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+    - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Allocate private Fast source and cache before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        # Source capacity is checked on the actual source filesystem BEFORE checkout.
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Preserve Actions' real workspace separately. Only Bash consumers see the
+        # unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+    - name: Admit exact focused source HEAD and tracked index
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+    - name: Admit cache-only preparation growth and require pinned provisioned LLVM
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        for tool in gh jq timeout lscpu dpkg-query sha256sum; do command -v "$tool" >/dev/null; done
+        available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        # Reuse the already provisioned Python/LLVM; private venv/wheel <=768MiB.
+        # The pinned 4.4MB baseline and all probe output fit the 256MiB diagnostic budget.
+        required=$((1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"preparation_growth_limit_bytes":805306368,"diagnostic_growth_bytes":268435456,"combined_growth_limit_bytes":%s,"llvm_install_growth_bytes":0,"python_toolcache_growth_bytes":0}\n' "$available" "$required" > "$CI_JOB_TEMP/proof/cache-growth-before-preparation.json"
+        ((available >= required))
+        printf 'CACHE_PREPARATION_START_BYTES=%s\n' "$(du -sb "$CI_JOB_TEMP" | cut -f1)" >> "$GITHUB_ENV"
+        test -f "$RUNNER_TOOL_CACHE/Python/3.12.15/x64.complete"
+        test -x "$RUNNER_TOOL_CACHE/Python/3.12.15/x64/bin/python"
+        test "$(dpkg-query -W -f='${Version}' libllvm18:amd64)" = 1:18.1.3-1ubuntu1
+        dpkg-query -W -f='${binary:Package}\t${Version}\n' libllvm18:amd64 > "$CI_JOB_TEMP/proof/llvm-package.before.txt"
+        provider=/usr/lib/x86_64-linux-gnu/libLLVM-18.so
+        test -f "$provider"
+        printf '%s  %s\n' 5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0 "$provider" | sha256sum --check --strict
+        sha256sum "$provider" > "$CI_JOB_TEMP/proof/llvm-provider.before.sha256"
+        readlink -e "$provider" > "$CI_JOB_TEMP/proof/llvm-realpath.before.txt"
+        # No Python download, apt install, SDK replacement or provider fallback.
+      id: cache_admission
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.15
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+    - name: Prepare and seal the original Python venv only
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        python -m venv "$CI_JOB_TEMP/venv"
+        printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
+        "$CI_JOB_TEMP/venv/bin/python" -m pip install --only-binary=:all: --no-cache-dir --no-compile numpy==2.5.3
+        "$CI_JOB_TEMP/venv/bin/python" -m pip freeze > "$CI_JOB_TEMP/proof/python-provider-versions.txt"
+        sha256sum "$CI_JOB_TEMP/venv/pyvenv.cfg" "$(readlink -e "$CI_JOB_TEMP/venv/bin/python")" > "$CI_JOB_TEMP/proof/oracle-environment.sha256"
+        find "$CI_JOB_TEMP/venv" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/venv-files.before.sha256"
+        find "$CI_JOB_TEMP/venv" -type l -printf '%p\t%l\n' | sort > "$CI_JOB_TEMP/proof/venv-links.before.txt"
+        owned_after=$(du -sb "$CI_JOB_TEMP" | cut -f1)
+        owned_growth=$((owned_after - CACHE_PREPARATION_START_BYTES))
+        printf '{"owned_bytes_before":%s,"owned_bytes_after":%s,"owned_preparation_growth_bytes":%s,"owned_preparation_limit_bytes":805306368}\n' "$CACHE_PREPARATION_START_BYTES" "$owned_after" "$owned_growth" > "$CI_JOB_TEMP/proof/cache-growth-after-preparation.json"
+        (( owned_growth >= 0 && owned_growth <= 768 * 1024 * 1024 ))
+      id: oracle
+    - name: Observe one original cache miss hit and ELF to runtime image linkage
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.oracle.outcome == 'success') }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        export EXPECTED_SOURCE="$GITHUB_SHA"
+        export ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
+        export CACHE_PROBE_OUTPUT="$CI_JOB_TEMP/proof/model-cache-probe"
+        # Python preparation completed under 768MiB + 256MiB admission above.
+        export CACHE_PREPARATION_GROWTH_MIB=0
+        sha256sum --check "$CI_JOB_TEMP/proof/oracle-environment.sha256"
+        bash tools/ci/model_cache_probe_482.sh
+    - name: Seal Fast source index original venv and provider after cache probe
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        git rev-parse HEAD > "$CI_JOB_TEMP/proof/SOURCE_COMMIT.after"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+
+        if test -f "$CI_JOB_TEMP/proof/venv-files.before.sha256"; then
+          find "$CI_JOB_TEMP/venv" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/venv-files.after.sha256"
+          find "$CI_JOB_TEMP/venv" -type l -printf '%p\t%l\n' | sort > "$CI_JOB_TEMP/proof/venv-links.after.txt"
+        fi
+        if test -f "$CI_JOB_TEMP/proof/llvm-provider.before.sha256"; then
+          provider=/usr/lib/x86_64-linux-gnu/libLLVM-18.so
+          sha256sum "$provider" > "$CI_JOB_TEMP/proof/llvm-provider.after.sha256"
+          readlink -e "$provider" > "$CI_JOB_TEMP/proof/llvm-realpath.after.txt"
+          dpkg-query -W -f='${binary:Package}\t${Version}\n' libllvm18:amd64 > "$CI_JOB_TEMP/proof/llvm-package.after.txt"
+        fi
+        # Capture all after manifests before rejecting a content mismatch.
+        cmp "$CI_JOB_TEMP/proof/SOURCE_COMMIT" "$CI_JOB_TEMP/proof/SOURCE_COMMIT.after"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        if test -f "$CI_JOB_TEMP/proof/oracle-environment.sha256"; then sha256sum --check "$CI_JOB_TEMP/proof/oracle-environment.sha256"; fi
+        if test -f "$CI_JOB_TEMP/proof/venv-files.before.sha256"; then
+          cmp "$CI_JOB_TEMP/proof/venv-files.before.sha256" "$CI_JOB_TEMP/proof/venv-files.after.sha256"
+          cmp "$CI_JOB_TEMP/proof/venv-links.before.txt" "$CI_JOB_TEMP/proof/venv-links.after.txt"
+        fi
+        if test -f "$CI_JOB_TEMP/proof/llvm-provider.before.sha256"; then
+          cmp "$CI_JOB_TEMP/proof/llvm-provider.before.sha256" "$CI_JOB_TEMP/proof/llvm-provider.after.sha256"
+          cmp "$CI_JOB_TEMP/proof/llvm-realpath.before.txt" "$CI_JOB_TEMP/proof/llvm-realpath.after.txt"
+          cmp "$CI_JOB_TEMP/proof/llvm-package.before.txt" "$CI_JOB_TEMP/proof/llvm-package.after.txt"
+        fi
+      id: source_final
+    - name: Retain Fast job ownership evidence
+      id: fast_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: diagnostic-fast-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        if-no-files-found: error
+        retention-days: 14
+    - name: Clean only uploaded private Fast source
+      id: fast_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success') }}
+      working-directory: ${{ github.workspace }}
+      env:
+        UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.fast_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.diag296-owner" && test ! -L "$p/.diag296-owner"
+        test "$(cat "$p/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned Fast job temporary paths
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != ''
+        && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success')
+        }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'

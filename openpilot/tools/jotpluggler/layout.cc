@@ -1,4 +1,5 @@
 #include "tools/jotpluggler/internal.h"
+#include "tools/jotpluggler/dbc_paths.h"
 #include "system/hardware/hw.h"
 
 #include <unistd.h>
@@ -275,16 +276,16 @@ std::string default_dbc_template() {
 
 DbcEditorSource resolve_dbc_editor_source(const std::string &dbc_name) {
   const fs::path generated_dbc_dir = repo_root() / "openpilot" / "tools" / "jotpluggler" / "generated_dbcs";
-  const std::array<DbcEditorSource, 2> candidates = {{
-    {.path = repo_root() / "opendbc_repo" / "opendbc" / "dbc" / (dbc_name + ".dbc"), .kind = DbcEditorState::SourceKind::Opendbc},
-    {.path = generated_dbc_dir / (dbc_name + ".dbc"), .kind = DbcEditorState::SourceKind::Generated},
-  }};
-  for (const DbcEditorSource &candidate : candidates) {
-    if (fs::exists(candidate.path)) {
-      return candidate;
-    }
+  const fs::path factory = jot_dbc_paths::factory_root(repo_root(), fs::path(JOTP_DBC_ROOT));
+  try {
+    const auto path = jot_dbc_paths::resolve(factory, generated_dbc_dir, dbc_name,
+                                            !std::string_view(JOTP_DBC_ROOT).empty());
+    return {.path = path, .kind = path == factory / (dbc_name + ".dbc") ? DbcEditorState::SourceKind::Opendbc :
+                                                               DbcEditorState::SourceKind::Generated};
+  } catch (const std::runtime_error &error) {
+    if (std::string(error.what()) == "DBC not found: " + dbc_name) return {};
+    throw;
   }
-  return {};
 }
 
 void load_dbc_editor_state(const AppSession &session, UiState *state) {

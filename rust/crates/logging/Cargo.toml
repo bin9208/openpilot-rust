@@ -22,3 +22,12 @@ zmq = "=0.10.0"
 [dev-dependencies]
 libc = "0.2"
 tempfile = "3"
+
+[[test]]
+name = "runtime_producer"
+harness = false
+
+[[test]]
+name = "retained_facade"
+path = "tests/retained_facade/main.rs"
+harness = false

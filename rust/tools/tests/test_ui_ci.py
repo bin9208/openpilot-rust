@@ -46,7 +46,9 @@ def test_arm_ui_commands_resolve_workspace_and_python_paths() -> None:
   workflow = yaml.safe_load((ROOT / '.github/workflows/rust.yml').read_text())
   job = workflow['jobs']['arm64']
   step = next(step for step in job['steps'] if 'cargo build -p openpilot-ui-application' in step.get('run', ''))
-  directory = ROOT / step.get('working-directory', job.get('defaults', {}).get('run', {}).get('working-directory', '.'))
+  directory_expression = step.get('working-directory', job.get('defaults', {}).get('run', {}).get('working-directory', '.'))
+  assert directory_expression == '${{ env.CI296_SOURCE }}/rust'
+  directory = ROOT / 'rust'
   scripts = [shlex.split(line)[1] for line in step['run'].splitlines() if line.strip().startswith('python ')]
   for script in scripts:
     assert (directory / script).is_file(), directory / script
@@ -61,3 +63,64 @@ def test_arm_ui_commands_resolve_workspace_and_python_paths() -> None:
     assert executable.is_absolute() and executable.is_file(), executable
   workspace = tomllib.loads((directory / 'Cargo.toml').read_text())
   assert 'crates/ui-application' in workspace['workspace']['members']
+
+
+def test_ui_suite_runs_both_native_adapter_sanitizers_on_owned_display(tmp_path: Path, monkeypatch) -> None:
+  import check_ui_ci as module
+  old_calls, native_calls, ordered = [], [], []
+  binaries, output, raylib = tmp_path / 'binaries', tmp_path / 'output', tmp_path / 'raylib'
+  monkeypatch.setenv('STARTUP_UI_RAYLIB_ROOT', str(raylib))
+  monkeypatch.setenv('STARTUP_UI_RAYLIB_LIBRARY', str(raylib / 'lib/libopenpilot-raylib.so'))
+  def original_check(self, name, script, arguments):
+    old_calls.append(name)
+    ordered.append(name)
+  def native_check(command, directory, name):
+    native_calls.append((command, directory, name))
+    ordered.append(name)
+  monkeypatch.setattr(module.UiCheck, 'check', original_check)
+  monkeypatch.setattr(module, 'require_space', lambda *args: None)
+  monkeypatch.setattr(module, 'run', native_check)
+  owner = module.UiCheck(output, binaries, tmp_path / 'peer')
+  owner.execute('owned-display')
+  assert old_calls == ['root', 'augmented', 'camera', 'runtime', 'pages',
+                       'hud-eight-modes', 'hud-traffic', 'calibration']
+  assert ordered == ['state', 'scheduler', 'plot-samples', 'qr', 'root', 'augmented', 'camera', 'runtime', 'pages',
+                     'hud-eight-modes', 'hud-traffic', 'calibration', 'torque', 'native-safety',
+                     'native-model-adapter', 'native-training-adapter']
+  assert native_calls == [
+    ([str(binaries / f'check-ui-{name}'), '--binary', str(binaries / f'examples/{binary}'),
+      '--output', str(output / name)], output / 'commands', name)
+    for name, binary in (('state', 'state_trace'), ('scheduler', 'scheduler_trace'), ('plot-samples', 'plot_samples'))
+  ] + [
+    ([str(binaries / 'check-ui-qr'), '--binary', str(binaries / 'examples/qr_trace'),
+      '--output', str(output / 'qr')], output / 'commands', 'qr'),
+    ([str(binaries / 'check-ui-torque-geometry'), '--binary', str(binaries / 'examples/torque_geometry'),
+      '--output', str(output / 'torque')], output / 'commands', 'torque'),
+    ([str(binaries / 'check-ui-native-safety'), '--target', str(binaries),
+      '--output', str(output / 'native-safety'), '--display', 'owned-display',
+      '--raylib-root', str(raylib), '--raylib-library', str(raylib / 'lib/libopenpilot-raylib.so')],
+      output / 'commands', 'native-safety'),
+  ] + [
+    (['env', 'DISPLAY=owned-display', str(binaries / f'check-ui-{kind}-adapter'), '--target', str(binaries), '--raylib', str(raylib),
+      '--evidence', str(output / f'native-{kind}-adapter')], output / 'commands', f'native-{kind}-adapter')
+    for kind in ('model', 'training')
+  ]
+
+
+# Shared framework order/log/disk/failure cases migrated to Rust
+# dev-tools/tests/ui_framework_check.rs with independent original captures.
+
+
+def test_native_plot_samples_failure_stops_remaining_ui_checks(tmp_path: Path, monkeypatch) -> None:
+  import check_ui_ci as module
+  calls = []
+  monkeypatch.setattr(module, 'require_space', lambda *args: None)
+  def execute(command, directory, name):
+    calls.append(name)
+    if name == 'plot-samples':
+      raise RuntimeError('sampling mismatch')
+  monkeypatch.setattr(module, 'run', execute)
+  monkeypatch.setattr(module.UiCheck, 'check', lambda self, name, script, arguments: calls.append(name))
+  with pytest.raises(RuntimeError, match='sampling mismatch'):
+    module.UiCheck(tmp_path / 'output', tmp_path / 'binaries', tmp_path / 'peer').execute(':owned')
+  assert calls == ['state', 'scheduler', 'plot-samples']

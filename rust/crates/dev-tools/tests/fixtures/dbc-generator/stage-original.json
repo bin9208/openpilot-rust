@@ -1,0 +1,183 @@
+[
+  {
+    "name": "clean",
+    "existing": [],
+    "generation_error": false,
+    "generated": [
+      [
+        "a_generated",
+        "A\n"
+      ],
+      [
+        "b_generated",
+        "\ud55c\uae00\n"
+      ],
+      [
+        "c_generated",
+        "C"
+      ]
+    ],
+    "error": null,
+    "stdout": "{\"added\": {\"a_generated.dbc\": \"06f961b802bc46ee168555f066d28f4f0e9afdf3f88174c1ee6f9de004fc30a0\", \"b_generated.dbc\": \"712f4b5a23ccde2c6cacfa46258849855f00be71873bb8e377132b8436030684\", \"c_generated.dbc\": \"6b23c0d5f35d1b11f9b683f0b0a617355deb11277d91ae091d399c655b87940d\"}, \"existing_files\": \"preserved\"}\n",
+    "files": {
+      "a_generated.dbc": "410a",
+      "b_generated.dbc": "ed959ceab8800a",
+      "c_generated.dbc": "43"
+    },
+    "links": {},
+    "directories": []
+  },
+  {
+    "name": "existing-file-and-dir",
+    "existing": [
+      [
+        "a_generated.dbc",
+        "file",
+        "CORRUPT"
+      ],
+      [
+        "b_generated.dbc",
+        "directory",
+        ""
+      ]
+    ],
+    "generation_error": false,
+    "generated": [
+      [
+        "a_generated",
+        "A\n"
+      ],
+      [
+        "b_generated",
+        "\ud55c\uae00\n"
+      ],
+      [
+        "c_generated",
+        "C"
+      ]
+    ],
+    "error": null,
+    "stdout": "{\"added\": {\"c_generated.dbc\": \"6b23c0d5f35d1b11f9b683f0b0a617355deb11277d91ae091d399c655b87940d\"}, \"existing_files\": \"preserved\"}\n",
+    "files": {
+      "a_generated.dbc": "434f5252555054",
+      "c_generated.dbc": "43"
+    },
+    "links": {},
+    "directories": [
+      "b_generated.dbc"
+    ]
+  },
+  {
+    "name": "existing-symlink",
+    "existing": [
+      [
+        "a_generated.dbc",
+        "symlink",
+        "target"
+      ],
+      [
+        "target",
+        "file",
+        "ORIGINAL"
+      ]
+    ],
+    "generation_error": false,
+    "generated": [
+      [
+        "a_generated",
+        "A\n"
+      ],
+      [
+        "b_generated",
+        "\ud55c\uae00\n"
+      ],
+      [
+        "c_generated",
+        "C"
+      ]
+    ],
+    "error": null,
+    "stdout": "{\"added\": {\"b_generated.dbc\": \"712f4b5a23ccde2c6cacfa46258849855f00be71873bb8e377132b8436030684\", \"c_generated.dbc\": \"6b23c0d5f35d1b11f9b683f0b0a617355deb11277d91ae091d399c655b87940d\"}, \"existing_files\": \"preserved\"}\n",
+    "files": {
+      "b_generated.dbc": "ed959ceab8800a",
+      "c_generated.dbc": "43",
+      "target": "4f524947494e414c"
+    },
+    "links": {
+      "a_generated.dbc": "target"
+    },
+    "directories": []
+  },
+  {
+    "name": "dangling-symlink-after-first",
+    "existing": [
+      [
+        "b_generated.dbc",
+        "symlink",
+        "absent"
+      ]
+    ],
+    "generation_error": false,
+    "generated": [
+      [
+        "a_generated",
+        "A\n"
+      ],
+      [
+        "b_generated",
+        "\ud55c\uae00\n"
+      ],
+      [
+        "c_generated",
+        "C"
+      ]
+    ],
+    "error": {
+      "type": "FileExistsError",
+      "errno": 17
+    },
+    "stdout": "",
+    "files": {
+      "a_generated.dbc": "410a"
+    },
+    "links": {
+      "b_generated.dbc": "absent"
+    },
+    "directories": []
+  },
+  {
+    "name": "generation-failure-before-write",
+    "existing": [
+      [
+        "manual.dbc",
+        "file",
+        "MANUAL"
+      ]
+    ],
+    "generation_error": true,
+    "generated": [
+      [
+        "a_generated",
+        "A\n"
+      ],
+      [
+        "b_generated",
+        "\ud55c\uae00\n"
+      ],
+      [
+        "c_generated",
+        "C"
+      ]
+    ],
+    "error": {
+      "type": "FileNotFoundError",
+      "errno": 2
+    },
+    "stdout": "",
+    "files": {
+      "manual.dbc": "4d414e55414c"
+    },
+    "links": {},
+    "directories": []
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "provenance": {
+    "source_sha256": "0acc44b19abd5fc64c2444bbb8b7e3f4594d9f7d8eef26c24aa55154747e4ae4",
+    "launcher_sha256": "05849b5eb5b75a72aadc6227b5690519d6a2b9cba1b7356a461d64d95e9674e0",
+    "entry_elf_sha256": "fd5d731051b0245da9fcd73985923b61566690132b92714d4b09143a537ad229",
+    "native_elf_sha256": "fcbdad7931d9b4e39d269210b440feab9219810bce0c1d56df9f0ccd8fe51ff4"
+  },
+  "original": {
+    "arm": "original",
+    "code": 0,
+    "stdin_observations": [
+      "original-inherited-token",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
+    "stdout": "PASS: real timed entrypoint publication, bounded exit, SIGINT/SIGTERM and CLI errors; zero clock commands\n",
+    "stderr": ""
+  }
+}

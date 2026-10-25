@@ -1,0 +1,149 @@
+{
+  "source_sha256": "519fe086d6cd27a1f06728d6c2ff0e3ccc3d42e213475c1d018acc0936894b39",
+  "python": "3.12.15",
+  "capture": "Original main(), actual pycapnp decodes real captured source wires; controlled process/IPC/clock boundaries, verifier separately independently captured; fake namespace operations never touch ambient /dev/shm or /tmp endpoints.",
+  "cases": [
+    {
+      "case": "term",
+      "mode": "receive-error",
+      "success": false,
+      "error": {
+        "kind": "RuntimeError",
+        "repr": "RuntimeError('controlled receive failure')"
+      },
+      "operations": [
+        [
+          "namespace-create",
+          "/dev/shm/msgq_camera_runtime_4242"
+        ],
+        [
+          "subscribe",
+          "wideRoadCameraState",
+          {
+            "conflate": false,
+            "segment_size": 256000
+          }
+        ],
+        [
+          "subscribe",
+          "roadCameraState",
+          {
+            "conflate": false,
+            "segment_size": 256000
+          }
+        ],
+        [
+          "subscribe",
+          "driverCameraState",
+          {
+            "conflate": false,
+            "segment_size": 256000
+          }
+        ],
+        [
+          "vision-new",
+          "camerad",
+          0,
+          false
+        ],
+        [
+          "vision-new",
+          "camerad",
+          1,
+          false
+        ],
+        [
+          "vision-new",
+          "camerad",
+          2,
+          false
+        ],
+        [
+          "logger-socket",
+          7
+        ],
+        [
+          "logger-option",
+          17,
+          0
+        ],
+        [
+          "logger-bind",
+          "ipc:///tmp/logmessagecamera_runtime_4242"
+        ],
+        [
+          "spawn",
+          [
+            "$ROOT/binary"
+          ],
+          {
+            "PATH": "/owned/path",
+            "KEEP": "retained",
+            "OPENPILOT_PREFIX": "camera_runtime_4242",
+            "CK_SENSOR": "21252",
+            "CK_TRACE": "$ROOT/out/trace.jsonl",
+            "CK_START_GATE": "$ROOT/out/go",
+            "PARAMS_ROOT": "$ROOT/out/params",
+            "LD_PRELOAD": "/usr/lib/llvm-18/lib/clang/18/lib/linux/libclang_rt.asan-x86_64.so:$ROOT/fixture",
+            "LD_LIBRARY_PATH": "/usr/lib/llvm-18/lib/clang/18/lib/linux",
+            "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1",
+            "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+          }
+        ],
+        [
+          "vision-connect",
+          0,
+          false
+        ],
+        [
+          "vision-connect",
+          1,
+          false
+        ],
+        [
+          "vision-connect",
+          2,
+          false
+        ],
+        [
+          "poll"
+        ],
+        [
+          "poll"
+        ],
+        [
+          "kill"
+        ],
+        [
+          "wait"
+        ],
+        [
+          "logger-close"
+        ],
+        [
+          "context-term"
+        ],
+        [
+          "namespace-remove",
+          "/dev/shm/msgq_camera_runtime_4242"
+        ],
+        [
+          "endpoint-unlink",
+          "/tmp/logmessagecamera_runtime_4242"
+        ]
+      ],
+      "files": {
+        "go": "go",
+        "logs.json": "[\n  {\n    \"levelnum\": 20,\n    \"msg\": \"controlled logging\"\n  }\n]\n",
+        "messages.json": "[\n  [\n    {\n      \"wire\": \"000000001700000000000000020001007df7a433e29300004800000000000000000000000c0007000000000000000000b5b4de31e293000000000000050000000000000000000000f5db3631e2930000000000000000000000000000000000000000000000000000000000000000003e2c5df13c000000000300000008e2753c02000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\n      \"event\": {\n        \"wideRoadCameraState\": {\n          \"frameId\": 0,\n          \"encodeId\": 0,\n          \"timestampEof\": 162599708570805,\n          \"deprecated\": {\n            \"frameLength\": 0,\n            \"globalGain\": 0,\n            \"frameType\": \"unknown\",\n            \"lensPos\": 0,\n            \"lensSag\": 0.0,\n            \"lensErr\": 0.0,\n            \"lensTruePos\": 0.0,\n            \"recoverState\": 0\n          },\n          \"integLines\": 5,\n          \"timestampSof\": 162599697570805,\n          \"gain\": 0.0,\n          \"highConversionGain\": false,\n          \"measuredGreyFraction\": 0.0,\n          \"targetGreyFraction\": 0.125,\n          \"processingTime\": 0.029463373124599457,\n          \"frameIdSensor\": 0,\n          \"sensor\": \"os04c10\",\n          \"exposureValPercent\": 0.01500750333070755,\n          \"requestId\": 2\n        },\n        \"logMonoTime\": 162599738341245,\n        \"valid\": true\n      }\n    }\n  ],\n  [],\n  []\n]\n",
+        "params/camera_runtime_4242/IsOffroad": "1",
+        "run.json": "{\n  \"command\": [\n    \"$ROOT/binary\"\n  ],\n  \"environment\": {\n    \"OPENPILOT_PREFIX\": \"camera_runtime_4242\",\n    \"CK_SENSOR\": \"21252\",\n    \"CK_TRACE\": \"$ROOT/out/trace.jsonl\",\n    \"CK_START_GATE\": \"$ROOT/out/go\",\n    \"PARAMS_ROOT\": \"$ROOT/out/params\",\n    \"LD_PRELOAD\": \"/usr/lib/llvm-18/lib/clang/18/lib/linux/libclang_rt.asan-x86_64.so:$ROOT/fixture\",\n    \"LD_LIBRARY_PATH\": \"/usr/lib/llvm-18/lib/clang/18/lib/linux\",\n    \"ASAN_OPTIONS\": \"detect_leaks=0:abort_on_error=1\",\n    \"UBSAN_OPTIONS\": \"halt_on_error=1:print_stacktrace=1\"\n  },\n  \"signal\": null,\n  \"exit\": -9,\n  \"failure\": \"RuntimeError('controlled receive failure')\"\n}\n",
+        "stderr": "",
+        "stdout": "",
+        "trace.jsonl": "{\"op\":\"runtime-ready\"}\n",
+        "vision.json": "[\n  [],\n  [],\n  []\n]\n"
+      },
+      "stdout": ""
+    }
+  ]
+}

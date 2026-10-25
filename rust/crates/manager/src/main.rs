@@ -52,6 +52,7 @@ fn options() -> Result<Option<(Installation, Mode)>, Error> {
 }
 
 fn main() -> ExitCode {
+    let _runtime_logs = openpilot_logging::producer::RuntimeLogScope;
     use std::os::unix::process::ExitStatusExt;
     let result = options().and_then(|options| match options {
         None => Ok(None),

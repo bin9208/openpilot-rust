@@ -1,0 +1,20 @@
+{
+  "pass": true,
+  "publications": 8,
+  "native_executable": "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/openpilot-paramsd",
+  "source_equal": true,
+  "restart": true,
+  "persisted_packet_index": null,
+  "gps_service": "gpsLocation",
+  "signal": 15,
+  "exit": 0,
+  "shutdown_seconds": 0.11362788400003865,
+  "no_python_runtime": true,
+  "startup_poll": {
+    "completed_waits_before_input": 1,
+    "input_queued_before_release": true,
+    "later_wait_returns": "diagnostic only; not an inferred empty-update count",
+    "batches_queued_before_release": 8,
+    "exact_committed_pose_cursor": true
+  }
+}

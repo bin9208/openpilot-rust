@@ -1,0 +1,3768 @@
+{
+  "checker_sha256": "d132b2a343be1281fd8a5d80760bf8f931855fc085415466b2c122654adefed8",
+  "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "evidence": "existing current-C++/Rust proof; three current binary hashes independently revalidated for each report, not a fresh run",
+  "reports": {
+    "camera_lifecycle": {
+      "binaries": {
+        "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-18-camera-lifecycle-generators/full-camera-proof/camera_lifecycle-source": "8e7ef0c6db3b6f2370e19506c13a937a0c9cb2934e13998b4c4d072978e393a3",
+        "/home/fma1/rust/cache/cargo-target-retirement-296/debug/examples/camera_lifecycle": "17dff71714c7f184ee33ad18c526661bfc7b23f117779dff591e5e0a4075ab40",
+        "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-18-camera-lifecycle-generators/full-camera-proof/camera_lifecycle-fixture.so": "56db483c45b6e06c06bb70a5274373845e929f2da994c5bb5f46a3cde833008e"
+      },
+      "free_bytes": 193267023872,
+      "estimated_growth_bytes": 1073741824,
+      "cases": [
+        {
+          "name": "ar-mode-0-depth-1",
+          "passed": true,
+          "calls": 319,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 12,
+            "fences": 4,
+            "fds": 36,
+            "mappings": 30
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "ar-mode-0-depth-18",
+          "passed": true,
+          "calls": 975,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 29,
+            "fences": 21,
+            "fds": 53,
+            "mappings": 47
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "ar-mode-1-depth-1",
+          "passed": true,
+          "calls": 341,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 15,
+            "fences": 4,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "ar-mode-1-depth-18",
+          "passed": true,
+          "calls": 946,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 32,
+            "fences": 21,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "ar-mode-2-depth-1",
+          "passed": true,
+          "calls": 462,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 23,
+            "fences": 8,
+            "fds": 46,
+            "mappings": 40
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "ar-mode-2-depth-18",
+          "passed": true,
+          "calls": 1358,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 57,
+            "fences": 42,
+            "fds": 63,
+            "mappings": 57
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "ox-mode-0-depth-1",
+          "passed": true,
+          "calls": 331,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 12,
+            "fences": 4,
+            "fds": 36,
+            "mappings": 30
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "ox-mode-0-depth-18",
+          "passed": true,
+          "calls": 987,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 29,
+            "fences": 21,
+            "fds": 53,
+            "mappings": 47
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "ox-mode-1-depth-1",
+          "passed": true,
+          "calls": 353,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 15,
+            "fences": 4,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "ox-mode-1-depth-18",
+          "passed": true,
+          "calls": 958,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 32,
+            "fences": 21,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "ox-mode-2-depth-1",
+          "passed": true,
+          "calls": 474,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 23,
+            "fences": 8,
+            "fds": 46,
+            "mappings": 40
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "ox-mode-2-depth-18",
+          "passed": true,
+          "calls": 1370,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 57,
+            "fences": 42,
+            "fds": 63,
+            "mappings": 57
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "os-mode-0-depth-1",
+          "passed": true,
+          "calls": 324,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 12,
+            "fences": 4,
+            "fds": 36,
+            "mappings": 30
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "os-mode-0-depth-18",
+          "passed": true,
+          "calls": 980,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 29,
+            "fences": 21,
+            "fds": 53,
+            "mappings": 47
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "os-mode-1-depth-1",
+          "passed": true,
+          "calls": 346,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 15,
+            "fences": 4,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "os-mode-1-depth-18",
+          "passed": true,
+          "calls": 951,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 32,
+            "fences": 21,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "os-mode-2-depth-1",
+          "passed": true,
+          "calls": 2376,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716,
+              717
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 24,
+            "fences": 8,
+            "fds": 47,
+            "mappings": 41
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "os-mode-2-depth-18",
+          "passed": true,
+          "calls": 3272,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716,
+              717
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 58,
+            "fences": 42,
+            "fds": 64,
+            "mappings": 58
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "events-1-stale",
+          "passed": true,
+          "calls": 953,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 32,
+            "fences": 21,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "events-1-frame-gap",
+          "passed": true,
+          "calls": 1207,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 32,
+            "fences": 39,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "events-1-request-gap",
+          "passed": true,
+          "calls": 1207,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 32,
+            "fences": 39,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "events-1-invalid",
+          "passed": true,
+          "calls": 1195,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 32,
+            "fences": 36,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "error-1-sync:6",
+          "passed": true,
+          "calls": 1191,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 32,
+            "fences": 38,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "error-1-sync:1",
+          "passed": true,
+          "calls": 951,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 32,
+            "fences": 21,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "error-1-camera:271",
+          "passed": true,
+          "calls": 951,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 32,
+            "fences": 21,
+            "fds": 38,
+            "mappings": 32
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "events-2-stale",
+          "passed": true,
+          "calls": 3274,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716,
+              717
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 58,
+            "fences": 42,
+            "fds": 64,
+            "mappings": 58
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "events-2-frame-gap",
+          "passed": true,
+          "calls": 3674,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716,
+              717
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 58,
+            "fences": 78,
+            "fds": 64,
+            "mappings": 58
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "events-2-request-gap",
+          "passed": true,
+          "calls": 3674,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716,
+              717
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 58,
+            "fences": 78,
+            "fds": 64,
+            "mappings": 58
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "events-2-invalid",
+          "passed": true,
+          "calls": 3632,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716,
+              717
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 58,
+            "fences": 72,
+            "fds": 64,
+            "mappings": 58
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "error-2-sync:6",
+          "passed": true,
+          "calls": 3648,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716,
+              717
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 58,
+            "fences": 76,
+            "fds": 64,
+            "mappings": 58
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "error-2-sync:1",
+          "passed": true,
+          "calls": 3272,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716,
+              717
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 58,
+            "fences": 42,
+            "fds": 64,
+            "mappings": 58
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "error-2-camera:271",
+          "passed": true,
+          "calls": 3272,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716,
+              717
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 58,
+            "fences": 42,
+            "fds": 64,
+            "mappings": 58
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        }
+      ],
+      "failures": []
+    },
+    "cleanup": {
+      "binaries": {
+        "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-18-camera-lifecycle-generators/full-camera-proof/camera_lifecycle-source": "8e7ef0c6db3b6f2370e19506c13a937a0c9cb2934e13998b4c4d072978e393a3",
+        "/home/fma1/rust/cache/cargo-target-retirement-296/debug/examples/camera_lifecycle": "17dff71714c7f184ee33ad18c526661bfc7b23f117779dff591e5e0a4075ab40",
+        "/home/fma1/.codex/worktrees/native-build-tools-296/openpilot-rust/.analysis/scratch/2026-10-18-camera-lifecycle-generators/full-camera-proof/camera_lifecycle-fixture.so": "56db483c45b6e06c06bb70a5274373845e929f2da994c5bb5f46a3cde833008e"
+      },
+      "free_bytes": 192837079040,
+      "estimated_growth_bytes": 1073741824,
+      "cases": [
+        {
+          "name": "cleanup-disabled",
+          "passed": true,
+          "calls": 69,
+          "source_image_fds": {},
+          "native_image_fds": {},
+          "ownership": {
+            "native_closes_source_leaked_fds": [],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 1,
+            "sessions": 1,
+            "started": 0,
+            "links": 0,
+            "deactivation": 0,
+            "buffers": 5,
+            "fences": 0,
+            "fds": 10,
+            "mappings": 5
+          },
+          "native_extra_cleanup": [
+            {
+              "fd": 502,
+              "name": "camera:262",
+              "payload": "17fcffffde050000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:268",
+              "payload": "17fcffff00000000"
+            }
+          ],
+          "expected_source_abort": false
+        },
+        {
+          "name": "cleanup-probe-none",
+          "passed": true,
+          "calls": 49,
+          "source_image_fds": {},
+          "native_image_fds": {},
+          "ownership": {
+            "native_closes_source_leaked_fds": [],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 0,
+            "sessions": 0,
+            "started": 0,
+            "links": 0,
+            "deactivation": 0,
+            "buffers": 3,
+            "fences": 0,
+            "fds": 8,
+            "mappings": 3
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": false
+        },
+        {
+          "name": "cleanup-sensor-init",
+          "passed": true,
+          "calls": 69,
+          "source_image_fds": {},
+          "native_image_fds": {},
+          "ownership": {
+            "native_closes_source_leaked_fds": [],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 1,
+            "sessions": 1,
+            "started": 0,
+            "links": 0,
+            "deactivation": 0,
+            "buffers": 5,
+            "fences": 0,
+            "fds": 10,
+            "mappings": 5
+          },
+          "native_extra_cleanup": [
+            {
+              "fd": 502,
+              "name": "camera:262",
+              "payload": "17fcffffde050000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:268",
+              "payload": "17fcffff00000000"
+            }
+          ],
+          "expected_source_abort": false
+        },
+        {
+          "name": "cleanup-sensor-poke-1",
+          "passed": true,
+          "calls": 799,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 2,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 31,
+            "fences": 18,
+            "fds": 37,
+            "mappings": 31
+          },
+          "native_extra_cleanup": [
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b20f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a10f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a20f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a30f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a40f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a50f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a60f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a70f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a80f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a90f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ab0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ac0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ad0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ae0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000af0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b00f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b10f0000"
+            },
+            {
+              "fd": 503,
+              "name": "camera:260",
+              "payload": "17fcffffdf050000"
+            },
+            {
+              "fd": 506,
+              "name": "camera:260",
+              "payload": "17fcffffe2050000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:278",
+              "payload": "0100000017fcffff010000000000000013fcffff00000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:270",
+              "payload": "17fcffff13fcffff"
+            },
+            {
+              "fd": 503,
+              "name": "camera:262",
+              "payload": "17fcffffdf050000"
+            },
+            {
+              "fd": 506,
+              "name": "camera:262",
+              "payload": "17fcffffe2050000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0100769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0200769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0300769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0400769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0500769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0600769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0700769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0800769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0900769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0a00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0b00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0c00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0d00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0e00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0f00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1000769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1100769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1200769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:272",
+              "payload": "17fcffff13fcffff00000000000000000000000000000000"
+            }
+          ],
+          "expected_source_abort": false
+        },
+        {
+          "name": "cleanup-sensor-poke-2",
+          "passed": true,
+          "calls": 3012,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20,
+            "24": 21,
+            "25": 22,
+            "26": 23,
+            "27": 24,
+            "28": 25,
+            "29": 26,
+            "30": 27,
+            "31": 28,
+            "32": 29,
+            "33": 30,
+            "34": 31,
+            "35": 32,
+            "36": 33,
+            "37": 34,
+            "38": 35,
+            "39": 36
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716,
+              717
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 57,
+            "fences": 36,
+            "fds": 63,
+            "mappings": 57
+          },
+          "native_extra_cleanup": [
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c30f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c40f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a10f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a20f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a30f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a40f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a50f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a60f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a70f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a80f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a90f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aa0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ab0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ac0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ad0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ae0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000af0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b00f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b10f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b20f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b30f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b40f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b50f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b60f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b70f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b80f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b90f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ba0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bb0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bc0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bd0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000be0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bf0f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c00f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c10f0000"
+            },
+            {
+              "fd": 505,
+              "name": "sync:1",
+              "payload": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c20f0000"
+            },
+            {
+              "fd": 503,
+              "name": "camera:260",
+              "payload": "17fcffffdf050000"
+            },
+            {
+              "fd": 504,
+              "name": "camera:260",
+              "payload": "17fcffffe0050000"
+            },
+            {
+              "fd": 506,
+              "name": "camera:260",
+              "payload": "17fcffffe2050000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:278",
+              "payload": "0100000017fcffff010000000000000013fcffff00000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:270",
+              "payload": "17fcffff13fcffff"
+            },
+            {
+              "fd": 503,
+              "name": "camera:262",
+              "payload": "17fcffffdf050000"
+            },
+            {
+              "fd": 504,
+              "name": "camera:262",
+              "payload": "17fcffffe0050000"
+            },
+            {
+              "fd": 506,
+              "name": "camera:262",
+              "payload": "17fcffffe2050000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0100769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0200769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0300769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0400769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0500769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0600769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0700769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0800769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0900769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0a00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0b00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0c00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0d00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0e00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "0f00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1000769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1100769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1200769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1300769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1400769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1500769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1600769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1700769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1800769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1900769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1a00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1b00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1c00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1d00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1e00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "1f00769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "2000769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "2100769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "2200769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "2300769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:276",
+              "payload": "2400769800000000"
+            },
+            {
+              "fd": 501,
+              "name": "camera:272",
+              "payload": "17fcffff13fcffff00000000000000000000000000000000"
+            },
+            {
+              "fd": 504,
+              "name": "camera:264",
+              "payload": "000000000000000017fcffffe005000001000000000000000000000000000000"
+            }
+          ],
+          "expected_source_abort": false
+        },
+        {
+          "name": "cleanup-isp-acquire",
+          "passed": true,
+          "calls": 42,
+          "source_image_fds": {},
+          "native_image_fds": {},
+          "ownership": {
+            "native_closes_source_leaked_fds": [],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 1,
+            "sessions": 1,
+            "started": 0,
+            "links": 0,
+            "deactivation": 0,
+            "buffers": 5,
+            "fences": 0,
+            "fds": 10,
+            "mappings": 5
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": true
+        },
+        {
+          "name": "cleanup-phy-config",
+          "passed": true,
+          "calls": 72,
+          "source_image_fds": {},
+          "native_image_fds": {},
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              707,
+              708,
+              709
+            ],
+            "native_unmaps_source_leaked_config": []
+          },
+          "native_resource_cleanup": {
+            "devices": 3,
+            "sessions": 1,
+            "started": 0,
+            "links": 0,
+            "deactivation": 0,
+            "buffers": 11,
+            "fences": 0,
+            "fds": 17,
+            "mappings": 11
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": true
+        },
+        {
+          "name": "cleanup-raw-map",
+          "passed": true,
+          "calls": 154,
+          "source_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20
+          },
+          "native_image_fds": {
+            "4": 1,
+            "5": 2,
+            "6": 3,
+            "7": 4,
+            "8": 5,
+            "9": 6,
+            "10": 7,
+            "11": 8,
+            "12": 9,
+            "13": 10,
+            "14": 11,
+            "15": 12,
+            "16": 13,
+            "17": 14,
+            "18": 15,
+            "19": 16,
+            "20": 17,
+            "21": 18,
+            "22": 19,
+            "23": 20
+          },
+          "ownership": {
+            "native_closes_source_leaked_fds": [
+              706,
+              709,
+              710,
+              711,
+              712,
+              713,
+              714,
+              715,
+              716,
+              717
+            ],
+            "native_unmaps_source_leaked_config": [
+              709
+            ]
+          },
+          "native_resource_cleanup": {
+            "devices": 4,
+            "sessions": 1,
+            "started": 3,
+            "links": 1,
+            "deactivation": 1,
+            "buffers": 19,
+            "fences": 0,
+            "fds": 43,
+            "mappings": 37
+          },
+          "native_extra_cleanup": [],
+          "expected_source_abort": true
+        }
+      ],
+      "failures": []
+    }
+  }
+}

@@ -1,0 +1,922 @@
+[
+  {
+    "mode": "exact",
+    "fallback": false,
+    "error": null,
+    "stdout": "PASS: every Event/procLog field matches the original Python implementation for 22 smaps_rollup cache cycles\n",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n",
+      "1001\n",
+      "1002\n",
+      "1003\n",
+      "1004\n",
+      "1005\n",
+      "1006\n",
+      "1007\n",
+      "1008\n",
+      "1009\n",
+      "1010\n",
+      "1011\n",
+      "1012\n",
+      "1013\n",
+      "1014\n",
+      "1015\n",
+      "1016\n",
+      "1017\n",
+      "1018\n",
+      "1019\n",
+      "1020\n",
+      "1021\n",
+      "EOF"
+    ],
+    "waits": [
+      10
+    ]
+  },
+  {
+    "mode": "exact",
+    "fallback": true,
+    "error": null,
+    "stdout": "PASS: every Event/procLog field matches the original Python implementation for 22 smaps cache cycles\n",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n",
+      "1001\n",
+      "1002\n",
+      "1003\n",
+      "1004\n",
+      "1005\n",
+      "1006\n",
+      "1007\n",
+      "1008\n",
+      "1009\n",
+      "1010\n",
+      "1011\n",
+      "1012\n",
+      "1013\n",
+      "1014\n",
+      "1015\n",
+      "1016\n",
+      "1017\n",
+      "1018\n",
+      "1019\n",
+      "1020\n",
+      "1021\n",
+      "EOF"
+    ],
+    "waits": [
+      10
+    ]
+  },
+  {
+    "mode": "queue-underscore",
+    "fallback": false,
+    "error": null,
+    "stdout": "PASS: every Event/procLog field matches the original Python implementation for 22 smaps_rollup cache cycles\n",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n",
+      "1001\n",
+      "1002\n",
+      "1003\n",
+      "1004\n",
+      "1005\n",
+      "1006\n",
+      "1007\n",
+      "1008\n",
+      "1009\n",
+      "1010\n",
+      "1011\n",
+      "1012\n",
+      "1013\n",
+      "1014\n",
+      "1015\n",
+      "1016\n",
+      "1017\n",
+      "1018\n",
+      "1019\n",
+      "1020\n",
+      "1021\n",
+      "EOF"
+    ],
+    "waits": [
+      10
+    ]
+  },
+  {
+    "mode": "queue-underscore",
+    "fallback": true,
+    "error": null,
+    "stdout": "PASS: every Event/procLog field matches the original Python implementation for 22 smaps cache cycles\n",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n",
+      "1001\n",
+      "1002\n",
+      "1003\n",
+      "1004\n",
+      "1005\n",
+      "1006\n",
+      "1007\n",
+      "1008\n",
+      "1009\n",
+      "1010\n",
+      "1011\n",
+      "1012\n",
+      "1013\n",
+      "1014\n",
+      "1015\n",
+      "1016\n",
+      "1017\n",
+      "1018\n",
+      "1019\n",
+      "1020\n",
+      "1021\n",
+      "EOF"
+    ],
+    "waits": [
+      10
+    ]
+  },
+  {
+    "mode": "wrong-queue",
+    "fallback": false,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      }
+    ],
+    "writes": [],
+    "waits": []
+  },
+  {
+    "mode": "wrong-queue",
+    "fallback": true,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      }
+    ],
+    "writes": [],
+    "waits": []
+  },
+  {
+    "mode": "invalid-queue",
+    "fallback": false,
+    "error": "ValueError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      }
+    ],
+    "writes": [],
+    "waits": []
+  },
+  {
+    "mode": "invalid-queue",
+    "fallback": true,
+    "error": "ValueError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      }
+    ],
+    "writes": [],
+    "waits": []
+  },
+  {
+    "mode": "queue-child-failure",
+    "fallback": false,
+    "error": "CalledProcessError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      }
+    ],
+    "writes": [],
+    "waits": []
+  },
+  {
+    "mode": "queue-child-failure",
+    "fallback": true,
+    "error": "CalledProcessError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      }
+    ],
+    "writes": [],
+    "waits": []
+  },
+  {
+    "mode": "size-zero",
+    "fallback": false,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "size-zero",
+    "fallback": true,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "size-limit",
+    "fallback": false,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "size-limit",
+    "fallback": true,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "partial-prefix",
+    "fallback": false,
+    "error": "KjException",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "partial-prefix",
+    "fallback": true,
+    "error": "KjException",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "truncated-payload",
+    "fallback": false,
+    "error": "ValueError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "truncated-payload",
+    "fallback": true,
+    "error": "ValueError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "wrong-valid",
+    "fallback": false,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "wrong-valid",
+    "fallback": true,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "early-cache",
+    "fallback": false,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n",
+      "1001\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "early-cache",
+    "fallback": true,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n",
+      "1001\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "missing-frame",
+    "fallback": false,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n",
+      "1001\n",
+      "1002\n",
+      "1003\n",
+      "1004\n",
+      "1005\n",
+      "1006\n",
+      "1007\n",
+      "1008\n",
+      "1009\n",
+      "1010\n",
+      "1011\n",
+      "1012\n",
+      "1013\n",
+      "1014\n",
+      "1015\n",
+      "1016\n",
+      "1017\n",
+      "1018\n",
+      "1019\n",
+      "1020\n",
+      "1021\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "missing-frame",
+    "fallback": true,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n",
+      "1001\n",
+      "1002\n",
+      "1003\n",
+      "1004\n",
+      "1005\n",
+      "1006\n",
+      "1007\n",
+      "1008\n",
+      "1009\n",
+      "1010\n",
+      "1011\n",
+      "1012\n",
+      "1013\n",
+      "1014\n",
+      "1015\n",
+      "1016\n",
+      "1017\n",
+      "1018\n",
+      "1019\n",
+      "1020\n",
+      "1021\n"
+    ],
+    "waits": []
+  },
+  {
+    "mode": "extra-frame",
+    "fallback": false,
+    "error": null,
+    "stdout": "PASS: every Event/procLog field matches the original Python implementation for 22 smaps_rollup cache cycles\n",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n",
+      "1001\n",
+      "1002\n",
+      "1003\n",
+      "1004\n",
+      "1005\n",
+      "1006\n",
+      "1007\n",
+      "1008\n",
+      "1009\n",
+      "1010\n",
+      "1011\n",
+      "1012\n",
+      "1013\n",
+      "1014\n",
+      "1015\n",
+      "1016\n",
+      "1017\n",
+      "1018\n",
+      "1019\n",
+      "1020\n",
+      "1021\n",
+      "EOF"
+    ],
+    "waits": [
+      10
+    ]
+  },
+  {
+    "mode": "extra-frame",
+    "fallback": true,
+    "error": null,
+    "stdout": "PASS: every Event/procLog field matches the original Python implementation for 22 smaps cache cycles\n",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n",
+      "1001\n",
+      "1002\n",
+      "1003\n",
+      "1004\n",
+      "1005\n",
+      "1006\n",
+      "1007\n",
+      "1008\n",
+      "1009\n",
+      "1010\n",
+      "1011\n",
+      "1012\n",
+      "1013\n",
+      "1014\n",
+      "1015\n",
+      "1016\n",
+      "1017\n",
+      "1018\n",
+      "1019\n",
+      "1020\n",
+      "1021\n",
+      "EOF"
+    ],
+    "waits": [
+      10
+    ]
+  },
+  {
+    "mode": "exit9",
+    "fallback": false,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n",
+      "1001\n",
+      "1002\n",
+      "1003\n",
+      "1004\n",
+      "1005\n",
+      "1006\n",
+      "1007\n",
+      "1008\n",
+      "1009\n",
+      "1010\n",
+      "1011\n",
+      "1012\n",
+      "1013\n",
+      "1014\n",
+      "1015\n",
+      "1016\n",
+      "1017\n",
+      "1018\n",
+      "1019\n",
+      "1020\n",
+      "1021\n",
+      "EOF"
+    ],
+    "waits": [
+      10
+    ]
+  },
+  {
+    "mode": "exit9",
+    "fallback": true,
+    "error": "AssertionError",
+    "stdout": "",
+    "calls": [
+      {
+        "queue": [
+          "--queue-size"
+        ]
+      },
+      {
+        "argv": [
+          "BINARY",
+          "PROC_ROOT",
+          "100",
+          "4096"
+        ],
+        "stdin": -1,
+        "stdout": -1
+      }
+    ],
+    "writes": [
+      "1000\n",
+      "1001\n",
+      "1002\n",
+      "1003\n",
+      "1004\n",
+      "1005\n",
+      "1006\n",
+      "1007\n",
+      "1008\n",
+      "1009\n",
+      "1010\n",
+      "1011\n",
+      "1012\n",
+      "1013\n",
+      "1014\n",
+      "1015\n",
+      "1016\n",
+      "1017\n",
+      "1018\n",
+      "1019\n",
+      "1020\n",
+      "1021\n",
+      "EOF"
+    ],
+    "waits": [
+      10
+    ]
+  }
+]

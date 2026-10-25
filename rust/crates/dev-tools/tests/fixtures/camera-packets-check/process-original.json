@@ -1,0 +1,1003 @@
+{
+  "checker_sha256": "2ef0b8e43a1f5337452b5a23f88ed461a7788a331bb4571444b1da91c526a01d",
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "inputs": [
+    {
+      "op": "layout"
+    },
+    {
+      "op": "poke",
+      "request": -1
+    },
+    {
+      "op": "i2c",
+      "words": false,
+      "opcode": 4294967295,
+      "registers": []
+    }
+  ],
+  "inputs_json": [
+    "{\"op\": \"layout\"}",
+    "{\"op\": \"poke\", \"request\": -1}",
+    "{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}"
+  ],
+  "cases": [
+    {
+      "name": "pass",
+      "error": null,
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"compared_bytes\": 5, \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\", \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\", \"scope\": \"Complete zero-initialized packet/payload bytes from original methods; controlled memory handles; no live kernel/device claim\"}\n",
+      "output_kind": "directory",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"compared_bytes\": 5,\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\",\n  \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\",\n  \"scope\": \"Complete zero-initialized packet/payload bytes from original methods; controlled memory handles; no live kernel/device claim\"\n}\n",
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "old-failure",
+      "error": null,
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"compared_bytes\": 5, \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\", \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\", \"scope\": \"Complete zero-initialized packet/payload bytes from original methods; controlled memory handles; no live kernel/device claim\"}\n",
+      "output_kind": "directory",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"compared_bytes\": 5,\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\",\n  \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\",\n  \"scope\": \"Complete zero-initialized packet/payload bytes from original methods; controlled memory handles; no live kernel/device claim\"\n}\n",
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n",
+        "failure.json": "old failure\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "mismatch",
+      "error": {
+        "type": "AssertionError",
+        "message": "packet mismatch at 1, poke"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 9], [3]]\n[[4, 5]]\n",
+        "failure.json": "{\n  \"index\": 1,\n  \"case\": {\n    \"op\": \"poke\",\n    \"request\": -1\n  },\n  \"source\": [\n    [\n      1,\n      2\n    ],\n    [\n      3\n    ]\n  ],\n  \"native\": [\n    [\n      1,\n      9\n    ],\n    [\n      3\n    ]\n  ]\n}",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "key-mismatch",
+      "error": {
+        "type": "AssertionError",
+        "message": "packet mismatch at 0, layout"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{\"y\":1}\n[[1, 2], [3]]\n[[4, 5]]\n",
+        "failure.json": "{\n  \"index\": 0,\n  \"case\": {\n    \"op\": \"layout\"\n  },\n  \"source\": {\n    \"x\": 1\n  },\n  \"native\": {\n    \"y\": 1\n  }\n}",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{\"x\":1}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "source-count",
+      "error": {
+        "type": "AssertionError",
+        "message": ""
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n"
+      }
+    },
+    {
+      "name": "native-count",
+      "error": {
+        "type": "AssertionError",
+        "message": ""
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 2], [3]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "source-json",
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 1 (char 0)"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\ninvalid\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "native-json",
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 1 (char 0)"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\ninvalid\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "source-exit",
+      "error": {
+        "type": "CalledProcessError",
+        "message": "Command '['$ROOT/reference']' returned non-zero exit status 7."
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "native-exit",
+      "error": {
+        "type": "CalledProcessError",
+        "message": "Command '['$ROOT/native']' returned non-zero exit status 7."
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "source-spawn",
+      "error": {
+        "type": "FileNotFoundError",
+        "message": "owned spawn failure"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n"
+      }
+    },
+    {
+      "name": "native-spawn",
+      "error": {
+        "type": "FileNotFoundError",
+        "message": "owned spawn failure"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n"
+      }
+    },
+    {
+      "name": "source-timeout",
+      "error": {
+        "type": "TimeoutExpired",
+        "message": "Command '['$ROOT/reference']' timed out after 120 seconds"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n"
+      }
+    },
+    {
+      "name": "native-timeout",
+      "error": {
+        "type": "TimeoutExpired",
+        "message": "Command '['$ROOT/native']' timed out after 120 seconds"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n"
+      }
+    },
+    {
+      "name": "source-utf8",
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf8' codec can't decode byte 0xff in position 0: bad"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n"
+      }
+    },
+    {
+      "name": "native-utf8",
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf8' codec can't decode byte 0xff in position 0: bad"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n"
+      }
+    },
+    {
+      "name": "source-stderr-utf8",
+      "error": {
+        "type": "UnicodeDecodeError",
+        "message": "'utf8' codec can't decode byte 0xff in position 0: bad"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n"
+      }
+    },
+    {
+      "name": "bad-source-runner",
+      "error": {
+        "type": "ValueError",
+        "message": "No closing quotation"
+      },
+      "calls": [],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n"
+      }
+    },
+    {
+      "name": "bad-native-runner",
+      "error": {
+        "type": "ValueError",
+        "message": "No closing quotation"
+      },
+      "calls": [],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n"
+      }
+    },
+    {
+      "name": "runner-words",
+      "error": null,
+      "calls": [
+        {
+          "argv": [
+            "one",
+            "two three",
+            "",
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "four",
+            "five six",
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"compared_bytes\": 5, \"source_command\": [\"one\", \"two three\", \"\", \"$ROOT/reference\"], \"native_command\": [\"four\", \"five six\", \"$ROOT/native\"], \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\", \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\", \"scope\": \"Complete zero-initialized packet/payload bytes from original methods; controlled memory handles; no live kernel/device claim\"}\n",
+      "output_kind": "directory",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"compared_bytes\": 5,\n  \"source_command\": [\n    \"one\",\n    \"two three\",\n    \"\",\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"four\",\n    \"five six\",\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\",\n  \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\",\n  \"scope\": \"Complete zero-initialized packet/payload bytes from original methods; controlled memory handles; no live kernel/device claim\"\n}\n",
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "output-file",
+      "error": {
+        "type": "FileExistsError",
+        "message": "[Errno 17] File exists: '$ROOT/out'"
+      },
+      "calls": [],
+      "stdout": "",
+      "output_kind": "file",
+      "files": {}
+    },
+    {
+      "name": "inputs-directory",
+      "error": {
+        "type": "IsADirectoryError",
+        "message": "[Errno 21] Is a directory: '$ROOT/out/inputs.jsonl'"
+      },
+      "calls": [],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "inputs.jsonl": "directory"
+      }
+    },
+    {
+      "name": "source-stdout-directory",
+      "error": {
+        "type": "IsADirectoryError",
+        "message": "[Errno 21] Is a directory: '$ROOT/out/batch-000.source.jsonl'"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "directory"
+      }
+    },
+    {
+      "name": "source-stderr-directory",
+      "error": {
+        "type": "IsADirectoryError",
+        "message": "[Errno 21] Is a directory: '$ROOT/out/batch-000.source.stderr'"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "directory",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "native-stdout-directory",
+      "error": {
+        "type": "IsADirectoryError",
+        "message": "[Errno 21] Is a directory: '$ROOT/out/batch-000.native.jsonl'"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.jsonl": "directory",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "native-stderr-directory",
+      "error": {
+        "type": "IsADirectoryError",
+        "message": "[Errno 21] Is a directory: '$ROOT/out/batch-000.native.stderr'"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "directory",
+        "batch-000.native.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "failure-directory",
+      "error": {
+        "type": "IsADirectoryError",
+        "message": "[Errno 21] Is a directory: '$ROOT/out/failure.json'"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 9], [3]]\n[[4, 5]]\n",
+        "failure.json": "directory",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "report-directory",
+      "error": {
+        "type": "IsADirectoryError",
+        "message": "[Errno 21] Is a directory: '$ROOT/out/report.json'"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "report.json": "directory",
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "hash-source-missing",
+      "error": {
+        "type": "FileNotFoundError",
+        "message": "[Errno 2] No such file or directory: '$ROOT/reference'"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "hash-native-missing",
+      "error": {
+        "type": "FileNotFoundError",
+        "message": "[Errno 2] No such file or directory: '$ROOT/native'"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "length-scalar",
+      "error": {
+        "type": "TypeError",
+        "message": "object of type 'int' has no len()"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[1]\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[1]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "length-text",
+      "error": null,
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"compared_bytes\": 4, \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\", \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\", \"scope\": \"Complete zero-initialized packet/payload bytes from original methods; controlled memory handles; no live kernel/device claim\"}\n",
+      "output_kind": "directory",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"compared_bytes\": 4,\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\",\n  \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\",\n  \"scope\": \"Complete zero-initialized packet/payload bytes from original methods; controlled memory handles; no live kernel/device claim\"\n}\n",
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n\"\u00e9\ud83d\ude00\"\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n\"\u00e9\ud83d\ude00\"\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "length-object",
+      "error": null,
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"compared_bytes\": 5, \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\", \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\", \"scope\": \"Complete zero-initialized packet/payload bytes from original methods; controlled memory handles; no live kernel/device claim\"}\n",
+      "output_kind": "directory",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"compared_bytes\": 5,\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\",\n  \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\",\n  \"scope\": \"Complete zero-initialized packet/payload bytes from original methods; controlled memory handles; no live kernel/device claim\"\n}\n",
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n{\"\u00e9\ud83d\ude00\":1,\"a\":2}\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n{\"\u00e9\ud83d\ude00\":1,\"a\":2}\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "splitlines",
+      "error": null,
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"compared_bytes\": 5, \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\", \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\", \"scope\": \"Complete zero-initialized packet/payload bytes from original methods; controlled memory handles; no live kernel/device claim\"}\n",
+      "output_kind": "directory",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"compared_bytes\": 5,\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\",\n  \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\",\n  \"scope\": \"Complete zero-initialized packet/payload bytes from original methods; controlled memory handles; no live kernel/device claim\"\n}\n",
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n[[1, 2], [3]]\n[[4, 5]]\n"
+      }
+    },
+    {
+      "name": "surrogate",
+      "error": {
+        "type": "AssertionError",
+        "message": "packet mismatch at 1, poke"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "layout\npoke -1\ni2c 0 -1 0 \n",
+          "timeout": 120
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+          "timeout": 120
+        }
+      ],
+      "stdout": "",
+      "output_kind": "directory",
+      "files": {
+        "batch-000.source.stderr": "source stderr\n",
+        "batch-000.native.stderr": "native stderr\n",
+        "batch-000.native.jsonl": "{}\n\"x\"\n[[4, 5]]\n",
+        "failure.json": "{\n  \"index\": 1,\n  \"case\": {\n    \"op\": \"poke\",\n    \"request\": -1\n  },\n  \"source\": \"\\ud800\",\n  \"native\": \"x\"\n}",
+        "inputs.jsonl": "{\"op\": \"layout\"}\n{\"op\": \"poke\", \"request\": -1}\n{\"op\": \"i2c\", \"words\": false, \"opcode\": 4294967295, \"registers\": []}\n",
+        "batch-000.source.jsonl": "{}\n\"\\ud800\"\n[[4, 5]]\n"
+      }
+    }
+  ]
+}

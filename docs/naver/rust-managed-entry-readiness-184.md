@@ -75,3 +75,13 @@ and included in PR 230. The new hosted gate will exercise it with the current
 composition. The hosted failure lacks the queue-state capture needed to prove
 its exact interleaving independently; the deterministic reproduction establishes
 the fixture hazard, rather than identifying that missing hosted observation.
+
+## Native checker migration (#296, 2026-10-19)
+
+The maintained command is now `check-managed-entry --readiness CHILD COLLECTOR
+PARAMS_BINDING OUTPUT`; build and scope are documented in
+[managed-entry validation](../rust-port/managed-entry-validation.md). It retains
+this original source/reset-error scenario and real subscriber-before-publisher
+queue reset using an owned local Unix socket gate. The descriptions above record
+the independent original Python reproduction, rather than a current interpreter
+requirement. Normal boot, recording and upload acceptance remain user-owned.

@@ -27,3 +27,12 @@ serialport = { version = "=4.10.1", default-features = false }
 signal-hook = "0.3"
 thiserror = "2"
 ureq = { version = "=3.4.2", features = ["gzip", "brotli", "rustls"] }
+
+[dev-dependencies]
+tempfile = "3"
+zmq = "=0.10.0"
+
+[[test]]
+name = "assistance_log_lifetime"
+path = "tests/assistance_log_lifetime/main.rs"
+harness = false

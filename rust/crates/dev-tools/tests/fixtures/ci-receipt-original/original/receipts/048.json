@@ -1,0 +1,52 @@
+{
+  "after": [
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVy"
+    },
+    {
+      "mode": 33188,
+      "path_b64": "cnVubmVyL3N0YWdlLmpzb24=",
+      "sha256": "1b1346ca784cf6257933ee212746f20713a37a51b5dce92ee2fc796619575ce5",
+      "size": 28
+    }
+  ],
+  "argv_b64": [
+    "L3Vzci9iaW4vcHl0aG9u",
+    "LVA=",
+    "LWM=",
+    "aW1wb3J0IGpzb24sc3lzOyBwcmludChqc29uLmxvYWQob3BlbihzeXMuYXJndlsxXSkpWyJwcmVmaXgiXSk=",
+    "L2hvbWUvcnVubmVyL3dvcmsvX3RlbXAvY2ktcmVjZWlwdC1zb3VyY2Uvb3JpZ2luYWwvd29yay8wNDgtcHJlZml4LXVudXNlZC1ub25maW5pdGUvcnVubmVyL3N0YWdlLmpzb24="
+  ],
+  "before": [
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVy"
+    },
+    {
+      "mode": 33188,
+      "path_b64": "cnVubmVyL3N0YWdlLmpzb24=",
+      "sha256": "1b1346ca784cf6257933ee212746f20713a37a51b5dce92ee2fc796619575ce5",
+      "size": 28
+    }
+  ],
+  "boundary_nonstring_prefix": false,
+  "caller": "13",
+  "capture_runner_b64": "L2hvbWUvcnVubmVyL3dvcmsvX3RlbXAvY2ktcmVjZWlwdC1zb3VyY2Uvb3JpZ2luYWwvd29yay8wNDgtcHJlZml4LXVudXNlZC1ub25maW5pdGUvcnVubmVy",
+  "env": "",
+  "error_class": null,
+  "glob_order_b64": [],
+  "name": "prefix-unused-nonfinite",
+  "op": "prefix",
+  "setup": {
+    "entries": [],
+    "input_relative": "stage.json",
+    "kind": "file",
+    "payload_b64": "eyJwcmVmaXgiOiJvayIsInVudXNlZCI6TmFOfQ==",
+    "raw_root": false
+  },
+  "status": 0,
+  "stderr_b64": "",
+  "stdout_b64": "b2sK",
+  "unchanged": true
+}

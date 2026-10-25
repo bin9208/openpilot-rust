@@ -11,6 +11,14 @@ impl Sensor {
         }
     }
 }
+/// Wire summary for non-three standard-deviation vectors. No missing axes are
+/// fabricated: these data may reject at min/norm policy, but cannot rotate.
+#[derive(Clone, Copy, Debug)]
+pub enum CameraStd {
+    Empty,
+    Three([f64; 3]),
+    Other { minimum: f64, norm: f64, first: f64 },
+}
 #[derive(Clone, Copy, Debug)]
 pub enum Input {
     Sensor {
@@ -19,8 +27,24 @@ pub enum Input {
         secondary: bool,
         values: [f64; 3],
     },
+    // Retain missing measurements until initialization/time/source policy admits
+    // the event. This tag never supplies replacement vector components.
+    TruncatedSensor {
+        time: f64,
+        secondary: bool,
+    },
     Speed(f64),
     Calibration(Option<[f64; 3]>),
+    MalformedCalibration {
+        out_of_bounds: bool,
+    },
+    IrregularCamera {
+        time: f64,
+        rotation: Option<[f64; 3]>,
+        translation: Option<[f64; 3]>,
+        rotation_std: CameraStd,
+        translation_std: CameraStd,
+    },
     Camera {
         time: f64,
         rotation: [f64; 3],

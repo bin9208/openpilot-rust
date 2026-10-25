@@ -1,0 +1,859 @@
+[
+  {
+    "name": "input-list-password-multi",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        "abc",
+        "de"
+      ],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": [
+            "abc",
+            "de"
+          ],
+          "cursor": 2,
+          "offset": 0,
+          "show_cursor": false,
+          "display": "\u2022de"
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": [
+            "abc",
+            "de"
+          ],
+          "cursor": 2,
+          "offset": 0,
+          "show_cursor": false,
+          "display": "\u2022de"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "de5f4db4081f8485cad7ea6c87eebdab7dc03baee7d92f27bd85c9186dde9c0c"
+  },
+  {
+    "name": "input-list-password-numeric",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        17
+      ],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "input-list-password-nested",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        [
+          "a"
+        ]
+      ],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "input-list-password-dict",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        {}
+      ],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "input-list-password-surrogate",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        "\ud800"
+      ],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "input-list-password-falsy",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        false
+      ],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "input-list-password-empty-string",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        ""
+      ],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": [
+            ""
+          ],
+          "cursor": 1,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": [
+            ""
+          ],
+          "cursor": 1,
+          "offset": 0,
+          "show_cursor": false,
+          "display": ""
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "e1c87cee0601dd839518f40871469a6099381ba4fcf2bc439f58b10422aedd8b"
+  },
+  {
+    "name": "input-list-delete",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        "a",
+        "bb",
+        "c"
+      ],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "key": 259
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": [
+            "a",
+            "bb"
+          ],
+          "cursor": 2,
+          "offset": 0,
+          "show_cursor": true,
+          "display": "\u2022bb"
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": [
+            "a",
+            "bb"
+          ],
+          "cursor": 2,
+          "offset": 0,
+          "show_cursor": true,
+          "display": "\u2022bb"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "7c03cb63eca1b77050789ca0e4ce57e3fdd713e670a320ee2e47e932a7e58b75"
+  },
+  {
+    "name": "input-list-max-ignore-character",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        "a"
+      ],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": true,
+        "max": 1
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "character",
+          "text": "x"
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": [
+            "a"
+          ],
+          "cursor": 1,
+          "offset": 0,
+          "show_cursor": false,
+          "display": "a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "text": [
+            "a"
+          ],
+          "cursor": 1,
+          "offset": 0,
+          "show_cursor": false,
+          "display": "a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "9f2d89ee7a6393c5917413dcbcf96070039652a5a00c9c097ba2162e88864aa8"
+  },
+  {
+    "name": "input-list-add-character",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        "a"
+      ],
+      "frames": 2,
+      "props": {
+        "show_touches": true,
+        "password": true,
+        "max": 2
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "character",
+          "text": "x"
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "input-list-masked-after-delay",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": [
+        17
+      ],
+      "frames": 32,
+      "props": {
+        "show_touches": true,
+        "password": true
+      },
+      "actions": []
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "confirm-value-NoneType-0",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "OK",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "text",
+          "text": null
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "11281445d099236a4950d9e2fa5ca4802170042e040a44631f0024d8abbc9c7f"
+  },
+  {
+    "name": "confirm-value-NoneType-1",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "OK",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 1,
+          "operation": "text",
+          "text": null
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "11281445d099236a4950d9e2fa5ca4802170042e040a44631f0024d8abbc9c7f"
+  },
+  {
+    "name": "confirm-value-bool-0",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "OK",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "text",
+          "text": false
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "11281445d099236a4950d9e2fa5ca4802170042e040a44631f0024d8abbc9c7f"
+  },
+  {
+    "name": "confirm-value-bool-1",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "OK",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 1,
+          "operation": "text",
+          "text": false
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "11281445d099236a4950d9e2fa5ca4802170042e040a44631f0024d8abbc9c7f"
+  },
+  {
+    "name": "confirm-value-list-0",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "OK",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "text",
+          "text": []
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "confirm-value-list-1",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "OK",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 1,
+          "operation": "text",
+          "text": []
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "confirm-value-dict-0",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "OK",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "text",
+          "text": {}
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "confirm-value-dict-1",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "OK",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 1,
+          "operation": "text",
+          "text": {}
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "confirm-value-int-0",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "OK",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "text",
+          "text": 17
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "confirm-value-int-1",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "confirm",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 2160,
+        "height": 1080
+      },
+      "text": "OK",
+      "frames": 2,
+      "props": {},
+      "actions": [
+        {
+          "frame": 1,
+          "operation": "text",
+          "text": 17
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "cases": 16,
+  "outputs": 38912,
+  "files": {
+    "random-original.json.gz": {
+      "sha256": "9be49c9a813b8468765be61ad2cd72fcd6601b0589326c9dbcd6c863d2b7157e",
+      "decoded_sha256": "857601180c092f314d31b60298565aa8469003b53d5566cdec927fb8b5180c1f",
+      "bytes": 372981
+    }
+  }
+}

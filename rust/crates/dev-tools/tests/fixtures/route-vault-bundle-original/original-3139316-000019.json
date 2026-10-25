@@ -1,0 +1,224 @@
+{
+  "copied_script": {
+    "bytes_hex": "2f746d702f6f70656e70696c6f742d63692e6c50786b6f582f2e746d706d6b686137552f7265706f2f746f6f6c732f636172726f745f726f7574655f7661756c742f6275696c645f62756e646c652e7079",
+    "utf8": "/tmp/openpilot-ci.lPxkoX/.tmpmkha7U/repo/tools/carrot_route_vault/build_bundle.py"
+  },
+  "destination_after": {
+    "entries": [
+      {
+        "kind": "directory",
+        "mode": 16877,
+        "relative_path": {
+          "bytes_hex": "",
+          "utf8": ""
+        }
+      },
+      {
+        "kind": "directory",
+        "mode": 16877,
+        "relative_path": {
+          "bytes_hex": "6f70656e6462635f7265706f",
+          "utf8": "opendbc_repo"
+        }
+      },
+      {
+        "kind": "directory",
+        "mode": 16877,
+        "relative_path": {
+          "bytes_hex": "6f70656e6462635f7265706f2f6f70656e646263",
+          "utf8": "opendbc_repo/opendbc"
+        }
+      },
+      {
+        "kind": "directory",
+        "mode": 16877,
+        "relative_path": {
+          "bytes_hex": "6f70656e6462635f7265706f2f6f70656e6462632f646263",
+          "utf8": "opendbc_repo/opendbc/dbc"
+        }
+      },
+      {
+        "bytes_hex": "646263",
+        "kind": "file",
+        "mode": 33188,
+        "relative_path": {
+          "bytes_hex": "6f70656e6462635f7265706f2f6f70656e6462632f6462632f612e646263",
+          "utf8": "opendbc_repo/opendbc/dbc/a.dbc"
+        },
+        "sha256": "e93f0a474e01c65ef2b56ca0a310de856f5d95a1be13f63bf4bd1c25c1ce3596"
+      },
+      {
+        "kind": "directory",
+        "mode": 16877,
+        "relative_path": {
+          "bytes_hex": "6f70656e70696c6f74",
+          "utf8": "openpilot"
+        }
+      },
+      {
+        "kind": "directory",
+        "mode": 16877,
+        "relative_path": {
+          "bytes_hex": "6f70656e70696c6f742f63657265616c",
+          "utf8": "openpilot/cereal"
+        }
+      },
+      {
+        "bytes_hex": "736368656d61",
+        "kind": "file",
+        "mode": 33188,
+        "relative_path": {
+          "bytes_hex": "6f70656e70696c6f742f63657265616c2f612e6361706e70",
+          "utf8": "openpilot/cereal/a.capnp"
+        },
+        "sha256": "df0ad6e43880f09c90ebf95f19110178aba6890df0010ebda7485029e2b543b4"
+      },
+      {
+        "bytes_hex": "6e6f6e6578697374656e742d746172676574",
+        "kind": "file",
+        "mode": 33188,
+        "relative_path": {
+          "bytes_hex": "6f70656e70696c6f742f63657265616c2f6c696e6b2e7079",
+          "utf8": "openpilot/cereal/link.py"
+        },
+        "sha256": "c6e8842448350ec8711031ff5b722d01367d7f613f1c33122a773d03435a9547"
+      },
+      {
+        "bytes_hex": "7370616365",
+        "kind": "file",
+        "mode": 33188,
+        "relative_path": {
+          "bytes_hex": "6f70656e70696c6f742f63657265616c2f7370616365206e616d652e7079",
+          "utf8": "openpilot/cereal/space name.py"
+        },
+        "sha256": "3f49dbbfe051cb20cc038923424fedf8d18307cc805e1520e4168e9360e2eb38"
+      },
+      {
+        "kind": "directory",
+        "mode": 16877,
+        "relative_path": {
+          "bytes_hex": "6f70656e70696c6f742f636f6d6d6f6e",
+          "utf8": "openpilot/common"
+        }
+      },
+      {
+        "bytes_hex": "636f6d6d69747465640d0a00ff",
+        "kind": "file",
+        "mode": 33188,
+        "relative_path": {
+          "bytes_hex": "6f70656e70696c6f742f636f6d6d6f6e2f66696c7465725f73696d706c652e7079",
+          "utf8": "openpilot/common/filter_simple.py"
+        },
+        "sha256": "1c90c8b16732b15973fa2cacb78c7ee0860825be9e4d83429707f69e4413b23f"
+      },
+      {
+        "bytes_hex": "66697865642072616461722e7079000a",
+        "kind": "file",
+        "mode": 33188,
+        "relative_path": {
+          "bytes_hex": "72616461722e7079",
+          "utf8": "radar.py"
+        },
+        "sha256": "1ac6535a55320f7447bb5c45ebd3692bb0534b707ff5335e24d5cea8e01f8bf8"
+      },
+      {
+        "bytes_hex": "6669786564207365727665722e7079000a",
+        "kind": "file",
+        "mode": 33188,
+        "relative_path": {
+          "bytes_hex": "7365727665722e7079",
+          "utf8": "server.py"
+        },
+        "sha256": "ada9877a40b61e24c300a3ec918a9623066b9b0ccc9c8142f6e97a5715ff79f2"
+      },
+      {
+        "bytes_hex": "6669786564207669657765722e7079000a",
+        "kind": "file",
+        "mode": 33188,
+        "relative_path": {
+          "bytes_hex": "7669657765722e7079",
+          "utf8": "viewer.py"
+        },
+        "sha256": "bbfbf9ac018727bb8d6d4c5dfc1eb7195d594e1852329b2662f6051e6ee5d815"
+      }
+    ],
+    "file_bytes": 95
+  },
+  "destination_before": {
+    "entries": [
+      {
+        "kind": "missing",
+        "relative_path": {
+          "bytes_hex": "",
+          "utf8": ""
+        }
+      }
+    ],
+    "file_bytes": 0
+  },
+  "destination_scope": {
+    "bytes_hex": "2f746d702f6f70656e70696c6f742d63692e6c50786b6f582f2e746d706d6b686137552f6f6c64",
+    "utf8": "/tmp/openpilot-ci.lPxkoX/.tmpmkha7U/old"
+  },
+  "destination_scope_kind": "destination",
+  "environment_overlay": {
+    "LC_ALL": "C.UTF-8",
+    "LD_LIBRARY_PATH_hex": "2f686f6d652f616374696f6e732f616374696f6e732d746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f6c6962"
+  },
+  "fixture_head": "f52ce098b08089d875889e3d4be3536ec93b2091",
+  "fixture_initial_head": "b87351bb8a7398b168879bac861fcd910ed2ef1a",
+  "fixture_root": {
+    "bytes_hex": "2f746d702f6f70656e70696c6f742d63692e6c50786b6f582f2e746d706d6b686137552f7265706f",
+    "utf8": "/tmp/openpilot-ci.lPxkoX/.tmpmkha7U/repo"
+  },
+  "inherited_path_hex": "2f746d702f6f70656e70696c6f742d63692e6c50786b6f582f636172676f2d686f6d652f62696e3a2f746d702f6f70656e70696c6f742d63692e6c50786b6f582f76656e762f62696e3a2f686f6d652f616374696f6e732f616374696f6e732d746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e3a2f686f6d652f616374696f6e732f616374696f6e732d746f6f6c63616368652f507974686f6e2f332e31322e31352f7836343a2f686f6d652f616374696f6e732f2e636172676f2f62696e3a2f686f6d652f616374696f6e732f2e636172676f2f62696e3a2f686f6d652f616374696f6e732f2e636172676f2f62696e3a2f686f6d652f616374696f6e732f2e636172676f2f62696e3a2f7573722f6c6f63616c2f7362696e3a2f7573722f6c6f63616c2f62696e3a2f7573722f7362696e3a2f7573722f62696e3a2f7362696e3a2f62696e3a2f7573722f67616d65733a2f7573722f6c6f63616c2f67616d65733a2f736e61702f62696e",
+  "input_argv_hex": [
+    "2f746d702f6f70656e70696c6f742d63692e6c50786b6f582f2e746d706d6b686137552f6f6c64",
+    "2d2d726566",
+    "48454144"
+  ],
+  "input_reference": "HEAD",
+  "outcome": {
+    "code": 1,
+    "kind": "captured",
+    "stderr_hex": "666174616c3a20706174682027746f6f6c732f636172726f745f726f7574655f7661756c742f72616461725f766965772e6a732720646f6573206e6f7420657869737420696e202766353263653039386230383038396438373538383965336434626533353336656339336232303931270a54726163656261636b20286d6f737420726563656e742063616c6c206c617374293a0a202046696c6520222f746d702f6f70656e70696c6f742d63692e6c50786b6f582f2e746d706d6b686137552f7265706f2f746f6f6c732f636172726f745f726f7574655f7661756c742f6275696c645f62756e646c652e7079222c206c696e652035312c20696e203c6d6f64756c653e0a202020206275696c6428617267732e64657374696e6174696f6e2c20617267732e726566290a202046696c6520222f746d702f6f70656e70696c6f742d63692e6c50786b6f582f2e746d706d6b686137552f7265706f2f746f6f6c732f636172726f745f726f7574655f7661756c742f6275696c645f62756e646c652e7079222c206c696e652034312c20696e206275696c640a202020202864657374696e6174696f6e202f206e616d65292e77726974655f62797465732873756270726f636573732e636865636b5f6f7574707574285b22676974222c202273686f77222c2066227b636f6d6d69747d3a7b736f757263657d225d2c206377643d524f4f5429290a202020202020202020202020202020202020202020202020202020202020202020202020205e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e0a202046696c6520222f686f6d652f616374696f6e732f616374696f6e732d746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f6c69622f707974686f6e332e31322f73756270726f636573732e7079222c206c696e65203436362c20696e20636865636b5f6f75747075740a2020202072657475726e2072756e282a706f70656e617267732c207374646f75743d504950452c2074696d656f75743d74696d656f75742c20636865636b3d547275652c0a20202020202020202020205e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e0a202046696c6520222f686f6d652f616374696f6e732f616374696f6e732d746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f6c69622f707974686f6e332e31322f73756270726f636573732e7079222c206c696e65203537312c20696e2072756e0a2020202072616973652043616c6c656450726f636573734572726f7228726574636f64652c2070726f636573732e617267732c0a73756270726f636573732e43616c6c656450726f636573734572726f723a20436f6d6d616e6420275b27676974272c202773686f77272c2027663532636530393862303830383964383735383839653364346265333533366563393362323039313a746f6f6c732f636172726f745f726f7574655f7661756c742f72616461725f766965772e6a73275d272072657475726e6564206e6f6e2d7a65726f206578697420737461747573203132382e0a",
+    "stdout_hex": ""
+  },
+  "provider_command_argv_hex": [
+    "2f746d702f6f70656e70696c6f742d63692e6c50786b6f582f76656e762f62696e2f707974686f6e",
+    "2d49",
+    "2d42",
+    "2d53",
+    "2d58",
+    "707963616368655f7072656669783d2f746d702f6f70656e70696c6f742d63692e6c50786b6f582f2e746d706d6b686137552f756e757365642d707963616368652d3139",
+    "2f746d702f6f70656e70696c6f742d63692e6c50786b6f582f2e746d706d6b686137552f7265706f2f746f6f6c732f636172726f745f726f7574655f7661756c742f6275696c645f62756e646c652e7079",
+    "2f746d702f6f70656e70696c6f742d63692e6c50786b6f582f2e746d706d6b686137552f6f6c64",
+    "2d2d726566",
+    "48454144"
+  ],
+  "provider_cwd": {
+    "bytes_hex": "2f746d702f6f70656e70696c6f742d63692e6c50786b6f582f2e746d706d6b686137552f7265706f",
+    "utf8": "/tmp/openpilot-ci.lPxkoX/.tmpmkha7U/repo"
+  },
+  "provider_library_path_hex": "2f686f6d652f616374696f6e732f616374696f6e732d746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f6c6962",
+  "provider_python_resolved": {
+    "bytes_hex": "2f686f6d652f616374696f6e732f616374696f6e732d746f6f6c63616368652f507974686f6e2f332e31322e31352f7836342f62696e2f707974686f6e332e3132",
+    "utf8": "/home/actions/actions-toolcache/Python/3.12.15/x64/bin/python3.12"
+  },
+  "remaining_environment": "inherited",
+  "row": 19,
+  "schema": "openpilot.route-vault-bundle.original-capture.v1",
+  "script_sha256_after": "05551fc470864a4c70758a66b1a156c2b6d9e95e8deeb1f2a74ac13fb5259aa9",
+  "script_sha256_before": "05551fc470864a4c70758a66b1a156c2b6d9e95e8deeb1f2a74ac13fb5259aa9",
+  "source_commit": "121aa5b86ddf427697a8cabb25d2ed337d80f429",
+  "source_root": {
+    "bytes_hex": "2f686f6d652f616374696f6e732f616374696f6e732d72756e6e65722f5f776f726b2f6f70656e70696c6f742d727573742f6f70656e70696c6f742d727573742f2e646961673239362d736f757263652d34303039333535373837352d312e4374483453632f736f75726365",
+    "utf8": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40093557875-1.CtH4Sc/source"
+  },
+  "source_script_path": "tools/carrot_route_vault/build_bundle.py",
+  "source_script_sha256": "05551fc470864a4c70758a66b1a156c2b6d9e95e8deeb1f2a74ac13fb5259aa9",
+  "stderr_limit": 16777216,
+  "stdout_limit": 16777216,
+  "test_name": "synthetic_original_native_all_seven_fixed_failures_match_partial_effects",
+  "timeout_seconds": 20
+}

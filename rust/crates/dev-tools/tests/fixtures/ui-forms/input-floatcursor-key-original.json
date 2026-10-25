@@ -1,0 +1,272 @@
+[
+  {
+    "name": "input-floatcursor-unknown",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "a",
+      "frames": 1,
+      "props": {
+        "show_touches": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "cursor",
+          "value": 0.0
+        },
+        {
+          "frame": 0,
+          "key": 65
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "a",
+          "cursor": 0.0,
+          "offset": 0,
+          "show_cursor": true,
+          "display": "a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "eab720e37a80d071726904bdf6177ea75200b5c6caaf641f61e82d35f9edcbdb"
+  },
+  {
+    "name": "input-floatcursor-backspace-zero",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "a",
+      "frames": 1,
+      "props": {
+        "show_touches": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "cursor",
+          "value": 0.0
+        },
+        {
+          "frame": 0,
+          "key": 259
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "a",
+          "cursor": 0.0,
+          "offset": 0,
+          "show_cursor": true,
+          "display": "a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "eab720e37a80d071726904bdf6177ea75200b5c6caaf641f61e82d35f9edcbdb"
+  },
+  {
+    "name": "input-floatcursor-delete-end",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "a",
+      "frames": 1,
+      "props": {
+        "show_touches": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "cursor",
+          "value": 1.0
+        },
+        {
+          "frame": 0,
+          "key": 261
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "input-floatcursor-unknown-positive",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "a",
+      "frames": 1,
+      "props": {
+        "show_touches": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "cursor",
+          "value": 1.0
+        },
+        {
+          "frame": 0,
+          "key": 65
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  },
+  {
+    "name": "input-floatcursor-home",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "a",
+      "frames": 1,
+      "props": {
+        "show_touches": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "cursor",
+          "value": 1.0
+        },
+        {
+          "frame": 0,
+          "key": 268
+        }
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "text": "a",
+          "cursor": 0,
+          "offset": 0,
+          "show_cursor": true,
+          "display": "a"
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "eab720e37a80d071726904bdf6177ea75200b5c6caaf641f61e82d35f9edcbdb"
+  },
+  {
+    "name": "input-floatcursor-right",
+    "scene": {
+      "config": {
+        "big": true,
+        "large_viewport": true,
+        "pc": true,
+        "scale": 1.0
+      },
+      "language": "en",
+      "kind": "input",
+      "rect": {
+        "x": 100,
+        "y": 150,
+        "width": 800,
+        "height": 180
+      },
+      "text": "a",
+      "frames": 1,
+      "props": {
+        "show_touches": true
+      },
+      "actions": [
+        {
+          "frame": 0,
+          "operation": "cursor",
+          "value": 0.0
+        },
+        {
+          "frame": 0,
+          "key": 262
+        }
+      ]
+    },
+    "exit": 1,
+    "png": false,
+    "state": false
+  }
+]

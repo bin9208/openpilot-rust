@@ -1,5 +1,73 @@
 # Independent Rust port repository (2026-09-29)
 
+- 2026-10-26 #523 인계 후 사용자는 등록 로컬 Actions 러너가 더 빠르며,
+  디스크80GB/i9 할당4코어/RAM4GB라고 명시했다. 다음 필요한 검증은 실제 작업별
+  디스크 증가량·가용 메모리와 CPU ISA 요구를 확인해 이 러너를 우선 활용한다.
+  작은 native 단위검사는 빌드 병렬1로 운영하고 큰 모델·전체 빌드는 자원 적합성을
+  확인해 배정한다. 진행 중 CI 취소·성공한 불변 검사 반복·기준 완화는 하지 않는다.
+  로컬 checkout의 기능 실행 금지는 유지하며 실행은 GitHub Actions를 통한다.
+
+- 2026-10-25 사용자는 `bin-actions`가 다른 관리자가 만든 현재 사용할 수 없는
+  러너임을 밝히고, 이 #523/#296 작업은 GitHub Actions 기본 러너로 진행하라고
+  명시했다. 아래 self-hosted-only 선택보다 이 지시가 우선한다. 명시적인
+  GitHub-hosted 플랫폼에서 필요한 검증을 계속하고, 과거 bin-actions 복구·삭제
+  작업은 실행하지 않는다. 실제 runner/SDK 경로와 소유권을 검증하며 예전 이름이나
+  경로를 위장하지 않는다. 원본·ABI·수치·자원 admission·전후 봉인·필수 gate 및
+  dev/dev-md 분리와 실기 수용 경계는 유지한다. 로컬은 여전히 소스·문법·서식·diff와
+  inert 원문 확인만 수행하고 기능·빌드 검증은 Actions에서 실행한다.
+
+- On 2026-10-23 the user requested applying the faster validated Actions runner
+  across active tasks, then explicitly fixed the choice to local Actions.
+  Use registered `bin-actions` for the next necessary
+  trusted x64 checks/builds, generic ARM cross-builds and AGNOS cross-builds. Its current labels are
+  `self-hosted`, `Linux`, `X64`, `dev-md-local`; confirm actual runner provenance.
+  The label does not authorize mixing dev-md with #296. The latest instruction
+  also withdraws the GitHub ARM exception: run ARM code checks in local ARM QEMU
+  on bin-actions and label them emulated, never native device/CPU validation.
+  Do not start GitHub-hosted x64 or ARM fallback jobs. Keep local checkout work to source/syntax/format/
+  diff and inert evidence review; functional checks still run in Actions jobs.
+  Do not cancel/restart active CI or repeat successful unchanged checks merely
+  to change runners. Preserve existing required checks, source/ABI verification,
+  PR targets and device/release boundaries. The user also removed the fixed
+  disk stop/resume thresholds; size each operation from actual space/resource
+  evidence and expected growth. This supersedes older hosted-only and fixed
+  reserve instructions. See #496/#498 for the runner comparison evidence.
+  Generic ARM job120013728323 also succeeded on registered runner22 in3341s
+  at source2ff834da04e2acaad3d63211c2b76e287679eeaa/run39832976197,
+  including workspace/native GNU and static musl probe builds and inspections.
+  This completes the operational runner choice; do not wait for the comparison
+  counterpart or infer pure compiler speed, long-term reliability or device
+  acceptance from this result. Keep the comparison's final timing in its own task.
+  Do not use GitHub-hosted runners as an automatic fallback or another
+  comparison target. Do not wait for the cancelled hosted generic comparison.
+  The user's reported404errors are not a demonstrated cause in these results.
+  QEMU offline-install timings include hashes and disk I/O; neither those timings
+  nor x64 cross-builds establish native ARM CPU execution.
+  The runner-comparison task owns the common routing/QEMU foundation in its
+  separate issue/isolated branch. Reuse its verified delivery without duplicating
+  that foundation or merging dev-md runtime changes into the #296 dev track.
+  Preserve ARM target code/checks; do not replace them with x64 or skip them.
+
+- On 2026-10-23 the user selected GPT-6.1 Sol / Ultra for this parent chat and
+  GPT-6.1 Sol for all subagents. Astra agents have completed their current
+  deliveries and are closed; do not launch or resume Astra.
+
+- On 2026-10-19 the user changed the #296 validation workflow: local work is
+  limited to quick diff, formatting and syntax checks. Do not rebuild or run
+  local tests, reference comparisons or regression gates after each change.
+  Group related changes into meaningful commits and use GitHub Actions for
+  builds and validation. Inspect CI failure logs and include repairs in the
+  next batch; continue independent conversion work while CI runs. This overrides
+  the earlier repeated local build/verification process. Complete Python removal
+  and all required exact-SHA CI gates remain required. Preserve other-session
+  sources and keep dev-md/#338 separate.
+
+- On 2026-10-18 the user clarified #296 delivery: the comma device is unavailable;
+  finish code conversion, optimization, tests and commit integration, and the user
+  will pull and personally verify normal boot, recording and upload. Do not block
+  code delivery on reconnecting hardware or claim those device checks were run.
+  Keep #296 on its dev-based issue branch, separate from dev-md/#338.
+
 - On 2026-10-14 the user selected Astra for the parent agent and explicitly
   required GPT-6.1 Sol for all separately launched sub-agents. Specify
   `gpt-6.1-sol` when delegating; hand off prior agents rather than silently
@@ -25,11 +93,9 @@
   device comparison after the complete runtime candidate is ready. Keep unported
   components and native external dependencies explicit in the inventory.
 
-- The user required prevention of disk exhaustion on 2026-09-30. Check available
-  space before each local build, dependency install or large artifact copy. Keep
-  at least 25 GiB free plus the operation's estimated growth; when below that
-  floor, stop new build work and recover at least 35 GiB before resuming. Prefer
-  bounded package builds with incremental compilation disabled and reuse a
+- Check actual available space and expected growth before each Actions build,
+  dependency install or large artifact copy; no fixed stop/resume floor applies.
+  Prefer bounded package builds with incremental compilation disabled and reuse a
   coordinated target cache. On 2026-10-09 the user explicitly authorized deleting
   old Rust-port records, archived validation artifacts and all unused build
   caches without another approval or preservation/compression step. This

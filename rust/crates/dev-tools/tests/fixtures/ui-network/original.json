@@ -1,0 +1,2472 @@
+[
+  {
+    "name": "scanning",
+    "scene": {
+      "kind": "wifi",
+      "snapshot": {
+        "networks": [
+          {
+            "ssid": "Open access",
+            "strength": 98,
+            "security_type": "Open",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Saved network",
+            "strength": 67,
+            "security_type": "Wpa",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Phone’s hotspot",
+            "strength": 45,
+            "security_type": "Wpa2",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Unsupported",
+            "strength": 20,
+            "security_type": "Unsupported",
+            "is_tethering": false
+          }
+        ],
+        "wifi_state": {
+          "ssid": "Saved network",
+          "status": "Connected"
+        },
+        "ipv4_address": "192.0.2.4",
+        "current_network_metered": "Yes",
+        "connecting_to_ssid": null,
+        "connected_ssid": "Saved network",
+        "tethering_password": "fixture-password",
+        "tethering_active": false,
+        "saved_ssids": [
+          "Saved network"
+        ]
+      },
+      "frames": [
+        {},
+        {}
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "9c6bae91ba78d51e08a06f728b45eaec7285be6fee8dacb6330703183c023b8b",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "5b341388629ca7a3d7884e60a9773216d8a9f7860c2166434a2459e3c5318f44",
+    "states": [
+      {
+        "state": {
+          "phase": "Idle",
+          "network": null,
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "Idle",
+          "network": null,
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      }
+    ]
+  },
+  {
+    "name": "list",
+    "scene": {
+      "kind": "wifi",
+      "snapshot": {
+        "networks": [
+          {
+            "ssid": "Open access",
+            "strength": 98,
+            "security_type": "Open",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Saved network",
+            "strength": 67,
+            "security_type": "Wpa",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Phone’s hotspot",
+            "strength": 45,
+            "security_type": "Wpa2",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Unsupported",
+            "strength": 20,
+            "security_type": "Unsupported",
+            "is_tethering": false
+          }
+        ],
+        "wifi_state": {
+          "ssid": "Saved network",
+          "status": "Connected"
+        },
+        "ipv4_address": "192.0.2.4",
+        "current_network_metered": "Yes",
+        "connecting_to_ssid": null,
+        "connected_ssid": "Saved network",
+        "tethering_password": "fixture-password",
+        "tethering_active": false,
+        "saved_ssids": [
+          "Saved network"
+        ]
+      },
+      "frames": [
+        {
+          "events": [
+            {
+              "NetworksUpdated": [
+                {
+                  "ssid": "Open access",
+                  "strength": 98,
+                  "security_type": "Open",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Saved network",
+                  "strength": 67,
+                  "security_type": "Wpa",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Phone’s hotspot",
+                  "strength": 45,
+                  "security_type": "Wpa2",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Unsupported",
+                  "strength": 20,
+                  "security_type": "Unsupported",
+                  "is_tethering": false
+                }
+              ]
+            }
+          ]
+        },
+        {},
+        {}
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "381f9904af240f0a6600a5f002b7183c9762be196b1b5990823c0af314160f4d",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "d10e52591d9caae5a3ee1a6793aa61f1bca4408f3edb3c7165a195c19ebb2778",
+    "states": [
+      {
+        "state": {
+          "phase": "Idle",
+          "network": null,
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "Idle",
+          "network": null,
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "Idle",
+          "network": null,
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      }
+    ]
+  },
+  {
+    "name": "connecting",
+    "scene": {
+      "kind": "wifi",
+      "snapshot": {
+        "networks": [
+          {
+            "ssid": "Open access",
+            "strength": 98,
+            "security_type": "Open",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Saved network",
+            "strength": 67,
+            "security_type": "Wpa",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Phone’s hotspot",
+            "strength": 45,
+            "security_type": "Wpa2",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Unsupported",
+            "strength": 20,
+            "security_type": "Unsupported",
+            "is_tethering": false
+          }
+        ],
+        "wifi_state": {
+          "ssid": "Saved network",
+          "status": "Connected"
+        },
+        "ipv4_address": "192.0.2.4",
+        "current_network_metered": "Yes",
+        "connecting_to_ssid": null,
+        "connected_ssid": "Saved network",
+        "tethering_password": "fixture-password",
+        "tethering_active": false,
+        "saved_ssids": [
+          "Saved network"
+        ]
+      },
+      "frames": [
+        {
+          "events": [
+            {
+              "NetworksUpdated": [
+                {
+                  "ssid": "Open access",
+                  "strength": 98,
+                  "security_type": "Open",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Saved network",
+                  "strength": 67,
+                  "security_type": "Wpa",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Phone’s hotspot",
+                  "strength": 45,
+                  "security_type": "Wpa2",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Unsupported",
+                  "strength": 20,
+                  "security_type": "Unsupported",
+                  "is_tethering": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "operation": "choose",
+          "ssid": "Open access"
+        },
+        {},
+        {}
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "e2f09342e4007607b3c58288cb85918268bb03a139bea9dfb4006899db060d7b",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "86a6d1a18b72174212c29f608f497e63b3ab1e3d59aa05c6eb53c78a1dfdfc99",
+    "states": [
+      {
+        "state": {
+          "phase": "Idle",
+          "network": null,
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "Connecting",
+          "network": "Open access",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          },
+          {
+            "Connect": {
+              "ssid": "Open access",
+              "password": "",
+              "hidden": false
+            }
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "Connecting",
+          "network": "Open access",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          },
+          {
+            "Connect": {
+              "ssid": "Open access",
+              "password": "",
+              "hidden": false
+            }
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "Connecting",
+          "network": "Open access",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          },
+          {
+            "Connect": {
+              "ssid": "Open access",
+              "password": "",
+              "hidden": false
+            }
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      }
+    ]
+  },
+  {
+    "name": "password",
+    "scene": {
+      "kind": "wifi",
+      "snapshot": {
+        "networks": [
+          {
+            "ssid": "Open access",
+            "strength": 98,
+            "security_type": "Open",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Saved network",
+            "strength": 67,
+            "security_type": "Wpa",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Phone’s hotspot",
+            "strength": 45,
+            "security_type": "Wpa2",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Unsupported",
+            "strength": 20,
+            "security_type": "Unsupported",
+            "is_tethering": false
+          }
+        ],
+        "wifi_state": {
+          "ssid": "Saved network",
+          "status": "Connected"
+        },
+        "ipv4_address": "192.0.2.4",
+        "current_network_metered": "Yes",
+        "connecting_to_ssid": null,
+        "connected_ssid": "Saved network",
+        "tethering_password": "fixture-password",
+        "tethering_active": false,
+        "saved_ssids": [
+          "Saved network"
+        ]
+      },
+      "frames": [
+        {
+          "events": [
+            {
+              "NetworksUpdated": [
+                {
+                  "ssid": "Open access",
+                  "strength": 98,
+                  "security_type": "Open",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Saved network",
+                  "strength": 67,
+                  "security_type": "Wpa",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Phone’s hotspot",
+                  "strength": 45,
+                  "security_type": "Wpa2",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Unsupported",
+                  "strength": 20,
+                  "security_type": "Unsupported",
+                  "is_tethering": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "operation": "choose",
+          "ssid": "Phone’s hotspot"
+        },
+        {},
+        {}
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "81abf31e0e477b0c1e29fa8c3795e389031ac488fb86e78b089b89f4c4b6181d",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "2117c1e395344fe16367f6b5c20774cfa034923646cd517e0c111f993ee8bac2",
+    "states": [
+      {
+        "state": {
+          "phase": "Idle",
+          "network": null,
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      }
+    ]
+  },
+  {
+    "name": "forget",
+    "scene": {
+      "kind": "wifi",
+      "snapshot": {
+        "networks": [
+          {
+            "ssid": "Open access",
+            "strength": 98,
+            "security_type": "Open",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Saved network",
+            "strength": 67,
+            "security_type": "Wpa",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Phone’s hotspot",
+            "strength": 45,
+            "security_type": "Wpa2",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Unsupported",
+            "strength": 20,
+            "security_type": "Unsupported",
+            "is_tethering": false
+          }
+        ],
+        "wifi_state": {
+          "ssid": "Saved network",
+          "status": "Connected"
+        },
+        "ipv4_address": "192.0.2.4",
+        "current_network_metered": "Yes",
+        "connecting_to_ssid": null,
+        "connected_ssid": "Saved network",
+        "tethering_password": "fixture-password",
+        "tethering_active": false,
+        "saved_ssids": [
+          "Saved network"
+        ]
+      },
+      "frames": [
+        {
+          "events": [
+            {
+              "NetworksUpdated": [
+                {
+                  "ssid": "Open access",
+                  "strength": 98,
+                  "security_type": "Open",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Saved network",
+                  "strength": 67,
+                  "security_type": "Wpa",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Phone’s hotspot",
+                  "strength": 45,
+                  "security_type": "Wpa2",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Unsupported",
+                  "strength": 20,
+                  "security_type": "Unsupported",
+                  "is_tethering": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "operation": "forget",
+          "ssid": "Saved network"
+        },
+        {},
+        {}
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "5700b8936176234fe0ee3ad616efd4c6c60bec17adf1d03c79ac49cd781b8b13",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "c6c6720fa5d09646661f3927f7f1dac007dc958a69e697815a3725f4f2d1d1dc",
+    "states": [
+      {
+        "state": {
+          "phase": "Idle",
+          "network": null,
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "ShowForgetConfirm",
+          "network": "Saved network",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "ShowForgetConfirm",
+          "network": "Saved network",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "ShowForgetConfirm",
+          "network": "Saved network",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      }
+    ]
+  },
+  {
+    "name": "advanced",
+    "scene": {
+      "kind": "advanced",
+      "snapshot": {
+        "networks": [
+          {
+            "ssid": "Open access",
+            "strength": 98,
+            "security_type": "Open",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Saved network",
+            "strength": 67,
+            "security_type": "Wpa",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Phone’s hotspot",
+            "strength": 45,
+            "security_type": "Wpa2",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Unsupported",
+            "strength": 20,
+            "security_type": "Unsupported",
+            "is_tethering": false
+          }
+        ],
+        "wifi_state": {
+          "ssid": "Saved network",
+          "status": "Connected"
+        },
+        "ipv4_address": "192.0.2.4",
+        "current_network_metered": "Yes",
+        "connecting_to_ssid": null,
+        "connected_ssid": "Saved network",
+        "tethering_password": "fixture-password",
+        "tethering_active": false,
+        "saved_ssids": [
+          "Saved network"
+        ]
+      },
+      "frames": [
+        {
+          "events": [
+            {
+              "NetworksUpdated": [
+                {
+                  "ssid": "Open access",
+                  "strength": 98,
+                  "security_type": "Open",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Saved network",
+                  "strength": 67,
+                  "security_type": "Wpa",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Phone’s hotspot",
+                  "strength": 45,
+                  "security_type": "Wpa2",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Unsupported",
+                  "strength": 20,
+                  "security_type": "Unsupported",
+                  "is_tethering": false
+                }
+              ]
+            }
+          ]
+        },
+        {},
+        {}
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "149a8ff1eb505f22b649df493cf49627d547cb610b65e373bc43ac956e1b6d6f",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "cad4532d58ebf94ea3d99f5d5e767ffe8816de2e926976030bc2bbdb096d9a62",
+    "states": [
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      }
+    ]
+  },
+  {
+    "name": "panel",
+    "scene": {
+      "kind": "network",
+      "snapshot": {
+        "networks": [
+          {
+            "ssid": "Open access",
+            "strength": 98,
+            "security_type": "Open",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Saved network",
+            "strength": 67,
+            "security_type": "Wpa",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Phone’s hotspot",
+            "strength": 45,
+            "security_type": "Wpa2",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Unsupported",
+            "strength": 20,
+            "security_type": "Unsupported",
+            "is_tethering": false
+          }
+        ],
+        "wifi_state": {
+          "ssid": "Saved network",
+          "status": "Connected"
+        },
+        "ipv4_address": "192.0.2.4",
+        "current_network_metered": "Yes",
+        "connecting_to_ssid": null,
+        "connected_ssid": "Saved network",
+        "tethering_password": "fixture-password",
+        "tethering_active": false,
+        "saved_ssids": [
+          "Saved network"
+        ]
+      },
+      "frames": [
+        {
+          "events": [
+            {
+              "NetworksUpdated": [
+                {
+                  "ssid": "Open access",
+                  "strength": 98,
+                  "security_type": "Open",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Saved network",
+                  "strength": 67,
+                  "security_type": "Wpa",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Phone’s hotspot",
+                  "strength": 45,
+                  "security_type": "Wpa2",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Unsupported",
+                  "strength": 20,
+                  "security_type": "Unsupported",
+                  "is_tethering": false
+                }
+              ]
+            }
+          ]
+        },
+        {},
+        {}
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "4fa9dffde99d30192a96cfc0dc5be57461903df1a821169deb4325db142ce8b4",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "cf38fe0f0cd2f08a77d718e6abb7a9f649732a7a6087795cf42240f27cfd7649",
+    "states": [
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      }
+    ]
+  },
+  {
+    "name": "password-input",
+    "scene": {
+      "kind": "wifi",
+      "snapshot": {
+        "networks": [
+          {
+            "ssid": "Open access",
+            "strength": 98,
+            "security_type": "Open",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Saved network",
+            "strength": 67,
+            "security_type": "Wpa",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Phone’s hotspot",
+            "strength": 45,
+            "security_type": "Wpa2",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Unsupported",
+            "strength": 20,
+            "security_type": "Unsupported",
+            "is_tethering": false
+          }
+        ],
+        "wifi_state": {
+          "ssid": "Saved network",
+          "status": "Connected"
+        },
+        "ipv4_address": "192.0.2.4",
+        "current_network_metered": "Yes",
+        "connecting_to_ssid": null,
+        "connected_ssid": "Saved network",
+        "tethering_password": "fixture-password",
+        "tethering_active": false,
+        "saved_ssids": [
+          "Saved network"
+        ]
+      },
+      "frames": [
+        {
+          "events": [
+            {
+              "NetworksUpdated": [
+                {
+                  "ssid": "Open access",
+                  "strength": 98,
+                  "security_type": "Open",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Saved network",
+                  "strength": 67,
+                  "security_type": "Wpa",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Phone’s hotspot",
+                  "strength": 45,
+                  "security_type": "Wpa2",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Unsupported",
+                  "strength": 20,
+                  "security_type": "Unsupported",
+                  "is_tethering": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "touch": [
+            {
+              "pos": {
+                "x": 200,
+                "y": 400
+              },
+              "slot": 0,
+              "pressed": true,
+              "released": false,
+              "down": true,
+              "time": 1.0
+            }
+          ]
+        },
+        {
+          "touch": [
+            {
+              "pos": {
+                "x": 200,
+                "y": 400
+              },
+              "slot": 0,
+              "pressed": false,
+              "released": true,
+              "down": false,
+              "time": 1.0
+            }
+          ]
+        },
+        {},
+        {
+          "chars": "a"
+        },
+        {
+          "chars": "b"
+        },
+        {
+          "chars": "c"
+        },
+        {
+          "chars": "d"
+        },
+        {
+          "chars": "e"
+        },
+        {
+          "chars": "f"
+        },
+        {
+          "chars": "g"
+        },
+        {
+          "chars": "h"
+        },
+        {
+          "touch": [
+            {
+              "pos": {
+                "x": 1900,
+                "y": 950
+              },
+              "slot": 0,
+              "pressed": true,
+              "released": false,
+              "down": true,
+              "time": 1.0
+            }
+          ]
+        },
+        {
+          "touch": [
+            {
+              "pos": {
+                "x": 1900,
+                "y": 950
+              },
+              "slot": 0,
+              "pressed": false,
+              "released": true,
+              "down": false,
+              "time": 1.0
+            }
+          ]
+        },
+        {},
+        {}
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "89f43b62d32b9645fb0e815d36ebbcc63d0a1b202259e279383dc82df80ed3f3",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "d91d224d88497e51b98cd294eedd8d2a55f8f3ee446dc70e16cdcc47ed9c27e4",
+    "states": [
+      {
+        "state": {
+          "phase": "Idle",
+          "network": null,
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "Idle",
+          "network": null,
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": "a"
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": "ab"
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": "abc"
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": "abcd"
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": "abcde"
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": "abcdef"
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": "abcdefg"
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": "abcdefgh"
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "NeedsAuth",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": "abcdefgh"
+        },
+        "stack": 2,
+        "commands": [
+          {
+            "SetActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "Connecting",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          },
+          {
+            "Connect": {
+              "ssid": "Phone’s hotspot",
+              "password": "abcdefgh",
+              "hidden": false
+            }
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "Connecting",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          },
+          {
+            "Connect": {
+              "ssid": "Phone’s hotspot",
+              "password": "abcdefgh",
+              "hidden": false
+            }
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": {
+          "phase": "Connecting",
+          "network": "Phone’s hotspot",
+          "retry": false,
+          "ip": "192.0.2.4",
+          "keyboard": ""
+        },
+        "stack": 1,
+        "commands": [
+          {
+            "SetActive": true
+          },
+          {
+            "Connect": {
+              "ssid": "Phone’s hotspot",
+              "password": "abcdefgh",
+              "hidden": false
+            }
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      }
+    ]
+  },
+  {
+    "name": "tether-input",
+    "scene": {
+      "kind": "advanced",
+      "snapshot": {
+        "networks": [
+          {
+            "ssid": "Open access",
+            "strength": 98,
+            "security_type": "Open",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Saved network",
+            "strength": 67,
+            "security_type": "Wpa",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Phone’s hotspot",
+            "strength": 45,
+            "security_type": "Wpa2",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Unsupported",
+            "strength": 20,
+            "security_type": "Unsupported",
+            "is_tethering": false
+          }
+        ],
+        "wifi_state": {
+          "ssid": "Saved network",
+          "status": "Connected"
+        },
+        "ipv4_address": "192.0.2.4",
+        "current_network_metered": "Yes",
+        "connecting_to_ssid": null,
+        "connected_ssid": "Saved network",
+        "tethering_password": "fixture-password",
+        "tethering_active": false,
+        "saved_ssids": [
+          "Saved network"
+        ]
+      },
+      "frames": [
+        {
+          "events": [
+            {
+              "NetworksUpdated": [
+                {
+                  "ssid": "Open access",
+                  "strength": 98,
+                  "security_type": "Open",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Saved network",
+                  "strength": 67,
+                  "security_type": "Wpa",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Phone’s hotspot",
+                  "strength": 45,
+                  "security_type": "Wpa2",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Unsupported",
+                  "strength": 20,
+                  "security_type": "Unsupported",
+                  "is_tethering": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "touch": [
+            {
+              "pos": {
+                "x": 2050,
+                "y": 80
+              },
+              "slot": 0,
+              "pressed": true,
+              "released": false,
+              "down": true,
+              "time": 1.0
+            }
+          ]
+        },
+        {
+          "touch": [
+            {
+              "pos": {
+                "x": 2050,
+                "y": 80
+              },
+              "slot": 0,
+              "pressed": false,
+              "released": true,
+              "down": false,
+              "time": 1.0
+            }
+          ]
+        },
+        {},
+        {
+          "snapshot": {
+            "networks": [
+              {
+                "ssid": "Open access",
+                "strength": 98,
+                "security_type": "Open",
+                "is_tethering": false
+              },
+              {
+                "ssid": "Saved network",
+                "strength": 67,
+                "security_type": "Wpa",
+                "is_tethering": false
+              },
+              {
+                "ssid": "Phone’s hotspot",
+                "strength": 45,
+                "security_type": "Wpa2",
+                "is_tethering": false
+              },
+              {
+                "ssid": "Unsupported",
+                "strength": 20,
+                "security_type": "Unsupported",
+                "is_tethering": false
+              }
+            ],
+            "wifi_state": {
+              "ssid": "Saved network",
+              "status": "Connected"
+            },
+            "ipv4_address": "192.0.2.4",
+            "current_network_metered": "Yes",
+            "connecting_to_ssid": null,
+            "connected_ssid": "Saved network",
+            "tethering_password": "fixture-password",
+            "tethering_active": true,
+            "saved_ssids": [
+              "Saved network"
+            ]
+          },
+          "events": [
+            {
+              "NetworksUpdated": [
+                {
+                  "ssid": "Open access",
+                  "strength": 98,
+                  "security_type": "Open",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Saved network",
+                  "strength": 67,
+                  "security_type": "Wpa",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Phone’s hotspot",
+                  "strength": 45,
+                  "security_type": "Wpa2",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Unsupported",
+                  "strength": 20,
+                  "security_type": "Unsupported",
+                  "is_tethering": false
+                }
+              ]
+            }
+          ]
+        },
+        {}
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "d86544ba432db45371278c6c05e20c01af6af501d7e7da3b4710326b9f89624a",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "a0225b6f3509c1b939bc48e734b728eb5dc47543cecb88241c71e9eac9425a98",
+    "states": [
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetTetheringActive": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetTetheringActive": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetTetheringActive": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      }
+    ]
+  },
+  {
+    "name": "apn-input",
+    "scene": {
+      "kind": "advanced",
+      "snapshot": {
+        "networks": [
+          {
+            "ssid": "Open access",
+            "strength": 98,
+            "security_type": "Open",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Saved network",
+            "strength": 67,
+            "security_type": "Wpa",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Phone’s hotspot",
+            "strength": 45,
+            "security_type": "Wpa2",
+            "is_tethering": false
+          },
+          {
+            "ssid": "Unsupported",
+            "strength": 20,
+            "security_type": "Unsupported",
+            "is_tethering": false
+          }
+        ],
+        "wifi_state": {
+          "ssid": "Saved network",
+          "status": "Connected"
+        },
+        "ipv4_address": "192.0.2.4",
+        "current_network_metered": "Yes",
+        "connecting_to_ssid": null,
+        "connected_ssid": "Saved network",
+        "tethering_password": "fixture-password",
+        "tethering_active": false,
+        "saved_ssids": [
+          "Saved network"
+        ]
+      },
+      "frames": [
+        {
+          "events": [
+            {
+              "NetworksUpdated": [
+                {
+                  "ssid": "Open access",
+                  "strength": 98,
+                  "security_type": "Open",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Saved network",
+                  "strength": 67,
+                  "security_type": "Wpa",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Phone’s hotspot",
+                  "strength": 45,
+                  "security_type": "Wpa2",
+                  "is_tethering": false
+                },
+                {
+                  "ssid": "Unsupported",
+                  "strength": 20,
+                  "security_type": "Unsupported",
+                  "is_tethering": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "touch": [
+            {
+              "pos": {
+                "x": 2050,
+                "y": 750
+              },
+              "slot": 0,
+              "pressed": true,
+              "released": false,
+              "down": true,
+              "time": 1.0
+            }
+          ]
+        },
+        {
+          "touch": [
+            {
+              "pos": {
+                "x": 2050,
+                "y": 750
+              },
+              "slot": 0,
+              "pressed": false,
+              "released": true,
+              "down": false,
+              "time": 1.0
+            }
+          ]
+        },
+        {},
+        {
+          "chars": " "
+        },
+        {
+          "chars": " "
+        },
+        {
+          "chars": "a"
+        },
+        {
+          "chars": "p"
+        },
+        {
+          "chars": "n"
+        },
+        {
+          "chars": "."
+        },
+        {
+          "chars": "f"
+        },
+        {
+          "chars": "i"
+        },
+        {
+          "chars": "x"
+        },
+        {
+          "chars": "t"
+        },
+        {
+          "chars": "u"
+        },
+        {
+          "chars": "r"
+        },
+        {
+          "chars": "e"
+        },
+        {
+          "chars": " "
+        },
+        {
+          "touch": [
+            {
+              "pos": {
+                "x": 1900,
+                "y": 950
+              },
+              "slot": 0,
+              "pressed": true,
+              "released": false,
+              "down": true,
+              "time": 1.0
+            }
+          ]
+        },
+        {
+          "touch": [
+            {
+              "pos": {
+                "x": 1900,
+                "y": 950
+              },
+              "slot": 0,
+              "pressed": false,
+              "released": true,
+              "down": false,
+              "time": 1.0
+            }
+          ]
+        },
+        {},
+        {}
+      ]
+    },
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "149a8ff1eb505f22b649df493cf49627d547cb610b65e373bc43ac956e1b6d6f",
+    "mode": "RGBA",
+    "shape": [
+      1080,
+      2160,
+      4
+    ],
+    "values_sha256": "cad4532d58ebf94ea3d99f5d5e767ffe8816de2e926976030bc2bbdb096d9a62",
+    "states": [
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 2,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": null,
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": "apn.fixture",
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": "apn.fixture",
+        "roaming": false,
+        "metered": false
+      },
+      {
+        "state": null,
+        "stack": 1,
+        "commands": [
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          },
+          {
+            "SetIpv4Forward": true
+          }
+        ],
+        "apn": "apn.fixture",
+        "roaming": false,
+        "metered": false
+      }
+    ]
+  }
+]

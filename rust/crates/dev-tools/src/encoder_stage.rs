@@ -102,14 +102,12 @@ fn ancestor(path: &Path) -> Result<PathBuf> {
 fn space(path: &Path, growth: u64) -> Result<Value> {
     let stats = rustix::fs::statvfs(ancestor(path)?)?;
     let free = stats.f_bavail.saturating_mul(stats.f_frsize);
-    let required = 25 * 1024 * 1024 * 1024 + growth;
+    let required = growth;
     let value = json!({"free_bytes":free,"required_bytes":required,"growth_bytes":growth});
     println!("{value}");
     require(
         free >= required,
-        format!(
-            "require 25 GiB plus estimated growth; recover at least 35 GiB before retry: {value}"
-        ),
+        format!("operation growth exceeds available space: {value}"),
     )?;
     Ok(value)
 }

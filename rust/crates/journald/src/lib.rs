@@ -35,7 +35,7 @@ pub fn parse_line(line: &str) -> Result<Option<Entry>, Error> {
     if line.is_empty() {
         return Ok(None);
     }
-    let value = decode::decode(line)?;
+    let mut value = decode::decode(line)?;
     let Value::Object(fields) = &value else {
         return Err(Error::Root);
     };
@@ -49,10 +49,13 @@ pub fn parse_line(line: &str) -> Result<Option<Entry>, Error> {
     let message = value.to_json()?;
     let pid = i32::try_from(field("_PID")?).map_err(|_| Error::Field("_PID"))?;
     let priority = u8::try_from(field("PRIORITY")?).map_err(|_| Error::Field("PRIORITY"))?;
-    let tag = match fields.get(b"SYSLOG_IDENTIFIER".as_slice()) {
-        Some(Value::Text(bytes)) => {
-            Some(String::from_utf8(bytes.clone()).map_err(|_| Error::Field("SYSLOG_IDENTIFIER"))?)
-        }
+    // Message serialization and all integer conversions are complete. Retain
+    // their original failure order, then transfer the now-unused decoded tag.
+    let Value::Object(fields) = &mut value else {
+        unreachable!("root already validated")
+    };
+    let tag = match fields.get_mut(b"SYSLOG_IDENTIFIER".as_slice()) {
+        Some(Value::Text(bytes)) => take_tag(Some(bytes))?,
         None => None,
         Some(
             Value::Null
@@ -72,6 +75,14 @@ pub fn parse_line(line: &str) -> Result<Option<Entry>, Error> {
     }))
 }
 
+fn take_tag(bytes: Option<&mut Vec<u8>>) -> Result<Option<String>, Error> {
+    bytes
+        .map(|bytes| {
+            String::from_utf8(std::mem::take(bytes)).map_err(|_| Error::Field("SYSLOG_IDENTIFIER"))
+        })
+        .transpose()
+}
+
 pub fn packet(entry: &Entry, monotonic_ns: u64) -> Vec<u8> {
     let mut message = capnp::message::Builder::new_default();
     let mut event = message.init_root::<event::Builder>();
@@ -87,4 +98,28 @@ pub fn packet(entry: &Entry, monotonic_ns: u64) -> Vec<u8> {
     }
     log.set_message(entry.message.as_str());
     capnp::serialize::write_message_to_words(&message)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn publication_moves_decoded_tag_allocation_after_message_serialization() {
+        let mut value =
+            decode::decode(r#"{"SYSLOG_IDENTIFIER":"한글kernel","MESSAGE":"payload"}"#).unwrap();
+        let Value::Object(fields) = &mut value else {
+            panic!("object");
+        };
+        let Some(Value::Text(bytes)) = fields.get_mut(b"SYSLOG_IDENTIFIER".as_slice()) else {
+            panic!("text");
+        };
+        let pointer = bytes.as_ptr();
+        let capacity = bytes.capacity();
+        let tag = take_tag(Some(bytes)).unwrap().unwrap();
+        assert_eq!(tag, "한글kernel");
+        assert_eq!(tag.as_ptr(), pointer);
+        assert_eq!(tag.capacity(), capacity);
+        assert!(bytes.is_empty());
+    }
 }

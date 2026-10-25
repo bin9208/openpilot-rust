@@ -1,0 +1,355 @@
+name: Python Rust 523 current model triplet and worker-cell diagnostic
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-model-current-triplet.yml
+    - tools/ci/model_current_triplet_482.py
+    - rust/crates/model-runtime/src/cpu/diagnostic_482_tests.rs
+    - rust/crates/model-runtime/src/cpu/diagnostic_482_pr1344.rs
+    - rust/crates/model-runtime/src/cpu.rs
+    - rust/crates/model-runtime/src/cached_code.rs
+permissions:
+  contents: read
+concurrency:
+  group: python-rust-523-model-current-triplet-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  model-pipelines:
+    name: Fresh whole PROGRAM triplets before road1928 two-frame worker observation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TERM_COLOR: never
+      PYTHONDONTWRITEBYTECODE: '1'
+      MODEL482_HELPER_SHA256: 6b173bb32ec045bbef9a0d2a968555a9318ff031e1d4cb1574a5254033bf2759
+    steps:
+    - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+          }}
+        EVENT_NAME: ${{ github.event_name }}
+        SOURCE_REF: ${{ github.ref }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied for normal40 qualification' >&2; exit 1; }
+        set -euo pipefail
+        test "$EVENT_NAME" = push
+        test "$SOURCE_REF" = refs/heads/codex/feat-523-python-rust
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -m)" = x86_64
+        printf 'MODEL482_JOB_START=%s\n' "$EPOCHSECONDS" >> "$GITHUB_ENV"
+    - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Allocate private source cache and target before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.ci296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Actions의 workspace와 Bash가 사용하는 private checkout을 구분한다.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$job/build/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+    - name: Admit operation-specific growth on the actual filesystems before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        # source2 + build/registry8 + SDK3 + venv1 + proof0.5 + apt2 + finish0.5 =17GiB.
+        # 같은 filesystem의 최대 동시 성장 admission이며 peak 실측이 아니다.
+        for root in "$DIAG_SOURCE_OWNER" "$CI_JOB_TEMP" /; do
+          free=$(df --output=avail -B1 -- "$root" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+          ((free >= 17 * 1024 * 1024 * 1024))
+          printf '%s\t%s\t%s\n' "$root" "$free" 18253611008 >> "$CI_JOB_TEMP/proof/model482-initial-admission.tsv"
+        done
+    - uses: actions/checkout@v7
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+    - name: Admit the exact driving ONNX before tracked source baseline
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        helper="$GITHUB_WORKSPACE/tools/ci/prepare-lfs-source-535"
+        printf '%s  %s\n' 836c65ed0b09b614a15fe0a1d39290dfee19749e7e3163e562d8d31e3fb95966 "$helper" | sha256sum --check -
+        CI296_SOURCE="$DIAG_SOURCE" CI296_SOURCE_OWNER="$DIAG_SOURCE_OWNER" CI296_ACTIONS_WORKSPACE="$DIAG_ACTIONS_WORKSPACE" CI296_SOURCE_IDENTITY="$DIAG_SOURCE_IDENTITY" "$helper" driving
+    - name: Seal exact source HEAD and tracked index before checks
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      id: source_before
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+        allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ ]]
+        printf '{"allocated_private_source_bytes":%s,"planned_source_growth_bytes":2147483648}\n' "$allocated" > "$CI_JOB_TEMP/proof/source-growth-after-checkout.json"
+        git ls-tree -r -l HEAD | awk '$4 ~ /^[0-9]+$/ {bytes+=$4; files++} END {printf "{\"tracked_blob_bytes\":%.0f,\"files\":%d}\n",bytes,files}' > "$CI_JOB_TEMP/proof/tracked-source-size.json"
+        ((allocated <= 2 * 1024 * 1024 * 1024))
+    - name: Prepare official pinned Rust in the owned private rustup root and seal it
+      id: prepared_rust
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before
+    - name: Prepare source-pinned LLVM provider with bounded native package growth
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        before=$(df --output=avail -B1 / | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+        ((before >= 2 * 1024 * 1024 * 1024 + 512 * 1024 * 1024))
+        (ulimit -f 524288; sudo -n /usr/bin/timeout --signal=TERM --kill-after=30s 600s apt-get -o APT::Architecture=amd64 update) > "$CI_JOB_TEMP/proof/model482-apt-update.log" 2>&1
+        (ulimit -f 524288; sudo -n /usr/bin/timeout --signal=TERM --kill-after=30s 600s apt-get -o APT::Architecture=amd64 install --no-install-recommends -y build-essential clang libllvm18) > "$CI_JOB_TEMP/proof/model482-apt-install.log" 2>&1
+        after=$(df --output=avail -B1 / | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+        ((before - after <= 2 * 1024 * 1024 * 1024 && after >= 512 * 1024 * 1024))
+        provider=$(readlink -e /usr/lib/x86_64-linux-gnu/libLLVM-18.so)
+        printf '%s  %s\n' 5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0 "$provider" > "$CI_JOB_TEMP/proof/model482-llvm.before.sha256"
+        sha256sum --check "$CI_JOB_TEMP/proof/model482-llvm.before.sha256"
+        test "$(dpkg-query -W -f='${Version}' libllvm18:amd64)" = 1:18.1.3-1ubuntu1
+        dpkg-query -W -f='${binary:Package}\t${Version}\n' libllvm18:amd64 > "$CI_JOB_TEMP/proof/model482-llvm-package.txt"
+        printf '%s\n' "LLVM_PATH=$provider" >> "$GITHUB_ENV"
+    - name: Select exact Python3.12.15 provider
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.15
+        check-latest: false
+    - name: Prepare isolated original venv within its one GiB growth scope
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        base=$(readlink -e "$pythonLocation")
+        [[ $base == /opt/hostedtoolcache/Python/3.12.15/x64 ]]
+        free=$(df --output=avail -B1 "$CI_JOB_TEMP" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+        ((free >= 1024 * 1024 * 1024 + 512 * 1024 * 1024))
+        export LD_LIBRARY_PATH="$base/lib"
+        /usr/bin/timeout --signal=TERM --kill-after=10s 120s "$base/bin/python3.12" -I -B -m venv "$CI_JOB_TEMP/venv"
+        PIP_CACHE_DIR="$CI_JOB_TEMP/cache/pip" /usr/bin/timeout --signal=TERM --kill-after=10s 240s "$CI_JOB_TEMP/venv/bin/python" -I -B -m pip install --no-cache-dir --no-compile --only-binary=:all: numpy==2.5.3 zstandard==0.25.0 > "$CI_JOB_TEMP/proof/model482-pip.log" 2>&1
+        allocated=$(du -sx -B1 "$CI_JOB_TEMP/venv" | cut -f1)
+        apparent=$(du -sx -B1 --apparent-size "$CI_JOB_TEMP/venv" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]]
+        ((allocated <= 1024 * 1024 * 1024 && apparent <= 1024 * 1024 * 1024))
+        "$CI_JOB_TEMP/venv/bin/python" -I -B -c 'import sys; assert sys.version_info[:3] == (3,12,15); print(sys.version)' > "$CI_JOB_TEMP/proof/model482-python-version.txt"
+        "$CI_JOB_TEMP/venv/bin/python" -I -B -m pip freeze > "$CI_JOB_TEMP/proof/model482-python-packages.txt"
+        printf '%s\n' "ORIGINAL_PYTHON_BASE=$base" "ORIGINAL_PYTHON=$CI_JOB_TEMP/venv/bin/python" >> "$GITHUB_ENV"
+    - name: Collect fresh complete triplets then compare two-frame plain and tapped bytes
+      id: qualify
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        helper=tools/ci/model_current_triplet_482.py
+        printf '%s  %s\n' "$MODEL482_HELPER_SHA256" "$helper" | sha256sum --check -
+        remaining=$((MODEL482_JOB_START + 61 * 60 - EPOCHSECONDS))
+        ((remaining > 0))
+        ((remaining <= 2700)) || remaining=2700
+        /usr/bin/timeout --signal=TERM --kill-after=120s "${remaining}s" /usr/bin/python3 -I -B -S "$helper"
+    - name: Seal source and index after all attempted contracts
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()
+        && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        du -sx --block-size=1 "$DIAG_SOURCE_OWNER" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/private-output-bytes.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$CI_JOB_TEMP/proof/cgroup-memory-after.txt"; fi
+        find "$CARGO_TARGET_DIR" -name '*.d' -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256" || test ! -d "$CARGO_TARGET_DIR"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 512 * 1024 * 1024))
+    - name: Verify whole prepared private Rust SDK after all attempted model diagnostic contracts
+      id: prepared_rust_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()
+        && steps.prepared_rust.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 512 * 1024 * 1024))
+    - name: Require independent immutable model source SDK providers and child recovery
+      id: immutable_seals
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()
+        && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        sha256sum --check "$CI_JOB_TEMP/proof/model482-llvm.before.sha256"
+        /usr/bin/python3 -I -B -S - <<'CHECK'
+        import hashlib,json,os,stat
+        from pathlib import Path
+        p=Path(os.environ['CI_JOB_TEMP'])/'proof/model482'
+        s=json.loads((p/'final-seals.json').read_bytes())
+        c=json.loads((p/'children.json').read_bytes())
+        assert s['pass'] is True and s['failures']==[] and s['source']==os.environ['GITHUB_SHA']
+        assert s['all_owned_children_reaped'] is True and c['subreaper'] is True and c['live']==[]
+        q=p/'build-metadata-controls.json'
+        fd=os.open(q,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
+        identity=lambda v:(v.st_dev,v.st_ino,v.st_mode,v.st_uid,v.st_gid,v.st_nlink,v.st_size,v.st_mtime_ns,v.st_ctime_ns)
+        try:
+         info=os.fstat(fd)
+         assert stat.S_ISREG(info.st_mode) and info.st_uid==os.getuid() and stat.S_IMODE(info.st_mode)==0o600 and info.st_nlink==1 and info.st_size<=65536
+         raw=os.pread(fd,65537,0)
+         assert len(raw)==info.st_size and identity(info)==identity(os.fstat(fd))==identity(q.lstat())
+        finally:os.close(fd)
+        r=json.loads(raw)
+        assert type(r['schema']) is int and r['schema']==1 and r['source']==os.environ['GITHUB_SHA'] and r['pass'] is True
+        assert r['input_origin']=='authored-metadata-controls' and r['compiler_started'] is False and r['actual_race_recovered'] is False
+        assert r['helper_sha256']=='6b173bb32ec045bbef9a0d2a968555a9318ff031e1d4cb1574a5254033bf2759'
+        assert hashlib.sha256((Path(os.environ['DIAG_SOURCE'])/'tools/ci/model_current_triplet_482.py').read_bytes()).hexdigest()==r['helper_sha256']
+        positive=['actual-du-allocated-apparent-sparse-hardlink-symlink','strict-child-ENOENT']
+        negative=['target-root','outside-target','permission','currently-present','non-ENOENT','third-incomplete','deadline','allocated-cap','apparent-cap','group-cap','root-missing','root-replaced']
+        assert r['positive_controls']==positive and r['negative_controls']==negative
+        assert type(r['positive_count']) is int and r['positive_count']==2 and type(r['negative_count']) is int and r['negative_count']==12
+        assert type(r['max_attempts']) is int and r['max_attempts']==3 and type(r['scan_total_seconds']) is int and r['scan_total_seconds']==10
+        assert type(r['metadata_bytes']) is list and len(r['metadata_bytes'])==2 and all(type(v) is int and v>=0 for v in r['metadata_bytes'])
+        assert r['actual_du_bytes']==r['metadata_bytes'] and hashlib.sha256(Path('/usr/bin/du').read_bytes()).hexdigest()==r['du_sha256']
+        target=Path(os.environ['CI_JOB_TEMP'])/'build/target'
+        t=target.lstat()
+        assert r['target']==str(target) and stat.S_ISDIR(t.st_mode) and t.st_uid==os.getuid() and stat.S_IMODE(t.st_mode)==0o700 and target.resolve(strict=True)==target
+        assert r['target_identity']==[t.st_dev,t.st_ino,t.st_mode,t.st_uid,t.st_gid]
+        held=json.loads((p/'holds-after.json').read_bytes())
+        receipt=held[str(q.resolve(strict=True))]
+        assert receipt['sha256']==hashlib.sha256(raw).hexdigest() and receipt['identity']==[info.st_dev,info.st_ino,info.st_mode,info.st_uid,info.st_gid,info.st_size,info.st_nlink,info.st_mtime_ns,info.st_ctime_ns] and str(q) in receipt['aliases']
+        assert held[str(Path('/usr/bin/du').resolve(strict=True))]['sha256']==r['du_sha256']
+        CHECK
+    - name: Require complete current diagnostic with historical and runtime acceptance separated
+      id: closure
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()
+        && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        QUALIFY_OUTCOME: ${{ steps.qualify.outcome }}
+        SOURCE_OUTCOME: ${{ steps.source_final.outcome }}
+        SDK_OUTCOME: ${{ steps.prepared_rust_final.outcome }}
+        SEALS_OUTCOME: ${{ steps.immutable_seals.outcome }}
+      run: |
+        set -euo pipefail
+        /usr/bin/python3 -I -B -S - <<'CHECK'
+        import json,os
+        from pathlib import Path
+        assert all(os.environ[k]=='success' for k in ['QUALIFY_OUTCOME','SOURCE_OUTCOME','SDK_OUTCOME','SEALS_OUTCOME'])
+        p=Path(os.environ['CI_JOB_TEMP'])/'proof/model482'
+        a=json.loads((p/'triplet-readonly.json').read_bytes())
+        b=json.loads((p/'comparison.json').read_bytes())
+        assert a['strict_triplet_all'] is True and a['host_isa_all'] is True
+        assert b['diagnostic_complete'] is True and b['plain_tapped_bytes_equal'] is True
+        assert b['original_native_bytes_equal'] is True
+        assert all(b[k] is False for k in ['cached_issuer_invoked','cached_runtime_enabled','ssa_first_producer_observed','historical_half_snan5_resolved','full128_acceptance','full_model_runtime_acceptance','historical_provider_proven'])
+        assert b['retirement_credit']==0
+        CHECK
+    - name: Retain owned current triplet proof including failed admissions and comparisons
+      id: fast_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()
+        && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: model-current-triplet-482-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        if-no-files-found: error
+        retention-days: 14
+        include-hidden-files: true
+    - name: Clean only uploaded private model diagnostic source after immutable seals and child recovery
+      id: fast_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()
+        && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest
+        != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.immutable_seals.outcome == 'success'
+        && steps.prepared_rust_final.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.fast_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.ci296-owner" && test ! -L "$p/.ci296-owner"
+        test "$(cat "$p/.ci296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned job temporary paths after evidence upload
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()
+        && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest
+        != '' && steps.fast_source_cleanup.outcome == 'success') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'

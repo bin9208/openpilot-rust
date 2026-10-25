@@ -1,0 +1,82 @@
+{
+  "status": "UNCHANGED_ORIGINAL_RESPONSE_ERROR_CAPTURE",
+  "candidate_executed": false,
+  "compiler_used": false,
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "source_sha256": {
+    "rust/tools/check_crash_sdk_transport.py": "8bf1281bbc182ecaba9a29b9e49aa3d250ec8ee1f43eca5861596cee475ed806",
+    "rust/tools/check_sdk_receiver.py": "38cb90685b559628392e0de2578eb295502c7e889c93264a3c079ba15ec81dda"
+  },
+  "cases": [
+    {
+      "index": 0,
+      "event_queued_despite_closed_response_peer": true,
+      "captured": {
+        "event": {
+          "message": "fully parsed then response peer closed",
+          "tags": {
+            "fixture": "\ud55c\uae00"
+          }
+        },
+        "raw": "{}\n{\"type\": \"event\", \"length\": 90}\n{\"message\": \"fully parsed then response peer closed\", \"tags\": {\"fixture\": \"\\ud55c\\uae00\"}}",
+        "path": "/api/1/envelope/",
+        "header": {},
+        "auth": null,
+        "wire_hex": "7b7d0a7b2274797065223a20226576656e74222c20226c656e677468223a2039307d0a7b226d657373616765223a202266756c6c7920706172736564207468656e20726573706f6e7365207065657220636c6f736564222c202274616773223a207b2266697874757265223a20225c75643535635c7561653030227d7d",
+        "content_encoding": null,
+        "headers": {
+          "Host": "127.0.0.1:44023",
+          "Content-Length": "125"
+        }
+      },
+      "request_hex": "504f5354202f6170692f312f656e76656c6f70652f20485454502f312e310d0a486f73743a203132372e302e302e313a34343032330d0a436f6e74656e742d4c656e6774683a203132350d0a0d0a7b7d0a7b2274797065223a20226576656e74222c20226c656e677468223a2039307d0a7b226d657373616765223a202266756c6c7920706172736564207468656e20726573706f6e7365207065657220636c6f736564222c202274616773223a207b2266697874757265223a20225c75643535635c7561653030227d7d"
+    },
+    {
+      "index": 1,
+      "event_queued_despite_closed_response_peer": true,
+      "captured": {
+        "event": {
+          "message": "fully parsed then response peer closed",
+          "tags": {
+            "fixture": "\ud55c\uae00"
+          }
+        },
+        "raw": "{}\n{\"type\": \"event\", \"length\": 90}\n{\"message\": \"fully parsed then response peer closed\", \"tags\": {\"fixture\": \"\\ud55c\\uae00\"}}",
+        "path": "/api/1/envelope/",
+        "header": {},
+        "auth": null,
+        "wire_hex": "7b7d0a7b2274797065223a20226576656e74222c20226c656e677468223a2039307d0a7b226d657373616765223a202266756c6c7920706172736564207468656e20726573706f6e7365207065657220636c6f736564222c202274616773223a207b2266697874757265223a20225c75643535635c7561653030227d7d",
+        "content_encoding": null,
+        "headers": {
+          "Host": "127.0.0.1:46223",
+          "Content-Length": "125"
+        }
+      },
+      "request_hex": "504f5354202f6170692f312f656e76656c6f70652f20485454502f312e310d0a486f73743a203132372e302e302e313a34363232330d0a436f6e74656e742d4c656e6774683a203132350d0a0d0a7b7d0a7b2274797065223a20226576656e74222c20226c656e677468223a2039307d0a7b226d657373616765223a202266756c6c7920706172736564207468656e20726573706f6e7365207065657220636c6f736564222c202274616773223a207b2266697874757265223a20225c75643535635c7561653030227d7d"
+    },
+    {
+      "index": 2,
+      "event_queued_despite_closed_response_peer": true,
+      "captured": {
+        "event": {
+          "message": "fully parsed then response peer closed",
+          "tags": {
+            "fixture": "\ud55c\uae00"
+          }
+        },
+        "raw": "{}\n{\"type\": \"event\", \"length\": 90}\n{\"message\": \"fully parsed then response peer closed\", \"tags\": {\"fixture\": \"\\ud55c\\uae00\"}}",
+        "path": "/api/1/envelope/",
+        "header": {},
+        "auth": null,
+        "wire_hex": "7b7d0a7b2274797065223a20226576656e74222c20226c656e677468223a2039307d0a7b226d657373616765223a202266756c6c7920706172736564207468656e20726573706f6e7365207065657220636c6f736564222c202274616773223a207b2266697874757265223a20225c75643535635c7561653030227d7d",
+        "content_encoding": null,
+        "headers": {
+          "Host": "127.0.0.1:34375",
+          "Content-Length": "125"
+        }
+      },
+      "request_hex": "504f5354202f6170692f312f656e76656c6f70652f20485454502f312e310d0a486f73743a203132372e302e302e313a33343337350d0a436f6e74656e742d4c656e6774683a203132350d0a0d0a7b7d0a7b2274797065223a20226576656e74222c20226c656e677468223a2039307d0a7b226d657373616765223a202266756c6c7920706172736564207468656e20726573706f6e7365207065657220636c6f736564222c202274616773223a207b2266697874757265223a20225c75643535635c7561653030227d7d"
+    }
+  ],
+  "stderr_sha256": "085a179b87eb619688ddb2a348660a1faecbef334d09ddd311eecd28d5f0a435"
+}

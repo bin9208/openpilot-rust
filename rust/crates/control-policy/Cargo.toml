@@ -9,6 +9,7 @@ publish = false
 [features]
 default = ["numerics"]
 numerics = ["dep:libloading", "dep:sha2"]
+diagnostic-553 = ["numerics"]
 
 [lints.rust]
 unsafe_code = "deny"

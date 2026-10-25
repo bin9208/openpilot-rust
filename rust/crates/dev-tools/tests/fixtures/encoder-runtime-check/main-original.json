@@ -1,0 +1,1047 @@
+{
+  "source_sha256": "b62f36792364a431901421ed4c4427dbd0fda60e3c1e5cbd63676f3900aec0ee",
+  "scope": "unchanged original main with controlled Peer/disk/affinity boundaries",
+  "cases": [
+    {
+      "name": "all",
+      "selected": null,
+      "calls": [
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-0-source",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main"
+        ],
+        [
+          "close",
+          "source",
+          "main"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-0-rust",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "main"
+        ],
+        [
+          "close",
+          "rust",
+          "main"
+        ],
+        [
+          "print",
+          {
+            "case": "main",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ],
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-1-source",
+          "--stream",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "--stream"
+        ],
+        [
+          "close",
+          "source",
+          "--stream"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-1-rust",
+          "--stream",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "--stream"
+        ],
+        [
+          "close",
+          "rust",
+          "--stream"
+        ],
+        [
+          "print",
+          {
+            "case": "--stream",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ],
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-2-source",
+          "--carrot-vision-road",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "--carrot-vision-road"
+        ],
+        [
+          "close",
+          "source",
+          "--carrot-vision-road"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-2-rust",
+          "--carrot-vision-road",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "--carrot-vision-road"
+        ],
+        [
+          "close",
+          "rust",
+          "--carrot-vision-road"
+        ],
+        [
+          "print",
+          {
+            "case": "--carrot-vision-road",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ],
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-3-source",
+          "--youtube-low",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "--youtube-low"
+        ],
+        [
+          "close",
+          "source",
+          "--youtube-low"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-3-rust",
+          "--youtube-low",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "--youtube-low"
+        ],
+        [
+          "close",
+          "rust",
+          "--youtube-low"
+        ],
+        [
+          "print",
+          {
+            "case": "--youtube-low",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ],
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-4-source",
+          "--youtube-medium",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "--youtube-medium"
+        ],
+        [
+          "close",
+          "source",
+          "--youtube-medium"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-4-rust",
+          "--youtube-medium",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "--youtube-medium"
+        ],
+        [
+          "close",
+          "rust",
+          "--youtube-medium"
+        ],
+        [
+          "print",
+          {
+            "case": "--youtube-medium",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ],
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-5-source",
+          "--youtube",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "--youtube"
+        ],
+        [
+          "close",
+          "source",
+          "--youtube"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-5-rust",
+          "--youtube",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "--youtube"
+        ],
+        [
+          "close",
+          "rust",
+          "--youtube"
+        ],
+        [
+          "print",
+          {
+            "case": "--youtube",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ],
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-6-source",
+          "--youtube-wide",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "--youtube-wide"
+        ],
+        [
+          "close",
+          "source",
+          "--youtube-wide"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-6-rust",
+          "--youtube-wide",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "--youtube-wide"
+        ],
+        [
+          "close",
+          "rust",
+          "--youtube-wide"
+        ],
+        [
+          "print",
+          {
+            "case": "--youtube-wide",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ],
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-7-source",
+          "main-multi",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main-multi"
+        ],
+        [
+          "close",
+          "source",
+          "main-multi"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-7-rust",
+          "main-multi",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "main-multi"
+        ],
+        [
+          "close",
+          "rust",
+          "main-multi"
+        ],
+        [
+          "print",
+          {
+            "case": "main-multi",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ],
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-8-source",
+          "main-restart",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main-restart"
+        ],
+        [
+          "close",
+          "source",
+          "main-restart"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-8-rust",
+          "main-restart",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "main-restart"
+        ],
+        [
+          "close",
+          "rust",
+          "main-restart"
+        ],
+        [
+          "print",
+          {
+            "case": "main-restart",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ],
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-9-source",
+          "main-lag",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main-lag"
+        ],
+        [
+          "close",
+          "source",
+          "main-lag"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-9-rust",
+          "main-lag",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "main-lag"
+        ],
+        [
+          "close",
+          "rust",
+          "main-lag"
+        ],
+        [
+          "print",
+          {
+            "case": "main-lag",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ]
+      ],
+      "error": null,
+      "artifacts": {
+        "progress.json": "[\n  {\n    \"case\": \"main\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  },\n  {\n    \"case\": \"--stream\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  },\n  {\n    \"case\": \"--carrot-vision-road\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  },\n  {\n    \"case\": \"--youtube-low\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  },\n  {\n    \"case\": \"--youtube-medium\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  },\n  {\n    \"case\": \"--youtube\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  },\n  {\n    \"case\": \"--youtube-wide\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  },\n  {\n    \"case\": \"main-multi\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  },\n  {\n    \"case\": \"main-restart\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  },\n  {\n    \"case\": \"main-lag\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  }\n]\n",
+        "receipt.json": "{\n  \"status\": \"PASS\",\n  \"results\": [\n    {\n      \"case\": \"main\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    },\n    {\n      \"case\": \"--stream\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    },\n    {\n      \"case\": \"--carrot-vision-road\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    },\n    {\n      \"case\": \"--youtube-low\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    },\n    {\n      \"case\": \"--youtube-medium\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    },\n    {\n      \"case\": \"--youtube\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    },\n    {\n      \"case\": \"--youtube-wide\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    },\n    {\n      \"case\": \"main-multi\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    },\n    {\n      \"case\": \"main-restart\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    },\n    {\n      \"case\": \"main-lag\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    }\n  ],\n  \"scope\": \"host PC codecs and real VisionIPC/message queues; not AGNOS hardware or CPU performance\"\n}\n"
+      }
+    },
+    {
+      "name": "selected",
+      "selected": [
+        "--youtube",
+        "main-lag"
+      ],
+      "calls": [
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-0-source",
+          "--youtube",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "--youtube"
+        ],
+        [
+          "close",
+          "source",
+          "--youtube"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-0-rust",
+          "--youtube",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "--youtube"
+        ],
+        [
+          "close",
+          "rust",
+          "--youtube"
+        ],
+        [
+          "print",
+          {
+            "case": "--youtube",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ],
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-1-source",
+          "main-lag",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main-lag"
+        ],
+        [
+          "close",
+          "source",
+          "main-lag"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-1-rust",
+          "main-lag",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "main-lag"
+        ],
+        [
+          "close",
+          "rust",
+          "main-lag"
+        ],
+        [
+          "print",
+          {
+            "case": "main-lag",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ]
+      ],
+      "error": null,
+      "artifacts": {
+        "progress.json": "[\n  {\n    \"case\": \"--youtube\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  },\n  {\n    \"case\": \"main-lag\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  }\n]\n",
+        "receipt.json": "{\n  \"status\": \"PASS\",\n  \"results\": [\n    {\n      \"case\": \"--youtube\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    },\n    {\n      \"case\": \"main-lag\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    }\n  ],\n  \"scope\": \"host PC codecs and real VisionIPC/message queues; not AGNOS hardware or CPU performance\"\n}\n"
+      }
+    },
+    {
+      "name": "duplicate",
+      "selected": [
+        "main",
+        "main"
+      ],
+      "calls": [
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-0-source",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main"
+        ],
+        [
+          "close",
+          "source",
+          "main"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-0-rust",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "main"
+        ],
+        [
+          "close",
+          "rust",
+          "main"
+        ],
+        [
+          "print",
+          {
+            "case": "main",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ],
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-1-source",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main"
+        ],
+        [
+          "close",
+          "source",
+          "main"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-1-rust",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "main"
+        ],
+        [
+          "close",
+          "rust",
+          "main"
+        ],
+        [
+          "print",
+          {
+            "case": "main",
+            "packets_per_process": {
+              "roadEncodeData": 1
+            },
+            "exact_bytes_and_metadata": true
+          }
+        ]
+      ],
+      "error": null,
+      "artifacts": {
+        "progress.json": "[\n  {\n    \"case\": \"main\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  },\n  {\n    \"case\": \"main\",\n    \"packets_per_process\": {\n      \"roadEncodeData\": 1\n    },\n    \"exact_bytes_and_metadata\": true\n  }\n]\n",
+        "receipt.json": "{\n  \"status\": \"PASS\",\n  \"results\": [\n    {\n      \"case\": \"main\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    },\n    {\n      \"case\": \"main\",\n      \"packets_per_process\": {\n        \"roadEncodeData\": 1\n      },\n      \"exact_bytes_and_metadata\": true\n    }\n  ],\n  \"scope\": \"host PC codecs and real VisionIPC/message queues; not AGNOS hardware or CPU performance\"\n}\n"
+      }
+    },
+    {
+      "name": "space",
+      "selected": null,
+      "calls": [],
+      "error": "runtime capture requires 25 GiB plus 1 GiB headroom",
+      "artifacts": {}
+    },
+    {
+      "name": "source-init",
+      "selected": null,
+      "calls": [
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-0-source",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ]
+      ],
+      "error": "source-init",
+      "artifacts": {}
+    },
+    {
+      "name": "source-exercise",
+      "selected": null,
+      "calls": [
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-0-source",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main"
+        ],
+        [
+          "close",
+          "source",
+          "main"
+        ]
+      ],
+      "error": "source-exercise",
+      "artifacts": {}
+    },
+    {
+      "name": "source-close",
+      "selected": null,
+      "calls": [
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-0-source",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main"
+        ],
+        [
+          "close",
+          "source",
+          "main"
+        ]
+      ],
+      "error": "source-close",
+      "artifacts": {}
+    },
+    {
+      "name": "rust-init",
+      "selected": null,
+      "calls": [
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-0-source",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main"
+        ],
+        [
+          "close",
+          "source",
+          "main"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-0-rust",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ]
+      ],
+      "error": "rust-init",
+      "artifacts": {}
+    },
+    {
+      "name": "rust-exercise",
+      "selected": null,
+      "calls": [
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-0-source",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main"
+        ],
+        [
+          "close",
+          "source",
+          "main"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-0-rust",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "main"
+        ],
+        [
+          "close",
+          "rust",
+          "main"
+        ]
+      ],
+      "error": "rust-exercise",
+      "artifacts": {}
+    },
+    {
+      "name": "rust-close",
+      "selected": null,
+      "calls": [
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-0-source",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main"
+        ],
+        [
+          "close",
+          "source",
+          "main"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-0-rust",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "main"
+        ],
+        [
+          "close",
+          "rust",
+          "main"
+        ]
+      ],
+      "error": "rust-close",
+      "artifacts": {}
+    },
+    {
+      "name": "rows",
+      "selected": null,
+      "calls": [
+        [
+          "init",
+          "$ROOT/source",
+          "$ROOT/output/case-0-source",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "source",
+          "main"
+        ],
+        [
+          "close",
+          "source",
+          "main"
+        ],
+        [
+          "init",
+          "$ROOT/rust",
+          "$ROOT/output/case-0-rust",
+          "main",
+          "$ROOT/native",
+          [
+            2,
+            4
+          ]
+        ],
+        [
+          "exercise",
+          "rust",
+          "main"
+        ],
+        [
+          "close",
+          "rust",
+          "main"
+        ]
+      ],
+      "error": "main: source/Rust publications differ; inspect packets.json",
+      "artifacts": {}
+    }
+  ]
+}

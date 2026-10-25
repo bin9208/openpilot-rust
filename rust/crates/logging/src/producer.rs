@@ -1,4 +1,5 @@
-//! Per-thread source-compatible nonblocking PUSH transport and console routing.
+//! Source-compatible nonblocking PUSH transport and console routing.
+//! Ordinary loggers own per-thread connections; runtime emission is process-retained.
 use crate::{
     context::{ContextGuard, GlobalContext, LocalContext},
     record::{format_record, Level, Record},
@@ -10,6 +11,35 @@ use std::{
     io::{self, Write},
     sync::Arc,
 };
+mod runtime;
+pub use runtime::{close_runtime, emit_runtime, RuntimeLogScope};
+
+// Opt-in for the route-upload QA process family only. Its supervisor holds this
+// private directory before any child bind; ordinary runtime callers keep /tmp.
+pub(crate) fn runtime_endpoint(prefix: &str) -> Result<String, Error> {
+    qa_endpoint(prefix, env::var_os("ROUTE_UPLOAD_QA_IPC_ROOT"))
+}
+fn qa_endpoint(prefix: &str, root: Option<std::ffi::OsString>) -> Result<String, Error> {
+    let Some(root) = root else {
+        return Ok(format!("ipc:///tmp/logmessage{prefix}"));
+    };
+    let root = std::path::PathBuf::from(root);
+    if root.parent() != Some(std::path::Path::new("/tmp"))
+        || !root
+            .file_name()
+            .is_some_and(|name| name.as_encoded_bytes().starts_with(b"route-upload-ipc-"))
+        || !std::fs::symlink_metadata(&root)?.is_dir()
+        || std::fs::canonicalize(&root)? != root
+    {
+        return Err(Error::Contract("invalid route-upload QA IPC root"));
+    }
+    let path = root.join("logmessage");
+    Ok(format!(
+        "ipc://{}",
+        path.to_str()
+            .ok_or(Error::Contract("QA logging endpoint is not UTF-8"))?
+    ))
+}
 
 #[derive(Clone)]
 pub struct Factory {
@@ -49,7 +79,7 @@ impl Factory {
                 return Err(Error::Contract("logging IPC prefix is not UTF-8"))
             }
         };
-        let factory = Self::new(format!("ipc:///tmp/logmessage{prefix}"))?;
+        let factory = Self::new(runtime_endpoint(&prefix)?)?;
         match env::var("OPENPILOT_LOG_CONTEXT") {
             Ok(context) => {
                 let Value::Object(mut fields) = serde_json::from_str(&context)? else {
@@ -101,7 +131,18 @@ impl Factory {
             factory: self.clone(),
             local: self.global.local(),
             state: Connection::Disconnected,
+            retained: false,
         }
+    }
+
+    /// Keep this factory's context while sending through the process-retained
+    /// runtime connection. The first successful runtime emission selects the
+    /// endpoint; retain RuntimeLogScope at the outermost process boundary.
+    /// Dropping this caller-local facade does not close queued records.
+    pub fn runtime_logger(&self) -> Logger {
+        let mut logger = self.logger();
+        logger.retained = true;
+        logger
     }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -135,8 +176,19 @@ pub struct Logger {
     factory: Factory,
     local: LocalContext,
     state: Connection,
+    retained: bool,
 }
 impl Logger {
+    /// Create a caller-local context/formatter facade over the process-retained
+    /// runtime connection. Dropping this facade never closes queued records.
+    ///
+    /// Factory initialization errors and local binding precedence match an
+    /// ordinary runtime Logger. The first successful runtime emission selects
+    /// the shared endpoint; retain RuntimeLogScope at the process root.
+    /// Explicit close closes only this facade in the current PID.
+    pub fn for_runtime_retained() -> Result<Self, Error> {
+        Ok(Factory::for_runtime()?.runtime_logger())
+    }
     pub fn bind(&self, fields: Fields) {
         self.local.bind(fields)
     }
@@ -147,8 +199,29 @@ impl Logger {
         self.local.snapshot()
     }
     pub fn emit(&mut self, site: Site, record: Record) -> Result<Delivery, Error> {
-        if record.level < Level::Debug {
+        let Some(packet) = self.prepare(site, record)? else {
             return Ok(Delivery::Filtered);
+        };
+        if self.retained {
+            if let Connection::Closed(owner) = &self.state {
+                if *owner == std::process::id() {
+                    return Err(zmq::Error::ENOTSOCK.into());
+                }
+                // Like an ordinary Logger, a facade closed in its parent PID
+                // can reconnect in the controlled fork child.
+                self.state = Connection::Disconnected;
+            }
+            runtime::send_prepared(&self.factory, &packet)
+        } else {
+            self.state.send(&self.factory.endpoint, &packet)
+        }
+    }
+    /// Format on the calling thread, before transport. Runtime emission uses a
+    /// temporary logger only for its empty local/inherited global context; the
+    /// Rc-backed local context never enters the shared process state.
+    fn prepare(&self, site: Site, record: Record) -> Result<Option<Vec<u8>>, Error> {
+        if record.level < Level::Debug {
+            return Ok(None);
         }
         let metadata = site.metadata(&self.factory.host)?;
         if record.level >= self.factory.console {
@@ -162,15 +235,35 @@ impl Logger {
             record.exception.as_deref(),
             &metadata,
         )?;
-        self.send(&packet)
+        Ok(Some(packet))
     }
-    fn send(&mut self, packet: &[u8]) -> Result<Delivery, Error> {
+    pub fn close(&mut self) {
+        if self.retained {
+            // No shared socket lives in the facade. Closing an unused or
+            // inherited facade still closes this facade in the calling PID.
+            self.state = Connection::Closed(std::process::id());
+        } else {
+            self.state.close();
+        }
+    }
+}
+impl Drop for Logger {
+    fn drop(&mut self) {
+        self.state.release();
+    }
+}
+
+// Only the mechanical socket lifetime is shared. Both producer entrypoints use
+// identical connect/send/release/close behavior, including the inherited-PID
+// guard, EINTR retry, DONTWAIT, EAGAIN delivery result and ten-millisecond linger.
+impl Connection {
+    fn send(&mut self, endpoint: &str, packet: &[u8]) -> Result<Delivery, Error> {
         let pid = std::process::id();
-        let reconnect = match &self.state {
-            Connection::Disconnected => true,
-            Connection::Connected(transport) => transport.pid != pid,
-            Connection::Closed(owner) if *owner == pid => return Err(zmq::Error::ENOTSOCK.into()),
-            Connection::Closed(_) => true,
+        let reconnect = match self {
+            Self::Disconnected => true,
+            Self::Connected(transport) => transport.pid != pid,
+            Self::Closed(owner) if *owner == pid => return Err(zmq::Error::ENOTSOCK.into()),
+            Self::Closed(_) => true,
         };
         if reconnect {
             self.release();
@@ -178,16 +271,16 @@ impl Logger {
             let socket = context.socket(zmq::PUSH)?;
             socket.set_linger(10)?;
             loop {
-                match socket.connect(&self.factory.endpoint) {
+                match socket.connect(endpoint) {
                     Ok(()) => break,
                     Err(zmq::Error::EINTR) => continue,
                     Err(error) => return Err(error.into()),
                 }
             }
-            // zmq::Socket retains a Context clone, so its last drop closes the socket before ctx_term.
-            self.state = Connection::Connected(Transport { socket, pid });
+            // Socket retains Context: socket close precedes context termination.
+            *self = Self::Connected(Transport { socket, pid });
         }
-        let Connection::Connected(transport) = &self.state else {
+        let Self::Connected(transport) = self else {
             return Err(Error::Contract("logger connection missing"));
         };
         loop {
@@ -200,30 +293,25 @@ impl Logger {
         }
     }
     fn release(&mut self) -> Option<u32> {
-        match std::mem::replace(&mut self.state, Connection::Disconnected) {
-            Connection::Disconnected => None,
-            Connection::Closed(pid) => Some(pid),
-            Connection::Connected(transport) => {
+        match std::mem::replace(self, Self::Disconnected) {
+            Self::Disconnected => None,
+            Self::Closed(pid) => Some(pid),
+            Self::Connected(transport) => {
                 let pid = transport.pid;
                 if pid != std::process::id() {
-                    // After fork, the inherited libzmq I/O threads and locks are unusable. Like
-                    // pyzmq _term/close's PID guard, skip both socket close and context termination.
-                    // The child forgets only its copied handles; the parent's ownership is unchanged.
+                    // Inherited libzmq I/O threads/locks are unusable after fork.
+                    // Like pyzmq's PID guard, skip close and context termination
+                    // only for the child's copied handles, never the parent.
                     std::mem::forget(transport);
                 }
                 Some(pid)
             }
         }
     }
-    pub fn close(&mut self) {
+    fn close(&mut self) {
         if let Some(pid) = self.release() {
-            self.state = Connection::Closed(pid);
+            *self = Self::Closed(pid);
         }
-    }
-}
-impl Drop for Logger {
-    fn drop(&mut self) {
-        self.release();
     }
 }
 
@@ -238,4 +326,45 @@ fn write_console(record: &Record) -> Result<(), io::Error> {
     }
     stderr.write_all(b"\n")?;
     stderr.flush()
+}
+
+#[cfg(test)]
+mod qa_endpoint_tests {
+    use super::*;
+    #[test]
+    fn default_and_owned_qa_log_endpoint_are_explicit_and_invalid_roots_fail() {
+        assert_eq!(
+            qa_endpoint("-original", None).unwrap(),
+            "ipc:///tmp/logmessage-original"
+        );
+        let root = tempfile::Builder::new()
+            .prefix("route-upload-ipc-")
+            .tempdir_in("/tmp")
+            .unwrap();
+        assert_eq!(
+            qa_endpoint("-original", Some(root.path().as_os_str().to_owned())).unwrap(),
+            format!("ipc://{}/logmessage", root.path().display())
+        );
+        for path in [
+            std::path::Path::new("/tmp"),
+            std::path::Path::new("relative"),
+            std::path::Path::new("/tmp/route-upload-ipc-missing"),
+        ] {
+            assert!(qa_endpoint("-original", Some(path.as_os_str().to_owned())).is_err());
+        }
+        let alias = root.path().with_extension("alias");
+        std::os::unix::fs::symlink(root.path(), &alias).unwrap();
+        for suffix in ["", "/", "/."] {
+            let mut spelling = alias.as_os_str().to_owned();
+            spelling.push(suffix);
+            assert!(
+                qa_endpoint("-original", Some(spelling)).is_err(),
+                "QA alias must be rejected, including trailing separators: {suffix}"
+            );
+            let mut genuine = root.path().as_os_str().to_owned();
+            genuine.push(suffix);
+            assert!(qa_endpoint("-original", Some(genuine)).is_ok());
+        }
+        std::fs::remove_file(alias).unwrap();
+    }
 }

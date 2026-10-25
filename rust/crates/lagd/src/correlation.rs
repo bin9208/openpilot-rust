@@ -88,18 +88,16 @@ impl Correlator {
         if expected.len() != actual.len() || expected.len() != mask.len() {
             return Err(Error::Contract("correlation shape"));
         }
-        let expected: Vec<_> = expected
+        let expected = expected
             .iter()
             .zip(mask)
-            .map(|(&value, &valid)| if valid { value } else { 0. })
-            .collect();
-        let actual: Vec<_> = actual
+            .map(|(&value, &valid)| if valid { value } else { 0. });
+        let actual = actual
             .iter()
             .zip(mask)
-            .map(|(&value, &valid)| if valid { value } else { 0. })
-            .collect();
-        let actual_fft = self.fft(actual.iter().copied())?;
-        let expected_fft = self.fft(expected.iter().rev().copied())?;
+            .map(|(&value, &valid)| if valid { value } else { 0. });
+        let actual_fft = self.fft(actual.clone())?;
+        let expected_fft = self.fft(expected.clone().rev())?;
         let mask_fft = self.fft(mask.iter().map(|value| f64::from(*value)))?;
         let reversed_mask_fft = self.fft(mask.iter().rev().map(|value| f64::from(*value)))?;
         let overlap: Vec<_> = self
@@ -110,8 +108,8 @@ impl Correlator {
         let ma = self.convolve(&reversed_mask_fft, &actual_fft)?;
         let me = self.convolve(&mask_fft, &expected_fft)?;
         let mut numerator = self.convolve(&expected_fft, &actual_fft)?;
-        let actual_squared_fft = self.fft(actual.iter().map(|value| value * value))?;
-        let expected_squared_fft = self.fft(expected.iter().rev().map(|value| value * value))?;
+        let actual_squared_fft = self.fft(actual.map(|value| value * value))?;
+        let expected_squared_fft = self.fft(expected.rev().map(|value| value * value))?;
         let mut da = self.convolve(&reversed_mask_fft, &actual_squared_fft)?;
         let mut de = self.convolve(&mask_fft, &expected_squared_fft)?;
         let mut denominator = Vec::with_capacity(self.n);

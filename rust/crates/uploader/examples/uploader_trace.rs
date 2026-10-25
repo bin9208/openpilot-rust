@@ -79,6 +79,7 @@ impl Transfer for Transport {
                     Ok(UploadResponse {
                         status: *status,
                         content_length: length.clone(),
+                        source: None,
                     })
                 }
             }
@@ -112,6 +113,13 @@ impl Attributes for Attr {
             Err(io::Error::from_raw_os_error(13))
         } else {
             self.cache.mark_uploaded(path)
+        }
+    }
+    fn mark_uploaded_source(&mut self, path: &Path, source: &std::fs::File) -> io::Result<()> {
+        if self.fail {
+            Err(io::Error::from_raw_os_error(13))
+        } else {
+            self.cache.mark_uploaded_source(path, source)
         }
     }
 }

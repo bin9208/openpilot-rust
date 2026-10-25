@@ -1,0 +1,136 @@
+[
+  {
+    "kind": "requests",
+    "args": [],
+    "exit": 2,
+    "stdout": false,
+    "stderr": true
+  },
+  {
+    "kind": "requests",
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "stdout": true,
+    "stderr": false
+  },
+  {
+    "kind": "requests",
+    "args": [
+      "--source"
+    ],
+    "exit": 2,
+    "stdout": false,
+    "stderr": true
+  },
+  {
+    "kind": "requests",
+    "args": [
+      "--source",
+      ".",
+      "--unknown"
+    ],
+    "exit": 2,
+    "stdout": false,
+    "stderr": true
+  },
+  {
+    "kind": "requests",
+    "args": [
+      "--sou",
+      "$ROOT"
+    ],
+    "exit": 0,
+    "stdout": true,
+    "stderr": false
+  },
+  {
+    "kind": "requests",
+    "args": [
+      "--source=$ROOT"
+    ],
+    "exit": 0,
+    "stdout": true,
+    "stderr": false
+  },
+  {
+    "kind": "requests",
+    "args": [
+      "--source",
+      "missing",
+      "--source",
+      "$ROOT"
+    ],
+    "exit": 0,
+    "stdout": true,
+    "stderr": false
+  },
+  {
+    "kind": "packets",
+    "args": [],
+    "exit": 2,
+    "stdout": false,
+    "stderr": true
+  },
+  {
+    "kind": "packets",
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "stdout": true,
+    "stderr": false
+  },
+  {
+    "kind": "packets",
+    "args": [
+      "--source"
+    ],
+    "exit": 2,
+    "stdout": false,
+    "stderr": true
+  },
+  {
+    "kind": "packets",
+    "args": [
+      "--source",
+      ".",
+      "--unknown"
+    ],
+    "exit": 2,
+    "stdout": false,
+    "stderr": true
+  },
+  {
+    "kind": "packets",
+    "args": [
+      "--sou",
+      "$ROOT"
+    ],
+    "exit": 0,
+    "stdout": true,
+    "stderr": false
+  },
+  {
+    "kind": "packets",
+    "args": [
+      "--source=$ROOT"
+    ],
+    "exit": 0,
+    "stdout": true,
+    "stderr": false
+  },
+  {
+    "kind": "packets",
+    "args": [
+      "--source",
+      "missing",
+      "--source",
+      "$ROOT"
+    ],
+    "exit": 0,
+    "stdout": true,
+    "stderr": false
+  }
+]

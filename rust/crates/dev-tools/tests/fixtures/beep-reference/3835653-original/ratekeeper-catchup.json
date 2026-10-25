@@ -1,0 +1,40 @@
+{
+  "name": "ratekeeper-catchup",
+  "original": {
+    "implementation": "python",
+    "exit_code": 0,
+    "stdout": "beep lagging by 40.00 ms\nbeep lagging by 10.00 ms\n",
+    "stderr": "",
+    "trace": [
+      {
+        "kind": "sleep",
+        "seconds": 0.049000000000001265
+      },
+      {
+        "kind": "rate",
+        "frame": 1,
+        "remaining": 0.049000000000001265
+      },
+      {
+        "kind": "rate",
+        "frame": 2,
+        "remaining": -0.03999999999999915
+      },
+      {
+        "kind": "rate",
+        "frame": 3,
+        "remaining": -0.00999999999999801
+      },
+      {
+        "kind": "sleep",
+        "seconds": 0.0400000000000027
+      },
+      {
+        "kind": "rate",
+        "frame": 4,
+        "remaining": 0.0400000000000027
+      }
+    ],
+    "log_packets": []
+  }
+}

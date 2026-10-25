@@ -1,0 +1,413 @@
+[
+  {
+    "mode": "exact",
+    "error": null,
+    "artifacts": {
+      "result.json": {
+        "bytes": 250,
+        "sha256": "9f7876917aab6b56e84f317b5441a7777f009a837af9083d1f302a3eb747ba22"
+      },
+      "native.stderr": {
+        "bytes": 15,
+        "sha256": "998113782533259e61f5ee3ba673430f83c943cda57a7c9a8ae86ef60d8d644f"
+      },
+      "native.jsonl": {
+        "bytes": 956857,
+        "sha256": "7c594b26bfca8e10f7bde54fc6991e3236832bbfa6ef301176c107bdf601d27d"
+      },
+      "source.json": {
+        "bytes": 966906,
+        "sha256": "e96dd87dc646c7d574c9bf42849e3fb6bba3849b17dc5a9c5ec8923aec2c985f"
+      },
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": {
+      "cases": 10049,
+      "exact": "signed fields and timestamp binary64 bits",
+      "binary_sha256": "7350e5acf80457cea7a5839c2dcc413e3aaa59ab748c5bebec13f7a83ee304bb",
+      "source_sha256": "d032d6069416bae35aea07e25f28f9930795f29cf0a9518c122bfecb6cebe4d3"
+    },
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  },
+  {
+    "mode": "exit9",
+    "error": "CalledProcessError",
+    "artifacts": {
+      "native.stderr": {
+        "bytes": 15,
+        "sha256": "998113782533259e61f5ee3ba673430f83c943cda57a7c9a8ae86ef60d8d644f"
+      },
+      "native.jsonl": {
+        "bytes": 18,
+        "sha256": "25e04ad6f4397da377a1de2502269113cb4c85559bb0621481caedfdeb06c7c7"
+      },
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": null,
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  },
+  {
+    "mode": "missing",
+    "error": "ValueError",
+    "artifacts": {
+      "native.stderr": {
+        "bytes": 15,
+        "sha256": "998113782533259e61f5ee3ba673430f83c943cda57a7c9a8ae86ef60d8d644f"
+      },
+      "native.jsonl": {
+        "bytes": 956800,
+        "sha256": "eac6dfa44cb603c5162234b3f320909679de593553aa41ff6a62b93a218c355f"
+      },
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": null,
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  },
+  {
+    "mode": "extra",
+    "error": "ValueError",
+    "artifacts": {
+      "native.stderr": {
+        "bytes": 15,
+        "sha256": "998113782533259e61f5ee3ba673430f83c943cda57a7c9a8ae86ef60d8d644f"
+      },
+      "native.jsonl": {
+        "bytes": 956954,
+        "sha256": "b8bc4fd8dfa693e13a0ac9818e144b6d65f5373dfeceb6ab4d9b2f68f289b688"
+      },
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": null,
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  },
+  {
+    "mode": "invalid-json",
+    "error": "JSONDecodeError",
+    "artifacts": {
+      "native.stderr": {
+        "bytes": 15,
+        "sha256": "998113782533259e61f5ee3ba673430f83c943cda57a7c9a8ae86ef60d8d644f"
+      },
+      "native.jsonl": {
+        "bytes": 9,
+        "sha256": "90801d4bc35f12b2a50a3a4fac96da0f3961980480459e6226c43803a7c56f74"
+      },
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": null,
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  },
+  {
+    "mode": "different-value",
+    "error": "AssertionError",
+    "artifacts": {
+      "native.stderr": {
+        "bytes": 15,
+        "sha256": "998113782533259e61f5ee3ba673430f83c943cda57a7c9a8ae86ef60d8d644f"
+      },
+      "native.jsonl": {
+        "bytes": 956857,
+        "sha256": "217c4ec2ace8a7429a898c0ecfd3484eb3ae585f8433fb52fcf686af85e8aedd"
+      },
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": null,
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  },
+  {
+    "mode": "different-timestamp",
+    "error": "AssertionError",
+    "artifacts": {
+      "native.stderr": {
+        "bytes": 15,
+        "sha256": "998113782533259e61f5ee3ba673430f83c943cda57a7c9a8ae86ef60d8d644f"
+      },
+      "native.jsonl": {
+        "bytes": 956856,
+        "sha256": "ef35a2b4ce062e00305d8ce29d2b0134d0013141c01892d0df95f3066f1cd24e"
+      },
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": null,
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  },
+  {
+    "mode": "timeout",
+    "error": "TimeoutExpired",
+    "artifacts": {
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": null,
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  },
+  {
+    "mode": "decode-error",
+    "error": "UnicodeDecodeError",
+    "artifacts": {
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": null,
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  },
+  {
+    "mode": "existing-output",
+    "error": "FileExistsError",
+    "artifacts": {},
+    "report": null,
+    "calls": []
+  },
+  {
+    "mode": "missing-binary",
+    "error": "FileNotFoundError",
+    "artifacts": {
+      "native.stderr": {
+        "bytes": 15,
+        "sha256": "998113782533259e61f5ee3ba673430f83c943cda57a7c9a8ae86ef60d8d644f"
+      },
+      "native.jsonl": {
+        "bytes": 956857,
+        "sha256": "7c594b26bfca8e10f7bde54fc6991e3236832bbfa6ef301176c107bdf601d27d"
+      },
+      "source.json": {
+        "bytes": 966906,
+        "sha256": "e96dd87dc646c7d574c9bf42849e3fb6bba3849b17dc5a9c5ec8923aec2c985f"
+      },
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": null,
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  },
+  {
+    "mode": "boolean-zero",
+    "error": null,
+    "artifacts": {
+      "result.json": {
+        "bytes": 250,
+        "sha256": "9f7876917aab6b56e84f317b5441a7777f009a837af9083d1f302a3eb747ba22"
+      },
+      "native.stderr": {
+        "bytes": 15,
+        "sha256": "998113782533259e61f5ee3ba673430f83c943cda57a7c9a8ae86ef60d8d644f"
+      },
+      "native.jsonl": {
+        "bytes": 956859,
+        "sha256": "6f62ebc7e44d473c4b666b08ce5c97286bcfe5798eccd4efe060a3e34c012430"
+      },
+      "source.json": {
+        "bytes": 966906,
+        "sha256": "e96dd87dc646c7d574c9bf42849e3fb6bba3849b17dc5a9c5ec8923aec2c985f"
+      },
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": {
+      "cases": 10049,
+      "exact": "signed fields and timestamp binary64 bits",
+      "binary_sha256": "7350e5acf80457cea7a5839c2dcc413e3aaa59ab748c5bebec13f7a83ee304bb",
+      "source_sha256": "d032d6069416bae35aea07e25f28f9930795f29cf0a9518c122bfecb6cebe4d3"
+    },
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  },
+  {
+    "mode": "integer-zero",
+    "error": null,
+    "artifacts": {
+      "result.json": {
+        "bytes": 250,
+        "sha256": "9f7876917aab6b56e84f317b5441a7777f009a837af9083d1f302a3eb747ba22"
+      },
+      "native.stderr": {
+        "bytes": 15,
+        "sha256": "998113782533259e61f5ee3ba673430f83c943cda57a7c9a8ae86ef60d8d644f"
+      },
+      "native.jsonl": {
+        "bytes": 956855,
+        "sha256": "8b663d96ed9bf6579f36864373cb7413c9822174922d1ee916ebe5bec22d1164"
+      },
+      "source.json": {
+        "bytes": 966906,
+        "sha256": "e96dd87dc646c7d574c9bf42849e3fb6bba3849b17dc5a9c5ec8923aec2c985f"
+      },
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": {
+      "cases": 10049,
+      "exact": "signed fields and timestamp binary64 bits",
+      "binary_sha256": "7350e5acf80457cea7a5839c2dcc413e3aaa59ab748c5bebec13f7a83ee304bb",
+      "source_sha256": "d032d6069416bae35aea07e25f28f9930795f29cf0a9518c122bfecb6cebe4d3"
+    },
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  },
+  {
+    "mode": "negative-zero",
+    "error": "AssertionError",
+    "artifacts": {
+      "native.stderr": {
+        "bytes": 15,
+        "sha256": "998113782533259e61f5ee3ba673430f83c943cda57a7c9a8ae86ef60d8d644f"
+      },
+      "native.jsonl": {
+        "bytes": 956858,
+        "sha256": "50bb60371ca04e538276f05e511dde96fc81ebaf251a863e7238ed1cfaac2c4d"
+      },
+      "input.jsonl": {
+        "bytes": 1110471,
+        "sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    },
+    "report": null,
+    "calls": [
+      {
+        "argv": [
+          "BINARY",
+          "decode"
+        ],
+        "timeout": 30,
+        "payload_sha256": "ef3d099c789cf1663095861a6f09c1b9446f105338820146737921902d2c0f04"
+      }
+    ]
+  }
+]

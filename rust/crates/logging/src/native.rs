@@ -56,7 +56,7 @@ impl Logger {
                 return Err(Error::Contract("logging IPC prefix is not UTF-8"));
             }
         };
-        let logger = Self::new(format!("ipc:///tmp/logmessage{prefix}"), version, device)?;
+        let logger = Self::new(crate::producer::runtime_endpoint(&prefix)?, version, device)?;
         *global = Some(logger.clone());
         Ok(logger)
     }

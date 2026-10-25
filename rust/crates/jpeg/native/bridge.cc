@@ -1,10 +1,24 @@
 #include "bridge.h"
 #include "encode.h"
+#include "decode.h"
 #include "openpilot-jpeg/src/bridge.rs.h"
 #include <cstdlib>
 #include <memory>
 #include <stdexcept>
 namespace openpilot_jpeg {
+Decoded decode(rust::Slice<const std::uint8_t> bytes,std::uint64_t max_pixels) {
+  unsigned char *pixels=nullptr;
+  std::size_t size=0;
+  unsigned int width=0,height=0,components=0;
+  char error[256]={0};
+  if (!decode_pixels(bytes.data(),bytes.size(),max_pixels,&pixels,&size,&width,&height,&components,error,sizeof(error))) throw std::runtime_error(error);
+  const std::unique_ptr<unsigned char,decltype(&std::free)> owned(pixels,&std::free);
+  Decoded result;
+  result.width=width; result.height=height; result.components=components;
+  result.pixels.reserve(size);
+  for (std::size_t i=0;i<size;++i) result.pixels.push_back(pixels[i]);
+  return result;
+}
 rust::Vec<std::uint8_t> encode(rust::Slice<const std::uint8_t> rgb,std::uint32_t width,std::uint32_t height) {
   if (!width || !height || width>65500 || height>65500) throw std::invalid_argument("JPEG dimensions do not match RGB slice");
   const std::uint64_t length=std::uint64_t{width}*height*3;

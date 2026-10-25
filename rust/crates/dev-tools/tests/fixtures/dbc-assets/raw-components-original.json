@@ -1,0 +1,81 @@
+{
+  "scope": "Actual unchanged original packager Path-component Unicode order, invalid0x80 mapsU+DC80 after validUTF8 U+00A0; no candidate expected data.",
+  "source_sha256": {
+    "rust/tools/radarcan_prepare_assets.py": "392dd87d54bfea8fe160a9c3e7cf6d5c2c888b4be2aee94822b1417b1b31d450",
+    "opendbc_repo/opendbc/dbc/generator/generator.py": "cbba0de854469d42d096451d358153c3c4ffe86da59bcbf350a2c40364685aa5",
+    ".analysis/scratch/2026-10-18-dbc-generator/capture-assets-raw-components.py": "8f8c525d2ec63e714c49770c05be3fa828c856fe82d12a23d4b9e779d75b07be"
+  },
+  "files": [
+    [
+      "622d802f696e7075742e747874",
+      "72617720636f6d706f6e656e7420622d802f696e7075742e747874"
+    ],
+    [
+      "622d802e646263",
+      "72617720636f6d706f6e656e7420622d802e646263"
+    ],
+    [
+      "622dc2a02f696e7075742e747874",
+      "72617720636f6d706f6e656e7420622dc2a02f696e7075742e747874"
+    ],
+    [
+      "622dc2a02e646263",
+      "72617720636f6d706f6e656e7420622dc2a02e646263"
+    ]
+  ],
+  "source_order_codepoints": [
+    [
+      98,
+      45,
+      160,
+      47,
+      105,
+      110,
+      112,
+      117,
+      116,
+      46,
+      116,
+      120,
+      116
+    ],
+    [
+      98,
+      45,
+      160,
+      46,
+      100,
+      98,
+      99
+    ],
+    [
+      98,
+      45,
+      56448,
+      47,
+      105,
+      110,
+      112,
+      117,
+      116,
+      46,
+      116,
+      120,
+      116
+    ],
+    [
+      98,
+      45,
+      56448,
+      46,
+      100,
+      98,
+      99
+    ]
+  ],
+  "asset_count": 105,
+  "copied_asset_sha256": {
+    "622dc2a02e646263": "33ca8473e5e8e31c9d995c59c0cbe5318c3a7441e360ff043ff52120c41825a4",
+    "622d802e646263": "c395e3d2334fae49d971fb7c1b61cca6178d9fd0b74a2148f27c133f68b58fa6"
+  }
+}

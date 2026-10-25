@@ -1,0 +1,1 @@
+PASS production updated: exclusive lock, SIGUSR1 check, SIGHUP fetch/finalize, Params/logs, symlink/mode and SIGTERM lifecycle

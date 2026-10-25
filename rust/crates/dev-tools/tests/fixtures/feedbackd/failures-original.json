@@ -1,0 +1,26 @@
+[
+  {
+    "name": "early-exit",
+    "error_kind": "AssertionError",
+    "readiness_error": null,
+    "prefix_restored": true,
+    "shm_exists": false,
+    "logs_created": true
+  },
+  {
+    "name": "missing-child",
+    "error_kind": "FileNotFoundError",
+    "readiness_error": null,
+    "prefix_restored": false,
+    "shm_exists": true,
+    "logs_created": true
+  },
+  {
+    "name": "subscriptions-timeout",
+    "error_kind": "AssertionError",
+    "readiness_error": "feedback subscriptions not ready",
+    "prefix_restored": true,
+    "shm_exists": false,
+    "logs_created": true
+  }
+]

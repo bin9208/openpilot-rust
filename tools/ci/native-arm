@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# #535 표준 ARM VM 전용 adapter. 원래 기능 명령은 현재 host에서 그대로 실행한다.
+set -euo pipefail
+fail() { printf '%s\n' "$*" >&2; exit 1; }
+[[ ${GITHUB_ACTIONS:-}:${GITHUB_REPOSITORY:-} == true:bin9208/openpilot-rust &&
+   ${RUNNER_ENVIRONMENT:-}:${RUNNER_OS:-}:${RUNNER_ARCH:-} == github-hosted:Linux:ARM64 &&
+   $(uname -s):$(uname -m) == Linux:aarch64 && ${LOCAL_CI_ARCH:-} == aarch64 ]] || fail 'Trusted hosted ARM64 source required'
+# GITHUB_WORKFLOW_REF는 reusable 실행에서도 caller context다. candidate 제한은 유지한다.
+if [[ ${GITHUB_WORKFLOW_REF:-} == "bin9208/openpilot-rust/.github/workflows/rust.yml@${GITHUB_REF:-}" ]]; then
+test "${CI296_NATIVE_ARM_CALLER:-}" = rust.yml
+test "${GITHUB_REPOSITORY:-}" = bin9208/openpilot-rust
+test "${GITHUB_WORKFLOW_REF:-}" = "bin9208/openpilot-rust/.github/workflows/rust.yml@${GITHUB_REF:-}"
+case "${GITHUB_EVENT_NAME:-}" in
+  push) [[ ${GITHUB_REF:-} == refs/heads/dev || ${GITHUB_REF:-} == refs/heads/main ]] ;;
+  pull_request)
+    [[ ${GITHUB_REF:-} =~ ^refs/pull/[1-9][0-9]*/merge$ &&
+       ( ${GITHUB_BASE_REF:-} == dev || ${GITHUB_BASE_REF:-} == main ) &&
+       ${CI296_PR_HEAD_REPOSITORY:-} == bin9208/openpilot-rust ]] ;;
+  workflow_dispatch)
+    case "${GITHUB_REF:-}" in refs/heads/?*|refs/tags/?*) ;; *) exit 1 ;; esac ;;
+  *) exit 1 ;;
+esac
+else
+  [[ ${GITHUB_EVENT_NAME:-} == push && ${GITHUB_REF:-} == refs/heads/codex/feat-523-python-rust &&
+     -z ${CI296_NATIVE_ARM_CALLER:-} ]] || fail 'Candidate ARM source required'
+  case ${GITHUB_WORKFLOW_REF:-} in
+    "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm.yml@$GITHUB_REF"|\
+    "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-more.yml@$GITHUB_REF"|\
+    "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-remaining.yml@$GITHUB_REF"|\
+    "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-final-two.yml@$GITHUB_REF") ;;
+    *) fail 'Unknown native ARM caller' ;;
+  esac
+fi
+job=${CI_JOB_TEMP:?}; source_dir=${CI296_SOURCE:?}
+[[ $job == /tmp/openpilot-ci.?????? && -d $job && ! -L $job && $(realpath -e "$job") == "$job" &&
+   $(stat -c '%u:%a' "$job") == "$(id -u):700" &&
+   -f $job/owner && ! -L $job/owner && $(cat "$job/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]] || fail 'Owned job required'
+[[ -d $source_dir && ! -L $source_dir && $(realpath -e "$source_dir") == "$source_dir" &&
+   $GITHUB_SHA =~ ^[0-9a-f]{40}$ && $(git -C "$source_dir" --no-optional-locks rev-parse HEAD) == "$GITHUB_SHA" &&
+   ${HOME:-} == "$job/home" && ${CARGO_HOME:-} == "$job/cargo-home" &&
+   ( ${RUSTUP_HOME:-} == "$job/rustup-home" ||
+     ( ${OPENPILOT_CI_PREPARED_RUST_MODE:-} == native-arm-530-v1 &&
+       ${RUSTUP_HOME:-} == "$job/arm530-sdk/rustup-home" &&
+       ( ${GITHUB_JOB:-} == planner-runtime || ${GITHUB_JOB:-} == carrot-man-runtime ||
+         ${GITHUB_JOB:-} == webrtc-runtime || ${GITHUB_JOB:-} == webcam-runtime ||
+         ${GITHUB_JOB:-} == xiaoge-runtime || ${GITHUB_JOB:-} == radard-runtime ||
+         ${GITHUB_JOB:-} == radar-arm || ${GITHUB_JOB:-} == carrot-navi-arm ) ) ) ]] || fail 'Private exact source and tool homes required'
+if [[ -n ${OPENPILOT_CI_PREPARED_RUST_MODE:-} ]]; then
+  [[ ${OPENPILOT_CI_PREPARED_RUST_MODE:-} == native-arm-530-v1 &&
+     ${RUSTUP_HOME:-} == "$job/arm530-sdk/rustup-home" ]] || fail 'Prepared ARM mode/home differs'
+fi
+if [[ ${RUSTUP_HOME:-} == "$job/arm530-sdk/rustup-home" ]]; then
+  /usr/bin/bash "$source_dir/tools/ci/prepare-readonly-arm-rust-530" verify
+fi
+transport="$job/local-arm"
+case ${1:-} in
+  prepare)
+    umask 077
+    test ! -e "$transport" && test ! -L "$transport"
+    mkdir -m 700 "$transport"
+    if test ! -e "$job/bin" && test ! -L "$job/bin"; then mkdir -m 700 "$job/bin"; fi
+    test -d "$job/bin" && test ! -L "$job/bin"
+    test "$(realpath -e "$job/bin")" = "$job/bin"
+    test "$(stat -c '%u:%a' "$job/bin")" = "$(id -u):700"
+    test ! -e "$job/bin/openpilot-local-shell" && test ! -L "$job/bin/openpilot-local-shell"
+    ln -s "$source_dir/tools/ci/native-arm" "$job/bin/openpilot-local-shell"
+    printf '%s\n' "$job/bin" >> "$GITHUB_PATH"
+    printf 'LOCAL_CI_TARGET_DIR=%s/rust/target\nOPENPILOT_CI_EXECUTION_MODE=native-host\nOPENPILOT_CI_HOST_ARCH=aarch64\nOPENPILOT_CI_TARGET_ARCH=aarch64\n' "$source_dir" >> "$GITHUB_ENV"
+    printf '{"schema":1,"source_commit":"%s","execution_mode":"native-host","host_architecture":"aarch64","guest_architecture":null,"native_arm_vm":true,"device_validated":false,"bare_metal_verified":false}\n' "$GITHUB_SHA" > "$transport/execution.json"
+    uname -a > "$transport/kernel.txt"
+    df -PB1 "$source_dir" "$job" > "$transport/disk-before.txt"
+    ;;
+  finish)
+    test -f "$transport/execution.json" && test ! -L "$transport/execution.json"
+    cat "$transport/execution.json"
+    ;;
+  *)
+    [[ $# == 1 && -f $1 && ! -L $1 && $(realpath -e "$1") == "$1" && -O $1 ]] || fail 'One owned canonical Actions command file required'
+    test -f "$transport/execution.json" && test ! -L "$transport/execution.json"
+    test "$(readlink -e "$job/bin/openpilot-local-shell")" = "$source_dir/tools/ci/native-arm"
+    test "$(command -v python)" = "$job/venv/bin/python"
+    test "$(python --version)" = "Python 3.12.14"
+    exec /usr/bin/bash --noprofile --norc -e -o pipefail "$1"
+    ;;
+esac

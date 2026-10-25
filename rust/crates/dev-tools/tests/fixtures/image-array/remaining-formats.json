@@ -1,0 +1,181 @@
+[
+  {
+    "name": "remaining-mcidas-1-0",
+    "mode": "L",
+    "shape": [
+      2,
+      4
+    ],
+    "values_sha256": "fece8d601cd4c9020e24f9e4a47feedefb2bceff5e9798d8056aea8700052eaa",
+    "input_sha256": "ea75f1427654de3b22e3b203a1257a992a499dfe68fe216b55c8b51dbc0d2b05",
+    "warnings": []
+  },
+  {
+    "name": "remaining-mcidas-1-4",
+    "mode": "L",
+    "shape": [
+      2,
+      4
+    ],
+    "values_sha256": "339b59e8f1f172042dc98e90c687e8075c64ba37e0371537b030fb7b0deccd2e",
+    "input_sha256": "713b8f56781f63e13578c1242b57d6001c8b53cd5778bcbae62d9ea34c563851",
+    "warnings": []
+  },
+  {
+    "name": "remaining-mcidas-2-0",
+    "mode": "I;16B",
+    "shape": [
+      2,
+      4
+    ],
+    "values_sha256": "58e32d4c1320af566d4b5ccb595e367854c74fc14de7a0ffc1c4a908560b24f1",
+    "input_sha256": "0b9b0279a44e9615a8d7c99490e44d985b1c168afc3a414c20e40c2b0b9022cc",
+    "warnings": []
+  },
+  {
+    "name": "remaining-mcidas-2-4",
+    "mode": "I;16B",
+    "shape": [
+      2,
+      4
+    ],
+    "values_sha256": "ce2ebba3c39521c1766f65d7835e57b21ab1830aaa5266e60cc845e938ad24ac",
+    "input_sha256": "db006bf0ccc9d6c8797bd82d30b12175416268ea13418e9cf8a8c23daf00a1bd",
+    "warnings": []
+  },
+  {
+    "name": "remaining-mcidas-4-0",
+    "mode": "I",
+    "shape": [
+      2,
+      4
+    ],
+    "values_sha256": "2666dc9f405fe61d01116fcd34738cca601c3f4177fae8cd4b52489083a9747d",
+    "input_sha256": "eaa3237c39b47e9509dfd55c9fa12716a60fe4916a11b77abcfdba38cdeb747c",
+    "warnings": []
+  },
+  {
+    "name": "remaining-mcidas-4-4",
+    "mode": "I",
+    "shape": [
+      2,
+      4
+    ],
+    "values_sha256": "1ac252235350ecb0ea6da3dce2910685eb632717337c2e610bbb7c83d89867db",
+    "input_sha256": "7fb8049dc92bad5eafcb2b9dc75c6324c6696eb83e5a125101469af5bca61c2c",
+    "warnings": []
+  },
+  {
+    "name": "remaining-pixar",
+    "mode": "RGB",
+    "shape": [
+      2,
+      4,
+      3
+    ],
+    "values_sha256": "088889b8071756d3559dc2172e525644f0be09d4b3fb26a697070bddcb805338",
+    "input_sha256": "4a9d093256b608571f37dedfbd1a0549516abceb2d098cddbe5b45491a187445",
+    "warnings": []
+  },
+  {
+    "name": "remaining-ftex-raw",
+    "mode": "RGB",
+    "shape": [
+      4,
+      4,
+      3
+    ],
+    "values_sha256": "852c80a269cfde9f6b8cc6c4f19f4e92c636218d0620fedda0d379e77abc224b",
+    "input_sha256": "b7402046cb3e6c29462c270e692065d93228118e78b8d6ce8e7feb340ef8316a",
+    "warnings": []
+  },
+  {
+    "name": "remaining-ftex-dxt1",
+    "mode": "RGBA",
+    "shape": [
+      4,
+      4,
+      4
+    ],
+    "values_sha256": "3c2e51eb5bc2373199f8aca9556fee9314aa892c4280cc054d427145a078bb65",
+    "input_sha256": "12d257e85a59fbfbe7b42a90522c66fc2d2d44d770c0f5ff51791c1d42b75cf9",
+    "warnings": []
+  },
+  {
+    "name": "remaining-fits-8",
+    "mode": "L",
+    "shape": [
+      2,
+      4
+    ],
+    "values_sha256": "3ad9026add2bbdbcafb74de406bc9a1c25ef1fe8f00b0d7a6d274da7718a9633",
+    "input_sha256": "aecac34f922c098b4f8347cf5d1daa66a9487f83578c17c8d4c0c2c99922e296",
+    "warnings": []
+  },
+  {
+    "name": "remaining-fits-16",
+    "mode": "I;16",
+    "shape": [
+      2,
+      4
+    ],
+    "values_sha256": "477e45ca92ed952db1cf5182778c73c2ddf259a6ff55e3870c385e8c85c815b1",
+    "input_sha256": "6edc3d25e8ac15b6964657d5c1e242582bb9d7cf6ed985f99e1a0b8a8bcdd38e",
+    "warnings": []
+  },
+  {
+    "name": "remaining-fits-32",
+    "mode": "I",
+    "shape": [
+      2,
+      4
+    ],
+    "values_sha256": "79176084c6ff0e23c5f31e59e27f6c3d264d0848fddaef70e974e582029eb70a",
+    "input_sha256": "31203faeb7236958407556bc670b738167b70351ec10c10e4a46104811060189",
+    "warnings": []
+  },
+  {
+    "name": "remaining-fits--32",
+    "mode": "F",
+    "shape": [
+      2,
+      4
+    ],
+    "values_sha256": "354886014a525713654cb40ee4bb0ec7882569d3533c9e693c41d95e50557590",
+    "input_sha256": "342ea1a62f5bf0644870b9104b82cbcae7dcd5bab4f6f0d674894b28e9da1ee7",
+    "warnings": [
+      "invalid value encountered in cast"
+    ]
+  },
+  {
+    "name": "remaining-fits--64",
+    "mode": "F",
+    "shape": [
+      2,
+      4
+    ],
+    "values_sha256": "354886014a525713654cb40ee4bb0ec7882569d3533c9e693c41d95e50557590",
+    "input_sha256": "59ef5b25d8562109cc1649f0641ea81f060a3b4e9a5c12947210c60683b9fee0",
+    "warnings": [
+      "invalid value encountered in cast"
+    ]
+  },
+  {
+    "name": "stub-grib-edition1",
+    "error": "OSError",
+    "message": "cannot find loader for this GRIB file",
+    "warnings": []
+  },
+  {
+    "name": "stub-grib-edition2",
+    "error": "UnidentifiedImageError",
+    "message": "cannot identify image file <_io.BytesIO object at 0x7e3d01873650>",
+    "warnings": []
+  },
+  {
+    "name": "stub-wmf",
+    "error": "UnidentifiedImageError",
+    "message": "cannot identify image file <_io.BytesIO object at 0x7e3d018737e0>",
+    "warnings": []
+  }
+]

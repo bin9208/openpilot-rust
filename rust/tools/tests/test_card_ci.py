@@ -62,17 +62,64 @@ def test_retained_selection_is_bounded_and_preserves_source_bus(tmp_path: Path) 
   assert [frame['bus'] for frame in actual[0]['steps'][0]['packets'][0]['frames']] == [4, 6]
 
 
+def _assert_required_native_arm_binding(workflow: dict, native: dict) -> None:
+  jobs, native_jobs = workflow['jobs'], native['jobs']
+  trusted = "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}"
+  denial = 'test "${SOURCE_ALLOWED:-}" = true || { echo \'Fork PR source denied on persistent bin-actions\' >&2; exit 1; }'
+  results = {'PLANNER': 'planner-runtime', 'CARROT_MAN': 'carrot-man-runtime', 'WEBRTC': 'webrtc-runtime',
+    'WEBCAM': 'webcam-runtime', 'XIAOGE': 'xiaoge-runtime', 'RADARD': 'radard-runtime',
+    'RADAR_ARM': 'radar-arm', 'CARROT_NAVI_ARM': 'carrot-navi-arm'}
+  assert jobs['native-arm'] == {'uses': './.github/workflows/rust-native-arm.yml'}
+  fast = jobs['fast']
+  assert fast['if'] == '${{ always() }}' and 'continue-on-error' not in fast
+  step = fast['steps'][0]
+  assert 'if' not in step and 'continue-on-error' not in step
+  assert step['env']['SOURCE_ALLOWED'] == trusted
+  assert step['env']['NATIVE_ARM'] == '${{ needs.native-arm.result }}'
+  assert step['run'].splitlines()[0] == denial
+  assert step['run'].splitlines().count('test "$NATIVE_ARM" = success') == 1
+  assert set(native_jobs) == {*results.values(), 'native-arm-checks'}
+  for name in results.values():
+    job = native_jobs[name]
+    assert job['runs-on'] == 'ubuntu-24.04-arm'
+    assert 'if' not in job and 'continue-on-error' not in job and 'needs' not in job
+    assert job['env']['CI296_NATIVE_ARM'] == '1' and job['env']['CI296_NATIVE_ARM_CALLER'] == 'rust.yml'
+  gate = native_jobs['native-arm-checks']
+  assert gate['needs'] == list(results.values())
+  assert gate['if'] == '${{ always() }}' and 'continue-on-error' not in gate
+  assert gate['runs-on'] == 'ubuntu-24.04' and gate['timeout-minutes'] == 2
+  assert len(gate['steps']) == 1
+  step = gate['steps'][0]
+  assert 'if' not in step and 'continue-on-error' not in step
+  assert step['env'] == {'SOURCE_ALLOWED': trusted, **{
+    variable: '${{ needs.' + name + '.result }}' for variable, name in results.items()}}
+  assert step['run'].splitlines() == [denial, *[f'test "${variable}" = success' for variable in results]]
+  for name, label in (('radar-arm', 'rust RadarCAN native ARM functional validation'),
+                      ('carrot-navi-arm', 'rust Carrot Navi native ARM build')):
+    assert jobs[name] == {'name': label, 'needs': ['native-arm'], 'if': '${{ always() }}',
+      'runs-on': 'ubuntu-24.04', 'timeout-minutes': 2, 'steps': [{'name': 'Require native ARM family result',
+        'env': {'SOURCE_ALLOWED': trusted, 'NATIVE_ARM': '${{ needs.native-arm.result }}'},
+        'run': denial + '\ntest "$NATIVE_ARM" = success\n'}]}
+
+
 def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -> None:
   workflow = yaml.safe_load((ROOT / '.github/workflows/rust.yml').read_text())
   jobs = workflow['jobs']
-  inherited = {'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
+  inherited = {'workspace', 'model-llvm20', 'model-memory', 'model-pipelines', 'model-family-retirement', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
     'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
     'estimation-runtime', 'ui-connectivity', 'athena-runtime', 'controls-runtime', 'web-upload-timeouts',
     'joystickd-runtime', 'planner-runtime', 'planner-memory', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime',
     'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'panda-runtime', 'camera-runtime', 'encoder-runtime',
     'xiaoge-runtime', 'xiaoge-memory', 'ui-runtime', 'carrot-man-runtime'}
-  assert set(jobs['fast']['needs']) == inherited | {'card-runtime', 'webrtc-runtime', 'webcam-runtime'}
+  required = inherited | {'card-runtime', 'webrtc-runtime', 'webcam-runtime', 'dbc-darwin'}
+  assert len(required) == 41
+  assert set(jobs['fast']['needs']) == required | {'native-arm'}
+  assert len(jobs['fast']['needs']) == 42
+  native = yaml.safe_load((ROOT / '.github/workflows/rust-native-arm.yml').read_text())
+  _assert_required_native_arm_binding(workflow, native)
   assert 'test "$CARD" = success' in jobs['fast']['steps'][0]['run']
+  assert jobs['fast']['steps'][0]['env']['MODEL_FAMILY'] == '${{ needs.model-family-retirement.result }}'
+  assert 'test "$MODEL_FAMILY" = success' in jobs['fast']['steps'][0]['run']
   for job, test_command in (('workspace', 'cargo test --workspace'), ('card-runtime', 'cargo test -p openpilot-can')):
     scripts = [step.get('run', '') for step in jobs[job]['steps']]
     generation = next(index for index, script in enumerate(scripts) if 'stage_card_fixtures.py' in script)
@@ -80,13 +127,37 @@ def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -
     assert generation < testing
     for checker in ('params', 'state', 'controller'):
       assert any(f'check_card_hyundai_{checker}.py' in script for script in scripts[testing:])
-    assert any(step.get('if') == 'always()' and step.get('uses', '').startswith('actions/upload-artifact')
+    upload_condition = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}"
+    assert any(step.get('if') == upload_condition and step.get('uses', '').startswith('actions/upload-artifact')
                for step in jobs[job]['steps'])
   scripts = [step.get('run', '') for step in jobs['arm64']['steps']]
   assert any('cargo build -p openpilot-card --features native --bins --examples' in script and
              '--target aarch64-unknown-linux-gnu' in script for script in scripts)
   uploads = [step['with']['path'] for step in jobs['arm64']['steps'] if step.get('uses', '').startswith('actions/upload-artifact')]
   assert any('aarch64-unknown-linux-gnu/release/openpilot-card' in path for path in uploads)
+
+
+@pytest.mark.parametrize(('scope', 'path', 'value'), [
+  ('main', ('jobs', 'native-arm', 'uses'), './.github/workflows/foreign.yml'),
+  ('main', ('jobs', 'native-arm', 'if'), '${{ false }}'),
+  ('main', ('jobs', 'fast', 'steps', 0, 'env', 'NATIVE_ARM'), '${{ needs.radar-arm.result }}'),
+  ('main', ('jobs', 'radar-arm', 'needs'), []),
+  ('main', ('jobs', 'carrot-navi-arm', 'if'), '${{ false }}'),
+  ('native', ('jobs', 'radar-arm', 'env', 'CI296_NATIVE_ARM_CALLER'), 'foreign.yml'),
+  ('native', ('jobs', 'native-arm-checks', 'needs'), ['radar-arm', 'carrot-navi-arm']),
+  ('native', ('jobs', 'native-arm-checks', 'if'), '${{ success() }}'),
+  ('native', ('jobs', 'native-arm-checks', 'steps', 0, 'env', 'RADAR_ARM'), '${{ needs.radard-runtime.result }}'),
+  ('native', ('jobs', 'native-arm-checks', 'steps', 0, 'run'), 'exit 0\n'),
+])
+def test_required_native_arm_binding_rejects_missing_skipped_or_rebound_results(scope, path, value) -> None:
+  workflow = yaml.safe_load((ROOT / '.github/workflows/rust.yml').read_text())
+  native = yaml.safe_load((ROOT / '.github/workflows/rust-native-arm.yml').read_text())
+  target = workflow if scope == 'main' else native
+  for key in path[:-1]:
+    target = target[key]
+  target[path[-1]] = value
+  with pytest.raises(AssertionError):
+    _assert_required_native_arm_binding(workflow, native)
 
 
 def test_reference_phase_stops_before_brand_outputs_can_cross_disk_floor(tmp_path: Path, monkeypatch) -> None:

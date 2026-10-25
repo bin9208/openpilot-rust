@@ -1,0 +1,177 @@
+[
+  {
+    "mode": "good",
+    "error": null,
+    "calls": 4,
+    "stdout": "5048 datetime timestamp cases, 0 differences\n5009 CPython monotonic conversion cases, 0 differences\n",
+    "report": "{\n  \"calendar_errors\": [\n    {\n      \"seconds\": -62135596801,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    },\n    {\n      \"seconds\": 253402300800,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    }\n  ],\n  \"cases\": 5048,\n  \"differences\": [],\n  \"monotonic_cases\": 5009,\n  \"monotonic_differences\": [],\n  \"binary_sha256\": \"400fae1dec4b5cdc0954f63e63cfa8c1d1cb3c9a29b5dccbace7993ab09303d4\"\n}"
+  },
+  {
+    "mode": "calendar-mutation",
+    "error": "AssertionError",
+    "calls": 4,
+    "stdout": "5048 datetime timestamp cases, 1 differences\n5009 CPython monotonic conversion cases, 0 differences\n",
+    "report": "{\n  \"calendar_errors\": [\n    {\n      \"seconds\": -62135596801,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    },\n    {\n      \"seconds\": 253402300800,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    }\n  ],\n  \"cases\": 5048,\n  \"differences\": [\n    {\n      \"input\": [\n        -62135596800,\n        0\n      ],\n      \"source\": -62135596800000000000,\n      \"native\": -62135596799999999999\n    }\n  ],\n  \"monotonic_cases\": 5009,\n  \"monotonic_differences\": [],\n  \"binary_sha256\": \"400fae1dec4b5cdc0954f63e63cfa8c1d1cb3c9a29b5dccbace7993ab09303d4\"\n}"
+  },
+  {
+    "mode": "monotonic-mutation",
+    "error": "AssertionError",
+    "calls": 4,
+    "stdout": "5048 datetime timestamp cases, 0 differences\n5009 CPython monotonic conversion cases, 1 differences\n",
+    "report": "{\n  \"calendar_errors\": [\n    {\n      \"seconds\": -62135596801,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    },\n    {\n      \"seconds\": 253402300800,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    }\n  ],\n  \"cases\": 5048,\n  \"differences\": [],\n  \"monotonic_cases\": 5009,\n  \"monotonic_differences\": [\n    {\n      \"input\": 0,\n      \"source_bits\": 0,\n      \"native_bits\": 1\n    }\n  ],\n  \"binary_sha256\": \"400fae1dec4b5cdc0954f63e63cfa8c1d1cb3c9a29b5dccbace7993ab09303d4\"\n}"
+  },
+  {
+    "mode": "both-mutation",
+    "error": "AssertionError",
+    "calls": 4,
+    "stdout": "5048 datetime timestamp cases, 1 differences\n5009 CPython monotonic conversion cases, 1 differences\n",
+    "report": "{\n  \"calendar_errors\": [\n    {\n      \"seconds\": -62135596801,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    },\n    {\n      \"seconds\": 253402300800,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    }\n  ],\n  \"cases\": 5048,\n  \"differences\": [\n    {\n      \"input\": [\n        -62135596800,\n        0\n      ],\n      \"source\": -62135596800000000000,\n      \"native\": -62135596799999999999\n    }\n  ],\n  \"monotonic_cases\": 5009,\n  \"monotonic_differences\": [\n    {\n      \"input\": 0,\n      \"source_bits\": 0,\n      \"native_bits\": 1\n    }\n  ],\n  \"binary_sha256\": \"400fae1dec4b5cdc0954f63e63cfa8c1d1cb3c9a29b5dccbace7993ab09303d4\"\n}"
+  },
+  {
+    "mode": "calendar-short",
+    "error": "ValueError",
+    "calls": 1,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "calendar-extra",
+    "error": "ValueError",
+    "calls": 1,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "calendar-empty",
+    "error": "ValueError",
+    "calls": 1,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "monotonic-short",
+    "error": "ValueError",
+    "calls": 2,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "monotonic-extra",
+    "error": "ValueError",
+    "calls": 2,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "monotonic-empty",
+    "error": "ValueError",
+    "calls": 2,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "calendar-invalid",
+    "error": "ValueError",
+    "calls": 1,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "monotonic-invalid",
+    "error": "ValueError",
+    "calls": 2,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "calendar-exit",
+    "error": "CalledProcessError",
+    "calls": 1,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "monotonic-exit",
+    "error": "CalledProcessError",
+    "calls": 2,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "calendar-invalid-stdout",
+    "error": "UnicodeDecodeError",
+    "calls": 1,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "calendar-invalid-stderr",
+    "error": "UnicodeDecodeError",
+    "calls": 1,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "monotonic-invalid-stdout",
+    "error": "UnicodeDecodeError",
+    "calls": 2,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "boundary-0-accepted",
+    "error": "AssertionError",
+    "calls": 3,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "boundary-1-accepted",
+    "error": "AssertionError",
+    "calls": 4,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "boundary-0-invalid-stderr",
+    "error": "UnicodeDecodeError",
+    "calls": 3,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "boundary-1-invalid-stdout",
+    "error": "UnicodeDecodeError",
+    "calls": 4,
+    "stdout": "",
+    "report": "keep"
+  },
+  {
+    "mode": "integer-lexical",
+    "error": null,
+    "calls": 4,
+    "stdout": "5048 datetime timestamp cases, 0 differences\n5009 CPython monotonic conversion cases, 0 differences\n",
+    "report": "{\n  \"calendar_errors\": [\n    {\n      \"seconds\": -62135596801,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    },\n    {\n      \"seconds\": 253402300800,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    }\n  ],\n  \"cases\": 5048,\n  \"differences\": [],\n  \"monotonic_cases\": 5009,\n  \"monotonic_differences\": [],\n  \"binary_sha256\": \"400fae1dec4b5cdc0954f63e63cfa8c1d1cb3c9a29b5dccbace7993ab09303d4\"\n}"
+  },
+  {
+    "mode": "crlf",
+    "error": null,
+    "calls": 4,
+    "stdout": "5048 datetime timestamp cases, 0 differences\n5009 CPython monotonic conversion cases, 0 differences\n",
+    "report": "{\n  \"calendar_errors\": [\n    {\n      \"seconds\": -62135596801,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    },\n    {\n      \"seconds\": 253402300800,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    }\n  ],\n  \"cases\": 5048,\n  \"differences\": [],\n  \"monotonic_cases\": 5009,\n  \"monotonic_differences\": [],\n  \"binary_sha256\": \"400fae1dec4b5cdc0954f63e63cfa8c1d1cb3c9a29b5dccbace7993ab09303d4\"\n}"
+  },
+  {
+    "mode": "unicode-lines",
+    "error": null,
+    "calls": 4,
+    "stdout": "5048 datetime timestamp cases, 0 differences\n5009 CPython monotonic conversion cases, 0 differences\n",
+    "report": "{\n  \"calendar_errors\": [\n    {\n      \"seconds\": -62135596801,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    },\n    {\n      \"seconds\": 253402300800,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": 1,\n      \"native_stderr\": \"controlled boundary failure\\n\"\n    }\n  ],\n  \"cases\": 5048,\n  \"differences\": [],\n  \"monotonic_cases\": 5009,\n  \"monotonic_differences\": [],\n  \"binary_sha256\": \"400fae1dec4b5cdc0954f63e63cfa8c1d1cb3c9a29b5dccbace7993ab09303d4\"\n}"
+  },
+  {
+    "mode": "boundary-signals",
+    "error": null,
+    "calls": 4,
+    "stdout": "5048 datetime timestamp cases, 0 differences\n5009 CPython monotonic conversion cases, 0 differences\n",
+    "report": "{\n  \"calendar_errors\": [\n    {\n      \"seconds\": -62135596801,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": -15,\n      \"native_stderr\": \"signal diagnostic \\uac00\\n\"\n    },\n    {\n      \"seconds\": 253402300800,\n      \"source_error\": \"ValueError\",\n      \"native_exit\": -15,\n      \"native_stderr\": \"signal diagnostic \\uac00\\n\"\n    }\n  ],\n  \"cases\": 5048,\n  \"differences\": [],\n  \"monotonic_cases\": 5009,\n  \"monotonic_differences\": [],\n  \"binary_sha256\": \"400fae1dec4b5cdc0954f63e63cfa8c1d1cb3c9a29b5dccbace7993ab09303d4\"\n}"
+  }
+]

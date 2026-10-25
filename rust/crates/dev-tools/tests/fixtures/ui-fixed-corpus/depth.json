@@ -1,0 +1,356 @@
+[
+  {
+    "kind": "qr",
+    "depth": 990,
+    "exit": 1,
+    "error": "TypeError: list indices must be integers or slices, not str",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 993,
+    "exit": 1,
+    "error": "TypeError: list indices must be integers or slices, not str",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 994,
+    "exit": 1,
+    "error": "TypeError: list indices must be integers or slices, not str",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 995,
+    "exit": 1,
+    "error": "TypeError: list indices must be integers or slices, not str",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 996,
+    "exit": 1,
+    "error": "TypeError: list indices must be integers or slices, not str",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 997,
+    "exit": 1,
+    "error": "TypeError: list indices must be integers or slices, not str",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 998,
+    "exit": 1,
+    "error": "TypeError: list indices must be integers or slices, not str",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 999,
+    "exit": 1,
+    "error": "TypeError: list indices must be integers or slices, not str",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 1000,
+    "exit": 1,
+    "error": "TypeError: list indices must be integers or slices, not str",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 9995,
+    "exit": 1,
+    "error": "TypeError: list indices must be integers or slices, not str",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 9996,
+    "exit": 1,
+    "error": "TypeError: list indices must be integers or slices, not str",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 9997,
+    "exit": 1,
+    "error": "TypeError: list indices must be integers or slices, not str",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 9998,
+    "exit": 1,
+    "error": "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 9999,
+    "exit": 1,
+    "error": "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "qr",
+    "depth": 10000,
+    "exit": 1,
+    "error": "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 990,
+    "exit": 1,
+    "error": "AssertionError",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 993,
+    "exit": 1,
+    "error": "AssertionError",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 994,
+    "exit": 1,
+    "error": "AssertionError",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 995,
+    "exit": 1,
+    "error": "AssertionError",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 996,
+    "exit": 1,
+    "error": "AssertionError",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 997,
+    "exit": 1,
+    "error": "AssertionError",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 998,
+    "exit": 1,
+    "error": "AssertionError",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 999,
+    "exit": 1,
+    "error": "AssertionError",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 1000,
+    "exit": 1,
+    "error": "AssertionError",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 9995,
+    "exit": 1,
+    "error": "AssertionError",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 9996,
+    "exit": 1,
+    "error": "AssertionError",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 9997,
+    "exit": 1,
+    "error": "AssertionError",
+    "files": [
+      "input.json",
+      "native.json",
+      "native.stderr",
+      "source.json"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 9998,
+    "exit": 1,
+    "error": "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+    "files": [
+      "input.json",
+      "native.stderr"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 9999,
+    "exit": 1,
+    "error": "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+    "files": [
+      "input.json",
+      "native.stderr"
+    ]
+  },
+  {
+    "kind": "torque_geometry",
+    "depth": 10000,
+    "exit": 1,
+    "error": "RecursionError: maximum recursion depth exceeded while decoding a JSON array from a unicode string",
+    "files": [
+      "input.json",
+      "native.stderr"
+    ]
+  }
+]

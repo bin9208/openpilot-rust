@@ -1,0 +1,2 @@
+usage: check_manager.py [-h] [--scenario SCENARIO] binary binding output
+check_manager.py: error: the following arguments are required: binary, binding, output

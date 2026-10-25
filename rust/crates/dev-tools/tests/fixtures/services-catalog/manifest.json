@@ -1,0 +1,120 @@
+{
+  "capture_script_sha256": "802eafb47e77a216daa01ae50ae019e504ede8043cd337d94611b1cb997ccc02",
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "pycapnp": "2.1.0",
+  "sources": {
+    "rust/tools/check_services.py": "ff87d294c3f13a1b95616d2b08326ca3ef75b7b7968aa5fbe75daa4d63c6802f",
+    "openpilot/cereal/services.py": "a0745e2ef00036f0eef08b453a4798b4281549ea9ac6dc91c8b348ef76131edb",
+    "openpilot/cereal/__init__.py": "c8e54d7417631916d8c5842d0d509d8c573ca8089e9cad6fc7acad849503fb60",
+    "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+    "openpilot/cereal/custom.capnp": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693",
+    "openpilot/cereal/deprecated.capnp": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355",
+    "opendbc_repo/opendbc/car/car.capnp": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda",
+    "openpilot/cereal/include/c++.capnp": "fb306076cd38c27af1aed20fac6395e9a46fbe5b5df6a248b5f1b6845a079c44"
+  },
+  "dependency": [
+    {
+      "name": "pycapnp",
+      "version": "2.1.0",
+      "source": {
+        "registry": "https://pypi.org/simple"
+      },
+      "sdist": {
+        "url": "https://files.pythonhosted.org/packages/15/86/a57e3c92acd3e1d2fc3dcad683ada191f722e4ac927e1a384b228ec2780a/pycapnp-2.1.0.tar.gz",
+        "hash": "sha256:69cc3d861fee1c9b26c73ad2e8a5d51e76ad87e4ff9be33a4fd2fc72f5846aec",
+        "size": 689734,
+        "upload-time": "2025-09-05T03:50:40.851Z"
+      },
+      "wheels": [
+        {
+          "url": "https://files.pythonhosted.org/packages/74/0e/66b41ba600e5f2523e900b7cc0d2e8496b397a1f2d6a5b7b323ab83418b7/pycapnp-2.1.0-cp312-cp312-macosx_10_13_x86_64.whl",
+          "hash": "sha256:2d2ec561bc948d11f64f43bf9601bede5d6a603d105ae311bd5583c7130624a4",
+          "size": 1619223,
+          "upload-time": "2025-09-05T03:48:54.64Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/40/6e/9bcb30180bd40cb0534124ff7f8ba8746a735018d593f608bf40c97821c0/pycapnp-2.1.0-cp312-cp312-macosx_11_0_arm64.whl",
+          "hash": "sha256:132cd97f57f6b6636323ca9b68d389dd90b96e87af38cde31e2b5c5a064f277e",
+          "size": 1484321,
+          "upload-time": "2025-09-05T03:48:55.85Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/14/0a/9ee1c9ecaff499e4fd1df2f0335bc20f666ec6ce5cd80f8ab055007f3c9b/pycapnp-2.1.0-cp312-cp312-manylinux_2_28_aarch64.whl",
+          "hash": "sha256:568e79268ba7c02a71fe558a8aec1ae3c0f0e6aff809ff618a46afe4964957d2",
+          "size": 5143502,
+          "upload-time": "2025-09-05T03:48:57.733Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/4d/50/65837e1416f7a8861ca1e8fe4582a5aef37192d7ef5e2ecfe46880bfdf9c/pycapnp-2.1.0-cp312-cp312-manylinux_2_28_ppc64le.whl",
+          "hash": "sha256:bcbf6f882d78d368c8e4bb792295392f5c4d71ddffa13a48da27e7bd47b99e37",
+          "size": 5508134,
+          "upload-time": "2025-09-05T03:48:59.383Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/a1/59/46df6db800e77dbc3cc940723fb3fd7bc837327c858edf464a0f904bf547/pycapnp-2.1.0-cp312-cp312-manylinux_2_28_s390x.whl",
+          "hash": "sha256:dc25b96e393410dde25c61c1df3ce644700ef94826c829426d58c2c6b3e2d2f5",
+          "size": 5631794,
+          "upload-time": "2025-09-05T03:49:03.511Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/63/9d/18e978500d5f6bd8d152f4d6919e3cfb83ead8a71c14613bbb54322df8b9/pycapnp-2.1.0-cp312-cp312-manylinux_2_28_x86_64.whl",
+          "hash": "sha256:48938e0436ab1be615fc0a41434119a2065490a6212b9a5e56949e89b0588b76",
+          "size": 5369378,
+          "upload-time": "2025-09-05T03:49:05.539Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/96/dc/726f1917e9996dc29f9fd1cf30674a14546cdbdfa0777e1982b6bd1ad628/pycapnp-2.1.0-cp312-cp312-musllinux_1_2_aarch64.whl",
+          "hash": "sha256:0c20de0f6e0b3fa9fa1df3864cf46051db3511b63bc29514d1092af65f2b82a0",
+          "size": 5999140,
+          "upload-time": "2025-09-05T03:49:07.341Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/fd/3a/3bbc4c5776fc32fbf8a59df5c7c5810efd292b933cd6545eb4b16d896268/pycapnp-2.1.0-cp312-cp312-musllinux_1_2_ppc64le.whl",
+          "hash": "sha256:18caca6527862475167c10ea0809531130585aa8a86cc76cd1629eb87ee30637",
+          "size": 6454308,
+          "upload-time": "2025-09-05T03:49:08.998Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/bf/dd/17e2d7808424f10ffddc47329b980488ed83ec716c504791787e593a7a93/pycapnp-2.1.0-cp312-cp312-musllinux_1_2_s390x.whl",
+          "hash": "sha256:9dcc11237697007b66e3bfc500d2ad892bd79672c9b50d61fbf728c6aaf936de",
+          "size": 6544212,
+          "upload-time": "2025-09-05T03:49:10.675Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/6a/5b/68090013128d7853f34c43828dd4dc80a7c8516fd1b56057b134e1e4c2c0/pycapnp-2.1.0-cp312-cp312-musllinux_1_2_x86_64.whl",
+          "hash": "sha256:c151edf78155b6416e7cb31e2e333d302d742ba52bb37d4dbdf71e75cc999d46",
+          "size": 6295279,
+          "upload-time": "2025-09-05T03:49:12.712Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/5b/52/7d85212b4fcf127588888f71d3dbf5558ee7dc302eba760b12b1b325f9a3/pycapnp-2.1.0-cp312-cp312-win32.whl",
+          "hash": "sha256:c09b28419321dafafc644d60c57ff8ccaf3c3e686801b6060c612a7a3c580944",
+          "size": 1038995,
+          "upload-time": "2025-09-05T03:49:14.165Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/f2/12/25d283ebf5c28717364647672e7494dc46196ca7a662f5420e4866f45687/pycapnp-2.1.0-cp312-cp312-win_amd64.whl",
+          "hash": "sha256:560cb69cc02b0347e85b0629e4c2f0a316240900aa905392f9df6bab0a359989",
+          "size": 1176620,
+          "upload-time": "2025-09-05T03:49:15.545Z"
+        }
+      ]
+    }
+  ],
+  "corpora": {
+    "catalog.json": "0409e5af3ca91cd90c9f79bcccc667110a0ea79f3769098ab3728eefc2a31eca",
+    "format-original.json": "a3f8cd1771aa546c7781494a794ee2ce475b5ab5f598cffa6f1445ad19e058e4",
+    "generated.rs": "86858445e453abc6be84d6259059b386a1a473f56eb63a2cabc18d3d8f274557",
+    "process-original.json": "5f9ce32a2b97638207f36d9341a14bd007b7a61c0fb50be177fbc3e1a4481bd6",
+    "schema-original.json": "ba9b4da0762095970279f605f8d8845592db04a34299ba882328b06f228cd1ad",
+    "schema.json": "ccf53af70495e5fa93378311ce2160d9d62b0abe2a9fb8952ab062e3c8bae96a"
+  },
+  "counts": {
+    "services": 88,
+    "event_fields": 154,
+    "process_cases": 29,
+    "schema_cases": 7,
+    "format_cases": 10
+  },
+  "old_catalog_identical": true
+}

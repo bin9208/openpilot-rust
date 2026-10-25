@@ -1,0 +1,32 @@
+{
+  "stack-input.json.gz": {
+    "gzip_sha256": "333316e75689f99387a880662e0dc13d251277cc9b59b75c86b21e3e8e961162",
+    "sha256": "f42cdb8b354a7773f20f73f2c6dc21bf241f7908af354d1b86747a5ceabbd985",
+    "bytes": 992
+  },
+  "fps-input.json.gz": {
+    "gzip_sha256": "635c8d2710c31e77370604be3993b7485a2359dd541b1de2f97f7f0bf45dc8a0",
+    "sha256": "765a1c086d3f388ef737c7daafe59f06254c75ac1098cab585cd8cce552fa499",
+    "bytes": 6760
+  },
+  "fps-stdin.json.gz": {
+    "gzip_sha256": "3189762370aa78e622b25bb0d6ee8b79b55efc442e86ca394968b31cfc798cf6",
+    "sha256": "da945c312532629d724ec5650638728e0658464606f6c52d6c3cd05d9f98b826",
+    "bytes": 4742
+  },
+  "stack-source.json.gz": {
+    "gzip_sha256": "491524a5039813cd55d2f775ed58d7c5414103cbfd1504e955b2c5461c098558",
+    "sha256": "3b7c0620ce2da75cb096de4d7067faba5e4a46d2e34d0a5130f62540749d3215",
+    "bytes": 6256
+  },
+  "fps-source.json.gz": {
+    "gzip_sha256": "3e2418796f77ffede4b86dfb00e5252ea9e4ecf7054e1e23c4e92232f28db953",
+    "sha256": "e7ace08ed752e7265a5ddc5bc99dfe749c1a986cc6e48180fd5a98bd2e43648d",
+    "bytes": 8312
+  },
+  "stack-stdin.json.gz": {
+    "gzip_sha256": "ed2424e617405e0e5c66fb36230f924bd8287a1c239d27f443e15c18a29f04e1",
+    "sha256": "4e11a3c9707f95471dbbdff53f95bc162f65a247c62116c6cf0f9265d4fda57c",
+    "bytes": 708
+  }
+}

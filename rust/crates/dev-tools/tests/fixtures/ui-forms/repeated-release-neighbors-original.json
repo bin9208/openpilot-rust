@@ -1,0 +1,181 @@
+[
+  {
+    "name": "confirm-three",
+    "scene_text": "{\"config\": {\"big\": true, \"large_viewport\": true, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"kind\": \"confirm\", \"rect\": {\"x\": 0, \"y\": 0, \"width\": 2160, \"height\": 1080}, \"text\": \"Do you want to continue?\", \"frames\": 3, \"props\": {}, \"actions\": [{\"frame\": 0, \"events\": [{\"pos\": {\"x\": 1600, \"y\": 700}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 1600, \"y\": 700}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}, {\"pos\": {\"x\": 1600, \"y\": 700}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 1600, \"y\": 700}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}, {\"pos\": {\"x\": 1600, \"y\": 700}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 1600, \"y\": 700}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}]}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": null,
+        "pops": 3,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 3,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 3,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "35a7f1f0a31842478abcf2fc9bf4d18c82fc802aa587c152f44ffabf0c85bbb3"
+  },
+  {
+    "name": "confirm-cancel-three",
+    "scene_text": "{\"config\": {\"big\": true, \"large_viewport\": true, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"kind\": \"confirm\", \"rect\": {\"x\": 0, \"y\": 0, \"width\": 2160, \"height\": 1080}, \"text\": \"Do you want to continue?\", \"frames\": 3, \"props\": {}, \"actions\": [{\"frame\": 0, \"events\": [{\"pos\": {\"x\": 500, \"y\": 700}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 500, \"y\": 700}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}, {\"pos\": {\"x\": 500, \"y\": 700}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 500, \"y\": 700}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}, {\"pos\": {\"x\": 500, \"y\": 700}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 500, \"y\": 700}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}]}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": null,
+        "pops": 3,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 3,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 3,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "35a7f1f0a31842478abcf2fc9bf4d18c82fc802aa587c152f44ffabf0c85bbb3"
+  },
+  {
+    "name": "confirm-mixed",
+    "scene_text": "{\"config\": {\"big\": true, \"large_viewport\": true, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"kind\": \"confirm\", \"rect\": {\"x\": 0, \"y\": 0, \"width\": 2160, \"height\": 1080}, \"text\": \"Do you want to continue?\", \"frames\": 3, \"props\": {}, \"actions\": [{\"frame\": 0, \"events\": [{\"pos\": {\"x\": 1600, \"y\": 700}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 1600, \"y\": 700}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}, {\"pos\": {\"x\": 1600, \"y\": 700}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 1600, \"y\": 700}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}, {\"pos\": {\"x\": 500, \"y\": 700}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 500, \"y\": 700}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}]}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": null,
+        "pops": 3,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 3,
+        "confirmed": 0
+      },
+      {
+        "state": null,
+        "pops": 3,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "35a7f1f0a31842478abcf2fc9bf4d18c82fc802aa587c152f44ffabf0c85bbb3"
+  },
+  {
+    "name": "list-description-two",
+    "scene_text": "{\"config\": {\"big\": true, \"large_viewport\": true, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"kind\": \"list\", \"rect\": {\"x\": 100, \"y\": 100, \"width\": 1800, \"height\": 170}, \"text\": \"Shared setting\", \"frames\": 3, \"props\": {\"description\": \"A detailed setting explanation.\", \"description_visible\": true}, \"actions\": [{\"frame\": 0, \"events\": [{\"pos\": {\"x\": 200, \"y\": 150}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 200, \"y\": 150}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}, {\"pos\": {\"x\": 200, \"y\": 150}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 200, \"y\": 150}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}]}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "description_visible": true,
+          "height": 224.71200561523438,
+          "right": {
+            "x": 1740.0,
+            "y": 100.0,
+            "width": 160.0,
+            "height": 170.0
+          }
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "description_visible": true,
+          "height": 224.71200561523438,
+          "right": {
+            "x": 1740.0,
+            "y": 100.0,
+            "width": 160.0,
+            "height": 170.0
+          }
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "description_visible": true,
+          "height": 224.71200561523438,
+          "right": {
+            "x": 1740.0,
+            "y": 100.0,
+            "width": 160.0,
+            "height": 170.0
+          }
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "77bec72489f9ba86c2fff0dca28cf77cad93cc02abcdf62debcbf7846988c773"
+  },
+  {
+    "name": "list-description-three",
+    "scene_text": "{\"config\": {\"big\": true, \"large_viewport\": true, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"kind\": \"list\", \"rect\": {\"x\": 100, \"y\": 100, \"width\": 1800, \"height\": 170}, \"text\": \"Shared setting\", \"frames\": 3, \"props\": {\"description\": \"A detailed setting explanation.\", \"description_visible\": true}, \"actions\": [{\"frame\": 0, \"events\": [{\"pos\": {\"x\": 200, \"y\": 150}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 200, \"y\": 150}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}, {\"pos\": {\"x\": 200, \"y\": 150}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 200, \"y\": 150}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}, {\"pos\": {\"x\": 200, \"y\": 150}, \"slot\": 0, \"pressed\": true, \"released\": false, \"down\": true, \"time\": 0}, {\"pos\": {\"x\": 200, \"y\": 150}, \"slot\": 0, \"pressed\": false, \"released\": true, \"down\": false, \"time\": 0}]}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "states": [
+      {
+        "state": {
+          "description_visible": false,
+          "height": 170.0,
+          "right": {
+            "x": 1740.0,
+            "y": 100.0,
+            "width": 160.0,
+            "height": 170.0
+          }
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "description_visible": false,
+          "height": 170.0,
+          "right": {
+            "x": 1740.0,
+            "y": 100.0,
+            "width": 160.0,
+            "height": 170.0
+          }
+        },
+        "pops": 0,
+        "confirmed": 0
+      },
+      {
+        "state": {
+          "description_visible": false,
+          "height": 170.0,
+          "right": {
+            "x": 1740.0,
+            "y": 100.0,
+            "width": 160.0,
+            "height": 170.0
+          }
+        },
+        "pops": 0,
+        "confirmed": 0
+      }
+    ],
+    "png_sha256": "0baa6e292e27a8d54ec6cbfc7271295667537f7d784f6cd512beef1bd6a9b0db"
+  }
+]

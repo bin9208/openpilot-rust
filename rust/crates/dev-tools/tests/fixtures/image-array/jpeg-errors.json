@@ -1,0 +1,50 @@
+[
+  {
+    "name": "jpeg-valid",
+    "error": false
+  },
+  {
+    "name": "jpeg-tail-junk",
+    "error": false
+  },
+  {
+    "name": "jpeg-truncated-1",
+    "error": true
+  },
+  {
+    "name": "jpeg-truncated-2",
+    "error": true
+  },
+  {
+    "name": "jpeg-truncated-3",
+    "error": true
+  },
+  {
+    "name": "jpeg-truncated-10",
+    "error": true
+  },
+  {
+    "name": "jpeg-truncated-50",
+    "error": true
+  },
+  {
+    "name": "jpeg-truncated-100",
+    "error": true
+  },
+  {
+    "name": "jpeg-truncated-200",
+    "error": true
+  },
+  {
+    "name": "jpeg-truncated-681",
+    "error": true
+  },
+  {
+    "name": "jpeg-zero",
+    "error": true
+  },
+  {
+    "name": "jpeg-bad-marker",
+    "error": true
+  }
+]

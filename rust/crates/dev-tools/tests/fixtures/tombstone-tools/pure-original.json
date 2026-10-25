@@ -1,0 +1,79 @@
+{
+  "cases": [
+    {
+      "name": "safe-empty",
+      "request": "{\"op\": \"safe\", \"text\": \"\"}",
+      "response": "{\"result\": {\"value\": \"\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "safe-separators",
+      "request": "{\"op\": \"safe\", \"text\": \"a/b-.x_\\t\\n\"}",
+      "response": "{\"result\": {\"value\": \"abx_\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "safe-original-unicode",
+      "request": "{\"op\": \"safe\", \"text\": \"\\ud55c\\uae00_\\u216b\\u00b2\\u0661e\\u0301\\u0345\\u200b\"}",
+      "response": "{\"result\": {\"value\": \"\\ud55c\\uae00_\\u216b\\u00b2\\u0661e\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "safe-lone-surrogates",
+      "request": "{\"op\": \"safe\", \"text\": \"\\ud800\\udcff\"}",
+      "response": "{\"result\": {\"value\": \"\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "safe-mixed-surrogates",
+      "request": "{\"op\": \"safe\", \"text\": \"a\\ud800\\ud55c\\udc80z\"}",
+      "response": "{\"result\": {\"value\": \"a\\ud55cz\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "safe-emoji",
+      "request": "{\"op\": \"safe\", \"text\": \"\\ud83d\\ude00\"}",
+      "response": "{\"result\": {\"value\": \"\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "safe-raw-fs-string",
+      "request": "{\"op\": \"safe\", \"text\": \"raw-\\udcff-\\ud55c-\\udce2\\udc82.crash\"}",
+      "response": "{\"result\": {\"value\": \"raw\\ud55ccrash\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "filename-long-unicode",
+      "request": "{\"op\": \"filename\", \"stamp\": \"2020-01-02--03-04-05\", \"commit\": \"\\\"abcdefghijk\\\"\", \"path\": \"\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\"}",
+      "response": "{\"result\": {\"value\": \"2020-01-02--03-04-05_abcdefgh_\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\\ud55c\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "filename-falsey",
+      "request": "{\"op\": \"filename\", \"stamp\": \"date\", \"commit\": \"false\", \"path\": \"a/b\"}",
+      "response": "{\"result\": {\"value\": \"date_nocommit_a_b\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "filename-list",
+      "request": "{\"op\": \"filename\", \"stamp\": \"date\", \"commit\": \"[true, null, \\\"\\\\ud55c\\\"]\", \"path\": \"a/b\"}",
+      "response": "{\"result\": {\"value\": \"date_[True, None, '\\ud55c']_a_b\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "filename-nonempty-map",
+      "request": "{\"op\": \"filename\", \"stamp\": \"date\", \"commit\": \"{\\\"commit\\\": \\\"abc\\\"}\", \"path\": \"a/b\"}",
+      "response": "{\"result\": {\"error\": \"KeyError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "filename-path-surrogate",
+      "request": "{\"op\": \"filename\", \"stamp\": \"date\", \"commit\": \"null\", \"path\": \"raw/\\udcff\\ud55c\"}",
+      "response": "{\"result\": {\"value\": \"date_nocommit_raw_\\ud55c\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "filename-commit-surrogate",
+      "request": "{\"op\": \"filename\", \"stamp\": \"date\", \"commit\": \"\\\"\\\\ud800abc\\\\udcff\\\"\", \"path\": \"a/b\"}",
+      "response": "{\"result\": {\"value\": \"date_\\ud800abc\\udcff_a_b\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "filename-path-bool",
+      "request": "{\"op\": \"filename\", \"stamp\": \"date\", \"commit\": \"\\\"abcdefgh\\\"\", \"path\": true}",
+      "response": "{\"result\": {\"error\": \"AttributeError\"}, \"calls\": [], \"logs\": []}"
+    },
+    {
+      "name": "filename-numeric-stamp",
+      "request": "{\"op\": \"filename\", \"stamp\": 12, \"commit\": \"\\\"abcdefgh\\\"\", \"path\": \"a/b\"}",
+      "response": "{\"result\": {\"value\": \"12_abcdefgh_a_b\"}, \"calls\": [], \"logs\": []}"
+    }
+  ]
+}

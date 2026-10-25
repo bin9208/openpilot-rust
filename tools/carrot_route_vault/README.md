@@ -101,10 +101,24 @@ is deliberately left to the NAS administrator; uploads and caches are not delete
 
 ## Manual build / recovery
 
-Run `python tools/carrot_route_vault/build_bundle.py <new-output-directory> --ref HEAD`
-after committing changes. This creates a Docker build context using committed
-replay Python sources, the full cereal schemas, and DBC data. Uncommitted vehicle
-changes and model artifacts are excluded. Viewer files also come from that commit.
+After committing changes, run from the repository root with a new output directory:
+
+```sh
+rust/tools/run-developer-tool build-route-vault-bundle /tmp/route-vault-bundle --ref HEAD
+```
+
+The helper requires Rustup and Rust 1.94.0, checks estimated build growth, and
+builds the CLI for the native host with `route-vault-bundle-native`.
+The output directory must not already exist. This creates a Docker build context
+using committed replay Python sources, the full cereal schemas, and DBC data.
+Uncommitted vehicle changes and model artifacts are excluded. Viewer files also
+come from that commit.
+
+The native CLI's committed output comparison passed in Actions; the new helper
+caller is awaiting CI validation. `build_bundle.py` remains as the original
+comparison source. The inherited `Carrot Routes image` workflow remains disabled
+for this independent repository; changing its bundle command does not activate
+image publication or NAS deployment.
 
 Back up the existing `/volume1/docker/carrot-route-vault` code and compose files,
 then copy the generated context there. Keep existing secrets, database paths,

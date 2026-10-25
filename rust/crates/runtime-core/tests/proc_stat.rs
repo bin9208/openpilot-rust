@@ -77,3 +77,21 @@ fn differences_large_counters_before_float_conversion() {
     let b = record(n + 1, n + 1);
     assert_eq!(cpu_percent(&a, &b, Duration::from_secs(1), 100), Some(2.0));
 }
+
+#[test]
+fn preserves_minimum_field_count_unused_fields_and_extra_tail() {
+    let full = line("name ) with ( parentheses", 12, 34, 56);
+    let close = full.rfind(')').unwrap();
+    let tail = full[close + 1..].split_whitespace().collect::<Vec<_>>();
+    for count in 0..50 {
+        let truncated = format!("{} {}", &full[..=close], tail[..count].join(" "));
+        assert!(ProcessStat::parse(&truncated).is_none(), "{count}");
+    }
+    let expected = ProcessStat::parse(&full).unwrap();
+    let extended = format!("{full}\tignored nonnumeric tail\n");
+    assert_eq!(ProcessStat::parse(&extended), Some(expected.clone()));
+    let mut fields = tail;
+    fields[49] = "ignored";
+    let unused = format!("{} {}", &full[..=close], fields.join("\u{2003}"));
+    assert_eq!(ProcessStat::parse(&unused), Some(expected));
+}

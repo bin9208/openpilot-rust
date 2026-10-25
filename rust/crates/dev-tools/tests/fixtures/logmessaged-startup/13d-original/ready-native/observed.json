@@ -1,0 +1,8 @@
+{
+  "logMessage": [
+    "{\"msg\": \"first-error-after-start\", \"levelnum\": 40}"
+  ],
+  "errorLogMessage": [
+    "{\"msg\": \"first-error-after-start\", \"levelnum\": 40}"
+  ]
+}

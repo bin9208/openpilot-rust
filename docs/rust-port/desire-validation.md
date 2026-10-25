@@ -34,8 +34,10 @@ JSON float parsing, maximum numeric difference was zero against a predefined
 lane-change desires, trailer/ATC/driver gates, and positive/negative parameter
 modes. The comparison does not infer branch coverage from randomized frame count.
 
-`check_command_reference.py` runs both readers against actual temporary journal
-files over 1,026 reads. Returned command, consumed identifier and repeat state
+`check-command-reference` replays independent original journal writes and expected
+reader results, then exercises the native reader against actual temporary journal
+files over 1,026 reads. Live original model/package guards reject source drift;
+the generic Bluetooth runtime remains pending conversion. Returned command, consumed identifier and repeat state
 match exactly (381 returned commands). Cases include startup leftovers, expiry,
 future timestamps, 20 ms throttling, duplicate consumption, disallowed consumption,
 learning/cancellation, legacy single messages, malformed structures, the last-64
@@ -48,12 +50,13 @@ comparison then passed. A second regression reproduced the NaN-versus-infinity
 interpolation mismatch before the NumPy fallback was preserved. Both fixes retain
 source thresholds and behavior.
 
-Reproduce after building all `openpilot-desire` examples from `rust/`:
+Reproduce from the repository root after building all `openpilot-desire` examples:
 
 ```sh
 PYTHONPATH=. python rust/tools/check_desire_reference.py \
   --binary rust/target/debug/examples/desire_probe --output /tmp/desire-comparison
-PYTHONPATH=. python rust/tools/check_command_reference.py \
+cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-command-reference --locked
+rust/target/debug/check-command-reference \
   --binary rust/target/debug/examples/command_probe --output /tmp/command-comparison
 ```
 

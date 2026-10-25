@@ -37,3 +37,8 @@ signal-hook = "0.3"
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
 zmq = "0.10"
+
+[[test]]
+name = "params_log_lifetime"
+path = "tests/params_log_lifetime/main.rs"
+harness = false

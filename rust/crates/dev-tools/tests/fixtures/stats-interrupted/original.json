@@ -1,0 +1,68 @@
+[
+  {
+    "case": "one",
+    "sequence": "4,0",
+    "result": {
+      "exit": 0,
+      "files": [
+        "gauge.retained,started=False,version=v,branch=fixture,dirty=False,origin=unknown,deviceType=pc value=7.0,dongle_id=\"None\" 1723456789123456000\n"
+      ],
+      "faults": [
+        4
+      ]
+    }
+  },
+  {
+    "case": "repeated",
+    "sequence": "4,4,4,0",
+    "result": {
+      "exit": 0,
+      "files": [
+        "gauge.retained,started=False,version=v,branch=fixture,dirty=False,origin=unknown,deviceType=pc value=7.0,dongle_id=\"None\" 1723456789123456000\n"
+      ],
+      "faults": [
+        4,
+        4,
+        4
+      ]
+    }
+  },
+  {
+    "case": "empty",
+    "sequence": "4,11,0",
+    "result": {
+      "exit": 0,
+      "files": [
+        "gauge.retained,started=False,version=v,branch=fixture,dirty=False,origin=unknown,deviceType=pc value=7.0,dongle_id=\"None\" 1723456789123456000\n"
+      ],
+      "faults": [
+        4,
+        11
+      ]
+    }
+  },
+  {
+    "case": "invalid",
+    "sequence": "4,22",
+    "result": {
+      "exit": 1,
+      "files": [],
+      "faults": [
+        4,
+        22
+      ]
+    }
+  },
+  {
+    "case": "closed",
+    "sequence": "4,88",
+    "result": {
+      "exit": 1,
+      "files": [],
+      "faults": [
+        4,
+        88
+      ]
+    }
+  }
+]

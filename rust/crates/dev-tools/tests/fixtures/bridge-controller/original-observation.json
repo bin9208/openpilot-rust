@@ -1,0 +1,43 @@
+{
+  "kind": "independent unchanged Python bridge controller observation; no native controller output",
+  "source_commit": "edb42bf095d6a3e3b38cc0a4546976dfb710363e",
+  "run_id": 39477200877,
+  "job_id": 118816129850,
+  "job_url": "https://github.com/bin9208/openpilot-rust/actions/runs/39477200877/job/118816129850",
+  "artifact_id": 12290810936,
+  "artifact_zip_sha256": "5072abdcc7fd8ded88212ccdd948969b98d10111728e351f7888bdc741a34edd",
+  "artifact_prefix": "bridge/",
+  "historical_checker_sha256": "17d5fc9f1d5dc3c59306ba0a8fdcc3bd85b216b362fbbe18fdc7e5daaa246821",
+  "original_report_sha256": "cdd891ddefa786b776b8e157246625fb879671d146025e9d5e4cca45c366e2e8",
+  "original_report": {
+    "source": {
+      "outgoing": "2e863802da7df834e15445128337e8007dc48bb32f0d5356710feb7bf3aac3ec",
+      "incoming": "4b2e0fd751509172d255cceaad2e2e476ec90890c91baa8c1cc5a80619e318e9"
+    },
+    "rust": {
+      "outgoing": "2e863802da7df834e15445128337e8007dc48bb32f0d5356710feb7bf3aac3ec",
+      "incoming": "4b2e0fd751509172d255cceaad2e2e476ec90890c91baa8c1cc5a80619e318e9"
+    }
+  },
+  "original_source_cases": {
+    "outgoing": {
+      "scenario_sha256": "535f0817a27a29346224f10fd037136f5c6ab35af5429799e2b61bc8725d385b",
+      "digest": "2e863802da7df834e15445128337e8007dc48bb32f0d5356710feb7bf3aac3ec",
+      "stdout_sha256": "13a0f8290bbfd069cb657a732c25e296284071e3f9dc859a2fd48ee429e5bb16",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_raw": "socket [carState] connected\nsocket [logMessage] connected\nsocket [carState] disconnected\nsocket [carState] connected\nsocket [carState] disconnected\nsocket [logMessage] disconnected\n",
+      "stderr_raw": "",
+      "scenario_raw": "{\"digest\": \"2e863802da7df834e15445128337e8007dc48bb32f0d5356710feb7bf3aac3ec\", \"network_namespace\": \"net:[4026532267]\"}\n"
+    },
+    "incoming": {
+      "scenario_sha256": "3bd1c5cdb8deba724235ea32cb4d36178b07f07ca4130ef2438608b6ed60ed8f",
+      "digest": "4b2e0fd751509172d255cceaad2e2e476ec90890c91baa8c1cc5a80619e318e9",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_raw": "",
+      "stderr_raw": "",
+      "scenario_raw": "{\"digest\": \"4b2e0fd751509172d255cceaad2e2e476ec90890c91baa8c1cc5a80619e318e9\", \"network_namespace\": \"net:[4026532267]\"}\n"
+    }
+  },
+  "original_report_raw": "{\n  \"source\": {\n    \"outgoing\": \"2e863802da7df834e15445128337e8007dc48bb32f0d5356710feb7bf3aac3ec\",\n    \"incoming\": \"4b2e0fd751509172d255cceaad2e2e476ec90890c91baa8c1cc5a80619e318e9\"\n  },\n  \"rust\": {\n    \"outgoing\": \"2e863802da7df834e15445128337e8007dc48bb32f0d5356710feb7bf3aac3ec\",\n    \"incoming\": \"4b2e0fd751509172d255cceaad2e2e476ec90890c91baa8c1cc5a80619e318e9\"\n  }\n}\n"
+}

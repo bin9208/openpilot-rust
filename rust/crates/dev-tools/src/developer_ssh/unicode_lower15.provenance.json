@@ -1,0 +1,108 @@
+{
+  "counts": {
+    "case_ignorable_inclusive_ranges": 437,
+    "case_ignorable_scalars": 2707,
+    "cased_inclusive_ranges": 157,
+    "cased_scalars": 4526,
+    "expanded_lower_mappings": 1,
+    "single_lower_pairs": 1432
+  },
+  "cp_python_reference": {
+    "commit": "e848e4b09ca4bc67c0041c9ce7526dae471d4c36",
+    "table_sha256": "ab60f0ca6db86dc14bb19ca5bcce6b0274282172500dd1c3ef61030e4b080cc8",
+    "table_url": "https://raw.githubusercontent.com/python/cpython/e848e4b09ca4bc67c0041c9ce7526dae471d4c36/Objects/unicodetype_db.h",
+    "tag": "v3.12.15",
+    "근거": "이전 source-table 조사에서 CPython 생성 table과 UCD15 mapping/두 속성 전체 항목 동일을 확인함. 실행 비교가 아니다."
+  },
+  "execution": {
+    "ci_started_by_this_worker": false,
+    "data_conversion_executed": true,
+    "local_compile_or_functional_tests_executed": false,
+    "local_lower15_executed": false,
+    "local_original_or_candidate_executed": false
+  },
+  "generation": {
+    "data_block_boundary": "UCD15 생성 data 시작 주석부터 original_tests의 첫 cfg(test) 직전까지, 후행 빈 줄 포함 UTF-8 bytes.",
+    "generator_location": "ignored .analysis/scratch/2026-10-24-python-rust-523/ssh-unicode-lower-data/generate.py",
+    "generator_source_bytes": 10333,
+    "generator_source_sha256": "60a1ff0e8aad659db8ae5fb204594011087d48b157dbcb1340a7ceb099a2ea9c",
+    "scratch_data_sha256": "77fbeefddd2d7f5f635ec3e8df7180bf90ee2a09cf277bff7c7fbe8f50204858",
+    "방법": "고정 원문만 파싱해 상수로 변환. 1432 pair/157 Cased/437 Case_Ignorable 원문 선언 내용이 승격 파일과 byte 동일. pub(super) 상수 visibility를 private const로 바꾸고 version은 metadata에 보관.",
+    "최종_data_block_bytes": 45886,
+    "최종_data_block_sha256": "0d4d5875bf1dcdcc865040f13dd1ef7cf6d05a1d99685d425347d72d701cf36f"
+  },
+  "inputs": {
+    "LICENSE-UNICODE-V3.txt": {
+      "bytes": 1995,
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+      "url": "https://www.unicode.org/license.txt"
+    },
+    "sources/DerivedCoreProperties-15.0.0.txt": {
+      "bytes": 1053943,
+      "sha256": "d367290bc0867e6b484c68370530bdd1a08b6b32404601b8c7accaf83e05628d",
+      "url": "https://www.unicode.org/Public/15.0.0/ucd/DerivedCoreProperties.txt"
+    },
+    "sources/ReadMe-15.0.0.txt": {
+      "bytes": 635,
+      "sha256": "53672c0d0b5185e3cf04c8e970d544c3af81ae7c8eeba0b9cf6d355aa954ae1f",
+      "url": "https://www.unicode.org/Public/15.0.0/ucd/ReadMe.txt"
+    },
+    "sources/SpecialCasing-15.0.0.txt": {
+      "bytes": 16832,
+      "sha256": "78b29c64b5840d25c11a9f31b665ee551b8a499eca6c70d770fcad7dd710f494",
+      "url": "https://www.unicode.org/Public/15.0.0/ucd/SpecialCasing.txt"
+    },
+    "sources/UnicodeData-15.0.0.txt": {
+      "bytes": 1913704,
+      "sha256": "806e9aed65037197f1ec85e12be6e8cd870fc5608b4de0fffd990f689f376a73",
+      "url": "https://www.unicode.org/Public/15.0.0/ucd/UnicodeData.txt"
+    }
+  },
+  "license": {
+    "note": "공식 현재 license raw bytes의 고정 snapshot. 2022 최초 배포 license 판본이라는 주장은 하지 않는다. 원문 ©2022 notice를 함께 보존한다.",
+    "path": "rust/crates/dev-tools/src/developer_ssh/unicode_lower15.LICENSE-UNICODE-V3.txt",
+    "snapshot_date": "2026-10-24",
+    "version": "UNICODE LICENSE V3"
+  },
+  "module": {
+    "bytes": 49834,
+    "path": "rust/crates/dev-tools/src/developer_ssh/unicode_lower15.rs",
+    "sha256": "f0edde8b8443486b6940dc8f22e7cea65675b8230a46baec11c8ce0c2bab6b40"
+  },
+  "red": {
+    "case": "unicode16-rams-horn-alias-false-match",
+    "job": 120868686487,
+    "job_url": "https://github.com/bin9208/openpilot-rust/actions/runs/40092771379/job/120868686487",
+    "observed_native": "합성 dongle_id 0000000000000001에 대한 잘못된 exec plan",
+    "observed_original": "exit1/noexec",
+    "run": 40092771379,
+    "source": "fb1228f02e0546b6fe7a9d8d0eec098e650a86bd",
+    "실제_SSH_실행": false
+  },
+  "schema": "openpilot.ssh-unicode-lower15-source.v1",
+  "sealing": {
+    "binary": "새 binary build/pin은 UNRUN; 부모의 실제 CI가 담당한다.",
+    "지침": "부모가 helper 전체 파일·이 metadata·license 및 부모 원본 테스트를 source 전후 seal에 포함한다. table 부분 SHA로 full source 또는 빌드 binary SHA를 대체하지 않는다."
+  },
+  "unicode_version": "15.0.0",
+  "변환_규칙": {
+    "conditional_lower": {
+      "condition": "Final_Sigma",
+      "final": "03C2",
+      "otherwise": "03C3",
+      "source": "03A3"
+    },
+    "context": "Sigma 문맥은 원래 입력과 고정15 두 property를 이용해 private helper에서 구현한다.",
+    "expanded_lower": {
+      "source": "0130",
+      "target": [
+        "0069",
+        "0307"
+      ]
+    },
+    "locale_conditions": "tr/az/lt 항목은 일반 CPython lower용 data에서 제외한다.",
+    "mapping": "UnicodeData simple lower를 읽고 unconditional SpecialCasing lower로 덮어쓴 뒤 identity를 제외한다.",
+    "properties": "DerivedCoreProperties의 두 property를 각각 정렬·비중복 inclusive range로 병합한다."
+  },
+  "상태": "실제 CLI RED 후 구현. helper/native unit/원본 비교/Clippy/빌드 정상 수용은 UNRUN."
+}

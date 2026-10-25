@@ -15,9 +15,10 @@ numerical artifact before execution; the existing host and ARM builds remain
 required. Fresh exact-SHA PR and post-merge results are still pending.
 
 A clean checkout needs generated DBCs to construct the unchanged source
-interfaces. `rust/tools/stage_control_dbcs.py` calls the original generator in
-its temporary-copy mode and stages only absent outputs, preserving every
-checked-in DBC. Directly invoking the generator's destructive refresh mode is
+interfaces. The native `stage-control-dbcs` tool (`openpilot-dev-tools`,
+`dbc-generator-native` feature) generates in a temporary copy and stages only
+absent outputs, preserving every checked-in DBC. It replaces the former
+`rust/tools/stage_control_dbcs.py` under #296. Directly invoking a destructive refresh mode is
 not part of CI. No DBC or source vehicle policy is changed by this integration.
 
 Independent review approved component revision

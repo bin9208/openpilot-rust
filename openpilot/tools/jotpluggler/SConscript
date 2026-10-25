@@ -1,12 +1,14 @@
 import os
 import subprocess
+from pathlib import Path
 import bootstrap_icons
 import imgui
 import libusb
-from opendbc import get_generated_dbcs
+from opendbc import SOURCE_DBC_PATH, get_generated_dbcs, native_dbc_generator
 from openpilot.common.basedir import BASEDIR
 
 Import('env', 'arch', 'common', 'messaging', 'visionipc', 'cereal', 'replay_lib', 'ffmpeg_libs')
+Import('generated_asset_root', 'staged_dbc_nodes')
 
 jot_env = env.Clone()
 jot_env["LIBPATH"] += [imgui.MESA_DIR, libusb.LIB_DIR]
@@ -14,6 +16,7 @@ jot_env["CPPPATH"] += [imgui.INCLUDE_DIR, libusb.INCLUDE_DIR]
 jot_env["CXXFLAGS"] += [
   "-DGLFW_INCLUDE_NONE",
   '-DJOTP_REPO_ROOT=\'"%s"\'' % os.path.realpath(BASEDIR),
+  '-DJOTP_DBC_ROOT=\'"%s"\'' % (str(generated_asset_root / "dbc") if generated_asset_root else ""),
   '-DBOOTSTRAP_ICONS_TTF=\'"%s"\'' % bootstrap_icons.TTF_PATH,
 ]
 
@@ -90,7 +93,13 @@ def generate_event_extractors(target, source, env):
   ])
   return None
 
-generated_dbc_stamp = jot_env.Command(f"generated_dbcs/.stamp", [], materialize_generated_dbcs)
+dbc_sources = [File(str(path)) for path in sorted((Path(SOURCE_DBC_PATH) / "generator").rglob("*.dbc"))]
+if generated_asset_root:
+  # factory45는 완전 staged catalog103에 이미 포함된다. 사용자 편집 디렉터리는 지우지 않는다.
+  generated_dbc_stamp = staged_dbc_nodes
+else:
+  generated_dbc_stamp = jot_env.Command("generated_dbcs/.stamp",
+                                      [File(str(native_dbc_generator())), *dbc_sources], materialize_generated_dbcs)
 car_fingerprint_to_dbc = jot_env.Command("car_fingerprint_to_dbc.h", [], write_car_fingerprint_to_dbc_header)
 event_extractors = jot_env.Command("generated_event_extractors.h", [
     "generate_event_extractors.py",

@@ -1,0 +1,81 @@
+[
+  {
+    "name": "edge-planar-rgb-tiff",
+    "mode": "RGB",
+    "shape": [
+      2,
+      2,
+      3
+    ],
+    "values_sha256": "87a8f4719b4bd130c4ff205e6c87129a61f7109a1894620920964b738d6d37c3",
+    "input_sha256": "01a392f3168045b21a4d01521ffaa49fe853ab81d3edc92426d16942e53af9cb",
+    "warnings": []
+  },
+  {
+    "name": "edge-palette-be-tiff",
+    "mode": "P",
+    "shape": [
+      2,
+      2
+    ],
+    "values_sha256": "a1e03200f1f82ad2c1cec8795c271aaecf98f5aa2d151d2229ec5fa0c177cf77",
+    "input_sha256": "2ae876c13f0d93566188a1befc2dbedc2c3b56349ef6f9f776e34e6b9efe6f8f",
+    "warnings": []
+  },
+  {
+    "name": "edge-sgi-rle",
+    "mode": "RGB",
+    "shape": [
+      2,
+      3,
+      3
+    ],
+    "values_sha256": "66371c99da31bd06100f30aea6912a72f268fb552a518c47ba694c74c2df5a4b",
+    "input_sha256": "f3904c4fbc74e88c96a45cad35cae737ef991ad78bb59d9f942485f2a97c15d6",
+    "warnings": []
+  },
+  {
+    "name": "edge-im-lut-gray",
+    "mode": "L",
+    "shape": [
+      2,
+      3
+    ],
+    "values_sha256": "22b4553aab7c9101cdb3c3793dbc909fd809d7f86fd7f517417c64dd4f5e66a5",
+    "input_sha256": "2c88dc8e9316b03a81c4ca1d94f99bbb8ceb73038fa0923b897db3457b402d0c",
+    "warnings": []
+  },
+  {
+    "name": "edge-im-lut-color",
+    "mode": "P",
+    "shape": [
+      2,
+      3
+    ],
+    "values_sha256": "22b4553aab7c9101cdb3c3793dbc909fd809d7f86fd7f517417c64dd4f5e66a5",
+    "input_sha256": "ed159bc049501ff03b926ea1a975eb4c2a0357204c5daace15bac0e76bd4f8f0",
+    "warnings": []
+  },
+  {
+    "name": "edge-packed-l-png",
+    "mode": "L",
+    "shape": [
+      2,
+      5
+    ],
+    "values_sha256": "23c379d6c0f22ef64cdef873fd530df1f1419b4a3935e9323d5f1d82ca697b6a",
+    "input_sha256": "b189d6b8fc0c6731153284fafbed669fc14d7914598e509a8550bf8969cec524",
+    "warnings": []
+  },
+  {
+    "name": "edge-packed-p-png",
+    "mode": "P",
+    "shape": [
+      2,
+      5
+    ],
+    "values_sha256": "23c379d6c0f22ef64cdef873fd530df1f1419b4a3935e9323d5f1d82ca697b6a",
+    "input_sha256": "c1e601e39f0f15525c7a0cf7558c0779c780d46b92402f9d5c46611a15402248",
+    "warnings": []
+  }
+]

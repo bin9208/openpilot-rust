@@ -1,0 +1,55 @@
+{
+  "after": [
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVy"
+    },
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVyL2pveXN0aWNrZA=="
+    },
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVyL2pveXN0aWNrZC9wYXJhbXMtYmluZGluZw=="
+    }
+  ],
+  "argv_b64": [
+    "L3Vzci9iaW4vcHl0aG9u",
+    "LVA=",
+    "LWM=",
+    "ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoOyBpbXBvcnQgb3M7IHByaW50KCJKT1lTVElDS0RfUEFSQU1TX0JJTkRJTkc9IiArIHN0cihuZXh0KChQYXRoKG9zLmVudmlyb25bIlJVTk5FUl9URU1QIl0pIC8gImpveXN0aWNrZC9wYXJhbXMtYmluZGluZyIpLmdsb2IoInBhcmFtc19weXgqLnNvIikpKSk="
+  ],
+  "before": [
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVy"
+    },
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVyL2pveXN0aWNrZA=="
+    },
+    {
+      "mode": 16877,
+      "path_b64": "cnVubmVyL2pveXN0aWNrZC9wYXJhbXMtYmluZGluZw=="
+    }
+  ],
+  "boundary_nonstring_prefix": false,
+  "caller": "10",
+  "capture_runner_b64": "L2hvbWUvcnVubmVyL3dvcmsvX3RlbXAvY2ktcmVjZWlwdC1zb3VyY2Uvb3JpZ2luYWwvd29yay8wNTgtZ2xvYi1ub25lL3J1bm5lcg==",
+  "env": "JOYSTICKD_PARAMS_BINDING",
+  "error_class": "StopIteration",
+  "glob_order_b64": [],
+  "name": "glob-none",
+  "op": "first-binding",
+  "setup": {
+    "entries": [],
+    "input_relative": "joystickd/params-binding",
+    "kind": "directory",
+    "payload_b64": "eyJtb2R1bGUiOiIvdG1wL3BhcmFtcy5zbyIsInByZWZpeCI6Ii90bXAvanNvbjExIn0=",
+    "raw_root": false
+  },
+  "status": 1,
+  "stderr_b64": "VHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOgogIEZpbGUgIjxzdHJpbmc+IiwgbGluZSAxLCBpbiA8bW9kdWxlPgpTdG9wSXRlcmF0aW9uCg==",
+  "stdout_b64": "",
+  "unchanged": true
+}

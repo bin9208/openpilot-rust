@@ -1,0 +1,577 @@
+{
+  "checker_sha256": "401526615ca939d19cb79b384bb589887e340e9ef2b2c5241ce3f9e888426dcc",
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "cases": [
+    {
+      "name": "pass",
+      "source_stdout": "null\nnull\nnull\n",
+      "native_stdout": "null\nnull\nnull\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": false,
+      "error": null,
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"counts\": {\"config\": 3}, \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\", \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\", \"seed\": 187, \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\", \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\", \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"}\n",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"counts\": {\n    \"config\": 3\n  },\n  \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\",\n  \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\",\n  \"seed\": 187,\n  \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\",\n  \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\",\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"\n}\n"
+      }
+    },
+    {
+      "name": "pass-existing",
+      "source_stdout": "null\nnull\nnull\n",
+      "native_stdout": "null\nnull\nnull\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": true,
+      "error": null,
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"counts\": {\"config\": 3}, \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\", \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\", \"seed\": 187, \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\", \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\", \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"}\n",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"counts\": {\n    \"config\": 3\n  },\n  \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\",\n  \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\",\n  \"seed\": 187,\n  \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\",\n  \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\",\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"\n}\n",
+        "failure.json": "old failure\n"
+      }
+    },
+    {
+      "name": "reorder",
+      "source_stdout": "{\"a\":1,\"b\":2}\n{\"a\":1,\"b\":2}\n{\"a\":1,\"b\":2}\n",
+      "native_stdout": "{\"b\":2,\"a\":1}\n{\"b\":2,\"a\":1}\n{\"b\":2,\"a\":1}\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": false,
+      "error": null,
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"counts\": {\"config\": 3}, \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\", \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\", \"seed\": 187, \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\", \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\", \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"}\n",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"counts\": {\n    \"config\": 3\n  },\n  \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\",\n  \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\",\n  \"seed\": 187,\n  \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\",\n  \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\",\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"\n}\n"
+      }
+    },
+    {
+      "name": "mismatch",
+      "source_stdout": "{\"a\":[1.0]}\n{\"a\":[1.0]}\n{\"a\":[1.0]}\n",
+      "native_stdout": "{\"a\":[2.0]}\n{\"a\":[2.0]}\n{\"a\":[2.0]}\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "('config 1.a[0]', 1.0, 2.0, '0000803f', '00000040')"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "failure.json": "{\n  \"request\": \"config 1\",\n  \"source\": {\n    \"a\": [\n      1.0\n    ]\n  },\n  \"native\": {\n    \"a\": [\n      2.0\n    ]\n  },\n  \"error\": \"('config 1.a[0]', 1.0, 2.0, '0000803f', '00000040')\"\n}\n"
+      }
+    },
+    {
+      "name": "mismatch-existing",
+      "source_stdout": "{\"a\":[1.0]}\n{\"a\":[1.0]}\n{\"a\":[1.0]}\n",
+      "native_stdout": "{\"a\":[2.0]}\n{\"a\":[2.0]}\n{\"a\":[2.0]}\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": true,
+      "error": {
+        "type": "AssertionError",
+        "message": "('config 1.a[0]', 1.0, 2.0, '0000803f', '00000040')"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "report.json": "old report\n",
+        "failure.json": "{\n  \"request\": \"config 1\",\n  \"source\": {\n    \"a\": [\n      1.0\n    ]\n  },\n  \"native\": {\n    \"a\": [\n      2.0\n    ]\n  },\n  \"error\": \"('config 1.a[0]', 1.0, 2.0, '0000803f', '00000040')\"\n}\n"
+      }
+    },
+    {
+      "name": "key-mismatch",
+      "source_stdout": "{\"a\":1}\n{\"a\":1}\n{\"a\":1}\n",
+      "native_stdout": "{\"b\":1}\n{\"b\":1}\n{\"b\":1}\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "('config 1', dict_keys(['a']), dict_keys(['b']))"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "failure.json": "{\n  \"request\": \"config 1\",\n  \"source\": {\n    \"a\": 1\n  },\n  \"native\": {\n    \"b\": 1\n  },\n  \"error\": \"('config 1', dict_keys(['a']), dict_keys(['b']))\"\n}\n"
+      }
+    },
+    {
+      "name": "overflow-no-artifact",
+      "source_stdout": "1.0\n1.0\n1.0\n",
+      "native_stdout": "1e39\n1e39\n1e39\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": false,
+      "error": {
+        "type": "OverflowError",
+        "message": "float too large to pack with f format"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "",
+      "files": {}
+    },
+    {
+      "name": "wrong-count",
+      "source_stdout": "null\nnull\n",
+      "native_stdout": "null\nnull\nnull\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": false,
+      "error": {
+        "type": "AssertionError",
+        "message": ""
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "",
+      "files": {}
+    },
+    {
+      "name": "wrong-count-existing",
+      "source_stdout": "null\nnull\n",
+      "native_stdout": "null\nnull\nnull\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": true,
+      "error": {
+        "type": "AssertionError",
+        "message": ""
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "report.json": "old report\n",
+        "failure.json": "old failure\n"
+      }
+    },
+    {
+      "name": "source-json",
+      "source_stdout": "null\ninvalid\n",
+      "native_stdout": "null\nnull\nnull\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": false,
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 1 (char 0)"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "",
+      "files": {}
+    },
+    {
+      "name": "source-json-existing",
+      "source_stdout": "null\ninvalid\n",
+      "native_stdout": "null\nnull\nnull\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": true,
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 1 (char 0)"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "report.json": "old report\n",
+        "failure.json": "old failure\n"
+      }
+    },
+    {
+      "name": "native-json",
+      "source_stdout": "null\nnull\nnull\n",
+      "native_stdout": "invalid\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": false,
+      "error": {
+        "type": "JSONDecodeError",
+        "message": "Expecting value: line 1 column 1 (char 0)"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "",
+      "files": {}
+    },
+    {
+      "name": "source-exit",
+      "source_stdout": "null\nnull\nnull\n",
+      "native_stdout": "null\nnull\nnull\n",
+      "source_code": 7,
+      "native_code": 0,
+      "existing": false,
+      "error": {
+        "type": "CalledProcessError",
+        "message": "Command '['$ROOT/reference']' returned non-zero exit status 7."
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "",
+      "files": {}
+    },
+    {
+      "name": "native-exit",
+      "source_stdout": "null\nnull\nnull\n",
+      "native_stdout": "null\nnull\nnull\n",
+      "source_code": 0,
+      "native_code": 8,
+      "existing": false,
+      "error": {
+        "type": "CalledProcessError",
+        "message": "Command '['$ROOT/native']' returned non-zero exit status 8."
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "",
+      "files": {}
+    },
+    {
+      "name": "splitlines",
+      "source_stdout": "null\r\ntrue\u2028{}\u0085",
+      "native_stdout": "null\n1\n{}\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": false,
+      "error": null,
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"counts\": {\"config\": 3}, \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\", \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\", \"seed\": 187, \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\", \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\", \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"}\n",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"counts\": {\n    \"config\": 3\n  },\n  \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\",\n  \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\",\n  \"seed\": 187,\n  \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\",\n  \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\",\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"\n}\n"
+      }
+    },
+    {
+      "name": "nan",
+      "source_stdout": "NaN\nNaN\nNaN\n",
+      "native_stdout": "NaN\nNaN\nNaN\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": false,
+      "error": null,
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "{\"status\": \"PASS\", \"cases\": 3, \"counts\": {\"config\": 3}, \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\", \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\", \"seed\": 187, \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\", \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\", \"source_command\": [\"$ROOT/reference\"], \"native_command\": [\"$ROOT/native\"], \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"}\n",
+      "files": {
+        "report.json": "{\n  \"status\": \"PASS\",\n  \"cases\": 3,\n  \"counts\": {\n    \"config\": 3\n  },\n  \"comparison\": \"exact registers/integer data and bit-identical binary32 sensor/score values\",\n  \"input_sha256\": \"8cf43f3b8adc8759ad097d3f8caf08a212baaa6a8a0b19a8b6902111612dffcf\",\n  \"seed\": 187,\n  \"source_sha256\": \"711251b8655a6c2624081a6769b18a5f6dc8a8b3c6a805afe82571e6ef956ad2\",\n  \"native_sha256\": \"b0ca94ca54cf33f214f3bf9f31dddf9438ae1a42a93cb493454f741a1e6f024e\",\n  \"source_command\": [\n    \"$ROOT/reference\"\n  ],\n  \"native_command\": [\n    \"$ROOT/native\"\n  ],\n  \"limits\": \"host or explicit emulator only; no camera hardware or complete runtime startup\"\n}\n"
+      }
+    },
+    {
+      "name": "surrogate",
+      "source_stdout": "\"\\ud800\"\n\"\\ud800\"\n\"\\ud800\"\n",
+      "native_stdout": "\"x\"\n\"x\"\n\"x\"\n",
+      "source_code": 0,
+      "native_code": 0,
+      "existing": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "('config 1', '\\ud800', 'x')"
+      },
+      "calls": [
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/reference"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        },
+        {
+          "argv": [
+            "$ROOT/native"
+          ],
+          "input": "config 1\nconfig 2\nconfig 3\n"
+        }
+      ],
+      "stdout": "",
+      "files": {
+        "failure.json": "{\n  \"request\": \"config 1\",\n  \"source\": \"\\ud800\",\n  \"native\": \"x\",\n  \"error\": \"('config 1', '\\\\ud800', 'x')\"\n}\n"
+      }
+    }
+  ]
+}

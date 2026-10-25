@@ -50,15 +50,31 @@ def parameters(root: Path, prefix: str, case: Case) -> bytes:
   return raw
 
 
+def fd_targets(fd_dir: Path) -> tuple[dict[str, str], list[str]]:
+  # A descriptor may close after /proc lists it but before readlink. Keep that
+  # loss explicit; a missing fd directory or any other read failure is fatal.
+  listed = list(fd_dir.iterdir())
+  targets = {}
+  closed = []
+  for fd in listed:
+    try:
+      targets[fd.name] = os.readlink(fd)
+    except FileNotFoundError:
+      closed.append(fd.name)
+  fd_dir.stat()
+  return targets, sorted(closed)
+
+
 def provenance(process: subprocess.Popen, output: Path) -> None:
   proc = Path('/proc') / str(process.pid)
   maps = (proc / 'maps').read_text()
   if output.name == 'native':
     assert 'libpython' not in maps
   (output / 'maps.txt').write_text(maps)
+  fds, closed = fd_targets(proc / 'fd')
   (output / 'process.json').write_text(json.dumps({'pid': process.pid, 'exe': str((proc / 'exe').resolve()),
     'exe_sha256': hashlib.sha256((proc / 'exe').read_bytes()).hexdigest(),
-    'fds': {fd.name: os.readlink(fd) for fd in (proc / 'fd').iterdir()}, 'captured_ns': time.monotonic_ns()}) + '\n')
+    'fds': fds, 'fds_closed_during_capture': closed, 'captured_ns': time.monotonic_ns()}) + '\n')
 
 
 def stop(process: subprocess.Popen) -> int:
@@ -91,6 +107,42 @@ def drain(subscriber, rows: list[Publication]) -> None:
     rows.append({'received_ns': received, 'event': event.to_dict(), 'raw': raw.hex()})
 
 
+def read_producer_completion(producer: subprocess.Popen, output: Path) -> tuple[dict, dict] | None:
+  code = producer.poll()
+  assert code in (None, 0), ('independent producer exit', code)
+  complete = output.with_name('producer-complete.json')
+  assert not complete.is_symlink(), 'symlink producer completion'
+  try:
+    with complete.open('rb') as stream:
+      raw = stream.read(1025)
+  except FileNotFoundError:
+    output.parent.stat()
+    assert code is None, 'producer exited without a success completion marker'
+    return None
+  assert len(raw) <= 1024, 'oversized producer completion'
+  marker = json.loads(raw)
+  assert isinstance(marker, dict) and set(marker) == {'schema', 'pid', 'completed_ns', 'producer_sha256', 'inputs_sha256'}
+  assert type(marker['schema']) is int and marker['schema'] == 1
+  assert type(marker['pid']) is int and marker['pid'] == producer.pid, 'stale producer completion PID'
+  assert type(marker['completed_ns']) is int
+  proof = output.read_bytes()
+  assert hashlib.sha256(proof).hexdigest() == marker['producer_sha256'], 'producer completion proof changed'
+  record = json.loads(proof)
+  assert type(record['pid']) is int and record['pid'] == producer.pid
+  assert type(record['final_ack_ns']) is int and type(record['evidence_done_ns']) is int
+  assert 0 < record['final_ack_ns'] <= record['evidence_done_ns'] <= marker['completed_ns'] <= time.monotonic_ns()
+  assert record['inputs_sha256'] == marker['inputs_sha256']
+  assert hashlib.sha256(output.with_name('inputs.json').read_bytes()).hexdigest() == marker['inputs_sha256'], 'completed inputs changed'
+  return marker, record
+
+
+def wait_for_producer_exit(producer: subprocess.Popen) -> int:
+  # SIGSTOP 뒤의 teardown 대기는 strict100ms 전송 창을 늘리지 않는다. kill 후 성공 수용은 없다.
+  code = producer.wait(timeout=3)
+  assert code == 0, ('independent producer exit', code)
+  return time.monotonic_ns()
+
+
 def capture(args: Arguments, case: Case) -> dict[str, int | str]:
   """Broadcast identical input bytes to independent actual source/native loops."""
   from openpilot.cereal import messaging
@@ -103,7 +155,10 @@ def capture(args: Arguments, case: Case) -> dict[str, int | str]:
   prior = os.environ.get('OPENPILOT_PREFIX')
   processes, subscribers, rows, modes = [], [], [[], []], ['source', 'native']
   producer = None
+  producer_exit_observed_ns = None
+  producer_forced = False
   stopped = []
+  stop_requested = []
   shutdowns = []
   result = None
   try:
@@ -151,6 +206,8 @@ def capture(args: Arguments, case: Case) -> dict[str, int | str]:
         processes.append(subprocess.Popen(command, cwd=ROOT, env=env, stdout=stdout, stderr=stderr))
       deadline = time.monotonic() + 20
       completion_ns = None
+      completion_record = None
+      producer_result = None
       retained = False
       started = False
       parameters_released = False
@@ -194,14 +251,16 @@ def capture(args: Arguments, case: Case) -> dict[str, int | str]:
           for process, mode in zip(processes, modes, strict=True):
             provenance(process, output / mode)
           retained = True
-        if producer.poll() is not None:
-          assert producer.returncode == 0, ('independent producer exit', producer.returncode)
-          if completion_ns is None:
+        if completion_ns is None:
+          completed = read_producer_completion(producer, output / 'producer.json')
+          if completed is not None:
+            completion_record, producer_result = completed
             completion_ns = time.monotonic_ns()
-          if time.monotonic_ns() - completion_ns >= 20_000_000:
-            for process in processes:
-              stopped.append(stop(process))
-            break
+        if completion_ns is not None and time.monotonic_ns() - completion_ns >= 20_000_000:
+          for process in processes:
+            stop_requested.append(time.monotonic_ns())
+            stopped.append(stop(process))
+          break
         time.sleep(.0005)
       for process, mode in zip(processes, modes, strict=True):
         if not retained:
@@ -209,7 +268,23 @@ def capture(args: Arguments, case: Case) -> dict[str, int | str]:
       for subscriber, values, mode in zip(subscribers, rows, modes, strict=True):
         drain(subscriber, values)
         (output / mode / 'publications.json').write_text(json.dumps(values) + '\n')
-      producer_result = json.loads((output / 'producer.json').read_text())
+      producer_exit_observed_ns = wait_for_producer_exit(producer)
+      assert completion_record is not None and producer_result is not None
+      # Retain the phases before enforcing the same strict bound. Producer exit
+      # includes evidence writes and interpreter teardown after its final send;
+      # without these observations a failed assertion cannot locate the delay.
+      (output / 'capture-timing.json').write_text(json.dumps({
+        'last_send_started_ns': producer_result['rows'][-1]['send_started_ns'],
+        'last_send_finished_ns': producer_result['rows'][-1]['send_finished_ns'],
+        'final_ack_ns': producer_result['final_ack_ns'],
+        'producer_evidence_done_ns': producer_result['evidence_done_ns'],
+        'producer_completed_ns': completion_record['completed_ns'],
+        'producer_completion_observed_ns': completion_ns,
+        'producer_exit_observed_ns': producer_exit_observed_ns,
+        'stop_bound_ns': 100_000_000,
+        'stops': [{'mode': mode, 'pid': process.pid, 'requested_ns': requested_ns, 'confirmed_ns': stop_ns}
+          for mode, process, requested_ns, stop_ns in zip(modes, processes, stop_requested, stopped, strict=True)],
+      }) + '\n')
       assert 'params_after_first' not in case or parameters_changed
       assert len(producer_result['rows']) == len(case['actions'])
       assert producer_result['encoded_done_ns'] - producer_result['origin_ns'] < 100_000_000
@@ -231,8 +306,12 @@ def capture(args: Arguments, case: Case) -> dict[str, int | str]:
     for process in processes:
       shutdowns.append(finish(process))
     if producer is not None and producer.poll() is None:
+      producer_forced = True
       producer.kill()
       producer.wait(timeout=3)
+    if producer is not None:
+      (output / 'producer-shutdown.json').write_text(json.dumps({'pid': producer.pid, 'exit': producer.returncode,
+        'forced': producer_forced, 'successful_exit_observed_ns': producer_exit_observed_ns, 'wait_timeout_seconds': 3}) + '\n')
     (output / 'shutdown.json').write_text(json.dumps(shutdowns) + '\n')
     subscribers.clear()
     gc.collect()
@@ -247,6 +326,7 @@ def capture(args: Arguments, case: Case) -> dict[str, int | str]:
       'processes_exited': [process.poll() is not None for process in processes],
       'binary_sha256': hashlib.sha256(args.binary.read_bytes()).hexdigest()}) + '\n')
   assert all(not value['forced'] for value in shutdowns), shutdowns
+  assert producer is not None and producer.returncode == 0 and not producer_forced
   assert result is not None
   result.update(source_exit=shutdowns[0]['exit'], native_exit=shutdowns[1]['exit'])
   (output / 'result.json').write_text(json.dumps(result) + '\n')

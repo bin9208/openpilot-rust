@@ -4,6 +4,14 @@ use std::{ffi::c_void, fs, io::Read, path::Path};
 
 type KernelFn = unsafe extern "C" fn(*const *mut c_void, *const i32);
 
+#[cfg(all(
+    test,
+    feature = "cached-program-isa",
+    target_arch = "x86_64",
+    target_os = "linux"
+))]
+mod diagnostic_482_tests;
+
 struct Invocation {
     function: KernelFn,
     buffers: Vec<*mut c_void>,
@@ -17,6 +25,8 @@ pub struct CpuModel {
     buffers: Vec<Buffer>,
     calls: Vec<Invocation>,
     _library: Library,
+    #[cfg(unix)]
+    _cached_library: Option<crate::cached_code::HeldLibrary>,
 }
 
 impl CpuModel {
@@ -27,6 +37,32 @@ impl CpuModel {
     /// The caller must prevent artifact modification until this model is dropped.
     /// Checksums detect corruption; they do not authenticate executable code.
     pub unsafe fn load(directory: &Path) -> Result<Self, Error> {
+        // SAFETY: this method preserves its existing trusted/immutable contract.
+        unsafe { Self::load_inner(directory, None) }
+    }
+
+    /// Load only an explicitly selected cached-code candidate.
+    ///
+    /// # Safety
+    /// All of `load`'s kernel/immutability requirements apply. `admission` must
+    /// come from independent original/current source and issuer authentication,
+    /// never by copying expected identities from the candidate artifact. The
+    /// ISA issuer must have decoded every complete image without executing it.
+    #[cfg(unix)]
+    pub unsafe fn load_cached(
+        directory: &Path,
+        admission: &crate::cached_code::Admission,
+    ) -> Result<Self, Error> {
+        // SAFETY: this explicit caller supplies load's contract plus the above
+        // independent original/current admission; prepare runs before dlopen.
+        unsafe { Self::load_inner(directory, Some(admission)) }
+    }
+
+    unsafe fn load_inner(
+        directory: &Path,
+        #[cfg(unix)] admission: Option<&crate::cached_code::Admission>,
+        #[cfg(not(unix))] _admission: Option<&()>,
+    ) -> Result<Self, Error> {
         if cfg!(target_endian = "big") {
             return Err(Error::Contract("little-endian CPU required"));
         }
@@ -35,6 +71,24 @@ impl CpuModel {
             .take(64 * 1024 * 1024 + 1)
             .read_to_end(&mut manifest)?;
         let graph = Graph::parse(&manifest)?.graph;
+        #[cfg(unix)]
+        let cached_library = match (graph.cached_code.as_ref(), admission) {
+            (Some(_), Some(expected)) => Some(
+                crate::cached_code::prepare(directory, &graph, expected)
+                    .map_err(Error::CachedCode)?,
+            ),
+            (Some(_), None) => {
+                return Err(Error::Contract("cached mode requires explicit admission"))
+            }
+            (None, Some(_)) => {
+                return Err(Error::Contract("cached admission requires cached graph"))
+            }
+            (None, None) => None,
+        };
+        #[cfg(not(unix))]
+        if graph.cached_code.is_some() {
+            return Err(Error::Contract("cached mode requires x86_64 Linux"));
+        }
         let weight_bytes = graph
             .allocations
             .iter()
@@ -70,7 +124,20 @@ impl CpuModel {
             buffers.push(buffer);
         }
         // SAFETY: the caller guarantees trusted code and immutable artifacts.
-        let library = unsafe { Library::new(library_path) }?;
+        #[cfg(unix)]
+        let selected_library = cached_library.as_ref().map_or_else(
+            || library_path.clone(),
+            |held| held.descriptor_path().into(),
+        );
+        #[cfg(not(unix))]
+        let selected_library = library_path;
+        // SAFETY: immutable trusted kernels; cached mode additionally verifies
+        // every bound image and ISA requirement and opens the held descriptor.
+        let library = unsafe { Library::new(selected_library) }?;
+        #[cfg(unix)]
+        if let Some(held) = &cached_library {
+            held.verify().map_err(Error::CachedCode)?;
+        }
         let mut functions = Vec::with_capacity(graph.kernels.len());
         for index in 0..graph.kernels.len() {
             let name = format!("op_kernel_{index}\0");
@@ -102,6 +169,8 @@ impl CpuModel {
             buffers,
             calls,
             _library: library,
+            #[cfg(unix)]
+            _cached_library: cached_library,
         })
     }
 
@@ -158,4 +227,33 @@ fn check_size(expected: usize, actual: usize) -> Result<(), Error> {
         return Err(Error::Size { expected, actual });
     }
     Ok(())
+}
+
+#[cfg(all(test, unix, target_arch = "x86_64"))]
+mod cached_admission_tests {
+    use super::*;
+    use serde_json::json;
+    #[test]
+    fn ordinary_load_rejects_cached_mode_before_any_library_or_sidecar_access() {
+        let directory = tempfile::tempdir().unwrap();
+        let manifest = json!({"version":3,"backend":"cpu-cached-llvm","arch":"x86_64",
+            "weights_sha256":"0".repeat(64),"library_sha256":"0".repeat(64),
+            "allocations":[],"views":[],"inputs":[],"outputs":[],
+            "kernels":[{"buffers":0,"scalars":0}],
+            "calls":[{"kernel":0,"views":[],"scalars":[],"workers":1,"core_id":null}],
+            "cached_code":{"certificate_sha256":"0".repeat(64),"kernels":[0]}});
+        fs::write(
+            directory.path().join("graph.json"),
+            serde_json::to_vec(&manifest).unwrap(),
+        )
+        .unwrap();
+        // No weights, library or sidecar exists. Failure must identify the
+        // disabled mode, rather than reach any file read/dlopen fallback.
+        // SAFETY: this candidate rejects before reaching executable code.
+        let result = unsafe { CpuModel::load(directory.path()) };
+        assert!(matches!(
+            result,
+            Err(Error::Contract("cached mode requires explicit admission"))
+        ));
+    }
 }

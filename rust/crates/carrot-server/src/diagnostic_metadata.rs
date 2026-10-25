@@ -44,9 +44,8 @@ pub(crate) async fn collect(
     runner: &Runner,
 ) -> Result<Metadata, Error> {
     let basic = tokio::task::spawn_blocking(move || -> Result<_, Error> {
-        let mut logger = openpilot_logging::producer::Factory::for_runtime()
-            .map_err(|error| Error::Source(error.to_string()))?
-            .logger();
+        let mut logger = openpilot_logging::producer::Logger::for_runtime_retained()
+            .map_err(|error| Error::Source(error.to_string()))?;
         let environment: BTreeMap<_, _> = ["CARROT_DEVICE_SERIAL", "DEVICE_SERIAL", "SERIAL"]
             .into_iter()
             .filter_map(|name| std::env::var(name).ok().map(|value| (name.into(), value)))

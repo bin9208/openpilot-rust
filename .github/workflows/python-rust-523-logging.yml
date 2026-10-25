@@ -1,0 +1,791 @@
+name: Python Rust 523 shared logging retained candidate
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-logging.yml
+    - tools/ci/logging_retained_549.sh
+    - tools/ci/logging_retained_exec_policy_549.jq
+    - docs/naver/python-rust-523-logging-cache-554.md
+    - rust/crates/dev-tools/src/native_logging_check.rs
+    - rust/crates/dev-tools/src/native_logging_check/**
+    - rust/crates/dev-tools/tests/native_logging_lifecycle.rs
+    - rust/crates/dev-tools/tests/native_logging_lifecycle/**
+    - rust/crates/logging/**
+    - rust/crates/dev-tools/Cargo.toml
+    - rust/Cargo.toml
+    - rust/Cargo.lock
+    - rust/tools/prepare-readonly-ci-rust
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: python-rust-523-logging-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  logging-retained:
+    name: Shared logging retained source and current native candidate
+    if: ${{ github.repository == 'bin9208/openpilot-rust' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TERM_COLOR: never
+      RUSTUP_TOOLCHAIN: 1.94.0
+      NATIVE_LOGGING_SOURCE_POLICY: absent
+    steps:
+    - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name
+          == github.repository }}
+        EVENT_NAME: ${{ github.event_name }}
+        SOURCE_REF: ${{ github.ref }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied for logging retained qualification' >&2; exit 1; }
+        set -euo pipefail
+        test "$EVENT_NAME" = push
+        test "$SOURCE_REF" = refs/heads/codex/feat-523-python-rust
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -m)" = x86_64
+    - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Allocate private source cache and target before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.logging549-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Actions의 workspace와 Bash가 사용하는 private checkout을 구분한다.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+        # job root를 최초 allocation 시점에 bind한다. cleanup 순간의 stat을 baseline으로 쓰지 않는다.
+        test -d "$CI_JOB_TEMP" && test ! -L "$CI_JOB_TEMP"
+        test "$(realpath -e -- "$CI_JOB_TEMP")" = "$CI_JOB_TEMP"
+        test "$(stat -c '%u:%a' -- "$CI_JOB_TEMP")" = "$UID:700"
+        printf 'LOGGING_JOB_IDENTITY=%s\n' "$(stat -c '%d:%i:%f:%u:%g' -- "$CI_JOB_TEMP")" >> "$GITHUB_ENV"
+        printf 'job_identity=%s\n' "$(stat -c '%d:%i:%f:%u:%g' -- "$CI_JOB_TEMP")" >> "$CI_JOB_TEMP/proof/ownership.txt"
+    - uses: actions/checkout@v7
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+    - name: Seal exact source HEAD and tracked index before checks
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      id: source_before
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+        allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ ]]
+        printf '{"allocated_private_source_bytes":%s,"planned_source_growth_bytes":2147483648}\n' "$allocated" > "$CI_JOB_TEMP/proof/source-growth-after-checkout.json"
+        git ls-tree -r -l HEAD | awk '$4 ~ /^[0-9]+$/ {bytes+=$4; files++} END {printf "{\"tracked_blob_bytes\":%.0f,\"files\":%d}\n",bytes,files}' > "$CI_JOB_TEMP/proof/tracked-source-size.json"
+        ((allocated <= 2 * 1024 * 1024 * 1024))
+    - name: Prepare official pinned Rust in the owned private rustup root and seal it
+      id: prepared_rust
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before
+    - name: Admit actual hosted disk space before native dependency preparation
+      id: hosted_dependencies
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      timeout-minutes: 15
+      run: |
+        set -euo pipefail
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        before_source=$(df -PB1 "$DIAG_SOURCE" | awk 'NR == 2 {print $4}')
+        before_job=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        before_system=$(df -PB1 / | awk 'NR == 2 {print $4}')
+        [[ $before_source =~ ^[0-9]+$ && $before_job =~ ^[0-9]+$ && $before_system =~ ^[0-9]+$ ]]
+        preparation=$((2 * 1024 * 1024 * 1024))
+        remaining=$(((8 + 2) * 1024 * 1024 * 1024))
+        printf '{"source_available_bytes":%s,"job_available_bytes":%s,"system_available_bytes":%s,"planned_apt_growth_bytes":%s,"reserved_build_and_proof_bytes":%s,"measured_peak_guarantee":false}\n' "$before_source" "$before_job" "$before_system" "$preparation" "$remaining" | tee "$CI_JOB_TEMP/proof/hosted-dependencies-before.json"
+        ((before_source >= preparation + remaining && before_job >= preparation + remaining))
+        ((before_system >= preparation + 512 * 1024 * 1024))
+        # 전역 apt 변경은 provider baseline 전 한 번만 한다. missing provider는 helper가 거부한다.
+        (ulimit -f 524288; sudo -n /usr/bin/timeout --signal=TERM --kill-after=30s 600s \
+          apt-get -o APT::Architecture=amd64 update) > "$CI_JOB_TEMP/proof/hosted-apt-update.log" 2>&1
+        (ulimit -f 524288; sudo -n /usr/bin/timeout --signal=TERM --kill-after=30s 600s \
+          apt-get -o APT::Architecture=amd64 install --no-install-recommends -y \
+          build-essential clang pkg-config capnproto libcapnp-dev libzmq3-dev strace gh curl) \
+          > "$CI_JOB_TEMP/proof/hosted-apt-install.log" 2>&1
+        after_source=$(df -PB1 "$DIAG_SOURCE" | awk 'NR == 2 {print $4}')
+        after_job=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        after_system=$(df -PB1 / | awk 'NR == 2 {print $4}')
+        [[ $after_source =~ ^[0-9]+$ && $after_job =~ ^[0-9]+$ && $after_system =~ ^[0-9]+$ ]]
+        printf '{"source_available_bytes":%s,"job_available_bytes":%s,"system_available_bytes":%s,"planned_apt_growth_bytes":%s,"measured_peak_guarantee":false}\n' "$after_source" "$after_job" "$after_system" "$preparation" | tee "$CI_JOB_TEMP/proof/hosted-dependencies-after.json"
+        ((before_source - after_source <= preparation && before_job - after_job <= preparation && before_system - after_system <= preparation))
+        ((after_source >= remaining && after_job >= remaining))
+        ((after_system >= 512 * 1024 * 1024))
+        dpkg-query -W build-essential clang pkg-config capnproto libcapnp-dev libzmq3-dev strace gh curl > "$CI_JOB_TEMP/proof/hosted-native-packages.txt"
+        for provider in bash sh ranlib nm git gh curl clang clang++ cc c++ ar as ld pkg-config capnp ldd strace timeout; do
+          command -v "$provider" > /dev/null
+        done
+    - name: Replay pinned historical first_int data with the current exact exec policy
+      id: exec_policy_replay
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.hosted_dependencies.outcome == 'success')
+        }}
+      timeout-minutes: 6
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        NATIVE_LOGGING_SOURCE_POLICY: present
+      run: |
+        set -euo pipefail
+        umask 077
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux && test "$RUNNER_ARCH" = X64
+        test -x /usr/bin/gh && test -x /usr/bin/unzip && test -x /usr/bin/timeout
+        test "$PWD" = "$DIAG_SOURCE" && test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        test "$(realpath -e -- "$CI_JOB_TEMP")" = "$CI_JOB_TEMP"
+        test -d "$CI_JOB_TEMP" && test ! -L "$CI_JOB_TEMP"
+        test "$(stat -c '%u:%a' -- "$CI_JOB_TEMP")" = "$UID:700"
+        test -d "$CI_JOB_TEMP/proof" && test ! -L "$CI_JOB_TEMP/proof"
+        proof=$CI_JOB_TEMP/proof/logging-exec-replay-788
+        mkdir -m 700 -- "$proof"
+        set -C
+        phase=admission
+        finish() {
+          status=$?
+          trap - EXIT
+          /usr/bin/jq -n --arg phase "$phase" --argjson status "$status" \
+            '{schema:1,source_policy:"present",policy_scope:"historical-788",historical_data_only:true,phase:$phase,exit_code:$status,historical_data_replay_only:true,current15_accepted:false,
+              legacy2_accepted:false,closed_pid:false,closed_cwd:false,closed_fd:false,closed_dso:false,
+              R4_acceptance:false,retirement_credit:0}' > "$proof/outcome.json" || status=1
+          exit "$status"
+        }
+        trap finish EXIT
+        policy=$DIAG_SOURCE/tools/ci/logging_retained_exec_policy_549.jq
+        policy_sha=3b84adc7a2f1bd147841382fc35a9f0e456d357005206966c586308061f492b7
+        test -f "$policy" && test ! -L "$policy"
+        printf '%s  %s\n' "$policy_sha" "$policy" > "$proof/policy.sha256"
+        sha256sum --check --strict "$proof/policy.sha256" > "$proof/policy-check.before.txt"
+        stat -c '%d:%i:%f:%u:%g:%s:%y:%z' -- "$policy" > "$proof/policy.before.stat"
+        jq_elf=$(realpath -e /usr/bin/jq)
+        test -f "$jq_elf" && test ! -L "$jq_elf"
+        sha256sum -- "$jq_elf" > "$proof/jq.sha256"
+        stat -c '%d:%i:%f:%u:%g:%s:%y:%z' -- "$jq_elf" > "$proof/jq.before.stat"
+        /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C "$jq_elf" --version > "$proof/jq-version.txt"
+        # 128MiB/file는 고정82.3MB ZIP을 위한 별도 download bound다. 원래 report cap은 아래64MiB다.
+        ulimit -f 131072
+        phase=artifact-download
+        /usr/bin/timeout --signal=TERM --kill-after=5s 90s /usr/bin/env -i \
+          PATH=/usr/bin:/bin HOME="$CI_JOB_TEMP/home" GH_HOST=github.com GH_TELEMETRY=false GH_TOKEN="$GH_TOKEN" \
+          /usr/bin/gh api repos/bin9208/openpilot-rust/actions/artifacts/12590267474 \
+          > "$proof/artifact-api.json" 2> "$proof/artifact-api.stderr"
+        /usr/bin/jq -e '.id==12590267474 and .size_in_bytes==82302246 and .expired==false and
+          .digest=="sha256:f77efe071f9175d1fc8ed61bf2e6def0624eeff806b454e294e533e6a1af350d" and
+          .workflow_run.id==40171227327 and .workflow_run.head_sha=="78896f19db29d5cbe305d6f788bac9d0db4ce552"' \
+          "$proof/artifact-api.json" > "$proof/artifact-api.scope.txt"
+        /usr/bin/timeout --signal=TERM --kill-after=5s 90s /usr/bin/env -i \
+          PATH=/usr/bin:/bin HOME="$CI_JOB_TEMP/home" GH_HOST=github.com GH_TELEMETRY=false GH_TOKEN="$GH_TOKEN" \
+          /usr/bin/gh api repos/bin9208/openpilot-rust/actions/artifacts/12590267474/zip \
+          > "$proof/archive.zip" 2> "$proof/artifact-download.stderr"
+        unset GH_TOKEN GITHUB_TOKEN
+        test "$(stat -c %s -- "$proof/archive.zip")" = 82302246
+        printf '%s  %s\n' f77efe071f9175d1fc8ed61bf2e6def0624eeff806b454e294e533e6a1af350d "$proof/archive.zip" > "$proof/archive.sha256"
+        sha256sum --check --strict "$proof/archive.sha256" > "$proof/archive-check.before.txt"
+        phase=archive-crc
+        /usr/bin/timeout --signal=TERM --kill-after=5s 90s /usr/bin/unzip -tqq "$proof/archive.zip" \
+          > "$proof/archive-crc.stdout" 2> "$proof/archive-crc.stderr"
+        /usr/bin/unzip -Z1 "$proof/archive.zip" > "$proof/archive-members.txt"
+        test "$(wc -l < "$proof/archive-members.txt")" -eq 5983
+        LC_ALL=C sort -u "$proof/archive-members.txt" > "$proof/archive-members.unique.txt"
+        test "$(wc -l < "$proof/archive-members.unique.txt")" -eq 5983
+        phase=two-json-members
+        /usr/bin/unzip -p "$proof/archive.zip" logging/inspect/first_int.json > "$proof/first_int.json"
+        /usr/bin/unzip -p "$proof/archive.zip" logging/exec-policy/binding.json > "$proof/binding.json"
+        test "$(stat -c %s -- "$proof/first_int.json")" = 494947
+        test "$(stat -c %s -- "$proof/binding.json")" = 82900
+        printf '%s  %s\n' \
+          75e80a5e4a017ef5971ed3306b4ba308198c4b0aa57c201c5a8e523c4c116a0d "$proof/first_int.json" \
+          e06a4f5ac76f6f2c356aa01b75ecbecdd03bd7b4d7cfb56134a8c4aeb6060fa0 "$proof/binding.json" > "$proof/members.sha256"
+        sha256sum --check --strict "$proof/members.sha256" > "$proof/members-check.before.txt"
+        # 다음 policy가 실패해도 검증한 원문 출처를 남긴다. 성공 출력/expected를 만들지 않는다.
+        /usr/bin/jq -n --arg current "$GITHUB_SHA" --arg policy "$policy_sha" \
+          '{schema:1,source_policy:"present",policy_scope:"historical-788",historical_data_only:true,scope:"historical-first-int-current-policy-replay",policy_source_commit:$current,policy_sha256:$policy,
+            fixture_source_commit:"78896f19db29d5cbe305d6f788bac9d0db4ce552",fixture_run:40171227327,
+            fixture_artifact:12590267474,zip_bytes:82302246,zip_sha256:"f77efe071f9175d1fc8ed61bf2e6def0624eeff806b454e294e533e6a1af350d",
+            whole_zip_crc_checked:true,zip_members:5983,
+            members:[{name:"logging/inspect/first_int.json",bytes:494947,sha256:"75e80a5e4a017ef5971ed3306b4ba308198c4b0aa57c201c5a8e523c4c116a0d"},
+              {name:"logging/exec-policy/binding.json",bytes:82900,sha256:"e06a4f5ac76f6f2c356aa01b75ecbecdd03bd7b4d7cfb56134a8c4aeb6060fa0"}],
+            raw_trace_redecoded:false,archive_code_executions:0,archive_elf_executions:0,original_executions:0,
+            current15_accepted:false,legacy2_accepted:false,closed_pid:false,closed_cwd:false,closed_fd:false,closed_dso:false,
+            all_adopted_reaped:false,old27_accepted:false,R4_acceptance:false,retirement_credit:0}' > "$proof/inputs.json"
+        # literal old paths는 JSON 값이다. 열기/치환/현재 provider 재수용은 하지 않는다.
+        phase=historical-first-int-policy
+        (ulimit -f 65536
+          /usr/bin/timeout --signal=TERM --kill-after=5s 60s /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C \
+            "$jq_elf" -e --arg policy_scope historical-788 --arg source_policy present --arg prefix first_int --slurpfile binding "$proof/binding.json" \
+            -f "$policy" "$proof/first_int.json") > "$proof/policy.stdout.json" 2> "$proof/policy.stderr"
+        phase=replay-output-and-seals
+        /usr/bin/jq -se 'length==1 and (.[0] | .source_policy=="present" and .policy_scope=="historical-788" and .historical_data_only==true and .schema==1 and .prefix=="first_int" and
+          .source_commit=="78896f19db29d5cbe305d6f788bac9d0db4ce552" and .summary_schema==2 and
+          .selected_exec_attempts==7 and .source_expected_exec_attempts==7 and .checker_attempts==1 and
+          .case_keys==["retained-first-int"] and .exact_exec_argv_env==true and .structural_detail_counts_equal==true and
+          .python_exec_attempts==0 and .cpp_exec_attempts==0 and .full_event_index==false and
+          .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and
+          .all_adopted_reaped==false and .old27_accepted==false and .pending_runtime2_accepted==false and
+          .R4_acceptance==false and .retirement_credit==0)' "$proof/policy.stdout.json" > "$proof/policy-output.scope.txt"
+        sha256sum --check --strict "$proof/archive.sha256" > "$proof/archive-check.after.txt"
+        sha256sum --check --strict "$proof/members.sha256" > "$proof/members-check.after.txt"
+        sha256sum --check --strict "$proof/policy.sha256" > "$proof/policy-check.after.txt"
+        sha256sum --check --strict "$proof/jq.sha256" > "$proof/jq-check.after.txt"
+        stat -c '%d:%i:%f:%u:%g:%s:%y:%z' -- "$policy" > "$proof/policy.after.stat"
+        stat -c '%d:%i:%f:%u:%g:%s:%y:%z' -- "$jq_elf" > "$proof/jq.after.stat"
+        cmp "$proof/policy.before.stat" "$proof/policy.after.stat"
+        cmp "$proof/jq.before.stat" "$proof/jq.after.stat"
+        sha256sum -- "$proof/policy.stdout.json" > "$proof/policy-output.sha256"
+        /usr/bin/jq -n --slurpfile admission "$proof/inputs.json" \
+          --arg output_sha "$(cut -d' ' -f1 "$proof/policy-output.sha256")" \
+          '$admission[0]+{policy_invocations:1,policy_output_sha256:$output_sha,
+            fixture_cpp_exec_attempts:0,fixture_python_exec_attempts:0,cpp_python_zero_scope:"captured788-first_int-exec-only"}' \
+          > "$proof/receipt.json"
+        phase=historical-data-replay-observed
+        # 검증을 마친 과거 ZIP의 binary 사본은 남기지 않고 두 JSON/출처만 보존한다.
+        test -f "$proof/archive.zip" && test ! -L "$proof/archive.zip"
+        test "$(realpath -e -- "$proof/archive.zip")" = "$proof/archive.zip"
+        test "$(stat -c '%u:%h' -- "$proof/archive.zip")" = "$UID:1"
+        rm -- "$proof/archive.zip"
+        test ! -e "$proof/archive.zip" && test ! -L "$proof/archive.zip"
+    - name: Build and observe retained native logging with originals absent
+      id: qualify
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        umask 077
+        # 첫 candidate의 실제 결과를 수집한다. old27/P2/closed-trace/caller/absence 수용은 별도다.
+        printf '%s  %s\n' 1504c949d8a8f39c7e821b87db0601f5f3ce3dd7aa0eb84be13ff2f411c9d59b tools/ci/logging_retained_549.sh | sha256sum --check --strict -
+        printf '%s  %s\n' 3b84adc7a2f1bd147841382fc35a9f0e456d357005206966c586308061f492b7 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check --strict -
+        /usr/bin/timeout --signal=TERM --kill-after=180s 60m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh
+        jq -e '.schema==1 and .selected_units==67 and .retained_units==27 and .prepare_units==9 and .trace_units==24 and .summary_units==7 and .ignored==0 and .exact_rosters==true' "$CI_JOB_TEMP/proof/logging/selected-units.json"
+        jq -e '.schema==1 and .states==8 and .status_pairs==8 and .authored_status_equal==true and .fs_check_passed==true and .fixture_cap_bytes==16777216 and .source_prime==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-cache-554/complete.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .fs_check_passed==true and .source_prime_statuses==1 and .status_channels_equal==true and .tracked_source_entries_flags_equal==true and .source_config_unchanged==true and .sdk_equal==true and .raw_index_immutable==false and .fixture_child_optional_locks_zero==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-source-cache-554/complete.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .qualification_profile=="fixed-true-554-v1" and .preload_index=="true" and .historical_false_receipts_relabelled==false and .production_preload_changed==false and .R4_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-preload-profile.json"
+        jq -e --arg source "$GITHUB_SHA" '
+          .schema==2 and .source_commit==$source and .order==["false-a1","true-b","false-a2"] and
+          .preload_order==["false","true","false"] and .status_observations==3 and .status_comparisons==2 and
+          .status_channels_equal==true and (.observations|length)==3 and
+          all(.observations[]; .source_commit==$source and .command_exit==0 and .diagnostic_only==true and .runtime_acceptance==false and .R4_acceptance==false and .retirement_credit==0) and
+          .raw_index_comparison.schema==1 and .raw_index_comparison.index_restored==false and
+          (.raw_index_comparison.same_raw_index_bytes|type)=="boolean" and
+          (.raw_index_comparison.same_raw_index_identity|type)=="boolean" and
+          (if .raw_index_comparison.same_raw_index_bytes and .raw_index_comparison.same_raw_index_identity
+           then .raw_index_comparison.performance_comparison=="eligible_observation_only"
+           else .raw_index_comparison.performance_comparison=="HOLD" end) and
+          .qualification_profile=="fixed-true-554-v1" and .qualification_preload_index=="true" and
+          .qualification_profile_changed==true and .historical_false_receipts_relabelled==false and
+          .production_preload_changed==false and .full_lifecycle_causality_proven==false and
+          .performance_claim==false and .root_cause_fixed==false and .runtime_acceptance==false and .R4_acceptance==false and .retirement_credit==0
+        ' "$CI_JOB_TEMP/proof/logging/git-preload-status-554/complete.json"
+    - name: Verify original legacy runtime directory INT and TERM in a separate bounded cohort
+      id: legacy_runtime2
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.qualify.outcome ==
+        'success') }}
+      timeout-minutes: 35
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        printf '%s  %s\n' 1504c949d8a8f39c7e821b87db0601f5f3ce3dd7aa0eb84be13ff2f411c9d59b tools/ci/logging_retained_549.sh | sha256sum --check --strict --quiet -
+        /usr/bin/timeout --signal=TERM --kill-after=180s 30m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh legacy-runtime2
+        proof=$CI_JOB_TEMP/proof/logging-legacy-runtime2
+        jq -e '.schema==1 and .source_policy=="absent" and .mode=="legacy-runtime2" and .phase=="legacy-runtime2-observed" and .exit_code==0 and .source_sdk_final_exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .provider_alias_final_exit_code==0 and .resource_final_exit_code==0 and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$proof/outcome.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .mode=="legacy-runtime2" and .source_policy=="absent" and .source_commit==$source and .logical_cases==2 and .logical_commands==2 and .libtest_passed==2 and .signal_order==["INT","TERM"] and .trace_prefixes==["legacy-runtime2-int","legacy-runtime2-term"] and .aggregate_limit_seconds==600 and .resume=="39833849895" and .selector=="actual_cli_int_term_reap_held_producer_and_preserve_runtime_foreign_replacement" and .prior_fd_continuity_claimed==false and .old17_reexecuted==false and .collision8_reexecuted==false and .retained14_reexecuted==false and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$proof/complete.json"
+    - name: Verify current native source guard CLI20 without executing producers
+      id: source_guard
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.qualify.outcome == 'success' && steps.legacy_runtime2.outcome == 'success') }}
+      timeout-minutes: 15
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        printf '%s  %s\n' 1504c949d8a8f39c7e821b87db0601f5f3ce3dd7aa0eb84be13ff2f411c9d59b tools/ci/logging_retained_549.sh | sha256sum --check --strict --quiet -
+        printf '%s  %s\n' 3b84adc7a2f1bd147841382fc35a9f0e456d357005206966c586308061f492b7 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check --strict --quiet -
+        /usr/bin/timeout --signal=TERM --kill-after=30s 14m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh source-guard
+    - name: Seal source and index after all attempted contracts
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        du -sx --block-size=1 "$DIAG_SOURCE_OWNER" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/private-output-bytes.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$CI_JOB_TEMP/proof/cgroup-memory-after.txt"; fi
+        find "$CARGO_TARGET_DIR" -name '*.d' -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256" || test ! -d "$CARGO_TARGET_DIR"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 2 * 1024 * 1024 * 1024))
+    - name: Verify whole prepared private Rust SDK after all attempted logging candidate contracts
+      id: prepared_rust_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.prepared_rust.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 2 * 1024 * 1024 * 1024))
+    - name: Bind source guard rejection controls to final source and SDK seals
+      id: source_guard_closure
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        SOURCE_GUARD_OUTCOME: ${{ steps.source_guard.outcome }}
+        SOURCE_FINAL_OUTCOME: ${{ steps.source_final.outcome }}
+        SDK_FINAL_OUTCOME: ${{ steps.prepared_rust_final.outcome }}
+      run: |
+        set -euo pipefail
+        test "$SOURCE_GUARD_OUTCOME:$SOURCE_FINAL_OUTCOME:$SDK_FINAL_OUTCOME" = success:success:success
+        proof=$CI_JOB_TEMP/proof/logging-source-absence
+        # helper가 최초 관측한 부모 baseline을 그대로 비교한다. 새 baseline을 만들지 않는다.
+        test "$NATIVE_LOGGING_SOURCE_POLICY" = absent
+        absence=$CI_JOB_TEMP/proof/logging-source-policy
+        test ! -e "$absence.failed" && test ! -L "$absence.failed"
+        for policy_file in "$absence.parents.tsv" "$absence.json"; do
+          test -f "$policy_file" && test ! -L "$policy_file"
+          test "$(realpath -e -- "$policy_file")" = "$policy_file"
+          test "$(stat -c '%u:%h' -- "$policy_file")" = "$UID:1"
+          (($(stat -c %s -- "$policy_file") <= 4096))
+        done
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .source_policy=="absent" and .scope=="sampled source checkpoints; CLI owns NOFOLLOW/ENOENT checks" and .postdelete_full_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$absence.json" > /dev/null
+        parent_rows=
+        for directory in "$DIAG_SOURCE" "$DIAG_SOURCE/rust" "$DIAG_SOURCE/rust/tools"; do
+          test -d "$directory" && test ! -L "$directory"
+          test "$(realpath -e -- "$directory")" = "$directory"
+          test "$(stat -c %u -- "$directory")" = "$UID"
+          identity=$(stat -c '%d:%i:%f:%u:%g' -- "$directory")
+          printf -v parent_rows '%s%s\t%s\n' "$parent_rows" "$directory" "$identity"
+        done
+        printf '%s' "$parent_rows" | cmp - "$absence.parents.tsv"
+        for leaf in check_native_logging.py native_logging_transport.py; do
+          test ! -e "$DIAG_SOURCE/rust/tools/$leaf" && test ! -L "$DIAG_SOURCE/rust/tools/$leaf"
+        done
+        source_index=$(git --no-optional-locks -C "$DIAG_SOURCE" ls-files -- rust/tools/check_native_logging.py rust/tools/native_logging_transport.py)
+        source_head=$(git --no-optional-locks -C "$DIAG_SOURCE" ls-tree -r --name-only HEAD -- rust/tools/check_native_logging.py rust/tools/native_logging_transport.py)
+        test -z "$source_index" && test -z "$source_head"
+        test ! -e "$absence.failed" && test ! -L "$absence.failed"
+        # current 결과와 재사용 binding을 absent로 묶는다. historical788 receipt는 별도다.
+        policy_file() {
+          test -f "$1" && test ! -L "$1"
+          test "$(realpath -e -- "$1")" = "$1"
+          test "$(stat -c '%u:%h' -- "$1")" = "$UID:1"
+          (($(stat -c %s -- "$1") <= 67108864))
+        }
+        for path in "$CI_JOB_TEMP/proof/logging/outcome.json" "$CI_JOB_TEMP/proof/logging/native/report.json" \
+          "$CI_JOB_TEMP/proof/logging-legacy-runtime2/outcome.json" "$CI_JOB_TEMP/proof/logging-legacy-runtime2/complete.json"; do
+          policy_file "$path"
+          jq -e '.source_policy=="absent"' "$path" > /dev/null
+        done
+        policy_file "$CI_JOB_TEMP/proof/logging/legacy-reuse.json"
+        jq -e --arg source "$GITHUB_SHA" --arg root "$DIAG_SOURCE" --arg prior "$CI_JOB_TEMP/proof/logging" '.schema==1 and .mode=="retained" and .source_policy=="absent" and .source_commit==$source and .source==$root and .prior==$prior and .historical_reuse==false and .R4_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/legacy-reuse.json" > /dev/null
+        for path in "$CI_JOB_TEMP/proof/logging/exec-policy/binding.json" "$proof/binding.json"; do
+          policy_file "$path"
+          jq -e --arg source "$GITHUB_SHA" --arg root "$DIAG_SOURCE" '.schema==1 and .source_policy=="absent" and .commit==$source and .source==$root' "$path" > /dev/null
+        done
+        for path in "$CI_JOB_TEMP/proof/logging/exec-policy/source-policy-controls/complete.json" "$proof/source-policy-controls/complete.json"; do
+          policy_file "$path"
+          jq -e '.schema==1 and .controls==14 and .each_source_policy_exact_error==true and .actual_raw_changed==false and .R4_acceptance==false and .retirement_credit==0' "$path" > /dev/null
+        done
+        policy_file "$CI_JOB_TEMP/proof/logging/exec-policy/controls.json"
+        jq -e '.schema==1 and .controls==4 and .each_guard_exact_error==true and .actual_raw_changed==false and .R4_acceptance==false' "$CI_JOB_TEMP/proof/logging/exec-policy/controls.json" > /dev/null
+        for prefix in first_int first_term first_eof runtime_directory_int runtime_directory_term escaped_descendant_int escaped_descendant_term escaped_descendant_eof output_file output_directory output_live_directory output_symlink output_dangling_symlink forbidden_executable_options retained-once; do
+          path=$CI_JOB_TEMP/proof/logging/exec-policy/$prefix.json
+          policy_file "$path"
+          jq -e --arg source "$GITHUB_SHA" --arg prefix "$prefix" '.schema==1 and .source_commit==$source and .prefix==$prefix and .source_policy=="absent" and .policy_scope=="current" and .historical_data_only==false and .R4_acceptance==false and .retirement_credit==0' "$path" > /dev/null
+        done
+        jq -e '.schema==1 and .source_policy=="absent" and .mode=="source-guard" and .phase=="source-guard-observed" and .exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .copy_final_exit_code==0 and .resource_final_exit_code==0 and .postdelete_full_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$proof/outcome.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .actual_cli_rejections==20 and .paths==2 and .node_variants==5 and .modes==["retained","legacy"] and .providers_unchanged==true and .source_parents_unchanged==true and .outputs_absent==true and .zero_child_exec_requires_external_trace==true and .absent_root_full_functional_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$proof/complete.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_policy=="absent" and .policy_scope=="current" and .historical_data_only==false and .source_commit==$source and .prefix=="source-absence" and .selected_exec_attempts==21 and .fixture_attempts==1 and .checker_attempts==20 and .checker_exit1==20 and .producer_exec_attempts==0 and .checker_spawn_attempts==0 and .checker_session_attempts==0 and .exact_exec_argv_env==true and .structural_detail_counts_equal==true and .python_exec_attempts==0 and .cpp_exec_attempts==0 and .probe_exec_attempts==0 and .builder_exec_attempts==0 and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .all_adopted_reaped==false and .postdelete_full_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$proof/exec-policy.json"
+        jq -e '.schema==1 and .controls==3 and .each_guard_exact_error==true and .actual_raw_changed==false and .R4_acceptance==false' "$proof/controls.json"
+        cmp "$proof/inputs.before.json" "$proof/inputs.after.json"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$proof/source-after.sha256"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/prepared-rust-roster.before.bin" "$proof/sdk-after.roster.bin"
+        for leaf in roster.bin files.bin sha256; do cmp "$proof/copy-before.$leaf" "$proof/copy-after.$leaf"; done
+        printf '%s  %s\n' "$(sha256sum "$proof/outcome.json" | cut -d' ' -f1)" "$proof/outcome.json" > "$proof/closure.sha256"
+        # 기존 outcome 봉인에 새 global proof/정책/재사용/schema14를 AND로 추가한다.
+        sha256sum -- "$absence.parents.tsv" "$absence.json" \
+          "$CI_JOB_TEMP/proof/logging/outcome.json" "$CI_JOB_TEMP/proof/logging/native/report.json" \
+          "$CI_JOB_TEMP/proof/logging/legacy-reuse.json" "$CI_JOB_TEMP/proof/logging/exec-policy/binding.json" \
+          "$CI_JOB_TEMP/proof/logging/exec-policy/controls.json" \
+          "$CI_JOB_TEMP/proof/logging/exec-policy/source-policy-controls/complete.json" \
+          "$CI_JOB_TEMP/proof/logging-legacy-runtime2/outcome.json" "$CI_JOB_TEMP/proof/logging-legacy-runtime2/complete.json" \
+          "$proof/binding.json" "$proof/exec-policy.json" "$proof/controls.json" "$proof/source-policy-controls/complete.json" \
+          >> "$proof/closure.sha256"
+        for prefix in first_int first_term first_eof runtime_directory_int runtime_directory_term escaped_descendant_int escaped_descendant_term escaped_descendant_eof output_file output_directory output_live_directory output_symlink output_dangling_symlink forbidden_executable_options retained-once; do
+          sha256sum -- "$CI_JOB_TEMP/proof/logging/exec-policy/$prefix.json" >> "$proof/closure.sha256"
+        done
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 2 * 1024 * 1024 * 1024))
+        test ! -e "$absence.failed" && test ! -L "$absence.failed"
+    - name: Retain current source and native logging candidate proof even on failure
+      id: proof_upload
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: logging-retained-549-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        # logging-source-policy.parents.tsv/.json 및 두 schema14 complete도 같은 global proof에 있다.
+        if-no-files-found: error
+        retention-days: 7
+        include-hidden-files: true
+    - name: Record candidate scope and outstanding retirement gates
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI_JOB_TEMP != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        printf '%s\n' '이 실행은 원본2가 부재한 shared logging 후보 검증이다.' 'old27/P2/전체 trace·FD 폐쇄/caller·전체 퇴역 수용은 별도이며 원본 교체 credit은 0이다.' >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Clean only uploaded unchanged owned logging source and private job
+      id: logging_owned_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.source_before.outcome
+        == 'success' && steps.prepared_rust.outcome == 'success' && steps.exec_policy_replay.outcome == 'success' && steps.qualify.outcome == 'success' && steps.legacy_runtime2.outcome == 'success' && steps.source_guard.outcome == 'success' && steps.source_guard_closure.outcome == 'success' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome
+        == 'success' && steps.proof_upload.outcome == 'success' && steps.proof_upload.outputs.artifact-id != '' && steps.proof_upload.outputs.artifact-digest != '' &&
+        env.DIAG_SOURCE_OWNER != '' && env.CI_JOB_TEMP != '') }}
+      shell: bash
+      timeout-minutes: 5
+      working-directory: ${{ env.DIAG_ACTIONS_WORKSPACE }}
+      env:
+        UPLOAD_ID: ${{ steps.proof_upload.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.proof_upload.outputs.artifact-digest }}
+        CURRENT_HELPER_SHA256: 1504c949d8a8f39c7e821b87db0601f5f3ce3dd7aa0eb84be13ff2f411c9d59b
+      run: |
+        set -euo pipefail
+        umask 077
+        [[ $UPLOAD_ID =~ ^[0-9]+$ && $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ && $GITHUB_SHA =~ ^[a-f0-9]{40}$ ]]
+        test "$GITHUB_ACTIONS:$GITHUB_REPOSITORY:$RUNNER_ENVIRONMENT:$RUNNER_OS:$RUNNER_ARCH" = true:bin9208/openpilot-rust:github-hosted:Linux:X64
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        job=$CI_JOB_TEMP
+        proof=$job/proof
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        [[ $workspace == /* && -d $workspace && ! -L $workspace && $(realpath -e -- "$workspace") == "$workspace" ]]
+        [[ $p == "$workspace/.logging549-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."?????? ]]
+        [[ $job == /tmp/openpilot-ci.?????? && ${job%/*} == /tmp ]]
+        [[ $p != "$job" && $p != "$job/"* && $job != "$p/"* ]]
+        roots() {
+          test -d "$p" && test ! -L "$p" && test "$(realpath -e -- "$p")" = "$p"
+          test "$(stat -c '%u:%a' -- "$p")" = "$UID:700"
+          test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+          test -d "$job" && test ! -L "$job" && test "$(realpath -e -- "$job")" = "$job"
+          test "$(stat -c '%u:%a' -- "$job")" = "$UID:700"
+          test "$(stat -c '%d:%i:%f:%u:%g' -- "$job")" = "$LOGGING_JOB_IDENTITY"
+          for marker in "$p/.diag296-owner" "$job/owner"; do
+            test -f "$marker" && test ! -L "$marker"
+            test "$(stat -c '%u:%h' -- "$marker")" = "$UID:1"
+            test "$(cat -- "$marker")" = "$owner"
+          done
+          test "$DIAG_SOURCE" = "$p/source"
+          test -d "$DIAG_SOURCE" && test ! -L "$DIAG_SOURCE"
+          test "$(realpath -e -- "$DIAG_SOURCE")" = "$DIAG_SOURCE"
+          test "$CARGO_TARGET_DIR" = "$DIAG_SOURCE/rust/target"
+          test "$RUSTUP_HOME" = "$job/rustup-home"
+          test "$CARGO_HOME" = "$job/cargo-home"
+        }
+        roots
+        required_file() {
+          test -f "$1" && test ! -L "$1"
+          test "$(realpath -e -- "$1")" = "$1"
+          test "$(stat -c '%u:%h' -- "$1")" = "$UID:1"
+          (($(stat -c %s -- "$1") <= 67108864))
+        }
+        # helper가 최초 관측한 부모 baseline을 그대로 비교한다. 새 baseline을 만들지 않는다.
+        test "$NATIVE_LOGGING_SOURCE_POLICY" = absent
+        absence=$CI_JOB_TEMP/proof/logging-source-policy
+        test ! -e "$absence.failed" && test ! -L "$absence.failed"
+        for policy_file in "$absence.parents.tsv" "$absence.json"; do
+          test -f "$policy_file" && test ! -L "$policy_file"
+          test "$(realpath -e -- "$policy_file")" = "$policy_file"
+          test "$(stat -c '%u:%h' -- "$policy_file")" = "$UID:1"
+          (($(stat -c %s -- "$policy_file") <= 4096))
+        done
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .source_policy=="absent" and .scope=="sampled source checkpoints; CLI owns NOFOLLOW/ENOENT checks" and .postdelete_full_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$absence.json" > /dev/null
+        parent_rows=
+        for directory in "$DIAG_SOURCE" "$DIAG_SOURCE/rust" "$DIAG_SOURCE/rust/tools"; do
+          test -d "$directory" && test ! -L "$directory"
+          test "$(realpath -e -- "$directory")" = "$directory"
+          test "$(stat -c %u -- "$directory")" = "$UID"
+          identity=$(stat -c '%d:%i:%f:%u:%g' -- "$directory")
+          printf -v parent_rows '%s%s\t%s\n' "$parent_rows" "$directory" "$identity"
+        done
+        printf '%s' "$parent_rows" | cmp - "$absence.parents.tsv"
+        for leaf in check_native_logging.py native_logging_transport.py; do
+          test ! -e "$DIAG_SOURCE/rust/tools/$leaf" && test ! -L "$DIAG_SOURCE/rust/tools/$leaf"
+        done
+        source_index=$(git --no-optional-locks -C "$DIAG_SOURCE" ls-files -- rust/tools/check_native_logging.py rust/tools/native_logging_transport.py)
+        source_head=$(git --no-optional-locks -C "$DIAG_SOURCE" ls-tree -r --name-only HEAD -- rust/tools/check_native_logging.py rust/tools/native_logging_transport.py)
+        test -z "$source_index" && test -z "$source_head"
+        test ! -e "$absence.failed" && test ! -L "$absence.failed"
+        required_file "$proof/SOURCE_COMMIT"
+        test "$(cat -- "$proof/SOURCE_COMMIT")" = "$GITHUB_SHA"
+        required_file "$DIAG_SOURCE/tools/ci/logging_retained_549.sh"
+        printf '%s  %s\n' "$CURRENT_HELPER_SHA256" "$DIAG_SOURCE/tools/ci/logging_retained_549.sh" | sha256sum --check --strict --quiet -
+        required_file "$proof/logging/outcome.json"
+        jq -e '.source_policy=="absent" and .phase=="candidate-observed" and .exit_code==0 and .held_final_exit_code==0 and .untraced_exit_code==0 and .paired_final_exit_code==0 and .retirement_credit==0 and .closed_trace_admitted==false and .old27_admitted==false' "$proof/logging/outcome.json"
+        replay=$proof/logging-exec-replay-788
+        for leaf in outcome.json receipt.json first_int.json binding.json members.sha256 policy.stdout.json policy-output.sha256; do required_file "$replay/$leaf"; done
+        jq -e '.source_policy=="present" and .policy_scope=="historical-788" and .historical_data_only==true and .schema==1 and .phase=="historical-data-replay-observed" and .exit_code==0 and .historical_data_replay_only==true and .current15_accepted==false and .legacy2_accepted==false and .R4_acceptance==false and .retirement_credit==0' "$replay/outcome.json"
+        jq -e --arg source "$GITHUB_SHA" '.source_policy=="present" and .policy_scope=="historical-788" and .historical_data_only==true and .policy_source_commit==$source and .policy_sha256=="3b84adc7a2f1bd147841382fc35a9f0e456d357005206966c586308061f492b7" and .fixture_source_commit=="78896f19db29d5cbe305d6f788bac9d0db4ce552" and .policy_invocations==1 and .whole_zip_crc_checked==true and .archive_code_executions==0 and .archive_elf_executions==0 and .current15_accepted==false and .legacy2_accepted==false and .R4_acceptance==false and .retirement_credit==0' "$replay/receipt.json"
+        jq -e '.source_policy=="present" and .policy_scope=="historical-788" and .historical_data_only==true' "$replay/policy.stdout.json" > /dev/null
+        sha256sum --check --strict --quiet "$replay/members.sha256"
+        sha256sum --check --strict --quiet "$replay/policy-output.sha256"
+        test ! -e "$replay/archive.zip" && test ! -L "$replay/archive.zip"
+        legacy=$proof/logging-legacy-runtime2
+        for leaf in outcome.json complete.json reuse-admission.txt cases.check commands.jsonl commands.check runtime2-monotonic.tsv fixture-command-int.argv0 fixture-command-term.argv0 legacy-runtime2-int.bound-seconds.txt legacy-runtime2-term.bound-seconds.txt source-after.sha256 index-after.bin sdk-after.roster.bin; do required_file "$legacy/$leaf"; done
+        jq -e '.schema==1 and .source_policy=="absent" and .mode=="legacy-runtime2" and .phase=="legacy-runtime2-observed" and .exit_code==0 and .source_sdk_final_exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .provider_alias_final_exit_code==0 and .resource_final_exit_code==0 and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$legacy/outcome.json"
+        jq -e --arg source "$GITHUB_SHA" '.source_policy=="absent" and .source_commit==$source and .logical_cases==2 and .logical_commands==2 and .libtest_passed==2 and .signal_order==["INT","TERM"] and .trace_prefixes==["legacy-runtime2-int","legacy-runtime2-term"] and .aggregate_limit_seconds==600 and .prior_fd_continuity_claimed==false and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$legacy/complete.json"
+        cmp "$proof/source-before.sha256" "$legacy/source-after.sha256"
+        cmp "$proof/index-before.bin" "$legacy/index-after.bin"
+        cmp "$proof/prepared-rust-roster.before.bin" "$legacy/sdk-after.roster.bin"
+        required_file "$proof/logging/held-after.txt"
+        grep -Fx 'current held files and bytes unchanged' "$proof/logging/held-after.txt"
+        # 이미 업로드한 proof를 수정하지 않는다. 마지막 검증 scratch도 삭제될 private job 안이다.
+        scratch=$job/logging-cleanup-check
+        mkdir -m 700 -- "$scratch"
+        test "$(git --no-optional-locks -C "$DIAG_SOURCE" rev-parse HEAD)" = "$GITHUB_SHA"
+        git --no-optional-locks -C "$DIAG_SOURCE" diff --exit-code
+        git --no-optional-locks -C "$DIAG_SOURCE" diff --cached --exit-code
+        git --no-optional-locks -C "$DIAG_SOURCE" ls-files -z > "$scratch/index.bin"
+        cmp "$proof/index-before.bin" "$proof/index-after.bin"
+        cmp "$proof/index-after.bin" "$scratch/index.bin"
+        (cd -- "$DIAG_SOURCE"; tar --null --no-recursion --verbatim-files-from -T "$proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner) | sha256sum > "$scratch/source.sha256"
+        cmp "$proof/source-before.sha256" "$proof/source-after.sha256"
+        cmp "$proof/source-after.sha256" "$scratch/source.sha256"
+        sdk=$job/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu
+        test "$CI_PREPARED_RUST_ROOT" = "$sdk"
+        test "$CI_PREPARED_RUST_MANIFEST" = "$proof/prepared-rust-files.before.sha256"
+        test -d "$sdk" && test ! -L "$sdk" && test "$(realpath -e -- "$sdk")" = "$sdk"
+        for leaf in prepared-rust-programs.sha256 prepared-rust-programs.after.sha256 prepared-rust-files.before.sha256 prepared-rust-files.after.sha256 prepared-rust-roster.before.bin prepared-rust-roster.after.bin; do required_file "$proof/$leaf"; done
+        cmp "$proof/prepared-rust-programs.sha256" "$proof/prepared-rust-programs.after.sha256"
+        cmp "$proof/prepared-rust-files.before.sha256" "$proof/prepared-rust-files.after.sha256"
+        cmp "$proof/prepared-rust-roster.before.bin" "$proof/prepared-rust-roster.after.bin"
+        sha256sum --check --strict --quiet "$proof/prepared-rust-programs.sha256"
+        sha256sum --check --strict --quiet "$CI_PREPARED_RUST_MANIFEST"
+        LC_ALL=C find -P "$sdk" -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$scratch/sdk-roster.bin"
+        cmp "$proof/prepared-rust-roster.after.bin" "$scratch/sdk-roster.bin"
+        # 필수 raw/report는 실제 regular bytes로 있어야 한다. socket은 receipt metadata와 구분한다.
+        for leaf in logging/native/report.json logging/context/context.json logging/context.prepare.json logging/raw-comparison.txt; do required_file "$proof/$leaf"; done
+        declare -A observed_pids=() observed_groups=()
+        for prefix in first_int first_term first_eof runtime_directory_int runtime_directory_term escaped_descendant_int escaped_descendant_term escaped_descendant_eof output_file output_directory output_live_directory output_symlink output_dangling_symlink forbidden_executable_options retained-once; do
+          report=$proof/logging/inspect/$prefix.json
+          required_file "$report"
+          jq -e --arg prefix "$prefix" '.schema==2 and .prefix==$prefix and .raw_immutable==true and .lexically_checked_all_events==true and (.raw_files|length)>0' "$report" > /dev/null
+          jq -er '.raw_files[]|[.name,.sha256,(.pid|tostring)]|@tsv' "$report" > "$scratch/raw.tsv"
+          while IFS=$'\t' read -r name digest pid; do
+            [[ $pid =~ ^[1-9][0-9]*$ && $name == "$prefix.$pid" && $digest =~ ^[a-f0-9]{64}$ ]]
+            raw=$proof/logging/trace/$name
+            test -f "$raw" && test ! -L "$raw"
+            test "$(realpath -e -- "$raw")" = "$raw"
+            test "$(stat -c '%u:%h' -- "$raw")" = "$UID:1"
+            (($(stat -c %s -- "$raw") <= 536870912))
+            printf '%s  %s\n' "$digest" "$raw" | sha256sum --check --strict --quiet -
+            observed_pids[$pid]=1
+          done < "$scratch/raw.tsv"
+          policy=$proof/logging/exec-policy/$prefix.json
+          required_file "$policy"
+          jq -e --arg prefix "$prefix" --arg source "$GITHUB_SHA" '.schema==1 and .prefix==$prefix and .source_policy=="absent" and .policy_scope=="current" and .historical_data_only==false and .source_commit==$source and .exact_exec_argv_env==true and .structural_detail_counts_equal==true and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .all_adopted_reaped==false and .R4_acceptance==false and .retirement_credit==0' "$policy" > /dev/null
+        done
+        required_file "$proof/logging/exec-policy/binding.json"
+        jq -er '.cases[].receipt|(.held.checker_observation.live_identity.group?,.held.peer_observation.live_identity.group?,.escaped_descendants[]?.group)|select(.!=null)|if type=="number" and .>1 and floor==. then . else error("group identity invalid") end' "$proof/logging/exec-policy/binding.json" > "$scratch/groups.txt"
+        while IFS= read -r group; do [[ $group =~ ^[1-9][0-9]*$ ]]; observed_groups[$group]=1; done < "$scratch/groups.txt"
+        ((${#observed_groups[@]} > 0 && ${#observed_pids[@]} > 0))
+        # legacy2의 두 prefix에는 retained exact15 정책을 적용하지 않는다.
+        for prefix in reference-build legacy-runtime2-int legacy-runtime2-term; do
+          report=$legacy/inspect/$prefix.json
+          required_file "$report"
+          jq -e --arg prefix "$prefix" '.schema==2 and .prefix==$prefix and .raw_immutable==true and .lexically_checked_all_events==true and .requires_exit_status_zero==true and (.raw_files|length)>0 and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .full_acceptance==false and .retirement_credit==false' "$report" > /dev/null
+          jq -er '.raw_files[]|[.name,.sha256,(.pid|tostring)]|@tsv' "$report" > "$scratch/legacy-raw.tsv"
+          while IFS=$'\t' read -r name digest pid; do
+            [[ $pid =~ ^[1-9][0-9]*$ && $name == "$prefix.$pid" && $digest =~ ^[a-f0-9]{64}$ ]]
+            raw=$legacy/trace/$name
+            test -f "$raw" && test ! -L "$raw"
+            test "$(realpath -e -- "$raw")" = "$raw"
+            test "$(stat -c '%u:%h' -- "$raw")" = "$UID:1"
+            (($(stat -c %s -- "$raw") <= 536870912))
+            printf '%s  %s\n' "$digest" "$raw" | sha256sum --check --strict --quiet -
+            observed_pids[$pid]=1
+          done < "$scratch/legacy-raw.tsv"
+        done
+        find -P "$legacy/lifecycle" -mindepth 1 -maxdepth 1 -print0 > "$scratch/legacy-cases.bin"
+        mapfile -d '' -t legacy_cases < "$scratch/legacy-cases.bin"
+        test "${#legacy_cases[@]}" -eq 2
+        for case_root in "${legacy_cases[@]}"; do
+          [[ $case_root == "$legacy/lifecycle/logging-lifecycle-"?????? && -d $case_root && ! -L $case_root ]]
+          test "$(realpath -e -- "$case_root")" = "$case_root"
+          test "$(stat -c '%u:%a' -- "$case_root")" = "$UID:700"
+          required_file "$case_root/case.json"
+          group=$(jq -er '.held.pid|if type=="number" and .>1 and floor==. then . else error("legacy peer group invalid") end' "$case_root/case.json")
+          [[ $group =~ ^[1-9][0-9]*$ ]]
+          observed_groups[$group]=1
+        done
+        guard=$proof/logging-source-absence
+        for leaf in outcome.json complete.json inputs.before.json inputs.after.json inspect.json exec-policy.json binding.json controls.json closure.sha256 copy-before.roster.bin copy-after.roster.bin copy-before.files.bin copy-after.files.bin copy-before.sha256 copy-after.sha256 source-after.sha256 index-after.bin sdk-after.roster.bin; do required_file "$guard/$leaf"; done
+        sha256sum --check --strict --quiet "$guard/closure.sha256"
+        jq -e '.source_policy=="absent" and .mode=="source-guard" and .phase=="source-guard-observed" and .exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .copy_final_exit_code==0 and .resource_final_exit_code==0' "$guard/outcome.json" > /dev/null
+        cmp "$guard/inputs.before.json" "$guard/inputs.after.json"
+        cmp "$proof/source-after.sha256" "$guard/source-after.sha256"
+        cmp "$proof/index-after.bin" "$guard/index-after.bin"
+        cmp "$proof/prepared-rust-roster.after.bin" "$guard/sdk-after.roster.bin"
+        for leaf in roster.bin files.bin sha256; do cmp "$guard/copy-before.$leaf" "$guard/copy-after.$leaf"; done
+        copy=$job/logging-source-absence-copy/source
+        test "$(jq -er '.source_root' "$guard/inputs.after.json")" = "$copy"
+        jq -er '.parent_identities[]|map(tostring)|join(":")' "$guard/inputs.after.json" > "$scratch/copy-parents.txt"
+        for directory in "$copy" "$copy/rust" "$copy/rust/tools"; do
+          test -d "$directory" && test ! -L "$directory" && test "$(realpath -e "$directory")" = "$directory"
+          stat -c '%d:%i:%f:%u:%g' "$directory"
+        done > "$scratch/copy-parents.actual.hex.txt"
+        # Rust metadata.mode()는 정수(st_mode)다. stat의 hex %f를 정수로 변환한다.
+        while IFS=: read -r dev ino mode owner_uid owner_gid; do printf '%s:%s:%s:%s:%s\n' "$dev" "$ino" "$((16#$mode))" "$owner_uid" "$owner_gid"; done < "$scratch/copy-parents.actual.hex.txt" > "$scratch/copy-parents.actual.txt"
+        cmp "$scratch/copy-parents.txt" "$scratch/copy-parents.actual.txt"
+        for leaf in check_native_logging.py native_logging_transport.py; do test ! -e "$copy/rust/tools/$leaf" && test ! -L "$copy/rust/tools/$leaf"; done
+        # 현재 copy의 모든 regular bytes를 다시 검사한다. symlink data를 follow하지 않는다.
+        find -P "$copy" -printf '%D:%i\t%m:%U:%G:%n\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$scratch/copy.roster.bin"
+        cmp "$guard/copy-after.roster.bin" "$scratch/copy.roster.bin"
+        find -P "$copy" -type f -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%p\0' | LC_ALL=C sort -z > "$scratch/copy.files.bin"
+        cmp "$guard/copy-after.files.bin" "$scratch/copy.files.bin"
+        sha256sum --check --strict --quiet "$guard/copy-after.sha256"
+        jq -e '.schema==2 and .prefix=="source-absence" and .raw_immutable==true and .lexically_checked_all_events==true and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .full_acceptance==false' "$guard/inspect.json" > /dev/null
+        jq -e '.source_policy=="absent" and .policy_scope=="current" and .historical_data_only==false and .selected_exec_attempts==21 and .checker_attempts==20 and .producer_exec_attempts==0 and .checker_spawn_attempts==0 and .checker_session_attempts==0 and .exact_exec_argv_env==true and .structural_detail_counts_equal==true and .postdelete_full_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$guard/exec-policy.json" > /dev/null
+        jq -er '.raw_files[]|[.name,.sha256,(.pid|tostring)]|@tsv' "$guard/inspect.json" > "$scratch/guard-raw.tsv"
+        while IFS=$'\t' read -r name digest pid; do
+          [[ $pid =~ ^[1-9][0-9]*$ && $name == "source-absence.$pid" && $digest =~ ^[a-f0-9]{64}$ ]]
+          raw=$guard/trace/$name
+          test -f "$raw" && test ! -L "$raw" && test "$(realpath -e "$raw")" = "$raw"
+          test "$(stat -c '%u:%h' "$raw")" = "$UID:1"
+          (($(stat -c %s "$raw") <= 536870912))
+          printf '%s  %s\n' "$digest" "$raw" | sha256sum --check --strict --quiet -
+          observed_pids[$pid]=1
+        done < "$scratch/guard-raw.tsv"
+        # collision8 group_empty와 같은 all-UID /proc/stat 검사. 새 signal/reap 동작은 없다.
+        observed_absent() {
+          local entry line rest pid
+          local -a fields
+          for entry in /proc/[0-9]*/stat; do
+            if ! IFS= read -r line < "$entry"; then [[ ! -e $entry ]] && continue; return 1; fi
+            pid=${entry#/proc/}; pid=${pid%/stat}
+            rest=${line##*) }; read -r -a fields <<< "$rest"
+            [[ ${#fields[@]} -ge 20 && ${fields[2]} =~ ^[0-9]+$ ]]
+            [[ ! -v observed_pids[$pid] && ! -v observed_groups[${fields[2]}] ]] || { printf 'cleanup blocked pid=%s pgid=%s state=%s\n' "$pid" "${fields[2]}" "${fields[0]}" >&2; return 1; }
+          done
+          printf 'LOGGING_CLEANUP observed_pids=%s observed_groups=%s absent=true all_adopted_reaped=false\n' "${#observed_pids[@]}" "${#observed_groups[@]}"
+        }
+        observed_absent
+        roots
+        # 모든 directory만 먼저 검증한다. -P/-xdev, canonical root/UID/dev 확인 뒤에만 u+w.
+        for root in "$p" "$job"; do
+          device=$(stat -c %d -- "$root")
+          find -P "$root" -xdev -type d -print0 > "$scratch/directories.bin"
+          while IFS= read -r -d '' directory; do
+            [[ $directory == "$root" || $directory == "$root/"* ]]
+            (cd -P -- "$directory"; test "$(pwd -P)" = "$directory"; test "$(stat -c '%u:%d' .)" = "$UID:$device")
+          done < "$scratch/directories.bin"
+        done
+        for root in "$p" "$job"; do
+          device=$(stat -c %d -- "$root")
+          find -P "$root" -xdev -type d -print0 > "$scratch/directories.bin"
+          while IFS= read -r -d '' directory; do
+            [[ $directory == "$root" || $directory == "$root/"* ]]
+            (cd -P -- "$directory"; test "$(pwd -P)" = "$directory"; test "$(stat -c '%u:%d' .)" = "$UID:$device"; chmod u+w -- .)
+          done < "$scratch/directories.bin"
+        done
+        # SDK roster/원본 source의 마지막 비교는 permission 변경 전이다. 이후는 삭제할 root만 다룬다.
+        roots
+        cd -- "$workspace"
+        observed_absent
+        rm -rf --one-file-system -- "$p"
+        test ! -e "$p" && test ! -L "$p"
+        printf 'LOGGING_CLEANUP source=%s root=%s absent=true artifact_id=%s digest=%s\n' "$GITHUB_SHA" "$p" "$UPLOAD_ID" "$UPLOAD_DIGEST"
+        observed_absent
+        test "$(stat -c '%d:%i:%f:%u:%g' -- "$job")" = "$LOGGING_JOB_IDENTITY"
+        test "$(cat -- "$job/owner")" = "$owner"
+        rm -rf --one-file-system -- "$job"
+        test ! -e "$job" && test ! -L "$job"
+        printf 'LOGGING_CLEANUP source=%s root=%s absent=true global_sdk_touched=false\n' "$GITHUB_SHA" "$job"
+        printf '%s\n' 'logging owned source/job cleanup verified; all-PID/FD/DSO/R4/retirement acceptance unchanged' >> "$GITHUB_STEP_SUMMARY"

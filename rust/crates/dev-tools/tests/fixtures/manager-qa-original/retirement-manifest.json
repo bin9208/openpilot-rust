@@ -1,0 +1,331 @@
+{
+  "artifact_id": 12404785057,
+  "artifact_members_crc_checked": 12868,
+  "artifact_zip_sha256": "b28449aa7816215da00b9b55f7a36e709310224948436f3fbdbbd39d6ab5d449",
+  "checked_out_source_commit": "83fb19a8cfda05bd2039253ceea8e0786676274d",
+  "files": {
+    "retirement/capture-scripts.sha256": {
+      "sha256": "f35acba3393179e64f576e102ab9b2917bcd0de924d5dfae15c068880d7f966b",
+      "size": 235
+    },
+    "retirement/cars.log": {
+      "sha256": "34742676490c2c6133eb940cff7d61721f2d7cb072978fd052c2376faeda9995",
+      "size": 290
+    },
+    "retirement/cars.sha256": {
+      "sha256": "65332acac1a203420eb844d181f3a7a01c1c417a4ddbe1961cf24801e07c50db",
+      "size": 753
+    },
+    "retirement/cli-check_manager.py-help.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/cli-check_manager.py-help.stdout": {
+      "sha256": "90541353b8aaf221ec04e570e8bf6ef17ba785cad1e3b65d14f09aa55d541f83",
+      "size": 211
+    },
+    "retirement/cli-check_manager.py-missing.stderr": {
+      "sha256": "434d8ed15e8061df4067c88ea72fd186fab34e3e7bbc4ee86025cc2c7f34e703",
+      "size": 160
+    },
+    "retirement/cli-check_manager.py-missing.stdout": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/cli-check_manager.py-unknown.stderr": {
+      "sha256": "434d8ed15e8061df4067c88ea72fd186fab34e3e7bbc4ee86025cc2c7f34e703",
+      "size": 160
+    },
+    "retirement/cli-check_manager.py-unknown.stdout": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/cli-check_manager_logging.py-help.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/cli-check_manager_logging.py-help.stdout": {
+      "sha256": "8fde578e74b9ee0d1f9af200876fcc18ec8e4552f60f7101eb722221333cbdb1",
+      "size": 166
+    },
+    "retirement/cli-check_manager_logging.py-missing.stderr": {
+      "sha256": "863f06658d1bf83444cd668115330c0a783f843bbe93767924a87f6cf7819171",
+      "size": 154
+    },
+    "retirement/cli-check_manager_logging.py-missing.stdout": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/cli-check_manager_logging.py-unknown.stderr": {
+      "sha256": "863f06658d1bf83444cd668115330c0a783f843bbe93767924a87f6cf7819171",
+      "size": 154
+    },
+    "retirement/cli-check_manager_logging.py-unknown.stdout": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/cli-generate_manager_cars.py-help.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/cli-generate_manager_cars.py-help.stdout": {
+      "sha256": "8c9584267fec643927599788158294c48a5dafb1d6da589150d9517ed57e7b8b",
+      "size": 199
+    },
+    "retirement/cli-generate_manager_cars.py-missing.stderr": {
+      "sha256": "74f97df8748ff753118b8d73ae8571d62938433cfece83b202f7c054b11485c9",
+      "size": 152
+    },
+    "retirement/cli-generate_manager_cars.py-missing.stdout": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/cli-generate_manager_cars.py-unknown.stderr": {
+      "sha256": "74f97df8748ff753118b8d73ae8571d62938433cfece83b202f7c054b11485c9",
+      "size": 152
+    },
+    "retirement/cli-generate_manager_cars.py-unknown.stdout": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/cli-status.txt": {
+      "sha256": "9fd561d5f5cde5823a028093a76a7a2b95fcba6a5049fd27306e66ae374dfbb2",
+      "size": 282
+    },
+    "retirement/final-status.txt": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "size": 2
+    },
+    "retirement/manager-logging.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/manager-logging.stdout": {
+      "sha256": "fb7f6886162f11a0f7510205082e49361d0c5bbff891b3e5c99aa516290a3240",
+      "size": 140
+    },
+    "retirement/manager-logging/source-records.json": {
+      "sha256": "236323202f57d0302ab52d3bcc87724309fd658a96bd75ab0a8008b7f75742da",
+      "size": 2713
+    },
+    "retirement/manager-logging/source.log": {
+      "sha256": "72d7043dd2552dc1bb05b3d7e6371d5abd193ee6492c59ffed78a29b31b33dde",
+      "size": 94
+    },
+    "retirement/manager-logging/summary.json": {
+      "sha256": "c9c9384cda6711976a21dd26226db41fde2ef38dd09f198b269a40e128ece892",
+      "size": 1179
+    },
+    "retirement/manager-logging/synthetic-environment.json": {
+      "sha256": "54aa9a879f3e0e719a1ebe96845ed6698ca72954508f59c0f249b61feab633dc",
+      "size": 436
+    },
+    "retirement/manager-selected.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/manager-selected.stdout": {
+      "sha256": "45602dd34a945ce2b053ff53e91c18a4f5d543e4d2a0849af88dc4e96a7e5e51",
+      "size": 156
+    },
+    "retirement/manager-selected/custom-source.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/manager-selected/custom-source/result.json": {
+      "sha256": "9d4e5276714fbb76b7186c35860abe63ccba31c13456834968aeb21d0b484943",
+      "size": 16574
+    },
+    "retirement/manager-selected/normal-source.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/manager-selected/normal-source/result.json": {
+      "sha256": "9d4e5276714fbb76b7186c35860abe63ccba31c13456834968aeb21d0b484943",
+      "size": 16574
+    },
+    "retirement/manager-selected/summary.json": {
+      "sha256": "69e7f87edbd068a86407b9842ba05444db5cecd7cd0be641fa068c43179d3494",
+      "size": 194
+    },
+    "retirement/manager.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/manager.stdout": {
+      "sha256": "cee83001f028c5c23d42d8d1f9208824c08284fb7c15b3269c6a35af8dd0d4d6",
+      "size": 410
+    },
+    "retirement/manager/default_edges-source.log": {
+      "sha256": "79a762330ecc2787e9e7129f4f6bff1260a4918e83067e0947bd0a124cb0efff",
+      "size": 187
+    },
+    "retirement/manager/default_edges-source/result.json": {
+      "sha256": "16b245ccfeca26e2bf5c9067b279be18dae89bffcfb0f325c572702eb9841058",
+      "size": 17114
+    },
+    "retirement/manager/interrupted-source.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/manager/interrupted-source/result.json": {
+      "sha256": "405cf44c167eb13f1f673268fe7392045b72469b4dbe6de804f28dc512d05d90",
+      "size": 14416
+    },
+    "retirement/manager/normal-source.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/manager/normal-source/result.json": {
+      "sha256": "9d4e5276714fbb76b7186c35860abe63ccba31c13456834968aeb21d0b484943",
+      "size": 16574
+    },
+    "retirement/manager/poll_failure-source.log": {
+      "sha256": "f7424bf9056e746944ebc2bd058818849985c5927ebd3187c38373ef5a8d0860",
+      "size": 514
+    },
+    "retirement/manager/poll_failure-source/result.json": {
+      "sha256": "932b32aac31efb0df10a8101e0bf29fdaaa34ff5bdda8394de63435cf604ea40",
+      "size": 14436
+    },
+    "retirement/manager/prepare_only-source.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "retirement/manager/prepare_only-source/result.json": {
+      "sha256": "8b88865d0ff3e6b47d5a8f9f118c7097dd7731fd872c2cf85502eaa1ffd05a70",
+      "size": 13884
+    },
+    "retirement/manager/registration_failure-source.log": {
+      "sha256": "b62450880c4ee339a72cc33ba0fd6ea1482d2a6cdd1739eaa3fcadbcacbc6eff",
+      "size": 585
+    },
+    "retirement/manager/registration_failure-source/result.json": {
+      "sha256": "e3e1d9f01f1a6dc2eaf3c17a5d0541a615fef7c4e09e3f9177afa8fca0c525c7",
+      "size": 12177
+    },
+    "retirement/manager/reset_defaults-source.log": {
+      "sha256": "5292e65bf850081d5d649e863a1858e709cec0708b638f8a5a4aaf94c17d4db1",
+      "size": 7780
+    },
+    "retirement/manager/reset_defaults-source/result.json": {
+      "sha256": "2694a5d395375fc811c6249f36326ef55dbb0384b104009e9ed67c742f0ff6bd",
+      "size": 10413
+    },
+    "retirement/manager/summary.json": {
+      "sha256": "dd02d0ed8d75ccf1be3f25ad890f35f750e2ecea3bf9d3479674989f3ce1224c",
+      "size": 296
+    },
+    "retirement/opendbc-python-after.sha256": {
+      "sha256": "57bad9a3bf938c2f3ba4e70921894deea81cda3e19a86a531262565bfb90e627",
+      "size": 29093
+    },
+    "retirement/opendbc-python-before.sha256": {
+      "sha256": "57bad9a3bf938c2f3ba4e70921894deea81cda3e19a86a531262565bfb90e627",
+      "size": 29093
+    },
+    "retirement/opendbc-source-commit.txt": {
+      "sha256": "9757e21254c3fa55f7da43ac1c34978098c8be91e5c483767d3abcefc4b64295",
+      "size": 41
+    },
+    "retirement/params-binding-build.sha256": {
+      "sha256": "97595b5e47c8d3889b0f052182cc329504a7e515bc2baa9c1f926b52177a7cd2",
+      "size": 280
+    },
+    "retirement/params-binding-commands.json": {
+      "sha256": "6181c969ecc559a089d47adcb5213d89fede206360ba04fcaf30213314c42d10",
+      "size": 2440
+    },
+    "retirement/params-binding-provenance.json": {
+      "sha256": "140057ce196076b5af70d8cae59d85b894ae0366e473685506fa6cd810255203",
+      "size": 2605
+    },
+    "retirement/providers-after.sha256": {
+      "sha256": "94265830b165dde213c31f7b2b796f6e728414b42ca4eea252fa7d1a5f2f185a",
+      "size": 312
+    },
+    "retirement/providers-before.sha256": {
+      "sha256": "94265830b165dde213c31f7b2b796f6e728414b42ca4eea252fa7d1a5f2f185a",
+      "size": 312
+    },
+    "retirement/python-providers-after.json": {
+      "sha256": "14cf6cfcadf50e5f67c969bb8b8caeb486a4f4b3fd0090ba890e2feecc028103",
+      "size": 1223238
+    },
+    "retirement/python-providers-before.json": {
+      "sha256": "14cf6cfcadf50e5f67c969bb8b8caeb486a4f4b3fd0090ba890e2feecc028103",
+      "size": 1223238
+    },
+    "retirement/repo-python-after.sha256": {
+      "sha256": "372a344a5602f4e15e17e9c233ed6a73c94a92947c74e1c6576e439389761af9",
+      "size": 360405
+    },
+    "retirement/repo-python-before.sha256": {
+      "sha256": "372a344a5602f4e15e17e9c233ed6a73c94a92947c74e1c6576e439389761af9",
+      "size": 360405
+    },
+    "retirement/source-commit.txt": {
+      "sha256": "9757e21254c3fa55f7da43ac1c34978098c8be91e5c483767d3abcefc4b64295",
+      "size": 41
+    },
+    "retirement/workflow-source-receipt.txt": {
+      "sha256": "3bfa99887b878f064a0648cce3412c554b0aa1587da0716f9d4b17e9f0a1b4db",
+      "size": 173
+    }
+  },
+  "final_original_capture_status": 0,
+  "independent_observations": {
+    "logging_dynamic_fields": [
+      "created",
+      "host",
+      "process",
+      "thread",
+      "OPENPILOT_PREFIX",
+      "MANAGER_LOG_CAPTURE"
+    ],
+    "logging_record_count": 4,
+    "logging_result_json_value_match_existing_fc_fixture": true,
+    "logging_static_fields_match_existing_fc_fixture": true,
+    "manager_cases": [
+      "normal",
+      "registration_failure",
+      "poll_failure",
+      "prepare_only",
+      "interrupted",
+      "default_edges",
+      "reset_defaults"
+    ],
+    "note": "Raw JSON byte hashes differ from fc fixture; do not claim byte identity. Original raw files are retained.",
+    "seven_case_json_value_match_existing_fc_fixture": true
+  },
+  "prior_fixture_manifest_sha256": "19fbf52a7d468ffac12a1d41b509970c4583766c966816801f5f3d07a05b4d2e",
+  "provenance_classes": {
+    "independent_original_manager_results": "retirement/manager/*-source/result.json and retirement/manager-selected/{normal,custom}-source/result.json; the seven original source cases are also pinned by the prior fixture manifest",
+    "independent_original_logging_records": "logging/source/result.json in the prior fixture and retirement/manager-logging/source-records.json",
+    "original_tool_output_after_comparison": "retirement/manager-logging/summary.json was written by the unchanged original comparison tool after it compared original source packets with native packets; it is a historical tool receipt, not an independently generated source packet or numerical oracle"
+  },
+  "run": 39728775823,
+  "scope": "Historical original source/provider/CLI receipts; manager-logging/summary.json is original comparison-tool output after native/source equality, not an independent source packet or numerical oracle; source implementation files themselves are not included.",
+  "source_rosters": {
+    "binary_provider_rows": {
+      "before_after_sha256": "94265830b165dde213c31f7b2b796f6e728414b42ca4eea252fa7d1a5f2f185a",
+      "count": 2
+    },
+    "installed_provider_rows": {
+      "before_after_json_sha256": "14cf6cfcadf50e5f67c969bb8b8caeb486a4f4b3fd0090ba890e2feecc028103",
+      "count": 3495,
+      "note": "Capture before/after bytes agree; hosted site-package files are not in this ZIP for independent byte rehash."
+    },
+    "opendbc_git_objects": {
+      "before_after_sha256": "57bad9a3bf938c2f3ba4e70921894deea81cda3e19a86a531262565bfb90e627",
+      "count": 257,
+      "verified_against_commit": "83fb19a8cfda05bd2039253ceea8e0786676274d"
+    },
+    "repo_git_objects": {
+      "before_after_sha256": "372a344a5602f4e15e17e9c233ed6a73c94a92947c74e1c6576e439389761af9",
+      "count": 3266,
+      "verified_against_commit": "83fb19a8cfda05bd2039253ceea8e0786676274d"
+    }
+  },
+  "workflow_commit": "c4db0c15342ba9b29d1d92d25ccbeefaab0584ec"
+}

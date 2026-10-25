@@ -3,12 +3,39 @@
 import ast
 import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 import types
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def dbc_generator_sources():
+  """Native generator provenance for still-pending source comparison tools."""
+  crate = ROOT / 'rust/crates/dev-tools'
+  return [ROOT / 'rust/Cargo.toml', ROOT / 'rust/Cargo.lock', crate / 'Cargo.toml',
+          ROOT / 'opendbc_repo/opendbc/__init__.py', ROOT / 'rust/tools/can_source.py',
+          crate / 'src/lib.rs', crate / 'src/dbc_generator.rs', crate / 'src/bin/dbc_generator.rs',
+          *sorted((crate / 'src/dbc_generator').rglob('*.rs'))]
+
+
+def native_card_asset_preparer():
+  """Resolve once against the repository before a runner changes cwd."""
+  configured = os.environ.get('OPENPILOT_CARD_ASSET_PREPARER')
+  if configured is not None:
+    path = Path(configured)
+  else:
+    path = Path(os.environ.get('CARGO_TARGET_DIR', 'rust/target')) / 'debug/prepare-card-assets'
+  return path if path.is_absolute() else ROOT / path
+
+
+def dbc_asset_sources():
+  crate = ROOT / 'rust/crates/dev-tools'
+  return [*dbc_generator_sources(), crate / 'src/dbc_assets.rs',
+          crate / 'src/bin/prepare_card_assets.rs', crate / 'src/bin/prepare_radarcan_assets.rs',
+          *sorted((crate / 'src/dbc_assets').rglob('*.rs'))]
 
 
 class UnusedParams:

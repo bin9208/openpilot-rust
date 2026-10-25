@@ -156,6 +156,7 @@ pub fn run(config: Config, stop: Arc<AtomicBool>) -> Result<(), Error> {
                     .map_err(|_| Error::Contract("sound state lock poisoned"))?;
                 state.playback.sounds = sounds;
                 state.playback.frame = 0;
+                drop(state);
                 logger.emit(
                     log_site!(),
                     Record::text(

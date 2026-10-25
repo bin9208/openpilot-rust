@@ -1,0 +1,52 @@
+{
+  "scope": "independent unchanged manager checker/reference/real Cython Params captures; source policy expected values only, never native candidate output",
+  "source_sha256": {
+    "rust/tools/check_manager_catalog.py": "5ecdf8d7ec832c7d047b383f5b5afa542615f2c1427312a143b0d890f6a8663a",
+    "rust/tools/manager_catalog_reference.py": "f47308dc81260c02495d6a586623308a1359a0f1d2495f1717eefaa07ee111b4",
+    "rust/tools/original_params_binding.py": "b5fa10da96aecca63bafef0c03f6ddf9fe5fde89683f10e70742b4e919c38457",
+    "openpilot/system/manager/process_config.py": "22f7a2830556dfd0e4848497b706d172e00c5ea825421676511bda64aae30d34",
+    "openpilot/system/manager/process.py": "c824eded96e88533f4d150a1b2ea0262cfd076cffea0692fad52ef4ba3bf5c8e",
+    "openpilot/common/params.py": "4708c127258c0c0de9acd2d670ad9b48d4f3fd050c96deb373ea8cd348afe3a4",
+    "openpilot/common/params_pyx.pyx": "a8cc5e5296dd38a012c55b0867c4563f8e320d25960260d897675dd90f0ea544",
+    "openpilot/common/params.cc": "2947645ca30b57d23feeace0e88bead5709c1681dc21359fb1e5a225ca63b187",
+    "openpilot/common/params.h": "47d08fa1987c9150e55d09a2a533a0a115851aadb34bd1a0c82325e0be8726b3",
+    "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+    "openpilot/cereal/custom.capnp": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693",
+    "openpilot/cereal/deprecated.capnp": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355",
+    "opendbc_repo/opendbc/car/car.capnp": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda",
+    "openpilot/common/util.cc": "4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a",
+    "openpilot/common/swaglog.cc": "b61e45b8ad799606ba2a78e0b5ee9303a665bad99a67d50f3b7134792bf7ba7c",
+    "openpilot/common/params_keys.h": "b8422e8ad2cd74ec3c5750c3e919f6546519d84fabb5f6ec868b5372713b4d7f",
+    "openpilot/common/util.h": "49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea",
+    "openpilot/common/swaglog.h": "bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b",
+    "openpilot/common/timing.h": "66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71",
+    "openpilot/common/version.h": "8d618ada21dcc00618178d67f52c532b95c3eeff0736a9909379a3431e050ba6",
+    "openpilot/common/queue.h": "f7c75c847ae63dfd6e864406e722248540a79908270e85ca2674b43407408fcf",
+    "openpilot/system/hardware/hw.h": "afc36d60417dbaf1683d17f10b32306c1d69f58816a6dad09c8da24484249da7",
+    "openpilot/system/hardware/base.h": "7ef48c160e8e0e5cba3a8f629ac72904900e41be260aee8e4029b5c1a615e3b9",
+    "openpilot/system/hardware/pc/hardware.h": "edee2ab86ca69a3c8f005a823457edfe3a9368703a5583ff0d77b32f8b1e105c"
+  },
+  "retired_sources": [
+    "rust/tools/check_manager_catalog.py",
+    "rust/tools/manager_catalog_reference.py"
+  ],
+  "files": {
+    "full-original.json": "7fc5badc5d81c0273f0634d7ef8bd32017967a4de028e46c51dcc36606626de5",
+    "generic-original.json": "4528ab17755e351f625c13a8f899d3c9107e8f5fe208d984f6762bb720dba056",
+    "cli-original.json": "210d7672c4051a47ba9b89c2347a496e3c5bd29f45322ebcb039994dc6509824"
+  },
+  "full_original_receipt_sha256": "34a639509321630a94e0799256c8b521a9c183ba5c3af2e8618b1bb6125920dd",
+  "full_original_manifest_sha256": "f2b535095ad852034649ba7dec74db54001c97fe60a26ca337c9b3fa26232612",
+  "probe_sha256": "70adc087b37d3556e7574f7dbe2e81a376639940734d3f46908faf033465342c",
+  "binding_sha256": "fb7d15475f49abc07f17bf704257dd09b2348a116c6b96f90a7495824dbdf02d",
+  "counts": {
+    "descriptors": 63,
+    "catalog_configurations": 64,
+    "environment_snapshots": 25,
+    "scenarios": 116,
+    "predicate_cases": 10573,
+    "fatal_cases": 24,
+    "generic_cases": 38,
+    "cli_cases": 11
+  }
+}

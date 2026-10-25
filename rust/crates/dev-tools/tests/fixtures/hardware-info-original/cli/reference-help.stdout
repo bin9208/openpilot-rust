@@ -1,0 +1,9 @@
+usage: hardware_info_reference.py [-h] binding request output
+
+positional arguments:
+  binding
+  request
+  output
+
+options:
+  -h, --help  show this help message and exit

@@ -1,0 +1,68 @@
+[
+  {
+    "name": "unified-size-null-zero",
+    "exit": 1,
+    "png": false,
+    "state": false,
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"unified\", \"text\": \"Alpha beta\\n\\ud83d\\ude00 \\ud55c\\uae00\", \"rect\": {\"x\": 11.25, \"y\": 12.5, \"width\": 500.5, \"height\": 180.25}, \"props\": {\"size\": null}}]}"
+  },
+  {
+    "name": "unified-spacing-null-zero",
+    "exit": 1,
+    "png": false,
+    "state": false,
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"unified\", \"text\": \"Alpha beta\\n\\ud83d\\ude00 \\ud55c\\uae00\", \"rect\": {\"x\": 11.25, \"y\": 12.5, \"width\": 500.5, \"height\": 180.25}, \"props\": {\"letter_spacing\": null}}]}"
+  },
+  {
+    "name": "unified-spacing-list-zero",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"unified\", \"text\": \"Alpha beta\\n\\ud83d\\ude00 \\ud55c\\uae00\", \"rect\": {\"x\": 11.25, \"y\": 12.5, \"width\": 500.5, \"height\": 180.25}, \"props\": {\"letter_spacing\": [\"\\ud800\"]}}]}",
+    "state_text": "[{\"width\": 0.0, \"scroll_offset\": 0}]"
+  },
+  {
+    "name": "unified-size-list-zero",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"unified\", \"text\": \"Alpha beta\\n\\ud83d\\ude00 \\ud55c\\uae00\", \"rect\": {\"x\": 11.25, \"y\": 12.5, \"width\": 500.5, \"height\": 180.25}, \"props\": {\"size\": [\"\\ud800\"]}}]}",
+    "state_text": "[{\"width\": 0.0, \"scroll_offset\": 0}]"
+  },
+  {
+    "name": "unified-size-float-spacing-text-zero",
+    "exit": 1,
+    "png": false,
+    "state": false,
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"unified\", \"text\": \"Alpha beta\\n\\ud83d\\ude00 \\ud55c\\uae00\", \"rect\": {\"x\": 11.25, \"y\": 12.5, \"width\": 500.5, \"height\": 180.25}, \"props\": {\"size\": 60.0, \"letter_spacing\": \"x\"}}]}"
+  },
+  {
+    "name": "label-size-null-zero",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"label\", \"text\": \"Alpha beta\\n\\ud83d\\ude00 \\ud55c\\uae00\", \"rect\": {\"x\": 11.25, \"y\": 12.5, \"width\": 500.5, \"height\": 180.25}, \"props\": {\"size\": null}}]}",
+    "state_text": "[null]"
+  },
+  {
+    "name": "button-size-null-zero",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"button\", \"text\": \"Alpha beta\\n\\ud83d\\ude00 \\ud55c\\uae00\", \"rect\": {\"x\": 11.25, \"y\": 12.5, \"width\": 500.5, \"height\": 180.25}, \"props\": {\"size\": null}}]}",
+    "state_text": "[null]"
+  },
+  {
+    "name": "unified-height-bool-zero",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"unified\", \"text\": \"Alpha beta\\n\\ud83d\\ude00 \\ud55c\\uae00\", \"rect\": {\"x\": 11.25, \"y\": 12.5, \"width\": 500.5, \"height\": 180.25}, \"props\": {\"line_height\": true}}]}",
+    "state_text": "[{\"width\": 0.0, \"scroll_offset\": 0}]"
+  }
+]

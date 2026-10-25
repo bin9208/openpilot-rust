@@ -42,10 +42,12 @@ catalog deletion is introduced by the port.
 
 ## Evidence
 
-`check_message_state.py` executes the actual original classes with socket creation
-replaced by inert fixtures. Full original cereal messages supply the payloads;
-all receive metadata, validity/frequency flags, moving-average state and group
-checks are compared after every update. Across 11,205 updates, all discrete states
+`check-message-state` replays inputs and expected outputs independently captured
+from the original classes with inert socket fixtures. Full original cereal
+messages supply the payloads; all receive metadata, validity/frequency flags, moving-average state
+and group checks are compared after every update. Live source/schema/dependency
+guards reject drift. Shared Python source()/compare() helpers remain for other
+validators; the old Python CLI has been removed. Across 11,205 updates, all discrete states
 matched and maximum numeric difference was zero within the predefined 1e-12 bound.
 Coverage includes 2,417 passing and 8,788 failing combined checks, healthy/stale
 frequency states, long gaps, recent-window recovery and the zero-interval error.
@@ -66,7 +68,8 @@ Reproduce from the repository root after building the messaging examples:
 
 ```sh
 PYTHONPATH=. python rust/tools/check_services.py
-PYTHONPATH=. python rust/tools/check_message_state.py \
+cargo build --manifest-path rust/Cargo.toml -p openpilot-dev-tools --bin check-message-state --locked
+rust/target/debug/check-message-state \
   --binary rust/target/debug/examples/state_probe --output /tmp/message-state
 ```
 

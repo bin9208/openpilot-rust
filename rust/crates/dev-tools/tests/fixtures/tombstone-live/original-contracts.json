@@ -1,0 +1,140 @@
+{
+  "scope": "Independent unchanged original checker contracts extracted from sealed exact-source CI artifact; artificial filesystem/loopback inputs only. No native replacement answers. Runtime expected report text remains dynamically executed independent source Session.",
+  "original_artifact": 12146317130,
+  "original_run": 39153248437,
+  "original_source_tree": "0416b71d",
+  "source_sha256": {
+    "rust/tools/check_tombstoned_runtime.py": "d167803d412098921a910578db3c45184df24cfd6a4fae88034edfffce2a203b",
+    "rust/tools/check_tombstoned_shutdown.py": "e77e4f6d70242cf0cbc82e0d70c35f54b63e8f265d7bcc4d66196ca8cd1d688c",
+    "rust/tools/tombstoned_reference.py": "7b647dba322d93e5d2bd9c5692356b10d3f85f2a2e0f9da8b982e05206c8e781",
+    "rust/tools/check_tombstoned_reference.py": "6271ece66356f377357ffc2b37bf3d98fcdb4c8231c8c07f556ed0294c261cd4",
+    "rust/tools/logmessaged_native.py": "3366e64eb36b0bad9b10023c46217f61c66aae0fe823120ae23d597d2456c872",
+    "rust/tools/logmessaged_reference.py": "ce6d6764911daaab1e9e5ce70152d9f5efc9b5ea006482064bb8192d36f735e3",
+    "rust/tools/check_crash_sdk_transport.py": "8bf1281bbc182ecaba9a29b9e49aa3d250ec8ee1f43eca5861596cee475ed806",
+    "openpilot/system/tombstoned.py": "a7a5f32535fe7c3a74593b3252366db5ac1c8b43f64837293e1c192f517527a5",
+    "openpilot/system/sentry.py": "fec900bf600e7a714460d8494472d6cc648759abf36ff72b79158bff61135fd8",
+    "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+    "openpilot/cereal/services.py": "a0745e2ef00036f0eef08b453a4798b4281549ea9ac6dc91c8b348ef76131edb"
+  },
+  "artifact_sha256": {
+    "tombstone-runtime/manifest.json": "5c2bcb4b90d346f95db61f191015683be876d7d94bce765ae40de12417e49f6d",
+    "tombstone-runtime/startup-failures.json": "6172b4dc5f3e33b390a9b388b3e01f3f1add279ef51c8f9817161242e2fb776d",
+    "tombstone-runtime/enabled/records.json": "3e33e638d66c8a0dd4141e67e279ad15b274d2c17adc961b4c481ab6e0a81dd5",
+    "tombstone-runtime/enabled/errorLogMessage.bin": "1599ee2496d017b765d97a77148d7dd924be17969f09c647440bd20a46dc4eda",
+    "tombstone-runtime/enabled/manifest.json": "0dac3b99f62948ebc7421a390a75e3767d0260ac974571e26d0d640555bc4d86",
+    "tombstone-runtime/enabled/copied.crash": "10b0378c4fbbc403f597fcce96fbe2c4758e787b927280825555402ed1afbffd",
+    "tombstone-runtime/enabled/daemon.stderr": "2bd9768dc7d4825f8b957046b094df4a84c43d0e126ddadd2cc63825e9591064",
+    "tombstone-runtime/enabled/sdk-event.json": "1244c1dc85080b1010d6d5918cf43226adc12b76b63db0e5ff68f388f7442a9e",
+    "tombstone-runtime/enabled/logMessage.bin": "f6940d85c8e79f89739fa9e7b1f2792ced1e9ffde83f3bf109140b7e0a4efce5",
+    "tombstone-runtime/enabled/source.stdout": "d8113473621dca2cb29400cb90cd1cd4b37ffaa7857b1e8ad7fcf6612788904c",
+    "tombstone-runtime/enabled/daemon.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tombstone-runtime/pc-disabled/records.json": "a7ea527d08fd279e2e85d8c10218cdd78c646a99b64911f74aa92f412345ac3a",
+    "tombstone-runtime/pc-disabled/manifest.json": "abca7dcd8f351fd0dffa9d8923461e9843a84d8dc28090f686694e9f3b09dfed",
+    "tombstone-runtime/pc-disabled/daemon.stderr": "2d58ed1ca75ac330e743175bec229f718f75afa05efa1b216c35822779aa5d2a",
+    "tombstone-runtime/pc-disabled/daemon.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tombstone-runtime/enabled/collector/invocation.json": "c3f6074bdc25fb12240a157af2710a7b59238f269a1b7594e717dc7fcf40340a",
+    "tombstone-runtime/enabled/collector/exit.json": "4f85ab494a03fe17e2d081bc8b3b40f3b8ef5547f959fe74d7b9f3d13981511d",
+    "tombstone-runtime/enabled/collector/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tombstone-runtime/enabled/collector/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tombstone-runtime/pc-disabled/collector/invocation.json": "8c56bd94d949527f9c3161bcc953c8b025888d63aaa06bb556d401c72f67a2fb",
+    "tombstone-runtime/pc-disabled/collector/exit.json": "cd0f99972d5883e304492075b3552206684b5b393cc39bc9772ac9b008ad8461",
+    "tombstone-runtime/pc-disabled/collector/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tombstone-runtime/pc-disabled/collector/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tombstone-shutdown/manifest.json": "e576d275d772d21264c8de51962d759b7c59e13574a8c5bf17cea8b6bfd0119f",
+    "tombstone-shutdown/source-SIGINT/result.json": "f42f8dc56b406c75aadb1db5c0ba5650d8a2942d8cbf2e6345bda4d80a6e2afb",
+    "tombstone-shutdown/source-SIGINT/stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tombstone-shutdown/source-SIGINT/stderr.txt": "f8877bcf82b8728bd9d75bba0bbb1ef98e4934a6fd84cbb0d9c24229f51be748",
+    "tombstone-shutdown/native-SIGTERM/result.json": "63243dece9fdf71c5dbd5ea5d7802bb106ac1ff713e57383866ad5a30d859edd",
+    "tombstone-shutdown/native-SIGTERM/stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tombstone-shutdown/native-SIGTERM/stderr.txt": "fa4614eb792f103d39b4c6511b89787520e138b4dba6222b330c4a8dc7f40bd9",
+    "tombstone-shutdown/native-SIGINT/result.json": "c470e46eabc4441ce732e665e4a91b50b8e3933528fc15dbb6a092197d74bf8c",
+    "tombstone-shutdown/native-SIGINT/stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tombstone-shutdown/native-SIGINT/stderr.txt": "fa4614eb792f103d39b4c6511b89787520e138b4dba6222b330c4a8dc7f40bd9"
+  },
+  "runtime": {
+    "case_count": 2,
+    "startup_failure_cases": 4,
+    "enabled": {
+      "log_messages": 6,
+      "error_messages": 3,
+      "disk_records": 6,
+      "subsequent_cycle_duplicates": 0,
+      "new_crash_report_delay_seconds_min": 4.0,
+      "new_crash_report_delay_seconds_max_exclusive": 9.5
+    },
+    "disabled": {
+      "log_messages": 0,
+      "error_messages": 0,
+      "disk_records": 0,
+      "subsequent_cycle_duplicates": 0
+    },
+    "sleep": "actual first scan hrtimer_nanosleep; original wait20s; real loop sleep5s",
+    "native_wait_seconds": 15,
+    "receive_seconds": 10,
+    "startup_failures": [
+      {
+        "exit_code": 1,
+        "stderr": "tombstoned: cycles must be positive\n",
+        "stdout": "",
+        "stdout_present": true
+      },
+      {
+        "exit_code": 1,
+        "stderr": "tombstoned: local device simulation requires local capture DSN\n",
+        "stdout": "",
+        "stdout_present": true
+      },
+      {
+        "exit_code": 1,
+        "stderr": "tombstoned: SDK dsn: local capture must use a loopback host\n",
+        "stdout": "",
+        "stdout_present": true
+      },
+      {
+        "exit_code": 1,
+        "stderr": "tombstoned: JSON syntax at byte 1: expected string\n",
+        "stdout": null,
+        "stdout_present": false
+      }
+    ],
+    "raw_filename_bytes_hex": "6e65772dff2ded959c2de2822e6372617368"
+  },
+  "shutdown": {
+    "cases": [
+      {
+        "kind": "source",
+        "signal": "SIGINT",
+        "exit_code": -2,
+        "exited_within_5_seconds": true,
+        "crash_retained": true,
+        "crash_copied": false,
+        "http_events": 0,
+        "native_active_descendants_after_stop": null
+      },
+      {
+        "kind": "native",
+        "signal": "SIGINT",
+        "exit_code": 0,
+        "exited_within_5_seconds": true,
+        "crash_retained": true,
+        "crash_copied": false,
+        "http_events": 0,
+        "native_active_descendants_after_stop": 0
+      },
+      {
+        "kind": "native",
+        "signal": "SIGTERM",
+        "exit_code": 0,
+        "exited_within_5_seconds": true,
+        "crash_retained": true,
+        "crash_copied": false,
+        "http_events": 0,
+        "native_active_descendants_after_stop": 0
+      }
+    ],
+    "readiness_seconds": 12,
+    "stop_seconds": 5,
+    "minimum_acknowledged_owned_processes": 3,
+    "source_orphan_behavior": "Original source SIGINT leaves sleeper; observe but do not require leakage. Always cleanup retained identities."
+  }
+}

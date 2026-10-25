@@ -1,0 +1,179 @@
+{
+  "provenance": "Executed unchanged Python checker; seed bytes produced exclusively by unchanged C++ ELF, not native output",
+  "source_commit": "249c1a0815e7b43d677065f3bd508b423e5ef6b5",
+  "run": 39625704015,
+  "artifact": 12358686227,
+  "zip_sha256": "1dffb8ea17d36f68e02b3c59736effbf9667d6225fb13e35eec833f140f321cc",
+  "member": "retirement/checkout-output/protocol/seeds.stdout",
+  "seed_sha256": "8210971639bfd3e43591414e5ff559083bd05d11768bc14ba184904495ae6df1",
+  "command": {
+    "argv": [
+      "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python3.12",
+      "/home/runner/work/openpilot-rust/openpilot-rust/rust/tools/check_pandad_protocol.py",
+      "--source",
+      "/home/runner/work/_temp/panda-native/retirement/checkout-output/protocol-src/pandad-protocol-source",
+      "--binary",
+      "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/examples/panda_protocol",
+      "--output",
+      "/home/runner/work/_temp/panda-native/retirement/checkout-output/protocol"
+    ],
+    "cwd": "/home/runner/work/openpilot-rust/openpilot-rust"
+  },
+  "exit": {
+    "returncode": 0
+  },
+  "report": {
+    "result": "pass",
+    "cases": 3174,
+    "pack_cases": 664,
+    "decode_cases": 2380,
+    "alert_steps": 30720,
+    "valid_receive_flag_cases": 1536,
+    "invalid_lengths": [
+      {
+        "length": 9,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 10,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 11,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 13,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 15,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 17,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 19,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 21,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 23,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 25,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 31,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 33,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 47,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 49,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 63,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 65,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      },
+      {
+        "length": 255,
+        "exits": {
+          "source": -6,
+          "native": 1
+        }
+      }
+    ],
+    "exact_packets_frames_resets_alert_state": true,
+    "source_binary_sha256": "bc4b133fad240a96212144be82f9946ee417390ad1cd4082b0c009ee680cd14d",
+    "native_binary_sha256": "82d80628099238f262d405983d5a5b74325626f47c7df50d8aba819ee0fe76c6",
+    "native_command": [
+      "/home/runner/work/openpilot-rust/openpilot-rust/rust/target/debug/examples/panda_protocol"
+    ],
+    "scope": "unchanged C++ CAN codec and SPI alert tracker; no physical transport or device validation"
+  },
+  "checker_sha256": "927164a1021139642d4e17f2f35d3b531dbafc989161fe871ccc614a7c7e51bf",
+  "cases_sha256": "3eac4a39401de9311c5a5ea5211afebac1deede3a055f9d15fdb45d7576ee5bf",
+  "files": {
+    "seeds-original.jsonl": {
+      "sha256": "8210971639bfd3e43591414e5ff559083bd05d11768bc14ba184904495ae6df1",
+      "size": 1782
+    },
+    "seed-requests-original.jsonl": {
+      "sha256": "db55a3ed4a0b98eb4b706f27872dbb057e6d99df6767f8959492e7472c261d59",
+      "size": 2443
+    },
+    "request-boundaries-original.json": {
+      "sha256": "88a2d4785a7feab3b2d1832fc394201a74f066126d63db7c594e600a0e1782a5",
+      "size": 59348
+    }
+  },
+  "full_original_request_member": "retirement/checkout-output/protocol/source.input.jsonl",
+  "full_original_request_sha256": "f58b2194c09021948c91d9bd82156f81aa5bc8b74c5b44d81fbbac31f321ee95"
+}

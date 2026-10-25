@@ -1,0 +1,3 @@
+usage: check_hardware_info.py [-h] [--cases CASES] [--runner ...]
+                              binary binding output
+check_hardware_info.py: error: the following arguments are required: binary, binding, output

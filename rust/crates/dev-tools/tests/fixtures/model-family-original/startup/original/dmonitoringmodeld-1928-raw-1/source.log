@@ -1,0 +1,5 @@
+{"event": "log", "message": "connecting to driver stream", "level": 30, "time": 646.992981567}
+{"event": "log", "message": "connected with buffer size: 4804608", "level": 30, "time": 646.993231737}
+{"event": "log", "message": "models loaded, dmonitoringmodeld starting", "level": 30, "time": 647.69679566}
+{"event": "initialized", "component": "dmonitoringmodeld", "time": 647.69683668, "width": 1928, "height": 1208, "buffer_len": 4804608, "source": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/selfdrive/modeld/dmonitoringmodeld.py", "source_lines": [112, 127], "model_class": "ModelState", "frames_sent_before_initialization": 0, "scope": "original ModelState plus original connection/load statements; artifact directory redirected; internal model only"}
+{"event": "first_frame", "frame_id": 1, "time": 647.700131147}

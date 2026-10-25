@@ -24,6 +24,9 @@ from openpilot.system.hardware import HARDWARE, PC
 from openpilot.system.ui.lib.multilang import multilang
 from openpilot.common.realtime import Ratekeeper
 import datetime
+import hashlib
+import json
+import stat
 
 #_DEFAULT_FPS = int(os.getenv("FPS", {'tizi': 20}.get(HARDWARE.get_device_type(), 60)))
 _DEFAULT_FPS = 20 
@@ -104,7 +107,64 @@ DEFAULT_TEXT_COLOR = rl.Color(255, 255, 255, int(255 * 0.9))
 FONT_SCALE = 1.242 if BIG_UI else 1.16
 
 ASSETS_DIR = Path(BASEDIR) / "openpilot" / "selfdrive" / "assets"
-FONT_DIR = ASSETS_DIR.joinpath("fonts")
+SOURCE_FONT_DIR = ASSETS_DIR.joinpath("fonts")
+
+
+def _font_asset_hash(path: Path) -> str:
+  descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+  with os.fdopen(descriptor, "rb") as stream:
+    before = os.fstat(stream.fileno())
+    if not stat.S_ISREG(before.st_mode) or before.st_size > 512 * 1024 * 1024:
+      raise ValueError("font asset is not a bounded regular file")
+    value = hashlib.file_digest(stream, "sha256").hexdigest()
+    identity = lambda row: (row.st_dev, row.st_ino, row.st_mode, row.st_size, row.st_mtime_ns, row.st_ctime_ns)
+    if identity(before) != identity(os.fstat(stream.fileno())) or identity(before) != identity(path.lstat()):
+      raise ValueError("font asset changed while reading")
+    return value
+
+
+def _generated_font_root() -> Path:
+  value = os.environ.get("OPENPILOT_FONT_ROOT")
+  if value is None:
+    return SOURCE_FONT_DIR
+  base = Path(os.environ.get("OPENPILOT_BUILD_ASSET_ROOT", ""))
+  path = Path(value)
+  repository = Path(BASEDIR).resolve()
+  if not base.is_absolute() or base.resolve() != base or ".." in base.parts:
+    raise ValueError("font build root must be absolute and canonical")
+  if base == repository or base.is_relative_to(repository) or repository.is_relative_to(base):
+    raise ValueError("font build root overlaps source")
+  if path != base / "fonts" or value != str(path) or path.resolve() != path:
+    raise ValueError("font root differs from build output")
+  for directory in (base, path):
+    metadata = directory.lstat()
+    if not stat.S_ISDIR(metadata.st_mode) or metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != 0o700:
+      raise ValueError("font root must be an owned private directory")
+  marker = path / ".ready"
+  if marker.is_symlink() or not marker.is_file() or marker.stat().st_size != len(b"openpilot-font-stage-v1\n") or marker.read_bytes() != b"openpilot-font-stage-v1\n":
+    raise ValueError("font stage is not ready")
+  manifest_path = path / "manifest.json"
+  _font_asset_hash(manifest_path)
+  if manifest_path.stat().st_size > 4 * 1024 * 1024:
+    raise ValueError("font manifest exceeds bound")
+  manifest = json.loads(manifest_path.read_bytes())
+  translation = repository / "openpilot/selfdrive/ui/translations"
+  inputs = [SOURCE_FONT_DIR / "process.py", repository / "openpilot/selfdrive/ui/SConscript",
+            translation / "languages.json", *SOURCE_FONT_DIR.glob("*.ttf"), *SOURCE_FONT_DIR.glob("*.otf"),
+            *translation.glob("*.po")]
+  sources = {str(file.relative_to(repository)): _font_asset_hash(file) for file in sorted(inputs)}
+  if type(manifest.get("format_version")) is not int or manifest["format_version"] != 1 or manifest.get("kind") != "fonts" or manifest.get("source_sha256") != sources:
+    raise ValueError("font source or role differs from stage")
+  actual = {file.name: _font_asset_hash(file) for file in sorted(path.iterdir()) if file.suffix in {".fnt", ".png"}}
+  stems = {file.stem for file in [*SOURCE_FONT_DIR.glob("*.ttf"), *SOURCE_FONT_DIR.glob("*.otf")]
+           if "emoji" not in file.name.lower()}
+  expected = {stem + suffix for stem in stems for suffix in (".fnt", ".png")}
+  if actual.keys() != expected or actual != manifest.get("asset_sha256"):
+    raise ValueError("font output roster or bytes changed")
+  return path
+
+
+FONT_DIR = _generated_font_root()
 FONT_SOURCE_EXTS = (".ttf", ".otf")
 
 
@@ -952,6 +1012,9 @@ class GuiApplication:
   def _resolve_font_path(self, fnt_path: Path) -> Path:
     if fnt_path.exists():
       return fnt_path
+
+    if "OPENPILOT_FONT_ROOT" in os.environ:
+      raise FileNotFoundError(f"staged font is missing: {fnt_path}")
 
     stem = fnt_path.with_suffix("")
     for ext in FONT_SOURCE_EXTS:

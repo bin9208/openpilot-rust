@@ -1,0 +1,269 @@
+name: Python Rust 523 unused compiler cache recovery
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-reclaim.yml
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: python-rust-523-cache-recovery
+  cancel-in-progress: false
+  queue: max
+jobs:
+  reclaim:
+    runs-on:
+    - self-hosted
+    - Linux
+    - X64
+    - dev-md-local
+    timeout-minutes: 20
+    steps:
+    - name: Deny fork source and require registered local runner
+      shell: bash
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        set -euo pipefail
+        test "$RUNNER_NAME" = bin-actions
+        test "$RUNNER_ENVIRONMENT" = self-hosted
+        test "$RUNNER_ARCH" = X64
+        evidence=$(mktemp -d "$RUNNER_TEMP/python-rust-523-reclaim.XXXXXX")
+        printf '%s:%s:%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_JOB" > "$evidence/owner"
+        printf 'RECLAIM_EVIDENCE=%s\n' "$evidence" >> "$GITHUB_ENV"
+
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$GITHUB_EVENT_NAME" = push
+        test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
+        test "$RUNNER_OS" = Linux
+    - name: Reclaim only exact unused shared example outputs and all internal aliases
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        available=$(df -PB1 "$RECLAIM_EVIDENCE" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        ((available >= 128 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_metadata_growth_bytes":134217728}\n' "$available" > "$RECLAIM_EVIDENCE/metadata-growth.json"
+        prior="$RECLAIM_EVIDENCE/capacity-642d01.zip"
+        gh api repos/bin9208/openpilot-rust/actions/artifacts/12563005351/zip > "$prior"
+        test "$(stat -c '%s' -- "$prior")" = 2098652
+        printf '81cd3b7e8fcd4c6e917ac90eb05d26c0d4e85792b2e2e812ad93d9ac9f85acc9  %s\n' "$prior" | sha256sum --check -
+        unzip -t "$prior" > "$RECLAIM_EVIDENCE/prior-crc.txt"
+        unzip -p "$prior" cache-inventory.json > "$RECLAIM_EVIDENCE/cache-inventory.json"
+        export RECLAIM_INVENTORY="$RECLAIM_EVIDENCE/cache-inventory.json"
+        export RECLAIM_INVENTORY_SHA256=cf0b7bfe33614bd8898d6da694d7ae67c5666279e3e2980285aad7340fdd01bf
+        export RECLAIM_INVENTORY_SOURCE=642d01cc2296790226d7f9058e4f19bca8dc9b1e
+        python3 - <<'RECLAIM'
+        # Actions 전용 후보. 로컬 실행 금지; exact historical roster와 현재 idle/보존 검사를 선행한다.
+        import hashlib,json,os,shutil,stat,subprocess,sys,signal,traceback
+        from collections import defaultdict
+        from pathlib import Path
+        proof=Path(os.environ['RECLAIM_EVIDENCE'])
+        assert os.environ['GITHUB_ACTIONS']=='true' and os.environ['GITHUB_REPOSITORY']=='bin9208/openpilot-rust'
+        assert os.environ['GITHUB_REF']=='refs/heads/codex/feat-523-python-rust' and os.environ['RUNNER_NAME']=='bin-actions'
+        assert os.environ['GITHUB_EVENT_NAME']=='push'
+        manifest_path=Path(os.environ['RECLAIM_INVENTORY'])
+        manifest_sha='cf0b7bfe33614bd8898d6da694d7ae67c5666279e3e2980285aad7340fdd01bf'
+        raw=manifest_path.read_bytes();assert len(raw)==7698013 and hashlib.sha256(raw).hexdigest()==manifest_sha
+        manifest=json.loads(raw);assert manifest['schema']=='openpilot.runner-cache-readonly.v1' and manifest['physical_deletions']==0
+        assert manifest['source_commit']=='642d01cc2296790226d7f9058e4f19bca8dc9b1e'
+        shared=Path('/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust')
+        target=shared/'rust/target';selected_root=target/'debug/examples'
+        sdk=Path('/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu')
+        expected_shared='e0ef927ebb4010996feaf52137611cdf2e2c3b86'
+        by_path={row['path']:row for row in manifest['roots']};assert len(by_path)==len(manifest['roots'])
+        row=by_path[str(target)];assert row['role']=='shared-build-cache'
+        def identity(s):return [s.st_dev,s.st_ino,s.st_mode,s.st_uid,s.st_gid,s.st_size,s.st_blocks,s.st_nlink,s.st_mtime_ns,s.st_ctime_ns]
+        def fail(error):raise error
+        def digest_file(path,with_prefix=False,expected=None):
+         fd=os.open(path,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
+         try:
+          before=os.fstat(fd);assert stat.S_ISREG(before.st_mode)
+          assert expected is None or identity(before)==expected,'lstat/hash-FD identity differs'
+          with os.fdopen(fd,'rb',closefd=False) as stream:
+           prefix=stream.read(4).hex();stream.seek(0);value=hashlib.file_digest(stream,'sha256').hexdigest()
+          assert identity(before)==identity(os.fstat(fd))==identity(path.lstat())
+          return (value,prefix) if with_prefix else value
+         finally:os.close(fd)
+        def source_state():
+         assert shared.resolve(strict=True)==shared and shared.is_dir() and not shared.is_symlink()
+         assert subprocess.check_output(['git','-C',str(shared),'rev-parse','HEAD'],text=True).strip()==expected_shared
+         assert not subprocess.check_output(['git','-C',str(shared),'status','--porcelain=v1','-uno'])
+         return subprocess.check_output(['git','-C',str(shared),'ls-files','-z'])
+        def selected_snapshot():
+         assert selected_root.resolve(strict=True)==selected_root and selected_root.is_dir() and not selected_root.is_symlink()
+         assert identity(selected_root.lstat())==row['entries']['debug/examples']['identity']
+         expected={str(Path(k).name):v for k,v in row['entries'].items() if k.startswith('debug/examples/')}
+         assert len(expected)==2728 and all('/' not in k for k in expected)
+         actual={}
+         paths=list(selected_root.iterdir());assert {p.name for p in paths}==set(expected),'Cache pathname roster changed'
+         for path in paths:
+          info=path.lstat();assert stat.S_ISREG(info.st_mode) and info.st_uid==os.getuid()
+          assert identity(info)==expected[path.name]['identity'],'Cache metadata changed before content read'
+          digest,prefix=digest_file(path,True,expected[path.name]['identity'])
+          actual[path.name]={'identity':identity(info),'type':stat.S_IFREG,'sha256':digest,'prefix4_hex':prefix}
+         assert actual==expected,'Exact example cache roster/content/identity changed after inventory'
+         return actual
+        assert target.resolve(strict=True)==target and not target.is_symlink()
+        assert identity(target.lstat())==row['root_identity']
+        assert identity((target/'debug').lstat())==row['entries']['debug']['identity']
+        assert selected_root.lstat().st_uid==os.getuid()==1000
+        index_before=source_state()
+        (proof/'shared-index-before.bin').write_bytes(index_before)
+        selected=selected_snapshot();aliases=defaultdict(list)
+        for name,item in selected.items():aliases[tuple(item['identity'][:2])].append(name)
+        assert len(aliases)==2274
+        selected_inodes={f'{device}:{inode}':[str(selected_root)] for device,inode in aliases}
+        for inode,names in aliases.items():
+         original=selected[names[0]]
+         assert len(names)==original['identity'][7] and len(names) in (1,2),'Unknown external hardlink alias'
+         assert all(selected[name]==original for name in names)
+         assert original['prefix4_hex']=='7f454c46' or all(name.endswith(('.d','.rmeta')) for name in names)
+        for root in manifest['roots']:
+         if root.get('absent'):continue
+         for name,item in root['entries'].items():
+          info=item['identity']
+          if tuple(info[:2]) in aliases:
+           assert root['path']==str(target) and name.startswith('debug/examples/'),'Protected historical alias'
+        # 현재 retained 전체의 inode도 별도로 검사하므로 과거 manifest 밖 alias를 일반 허용하지 않는다.
+        def snapshot_roots(index):
+         result={}
+         def add(path):
+          assert len(result)<65000,'Retained roster bound'
+          info=path.lstat();assert stat.S_ISREG(info.st_mode) or stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode)
+          assert tuple(identity(info)[:2]) not in aliases,'Protected current alias'
+          item={'identity':identity(info),'type':stat.S_IFMT(info.st_mode)}
+          if stat.S_ISREG(info.st_mode):item['sha256']=digest_file(path,expected=identity(info))
+          elif stat.S_ISLNK(info.st_mode):
+           item['target']=os.readlink(path)
+           resolved=path.resolve(strict=False)
+           assert resolved!=selected_root and selected_root not in resolved.parents,'Protected symlink points to selected cache'
+          result[str(path)]=item
+         for root in (target,sdk):
+          assert root.resolve(strict=True)==root and root.is_dir() and not root.is_symlink();add(root)
+          for base,dirs,files in os.walk(root,followlinks=False,onerror=fail):
+           assert len(Path(base).relative_to(root).parts)<=64
+           for name in dirs+files:
+            path=Path(base)/name
+            if path==selected_root or selected_root in path.parents:continue
+            add(path)
+           dirs[:]=[name for name in dirs if not (Path(base)/name).is_symlink() and Path(base)/name!=selected_root]
+         # tracked source 전부와 실제 index를 보존한다. untracked proof/private SDK는 삭제 namespace 밖이다.
+         for name in index.split(b'\0'):
+          if not name:continue
+          path=shared/Path(os.fsdecode(name));assert path.is_relative_to(shared) and '..' not in path.relative_to(shared).parts
+          add(path)
+         return result
+        def save_retained(label,state):
+         data=(json.dumps(state,sort_keys=True,separators=(',',':'))+'\n').encode();assert len(data)<=32*1024**2
+         (proof/f'retained-{label}.json').write_bytes(data)
+
+        reader="import json,os,sys\nfrom pathlib import Path\nrequest=json.load(sys.stdin);roots=request['roots'];inodes=request['inodes']\nresult={'references':[],'unknown_processes':[],'active_compilers':[]}\ndef matched(pid,kind,value,device=None,inode=None):\n found={root for root in roots if value==root or value.startswith(root+'/')}\n if device is not None:found.update(inodes.get(f'{device}:{inode}',[]))\n for root in sorted(found):result['references'].append({'pid':pid,'root':root,'kind':kind})\nfor proc in Path('/proc').iterdir():\n if not proc.name.isdigit() or int(proc.name)==os.getpid():continue\n try:\n  comm=(proc/'comm').read_text().strip()\n  if comm in {'cargo','rustc','rustdoc','gcc','g++','cc','cc1','cc1plus','clang','clang++','ld','ld.lld'}:result['active_compilers'].append({'pid':int(proc.name),'comm':comm})\n  for link in [proc/'cwd',proc/'exe']+list((proc/'fd').iterdir()):\n   try:\n    value=os.readlink(link).removesuffix(' (deleted)');info=link.stat()\n   except FileNotFoundError:continue\n   matched(int(proc.name),'fd' if link.parent.name=='fd' else link.name,value,info.st_dev,info.st_ino)\n  for line in (proc/'maps').read_text().splitlines():\n   fields=line.split(None,5)\n   if len(fields)>=5:\n    major,minor=(int(part,16) for part in fields[3].split(':'));device=os.makedev(major,minor)\n    matched(int(proc.name),'map',fields[5].removesuffix(' (deleted)') if len(fields)==6 else '',device,int(fields[4]))\n except (FileNotFoundError,ProcessLookupError):continue\n except (PermissionError,OSError) as error:result['unknown_processes'].append({'pid':int(proc.name),'error_type':type(error).__name__})\nresult['complete_reference_scan']=not result['unknown_processes']\nprint(json.dumps(result,sort_keys=True))\n"
+        def idle(label):
+         response=subprocess.run(['sudo','-n',sys.executable,'-I','-B','-S','-c',reader],input=json.dumps({'roots':[str(selected_root)],'inodes':selected_inodes}),text=True,capture_output=True,check=True)
+         data=json.loads(response.stdout);(proof/f'processes-{label}.json').write_text(json.dumps(data,indent=2)+'\n')
+         assert data['complete_reference_scan'] and not data['unknown_processes'] and not data['active_compilers'] and not data['references'],'Example cache has active/unknown references'
+        idle('before')
+        before=snapshot_roots(index_before);save_retained('before',before)
+        (proof/'free-before.json').write_text(json.dumps(shutil.disk_usage(shared)._asdict())+'\n')
+        plan={'source_commit':os.environ['GITHUB_SHA'],'shared_source':expected_shared,'inventory_source':manifest['source_commit'],'inventory_sha256':manifest_sha,'selected_root':str(selected_root),'selected_root_identity':identity(selected_root.lstat()),'regular_paths':2728,'unique_inodes':2274,'unique_allocated_bytes':sum(selected[names[0]]['identity'][6]*512 for names in aliases.values()),'aliases':list(aliases.values()),'scope':'exact unused shared example outputs only; no SDK/deps/DSO/source/proof deletion'}
+        assert plan['unique_allocated_bytes']==5041766400
+        (proof/'plan.json').write_text(json.dumps(plan,indent=2)+'\n')
+        def interrupted(number,_frame):raise RuntimeError(f'interrupted signal {number}')
+        signal.signal(signal.SIGTERM,interrupted)
+        signal.signal(signal.SIGINT,interrupted)
+        mutation_error=None
+        post_errors=[]
+        post={}
+        removed_names=[]
+        removed_inodes=[]
+        def observe(label,operation):
+         try:post[label]=operation()
+         except BaseException:
+          post_errors.append({'check':label,'error':traceback.format_exc()})
+        try:
+         # 보호 내용 hash 후 원래 전체선택 snapshot/전 UID 참조를 삭제 직전에 다시 확인한다.
+         assert selected_snapshot()==selected and source_state()==index_before
+         idle('immediately-before')
+         dirfd=os.open(selected_root,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW|os.O_CLOEXEC)
+         try:
+          assert identity(os.fstat(dirfd))==plan['selected_root_identity']
+          with (proof/'journal.jsonl').open('x') as journal:
+           for inode,names in sorted(aliases.items()):
+            names=sorted(names);original=selected[names[0]]
+            fd=os.open(names[0],os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC,dir_fd=dirfd)
+            try:
+             assert identity(os.fstat(fd))==original['identity']
+             with os.fdopen(fd,'rb',closefd=False) as stream:assert hashlib.file_digest(stream,'sha256').hexdigest()==original['sha256']
+             current=identity(os.fstat(fd));assert current==original['identity']
+             journal.write(json.dumps({'intent':{'inode':list(inode),'paths':names,'identity':current,'sha256':original['sha256']}})+'\n');journal.flush();os.fsync(journal.fileno())
+             for name in names:
+              assert '/' not in name and name not in ('.','..')
+              assert identity(os.stat(name,dir_fd=dirfd,follow_symlinks=False))==current
+              assert identity(os.fstat(fd))==current
+              os.unlink(name,dir_fd=dirfd)
+              removed_names.append(name)
+              after=identity(os.fstat(fd))
+              # unlink는 nlink/ctime만 바꾼다. 나머지 inode·mode·owner·길이·blocks·mtime는 유지한다.
+              assert after[:7]==current[:7] and after[8]==current[8] and after[7]==current[7]-1
+              current=after
+              try:os.stat(name,dir_fd=dirfd,follow_symlinks=False)
+              except FileNotFoundError:pass
+              else:raise AssertionError('Deleted cache pathname reappeared')
+              journal.write(json.dumps({'removed':str(selected_root/name),'remaining_inode_links':current[7]})+'\n');journal.flush();os.fsync(journal.fileno())
+             assert current[7]==0
+             removed_inodes.append(list(inode))
+            finally:os.close(fd)
+          assert not os.listdir(dirfd),'Foreign/new cache pathname remains; not removed'
+         finally:os.close(dirfd)
+        except BaseException:
+         mutation_error=traceback.format_exc()
+         raise
+        finally:
+         # 부분 unlink/일반 예외/TERM/INT도 각 후검증을 독립적으로 시도한다. 실패를 PASS로 바꾸지 않는다.
+         observe('idle',lambda:idle('after'))
+         def root_after():
+          info=selected_root.lstat();value=identity(info)
+          (proof/'selected-root-after.json').write_text(json.dumps(value)+'\n')
+          old=plan['selected_root_identity']
+          assert value[:5]==old[:5] and value[7]==old[7]
+          names=sorted(os.listdir(selected_root));assert len(names)<=2728
+          (proof/'remaining-paths.json').write_text(json.dumps(names)+'\n')
+          return {'unchanged_root_identity':True,'remaining_paths':len(names),'empty':not names}
+         observe('root',root_after)
+         def index_after():
+          value=source_state();(proof/'shared-index-after.bin').write_bytes(value);assert value==index_before
+          return {'unchanged':True}
+         observe('index',index_after)
+         def retained_after():
+          after=snapshot_roots(index_before);save_retained('after',after);assert before==after,'Protected target/SDK/tracked source changed'
+          return {'unchanged':True,'entries':len(after)}
+         observe('retained',retained_after)
+         def free_after():
+          value=shutil.disk_usage(shared)._asdict();(proof/'free-after.json').write_text(json.dumps(value)+'\n');return value
+         observe('free',free_after)
+         passed=(mutation_error is None and not post_errors and len(removed_names)==2728 and len(removed_inodes)==2274
+                 and post.get('root',{}).get('empty') is True and post.get('index',{}).get('unchanged') is True
+                 and post.get('retained',{}).get('unchanged') is True)
+         (proof/'result.json').write_text(json.dumps({'pass':passed,'removed_recorded_paths':len(removed_names),
+          'removed_recorded_unique_inodes':len(removed_inodes),'source_commit':os.environ['GITHUB_SHA'],
+          'mutation_error':mutation_error,'post_errors':post_errors,'post_checks':post,'whole_runtime_acceptance':False,
+          'physical_acceptance':False,'untracked_proof_and_other_SDKs':'outside deletion namespace; not newly qualified'},indent=2)+'\n')
+         if not passed and mutation_error is None:raise AssertionError('Example cleanup or its mandatory postflight did not complete')
+        RECLAIM
+      env:
+        GH_TOKEN: ${{ github.token }}
+    - name: Preserve exact cleanup journal and retained-file evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.RECLAIM_EVIDENCE
+        != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: python-rust-523-reclaim-${{ github.run_id }}
+        path: ${{ env.RECLAIM_EVIDENCE }}
+        if-no-files-found: error
+        retention-days: 14

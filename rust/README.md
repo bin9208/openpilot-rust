@@ -8,7 +8,7 @@ procLog producer. The transport still uses original C++ msgq through CXX. This
 is not a complete openpilot runtime.
 
 Use Rust 1.94.0, a C++17 compiler, Cap'n Proto 1.0.1 and its development headers.
-Python reference checks use NumPy 2.4.6 and pycapnp 2.1.0. From `rust/`:
+Remaining Python reference checks use the versions pinned in `uv.lock`. From `rust/`:
 
 ```sh
 cargo fmt --all --check
@@ -17,8 +17,8 @@ cargo test --workspace --locked
 cargo build --locked --release -p openpilot-runtime-core --example filter_trace
 cargo run --locked -p openpilot-dev-tools --bin check-filter-reference -- --binary "${CARGO_TARGET_DIR:-target}/release/examples/filter_trace"
 cargo build --workspace --examples --locked
-python3 tools/check_proclog_reference.py
-python3 tools/check_params_reference.py
+cargo run --locked -p openpilot-dev-tools --features proclog-reference-native --bin check-proclog-reference -- --binary "${CARGO_TARGET_DIR:-target}/debug/examples/reference_trace"
+cargo run --locked -p openpilot-dev-tools --bin check-params-reference -- --binary "${CARGO_TARGET_DIR:-target}/debug/examples/store"
 cargo run --release --locked --bin cpu-sample -- 1000
 ```
 

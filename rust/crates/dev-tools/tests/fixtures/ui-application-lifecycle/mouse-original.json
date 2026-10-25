@@ -1,0 +1,308 @@
+{
+  "capture": "Unchanged MouseState._handle_mouse_event/_append_event/get_events; raw mouse/time endpoints injected only.",
+  "source_sha256": "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00",
+  "cases": [
+    {
+      "name": "ordinary",
+      "scale": 1,
+      "frames": [
+        [
+          false,
+          false,
+          10,
+          20
+        ],
+        [
+          false,
+          false,
+          40,
+          50
+        ],
+        [
+          true,
+          false,
+          10,
+          20
+        ],
+        [
+          true,
+          false,
+          12,
+          23
+        ],
+        [
+          true,
+          false,
+          12,
+          23
+        ],
+        [
+          false,
+          false,
+          99,
+          100
+        ],
+        [
+          false,
+          false,
+          0,
+          0
+        ]
+      ],
+      "events": [
+        [
+          {
+            "pos": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "slot": 0,
+            "pressed": false,
+            "released": false,
+            "down": false,
+            "time": 0.0
+          },
+          {
+            "pos": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "slot": 1,
+            "pressed": false,
+            "released": false,
+            "down": false,
+            "time": 0.0
+          }
+        ],
+        [],
+        [
+          {
+            "pos": {
+              "x": 10.0,
+              "y": 20.0
+            },
+            "slot": 0,
+            "pressed": true,
+            "released": false,
+            "down": true,
+            "time": 0.1
+          }
+        ],
+        [
+          {
+            "pos": {
+              "x": 12.0,
+              "y": 23.0
+            },
+            "slot": 0,
+            "pressed": false,
+            "released": false,
+            "down": true,
+            "time": 0.15
+          }
+        ],
+        [],
+        [
+          {
+            "pos": {
+              "x": 12.0,
+              "y": 23.0
+            },
+            "slot": 0,
+            "pressed": false,
+            "released": true,
+            "down": false,
+            "time": 0.25
+          }
+        ],
+        [
+          {
+            "pos": {
+              "x": 12.0,
+              "y": 23.0
+            },
+            "slot": 0,
+            "pressed": false,
+            "released": false,
+            "down": false,
+            "time": 0.3
+          }
+        ]
+      ]
+    },
+    {
+      "name": "two-slots",
+      "scale": 1,
+      "frames": [
+        [
+          true,
+          true,
+          30,
+          40
+        ],
+        [
+          false,
+          true,
+          50,
+          60
+        ],
+        [
+          false,
+          false,
+          70,
+          80
+        ]
+      ],
+      "events": [
+        [
+          {
+            "pos": {
+              "x": 30.0,
+              "y": 40.0
+            },
+            "slot": 0,
+            "pressed": true,
+            "released": false,
+            "down": true,
+            "time": 0.0
+          },
+          {
+            "pos": {
+              "x": 31.0,
+              "y": 41.0
+            },
+            "slot": 1,
+            "pressed": true,
+            "released": false,
+            "down": true,
+            "time": 0.0
+          }
+        ],
+        [
+          {
+            "pos": {
+              "x": 30.0,
+              "y": 40.0
+            },
+            "slot": 0,
+            "pressed": false,
+            "released": true,
+            "down": false,
+            "time": 0.05
+          },
+          {
+            "pos": {
+              "x": 51.0,
+              "y": 61.0
+            },
+            "slot": 1,
+            "pressed": false,
+            "released": false,
+            "down": true,
+            "time": 0.05
+          }
+        ],
+        [
+          {
+            "pos": {
+              "x": 30.0,
+              "y": 40.0
+            },
+            "slot": 0,
+            "pressed": false,
+            "released": false,
+            "down": false,
+            "time": 0.1
+          },
+          {
+            "pos": {
+              "x": 51.0,
+              "y": 61.0
+            },
+            "slot": 1,
+            "pressed": false,
+            "released": true,
+            "down": false,
+            "time": 0.1
+          }
+        ]
+      ]
+    },
+    {
+      "name": "scaled",
+      "scale": 2,
+      "frames": [
+        [
+          false,
+          false,
+          0,
+          0
+        ],
+        [
+          true,
+          false,
+          15,
+          21
+        ],
+        [
+          false,
+          false,
+          70,
+          80
+        ]
+      ],
+      "events": [
+        [
+          {
+            "pos": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "slot": 0,
+            "pressed": false,
+            "released": false,
+            "down": false,
+            "time": 0.0
+          },
+          {
+            "pos": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "slot": 1,
+            "pressed": false,
+            "released": false,
+            "down": false,
+            "time": 0.0
+          }
+        ],
+        [
+          {
+            "pos": {
+              "x": 7.5,
+              "y": 10.5
+            },
+            "slot": 0,
+            "pressed": true,
+            "released": false,
+            "down": true,
+            "time": 0.05
+          }
+        ],
+        [
+          {
+            "pos": {
+              "x": 7.5,
+              "y": 10.5
+            },
+            "slot": 0,
+            "pressed": false,
+            "released": true,
+            "down": false,
+            "time": 0.1
+          }
+        ]
+      ]
+    }
+  ]
+}

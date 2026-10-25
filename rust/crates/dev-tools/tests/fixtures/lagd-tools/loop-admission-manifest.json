@@ -1,0 +1,11 @@
+{
+  "source_pins_sha256": "b8205f241d7147eeee534f4903ebbc39fefe5521d75ba0ccf8e5725275570fe1",
+  "count": 25,
+  "files": {
+    "loop-admission-original.json.gz": {
+      "sha256": "5906a919125d21f0c710327611b786cd18ca344babdec954e8a83ceb3a023cb7",
+      "decoded_sha256": "f2d8d4779a5b00db8f61ba5ef42bb6cd1a4b5afd6c4424e8e612f6dfee1ed2f9"
+    }
+  },
+  "scope": "Additional source-reviewed bytes()/empty iterable semantics; independently captured from unchanged original. Existing captures unchanged."
+}

@@ -110,4 +110,4 @@ class GithubUtils:
         table.append('</tr>')
     table.append('</table></details>')
     table = ''.join(table)
-    self.comment_on_pr(table, commenter, pr_branch)
+    self.comment_on_pr(table, pr_branch, commenter)

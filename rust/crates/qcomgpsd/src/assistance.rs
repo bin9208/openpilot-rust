@@ -68,8 +68,9 @@ pub fn run(config: &Config, stop: &AtomicBool) -> Result<(), Error> {
                 let mut source = response.body_mut().as_reader();
                 let mut size = 0;
                 let mut complete = true;
+                let mut chunk = Vec::with_capacity(8192);
                 loop {
-                    let mut chunk = Vec::with_capacity(8192);
+                    chunk.clear();
                     match source.by_ref().take(8192).read_to_end(&mut chunk) {
                         Ok(0) => break,
                         Ok(count) => {
@@ -131,7 +132,7 @@ pub fn inject(config: &Config, stop: &AtomicBool) -> Result<(), Error> {
             ))
             .output();
         if result.is_ok_and(|output| output.status.success()) {
-            Factory::for_runtime()?.logger().emit(
+            openpilot_logging::producer::Logger::for_runtime_retained()?.emit(
                 openpilot_logging::log_site!(),
                 Record::text(Level::Info, "successfully loaded assistance data".into()),
             )?;

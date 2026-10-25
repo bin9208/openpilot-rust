@@ -1,0 +1,156 @@
+[
+  {
+    "name": "weighted-mask",
+    "input": {
+      "kind": "smooth",
+      "values": [
+        1.0,
+        2.0,
+        4.0
+      ],
+      "mask": [
+        1,
+        2,
+        1
+      ],
+      "k": 3,
+      "sigma": 1.0
+    },
+    "result": [
+      1.4302258370717043,
+      2.1887703343990728,
+      3.139548325856591
+    ]
+  },
+  {
+    "name": "integer-block-storage",
+    "input": {
+      "kind": "blocks",
+      "count": 2,
+      "size": 2,
+      "valid": 0,
+      "initial": 0,
+      "updates": [
+        0.75,
+        0.75
+      ]
+    },
+    "result": [
+      {
+        "values": [
+          0,
+          0
+        ],
+        "block_idx": 0,
+        "idx": 0,
+        "valid_blocks": 0,
+        "statistics": [
+          "nan",
+          "nan",
+          "nan",
+          "nan"
+        ]
+      },
+      {
+        "values": [
+          0,
+          0
+        ],
+        "block_idx": 0,
+        "idx": 1,
+        "valid_blocks": 0,
+        "statistics": [
+          "nan",
+          "nan",
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "values": [
+          0,
+          0
+        ],
+        "block_idx": 1,
+        "idx": 0,
+        "valid_blocks": 1,
+        "statistics": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  {
+    "name": "string-peak",
+    "input": {
+      "kind": "peak",
+      "values": [
+        "1",
+        "2",
+        "1"
+      ],
+      "index": 1
+    },
+    "error": {
+      "type": "TypeError",
+      "message": "unsupported operand type(s) for -: 'numpy.str_' and 'numpy.str_'"
+    }
+  },
+  {
+    "name": "string-smoothing",
+    "input": {
+      "kind": "smooth",
+      "values": [
+        "1",
+        "2",
+        "1"
+      ],
+      "mask": [
+        true,
+        true,
+        true
+      ],
+      "k": 3,
+      "sigma": 1.0
+    },
+    "error": {
+      "type": "UFuncTypeError",
+      "message": "ufunc 'multiply' did not contain a loop with signature matching types (dtype('<U1'), dtype('bool')) -> None"
+    }
+  },
+  {
+    "name": "integer-correlation-mask",
+    "input": {
+      "kind": "correlate",
+      "expected": [
+        1.0,
+        2.0,
+        4.0
+      ],
+      "actual": [
+        1.0,
+        2.0,
+        4.0
+      ],
+      "mask": [
+        1,
+        0,
+        1
+      ],
+      "n": 8
+    },
+    "result": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+]

@@ -1,0 +1,366 @@
+{
+  "source_sha256": "4641d2e73a12c476a67b418210148a54e178129b94abf65b968a107f302b1920",
+  "cases": [
+    {
+      "name": "missing",
+      "outcome": {
+        "kind": "FileNotFoundError",
+        "errno": 2,
+        "returncode": null
+      },
+      "report_present": false,
+      "report_equal": null,
+      "source": null,
+      "native": null
+    },
+    {
+      "name": "nonzero",
+      "outcome": {
+        "kind": "CalledProcessError",
+        "errno": null,
+        "returncode": 1
+      },
+      "report_present": false,
+      "report_equal": null,
+      "source": null,
+      "native": null
+    },
+    {
+      "name": "empty",
+      "outcome": {
+        "kind": "AssertionError",
+        "errno": null,
+        "returncode": null
+      },
+      "report_present": true,
+      "report_equal": false,
+      "source": [
+        {
+          "seconds": 0,
+          "expiration": 3600
+        },
+        {
+          "seconds": 0,
+          "expiration": 3600
+        },
+        {
+          "seconds": -1,
+          "expiration": 3599
+        },
+        {
+          "seconds": -1,
+          "expiration": 3599
+        },
+        {
+          "seconds": -2,
+          "expiration": 3598
+        },
+        {
+          "seconds": -62135596800,
+          "expiration": -62135593200
+        },
+        {
+          "seconds": null,
+          "expiration": null
+        },
+        {
+          "seconds": 253402297199,
+          "expiration": 253402300799
+        },
+        {
+          "seconds": 253402297200,
+          "expiration": null
+        },
+        {
+          "seconds": 253402300799,
+          "expiration": null
+        },
+        {
+          "seconds": null,
+          "expiration": null
+        },
+        {
+          "seconds": null,
+          "expiration": null
+        },
+        {
+          "seconds": null,
+          "expiration": null
+        }
+      ],
+      "native": []
+    },
+    {
+      "name": "mismatch",
+      "outcome": {
+        "kind": "AssertionError",
+        "errno": null,
+        "returncode": null
+      },
+      "report_present": true,
+      "report_equal": false,
+      "source": [
+        {
+          "seconds": 0,
+          "expiration": 3600
+        },
+        {
+          "seconds": 0,
+          "expiration": 3600
+        },
+        {
+          "seconds": -1,
+          "expiration": 3599
+        },
+        {
+          "seconds": -1,
+          "expiration": 3599
+        },
+        {
+          "seconds": -2,
+          "expiration": 3598
+        },
+        {
+          "seconds": -62135596800,
+          "expiration": -62135593200
+        },
+        {
+          "seconds": null,
+          "expiration": null
+        },
+        {
+          "seconds": 253402297199,
+          "expiration": 253402300799
+        },
+        {
+          "seconds": 253402297200,
+          "expiration": null
+        },
+        {
+          "seconds": 253402300799,
+          "expiration": null
+        },
+        {
+          "seconds": null,
+          "expiration": null
+        },
+        {
+          "seconds": null,
+          "expiration": null
+        },
+        {
+          "seconds": null,
+          "expiration": null
+        }
+      ],
+      "native": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          999999999
+        ],
+        [
+          -1,
+          999999999
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          -2,
+          999999999
+        ],
+        [
+          -62135596800,
+          0
+        ],
+        [
+          -62135596801,
+          999999999
+        ],
+        [
+          253402297199,
+          999999999
+        ],
+        [
+          253402297200,
+          0
+        ],
+        [
+          253402300799,
+          999999999
+        ],
+        [
+          253402300800,
+          0
+        ],
+        [
+          9223372036854775807,
+          0
+        ],
+        [
+          -9223372036854775808,
+          0
+        ]
+      ]
+    },
+    {
+      "name": "malformed",
+      "outcome": {
+        "kind": "JSONDecodeError",
+        "errno": null,
+        "returncode": null
+      },
+      "report_present": false,
+      "report_equal": null,
+      "source": null,
+      "native": null
+    },
+    {
+      "name": "missing-parent",
+      "outcome": {
+        "kind": "FileNotFoundError",
+        "errno": 2,
+        "returncode": null
+      },
+      "report_present": false,
+      "report_equal": null,
+      "source": null,
+      "native": null
+    },
+    {
+      "name": "directory-output",
+      "outcome": {
+        "kind": "IsADirectoryError",
+        "errno": 21,
+        "returncode": null
+      },
+      "report_present": false,
+      "report_equal": null,
+      "source": null,
+      "native": null
+    },
+    {
+      "name": "numeric-equality",
+      "outcome": {
+        "kind": "returned",
+        "exit": 0
+      },
+      "report_present": true,
+      "report_equal": true,
+      "source": [
+        {
+          "seconds": 0,
+          "expiration": 3600
+        },
+        {
+          "seconds": 0,
+          "expiration": 3600
+        },
+        {
+          "seconds": -1,
+          "expiration": 3599
+        },
+        {
+          "seconds": -1,
+          "expiration": 3599
+        },
+        {
+          "seconds": -2,
+          "expiration": 3598
+        },
+        {
+          "seconds": -62135596800,
+          "expiration": -62135593200
+        },
+        {
+          "seconds": null,
+          "expiration": null
+        },
+        {
+          "seconds": 253402297199,
+          "expiration": 253402300799
+        },
+        {
+          "seconds": 253402297200,
+          "expiration": null
+        },
+        {
+          "seconds": 253402300799,
+          "expiration": null
+        },
+        {
+          "seconds": null,
+          "expiration": null
+        },
+        {
+          "seconds": null,
+          "expiration": null
+        },
+        {
+          "seconds": null,
+          "expiration": null
+        }
+      ],
+      "native": [
+        {
+          "expiration": 3600.0,
+          "seconds": false
+        },
+        {
+          "expiration": 3600.0,
+          "seconds": false
+        },
+        {
+          "expiration": 3599.0,
+          "seconds": -1.0
+        },
+        {
+          "expiration": 3599.0,
+          "seconds": -1.0
+        },
+        {
+          "expiration": 3598.0,
+          "seconds": -2.0
+        },
+        {
+          "expiration": -62135593200.0,
+          "seconds": -62135596800.0
+        },
+        {
+          "expiration": null,
+          "seconds": null
+        },
+        {
+          "expiration": 253402300799.0,
+          "seconds": 253402297199.0
+        },
+        {
+          "expiration": null,
+          "seconds": 253402297200.0
+        },
+        {
+          "expiration": null,
+          "seconds": 253402300799.0
+        },
+        {
+          "expiration": null,
+          "seconds": null
+        },
+        {
+          "expiration": null,
+          "seconds": null
+        },
+        {
+          "expiration": null,
+          "seconds": null
+        }
+      ]
+    }
+  ],
+  "scope": "unchanged original main + real external child boundaries; /bin/cat and readonly numeric payload only boundary fixtures, never source oracle"
+}

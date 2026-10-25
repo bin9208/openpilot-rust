@@ -1,0 +1,13 @@
+[
+  {
+    "argv": [
+      "controlled-native"
+    ],
+    "input": "[{\"operation\": \"pop\", \"index\": null}, {\"operation\": \"push\", \"id\": 0}, {\"operation\": \"push\", \"id\": 1}, {\"operation\": \"push\", \"id\": 1}, {\"operation\": \"push\", \"id\": 2}, {\"operation\": \"pop\", \"index\": 0}, {\"operation\": \"pop\", \"index\": 8}, {\"operation\": \"pop\", \"index\": 1}, {\"operation\": \"pop_to\", \"id\": 3, \"instant\": false}, {\"operation\": \"pop_to\", \"id\": 2, \"instant\": false}, {\"operation\": \"push\", \"id\": 1}, {\"operation\": \"push\", \"id\": 3}, {\"operation\": \"pop_to\", \"id\": 0, \"instant\": false}, {\"operation\": \"pop\", \"index\": null}, {\"operation\": \"push\", \"id\": 1}, {\"operation\": \"push\", \"id\": 2}, {\"operation\": \"push\", \"id\": 3}, {\"operation\": \"pop_to\", \"id\": 1, \"instant\": true}, {\"operation\": \"pop\", \"index\": null}]",
+    "options": {
+      "text": true,
+      "capture_output": true,
+      "check": true
+    }
+  }
+]

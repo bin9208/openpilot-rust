@@ -6,6 +6,7 @@ import platform
 import shlex
 import importlib
 import numpy as np
+from opendbc import _checked_build_root
 
 import SCons.Errors
 from SCons.Defaults import _stripixes
@@ -237,6 +238,8 @@ np_version = SCons.Script.Value(np.__version__)
 Export('envCython', 'np_version')
 
 Export('env', 'arch', 'acados', 'ffmpeg_libs')
+generated_asset_root = _checked_build_root(create=True)
+Export('generated_asset_root')
 
 # Setup cache dir
 cache_dir = '/data/scons_cache' if arch == "larch64" else '/tmp/scons_cache'

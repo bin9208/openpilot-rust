@@ -42,6 +42,7 @@ pub(crate) fn validate(version: u32, entries: &[Entrypoint], calls: usize) -> Re
     Ok(())
 }
 
+#[cfg(feature = "native-skip-miri")]
 pub(crate) fn find(entries: &[Entrypoint], name: &str) -> Result<usize, Error> {
     entries
         .iter()

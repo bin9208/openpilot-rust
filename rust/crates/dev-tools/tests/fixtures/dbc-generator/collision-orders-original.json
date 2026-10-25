@@ -1,0 +1,58 @@
+{
+  "source_sha256": "cbba0de854469d42d096451d358153c3c4ffe86da59bcbf350a2c40364685aa5",
+  "scope": "unchanged original create_all, actual directory enumeration on two filesystems, no native candidate",
+  "cases": [
+    {
+      "filesystem_root": "/tmp",
+      "creation_order": [
+        "first",
+        "second"
+      ],
+      "walk_order": [
+        ".",
+        "first",
+        "second"
+      ],
+      "output_hex": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a434d5f20226361722e646263207374617274732068657265223b0a5345434f4e44"
+    },
+    {
+      "filesystem_root": "/tmp",
+      "creation_order": [
+        "second",
+        "first"
+      ],
+      "walk_order": [
+        ".",
+        "first",
+        "second"
+      ],
+      "output_hex": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a434d5f20226361722e646263207374617274732068657265223b0a5345434f4e44"
+    },
+    {
+      "filesystem_root": "/dev/shm",
+      "creation_order": [
+        "first",
+        "second"
+      ],
+      "walk_order": [
+        ".",
+        "second",
+        "first"
+      ],
+      "output_hex": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a434d5f20226361722e646263207374617274732068657265223b0a4649525354"
+    },
+    {
+      "filesystem_root": "/dev/shm",
+      "creation_order": [
+        "second",
+        "first"
+      ],
+      "walk_order": [
+        ".",
+        "first",
+        "second"
+      ],
+      "output_hex": "434d5f20224155544f47454e4552415445442046494c452c20444f204e4f542045444954223b0a0a434d5f20226361722e646263207374617274732068657265223b0a5345434f4e44"
+    }
+  ]
+}

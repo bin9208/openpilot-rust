@@ -1,0 +1,44 @@
+[
+  {
+    "architecture": "x86_64",
+    "prefix": "json11/fixture.data/purelib/json11/install",
+    "dependency": {
+      "json11_version": "fixture",
+      "json11_sha256": "f2e576069807503069f7bb8c483634e0fd2cfc4da41cf73e7cb3e625d9295440",
+      "json11_architecture": "x86_64"
+    },
+    "command": [
+      "curl",
+      "-fsSL",
+      "https://fixture.invalid/json11-fixture-py3-none-manylinux_2_28_x86_64.whl",
+      "-o",
+      "$OUTPUT/json11-fixture-py3-none-manylinux_2_28_x86_64.whl"
+    ],
+    "files": {
+      "json11-fixture-py3-none-manylinux_2_28_x86_64.whl": "f2e576069807503069f7bb8c483634e0fd2cfc4da41cf73e7cb3e625d9295440",
+      "json11/fixture.data/purelib/json11/install/include/json11.hpp": "8c1acf186657a8baf0df83768a4903bbb3ef26050db552b2a79b23b0953495d6",
+      "json11/fixture.data/purelib/json11/install/lib/libjson11.a": "dfb2d92748278cdb6ec47b3ae8c382b28d9f5081313ec2dc1a1778a7284482a0"
+    }
+  },
+  {
+    "architecture": "aarch64",
+    "prefix": "json11/fixture.data/purelib/json11/install",
+    "dependency": {
+      "json11_version": "fixture",
+      "json11_sha256": "193e7c647586d92dadbee4ced52c6075cf8f5cbf5097a06e134f8757bf80ed27",
+      "json11_architecture": "aarch64"
+    },
+    "command": [
+      "curl",
+      "-fsSL",
+      "https://fixture.invalid/json11-fixture-py3-none-manylinux_2_28_aarch64.whl",
+      "-o",
+      "$OUTPUT/json11-fixture-py3-none-manylinux_2_28_aarch64.whl"
+    ],
+    "files": {
+      "json11-fixture-py3-none-manylinux_2_28_aarch64.whl": "193e7c647586d92dadbee4ced52c6075cf8f5cbf5097a06e134f8757bf80ed27",
+      "json11/fixture.data/purelib/json11/install/include/json11.hpp": "8c1acf186657a8baf0df83768a4903bbb3ef26050db552b2a79b23b0953495d6",
+      "json11/fixture.data/purelib/json11/install/lib/libjson11.a": "f2be5e77faec52d9233cf3a73bf0e8607cbd6f8710b5bff5b8db1e4eaa100609"
+    }
+  }
+]

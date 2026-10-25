@@ -1,0 +1,3308 @@
+[
+  {
+    "name": "tiff-openinfo-0-1",
+    "mode": "1",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "ecfb74204be38dbd97bc988990f98e0636cefaeed54949f4a1b3ff866ad0e70f",
+    "input_sha256": "586b9676bd07081ab006756d0c8f36912ab94e03d6a2c33235cf5aac04adcca6",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-0-8",
+    "mode": "1",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "ecfb74204be38dbd97bc988990f98e0636cefaeed54949f4a1b3ff866ad0e70f",
+    "input_sha256": "4975c7f6c0f3b56a302d5065ad027be12cf1a9e970d6a4fa063ff2a1311cde7a",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-1-1",
+    "mode": "1",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "e5d7ac39a00d3e87d252a57347bfb8bd8cd62117f769ec333c325cd0c237dbe4",
+    "input_sha256": "60bbcd91c064ceaadb653c2e40982298722be194d8e335d842f1e567ac249899",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-1-8",
+    "mode": "1",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "e5d7ac39a00d3e87d252a57347bfb8bd8cd62117f769ec333c325cd0c237dbe4",
+    "input_sha256": "1cc96f8cec7cb48f5bf71a86a3873f056cd8cc024525cbb2c6bd90b520e3dd4e",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-2-1",
+    "mode": "1",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "605ae34970ddddabc9f5bcaea38ec9c7c637e297819983fad9dc868a0a404994",
+    "input_sha256": "4e443ed8a50784d24c252aa060a80143bf1ec31654a8f8c0cb3be6f8cc493d5f",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-2-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-3-1",
+    "mode": "1",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "a36fd20c8a2a183cbb7cb2b757a0f4452704d2270dbba545d32bbc5478a1d85e",
+    "input_sha256": "cea7dde170fc156a53702b60938e2f75255f14eeceb2876d557ad06a3e9e8154",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-3-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-4-1",
+    "mode": "1",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "513221c29e44ddd23753d02e19c9da50ca8cf9c5a7d9c11c71b6e97ce02a990b",
+    "input_sha256": "e592d3cbe0c4531fa563667f8bd012dd022577ef295683e12850acb74ca53a26",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-4-8",
+    "mode": "1",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "513221c29e44ddd23753d02e19c9da50ca8cf9c5a7d9c11c71b6e97ce02a990b",
+    "input_sha256": "8f7d4693a681f1e7675e4a9d8318067910379295cdd03d3ab714ac7452b96581",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-5-1",
+    "mode": "1",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "5442afd6857ea95c3531c2374245fd2c0f43204e6403851613bc6b15f2688e59",
+    "input_sha256": "61f0f4b1306fdddab7ced9cc4ba8d87bec5833ea780980ab5661e58cc53a5356",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-5-8",
+    "mode": "1",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "5442afd6857ea95c3531c2374245fd2c0f43204e6403851613bc6b15f2688e59",
+    "input_sha256": "6c22ca142b33c8b6c0a9bbf486dbbd4c221c9a9d0a7fdc582ce7bc675a81c5c6",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-6-1",
+    "mode": "1",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "775d73add896f1c101beb20f859ab6111c5c48ac9588cf7d9f992679f6293323",
+    "input_sha256": "b9dd1be88add4245e2c2bae7a70339083966211cfd6cc820ffd59bcd72333548",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-6-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-7-1",
+    "mode": "1",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "e38f302cd33c9d86d767947c1245ed3b6dd55b284e4b47f135b40148af58749a",
+    "input_sha256": "b452f4838894f146f65d047fd2d4a8f6ce778b7780b966456633c9bdc31df458",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-7-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-8-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "b94ca5ffe53bc7912fe3612061fc592ba6cab6233523dc4e97da290ee760cf5c",
+    "input_sha256": "20325b880f80f0e2427c2b70cd87c0950e235050ad3b1cc01a304c49a7749aee",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-8-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "b94ca5ffe53bc7912fe3612061fc592ba6cab6233523dc4e97da290ee760cf5c",
+    "input_sha256": "c4c0237a10aa41a01c2bfe82856673c6d942d923ffd77cce43f5849189127257",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-9-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "38ae632c58762af797d67279a99fd3b9d9bb4f607a693bddd28c61e1ea514f06",
+    "input_sha256": "cbc53c8f63b782b89c174d62fe50dad2ae638c6f00766b490a9b0dec1f91528f",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-9-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "38ae632c58762af797d67279a99fd3b9d9bb4f607a693bddd28c61e1ea514f06",
+    "input_sha256": "2f8856ba85bf412f29be8a401060e17d8d05f83568c31d1e32ac24256a01ee89",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-10-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "0bb65012a4d49d07e5c897adabe2fded16a97b94add55885c842c4c3ce3eb451",
+    "input_sha256": "200f16f8605a92651e16746d09125e2409d1f8a1dfd1c370278581ee66a17dc9",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-10-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-11-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "7d39262f57e5aa8f718e898e050c7656b0c6da4e17c87cd186078e2d3adec536",
+    "input_sha256": "746f35ea575de61f02283ef9c257f3894637b3cef687e3403794cca0e5597f40",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-11-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-12-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "5b6ab77c594f8724fa01cb75c6cd4eee6d6b0f3b69c6248684e1b5670530885f",
+    "input_sha256": "ec329a9cfb4c39778bc68f1d1ad98109f91c46d987c68ab5366d04b6bb35a67e",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-12-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "5b6ab77c594f8724fa01cb75c6cd4eee6d6b0f3b69c6248684e1b5670530885f",
+    "input_sha256": "abe8aaacf0a12bb69e311949dc049485df9ff0b25b7b5917701e12807986bb1b",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-13-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "6fddf67df54331dede502347069c9294e56c1d86b88b1acb0f6ed9445d39bfc1",
+    "input_sha256": "17d39ba29baf9f6ccdf82757becd4a0f906888a2609b08a97cb2a28466a47076",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-13-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "6fddf67df54331dede502347069c9294e56c1d86b88b1acb0f6ed9445d39bfc1",
+    "input_sha256": "6da831363ebb71b90f8b97a684f65c3e4802ee87d1dee17cde80b6ec8e8c9dee",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-14-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "46192187e4613dfcfe50d7030a69fc38d24ca7ec35cf87fd35e999bd5391fc29",
+    "input_sha256": "dff25a5821db062266a94433c2cec3db075a45b05ea408d5345c58f9acfad707",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-14-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-15-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "5cb181dd102de9944e5475413f191dabe09d9956103855b80b45dfc66a205e05",
+    "input_sha256": "d5211b14ba723efdab0db98d38e2794130e691a227f238ca354a90ff83a2b402",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-15-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-16-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "b57e88926cfbdc748d6ded5f9ed93948cb06c8d1273999017fa1cdc090373bfa",
+    "input_sha256": "427cd47f974e60d8470dea3999360ce348b10c3986fd8b57690427e47a628b58",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-16-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "b57e88926cfbdc748d6ded5f9ed93948cb06c8d1273999017fa1cdc090373bfa",
+    "input_sha256": "728705e520ae1f46a13d3efecab374259adc324d12d6e42db9751db67cd69d60",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-17-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "ffd45a81bfde9ce77dfea31a32d9ebf5a14b9fa60eb2e88227ae6ae02b94c0be",
+    "input_sha256": "9c3c6fa35a03ab14b9257498f6b8ab614bcf56d43394ff52f35acb27518dc0f3",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-17-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "ffd45a81bfde9ce77dfea31a32d9ebf5a14b9fa60eb2e88227ae6ae02b94c0be",
+    "input_sha256": "d507b9951a1895f4b9c1199356bd33038fd117d76676c7064724b3d3485c1281",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-18-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "b97e579cc04e3f02c5b5207b0f605d921c81d45ca1f66542f1235c727f6bf6e1",
+    "input_sha256": "88726d7bf2f5a5ada53d0f748396ebc7d7e91872a62af8aa92c1ec7c0d3e8065",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-18-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-19-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "a43a8fcaec853ac6f567a4e61f91bb69570c63d13254acf546ef35a46620b715",
+    "input_sha256": "6bac6d58f00a63ca0459070c2dc0843677acda53db13f476122d8fd0fcfc0f69",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-19-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-20-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "b611bf681d00866021d67bf7038d49478abbd1be62cc0544a7fb53de047a4635",
+    "input_sha256": "ae3ee1bb2a75996bb0dafbafaeabab5dc1c3cfa24c4a3302053f354384d860eb",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-20-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "b611bf681d00866021d67bf7038d49478abbd1be62cc0544a7fb53de047a4635",
+    "input_sha256": "f225feb6d6afd78673415131c560a57fca125b8e939ea492d1e8e4fa01cb7dd7",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-21-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "205fdcd7d74894029b3698e0b78b5403ef4f6b6386e48ffab4c6c99d6937030d",
+    "input_sha256": "c0a403cf23495214afcbad2b9cdbb65a499de29f5ba3aa63c5a0c4d8e4ec2e2e",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-21-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "205fdcd7d74894029b3698e0b78b5403ef4f6b6386e48ffab4c6c99d6937030d",
+    "input_sha256": "7dd95f92af6a89002ce7d9c4cb361e906c5d3164dc27be3c6cb68b2de0c4b5bc",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-22-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "9c8ea2a5bb3f9f88ad63fcda05680f19a923ec23beda99a0eac74a89ce48a83a",
+    "input_sha256": "0c655fa68d69020afdfd3a612456d0995f5796462b2cee46a0b2e6fc9fbbca21",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-22-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-23-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "63e70aff86ffc1690c0f479dfb1f26d539fb56faadccccb00d3157941193276e",
+    "input_sha256": "947af6fcc045fbc0a74be89fdd2be63198cbb6b2994961a4f8273242f97a30de",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-23-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-24-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "32a79b1dc056747b1ba3f7591ebb43a9db1b7a22b53e03371a7d40c847a97e5f",
+    "input_sha256": "7aae40f45b71bc667bf718f501d4499301415162843f7057fb82bca21740e7fe",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-24-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "32a79b1dc056747b1ba3f7591ebb43a9db1b7a22b53e03371a7d40c847a97e5f",
+    "input_sha256": "ac0be5fcce4930acd68ed64e70d7a897e5883f38304b8de2580fb4ede39b57a6",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-25-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "e6524a9250557ba313c9f078b947230f2a50331bfb3590ae0c9a2e5f3c64c0b3",
+    "input_sha256": "bc3aeb54a714c6c3eaba45bcc0305267e42bc85d1c2d4d605e4fb81eb9346911",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-25-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "e6524a9250557ba313c9f078b947230f2a50331bfb3590ae0c9a2e5f3c64c0b3",
+    "input_sha256": "df478d270998210e69f7c01e844d89e8985beb4cd1e2b0ccf79a3f35e9459fe4",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-26-1",
+    "error": "ValueError",
+    "message": "unknown raw mode for given image mode",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-26-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-27-1",
+    "error": "ValueError",
+    "message": "unknown raw mode for given image mode",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-27-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-28-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "d899f5037a79f20f32c7e16a41d2eec86c354ad650dcf5db48e753e9cb79477c",
+    "input_sha256": "f9b6c134cfb3a65c81a01bde54022201d08d90359b2daab122d2500d56051de6",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-28-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "d899f5037a79f20f32c7e16a41d2eec86c354ad650dcf5db48e753e9cb79477c",
+    "input_sha256": "36b0f2b637fb247299820242252d3dd54f3a8fc219b92c1db48012a53698fb19",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-29-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "777e449bdec29f5191fb0ceb680e300fd7660f8a5f97c8724ac43c3db773ce4c",
+    "input_sha256": "7b13ff2a50d096506a80f6facaf725d730b42d5c5c2741651c5b513cb0b67e48",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-29-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "777e449bdec29f5191fb0ceb680e300fd7660f8a5f97c8724ac43c3db773ce4c",
+    "input_sha256": "f1ba7fd3882aea83fc71c2071dc522824a3883595a095d186d52ef3d1c89a732",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-30-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "76319ad0120a8829ad819f3085f7982f4bac13eb23546bc44db2a2728222a601",
+    "input_sha256": "06999a7316760c36c2d599817bb88ed6611ad1033aed5aec9eeb8587505b7651",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-30-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "76319ad0120a8829ad819f3085f7982f4bac13eb23546bc44db2a2728222a601",
+    "input_sha256": "989c39e0eb0200b3488119087ce5d81753db2122997df35a51394fc2925e9cf7",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-31-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "9c44ac107589f9e9e6691b9ca66b23a80d0076e502c031879f62cd76da9fcf81",
+    "input_sha256": "418077aa627ed65f8d732bb9969723a4f766b59efc7762c50336c3f3bc7699c4",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-31-8",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "9c44ac107589f9e9e6691b9ca66b23a80d0076e502c031879f62cd76da9fcf81",
+    "input_sha256": "7f6952f678c62c93ed320dd5224a81f115f0c3aed78709af70b653462b74f24e",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-32-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "6620531a76ab50dfd8cf3b11d74c56832187f7cddc7b233f03d40d6072984599",
+    "input_sha256": "19ebb7909d8204c75c61c64b0b695fcfb7ec8d26737009c701ae0389d68b80fc",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-32-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-33-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "a5c319f1683049270c288fe79b70d5ff647c40cf486e489d6ab0795640e7642d",
+    "input_sha256": "22bc475e22d818517377aeec11bf6639628596c1a2841b98a4323aa82064e07a",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-33-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-34-1",
+    "mode": "I;16",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "aeabc199d5c0ccba3e14ebeb5c7cc01fe43a3693f7ba408857e8c2f4a4ac0e4f",
+    "input_sha256": "456a3e81b8080faff871d88e8f4d6b2b927ca41a20cd2c6e643cdf13d53fe73f",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-34-8",
+    "mode": "I;16",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "aeabc199d5c0ccba3e14ebeb5c7cc01fe43a3693f7ba408857e8c2f4a4ac0e4f",
+    "input_sha256": "6007f956f163debaab2357feb25f218847aeb8e2f37f276cd258e22e0beb3184",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-35-1",
+    "mode": "I;16",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "0b74e5533af1515271124f0baecfc1a1ae933e9d9820042c3a1eb4fa881b9fdb",
+    "input_sha256": "719adf8940abc4186d1afc0fecc2a5d877d0b53d34fc89a07277aa2b26f571de",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-35-8",
+    "mode": "I;16",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "0b74e5533af1515271124f0baecfc1a1ae933e9d9820042c3a1eb4fa881b9fdb",
+    "input_sha256": "60a915abe9d3b7e906796af3ce84a3da6f2dd2cc1d3ec0550f3f4e336c56593a",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-36-1",
+    "mode": "I;16",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "ea93b0d9c15cc39b85f63d9d3e14acf49caf47649f043b08148d7984d986c5d7",
+    "input_sha256": "0799b35625f9fbba4df88505e6bb57d9acd0a54d759b5917f0ba06110157b3d0",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-36-8",
+    "mode": "I;16",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "ea93b0d9c15cc39b85f63d9d3e14acf49caf47649f043b08148d7984d986c5d7",
+    "input_sha256": "e9608a194939b4464802b3db61b802bcf01ace7f92605bd7bb6db55b79d89648",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-37-1",
+    "mode": "I;16B",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "5a2dc31f0c139e4619611930a560a80709271e5dea78addcfcd8b2610dc8af88",
+    "input_sha256": "a639ab6bf55505a4cc6e0644c39824ebf9b9e35cd00e592f95eefa0fe9d83bf7",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-37-8",
+    "mode": "I;16B",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "5a2dc31f0c139e4619611930a560a80709271e5dea78addcfcd8b2610dc8af88",
+    "input_sha256": "53881d68b6ce8ae136a0f681c89640cf21c7940eb63ce55a7c1d697bab9d2724",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-38-1",
+    "mode": "I;16",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "4abc9d05f393446b8c2c1c0b68ed02d3b3a4a0049723121fa5134681c9d84284",
+    "input_sha256": "be934bcfac5eab652af90060d9f35546ba9b2f46752a0f029fcd96a0c08abab6",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-38-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-39-1",
+    "mode": "I",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "000b53b0b1a53b5bdfcd1ec61dbe3bb679f0ca7442faf815e8dd870eee22b0fc",
+    "input_sha256": "dadc4379ac08cbd327696d165106ddf632278ed26f9e3f91ff0747a8397c14ce",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-39-8",
+    "mode": "I",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "000b53b0b1a53b5bdfcd1ec61dbe3bb679f0ca7442faf815e8dd870eee22b0fc",
+    "input_sha256": "710817c55c8497a1611727816e59dd99a06f59d822560cecd0eacaf719bc0895",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-40-1",
+    "mode": "I",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "dc4dfb5e977968384de49f00398d4bafb7a4db2033115e1ab9edb6f31bcb9c34",
+    "input_sha256": "c083283d8ececb387139873a98aa60181a14d8049fdafcd176752640e648e82f",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-40-8",
+    "mode": "I",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "4e1e0a4f518ae6488e118e294fa5390c33528b763b0724f35d64d81db0cd3f8f",
+    "input_sha256": "e271de7fa49ab2fae63752f8822c3fd4e9abe92d1a03527bb169fad583ad42a0",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-41-1",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "cd332c709f14a79b9c980856b79c5d1ac945d0381df2299f3e49909eec9c01c7",
+    "input_sha256": "5947d10a5b5b93941264baef7f3aa876e1253416c4678f7057ebe070091979ac",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-41-8",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "cd332c709f14a79b9c980856b79c5d1ac945d0381df2299f3e49909eec9c01c7",
+    "input_sha256": "c44efc7ce1d85b8af190ae5c0b15e14f1b20fc51f544aa1bcccd2ddc21d3578c",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-42-1",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "cd332c709f14a79b9c980856b79c5d1ac945d0381df2299f3e49909eec9c01c7",
+    "input_sha256": "dc49460b3a6d8c792885561df60e9b0584d10ff11280e9c6ed9f070261ee49fc",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-42-8",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "1661f54e146025455a727076fa90a387c4217178094efdd471469f56df2352da",
+    "input_sha256": "6ab532aeaa87d786f3c760c3875c22d52a288db64e8d0d239843b399b16b386e",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-43-1",
+    "mode": "I",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "fca57788fd68b77005b6b8ae395ebde002dc4656bfcedca7b9b3d2d677d00958",
+    "input_sha256": "abdcc6deaa27120892e105916b4596b3bdd20393c640d9f8e4cb1ad6cc9f19c4",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-43-8",
+    "mode": "I",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "fca57788fd68b77005b6b8ae395ebde002dc4656bfcedca7b9b3d2d677d00958",
+    "input_sha256": "1aa5a741b3f258c96feb8dddf1dfc4819396518db5f4f808ee02d1849136517d",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-44-1",
+    "mode": "I",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "a0b943b7a80d85b8523441d2a0d7034190042acb863a60aaa84a15d7048d7cf2",
+    "input_sha256": "7a3f9a3c202a93fc4261602566591f8ecaf1eadb384c2a25a106efcc0702b2b2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-44-8",
+    "mode": "I",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "a0b943b7a80d85b8523441d2a0d7034190042acb863a60aaa84a15d7048d7cf2",
+    "input_sha256": "16905bc2282a3a7b21c8a6442f94fefc523d89682446775dd68a411dcec4ef63",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-45-1",
+    "mode": "I",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "8ea8a0f8d28ff42e1fadcd863135d373d0cbf1a7569131144d8edced110d9d98",
+    "input_sha256": "e5f9e5e902179040445f67aae307db471ecd7409672f651cf08012e5da9399d9",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-45-8",
+    "mode": "I",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "4e7ed1ea68ad453b855df3365f3975ceb8d6edf15a3fe822895d6fe0f15ea32a",
+    "input_sha256": "a0ac5371909dd456adcfef204c503350cb378c6b888f1230559e9191fb627e05",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-46-1",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "cd332c709f14a79b9c980856b79c5d1ac945d0381df2299f3e49909eec9c01c7",
+    "input_sha256": "7d87e34458bef52d46da56ef10de755d838756a08a89bc865c29b662ef12d516",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-46-8",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "cd332c709f14a79b9c980856b79c5d1ac945d0381df2299f3e49909eec9c01c7",
+    "input_sha256": "98cb3059b067d8d31fafdeff717fac1d2ded196e953b9871863fa2db9e9b9d48",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-47-1",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "cd332c709f14a79b9c980856b79c5d1ac945d0381df2299f3e49909eec9c01c7",
+    "input_sha256": "40c5015eaae1fc14d9a5f6a60a37a1ec4ef5bee26c9defcb03fedcd3554f908d",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-47-8",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "1661f54e146025455a727076fa90a387c4217178094efdd471469f56df2352da",
+    "input_sha256": "fae2d7fb5dfd430811cff056c2eaf78dc9478dbf53df85b3a3c55aa5dc9fc8e3",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-48-1",
+    "mode": "LA",
+    "shape": [
+      3,
+      4,
+      2
+    ],
+    "values_sha256": "52774e426aa74e6d292ef73204b241a77b85cfb24976be6e4f310d044e94328a",
+    "input_sha256": "d00a6c115508c3a7a0115f51141c8031beb21df5d60db6c0bb501cf8e4bb4b05",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-48-8",
+    "mode": "LA",
+    "shape": [
+      3,
+      4,
+      2
+    ],
+    "values_sha256": "52774e426aa74e6d292ef73204b241a77b85cfb24976be6e4f310d044e94328a",
+    "input_sha256": "e7131927f7478b8d905e6efacadb91fa3adc36fd6c2b2b30bc9a7fcbf3dc8434",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-49-1",
+    "mode": "LA",
+    "shape": [
+      3,
+      4,
+      2
+    ],
+    "values_sha256": "f6a5f9cce614fd3d29bac92adaf68d32ed14f9968b2364ca10f2eda1f6ed3267",
+    "input_sha256": "89134d22ab2425fd7f395b419ebedc4653d11f7bb189f041b1c67cd690498e48",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-49-8",
+    "mode": "LA",
+    "shape": [
+      3,
+      4,
+      2
+    ],
+    "values_sha256": "f6a5f9cce614fd3d29bac92adaf68d32ed14f9968b2364ca10f2eda1f6ed3267",
+    "input_sha256": "d4c0b7fc3a380bcde3a2319c94f90e9ba9106432b83445e7dee93b5ded33ab87",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-50-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "abce6328849c4f5557dde54613057556302ccc41f1d120faea5a484d39825a2e",
+    "input_sha256": "64bcf28df8c0978c602a40a60f35c5467349e2170ebae9894c6d48fab6bb5367",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-50-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "abce6328849c4f5557dde54613057556302ccc41f1d120faea5a484d39825a2e",
+    "input_sha256": "e73a4e415e62a43fe8d859e6896cee7c46749d5c5e309384c1c3709c88d2ef29",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-51-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "30dff6bc82c14886f9fa11d758d9c03d79398c27b44e409b44fa1084457af4a6",
+    "input_sha256": "a475e792c0312ed4708c62d605d0632b37a6b1fdc6d0a4c8b6b145a7a6e25713",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-51-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "30dff6bc82c14886f9fa11d758d9c03d79398c27b44e409b44fa1084457af4a6",
+    "input_sha256": "ea4f7e3baf91d779c82e84b7741bb3554285c236d148c4f2aebe3f8a83ecbc0c",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-52-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "11191b144393f80898a18b4cd6d75f519e564cc7235401595bb6d9f709360bcc",
+    "input_sha256": "7a2a555593ed732af0c70fd0d48d762fca7842ecf2f792c371dab0ec3007a299",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-52-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-53-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "656a76e4c2e323a18d7a3abcd631af2ec568eb371ed385dbbadcce5335f1d7c3",
+    "input_sha256": "2db27ab0ace26f37a182cce0c8f085c9b5e9ee638a6e0fc04709ce2b2554724a",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-53-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-54-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "3aca550b0848c610f627a92fcd9edb49c675129ce24c4fd7e065f4455582596a",
+    "input_sha256": "eca8c2f85c61594c1dc31185b3e2ad1adf17ebdb5f2347bd6b355f78d73afc64",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-54-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "3aca550b0848c610f627a92fcd9edb49c675129ce24c4fd7e065f4455582596a",
+    "input_sha256": "fba63ef17756bcd29ae17c6bb9dcd85a5535aec54f65c0ccdcadee604a565d13",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-55-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "d9ee2062c5948f1974a35464ec69701c4f87e8b55eb0d8f07762e968034d085d",
+    "input_sha256": "04c2408252911183a2d81e94a0d6902e27f4b8a44d912eaf5152a96d4ee97a00",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-55-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "d9ee2062c5948f1974a35464ec69701c4f87e8b55eb0d8f07762e968034d085d",
+    "input_sha256": "aea3920e40e101500aaa0761cbef791f615a19b5d893c2528282badddee0a56d",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-56-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "6419f992abe29570f1ddac8b80944731fadfbb963132ab491b512e56819c845a",
+    "input_sha256": "021b3fe9ad2780fbfcaba20232cc5c8cd734cca9f7afd65d7a32feb27555f73b",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-56-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "6419f992abe29570f1ddac8b80944731fadfbb963132ab491b512e56819c845a",
+    "input_sha256": "666d22ca91a64a1b6da15899ec98d7e23284013651f8b9c0c8764e72aca191f8",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-57-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "1fa229a06cbe23d88aab3612d7bb00f23b6e071aa13d0674b9a2829f394154cb",
+    "input_sha256": "6438a38cf2a75049cb7b144f4c0e39f868af59ff98841b152d823df066662863",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-57-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "1fa229a06cbe23d88aab3612d7bb00f23b6e071aa13d0674b9a2829f394154cb",
+    "input_sha256": "b5b17d487b938ba6ba0417e7b952d8a559dba074b3c03bcb40eb73f6b09844cd",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-58-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "a2839a86027d0918645824a479c9b07060d9512b53f729f8562d3ee34b974524",
+    "input_sha256": "3a5d1a44976dab4246a27fbb8aecdbd48305557c2baf1124b215241c091fd3e8",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-58-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "a2839a86027d0918645824a479c9b07060d9512b53f729f8562d3ee34b974524",
+    "input_sha256": "f31a40ec7f0ba4c2ae6a517c95b146699a6298fe384ee74cdab94eb0008bc6cf",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-59-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "d87150ec852e4050d6a3d7bdd1abce405b0645cb8e6108bc8f0bf6aca3c00ef3",
+    "input_sha256": "4eaa15f994934e84a8aa3eea5a19504ac5148abcf2eabe376226a0de0444afe9",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-59-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "d87150ec852e4050d6a3d7bdd1abce405b0645cb8e6108bc8f0bf6aca3c00ef3",
+    "input_sha256": "455c5227fd4381fd66fa8d325b187d885827f0f36d3100d8513269cb440d2fe6",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-60-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "d951009bf701014324aca5f5a476714c192fed1d3c558a9efb87bceae4ebe72a",
+    "input_sha256": "ccde04706e50baad860856c43e2ce736ddbc700ee9c19476e173971df39b9f5c",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-60-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "d951009bf701014324aca5f5a476714c192fed1d3c558a9efb87bceae4ebe72a",
+    "input_sha256": "a02bf57589716d2b0f5ee148babfe8351b4db9ddea825a0925c269e80a548ef2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-61-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "a4bf216d347efe7e71e708ebbc0ef2a425032a01dc4186916bdca0fa8d439b93",
+    "input_sha256": "9ac3be29470dc65b1a09488394dbc970310c031af3390845b4f8729fdd37a350",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-61-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "a4bf216d347efe7e71e708ebbc0ef2a425032a01dc4186916bdca0fa8d439b93",
+    "input_sha256": "df8a14bb6b29b201dab61052beb5ce4bf1bbfc5b1e0acd8884e82a3e8a11a9c5",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-62-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "ebf90fbc94a9d0a3ed2b541cad5a5d6a4eba869b154c7bdeccc213783dfe4573",
+    "input_sha256": "fcef82885bb010740e658771ecb081ca8d51011b73a63913c761d564afa0ba1d",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-62-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "ebf90fbc94a9d0a3ed2b541cad5a5d6a4eba869b154c7bdeccc213783dfe4573",
+    "input_sha256": "eb5597eb638be436a4a1400b46befbf133d9a87079154f033ab3e9ba337a72ce",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-63-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "e8c3a65e85528b47ef5c59c476025e13ece73e1a9841fa391ab2af84fc9ea912",
+    "input_sha256": "980e1330e1a0692aa8aa6464b8e15bc2ed5dbcd846f9086dd7dc37e29d7c9008",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-63-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "e8c3a65e85528b47ef5c59c476025e13ece73e1a9841fa391ab2af84fc9ea912",
+    "input_sha256": "a33b4344c08247129f2621d3a519035e7f2f7ecf322be8d40d3ec6764066ba85",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-64-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "0b47e89e1c3a2c2d4987446077d5da52cf15fba1377b9654096c9f83019af7ef",
+    "input_sha256": "c49d2b5891d70d39870ade5aa649cd2288c17f51d49e6c534fe8924a0baa4294",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-64-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "0b47e89e1c3a2c2d4987446077d5da52cf15fba1377b9654096c9f83019af7ef",
+    "input_sha256": "4ef5c744e6120925f0d50a19d4247c60deb0294a01f93d2f48c68625f3b97acc",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-65-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "021e92a91e8d05d1022f740698c9ecc6fa3e80d56d4aafef2b41c5a3ce8ddd72",
+    "input_sha256": "7a0d9c6e86feeb6c4404c7982bc2a32cd646ca814789de38a6690407603e3f41",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-65-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "021e92a91e8d05d1022f740698c9ecc6fa3e80d56d4aafef2b41c5a3ce8ddd72",
+    "input_sha256": "cbcd659649d1e8fbf0c5960bf7e47fa51683adee1b9a9ccb8fbf25a232dee73a",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-66-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "7d1a5f9cf3ffe0917220f55a103b6e937b0f8c8a3fa0f21b86ae8f8cf8388d45",
+    "input_sha256": "56bd6f952a0ed41357eb85a7fd10609463e3b3ab1ad9a508543372d1f7992bfe",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-66-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "7d1a5f9cf3ffe0917220f55a103b6e937b0f8c8a3fa0f21b86ae8f8cf8388d45",
+    "input_sha256": "264ca822ede049f7800c2463daec7ee05d32ae003e6d86985398a22ec8270a5d",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-67-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "ddd38acb88bc2b5d07f8f3ec1a356e270afb1ffad7c131392bc84717ace42ba5",
+    "input_sha256": "e07a3603b982ce70e70bbe327be5d42001595b0772ade7e27941067982947634",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-67-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "ddd38acb88bc2b5d07f8f3ec1a356e270afb1ffad7c131392bc84717ace42ba5",
+    "input_sha256": "b7cff873b364dff031016330540d7581c6925051da85916e63db774946f0f11d",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-68-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "c428b28ba1d320ba75e3f9a338a952adb4285b35c28faead586c06067a9ea0a7",
+    "input_sha256": "ef3ca86898c1c23420e30941f3fcb7b2162c8fec2ffef45d7f90090a8673bf36",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-68-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "c428b28ba1d320ba75e3f9a338a952adb4285b35c28faead586c06067a9ea0a7",
+    "input_sha256": "df0e5870219941c65aa3cece959ff9f783556427c6ad9485fc5a28130efad66b",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-69-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "1e4f74a7cfd83c0482d7e8f91480e2a6586d6589ea4412f0cf830baa9c446294",
+    "input_sha256": "591f283845dfc19cad237112956032bca214f591060d46489f720a5c6b9f9373",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-69-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "1e4f74a7cfd83c0482d7e8f91480e2a6586d6589ea4412f0cf830baa9c446294",
+    "input_sha256": "0fb6df0c95c7a91c443cab9f9f44014d290f68e2e6ad2e26cf7efe11250910c8",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-70-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "3e44885dfb6497e261b8b21b140234ad2c54ffcd02e01bcd9a6e417a9e8d8b5f",
+    "input_sha256": "96a929a62172693ca2985c411990099dda2b71400e0a173809c674026ffe1424",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-70-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "3e44885dfb6497e261b8b21b140234ad2c54ffcd02e01bcd9a6e417a9e8d8b5f",
+    "input_sha256": "3add78440ed6cbbb4dda350a2d3e5c373315a9e36fcf1073a6dc0625f6ac1708",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-71-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "8a518174b974d44d425fb4a4627e2d0e8161aa14bf383be858988fe685a9ead2",
+    "input_sha256": "03ffc552c9ae9329f5da7954e06f6e3378b5ba43e1362969f06ee95b3d4b8934",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-71-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "8a518174b974d44d425fb4a4627e2d0e8161aa14bf383be858988fe685a9ead2",
+    "input_sha256": "d21305c6956c02c2b70123dd720b059580cc80f45815e0cf508b2020e809f19a",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-72-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "61d6e36f04535222ed39f9e9a34b2650db39281e1adc472dbe6eafc50029c8f3",
+    "input_sha256": "9b8920c11a7967d0e640418fc7110660436cb25bc2f1517be51fd8f0ef40fb59",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-72-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "61d6e36f04535222ed39f9e9a34b2650db39281e1adc472dbe6eafc50029c8f3",
+    "input_sha256": "b7dadecde06be195219da4d17408d813c1502349488cf52da001e19a5505cd3e",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-73-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "2b0dcf4aac03bb12fecae2c2ae6598b413c5710959d4741dbd4756f7a6cb303b",
+    "input_sha256": "4221fa64bafd7ee85b8205c35d4860ee1f99e00a189984528b2a94bc21d2ed0f",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-73-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "2b0dcf4aac03bb12fecae2c2ae6598b413c5710959d4741dbd4756f7a6cb303b",
+    "input_sha256": "b2caac9ffc34cf20cdba11dbbcb85fd51f55de50c8b02c53e8cecebf0be6c2e3",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-74-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "51730748e98b60394a77a8652016f9fd1718a9a8e006c044de6339f720b405e6",
+    "input_sha256": "a0b60a10384dc1b78a6f85e3cac773eb44d914b5a922f144c3027b99416cae04",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-74-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "51730748e98b60394a77a8652016f9fd1718a9a8e006c044de6339f720b405e6",
+    "input_sha256": "196f5722d11f3c00f917ee1afb7ae0e5a6138a6ac92b0c5615125f85d6c00d88",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-75-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "8ace249005df8d5d05a9aeac78059c7ba6d7b2e37fd644d805b004e524cf93c1",
+    "input_sha256": "3859cff0b5be5f316bb40e9da9d5d5e48dab0785164eeaf7b436fecc0aa8b487",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-75-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "8ace249005df8d5d05a9aeac78059c7ba6d7b2e37fd644d805b004e524cf93c1",
+    "input_sha256": "bfdbf69314326b3253922b87f95066f3ffbcdc18007bb01dd5b5248cfc4acf88",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-76-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "32ecf869741cf61f262d8c3f15fd4dce458becf0f10e6a5deb4cce8db1238ca1",
+    "input_sha256": "63d96c9c50240aa3f01ad095f825021751f017314660379d11459067d42a71be",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-76-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "32ecf869741cf61f262d8c3f15fd4dce458becf0f10e6a5deb4cce8db1238ca1",
+    "input_sha256": "c243d0361c784325a858bc93fb4ff674ef38593837222a29b59654e83876744e",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-77-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "65df03c1b4e17b15e2269aea8b46650be9e2f342cae2de6cc63872c3a00e5e19",
+    "input_sha256": "9cb3687ff218b44a43ebe5ed4c187edb3214445ddfed825ae2f7b8d6d03164ae",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-77-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "65df03c1b4e17b15e2269aea8b46650be9e2f342cae2de6cc63872c3a00e5e19",
+    "input_sha256": "8fb8e6d1d209a3946a85510653f1eb1f2bec6fd175dac4ae94f2a0850f3285e1",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-78-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "00895fdf77d27f5fd8955839d626a77619b12ae3238455b09556be58a077cd91",
+    "input_sha256": "169e962d5744c8da8bfc0817c90c35e2a398de93a747a4eb201ac4e9b8c1f2fc",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-78-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "00895fdf77d27f5fd8955839d626a77619b12ae3238455b09556be58a077cd91",
+    "input_sha256": "c780f53889cea485d011cc42d6668c248c24ceba4128221384802bf2640bd4c0",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-79-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "13e4d8b932975db3a76f9d44d18df9d267131a3c60a50d6ce015ef28ff2f9140",
+    "input_sha256": "335bb36b07258dbc3ab7b231e10b3dd45c4167aaba75c90420b6d180be2ccc4e",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-79-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "13e4d8b932975db3a76f9d44d18df9d267131a3c60a50d6ce015ef28ff2f9140",
+    "input_sha256": "c824b83a9a1be1693bd6cc66bc4b6326e4f04c92e98e4b91aa805c518f201090",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-80-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "dcf41f1d0599667f0030f4988d3fc4bab48ea165b6840b4a7ced4f88bf2336e3",
+    "input_sha256": "cabecbd9e4eeed945c1479466f5446bde30d654dc439b10755b4f58f63202043",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-80-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "dcf41f1d0599667f0030f4988d3fc4bab48ea165b6840b4a7ced4f88bf2336e3",
+    "input_sha256": "4ad19116eb3bd0235e83ecd6338423a7c128924b9075cb8044dc76b4d4e7bcb6",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-81-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "ea46d3eddbf9535fbe1b6d275a19ae59bd343cfeb7f4ed326d9cd85708bfff51",
+    "input_sha256": "93e2dd690e4ee8acabc8bf479ad4c87986269a024502d895cf24ad55be7a95eb",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-81-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "ea46d3eddbf9535fbe1b6d275a19ae59bd343cfeb7f4ed326d9cd85708bfff51",
+    "input_sha256": "a3fb12c65b2bf8a29b76a08b481000224f16e46aed3bc450bc893b410588b283",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-82-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "d305630d371436afad31ef85a83769cd131344f65860a054aa9a303a21652ec9",
+    "input_sha256": "ad07fcb40e8a97d1a6d8c5dc450702f1ef0645545e9dd3e01f2e6e00453252aa",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-82-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "d305630d371436afad31ef85a83769cd131344f65860a054aa9a303a21652ec9",
+    "input_sha256": "fa4c1bf5e3c666c6434962f25ab74f9e311fbd5b666dad6136c518229887a8e6",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-83-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "179c298f764cdb09bdc4b38ebdf6af60800756c14fa8d06822f681acb43e57fc",
+    "input_sha256": "98daee46af44c36133b436a538a38d9ec120dfe2fae9e0e30025271068eac4d0",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-83-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "179c298f764cdb09bdc4b38ebdf6af60800756c14fa8d06822f681acb43e57fc",
+    "input_sha256": "f1f160c4239dee0dee1eb10acf4298fb9e125cf1e4bbaf8e4f48abf6172ebd1a",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-84-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "28f2d9c35f91c27be5c229159b8c35d2f7d3d470edc39a7c49ee66aa38d1ef4f",
+    "input_sha256": "7b6d159e62beccc1c288122bff313ceb990b0f419dc0bfc6edee8a149e0faaff",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-84-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "28f2d9c35f91c27be5c229159b8c35d2f7d3d470edc39a7c49ee66aa38d1ef4f",
+    "input_sha256": "e1d434a4a5f7caefd0c74f54853e53b47f69ff632c45a877be644ae942565733",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-85-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "1aa590014ca50a15d0055c8e23ef0c9d2cf2a32868bfdd9e96f4687fe93acae2",
+    "input_sha256": "84f7a76f672a743f3cb285d43f0a850ad66543ff4421f15187c93f55cc449820",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-85-8",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "1aa590014ca50a15d0055c8e23ef0c9d2cf2a32868bfdd9e96f4687fe93acae2",
+    "input_sha256": "f57addecfe6ade1d8d210bc6874b974bb8ec59dd61e59bbaf24b60f2615c6875",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-86-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "e8ea0377076205490757c4cb67b2879e2e8d7646fa8533bdb5475dace7cb1ea5",
+    "input_sha256": "2da8242b0ed0417372ed46a9608c7e79f9ab60ca5f114cbfcfb98493b2120e65",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-86-8",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "e8ea0377076205490757c4cb67b2879e2e8d7646fa8533bdb5475dace7cb1ea5",
+    "input_sha256": "fe696b68a6b70d4ec4c5bd898c2e7f2458f0a217dd8713836a4f261cba6e172d",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-87-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "7913437719b12f478943b516e9dc97aebcfbab5113ffdc880b107d70297d3170",
+    "input_sha256": "548ba901936fcba1575add9285c76a91b876071e5ef6ca5ae61e9362cf21dcfb",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-87-8",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "7913437719b12f478943b516e9dc97aebcfbab5113ffdc880b107d70297d3170",
+    "input_sha256": "4ac4e2bb04f49a9536f7570bfe0f02342bb1ec1baa82d4618fde065d79953ab3",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-88-1",
+    "error": "ValueError",
+    "message": "unknown raw mode for given image mode",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-88-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-89-1",
+    "error": "ValueError",
+    "message": "unknown raw mode for given image mode",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-89-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-90-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "f6431386b904346dadb7d4149189807f5dbc12e233254a900913f6605213fa31",
+    "input_sha256": "1fad48bacb5fbc68974bd970a5c585ce6d4524f49243398a86350978230b52de",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-90-8",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "f6431386b904346dadb7d4149189807f5dbc12e233254a900913f6605213fa31",
+    "input_sha256": "a0ae67db0deef152236d65789b5184f9528dcbdcc64779e3c346f1d44742598a",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-91-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "126a3694785d3a7b61d1c11cd796c620844fe4c9071b22f1f0e1643e1960f0a6",
+    "input_sha256": "6d3aaf96d6cae298053b1a255cf703b7970cd0bb95e48558707bb6fcffe15116",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-91-8",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "126a3694785d3a7b61d1c11cd796c620844fe4c9071b22f1f0e1643e1960f0a6",
+    "input_sha256": "79ee155b05ffb982d3bec3a96181a48c9b8d9250f5479cb2f45efa9b7f81d520",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-92-1",
+    "error": "ValueError",
+    "message": "unknown raw mode for given image mode",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-92-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-93-1",
+    "error": "ValueError",
+    "message": "unknown raw mode for given image mode",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-93-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-94-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "05bd92e77364d97b004193dae2a9e58ea7553711389df966d32ed4cec36d4dfb",
+    "input_sha256": "1b495b8b771569998260d12ae4341525957ce8bb0bd4a42206a78a330ff085ef",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-94-8",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "05bd92e77364d97b004193dae2a9e58ea7553711389df966d32ed4cec36d4dfb",
+    "input_sha256": "4aaa687f27786cb599464957eb44372700f30869a623a48093dd571dfd8e2927",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-95-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "660bd11f617b4dffbc3c0a5e101f2860414b812de85b98183a021771333fb181",
+    "input_sha256": "85264b66d920f0c6a3dda487f087f7408ad7cf216cf5ec3afafa0036832df69e",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-95-8",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "660bd11f617b4dffbc3c0a5e101f2860414b812de85b98183a021771333fb181",
+    "input_sha256": "f11eb98daa5d334af855a6464fc8c2b344ecc07611646e4fdc3a98d869464fbf",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-96-1",
+    "error": "ValueError",
+    "message": "unknown raw mode for given image mode",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-96-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-97-1",
+    "error": "ValueError",
+    "message": "unknown raw mode for given image mode",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-97-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-98-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "9efd749e6226706bdada5b905bd11edd2985461624f971cf34f634d28a2405bf",
+    "input_sha256": "504de7df44fcda95a2b52e8e50829cc9549395636ca70c538e8ef5b1c0182cab",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-98-8",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "9efd749e6226706bdada5b905bd11edd2985461624f971cf34f634d28a2405bf",
+    "input_sha256": "492ba12d4926cf5563e2801c1776129c4f6cb9509600aa3d20d5ecc3163b8063",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-99-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "a5874ada7f426fd533f1c7775dd1066c56ff874cb4720834d0b4f41024b9ee73",
+    "input_sha256": "2f284be7d1cd7c9c4e713181b6956934fa7fb51144909d42b37459539a8d1329",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-99-8",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "a5874ada7f426fd533f1c7775dd1066c56ff874cb4720834d0b4f41024b9ee73",
+    "input_sha256": "6723daf67e18271d91445a7deafacc4c063794c7ab095d165b80f6a79d225f02",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-100-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "350fd1739a6882a7b5427284ae7aad0fce2bd741de52a0e07361488b844d1f84",
+    "input_sha256": "97cbcbd956feacd2dc88174143239b6195667dbec30cc2ffa07bc4c5eb0e8463",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-100-8",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "350fd1739a6882a7b5427284ae7aad0fce2bd741de52a0e07361488b844d1f84",
+    "input_sha256": "9d935f63b41c041809d5e52c08b6d7211e8de64c67e2cd3afa931d69a6c5ec00",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-101-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "85df7050483068a2756ab8dfb1f4461e6997b10c5d8dc0e53c2e5561c7b014f9",
+    "input_sha256": "db0c9d9cd1e4fc351076d7a1e52c5ae6f7fdeaa4ea2732b5943fcaccc4bc6c7c",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-101-8",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "85df7050483068a2756ab8dfb1f4461e6997b10c5d8dc0e53c2e5561c7b014f9",
+    "input_sha256": "b22dade74fdeff175c986f643dbbab9a14bf8cf1ba8b4760710cc2229044724b",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-102-1",
+    "mode": "PA",
+    "shape": [
+      3,
+      4,
+      2
+    ],
+    "values_sha256": "5519299058bcb8fcd4a6b16513af5bf3ca29a5eb5765b33baaf7ae1067ba2350",
+    "input_sha256": "0b4e42c69da24bb520d7c5aeda95d419cfb9dc9c53bf65825b3dce884cb81c36",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-102-8",
+    "mode": "PA",
+    "shape": [
+      3,
+      4,
+      2
+    ],
+    "values_sha256": "5519299058bcb8fcd4a6b16513af5bf3ca29a5eb5765b33baaf7ae1067ba2350",
+    "input_sha256": "0c4e9a38c1c3c073b55695f6893dde40e52c3f6b5806149b05f3a73f0db0304f",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-103-1",
+    "mode": "PA",
+    "shape": [
+      3,
+      4,
+      2
+    ],
+    "values_sha256": "2aa5262b0091bade32e80b7c1f35d36c9e378c56c9db8612df641417919192be",
+    "input_sha256": "ea57351d3502c49ef9cfccb49b552b5f90a31a1739073b0de7cb8102e5435001",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-103-8",
+    "mode": "PA",
+    "shape": [
+      3,
+      4,
+      2
+    ],
+    "values_sha256": "2aa5262b0091bade32e80b7c1f35d36c9e378c56c9db8612df641417919192be",
+    "input_sha256": "818887f67763e02d1d0140ae1f5a08013437ba8dddcea1ce14cd74f8d6dca0fd",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-104-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "037a6c080357c82b2fa513acc811f2000af20886af0e558606e9211d07ad037e",
+    "input_sha256": "30610e14878993ad6e1dd848734df5350027ace527a8e26d6862a9a9407b9e2c",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-104-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-105-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "836df67f574b0e3fccb00a8bc21788c443160deb8d2a7bc35a5d7cd03f908afd",
+    "input_sha256": "0bc898166d9b4f37ffb36f24d45d2e16bee6537a6e870aef4997e608d8b44d73",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-105-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-106-1",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "d60cc50fba7e0b090441e4a58a1221b09aa5492b5b6dad08e7765fb18bcc4826",
+    "input_sha256": "6bcaf87bdc1b9abdc307ed321370883a7672f72c02ee626bba3b2d3ff608b8d8",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-106-8",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "d60cc50fba7e0b090441e4a58a1221b09aa5492b5b6dad08e7765fb18bcc4826",
+    "input_sha256": "0d1177175447e949f96534d6b63941224179dff5af8a1fcff87a370af08dd816",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-107-1",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "3dda17f695462d324f398bfe99ca798a2875111d2f704e1c0c00563df87cd59a",
+    "input_sha256": "4f149694b1da13ba5dce9af622b2a171e6e9e80f91d5f782ce9bd6758c1da95b",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-107-8",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "3dda17f695462d324f398bfe99ca798a2875111d2f704e1c0c00563df87cd59a",
+    "input_sha256": "a2bbd541a770add25068959a883c97ca1590c422ff033320e9a532941a5d1532",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-108-1",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "f7ea6c2e2f529c699d59f29e7ddac35e8414bd90a89f581759911cf9d56bc19a",
+    "input_sha256": "30c169cc2c932c1a01c3e1df16fe4da91ae7322b142d18dccefceee2fc09271d",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-108-8",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "f7ea6c2e2f529c699d59f29e7ddac35e8414bd90a89f581759911cf9d56bc19a",
+    "input_sha256": "d8788a6aa57d56b07d133c23d4c9049cafd8e7a7515a273c96bba0de89f813de",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-109-1",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "9e20b575982a4765c7de63e810e0647b7d8f6ae7b05b2407a207002ca71eb174",
+    "input_sha256": "46f1ef13f6d195ab50f2ad1050fe9f5de00ca300a4b1f01202c9d5eaf9ddcbd7",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-109-8",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "9e20b575982a4765c7de63e810e0647b7d8f6ae7b05b2407a207002ca71eb174",
+    "input_sha256": "74914c18cf639f7b0c90985682d60f31eb021bbd2a9ebc222862f11ef844be6c",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-110-1",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "1134352aa7222413e7333dfb7495c026898298c689429db9dde8847ef901bd99",
+    "input_sha256": "058bc0950dc69ad6a1b6ae119d1fbda11c2cf0089b4149f5584818e35fd987a2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-110-8",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "1134352aa7222413e7333dfb7495c026898298c689429db9dde8847ef901bd99",
+    "input_sha256": "4059c93564a6fde7977e61a4e5b17aec5e540eb417cf1bda654db7512d4068bc",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-111-1",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "fdd555e3fa380a7938115a512efa3ec2faa7f656a9912023d88ff7f32dde8c37",
+    "input_sha256": "ae1a1f45303e066f1e74dbe13a36b8ec8916cb6c6d06edfade9439973703d7c0",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-111-8",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "fdd555e3fa380a7938115a512efa3ec2faa7f656a9912023d88ff7f32dde8c37",
+    "input_sha256": "21a0d28b7427de9689216626511e3a9e64209984857dc84afd0aaf99f9963ddd",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-112-1",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "53aaca3e2d750c9e82d6460599e362f3fac6d58f1149575802001adc211e3068",
+    "input_sha256": "6dfeea1034ea9c98ba33002e05e3aebd82d1cd6570df0089c0da9f743a6b2e92",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-112-8",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "53aaca3e2d750c9e82d6460599e362f3fac6d58f1149575802001adc211e3068",
+    "input_sha256": "dddf2da61c2ab3ae785a0279c7fd33a0559f268793c9ad792ec040707605a6cc",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-113-1",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "a9c9dbeeea9dfcb6a327acb7c8081ce62d3a6a8cb9ccb520ae7b9b54b79134f3",
+    "input_sha256": "a35b142d3e21f2e6ec5fd5c845214a069752ed3d9bd6d62a8630c793b3496b37",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-113-8",
+    "mode": "CMYK",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "a9c9dbeeea9dfcb6a327acb7c8081ce62d3a6a8cb9ccb520ae7b9b54b79134f3",
+    "input_sha256": "4fea645f1f7500a8213930971a480cb29fbfbce74eeae8832a805166f3b9cf27",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-114-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "e5f5093ebeccd1768d5a9a03dde0a724c4a9dd3f4b399c5a6b40c8bba9612dba",
+    "input_sha256": "e5ce8e292bfe45635d9da67ba3aaabd605306c3012b8c9c0298c6e7c4e678426",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-114-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-115-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "cd012708e3a0bd0bc705342216995471de23ca7db3c1c7eb4a75ecacc2d022e1",
+    "input_sha256": "abba6d648a45b816e8433f7a04392a76ebfee2c242832003c6ba24536f823dab",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-115-8",
+    "error": "OSError",
+    "message": "decoder error -2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-116-1",
+    "error": "OSError",
+    "message": "image file is truncated (4 bytes not processed)",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-116-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "8196a3d08b618a92388d7158ccc1b4a5c3bc73658de10e3766b14f3813becd79",
+    "input_sha256": "107c8b81552b4980cfb913f57bedcdc3483f99f7e1a7814b83e5ed1605dd57f1",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-117-1",
+    "error": "OSError",
+    "message": "image file is truncated (4 bytes not processed)",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-117-8",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "b30257e5bda31601cd760da23698ed540781a05dcac5fb0a5cd9d6216ee174db",
+    "input_sha256": "f51faeb6298a1dfa786042c1c9be73c06d6f1b14520d92bf362538029c9ea2ce",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-118-1",
+    "mode": "LAB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "f0f20de4a92e4b840ddb281d36bf746a8cb63eed01f10d1d72e0462760da1505",
+    "input_sha256": "44db736ef9193bd80516df8152b5822ebb0922c66a5865144875ef9223ca7f20",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-118-8",
+    "mode": "LAB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "f0f20de4a92e4b840ddb281d36bf746a8cb63eed01f10d1d72e0462760da1505",
+    "input_sha256": "92abbb97aa02100fcb19942ec213bbd67dde6f58df55291615033eebf3b42840",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-119-1",
+    "mode": "LAB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "70bd570c787625ba8398eebcace3662cee9d2fa5f837a55a0382e06ba39afb00",
+    "input_sha256": "4af87179ed7e97f542811da281fa22f53919dbbf67bd837f4adc78590faf1f14",
+    "warnings": []
+  },
+  {
+    "name": "tiff-openinfo-119-8",
+    "mode": "LAB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "70bd570c787625ba8398eebcace3662cee9d2fa5f837a55a0382e06ba39afb00",
+    "input_sha256": "112efff6c29e7bbac0e1e4dda87b8355686f5bf3b2b432046c21e54d5c7bacfd",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-L-1",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "9af41bb6acf280039d5bcf86f05607ac86bae9624f976ae020db623b667587ee",
+    "input_sha256": "98fa3a1f67493cceabf18ae04c572b69817f7709facb77dea6c8e5029deb4ccb",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-L-2",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "1d0ee9656896ad06182236fa8a248b33333ee20e0fbeee9cde01b32c6c2041ac",
+    "input_sha256": "b9eb0cd287235356ddafc3723bc38a63c4a6b79387e62af5e34492460b098c90",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-L-3",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "8024d6c7289b13be43e71085820ad7f542e2434b0a337f111cc200d618af4dcb",
+    "input_sha256": "a67695f25a453cde58a9df6430329ee921bc300801e17862109529668ea45303",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-L-4",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "4ce3434a80d5aec99ec37f4b57fe96ee270bccfca9876335a2fc73ec8d61ec3a",
+    "input_sha256": "a8afe0e3fadc6087fc2dbb3f1dc1eb0c43a08c1f02182add10c907bae68ee47f",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-L-5",
+    "mode": "L",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "2e785cab3daebcfc31b7d3eb7b8044c2daeca49b877c92cace7edf264c636d92",
+    "input_sha256": "c5aec6e85fade44d4067fe92f53266730a29364defd531287e74f8537ed940e0",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-L-6",
+    "mode": "L",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "b487da87521fb3bd1d663ae65897d02c99b09101b7f0f007104f1209b3f07e04",
+    "input_sha256": "08f597225795e9f189c1c1bd1dba85cffbfc6b36fb1617a55ce059e5886ec8c5",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-L-7",
+    "mode": "L",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "bfa8c0ef56b9207258d08ed152db576880f82efdd822ffa10ed6a477cd161c82",
+    "input_sha256": "b7876974c718a814593c83f749ece60afef0d386762f3b6d215954317cccad2c",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-L-8",
+    "mode": "L",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "9ee1d947e9aaef209d965d9f576bfe71b6a354b92b2a791ae28f38c3a3328600",
+    "input_sha256": "ba97fef412de20b8669755a039787679f1a469f3a8a4ec351e675668b4b06a4d",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGB-1",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "e53dd739d0ff8863c32ca46cbf0fe2d5d0e71d51823c4815da69124e8177c88b",
+    "input_sha256": "48dcd9f8a4eefb2879b529d94767f31e4fcfcc5229f039193bd746c02d8075f9",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGB-2",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "002516c7d53d5851ecc480b203faee8b619e29e0f025288c344e4f7f50034723",
+    "input_sha256": "389310e77c7696b1e325ea758870b894dd52f0db34c1a1abed7b9c2db66528e0",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGB-3",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "6b66e137b49967c1cbeebdff3b6c542e1be508ea28bb5a9a4d524f90b13f182a",
+    "input_sha256": "72e5dbd552b214c7e83db12147a4d870d65f12d216ff50199a9241ae3f0a013a",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGB-4",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "7dbbf7c5a75876a20587411098ca4156ea0c1cdfbda1b6b8de69612bcc72de2a",
+    "input_sha256": "3fced5f8e6e88e477961ecfe19b2b8acb1d0b48c226e78924696f38cde90045b",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGB-5",
+    "mode": "RGB",
+    "shape": [
+      4,
+      3,
+      3
+    ],
+    "values_sha256": "ccead7d674ede2ed9b56857ba01f55cd2e3ea4d708c43cf06470a2b2f18ef997",
+    "input_sha256": "83c2a63a208160fc97c540734ac39ef89852fc6eb4f5fab91521d2457f795baf",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGB-6",
+    "mode": "RGB",
+    "shape": [
+      4,
+      3,
+      3
+    ],
+    "values_sha256": "24992e5511ce840a0f1ccf3e66c470c6bff48b554d2991dca02959fe5e44d7cb",
+    "input_sha256": "166136665a7976e007ee82b70c15d5b96d3901aba9fb3d2ad23fbb2e79208075",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGB-7",
+    "mode": "RGB",
+    "shape": [
+      4,
+      3,
+      3
+    ],
+    "values_sha256": "162a4d05fee4f8b03a749a8413edd4eded9543772f97cd875407bec567de8066",
+    "input_sha256": "b66f327d1c9bc594b2083b811fae720eccbba2bd09e29eecf6eec6fd6d5caaa9",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGB-8",
+    "mode": "RGB",
+    "shape": [
+      4,
+      3,
+      3
+    ],
+    "values_sha256": "2517b1b06f009d829b90ee4fb6a478027ee8ad5e31e27f633b31d8d923fcd35a",
+    "input_sha256": "1655fcaeb8e204585705d889301f42752757adb48a84d04215ba9229cf350bf7",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGBA-1",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "59a5746f7e9ac906ef394bee920a4b8d08cb9cc9d355b6d5f46d8a2bfcf9eeff",
+    "input_sha256": "b722d65bcde27d98cca80d2ef85d95ceaf36600a1e9771df1d9a3ae2f4db4a96",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGBA-2",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "d296422ba320d9a60706d56f2583f7a331a854f92e83fda9c0330e54186d1f13",
+    "input_sha256": "5f5cbda48395952798e5da685bfccab7cc8e4b724427b8ec5a9ecf3bfe5f6807",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGBA-3",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "3898e945ab817441dace0bdeacba3fd1d607acd560c54ea91bbff632a52102ef",
+    "input_sha256": "a4df56640827b7819e35eb0db1c917c4a0a9048023005daea89bbe2f25dbd8bd",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGBA-4",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "823cb6f250937910a1d84b52d8c8d1d738edcff30d7704831299eac9d92c1bce",
+    "input_sha256": "f40e4f275585de9dab3e5c1ea4e4cebb514d27fdc88a9c43ab523ffa68db84cf",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGBA-5",
+    "mode": "RGBA",
+    "shape": [
+      4,
+      3,
+      4
+    ],
+    "values_sha256": "2defd6a62e7c7768662bb0a449de71aba215f7cbb81d97091bdf22e66c89e09b",
+    "input_sha256": "912872427febc2bc7cbd39b4ebf1145d52685d4d31e439a996d0af014fc8bf87",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGBA-6",
+    "mode": "RGBA",
+    "shape": [
+      4,
+      3,
+      4
+    ],
+    "values_sha256": "7b1d24cb3e9665428366dd39661cd32e084be101724275cd7583c890a0fc56e6",
+    "input_sha256": "a8126ebc6289c97955652bb6a677e0b4e66ca1339956376a90e621e4eb37c777",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGBA-7",
+    "mode": "RGBA",
+    "shape": [
+      4,
+      3,
+      4
+    ],
+    "values_sha256": "75e7ad5aa4d0651927399d9a9885ed708cd0635111f8eadb34f7d7a6cff80a33",
+    "input_sha256": "f6d1204b4b8a8b135f648cb8668fb2577bc274da25b44cb61742649b5ceb69a2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-RGBA-8",
+    "mode": "RGBA",
+    "shape": [
+      4,
+      3,
+      4
+    ],
+    "values_sha256": "ec2e7363efdf9d9fa509c8899cd42515481ecee4d4cbaee6770d3b994d74b626",
+    "input_sha256": "a219235d4a0ba0d524a43216d8cc256bc9f50f70ba4a85263dff81356f884922",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-P-1",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "9af41bb6acf280039d5bcf86f05607ac86bae9624f976ae020db623b667587ee",
+    "input_sha256": "65f7858bd73dc67e2943cbba5ce7bbed019675321a53edc021b21bf139daebde",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-P-2",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "1d0ee9656896ad06182236fa8a248b33333ee20e0fbeee9cde01b32c6c2041ac",
+    "input_sha256": "e2ccc54965fa7e1e29ae51c7bf1bb4604f10be0e51f301ff24e5e3500eda4727",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-P-3",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "8024d6c7289b13be43e71085820ad7f542e2434b0a337f111cc200d618af4dcb",
+    "input_sha256": "0368c28826e31430e0ffdd7bc64df7aea2e1e347c54231c743948109009676e3",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-P-4",
+    "mode": "P",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "4ce3434a80d5aec99ec37f4b57fe96ee270bccfca9876335a2fc73ec8d61ec3a",
+    "input_sha256": "5f4ff99b4b6d2a03d4392185cd2a2f46d4bbc1b2b5d4d35d203357d3b1029a02",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-P-5",
+    "mode": "P",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "2e785cab3daebcfc31b7d3eb7b8044c2daeca49b877c92cace7edf264c636d92",
+    "input_sha256": "8956e676b5633ce45306ff5624825aa8807cfac2e63dbfd68e8d6ffdd97f9de4",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-P-6",
+    "mode": "P",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "b487da87521fb3bd1d663ae65897d02c99b09101b7f0f007104f1209b3f07e04",
+    "input_sha256": "67a0844f9c535bf22a75ed12197b217debb204f4e15eba6d32e764ff75a8c96c",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-P-7",
+    "mode": "P",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "bfa8c0ef56b9207258d08ed152db576880f82efdd822ffa10ed6a477cd161c82",
+    "input_sha256": "8d53f099f432c27378a29c0296680bc07a6fce5bafc4dc31b776024dd8c25004",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-P-8",
+    "mode": "P",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "9ee1d947e9aaef209d965d9f576bfe71b6a354b92b2a791ae28f38c3a3328600",
+    "input_sha256": "a5e720998c390b639b0b9ebcc4c20e2338e54bc7262d86f6b6e339fc4904a922",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-I-16-1",
+    "mode": "I;16",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "9af41bb6acf280039d5bcf86f05607ac86bae9624f976ae020db623b667587ee",
+    "input_sha256": "fcc221bed9b9eb73d3a3a490cafb93454ed51bf470c21a35b86ebee01e414dc7",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-I-16-2",
+    "mode": "I;16",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "1d0ee9656896ad06182236fa8a248b33333ee20e0fbeee9cde01b32c6c2041ac",
+    "input_sha256": "94df3f8cf2ee6609cc4b0c2b522f1133a0cfb259535725cd2047261a661cb667",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-I-16-3",
+    "mode": "I;16",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "8024d6c7289b13be43e71085820ad7f542e2434b0a337f111cc200d618af4dcb",
+    "input_sha256": "482ef07eadbc1fe84c356d1a9395e6c199f4bd876307a9503d5da0dee10954fc",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-I-16-4",
+    "mode": "I;16",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "4ce3434a80d5aec99ec37f4b57fe96ee270bccfca9876335a2fc73ec8d61ec3a",
+    "input_sha256": "f29c4046bbbe871c7bc2fa6235991c2b6ff002e7a9b87bc46511dea4f50ba611",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-I-16-5",
+    "mode": "I;16",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "2e785cab3daebcfc31b7d3eb7b8044c2daeca49b877c92cace7edf264c636d92",
+    "input_sha256": "f0d66fc5f017b9966218a19687150999461f61af3082628c1dd342708775a6eb",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-I-16-6",
+    "mode": "I;16",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "b487da87521fb3bd1d663ae65897d02c99b09101b7f0f007104f1209b3f07e04",
+    "input_sha256": "80ccbfe09cf424799882621b00ae842d636bdb4204f1887d8cebfad36203be6a",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-I-16-7",
+    "mode": "I;16",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "bfa8c0ef56b9207258d08ed152db576880f82efdd822ffa10ed6a477cd161c82",
+    "input_sha256": "f8fcb2901e904006444d2712c913bf2a2425071fa519deda5d276d9f9e0a8673",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-I-16-8",
+    "mode": "I;16",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "9ee1d947e9aaef209d965d9f576bfe71b6a354b92b2a791ae28f38c3a3328600",
+    "input_sha256": "36d26cc8381770b0c1c6a5d00320b0b3a6bb55b01fd1d93271495782ec43b502",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-F-1",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "9af41bb6acf280039d5bcf86f05607ac86bae9624f976ae020db623b667587ee",
+    "input_sha256": "65f9f76f5fd4508d892653390ff2676b30cfa3f8c12815e32e67f86d4663ec4b",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-F-2",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "1d0ee9656896ad06182236fa8a248b33333ee20e0fbeee9cde01b32c6c2041ac",
+    "input_sha256": "0d5683f31cfd03302086b3874560d2ebef606be51967ba7da8e507b019e99c71",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-F-3",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "8024d6c7289b13be43e71085820ad7f542e2434b0a337f111cc200d618af4dcb",
+    "input_sha256": "7b77c0d43b5798da1e3186eea1a164fbd867f36ab01e48177194dd1fb4cb4f57",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-F-4",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "4ce3434a80d5aec99ec37f4b57fe96ee270bccfca9876335a2fc73ec8d61ec3a",
+    "input_sha256": "9c1a4648b31c60f297851d3a09dd1162b3941ddf800633e91d0bba369d643acf",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-F-5",
+    "mode": "F",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "2e785cab3daebcfc31b7d3eb7b8044c2daeca49b877c92cace7edf264c636d92",
+    "input_sha256": "6b27f395b485d403a87d02aca695cbe5515839c6e87779b1cfabf1032e41db49",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-F-6",
+    "mode": "F",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "b487da87521fb3bd1d663ae65897d02c99b09101b7f0f007104f1209b3f07e04",
+    "input_sha256": "364ca396fc4f895af791470c9f3040227676aaa93001f85af2368c78e232cce9",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-F-7",
+    "mode": "F",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "bfa8c0ef56b9207258d08ed152db576880f82efdd822ffa10ed6a477cd161c82",
+    "input_sha256": "b52bcf5e25e3865445e31c42f0ecbb9140b6ef7682b2071145f0ff076e9f7449",
+    "warnings": []
+  },
+  {
+    "name": "tiff-orientation-F-8",
+    "mode": "F",
+    "shape": [
+      4,
+      3
+    ],
+    "values_sha256": "9ee1d947e9aaef209d965d9f576bfe71b6a354b92b2a791ae28f38c3a3328600",
+    "input_sha256": "33e32e407e5260b7650bd7d64ab228430f23e3635896622c727bef144e83590c",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-False-1-1",
+    "mode": "1",
+    "shape": [
+      17,
+      18
+    ],
+    "values_sha256": "fc187b2d1460891fbce4fa48fa65ac7107faf943099f820df7aedf61ead90a43",
+    "input_sha256": "dde0be79a12c314b44a2511a0fd56d5d59d5737bb588f81aad2988305338bedf",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-False-4-1",
+    "mode": "P",
+    "shape": [
+      17,
+      18
+    ],
+    "values_sha256": "bf71cb1108236d29f57fa4cb3a4145e00a154801b251aee3169f24318ce4670b",
+    "input_sha256": "700c669d62093f1adc8ad648e6afae745b8f4c692544b6d84b4ae5e759fb6ac2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-False-8-1",
+    "mode": "L",
+    "shape": [
+      17,
+      18
+    ],
+    "values_sha256": "c19e58434033d625b93c210a317e5f642459cdc09967b0a7594f0527cc930e4e",
+    "input_sha256": "a5c06d8a4a3d18133d85e7a13447f6e3361ea90dced394db0267062ca22bc9bc",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-False-16-1",
+    "mode": "I;16",
+    "shape": [
+      17,
+      18
+    ],
+    "values_sha256": "66b738be8747830b89892f6c0389a24151b489acb4ef5549d9a0c493d8e77425",
+    "input_sha256": "2cbfc9d95e1cea27033fbfa19a73dbc2109c98007411f1911716987149749404",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-False-8-3",
+    "mode": "RGB",
+    "shape": [
+      17,
+      18,
+      3
+    ],
+    "values_sha256": "8f5b67f11b6401c19497a6bee07b04001670e9b787bc7aa1c9153fa734edf924",
+    "input_sha256": "6ec3d9680ecc6166a1ff5733a04f8a3c534716f6001949f9e2eb8fe5691a0ef7",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-False-16-3",
+    "mode": "RGB",
+    "shape": [
+      17,
+      18,
+      3
+    ],
+    "values_sha256": "4ac7c4d69d315353428661c1729be1d7e003b33f76134f7d0ecf4ca2d7a89c9f",
+    "input_sha256": "9ff051c663b0b5afdc429184952d8b8c929e989602cd6f16ff2967a7f40a59d2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-False-8-4",
+    "mode": "RGBA",
+    "shape": [
+      17,
+      18,
+      4
+    ],
+    "values_sha256": "77957d2e3488c6a679f74e9fffd5f1c5d4b40c5260a190941584b7041b00ddab",
+    "input_sha256": "0b15f07704c22942ab01073bf738437a657a748b5b24b3ac2be28f5891bb49da",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-True-1-1",
+    "mode": "1",
+    "shape": [
+      17,
+      18
+    ],
+    "values_sha256": "fc187b2d1460891fbce4fa48fa65ac7107faf943099f820df7aedf61ead90a43",
+    "input_sha256": "e4d33c3410b0f14961e4452bae606ca01ee6c4d66b7e85b2a24ddf90b1036d55",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-True-4-1",
+    "mode": "P",
+    "shape": [
+      17,
+      18
+    ],
+    "values_sha256": "bf71cb1108236d29f57fa4cb3a4145e00a154801b251aee3169f24318ce4670b",
+    "input_sha256": "d0bc96d95b26939f067bfea159edadffa9a66e4213316032075802fabe957f9e",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-True-8-1",
+    "mode": "L",
+    "shape": [
+      17,
+      18
+    ],
+    "values_sha256": "c19e58434033d625b93c210a317e5f642459cdc09967b0a7594f0527cc930e4e",
+    "input_sha256": "643182c4cb029719ba6fe88d5e04f7c7bbf2ddc3ad0ed91672defc459a0d5632",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-True-16-1",
+    "mode": "I;16B",
+    "shape": [
+      17,
+      18
+    ],
+    "values_sha256": "b772c09b8fbefca8dcafbeedbced1221e9f08d25890b8089cc9cc74d580c0f47",
+    "input_sha256": "0e92653df67f5c0e873819815fec72d714ca399b8b4d6dfc1c467471abb178ce",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-True-8-3",
+    "mode": "RGB",
+    "shape": [
+      17,
+      18,
+      3
+    ],
+    "values_sha256": "8f5b67f11b6401c19497a6bee07b04001670e9b787bc7aa1c9153fa734edf924",
+    "input_sha256": "cc45c75618969181d587a86bab5194fd2bc0a250c414c4c487e0c19ff40e88c2",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-True-16-3",
+    "mode": "RGB",
+    "shape": [
+      17,
+      18,
+      3
+    ],
+    "values_sha256": "bd2fbf667c905f44ddf22b2e8a878cdb07162b7602e2229dc19b0cac6e2cb25b",
+    "input_sha256": "506a7295f2a1c82abdb435a39f4d4d5decd45c79e1fbf892d9a4f2b9b1273f86",
+    "warnings": []
+  },
+  {
+    "name": "tiff-tiles-True-8-4",
+    "mode": "RGBA",
+    "shape": [
+      17,
+      18,
+      4
+    ],
+    "values_sha256": "77957d2e3488c6a679f74e9fffd5f1c5d4b40c5260a190941584b7041b00ddab",
+    "input_sha256": "4330b03886d7c5eb3ca4a8e26dab6c0899833285c0f30b0aea962e6a5405e503",
+    "warnings": []
+  },
+  {
+    "name": "tiff-bigtiff-L",
+    "mode": "L",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "9af41bb6acf280039d5bcf86f05607ac86bae9624f976ae020db623b667587ee",
+    "input_sha256": "4dec57c47aa629d4cc7c6ffc5888ee9432a56c664f7bb99e1d98b3bfa5dcb8a5",
+    "warnings": []
+  },
+  {
+    "name": "tiff-bigtiff-RGB",
+    "mode": "RGB",
+    "shape": [
+      3,
+      4,
+      3
+    ],
+    "values_sha256": "e53dd739d0ff8863c32ca46cbf0fe2d5d0e71d51823c4815da69124e8177c88b",
+    "input_sha256": "35c373d148e028bdaecda1f8edc3958715eeffc576b9e32e9cfd128df8c2294b",
+    "warnings": []
+  },
+  {
+    "name": "tiff-bigtiff-RGBA",
+    "mode": "RGBA",
+    "shape": [
+      3,
+      4,
+      4
+    ],
+    "values_sha256": "59a5746f7e9ac906ef394bee920a4b8d08cb9cc9d355b6d5f46d8a2bfcf9eeff",
+    "input_sha256": "8c959e673d3937db0195f3562838ee999203340841fc6bf90551dbe11af1ebfc",
+    "warnings": []
+  },
+  {
+    "name": "tiff-bigtiff-I-16",
+    "mode": "I;16",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "9af41bb6acf280039d5bcf86f05607ac86bae9624f976ae020db623b667587ee",
+    "input_sha256": "a834d290330ad88f46f9c8a662586d90aaee14d3d507d85941b4022fd3bf625f",
+    "warnings": []
+  },
+  {
+    "name": "tiff-bigtiff-F",
+    "mode": "F",
+    "shape": [
+      3,
+      4
+    ],
+    "values_sha256": "9af41bb6acf280039d5bcf86f05607ac86bae9624f976ae020db623b667587ee",
+    "input_sha256": "72793f35820b219a5cf6a1e557ad99caaf4c020f39b2fd5203767142e6ecf2f8",
+    "warnings": []
+  }
+]

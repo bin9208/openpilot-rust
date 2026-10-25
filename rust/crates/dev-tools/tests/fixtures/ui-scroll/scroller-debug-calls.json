@@ -1,0 +1,47 @@
+[
+  {
+    "case": 0,
+    "argv": [
+      "controlled-native"
+    ],
+    "input_sha256": "a5b537f5b0d2565bcf87fdfc53445c004be7ba22b68d3e3b85392127d58a788a",
+    "input_bytes": 36041,
+    "options": {
+      "capture_output": true,
+      "text": true,
+      "check": true
+    },
+    "debug_stdout_sha256": "89c98af158d7872fec430ef1d0a8c2edbdc7f12aee2eab5a9580b5d05da577bc",
+    "debug_stdout_bytes": 33429
+  },
+  {
+    "case": 1,
+    "argv": [
+      "controlled-native"
+    ],
+    "input_sha256": "7e2220b3740c267ffb0a3f8672b61c0b1a4c4e3db53a109b5ae2a2d633008e1a",
+    "input_bytes": 36040,
+    "options": {
+      "capture_output": true,
+      "text": true,
+      "check": true
+    },
+    "debug_stdout_sha256": "71e5d6dee4e52c4c13dd5d7f5fc2e74399cefbe9f8010289c5ef351cf0a675f0",
+    "debug_stdout_bytes": 33708
+  },
+  {
+    "case": 2,
+    "argv": [
+      "controlled-native"
+    ],
+    "input_sha256": "f4ae16b756a458d26d53ba24348eee008f48f3befb19183d472bf15dc6573dc5",
+    "input_bytes": 36082,
+    "options": {
+      "capture_output": true,
+      "text": true,
+      "check": true
+    },
+    "debug_stdout_sha256": "86be316d0c7cc69d7cafcfd7a439aab9ee65419a36212ea2c8ba7d51e9fdc515",
+    "debug_stdout_bytes": 34590
+  }
+]

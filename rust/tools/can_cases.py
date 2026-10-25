@@ -1,6 +1,7 @@
 """Source-backed codec vectors and parser lifecycle scenarios for the complete DBC catalog."""
 
 from pathlib import Path
+import json
 import random
 
 from can_source import ROOT, load
@@ -9,8 +10,8 @@ from can_source import ROOT, load
 def databases(staging):
   load()
   from opendbc.car.values import PLATFORMS
-  from opendbc.dbc.generator.generator import generate_all
-  generated = generate_all()
+  from opendbc import DBC_PATH, run_dbc_generator
+  generated = json.loads(run_dbc_generator('generate-all', '--source', Path(DBC_PATH) / 'generator'))
   staging.mkdir(parents=True, exist_ok=True)
   names = sorted({name for p in PLATFORMS.values() for name in p.config.dbc_dict.values() if name})
   paths = {}

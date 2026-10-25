@@ -1,0 +1,30 @@
+[
+  {
+    "state": {
+      "selection": "First"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "selection": "Third"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "selection": "Third"
+    },
+    "pops": 0,
+    "confirmed": 0
+  },
+  {
+    "state": {
+      "selection": "Third"
+    },
+    "pops": 0,
+    "confirmed": 0
+  }
+]

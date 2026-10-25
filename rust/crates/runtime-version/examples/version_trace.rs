@@ -148,6 +148,7 @@ fn handle(request: Request) -> Result<String, Error> {
     }
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _runtime_logs = version::RuntimeLogScope;
     for line in io::stdin().lock().lines() {
         let request: Request = serde_json::from_str(&line?)?;
         let response = match handle(request) {

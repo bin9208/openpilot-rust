@@ -1,0 +1,159 @@
+[
+  {
+    "name": "help",
+    "args": [
+      "--help"
+    ],
+    "exit": 0,
+    "output_exists": false,
+    "files": []
+  },
+  {
+    "name": "short-help",
+    "args": [
+      "-h"
+    ],
+    "exit": 0,
+    "output_exists": false,
+    "files": []
+  },
+  {
+    "name": "help-cluster",
+    "args": [
+      "-hxxx"
+    ],
+    "exit": 0,
+    "output_exists": false,
+    "files": []
+  },
+  {
+    "name": "missing",
+    "args": [],
+    "exit": 2,
+    "output_exists": false,
+    "files": []
+  },
+  {
+    "name": "unknown",
+    "args": [
+      "--unknown"
+    ],
+    "exit": 2,
+    "output_exists": false,
+    "files": []
+  },
+  {
+    "name": "missing-value",
+    "args": [
+      "--reference"
+    ],
+    "exit": 2,
+    "output_exists": false,
+    "files": []
+  },
+  {
+    "name": "ambiguous",
+    "args": [
+      "--r",
+      "x"
+    ],
+    "exit": 2,
+    "output_exists": false,
+    "files": []
+  },
+  {
+    "name": "valid-missing-child",
+    "args": [
+      "--reference",
+      "missing",
+      "--native",
+      "missing",
+      "--parser",
+      "missing",
+      "--fixture",
+      "missing",
+      "--output",
+      "$OUT"
+    ],
+    "exit": 1,
+    "output_exists": true,
+    "files": []
+  },
+  {
+    "name": "abbrev",
+    "args": [
+      "--ref",
+      "missing",
+      "--nat",
+      "missing",
+      "--par",
+      "missing",
+      "--fix",
+      "missing",
+      "--out",
+      "$OUT"
+    ],
+    "exit": 1,
+    "output_exists": true,
+    "files": []
+  },
+  {
+    "name": "qemu-missing-sysroot",
+    "args": [
+      "--reference",
+      "missing",
+      "--native",
+      "missing",
+      "--parser",
+      "missing",
+      "--fixture",
+      "missing",
+      "--output",
+      "$OUT",
+      "--qemu",
+      "qemu"
+    ],
+    "exit": 1,
+    "output_exists": true,
+    "files": []
+  },
+  {
+    "name": "repeat",
+    "args": [
+      "--reference",
+      "missing",
+      "--native",
+      "missing",
+      "--parser",
+      "missing",
+      "--fixture",
+      "missing",
+      "--output",
+      "$OUT",
+      "--output",
+      "$OUT"
+    ],
+    "exit": 1,
+    "output_exists": true,
+    "files": []
+  },
+  {
+    "name": "extra",
+    "args": [
+      "--reference",
+      "missing",
+      "--native",
+      "missing",
+      "--parser",
+      "missing",
+      "--fixture",
+      "missing",
+      "--output",
+      "$OUT",
+      "extra"
+    ],
+    "exit": 2,
+    "output_exists": false,
+    "files": []
+  }
+]

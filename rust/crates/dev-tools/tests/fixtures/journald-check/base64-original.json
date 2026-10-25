@@ -1,0 +1,225 @@
+{
+  "source_sha256": "d735cdb55a379e1ec175b6f515a9855c757743b41652fa93e14632de3c858768",
+  "controls": "Actual unchanged original child with each selected base64 command and EOF; native frozen helper used only for independent RED, never original expected values.",
+  "cases": [
+    {
+      "base64": "TQ====",
+      "chunks_hex": [
+        "7b226f70223a20227772697465222c2022626173653634223a202254513d3d3d3d227d0a"
+      ],
+      "signal_after": false,
+      "name": "base64-0",
+      "exit": 0,
+      "stdout_hex": "4d",
+      "stderr_nonempty": false,
+      "events": [
+        "started",
+        "stdin-eof"
+      ],
+      "argv": [
+        [
+          "-f",
+          "-o",
+          "json"
+        ],
+        [
+          "-f",
+          "-o",
+          "json"
+        ]
+      ]
+    },
+    {
+      "base64": "TQ==junk",
+      "chunks_hex": [
+        "7b226f70223a20227772697465222c2022626173653634223a202254513d3d6a756e6b227d0a"
+      ],
+      "signal_after": false,
+      "name": "base64-1",
+      "exit": 0,
+      "stdout_hex": "4d",
+      "stderr_nonempty": false,
+      "events": [
+        "started",
+        "stdin-eof"
+      ],
+      "argv": [
+        [
+          "-f",
+          "-o",
+          "json"
+        ],
+        [
+          "-f",
+          "-o",
+          "json"
+        ]
+      ]
+    },
+    {
+      "base64": "=TQ==",
+      "chunks_hex": [
+        "7b226f70223a20227772697465222c2022626173653634223a20223d54513d3d227d0a"
+      ],
+      "signal_after": false,
+      "name": "base64-2",
+      "exit": 0,
+      "stdout_hex": "4d",
+      "stderr_nonempty": false,
+      "events": [
+        "started",
+        "stdin-eof"
+      ],
+      "argv": [
+        [
+          "-f",
+          "-o",
+          "json"
+        ],
+        [
+          "-f",
+          "-o",
+          "json"
+        ]
+      ]
+    },
+    {
+      "base64": "\u00e9",
+      "chunks_hex": [
+        "7b226f70223a20227772697465222c2022626173653634223a20225c7530306539227d0a"
+      ],
+      "signal_after": false,
+      "name": "base64-3",
+      "exit": 1,
+      "stdout_hex": "",
+      "stderr_nonempty": true,
+      "events": [
+        "started"
+      ],
+      "argv": [
+        [
+          "-f",
+          "-o",
+          "json"
+        ]
+      ]
+    },
+    {
+      "base64": "T",
+      "chunks_hex": [
+        "7b226f70223a20227772697465222c2022626173653634223a202254227d0a"
+      ],
+      "signal_after": false,
+      "name": "base64-4",
+      "exit": 1,
+      "stdout_hex": "",
+      "stderr_nonempty": true,
+      "events": [
+        "started"
+      ],
+      "argv": [
+        [
+          "-f",
+          "-o",
+          "json"
+        ]
+      ]
+    },
+    {
+      "base64": "TQ",
+      "chunks_hex": [
+        "7b226f70223a20227772697465222c2022626173653634223a20225451227d0a"
+      ],
+      "signal_after": false,
+      "name": "base64-5",
+      "exit": 1,
+      "stdout_hex": "",
+      "stderr_nonempty": true,
+      "events": [
+        "started"
+      ],
+      "argv": [
+        [
+          "-f",
+          "-o",
+          "json"
+        ]
+      ]
+    },
+    {
+      "base64": "TWE",
+      "chunks_hex": [
+        "7b226f70223a20227772697465222c2022626173653634223a2022545745227d0a"
+      ],
+      "signal_after": false,
+      "name": "base64-6",
+      "exit": 1,
+      "stdout_hex": "",
+      "stderr_nonempty": true,
+      "events": [
+        "started"
+      ],
+      "argv": [
+        [
+          "-f",
+          "-o",
+          "json"
+        ]
+      ]
+    },
+    {
+      "base64": "TWFu",
+      "chunks_hex": [
+        "7b226f70223a20227772697465222c2022626173653634223a202254574675227d0a"
+      ],
+      "signal_after": false,
+      "name": "base64-7",
+      "exit": 0,
+      "stdout_hex": "4d616e",
+      "stderr_nonempty": false,
+      "events": [
+        "started",
+        "stdin-eof"
+      ],
+      "argv": [
+        [
+          "-f",
+          "-o",
+          "json"
+        ],
+        [
+          "-f",
+          "-o",
+          "json"
+        ]
+      ]
+    },
+    {
+      "base64": "TQ==!!TWE=",
+      "chunks_hex": [
+        "7b226f70223a20227772697465222c2022626173653634223a202254513d3d21215457453d227d0a"
+      ],
+      "signal_after": false,
+      "name": "base64-8",
+      "exit": 0,
+      "stdout_hex": "4d",
+      "stderr_nonempty": false,
+      "events": [
+        "started",
+        "stdin-eof"
+      ],
+      "argv": [
+        [
+          "-f",
+          "-o",
+          "json"
+        ],
+        [
+          "-f",
+          "-o",
+          "json"
+        ]
+      ]
+    }
+  ]
+}

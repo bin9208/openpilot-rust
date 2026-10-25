@@ -54,6 +54,7 @@ pub struct Bundle {
 }
 
 pub struct Catalog {
+    generation: String,
     bundles: Vec<Bundle>,
 }
 
@@ -119,7 +120,7 @@ impl Catalog {
             }
             let backend: Backend = serde_json::from_slice(&graph_bytes)?;
             match backend.backend.as_str() {
-                "cpu-clang" | "cpu-llvm" => {
+                "cpu-clang" | "cpu-llvm" | "cpu-cached-llvm" => {
                     let graph = Graph::parse(&graph_bytes)?.graph;
                     descriptor.validate(&Contract {
                         inputs: &graph.inputs,
@@ -145,7 +146,15 @@ impl Catalog {
                 backend: backend.backend,
             });
         }
-        Ok(Self { bundles })
+        Ok(Self {
+            generation: pointer.generation,
+            bundles,
+        })
+    }
+
+    /// Identity of the verified index loaded with these bundles.
+    pub fn generation(&self) -> &str {
+        &self.generation
     }
 
     pub fn bundles(&self) -> &[Bundle] {

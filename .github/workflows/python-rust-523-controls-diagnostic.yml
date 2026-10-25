@@ -1,0 +1,348 @@
+name: Python Rust 523 controls first numeric layer diagnostic
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-controls-diagnostic.yml
+    - tools/ci/controlsd_diagnostic_553.py
+    - tools/ci/controlsd_normal_523.py
+    - rust/crates/controlsd/**
+    - rust/crates/control-policy/**
+    - rust/tools/controlsd_source.py
+    - rust/tools/check_controlsd.py
+    - rust/tools/check_message_state.py
+    - rust/tools/locationd_loop_source.py
+    - openpilot/cereal/**
+    - opendbc_repo/opendbc/car/**
+    - openpilot/selfdrive/controls/**
+    - rust/Cargo.toml
+    - rust/Cargo.lock
+    - rust/tools/prepare-readonly-ci-rust
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: python-rust-523-controls-diagnostic-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  controls-diagnostic-553:
+    name: 'Case3 frame0 original and native numeric layer diagnostic'
+    if: ${{ github.repository == 'bin9208/openpilot-rust' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TERM_COLOR: never
+      RUSTUP_TOOLCHAIN: 1.94.0
+    steps:
+    - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+          }}
+        EVENT_NAME: ${{ github.event_name }}
+        SOURCE_REF: ${{ github.ref }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied for normal40 qualification' >&2; exit 1; }
+        set -euo pipefail
+        test "$EVENT_NAME" = push
+        test "$SOURCE_REF" = refs/heads/codex/feat-523-python-rust
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -m)" = x86_64
+    - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Allocate private source cache and target before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        # source2 + SDK3 + build8 + proof1 + original Python/deps2 + apt2 + reserve0.5GiB.
+        declare -A growth=() roots=()
+        paths=("$workspace" "$job" "$RUNNER_TOOL_CACHE" /)
+        gib=(2 13 1 2)
+        for n in "${!paths[@]}"; do
+          device=$(stat -c %d "${paths[$n]}")
+          growth[$device]=$(( ${growth[$device]:-0}+gib[$n]*1024*1024*1024 ))
+          roots[$device]=${paths[$n]}
+        done
+        for device in "${!growth[@]}"; do
+          available=$(df --output=avail -B1 "${roots[$device]}" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2 || n!=1) exit 1;print v}')
+          required=$((growth[$device]+512*1024*1024))
+          printf '%s\t%s\t%s\n' "$device" "$available" "$required" >> "$job/proof/diagnostic-initial-admission.tsv"
+          ((available >= required))
+        done
+        source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Actions의 workspace와 Bash가 사용하는 private checkout을 구분한다.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+    - uses: actions/checkout@v7
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+    - name: Seal exact source HEAD and tracked index before checks
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      id: source_before
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+        allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ ]]
+        printf '{"allocated_private_source_bytes":%s,"planned_source_growth_bytes":2147483648}\n' "$allocated" > "$CI_JOB_TEMP/proof/source-growth-after-checkout.json"
+        git ls-tree -r -l HEAD | awk '$4 ~ /^[0-9]+$/ {bytes+=$4; files++} END {printf "{\"tracked_blob_bytes\":%.0f,\"files\":%d}\n",bytes,files}' > "$CI_JOB_TEMP/proof/tracked-source-size.json"
+        ((allocated <= 2 * 1024 * 1024 * 1024))
+    - name: Prepare official pinned Rust in the owned private rustup root and seal it
+      id: prepared_rust
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before
+    - name: Admit actual hosted disk space before native dependency preparation
+      id: hosted_dependencies
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      timeout-minutes: 15
+      run: |
+        set -euo pipefail
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        before_source=$(df -PB1 "$DIAG_SOURCE" | awk 'NR == 2 {print $4}')
+        before_job=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        before_system=$(df -PB1 / | awk 'NR == 2 {print $4}')
+        [[ $before_source =~ ^[0-9]+$ && $before_job =~ ^[0-9]+$ && $before_system =~ ^[0-9]+$ ]]
+        preparation=$((2 * 1024 * 1024 * 1024))
+        remaining=$(((8 + 2) * 1024 * 1024 * 1024))
+        printf '{"source_available_bytes":%s,"job_available_bytes":%s,"system_available_bytes":%s,"planned_apt_growth_bytes":%s,"reserved_build_and_proof_bytes":%s,"measured_peak_guarantee":false}\n' "$before_source" "$before_job" "$before_system" "$preparation" "$remaining" | tee "$CI_JOB_TEMP/proof/hosted-dependencies-before.json"
+        ((before_source >= preparation + remaining && before_job >= preparation + remaining))
+        ((before_system >= preparation + 512 * 1024 * 1024))
+        # 전역 apt 변경은 provider baseline 전 한 번만 한다. missing provider는 helper가 거부한다.
+        (ulimit -f 524288; sudo -n /usr/bin/timeout --signal=TERM --kill-after=30s 600s \
+          apt-get -o APT::Architecture=amd64 update) > "$CI_JOB_TEMP/proof/hosted-apt-update.log" 2>&1
+        (ulimit -f 524288; sudo -n /usr/bin/timeout --signal=TERM --kill-after=30s 600s \
+          apt-get -o APT::Architecture=amd64 install --no-install-recommends -y \
+          build-essential clang pkg-config capnproto libcapnp-dev libzmq3-dev strace gh curl) \
+          > "$CI_JOB_TEMP/proof/hosted-apt-install.log" 2>&1
+        after_source=$(df -PB1 "$DIAG_SOURCE" | awk 'NR == 2 {print $4}')
+        after_job=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        after_system=$(df -PB1 / | awk 'NR == 2 {print $4}')
+        [[ $after_source =~ ^[0-9]+$ && $after_job =~ ^[0-9]+$ && $after_system =~ ^[0-9]+$ ]]
+        printf '{"source_available_bytes":%s,"job_available_bytes":%s,"system_available_bytes":%s,"planned_apt_growth_bytes":%s,"measured_peak_guarantee":false}\n' "$after_source" "$after_job" "$after_system" "$preparation" | tee "$CI_JOB_TEMP/proof/hosted-dependencies-after.json"
+        ((before_source - after_source <= preparation && before_job - after_job <= preparation && before_system - after_system <= preparation))
+        ((after_source >= remaining && after_job >= remaining))
+        ((after_system >= 512 * 1024 * 1024))
+        dpkg-query -W build-essential clang pkg-config capnproto libcapnp-dev libzmq3-dev strace gh curl > "$CI_JOB_TEMP/proof/hosted-native-packages.txt"
+        for provider in bash sh ranlib nm git gh curl clang clang++ cc c++ ar as ld pkg-config capnp ldd strace timeout; do
+          command -v "$provider" > /dev/null
+        done
+    - name: Record Python installation growth before exact original provider setup
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        df --output=avail -B1 "$RUNNER_TOOL_CACHE" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2 || n!=1) exit 1;print v}' > "$CI_JOB_TEMP/proof/python-free-before.txt"
+    - uses: actions/setup-python@v6
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      with:
+        python-version: 3.12.15
+    - name: Bind exact original Python path and bounded installation growth
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        original_root=${pythonLocation:?}
+        test -d "$original_root" && test ! -L "$original_root"
+        test "$(readlink -e "$original_root")" = "$original_root"
+        test -f "$original_root/bin/python3.12"
+        before=$(cat "$CI_JOB_TEMP/proof/python-free-before.txt")
+        after=$(df --output=avail -B1 "$RUNNER_TOOL_CACHE" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2 || n!=1) exit 1;print v}')
+        [[ $before =~ ^[0-9]+$ && $after =~ ^[0-9]+$ ]]
+        ((before-after <= 1024*1024*1024))
+        printf '%s\t%s\n' "$before" "$after" > "$CI_JOB_TEMP/proof/python-install-growth.tsv"
+        printf 'ORIGINAL_PYTHON=%s/bin/python3.12\nORIGINAL_PYTHON_ROOT=%s\n' "$original_root" "$original_root" >> "$GITHUB_ENV"
+    - name: Diagnose bound case3 frame0 numeric differences
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      id: qualify
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        umask 077
+        printf '%s  %s\n' b050f59a60a0afa1450ec935f4d07ceb5d57b6ae7943d7eadeede14f2968dfa4 tools/ci/controlsd_diagnostic_553.py | sha256sum --check --strict --quiet -
+        # 원본 current cohort와 native를 각각 plain/tapped로 관측한다. 전체 원본 재capture가 아니다.
+        /usr/bin/timeout --signal=TERM --kill-after=180s 60m \
+          /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH \
+          /usr/bin/python3 -I -B -S tools/ci/controlsd_diagnostic_553.py \
+            --root "$DIAG_SOURCE" --python "$ORIGINAL_PYTHON" \
+            --evidence "$CI_JOB_TEMP/proof/controls-diagnostic-553" --source-commit "$GITHUB_SHA"
+    - name: Seal source and index after all attempted contracts
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        du -sx --block-size=1 "$DIAG_SOURCE_OWNER" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/private-output-bytes.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$CI_JOB_TEMP/proof/cgroup-memory-after.txt"; fi
+        find "$CARGO_TARGET_DIR" -name '*.d' -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256" || test ! -d "$CARGO_TARGET_DIR"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 1024 * 1024 * 1024))
+    - name: Verify whole prepared private Rust SDK after attempted numeric diagnostic
+      id: prepared_rust_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.prepared_rust.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 1024 * 1024 * 1024))
+    - name: Require immutable source SDK provider and child seals independently of numeric comparison
+      id: immutable_seals
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/python3 -I -B -S - <<'SEALS'
+        import json,os
+        from pathlib import Path
+        proof=Path(os.environ['CI_JOB_TEMP'])/'proof/controls-diagnostic-553'
+        seal=json.loads((proof/'final-seals.json').read_bytes())
+        children=json.loads((proof/'children.json').read_bytes())
+        assert seal['source']==os.environ['GITHUB_SHA'] and seal['pass'] is True and seal['failures']==[]
+        assert seal['all_owned_children_reaped'] is True
+        assert children['subreaper'] is True and children['live']==[]
+        SEALS
+    - name: Require diagnostic replay and observer effects checks only
+      id: closure
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        QUALIFY_OUTCOME: ${{ steps.qualify.outcome }}
+        SOURCE_OUTCOME: ${{ steps.source_final.outcome }}
+        SDK_OUTCOME: ${{ steps.prepared_rust_final.outcome }}
+        IMMUTABLE_OUTCOME: ${{ steps.immutable_seals.outcome }}
+      run: |
+        set -euo pipefail
+        /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/python3 -I -B -S - <<'DIAG'
+        import json,os
+        from pathlib import Path
+        assert all(os.environ[x]=='success' for x in ['QUALIFY_OUTCOME','SOURCE_OUTCOME','SDK_OUTCOME','IMMUTABLE_OUTCOME'])
+        data=json.loads((Path(os.environ['CI_JOB_TEMP'])/'proof/controls-diagnostic-553/complete.json').read_bytes())
+        assert data['schema']==1 and data['source']==os.environ['GITHUB_SHA'] and data['diagnostic_only'] is True and data['pass'] is True
+        assert data['cases']==data['frames']==1
+        assert data['plain_original_matches_historical'] is True and data['plain_native_matches_602'] is True
+        assert data['tapped_original_equals_plain'] is True and data['tapped_native_equals_plain'] is True
+        assert data['kernel_observed'] is False and data['historical_original_provider_closure_complete'] is False
+        assert data['normal40_acceptance'] is False and data['full_runtime_acceptance'] is False and data['retirement_credit']==0
+        DIAG
+    - name: Upload numeric diagnostic proof including failed admissions before owned cleanup
+      id: fast_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: controls-diagnostic-553-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        if-no-files-found: error
+        retention-days: 7
+        include-hidden-files: true
+    - name: Clean only uploaded private diagnostic source after immutable seals and child recovery
+      id: fast_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest
+        != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.immutable_seals.outcome ==
+        'success' && steps.prepared_rust_final.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.fast_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.diag296-owner" && test ! -L "$p/.diag296-owner"
+        test "$(cat "$p/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned job temporary paths after evidence upload
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest
+        != '' && steps.fast_source_cleanup.outcome == 'success') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'

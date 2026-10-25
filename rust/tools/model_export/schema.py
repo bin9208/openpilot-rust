@@ -73,6 +73,20 @@ class Call:
 
 
 @dataclass(frozen=True, slots=True)
+class CompilationEvidence:
+    compiled_source: str
+    rewrite_receipt: bytes
+    binding: dict
+
+
+@dataclass(frozen=True, slots=True)
+class CachedProgram:
+    original_index: int
+    kernel: int
+    image: bytes
+
+
+@dataclass(frozen=True, slots=True)
 class CapturedModel:
     allocations: tuple[Allocation, ...]
     views: tuple[View, ...]
@@ -85,6 +99,8 @@ class CapturedModel:
     wrappers: tuple[str, ...]
     weights: bytes
     backend: str
+    compilation: tuple[CompilationEvidence | None, ...] = ()
+    cached_programs: tuple[CachedProgram, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

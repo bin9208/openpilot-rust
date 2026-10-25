@@ -1,19 +1,37 @@
 from pathlib import Path
-Import('env', 'arch', 'common')
+import subprocess
+Import('env', 'arch', 'common', 'generated_asset_root')
 
 # build the fonts
 generator = File("#openpilot/selfdrive/assets/fonts/process.py")
 source_files = Glob("#openpilot/selfdrive/assets/fonts/*.ttf") + Glob("#openpilot/selfdrive/assets/fonts/*.otf")
+font_output = generated_asset_root / "fonts" if generated_asset_root else None
+if font_output:
+  if font_output.is_symlink() or font_output.resolve() != font_output:
+    raise ValueError("font output must be canonical")
+  font_output.mkdir(mode=0o700, exist_ok=True)
 output_files = [
+  (str(font_output / (Path(f.path).stem + '.fnt')), str(font_output / (Path(f.path).stem + '.png'))) if font_output else
   (f"#{Path(f.path).with_suffix('.fnt')}", f"#{Path(f.path).with_suffix('.png')}")
   for f in source_files
   if "NotoColor" not in f.name
 ]
-env.Command(
-  target=output_files,
-  source=[generator, source_files],
-  action=f"python3 {generator}",
+font_metadata = [str(font_output / "manifest.json"), str(font_output / ".ready")] if font_output else []
+translations = [File("#openpilot/selfdrive/ui/translations/languages.json"), *Glob("#openpilot/selfdrive/ui/translations/*.po")]
+
+def generate_staged_fonts(target, source, env):
+  subprocess.check_call(["python3", generator.abspath, "--output-dir", str(font_output)], env=env["ENV"])
+
+
+font_nodes = env.Command(
+  target=[output_files, font_metadata],
+  source=[generator, source_files, translations],
+  action=generate_staged_fonts if font_output else f"python3 {generator}",
 )
+if font_output:
+  NoCache(font_nodes)
+  # 외부 출력은 기본 '.' 순회에 포함되지 않는다. 원래 root target도 함께 유지한다.
+  Default(Dir("#"), font_nodes)
 
 
 if GetOption('extras') and arch == "larch64":

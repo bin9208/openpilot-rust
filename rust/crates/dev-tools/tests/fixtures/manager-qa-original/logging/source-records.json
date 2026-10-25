@@ -1,0 +1,78 @@
+[
+  {
+    "msg": "Failed to cast param b'UptimeOnroad' with value=b'1__2.5' from type t=<ParamKeyType.FLOAT: 3>",
+    "ctx": {},
+    "level": "WARNING",
+    "levelnum": 30,
+    "name": "swaglog",
+    "filename": "manager.py",
+    "lineno": 249,
+    "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/manager/manager.py",
+    "module": "manager",
+    "funcName": "main",
+    "host": "runnervmxehtw",
+    "process": 12352,
+    "thread": 140107228502912,
+    "threadName": "MainThread",
+    "created": 1792640443.021824
+  },
+  {
+    "msg": "manager start",
+    "ctx": {
+      "daemon": "manager"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "manager.py",
+    "lineno": 163,
+    "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/manager/manager.py",
+    "module": "manager",
+    "funcName": "manager_thread",
+    "host": "runnervmxehtw",
+    "process": 12352,
+    "thread": 140107228502912,
+    "threadName": "MainThread",
+    "created": 1792640443.0802205
+  },
+  {
+    "msg": {
+      "environ": "environ({'PATH': '/usr/bin:/bin', 'LC_ALL': 'C.UTF-8', 'LC_CTYPE': 'C.UTF-8', 'PYTHONPATH': '/home/runner/work/openpilot-rust/openpilot-rust', 'OPENPILOT_PREFIX': 'manager-log-ma8m9cub', 'MANAGER_LOG_CAPTURE': 'ipc:///tmp/logmessagemanager-log-ma8m9cub', 'NOBOARD': '', 'BLOCK': 'ui,,custom', 'FIXTURE_LABEL': 'synthetic \"quotes\" and \\'apostrophe\\'\\nline', 'LD_LIBRARY_PATH': '/opt/hostedtoolcache/Python/3.12.15/x64/lib', 'DISABLE_WIDE_ROAD': '1', 'DONGLE_ID': 'fixture-id', 'GIT_ORIGIN': 'github.com/commaai/openpilot', 'GIT_BRANCH': 'release-tizi', 'GIT_COMMIT': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'CLEAN': '1'})"
+    },
+    "ctx": {
+      "daemon": "manager"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "manager.py",
+    "lineno": 164,
+    "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/manager/manager.py",
+    "module": "manager",
+    "funcName": "manager_thread",
+    "host": "runnervmxehtw",
+    "process": 12352,
+    "thread": 140107228502912,
+    "threadName": "MainThread",
+    "created": 1792640443.0803537
+  },
+  {
+    "msg": "everything is dead",
+    "ctx": {
+      "daemon": "manager"
+    },
+    "level": "INFO",
+    "levelnum": 20,
+    "name": "swaglog",
+    "filename": "manager.py",
+    "lineno": 149,
+    "pathname": "/home/runner/work/openpilot-rust/openpilot-rust/openpilot/system/manager/manager.py",
+    "module": "manager",
+    "funcName": "manager_cleanup",
+    "host": "runnervmxehtw",
+    "process": 12352,
+    "thread": 140107228502912,
+    "threadName": "MainThread",
+    "created": 1792640443.0878222
+  }
+]

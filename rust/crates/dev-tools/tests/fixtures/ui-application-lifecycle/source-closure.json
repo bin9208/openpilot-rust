@@ -1,0 +1,194 @@
+{
+  "capture": "Actual unchanged application/InputBox/Button import closure observed in capture_touch_guard.py; original _resolve_font_path order evaluated against current assets; no candidate. Selected dependency records from current uv.lock.",
+  "sources": {
+    "openpilot/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "openpilot/system/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "openpilot/system/ui/lib/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "openpilot/common/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "openpilot/common/basedir.py": "58cfa5d6405903ee1acecc4544463bb8f47a66921b120c382143aa80d8539b28",
+    "openpilot/common/logging_extra.py": "ce9b3b3d8498d76e1c4c0352a3e98e72759bb7f367ff8629c1329c46040595c3",
+    "openpilot/common/swaglog.py": "d37b623bd9418b72ffd3c4800a1da192c49856cb63bbbc1c09bb24a5ec6f8616",
+    "openpilot/selfdrive/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "openpilot/selfdrive/ui/__init__.py": "6809335c82c406d5732ebb0b86170889cf04dae671911b02e383ac9f80d53f70",
+    "openpilot/system/ui/lib/multilang.py": "8ca25630d6be433f0ae8dd7f0708a277d31c873be6669650804f97b45a427f19",
+    "openpilot/common/utils.py": "b1cc68b63cff1386ba397c0cc527dbb38fb50b154043ffcb066ed7acce65ec83",
+    "openpilot/common/realtime.py": "6337d64508299a53c00f0795397e5043ec7b69c864d6ca8c02604244502aba5e",
+    "openpilot/system/ui/lib/application.py": "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00",
+    "openpilot/system/ui/widgets/__init__.py": "2089c705e90238bc152c24646434df7a7318d1e6923336b4d2ced252e556490a",
+    "openpilot/system/ui/lib/emoji.py": "a9a54f3237e8b1d72c322e7533545b85f418c925d1af98cd3c0306345c99a609",
+    "openpilot/system/ui/lib/text_measure.py": "34f2617ad58f1f49befa02d8090f185e4ddcd849f58d0d75a4e766ef70e58da6",
+    "openpilot/system/ui/widgets/inputbox.py": "a2266ea4060dda6cedf34a5279c8fd3fea51184e37a6beb1982d651c04097617",
+    "openpilot/system/ui/lib/wrap_text.py": "61ad7cb549c8f31499f1404d2c2876f67e6d5b21805107bd7f704386af2c1ec6",
+    "openpilot/system/ui/widgets/label.py": "4eb916d4c3baa10e3e9b92cf20d435834742f02d832fe7186de03b4fa72a52bb",
+    "openpilot/common/filter_simple.py": "38d315a00635c4093cf6cbc3ed46a90d0f1708daf7662cba8a00d069c20dbfb3",
+    "openpilot/system/ui/widgets/button.py": "be996f6c929906f1cda719103cb8b2f554003e89b05126d81e022341b75db4e1",
+    "openpilot/selfdrive/assets/fonts/Inter-Medium.ttf": "5249ae5f8ddfded34c98c6e3cf09e08f178f234e1bfa28a68f98f6f957628418",
+    "openpilot/selfdrive/assets/fonts/Inter-Bold.ttf": "d597e753e78d8bf9db34c13343146545fb3be5a1c99a175bc381fe3f6f787f31",
+    "openpilot/selfdrive/assets/fonts/Inter-SemiBold.ttf": "98542636e6c900d04e987ca7a37e160a407df344be073fb041fd88f2cd90085a",
+    "openpilot/selfdrive/assets/fonts/Pretendard-SemiBold.fnt": "53da3ffe3d7d6b905d7857705aba86b67204a7096830bc42ed53c4a82bf22016",
+    "openpilot/selfdrive/assets/fonts/unifont.otf": "9712a9bc089af7ddc06e0826aa84f2ee23ed2f1a1dddaf2a89c2483e753a8475",
+    "openpilot/selfdrive/assets/fonts/Inter-Regular.ttf": "1041a8cf17dab7579acef0cc46b21f6497ec1ae01918ddc3495416efb81a4780",
+    "openpilot/selfdrive/assets/fonts/KaiGenGothicKR-Bold.ttf": "e1656b065f0249609b86139a30abba71f0a37edb2f0b325f6f7e9f5d35979de1",
+    "openpilot/common/params.py": "4708c127258c0c0de9acd2d670ad9b48d4f3fd050c96deb373ea8cd348afe3a4",
+    "openpilot/selfdrive/assets/fonts/Pretendard-SemiBold.png": "c2b890e8c0330d29969e2329eec7df5c277f9bde925b5138a4a66e24b9b88e38",
+    "openpilot/selfdrive/ui/translations/languages.json": "46f5510bdda495843eac5b7ea64d66edf335dceb752be027076f443f337ba2c5",
+    "openpilot/selfdrive/ui/translations/app_en.po": "dbe5d7a26bf71611766c1e7c739baa141d555f7b0f5693a66c5d86d3bbfdbf91"
+  },
+  "absent": [
+    "openpilot/selfdrive/assets/fonts/Inter-Medium.fnt",
+    "openpilot/selfdrive/assets/fonts/Inter-Bold.fnt",
+    "openpilot/selfdrive/assets/fonts/Inter-SemiBold.fnt",
+    "openpilot/selfdrive/assets/fonts/unifont.fnt",
+    "openpilot/selfdrive/assets/fonts/unifont.ttf",
+    "openpilot/selfdrive/assets/fonts/Inter-Regular.fnt",
+    "openpilot/selfdrive/assets/fonts/KaiGenGothicKR-Bold.fnt"
+  ],
+  "dependencies": [
+    {
+      "name": "cffi",
+      "version": "2.1.1",
+      "source": {
+        "registry": "https://pypi.org/simple"
+      },
+      "dependencies": [
+        {
+          "name": "pycparser",
+          "marker": "implementation_name != 'PyPy'"
+        }
+      ],
+      "sdist": {
+        "url": "https://files.pythonhosted.org/packages/9e/ef/008a1939e372c06329a3fce4279c02f328488f3526744906eeec3da7ad5f/cffi-2.1.1.tar.gz",
+        "hash": "sha256:dd31f52ea1086513bb9df30f8fcee9b8918323ae067a3d5b78bc826a000712be",
+        "size": 530807,
+        "upload-time": "2026-08-03T21:21:18.939Z"
+      },
+      "wheels": [
+        {
+          "url": "https://files.pythonhosted.org/packages/10/69/43965eccfdead3b9220015fd1320e117be8c6ed01a62ffab76eeb752f5d5/cffi-2.1.1-cp312-cp312-macosx_10_15_x86_64.whl",
+          "hash": "sha256:c8c69575568085ba0b1b10c0249d779a214aea6f6522e949a0fc9fb0fcb449d0",
+          "size": 184821,
+          "upload-time": "2026-08-03T21:19:44.887Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/54/7d/16e5a096677b5e313ca80cd5e5170efa3ea44624a82bb111925522da64b1/cffi-2.1.1-cp312-cp312-macosx_11_0_arm64.whl",
+          "hash": "sha256:f81b3b8f3d4e343550fa4baa0e479bba9f2d29ce9c2e9b51d1ce1718d7442fcf",
+          "size": 184719,
+          "upload-time": "2026-08-03T21:19:46.129Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/56/e6/8941622732edec876dd17d0453dce07317ae96db34f2ec1436c9d3785986/cffi-2.1.1-cp312-cp312-manylinux1_i686.manylinux2014_i686.manylinux_2_17_i686.manylinux_2_5_i686.whl",
+          "hash": "sha256:811bd1e21d32de12efca32393a0ab3f5133b54fce9bd44b8bd77ab07da14bf6a",
+          "size": 214799,
+          "upload-time": "2026-08-03T21:19:47.218Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/44/de/f98430906df1545ffde0d543dd124a7a439bc2cd32b36b9c53f805df7333/cffi-2.1.1-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl",
+          "hash": "sha256:68e62fe11f30d5ca8289242866f0a5291402d8529ca2178ab8afc5c9694ae890",
+          "size": 222389,
+          "upload-time": "2026-08-03T21:19:48.331Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/6a/5b/717f1526b9957b34456313c31645c5b82b8fb5c3fe9e4752999be7128bfc/cffi-2.1.1-cp312-cp312-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl",
+          "hash": "sha256:4a7c934f7360e8cd64fe9efadcbd10c7c6364f531e432b9a4bf5ccbc9e0e8b50",
+          "size": 210249,
+          "upload-time": "2026-08-03T21:19:49.543Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/64/b3/f8aa4f3e34986c7e4ec45072d1b1b9dd295b6b18007b45518d79726dd725/cffi-2.1.1-cp312-cp312-manylinux2014_s390x.manylinux_2_17_s390x.whl",
+          "hash": "sha256:3143d81e29e1e20a9ce10901ec369012947876596f75a222235965f2b7ae832e",
+          "size": 208775,
+          "upload-time": "2026-08-03T21:19:50.918Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/b1/db/dceb9dd5b231e1da801793f8acc9f3c52a7e1afe40bb1aae37e02b0faad5/cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+          "hash": "sha256:c1453022f490d2459a11819d83ad1d586e9ff65a12ac3e705ffebd46d3685dcf",
+          "size": 221822,
+          "upload-time": "2026-08-03T21:19:52.054Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/a0/d2/6cd24ae3be000a634109c247d1475d62e5616d0dc78c82770942ec384248/cffi-2.1.1-cp312-cp312-musllinux_1_2_aarch64.whl",
+          "hash": "sha256:208f941bb9d18e768138677f0a6d2ce01f590df56043dda1df1535ac57c88517",
+          "size": 225232,
+          "upload-time": "2026-08-03T21:19:53.109Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/cb/52/3fa190537004dd7f0ab860a6dc7c0175b8667f68d1e618a46f5498d30250/cffi-2.1.1-cp312-cp312-musllinux_1_2_x86_64.whl",
+          "hash": "sha256:210019b6c7cf07f081b4c54635c8cf744377001350e29cc0f81c4377b4797735",
+          "size": 223597,
+          "upload-time": "2026-08-03T21:19:54.515Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/80/fb/0bb75b7039588c074b37ae99f40d9bfddf990ecb2fbc346ebccd2e56b9be/cffi-2.1.1-cp312-cp312-win32.whl",
+          "hash": "sha256:046bfc24911b37851ee1b51aab8bffe713d89c68c6a057b09484ce9fd5f69b4e",
+          "size": 175292,
+          "upload-time": "2026-08-03T21:19:55.566Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/d9/79/615cc094e2fb508cade7de88d3b4f6c4ec2bab695c97bce9153dc65aadf5/cffi-2.1.1-cp312-cp312-win_amd64.whl",
+          "hash": "sha256:f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a",
+          "size": 185919,
+          "upload-time": "2026-08-03T21:19:56.89Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/70/c6/d0ea84713fe46b243a436a18fcd47d639732747e21635c8a27191b06dc30/cffi-2.1.1-cp312-cp312-win_arm64.whl",
+          "hash": "sha256:7bde5e4cc5c10140859842b9d383af292b22639a4dffb725314baf45968cef80",
+          "size": 180093,
+          "upload-time": "2026-08-03T21:19:58.155Z"
+        }
+      ]
+    },
+    {
+      "name": "comma-deps-raylib",
+      "version": "6.0.0.1.post103",
+      "source": {
+        "registry": "https://pypi.org/simple"
+      },
+      "dependencies": [
+        {
+          "name": "cffi"
+        }
+      ],
+      "wheels": [
+        {
+          "url": "https://files.pythonhosted.org/packages/6f/e3/21e3be3ad1e2382b9ecab7d836e7ca19ea0959fe714d539a71c6b87ba510/comma_deps_raylib-6.0.0.1.post103-py3-none-macosx_11_0_arm64.whl",
+          "hash": "sha256:d8bef63b7e49bc8704eda9fecdefbff01d7f6c9027069cb1b1f5150cac077ed1",
+          "size": 1885397,
+          "upload-time": "2026-09-11T22:33:22.617Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/3d/4d/cceaf969d771af8870094d06bb84dca805f9268584a9a3c134dfee2307c7/comma_deps_raylib-6.0.0.1.post103-py3-none-manylinux_2_28_aarch64.whl",
+          "hash": "sha256:d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a",
+          "size": 21707647,
+          "upload-time": "2026-09-11T22:33:26.533Z"
+        },
+        {
+          "url": "https://files.pythonhosted.org/packages/27/ce/e8b941bcf0b213ca9cb4d8cb69b18398b4dad77923925d80bc3281837461/comma_deps_raylib-6.0.0.1.post103-py3-none-manylinux_2_28_x86_64.whl",
+          "hash": "sha256:942ec942ec01005f05584eede1a6add483043e8e8f764e68cfebb7c21c443b89",
+          "size": 20722617,
+          "upload-time": "2026-09-11T22:33:31.158Z"
+        }
+      ]
+    },
+    {
+      "name": "pycparser",
+      "version": "3.0",
+      "source": {
+        "registry": "https://pypi.org/simple"
+      },
+      "sdist": {
+        "url": "https://files.pythonhosted.org/packages/1b/7d/92392ff7815c21062bea51aa7b87d45576f649f16458d78b7cf94b9ab2e6/pycparser-3.0.tar.gz",
+        "hash": "sha256:600f49d217304a5902ac3c37e1281c9fe94e4d0489de643a9504c5cdfdfc6b29",
+        "size": 103492,
+        "upload-time": "2026-01-21T14:26:51.89Z"
+      },
+      "wheels": [
+        {
+          "url": "https://files.pythonhosted.org/packages/0c/c3/44f3fbbfa403ea2a7c779186dc20772604442dde72947e7d01069cbe98e3/pycparser-3.0-py3-none-any.whl",
+          "hash": "sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992",
+          "size": 48172,
+          "upload-time": "2026-01-21T14:26:50.693Z"
+        }
+      ]
+    }
+  ]
+}

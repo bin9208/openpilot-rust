@@ -1,0 +1,67 @@
+{
+  "source_sha256": "519fe086d6cd27a1f06728d6c2ff0e3ccc3d42e213475c1d018acc0936894b39",
+  "python": "3.12.15",
+  "capture": "Unmodified original verify(), real source pycapnp Event.from_bytes/to_dict and cleanup audit; oracle subprocess boundary replays earlier real-C++ stdout without invoking candidate policy. Complete original eight runtime capture inputs retained in deterministic gzip.",
+  "cases": [
+    {
+      "case": "term",
+      "mode": "unrelated-log-number",
+      "success": false,
+      "error": {
+        "kind": "AttributeError",
+        "repr": "AttributeError(\"'int' object has no attribute 'startswith'\")",
+        "message": "'int' object has no attribute 'startswith'"
+      },
+      "calls": [],
+      "files": {
+        "cleanup-audit.json": "{\n  \"devices\": 10,\n  \"sessions\": 3,\n  \"started\": 7,\n  \"links\": 3,\n  \"deactivation\": 3,\n  \"buffers\": 103,\n  \"fences\": 97,\n  \"fds\": 113,\n  \"mappings\": 103\n}\n"
+      },
+      "stdout": ""
+    },
+    {
+      "case": "term",
+      "mode": "unrelated-log-null",
+      "success": false,
+      "error": {
+        "kind": "AttributeError",
+        "repr": "AttributeError(\"'NoneType' object has no attribute 'startswith'\")",
+        "message": "'NoneType' object has no attribute 'startswith'"
+      },
+      "calls": [],
+      "files": {
+        "cleanup-audit.json": "{\n  \"devices\": 10,\n  \"sessions\": 3,\n  \"started\": 7,\n  \"links\": 3,\n  \"deactivation\": 3,\n  \"buffers\": 103,\n  \"fences\": 97,\n  \"fds\": 113,\n  \"mappings\": 103\n}\n"
+      },
+      "stdout": ""
+    },
+    {
+      "case": "term",
+      "mode": "unrelated-log-dict",
+      "success": false,
+      "error": {
+        "kind": "AttributeError",
+        "repr": "AttributeError(\"'dict' object has no attribute 'startswith'\")",
+        "message": "'dict' object has no attribute 'startswith'"
+      },
+      "calls": [],
+      "files": {
+        "cleanup-audit.json": "{\n  \"devices\": 10,\n  \"sessions\": 3,\n  \"started\": 7,\n  \"links\": 3,\n  \"deactivation\": 3,\n  \"buffers\": 103,\n  \"fences\": 97,\n  \"fds\": 113,\n  \"mappings\": 103\n}\n"
+      },
+      "stdout": ""
+    },
+    {
+      "case": "missing-road",
+      "mode": "unrelated-log-number",
+      "success": false,
+      "error": {
+        "kind": "TypeError",
+        "repr": "TypeError(\"argument of type 'int' is not iterable\")",
+        "message": "argument of type 'int' is not iterable"
+      },
+      "calls": [],
+      "files": {
+        "cleanup-audit.json": "{\n  \"devices\": 7,\n  \"sessions\": 2,\n  \"started\": 5,\n  \"links\": 2,\n  \"deactivation\": 2,\n  \"buffers\": 81,\n  \"fences\": 192,\n  \"fds\": 90,\n  \"mappings\": 81\n}\n"
+      },
+      "stdout": ""
+    }
+  ]
+}

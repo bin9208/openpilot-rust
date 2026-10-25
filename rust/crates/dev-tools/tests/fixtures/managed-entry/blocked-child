@@ -1,0 +1,6 @@
+#!/bin/sh
+# Immutable ownership fixture: no candidate response or expected policy answer.
+trap '' INT TERM
+/bin/sleep 60 &
+printf '%s %s\n' "$$" "$!" > "$MANAGED_OWNERSHIP_ACK"
+wait

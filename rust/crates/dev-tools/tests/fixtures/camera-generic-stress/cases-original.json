@@ -1,0 +1,462 @@
+{
+  "sources": {
+    "rust/tools/check_camerad_stress.py": "05407fbd24e73550d8236c79d28213021493138d6436eb5b559e3bf0e10803aa",
+    "rust/tools/camerad_runtime_stress_check.py": "62b87a20edc76103bf88be0b036b650c9836aca21c4f6532ce536f848deac99a"
+  },
+  "cases": [
+    {
+      "name": "constructor-lazy",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "bad",
+        "SPECTRA_ERROR_DT": "bad",
+        "STRESS_RAND": "0"
+      },
+      "actions": "",
+      "expected": [],
+      "error": null
+    },
+    {
+      "name": "now-does-not-parse",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "bad",
+        "SPECTRA_ERROR_DT": "bad",
+        "STRESS_RAND": "0"
+      },
+      "actions": "now\n",
+      "expected": [
+        {
+          "now": 1000000000
+        }
+      ],
+      "error": null
+    },
+    {
+      "name": "parse-after-now",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "bad",
+        "STRESS_RAND": "0"
+      },
+      "actions": "now\nstress 2 3\n",
+      "expected": [
+        {
+          "now": 1000000000
+        }
+      ],
+      "error": "invalid_argument"
+    },
+    {
+      "name": "defaults",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "disabled-0",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "0",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "disabled-1",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "-0",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "disabled-2",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "-1",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "disabled-3",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "-inf",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "disabled-4",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "nan",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "disabled-5",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "NaN(payload)",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "one-excludes-rand-max",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "1",
+        "STRESS_RAND": "2147483647"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "unclamped-probability",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "1.01",
+        "STRESS_RAND": "2147483647"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        true
+      ],
+      "error": null
+    },
+    {
+      "name": "infinite-probability",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "inf",
+        "STRESS_RAND": "2147483647"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        true
+      ],
+      "error": null
+    },
+    {
+      "name": "half-random-boundary",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": ".5",
+        "SPECTRA_ERROR_DT": "0",
+        "STRESS_RAND": "1073741823,1073741824"
+      },
+      "actions": "stress 0 0\nstress 1 1\n",
+      "expected": [
+        true,
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "strict-millisecond-interval",
+      "environment": {
+        "STRESS_CLOCK": "0:999999,0:1000000,0:1000001,0:2000000,0:3000000",
+        "SPECTRA_ERROR_PROB": "1",
+        "SPECTRA_ERROR_DT": "1",
+        "STRESS_RAND": "0,0,0,0"
+      },
+      "actions": "stress 0 0\nstress 1 1\nstress 2 2\nstress 0 3\n",
+      "expected": [
+        false,
+        false,
+        true,
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "shared-three-camera-last-trigger",
+      "environment": {
+        "STRESS_CLOCK": "0:6000000,0:7000000,0:12000000,0:12000001,0:13000000,0:19000000,0:20000000",
+        "SPECTRA_ERROR_PROB": "1",
+        "SPECTRA_ERROR_DT": "5",
+        "STRESS_RAND": "0,0,0,0"
+      },
+      "actions": "stress 0 0\nstress 1 1\nstress 2 2\nstress 0 3\n",
+      "expected": [
+        true,
+        false,
+        true,
+        true
+      ],
+      "error": null
+    },
+    {
+      "name": "interval-0",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "1",
+        "SPECTRA_ERROR_DT": "inf",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "interval-1",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "1",
+        "SPECTRA_ERROR_DT": "nan",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "interval-2",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "1",
+        "SPECTRA_ERROR_DT": "-inf",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        true
+      ],
+      "error": null
+    },
+    {
+      "name": "interval-3",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "1",
+        "SPECTRA_ERROR_DT": "-1",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        true
+      ],
+      "error": null
+    },
+    {
+      "name": "interval-4",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "1",
+        "SPECTRA_ERROR_DT": "-0",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        true
+      ],
+      "error": null
+    },
+    {
+      "name": "prefixes",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": " \t+0x1.8p-1tail",
+        "SPECTRA_ERROR_DT": " +0.5suffix",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [
+        true
+      ],
+      "error": null
+    },
+    {
+      "name": "cached-env",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "STRESS_MUTATE_PROB": "invalid",
+        "STRESS_MUTATE_DT": "invalid",
+        "SPECTRA_ERROR_PROB": "1",
+        "SPECTRA_ERROR_DT": "0",
+        "STRESS_RAND": "0,0"
+      },
+      "actions": "stress 1 2\nstress 2 3\n",
+      "expected": [
+        true,
+        true
+      ],
+      "error": null
+    },
+    {
+      "name": "real-libc-rand-sequence",
+      "environment": {
+        "STRESS_CLOCK": "1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:0,18:0,19:0,20:0",
+        "SPECTRA_ERROR_PROB": "0.5",
+        "SPECTRA_ERROR_DT": "0"
+      },
+      "actions": "stress 0 0\nstress 0 0\nstress 0 0\nstress 0 0\nstress 0 0\nstress 0 0\nstress 0 0\nstress 0 0\nstress 0 0\nstress 0 0\n",
+      "expected": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true,
+        false
+      ],
+      "error": null
+    },
+    {
+      "name": "probability-error-0",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [],
+      "error": "invalid_argument"
+    },
+    {
+      "name": "probability-error-1",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "x",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [],
+      "error": "invalid_argument"
+    },
+    {
+      "name": "probability-error-2",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "+",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [],
+      "error": "invalid_argument"
+    },
+    {
+      "name": "probability-error-3",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "1e9999",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [],
+      "error": "out_of_range"
+    },
+    {
+      "name": "probability-error-4",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_PROB": "1e-9999",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [],
+      "error": "out_of_range"
+    },
+    {
+      "name": "interval-error-0",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_DT": "",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [],
+      "error": "invalid_argument"
+    },
+    {
+      "name": "interval-error-1",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_DT": "x",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [],
+      "error": "invalid_argument"
+    },
+    {
+      "name": "interval-error-2",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_DT": "+",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [],
+      "error": "invalid_argument"
+    },
+    {
+      "name": "interval-error-3",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_DT": "1e9999",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [],
+      "error": "out_of_range"
+    },
+    {
+      "name": "interval-error-4",
+      "environment": {
+        "STRESS_CLOCK": "1:0,1:1000,1:2000,1:3000",
+        "SPECTRA_ERROR_DT": "1e-9999",
+        "STRESS_RAND": "0"
+      },
+      "actions": "stress 0 0\n",
+      "expected": [],
+      "error": "out_of_range"
+    }
+  ]
+}

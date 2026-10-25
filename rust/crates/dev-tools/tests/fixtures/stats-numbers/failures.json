@@ -1,0 +1,80 @@
+[
+  {
+    "mode": "good",
+    "error": null,
+    "stdout": "598 aggregation cases, 0 differences\n",
+    "report": "{\n  \"cases\": 598,\n  \"differences\": [],\n  \"source_sha256\": \"c0e52f371eb8e45e74c2f8acdaf2505784843d31d9b9c997a011f98bd3467d27\",\n  \"binary_sha256\": \"400fae1dec4b5cdc0954f63e63cfa8c1d1cb3c9a29b5dccbace7993ab09303d4\"\n}"
+  },
+  {
+    "mode": "mutation",
+    "error": "AssertionError",
+    "stdout": "598 aggregation cases, 1 differences\n",
+    "report": "{\n  \"cases\": 598,\n  \"differences\": [\n    {\n      \"case\": 0,\n      \"expected\": \"sample.x,started=False,version=v,branch=test,dirty=False,origin=github.com/test/openpilot,deviceType=pc count=2,min=0.0,max=-0.0,mean=0.0,p5=0.0,p50=0.0,p95=-0.0,dongle_id=\\\"test\\\" 123\\n\",\n      \"actual\": \"changed\",\n      \"input\": {\n        \"metrics\": [\n          \"x:0.0|sa\",\n          \"x:-0.0|sa\"\n        ]\n      }\n    }\n  ],\n  \"source_sha256\": \"c0e52f371eb8e45e74c2f8acdaf2505784843d31d9b9c997a011f98bd3467d27\",\n  \"binary_sha256\": \"400fae1dec4b5cdc0954f63e63cfa8c1d1cb3c9a29b5dccbace7993ab09303d4\"\n}"
+  },
+  {
+    "mode": "short",
+    "error": "ValueError",
+    "stdout": "",
+    "report": null
+  },
+  {
+    "mode": "extra",
+    "error": "ValueError",
+    "stdout": "",
+    "report": null
+  },
+  {
+    "mode": "empty",
+    "error": "ValueError",
+    "stdout": "",
+    "report": null
+  },
+  {
+    "mode": "malformed",
+    "error": "JSONDecodeError",
+    "stdout": "",
+    "report": null
+  },
+  {
+    "mode": "bom",
+    "error": "JSONDecodeError",
+    "stdout": "",
+    "report": null
+  },
+  {
+    "mode": "nul",
+    "error": "JSONDecodeError",
+    "stdout": "",
+    "report": null
+  },
+  {
+    "mode": "crlf",
+    "error": null,
+    "stdout": "598 aggregation cases, 0 differences\n",
+    "report": "{\n  \"cases\": 598,\n  \"differences\": [],\n  \"source_sha256\": \"c0e52f371eb8e45e74c2f8acdaf2505784843d31d9b9c997a011f98bd3467d27\",\n  \"binary_sha256\": \"400fae1dec4b5cdc0954f63e63cfa8c1d1cb3c9a29b5dccbace7993ab09303d4\"\n}"
+  },
+  {
+    "mode": "unicode-lines",
+    "error": null,
+    "stdout": "598 aggregation cases, 0 differences\n",
+    "report": "{\n  \"cases\": 598,\n  \"differences\": [],\n  \"source_sha256\": \"c0e52f371eb8e45e74c2f8acdaf2505784843d31d9b9c997a011f98bd3467d27\",\n  \"binary_sha256\": \"400fae1dec4b5cdc0954f63e63cfa8c1d1cb3c9a29b5dccbace7993ab09303d4\"\n}"
+  },
+  {
+    "mode": "invalid-stdout",
+    "error": "UnicodeDecodeError",
+    "stdout": "",
+    "report": null
+  },
+  {
+    "mode": "invalid-stderr",
+    "error": "UnicodeDecodeError",
+    "stdout": "",
+    "report": null
+  },
+  {
+    "mode": "exit",
+    "error": "CalledProcessError",
+    "stdout": "",
+    "report": null
+  }
+]

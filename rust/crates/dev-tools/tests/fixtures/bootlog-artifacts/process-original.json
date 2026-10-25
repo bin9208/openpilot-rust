@@ -1,0 +1,124 @@
+{
+  "cases": [
+    {
+      "name": "source-exit7",
+      "native": false,
+      "runner": [],
+      "mode": "exec",
+      "observed": {
+        "result": {
+          "success": false,
+          "counter": "3432",
+          "current_exists": false
+        },
+        "args": "\n",
+        "cwd": "$OUTPUT/basedir/openpilot/system/loggerd",
+        "core-limit": "0\n",
+        "stderr.log-exists": true,
+        "stderr.log": "stderr-fixture\n",
+        "invocation.json-exists": true,
+        "invocation": {
+          "argv": [
+            "$BINARY"
+          ],
+          "cwd": "$OUTPUT/basedir/openpilot/system/loggerd",
+          "environment": {
+            "PARAMS_ROOT": "$OUTPUT/params",
+            "OPENPILOT_PREFIX": "boot-fixture-4d0344d95623",
+            "LOG_ROOT": "$OUTPUT/logs",
+            "PARAMS_COPY_PATH": "$OUTPUT/copy",
+            "PATH": "$OUTPUT/commands",
+            "BOOTLOG_PSTORE_PATH": "$OUTPUT/pstore",
+            "BOOTLOG_LAUNCH_PATH": "$OUTPUT/launch_log",
+            "CLEAN": "1"
+          },
+          "exit": 7
+        },
+        "result.json-exists": true
+      }
+    },
+    {
+      "name": "native-exit7",
+      "native": true,
+      "runner": [
+        "/usr/bin/env"
+      ],
+      "mode": "exec",
+      "observed": {
+        "result": {
+          "success": false,
+          "counter": "3432",
+          "current_exists": false
+        },
+        "args": "--pstore\n$OUTPUT/pstore\n--launch-log\n$OUTPUT/launch_log\n",
+        "cwd": "$OUTPUT/basedir/openpilot/system/loggerd",
+        "core-limit": "0\n",
+        "stderr.log-exists": true,
+        "stderr.log": "stderr-fixture\n",
+        "invocation.json-exists": true,
+        "invocation": {
+          "argv": [
+            "/usr/bin/env",
+            "$BINARY",
+            "--pstore",
+            "$OUTPUT/pstore",
+            "--launch-log",
+            "$OUTPUT/launch_log"
+          ],
+          "cwd": "$OUTPUT/basedir/openpilot/system/loggerd",
+          "environment": {
+            "PARAMS_ROOT": "$OUTPUT/params",
+            "OPENPILOT_PREFIX": "boot-fixture-88ed4846c548",
+            "LOG_ROOT": "$OUTPUT/logs",
+            "PARAMS_COPY_PATH": "$OUTPUT/copy",
+            "PATH": "$OUTPUT/commands",
+            "BOOTLOG_PSTORE_PATH": "$OUTPUT/pstore",
+            "BOOTLOG_LAUNCH_PATH": "$OUTPUT/launch_log",
+            "CLEAN": "1"
+          },
+          "exit": 7
+        },
+        "result.json-exists": true
+      }
+    },
+    {
+      "name": "missing",
+      "native": false,
+      "runner": [],
+      "mode": "missing",
+      "observed": {
+        "error": "FileNotFoundError",
+        "errno": 2,
+        "stderr.log-exists": false,
+        "invocation.json-exists": false,
+        "result.json-exists": false
+      }
+    },
+    {
+      "name": "nonexec",
+      "native": false,
+      "runner": [],
+      "mode": "nonexec",
+      "observed": {
+        "error": "PermissionError",
+        "errno": 13,
+        "stderr.log-exists": false,
+        "invocation.json-exists": false,
+        "result.json-exists": false
+      }
+    },
+    {
+      "name": "existing-output",
+      "native": false,
+      "runner": [],
+      "mode": "exists",
+      "observed": {
+        "error": "FileExistsError",
+        "errno": 17,
+        "stderr.log-exists": false,
+        "invocation.json-exists": false,
+        "result.json-exists": false
+      }
+    }
+  ]
+}

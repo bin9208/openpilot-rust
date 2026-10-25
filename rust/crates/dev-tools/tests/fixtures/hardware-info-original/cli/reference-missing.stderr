@@ -1,0 +1,2 @@
+usage: hardware_info_reference.py [-h] binding request output
+hardware_info_reference.py: error: the following arguments are required: binding, request, output

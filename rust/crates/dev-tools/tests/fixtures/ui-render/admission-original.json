@@ -1,0 +1,110 @@
+[
+  {
+    "name": "raw-label-surrogate-zero",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"label\", \"text\": \"\\ud800\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 400, \"height\": 160}, \"props\": {}}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "state_text": "[\n  null\n]"
+  },
+  {
+    "name": "raw-unified-surrogate-zero",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"unified\", \"text\": \"\\ud800\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 400, \"height\": 160}, \"props\": {}}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "state_text": "[\n  {\n    \"width\": 0.0,\n    \"scroll_offset\": 0\n  }\n]"
+  },
+  {
+    "name": "raw-unified-null-zero",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"unified\", \"text\": null, \"rect\": {\"x\": 10, \"y\": 10, \"width\": 400, \"height\": 160}, \"props\": {}}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "state_text": "[\n  {\n    \"width\": 0.0,\n    \"scroll_offset\": 0\n  }\n]"
+  },
+  {
+    "name": "raw-unified-number-draw",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 1, \"elements\": [{\"kind\": \"unified\", \"text\": 17, \"rect\": {\"x\": 10, \"y\": 10, \"width\": 400, \"height\": 160}, \"props\": {}}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "667c2aec626207065f521c9eec0da863b4b2e8bac993f7e71057bb4d4beb0c49",
+    "state_text": "[\n  {\n    \"width\": 60.20399856567383,\n    \"scroll_offset\": 0\n  }\n]"
+  },
+  {
+    "name": "raw-toggle-list",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 1, \"elements\": [{\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 400, \"height\": 160}, \"props\": {\"value\": [\"\\ud800\"]}}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "48ef920645176cb9f0ac3c4184b444d4d18fea4dbd0c2e3a6ce51c1e8381cd2a",
+    "state_text": "[\n  {\n    \"value\": [\n      \"\\ud800\"\n    ],\n    \"progress\": 1.0\n  }\n]"
+  },
+  {
+    "name": "raw-unused-surrogate",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"unified\", \"text\": \"Hello\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 400, \"height\": 160}, \"props\": {\"unused\": \"\\ud800\"}}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "state_text": "[\n  {\n    \"width\": 0.0,\n    \"scroll_offset\": 0\n  }\n]"
+  },
+  {
+    "name": "raw-unused-deep",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"unified\", \"text\": \"Hello\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 400, \"height\": 160}, \"props\": {\"unused\": [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "state_text": "[\n  {\n    \"width\": 0.0,\n    \"scroll_offset\": 0\n  }\n]"
+  },
+  {
+    "name": "raw-label-string-size-zero",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"label\", \"text\": \"a\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 400, \"height\": 160}, \"props\": {\"size\": \"60\"}}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "state_text": "[\n  null\n]"
+  },
+  {
+    "name": "raw-string-scale",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": \"1.0\"}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"unified\", \"text\": \"Hello\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 400, \"height\": 160}, \"props\": {}}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "state_text": "[\n  {\n    \"width\": 0.0,\n    \"scroll_offset\": 0\n  }\n]"
+  },
+  {
+    "name": "raw-unified-list-zero",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"unified\", \"text\": [17], \"rect\": {\"x\": 10, \"y\": 10, \"width\": 400, \"height\": 160}, \"props\": {}}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "state_text": "[\n  {\n    \"width\": 0.0,\n    \"scroll_offset\": 0\n  }\n]"
+  },
+  {
+    "name": "raw-button-null-zero",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 0, \"elements\": [{\"kind\": \"button\", \"text\": null, \"rect\": {\"x\": 10, \"y\": 10, \"width\": 400, \"height\": 160}, \"props\": {}}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "8555ac1a7c481622b9ee16aac3b89ab446736de69798300329c940ec44f83746",
+    "state_text": "[\n  null\n]"
+  },
+  {
+    "name": "raw-toggle-value-null",
+    "scene_text": "{\"config\": {\"big\": false, \"large_viewport\": false, \"pc\": true, \"scale\": 1.0}, \"language\": \"en\", \"frames\": 1, \"elements\": [{\"kind\": \"toggle\", \"text\": \"\", \"rect\": {\"x\": 10, \"y\": 10, \"width\": 400, \"height\": 160}, \"props\": {\"value\": null}}]}",
+    "exit": 0,
+    "png": true,
+    "state": true,
+    "png_sha256": "1be4433e4ac4cf9d65909065c5ad03c4883a8a1e6edfffa0b4257549858ea7de",
+    "state_text": "[\n  {\n    \"value\": null,\n    \"progress\": 0.0\n  }\n]"
+  }
+]

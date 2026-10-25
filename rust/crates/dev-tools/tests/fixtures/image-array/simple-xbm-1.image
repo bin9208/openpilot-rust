@@ -1,0 +1,5 @@
+#define im_width 8
+#define im_height 2
+static char im_bits[] = {
+0xaa,0xaa
+};

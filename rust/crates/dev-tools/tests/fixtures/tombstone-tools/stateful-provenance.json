@@ -1,0 +1,60 @@
+{
+  "scope": "Permanent bounded stateful group:50existing gates +9configure-order +13tag controls. Original full242 raw capture retained separately; remaining192 are not represented by this group.",
+  "candidate_executed": false,
+  "build_or_install": false,
+  "python": "3.12.15 (main, Oct 14 2026, 01:05:27) [Clang 23.1.3 ]",
+  "source_sha256": {
+    "rust/tools/check_tombstoned_reference.py": "6271ece66356f377357ffc2b37bf3d98fcdb4c8231c8c07f556ed0294c261cd4",
+    "rust/tools/tombstoned_reference.py": "7b647dba322d93e5d2bd9c5692356b10d3f85f2a2e0f9da8b982e05206c8e781",
+    "rust/tools/check_version_reference.py": "d0ad5fbec23e1ba4a2507ae6dbc68856141d03eda07dadebab3280d5731525d5",
+    "openpilot/system/tombstoned.py": "a7a5f32535fe7c3a74593b3252366db5ac1c8b43f64837293e1c192f517527a5",
+    "openpilot/system/sentry.py": "fec900bf600e7a714460d8494472d6cc648759abf36ff72b79158bff61135fd8",
+    "openpilot/system/athena/registration.py": "461b5976d0e0ad7849c8096e5372dc3514da24fcd7c1924c97027cdcb62a0924",
+    "openpilot/system/version.py": "69b91ce6fc8fe3b164c4f6c23e9514c89a4b6759043cfb607b733c7e006144d7",
+    "openpilot/common/git.py": "68a68daab8137ba307753b6f1dbc18a4a8c736ed118383800ad6bfd8690140d9",
+    "openpilot/common/utils.py": "b1cc68b63cff1386ba397c0cc527dbb38fb50b154043ffcb066ed7acce65ec83",
+    "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+    "openpilot/cereal/custom.capnp": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693",
+    "openpilot/cereal/deprecated.capnp": "65079ff035a29c4c267d07ef7240c316c7eaa81b52f795142ed7603489a61355",
+    "opendbc_repo/opendbc/car/car.capnp": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda",
+    "openpilot/common/params_pyx.pyx": "a8cc5e5296dd38a012c55b0867c4563f8e320d25960260d897675dd90f0ea544",
+    "openpilot/common/params.cc": "2947645ca30b57d23feeace0e88bead5709c1681dc21359fb1e5a225ca63b187",
+    "openpilot/common/util.cc": "4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a",
+    "openpilot/common/swaglog.cc": "b61e45b8ad799606ba2a78e0b5ee9303a665bad99a67d50f3b7134792bf7ba7c",
+    "openpilot/common/params.h": "47d08fa1987c9150e55d09a2a533a0a115851aadb34bd1a0c82325e0be8726b3",
+    "openpilot/common/params_keys.h": "b8422e8ad2cd74ec3c5750c3e919f6546519d84fabb5f6ec868b5372713b4d7f",
+    "openpilot/common/util.h": "49db7a80478fb44be3a03ee5224775fa15e62a03f982152eae15f0a4dc5cceea",
+    "openpilot/common/swaglog.h": "bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b",
+    "openpilot/common/timing.h": "66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71",
+    "openpilot/common/version.h": "8d618ada21dcc00618178d67f52c532b95c3eeff0736a9909379a3431e050ba6",
+    "openpilot/common/queue.h": "f7c75c847ae63dfd6e864406e722248540a79908270e85ca2674b43407408fcf",
+    "openpilot/system/hardware/hw.h": "afc36d60417dbaf1683d17f10b32306c1d69f58816a6dad09c8da24484249da7",
+    "openpilot/system/hardware/base.h": "7ef48c160e8e0e5cba3a8f629ac72904900e41be260aee8e4029b5c1a615e3b9",
+    "openpilot/system/hardware/pc/hardware.h": "edee2ab86ca69a3c8f005a823457edfe3a9368703a5583ff0d77b32f8b1e105c"
+  },
+  "binding_sha256": "fb7d15475f49abc07f17bf704257dd09b2348a116c6b96f90a7495824dbdf02d",
+  "binding_provenance_sha256": "5ee3ff154bbcbdf3ba41d638fe8d2f55a5310322c41d0bd7162c218ee2ca1949",
+  "source_receipts": {
+    "full-source-original-3": "c671daefb4a829089b7685382fbd7e6aa0f911b305fc6d41ad509d445bd76d5b",
+    "configure-order-original-1": "3151a01dc2211e368603dd810df14bf4d226447f30eecb62d1d0dc75aebcc1ca",
+    "tag-order-original-1": "cc75d6ec2c8ebe626ccb428db08e18892e9ae07b18ba7e43cf062501d0a617a5"
+  },
+  "capture_scripts": {
+    "capture-full-source.py": "1c4c06f15d45dea75918b352b60dde585354645f8a70dd5091f0df85a58cd956",
+    "capture-configure-order.py": "335a198d88d135af7e20e2e2cf7ce023f4b5e3593693ea676eba8753efaba057",
+    "capture-tag-order.py": "5759cea821adcae3fefa8068acfd531af13a873acaa970af933f1aa892d6e526",
+    "prepare-stateful-fixtures.py": "ab6f7cd2b6f431b52fa254c8b5b24384baa2545007d56046b0963cb01c086871"
+  },
+  "artifacts": {
+    "stateful-gates-original.json": "80efbc3289a5dfeb8ebd9396f6c09da2e40c30193355ca8d7e98daefd623aa3d",
+    "stateful-configure-original.json": "895ad316406c071243f580b156fe6d1c6d9ed8e603ef73fc2d8ddb9b0c294055",
+    "stateful-tag-original.json": "3ad2ef7d10075b7c34fe18815aa8b662ed0daa54327db59262c5ffad1b3cbc19"
+  },
+  "comparison": "Exact recursive types/fields/array order including SDK and log order. Only original created timestamps vary; value_json is decoded exactly as original Pair.normalize. No scan/cycle/subprocess cases or tolerances omitted silently.",
+  "original_fixture_replay": {
+    "receipt_sha256": "7e7da86f2f0531fded625163f30457e6bf89aff4f63be59378e351eb89a68d05",
+    "script_sha256": "52d33c00091d863d4b6334b8d5a9120ccd698628979167d20ec20adc85ab1fb9",
+    "cases": 72,
+    "candidate_executed": false
+  }
+}

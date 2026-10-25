@@ -1,0 +1,50 @@
+[
+  {
+    "kind": "fps",
+    "file": "input.json",
+    "bytes": 6760,
+    "sha256": "765a1c086d3f388ef737c7daafe59f06254c75ac1098cab585cd8cce552fa499"
+  },
+  {
+    "kind": "fps",
+    "file": "source.json",
+    "bytes": 8312,
+    "sha256": "e7ace08ed752e7265a5ddc5bc99dfe749c1a986cc6e48180fd5a98bd2e43648d"
+  },
+  {
+    "kind": "fps",
+    "file": "native.json",
+    "bytes": 8312,
+    "sha256": "e7ace08ed752e7265a5ddc5bc99dfe749c1a986cc6e48180fd5a98bd2e43648d"
+  },
+  {
+    "kind": "stack",
+    "file": "result.json",
+    "bytes": 126,
+    "sha256": "62e2fcd1e5d4238c14c7c3777b0b95d55eb56b0868c1bace514518806bd9973d"
+  },
+  {
+    "kind": "stack",
+    "file": "native.stderr",
+    "bytes": 275,
+    "sha256": "811d847bcf6ec0a60e501a3372b8e54b446359e458552b1a334ab208817e02f6"
+  },
+  {
+    "kind": "stack",
+    "file": "input.json",
+    "bytes": 992,
+    "sha256": "f42cdb8b354a7773f20f73f2c6dc21bf241f7908af354d1b86747a5ceabbd985"
+  },
+  {
+    "kind": "stack",
+    "file": "source.json",
+    "bytes": 6256,
+    "sha256": "3b7c0620ce2da75cb096de4d7067faba5e4a46d2e34d0a5130f62540749d3215"
+  },
+  {
+    "kind": "stack",
+    "file": "native.json",
+    "bytes": 3241,
+    "sha256": "2f7efb8e2b64c12cfb06c67caa742aea3fc208a0bec465f48eac93acd67621aa"
+  }
+]

@@ -1,0 +1,590 @@
+{
+  "artifact_member_count": 889,
+  "artifact_zip_bytes": 4250230,
+  "artifact_zip_sha256": "b6ecc542f61d83ee1bfa518d3926ccfb45e6d2f52240eb7f85fd42c8cdc3f50a",
+  "capture_artifact": 12560845618,
+  "capture_evidence": {
+    "SOURCE_COMMIT": {
+      "bytes": 41,
+      "sha256": "edfb5a59536f48fb49a0cacdd28f930cea8ce7ddb23fc83f9c9189c9fdddf408"
+    },
+    "bundle-clippy.log": {
+      "bytes": 5988,
+      "sha256": "034d54c8aa222d35f8d873ea11734c766547db35705ff09041f35ed79d6e0c40"
+    },
+    "bundle-integration.log": {
+      "bytes": 2701,
+      "sha256": "c7e99ae9d56a00dc60aec0dbb00b7e17f90a3d9b845eaf2a1f458a81c075ff20"
+    },
+    "bundle-lib.log": {
+      "bytes": 11924,
+      "sha256": "89fb61c685e547a0d2706e7e3762ebfae7b75fe6414f4abbb44807dc523c7fc0"
+    },
+    "index-after.bin": {
+      "bytes": 1163286,
+      "sha256": "e58eb43e9c59887bdf63025057e26dbc7f8abc4111d57fedfff376e27b98b0d8"
+    },
+    "index-before.bin": {
+      "bytes": 1163286,
+      "sha256": "e58eb43e9c59887bdf63025057e26dbc7f8abc4111d57fedfff376e27b98b0d8"
+    },
+    "oracle-venv-files.after.sha256": {
+      "bytes": 146482,
+      "sha256": "6fd2a6261c31adcf099106916b65a54f07bc815f9f17f1f84f7bd55a89ae0bf9"
+    },
+    "oracle-venv-files.before.sha256": {
+      "bytes": 146482,
+      "sha256": "6fd2a6261c31adcf099106916b65a54f07bc815f9f17f1f84f7bd55a89ae0bf9"
+    },
+    "oracle-venv-links.after.txt": {
+      "bytes": 244,
+      "sha256": "679b5dcbda21e707000879f371a5d62ae8f01f54fd21a54fdff664632479e310"
+    },
+    "oracle-venv-links.before.txt": {
+      "bytes": 244,
+      "sha256": "679b5dcbda21e707000879f371a5d62ae8f01f54fd21a54fdff664632479e310"
+    },
+    "source-after.sha256": {
+      "bytes": 68,
+      "sha256": "d99c8373841193e5030af323e385574fdcf5e65ba016df113abe16678c8e54c8"
+    },
+    "source-before.sha256": {
+      "bytes": 68,
+      "sha256": "d99c8373841193e5030af323e385574fdcf5e65ba016df113abe16678c8e54c8"
+    }
+  },
+  "capture_harness_sha256": "5d888f50c5e57483d55b5ab87fe3f8678406cb8bc875651d765573d225390f4f",
+  "capture_job": 120871017872,
+  "capture_run": 40093557875,
+  "capture_source_commit": "121aa5b86ddf427697a8cabb25d2ed337d80f429",
+  "current_native_sha256": {
+    "rust/Cargo.lock": "a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0",
+    "rust/Cargo.toml": "7372b8240f7998d6a78f6ef95b574cf64523b913282240d918ef5697a7d8507d",
+    "rust/crates/dev-tools/Cargo.toml": "a1db3f1726cba01dfcb50efd8d13536de6ff9c47d5244346019010bf7be243a8",
+    "rust/crates/dev-tools/src/argparse_scan.rs": "a2e53b5164624f1946ca40fe188915493329dd25fe7abe37a9f7958dcf56adaa",
+    "rust/crates/dev-tools/src/bin/build_route_vault_bundle.rs": "f06bb9002bf3bd5f7bba0c459c36c7021ccf553179ebaade0b71ab4f26e25017",
+    "rust/crates/dev-tools/src/lib.rs": "b817e5ccecebacdf904632a5d8705b266c6e00998516e5b13092c9c8c9be9412",
+    "rust/crates/dev-tools/src/qa_process.rs": "aa9fda1ed867fe6dcf7befb19fc6857fa419bbaa33fcc518264276abef7c6633",
+    "rust/crates/dev-tools/src/route_vault_bundle.rs": "8c21b56bd4846e6cfcee4a7c432cd64512d09fbf3fa2c6de39a796cead755fe2",
+    "rust/crates/dev-tools/src/seal.rs": "61acb2852b7b000b84ab179fcf7bdde4e062bb5055e1759ef0c4fa7523837c54",
+    "rust/rust-toolchain.toml": "474342a18df37f923f59df43b1b90e6c0b0d6758612462bbc0dadbe37fe2cadf"
+  },
+  "raw_total_bytes": 184435,
+  "retired_source_sha256": "05551fc470864a4c70758a66b1a156c2b6d9e95e8deeb1f2a74ac13fb5259aa9",
+  "rows": [
+    {
+      "archive_member": "bundle-original/original-3139316-000000.json",
+      "argv_spans": [
+        [
+          {
+            "offset": 0,
+            "token": "DEST"
+          }
+        ],
+        [],
+        []
+      ],
+      "bytes": 10956,
+      "file": "original-3139316-000000.json",
+      "row": 0,
+      "sha256": "096207b805d24df61425dfb70c83221c9d200c20f287137c07abcdd4f2b9108e",
+      "stderr_spans": [],
+      "stdout_spans": [
+        {
+          "offset": 6,
+          "token": "DEST"
+        }
+      ]
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000001.json",
+      "argv_spans": [],
+      "bytes": 4898,
+      "file": "original-3139316-000001.json",
+      "row": 1,
+      "sha256": "7065a603f6342f453c6344877740fd429293efb96e2a373156b02f0420547223",
+      "stderr_spans": [],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000002.json",
+      "argv_spans": [
+        [
+          {
+            "offset": 0,
+            "token": "DEST"
+          }
+        ],
+        [],
+        []
+      ],
+      "bytes": 10265,
+      "file": "original-3139316-000002.json",
+      "row": 2,
+      "sha256": "db77acf80ceb82562f33ddbd25b6f0efafbd65bffbc70e536f51bdeb1a1c02b1",
+      "stderr_spans": [
+        {
+          "offset": 153,
+          "token": "ROOT"
+        },
+        {
+          "offset": 304,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000003.json",
+      "argv_spans": [
+        []
+      ],
+      "bytes": 5436,
+      "file": "original-3139316-000003.json",
+      "row": 3,
+      "sha256": "a72c0c6e977399970a2444cf0e618b96b894c305a35483c60c63d4398b00d61c",
+      "stderr_spans": [],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000004.json",
+      "argv_spans": [
+        [],
+        []
+      ],
+      "bytes": 5488,
+      "file": "original-3139316-000004.json",
+      "row": 4,
+      "sha256": "44cffd0a9e044fdb63f3fc88c426d50de6226ad857ea95edf5acd54ba51e1bf5",
+      "stderr_spans": [],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000005.json",
+      "argv_spans": [
+        [],
+        []
+      ],
+      "bytes": 4952,
+      "file": "original-3139316-000005.json",
+      "row": 5,
+      "sha256": "a6905c42d0740c6e9968099388eb3c0c3185a0bc6ef182d906b16eedad05fa05",
+      "stderr_spans": [],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000006.json",
+      "argv_spans": [
+        [
+          {
+            "offset": 0,
+            "token": "DEST"
+          }
+        ],
+        [],
+        []
+      ],
+      "bytes": 7063,
+      "file": "original-3139316-000006.json",
+      "row": 6,
+      "sha256": "e26fc58e5eefb999547bde76bfad43ef68da195c7193529edc0a75804969c0eb",
+      "stderr_spans": [
+        {
+          "offset": 75,
+          "token": "ROOT"
+        },
+        {
+          "offset": 226,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000007.json",
+      "argv_spans": [
+        [
+          {
+            "offset": 0,
+            "token": "DEST"
+          }
+        ],
+        [],
+        []
+      ],
+      "bytes": 10586,
+      "file": "original-3139316-000007.json",
+      "row": 7,
+      "sha256": "890a77b7112a74e124f9a65043fa3f31df602cbbdeb7358b329292bb96c3aee8",
+      "stderr_spans": [
+        {
+          "offset": 153,
+          "token": "ROOT"
+        },
+        {
+          "offset": 304,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000008.json",
+      "argv_spans": [
+        [],
+        []
+      ],
+      "bytes": 4944,
+      "file": "original-3139316-000008.json",
+      "row": 8,
+      "sha256": "6a80438696aaab6f82b25bbdb8d8219c8e74d7ad48fc975fddfc12b8df6c2367",
+      "stderr_spans": [],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000009.json",
+      "argv_spans": [
+        [],
+        []
+      ],
+      "bytes": 4928,
+      "file": "original-3139316-000009.json",
+      "row": 9,
+      "sha256": "fd83ded01fc34cba518e5f5ccbe5f6adbedf3793b201800305c1284f99a839f0",
+      "stderr_spans": [],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000010.json",
+      "argv_spans": [
+        [
+          {
+            "offset": 0,
+            "token": "DEST"
+          }
+        ],
+        [],
+        []
+      ],
+      "bytes": 5974,
+      "file": "original-3139316-000010.json",
+      "row": 10,
+      "sha256": "1523b2fca3fc087a70e1c3a28cbc8788d5e933a70f40d8635841f7662433f993",
+      "stderr_spans": [
+        {
+          "offset": 43,
+          "token": "ROOT"
+        },
+        {
+          "offset": 194,
+          "token": "ROOT"
+        },
+        {
+          "offset": 522,
+          "token": "DEST"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000011.json",
+      "argv_spans": [
+        []
+      ],
+      "bytes": 4951,
+      "file": "original-3139316-000011.json",
+      "row": 11,
+      "sha256": "72148ad8f88b8c98c403b0873ee080ebf4115f1d438ebf5d50b777dfd953e771",
+      "stderr_spans": [],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000012.json",
+      "argv_spans": [
+        [],
+        [],
+        []
+      ],
+      "bytes": 7423,
+      "file": "original-3139316-000012.json",
+      "row": 12,
+      "sha256": "584cb878e6b8204007896808934a2dd910236dafa53d58171b1527e19e8c31f0",
+      "stderr_spans": [
+        {
+          "offset": 75,
+          "token": "ROOT"
+        },
+        {
+          "offset": 226,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000013.json",
+      "argv_spans": [
+        [
+          {
+            "offset": 0,
+            "token": "DEST"
+          }
+        ],
+        [],
+        []
+      ],
+      "bytes": 10906,
+      "file": "original-3139316-000013.json",
+      "row": 13,
+      "sha256": "a5c47e72a20cd8660e4428a2f166bcded94d49772fbbba5dcb695eb690feac3b",
+      "stderr_spans": [
+        {
+          "offset": 152,
+          "token": "ROOT"
+        },
+        {
+          "offset": 303,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000014.json",
+      "argv_spans": [
+        [
+          {
+            "offset": 0,
+            "token": "DEST"
+          }
+        ],
+        [],
+        []
+      ],
+      "bytes": 8786,
+      "file": "original-3139316-000014.json",
+      "row": 14,
+      "sha256": "19464d4a9d47c18129c369da0ddfe8519b62699ad5bbb2737a1f43d7cf058d2a",
+      "stderr_spans": [
+        {
+          "offset": 126,
+          "token": "ROOT"
+        },
+        {
+          "offset": 277,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000015.json",
+      "argv_spans": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "bytes": 7491,
+      "file": "original-3139316-000015.json",
+      "row": 15,
+      "sha256": "2570afe63d10c2ac6b0c8b7851f0f76f1b0ac52f9552504ec1a232c5762d3a76",
+      "stderr_spans": [
+        {
+          "offset": 75,
+          "token": "ROOT"
+        },
+        {
+          "offset": 226,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000016.json",
+      "argv_spans": [
+        [],
+        [],
+        []
+      ],
+      "bytes": 7419,
+      "file": "original-3139316-000016.json",
+      "row": 16,
+      "sha256": "890a0e7eeb55b9fc73d06fd8c9915053609274ac702dbde373fd856f833cd222",
+      "stderr_spans": [
+        {
+          "offset": 75,
+          "token": "ROOT"
+        },
+        {
+          "offset": 226,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000017.json",
+      "argv_spans": [
+        [],
+        [],
+        [],
+        []
+      ],
+      "bytes": 7460,
+      "file": "original-3139316-000017.json",
+      "row": 17,
+      "sha256": "1fa9a65d1c9d5e5ac85ecbd48bf4abf2086aa1ebd6c23339f9585c2cc5ddf342",
+      "stderr_spans": [
+        {
+          "offset": 75,
+          "token": "ROOT"
+        },
+        {
+          "offset": 226,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000018.json",
+      "argv_spans": [
+        [],
+        [],
+        []
+      ],
+      "bytes": 7415,
+      "file": "original-3139316-000018.json",
+      "row": 18,
+      "sha256": "5a66517359b7a1b6d7feeeceb1f575e511e15bf83736cc86060ced72ac9d5f0f",
+      "stderr_spans": [
+        {
+          "offset": 75,
+          "token": "ROOT"
+        },
+        {
+          "offset": 226,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000019.json",
+      "argv_spans": [
+        [
+          {
+            "offset": 0,
+            "token": "DEST"
+          }
+        ],
+        [],
+        []
+      ],
+      "bytes": 11242,
+      "file": "original-3139316-000019.json",
+      "row": 19,
+      "sha256": "dca592e1c11ca59997d44c938282d091da13d8750967cec8825055dbf701245b",
+      "stderr_spans": [
+        {
+          "offset": 157,
+          "token": "ROOT"
+        },
+        {
+          "offset": 308,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000020.json",
+      "argv_spans": [
+        [
+          {
+            "offset": 0,
+            "token": "DEST"
+          }
+        ],
+        [],
+        []
+      ],
+      "bytes": 11596,
+      "file": "original-3139316-000020.json",
+      "row": 20,
+      "sha256": "e5e6a9ba9e85d716e979d4659ebb94d04814f743d0fe576d2d5a230739c342ad",
+      "stderr_spans": [
+        {
+          "offset": 160,
+          "token": "ROOT"
+        },
+        {
+          "offset": 311,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000021.json",
+      "argv_spans": [
+        [
+          {
+            "offset": 0,
+            "token": "DEST"
+          }
+        ],
+        [],
+        []
+      ],
+      "bytes": 11952,
+      "file": "original-3139316-000021.json",
+      "row": 21,
+      "sha256": "4d096b2967fc9401bbb7e28e0ac0f014265b122cb74e72e535f23e715ba95c1d",
+      "stderr_spans": [
+        {
+          "offset": 160,
+          "token": "ROOT"
+        },
+        {
+          "offset": 311,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    },
+    {
+      "archive_member": "bundle-original/original-3139316-000022.json",
+      "argv_spans": [
+        [
+          {
+            "offset": 0,
+            "token": "DEST"
+          }
+        ],
+        [],
+        []
+      ],
+      "bytes": 12304,
+      "file": "original-3139316-000022.json",
+      "row": 22,
+      "sha256": "b59604fb24c5e05fe704c5d99b9d3ea6a48bcfd3a2afe38066475f7e2b7a2e86",
+      "stderr_spans": [
+        {
+          "offset": 159,
+          "token": "ROOT"
+        },
+        {
+          "offset": 310,
+          "token": "ROOT"
+        }
+      ],
+      "stdout_spans": []
+    }
+  ],
+  "schema": "openpilot.bundle-frozen-input.v1",
+  "status": "PINNED_HISTORICAL_CAPTURE_FROZEN_REPLAY_UNRUN"
+}

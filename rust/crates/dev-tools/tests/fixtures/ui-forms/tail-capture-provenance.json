@@ -1,0 +1,64 @@
+{
+  "python": "Python 3.12.15",
+  "helper_sha256": "2220f3192136ead8d283cf8276ca2120a85198978bbca79c0f1286b8690dc365",
+  "fixtures": [
+    {
+      "fixture": "input-list-neighbors-original.json",
+      "cases": 21,
+      "success": 8,
+      "sha256": "4b99f0942b4793022565801049df70e49624e4fa813b64deebb5b62a91a5eea1",
+      "all_synthetic": true
+    },
+    {
+      "fixture": "input-list-lazy-original.json",
+      "cases": 7,
+      "success": 7,
+      "sha256": "0ac93b6d3eeb91a78b28adcd0eea2bb431e3db5993abf85e42e35fbe8ea05199",
+      "all_synthetic": true
+    },
+    {
+      "fixture": "mici-slider-slots-original.json",
+      "cases": 12,
+      "success": 6,
+      "sha256": "fa68c03ad12acb7f19e55d577d4096e3414e0eb2c37b82f1d3ae72664a6b7c91",
+      "all_synthetic": true
+    },
+    {
+      "fixture": "slider-shimmer-width-original.json",
+      "cases": 3,
+      "success": 3,
+      "sha256": "642790ed72ca61934f577be12d0b129dd2d50b91feb1d28e17984b1d2f718434",
+      "all_synthetic": true
+    },
+    {
+      "fixture": "keyboard-keyvalue-neighbors-original.json",
+      "cases": 6,
+      "success": 4,
+      "sha256": "6b472d57c131fc6f3406f2339baac375b43a40fa6babcab856188a3b2a86f925",
+      "all_synthetic": true
+    },
+    {
+      "fixture": "options-slots-original.json",
+      "cases": 6,
+      "success": 3,
+      "sha256": "93200a120ce968b0c1941b804547c66e3b61ed8487a4af336c443948bcdaa35d",
+      "all_synthetic": true
+    },
+    {
+      "fixture": "input-floatcursor-key-original.json",
+      "cases": 6,
+      "success": 3,
+      "sha256": "4dab33bc043603b8bbbfa1509f0b5d6b92d8aa1821812d6e5d080bf1088274dc",
+      "all_synthetic": true
+    },
+    {
+      "fixture": "list-visible-codepoints-original.json",
+      "cases": 2,
+      "success": 2,
+      "sha256": "25198c6656499c84621bbbe2473b1309c44433cd05de433f26466b3270be47c3",
+      "all_synthetic": true
+    }
+  ],
+  "current_source": "All208 family cases,65 admission cases,9 reference tests,35 checker boundaries,CI routing,AST12,strict Clippy and current18scene/388frame native-only proof passed.",
+  "ownership": "Image: input/keyboard/mici/html/controls/list/slider policies; reviewer: adapter/reference/tests; parent: Cargo/workflows/Git/deletions"
+}

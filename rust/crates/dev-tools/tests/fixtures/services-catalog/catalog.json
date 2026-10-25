@@ -1,0 +1,712 @@
+[
+  {
+    "name": "gyroscope",
+    "should_log": true,
+    "frequency": 104.0,
+    "decimation": 104,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "accelerometer",
+    "should_log": true,
+    "frequency": 104.0,
+    "decimation": 104,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "magnetometer",
+    "should_log": true,
+    "frequency": 25.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "lightSensor",
+    "should_log": true,
+    "frequency": 100.0,
+    "decimation": 100,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "temperatureSensor",
+    "should_log": true,
+    "frequency": 2.0,
+    "decimation": 200,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "gpsNMEA",
+    "should_log": true,
+    "frequency": 9.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "deviceState",
+    "should_log": true,
+    "frequency": 2.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "touch",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "can",
+    "should_log": true,
+    "frequency": 100.0,
+    "decimation": 2053,
+    "queue_size": 10485760,
+    "frequency_range": null
+  },
+  {
+    "name": "controlsState",
+    "should_log": true,
+    "frequency": 100.0,
+    "decimation": 10,
+    "queue_size": 2097152,
+    "frequency_range": null
+  },
+  {
+    "name": "selfdriveState",
+    "should_log": true,
+    "frequency": 100.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "pandaStates",
+    "should_log": true,
+    "frequency": 10.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "peripheralState",
+    "should_log": true,
+    "frequency": 2.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "radarState",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 5,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "roadEncodeIdx",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "liveTracks",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": [
+      14.0,
+      25.0
+    ]
+  },
+  {
+    "name": "sendcan",
+    "should_log": true,
+    "frequency": 100.0,
+    "decimation": 139,
+    "queue_size": 2097152,
+    "frequency_range": null
+  },
+  {
+    "name": "logMessage",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": null,
+    "queue_size": 10485760,
+    "frequency_range": null
+  },
+  {
+    "name": "errorLogMessage",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": 1,
+    "queue_size": 10485760,
+    "frequency_range": null
+  },
+  {
+    "name": "liveCalibration",
+    "should_log": true,
+    "frequency": 4.0,
+    "decimation": 4,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "liveTorqueParameters",
+    "should_log": true,
+    "frequency": 4.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "liveDelay",
+    "should_log": true,
+    "frequency": 4.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "androidLog",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "carState",
+    "should_log": true,
+    "frequency": 100.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "carControl",
+    "should_log": true,
+    "frequency": 100.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "carOutput",
+    "should_log": true,
+    "frequency": 100.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "longitudinalPlan",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": [
+      14.0,
+      25.0
+    ]
+  },
+  {
+    "name": "lateralManeuverPlan",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "driverAssistance",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 20,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "procLog",
+    "should_log": true,
+    "frequency": 0.5,
+    "decimation": 15,
+    "queue_size": 10485760,
+    "frequency_range": null
+  },
+  {
+    "name": "gpsLocationExternal",
+    "should_log": true,
+    "frequency": 10.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "gpsLocation",
+    "should_log": true,
+    "frequency": 1.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "ubloxGnss",
+    "should_log": true,
+    "frequency": 10.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "qcomGnss",
+    "should_log": true,
+    "frequency": 2.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "gnssMeasurements",
+    "should_log": true,
+    "frequency": 10.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "clocks",
+    "should_log": true,
+    "frequency": 0.1,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "ubloxRaw",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "livePose",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 4,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "liveParameters",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 5,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "cameraOdometry",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "thumbnail",
+    "should_log": true,
+    "frequency": 0.016666666666666666,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "lateralPlan",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 5,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "onroadEvents",
+    "should_log": true,
+    "frequency": 1.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "carParams",
+    "should_log": true,
+    "frequency": 0.02,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "roadCameraState",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 20,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "driverCameraState",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 20,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "driverEncodeIdx",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "driverStateV2",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "driverMonitoringState",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "wideRoadEncodeIdx",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "wideRoadCameraState",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 20,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "drivingModelData",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "modelV2",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 10485760,
+    "frequency_range": null
+  },
+  {
+    "name": "managerState",
+    "should_log": true,
+    "frequency": 2.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "uploaderState",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "navInstruction",
+    "should_log": true,
+    "frequency": 1.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "navRoute",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "navRouteNavd",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "navThumbnail",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "navModel",
+    "should_log": true,
+    "frequency": 2.0,
+    "decimation": 4,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "mapRenderState",
+    "should_log": true,
+    "frequency": 2.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "qRoadEncodeIdx",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "userBookmark",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "soundPressure",
+    "should_log": true,
+    "frequency": 10.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "rawAudioData",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "bookmarkButton",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "audioFeedback",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "roadEncodeData",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 10485760,
+    "frequency_range": null
+  },
+  {
+    "name": "driverEncodeData",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 10485760,
+    "frequency_range": null
+  },
+  {
+    "name": "wideRoadEncodeData",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 10485760,
+    "frequency_range": null
+  },
+  {
+    "name": "qRoadEncodeData",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 10485760,
+    "frequency_range": null
+  },
+  {
+    "name": "carrotMan",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "navInstructionCarrot",
+    "should_log": true,
+    "frequency": 1.0,
+    "decimation": 10,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "carrotNavi",
+    "should_log": true,
+    "frequency": 2.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "carrotNaviMedia",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 10485760,
+    "frequency_range": null
+  },
+  {
+    "name": "uiDebug",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": 1,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "testJoystick",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "alertDebug",
+    "should_log": true,
+    "frequency": 20.0,
+    "decimation": 5,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "livestreamWideRoadEncodeIdx",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "livestreamRoadEncodeIdx",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "livestreamDriverEncodeIdx",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "livestreamWideRoadEncodeData",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 2097152,
+    "frequency_range": null
+  },
+  {
+    "name": "livestreamRoadEncodeData",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 2097152,
+    "frequency_range": null
+  },
+  {
+    "name": "livestreamDriverEncodeData",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 2097152,
+    "frequency_range": null
+  },
+  {
+    "name": "youtubeRoadEncodeData",
+    "should_log": false,
+    "frequency": 20.0,
+    "decimation": null,
+    "queue_size": 10485760,
+    "frequency_range": null
+  },
+  {
+    "name": "customReservedRawData0",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "customReservedRawData1",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  },
+  {
+    "name": "customReservedRawData2",
+    "should_log": true,
+    "frequency": 0.0,
+    "decimation": null,
+    "queue_size": 256000,
+    "frequency_range": null
+  }
+]

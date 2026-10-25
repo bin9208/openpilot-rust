@@ -1,0 +1,542 @@
+#!/usr/bin/env bash
+# #530/#572: main8 또는 exact final-two2 caller의 새 SDK. 기존 partial prefix는 읽기 전용이다.
+set -euo pipefail
+umask 077
+original_path=$PATH
+export LC_ALL=C PATH=/usr/bin:/bin
+fail() { printf 'ARM SDK 530: %s\n' "$*" >&2; exit 1; }
+[[ $# == 1 && ( $1 == before || $1 == verify || $1 == after ) ]] || fail 'before|verify|after required'
+phase=$1
+[[ ${GITHUB_ACTIONS:-}:${GITHUB_REPOSITORY:-} == true:bin9208/openpilot-rust &&
+   ${RUNNER_ENVIRONMENT:-}:${RUNNER_OS:-}:${RUNNER_ARCH:-} == github-hosted:Linux:ARM64 &&
+   $(uname -s):$(uname -m) == Linux:aarch64 && ${LOCAL_CI_ARCH:-} == aarch64 &&
+   ${CI296_NATIVE_ARM:-} == 1 ]] || fail 'exact native ARM caller required'
+# 이 함수는 caller 정책만 판정한다. host/소유성/SDK 봉인은 별도 필수 경계다.
+arm530_caller() {
+if [[ ${CI296_NATIVE_ARM_CALLER:-} == rust.yml ]];then
+  [[ ${GITHUB_WORKFLOW_REF:-} == "bin9208/openpilot-rust/.github/workflows/rust.yml@${GITHUB_REF:-}" ]] || fail 'exact native ARM caller required'
+case ${GITHUB_JOB:-} in
+  planner-runtime|carrot-man-runtime|webrtc-runtime|webcam-runtime|xiaoge-runtime|radard-runtime|radar-arm|carrot-navi-arm) ;;
+  *) fail 'unapproved ARM SDK role';;
+esac
+case ${GITHUB_EVENT_NAME:-} in
+  push) [[ ${GITHUB_REF:-} == refs/heads/dev || ${GITHUB_REF:-} == refs/heads/main ]] || fail 'push ref differs';;
+  pull_request) [[ ${GITHUB_REF:-} =~ ^refs/pull/[1-9][0-9]*/merge$ &&
+    ( ${GITHUB_BASE_REF:-} == dev || ${GITHUB_BASE_REF:-} == main ) &&
+    ${CI296_PR_HEAD_REPOSITORY:-} == bin9208/openpilot-rust ]] || fail 'PR source differs';;
+  workflow_dispatch) case ${GITHUB_REF:-} in refs/heads/?*|refs/tags/?*) ;; *) fail 'dispatch ref differs';; esac;;
+  *) fail 'event differs';;
+esac
+else
+  [[ -z ${CI296_NATIVE_ARM_CALLER:-} && ${GITHUB_EVENT_NAME:-} == push &&
+     ${GITHUB_REF:-} == refs/heads/codex/feat-523-python-rust &&
+     ${GITHUB_WORKFLOW_REF:-} == "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-final-two.yml@refs/heads/codex/feat-523-python-rust" ]] || fail 'exact final-two ARM caller required'
+  case ${GITHUB_JOB:-} in
+    radar-arm|carrot-navi-arm) ;;
+    *) fail 'unapproved final-two ARM SDK role';;
+  esac
+fi
+}
+arm530_caller
+job=${CI_JOB_TEMP:?}; source_dir=${CI296_SOURCE:?}; owner=${CI296_SOURCE_OWNER:?}
+[[ $job == /tmp/openpilot-ci.?????? && $source_dir == "$owner/source" &&
+   ${HOME:-} == "$job/home" && ${CARGO_HOME:-} == "$job/cargo-home" &&
+   $GITHUB_SHA =~ ^[0-9a-f]{40}$ && $(git -C "$source_dir" --no-optional-locks rev-parse HEAD) == "$GITHUB_SHA" ]] || fail 'private source/homes differ'
+prefix=$job/arm530-sdk
+sdk=$prefix/rustup-home/toolchains/1.94.0-aarch64-unknown-linux-gnu
+proof=$job/proof/arm530-sdk
+receipt=$proof/binding.tsv
+helper=$source_dir/tools/ci/prepare-readonly-arm-rust-530
+[[ ${ARM530_HELPER_SHA256:-} =~ ^[0-9a-f]{64}$ && $(readlink -e "${BASH_SOURCE[0]}") == "$helper" ]] || fail 'current helper binding differs'
+printf '%s  %s\n' "$ARM530_HELPER_SHA256" "$helper" | sha256sum --check --strict --quiet - || fail 'helper hash differs'
+uid=$(id -u); gib=$((1024*1024*1024)); reserve=$((512*1024*1024))
+validate() {
+  local path=$1 kind=$2 meta user mode
+  [[ $path == /* && ! -L $path && $(readlink -e "$path") == "$path" ]] || return 1
+  if [[ $kind == directory ]];then [[ -d $path ]];else [[ -f $path ]];fi || return 1
+  meta=$(stat -c '%u %a' "$path") || return 1;read -r user mode <<< "$meta"
+  [[ $user == "$uid" ]] && (( (8#$mode & 0022)==0 ))
+}
+for p in "$job" "$job/proof" "$owner" "$source_dir";do validate "$p" directory || fail 'owned canonical directory required';done
+for p in "$job/owner" "$owner/.ci296-owner";do validate "$p" file || fail 'owned regular marker required';done
+[[ $(cat "$job/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" &&
+   $(cat "$owner/.ci296-owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" &&
+   $(stat -c '%d:%i' "$owner") == "${CI296_SOURCE_IDENTITY:?}" ]] || fail 'owner identity differs'
+stamp() { stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$1"; }
+seal_tree() {
+  local root=$1 output=$2 link
+  validate "$root" directory || return 1
+  [[ $(stat -c %d "$root") == "$(stat -c %d "$job")" ]] || return 1
+  find -P "$root" -xdev -printf '%D\n' | sort -u > "$output.devices" || return 1
+  [[ $(cat "$output.devices") == "$(stat -c %d "$job")" ]] || return 1
+  find -P "$root" -type l -print0 > "$output.links" || return 1
+  while IFS= read -r -d '' link;do
+    [[ $root == "$prefix/shims" && $(readlink -e "$link") == "$root/bin/rustup" ]] || return 1
+  done < "$output.links"
+  find -P "$root" \( ! -uid "$uid" -o \( ! -type f ! -type d ! -type l \) -o \( ! -type l -perm /0022 \) \) -print0 > "$output.rejected" || return 1
+  [[ ! -s $output.rejected ]] || return 1
+  find -P "$root" -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%y\t%p\0' | sort -z > "$output.roster" || return 1
+  find -P "$root" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$output.sha256" || return 1
+  find -P "$root" -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%y\t%p\0' | sort -z > "$output.stable" || return 1
+  cmp "$output.roster" "$output.stable"
+}
+measure() {
+  local root=$1 cap=$2 apparent=$3 before value code n line path bytes
+  local -a excluded=()
+  [[ $root != "$owner" ]] || excluded=("--exclude=$source_dir/rust/target")
+  [[ -e $root || -L $root ]] || { printf '0\n';return; }
+  validate "$root" directory || return 1
+  before=$(stat -c '%d:%i' "$root") || return 1
+  for n in 1 2 3;do
+    code=0
+    value=$(timeout 15s du -sx -B1 $apparent "${excluded[@]}" -- "$root" 2> "$proof/sizing.stderr") || code=$?
+    [[ $(stat -c '%d:%i' "$root") == "$before" ]] || return 1
+    bytes=${value%%$'\t'*}
+    [[ $bytes =~ ^[0-9]+$ && $value == "$bytes"$'\t'"$root" ]] && ((bytes<=cap)) || return 1
+    if [[ $code == 0 && ! -s $proof/sizing.stderr ]];then printf '%s\n' "$bytes";return;fi
+    [[ $code == 1 && $root == "$prefix" && -s $proof/sizing.stderr ]] || return 1
+    while IFS= read -r line;do
+      [[ $line == "du: cannot access '$prefix/"*"': No such file or directory" ]] || return 1
+      path=${line#"du: cannot access '"};path=${path%"': No such file or directory"}
+      [[ ! -e $path && ! -L $path ]] || return 1
+    done < "$proof/sizing.stderr"
+  done
+  return 1
+}
+admit() {
+  local root cap bytes apparent dev available n
+  local -a roots=("$prefix" "$job/proof" "$job/openpilot-disk-guard" "$job/cargo-home" "$source_dir/rust/target" "$owner")
+  local -a caps=($((3*gib)) "$reserve" "$gib" "$gib" $((8*gib)) $((2*gib)))
+  local -A need=() samples=()
+  for n in "${!roots[@]}";do
+    root=${roots[$n]};cap=${caps[$n]}
+    bytes=$(measure "$root" "$cap" '') || { printf '%s\tallocated\t%s\t%s\n' "$phase_label" "$root" "$cap" >> "$proof/admission-failure.tsv";return 1; }
+    apparent=$(measure "$root" "$cap" --apparent-size) || { printf '%s\tapparent\t%s\t%s\n' "$phase_label" "$root" "$cap" >> "$proof/admission-failure.tsv";return 1; }
+    while [[ ! -d $root ]];do root=$(dirname "$root");done
+    dev=$(stat -c %d "$root");samples[$dev]=$root;need[$dev]=$(( ${need[$dev]:-0}+cap-bytes ))
+  done
+  for dev in "${!need[@]}";do
+    available=$(df --output=avail -B1 "${samples[$dev]}" | awk 'NR==2&&NF==1&&$1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}') || return 1
+    printf '%s\t%s\t%s\t%s\n' "$phase_label" "$dev" "$available" "$((need[$dev]+reserve))" >> "$proof/admission.tsv"
+    ((available>=need[$dev]+reserve)) || return 1
+  done
+}
+
+binding() {
+  local prefix_stamp sdk_stamp source_identity p digest
+  prefix_stamp=$(stamp "$prefix") && sdk_stamp=$(stamp "$sdk") || return 1
+  source_identity=$(stat -c '%d:%i' "$source_dir") || return 1
+  printf 'schema=1\nmode=native-arm-530-v1\nsource=%s\nrole=%s\nworkflow=%s\nowner=%s\nsource_identity=%s:%s\nprefix=%s\nsdk=%s\nhelper=%s\n' \
+    "$GITHUB_SHA" "$GITHUB_JOB" "$GITHUB_WORKFLOW_REF" "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" \
+    "$CI296_SOURCE_IDENTITY" "$source_identity" "$prefix_stamp" "$sdk_stamp" "$ARM530_HELPER_SHA256" || return 1
+  for p in sdk.before.sha256 sdk.before.roster rustup.before.sha256 rustup.before.roster inputs.before.sha256 inputs.before.roster shims.before.sha256 shims.before.roster bootstrap.before.sha256 bootstrap.before.roster payload.sha256;do
+    validate "$proof/$p" file && [[ $(stat -c %h "$proof/$p") == 1 ]] || return 1
+    digest=$(sha256sum "$proof/$p") || return 1;digest=${digest%% *}
+    [[ $digest =~ ^[0-9a-f]{64}$ ]] || return 1
+    printf '%s=%s\n' "$p" "$digest" || return 1
+  done
+}
+program_pins() {
+  printf '%s  %s\n' \
+    e467c9248540c2ce5f63c624d1deefa0428201c988a30b437df2e2bdb4175050 "$sdk/bin/rustc" \
+    6026281758f8ef9cd8155a6e338d0a5e277831774478a166514df3b445bed04d "$sdk/bin/cargo" \
+    3e1c98dc2b3908886656cf23cd9e907e96a7dbc1b42e72e1c2dfd6fbd760f02f "$sdk/bin/rustfmt" \
+    ebeb778b37e38e032facaa829c30a91b3a0a4ebfcfaf51e1fe93482589784add "$sdk/bin/clippy-driver" \
+    ad17c302d4ece11bbb9e087093359a9c584f97d586bc052451f37f38ec18da2c "$sdk/bin/cargo-clippy" \
+    98a51f89fbd3300cbb11a8928cbb07ff179af232c84c07c70825f12e74242f00 "$sdk/bin/rustdoc" \
+    fdf8160017f921b485c3e64840532aa460b3e556c06374a9de1c378f131d6da0 "$sdk/bin/cargo-fmt"
+}
+verify() {
+  local output=${1:-$proof/verify} p current recorded
+  [[ ${OPENPILOT_CI_PREPARED_RUST_MODE:-} == native-arm-530-v1 &&
+     ${OPENPILOT_CI_PREPARED_RUST_ROOT:-} == "$sdk" &&
+     ${OPENPILOT_CI_PREPARED_RUST_MANIFEST:-} == "$proof/sdk.before.sha256" &&
+     ${RUSTUP_HOME:-} == "$prefix/rustup-home" && ${RUSTUP_AUTO_INSTALL:-} == 0 &&
+     ${RUSTUP_TOOLCHAIN:-} == 1.94.0-aarch64-unknown-linux-gnu &&
+     ${RUSTC:-} == "$sdk/bin/rustc" && ${RUSTDOC:-} == "$sdk/bin/rustdoc" &&
+     ${ARM530_BINDING_SHA256:-} =~ ^[0-9a-f]{64}$ ]] || return 1
+  validate "$receipt" file && [[ $(stat -c %h "$receipt") == 1 ]] || return 1
+  printf '%s  %s\n' "$ARM530_BINDING_SHA256" "$receipt" | sha256sum --check --strict --quiet - || return 1
+  current=$(binding) && recorded=$(cat "$receipt") || return 1
+  [[ $current == "$recorded" ]] || return 1
+  for p in sdk rustup inputs shims bootstrap;do
+    local tree=$prefix/$p
+    [[ $p != sdk ]] || tree=$sdk
+    [[ $p != rustup ]] || tree=$prefix/rustup-home
+    seal_tree "$tree" "$output.$p" || return 1
+    cmp "$proof/$p.before.roster" "$output.$p.roster" && cmp "$proof/$p.before.sha256" "$output.$p.sha256" || return 1
+  done
+  program_pins | sha256sum --check --strict --quiet - || return 1
+  sha256sum --check --strict --quiet "$proof/payload.sha256" || return 1
+  prestate_verify || return 1
+  phase_label=$phase
+  admit
+}
+prestate_verify() {
+  local kind path before hash extra fd current
+  while IFS=$'\t' read -r kind path before hash extra;do
+    [[ -z $extra ]] || return 1
+    case $kind in
+      absent) [[ ! -e $path && ! -L $path ]] || return 1;;
+      path) [[ $(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$path") == "$before" ]] || return 1;;
+      held)
+        [[ $(stamp "$path") == "$before" && ! -L $path ]] || return 1
+        exec {fd}<"$path" || return 1
+        current=$(sha256sum "/proc/$$/fd/$fd") || return 1;current=${current%% *}
+        [[ $current == "$hash" && $(stamp "/proc/$$/fd/$fd") == "$before" && $(stamp "$path") == "$before" ]] || return 1
+        exec {fd}<&-;;
+      *) return 1;;
+    esac
+  done < "$proof/prestate.tsv"
+}
+if [[ $phase != before ]];then
+  validate "$proof" directory || fail 'preparation proof missing'
+  if [[ $phase == after ]];then
+    status=0
+    # prepare 중간 실패라도 원래 tool/partial-prefix 관측 파일은 독립 재검사한다.
+    prestate_verify || status=1
+    verify "$proof/after" || status=1
+    printf 'source=%s\nrole=%s\nstatus=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" "$status" > "$proof/after-status.tsv"
+    exit "$status"
+  fi
+  verify || fail 'prepared ARM SDK changed'
+  exit
+fi
+[[ ${RUSTUP_HOME:-} == "$job/rustup-home" && ! -e $prefix && ! -L $prefix && ! -e $proof && ! -L $proof ]] || fail 'new absent prefix/proof required'
+mkdir -m 700 "$proof" "$proof/logs"
+out=$proof
+# credential/config/전체 환경을 읽지 않는다. 알려진 tool과 설치 metadata만 관측한다.
+prestate() {
+  local path name canonical count=0 total=0 metadata_total=0 size before fd hash kind
+  for name in rustup cargo;do
+    path=$(PATH="$original_path" command -v "$name" || :)
+    [[ -z $path ]] || printf '%s\t%s\n' "$name" "$path" >> "$proof/prestate-paths.tsv"
+  done
+  for path in "$(PATH="$original_path" command -v rustup || :)" "$(PATH="$original_path" command -v cargo || :)" \
+      "$job/rustup-home/toolchains/1.94.0-aarch64-unknown-linux-gnu/bin/cargo-clippy" \
+      "$job/rustup-home/toolchains/1.94.0-aarch64-unknown-linux-gnu/lib/rustlib/"{components,multirust-config.toml,multirust-channel-manifest.toml,manifest-clippy-preview-aarch64-unknown-linux-gnu};do
+    [[ -n $path ]] || continue
+    if [[ ! -e $path && ! -L $path ]];then printf 'absent\t%s\n' "$path" >> "$proof/prestate.tsv";continue;fi
+    printf 'path\t%s\t%s\n' "$path" "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$path")" >> "$proof/prestate.tsv"
+    canonical=$(readlink -e "$path") || return 1
+    [[ -f $canonical && ! -L $canonical ]] || return 1
+    before=$(stamp "$canonical");size=$(stat -c %s "$canonical")
+    ((size<=64*1024*1024 && total+size<=256*1024*1024)) || return 1
+    if [[ $path == */lib/rustlib/* ]];then
+      ((size<=2*1024*1024 && metadata_total+size<=4*1024*1024)) || return 1
+      metadata_total=$((metadata_total+size))
+    fi
+    total=$((total+size));count=$((count+1))
+    exec {fd}<"$canonical" || return 1
+    [[ $(stamp "/proc/$$/fd/$fd") == "$before" ]] || return 1
+    hash=$(sha256sum "/proc/$$/fd/$fd") || return 1;hash=${hash%% *}
+    [[ $(stamp "$canonical") == "$before" && $(stamp "/proc/$$/fd/$fd") == "$before" ]] || return 1
+    printf 'held\t%s\t%s\t%s\n' "$canonical" "$before" "$hash" >> "$proof/prestate.tsv"
+    exec {fd}<&-
+  done
+  for path in "$job/rustup-home" "$job/cargo-home";do
+    if [[ -e $path || -L $path ]];then
+      validate "$path" directory || return 1
+      (ulimit -f 1024; timeout 15s find -P "$path" -maxdepth 2 -printf '%D:%i\t%m:%U:%G\t%y\t%p\t%l\0') > "$proof/prestate.$(basename "$path").bin" || return 1
+      [[ $(stat -c %s "$proof/prestate.$(basename "$path").bin") -le 1048576 ]] || return 1
+      [[ $(awk 'BEGIN {RS="\0"} END {print NR}' "$proof/prestate.$(basename "$path").bin") -le 4096 ]] || return 1
+    fi
+  done
+  printf 'tools=%s\nhashed_bytes=%s\nold_sdk_closure_complete=false\n' "$count" "$total" > "$proof/prestate-summary.tsv"
+}
+prestate || fail 'pre-install state unknown'
+[[ ! -e $source_dir/rust/target && ! -L $source_dir/rust/target ]] || fail 'fresh ARM target required before SDK preparation'
+mkdir -m 700 "$prefix" "$prefix/bootstrap" "$prefix/inputs" "$prefix/work" "$prefix/expected" "$prefix/rustup-home" "$prefix/shims"
+active= identity=;phase_label=admission;deadline=$((SECONDS+1200));groups_ok=true
+
+pid_identity() {
+  local row rest;local -a fields
+  { IFS= read -r -n 8193 row < "/proc/$1/stat"; } 2>/dev/null || return 1
+  rest=${row##*) };read -r -a fields <<< "$rest"
+  [[ ${#row} -le 8192 && $row == "$1 ("*") "* && ${#fields[@]} -ge 20 && ${fields[0]} != Z && ${fields[0]} != X &&
+     ${fields[1]} == "$$" && ${fields[2]} == "$1" && ${fields[3]} == "$1" && ${fields[19]} =~ ^[0-9]+$ &&
+     ( -z ${2:-} || ${fields[0]} == "$2" ) ]] || return 1
+  printf '%s\n' "${fields[19]}"
+}
+kill_owned() { [[ -n $active && -n $identity && $(pid_identity "$active") == "$identity" ]] && kill -KILL -- "-$active"; }
+group_failure() {
+  local report=$1 kind=$2 code=$3 pgid=$4 exempt=$5 entry=$6 row=$7 disappeared=$8 rest exe_code=0
+  local -a fields=()
+  rest=${row##*) };read -r -a fields <<< "$rest" || :
+  # 최초 실패만 create-new/64KiB에 보존한다. proc comm/raw stat와 exe 외 argv/env는 읽지 않는다.
+  (
+    set -o noclobber;ulimit -f 64 || exit 1
+    {
+      printf 'schema=1\nkind=%s\nreturn_code=%s\nexpected_pgid=%s\nexempt_pid=%s\nentry=%s\ndisappeared_before_failure=%s\n' \
+        "$kind" "$code" "$pgid" "$exempt" "$entry" "$disappeared" || exit 1
+      printf 'state=%s\nppid=%s\npgid=%s\nsession=%s\nstartticks=%s\nraw_stat_bytes=%s\nraw_stat=%s\n' \
+        "${fields[0]:-unavailable}" "${fields[1]:-unavailable}" "${fields[2]:-unavailable}" \
+        "${fields[3]:-unavailable}" "${fields[19]:-unavailable}" "${#row}" "$row" || exit 1
+      printf 'exe=' || exit 1
+      /usr/bin/readlink -e -- "${entry%/stat}/exe" 2>/dev/null || exe_code=$?
+      printf '\nexe_read_status=%s\n' "$exe_code" || exit 1
+    } > "$report"
+  )
+}
+group_quiet() {
+  local pgid=$1 exempt=${2:-} report=$3 entry row rest pid disappeared=0 seen=0
+  local -a fields
+  for entry in /proc/[0-9]*/stat;do
+    row=;fields=();pid=${entry#/proc/};pid=${pid%/stat};seen=$((seen+1))
+    if ! { IFS= read -r -n 8193 row < "$entry"; } 2>/dev/null;then
+      if [[ ! -e $entry && ! -d ${entry%/stat} ]];then disappeared=$((disappeared+1));continue;fi
+      group_failure "$report" unreadable-stat 2 "$pgid" "$exempt" "$entry" "$row" "$disappeared" || return 2
+      return 2
+    fi
+    rest=${row##*) };read -r -a fields <<< "$rest"
+    if [[ ${#row} -gt 8192 || $row != "$pid ("*") "* || ${#fields[@]} -lt 20 ||
+          ! ${fields[0]} =~ ^[A-Za-z]$ || ! ${fields[1]} =~ ^[0-9]+$ || ! ${fields[2]} =~ ^[0-9]+$ ||
+          ! ${fields[3]} =~ ^[0-9]+$ || ! ${fields[19]} =~ ^[0-9]+$ ]];then
+      group_failure "$report" malformed-stat 2 "$pgid" "$exempt" "$entry" "$row" "$disappeared" || return 2
+      return 2
+    fi
+    if [[ ${fields[2]} == "$pgid" && $pid != "$exempt" && ${fields[0]} != Z && ${fields[0]} != X ]];then
+      group_failure "$report" live-member 1 "$pgid" "$exempt" "$entry" "$row" "$disappeared" || return 2
+      return 1
+    fi
+  done
+  (ulimit -f 64 || exit 1;printf '%s\t%s\t%s\t%s\t%s\n' "$pgid" "$exempt" "$seen" "$disappeared" "$EPOCHREALTIME" >> "$out/group-scans.tsv") || return 2
+}
+await_stopped() {
+  local leader=$1 start=$2 end=$3 count
+  for ((count=0;count<300;count++));do
+    [[ $(pid_identity "$leader") == "$start" ]] || return 1
+    [[ $(pid_identity "$leader" T) != "$start" ]] || return 0
+    ((SECONDS<end)) || return 1
+    sleep 0.01
+  done
+  return 1
+}
+
+start_owned() {
+  local label=$1 seconds=$2 leader ready go done release status count end remaining row
+  shift 2;phase_label=$label;admit
+  [[ -z $active && -z $identity && $label =~ ^[A-Za-z0-9_.-]+$ ]] || fail 'owned command overlap/label'
+  remaining=$((deadline-SECONDS));((remaining>0)) || fail '1200s SDK deadline'
+  ((seconds<=remaining)) || seconds=$remaining
+  ready=$out/logs/$label.ready;go=$out/logs/$label.go;done=$out/logs/$label.done;release=$out/logs/$label.release;status=$out/logs/$label.status
+  printf '%s\0' "$label" "$@" >> "$out/commands.nul"
+  # command 종료 뒤 builtin STOP만 한다. release 대기용 외부 자식을 만들지 않는다.
+  /usr/bin/setsid /usr/bin/bash --noprofile --norc -c '
+    set -u;ulimit -c 0;ulimit -f 524288 || exit 125
+    ready=$1;go=$2;done=$3;release=$4;status=$5;seconds=$6;shift 6
+    printf "%s\n" "$$" > "$ready"
+    for ((n=0;n<300;n++));do [[ ! -e $go ]] || break;sleep 0.01;done
+    [[ -e $go ]] || exit 125
+    code=0
+    /usr/bin/timeout --foreground --signal=TERM --kill-after=15s "${seconds}s" "$@" || code=$?
+    printf "%s\n" "$code" > "$status" || exit 125
+    : > "$done" || exit 125
+    kill -STOP "$$" || exit 125
+    [[ -f $release && ! -L $release ]] || exit 125
+    exit "$code"
+  ' arm530-owned "$ready" "$go" "$done" "$release" "$status" "$seconds" /usr/bin/env -i "${base_env[@]}" "${extra_env[@]}" "$@" \
+    > "$out/logs/$label.stdout" 2> "$out/logs/$label.stderr" < /dev/null &
+  leader=$!;active=$leader;identity=
+  for ((count=0;count<300;count++));do
+    if [[ -s $ready && $(cat "$ready") == "$leader" ]];then identity=$(pid_identity "$leader") && break;fi
+    sleep 0.01
+  done
+  [[ -n $identity ]] || fail 'owned leader handshake failed'
+  : > "$go";end=$((SECONDS+seconds+20))
+  while [[ ! -e $done ]];do
+    [[ $(pid_identity "$leader") == "$identity" ]] || fail 'leader disappeared before status'
+    ((SECONDS<end)) || fail 'owned command deadline'
+    admit || fail 'resource guard failed'
+    sleep 0.5
+  done
+  await_stopped "$leader" "$identity" "$end" || fail 'owned leader did not reach stable T state'
+  { IFS= read -r -n 8193 row < "/proc/$leader/stat"; } 2>/dev/null || fail 'stopped leader stat unreadable'
+  [[ ${#row} -le 8192 && $(pid_identity "$leader" T) == "$identity" ]] || fail 'stopped leader identity differs'
+  (set -o noclobber;printf '%s\n' "$row" > "$out/logs/$label.stopped.stat") || fail 'stopped leader proof failed'
+}
+complete_owned() {
+  local label=$1 leader=$active code waited=0
+  [[ $(pid_identity "$leader" T) == "$identity" ]] || fail 'leader not owned/stopped before release'
+  IFS= read -r code < "$out/logs/$label.status"
+  [[ $code =~ ^[0-9]+$ ]] && ((code<=255)) || fail 'command status malformed'
+  (set -o noclobber;: > "$out/logs/$label.release") || fail 'release marker failed'
+  [[ $(pid_identity "$leader" T) == "$identity" ]] || fail 'leader identity changed before CONT'
+  kill -CONT "$leader" || fail 'owned CONT failed'
+  wait -f "$leader" || waited=$?
+  owned_code=$code;owned_waited=$waited
+  active= identity=
+  group_quiet "$leader" '' "$out/logs/$label.group-after-wait" || { groups_ok=false;fail 'group live/unknown after direct wait'; }
+  printf '%s\t%s\t%s\t%s\n' "$label" "$code" "$waited" "$EPOCHREALTIME" >> "$out/exit-codes.tsv"
+  [[ $waited == "$code" ]] || fail "$label status/wait mismatch $code/$waited"
+}
+run() {
+  local label=$1 seconds=$2
+  shift 2
+  start_owned "$label" "$seconds" "$@"
+  group_quiet "$active" "$active" "$out/logs/$label.group-before-release" || fail 'command left live/unknown group members'
+  complete_owned "$label"
+  [[ $owned_code == 0 ]] || fail "$label exit $owned_code (wait $owned_waited)"
+  admit
+}
+finish() {
+  local code=$? stop=0 waited=0
+  trap - EXIT INT TERM HUP;set +e
+  if [[ -n $active ]];then
+    kill_owned || stop=$?
+    if [[ $stop == 0 ]];then wait -f "$active" || waited=$?;else groups_ok=false;fi
+    group_quiet "$active" '' "$proof/logs/finalizer.group-failure" || groups_ok=false
+  fi
+  printf 'source=%s\nphase=%s\nexit=%s\nowned_kill=%s\nowned_wait=%s\nowned_groups_nonlive=%s\nall_adopted_children_reaped=false\n' \
+    "$GITHUB_SHA" "$phase_label" "$code" "$stop" "$waited" "$groups_ok" > "$proof/preparation-status.tsv" || stop=1
+  [[ $code == 0 && $stop == 0 && $groups_ok == true ]] || exit 1
+}
+trap finish EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+base_env=(PATH=/usr/bin:/bin HOME="$job/home" LC_ALL=C TZ=UTC TMPDIR="$prefix/work"
+  CARGO_HOME="$prefix/shims" RUSTUP_HOME="$prefix/rustup-home" RUSTUP_AUTO_INSTALL=0)
+extra_env=()
+download() {
+  local label=$1 url=$2 bytes=$3 sha=$4 file=$prefix/inputs/$1
+  run "download-$label" 240 /usr/bin/curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error \
+    --retry 2 --retry-all-errors --max-time 180 --max-filesize "$bytes" --output "$file" "$url"
+  [[ -f $file && ! -L $file && $(stat -c '%s:%h' "$file") == "$bytes:1" ]] || fail 'provider exact size differs'
+  printf '%s  %s\n' "$sha" "$file" | sha256sum --check --strict --quiet - || fail 'provider hash differs'
+}
+admit || fail 'initial SDK capacity unavailable'
+download channel.toml https://static.rust-lang.org/dist/channel-rust-1.94.0.toml 845032 aaa177def36e01d539bee6bde95295230b9ce378f81057845db8d0ebe97898ee
+download rustup-init https://static.rust-lang.org/rustup/archive/1.29.1/aarch64-unknown-linux-gnu/rustup-init 19856640 15f6e4ce9f583b929c996c91562bad6d4454f3281de858b02cdfdef615fac433
+download rustc.tar.xz https://static.rust-lang.org/dist/2026-03-05/rustc-1.94.0-aarch64-unknown-linux-gnu.tar.xz 61188172 7261b2fcdb88aef8b21f4b9f915d9a75c959674193f5b38e13fab4569684fc5b
+download cargo.tar.xz https://static.rust-lang.org/dist/2026-03-05/cargo-1.94.0-aarch64-unknown-linux-gnu.tar.xz 10398516 d57ab7b23b52cba46e58c78327904d0c7db19892988677b0d59495c8af4bb790
+download rust-std.tar.xz https://static.rust-lang.org/dist/2026-03-05/rust-std-1.94.0-aarch64-unknown-linux-gnu.tar.xz 28485880 c781b3ef4fefa5508fbe05820eddc95e46351d905a30921cc020febd9c596a2e
+download rustfmt.tar.xz https://static.rust-lang.org/dist/2026-03-05/rustfmt-1.94.0-aarch64-unknown-linux-gnu.tar.xz 1999864 1ac17dbe7f8f6c98db5b62cb149fcd10c7565d624a59471115fc40055db9af28
+download clippy.tar.xz https://static.rust-lang.org/dist/2026-03-05/clippy-1.94.0-aarch64-unknown-linux-gnu.tar.xz 3673924 f7450c414e394450b53be602d37c374e2a2c5a2f51be2b54faf3d1e3272160b1
+declare -a packages=(rustc cargo rust-std rustfmt clippy)
+declare -a components=(rustc cargo rust-std-aarch64-unknown-linux-gnu rustfmt-preview clippy-preview)
+: > "$proof/payload.sha256";: > "$proof/expected-files.txt";: > "$proof/components.txt"
+for n in "${!packages[@]}";do
+  package=${packages[$n]};component=${components[$n]};top=$package-1.94.0-aarch64-unknown-linux-gnu
+  run "unpack-$package" 90 /usr/bin/tar --extract --xz --file "$prefix/inputs/$package.tar.xz" \
+    --directory "$prefix/expected" --no-same-owner --no-same-permissions -- "$top/$component"
+  manifest=$prefix/expected/$top/$component/manifest.in
+  [[ -f $manifest && ! -L $manifest && $(stat -c %s "$manifest") -le 65536 ]] || fail 'package manifest missing/oversized'
+  while IFS= read -r line;do
+    [[ $line =~ ^file:([A-Za-z0-9_./+-]+)$ ]] || fail 'unknown package manifest entry'
+    relative=${BASH_REMATCH[1]}
+    [[ $relative != /* && $relative != */../* && $relative != ../* && $relative != */./* && $relative != *//* ]] || fail 'package path traversal'
+    expected=$prefix/expected/$top/$component/$relative
+    [[ -f $expected && ! -L $expected ]] || fail 'package file missing'
+    hash=$(sha256sum "$expected");hash=${hash%% *}
+    printf '%s  %s\n' "$hash" "$sdk/$relative" >> "$proof/payload.sha256"
+    printf '%s\n' "$relative" >> "$proof/expected-files.txt"
+  done < "$manifest"
+  printf '%s-aarch64-unknown-linux-gnu\n' "$package" | sed 's/^rustfmt-/rustfmt-preview-/;s/^clippy-/clippy-preview-/' >> "$proof/components.txt"
+done
+[[ $(sort "$proof/expected-files.txt" | uniq -d | wc -l) == 0 ]] || fail 'overlapping component payload'
+cp "$prefix/inputs/rustup-init" "$prefix/bootstrap/rustup-init"
+chmod 700 "$prefix/bootstrap/rustup-init"
+cd "$prefix/work"
+run client-install 180 "$prefix/bootstrap/rustup-init" -y --default-host aarch64-unknown-linux-gnu --default-toolchain none --no-modify-path
+printf '%s  %s\n' 15f6e4ce9f583b929c996c91562bad6d4454f3281de858b02cdfdef615fac433 "$prefix/shims/bin/rustup" | sha256sum --check --strict --quiet -
+run sdk-install 720 "$prefix/shims/bin/rustup" toolchain install 1.94.0-aarch64-unknown-linux-gnu --profile minimal --component rustfmt --component clippy --no-self-update
+validate "$sdk" directory || fail 'installed SDK missing'
+sha256sum --check --strict --quiet "$proof/payload.sha256" || fail 'installed payload differs from official archives'
+for n in "${!packages[@]}";do
+  package=${packages[$n]};component=${components[$n]};top=$package-1.94.0-aarch64-unknown-linux-gnu
+  # installer component 이름에는 target이 붙는다. std는 원래 이름 자체에 target이 있다.
+  suffix=$component
+  [[ $package == rust-std ]] || suffix=$component-aarch64-unknown-linux-gnu
+  cmp "$prefix/expected/$top/$component/manifest.in" "$sdk/lib/rustlib/manifest-$suffix"
+done
+sort "$proof/components.txt" > "$proof/components.sorted"
+sort "$sdk/lib/rustlib/components" > "$proof/installed-components.sorted"
+cmp "$proof/components.sorted" "$proof/installed-components.sorted"
+printf '3' | cmp - "$sdk/lib/rustlib/rust-installer-version"
+for name in cargo rustc rustfmt clippy-driver cargo-clippy rustdoc cargo-fmt;do
+  validate "$sdk/bin/$name" file && [[ -x $sdk/bin/$name ]] || fail 'required SDK executable missing'
+done
+# 공식 archive payload와 별개인 generated control metadata만 표준 TOML reader로 검사한다.
+# guard/verify/after 경로는 이 reader나 Python을 실행하지 않는다.
+metadata_reader=$(cat <<'PY'
+import json, os, sys, tomllib
+from pathlib import Path
+assert sys.version_info[:3] == (3, 12, 14)
+sdk, original = map(Path, sys.argv[1:])
+def read(path):
+    fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    try:
+        before = os.fstat(fd)
+        def identity(s):
+            return (s.st_dev, s.st_ino, s.st_mode, s.st_uid, s.st_gid,
+                    s.st_nlink, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+        assert before.st_size <= 2 * 1024 * 1024
+        data = bytearray()
+        while block := os.read(fd, 65536):
+            data.extend(block)
+            assert len(data) <= 2 * 1024 * 1024
+        assert identity(os.fstat(fd)) == identity(before)
+        assert identity(path.stat(follow_symlinks=False)) == identity(before)
+        return tomllib.loads(data.decode())
+    finally:
+        os.close(fd)
+reference = read(original)
+manifest = read(sdk / 'lib/rustlib/multirust-channel-manifest.toml')
+assert set(manifest) == {'manifest-version', 'date', 'pkg', 'renames', 'profiles'}
+assert manifest['manifest-version'] == reference['manifest-version'] == '2'
+assert manifest['date'] == reference['date'] == '2026-03-05'
+names = {'rustc', 'cargo', 'rust-std', 'rustfmt-preview', 'clippy-preview'}
+host = 'aarch64-unknown-linux-gnu'
+for name in names:
+    left, right = manifest['pkg'][name], reference['pkg'][name]
+    assert left['version'] == right['version']
+    for key in ['available', 'url', 'hash', 'xz_url', 'xz_hash']:
+        assert type(left['target'][host][key]) is type(right['target'][host][key])
+        assert left['target'][host][key] == right['target'][host][key]
+config = read(sdk / 'lib/rustlib/multirust-config.toml')
+assert set(config) == {'config_version', 'components'} and config['config_version'] == '1'
+assert len(config['components']) == 5
+observed = set()
+for item in config['components']:
+    assert set(item) == {'pkg', 'target', 'is_extension'}
+    assert item['target'] == host and item['is_extension'] is False
+    assert item['pkg'] in names and item['pkg'] not in observed
+    observed.add(item['pkg'])
+assert observed == names
+print(json.dumps({'schema': 1, 'components': sorted(observed), 'metadata_valid': True}))
+PY
+)
+[[ ${pythonLocation:-} == /opt/hostedtoolcache/Python/3.12.14/arm64 && -x $job/venv/bin/python ]] || fail 'original admitted Python reader missing'
+extra_env=(LD_LIBRARY_PATH="$pythonLocation/lib")
+run control-metadata 90 "$job/venv/bin/python" -I -B -S -c "$metadata_reader" "$sdk" "$prefix/inputs/channel.toml"
+extra_env=()
+for name in components rust-installer-version multirust-config.toml multirust-channel-manifest.toml;do printf 'lib/rustlib/%s\n' "$name" >> "$proof/expected-files.txt";done
+while IFS= read -r name;do printf 'lib/rustlib/manifest-%s\n' "$name" >> "$proof/expected-files.txt";done < "$proof/components.txt"
+sort "$proof/expected-files.txt" > "$proof/expected-files.sorted"
+find -P "$sdk" -type f -printf '%P\n' | sort > "$proof/installed-files.sorted"
+cmp "$proof/expected-files.sorted" "$proof/installed-files.sorted" || fail 'extra/missing SDK files'
+{ printf '\n';awk -F/ '{p="";for(i=1;i<NF;i++){p=p (i>1?"/":"") $i;print p}}' "$proof/expected-files.sorted"; } | sort -u > "$proof/expected-dirs.sorted"
+find -P "$sdk" -type d -printf '%P\n' | sort > "$proof/installed-dirs.sorted"
+cmp "$proof/expected-dirs.sorted" "$proof/installed-dirs.sorted" || fail 'extra/missing SDK directories'
+awk '/\/lib\/rustlib\/aarch64-unknown-linux-gnu\/lib\// {print}' "$proof/payload.sha256" > "$proof/stdlib.sha256"
+[[ $(wc -l < "$proof/stdlib.sha256") == 61 ]] || fail 'exact ARM std roster differs'
+program_pins > "$proof/programs.sha256"
+sha256sum --check --strict --quiet "$proof/programs.sha256"
+seal_tree "$sdk" "$proof/sdk.before"
+seal_tree "$prefix/rustup-home" "$proof/rustup.before"
+seal_tree "$prefix/inputs" "$proof/inputs.before"
+seal_tree "$prefix/shims" "$proof/shims.before"
+seal_tree "$prefix/bootstrap" "$proof/bootstrap.before"
+export RUSTUP_HOME=$prefix/rustup-home RUSTUP_AUTO_INSTALL=0
+export RUSTUP_TOOLCHAIN=1.94.0-aarch64-unknown-linux-gnu RUSTC=$sdk/bin/rustc RUSTDOC=$sdk/bin/rustdoc
+export OPENPILOT_CI_PREPARED_RUST_MODE=native-arm-530-v1 OPENPILOT_CI_PREPARED_RUST_ROOT=$sdk OPENPILOT_CI_PREPARED_RUST_MANIFEST=$proof/sdk.before.sha256
+(set -o noclobber;binding > "$receipt") || fail 'new SDK binding publication failed'
+ARM530_BINDING_SHA256=$(sha256sum "$receipt");export ARM530_BINDING_SHA256=${ARM530_BINDING_SHA256%% *}
+verify "$proof/initial-verify" || fail 'ready SDK failed independent verification'
+printf '%s\n' "RUSTUP_HOME=$RUSTUP_HOME" "RUSTUP_AUTO_INSTALL=0" "RUSTUP_TOOLCHAIN=1.94.0-aarch64-unknown-linux-gnu" \
+  "RUSTC=$sdk/bin/rustc" "RUSTDOC=$sdk/bin/rustdoc" "OPENPILOT_CI_PREPARED_RUST_MODE=$OPENPILOT_CI_PREPARED_RUST_MODE" \
+  "OPENPILOT_CI_PREPARED_RUST_ROOT=$sdk" "OPENPILOT_CI_PREPARED_RUST_MANIFEST=$OPENPILOT_CI_PREPARED_RUST_MANIFEST" \
+  "ARM530_BINDING_SHA256=$ARM530_BINDING_SHA256" "ARM530_HELPER_SHA256=$ARM530_HELPER_SHA256" >> "${GITHUB_ENV:?}"
+printf '%s\n' "$prefix/shims/bin" >> "${GITHUB_PATH:?}"
+phase_label=ready

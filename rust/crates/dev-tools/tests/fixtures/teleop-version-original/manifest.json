@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "python_executable": "/usr/bin/python3",
+  "int_max_str_digits": 4300,
+  "capture_helper_sha256": "8c4b4a8c3077ca82c5f52ad65b0df9f40a0abc6da36053d56ec8bc06294f5fbf",
+  "source_commit": "c810f7159ccecde0826e51c1ccc6364d0081cd8e",
+  "source_pins_before": {
+    "teleoprtc_repo/scripts/bump_tag.sh": "34e3f49bcc8905086065d31b085d0c544ffe89092e4f303cdcaa5459c52424e0",
+    "teleoprtc_repo/pyproject.toml": "1a35c809ec724bc7de6536c42da261a69dc4662455c609f2d969e7389980daf9"
+  },
+  "source_pins_after": {
+    "teleoprtc_repo/scripts/bump_tag.sh": "34e3f49bcc8905086065d31b085d0c544ffe89092e4f303cdcaa5459c52424e0",
+    "teleoprtc_repo/pyproject.toml": "1a35c809ec724bc7de6536c42da261a69dc4662455c609f2d969e7389980daf9"
+  },
+  "computations": 34,
+  "effects": 10,
+  "files": {
+    "computations.json": {
+      "bytes": 41736,
+      "sha256": "459089b56842ef86e80f1ebf0919c94db76586fa6ac81fc6ed026e7b2b4e948b"
+    },
+    "original-pyproject.toml": {
+      "bytes": 1295,
+      "sha256": "1a35c809ec724bc7de6536c42da261a69dc4662455c609f2d969e7389980daf9"
+    },
+    "script-effects.json": {
+      "bytes": 11376,
+      "sha256": "c9b6886860f61700f8565247972a6982fb8dd8b4136f1e083eb20873255c40e2"
+    },
+    "snippets.json": {
+      "bytes": 195,
+      "sha256": "894503daf7255a8f72a4e9b01eeda5b33a643d2cee0e354a714c37bb4ecc36b8"
+    },
+    "original-bump_tag.sh": {
+      "bytes": 1083,
+      "sha256": "34e3f49bcc8905086065d31b085d0c544ffe89092e4f303cdcaa5459c52424e0"
+    }
+  },
+  "native_expected_used": false,
+  "incidental_non_string_version_supported": false
+}

@@ -1,0 +1,5 @@
+{
+  "rust/tools/check_bluetooth_files.py": "e30b4cdca8c658cfbd713b6603ef23c64d21854ff41ffa1f611bdd43d2371682",
+  "openpilot/selfdrive/carrot/bluetooth/model.py": "74f65767da6459358c8809f6e0adf465a4e7007b4bbf4e160b23c98819e6a633",
+  "rust/crates/bluetooth/examples/file_fixture.rs": "fac81b03cc32d0a26515b3ee7213e80d8c6fe392bdb0670434c09337f1d20d93"
+}

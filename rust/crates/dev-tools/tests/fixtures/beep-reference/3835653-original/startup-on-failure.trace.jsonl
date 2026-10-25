@@ -1,0 +1,3 @@
+{"kind": "command", "command": "echo 42 | sudo tee /sys/class/gpio/export", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"out\" | sudo tee /sys/class/gpio/gpio42/direction", "failed": false, "status": 0}
+{"kind": "command", "command": "echo \"1\" | sudo tee /sys/class/gpio/gpio42/value", "failed": true, "status": 0}

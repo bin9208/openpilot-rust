@@ -1,8 +1,10 @@
 from dataclasses import dataclass, replace
+import hashlib
 import json
 import os
 from pathlib import Path
 import signal
+import stat
 import struct
 import subprocess
 import sys
@@ -16,6 +18,37 @@ from openpilot.cereal import messaging
 
 MAC = 'AA:BB:CC:DD:EE:FF'
 WIRE = struct.Struct('@llHHi')
+
+
+def install_native_sudo(sudo: Path) -> None:
+  configured = os.environ['BLUETOOTH_SUDO_NATIVE_BINARY']
+  expected = os.environ['BLUETOOTH_SUDO_NATIVE_SHA256']
+  binary = Path(configured)
+  if not binary.is_absolute():
+    raise ValueError('Bluetooth sudo native binary must be absolute')
+  fd = os.open(binary, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC | os.O_NOFOLLOW)
+  with os.fdopen(fd, 'rb') as source:
+    before = os.fstat(source.fileno())
+    if not stat.S_ISREG(before.st_mode) or not before.st_mode & 0o111:
+      raise ValueError('Bluetooth sudo native binary must be an executable regular file')
+    identity = lambda current: (current.st_dev, current.st_ino, current.st_mode, current.st_size,
+                                current.st_mtime_ns, current.st_ctime_ns)
+    if identity(before) != identity(binary.lstat()):
+      raise ValueError('Bluetooth sudo native binary identity changed')
+    payload = source.read()
+    if not payload.startswith(b'\x7fELF'):
+      raise ValueError('Bluetooth sudo native binary is not ELF')
+    if hashlib.sha256(payload).hexdigest() != expected or identity(before) != identity(os.fstat(source.fileno())):
+      raise ValueError('Bluetooth sudo native binary digest or identity changed')
+    with sudo.open('xb') as target:
+      target.write(payload)
+    sudo.chmod(0o700)
+    source.seek(0)
+    if (hashlib.sha256(source.read()).hexdigest() != expected or
+        identity(before) != identity(os.fstat(source.fileno())) or
+        identity(before) != identity(binary.lstat()) or
+        hashlib.sha256(sudo.read_bytes()).hexdigest() != expected):
+      raise ValueError('Bluetooth sudo native binary changed while copying')
 
 
 def wait_for(predicate: Callable[[], bool], timeout: float = 5) -> None:
@@ -73,8 +106,7 @@ class Fixture:
       commands = self.root / 'commands'
       commands.mkdir()
       sudo = commands / 'sudo'
-      sudo.write_bytes(Path(__file__).with_name('bluetooth_sudo_fixture.py').read_bytes())
-      sudo.chmod(0o700)
+      install_native_sudo(sudo)
       self.env.update(PATH=str(commands), INPUT_FIXTURE_DENIED='1', INPUT_FIXTURE_SUDO_MODE='timeout',
                       INPUT_FIXTURE_SUDO_LOG=str(self.root / 'sudo.jsonl'))
     self.command = ([sys.executable, str(Path(__file__).with_name('bluetooth_daemon_source.py')),
