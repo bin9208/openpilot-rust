@@ -136,3 +136,54 @@ private copy의 추출에만 `--same-permissions`를 더한다. root0700/전역u
 create_new `copy-source-modes.tsv`(4096B 이하)로 기록하고 held FD/SHA 후검사에 추가한다.
 이는 진단 관측이며 전체 source·Git·현재19pin·부재·기능 비교를 대체하지 않는다.
 로컬 Bash 문법·exact outside projection·diff만 확인하며 새 copy/CLI20/raw21/policy3 수용은 **GHA UNRUN**이다.
+
+## 8fcbc 실제 다음 실패와 bounded raw index 관측 후보
+
+run40190291372/job121159648434(source8fcbc9c0b61310727a761260ff91c83076973e75)의
+artifact12598301220은128891557B/SHA256
+`15236fbdb9ad81d933f9ff35f19b25f55663cd3fe064837909a834c3ce1fe29d`, 전체9399CRC PASS다.
+`--same-permissions` 뒤 canonical TAR hash 두 줄은 모두
+`17ed2534826885690928f6784f28c8a8f57af7b7bea42b6a6e01cf2bcf6f4b5a`로 같았다.
+mode4행도 Cargo.toml 양쪽0644/2758B, helper 양쪽0644/116368B/UIDGID1001로 같았다.
+source/copy 각각2GiB 및 copy+64MiB manifest+512MiB reserve의 실제 admission은 PASS,
+old combined2GiB would_pass0이었다. 그 뒤 copied `.git` checksum에서 `./index: FAILED`로
+중단했다. source rawindex는 전후cc170f02a3c29fe20631b1036c9d08d2e3131059594b7c846b6306f7ef7cfa46
+동일이지만 copy의 실제 실패 bytes/직전 hash가 없어 어느 명령이 바꿨는지는 아직 미확정이다.
+CLI20/raw21/sourceguard policy3는 미도달이고 sourceSDK finalPASS/uploadPASS/closureFAIL/cleanupSKIP다.
+
+승인된 후속은 진단만 추가한다. `$proof/index-journal/journal.tsv`는 create_new/32KiB/최대32record이고
+한 append FD의 전후 identity와 path identity를 매번 대조한다. cp-a 직전 source raw baseline,
+cp 직후 source/copy, 원래 rev-parse/ls-files/diff--cached/diff--name-only 각 직후와 원래 `.git`
+전체 hash 대조 직전에 source/copy의 dev/ino/hexmode/uid/gid/nlink/size/mtime/ctime/SHA256을 기록한다.
+Git argv는 실제 인자에 `%q`를 적용해 기록하고 status도 원래 명령 직후 저장한다. 기존 네 Git argv,
+expected HEAD/roster/빈 cached diff/정확2 deletion 및 전체 Git SHA 대조를 그대로 보존한다.
+metadata/hash 불일치나 command 실패는 afterraw를 보존하고 sticky FAIL로 끝난다.
+정상 경로는 source 사전 캡처1회와 postcopy/네 Git/pre-manifest의6 checkpoint×2로 총13캡처,
+journal29행이다. pre-manifest는 실행 전 관측이며 SHA 명령의 성공 status로 기록하지 않는다.
+
+입력 index는 파일당4MiB 이하의 owned regular/nlink1만 읽는다. 기존 collision capture의
+`dd iflag=nofollow,nonblock,fullblock,count_bytes` 단일 입력 FD와 `conv=excl` 출력 패턴을 재사용한다.
+size+1 read와 전후 source path full identity/부모 devino-modeuidgid를 검사하므로 short read/성장/
+교체/alias를 정상 복사로 세지 않는다. dd 입력 FD의 fstat를 직접 출력하는 도구는 아니며 이 사실을
+journal header에 false로 남긴다. 캡처는 별도 held FD와 `/proc/FD`를 통해 hash하고 그 FD/path identity를
+다시 대조한다. 새 Python/Perl/compile/일반 controller는 추가하지 않는다. 사용하는 dd/mv/rm ELF와
+ldd closure는 기존 hold/후검사로 묶는다.
+
+보존 raw는 `source-before.raw`, `copy-before.raw`와 최초 실패의 `first-source-after.raw`,
+`first-copy-after.raw`뿐이다. 정상 checkpoint의 임시 current raw는 두 baseline을 바꾸지 않고 제거한다.
+첫 copy 비교부터 실패하면 accepted copy baseline은 만들지 않는다. 캡처 rename의 원래/새 이름과
+새 identity도 journal에 명시한다. 입력 index 자체를 재hold·수정·재생성·복원하지 않으며 캡처 bytes를
+native functional expected로 사용하지 않는다. read/shape 자체 실패 시 partial current raw와 해당
+stage/side stderr·오류를 남기고 그대로 실패한다. 새로운 index가4MiB를 넘으면 진단도 FAIL하며
+prefix/truncation을 full raw로 수용하지 않는다.
+
+동시에 최대 raw4개=16MiB다. dd 실패 stderr는 per-command file limit4097KiB 안에 갇히고4096B 초과는
+strict FAIL이다. operation 직전에는 두 raw와 이 bounded stderr 여유까지 포함한 pending16MiB+32KiB
+(처음 source-only8MiB+32KiB)를 실제 proof2GiB와 filesystem free+finish reserve에 함께 admit한다.
+기존 copy 전64MiB manifest계획/각 source-copy2GiB/proof2GiB/target8GiB/512MiB reserve는 올리지 않는다.
+후속 stage의 실제 사용량도 기존 admission/finalizer에서 검사한다. 일반 hard quota나 peak 보장으로
+표현하지 않는다. 새 retry/원문 waive/정상화/dirty 숨김/타이머 변경은0이다.
+
+이번 변경의 로컬 검증은 Bash-n/소스·outside projection/diff뿐이다. journal/복사/Git 명령/fixture를
+실행하지 않았으며 실제 최초 변경 지점·CLI20/raw21/policy3 및 cleanup은 새 source의 GHA UNRUN이다.
+원본2·frozen inputs·원래67/14/legacy2·15정책은 그대로이며 old27/R4/retirement credit0을 유지한다.

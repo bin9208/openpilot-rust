@@ -703,8 +703,8 @@ jobs:
         printf '%s  %s\n' 836c65ed0b09b614a15fe0a1d39290dfee19749e7e3163e562d8d31e3fb95966 tools/ci/prepare-lfs-source-535 | sha256sum --check -
         printf '%s  %s\n' dfd8e9c0a5faff24058f8f570790a625646a4ba17001eff74efc1c3279f81149 rust/crates/logging/build.rs | sha256sum --check -
         printf '%s  %s\n' b70ad5b50c56e3ce3299efb5db87a0aca006488a936e297cca117424b9123423 rust/crates/logging/tests/build_watch.rs | sha256sum --check -
-        printf '%s  %s\n' e01043d0a4a9d16aa6105efc2b87e22fa92ddb3fc65b7add3cb256861aefe13b .github/workflows/python-rust-523-logging.yml | sha256sum --check -
-        printf '%s  %s\n' d1ec7492cd4dba7cb3bb7af4bf415ef890d9e001c510624128a6a17f1049ae48 tools/ci/logging_retained_549.sh | sha256sum --check -
+        printf '%s  %s\n' 72581036a64d844578b64ae2fd7ae4cc12d5e0975b6e9ae6bd026640c92bdf92 .github/workflows/python-rust-523-logging.yml | sha256sum --check -
+        printf '%s  %s\n' 99baa3106775d9c96bc93eebbda6cc6b5126b2b9b495e9abf289b0e56022c987 tools/ci/logging_retained_549.sh | sha256sum --check -
         printf '%s  %s\n' 9ec97216369d7481a75ec02751aa39fd2bc2ae2482602d29ec5911a8d61d1d34 rust/crates/dev-tools/src/selfdrive_params_process.rs | sha256sum --check -
         printf '%s  %s\n' b173a785ccf72d8fdd89242b69670a45e5776e8e3ee204887f3e8cfd73a10660 .github/workflows/python-rust-523-model-pr1344-replay.yml | sha256sum --check -
         printf '%s  %s\n' 60db7b111ffd49f9de4ec466c35837982f270f0289b2d05a065a1dd63ba76837 tools/ci/model_pr1344_replay_482.py | sha256sum --check -

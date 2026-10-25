@@ -598,9 +598,165 @@ source_guard_finish() {
     "$phase" "$result" "$source_result" "$sdk_result" "$held_result" "$copy_result" "$resource_result" > "$proof/outcome.json"
   exit "$result"
 }
+# source-guard의 고정 Git 관측 네 개만 진단한다. index 기준을 갱신하지 않는다.
+source_guard_index_identity() { stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' -- "$1"; }
+source_guard_index_record() {
+  local row current
+  [[ $sg_index_records -lt 32 && ! -L $sg_index_journal && ! -L $sg_index_dir &&
+     $(stat -c '%d:%i:%f:%u:%g' "$sg_index_dir") == "$sg_index_dir_identity" ]] || return 1
+  current=$(source_guard_index_identity "/proc/$$/fd/$sg_index_journal_fd") || return 1
+  [[ $current == "$sg_index_journal_identity" && $(source_guard_index_identity "$sg_index_journal") == "$current" ]] || return 1
+  printf -v row '%s\t' "$@"
+  row=${row%$'\t'}
+  (( $(stat -Lc %s "/proc/$$/fd/$sg_index_journal_fd") + ${#row} + 1 <= 32768 )) || return 1
+  printf '%s\n' "$row" >&"$sg_index_journal_fd" || return 1
+  sg_index_journal_identity=$(source_guard_index_identity "/proc/$$/fd/$sg_index_journal_fd") || return 1
+  [[ $(source_guard_index_identity "$sg_index_journal") == "$sg_index_journal_identity" ]] || return 1
+  sg_index_records=$((sg_index_records + 1))
+}
+source_guard_index_capture() {
+  local stage=$1 side=$2 path=$3 output=$4 parent expected_parent before after bytes fd raw_identity digest read_code=0
+  sg_index_capture_error=unsafe-input
+  [[ $stage =~ ^[a-z-]{1,32}$ && ( $side == source || $side == copy ) &&
+     $output == "$sg_index_dir/${output##*/}" && ! -e $output && ! -L $output &&
+     ! -L $sg_index_dir && $(stat -c '%d:%i:%f:%u:%g' "$sg_index_dir") == "$sg_index_dir_identity" ]] || return 1
+  parent=${path%/index}
+  if [[ $side == source ]]; then expected_parent=$sg_index_source_parent; else expected_parent=$sg_index_copy_parent; fi
+  [[ -d $parent && ! -L $parent && $(realpath -e "$parent") == "$parent" &&
+     $(stat -c '%d:%i:%f:%u:%g' "$parent") == "$expected_parent" &&
+     -f $path && ! -L $path && $(stat -c '%u:%h' "$path") == "$UID:1" ]] || return 1
+  before=$(source_guard_index_identity "$path") || return 1
+  bytes=$(stat -c %s "$path") || return 1
+  [[ $bytes =~ ^[0-9]+$ ]] && ((bytes > 0 && bytes <= 4194304)) || return 1
+  source_guard_index_record reading "$stage" "$side" "$path" "$before" "$bytes" "${output##*/}" || return 1
+  # 기존 collision capture와 동일한 NOFOLLOW/NONBLOCK 단일 input FD다.
+  # source FD fstat의 직접 관측으로 과장하지 않고 path full identity 전후를 함께 검사한다.
+  sg_index_capture_error=read-failed
+  (ulimit -f 4097 && /usr/bin/dd if="$path" of="$output" bs=65536 count="$((bytes+1))" \
+    iflag=nofollow,nonblock,fullblock,count_bytes oflag=nofollow,nonblock conv=excl status=none) \
+    2> "$sg_index_dir/$stage-$side.stderr" || read_code=$?
+  sg_index_capture_error="read-failed:$read_code"
+  [[ $(stat -c %s "$sg_index_dir/$stage-$side.stderr") -le 4096 && $read_code == 0 &&
+     -f $output && ! -L $output && $(stat -c '%u:%h:%s' "$output") == "$UID:1:$bytes" ]] || return 1
+  sg_index_capture_error=input-changed
+  after=$(source_guard_index_identity "$path") || return 1
+  [[ -f $path && ! -L $path && ! -L $parent && $(realpath -e "$parent") == "$parent" &&
+     $before == "$after" && $(stat -c '%d:%i:%f:%u:%g' "$parent") == "$expected_parent" ]] || return 1
+  # 원문 input은 다시 열어 hash하지 않는다. exclusive 캡처를 같은 held FD로 hash한다.
+  sg_index_capture_error=capture-changed
+  raw_identity=$(source_guard_index_identity "$output") || return 1
+  exec {fd}< "$output" || return 1
+  if [[ $(source_guard_index_identity "/proc/$$/fd/$fd") != "$raw_identity" ]]; then exec {fd}<&-; return 1; fi
+  digest=$(sha256sum "/proc/$$/fd/$fd") || { exec {fd}<&-; return 1; }
+  digest=${digest%% *}
+  [[ $digest =~ ^[0-9a-f]{64}$ && $(source_guard_index_identity "/proc/$$/fd/$fd") == "$raw_identity" &&
+     $(source_guard_index_identity "$output") == "$raw_identity" && ! -L $path &&
+     $(source_guard_index_identity "$path") == "$before" ]] || { exec {fd}<&-; return 1; }
+  exec {fd}<&-
+  sg_index_observed_identity=$before; sg_index_observed_sha=$digest; sg_index_observed_capture_identity=$raw_identity
+}
+source_guard_index_budget() {
+  local label=$1 pending=$2 used
+  used=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1) || return 1
+  [[ $used =~ ^[0-9]+$ ]] && ((used + pending <= 2147483648)) || return 1
+  source_guard_resource "$label" 0 "$pending"
+}
+source_guard_index_begin() {
+  local capture_code=0
+  sg_index_dir=$proof/index-journal
+  mkdir -m 700 -- "$sg_index_dir"
+  sg_index_dir_identity=$(stat -c '%d:%i:%f:%u:%g' "$sg_index_dir")
+  sg_index_journal=$sg_index_dir/journal.tsv
+  (set -C; : > "$sg_index_journal")
+  exec {sg_index_journal_fd}>> "$sg_index_journal"
+  sg_index_journal_identity=$(source_guard_index_identity "$sg_index_journal")
+  [[ $(source_guard_index_identity "/proc/$$/fd/$sg_index_journal_fd") == "$sg_index_journal_identity" ]]
+  sg_index_records=0; sg_index_failed=false; sg_index_copy_identity=; sg_index_checks=0
+  sg_index_source_parent=$(stat -c '%d:%i:%f:%u:%g' "$source/.git")
+  source_guard_index_budget index-before-copy 8421376
+  source_guard_index_record schema 1 input_open NOFOLLOW_NONBLOCK input_fd_fstat_directly_observed false capture_fd_hash_identity_checked true
+  source_guard_index_capture before-copy source "$source/.git/index" "$sg_index_dir/source-before.raw" || capture_code=$?
+  if ((capture_code != 0)); then
+    sg_index_failed=true
+    source_guard_index_record before-copy cp-not-started 0 capture-error "$sg_index_capture_error"
+    return 1
+  fi
+  sg_index_source_identity=$sg_index_observed_identity; sg_index_source_sha=$sg_index_observed_sha
+  source_guard_index_record before-copy cp-not-started 0 source "$source/.git/index" "$sg_index_source_identity" "$sg_index_source_sha" source-before.raw "$sg_index_observed_capture_identity" baseline
+  hold "$sg_index_dir/source-before.raw"
+}
+source_guard_index_check() {
+  local stage=$1 command_code=$2 source_identity source_hash source_raw_identity copy_identity copy_hash copy_raw_identity command result=equal capture_code=0
+  shift 2
+  [[ $sg_index_failed == false && $sg_index_checks -lt 6 ]]
+  sg_index_checks=$((sg_index_checks + 1))
+  printf -v command '%q ' "$@"
+  source_guard_index_budget "index-$stage" 16809984
+  if [[ $stage == after-copy ]]; then
+    sg_index_copy_parent=$(stat -c '%d:%i:%f:%u:%g' "$root/.git") || {
+      sg_index_failed=true
+      source_guard_index_record "$stage" "$command" "$command_code" capture-error copy-parent-unavailable
+      return 1
+    }
+  fi
+  source_guard_index_capture "$stage" source "$source/.git/index" "$sg_index_dir/source-current.raw" || capture_code=$?
+  if ((capture_code == 0)); then
+    source_identity=$sg_index_observed_identity; source_hash=$sg_index_observed_sha; source_raw_identity=$sg_index_observed_capture_identity
+    source_guard_index_capture "$stage" copy "$root/.git/index" "$sg_index_dir/copy-current.raw" || capture_code=$?
+  fi
+  if ((capture_code != 0)); then
+    sg_index_failed=true
+    source_guard_index_record "$stage" "$command" "$command_code" capture-error "$sg_index_capture_error"
+    return 1
+  fi
+  copy_identity=$sg_index_observed_identity; copy_hash=$sg_index_observed_sha; copy_raw_identity=$sg_index_observed_capture_identity
+  if [[ $source_identity != "$sg_index_source_identity" || $source_hash != "$sg_index_source_sha" ||
+        $copy_hash != "$sg_index_source_sha" || ( -n $sg_index_copy_identity && $copy_identity != "$sg_index_copy_identity" ) ]]; then result=mismatch; fi
+  if ((command_code != 0)); then
+    if [[ $result == equal ]]; then result=command-failed; else result=mismatch-and-command-failed; fi
+  fi
+  source_guard_index_record "$stage" "$command" "$command_code" source "$source/.git/index" "$source_identity" "$source_hash" source-current.raw "$source_raw_identity" "$result"
+  source_guard_index_record "$stage" "$command" "$command_code" copy "$root/.git/index" "$copy_identity" "$copy_hash" copy-current.raw "$copy_raw_identity" "$result"
+  if [[ $result != equal ]]; then
+    sg_index_failed=true
+    # rename은 진단 캡처에만 적용한다. 원본/복사본 index는 절대 복원·재생성하지 않는다.
+    [[ ! -e $sg_index_dir/first-source-after.raw && ! -L $sg_index_dir/first-source-after.raw &&
+       ! -e $sg_index_dir/first-copy-after.raw && ! -L $sg_index_dir/first-copy-after.raw ]]
+    mv -n -- "$sg_index_dir/source-current.raw" "$sg_index_dir/first-source-after.raw"
+    mv -n -- "$sg_index_dir/copy-current.raw" "$sg_index_dir/first-copy-after.raw"
+    [[ ! -e $sg_index_dir/source-current.raw && ! -L $sg_index_dir/source-current.raw &&
+       ! -e $sg_index_dir/copy-current.raw && ! -L $sg_index_dir/copy-current.raw ]]
+    source_guard_index_record retained-first-after source-current.raw first-source-after.raw "$(source_guard_index_identity "$sg_index_dir/first-source-after.raw")" \
+      copy-current.raw first-copy-after.raw "$(source_guard_index_identity "$sg_index_dir/first-copy-after.raw")"
+    printf 'copied Git index strict failure at %s; see %s\n' "$stage" "$sg_index_journal" >&2
+    return 1
+  fi
+  if [[ -z $sg_index_copy_identity ]]; then
+    sg_index_copy_identity=$copy_identity
+    [[ ! -e $sg_index_dir/copy-before.raw && ! -L $sg_index_dir/copy-before.raw ]]
+    mv -n -- "$sg_index_dir/copy-current.raw" "$sg_index_dir/copy-before.raw"
+    [[ ! -e $sg_index_dir/copy-current.raw && ! -L $sg_index_dir/copy-current.raw ]]
+    source_guard_index_record retained-baseline copy-current.raw copy-before.raw "$(source_guard_index_identity "$sg_index_dir/copy-before.raw")" "$copy_hash"
+    hold "$sg_index_dir/copy-before.raw"
+  else rm -- "$sg_index_dir/copy-current.raw"; fi
+  rm -- "$sg_index_dir/source-current.raw"
+}
+source_guard_index_git() {
+  local stage=$1 output=$2 command_code=0
+  shift 2
+  "$@" > "$output" || command_code=$?
+  source_guard_index_check "$stage" "$command_code" "$@"
+  return "$command_code"
+}
+source_guard_index_end() {
+  [[ $sg_index_failed == false && $sg_index_checks == 6 ]]
+  source_guard_index_record complete strict-checks 0 raw-baselines-never-updated true
+  exec {sg_index_journal_fd}>&-
+  hold "$sg_index_journal"
+}
 source_guard() {
   local prior=$CI_JOB_TEMP/proof/logging legacy=$CI_JOB_TEMP/proof/logging-legacy-runtime2
-  local path hash identity prior_fd selected context builder size estimate git_bytes
+  local path hash identity prior_fd selected context builder size estimate git_bytes copy_git_code=0
   local copy=$CI_JOB_TEMP/logging-source-absence-copy root=$CI_JOB_TEMP/logging-source-absence-copy/source
   local selector=source_absence::source_absence_rejects_original_nodes_before_producers
   source_guard_copy_ready=false
@@ -624,6 +780,7 @@ source_guard() {
   elf source-guard-builder "$builder"
   context=$prior/context/context.json
   legacy_file "$context"
+  for path in /usr/bin/dd /usr/bin/mv /usr/bin/rm; do elf "source-guard-index-${path##*/}" "$path"; done
   legacy_tree "$source/.git" "$proof/original-git-before"
   printf '%s  %s\n' adee1d45e299bfd6448e8f5584b194b2dbbb53622ee3c1d57c02538d0b0d1fc4 "$source/rust/tools/check_native_logging.py" \
     288a4fd0f9aca05d82a3f415e6632ef3e62b92f2d73f01d7a2f1b5263cdb7ad1 "$source/rust/tools/native_logging_transport.py" | sha256sum --check --strict - > "$proof/originals-present.txt"
@@ -653,16 +810,19 @@ source_guard() {
   mkdir -m 700 -- "$copy" "$root"
   source_guard_copy_identity=$(stat -c '%d:%i:%f:%u:%g' "$copy")
   (ulimit -f 524288; tar --hard-dereference --null --no-recursion --verbatim-files-from -T "$proof/copy-selected.bin" -cf -) | tar --same-permissions -xf - -C "$root"
-  cp -a -- "$source/.git" "$root/.git"
+  source_guard_index_begin
+  cp -a -- "$source/.git" "$root/.git" || copy_git_code=$?
+  source_guard_index_check after-copy "$copy_git_code" cp -a -- "$source/.git" "$root/.git"
   # 실제 copy mode를 기록하되 전체 canonical tar 동일성 검사는 그대로 유지한다.
   (set -C; stat -c $'%n\t%a\t%f\t%u\t%g\t%s' --     "$source/rust/Cargo.toml" "$root/rust/Cargo.toml"     "$source/tools/ci/logging_retained_549.sh" "$root/tools/ci/logging_retained_549.sh" > "$proof/copy-source-modes.tsv")
   test "$(stat -c %s "$proof/copy-source-modes.tsv")" -le 4096
   hold "$proof/copy-source-modes.tsv"
-  [[ $(git --no-optional-locks -C "$root" rev-parse HEAD) == "$GITHUB_SHA" ]]
-  git --no-optional-locks -C "$root" ls-files -z > "$proof/copied-index.bin"
+  source_guard_index_git after-rev-parse "$proof/copied-head.txt" git --no-optional-locks -C "$root" rev-parse HEAD
+  [[ $(cat "$proof/copied-head.txt") == "$GITHUB_SHA" ]]
+  source_guard_index_git after-ls-files "$proof/copied-index.bin" git --no-optional-locks -C "$root" ls-files -z
   cmp "$proof/copy-index.bin" "$proof/copied-index.bin"
-  git --no-optional-locks -C "$root" diff --cached --exit-code > "$proof/copy-cached.diff"
-  git --no-optional-locks -C "$root" diff --name-only -z > "$proof/copy-deletions.bin"
+  source_guard_index_git after-diff-cached "$proof/copy-cached.diff" git --no-optional-locks -C "$root" diff --cached --exit-code
+  source_guard_index_git after-diff-files "$proof/copy-deletions.bin" git --no-optional-locks -C "$root" diff --name-only -z
   printf 'rust/tools/check_native_logging.py\0rust/tools/native_logging_transport.py\0' > "$proof/copy-deletions.expected.bin"
   cmp "$proof/copy-deletions.expected.bin" "$proof/copy-deletions.bin"
   # canonical tar와 Git metadata bytes를 source->copy 대조한다. raw index 변경도 숨기지 않는다.
@@ -671,7 +831,9 @@ source_guard() {
   done
   test "$(sort -u "$proof/copied-source.sha256" | wc -l)" -eq 1
   (cd "$source/.git"; find -P . -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum) > "$proof/git-source.sha256"
+  source_guard_index_check before-git-manifest 0 checkpoint-only no-command-executed
   (cd "$root/.git"; sha256sum --check --strict --quiet "$proof/git-source.sha256")
+  source_guard_index_end
   jq -er '.source_files|if length==19 then to_entries[]|[.key,.value.sha256,(.value.size|tostring)]|@tsv else error("current19 required") end' "$context" > "$proof/current19.tsv"
   while IFS=$'\t' read -r path hash size; do
     [[ $path != /* && $path != ../* && $path != */../* && $hash =~ ^[a-f0-9]{64}$ && $size =~ ^[0-9]+$ ]]
