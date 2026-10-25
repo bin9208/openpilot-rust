@@ -276,3 +276,38 @@ graphics용 환경 추가분은 저장한 이전 extra_env로 되돌려 Clippy �
 이는 기능 기준을 늘리는 변경이 아니라 준비·기능1200초와 별도 정적600초·후검사를 담는
 운영 예산 변경이다. 기존 전체 shared1200초는 이 source부터 두 명시 수명으로 대체됐으며,
 이전 실행을 새 경계의 PASS로 다시 표기하지 않는다. 실제 원본5·Clippy/최종 전체 수용은 GHA 대기다.
+
+
+### #569 기존 partial-write RED에 현재 pending-close API가 섞인 컴파일 실패
+
+[PR343 bacda40173790842/job121111148697](https://github.com/bin9208/openpilot-rust/actions/runs/40173790842/job/121111148697)의
+UI/connectivity step33은 현재 test9 전체를 과거11f3dec adapter에 복사해 E0432
+`pending_close_native::pending_close_control` unresolved import로 실패했다. 의도한 RED assertion에
+도달하지 않았으므로 기존 partial-write 수용이나 #559 기능 실패로 세지 않는다. #569로 독립 추적한다.
+
+기준 adapter11f3dec과 exact short-reading selector/assertion은 유지한다. test 입력만
+`ca8fd1119ca16aaefe0f99676d5b3ed7d5874df2`의 기존8개를 immutable git show로 복사한다.
+18569B/SHA `5b26f9e5ba3db68693b00532930fd7ee509122f18372a1c6d308086cc855cddc`를 확인하고
+현재test의18569byte prefix와 동일함을 proof로 남긴다. 현재 test9 전체는 기존 후속 Cargo 명령에서
+계속 실행한다. 과거 adapter의 독립 target·용량 입장·실제 RED 실패문구·현재 GREEN을 유지한다.
+main workflow는 해당 run1곳만 바꾸고 다른43job/native8집계/원문5mode·pendingclose9 경계를 보존한다.
+로컬 source/문법/diff만 확인했으며 새 RED/GREEN과 전체 UI는 Actions UNRUN이다.
+
+
+### #559의 실제 수용 완료: c761 기능 전체와 Clippy 성공
+
+[c76140175214685/job121114297363](https://github.com/bin9208/openpilot-rust/actions/runs/40175214685/job/121114297363)은
+SUCCESS다. write ACK와 queue2를 고정한 과거 detach overlay는101/actual514560 vs expected1543680으로
+RED, 현재 동일 selector는 GREEN이다. 기존 recording9/source-binding4/원본5모드의 실제9-render/3-frame
+비교 및 기존4target strict Clippy가 같은 source에서 통과했다. public detach·30/10/5초·queue/FPS/
+write_all·원문 기대값은 그대로다. 기능955/1200초와 별도 Clippy63/600초, finalizer0·immutable seals/
+owned nonlive/pass=true를 확인했다. 앞 절의 운영 예산 변경은 명시적으로 유지하며 과거 실행을 재도장하지 않는다.
+
+artifact12592830565는44755004B/SHA
+`c22b619d73a8d58a9224379d92e54fb3a0987beda6005c19ec283819d9f16259`,25166CRC/전개233536665B다.
+source/index/SDK·baseline/registry·image SDK/renderer/header/compiler raw36쌍, held421개 전체 identity/SHA
+행(행 순서만 다름), 정확 current source6핀, 명령35개와 group35 nonlive를 대조했다. 첫 current의
+non-registry144개는 모두 fresh:false다. upload/소유 cleanup도 성공해 #559를 개별 종료했다.
+제품 UI 전체/#523/#296/필수 PR·실기·원본 제거 credit은 계속 미완료/0이다. adopted 자손 전체 wait나
+closed FD/DSO는 주장하지 않는다. #569 partial-write RED의 별도 compile 연결 결함은 계속 열린다.
+로컬 프로젝트·원본·모델·ELF/빌드/테스트 실행0이며 ignored ui-c761-559-acceptance-audit.json에 원문 근거를 둔다.

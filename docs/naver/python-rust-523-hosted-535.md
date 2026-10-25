@@ -1106,3 +1106,25 @@ branch Fast40166180682는6leaf 성공/routing1실패/aggregate실패로 확정�
 [a483 controls diagnostic40166180678](https://github.com/bin9208/openpilot-rust/actions/runs/40166180678)은 unit2/getter4·중간2329bits 일치·loader2출력 동일과 final seals를 통과했지만602 실패state를 재현하지 못해 FAIL이다. artifact12588319492는89724404B/SHA256 `22fe0caa368306b8250e0e5eb0bfbd176633d6bab6ba8547548219bba00c5540`,162CRC/expanded368221660B다. normal54의 EPYC9V74(AVX512 포함)와 진단의 EPYC7763(AVX2/FMA)이 달라 원인 후보를 같은 VM에서 구분할 계획이다. 실제 BLAS/kernel·역사 provider·full40 수용은 false를 유지한다.
 
 7b logging40166934406은 Actions SUCCESS이며 산출물의 별도 감사가 진행 중이다. 이를 old27/R4/caller/원본2 퇴역이나 전체 #523 완료로 미리 승격하지 않는다. baseline294/3/3283과 execution114/대기84는 그대로다.
+
+
+### #566 checkout receipt 경합의 개별 수용 완료
+
+실제 merge `e4f7d4a868f3aaee36a1b485af29923f2e24cee6`와 head
+`a4838fc4e7d09499d1dbc50045ec049af995ffbc`는 tree5de13f49c18e5a551b65199ce791663a21140b71이 같다.
+[startup prerequisites121088724978](https://github.com/bin9208/openpilot-rust/actions/runs/40166518729/job/121088724978)와
+[startup services121088724942](https://github.com/bin9208/openpilot-rust/actions/runs/40166518729/job/121088724942)는
+전체 SUCCESS이며 checkout7/reference3/strict Clippy, source/index final·upload/소유 cleanup을 통과했다.
+raw command17/transcript17(576records)/cleanup17/provenance7을 감사했고 checkout9시나리오 PASS,
+paired7 결과 동일, remaining_children=[]와 PID관측127 exists_after=false를 확인했다.
+비UTF8 byte assertion의 실제 수행은 전체7 PASS로 확인하며 unit TempDir 원문이 archive에 따로
+보존됐다는 주장은 하지 않는다.
+
+artifact12588619755(104014061B/SHA e389f7d01898fc166204c561131163fab52f103c055ba240b071313228f22259),
+12588663869(12196680B/SHA74668935c8f02d1b558d5591c598aaa5dc23bc9bab6c9225fcb9aea6cafab5f7)와
+private12588619760/12588354497의 총98643CRC/전개294769377B를 감사했다. 두 source/index raw쌍과
+owner/source/index19469경로가 맞고 source tar SHA는
+`ee69055d1ab3f3043f72f546e8f2187ceebb05c50e87f37e18427e1e483300e6`다.
+[#566 완료 댓글6395356795](https://github.com/bin9208/openpilot-rust/issues/566#issuecomment-6395356795)로 개별 종료했다.
+이 성공은 전체 PR/#523/#296·Python retirement·기기 수용으로 확대하지 않는다. 기존 단독 artifact를
+재사용했으며 새 다운로드·로컬 기능 실행·옛 receipt 재도장은 없다.
