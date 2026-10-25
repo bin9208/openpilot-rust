@@ -2,6 +2,7 @@
 """#482 D0 Actions 전용. packet/fixture 데이터만 decode하며 모델은 실행하지 않는다."""
 from __future__ import annotations
 
+import errno
 import hashlib
 import importlib.util
 import io
@@ -134,6 +135,9 @@ class D0:
         self.build.mkdir(mode=0o700, exist_ok=True)
         self.target = self.build/'target'
         need(Path(os.environ['CARGO_TARGET_DIR']) == self.target, 'private target binding')
+        self.target.mkdir(mode=0o700)
+        self.target_before = self.target_identity()
+        self.scan_count = 0
         self.sdk = Path(os.environ['CI_PREPARED_RUST_ROOT'])
         need(self.sdk == self.job/'rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu'
              and self.sdk.resolve(strict=True) == self.sdk, 'actual private SDK binding')
@@ -153,6 +157,112 @@ class D0:
                         RUSTC=str(self.sdk/'bin/rustc'), RUSTDOC=str(self.sdk/'bin/rustdoc'))
         self.source_before = self.sdk_before = None
 
+    def target_identity(self):
+        info = self.target.lstat()
+        need(stat.S_ISDIR(info.st_mode) and info.st_uid == os.getuid() and not info.st_mode & 0o022
+             and self.target.resolve(strict=True) == self.target, 'mutable target root boundary')
+        return (info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid)
+
+    def missing_target(self, path, problem):
+        need(isinstance(problem, FileNotFoundError) and problem.errno == errno.ENOENT,
+             'mutable scan accepts only ENOENT')
+        need(path.is_absolute() and '..' not in path.parts and path != self.target
+             and path.is_relative_to(self.target), 'mutable ENOENT outside exact target child')
+        need(self.target_identity() == self.target_before, 'mutable target root changed')
+        try:
+            path.lstat()
+        except FileNotFoundError as current:
+            need(current.errno == errno.ENOENT, 'mutable scan accepts only ENOENT')
+        else:
+            raise RuntimeError('mutable ENOENT entry is currently present')
+        text = str(path)
+        need(len(os.fsencode(text)) <= 1024, 'mutable ENOENT path1024B bound')
+        return text
+
+    @staticmethod
+    def budget_charge(totals, index, blocks, limit):
+        totals[index] += blocks
+        need(totals[index] <= limit, 'allocated growth cap')
+        need(totals[0]+totals[1] <= 8*GIB, 'combined build/registry8GiB cap')
+
+    @staticmethod
+    def scan_complete(attempt, missing):
+        need(not missing or attempt < 2, 'mutable target scan exhausted3attempts')
+        return not missing
+
+    def scan_record(self, attempt, totals, missing, status, error=None):
+        text = None if error is None else str(error)
+        row = {'schema': 1, 'scan': self.scan_count, 'attempt': attempt+1, 'phase': self.phase,
+               'target': str(self.target), 'target_identity': self.target_before, 'partial_allocated_bytes': totals,
+               'ENOENT_paths': missing, 'status': status, 'error': None if text is None else text[:2048],
+               'error_truncated': text is not None and len(text) > 2048, 'Cargo_restarted': False}
+        raw = (json.dumps(row, allow_nan=False)+'\n').encode()
+        need(len(raw) <= 32*1024, 'budget diagnostic32KiB bound')
+        self.c.write_new(self.out/f'budget-scan-{self.scan_count:04d}-{attempt+1}-{status}.json', raw)
+
+    def budget_metadata_controls(self):
+        # 실제 private target의 metadata 경계만 검사한다. compiler/decoder 양성이 아니다.
+        directory = self.target/'d0-budget-controls'
+        directory.mkdir(mode=0o700)
+        present, missing = directory/'present', directory/'missing'
+        self.c.write_new(present, b'inert metadata control\n')
+        try:
+            missing.lstat()
+        except FileNotFoundError as problem:
+            absent_error = problem
+        else:
+            raise RuntimeError('metadata control missing entry exists')
+        try:
+            need(self.missing_target(missing, absent_error) == str(missing), 'target ENOENT control')
+            need(not self.scan_complete(0, [str(missing)]) and self.scan_complete(1, []),
+                 'clean complete scan required after transient')
+            charged = present.lstat().st_blocks*512
+            need(charged > 0, 'metadata control actual block allocation')
+            def partial_over_cap():
+                self.budget_charge([8*GIB, 0, 0, 0, 0], 0, charged, 8*GIB)
+            def combined_over_cap():
+                self.budget_charge([7*GIB, GIB, 0, 0, 0], 1, charged, 8*GIB)
+            def replaced_root():
+                # Cargo 시작 전 owned root를 실제 교체하고 원래 inode로 복구한다.
+                holder = self.build/'d0-budget-root-control'
+                holder.mkdir(mode=0o700)
+                parked = holder/'target'
+                self.target.rename(parked)
+                replacement_created = False
+                try:
+                    self.target.mkdir(mode=0o700)
+                    replacement_created = True
+                    self.missing_target(missing, absent_error)
+                finally:
+                    if replacement_created:
+                        self.target.rmdir()
+                    parked.rename(self.target)
+                    holder.rmdir()
+                    need(self.target_identity() == self.target_before, 'metadata control root restoration')
+            controls = [
+                ('target-root', lambda: self.missing_target(self.target, absent_error), 'mutable ENOENT outside exact target child'),
+                ('replaced-root', replaced_root, 'mutable target root changed'),
+                ('outside-proof', lambda: self.missing_target(self.out/'missing', absent_error), 'mutable ENOENT outside exact target child'),
+                ('permission', lambda: self.missing_target(missing, PermissionError(errno.EACCES, 'authored metadata error')), 'mutable scan accepts only ENOENT'),
+                ('currently-present', lambda: self.missing_target(present, absent_error), 'mutable ENOENT entry is currently present'),
+                ('third-incomplete', lambda: self.scan_complete(2, [str(missing)]), 'mutable target scan exhausted3attempts'),
+                ('partial-over-cap', partial_over_cap, 'allocated growth cap'),
+                ('combined-over-cap', combined_over_cap, 'combined build/registry8GiB cap')]
+            for name, reject, expected in controls:
+                try:
+                    reject()
+                except RuntimeError as problem:
+                    need(str(problem) == expected, 'metadata control wrong rejection: '+name)
+                else:
+                    raise RuntimeError('metadata control accepted: '+name)
+            self.c.save(self.out/'budget-metadata-controls.json', {'schema': 1, 'positive': 1,
+                'negative': [name for name, _, _ in controls], 'negative_count': 8, 'exact_errors': True,
+                'metadata_only': True, 'compiler_or_decoder_qualified': False, 'retirement_credit': 0})
+        finally:
+            present.unlink()
+            directory.rmdir()
+        need(self.target_identity() == self.target_before, 'metadata controls target root changed')
+
     def budget(self, force=False):
         need(time.monotonic() <= self.deadline, f'D0 total1800s deadline: {self.phase}')
         if self.finalizing:
@@ -160,25 +270,49 @@ class D0:
         if not force and time.monotonic() - self.last_budget < 2:
             return
         self.last_budget = time.monotonic()
+        self.scan_count += 1
+        need(self.scan_count <= 2048, 'budget scan count2048 bound')
         for root in (self.root, self.job):
             v = os.statvfs(root)
             need(v.f_bavail * v.f_frsize >= 512*MIB, f'finish512MiB reserve: {root}')
-        # mutable build를 snapshot으로 부르지 않는다. 경합/미확정은 성공으로 처리하지 않는다.
         scopes = [(self.build, 8*GIB), (self.job/'cargo-home', 8*GIB),
                   (self.job/'proof', 512*MIB), (self.input, 256*MIB), (self.root.parent, 2*GIB)]
-        totals = []
-        for root, limit in scopes:
-            allocated = 0
-            for path in self.c.walk(root):
-                m = path.lstat()
-                allocated += m.st_blocks*512
-                need(allocated <= limit, f'allocated growth cap: {root}')
-                if stat.S_ISREG(m.st_mode):
-                    need(m.st_size <= 512*MIB, f'file512MiB cap: {path}')
-                else:
-                    need(stat.S_ISDIR(m.st_mode) or stat.S_ISLNK(m.st_mode), 'special output file')
-            totals.append(allocated)
-        need(totals[0]+totals[1] <= 8*GIB, 'combined build/registry8GiB cap')
+        for attempt in range(3):
+            totals, missing = [0]*len(scopes), []
+            def note_missing(path, problem=None):
+                # COMMON walk는 FileNotFoundError만 callback으로 전달한다. 현재 literal 부재도 재확인한다.
+                if problem is None:
+                    problem = FileNotFoundError(errno.ENOENT, 'COMMON walk ENOENT', str(path))
+                text = self.missing_target(path, problem)
+                need(len(missing) < 16, 'mutable ENOENT path count16 bound')
+                missing.append(text)
+            try:
+                need(self.target_identity() == self.target_before, 'mutable target root changed')
+                for index, (root, limit) in enumerate(scopes):
+                    for path in self.c.walk(root, mutable=root == self.build, missing=note_missing):
+                        need(time.monotonic() <= self.deadline, f'D0 total1800s deadline: {self.phase}')
+                        try:
+                            info = path.lstat()
+                        except FileNotFoundError as problem:
+                            note_missing(path, problem)
+                            continue
+                        # missing이 있어도부분합초과는즉시실패한다. retry로지워서양성해석하지않는다.
+                        self.budget_charge(totals, index, info.st_blocks*512, limit)
+                        if stat.S_ISREG(info.st_mode):
+                            need(info.st_size <= 512*MIB, f'file512MiB cap: {path}')
+                        else:
+                            need(stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode), 'special output file')
+                need(self.target_identity() == self.target_before, 'mutable target root changed')
+                clean = self.scan_complete(attempt, missing)
+                self.scan_record(attempt, totals, missing, 'clean' if clean else 'retry')
+            except BaseException as problem:
+                try:
+                    self.scan_record(attempt, totals, missing, 'failed', problem)
+                except BaseException as diagnostic:
+                    print(f'D0 budget diagnostic unavailable: {diagnostic}', file=sys.stderr)
+                raise
+            if clean:
+                return
 
     def command(self, argv, label, seconds=60, env=None):
         self.phase = label
@@ -405,6 +539,7 @@ class D0:
         self.holds.add(Path(__file__))
         self.source_before = self.source_snapshot('before')
         self.sdk_before = self.sdk_snapshot('before')
+        self.budget_metadata_controls()
         self.packet()
         self.fixture()
         raw = self.command([self.sdk/'bin/cargo', 'test', '--manifest-path', self.root/'rust/Cargo.toml',

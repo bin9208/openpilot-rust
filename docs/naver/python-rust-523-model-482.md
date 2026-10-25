@@ -850,3 +850,33 @@ D0 성공은 decode/전체 분류 완료만 뜻한다. byte equality나 원래 �
 D1/D2 adapter, 같은 VM 원본·native 모델 재생 및 별도 nativefamily 장기 job은 이 변경에 포함하지 않았다.
 로컬 AST/YAML/Bash/rustfmt/diff만 검토했으며 실제 build/decoder/selector/자원 적합성은 **Actions UNRUN**이다.
 부모가 Focus/정책/원장 및 새 Python execution edge를 등록한 뒤 실제 Actions 결과로 판단한다.
+
+
+### 31e D0 실제 실패와 target metadata 재관측 후보 — Actions UNRUN
+
+[run40184569720/job121142516145](https://github.com/bin9208/openpilot-rust/actions/runs/40184569720/job/121142516145)은
+source `31e29a35e1a253813f76526692919b42284505ed`에서 current-build 감시 중
+`build/target/debug/deps/.tmpo0GBUR.temp-archive`의 실제 ENOENT로 실패했다.
+artifact12596035285는 3,775,521B/SHA
+`b3f4f340c18df40c18405640c58be5b9c0220184d6122f2591311e87d1436075`/74CRC다.
+Rust 컴파일 오류나 용량 초과는 관측되지 않았으며, controller 오류 뒤 Cargo를 SIGTERM으로 회수했다.
+packet/기존 raw fixture pin·1564 TAR roster admission은 통과했으나 test ELF 선택과 2576-word decode에는 도달하지 않았다.
+source/index/SDK/held 봉인과 child 회수·업로드는 통과했고 qualify/closure 실패로 source/job cleanup은 모두 skip됐다.
+
+수정 후보는 Cargo 전에 private target을 만들고 dev/ino/mode/uid/gid를 고정한다.
+COMMON의 기존 mutable walk callback을 build 순회에만 재사용하되 실제 ENOENT가 exact target의 엄격한 하위 경로이고,
+현재 literal도 ENOENT이며 target identity가 같은 경우에만 전체 metadata scan을 최대 3회 다시 관측한다.
+성공에는 모든 scope의 깨끗한 완주가 필요하다. root 부재·교체, target 밖 경로, permission 및 다른 오류는 즉시 실패한다.
+각 부분합과 build/registry 합산 8GiB 초과는 missing이 함께 있어도 즉시 실패하며 재관측으로 지우지 않는다.
+Cargo 재시작·명령 재실행은 없고, source/proof/input/registry/SDK에 mutable 허용을 확대하지 않는다.
+
+GHA 시작 시 실제 private metadata 양성 1개와 음성 8개를 별도로 기록한다.
+음성은 target-root 경로·실제 root inode 교체·밖 경로·permission·현재 존재·3회 고갈·부분합 초과·합산 초과다.
+root 교체 통제는 Cargo 전 owned target을 잠시 rename하고 같은 경로에 새 디렉터리를 만든 뒤 정확한 root-changed 오류와
+원래 identity 복구를 확인한다. 이 통제는 compiler/decoder 양성이 아니다.
+phase/attempt/부분합/identity/ENOENT 경로는 경로당 1024B·시도당 16경로·32KiB/record로 제한해 보존한다.
+기존 2초 sampling, controller1800/build1200/test60초, file/log·성장 cap과 독립 finalizer는 유지한다.
+로컬 검사는 AST/source/diff뿐이며 새 metadata 9통제·Cargo 완주·D0 decode와 자원 적합성은 **Actions UNRUN**이다.
+원래 모델 byte 비교·전체 모델 수용·원본 제거 credit는 여전히 false/0이다.
+
+이 resource observer의 개별 결함·완료 조건은 [#573](https://github.com/bin9208/openpilot-rust/issues/573)으로 추적하며, #482의 원본 모델 수치 수용과 구분한다.
