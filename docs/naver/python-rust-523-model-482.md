@@ -636,3 +636,54 @@ ELF64 little-endian/ET_DYN/x86_64/PT_INTERP0/PT_DYNAMIC1/DT_NULL 종료/DT_NEEDE
 그대로다. LLVM pin·CPU·생산 수학·Rust test·cached 정책·한도·expected 변경은 없다.
 로컬은 AST/YAML/Bash 문법·inert wheel/ELF metadata·diff만 확인했으며 수정 경로와 통제의
 기능은 **Actions UNRUN**이다. fresh original/A/B와 기존 half·sNaN/역사·runtime 미수용도 유지한다.
+
+### b9cc의 fresh 전체 roster 수집 뒤 bool-pointer ABI 거부
+
+[40171726319/job121103782651](https://github.com/bin9208/openpilot-rust/actions/runs/40171726319/job/121103782651),
+source `b9cc4c108c2ea1289762c6e10980d0e4f4e8192b`의 artifact12590232774는11,577,976B/SHA256
+`0d7e1e876345acddf09543e7d165888b0d61131a9a3a1cc93b6499b65269e856`, 442CRC/전개60,402,842B다.
+현재 bins/libtest compile/strict Clippy와 DSO 준비는 성공했다. fresh original 수집도42.633초/exit0으로
+91개 unique PROGRAM, 176개 호출, 104개 compile/link event를 기록했다. 이 수집은 원본 warmup의 generated
+code 실행을 포함한다. 보존한 source/object/image273개는 request의 길이/SHA와 각각 일치한다.
+
+최초 실패는 A의 readonly selector3.501초/exit101이며 `program73: cached LLVM pointer calling convention`이다.
+원문 `model482/retained/triplets/compile-73.ll`의 SHA는
+`f6b328b6e7f08b90191e9d1e8de2392eec5de4d5fc5d9bfc7ebab43b889b632b`이고 첫 줄은 다음과 같다.
+
+```llvm
+define void @r_8_9_9_16_4(float* noalias align 32 %data0, i1* noalias align 32 %data1, float* noalias align 32 %data2) #0
+```
+
+기존 `cached_code::verify_original_program`의 포인터 타입 목록은 `i8*/i16*/i32*/i64*/float*/double*`이며
+`i1*`를 거부한다. 91개 원문 header의 inert 대조에서 이 목록 밖 타입은 위 한 곳뿐이다. 원본 renderer도
+`dtypes.bool`을 `i1`로 출력한다. helper의 metadata가 잘못 옮겨졌다는 근거는 없으며, 원문 수정/타입 치환/
+부분 roster 선택으로 통과시킬 수 없다. `strict_triplet_all=false`, ISA 검사는 보류됐고 B의2frame/plain-tap/
+worker-cell 비교는 미도달이다. 다른 PROGRAM의 후속 ISA 통과나 수치 원인은 아직 판정하지 않는다.
+
+source/index/SDK/Python base·venv 및 held385개는 전후 일치하고 independent final-seals는 pass,
+failures는 빈 목록이다. registry의 before는 archive에 별도 저장되지 않아 독립 byte 대조 대신 finalizer의
+실제 pass만 확인했다. 자손 live0, source·SDK final/upload/소유 cleanup은 성공했고 전체 진단/closure는 FAIL이다.
+LLVM provider는 같은 SHA `5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`다.
+
+이번 허용 helper/WF/doc 범위에서는 실행 경로를 바꾸지 않았다. 최소 후속은 별도 소유 범위에서 bool-pointer의
+정확 ABI 지원과 양성/unknown·arity·alignment·argument-order 거부 회귀를 검토하는 것이다. 기존 object 재구성/
+전체 ISA/소스 봉인 및 full128·R4·역사 half/sNaN5·runtime 기준은 유지해야 한다. 후속 지원과 A/B 기능은
+**Actions UNRUN**이며 이번 실패를 compiler 수치 결함 해결이나 모델 수용으로 표시하지 않는다.
+
+
+### i1 buffer pointer 지원 후보와 현재 source 재봉인
+
+program73의 실제 LLVM은 `float* %data0, i1* %data1, float* %data2`이며 bool load 뒤 float select를 한다.
+[LLVM18.1.3 DataLayout](https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-18.1.3/llvm/include/llvm/IR/DataLayout.h)과 현재 tinygrad의 bool itemsize는1byte다. 현재 C wrapper와 Rust KernelFn은
+같은 raw buffer 주소를 void pointer로 전달하므로 scalar bool 변환을 추가하지 않는다.
+후속 production diff는 cached ABI pointer 열거의 정확 `i1*` 한 항목뿐이다. 기존 pointer/scalar·정렬·
+arity/global order·source/object/image·ISA/issuer의 혼합 거부는 유지한다.
+
+기존 test13개 본문은 그대로 두고 bool pointer의 실제3인자 형태와 독립 triplet/global binding,
+다른 integer 폭·pointer-to-pointer·vector·주소공간·정렬·scalar/varargs 거부의 의미 있는 회귀2개를 추가했다.
+새 current-triplet controller와 historical readonly workflow는 cached15개 전체 및 새2개 명시 selector를
+확인한다. historical workflow의 streamed5/ISA5/실행 금지 경계는 그대로다. 로컬은 source/format/diff뿐이다.
+
+CACHED_SOURCES10은 그대로이며 새 binary/current catalog/admission은 변경된 cached_code.rs를
+현재 source로 독립 봉인해야 한다. 기존 certificate/receipt를 현재 것으로 다시 표기하지 않는다.
+현재 source의 whole91 A·ISA/B 수치·기존 full128·historical half/sNaN5·runtime 수용은 모두 GHA 대기다.

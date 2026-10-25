@@ -799,6 +799,14 @@ class Controller:
         for i,path in enumerate(sorted((self.job/'venv').rglob('*.so*'))):
             need(path.is_file() and not path.is_symlink(),'extension provider must be regular')
             self.dso(path,f'python-dso-{i}')
+        controls = self.command([test, "cached_code::tests::", "--nocapture", "--test-threads=1", "--color=never"],
+                                "cached-code-controls", 180).decode()
+        need(len(re.findall(r"^test result: ok\. 15 passed; 0 failed; 0 ignored;", controls, re.M)) == 1,
+             "all fifteen cached source/object/ABI contracts must pass")
+        for selector in ("bool_buffer_pointer_retains_triplet_and_global_argument_binding",
+                         "bool_pointer_does_not_admit_other_llvm_parameter_abis"):
+            need(controls.splitlines().count("test cached_code::tests::" + selector + " ... ok") == 1,
+                 "exact bool pointer ABI regression missing: " + selector)
         closure = ["guarded_add.rs", "bin/offline-llvm-guarded-add.rs", "owned_outputs.rs", "lib.rs", "cached_code.rs",
                    "bin/offline-cached-code.rs", "cached_elf.rs", "cached_isa.rs", "cpu.rs", "graph.rs", "error.rs", "entrypoint.rs", "assets.rs", "buffer.rs", "cpu/diagnostic_482_tests.rs"]
         closure = ["rust/crates/model-runtime/src/"+p for p in closure] + ["rust/crates/model-runtime/Cargo.toml", "rust/Cargo.toml", "rust/Cargo.lock", "rust/rust-toolchain.toml"]

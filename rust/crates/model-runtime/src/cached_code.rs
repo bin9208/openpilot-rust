@@ -919,6 +919,116 @@ mod tests {
         );
     }
 
+    fn bool_pointer_triplet_fixture() -> (OriginalProgram, Vec<u8>, Vec<u8>, Vec<u8>) {
+        // ABI만 검사하는 synthetic triplet이다. 원본 compile 증거나 실행 fixture가 아니다.
+        let image = vec![0xc3];
+        let object = cached_elf::package(&[(0, &image)]).unwrap();
+        let source = b"define void @bool_buffers(float* noalias align 32 %data0, i1* noalias align 32 %data1, float* noalias align 32 %data2) #0\n{\nret void\n}\n".to_vec();
+        let original = OriginalProgram {
+            source_sha256: digest(&source),
+            image_sha256: digest(&image),
+            reconstruction_object_sha256: digest(&object),
+            image_bytes: image.len(),
+            image_alignment: 64,
+            text_bytes: image.len(),
+            pointers: 3,
+            scalars: 0,
+            global_slots: vec![0, 1, 2],
+            workers: 1,
+            core_id: None,
+        };
+        (original, source, image, object)
+    }
+
+    #[test]
+    fn bool_buffer_pointer_retains_triplet_and_global_argument_binding() {
+        let (mut original, source, image, object) = bool_pointer_triplet_fixture();
+        verify_original_program(&original, &source, &image, &object).unwrap();
+
+        let changed_source = String::from_utf8(source.clone())
+            .unwrap()
+            .replace("i1*", "i8*");
+        assert_eq!(
+            verify_original_program(&original, changed_source.as_bytes(), &image, &object)
+                .unwrap_err(),
+            "cached original SOURCE/BINARY/object triplet differs"
+        );
+        let mut changed_image = image.clone();
+        changed_image[0] ^= 1;
+        assert!(verify_original_program(&original, &source, &changed_image, &object).is_err());
+        let mut changed_object = object.clone();
+        changed_object[0] ^= 1;
+        assert!(verify_original_program(&original, &source, &image, &changed_object).is_err());
+
+        original.global_slots.swap(0, 1);
+        assert_eq!(
+            verify_original_program(&original, &source, &image, &object).unwrap_err(),
+            "cached original global argument order"
+        );
+        original.global_slots.swap(0, 1);
+        original.pointers = 2;
+        assert_eq!(
+            verify_original_program(&original, &source, &image, &object).unwrap_err(),
+            "cached original pointer/scalar arity"
+        );
+    }
+
+    #[test]
+    fn bool_pointer_does_not_admit_other_llvm_parameter_abis() {
+        let (original, source, image, object) = bool_pointer_triplet_fixture();
+        verify_original_program(&original, &source, &image, &object).unwrap();
+        let declaration = std::str::from_utf8(&source).unwrap();
+        let check_source = |source: &str| {
+            let mut changed = original.clone();
+            // 오래된 SHA 때문이 아니라 각 ABI guard 자체에서 거부하도록 재바인딩한다.
+            changed.source_sha256 = digest(source.as_bytes());
+            verify_original_program(&changed, source.as_bytes(), &image, &object)
+        };
+        for pointer in [
+            "i2*",
+            "i7*",
+            "i128*",
+            "i1**",
+            "<2 x i1>*",
+            "i1 addrspace(0)*",
+            "i1 addrspace(1)*",
+        ] {
+            let changed = declaration.replace("i1* noalias", &format!("{pointer} noalias"));
+            assert_eq!(
+                check_source(&changed).unwrap_err(),
+                "cached LLVM pointer calling convention",
+                "{pointer}"
+            );
+        }
+        for alignment in [0, 3, 128] {
+            let changed = declaration.replace(
+                "i1* noalias align 32",
+                &format!("i1* noalias align {alignment}"),
+            );
+            assert_eq!(
+                check_source(&changed).unwrap_err(),
+                "cached LLVM pointer alignment exceeds native buffers",
+                "alignment {alignment}"
+            );
+        }
+
+        let scalar_source = declaration.replace(") #0", ", i32 %data3) #0");
+        let mut with_scalar = original;
+        with_scalar.scalars = 1;
+        with_scalar.source_sha256 = digest(scalar_source.as_bytes());
+        verify_original_program(&with_scalar, scalar_source.as_bytes(), &image, &object).unwrap();
+        for scalar in ["i1 %data3", "i64 %data3", "<2 x i1> %data3", "..."] {
+            let changed = scalar_source.replace("i32 %data3", scalar);
+            with_scalar.source_sha256 = digest(changed.as_bytes());
+            assert_eq!(
+                verify_original_program(&with_scalar, changed.as_bytes(), &image, &object)
+                    .unwrap_err(),
+                "cached LLVM scalar calling convention",
+                "{scalar}"
+            );
+        }
+    }
+
     #[test]
     fn source_only_dedup_and_partial_original_roster_are_not_admitted() {
         let (mut expected, _, _, _, _, _) = fixture();
@@ -1121,7 +1231,7 @@ pub fn verify_original_program(
             if fields.len() != 5
                 || !matches!(
                     fields[0],
-                    "i8*" | "i16*" | "i32*" | "i64*" | "float*" | "double*"
+                    "i1*" | "i8*" | "i16*" | "i32*" | "i64*" | "float*" | "double*"
                 )
                 || fields[1] != "noalias"
                 || fields[2] != "align"

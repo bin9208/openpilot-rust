@@ -8,6 +8,7 @@ name: Python Rust 523 current model triplet and worker-cell diagnostic
     - tools/ci/model_current_triplet_482.py
     - rust/crates/model-runtime/src/cpu/diagnostic_482_tests.rs
     - rust/crates/model-runtime/src/cpu.rs
+    - rust/crates/model-runtime/src/cached_code.rs
 permissions:
   contents: read
 concurrency:
@@ -26,7 +27,7 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
       PYTHONDONTWRITEBYTECODE: '1'
-      MODEL482_HELPER_SHA256: 4ea04c748d57313ca746ae96df798683662c9fe589e781eaf9dd55dcf6722fda
+      MODEL482_HELPER_SHA256: 932aee554b6a659c47156a91fdf4ed902a5a658c0d408218f7effec167a81e9b
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
       shell: bash
