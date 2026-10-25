@@ -402,7 +402,7 @@ impl BufferObservation {
         assert!(job.is_absolute());
         assert_eq!(job.canonicalize().unwrap(), job);
         let owner = format!(
-            "{}:{}:{}\n",
+            "{}:{}:{}",
             std::env::var("GITHUB_RUN_ID").unwrap(),
             std::env::var("GITHUB_RUN_ATTEMPT").unwrap(),
             std::env::var("GITHUB_JOB").unwrap()

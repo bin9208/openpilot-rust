@@ -173,3 +173,15 @@ ea47bd7f44fb618a04fd904a1e460e47ee6dd10fb26468da6af4ef355c9b3edb  rust/crates/de
 문서 자체의 SHA는 최종 인계 메시지에서 전달한다. 로컬 source 검토에서 native8의 본문과
 전후 guard와 Result 보존 호출부 외 memory 구현이 source425와 바이트 동일함을 확인했다. 퇴역 두 경로는
 실제로 부재하며 fixture는 원래 ZIP member와 완전히 같다. 이 확인은 기능 실행이 아니다.
+
+
+## source7a82 삭제 후 실제 검사와 Clippy 정리
+
+[run40230515032/job121281013120](https://github.com/bin9208/openpilot-rust/actions/runs/40230515032/job/121281013120)의
+native controller14/runtime guard6/frozen5/adapter13/새 memory15가 모두 PASS다. 마지막 strict
+Clippy만 `planner_memory_controller.rs`의 삭제 전 collector에서 남은 unused `PathBuf`
+import 하나를 거부했다. 이 import만 제거하며 function body/frozen raw/검사 수·정책을
+바꾸지 않는다. Clippy와 최종 artifact 봉인 수용 전까지 삭제 credit을 확정하지 않는다.
+
+source7a82의 actual host runtime12+ASan3 및 ARM runtime12도 실제 성공했다.
+정확한 산출물 SHA/독립 감사와 최종 Clippy 수용은 부모의 후속 통합 기록에 남긴다.

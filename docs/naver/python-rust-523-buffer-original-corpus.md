@@ -108,3 +108,14 @@ run_once compiler-buffer-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Car
 collector를 검증하려고 성공한 불변 gate를 로컬에서 반복하지 않는다. 이번 로컬 검증은
 source/구문/서식/diff와 원문 보존 비교뿐이다. 새 GHA 원문·179경계 수용·모델/장치 기능 수용은
 부모가 실제 결과를 받은 뒤 구분해 기록한다.
+
+
+## source7a82 최초 실제 수집 admission 실패
+
+[run40230515032/job121281012930](https://github.com/bin9208/openpilot-rust/actions/runs/40230515032/job/121281012930)의
+source7a82에서 native6와 strict Clippy는 성공했다. original1은 원본 spawn 이전의
+`job/owner` exact 비교에서 실패했다. 공유 job-temp는 `run:attempt:job`을 줄바꿈 없이 쓰지만
+collector가 끝 `\n`을 잘못 가정했다. parent가 그 추가 한 글자만 제거해 실제 producer와
+exact 비교하며 임의 trim/부분 일치로 완화하지 않는다. source/Python/owner 파일의 원문
+전후 identity·SHA와179경계·기한·출력 cap은 그대로다. 원본 프로세스/원문 관측은 미실행이다.
+수정본 actual GHA 수용이 남아 있으며 이 실패를 buffer algorithm 차이라고 기록하지 않는다.
