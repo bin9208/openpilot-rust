@@ -289,7 +289,7 @@ jobs:
         printf 'jobs=%s\nincremental=%s\ndev_debug=%s\ntest_debug=%s\nrustc=%s\ncargo=%s\nfeatures=no-default-features\n' \
           "$CARGO_BUILD_JOBS" "$CARGO_INCREMENTAL" "$CARGO_PROFILE_DEV_DEBUG" "$CARGO_PROFILE_TEST_DEBUG" \
           "$RUSTC" "$sdk/bin/cargo" > "$CI_JOB_TEMP/proof/compile-profile.txt"
-        if [[ $NATIVE_UNITS_CRATE == buffers || $NATIVE_UNITS_CRATE == compiler-export ]]; then
+        if [[ $NATIVE_UNITS_CRATE == model || $NATIVE_UNITS_CRATE == buffers || $NATIVE_UNITS_CRATE == compiler-export ]]; then
           printf 'additional_features=native-skip-miri\n' >> "$CI_JOB_TEMP/proof/compile-profile.txt"
         fi
         failed=0
@@ -318,30 +318,33 @@ jobs:
             ;;
           model)
         run_once model-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
-          --no-default-features -p openpilot-model-runtime --test compiler_launch --test compiler_schedule
-        run_once original-boundaries "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
-          --no-default-features -p openpilot-model-runtime --test compiler_schedule \
+          --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_launch --test compiler_schedule
+        stage_python=$(readlink -e -- /usr/bin/python3)
+        test -f "$stage_python" && test -x "$stage_python" && test ! -L "$stage_python"
+        sha256sum "$stage_python" > "$CI_JOB_TEMP/proof/stage-oracle-python.sha256"
+        "$stage_python" -I -B -S --version > "$CI_JOB_TEMP/proof/stage-oracle-python.version"
+        run_once original-boundaries /usr/bin/env STAGE_REFERENCE_PYTHON="$stage_python" "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_schedule \
           original_python_pipeline_boundaries_match_native -- --ignored --exact --nocapture
         # Prevent a renamed/missing ignored test from silently accepting zero tests.
         grep -F 'test result: ok. 1 passed; 0 failed;' "$CI_JOB_TEMP/proof/original-boundaries.log" || failed=1
+        sha256sum --check --strict "$CI_JOB_TEMP/proof/stage-oracle-python.sha256" || failed=1
         run_once model-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
-          --no-default-features -p openpilot-model-runtime --lib --test compiler_launch --test compiler_schedule -- -D warnings
+          --no-default-features --features native-skip-miri -p openpilot-model-runtime --lib --test compiler_launch --test compiler_schedule -- -D warnings
             ;;
           buffers)
         run_once compiler-buffer-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_buffers
-        grep -F 'test result: ok. 6 passed; 0 failed; 1 ignored;' "$CI_JOB_TEMP/proof/compiler-buffer-units.log" || failed=1
-        buffer_python=$(readlink -e -- /usr/bin/python3)
-        test -f "$buffer_python" && test -x "$buffer_python" && test ! -L "$buffer_python"
-        sha256sum "$buffer_python" > "$CI_JOB_TEMP/proof/buffer-oracle-python.sha256"
-        "$buffer_python" -I -B -S --version > "$CI_JOB_TEMP/proof/buffer-oracle-python.version"
-        run_once original-buffers /usr/bin/env BUFFER_REFERENCE_PYTHON="$buffer_python" "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
-          --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_buffers \
-          original_python_buffer_tables_match_native -- --ignored --exact --nocapture
-        grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/original-buffers.log" || failed=1
-        sha256sum --check --strict "$CI_JOB_TEMP/proof/buffer-oracle-python.sha256" || failed=1
+        grep -F 'test result: ok. 7 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/compiler-buffer-units.log" || failed=1
         run_once compiler-buffer-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --lib --test compiler_buffers -- -D warnings
+        printf 'buffer_union_features=native-skip-miri,serde_json/preserve_order\n' >> "$CI_JOB_TEMP/proof/compile-profile.txt"
+        run_once compiler-buffer-order-union "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features --features native-skip-miri,serde_json/preserve_order -p openpilot-model-runtime --test compiler_buffers \
+          frozen_original_buffer_tables_match_native -- --exact --nocapture
+        grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/compiler-buffer-order-union.log" || failed=1
+        run_once compiler-buffer-order-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
+          --no-default-features --features native-skip-miri,serde_json/preserve_order -p openpilot-model-runtime --lib --test compiler_buffers -- -D warnings
             ;;
           compiler-export)
         run_once compiler-export-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
@@ -396,8 +399,11 @@ jobs:
         grep -F 'test result: ok. 11 passed; 0 failed; 1 ignored;' "$CI_JOB_TEMP/proof/minimal-prepared-audit-units.log" || failed=1
         run_once minimal-prepared-audit-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-prepared-cold-audit --all-targets -- -D warnings
+        run_once fast-cold-measurement "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --test fast_cold_measure
+        grep -F 'test result: ok. 8 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/fast-cold-measurement.log" || failed=1
         run_once planner-policy-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
-          --no-default-features -p openpilot-dev-tools --lib --test planner_ci_policy --test release_files --test ci_disk_bootstrap --test ci_rust_isolation -- -D warnings
+          --no-default-features -p openpilot-dev-tools --lib --test planner_ci_policy --test release_files --test ci_disk_bootstrap --test ci_rust_isolation --test fast_cold_measure -- -D warnings
             ;;
           *) echo "unknown native crate" >&2; exit 1 ;;
         esac
@@ -526,4 +532,4 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: "${{ fromJSON(github.event_name == 'push' && '[\"buffers\",\"planner\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"
+        crate: "${{ fromJSON(github.event_name == 'push' && '[\"model\",\"buffers\",\"tools\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"

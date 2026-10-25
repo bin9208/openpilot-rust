@@ -1,0 +1,91 @@
+
+import ast, dataclasses, hashlib, json, os, pathlib, sys, types
+from collections.abc import Mapping
+root = pathlib.Path(sys.argv[1])
+os.environ.update(DEV='CPU', CACHELEVEL='0', DEBUG='0', PROFILE='0', PYTHONDONTWRITEBYTECODE='1', TYPED='0')
+sys.path.insert(0, str(root))
+sys.path.insert(0, str(root/'tinygrad_repo'))
+from tinygrad.device import Buffer, MultiBuffer, Device, Compiler
+from tinygrad.dtype import dtypes
+from tinygrad.uop.ops import UOp
+def no_compilation(*args, **kwargs):
+    raise AssertionError('buffer oracle must not compile kernels')
+Compiler.compile = Compiler.compile_cached = no_compilation
+open_device = Device._Device__get_canonicalized_item
+def only_cpu(name):
+    assert name.split(':')[0] == 'CPU', f'buffer oracle must not open {name}'
+    return open_device(name)
+Device._Device__get_canonicalized_item = only_cpu
+scope = {'__name__': '__main__', 'dataclass': dataclasses.dataclass, 'Mapping': Mapping,
+         'Buffer': Buffer, 'MultiBuffer': MultiBuffer, 'UOp': UOp}
+hashes = {}
+def definitions(relative, names):
+    path = root/relative
+    content = path.read_bytes()
+    hashes[relative] = hashlib.sha256(content).hexdigest()
+    tree = ast.parse(content, filename=str(path))
+    for name in names:
+        node = next(node for node in tree.body if getattr(node, 'name', None) == name)
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), 'exec'), scope)
+definitions('rust/tools/model_export/schema.py', ['ExportError', 'Allocation', 'View'])
+definitions('rust/tools/model_export/buffers.py', ['host_buffer', 'BufferTable'])
+definitions('rust/tools/model_export/offline_buffers.py', ['descriptor', 'OfflineBufferTable'])
+hashes['tinygrad_repo/tinygrad/device.py'] = hashlib.sha256((root/'tinygrad_repo/tinygrad/device.py').read_bytes()).hexdigest()
+for relative in ('tinygrad_repo/tinygrad/runtime/ops_cpu.py', 'tinygrad_repo/tinygrad/runtime/support/hcq.py'):
+    hashes[relative] = hashlib.sha256((root/relative).read_bytes()).hexdigest()
+request = json.load(sys.stdin)
+descriptor_results = []
+for case in request['descriptors']:
+    if case['kind'] == 'multi':
+        value = MultiBuffer(('CPU', 'PYTHON'), 8, dtypes.uint8)
+    elif case['kind'] == 'other':
+        value = object()
+    else:
+        value = Buffer(case['device'], 8, dtypes.uint8)
+        if case['allocated']:
+            # Synthetic allocation-state control only: no GPU/host provider is
+            # opened for descriptor tests. Clear it before object finalization.
+            value._bufs[value.device] = object()
+    row = {}
+    for name, argument in [('host_buffer', value), ('descriptor', types.SimpleNamespace(buffer=value))]:
+        try:
+            row[name] = scope[name](argument) is value
+        except scope['ExportError']:
+            row[name] = False
+    descriptor_results.append(row)
+    if isinstance(value, Buffer):
+        value._bufs.clear()
+traces = []
+for case in request['cases']:
+    host = case['kind'] == 'host'
+    bases = {base['id']: Buffer('CPU' if host else base.get('device', 'QCOM'), base['bytes'], dtypes.uint8)
+             for base in case['bases']}
+    initial = {bases[base['id']]: bytes(base['initialized']) for base in case['bases'] if 'initialized' in base}
+    for base in case['bases']:
+        if 'initializer_alias' in base:
+            alias = base['initializer_alias']
+            owner = bases[base['id']]
+            key = Buffer(owner.device, alias['bytes'], dtypes.uint8, base=owner, offset=alias['offset'])
+            initial[key] = bytes(alias['data'])
+    table = scope['BufferTable']() if host else scope['OfflineBufferTable'](initial)
+    if host:
+        for base in case['bases']:
+            bases[base['id']].ensure_allocated().copyin(memoryview(bytearray(base['data'])))
+    rows = []
+    for op in case['ops']:
+        base = bases[op['base']]
+        view = Buffer(base.device, op['bytes'], dtypes.uint8, base=base, offset=op['offset'])
+        if host and 'data' in op:
+            base.copyin(memoryview(bytearray(op['data'])))
+        try:
+            returned = getattr(table, op['op'])(view)
+            outcome = {'ok': returned}
+        except scope['ExportError']:
+            outcome = {'error': True}
+        allocations, packed = table.weights()
+        rows.append({'outcome': outcome, 'views': [dataclasses.asdict(v) for v in table.views],
+                     'allocations': [dataclasses.asdict(a) for a in allocations], 'weights': list(packed)})
+    traces.append(rows)
+assert Device._opened_devices == {'CPU'}
+print(json.dumps({'source_sha256': hashes, 'opened_devices': sorted(Device._opened_devices),
+                  'descriptors': descriptor_results, 'traces': traces}))

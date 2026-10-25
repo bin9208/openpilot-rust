@@ -5,6 +5,12 @@ name: Python Rust 523 recovery functional and exec lanes
       - codex/feat-523-python-rust
     paths:
       - .github/workflows/python-rust-523-recovery-lanes.yml
+      - tools/ci/recovery_tracer_474.sh
+      - tools/ci/prepare-cold-strace-560
+      - tools/ci/cold_tracer_launch_560.sh
+      - tools/ci/cold_tracer_diagnostic_560.sh
+      - tools/ci/fixtures/cold560_exec_inheritance.rs
+      - tools/ci/fixtures/strace-6.8-560-*.patch
   workflow_dispatch: {}
 permissions:
   contents: read
@@ -24,6 +30,9 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
+      SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      RECOVERY474_NONPROVIDER_GROWTH_BYTES: '10200547328'
+      RECOVERY474_HELPER_SHA256: 5704296015b6ac6bbf404a5b5ec94ad9421284524b0b2b7464ac7f486b63aed7
     steps:
       - name: Deny fork source and require GitHub-hosted Linux X64
         shell: bash
@@ -33,6 +42,7 @@ jobs:
         run: |
           test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
           set -euo pipefail
+          printf '%s\n' "RECOVERY474_PROVIDER_DEADLINE_EPOCH=$((EPOCHSECONDS+420))" >> "$GITHUB_ENV"
           test "$GITHUB_ACTIONS" = true
           test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
           test "$GH_HOSTED" = 1
@@ -62,9 +72,9 @@ jobs:
           printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
           cat "$job/proof/source-growth-before-checkout.json"
           ((available >= required))
-          # 같은 filesystem의 동시 잔여 성장: source2+target6+registry2+SDK3+proof1+apt2+reserve0.5 GiB.
+          # 같은 filesystem의 동시 잔여 성장: source2+target6+registry2+SDK3+proof1+apt2+reserve0.5+provider0.5 GiB.
           declare -A recovery_growth=() recovery_paths=()
-          for entry in "workspace:$workspace:8589934592" "job:$job:6979321856" 'apt:/:2147483648'; do
+          for entry in "workspace:$workspace:8589934592" "job:$job:7516192768" 'apt:/:2147483648'; do
             label=${entry%%:*}; rest=${entry#*:}; growth=${rest##*:}; path=${rest%:*}
             device=$(stat -c %d -- "$path")
             recovery_growth[$device]=$(( ${recovery_growth[$device]:-0} + growth ))
@@ -119,16 +129,29 @@ jobs:
         shell: bash
         run: '"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before'
       - name: Install only native recovery host providers
+        id: recovery_hosts
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           set -euo pipefail
           sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" update
-          sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y --no-install-recommends g++ pkg-config capnproto libcapnp-dev tmux util-linux strace binutils
+          sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y --no-install-recommends build-essential pkg-config capnproto libcapnp-dev tmux util-linux strace binutils dpkg-dev perl patch xz-utils curl jq
         timeout-minutes: 10
         working-directory: ${{ env.DIAG_SOURCE }}
+      - name: Admit and prepare the unchanged private recovery tracer
+        id: recovery_provider
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && steps.prepared_rust.outcome == 'success' && steps.recovery_hosts.outcome == 'success' }}
+        timeout-minutes: 4
+        working-directory: ${{ env.DIAG_SOURCE }}
+        run: /usr/bin/bash "$GITHUB_WORKSPACE/tools/ci/recovery_tracer_474.sh" prepare
+      - name: Require the original 18 closure and three STOP CONT protocol controls
+        id: recovery_provider_controls
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && steps.recovery_provider.outcome == 'success' }}
+        timeout-minutes: 8
+        working-directory: ${{ env.DIAG_SOURCE }}
+        run: /usr/bin/bash "$GITHUB_WORKSPACE/tools/ci/recovery_tracer_474.sh" controls
       - name: Build and select one exact native recovery cohort
         id: recovery_build
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success' && steps.recovery_hosts.outcome == 'success') }}
         run: |
           set -euo pipefail
           export OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST"
@@ -197,6 +220,12 @@ jobs:
           du -sm "$proof" > "$proof/artifact-size-mib.txt"
           test "$(cut -f1 "$proof/artifact-size-mib.txt")" -le 200
         working-directory: ${{ env.DIAG_SOURCE }}
+      - name: Require actual native PTY HUP KILL descendant cleanup under the private provider
+        id: recovery_provider_pty
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.recovery_build.outcome == 'success' && steps.recovery_provider_controls.outcome == 'success') }}
+        timeout-minutes: 2
+        working-directory: ${{ env.DIAG_SOURCE }}
+        run: /usr/bin/bash "$GITHUB_WORKSPACE/tools/ci/recovery_tracer_474.sh" pty
       - name: Run the separate complete exec trace with the same selected ELFs
         id: recovery_trace
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.recovery_build.outcome == 'success') }}
@@ -211,9 +240,16 @@ jobs:
           pre_sha=$(rust/target/debug/audit-recovery-exec pre --receipt "$proof/exec-preflight.json" --native-root "$proof/native" --server "$RECOVERY_FAMILY_BINARY" --actions "$RECOVERY_FAMILY_ACTIONS_EXAMPLE" --upload "$RECOVERY_FAMILY_UPLOAD_EXAMPLE" --child "$RECOVERY_FAMILY_PROCESS_CHILD" --cwp "$RECOVERY_FAMILY_CWP_TEST_BINARY" --tmux /usr/bin/tmux --harness "$RECOVERY_HARNESS" --host-path "$PATH")
           [[ "$pre_sha" =~ ^[0-9a-f]{64}$ ]]
           printf '%s\n' "$pre_sha" > "$proof/exec-preflight.sha256"
-          status=0
-          /usr/bin/timeout --signal=TERM --kill-after=15s 15m strace -ff -qq -s 32768 -xx -e trace=execve,execveat -o "$proof/exec" "$RECOVERY_HARNESS" --exact eight_native_recovery_controllers_same_elf_present_and_absent --test-threads=1 --nocapture > "$proof/harness.stdout" 2> "$proof/harness.stderr" || status=$?
-          printf '%s\n' "$status" > "$proof/harness.status"
+          # The adapter owns the unchanged timeout=900s/KILL-after=15s fresh-root launcher.
+          # A failed/missing provider is fatal; never fall back to the stock tracer.
+          : > "$proof/harness.stdout"
+          : > "$proof/harness.stderr"
+          driver_status=0
+          /usr/bin/bash "$GITHUB_WORKSPACE/tools/ci/recovery_tracer_474.sh" trace > "$proof/provider-driver.stdout" 2> "$proof/provider-driver.stderr" || driver_status=$?
+          printf '%s\n' "$driver_status" > "$proof/provider-driver.status"
+          test -f "$proof/harness.status" || printf '125\n' > "$proof/harness.status"
+          status=$(cat "$proof/harness.status")
+          [[ $status =~ ^[0-9]+$ ]] && ((status<=255))
           sha256sum --check --strict -- "$CI_JOB_TEMP/proof/recovery-build/selected-before.sha256"
           while IFS= read -r path; do
             stat -c '%d:%i:%s:%a:%u:%g:%Y %n' -- "$path" >> "$proof/selected-after.stat"
@@ -225,13 +261,36 @@ jobs:
           done < "$CI_JOB_TEMP/proof/recovery-build/selected-paths.txt"
           cmp "$CI_JOB_TEMP/proof/recovery-build/selected-before.stat" "$proof/selected-after.stat"
           cmp "$CI_JOB_TEMP/proof/recovery-build/fixed-ctime-before.stat" "$proof/fixed-ctime-after.stat"
-          test "$status" -eq 0 || { tail -n 100 "$proof/harness.stdout" "$proof/harness.stderr"; exit "$status"; }
+          test "$driver_status" -eq 0 && test "$status" -eq 0 || { tail -n 100 "$proof/harness.stdout" "$proof/harness.stderr" "$proof/provider-driver.stderr"; exit 1; }
           grep -F '1 passed; 0 failed' "$proof/harness.stdout"
           test "$(sha256sum "$proof/exec-preflight.json" | cut -d ' ' -f 1)" = "$pre_sha"
           rust/target/debug/audit-recovery-exec post --receipt "$proof/exec-preflight.json" --receipt-sha256 "$pre_sha" --trace-dir "$proof" --output "$proof/exec-audit.json" --harness-exit "$status"
+          # Bind the provider's actual root PID to the existing auditor's parsed
+          # first root exec. No trace file/line exclusion or new program rule.
+          root_receipt="$CI_JOB_TEMP/proof/recovery-provider-474/trace/inheritance/recovery/inherit.log"
+          root_pid=$(sed -n '2s/^COLD560_INHERIT root pid=\([0-9][0-9]*\)$/\1/p' "$root_receipt")
+          [[ $root_pid =~ ^[1-9][0-9]*$ ]] && ((root_pid<=4294967295))
+          jq --argjson root "$root_pid" --slurpfile pre "$proof/exec-preflight.json" '
+            . as $audit |
+            ([.attempts[] | select(.pid == $root)] | sort_by(.line)) as $calls |
+            ($pre[0].selected.harness | explode) as $program |
+            ([$pre[0].selected.harness, "--exact", "eight_native_recovery_controllers_same_elf_present_and_absent", "--test-threads=1", "--nocapture"] | map(explode)) as $argv |
+            {passed: (($pre|length) == 1 and $audit.passed == true and
+              ($program | all(. > 0 and . < 128)) and ($calls|length) > 0 and
+              $calls[0].program == $program and $calls[0].argv == $argv and $calls[0].outcome == "Success"),
+             root_pid: $root, expected_harness: $pre[0].selected.harness, first_root_attempt: $calls[0],
+             trace_modified: false, extra_program_rule: false}
+          ' "$proof/exec-audit.json" > "$proof/direct-root-audit.json"
+          jq -e '.passed == true' "$proof/direct-root-audit.json"
           du -sm "$proof" > "$proof/artifact-size-mib.txt"
           test "$(cut -f1 "$proof/artifact-size-mib.txt")" -le 200
         working-directory: ${{ env.DIAG_SOURCE }}
+      - name: Seal the complete private provider source SDK and ELF after every trace outcome
+        id: recovery_provider_final
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '' && steps.prepared_rust.outcome == 'success' && steps.recovery_hosts.outcome == 'success') }}
+        timeout-minutes: 5
+        working-directory: ${{ env.DIAG_SOURCE }}
+        run: /usr/bin/bash "$GITHUB_WORKSPACE/tools/ci/recovery_tracer_474.sh" after
       - name: Verify read-only Rust SDK contents and identities after maintained checks
         id: prepared_rust_final
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}
@@ -263,13 +322,17 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/proof
             ${{ env.CI_JOB_TEMP }}/recovery-functional
             ${{ env.CI_JOB_TEMP }}/recovery-trace
+            ${{ env.CI_JOB_TEMP }}/cold-strace-560/inputs
+            ${{ env.CI_JOB_TEMP }}/cold-strace-560/bin
+            ${{ env.CI_JOB_TEMP }}/recovery-provider-474
           if-no-files-found: error
           retention-days: 14
       - name: Clean only uploaded private Fast source
         id: fast_source_cleanup
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id
           != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.recovery_functional.outcome
-          == 'success' && steps.recovery_trace.outcome == 'success') }}
+          == 'success' && steps.recovery_trace.outcome == 'success' && steps.recovery_provider.outcome == 'success' && steps.recovery_provider_controls.outcome == 'success'
+          && steps.recovery_provider_pty.outcome == 'success' && steps.recovery_provider_final.outcome == 'success') }}
         working-directory: ${{ github.workspace }}
         env:
           UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}

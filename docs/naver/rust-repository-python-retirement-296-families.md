@@ -260,3 +260,18 @@ routing map은20 accepted /3286 pending·partial이다. 이번 추가 수용은 
 `replaced-local`은 기존 원장 이름이며 기능 검사는 Actions에서 실행했다.
 실제 원격 SSH 연결, 전체 Python 부재, 완전한 build dependency closure 또는 전체 전환 완료를 뜻하지 않는다.
 원시 receipt의 retirement_credit0/범위 제한은 원문 그대로 보존한다.
+
+
+## 2026-10-26 Planner 제어·메모리 wrapper 삭제 후 수용
+
+현재 baseline은 **299 replaced-local /3 partially-replaced /3278 pending =3580**,
+routing map은25 replaced-local/3 partial/3278 pending이다. 정확 세 baseline 경로
+`check_plannerd_ci.py`, `check_plannerd_native_memory.py`, `tests/test_plannerd_ci.py`를
+갱신했다. 추가 memory wrapper unittest는 baseline에 넣지 않고 별도 실행 원장에 기록했다.
+source425의 독립 원문5+5, source7a82 실제 host12/ASan3/ARM12 및 source100의 native14/
+frozen5/guard6/memory15·strict Clippy 수용과 source/index/SDK 봉인을 결합했다.
+
+추가 원장162행은30교체/128대기/1기존native/2비실행문구/1제거다. Rust 두 test의 live
+Python 원본 실행과 Bash의 옛 직접 wrapper dispatch를 닫았으며 나머지 Python leaf/IPC/
+Cython/컴파일러는 대기다. 세부 artifact SHA와 한계는
+[삭제 후 수용 기록](python-rust-523-planner-retirement-acceptance.md)을 따른다.

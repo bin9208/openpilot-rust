@@ -14,6 +14,15 @@ case ${GITHUB_EVENT_NAME:-} in
   *) fail 'unsupported event';;
 esac
 job=${CI_JOB_TEMP:?}; source=${DIAG_SOURCE:?}; sdk=${CI_PREPARED_RUST_ROOT:?}
+# BEGIN recovery474 context admission (default Fast source projection omits this block).
+case ${COLD560_PREPARE_CONTEXT-fast} in
+  fast) ;;
+  recovery474)
+    [[ ${RUNNER_ENVIRONMENT:-}:${GITHUB_JOB:-} == github-hosted:recovery ]] || fail 'recovery474 context requires github-hosted recovery job'
+    ;;
+  *) fail 'unsupported preparation context';;
+esac
+# END recovery474 context admission
 case ${RUNNER_ENVIRONMENT:-} in
   self-hosted) [[ ${RUNNER_NAME:-} == bin-actions && $sdk == /home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu ]] || fail 'registered local SDK required';;
   github-hosted) [[ $sdk == "$job/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu" ]] || fail 'actual private hosted SDK required';;
@@ -49,6 +58,14 @@ root=${COLD560_PREPARE_ROOT:-$job/cold-strace-560}
 owned_dir "${root%/*}" || fail 'owned provider parent required'
 out=$job/proof/cold-strace-560
 cap=$((512*1024*1024)); envelope=$((6*1024*1024*1024)); phase=preflight
+# BEGIN recovery474 scoped envelope (no caller-selected numeric cap).
+if [[ ${COLD560_PREPARE_CONTEXT-fast} == recovery474 ]]; then
+  [[ ${SOURCE_ALLOWED:-} == true && ${CI_PREPARED_RUST_MANIFEST:-} == "$job/proof/prepared-rust-files.before.sha256" &&
+     -f $CI_PREPARED_RUST_MANIFEST && ! -L $CI_PREPARED_RUST_MANIFEST &&
+     ${COLD560_NONPROVIDER_GROWTH_BYTES:-} == 10200547328 ]] || fail 'recovery474 requires the current manifest and exact 9.5GiB remaining forecast'
+  envelope=$((10*1024*1024*1024))
+fi
+# END recovery474 scoped envelope
 stamp() { stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' -- "$1"; }
 tree() {
   local path=$1 prefix=$2
@@ -147,7 +164,39 @@ verify() {
   file_seal /etc/ld.so.cache "$out/ld-cache.$suffix"
   cmp "$out/ld-cache.before.metadata" "$out/ld-cache.$suffix.metadata"
   cmp "$out/ld-cache.before.sha256" "$out/ld-cache.$suffix.sha256"
+# BEGIN recovery474 outer receipt after seals.
+  if [[ ${COLD560_PREPARE_CONTEXT-fast} == recovery474 ]]; then
+    for name in plan admitted; do
+      file_seal "$job/proof/recovery-growth-$name.tsv" "$out/recovery474-outer-$name.$suffix"
+      cmp "$out/recovery474-outer-$name.before.metadata" "$out/recovery474-outer-$name.$suffix.metadata"
+      cmp "$out/recovery474-outer-$name.before.sha256" "$out/recovery474-outer-$name.$suffix.sha256"
+    done
+  fi
+# END recovery474 outer receipt after seals
 }
+# BEGIN recovery474 outer admission (read only, before allocation/build or verify).
+if [[ ${COLD560_PREPARE_CONTEXT-fast} == recovery474 ]]; then
+  for receipt in "$job/proof/recovery-growth-plan.tsv" "$job/proof/recovery-growth-admitted.tsv"; do
+    [[ -f $receipt && ! -L $receipt && $(stat -c %u "$receipt") == "$(id -u)" &&
+       $(stat -c %s "$receipt") -gt 0 && $(stat -c %s "$receipt") -le 4096 ]] || fail 'recovery474 outer admission receipt required'
+  done
+  awk -F '\t' -v workspace="$workspace" -v job="$job" \
+    -v wd="$(stat -c %d "$workspace")" -v jd="$(stat -c %d "$job")" -v ad="$(stat -c %d /)" '
+    NR==FNR {
+      if(NF!=4 || seen[$1]++) bad=1;
+      if($1=="workspace" && $2==wd && $3==workspace && $4=="8589934592") {}
+      else if($1=="job" && $2==jd && $3==job && $4=="7516192768") {}
+      else if($1=="apt" && $2==ad && $3=="/" && $4=="2147483648") {}
+      else bad=1;
+      need[$2]+=$4;total+=$4;rows++;next
+    }
+    {
+      if(NF!=3 || !($1 in need) || admitted[$1]++ || $2!~/^[0-9]+$/ || $3!~/^[0-9]+$/ || $3!=need[$1] || $2<$3) bad=1;
+    }
+    END {if(bad || rows!=3 || total!=18253611008)exit 1;for(device in need)if(admitted[device]!=1)exit 1}
+  ' "$job/proof/recovery-growth-plan.tsv" "$job/proof/recovery-growth-admitted.tsv" || fail 'recovery474 outer 17GiB filesystem admission differs'
+fi
+# END recovery474 outer admission
 if [[ $mode == verify ]]; then
   owned_dir "$root" && owned_dir "$out" || fail 'owned built provider required'
   [[ -f $out/build-complete && ! -L $out/build-complete && $(cat "$out/build-complete") == "$GITHUB_SHA" ]] || fail 'no successful prepared provider'
@@ -173,6 +222,15 @@ deadline=$((EPOCHSECONDS+120)); ((deadline<=COLD560_JOB_DEADLINE_EPOCH)) || dead
 admit
 [[ ! -e $job/openpilot-disk-guard && ! -L $job/openpilot-disk-guard ]] || fail 'provider preparation must precede the first cold bootstrap'
 mkdir "$root/inputs" "$root/source" "$root/build" "$root/build/tmp" "$root/bin"
+# BEGIN recovery474 outer receipt before seals.
+if [[ ${COLD560_PREPARE_CONTEXT-fast} == recovery474 ]]; then
+  for name in plan admitted; do
+    file_seal "$job/proof/recovery-growth-$name.tsv" "$out/recovery474-outer-$name.before"
+    cp "$job/proof/recovery-growth-$name.tsv" "$root/inputs/recovery474-outer-$name.tsv"
+  done
+  printf 'context=recovery474\nouter_bytes=18253611008\nremaining_nonprovider_bytes=10200547328\nprovider_bytes=536870912\nscoped_envelope_bytes=10737418240\n' > "$out/recovery474-context.txt"
+fi
+# END recovery474 outer receipt before seals
 source_seal "$out/tracked.before"
 tree "$sdk" "$out/sdk-original.before"
 [[ ${CI_PREPARED_RUST_MANIFEST:-} == "$job/proof/prepared-rust-files.before.sha256" ]]

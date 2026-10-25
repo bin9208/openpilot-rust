@@ -191,7 +191,7 @@ jobs:
       shell: bash
       env:
         SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        FAST560_HELPER_SHA256: 645a23e3eed36c6663093cabd71f3618ba3f98af9ccf9848098659b25da1feec
+        FAST560_HELPER_SHA256: bb9f23ef5aaf179e444533e3804d09c2eb275a7df1efa161980c8fe7c47db2f8
       run: |
         "$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh" cold
     - name: Audit actual prepared cold bootstrap with the minimal native crate
@@ -212,7 +212,7 @@ jobs:
       shell: bash
       env:
         SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        FAST560_HELPER_SHA256: 645a23e3eed36c6663093cabd71f3618ba3f98af9ccf9848098659b25da1feec
+        FAST560_HELPER_SHA256: bb9f23ef5aaf179e444533e3804d09c2eb275a7df1efa161980c8fe7c47db2f8
       run: |
         "$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh" after
     - name: Verify provisioned Rust SDK contents and identities after routing

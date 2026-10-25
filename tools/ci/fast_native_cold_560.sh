@@ -34,7 +34,7 @@ export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_OPTIONAL_LOCKS=0 GI
 printf '%s  %s\n' "$FAST560_HELPER_SHA256" "$source/tools/ci/fast_native_cold_560.sh" | sha256sum --check --strict --quiet -
 out=$job/proof/fast-cold-560; build=$job/fast-cold-560; root=$job/cold-strace-560
 preparer=$source/tools/ci/prepare-cold-strace-560
-export COLD560_PREPARE_HELPER_SHA256=6c7d99e6f5c1ee7fc4929c105a8bbb80334a47ec75e7e990ca5ea47c3d81bd58
+export COLD560_PREPARE_HELPER_SHA256=051332a53de80a8debc38c7ef1fcaf0fa43a113d03300b33ea7e6660687f0c5c
 export COLD560_PREPARE_ROOT=$root COLD560_NONPROVIDER_GROWTH_BYTES=$((5632*1048576))
 printf '%s  %s\n' "$COLD560_PREPARE_HELPER_SHA256" "$preparer" | sha256sum --check --strict --quiet -
 phase=preflight; active= identity=; groups_ok=true; passed=false
@@ -69,6 +69,103 @@ printf '%s  %s\n' "$launch_shared_sha" "/proc/$launch_shared_pid/fd/$launch_shar
 exec {launch_shared_fd}<&-
 COLD560_HELPER_SHA256=$launch_shared_sha
 free_bytes() { df --output=avail -B1 "$1" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}'; }
+measure_job_identity=$(stat -c '%d:%i' "$job")
+admission_failure() {
+  local reason=$1 roots=$2 cap=$3 kind=$4 code=$5 bytes=$6 attempt=$7 stream
+  local record=$out/first-admission-failure.tsv
+  if [[ ! -e $record && ! -L $record ]];then
+    (set -o noclobber;printf 'phase\treason\troots\tcap\tkind\tdu_exit\tobserved_bytes\tattempt\n%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "$phase" "$reason" "$roots" "$cap" "$kind" "$code" "$bytes" "$attempt" > "$record") || return 1
+    for stream in stdout stderr;do
+      if [[ -f $out/du.$stream && ! -L $out/du.$stream && $(stat -c %s "$out/du.$stream") -le 16384 ]];then
+        (set -o noclobber;cat -- "$out/du.$stream" > "$out/first-admission-du.$stream") || return 1
+      fi
+    done
+  fi
+  return 1
+}
+measure() {
+  local cap=$1 apparent=$2;shift 2
+  local -a roots=("$@") before=()
+  local label="${roots[*]}" count code path value bytes total n line suffix matched stdout_bytes stderr_bytes header retained seen
+  owned_dir "$job" && owned_dir "$owner" &&
+    [[ $(stat -c '%d:%i' "$job") == "$measure_job_identity" && $(stat -c '%d:%i' "$owner") == "$DIAG_SOURCE_IDENTITY" ]] || {
+    admission_failure owner-job-identity "$label" "$cap" "$apparent" - - 0;return 1;
+  }
+  for path in "${roots[@]}";do
+    owned_dir "$path" || { admission_failure canonical-root "$label" "$cap" "$apparent" - - 0;return 1; }
+    before+=("$(stat -c '%d:%i' "$path")")
+  done
+  for count in 1 2 3;do
+    code=0
+    # Bound each raw stream; neither partial stdout nor stderr is an accepted sample.
+    (ulimit -f 16 || exit 125;du -sx --block-size=1 $apparent -- "${roots[@]}") \
+      > "$out/du.stdout" 2> "$out/du.stderr" || code=$?
+    owned_dir "$job" && owned_dir "$owner" &&
+      [[ $(stat -c '%d:%i' "$job") == "$measure_job_identity" && $(stat -c '%d:%i' "$owner") == "$DIAG_SOURCE_IDENTITY" ]] || {
+      admission_failure owner-job-identity "$label" "$cap" "$apparent" "$code" - "$count";return 1;
+    }
+    for n in "${!roots[@]}";do
+      path=${roots[$n]}
+      owned_dir "$path" && [[ $(stat -c '%d:%i' "$path") == "${before[$n]}" ]] || {
+        admission_failure root-identity-changed "$label" "$cap" "$apparent" "$code" - "$count";return 1;
+      }
+    done
+    stdout_bytes=$(stat -c %s "$out/du.stdout") && stderr_bytes=$(stat -c %s "$out/du.stderr") || return 1
+    ((stdout_bytes<=16384 && stderr_bytes<=16384)) || {
+      admission_failure du-stream-bound "$label" "$cap" "$apparent" "$code" - "$count";return 1;
+    }
+    total=0;n=0;line=;seen=0
+    while IFS= read -r line;do
+      bytes=${line%%$'\t'*}
+      [[ $n -lt ${#roots[@]} ]] && [[ $bytes =~ ^(0|[1-9][0-9]*)$ ]] &&
+        [[ $line == "$bytes"$'\t'"${roots[$n]}" ]] || {
+        admission_failure du-output-shape "$label" "$cap" "$apparent" "$code" - "$count";return 1;
+      }
+      # Check even a failed sample's partial sum before considering a retry.
+      ((${#bytes}<=${#cap})) && ((bytes<=cap-total)) || {
+        admission_failure measured-cap "$label" "$cap" "$apparent" "$code" "$bytes+$total" "$count";return 1;
+      }
+      total=$((total+bytes));n=$((n+1));seen=$((seen+${#line}+1))
+    done < "$out/du.stdout"
+    [[ -z $line && $n == ${#roots[@]} && $seen == "$stdout_bytes" ]] || {
+      admission_failure du-output-shape "$label" "$cap" "$apparent" "$code" - "$count";return 1;
+    }
+    if [[ $code == 0 && $stderr_bytes == 0 ]];then printf '%s\n' "$total";return;fi
+    # Retain all failed samples until the 64KiB evidence bound, then fail closed.
+    header=$(printf 'phase=%s kind=%s attempt=%s exit=%s roots=%s\n' "$phase" "${apparent:-allocated}" "$count" "$code" "$label")
+    retained=0
+    if [[ -e $out/du-failed-samples.log || -L $out/du-failed-samples.log ]];then
+      [[ -f $out/du-failed-samples.log && ! -L $out/du-failed-samples.log ]] || return 1
+      retained=$(stat -c %s "$out/du-failed-samples.log") || return 1
+    fi
+    ((retained+${#header}+stdout_bytes+stderr_bytes+64<=65536)) || {
+      admission_failure du-evidence-bound "$label" "$cap" "$apparent" "$code" "$total" "$count";return 1;
+    }
+    { printf '%s\n---stdout---\n' "$header";cat -- "$out/du.stdout";printf '\n---stderr---\n';cat -- "$out/du.stderr";printf '\n---end---\n'; } \
+      >> "$out/du-failed-samples.log" || return 1
+    [[ $code == 1 && $stderr_bytes -gt 0 ]] || {
+      admission_failure du-status "$label" "$cap" "$apparent" "$code" "$total" "$count";return 1;
+    }
+    suffix="': No such file or directory";line=;seen=0
+    while IFS= read -r line;do
+      [[ $line == "du: cannot access '"*"$suffix" ]] || {
+        admission_failure du-error-shape "$label" "$cap" "$apparent" "$code" "$total" "$count";return 1;
+      }
+      path=${line#"du: cannot access '"};path=${path%"$suffix"};matched=false
+      for value in "${roots[@]}";do [[ $path != "$value/"* ]] || matched=true;done
+      case $path in "$root/build"|"$root/build/"*|"$source/rust/target"|"$source/rust/target/"*|"$build/tmp"|"$build/tmp/"*) ;;
+        *) matched=false;;
+      esac
+      [[ $matched == true && ! -e $path && ! -L $path && $(readlink -m -- "$path") == "$path" ]] || {
+        admission_failure du-absent-mutable-path "$label" "$cap" "$apparent" "$code" "$total" "$count";return 1;
+      }
+      seen=$((seen+${#line}+1))
+    done < "$out/du.stderr"
+    [[ -z $line && $seen == "$stderr_bytes" ]] || { admission_failure du-error-shape "$label" "$cap" "$apparent" "$code" "$total" "$count";return 1; }
+  done
+  admission_failure du-three-attempts-exhausted "$label" "$cap" "$apparent" "$code" "$total" 3
+}
 memory_available() {
   local value group current maximum remaining
   value=$(awk '$1=="MemAvailable:" && $2~/^[0-9]+$/ && $3=="kB" {n++;v=$2*1024} END {if(n!=1)exit 1;printf "%.0f\n",v}' /proc/meminfo) || return 1
@@ -100,9 +197,8 @@ admit() {
   ((EPOCHSECONDS<COLD560_JOB_DEADLINE_EPOCH)) || return 1
   for n in 0 1;do
     path=${roots[$n]};cap=${caps[$n]}
-    allocated=$(du -sx --block-size=1 "$path") || return 1;allocated=${allocated%%$'\t'*}
-    apparent=$(du -sx --apparent-size --block-size=1 "$path") || return 1;apparent=${apparent%%$'\t'*}
-    [[ $allocated =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] && ((allocated<=cap && apparent<=cap)) || return 1
+    allocated=$(measure "$cap" '' "$path") || return 1
+    apparent=$(measure "$cap" --apparent-size "$path") || return 1
     dev=$(stat -c %d "$path");representative[$dev]=$path;need[$dev]=$(( ${need[$dev]:-0}+cap-allocated ))
     printf '%s\t%s\t%s\t%s\t%s\n' "$phase" "$path" "$allocated" "$apparent" "$cap" >> "$out/admission.tsv" || return 1
   done
@@ -112,8 +208,7 @@ admit() {
   done
   if [[ -d $root && -d $job/proof/cold-strace-560 ]];then
     for option in '' --apparent-size;do
-      allocated=$(du -sx --block-size=1 $option "$root" "$job/proof/cold-strace-560" | awk '{n+=$1} END {printf "%.0f\n",n}') || return 1
-      [[ $allocated =~ ^[0-9]+$ ]] && ((allocated<=512*1048576)) || return 1
+      allocated=$(measure $((512*1048576)) "$option" "$root" "$job/proof/cold-strace-560") || return 1
     done
   fi
   memory=$(memory_available) || return 1

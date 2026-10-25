@@ -550,7 +550,7 @@ F01-vehicle-safety	rust/tools/check_pandad_usb.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_usb_policy.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_usb_raw.py	pending
 F01-vehicle-safety	rust/tools/check_plannerd_lifecycle.py	pending
-F01-vehicle-safety	rust/tools/check_plannerd_native_memory.py	pending
+F01-vehicle-safety	rust/tools/check_plannerd_native_memory.py	replaced-local
 F01-vehicle-safety	rust/tools/check_radarcan_constructors.py	pending
 F01-vehicle-safety	rust/tools/check_radarcan_policy.py	pending
 F01-vehicle-safety	rust/tools/check_radarcan_runtime.py	pending
@@ -3177,7 +3177,7 @@ F07-ci-release-launch	conftest.py	pending
 F07-ci-release-launch	openpilot/tools/sim/tests/conftest.py	pending
 F07-ci-release-launch	release/pack.py	pending
 F07-ci-release-launch	rust/tools/check_card_ci.py	pending
-F07-ci-release-launch	rust/tools/check_plannerd_ci.py	pending
+F07-ci-release-launch	rust/tools/check_plannerd_ci.py	replaced-local
 F07-ci-release-launch	rust/tools/check_radarcan_ci.py	pending
 F07-ci-release-launch	rust/tools/check_ui_ci.py	pending
 F07-ci-release-launch	rust/tools/check_xiaoge_ci.py	pending
@@ -3202,7 +3202,7 @@ F07-ci-release-launch	rust/tools/tests/test_offline_qcom_publish.py	pending
 F07-ci-release-launch	rust/tools/tests/test_offline_qcom_schedule.py	pending
 F07-ci-release-launch	rust/tools/tests/test_pandad_spi.py	pending
 F07-ci-release-launch	rust/tools/tests/test_pipeline_export.py	pending
-F07-ci-release-launch	rust/tools/tests/test_plannerd_ci.py	pending
+F07-ci-release-launch	rust/tools/tests/test_plannerd_ci.py	replaced-local
 F07-ci-release-launch	rust/tools/tests/test_qcom_export.py	pending
 F07-ci-release-launch	rust/tools/tests/test_radarcan_ci.py	pending
 F07-ci-release-launch	rust/tools/tests/test_radarcan_exact.py	pending

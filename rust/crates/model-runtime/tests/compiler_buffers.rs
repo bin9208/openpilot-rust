@@ -118,103 +118,6 @@ fn host_reads_recapture_unwritten_bytes_without_marking_them_written() {
     table.read(buffer(8, 4, 0, 4), &[]).unwrap();
 }
 
-// All expected traces below are computed by calling the original Python table
-// methods on genuine tinygrad Buffer objects. Only import side effects are
-// avoided by extracting unchanged definitions; no candidate outputs enter the
-// original process. CPU allocation/copyout is real; no kernel is compiled/run.
-const ORIGINAL_BUFFERS: &str = r#"
-import ast, dataclasses, hashlib, json, os, pathlib, sys, types
-from collections.abc import Mapping
-root = pathlib.Path(sys.argv[1])
-os.environ.update(DEV='CPU', CACHELEVEL='0', DEBUG='0', PROFILE='0', PYTHONDONTWRITEBYTECODE='1', TYPED='0')
-sys.path.insert(0, str(root))
-sys.path.insert(0, str(root/'tinygrad_repo'))
-from tinygrad.device import Buffer, MultiBuffer, Device, Compiler
-from tinygrad.dtype import dtypes
-from tinygrad.uop.ops import UOp
-def no_compilation(*args, **kwargs):
-    raise AssertionError('buffer oracle must not compile kernels')
-Compiler.compile = Compiler.compile_cached = no_compilation
-open_device = Device._Device__get_canonicalized_item
-def only_cpu(name):
-    assert name.split(':')[0] == 'CPU', f'buffer oracle must not open {name}'
-    return open_device(name)
-Device._Device__get_canonicalized_item = only_cpu
-scope = {'__name__': '__main__', 'dataclass': dataclasses.dataclass, 'Mapping': Mapping,
-         'Buffer': Buffer, 'MultiBuffer': MultiBuffer, 'UOp': UOp}
-hashes = {}
-def definitions(relative, names):
-    path = root/relative
-    content = path.read_bytes()
-    hashes[relative] = hashlib.sha256(content).hexdigest()
-    tree = ast.parse(content, filename=str(path))
-    for name in names:
-        node = next(node for node in tree.body if getattr(node, 'name', None) == name)
-        exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), 'exec'), scope)
-definitions('rust/tools/model_export/schema.py', ['ExportError', 'Allocation', 'View'])
-definitions('rust/tools/model_export/buffers.py', ['host_buffer', 'BufferTable'])
-definitions('rust/tools/model_export/offline_buffers.py', ['descriptor', 'OfflineBufferTable'])
-hashes['tinygrad_repo/tinygrad/device.py'] = hashlib.sha256((root/'tinygrad_repo/tinygrad/device.py').read_bytes()).hexdigest()
-for relative in ('tinygrad_repo/tinygrad/runtime/ops_cpu.py', 'tinygrad_repo/tinygrad/runtime/support/hcq.py'):
-    hashes[relative] = hashlib.sha256((root/relative).read_bytes()).hexdigest()
-request = json.load(sys.stdin)
-descriptor_results = []
-for case in request['descriptors']:
-    if case['kind'] == 'multi':
-        value = MultiBuffer(('CPU', 'PYTHON'), 8, dtypes.uint8)
-    elif case['kind'] == 'other':
-        value = object()
-    else:
-        value = Buffer(case['device'], 8, dtypes.uint8)
-        if case['allocated']:
-            # Synthetic allocation-state control only: no GPU/host provider is
-            # opened for descriptor tests. Clear it before object finalization.
-            value._bufs[value.device] = object()
-    row = {}
-    for name, argument in [('host_buffer', value), ('descriptor', types.SimpleNamespace(buffer=value))]:
-        try:
-            row[name] = scope[name](argument) is value
-        except scope['ExportError']:
-            row[name] = False
-    descriptor_results.append(row)
-    if isinstance(value, Buffer):
-        value._bufs.clear()
-traces = []
-for case in request['cases']:
-    host = case['kind'] == 'host'
-    bases = {base['id']: Buffer('CPU' if host else base.get('device', 'QCOM'), base['bytes'], dtypes.uint8)
-             for base in case['bases']}
-    initial = {bases[base['id']]: bytes(base['initialized']) for base in case['bases'] if 'initialized' in base}
-    for base in case['bases']:
-        if 'initializer_alias' in base:
-            alias = base['initializer_alias']
-            owner = bases[base['id']]
-            key = Buffer(owner.device, alias['bytes'], dtypes.uint8, base=owner, offset=alias['offset'])
-            initial[key] = bytes(alias['data'])
-    table = scope['BufferTable']() if host else scope['OfflineBufferTable'](initial)
-    if host:
-        for base in case['bases']:
-            bases[base['id']].ensure_allocated().copyin(memoryview(bytearray(base['data'])))
-    rows = []
-    for op in case['ops']:
-        base = bases[op['base']]
-        view = Buffer(base.device, op['bytes'], dtypes.uint8, base=base, offset=op['offset'])
-        if host and 'data' in op:
-            base.copyin(memoryview(bytearray(op['data'])))
-        try:
-            returned = getattr(table, op['op'])(view)
-            outcome = {'ok': returned}
-        except scope['ExportError']:
-            outcome = {'error': True}
-        allocations, packed = table.weights()
-        rows.append({'outcome': outcome, 'views': [dataclasses.asdict(v) for v in table.views],
-                     'allocations': [dataclasses.asdict(a) for a in allocations], 'weights': list(packed)})
-    traces.append(rows)
-assert Device._opened_devices == {'CPU'}
-print(json.dumps({'source_sha256': hashes, 'opened_devices': sorted(Device._opened_devices),
-                  'descriptors': descriptor_results, 'traces': traces}))
-"#;
-
 fn bytes(value: &Value) -> Vec<u8> {
     serde_json::from_value(value.clone()).unwrap()
 }
@@ -293,293 +196,341 @@ fn op(name: &str, base: u64, offset: usize, bytes: usize) -> Value {
     json!({"op":name,"base":base,"offset":offset,"bytes":bytes})
 }
 
+// source100의 실제 원본 1회 관측이다. oracle.txt는 실행하지 않는 provenance 데이터다.
+// 현재 원본22파일/Python/GHA 환경을 열거나 호출하지 않고 아래 고정 bytes만 검증한다.
+const FROZEN_SOURCE: &str = "1000464f57239a1d15bfba3bdb6c01550f12d8a0";
+const FROZEN_ROOT: &str = "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source";
+const FROZEN_JOB: &str = "/tmp/openpilot-ci.kSO6zn";
+const FROZEN_PYTHON: &str = "/usr/bin/python3.12";
+const FROZEN_PYTHON_SHA256: &str =
+    "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f";
 const RECORD_LIMIT: usize = 1024 * 1024;
-const CORPUS_LIMIT: u64 = 8 * 1024 * 1024;
-// 실제 snippet의 import와 CPU copy 경로에 대한 선택 source witness다.
-// 전체 Python import/DSO closure 또는 모델 실행 증거로 확대하지 않는다.
-const BUFFER_WITNESSES: &[&str] = &[
-    "rust/tools/model_export/buffers.py",
-    "rust/tools/model_export/offline_buffers.py",
-    "rust/tools/model_export/schema.py",
-    "tinygrad_repo/tinygrad/__init__.py",
-    "tinygrad_repo/tinygrad/device.py",
-    "tinygrad_repo/tinygrad/dtype.py",
-    "tinygrad_repo/tinygrad/helpers.py",
-    "tinygrad_repo/tinygrad/uop/__init__.py",
-    "tinygrad_repo/tinygrad/uop/ops.py",
-    "tinygrad_repo/tinygrad/runtime/ops_cpu.py",
-    "tinygrad_repo/tinygrad/runtime/support/hcq.py",
-    "tinygrad_repo/tinygrad/runtime/support/memory.py",
-    "tinygrad_repo/tinygrad/runtime/support/elf.py",
-    "tinygrad_repo/tinygrad/runtime/autogen/libc.py",
-    "tinygrad_repo/tinygrad/renderer/__init__.py",
-    "tinygrad_repo/tinygrad/renderer/cstyle.py",
-    "rust/crates/model-runtime/src/compiler_buffers.rs",
-    "rust/crates/model-runtime/src/export.rs",
-    "rust/crates/model-runtime/src/lib.rs",
-    "rust/crates/model-runtime/tests/compiler_buffers.rs",
-    "rust/crates/model-runtime/Cargo.toml",
-    "rust/Cargo.lock",
+const CORPUS_LIMIT: usize = 8 * 1024 * 1024;
+const FROZEN_RECORDS: [(&str, usize, &str, &[u8]); 7] = [
+    (
+        "observation.json",
+        39344,
+        "e8e52475eba99d6e13287ecb957ec650c8e4d64b1e517caea1fd3b08fdddf257",
+        include_bytes!("fixtures/compiler-buffer-original/observation.json"),
+    ),
+    (
+        "oracle.txt",
+        4694,
+        "2b4747903018e15f3f99eabf62a6fb052f4899bfd0bee1ac44ce7bb5501cf371",
+        include_bytes!("fixtures/compiler-buffer-original/oracle.txt"),
+    ),
+    (
+        "python.sha256",
+        86,
+        "74a2bf284a5116d43270762ab1766fe74421da338fa0889fcd2c188202eae773",
+        include_bytes!("fixtures/compiler-buffer-original/python.sha256"),
+    ),
+    (
+        "python.version",
+        14,
+        "5b3e43dc38ca01e3f5a7854ba50d4330864b0c1e0f646650b2c78cf072acc366",
+        include_bytes!("fixtures/compiler-buffer-original/python.version"),
+    ),
+    (
+        "request.json",
+        60636,
+        "809ff0aba501e93a4bab0d86fd8066a77d72881580cfc72408e1c1ea19fd15fb",
+        include_bytes!("fixtures/compiler-buffer-original/request.json"),
+    ),
+    (
+        "stderr.bin",
+        0,
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        include_bytes!("fixtures/compiler-buffer-original/stderr.bin"),
+    ),
+    (
+        "stdout.bin",
+        270242,
+        "fc019a80d96e11a95cc8d1573b94cbbb4ea06f30b56fdf71efa6f29d5e149593",
+        include_bytes!("fixtures/compiler-buffer-original/stdout.bin"),
+    ),
 ];
 
-fn file_identity(metadata: &std::fs::Metadata) -> Value {
-    use std::os::unix::fs::MetadataExt;
-    json!({"device":metadata.dev(),"inode":metadata.ino(),"bytes":metadata.len(),
-        "mode":metadata.mode(),"uid":metadata.uid(),"gid":metadata.gid(),"links":metadata.nlink(),
-        "mtime":[metadata.mtime(),metadata.mtime_nsec()],"ctime":[metadata.ctime(),metadata.ctime_nsec()]})
-}
+// source100에서 인증한 과거 source pin이며 변경된 test나 현재 원본을 다시 읽지 않는다.
+const FROZEN_SOURCE_FILES: [(&str, usize, &str); 22] = [
+    (
+        "rust/Cargo.lock",
+        159864,
+        "9586516b4adda7abc3f739f2c3360a6cd2370e8f2d785a6b36a4adfcf54f6b9a",
+    ),
+    (
+        "rust/crates/model-runtime/Cargo.toml",
+        1605,
+        "53d766c5fa51dab5e4be7c7b793e82d591a0bf7970784b68638c9b5159e56866",
+    ),
+    (
+        "rust/crates/model-runtime/src/compiler_buffers.rs",
+        3332,
+        "1588afe7d4d6d69bac36df96653405802d569e730812dd001ffc874ebcdf42da",
+    ),
+    (
+        "rust/crates/model-runtime/src/export.rs",
+        24746,
+        "7dc0993039db5247aa0e71d7c122c46b393e30a8e02724f8367a3b26ec6f6e8c",
+    ),
+    (
+        "rust/crates/model-runtime/src/lib.rs",
+        1118,
+        "9c18a2434644ea72ebbd5d2d23c706084391775995e0567c6a0d1809f8f1d741",
+    ),
+    (
+        "rust/crates/model-runtime/tests/compiler_buffers.rs",
+        31176,
+        "31c68a1b54d0162837329b374752a765b22a96710a385458f527a0c6fd9dd950",
+    ),
+    (
+        "rust/tools/model_export/buffers.py",
+        2577,
+        "9429df49f408cda89f5b862fc0d51982668234cc18cb28ca0e83fd3d1a5bc7de",
+    ),
+    (
+        "rust/tools/model_export/offline_buffers.py",
+        1575,
+        "9ab6c8c777b04d374750779fabfa75bb2b2af64fb6f8ce3ff8edd7a14138de4f",
+    ),
+    (
+        "rust/tools/model_export/schema.py",
+        2611,
+        "720abcc396852a395689c4d37f9487822f951166a36b5efe8586dce5f656c6a9",
+    ),
+    (
+        "tinygrad_repo/tinygrad/__init__.py",
+        674,
+        "fc24d5d0df1b1a14bbee0bd2641a61ca5f34ec7d83f1b0b755adf6eb83d5c0be",
+    ),
+    (
+        "tinygrad_repo/tinygrad/device.py",
+        20639,
+        "7c28ae3854a3f009fc6eddfb52f03b3d382a23b581d94a3c4741a12bdc79f008",
+    ),
+    (
+        "tinygrad_repo/tinygrad/dtype.py",
+        20162,
+        "de4bb7980fac9c09f851374fc6e8c57441071fca6d98dc92c6e984170bc58008",
+    ),
+    (
+        "tinygrad_repo/tinygrad/helpers.py",
+        32632,
+        "24c347d2137c92e1dc35d78cd9df45b38d31cc4d34729a35215f8822b3f2f6fb",
+    ),
+    (
+        "tinygrad_repo/tinygrad/renderer/__init__.py",
+        4405,
+        "22b219d73973e2591201662ae4a5c4ebd8688e51313a0ad4f55d50ae513828f7",
+    ),
+    (
+        "tinygrad_repo/tinygrad/renderer/cstyle.py",
+        37506,
+        "13d806a4674ec87ffc94959b5825bb5915a7581b9c6652a3ddfe8a52120470be",
+    ),
+    (
+        "tinygrad_repo/tinygrad/runtime/autogen/libc.py",
+        124407,
+        "89004d7b83537131ef45a55191eb1ce2708ef5e3f649abf656abdeeb193d42db",
+    ),
+    (
+        "tinygrad_repo/tinygrad/runtime/ops_cpu.py",
+        8395,
+        "012f3d932abba9e14f82aedefe0ca52243eba1728f847c38cae54ae05b171a16",
+    ),
+    (
+        "tinygrad_repo/tinygrad/runtime/support/elf.py",
+        5263,
+        "ed0340b507c8fb23f1fa1ae1b3ca1297006d70c289a016233d9f1d5291801aa8",
+    ),
+    (
+        "tinygrad_repo/tinygrad/runtime/support/hcq.py",
+        32420,
+        "86ccce42fce7fe59f4cd2e345d9186b7241e44a00763ee51712c16a10b521bff",
+    ),
+    (
+        "tinygrad_repo/tinygrad/runtime/support/memory.py",
+        15268,
+        "0457d300a3f149ba11b2da97240f7c7b6c0bb952e7ac4779dea2cfc0c44c81e2",
+    ),
+    (
+        "tinygrad_repo/tinygrad/uop/__init__.py",
+        4829,
+        "8de567435d8c37f5472650e96409660063890d7a1a6dea32054396da6b6749ac",
+    ),
+    (
+        "tinygrad_repo/tinygrad/uop/ops.py",
+        94967,
+        "d4b454cc4577a23be8d688aed874b9911992332e21bea7d7567974c9dc7c197a",
+    ),
+];
 
-fn file_witness(path: &std::path::Path) -> std::io::Result<Value> {
+fn sha256(bytes: &[u8]) -> String {
     use sha2::{Digest, Sha256};
-    use std::{fs::OpenOptions, io::Read, os::unix::fs::OpenOptionsExt};
-    if !path.is_absolute() || path.canonicalize()? != path {
-        return Err(std::io::Error::other(
-            "witness path must be canonical and absolute",
-        ));
-    }
-    let mut file = OpenOptions::new()
-        .read(true)
-        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
-        .open(path)?;
-    let before = file.metadata()?;
-    const FILE_LIMIT: u64 = 64 * 1024 * 1024;
-    if !before.is_file() || before.len() > FILE_LIMIT {
-        return Err(std::io::Error::other(
-            "witness must be a bounded regular file",
-        ));
-    }
-    let mut digest = Sha256::new();
-    let mut bytes = [0; 65536];
-    let mut read = 0u64;
-    loop {
-        let count = file.read(&mut bytes)?;
-        if count == 0 {
-            break;
-        }
-        read += count as u64;
-        if read > FILE_LIMIT {
-            return Err(std::io::Error::other("witness grew beyond bound"));
-        }
-        digest.update(&bytes[..count]);
-    }
-    let identity = file_identity(&before);
-    if read != before.len()
-        || file_identity(&file.metadata()?) != identity
-        || file_identity(&std::fs::symlink_metadata(path)?) != identity
-    {
-        return Err(std::io::Error::other("witness changed while hashing"));
-    }
-    Ok(json!({"path":path,"sha256":format!("{:x}",digest.finalize()),"identity":identity}))
+    format!("{:x}", Sha256::digest(bytes))
 }
 
-struct BufferObservation {
-    directory: std::path::PathBuf,
-    root: std::path::PathBuf,
-    python: std::path::PathBuf,
-    files: BTreeMap<String, std::path::PathBuf>,
-    before: BTreeMap<String, Value>,
-    source: String,
-    request_sha256: String,
+fn frozen_bytes(name: &str) -> &'static [u8] {
+    FROZEN_RECORDS
+        .iter()
+        .find(|record| record.0 == name)
+        .unwrap()
+        .3
 }
 
-impl BufferObservation {
-    fn start(root: &std::path::Path, request: &[u8]) -> Self {
-        use sha2::{Digest, Sha256};
-        use std::{
-            fs,
-            os::unix::fs::{DirBuilderExt, MetadataExt},
-            path::PathBuf,
-        };
-        let root = root.canonicalize().unwrap();
-        assert_eq!(
-            root,
-            PathBuf::from(std::env::var_os("DIAG_SOURCE").expect("admitted DIAG_SOURCE required"))
-                .canonicalize()
-                .unwrap()
+fn assert_frozen_witness(witness: &Value, path: &str, bytes: usize, digest: &str) {
+    assert_eq!(witness["path"], path);
+    assert_eq!(witness["sha256"], digest);
+    assert_eq!(witness["identity"]["bytes"], bytes);
+    assert_eq!(witness["identity"]["links"], 1);
+    assert_eq!(
+        witness["identity"]["mode"].as_u64().unwrap() & 0o170000,
+        0o100000
+    );
+}
+
+fn frozen_reference(request: &[u8]) -> Value {
+    let mut total = 0;
+    for &(name, expected_bytes, digest, bytes) in &FROZEN_RECORDS {
+        assert_eq!(bytes.len(), expected_bytes, "frozen bytes: {name}");
+        assert_eq!(sha256(bytes), digest, "frozen SHA256: {name}");
+        assert!(bytes.len() <= RECORD_LIMIT);
+        total += bytes.len();
+    }
+    assert!(total <= CORPUS_LIMIT);
+    assert_eq!(total, 375016);
+    // 원문 SHA는 위에서 고정한다. 입력 object key 순서는 preserve_order feature에
+    // 영향을 받지만 의미는 같으며, array 순서·값·숫자/boolean 종류는 그대로 대조한다.
+    assert_eq!(
+        serde_json::from_slice::<Value>(request).unwrap(),
+        serde_json::from_slice::<Value>(frozen_bytes("request.json")).unwrap()
+    );
+    let observation: Value = serde_json::from_slice(frozen_bytes("observation.json")).unwrap();
+    assert_eq!(observation["schema_version"], 1);
+    assert_eq!(observation["kind"], "independent-python-buffer-observation");
+    assert_eq!(observation["github_sha"], FROZEN_SOURCE);
+    assert_eq!(observation["source_root"], FROZEN_ROOT);
+    assert_eq!(observation["binding_unchanged"], true);
+    assert_eq!(observation["collector_only"], true);
+    assert_eq!(observation["retirement_credit"], 0);
+    assert_eq!(observation["record_limit_bytes"], RECORD_LIMIT);
+    assert_eq!(observation["total_limit_bytes"], CORPUS_LIMIT);
+    assert_eq!(
+        observation["request"],
+        json!({
+            "record":"request.json", "record_unchanged":true,
+            "sha256":sha256(frozen_bytes("request.json"))
+        })
+    );
+    assert_eq!(
+        observation["original"],
+        json!({
+            "exit_code":0,"returncode":0,"signal":null,
+            "file_size_limit_signal":false,"input_error":null,
+            "stdout":{"record":"stdout.bin","bytes":270242,"sha256":sha256(frozen_bytes("stdout.bin"))},
+            "stderr":{"record":"stderr.bin","bytes":0,"sha256":sha256(frozen_bytes("stderr.bin"))}
+        })
+    );
+    assert!(frozen_bytes("stderr.bin").is_empty());
+    assert_eq!(
+        observation["argv"],
+        json!([
+            FROZEN_PYTHON,
+            "-I",
+            "-B",
+            "-c",
+            std::str::from_utf8(frozen_bytes("oracle.txt")).unwrap(),
+            format!("{FROZEN_ROOT}/rust/crates/model-runtime/../../..")
+        ])
+    );
+    assert_eq!(frozen_bytes("python.version"), b"Python 3.12.3\n");
+    assert_eq!(
+        frozen_bytes("python.sha256"),
+        format!("{FROZEN_PYTHON_SHA256}  {FROZEN_PYTHON}\n").as_bytes()
+    );
+
+    let before = &observation["witnesses_before"];
+    assert_eq!(before, &observation["witnesses_after"]);
+    assert_eq!(
+        before.as_object().unwrap().len(),
+        FROZEN_SOURCE_FILES.len() + 5
+    );
+    for &(name, bytes, digest) in &FROZEN_SOURCE_FILES {
+        assert_frozen_witness(
+            &before[name],
+            &format!("{FROZEN_ROOT}/{name}"),
+            bytes,
+            digest,
         );
-        let job =
-            PathBuf::from(std::env::var_os("CI_JOB_TEMP").expect("owned CI_JOB_TEMP required"));
-        assert!(job.is_absolute());
-        assert_eq!(job.canonicalize().unwrap(), job);
-        let owner = format!(
-            "{}:{}:{}",
-            std::env::var("GITHUB_RUN_ID").unwrap(),
-            std::env::var("GITHUB_RUN_ATTEMPT").unwrap(),
-            std::env::var("GITHUB_JOB").unwrap()
-        );
-        assert_eq!(fs::read_to_string(job.join("owner")).unwrap(), owner);
-        let proof = job.join("proof");
-        assert_eq!(proof.canonicalize().unwrap(), proof);
-        assert!(fs::metadata(&proof).unwrap().is_dir());
-        // SAFETY: geteuid는 인자나 메모리 접근이 없는 조회다.
-        assert_eq!(fs::metadata(&proof).unwrap().uid(), unsafe {
-            libc::geteuid()
-        });
-        let python = PathBuf::from(
-            std::env::var_os("BUFFER_REFERENCE_PYTHON")
-                .expect("admitted canonical BUFFER_REFERENCE_PYTHON required; no PATH fallback"),
-        );
-        let source = std::env::var("GITHUB_SHA").unwrap();
-        assert!(
-            source.len() == 40
-                && source
-                    .bytes()
-                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-        );
-        assert_eq!(
-            fs::read_to_string(proof.join("SOURCE_COMMIT")).unwrap(),
-            format!("{source}\n")
-        );
-        let mut files = BUFFER_WITNESSES
-            .iter()
-            .map(|name| ((*name).to_owned(), root.join(name)))
-            .collect::<BTreeMap<_, _>>();
-        files.insert("admitted-python".into(), python.clone());
-        files.insert("job-owner".into(), job.join("owner"));
-        for name in [
-            "SOURCE_COMMIT",
+    }
+    assert_frozen_witness(
+        &before["admitted-python"],
+        FROZEN_PYTHON,
+        8020928,
+        FROZEN_PYTHON_SHA256,
+    );
+    for (name, bytes) in [
+        ("SOURCE_COMMIT", format!("{FROZEN_SOURCE}\n").into_bytes()),
+        (
             "buffer-oracle-python.sha256",
+            frozen_bytes("python.sha256").to_vec(),
+        ),
+        (
             "buffer-oracle-python.version",
-        ] {
-            files.insert(name.into(), proof.join(name));
-        }
-        let before = files
-            .iter()
-            .map(|(name, path)| (name.clone(), file_witness(path).unwrap()))
-            .collect::<BTreeMap<_, _>>();
-        let hash_proof = fs::read(proof.join("buffer-oracle-python.sha256")).unwrap();
-        let version_proof = fs::read(proof.join("buffer-oracle-python.version")).unwrap();
-        assert!(hash_proof.len() <= 4096 && version_proof.len() <= 4096);
+            frozen_bytes("python.version").to_vec(),
+        ),
+    ] {
+        assert_frozen_witness(
+            &before[name],
+            &format!("{FROZEN_JOB}/proof/{name}"),
+            bytes.len(),
+            &sha256(&bytes),
+        );
+    }
+    let owner = b"40231559285:1:native-units";
+    assert_frozen_witness(
+        &before["job-owner"],
+        &format!("{FROZEN_JOB}/owner"),
+        owner.len(),
+        &sha256(owner),
+    );
+
+    let input: Value = serde_json::from_slice(frozen_bytes("request.json")).unwrap();
+    assert_eq!(input.as_object().unwrap().len(), 2);
+    assert_eq!(input["descriptors"].as_array().unwrap().len(), 32);
+    assert_eq!(input["cases"].as_array().unwrap().len(), 147);
+    let reference: Value = serde_json::from_slice(frozen_bytes("stdout.bin")).unwrap();
+    assert_eq!(reference.as_object().unwrap().len(), 4);
+    assert_eq!(reference["source_sha256"].as_object().unwrap().len(), 6);
+    for (name, digest) in reference["source_sha256"].as_object().unwrap() {
         assert_eq!(
-            std::str::from_utf8(&hash_proof).unwrap(),
-            format!(
-                "{}  {}\n",
-                before["admitted-python"]["sha256"].as_str().unwrap(),
-                python.to_str().unwrap()
-            )
+            *digest,
+            before[name.as_str()]["sha256"],
+            "original source binding: {name}"
         );
-        let version = std::str::from_utf8(&version_proof).unwrap().trim_end();
-        assert!(version.starts_with("Python ") && !version.contains(['\n', '\r']));
-        let directory = proof.join("compiler-buffer-original");
-        fs::DirBuilder::new()
-            .mode(0o700)
-            .create(&directory)
-            .unwrap();
-        let this = Self {
-            directory,
-            root,
-            python,
-            files,
-            before,
-            source,
-            request_sha256: format!("{:x}", Sha256::digest(request)),
-        };
-        this.record("request.json", request);
-        this.record("oracle.py", ORIGINAL_BUFFERS.as_bytes());
-        this.record("python.sha256", &hash_proof);
-        this.record("python.version", &version_proof);
-        this
     }
-
-    fn record_file(&self, name: &str) -> std::fs::File {
-        use std::{fs::OpenOptions, os::unix::fs::OpenOptionsExt};
-        OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .mode(0o600)
-            .custom_flags(libc::O_NOFOLLOW)
-            .open(self.directory.join(name))
-            .unwrap()
-    }
-
-    fn total(&self) -> u64 {
-        std::fs::read_dir(&self.directory)
-            .unwrap()
-            .map(|entry| {
-                let metadata = std::fs::symlink_metadata(entry.unwrap().path()).unwrap();
-                assert!(metadata.is_file() && metadata.len() <= RECORD_LIMIT as u64);
-                metadata.len()
-            })
-            .sum()
-    }
-
-    fn record(&self, name: &str, bytes: &[u8]) {
-        use std::io::Write;
-        assert!(bytes.len() <= RECORD_LIMIT && self.total() + bytes.len() as u64 <= CORPUS_LIMIT);
-        let mut file = self.record_file(name);
-        file.write_all(bytes).unwrap();
-        file.sync_all().unwrap();
-    }
-
-    fn finish(
-        &self,
-        status: std::process::ExitStatus,
-        input_error: Option<String>,
-        root: &std::path::Path,
-    ) -> std::process::Output {
-        use sha2::{Digest, Sha256};
-        use std::{fs, os::unix::process::ExitStatusExt};
-        assert!(self.total() <= CORPUS_LIMIT);
-        let stdout = fs::read(self.directory.join("stdout.bin")).unwrap();
-        let stderr = fs::read(self.directory.join("stderr.bin")).unwrap();
-        let after = self
-            .files
+    assert_eq!(reference["opened_devices"], json!(["CPU"]));
+    assert_eq!(reference["descriptors"].as_array().unwrap().len(), 32);
+    let traces = reference["traces"].as_array().unwrap();
+    assert_eq!(traces.len(), 147);
+    assert_eq!(
+        traces
             .iter()
-            .map(|(name, path)| {
-                (
-                    name.clone(),
-                    file_witness(path).unwrap_or_else(|error| json!({"error":error.to_string()})),
-                )
-            })
-            .collect::<BTreeMap<_, _>>();
-        let unchanged = after == self.before;
-        let request_unchanged = format!(
-            "{:x}",
-            Sha256::digest(fs::read(self.directory.join("request.json")).unwrap())
-        ) == self.request_sha256;
-        let receipt = json!({"schema_version":1,"kind":"independent-python-buffer-observation",
-            "collector_only":true,"retirement_credit":0,"github_sha":self.source,"source_root":self.root,
-            "argv":[self.python.to_str().unwrap(),"-I","-B","-c",ORIGINAL_BUFFERS,root.to_str().unwrap()],
-            "request":{"record":"request.json","sha256":self.request_sha256,"record_unchanged":request_unchanged},
-            "original":{"returncode":status.code().or_else(|| status.signal().map(|signal| -signal)),"exit_code":status.code(),"signal":status.signal(),
-                "file_size_limit_signal":status.signal() == Some(libc::SIGXFSZ),
-                "stdout":{"record":"stdout.bin","bytes":stdout.len(),"sha256":format!("{:x}",Sha256::digest(&stdout))},
-                "stderr":{"record":"stderr.bin","bytes":stderr.len(),"sha256":format!("{:x}",Sha256::digest(&stderr))},"input_error":input_error},
-            "record_limit_bytes":RECORD_LIMIT,"total_limit_bytes":CORPUS_LIMIT,"binding_unchanged":unchanged,
-            "witnesses_before":self.before,"witnesses_after":after,
-            "scope":"선택 source/Python binding과 기존 원본 프로세스 1회의 관측 원문. 아래 기존 native parity assertions까지 성공해야 비교 수용이며, 모델/컴파일/전체 import closure 수용이 아니다."});
-        let mut bytes = serde_json::to_vec_pretty(&receipt).unwrap();
-        bytes.push(b'\n');
-        self.record("observation.json", &bytes);
-        assert!(
-            unchanged,
-            "source/Python/proof binding changed; raw observation retained"
+            .map(|trace| trace.as_array().unwrap().len())
+            .sum::<usize>(),
+        959
+    );
+    for (case, trace) in input["cases"].as_array().unwrap().iter().zip(traces) {
+        assert_eq!(
+            case["ops"].as_array().unwrap().len(),
+            trace.as_array().unwrap().len()
         );
-        assert!(
-            request_unchanged,
-            "original request record changed; raw observation retained"
-        );
-        assert!(
-            input_error.is_none(),
-            "original request write failed; raw observation retained"
-        );
-        std::process::Output {
-            status,
-            stdout,
-            stderr,
-        }
     }
+    reference
 }
 
 #[test]
-#[ignore = "GHA-only: genuine Python buffer table methods, CPU byte copies only, no kernel/model execution"]
-fn original_python_buffer_tables_match_native() {
-    use std::{
-        io::Write,
-        os::unix::process::CommandExt,
-        process::{Command, Stdio},
-    };
-    assert_eq!(std::env::var("GITHUB_ACTIONS").as_deref(), Ok("true"));
+fn frozen_original_buffer_tables_match_native() {
     let mut descriptors = Vec::new();
     for device in [
         "CPU", "CPU:0", "CPU:LLVM", "NPY", "NPY:2", "PYTHON", "QCOM", "QCOM:0", "QCOM:7", "QCOMX",
@@ -648,62 +599,8 @@ fn original_python_buffer_tables_match_native() {
     assert_eq!(descriptors.len(), 32);
     assert_eq!(cases.len(), 147);
     let request = json!({"descriptors":descriptors,"cases":cases});
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let request_bytes = serde_json::to_vec(&request).unwrap();
-    let observation = BufferObservation::start(&root, &request_bytes);
-    let mut command = Command::new(&observation.python);
-    command
-        .args(["-I", "-B", "-c", ORIGINAL_BUFFERS])
-        .arg(&root)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::from(observation.record_file("stdout.bin")))
-        .stderr(Stdio::from(observation.record_file("stderr.bin")));
-    // SAFETY: fork 뒤에는 setrlimit syscall과 실패 시 errno 조회만 한다.
-    // 이 제한은 child의 raw 파일을 실행 중부터 제한하며 부모에는 적용하지 않는다.
-    unsafe {
-        command.pre_exec(|| {
-            let limit = libc::rlimit {
-                rlim_cur: RECORD_LIMIT as libc::rlim_t,
-                rlim_max: RECORD_LIMIT as libc::rlim_t,
-            };
-            let no_core = libc::rlimit {
-                rlim_cur: 0,
-                rlim_max: 0,
-            };
-            if libc::setrlimit(libc::RLIMIT_CORE, &no_core) == 0
-                && libc::setrlimit(libc::RLIMIT_FSIZE, &limit) == 0
-            {
-                Ok(())
-            } else {
-                Err(std::io::Error::last_os_error())
-            }
-        });
-    }
-    let mut child = command
-        .spawn()
-        .expect("Actions must provide the admitted canonical Python");
-    let input_error = child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(&request_bytes)
-        .err()
-        .map(|error| error.to_string());
-    let status = child.wait().unwrap();
-    let output = observation.finish(status, input_error, &root);
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    let reference: Value = serde_json::from_slice(&output.stdout).unwrap();
-    for (name, digest) in reference["source_sha256"].as_object().unwrap() {
-        assert_eq!(
-            *digest, observation.before[name]["sha256"],
-            "original source binding: {name}"
-        );
-    }
-    eprintln!("original buffer sources: {}", reference["source_sha256"]);
+    let reference = frozen_reference(&request_bytes);
     assert_eq!(reference["opened_devices"], json!(["CPU"]));
     assert_eq!(
         reference["descriptors"].as_array().unwrap().len(),

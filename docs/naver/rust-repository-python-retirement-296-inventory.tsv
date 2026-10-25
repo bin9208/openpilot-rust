@@ -2037,9 +2037,9 @@ rust/tools/check_paramsd_native.py	a1e7580517a25338d14e496cc547b6857c765c23	pend
 rust/tools/check_paramsd_startup.py	8ccf349660d5d42e466e4db7fb4f5e6d1b626de0	pending	-
 rust/tools/check_pigeon.py	e880f785c5b6297c30e2312ecb47b3cd7afaafa6	pending	-
 rust/tools/check_pipeline_reference.py	87f9213cd8df6e7db7f47ae50575cb0ebb990533	pending	-
-rust/tools/check_plannerd_ci.py	9a110182c9816356197bed74248423b20952ae6b	pending	-
+rust/tools/check_plannerd_ci.py	9a110182c9816356197bed74248423b20952ae6b	replaced-local	rust/crates/dev-tools/src/planner_ci_controller.rs; check-plannerd-ci runtime; source7a82 host12/ARM12 및 source100 native/Clippy 수용
 rust/tools/check_plannerd_lifecycle.py	3ffbbf628701c81dd1a3a752225f0527906893c0	pending	-
-rust/tools/check_plannerd_native_memory.py	18bdcc408cd747e4f3b9c11a846371054b5134bf	pending	-
+rust/tools/check_plannerd_native_memory.py	18bdcc408cd747e4f3b9c11a846371054b5134bf	replaced-local	rust/crates/dev-tools/src/planner_ci_controller/memory.rs; memory --asan-library; source7a82 ASan3 및 source100 memory15/Clippy 수용
 rust/tools/check_policy_reference.py	9590b9d553c064623ffd6a8a728ef118b8a6483e	pending	-
 rust/tools/check_process_supervision.py	1b623e48e6d583b3df4a1d3421d0947c4a42b948	pending	-
 rust/tools/check_proclog_daemon.py	4aacc37155b94d99e4caae8f5328b9589e0fc90e	pending	-
@@ -2550,7 +2550,7 @@ rust/tools/tests/test_pandad_ci.py	be962fdc8ee1ea7a302f88357ffc4f4439703d9b	repl
 rust/tools/tests/test_pandad_spi.py	4e91bb726a1a9aeeb0affd1ddc5ac80171928d4d	pending	-
 rust/tools/tests/test_paramsd_atomic_gate.py	92cb6b8b0c058d5f0dbdc6904f960cbd51ef08ca	replaced-local	rust/crates/dev-tools/tests/paramsd_startup_gate.rs; docs/naver/rust-paramsd-daemon-controller-296.md
 rust/tools/tests/test_pipeline_export.py	8f47e0546e0a949f83fb880aff314df57ad00c35	pending	-
-rust/tools/tests/test_plannerd_ci.py	d54389d1ed4bc3487ab45989f1e68d01431f693b	pending	-
+rust/tools/tests/test_plannerd_ci.py	d54389d1ed4bc3487ab45989f1e68d01431f693b	replaced-local	rust/crates/dev-tools/tests/planner_ci_policy; planner_ci_controller.rs; planner_controller_frozen.rs; planner_controller_retirement.rs; source7a82/100 수용
 rust/tools/tests/test_qcom_export.py	a2d4dcd55f8446c21657abe7ee35d0692801ad28	pending	-
 rust/tools/tests/test_radarcan_ci.py	97797977e8469a0515b828940d26d4a486723665	pending	-
 rust/tools/tests/test_radarcan_exact.py	2afc53904c6fc229f7fa65f41ec9b49d499617ab	pending	-

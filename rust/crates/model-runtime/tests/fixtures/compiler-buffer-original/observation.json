@@ -1,0 +1,1180 @@
+{
+  "argv": [
+    "/usr/bin/python3.12",
+    "-I",
+    "-B",
+    "-c",
+    "\nimport ast, dataclasses, hashlib, json, os, pathlib, sys, types\nfrom collections.abc import Mapping\nroot = pathlib.Path(sys.argv[1])\nos.environ.update(DEV='CPU', CACHELEVEL='0', DEBUG='0', PROFILE='0', PYTHONDONTWRITEBYTECODE='1', TYPED='0')\nsys.path.insert(0, str(root))\nsys.path.insert(0, str(root/'tinygrad_repo'))\nfrom tinygrad.device import Buffer, MultiBuffer, Device, Compiler\nfrom tinygrad.dtype import dtypes\nfrom tinygrad.uop.ops import UOp\ndef no_compilation(*args, **kwargs):\n    raise AssertionError('buffer oracle must not compile kernels')\nCompiler.compile = Compiler.compile_cached = no_compilation\nopen_device = Device._Device__get_canonicalized_item\ndef only_cpu(name):\n    assert name.split(':')[0] == 'CPU', f'buffer oracle must not open {name}'\n    return open_device(name)\nDevice._Device__get_canonicalized_item = only_cpu\nscope = {'__name__': '__main__', 'dataclass': dataclasses.dataclass, 'Mapping': Mapping,\n         'Buffer': Buffer, 'MultiBuffer': MultiBuffer, 'UOp': UOp}\nhashes = {}\ndef definitions(relative, names):\n    path = root/relative\n    content = path.read_bytes()\n    hashes[relative] = hashlib.sha256(content).hexdigest()\n    tree = ast.parse(content, filename=str(path))\n    for name in names:\n        node = next(node for node in tree.body if getattr(node, 'name', None) == name)\n        exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), 'exec'), scope)\ndefinitions('rust/tools/model_export/schema.py', ['ExportError', 'Allocation', 'View'])\ndefinitions('rust/tools/model_export/buffers.py', ['host_buffer', 'BufferTable'])\ndefinitions('rust/tools/model_export/offline_buffers.py', ['descriptor', 'OfflineBufferTable'])\nhashes['tinygrad_repo/tinygrad/device.py'] = hashlib.sha256((root/'tinygrad_repo/tinygrad/device.py').read_bytes()).hexdigest()\nfor relative in ('tinygrad_repo/tinygrad/runtime/ops_cpu.py', 'tinygrad_repo/tinygrad/runtime/support/hcq.py'):\n    hashes[relative] = hashlib.sha256((root/relative).read_bytes()).hexdigest()\nrequest = json.load(sys.stdin)\ndescriptor_results = []\nfor case in request['descriptors']:\n    if case['kind'] == 'multi':\n        value = MultiBuffer(('CPU', 'PYTHON'), 8, dtypes.uint8)\n    elif case['kind'] == 'other':\n        value = object()\n    else:\n        value = Buffer(case['device'], 8, dtypes.uint8)\n        if case['allocated']:\n            # Synthetic allocation-state control only: no GPU/host provider is\n            # opened for descriptor tests. Clear it before object finalization.\n            value._bufs[value.device] = object()\n    row = {}\n    for name, argument in [('host_buffer', value), ('descriptor', types.SimpleNamespace(buffer=value))]:\n        try:\n            row[name] = scope[name](argument) is value\n        except scope['ExportError']:\n            row[name] = False\n    descriptor_results.append(row)\n    if isinstance(value, Buffer):\n        value._bufs.clear()\ntraces = []\nfor case in request['cases']:\n    host = case['kind'] == 'host'\n    bases = {base['id']: Buffer('CPU' if host else base.get('device', 'QCOM'), base['bytes'], dtypes.uint8)\n             for base in case['bases']}\n    initial = {bases[base['id']]: bytes(base['initialized']) for base in case['bases'] if 'initialized' in base}\n    for base in case['bases']:\n        if 'initializer_alias' in base:\n            alias = base['initializer_alias']\n            owner = bases[base['id']]\n            key = Buffer(owner.device, alias['bytes'], dtypes.uint8, base=owner, offset=alias['offset'])\n            initial[key] = bytes(alias['data'])\n    table = scope['BufferTable']() if host else scope['OfflineBufferTable'](initial)\n    if host:\n        for base in case['bases']:\n            bases[base['id']].ensure_allocated().copyin(memoryview(bytearray(base['data'])))\n    rows = []\n    for op in case['ops']:\n        base = bases[op['base']]\n        view = Buffer(base.device, op['bytes'], dtypes.uint8, base=base, offset=op['offset'])\n        if host and 'data' in op:\n            base.copyin(memoryview(bytearray(op['data'])))\n        try:\n            returned = getattr(table, op['op'])(view)\n            outcome = {'ok': returned}\n        except scope['ExportError']:\n            outcome = {'error': True}\n        allocations, packed = table.weights()\n        rows.append({'outcome': outcome, 'views': [dataclasses.asdict(v) for v in table.views],\n                     'allocations': [dataclasses.asdict(a) for a in allocations], 'weights': list(packed)})\n    traces.append(rows)\nassert Device._opened_devices == {'CPU'}\nprint(json.dumps({'source_sha256': hashes, 'opened_devices': sorted(Device._opened_devices),\n                  'descriptors': descriptor_results, 'traces': traces}))\n",
+    "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/crates/model-runtime/../../.."
+  ],
+  "binding_unchanged": true,
+  "collector_only": true,
+  "github_sha": "1000464f57239a1d15bfba3bdb6c01550f12d8a0",
+  "kind": "independent-python-buffer-observation",
+  "original": {
+    "exit_code": 0,
+    "file_size_limit_signal": false,
+    "input_error": null,
+    "returncode": 0,
+    "signal": null,
+    "stderr": {
+      "bytes": 0,
+      "record": "stderr.bin",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stdout": {
+      "bytes": 270242,
+      "record": "stdout.bin",
+      "sha256": "fc019a80d96e11a95cc8d1573b94cbbb4ea06f30b56fdf71efa6f29d5e149593"
+    }
+  },
+  "record_limit_bytes": 1048576,
+  "request": {
+    "record": "request.json",
+    "record_unchanged": true,
+    "sha256": "809ff0aba501e93a4bab0d86fd8066a77d72881580cfc72408e1c1ea19fd15fb"
+  },
+  "retirement_credit": 0,
+  "schema_version": 1,
+  "scope": "선택 source/Python binding과 기존 원본 프로세스 1회의 관측 원문. 아래 기존 native parity assertions까지 성공해야 비교 수용이며, 모델/컴파일/전체 import closure 수용이 아니다.",
+  "source_root": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source",
+  "total_limit_bytes": 8388608,
+  "witnesses_after": {
+    "SOURCE_COMMIT": {
+      "identity": {
+        "bytes": 41,
+        "ctime": [
+          1792961148,
+          57135498
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3024522,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961148,
+          57135498
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.kSO6zn/proof/SOURCE_COMMIT",
+      "sha256": "99c5b59fd351307b021692eeec8962a56b51a57643aa472af2119b7eeab28af2"
+    },
+    "admitted-python": {
+      "identity": {
+        "bytes": 8020928,
+        "ctime": [
+          1792495150,
+          427621543
+        ],
+        "device": 64521,
+        "gid": 0,
+        "inode": 2755469,
+        "links": 1,
+        "mode": 33261,
+        "mtime": [
+          1788171506,
+          0
+        ],
+        "uid": 0
+      },
+      "path": "/usr/bin/python3.12",
+      "sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f"
+    },
+    "buffer-oracle-python.sha256": {
+      "identity": {
+        "bytes": 86,
+        "ctime": [
+          1792961190,
+          820251567
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3028192,
+        "links": 1,
+        "mode": 33152,
+        "mtime": [
+          1792961190,
+          820251567
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.kSO6zn/proof/buffer-oracle-python.sha256",
+      "sha256": "74a2bf284a5116d43270762ab1766fe74421da338fa0889fcd2c188202eae773"
+    },
+    "buffer-oracle-python.version": {
+      "identity": {
+        "bytes": 14,
+        "ctime": [
+          1792961190,
+          821251575
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3028193,
+        "links": 1,
+        "mode": 33152,
+        "mtime": [
+          1792961190,
+          821251575
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.kSO6zn/proof/buffer-oracle-python.version",
+      "sha256": "5b3e43dc38ca01e3f5a7854ba50d4330864b0c1e0f646650b2c78cf072acc366"
+    },
+    "job-owner": {
+      "identity": {
+        "bytes": 26,
+        "ctime": [
+          1792961125,
+          695205453
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3024508,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961125,
+          695205453
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.kSO6zn/owner",
+      "sha256": "acc954cc47f1d184d1363bde13ab712ecb19987c71929d63bbfcb51ab5a090a1"
+    },
+    "rust/Cargo.lock": {
+      "identity": {
+        "bytes": 159864,
+        "ctime": [
+          1792961144,
+          459881792
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1070387,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961144,
+          459881792
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/Cargo.lock",
+      "sha256": "9586516b4adda7abc3f739f2c3360a6cd2370e8f2d785a6b36a4adfcf54f6b9a"
+    },
+    "rust/crates/model-runtime/Cargo.toml": {
+      "identity": {
+        "bytes": 1605,
+        "ctime": [
+          1792961145,
+          432288065
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1081029,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          432288065
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/crates/model-runtime/Cargo.toml",
+      "sha256": "53d766c5fa51dab5e4be7c7b793e82d591a0bf7970784b68638c9b5159e56866"
+    },
+    "rust/crates/model-runtime/src/compiler_buffers.rs": {
+      "identity": {
+        "bytes": 3332,
+        "ctime": [
+          1792961145,
+          436209233
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1081080,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          436209233
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/crates/model-runtime/src/compiler_buffers.rs",
+      "sha256": "1588afe7d4d6d69bac36df96653405802d569e730812dd001ffc874ebcdf42da"
+    },
+    "rust/crates/model-runtime/src/export.rs": {
+      "identity": {
+        "bytes": 24746,
+        "ctime": [
+          1792961145,
+          438889600
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1081113,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          438889600
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/crates/model-runtime/src/export.rs",
+      "sha256": "7dc0993039db5247aa0e71d7c122c46b393e30a8e02724f8367a3b26ec6f6e8c"
+    },
+    "rust/crates/model-runtime/src/lib.rs": {
+      "identity": {
+        "bytes": 1118,
+        "ctime": [
+          1792961145,
+          438889600
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1081116,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          438889600
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/crates/model-runtime/src/lib.rs",
+      "sha256": "9c18a2434644ea72ebbd5d2d23c706084391775995e0567c6a0d1809f8f1d741"
+    },
+    "rust/crates/model-runtime/tests/compiler_buffers.rs": {
+      "identity": {
+        "bytes": 31176,
+        "ctime": [
+          1792961145,
+          441016353
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1081146,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          441016353
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/crates/model-runtime/tests/compiler_buffers.rs",
+      "sha256": "31c68a1b54d0162837329b374752a765b22a96710a385458f527a0c6fd9dd950"
+    },
+    "rust/tools/model_export/buffers.py": {
+      "identity": {
+        "bytes": 2577,
+        "ctime": [
+          1792961145,
+          702982662
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1084300,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          702982662
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/tools/model_export/buffers.py",
+      "sha256": "9429df49f408cda89f5b862fc0d51982668234cc18cb28ca0e83fd3d1a5bc7de"
+    },
+    "rust/tools/model_export/offline_buffers.py": {
+      "identity": {
+        "bytes": 1575,
+        "ctime": [
+          1792961145,
+          702982662
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1084305,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          702982662
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/tools/model_export/offline_buffers.py",
+      "sha256": "9ab6c8c777b04d374750779fabfa75bb2b2af64fb6f8ce3ff8edd7a14138de4f"
+    },
+    "rust/tools/model_export/schema.py": {
+      "identity": {
+        "bytes": 2611,
+        "ctime": [
+          1792961145,
+          703891714
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1084319,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          703891714
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/tools/model_export/schema.py",
+      "sha256": "720abcc396852a395689c4d37f9487822f951166a36b5efe8586dce5f656c6a9"
+    },
+    "tinygrad_repo/tinygrad/__init__.py": {
+      "identity": {
+        "bytes": 674,
+        "ctime": [
+          1792961146,
+          495898031
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086637,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          495898031
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/__init__.py",
+      "sha256": "fc24d5d0df1b1a14bbee0bd2641a61ca5f34ec7d83f1b0b755adf6eb83d5c0be"
+    },
+    "tinygrad_repo/tinygrad/device.py": {
+      "identity": {
+        "bytes": 20639,
+        "ctime": [
+          1792961146,
+          497460653
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086656,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          497460653
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/device.py",
+      "sha256": "7c28ae3854a3f009fc6eddfb52f03b3d382a23b581d94a3c4741a12bdc79f008"
+    },
+    "tinygrad_repo/tinygrad/dtype.py": {
+      "identity": {
+        "bytes": 20162,
+        "ctime": [
+          1792961146,
+          497460653
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086657,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          497460653
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/dtype.py",
+      "sha256": "de4bb7980fac9c09f851374fc6e8c57441071fca6d98dc92c6e984170bc58008"
+    },
+    "tinygrad_repo/tinygrad/helpers.py": {
+      "identity": {
+        "bytes": 32632,
+        "ctime": [
+          1792961146,
+          498163231
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086663,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          498163231
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/helpers.py",
+      "sha256": "24c347d2137c92e1dc35d78cd9df45b38d31cc4d34729a35215f8822b3f2f6fb"
+    },
+    "tinygrad_repo/tinygrad/renderer/__init__.py": {
+      "identity": {
+        "bytes": 4405,
+        "ctime": [
+          1792961146,
+          500138415
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086689,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          500138415
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/renderer/__init__.py",
+      "sha256": "22b219d73973e2591201662ae4a5c4ebd8688e51313a0ad4f55d50ae513828f7"
+    },
+    "tinygrad_repo/tinygrad/renderer/cstyle.py": {
+      "identity": {
+        "bytes": 37506,
+        "ctime": [
+          1792961146,
+          500980452
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086696,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          500980452
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/renderer/cstyle.py",
+      "sha256": "13d806a4674ec87ffc94959b5825bb5915a7581b9c6652a3ddfe8a52120470be"
+    },
+    "tinygrad_repo/tinygrad/runtime/autogen/libc.py": {
+      "identity": {
+        "bytes": 124407,
+        "ctime": [
+          1792961146,
+          518898215
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086763,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          518898215
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/runtime/autogen/libc.py",
+      "sha256": "89004d7b83537131ef45a55191eb1ce2708ef5e3f649abf656abdeeb193d42db"
+    },
+    "tinygrad_repo/tinygrad/runtime/ops_cpu.py": {
+      "identity": {
+        "bytes": 8395,
+        "ctime": [
+          1792961146,
+          533103724
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086806,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          533103724
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/runtime/ops_cpu.py",
+      "sha256": "012f3d932abba9e14f82aedefe0ca52243eba1728f847c38cae54ae05b171a16"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/elf.py": {
+      "identity": {
+        "bytes": 5263,
+        "ctime": [
+          1792961146,
+          535128442
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086834,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          535128442
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/runtime/support/elf.py",
+      "sha256": "ed0340b507c8fb23f1fa1ae1b3ca1297006d70c289a016233d9f1d5291801aa8"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/hcq.py": {
+      "identity": {
+        "bytes": 32420,
+        "ctime": [
+          1792961146,
+          535128442
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086835,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          535128442
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/runtime/support/hcq.py",
+      "sha256": "86ccce42fce7fe59f4cd2e345d9186b7241e44a00763ee51712c16a10b521bff"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/memory.py": {
+      "identity": {
+        "bytes": 15268,
+        "ctime": [
+          1792961146,
+          535128442
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086836,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          535128442
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/runtime/support/memory.py",
+      "sha256": "0457d300a3f149ba11b2da97240f7c7b6c0bb952e7ac4779dea2cfc0c44c81e2"
+    },
+    "tinygrad_repo/tinygrad/uop/__init__.py": {
+      "identity": {
+        "bytes": 4829,
+        "ctime": [
+          1792961146,
+          537149050
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086856,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          537149050
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/uop/__init__.py",
+      "sha256": "8de567435d8c37f5472650e96409660063890d7a1a6dea32054396da6b6749ac"
+    },
+    "tinygrad_repo/tinygrad/uop/ops.py": {
+      "identity": {
+        "bytes": 94967,
+        "ctime": [
+          1792961146,
+          537988453
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086859,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          537988453
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/uop/ops.py",
+      "sha256": "d4b454cc4577a23be8d688aed874b9911992332e21bea7d7567974c9dc7c197a"
+    }
+  },
+  "witnesses_before": {
+    "SOURCE_COMMIT": {
+      "identity": {
+        "bytes": 41,
+        "ctime": [
+          1792961148,
+          57135498
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3024522,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961148,
+          57135498
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.kSO6zn/proof/SOURCE_COMMIT",
+      "sha256": "99c5b59fd351307b021692eeec8962a56b51a57643aa472af2119b7eeab28af2"
+    },
+    "admitted-python": {
+      "identity": {
+        "bytes": 8020928,
+        "ctime": [
+          1792495150,
+          427621543
+        ],
+        "device": 64521,
+        "gid": 0,
+        "inode": 2755469,
+        "links": 1,
+        "mode": 33261,
+        "mtime": [
+          1788171506,
+          0
+        ],
+        "uid": 0
+      },
+      "path": "/usr/bin/python3.12",
+      "sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f"
+    },
+    "buffer-oracle-python.sha256": {
+      "identity": {
+        "bytes": 86,
+        "ctime": [
+          1792961190,
+          820251567
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3028192,
+        "links": 1,
+        "mode": 33152,
+        "mtime": [
+          1792961190,
+          820251567
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.kSO6zn/proof/buffer-oracle-python.sha256",
+      "sha256": "74a2bf284a5116d43270762ab1766fe74421da338fa0889fcd2c188202eae773"
+    },
+    "buffer-oracle-python.version": {
+      "identity": {
+        "bytes": 14,
+        "ctime": [
+          1792961190,
+          821251575
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3028193,
+        "links": 1,
+        "mode": 33152,
+        "mtime": [
+          1792961190,
+          821251575
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.kSO6zn/proof/buffer-oracle-python.version",
+      "sha256": "5b3e43dc38ca01e3f5a7854ba50d4330864b0c1e0f646650b2c78cf072acc366"
+    },
+    "job-owner": {
+      "identity": {
+        "bytes": 26,
+        "ctime": [
+          1792961125,
+          695205453
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 3024508,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961125,
+          695205453
+        ],
+        "uid": 1000
+      },
+      "path": "/tmp/openpilot-ci.kSO6zn/owner",
+      "sha256": "acc954cc47f1d184d1363bde13ab712ecb19987c71929d63bbfcb51ab5a090a1"
+    },
+    "rust/Cargo.lock": {
+      "identity": {
+        "bytes": 159864,
+        "ctime": [
+          1792961144,
+          459881792
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1070387,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961144,
+          459881792
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/Cargo.lock",
+      "sha256": "9586516b4adda7abc3f739f2c3360a6cd2370e8f2d785a6b36a4adfcf54f6b9a"
+    },
+    "rust/crates/model-runtime/Cargo.toml": {
+      "identity": {
+        "bytes": 1605,
+        "ctime": [
+          1792961145,
+          432288065
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1081029,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          432288065
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/crates/model-runtime/Cargo.toml",
+      "sha256": "53d766c5fa51dab5e4be7c7b793e82d591a0bf7970784b68638c9b5159e56866"
+    },
+    "rust/crates/model-runtime/src/compiler_buffers.rs": {
+      "identity": {
+        "bytes": 3332,
+        "ctime": [
+          1792961145,
+          436209233
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1081080,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          436209233
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/crates/model-runtime/src/compiler_buffers.rs",
+      "sha256": "1588afe7d4d6d69bac36df96653405802d569e730812dd001ffc874ebcdf42da"
+    },
+    "rust/crates/model-runtime/src/export.rs": {
+      "identity": {
+        "bytes": 24746,
+        "ctime": [
+          1792961145,
+          438889600
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1081113,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          438889600
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/crates/model-runtime/src/export.rs",
+      "sha256": "7dc0993039db5247aa0e71d7c122c46b393e30a8e02724f8367a3b26ec6f6e8c"
+    },
+    "rust/crates/model-runtime/src/lib.rs": {
+      "identity": {
+        "bytes": 1118,
+        "ctime": [
+          1792961145,
+          438889600
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1081116,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          438889600
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/crates/model-runtime/src/lib.rs",
+      "sha256": "9c18a2434644ea72ebbd5d2d23c706084391775995e0567c6a0d1809f8f1d741"
+    },
+    "rust/crates/model-runtime/tests/compiler_buffers.rs": {
+      "identity": {
+        "bytes": 31176,
+        "ctime": [
+          1792961145,
+          441016353
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1081146,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          441016353
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/crates/model-runtime/tests/compiler_buffers.rs",
+      "sha256": "31c68a1b54d0162837329b374752a765b22a96710a385458f527a0c6fd9dd950"
+    },
+    "rust/tools/model_export/buffers.py": {
+      "identity": {
+        "bytes": 2577,
+        "ctime": [
+          1792961145,
+          702982662
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1084300,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          702982662
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/tools/model_export/buffers.py",
+      "sha256": "9429df49f408cda89f5b862fc0d51982668234cc18cb28ca0e83fd3d1a5bc7de"
+    },
+    "rust/tools/model_export/offline_buffers.py": {
+      "identity": {
+        "bytes": 1575,
+        "ctime": [
+          1792961145,
+          702982662
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1084305,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          702982662
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/tools/model_export/offline_buffers.py",
+      "sha256": "9ab6c8c777b04d374750779fabfa75bb2b2af64fb6f8ce3ff8edd7a14138de4f"
+    },
+    "rust/tools/model_export/schema.py": {
+      "identity": {
+        "bytes": 2611,
+        "ctime": [
+          1792961145,
+          703891714
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1084319,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961145,
+          703891714
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/rust/tools/model_export/schema.py",
+      "sha256": "720abcc396852a395689c4d37f9487822f951166a36b5efe8586dce5f656c6a9"
+    },
+    "tinygrad_repo/tinygrad/__init__.py": {
+      "identity": {
+        "bytes": 674,
+        "ctime": [
+          1792961146,
+          495898031
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086637,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          495898031
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/__init__.py",
+      "sha256": "fc24d5d0df1b1a14bbee0bd2641a61ca5f34ec7d83f1b0b755adf6eb83d5c0be"
+    },
+    "tinygrad_repo/tinygrad/device.py": {
+      "identity": {
+        "bytes": 20639,
+        "ctime": [
+          1792961146,
+          497460653
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086656,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          497460653
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/device.py",
+      "sha256": "7c28ae3854a3f009fc6eddfb52f03b3d382a23b581d94a3c4741a12bdc79f008"
+    },
+    "tinygrad_repo/tinygrad/dtype.py": {
+      "identity": {
+        "bytes": 20162,
+        "ctime": [
+          1792961146,
+          497460653
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086657,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          497460653
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/dtype.py",
+      "sha256": "de4bb7980fac9c09f851374fc6e8c57441071fca6d98dc92c6e984170bc58008"
+    },
+    "tinygrad_repo/tinygrad/helpers.py": {
+      "identity": {
+        "bytes": 32632,
+        "ctime": [
+          1792961146,
+          498163231
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086663,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          498163231
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/helpers.py",
+      "sha256": "24c347d2137c92e1dc35d78cd9df45b38d31cc4d34729a35215f8822b3f2f6fb"
+    },
+    "tinygrad_repo/tinygrad/renderer/__init__.py": {
+      "identity": {
+        "bytes": 4405,
+        "ctime": [
+          1792961146,
+          500138415
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086689,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          500138415
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/renderer/__init__.py",
+      "sha256": "22b219d73973e2591201662ae4a5c4ebd8688e51313a0ad4f55d50ae513828f7"
+    },
+    "tinygrad_repo/tinygrad/renderer/cstyle.py": {
+      "identity": {
+        "bytes": 37506,
+        "ctime": [
+          1792961146,
+          500980452
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086696,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          500980452
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/renderer/cstyle.py",
+      "sha256": "13d806a4674ec87ffc94959b5825bb5915a7581b9c6652a3ddfe8a52120470be"
+    },
+    "tinygrad_repo/tinygrad/runtime/autogen/libc.py": {
+      "identity": {
+        "bytes": 124407,
+        "ctime": [
+          1792961146,
+          518898215
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086763,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          518898215
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/runtime/autogen/libc.py",
+      "sha256": "89004d7b83537131ef45a55191eb1ce2708ef5e3f649abf656abdeeb193d42db"
+    },
+    "tinygrad_repo/tinygrad/runtime/ops_cpu.py": {
+      "identity": {
+        "bytes": 8395,
+        "ctime": [
+          1792961146,
+          533103724
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086806,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          533103724
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/runtime/ops_cpu.py",
+      "sha256": "012f3d932abba9e14f82aedefe0ca52243eba1728f847c38cae54ae05b171a16"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/elf.py": {
+      "identity": {
+        "bytes": 5263,
+        "ctime": [
+          1792961146,
+          535128442
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086834,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          535128442
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/runtime/support/elf.py",
+      "sha256": "ed0340b507c8fb23f1fa1ae1b3ca1297006d70c289a016233d9f1d5291801aa8"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/hcq.py": {
+      "identity": {
+        "bytes": 32420,
+        "ctime": [
+          1792961146,
+          535128442
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086835,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          535128442
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/runtime/support/hcq.py",
+      "sha256": "86ccce42fce7fe59f4cd2e345d9186b7241e44a00763ee51712c16a10b521bff"
+    },
+    "tinygrad_repo/tinygrad/runtime/support/memory.py": {
+      "identity": {
+        "bytes": 15268,
+        "ctime": [
+          1792961146,
+          535128442
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086836,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          535128442
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/runtime/support/memory.py",
+      "sha256": "0457d300a3f149ba11b2da97240f7c7b6c0bb952e7ac4779dea2cfc0c44c81e2"
+    },
+    "tinygrad_repo/tinygrad/uop/__init__.py": {
+      "identity": {
+        "bytes": 4829,
+        "ctime": [
+          1792961146,
+          537149050
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086856,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          537149050
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/uop/__init__.py",
+      "sha256": "8de567435d8c37f5472650e96409660063890d7a1a6dea32054396da6b6749ac"
+    },
+    "tinygrad_repo/tinygrad/uop/ops.py": {
+      "identity": {
+        "bytes": 94967,
+        "ctime": [
+          1792961146,
+          537988453
+        ],
+        "device": 64521,
+        "gid": 1000,
+        "inode": 1086859,
+        "links": 1,
+        "mode": 33188,
+        "mtime": [
+          1792961146,
+          537988453
+        ],
+        "uid": 1000
+      },
+      "path": "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40231559285-1.AaaMkI/source/tinygrad_repo/tinygrad/uop/ops.py",
+      "sha256": "d4b454cc4577a23be8d688aed874b9911992332e21bea7d7567974c9dc7c197a"
+    }
+  }
+}

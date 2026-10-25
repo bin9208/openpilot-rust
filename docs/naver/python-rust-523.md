@@ -1470,3 +1470,26 @@ buffer의 기존 original179경계 비교는 같은 원본 프로세스1회의 r
 실패해 #474를 유지한다. driver source425는 fresh4case가 성공하여 failure-only retained
 진단이 미도달했다. 실제 exit0과 미도달 baseline을 구분하도록 기록을 보완하며 fresh 미재현을
 억지 실패나 cached 수용으로 바꾸지 않는다. #476/#482/전체 PR·대단원 완료 조건은 계속 남는다.
+
+
+## 2026-10-26 Planner 세 baseline·추가 실행 경계의 한정 수용
+
+삭제 후 source7a82의 actual host12/ASan3/ARM12, controller14/policy21/frozen5/runtime guard6와
+source100 native memory15/strict Clippy 및 source/index/SDK 원문 봉인을 수용했다.
+인벤토리는 **299교체/3부분/3278대기 =3580**, routing은25교체/3부분/3278대기다.
+삭제4개 중baseline3개와 추가memory unittest1개를 구분했다. 추가 실행 원장162행은
+30교체/128대기/1기존native/2비실행/1제거이며 old source5·memory 원본5 실행과 직접wrapper
+Python dispatch의 퇴역도 해당 범위로 기록했다. 상세는
+[Planner 삭제 후 수용](python-rust-523-planner-retirement-acceptance.md)에 있다.
+
+Buffer179 원문 수집은 source100의 native6/original1/Clippy 실제 성공을 확인했고 artifact
+독립 감사를 진행한다. 이전 source7a82의 소유 표식 줄바꿈 가정은 수정했다.
+새 [#593](https://github.com/bin9208/openpilot-rust/issues/593)은 source425에서 미등록 VBMI를
+정확히 거부한 ISA 경계를 추적한다. sourceee74에 mapping/OS-aware 탐지·unit14와 실제 호출을
+연결했다. 원래 historical old image는 자연 host의 avx512bw 부재로 계속 거부되며, ISA14의
+성공이나 새로운 mapping으로 모델 수치/전체 #482를 대신하지 않는다.
+
+원래 fullsix 복사본을 추가하면서 actual private source roster78/ARM24와 맞지 않았던
+두 policy count를 sourceee74에서 수정했다. fullsix는 같은 원래 selector·기한·원문·수치/
+부재/복원·봉인 조건으로 다시 검증한다. #474 provider 준비와 실제 IPC/컴파일러 전환을
+계속하며 대단원 전체·필수 PR·전달·실기 완료 조건은 남아 있다.
