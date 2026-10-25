@@ -389,9 +389,10 @@ run() {
   admit
 }
 artifact() {
-  local log=$1 root=$2 name=$3 kind=$4 src=$5 tested=$6 features=$7
-  jq -ser --arg package "path+file://$root/rust/crates/dev-tools#openpilot-dev-tools@0.1.0" \
-    --arg manifest "$root/rust/crates/dev-tools/Cargo.toml" --arg name "$name" --arg kind "$kind" \
+  local log=$1 root=$2 name=$3 kind=$4 src=$5 tested=$6 features=$7 crate=${8:-dev-tools}
+  case $crate in dev-tools|disk-space) ;; *) return 1;; esac
+  jq -ser --arg package "path+file://$root/rust/crates/$crate#openpilot-$crate@0.1.0" \
+    --arg manifest "$root/rust/crates/$crate/Cargo.toml" --arg name "$name" --arg kind "$kind" \
     --arg src "$root/$src" --argjson tested "$tested" --argjson features "$features" '
     if length<1 or .[-1]!={reason:"build-finished",success:true} or
       ([.[]|select(.reason=="build-finished")]|length)!=1 then error("Cargo EOF") else . end |
@@ -413,7 +414,7 @@ ok_test() {
   [[ $(grep -Ec "^test result: ok\\. $count passed; 0 failed; 0 ignored;" "$proof/logs/$label.stdout") == 1 ]]
 }
 extra_env=()
-for tool in bash sh env git find sort xargs sha256sum stat readlink readelf sed awk grep head od tr cat dd true cmp df du jq strace timeout setsid sleep curl clang++ g++ cc as ar ranlib ld nm pkg-config capnp tar xauth Xvfb xvfb-run ffmpeg ffprobe cp chmod mkdir id dirname basename cut rm ldd mktemp touch ps tail wc uname which getopt; do
+for tool in bash sh env git find sort xargs sha256sum stat readlink readelf sed awk grep head od tr cat dd true cmp df du jq strace timeout setsid sleep curl clang++ g++ cc as ar ranlib ld nm pkg-config capnp tar gzip cmake make gmake xauth Xvfb xvfb-run ffmpeg ffprobe cp chmod mkdir id dirname basename cut rm ldd mktemp touch ps tail wc uname which getopt; do
   # command -v true는 builtin 이름을 반환한다. 봉인할 외부 PATH provider를 선택한다.
   path=$(type -P "$tool") || fail "external provider missing: $tool"
   [[ $path == /* ]] || fail "external provider path is not absolute: $tool"
@@ -445,7 +446,7 @@ add_tree source "$source"
 add_tree sdk "$sdk"
 add_tree system-headers /usr/include
 # 링크/컴파일 provider와 OpenGL의 runtime plugin도 현재 파일로 봉인한다.
-for query in cc1plus collect2 as ld; do
+for query in cc1 cc1plus collect2 as ld; do
   path=$(/usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C /usr/bin/timeout 30s /usr/bin/g++ "-print-prog-name=$query")
   [[ $path == /* ]] || path=$(command -v "$path")
   bind_elf "$path"
@@ -456,6 +457,35 @@ established=true
 admit
 run strace-help 30 0 /usr/bin/strace --help
 grep -F -- --kill-on-exit "$proof/logs/strace-help.stdout" > "$proof/exitkill-supported.txt"
+# image-array-native의 필수 decoder SDK를 기존 standalone stager로 준비한다.
+# work/archive는 build8GiB, 설치는 raylib과 tools2GiB를 공유한다. cap/deadline은 늘리지 않는다.
+image_sdk_source=$source/rust/crates/image-codecs/native/sdk
+for name in stage.rs receipt.rs sources.json CMakeLists.txt dav1d.cmake tiff.cmake; do hold "$image_sdk_source/$name"; done
+extra_env=(CARGO_TARGET_DIR="$build/candidate-target")
+run image-disk-guard-build 120 0 "$sdk/bin/cargo" build --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-disk-space --bin disk-space-guard --message-format=json
+disk_guard=$(artifact "$proof/logs/image-disk-guard-build.stdout" "$source" disk-space-guard bin rust/crates/disk-space/src/main.rs false '[]' disk-space)
+copy_elf "$disk_guard" image-disk-guard candidate
+run image-stager-build 120 0 "$sdk/bin/rustc" --edition=2021 "$image_sdk_source/stage.rs" -o "$build/candidate-target/stage-image-codecs"
+copy_elf "$build/candidate-target/stage-image-codecs" image-codecs-stager candidate
+mkdir "$build/image-codecs-archives"
+jq -er 'if .schema==1 and (.sources|length)==9 and ([.sources[].archive]|unique|length)==9
+  then .sources[] | [.archive,.url,.sha256] | @tsv else error("exact decoder source roster required") end' \
+  "$image_sdk_source/sources.json" > "$proof/image-sources.tsv"
+while IFS=$'\t' read -r archive url digest; do
+  [[ $archive =~ ^[A-Za-z0-9._-]+\.tar\.gz$ && $url == https://* && $digest =~ ^[a-f0-9]{64}$ ]]
+  run "image-download-${archive%.tar.gz}" 120 0 /usr/bin/curl --fail --location --proto '=https' --proto-redir '=https' \
+    --connect-timeout 20 --max-time 90 --max-filesize 67108864 --output "$build/image-codecs-archives/$archive" "$url"
+  printf '%s  %s\n' "$digest" "$build/image-codecs-archives/$archive" | sha256sum --check --strict --quiet -
+  hold "$build/image-codecs-archives/$archive"
+done < "$proof/image-sources.tsv"
+extra_env+=(CHECK_DISK_SPACE_BINARY="$proof/elfs/image-disk-guard")
+run image-sdk-stage 600 0 "$proof/elfs/image-codecs-stager" "$build/image-codecs-archives" \
+  "$build/image-codecs-work" "$tools/image-codecs" "$image_sdk_source"
+hold "$tools/image-codecs/openpilot-image-codecs-sdk.txt"
+for name in avif dav1d yuv openjp2 tiff jpeg lzma zstd z; do hold "$tools/image-codecs/lib/lib$name.a"; done
+add_tree image-codecs-sdk "$tools/image-codecs"
+build_env+=(IMAGE_CODECS_SDK_ROOT="$tools/image-codecs")
+extra_env=()
 # 현재 checkout은 그대로 두고, 별도 owned clone에만 고정 취소 overlay를 적용한다.
 run baseline-clone 180 0 /usr/bin/git clone --no-local --no-hardlinks --no-checkout "$source" "$baseline"
 run baseline-checkout 90 0 /usr/bin/git -C "$baseline" checkout --detach "$GITHUB_SHA"

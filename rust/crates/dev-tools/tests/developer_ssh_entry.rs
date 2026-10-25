@@ -1248,7 +1248,7 @@ fn worker(public: bool) -> Result<()> {
     )?;
     rustix::process::set_child_subreaper(Some(rustix::process::getpid()))?;
     let mut ctx = Context::new(public)?;
-    let primary_paths: BTreeSet<_> = ctx.held.iter().map(|held| held.path.clone()).collect();
+    let primary_count = ctx.held.len();
     create(
         &ctx.output.join("held.before.json"),
         &serde_json::to_vec(&ctx.held_value())?,
@@ -1282,9 +1282,7 @@ fn worker(public: bool) -> Result<()> {
             .as_array()
             .ok_or("held roster missing")?
             .iter()
-            .filter(|row| row["path"]
-                .as_str()
-                .is_some_and(|path| primary_paths.contains(Path::new(path))))
+            .take(primary_count)
             .cloned()
             .collect::<Vec<_>>())
     } else {

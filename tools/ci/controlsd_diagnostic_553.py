@@ -580,6 +580,134 @@ class Diagnostic:
         self.budget(force=True)
         need(self.usage["build"]-before <= 512*MIB, "Clippy append exceeds 512 MiB")
 
+    def loader_environment_comparison(self, plain, native_env, native_plain):
+        directory = self.out / "native-loader-ab"
+        directory.mkdir(mode=0o700)
+        output = directory / "native-result.json"
+        plain_seal = self.holds.records()[str(plain)]
+        input_seal = self.holds.records()[str(self.request)]
+        plain_record = {k: plain_seal[k] for k in ("identity", "sha256")}
+        input_record = {k: input_seal[k] for k in ("identity", "sha256")}
+        with_ld = dict(native_env)
+        need(with_ld.get("LD_LIBRARY_PATH") == str(self.numerics), "existing private native loader environment")
+        without_ld = {k: v for k, v in with_ld.items() if k != "LD_LIBRARY_PATH"}
+        need(set(with_ld) - set(without_ld) == {"LD_LIBRARY_PATH"}
+             and all(with_ld[k] == v for k, v in without_ld.items()), "loader A/B single environment difference")
+        rows, traces = [], {}
+        directory_fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
+        directory_identity = self.c.ident(os.fstat(directory_fd))[:5]
+
+        def directory_guard():
+            need(directory.resolve(strict=True) == directory
+                 and self.c.ident(directory.lstat())[:5] == directory_identity
+                 == self.c.ident(os.fstat(directory_fd))[:5]
+                 and stat.S_ISDIR(directory_identity[2]) and directory_identity[2] & 0o777 == 0o700
+                 and directory_identity[3] == os.getuid(), "same private loader A/B directory FD")
+
+        try:
+            for variant, env in (("with-ld", with_ld), ("without-ld", without_ld)):
+                label = "native-loader-" + variant
+                self.phase = label
+                directory_guard()
+                need(not os.path.lexists(output), "loader A/B fixed output must start absent")
+                need(time.monotonic() < self.deadline, "#553 global deadline before loader A/B")
+                self.holds.verify()
+                need(self.c.regular(plain) == plain_record and self.c.regular(self.request) == input_record,
+                     "same held plain ELF and one-frame input before loader A/B")
+                command_error = None
+                with self.request.open("rb") as source:
+                    need(self.c.ident(os.fstat(source.fileno())) == input_seal["identity"], "loader A/B stdin FD")
+                    try:
+                        self.command([plain, output], label, env=env, stdin=source, seconds=600)
+                    except RuntimeError as problem:
+                        record = self.commands[-1] if self.commands else {}
+                        code = record.get("returncode")
+                        # 보통의 child exit만 별도 관측한다. timeout/guard/회수 오류는 계속 전파한다.
+                        if not (record.get("label") == label and code is not None and code > 0
+                                and record.get("error") == str(problem) == f"{label}: exit {code}"
+                                and record.get("all_owned_children_reaped") is True):
+                            raise
+                        command_error = str(problem)
+                    need(self.c.ident(os.fstat(source.fileno())) == input_seal["identity"], "loader A/B stdin FD changed")
+                self.budget(force=True)
+                self.holds.verify()
+                need(self.c.regular(plain) == plain_record and self.c.regular(self.request) == input_record,
+                     "same held plain ELF and one-frame input after loader A/B")
+                directory_guard()
+                record = self.commands[-1]
+                need(record["label"] == label and record["argv"] == [str(plain), str(output)],
+                     "same actual loader A/B argv")
+                row = {"variant": variant, "command_label": label, "argv": [str(plain), str(output)],
+                       "stdout": str(self.out / (label + ".stdout")), "stderr": str(self.out / (label + ".stderr")),
+                       "ld_library_path_present": "LD_LIBRARY_PATH" in env,
+                       "ld_library_path": env.get("LD_LIBRARY_PATH"), "returncode": record["returncode"],
+                       "command_error": command_error, "elapsed_seconds": record["elapsed_seconds"],
+                       "all_owned_children_reaped": record["all_owned_children_reaped"],
+                       "output": None, "output_parse_error": None, "state_bits": None}
+                trace = None
+                if os.path.lexists(output):
+                    before = self.c.regular(output, 16*MIB)
+                    need(before["identity"][3] == os.getuid() and before["identity"][6] == 1
+                         and before["identity"][2] & 0o077 == 0, "private single-link loader output")
+                    fd = os.open(output, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+                    try:
+                        need(self.c.ident(os.fstat(fd)) == before["identity"], "loader output FD identity")
+                        raw = self.c.read(output, 16*MIB)
+                        need(sha(raw) == before["sha256"] and self.c.regular(output, 16*MIB) == before,
+                             "loader output changed before rename")
+                        preserved = directory / (variant + ".json")
+                        need(not os.path.lexists(preserved), "loader output proof must be absent")
+                        os.rename(output.name, preserved.name, src_dir_fd=directory_fd, dst_dir_fd=directory_fd)
+                        directory_guard()
+                        after = self.c.regular(preserved, 16*MIB)
+                        need(after["identity"][:8] == before["identity"][:8]
+                             and after["sha256"] == before["sha256"]
+                             and self.c.ident(os.fstat(fd)) == after["identity"],
+                             "loader output rename changed more than ctime")
+                        self.holds.add(preserved, before["sha256"])
+                        row["output"] = {"path": str(preserved), "before_rename": before, "after_rename": after}
+                    finally:
+                        os.close(fd)
+                    try:
+                        trace = loads(raw)
+                        need(isinstance(trace, list) and len(trace) == 1 and isinstance(trace[0], dict)
+                             and set(trace[0]) == {"name", "printed", "rows"}
+                             and trace[0]["name"] == "HYUNDAI_PALISADE-torque"
+                             and isinstance(trace[0]["rows"], list) and len(trace[0]["rows"]) == 1
+                             and isinstance(trace[0]["rows"][0], dict)
+                             and isinstance(trace[0]["rows"][0].get("state"), dict), "loader A/B exact one-frame output")
+                        row["state_bits"] = bits(trace[0]["rows"][0]["state"])
+                        row["matches_existing_native_plain_bits"] = bits(trace) == bits(native_plain)
+                        row["reproduces_602_state_bits"] = row["state_bits"] == bits(self.expected_native)
+                        row["reproduces_frozen_state_bits"] = row["state_bits"] == bits(self.expected_original)
+                    except (ValueError, RuntimeError) as problem:
+                        trace = None
+                        row["output_parse_error"] = str(problem)
+                else:
+                    row["output_parse_error"] = "command produced no output file"
+                need(not os.path.lexists(output), "loader A/B fixed output not released")
+                traces[variant] = trace
+                rows.append(row)
+                self.save(label + "-receipt.json", {"schema": 1, "diagnostic_only": True, **row, **FLAGS})
+                self.holds.add(self.out / (label + "-receipt.json"))
+            directory_guard()
+        finally:
+            os.close(directory_fd)
+        valid = all(value is not None for value in traces.values()) and len(traces) == 2
+        result = {"schema": 1, "diagnostic_only": True, "source": self.source,
+            "same_vm": True, "same_argv": [str(plain), str(output)], "same_cwd": str(self.root),
+            "same_held_plain_elf": {"path": str(plain), **plain_seal},
+            "same_held_oneframe_input": {"path": str(self.request), **input_seal},
+            "common_environment_without_ld_library_path": without_ld,
+            "environment_difference_keys": ["LD_LIBRARY_PATH"], "runs": rows,
+            "commands_succeeded": all(row["returncode"] == 0 for row in rows), "valid_outputs": valid,
+            "output_bits_equal": bits(traces["with-ld"]) == bits(traces["without-ld"]) if valid else None,
+            "state_bits_equal": rows[0]["state_bits"] == rows[1]["state_bits"] if valid else None,
+            "baseline_plain_output_path_differs": True, "replaces_existing_reproduction_gate": False, **FLAGS}
+        self.save("native-loader-environment-comparison.json", result)
+        self.holds.add(self.out / "native-loader-environment-comparison.json")
+        return result
+
     def run(self):
         self.budget(force=True)
         for path, pin in SOURCE_PINS.items():
@@ -681,9 +809,14 @@ class Diagnostic:
         self.save("native-prefix-comparison.json", prefix_comparison)
         self.holds.add(self.out / "native-prefix-comparison.json")
         self.result["prefix_plain_comparison"] = prefix_comparison
+        self.save("diagnostic-before-loader-ab.json", self.result)
+        self.holds.add(self.out / "diagnostic-before-loader-ab.json")
+        loader = self.loader_environment_comparison(plain, native_env, traces["native-plain"])
+        self.result["loader_environment_comparison"] = loader
         self.save("diagnostic.json", self.result)
         need(original_same and native_same, "observation changed output bits; diagnostic is invalid")
         need(original_reproduced and native_reproduced, "one-frame replay did not reproduce historical/602 boundaries")
+        need(loader["commands_succeeded"] and loader["valid_outputs"], "loader A/B command or output failed")
 
     def finish(self, error):
         if self.out is None:
