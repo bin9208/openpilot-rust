@@ -706,12 +706,18 @@ verify_seeded_workspace() {
   hold "$log"
 }
 audit_rustc_source() {
-  local label=$1 crate=$2 relative=$3 file receipt=$proof/cache-copy/$1-$2.rustc
+  local label=$1 crate=$2 relative=$3 file emit receipt=$proof/cache-copy/$1-$2.rustc
+  # library는 metadata도 생성한다. 알려진4개 대상의 실제 Cargo emit만 허용한다.
+  case "$crate:$relative" in
+    openpilot_dev_tools:crates/dev-tools/src/lib.rs) emit=dep-info,metadata,link ;;
+    ui_application_lifecycle_recording:crates/dev-tools/tests/ui_application_lifecycle_recording.rs|ui_application_lifecycle_reference:crates/dev-tools/tests/ui_application_lifecycle_reference.rs|stage_startup_ui_raylib:crates/dev-tools/src/bin/stage_startup_ui_raylib.rs) emit=dep-info,link ;;
+    *) fail "unadmitted current rustc target: $crate/$relative" ;;
+  esac
   local prefix="execve(\"$sdk/bin/rustc\", [\"$sdk/bin/rustc\", \"--crate-name\", \"$crate\", \"--edition=2021\", \"$relative\","
   # xargs의 유한 argv batch로 읽고 전체 Event를 메모리에 합치지 않는다.
   # run()의 trace_nonlive가 이미 전체 trace.PID의 regular type/이름/종료를 확인했다.
   find -P "$proof/trace/$label" -mindepth 1 -maxdepth 1 -type f -name 'trace.*' -print0 | sort -z |
-    xargs -0 -r awk -v prefix="$prefix" -v cwd="chdir(\"$source/rust\")" \
+    xargs -0 -r awk -v prefix="$prefix" -v emit="\"--emit=$emit\"" -v cwd="chdir(\"$source/rust\")" \
       -v output="\"--out-dir\", \"$build/candidate-target/debug/deps\"" '
       function finish_file() {
         if(bad||attempts>1)exit 1
@@ -724,7 +730,7 @@ audit_rustc_source() {
         selected=0
         if(index($0,prefix)==1) {
           attempts++
-          if(!current||$0!~/\) = 0$/||!index($0,output)||!index($0,"\"--emit=dep-info,link\""))bad=1;else selected=1
+          if(!current||$0!~/\) = 0$/||!index($0,output)||!index($0,emit))bad=1;else selected=1
         }
       }
       /^exit_group\(0\)[ \t]*=[ \t]*\?$/ {if(selected)ended=1}

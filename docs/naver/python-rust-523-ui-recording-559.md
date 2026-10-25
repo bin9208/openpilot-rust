@@ -220,3 +220,24 @@ registry build cache/source, baseline source/target, SDK에는 쓰지 않는다.
 원래 RED/GREEN/recording9/source4/원문5 modes/Clippy·shared1200초·8GiB build/1GiB proof/512MiB file도
 바꾸지 않았다. 추가 작업의60초 fit과 실제 CMake/current 전체 성공은 **Actions UNRUN**이다.
 shared WF helper literal은 부모가 갱신하며, logging frozen5 source는 편집하지 않는다.
+
+
+## 3393의 current 재빌드 성공과 rustc emit 판정 정정 후보
+
+[40171142693/job121102032148](https://github.com/bin9208/openpilot-rust/actions/runs/40171142693/job/121102032148),
+source `3393c2ee9c8a923ca94f46951e8959bb382dac7b`는 current recording Cargo build를 마쳤다.
+Cargo JSONL EOF는 success=true이고 non-registry144개 모두 fresh=false다. 이전 fingerprint 및
+정확3개 OUT_DIR 정리 뒤 CMake 경로 오류는 나타나지 않았다. 그 다음 rustc cwd/exec 검사에서
+멈춰 전체 GREEN/recording9/원본5/Clippy는 미수용이다. artifact12590786738은28,692,076B/
+SHA256 `db108902133019543637f97e43fe5e3416f20a8bb56b38e6175f4a08d5a1ce9f`/18,107CRC,
+전개164,756,398B이며 전체 CRC와 해당 실제 JSON/trace를 확인했다.
+
+원문 `ui559/trace/recording-build/trace.90944:2`는 정확 current cwd와 SDK rustc로
+`openpilot_dev_tools` library를 컴파일하며 `--emit=dep-info,metadata,link`를 사용하고 exit_group0이다.
+기존 감사는 test/bin용 `--emit=dep-info,link`만 기대해서 정상 library 명령을 거부했다.
+fixture의 trace.96187은 원래 기대대로 test/dep-info,link다.
+
+후속은 알려진4개 crate/source 조합 중 library1개에만 metadata 포함 emit을 요구하고,
+기존 test2/bin1은 원래 emit을 유지한다. 미등록 조합은 거부한다. current cwd·정확 compiler/소스·
+출력 root·유일 exec·정상 종료와 기존 Cargo freshfalse/ELF 기준은 그대로다. 새로운 전체 기능
+성공은 Actions에서 확인하며 source/SDK 최종 봉인·관측 process 부재 성공과 구분한다.
