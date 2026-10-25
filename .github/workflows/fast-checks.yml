@@ -511,6 +511,11 @@ jobs:
       - run: python -m pip install pytest==9.0.2 PyYAML==6.0.2
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.DIAG_SOURCE }}
+      - name: Check private ARM UI workspace paths
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        working-directory: ${{ env.DIAG_SOURCE }}
+        run: |
+          PYTHONPATH="$PWD/rust/tools" python -m pytest -c /dev/null --rootdir=. --confcutdir=rust/tools/tests -q rust/tools/tests/test_ui_ci.py::test_arm_ui_commands_resolve_workspace_and_python_paths
       - name: Prepare native CI validation
         run: |
           OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" \

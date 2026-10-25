@@ -254,6 +254,8 @@ jobs:
           case "$changed" in
             .github/workflows/carrot-route-vault-publish.yaml) ;;
             .github/workflows/fast-checks.yml) ;;
+            rust/tools/tests/test_ui_ci.py) ;;
+            docs/naver/python-rust-523-ui-workspace-580.md) ;;
             .github/workflows/python-rust-523-bundle.yml) ;;
             .github/workflows/python-rust-523-capacity.yml) ;;
             .github/workflows/python-rust-523-model.yml) ;;
@@ -551,7 +553,8 @@ jobs:
         printf '%s  %s\n' 62be9fd4960295fe04784f7021b3d9ea608ac21dbd524791327e873aa22ecdac tools/ci/fixtures/strace-6.8-560-inherited-filter.patch | sha256sum --check -
         printf '%s  %s\n' e92f1b3e0f7b1f437661dbd2acf205ba5a7060a893aa74ded06e889c7479823e tools/ci/fixtures/cold560_exec_inheritance.rs | sha256sum --check -
         printf '%s  %s\n' 68f0f800ef5fbb456a06986a8695a5c3aaa2cbdf86160b47826e913edd792f85 .github/workflows/carrot-route-vault-publish.yaml | sha256sum --check -
-        printf '%s  %s\n' 50e86403dd521a54dc166d160ad6f5720fdb4d5905c1deb2fd960a1c6ff82958 .github/workflows/fast-checks.yml | sha256sum --check -
+        printf '%s  %s\n' 1f539d2d066d9e4280a8f2d217a9640cce3174b18392cd2376a929decf484e67 .github/workflows/fast-checks.yml | sha256sum --check -
+        printf '%s  %s\n' 071b0b65463597677ab634454db98670f4740bcf22363cfc1c19125c7729dc73 rust/tools/tests/test_ui_ci.py | sha256sum --check -
         printf '%s  %s\n' ada137e1a1bbe957903a930c49dc5496f5d685193b8d09970accd90f632c2a0c .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
         printf '%s  %s\n' e7718884de7e2b3f25a31d7c1fdf23f11f1a1ece82c4f86d1e84e6a9673d6388 .github/workflows/python-rust-523-capacity.yml | sha256sum --check -
         printf '%s  %s\n' 634559405e03be79cf66dfcf888bfc28a0b27a51e92b5335013dfe1b16836f59 .github/workflows/python-rust-523-model.yml | sha256sum --check -
