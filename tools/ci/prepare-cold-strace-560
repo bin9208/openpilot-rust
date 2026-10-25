@@ -1,0 +1,291 @@
+#!/usr/bin/env bash
+# #560 GHA-only private provider preparation. No cold launch, parser, apt or install.
+set -euo pipefail
+umask 077
+export LC_ALL=C PATH=/usr/bin:/bin
+fail() { printf 'prepare cold strace 560: %s\n' "$*" >&2; exit 1; }
+[[ $# == 1 && ( $1 == build || $1 == verify ) ]] || fail 'build|verify required'
+mode=$1
+[[ ${GITHUB_ACTIONS:-}:${GITHUB_REPOSITORY:-}:${RUNNER_OS:-}:${RUNNER_ARCH:-} == true:bin9208/openpilot-rust:Linux:X64 &&
+   $(uname -s):$(uname -m) == Linux:x86_64 ]] || fail 'trusted Actions Linux X64 required'
+case ${GITHUB_EVENT_NAME:-} in
+  push|workflow_dispatch) ;;
+  pull_request) [[ ${SOURCE_ALLOWED:-} == true ]] || fail 'explicit same-repository source admission required';;
+  *) fail 'unsupported event';;
+esac
+job=${CI_JOB_TEMP:?}; source=${DIAG_SOURCE:?}; sdk=${CI_PREPARED_RUST_ROOT:?}
+case ${RUNNER_ENVIRONMENT:-} in
+  self-hosted) [[ ${RUNNER_NAME:-} == bin-actions && $sdk == /home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu ]] || fail 'registered local SDK required';;
+  github-hosted) [[ $sdk == "$job/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu" ]] || fail 'actual private hosted SDK required';;
+  *) fail 'unapproved runner';;
+esac
+[[ ${GITHUB_JOB:-} != native || ${CARGO_BUILD_JOBS:-} == 1 ]] || fail 'Fast native must retain Cargo worker count one'
+unset GH_TOKEN GITHUB_TOKEN BASH_ENV ENV LD_PRELOAD LD_LIBRARY_PATH MAKEFLAGS MFLAGS CONFIG_SITE
+export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0
+owned_dir() {
+  local permissions
+  [[ -d $1 && ! -L $1 && $(readlink -e -- "$1") == "$1" && $(stat -c %u -- "$1") == "$(id -u)" ]] || return 1
+  permissions=$(stat -c %a -- "$1")
+  (( (8#$permissions & 0022) == 0 ))
+}
+[[ $job == /tmp/openpilot-ci.?????? && ${job%/*} == /tmp && $PWD == "$source" && ${GITHUB_WORKSPACE:-} == "$source" &&
+   ${CARGO_HOME:-} == "$job/cargo-home" && ${RUSTUP_HOME:-} == "$job/rustup-home" ]] || fail 'owned source/tool homes differ'
+for path in "$job" "$job/proof" "$source" "$sdk"; do owned_dir "$path" || fail 'canonical owned directory required'; done
+source_owner=${DIAG_SOURCE_OWNER:?}; workspace=${DIAG_ACTIONS_WORKSPACE:?}
+case $source_owner in
+  "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????|"$workspace/.cold560-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;;
+  *) fail 'unexpected source owner namespace';;
+esac
+owned_dir "$source_owner" || fail 'source owner root required'
+[[ $source == "$source_owner/source" && $(stat -c '%d:%i' "$source_owner") == "${DIAG_SOURCE_IDENTITY:?}" &&
+   -f $source_owner/.diag296-owner && ! -L $source_owner/.diag296-owner &&
+   $(cat "$source_owner/.diag296-owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]] || fail 'source owner binding differs'
+[[ -f $job/owner && ! -L $job/owner && $(cat "$job/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" &&
+   $GITHUB_SHA =~ ^[0-9a-f]{40}$ && $(git rev-parse HEAD) == "$GITHUB_SHA" ]] || fail 'job/source binding differs'
+[[ ${COLD560_PREPARE_HELPER_SHA256:-} =~ ^[0-9a-f]{64}$ ]] || fail 'reviewed helper SHA required'
+printf '%s  %s\n' "$COLD560_PREPARE_HELPER_SHA256" "$source/tools/ci/prepare-cold-strace-560" | sha256sum --check --strict --quiet -
+root=${COLD560_PREPARE_ROOT:-$job/cold-strace-560}
+[[ $root == "$job/cold-strace-560" || $root == "$job/build/cold-strace-560" ]] || fail 'provider must remain in this owned job'
+owned_dir "${root%/*}" || fail 'owned provider parent required'
+out=$job/proof/cold-strace-560
+cap=$((512*1024*1024)); envelope=$((6*1024*1024*1024)); phase=preflight
+stamp() { stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' -- "$1"; }
+tree() {
+  local path=$1 prefix=$2
+  find -P "$path" -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%y\t%p\t%l\0' | sort -z > "$prefix.roster"
+  find -P "$path" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$prefix.sha256"
+  find -P "$path" -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%y\t%p\t%l\0' | sort -z > "$prefix.stable"
+  cmp "$prefix.roster" "$prefix.stable"
+}
+source_seal() {
+  git ls-files -z > "$1.index"
+  git ls-files --stage -z > "$1.stage"
+  tar --null --no-recursion --verbatim-files-from -T "$1.index" -cf - \
+    --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$1.sha256"
+  git diff --exit-code && git diff --cached --exit-code
+}
+file_seal() {
+  local path=$1 prefix=$2 canonical before
+  canonical=$(readlink -e -- "$path")
+  [[ -f $canonical && ! -L $canonical && $(stat -c %s -- "$canonical") -le 536870912 ]] || return 1
+  before=$(stamp "$canonical")
+  printf '%s\t%s\t%s\t%s\n' "$path" "$canonical" "$before" "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' -- "$path")" > "$prefix.metadata"
+  sha256sum -- "$canonical" > "$prefix.sha256"
+  [[ $(stamp "$canonical") == "$before" ]]
+}
+declare -A tools=()
+bind_tool() {
+  local path=$1 canonical line interpreter resolved number
+  canonical=$(readlink -e -- "$path")
+  [[ ! -v tools[$canonical] ]] || return 0
+  number=${#tools[@]}; tools[$canonical]=$number
+  file_seal "$path" "$out/tools/$number.before"
+  printf '%s\t%s\n' "$number" "$path" >> "$out/tools.tsv"
+  if [[ $(head -c 4 -- "$canonical" | od -An -tx1 | tr -d ' \n') != 7f454c46 ]]; then
+    IFS= read -r line < "$canonical"
+    case $line in
+      '#!/bin/sh'|'#! /bin/sh'|'#!/usr/bin/sh') bind_tool /bin/sh;;
+      '#!/bin/bash'|'#!/usr/bin/bash') bind_tool /bin/bash;;
+      '#!/usr/bin/perl') bind_tool /usr/bin/perl;;
+      *) fail 'unrecognized preparation interpreter';;
+    esac
+    return
+  fi
+  readelf -h -l "$canonical" > "$out/tools/$number.elf"
+  grep -Eq 'Class: +ELF64$' "$out/tools/$number.elf"
+  grep -Eq 'Machine: +Advanced Micro Devices X86-64$' "$out/tools/$number.elf"
+  interpreter=$(sed -n 's/.*Requesting program interpreter: \([^]]*\)\].*/\1/p' "$out/tools/$number.elf")
+  [[ -z $interpreter || $interpreter == /lib64/ld-linux-x86-64.so.2 ]] || fail 'unapproved ELF interpreter'
+  /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C /usr/bin/timeout 10s /usr/bin/ldd "$canonical" > "$out/tools/$number.ldd" 2> "$out/tools/$number.stderr"
+  [[ ! -s $out/tools/$number.stderr ]]
+  while IFS= read -r line; do
+    [[ $line =~ ^[[:space:]]*linux-vdso.so.1[[:space:]]+\(0x[0-9a-f]+\)$ ]] && continue
+    if [[ $line =~ ^[[:space:]]*[^[:space:]]+[[:space:]]+=\>[[:space:]]+(/[^[:space:]]+)[[:space:]]+\(0x[0-9a-f]+\)$ ]]; then resolved=${BASH_REMATCH[1]}
+    elif [[ $line =~ ^[[:space:]]*(/[^[:space:]]+)[[:space:]]+\(0x[0-9a-f]+\)$ ]]; then resolved=${BASH_REMATCH[1]}
+    else fail 'unrecognized preparation DSO binding'; fi
+    # DSO files are sealed, not executed as programs.
+    canonical=$(readlink -e -- "$resolved")
+    [[ -v tools[$canonical] ]] && continue
+    tools[$canonical]=${#tools[@]}
+    file_seal "$resolved" "$out/tools/${tools[$canonical]}.before"
+    printf '%s\t%s\n' "${tools[$canonical]}" "$resolved" >> "$out/tools.tsv"
+  done < "$out/tools/$number.ldd"
+}
+admit() {
+  local allocated apparent available nonprovider=${COLD560_NONPROVIDER_GROWTH_BYTES:?explicit remaining Fast forecast required}
+  [[ $nonprovider =~ ^[0-9]+$ ]] && ((nonprovider<=envelope-cap)) || fail 'provider plus remaining work exceeds the existing 6 GiB envelope'
+  [[ $(stat -c %d "$root") == "$(stat -c %d "$out")" && $(stat -c %d "$root") == "$(stat -c %d "$job")" ]] || fail 'provider/proof must share the admitted job filesystem'
+  allocated=$(du -sx --block-size=1 -- "$root" "$out" | awk '{n+=$1} END {printf "%.0f\n",n}')
+  apparent=$(du -sx --apparent-size --block-size=1 -- "$root" "$out" | awk '{n+=$1} END {printf "%.0f\n",n}')
+  available=$(df --output=avail -B1 -- "$root" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+  [[ $allocated =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ && $available =~ ^[0-9]+$ ]]
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$phase" "$allocated" "$apparent" "$available" "$cap" "$nonprovider" >> "$out/admission.tsv"
+  ((allocated<=cap && apparent<=cap && available>=cap-allocated+nonprovider)) || fail 'provider/current Fast growth admission failed'
+}
+verify() {
+  local suffix=$1 name number path
+  [[ $(cat "$root/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB:$GITHUB_SHA" &&
+     $(stat -c '%d:%i' "$root") == "$(cat "$out/root.identity")" ]] || fail 'provider owner/inode differs'
+  source_seal "$out/tracked.$suffix"
+  for name in index stage sha256; do cmp "$out/tracked.before.$name" "$out/tracked.$suffix.$name"; done
+  for name in sdk-original inputs source build bin; do
+    if [[ $name == sdk-original ]]; then path=$sdk; else path=$root/$name; fi
+    tree "$path" "$out/$name.$suffix"
+    cmp "$out/$name.before.sha256" "$out/$name.$suffix.sha256"
+    cmp "$out/$name.before.roster" "$out/$name.$suffix.roster"
+  done
+  while IFS=$'\t' read -r name path; do
+    tree "$path" "$out/$name.$suffix"
+    cmp "$out/$name.before.sha256" "$out/$name.$suffix.sha256"
+    cmp "$out/$name.before.roster" "$out/$name.$suffix.roster"
+  done < "$out/compiler-inputs.tsv"
+  while IFS=$'\t' read -r number path; do
+    file_seal "$path" "$out/tools/$number.$suffix"
+    cmp "$out/tools/$number.before.metadata" "$out/tools/$number.$suffix.metadata"
+    cmp "$out/tools/$number.before.sha256" "$out/tools/$number.$suffix.sha256"
+  done < "$out/tools.tsv"
+  file_seal /etc/ld.so.cache "$out/ld-cache.$suffix"
+  cmp "$out/ld-cache.before.metadata" "$out/ld-cache.$suffix.metadata"
+  cmp "$out/ld-cache.before.sha256" "$out/ld-cache.$suffix.sha256"
+}
+if [[ $mode == verify ]]; then
+  owned_dir "$root" && owned_dir "$out" || fail 'owned built provider required'
+  [[ -f $out/build-complete && ! -L $out/build-complete && $(cat "$out/build-complete") == "$GITHUB_SHA" ]] || fail 'no successful prepared provider'
+  suffix=${COLD560_VERIFY_PHASE:-after-fast}
+  case $suffix in after-cold) marker=$out/verify-after-cold-complete;; after-fast) marker=$out/verify-complete;; *) fail 'unknown verification phase';; esac
+  [[ ! -e $marker && ! -L $marker ]] || fail 'verification must run once per phase'
+  [[ ${COLD560_STRACE:-} == "$root/bin/strace" && ${COLD560_PROVIDER_SHA256:-} =~ ^[0-9a-f]{64}$ ]] || fail 'caller-held selected provider binding required'
+  printf '%s  %s\n' "$COLD560_PROVIDER_SHA256" "$COLD560_STRACE" | sha256sum --check --strict --quiet -
+  verify "$suffix"
+  phase=$suffix; admit
+  (set -o noclobber;printf '%s\n' "$GITHUB_SHA" > "$marker")
+  exit
+fi
+[[ ! -e $root && ! -L $root && ! -e $out && ! -L $out ]] || fail 'fresh provider/proof required'
+mkdir "$root" "$out" "$out/tools" "$out/logs"
+printf '%s\n' "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB:$GITHUB_SHA" > "$root/owner"
+stat -c '%d:%i' "$root" > "$out/root.identity"
+trap 'rc=$?; printf "phase=%s\nexit_code=%s\n" "$phase" "$rc" > "$out/build-status.txt"' EXIT
+[[ ${COLD560_JOB_DEADLINE_EPOCH:-} =~ ^[0-9]+$ ]] || fail 'original job-start plus 420-second deadline required'
+remaining=$((COLD560_JOB_DEADLINE_EPOCH-EPOCHSECONDS))
+((remaining>0 && remaining<=420)) || fail 'original Fast seven-minute budget expired or extended'
+deadline=$((EPOCHSECONDS+120)); ((deadline<=COLD560_JOB_DEADLINE_EPOCH)) || deadline=$COLD560_JOB_DEADLINE_EPOCH
+admit
+[[ ! -e $job/openpilot-disk-guard && ! -L $job/openpilot-disk-guard ]] || fail 'provider preparation must precede the first cold bootstrap'
+mkdir "$root/inputs" "$root/source" "$root/build" "$root/build/tmp" "$root/bin"
+source_seal "$out/tracked.before"
+tree "$sdk" "$out/sdk-original.before"
+[[ ${CI_PREPARED_RUST_MANIFEST:-} == "$job/proof/prepared-rust-files.before.sha256" ]]
+cmp "$CI_PREPARED_RUST_MANIFEST" "$out/sdk-original.before.sha256"
+printf '%s  %s\n' 103b60e1b1339968c1d74202ea1d45686037e82c4ea3e0569de24b18a1e6836a "$sdk/bin/rustc" \
+  77f14b761b02b47e6747473f556b3bc9f98f7e4525b7c3b8d74898ff816e4636 "$sdk/bin/cargo" \
+  d1c6d8c0e2fae4fbb686d421415d2f471e409ade6babb3e491d9ac5d9c70c602 "$sdk/bin/rustfmt" \
+  2ff45d07196eec4f57a631103a877631d3579e86db2770bcfaa3b9d92a0b9d15 "$sdk/bin/clippy-driver" > "$out/sdk-programs.sha256"
+sha256sum --check --strict --quiet "$out/sdk-programs.sha256"
+for path in /usr/include /usr/lib/gcc/x86_64-linux-gnu /usr/share/perl /usr/share/perl5 \
+  /usr/lib/x86_64-linux-gnu/perl /usr/lib/x86_64-linux-gnu/perl5; do
+  [[ ! -d $path ]] || printf 'compiler-input-%s\t%s\n' "$(printf '%s' "$path" | tr / _)" "$path" >> "$out/compiler-inputs.tsv"
+done
+while IFS=$'\t' read -r name path; do tree "$path" "$out/$name.before"; done < "$out/compiler-inputs.tsv"
+printf '%s\n%s\n%s\n%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$out/actual-runner.txt"
+uname -rvm > "$out/actual-kernel.txt"
+cat /proc/version > "$out/actual-proc-version.txt"
+cat /proc/meminfo > "$out/actual-memory.txt"
+dpkg-query -W '-f=binary=${binary:Package}\nversion=${Version}\nsource=${source:Package}\nsource_version=${source:Version}\n' strace > "$out/system-strace.package"
+for tool in bash sh env git find sort xargs sha256sum stat readlink readelf sed awk grep head od tr cat cmp df du cut timeout curl gcc make as ar ranlib ld nm pkg-config dpkg-query dpkg-deb dpkg-buildflags perl tar xz patch cp chmod mkdir id dirname basename ldd wc jq setsid sleep; do
+  bind_tool "$(type -P "$tool")"
+done
+bind_tool "$sdk/bin/rustc"
+bind_tool /usr/bin/strace
+file_seal /etc/ld.so.cache "$out/ld-cache.before"
+for query in cc1 collect2 as ld; do
+  path=$(/usr/bin/gcc "-print-prog-name=$query")
+  [[ $path == /* ]] || path=$(type -P "$path")
+  bind_tool "$path"
+done
+run() {
+  local label=$1 seconds
+  shift
+  phase=$label
+  admit
+  seconds=$((deadline-EPOCHSECONDS-5))
+  ((seconds>0)) || fail 'provider preparation exceeded original shared time budget'
+  /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C HOME="$root" TMPDIR="$root/build/tmp" \
+    /usr/bin/timeout --signal=TERM --kill-after=5s "${seconds}s" "$@" > "$out/logs/$label.stdout" 2> "$out/logs/$label.stderr"
+  ((EPOCHSECONDS<=deadline)) || fail 'provider deadline expired'
+}
+while IFS=$'\t' read -r name bytes digest; do
+  run "download-$name" /usr/bin/curl --fail --location --proto '=https' --proto-redir '=https' \
+    --connect-timeout 10 --max-time 30 --max-filesize "$bytes" --output "$root/inputs/$name" \
+    "https://archive.ubuntu.com/ubuntu/pool/main/s/strace/$name"
+  [[ $(stat -c %s "$root/inputs/$name") == "$bytes" ]]
+  printf '%s  %s\n' "$digest" "$root/inputs/$name" | sha256sum --check --strict --quiet -
+done <<'PINS'
+strace_6.8.orig.tar.xz	2457948	ba6950a96824cdf93a584fa04f0a733896d2a6bc5f0ad9ffe505d9b41e970149
+strace_6.8-0ubuntu2.debian.tar.xz	21776	6efc6fde478f3beb37dbd246f1e9fe4f13e74eef794b5b66d7589f0933bc351b
+strace_6.8-0ubuntu2.dsc	2285	330679ec872f5d097809a28fe0bcd4fe3a0ba2a57e639feec53ffc3745aa831b
+strace_6.8-0ubuntu2_amd64.deb	584172	d588810ae26b06fee6678dc81e5b54f6efcde8e718e4589adb4d11d254b9820b
+PINS
+run original-elf /bin/bash -c 'set -euo pipefail; dpkg-deb --fsys-tarfile "$1" | tar -xOf - ./usr/bin/strace > "$2"' \
+  original-strace "$root/inputs/strace_6.8-0ubuntu2_amd64.deb" "$root/inputs/ubuntu-strace.elf"
+printf '%s  %s\n' 28f957c227012de0b18d1bd7fff2d396cb693ea60ed8013be68de071e84b5001 "$root/inputs/ubuntu-strace.elf" | sha256sum --check --strict --quiet -
+run unpack-original tar -xJf "$root/inputs/strace_6.8.orig.tar.xz" -C "$root/source" --no-same-owner --no-same-permissions
+native=$root/source/strace-6.8
+run unpack-debian tar -xJf "$root/inputs/strace_6.8-0ubuntu2.debian.tar.xz" -C "$native" --no-same-owner --no-same-permissions
+printf '02-disable_delay_test\n0007-XFAIL-netlink_crypto.patch\n0008-XFAIL-nlattr_crypto_user_alg.patch\nfix-time_t-conversion.patch\n' > "$root/inputs/quilt.expected"
+cmp "$root/inputs/quilt.expected" "$native/debian/patches/series"
+while IFS= read -r name; do run "quilt-$name" patch --directory="$native" --batch --fuzz=0 --no-backup-if-mismatch -p1 --input="$native/debian/patches/$name"; done < "$root/inputs/quilt.expected"
+check_source() {
+  printf '%s  %s\n' "$1" "$native/src/strace.c" "$2" "$native/src/syscall.c" \
+    8073129838f921c5c0286c3c6cc0bebf7832b04f476340114ea25e5c8216c4a1 "$native/src/filter_seccomp.c" | sha256sum --check --strict --quiet -
+}
+check_source 21fe0b653612b9354ff783a9ca1643d39682d85fd38bf32a14b09cdea41febd1 0d8c5449b011a8cd16f0b5d0864f57fa633867876682270fee294390bb0e62b1
+for item in observer inherited-filter; do
+  patchfile=$source/tools/ci/fixtures/strace-6.8-560-$item.patch
+  case $item in observer) digest=b32a9508ded464e5c08b22444064ba2de300b0373e0bce643974f4e21775d51a;; inherited-filter) digest=9091d941bd67823844a62f9aae4525eef019cb8f20486105caa9b4849193c0ca;; esac
+  printf '%s  %s\n' "$digest" "$patchfile" | sha256sum --check --strict --quiet -
+  cp "$patchfile" "$root/inputs/$item.patch"
+  run "$item-patch" patch --directory="$native" --batch --fuzz=0 --no-backup-if-mismatch -p1 --input="$root/inputs/$item.patch"
+  if [[ $item == observer ]]; then check_source 07397b01bc0bcea2c58aa4a8b5a1cfe71778f929934529155a7c35ae55cbd638 41b9dffd742377a76215b75c6a9b1a76d63483493dca2afb50bac87e8877d777; fi
+done
+check_source 8776b1d2afc63900a3c6da12147f0154a04ac11d2f2ed915285444ac26451bbf 41b9dffd742377a76215b75c6a9b1a76d63483493dca2afb50bac87e8877d777
+cp "$native/COPYING" "$native/LGPL-2.1-or-later" "$native/debian/copyright" "$root/inputs/"
+cp "$native/bundled/linux/COPYING" "$root/inputs/linux.COPYING"
+tree "$root/source" "$out/source.before-build"
+for flag in CFLAGS CPPFLAGS LDFLAGS; do run "flags-$flag" env DEB_BUILD_MAINT_OPTIONS=hardening=+all dpkg-buildflags --get "$flag"; done
+cflags=$(cat "$out/logs/flags-CFLAGS.stdout"); cppflags=$(cat "$out/logs/flags-CPPFLAGS.stdout"); ldflags=$(cat "$out/logs/flags-LDFLAGS.stdout")
+[[ -n $cflags && -n $cppflags && -n $ldflags && $cflags != *$'\n'* && $cppflags != *$'\n'* && $ldflags != *$'\n'* ]]
+cd "$root/build"
+run configure env CC=/usr/bin/gcc CFLAGS="$cflags -Wall -g -O2" CPPFLAGS="$cppflags" LDFLAGS="$ldflags" \
+  CFLAGS_FOR_BUILD="$cflags -Wall -g -O2" CPPFLAGS_FOR_BUILD="$cppflags" LDFLAGS_FOR_BUILD="$ldflags" \
+  /bin/bash "$native/configure" --enable-mpers=check --disable-dependency-tracking --prefix="$root/install" --build=x86_64-linux-gnu
+grep -Fx 'S["AMDEP_TRUE"]="#"' config.status > "$out/dependency-tracking.txt"
+cp config.status "$out/config.status.before-make"
+run make env CC=/usr/bin/gcc CFLAGS="$cflags -Wall -g -O2" CPPFLAGS="$cppflags" LDFLAGS="$ldflags" \
+  CFLAGS_FOR_BUILD="$cflags -Wall -g -O2" CPPFLAGS_FOR_BUILD="$cppflags" LDFLAGS_FOR_BUILD="$ldflags" /usr/bin/make -j1
+cmp config.status "$out/config.status.before-make"
+cp src/strace "$root/bin/strace"
+chmod 700 "$root/bin/strace"
+cd "$source"
+# The unchanged std-only STOP approver is not a Cargo/bootstrap warmup. Its
+# compilation, ELF/DSO seals and bytes remain inside the same 120s/512MiB cap.
+fixture_source=$source/tools/ci/fixtures/cold560_exec_inheritance.rs
+printf '%s  %s\n' e012d523f41a1a51cb49fd05cd334e04085ab562873f17303fffff6b10ad15fd "$fixture_source" | sha256sum --check --strict --quiet -
+cp "$fixture_source" "$root/inputs/cold560_exec_inheritance.rs"
+run compile-approver "$sdk/bin/rustc" --edition=2021 --crate-name cold560_exec_inheritance -C opt-level=2 \
+  "$fixture_source" -o "$root/bin/approve-launch"
+bind_tool "$root/bin/strace"
+bind_tool "$root/bin/approve-launch"
+for name in inputs source build bin; do tree "$root/$name" "$out/$name.before"; done
+cmp "$out/source.before-build.sha256" "$out/source.before.sha256"
+cmp "$out/source.before-build.roster" "$out/source.before.roster"
+phase=prepared; admit
+digest=$(sha256sum "$root/bin/strace"); digest=${digest%% *}
+# Preparation itself must preserve source, original SDK and every bound provider.
+# The caller invokes verify once more after the real cold run, even on failure.
+verify after-build
+((EPOCHSECONDS<=deadline)) || fail 'preparation including seals exceeded the bounded deadline'
+printf 'provider=%s\nsha256=%s\nsource=%s\npatched_ubuntu_source=true\nstock_binary_identity=false\nactual_cold_run=false\ncontrols18_run=false\n' \
+  "$root/bin/strace" "$digest" "$GITHUB_SHA" > "$out/provider.txt"
+printf 'COLD560_PREPARE_ROOT=%q\nCOLD560_PROVIDER_ROOT=%q\nCOLD560_STRACE=%q\nCOLD560_PROVIDER_SHA256=%q\n' "$root" "$root" "$root/bin/strace" "$digest" > "$root/provider.env"
+printf '%s\n' "$GITHUB_SHA" > "$out/build-complete"

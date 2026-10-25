@@ -195,7 +195,7 @@ jobs:
         CI296_HOST_CONTROL: '1'
       run: 'set -euo pipefail
 
-        printf ''%s  %s\n'' 94428002215575a248ca35202dae59db7f7d7e366b1c4ad840c30a4f64d954cf .github/workflows/rust.yml
+        printf ''%s  %s\n'' cdadd4a902157aa5381fad7eb99e0da910d9b0d207f98934dea35645e631ec07 .github/workflows/rust.yml
         | sha256sum --check --strict -
 
         '

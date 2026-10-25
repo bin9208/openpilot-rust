@@ -414,3 +414,208 @@ exit/held/untraced/paired=0, CLI20/providers·parents unchanged, legacy2 및 abs
 main logger는 APT 단계의 Azure HTTP 다운로드 지연으로20분 timeout되어 actual step19에
 미도달했다는 부모 조사도 수령했다. 따라서 main maintained caller+collision이 남아 있으며
 원본2 full retirement credit은 계속0이다.
+
+## #549 종료 전 읽기전용 증거 대조 — 2026-10-26
+
+[issue549 현재 본문](https://github.com/bin9208/openpilot-rust/issues/549)과6개 댓글을 읽었다.
+본문의 원본2 보존/21core·14actual UNRUN/설계 초기 상태는 현재 증거보다 오래됐다. 이 절은
+부모의 종료 판정을 위한 감사이며 issue/inventory/families/실행원장/master record를 갱신하지
+않는다. 원본2의 실제 삭제와 기능 성공만으로 자동 credit을 부여하지 않는다.
+
+**현재 결론:** predelete 동일 ELF의 기존 감사 연결은 찾았으며 누락으로 분류할 이유가 없다.
+DD postdelete retained는 부모 독립 감사 완료이고 f1 collision 및 main exact caller는 실제
+전체 SUCCESS다. f1 collision/main의 artifact 실물·CRC·필수 proof에 대한 부모 최종 감사와
+관련 원장 갱신은 아직 이 작업자의 수령 증거에 없으므로, 이 절만으로 #549 종료 또는
+`pending→replaced-local`을 실행하지 않는다. 아래 남은 실물 감사가 성공하면 두 파일의 좁은
+family 수용을 기록할 수 있으며, 이를 전체 필수 PR/모델/전체 #523 수용으로 합치지 않는다.
+
+### 조건별 연결
+
+| issue 본문의 조건 | 확인한 증거 | 판정 및 제한 |
+| --- | --- | --- |
+| authenticated archive108의 strict native 준비 | 5bee [40199544123/job121187580810](https://github.com/bin9208/openpilot-rust/actions/runs/40199544123/job/121187580810)의 기존 독립 감사:108/700585B=TAR70+innerZIP37+current reference1, source19와 전후 입력 봉인, R11 outer05ff6420…/gzip2dfea2b7… 유지 | 감사 완료 기록 재사용. 원문/옛 ELF/Python 실행·새 expected 생성 없음 |
+| 실제 기본 Linux/X64 fixture·source/SDK/provider/lineage/reap·600s/2s 유지 | 같은5bee 감사의 whole source/index·SDK165files/188roster/4program·held provider·관측 PID/pidfd/reap·cleanup 및 #554 원래 timer 검증; DD postdelete 부모 감사가 동일 경계를 확인 | 정의된 held/관측 범위 수용. 전체 PID/cwd/FD/DSO closure·모든 adopted reap을 증명하지 않으며 false flag 유지 |
+| 21core·14actual·fresh250/697 대 원문249/694·7console/rate/thread/signal/error | 5bee의67unit(core27=기존21+guard6/import9/trace24/summary7),14+untraced1/retained-once/current15,250/697 대249/694. DD [40212410474/job121226283640](https://github.com/bin9208/openpilot-rust/actions/runs/40212410474/job/121226283640) 전체 성공·부모 artifact 감사 완료 | 현재 기능 수용 기록 있음. R4_acceptance/lifecycle_reuse의 기존 의미와 false/0 값 보존 |
+| old27의 미수용10을 닫거나 정확하게 미완료 유지 | 아래10행을 historical ledger pending으로 유지한다. source `40eb0429013cd853c1e74dc9530cdb5f484aa32c`의 historical17은 별도 | 이 조건은 정확 pending 유지로 충족할 수 있다. old27 재실행을 새 요구로 추가하지 않는다 |
+| 같은 current ELF의 predelete 및 명시 absence/reappearance negative 뒤 caller 전환/원본2 제거·봉인/upload/cleanup | 아래 predelete 동일 ELF 연결, DD 실제 absent CLI20/raw21/정책14 두 묶음·legacy2, f1 actual main19와 collision 전체 SUCCESS, f1 HEAD/index/작업트리의 literal2 부재 | 기능·단계 증거 있음. f1 artifact 실물 독립 감사가 남아 있어 최종 등록은 보류 |
+| exact source Actions·필수 PR/통합 상태와 inventory를 실제 범위로 갱신 | DD와 f1 각 source/run을 구별하고 아래 artifact/source pin 연결. 현재 두 inventory/family 행은 pending임을 읽기전용 확인 | 부모가 최종 감사 후 두 경로/호출 edge/issue 기록을 갱신해야 한다. 전체 필수 PR 모델 실패와 통합·기기 수용은 별도 미완료 |
+
+### predelete의 같은 current ELF 조건
+
+기존 단독 감사 기록
+`.analysis/scratch/2026-10-25-523-completion/imported/recovery/saved/logging-5bee-audit.md`의
+`source/SDK/provider/budget/final/cleanup` 절은 checker SHA `3c9252ec…`, probe SHA
+`180a4fe5…`가 `logging/exec-policy/binding.json`과
+`logging-source-absence/inputs.before.json`의4개 provider에 **같은 identity/SHA**로 연결됐다고
+명시한다. 같은 job의 retained·legacy에서 실제 선택/hold한 checker/probe/fixture와 fresh
+builder를 source-guard가 재검증한 경로이며, private copy의 CLI20/raw21은 그 checker를 사용했다.
+원본2 present fixed-SHA, retained14/once/current15와 negative20/producer0, 전후 provider 불변,
+source/index/SDK/copy/closure/upload/소유 cleanup 성공까지 기존 감사에 함께 기록돼 있다.
+
+따라서 단순히 predelete 테스트가 있었던 다른 ELF를 끌어온 것은 아니다. 같은 current ELF의
+present 기능과 private-copy absent/reappearance 음성을 묶는 **5bee 안의 증거**가 존재한다.
+이는 DD/f1에서 새로 빌드한 checker가 5bee와 byte 동일하다는 주장이 아니며, private-copy의
+metadata 양성을 full absent 기능으로 바꾸지도 않는다. 실제 postdelete full 기능은 DD가
+별도로 제공한다. 인계된5bee 기록에는 전체 checker SHA literal과 상세 JSON/ZIP 본체가 없으므로
+새 SHA를 추정해 적지 않았고, 기존 독립 감사 결과를 재사용한 사실을 명시한다.
+
+5bee artifact12602016721=133573683B/SHA
+`65452f43e3093f5e09dad47bffaba586a8b273a26f869c01cff0fad5bda194f8`,9594safe unique/전체CRC,
+expanded1969479788B의 기존 감사 manifest도 확인했다. 재다운로드/재CRC0이다.
+
+### DD postdelete와 f1 actual 성공을 잇는 범위
+
+DD=`dd6157c3984a73a59fb808b551cdab73f04dba35`, f1=`f1c730b029df77ed2731f86ddf2d224e74bb9f50`다.
+DD→f1 Git object를 다음 범위로 직접 비교했고 변경0이었다:
+`tools/ci/logging_retained_549.sh`, `logging_retained_exec_policy_549.jq`,
+`native_logging_check.rs`와 하위 모듈, `rust/crates/logging`, root lifecycle fixture와 하위 모듈.
+이는 성공한 DD retained를 불변 기능 증거로 재사용하는 source 비교이며 ELF/전체 dependency
+closure가 같다는 증명으로 확대하지 않는다. retained 재실행0이다.
+
+DD artifact12607036666은 부모가 독립 감사한136138137B/SHA
+`fcdd3b591e544cf57ccfd0038ec7ef6c7a1f7da6126ae92175f82d5c6aafc681`,9696safe unique/non-symlink/전체CRC,
+expanded1973631690B다. logging candidate exit/held/untraced/paired=0,
+source_policy=absent, 실제 CLI20/providers·parents unchanged, legacy INT/TERM2,
+source/index·whole SDK file/roster/program·업로드/cleanup 성공을 부모에게 수령했다.
+이 작업자가 해당 ZIP을 다시 읽거나 감사했다고 표현하지 않는다.
+
+f1 [collision40217812550/job121242667148](https://github.com/bin9208/openpilot-rust/actions/runs/40217812550/job/121242667148)은
+API metadata와 성공 로그로 전체 SUCCESS를 직접 확인했다. 실제 step10 build/current8,
+step11 whole SDK, step12 source/index, step13 narrow closure, step14 upload,
+step15 source cleanup, step16 owned job cleanup이 모두 성공했다. closure의 actual8/exec8/exit1×8/
+spawn0/foreign 동일성과 parent baseline·failed 부재·current absent·worker exact-once coverage를
+요구하는 기존 AND가 통과했다. helper SHA는
+`5b01ff90076714db598915bcef27c80e114d2c44f355c321b791dd1b83b2467d`, batch worker는
+`52d4ca212c28cad44579360b8531c915f6fe8e3060c0b480f0f7ec1cdb659a79`다.
+업로드 API와 로그가 가리키는 artifact12608900233은39232753B/SHA
+`5bd11d1bb0ba5424208c8276bb1338dc89d67c24257956bfb02bdf6cb3ab7e91`다.
+이는 서버 metadata/업로드 digest 확인이며 ZIP CRC·member/raw 전수 감사 완료라는 뜻은 아니다.
+부모의 예정 다운로드와 중복되는 artifact ZIP 다운로드0이다(REST metadata GET만 수행).
+
+f1 [main exact logger40217812664/job121242667579](https://github.com/bin9208/openpilot-rust/actions/runs/40217812664/job/121242667579)도
+감사 도중 전체 SUCCESS로 완료됐다(API updated_at2026-10-25T18:00:31Z).
+처음 snapshot은 Miri 완료/ASAN 진행이었으나 마지막 snapshot은 ASAN·artifact upload·source/index
+final·ownership proof·source/target cleanup·job cleanup까지 전부 성공이다. 오래된 source126의
+APT timeout을 이 성공으로 다시 이름 붙이지 않는다.
+
+f1 Git object의 main `.github/workflows/rust.yml`은499697B/SHA
+`4c538b38a252290a2e18ad4b523ee8a45d36b84fd293add47a8be3154685bf36`이며 exact caller workflow가
+이 전체 SHA를 실제 검증했다. pin 검사 step 하나만 제외하면 parsed `logger-runtime` job과
+global env가 main과 완전히 동일함을 읽기전용 대조했다. main 배열 index19의 maintained Rust
+caller가 exact workflow 배열 index20/GitHub step22로 실제 성공했다. exact argv의
+`--source-policy absent`를 유지하고 console/transport/rate-limit 비교를 통과했으며,
+후속 full native logs/media/fallback/signal·diagnostic·flush/close·Miri·ASAN도 성공이다.
+별도 retained 성공을 main caller로 대체한 판정이 아니다.
+
+main artifact는 서버 metadata상 다음2개다. 두 ZIP 모두 이 작업자는 다운로드/CRC하지 않았다.
+
+| artifact | bytes | API digest SHA256 |
+| --- | ---: | --- |
+| 12608477043 `rust-route-logger-evidence` | 25035246 | `564bdcbcdfd667f4e07e9ac2686cae33cc4306b696db47b81d91333de0f47061` |
+| 12608786367 `private-rust-logger-runtime-0-40217812664-1` | 291002 | `9324fda49968cd322e004e994f045549a7346af59ffc019dc4f75ed7bb26d62b` |
+
+### old27의 정확한 pending10 유지
+
+기존 exec 문서의 historical17은 old C++ first3+runtime12+occupied-output2다.
+현재 selector의 RESUME 분기와 원래 조합을 대조하면 남은10은 아래와 같다. 새 cohort 성공을
+이 표의 역사 pending 해제로 대입하지 않는다. 특히 현재 retained의 native-first3은
+historical C++ first3과 entry가 다르며, old17의 current provider/context bridge도 별도 HOLD다.
+
+| pending 항목 | 기존 문맥 | 현재 별도 증거와 구분 |
+| --- | --- | --- |
+| collision/no-reference/live-directory | prebuilt=false | f1 actual collision8에 있으나 old27 current-epoch로 승격하지 않음 |
+| collision/no-reference/symlink | prebuilt=false | 동일 |
+| collision/no-reference/dangling-symlink | prebuilt=false | 동일 |
+| collision/prebuilt/file | prebuilt=true | 동일 |
+| collision/prebuilt/directory | prebuilt=true | 동일 |
+| collision/prebuilt/live-directory | prebuilt=true | 동일 |
+| collision/prebuilt/symlink | prebuilt=true | 동일 |
+| collision/prebuilt/dangling-symlink | prebuilt=true | 동일 |
+| legacy runtime/directory/SIGINT | old run_cli의 live C++/native 준비 뒤 runtime barrier | DD legacy2의 INT 실제 성공은 별도 cohort 수용이며 old27로 재계수하지 않음 |
+| legacy runtime/directory/SIGTERM | 같은 원래 entry, 별도 TERM case | DD legacy2의 TERM 실제 성공도 동일 경계 |
+
+이10개를 정확 pending으로 남기므로 issue의 old27 조건을 무시하거나 새 재실행을 요구할 필요가
+없다. `old27_accepted`, `pending_runtime2_accepted`, closed PID/cwd/FD/DSO,
+`all_adopted_reaped`, R4/full acceptance false 값은 기존 receipt에 그대로 남긴다. 부모가 두 파일의
+family 교체를 수용해도 과거 receipt의 retirement_credit0을 true/2로 다시 쓰지 않는다.
+
+### 부모의 최종 등록 전 남은 확인
+
+1. 부모가 예정한 f1 collision artifact12608900233의 실제size/SHA·safe/unique/type/CRC,
+   outcome/candidate/whole-prefix raw·batch coverage·source/index/SDK·후검사/cleanup 근거를 감사한다.
+   관측값을 확인하기 전 최종 peer audit 완료로 쓰지 않는다.
+2. main의 두 artifact를 실제 audit하고 native comparison/report와 final source/index·ownership·
+   upload/cleanup 증거를 연결한다. job 전체 성공 metadata와 artifact bytes 감사는 구분한다.
+3. 두 감사가 성공하면 `rust/tools/check_native_logging.py`, `rust/tools/native_logging_transport.py`의
+   inventory/family pending2와 maintained caller edge를 실제 Rust 대체 경로·exact source/run/artifact로
+   갱신한다. 예상 baseline 변화는 현재294/3/3283에서296/3/3281이지만 다른 병렬 수용이 있을 수
+   있으므로 부모가 최종 원장을 기준으로 집계한다. 이 작업자는 숫자/상태를 변경하지 않았다.
+4. #549 본문의 낡은 초기 상태를 위 증거/경계로 갱신한 뒤 가족2개 범위의 종료 여부를 판정한다.
+   전체 필수 PR의 모델 실패와 #523/#296 통합·전달·기기 수용은 별도 미완료로 남긴다. 여기의
+   `replaced-local`은 저장소 대체/검증 분류이며 실차 CPU 절감·차량 설치 수용을 뜻하지 않는다.
+
+이번 작업은 기존 logging 기록 append만 썼다. issue/원장/inventory/families/master/WF/코드/
+commit/push/GHA는 변경·실행하지 않았으며 artifact ZIP 신규 다운로드·중복 CRC도0이다.
+
+## predelete 동일 ELF 최종 판정과 c8 f1 감사 수령 — 2026-10-26
+
+**predelete의 같은 current ELF 조건은 기존 증거로 충족 판정 가능하다.** 새로운 예외나
+검증 면제에 의존하지 않는다. 이 결론은 5bee의 기존 독립 실물 감사와 그 exact source의
+실제 호출·재사용 검사를 연결한 것이다. 이 작업자가 원래 ZIP을 다시 감사했다는 뜻은 아니다.
+
+1. 5bee/run40199544123/job121187580810은 original2 present 상태에서 full14/once/current15와
+   legacy2를 실제 성공시킨 뒤 source-guard CLI20/raw21도 성공했다. 기존 독립 감사가
+   retained binding과 guard의4 provider 입력에 checker/probe의 **동일 identity/SHA**를 명시한다.
+2. 당시 [helper169행](https://github.com/bin9208/openpilot-rust/blob/5bee0d30b3a824cc4f2dbcc23c4caba2fa813a64/tools/ci/logging_retained_549.sh#L169)은
+   retained에서 실제 선택·hold한 checker의 Cargo log/경로/identity/SHA를 reuse receipt에
+   기록한다. [325행](https://github.com/bin9208/openpilot-rust/blob/5bee0d30b3a824cc4f2dbcc23c4caba2fa813a64/tools/ci/logging_retained_549.sh#L325)의
+   재사용 admission은 source/job owner·Cargo target/kind/src/profile·원래 경로·identity/hash를
+   대조하며, checker/probe/fixture를 다시 빌드하지 않는다. source-guard가 같은 재사용 함수를
+   호출하는 지점은771행이다. 두 Bash 호출 사이 FD가 연속해서 열려 있었다는 주장은 하지 않는다.
+3. 당시 [source_absence.rs263행](https://github.com/bin9208/openpilot-rust/blob/5bee0d30b3a824cc4f2dbcc23c4caba2fa813a64/rust/crates/dev-tools/tests/native_logging_lifecycle/source_absence.rs#L263)은
+   `CHECKER` 자체를 hold하고275행에서 actual source의 `rust/target/debug/check-native-logging`과
+   정확히 같은 경로인지 확인한다.305행에 입력4개의 metadata/hash를 저장하고,
+   [323행](https://github.com/bin9208/openpilot-rust/blob/5bee0d30b3a824cc4f2dbcc23c4caba2fa813a64/rust/crates/dev-tools/tests/native_logging_lifecycle/source_absence.rs#L323)의
+   `Command::new(CHECKER)`로 retained/legacy×literal2×node5를 실행한다. 각20회와 종료 후에
+   held 입력 전체를 재검증한다. 기존 실물 감사는 이 raw exec21의 exact argv/env·checker20의
+   exit1·producer0 및 provider 불변도 확인했다. 소스상 경로 일치만으로 실제 성공을 대신한
+   판정이 아니며, 앞의 독립 실물 감사와 결합한다.
+4. Git object의5bee→f1 범위에서도 `native_logging_check.rs`와 하위 모듈,
+   `source_absence.rs`, `rust/crates/logging`은 변경0이었다. 이는 관련 source 연속성이고
+   재컴파일된 DD/f1 ELF의 byte 동일성이나 전체 dependency closure 증명은 아니다.
+
+따라서 수용의 정확한 표현은 **“5bee의 같은 current checker ELF로 present 기능과 private-copy
+absence/reappearance 음성을 실제 통과했고, 원본2 실제 삭제 뒤에는 fresh DD의 full absent
+기능과 f1의 main caller/collision을 별도로 성공시켰다”**다. private copy 음성의
+`absent_root_full_functional_acceptance=false`와 당시 R4/credit0은 그대로 보존한다.
+추가 predelete 재실행, original 소스 복원, 과거 receipt의 재작성은 필요하지 않다.
+
+부모가 f1 collision artifact12608900233의 독립 실물 감사를 완료했다고 수령했다.
+로컬 `ci/12608900233.zip`=39232753B/SHA
+`5bd11d1bb0ba5424208c8276bb1338dc89d67c24257956bfb02bdf6cb3ab7e91`,9495safe unique/non-symlink/전체CRC,
+expanded396590632B다. source/index/SDK files·roster·program의5쌍이 모두 byte 동일하며,
+outcome phase=collision8-observed, command/finalizer/held/tree/source-policy/resource/stop=0,
+immutable=true/collision8_current=true/logical8이다. candidate의 checker exec8/exit1×8/spawn0,
+CPP/probe0/foreign 불변 및 fixture batches all-pass/exact-once도 확인됐다는 부모 감사다.
+본 작업자의 추가 다운로드/전체CRC/receipt 재읽기는0이다. 이 수령으로 앞 절의 collision
+실물 감사 대기는 해소됐다. closed PID/CWD/FD/DSO·old27·R4·기존 receipt credit0은 유지한다.
+
+main exact logger40217812664의 실제 전체SUCCESS(Miri/ASAN/final/cleanup 포함)는 직접 확인한
+metadata와 부모 수령이 일치한다. SDK836/run40218262329 전체SUCCESS도 부모에게 수령했으며,
+이 별도 SDK 결과를 기존 #549 각 source의 전후 SDK identity/hash 증거 대신 사용하지 않는다.
+main의 두 artifact 실물 감사는 부모가 진행 중이므로 아직 완료로 기록하지 않는다.
+
+**부모의 최종 gate:** 남은 main artifact 감사가 성공하면 위 predelete 근거와 DD retained·f1
+collision/main의 명시 성공으로 원본2의 좁은 #549 family 수용 및 inventory credit을 판정할 수
+있다. 정확한 old27 pending10 유지 조건은 이미 기록돼 있으며 새 old27 재실행을 요구하지 않는다.
+전체 필수 PR/모델·#523/#296 통합/기기 수용과 원장·issue 갱신은 여전히 부모 소유다.
+
+## 부모의 main 실물 감사와 원본2 퇴역 수용 — 2026-10-26
+
+source `f1c730b029df77ed2731f86ddf2d224e74bb9f50`의 [main exact logger40217812664/job121242667579](https://github.com/bin9208/openpilot-rust/actions/runs/40217812664/job/121242667579)가 준비·실제 native caller19·원본 C++/전체 route/media/flush·Miri·ASAN·source/index after·두 업로드와 소유 정리까지 모두 성공했다. 독립 workflow는 main 전체 SHA를 검사하며 main job/global env에 그 read-only pin 하나만 더한 것이다. 필수 PR 전체 성공으로 위장하지 않는다.
+
+부모가 private artifact12608786367(291002B/SHA256 `9324fda49968cd322e004e994f045549a7346af59ffc019dc4f75ed7bb26d62b`,12 safe unique/non-symlink/CRC 정상)의 sourcef1와 source/index 전후 동일성을 확인했다. 기능 artifact12608477043은25035246B/SHA256 `564bdcbcdfd667f4e07e9ac2686cae33cc4306b696db47b81d91333de0f47061`,45249 safe unique/non-symlink/전체CRC 정상이다.
+
+실제 `native-logging/report.json`은 source_policy=absent/result=pass, logprint7/wire168/rate516→16, threads64, strict2s 안의 send+shutdown Rust1.205748035초/C++0.228875968초와 signal/invalid-endpoint/console-failure/runtime-prefix 결과를 보존한다. native probe SHA `02a5d836e30d51dacf31e11f4bbea80ff979c875574164fc75e45562c1d856c8`, fresh C++ SHA `1a13adabeaecbbaca3fc8b726c2e73a13113533d2c495188f273e67c1f174dc2`이며 provider before/after JSON bytes도 같다. runtime-log-upload의 PASS는 owned sourcef1와 crash1/route4/HTTP2044B/upload-marked를 확인하며 완전 manager·기기 수용으로 확대하지 않는다.
+
+위 predelete5bee의 같은 current ELF, DD의 full absent67/14/once/current15·legacy2·CLI20/policy14, f1collision8 및 실제 maintained caller19를 결합해 **#549 원본 두 경로만 native 교체 수용**한다. inventory/family의 두 행을 pending→replaced-local로 갱신한다. 원래 baseline3580은296교체/3부분/3281대기다. 기존 raw receipts의 R4_acceptance/old27/retirement_credit0을 다시 쓰지 않고, 이 수용 결정은 별도 추적 기록으로 남긴다. old27은 역사17/대기10 그대로이며 별도14를 남은10에 대입하지 않는다. 전체 #523/#296·필수 PR/통합·모델 및 실기 수용은 미완료다.

@@ -218,17 +218,14 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
     - name: Compare exact policies, main loops, real IPC and lifecycle
-      run: |
-        python -P rust/tools/check_plannerd_ci.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-artifact" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --output "$RUNNER_TEMP/planner-comparison"
+      run: "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" runtime\n"
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
     - name: Check generated C with ASan, UBSan and allocator leak detection
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         && (matrix.runner == 'local-x64') }}
-      run: |
-        python rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --sanitize --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-sanitized"
-        python -P rust/tools/check_plannerd_native_memory.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-sanitized" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --asan-library "$(gcc -print-file-name=libasan.so)" --output "$RUNNER_TEMP/planner-native-memory"
+      run: "python rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --sanitize --python \"$(command -v python)\" --acados \"$PLANNER_GENERATOR\" --wheel \"$RUNNER_TEMP\"/planner-wheel/*.whl --output \"$RUNNER_TEMP/planner-sanitized\"\n/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" memory\n"
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
     - uses: actions/upload-artifact@v6

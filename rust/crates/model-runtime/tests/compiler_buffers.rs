@@ -194,13 +194,13 @@ for case in request['cases']:
     table = scope['BufferTable']() if host else scope['OfflineBufferTable'](initial)
     if host:
         for base in case['bases']:
-            bases[base['id']].ensure_allocated().copyin(memoryview(bytes(base['data'])))
+            bases[base['id']].ensure_allocated().copyin(memoryview(bytearray(base['data'])))
     rows = []
     for op in case['ops']:
         base = bases[op['base']]
         view = Buffer(base.device, op['bytes'], dtypes.uint8, base=base, offset=op['offset'])
         if host and 'data' in op:
-            base.copyin(memoryview(bytes(op['data'])))
+            base.copyin(memoryview(bytearray(op['data'])))
         try:
             returned = getattr(table, op['op'])(view)
             outcome = {'ok': returned}

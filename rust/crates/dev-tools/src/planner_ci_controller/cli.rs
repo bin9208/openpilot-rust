@@ -5,7 +5,7 @@ use super::{
 use crate::{qa_process::NativeRunner, seal::Result};
 use std::{collections::BTreeMap, ffi::OsString, fs::OpenOptions, path::PathBuf, time::Duration};
 
-const HELP: &str = "check-plannerd-ci schedule\ncheck-plannerd-ci --root PATH --python PATH --bin-dir PATH --artifact PATH --source-native PATH --binding PATH --output PATH --timeout-seconds N --growth-mib NAME=MIB (each of the 12 operations)";
+const HELP: &str = "check-plannerd-ci schedule\ncheck-plannerd-ci [memory] --root PATH --python PATH --bin-dir PATH --artifact PATH --source-native PATH --binding PATH --output PATH --timeout-seconds N --growth-mib NAME=MIB (all 12 operations, or abi/owner/fault in memory mode)";
 
 pub fn cli() -> Result<()> {
     let mut arguments = std::env::args_os().skip(1).peekable();
@@ -21,6 +21,10 @@ pub fn cli() -> Result<()> {
             return scheduler::serve_recorded(input.lock(), output.lock(), file);
         }
         return scheduler::serve(input.lock(), output.lock());
+    }
+    let memory = arguments.peek().is_some_and(|arg| arg == "memory");
+    if memory {
+        arguments.next();
     }
     let mut options = BTreeMap::new();
     let mut growth = BTreeMap::new();
@@ -81,10 +85,17 @@ pub fn cli() -> Result<()> {
         .to_str()
         .ok_or(HELP)?
         .parse::<u64>()?;
-    let checks = plan::runtime_checks(&inputs, &growth, Duration::from_secs(timeout))?;
+    let checks = if memory {
+        plan::memory_checks(&inputs, &growth, Duration::from_secs(timeout))?
+    } else {
+        plan::runtime_checks(&inputs, &growth, Duration::from_secs(timeout))?
+    };
     let mut runner = NativeRunner;
     run_checks(&checks, &output, &inputs.root, &mut runner)?;
-    let receipt = plan::write_receipt(&inputs, &checks, &output, &mut runner)?;
-    println!("{receipt}");
+    if !memory {
+        let receipt = plan::write_receipt(&inputs, &checks, &output, &mut runner)?;
+        println!("{receipt}");
+    }
+    // memory의 sanitizer/binary/final receipt는 호출 wrapper가 원래 형식으로 기록한다.
     Ok(())
 }

@@ -39,6 +39,8 @@ jobs:
           test "$RUNNER_ARCH" = X64
           test "$(uname -m)" = x86_64
           df -PB1 "$GITHUB_WORKSPACE" /tmp
+          test -z "${COLD560_JOB_DEADLINE_EPOCH:-}"
+          printf 'COLD560_JOB_DEADLINE_EPOCH=%s\n' "$((EPOCHSECONDS+420))" >> "$GITHUB_ENV"
       - name: Common owned Fast job temporary paths
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
@@ -179,152 +181,15 @@ jobs:
           find "$sdk" -xdev \( -type d -o -type f \) -perm /0022 -print0 > "$CI_JOB_TEMP/proof/sdk-remaining-shared-writes.bin"
           test ! -s "$CI_JOB_TEMP/proof/sdk-remaining-shared-writes.bin"
       - name: Prepare native CI validation
-        run: |
-          set -euo pipefail
-          umask 077
-          set -C
-          test ! -e "$RUNNER_TEMP/openpilot-disk-guard"
-          test "$(cat "$CI_JOB_TEMP/owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
-          cold_proof=$CI_JOB_TEMP/proof
-          [[ -d "$cold_proof" && ! -L "$cold_proof" ]]
-          test "$(readlink -e -- "$cold_proof")" = "$cold_proof"
-          test "$(stat -c '%u:%a' -- "$cold_proof")" = "$(id -u):700"
-          cold_strace=$(readlink -e -- /usr/bin/strace)
-          test "$cold_strace" = /usr/bin/strace
-          cold_provider() {
-            local cold_phase=$1 cold_metadata
-            [[ -f "$cold_strace" && ! -L "$cold_strace" && -x "$cold_strace" ]] || return 1
-            test "$(readlink -e -- /usr/bin/strace)" = "$cold_strace" || return 1
-            test "$(head -c 4 -- "$cold_strace" | od -An -tx1 | tr -d ' \n')" = 7f454c46 || return 1
-            cold_metadata=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' -- "$cold_strace") || return 1
-            printf 'path=%s\nmetadata=%s\n' "$cold_strace" "$cold_metadata" > "$cold_proof/cold-strace.$cold_phase.metadata" || return 1
-            sha256sum -- "$cold_strace" > "$cold_proof/cold-strace.$cold_phase.sha256" || return 1
-            # 버전 출력만 64KiB/file로 제한한다. cold build에는 file-size 제한을 전파하지 않는다.
-            (ulimit -f 64; "$cold_strace" --version) > "$cold_proof/cold-strace.$cold_phase.version" 2> "$cold_proof/cold-strace.$cold_phase.version.stderr" || return 1
-            # OS 배포판/image 표기로 실제 kernel 또는 dpkg revision을 추측하지 않는다.
-            (ulimit -f 64; /usr/bin/uname -rvm) > "$cold_proof/cold-strace.$cold_phase.kernel" 2> "$cold_proof/cold-strace.$cold_phase.kernel.stderr" || return 1
-            (ulimit -f 64; /usr/bin/cat /proc/version) > "$cold_proof/cold-strace.$cold_phase.proc-version" 2> "$cold_proof/cold-strace.$cold_phase.proc-version.stderr" || return 1
-            (ulimit -f 64; /usr/bin/dpkg-query -W -f='binary=${binary:Package}\nversion=${Version}\narchitecture=${Architecture}\nsource=${source:Package}\nsource_version=${source:Version}\n' strace) > "$cold_proof/cold-strace.$cold_phase.package" 2> "$cold_proof/cold-strace.$cold_phase.package.stderr" || return 1
-            (ulimit -f 64; /usr/bin/stat -c '%n %d:%i:%f:%u:%g:%h:%s:%y:%z' /usr/bin/dpkg-query && /usr/bin/sha256sum /usr/bin/dpkg-query) > "$cold_proof/cold-strace.$cold_phase.package-provider" || return 1
-            test "$cold_metadata" = "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' -- "$cold_strace")"
-          }
-          # 수집기만 현재 PID/start ticks/PPID로 확인한다. tracer/과거 PGID에는 신호를 보내지 않는다.
-          cold_collector_current() {
-            local cold_row cold_tail cold_fields
-            cold_stderr_state=unknown
-            [[ -d "/proc/$cold_parent" && -r "/proc/$cold_parent/stat" ]] || return 1
-            if [[ ! -d "/proc/$cold_stderr_pid" ]]; then cold_stderr_state=gone; return 0; fi
-            if ! IFS= read -r cold_row < "/proc/$cold_stderr_pid/stat"; then
-              [[ ! -d "/proc/$cold_stderr_pid" ]] || return 1
-              cold_stderr_state=gone; return 0
-            fi
-            [[ $cold_row == "$cold_stderr_pid "* && ${#cold_row} -le 4096 ]] || return 1
-            cold_tail=${cold_row##*) }
-            IFS=' ' read -r -a cold_fields <<< "$cold_tail" || return 1
-            [[ ${#cold_fields[@]} -ge 20 && ${cold_fields[1]} == "$cold_parent" && ${cold_fields[19]} == "$cold_stderr_ticks" ]] || return 1
-            case ${cold_fields[0]} in
-              Z|X) cold_stderr_state=terminal;;
-              R|S|D|T|t|I|W|P) cold_stderr_state=live;;
-              *) return 1;;
-            esac
-          }
-          cold_collect_stderr() {
-            local cold_drain_polls=$1 cold_reap_polls=$2 cold_poll cold_row cold_tail cold_fields
-            [[ $cold_drain_polls =~ ^[1-9][0-9]*$ && $cold_reap_polls =~ ^[1-9][0-9]*$ ]] || return 125
-            ((cold_drain_polls <= 100 && cold_reap_polls <= 20)) || return 125
-            for ((cold_poll=0; cold_poll<cold_drain_polls; cold_poll++)); do
-              [[ ! -s "$cold_proof/cold-stderr.start.stat" ]] || break
-              /usr/bin/sleep 0.1 || return 125
-            done
-            IFS= read -r cold_row < "$cold_proof/cold-stderr.start.stat" || return 125
-            [[ $cold_row == "$cold_stderr_pid "* && ${#cold_row} -le 4096 ]] || return 125
-            cold_tail=${cold_row##*) }
-            IFS=' ' read -r -a cold_fields <<< "$cold_tail" || return 125
-            [[ ${#cold_fields[@]} -ge 20 && ${cold_fields[1]} == "$cold_parent" && ${cold_fields[19]} =~ ^[1-9][0-9]*$ ]] || return 125
-            cold_stderr_ticks=${cold_fields[19]}
-            for ((; cold_poll<cold_drain_polls; cold_poll++)); do
-              cold_collector_current || return 125
-              [[ $cold_stderr_state == live ]] || break
-              /usr/bin/sleep 0.1 || return 125
-            done
-            if [[ $cold_stderr_state == live ]]; then
-              cold_stderr_timed_out=true
-              # 신호 직전에 소유성을 다시 확인하며 단일 수집기 PID만 대상으로 한다.
-              cold_collector_current || return 125
-              if [[ $cold_stderr_state == live ]]; then
-                kill -KILL -- "$cold_stderr_pid" || return 125
-              fi
-              for ((cold_poll=0; cold_poll<cold_reap_polls; cold_poll++)); do
-                cold_collector_current || return 125
-                [[ $cold_stderr_state == live ]] || break
-                /usr/bin/sleep 0.1 || return 125
-              done
-            fi
-            # 살아 있거나 소유성이 불확실하면 wait로 진입하지 않는다.
-            [[ $cold_stderr_state == terminal || $cold_stderr_state == gone ]] || return 125
-            cold_stderr_wait_status=0
-            wait "$cold_stderr_pid" || cold_stderr_wait_status=$?
-            cold_stderr_reaped=true
-            [[ $cold_stderr_timed_out == false ]] || return 124
-            return "$cold_stderr_wait_status"
-          }
-          cold_provider before
-          [[ ! -e "$cold_proof/prepared-cold-bootstrap.exec" && ! -L "$cold_proof/prepared-cold-bootstrap.exec" ]]
-          [[ ! -e "$cold_proof/prepared-cold-bootstrap.stderr" && ! -L "$cold_proof/prepared-cold-bootstrap.stderr" ]]
-          [[ ! -e "$cold_proof/cold-stderr.start.stat" && ! -L "$cold_proof/cold-stderr.start.stat" ]]
-          cold_started=$(date -u +'%Y-%m-%dT%H:%M:%S.%NZ')
-          cold_parent=$BASHPID
-          # 이 background PID는 stderr 수집기뿐이다. tracer는 기존 foreground/PGID를 유지한다.
-          # tee에만 512MiB/file 상한을 적용하며 overflow/수집기 실패도 단계 실패다.
-          # --debug 증가량은 미실측이다. 같은 상한으로 관측하며 unknown 거부는 유지한다.
-          exec {cold_stderr_fd}> >(
-            ulimit -f 524288 || exit 1
-            IFS= read -r cold_row < "/proc/$BASHPID/stat" || exit 1
-            printf '%s\n' "$cold_row" > "$cold_proof/cold-stderr.start.stat" || exit 1
-            exec /usr/bin/tee "$cold_proof/prepared-cold-bootstrap.stderr" >&2
-          )
-          cold_stderr_pid=$!
-          cold_status=0
-          (
-            exec {cold_stderr_fd}>&- || exit 1
-            # exec 직전 PID/start ticks를 기록하고 같은 PID로 strace를 실행한다. 별도 PGID/kill은 없다.
-            cold_pid=$BASHPID
-            IFS= read -r cold_stat < "/proc/$cold_pid/stat" || exit 1
-            [[ $cold_stat == "$cold_pid "* && ${#cold_stat} -le 4096 ]] || exit 1
-            cold_tail=${cold_stat##*) }
-            read -r -a cold_fields <<< "$cold_tail" || exit 1
-            [[ ${#cold_fields[@]} -ge 20 && ${cold_fields[19]} =~ ^[0-9]+$ ]] || exit 1
-            printf '%s\n' "$cold_stat" > "$cold_proof/cold-tracer.start.stat" || exit 1
-            printf 'pid=%s\nstart_ticks=%s\nppid=%s\npgrp=%s\nsession=%s\nuid=%s\neuid=%s\nidentity_phase=before_exec_same_pid\n' "$cold_pid" "${cold_fields[19]}" "${cold_fields[1]}" "${cold_fields[2]}" "${cold_fields[3]}" "$UID" "$EUID" > "$cold_proof/cold-tracer.identity" || exit 1
-            OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" exec \
-              /usr/bin/strace --debug --seccomp-bpf -f -qq -s 65535 -e trace=execve,execveat -o "$CI_JOB_TEMP/proof/prepared-cold-bootstrap.exec" \
-              "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
-          ) 2>&"$cold_stderr_fd" || cold_status=$?
-          cold_records_status=0
-          # noclobber로 tracer 종료 상태를 먼저 보존한다. 수집기 회수가 실패해도 이 값은 남는다.
-          printf 'shell_wait_status=%s\n' "$cold_status" > "$cold_proof/cold-tracer.status" || cold_records_status=1
-          exec {cold_stderr_fd}>&- || cold_records_status=1
-          cold_stderr_status=0
-          cold_stderr_wait_status=not_waited
-          cold_stderr_state=unknown
-          cold_stderr_timed_out=false
-          cold_stderr_reaped=false
-          cold_collect_stderr 100 20 || cold_stderr_status=$?
-          cold_ended=$(date -u +'%Y-%m-%dT%H:%M:%S.%NZ') || cold_records_status=1
-          if ! cold_stderr_bytes=$(stat -c '%s' -- "$cold_proof/prepared-cold-bootstrap.stderr"); then
-            cold_stderr_bytes=unavailable
-            cold_records_status=1
-          fi
-          printf 'started_utc=%s\nended_utc=%s\nshell_wait_status=%s\nstderr_collector_pid=%s\nstderr_wait_status=%s\nstderr_collection_status=%s\nstderr_state=%s\nstderr_timed_out=%s\nstderr_reaped=%s\nstrace_debug_requested=true\ndiagnostic_only=true\nstderr_file_limit_bytes=536870912\nstderr_bytes_observed=%s\nseccomp_bpf_requested=true\nseccomp_bpf_activation=unproven\n' "$cold_started" "$cold_ended" "$cold_status" "$cold_stderr_pid" "$cold_stderr_wait_status" "$cold_stderr_status" "$cold_stderr_state" "$cold_stderr_timed_out" "$cold_stderr_reaped" "$cold_stderr_bytes" > "$cold_proof/cold-tracer.result" || cold_records_status=1
-          cold_provider_status=0
-          cold_provider after || cold_provider_status=$?
-          for cold_record in metadata sha256 version version.stderr kernel kernel.stderr proc-version proc-version.stderr package package.stderr package-provider; do
-            cmp "$cold_proof/cold-strace.before.$cold_record" "$cold_proof/cold-strace.after.$cold_record" || cold_provider_status=1
-          done
-          if ((cold_status != 0)); then exit "$cold_status"; fi
-          test "$cold_stderr_status" -eq 0 && test "$cold_provider_status" -eq 0 && test "$cold_records_status" -eq 0
+        id: fast_cold
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.DIAG_SOURCE }}
+        shell: bash
+        env:
+          SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          FAST560_HELPER_SHA256: 645a23e3eed36c6663093cabd71f3618ba3f98af9ccf9848098659b25da1feec
+        run: |
+          "$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh" cold
       - name: Check CI routing and upstream synchronization guards
         run: |
           set -euo pipefail
@@ -332,7 +197,7 @@ jobs:
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
           # The original 6GiB routing admission also covers compiling this native verifier.
           # Reuse that target for the unchanged routing selectors below.
-          CI_PREPARED_RUST_PROOF="$CI_JOB_TEMP/proof" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked \
+          CI_PREPARED_RUST_PROOF="$CI_JOB_TEMP/proof" "$CI_PREPARED_RUST_ROOT/bin/cargo" test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked \
             --test ci_disk_bootstrap prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- --ignored --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/prepared-cold-native-audit.log"
           grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/prepared-cold-native-audit.log"
           "$GITHUB_WORKSPACE/rust/tools/prepare-changed-files-caller" "$CI_JOB_TEMP/proof/changed-files-caller" "$CI_JOB_TEMP/changed-files-caller.env"
@@ -344,6 +209,16 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features carrot-navi-compare-native --test carrot_navi_compare maintained_policy_accepts_yaml_aliases_and_rejects_unreviewed_overlays -- --exact
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.DIAG_SOURCE }}
+      - name: Seal Fast private cold provider after maintained checks
+        id: fast_cold_final
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_cold.outcome != 'skipped' && env.DIAG_SOURCE != '') }}
+        working-directory: ${{ env.DIAG_SOURCE }}
+        shell: bash
+        env:
+          SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          FAST560_HELPER_SHA256: 645a23e3eed36c6663093cabd71f3618ba3f98af9ccf9848098659b25da1feec
+        run: |
+          "$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh" after
       - name: Verify provisioned Rust SDK contents and identities after routing
         id: prepared_rust_final
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}
@@ -376,7 +251,7 @@ jobs:
           retention-days: 14
       - name: Clean only uploaded private Fast source
         id: fast_source_cleanup
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.sdk_permissions_final.outcome == 'success') }}
+        if: "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.sdk_permissions_final.outcome == 'success' && steps.fast_cold_final.outcome == 'success') }}"
         working-directory: ${{ github.workspace }}
         env:
           UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
@@ -399,7 +274,7 @@ jobs:
           test "$(realpath -e -- "$p/source")" = "$p/source"
           rm -rf --one-file-system -- "$p"
       - name: Clean common owned Fast job temporary paths
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}
+        if: "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success' && steps.fast_cold_final.outcome == 'success') }}"
         uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
         with:
           cleanup: 'true'

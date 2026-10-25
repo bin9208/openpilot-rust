@@ -28,6 +28,7 @@ pub const CHECK_NAMES: [&str; 12] = [
     "ipc",
     "lifecycle",
 ];
+pub const MEMORY_CHECK_NAMES: [&str; 3] = ["abi", "owner", "fault"];
 
 #[derive(Clone, Debug)]
 pub struct Inputs {
@@ -51,12 +52,29 @@ pub fn runtime_checks(
     growth: &BTreeMap<String, u64>,
     timeout: Duration,
 ) -> Result<Vec<Check>> {
-    if growth.len() != CHECK_NAMES.len()
-        || CHECK_NAMES.iter().any(|name| !growth.contains_key(*name))
-    {
-        return Err(
-            "growth admission must name every one of the 12 Planner operations exactly once".into(),
-        );
+    selected_checks(inputs, growth, timeout, &CHECK_NAMES)
+}
+
+pub fn memory_checks(
+    inputs: &Inputs,
+    growth: &BTreeMap<String, u64>,
+    timeout: Duration,
+) -> Result<Vec<Check>> {
+    selected_checks(inputs, growth, timeout, &MEMORY_CHECK_NAMES)
+}
+
+fn selected_checks(
+    inputs: &Inputs,
+    growth: &BTreeMap<String, u64>,
+    timeout: Duration,
+    names: &[&str],
+) -> Result<Vec<Check>> {
+    if growth.len() != names.len() || names.iter().any(|name| !growth.contains_key(*name)) {
+        return Err(format!(
+            "growth admission must name every selected Planner operation exactly once: {}",
+            names.join(",")
+        )
+        .into());
     }
     if timeout.is_zero() {
         return Err("Planner command timeout must be positive".into());
@@ -85,6 +103,9 @@ pub fn runtime_checks(
     let mut checks = Vec::new();
     let mut add =
         |name: &str, script: &str, arguments: Vec<String>, output_option: &str| -> Result<()> {
+            let Some(growth_bytes) = growth.get(name) else {
+                return Ok(());
+            };
             let mut argv = vec![
                 text(&inputs.python)?,
                 "-u".into(),
@@ -102,7 +123,7 @@ pub fn runtime_checks(
                 name: name.into(),
                 command,
                 output_option: output_option.into(),
-                growth_bytes: growth[name],
+                growth_bytes: *growth_bytes,
                 scheduler_calls: (name == "ipc").then_some(4 * 40),
             });
             Ok(())

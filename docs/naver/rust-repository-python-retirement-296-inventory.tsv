@@ -1998,7 +1998,7 @@ rust/tools/check_modem_process_boundary.py	a3b7c5d0b886c5d1e2fa996ed0894c9dbbd10
 rust/tools/check_monitoring_reference.py	d10d0decd660d1abb5e7df75354cf3f25b8bd239	pending	-
 rust/tools/check_msgq_ion.py	7008f9446509ef08e027560d547bf88d58256923	pending	-
 rust/tools/check_msgq_sanitizers.py	50efd27009fbf18125f9ce6c820a5f9f381ee607	replaced-local	rust/crates/dev-tools/src/msgq_sanitizers_check.rs
-rust/tools/check_native_logging.py	b306fad8a037aa0454740c2101e7c4ff4dfd0a5a	pending	-
+rust/tools/check_native_logging.py	b306fad8a037aa0454740c2101e7c4ff4dfd0a5a	replaced-local	rust/crates/dev-tools/src/native_logging_check.rs; check-native-logging --source-policy absent; #549 exact-source Actions 수용
 rust/tools/check_navd_config.py	23aa01ccf0fc199c5b35813a1fdc7195ea6da300	replaced-local	rust/crates/dev-tools/src/navd_config_check.rs; native 26-case controller with CLI, cancellation and receipt ownership checks
 rust/tools/check_navd_destination.py	d2cd458007e0adc14d79ab21bb5c08bd1963bba9	pending	-
 rust/tools/check_navd_engine.py	a27d452daf9668ddb333f4d94e32c8116c72c7f4	pending	-
@@ -2428,7 +2428,7 @@ rust/tools/modem_fixture_command.py	a8d72644e3789dce6f179ebdabc7b6205941e2d9	rep
 rust/tools/modem_source.py	55457b5ed59cc279cab9796377caa9019997791a	replaced-local	rust/crates/dev-tools/src/modem_qa.rs; modem_capture.rs; tests/modem_retirement.rs; postdelete39727029012/policy39727105631 (runtime modem.py remains pending)
 rust/tools/monitoring_fixtures.py	7156388b9993050fdea870375604390b7f20620e	pending	-
 rust/tools/native_logging_build.py	87493de7acca1716721a4bc05b5b6fdb9b2aab1c	replaced-local	rust/crates/dev-tools/src/native_logging_build.rs;rust/crates/dev-tools/src/json11_stage.rs
-rust/tools/native_logging_transport.py	71a76f101aba183ac832debf5ae499cd2b1e25ea	pending	-
+rust/tools/native_logging_transport.py	71a76f101aba183ac832debf5ae499cd2b1e25ea	replaced-local	rust/crates/dev-tools/src/native_logging_check/transport.rs; check-native-logging retained --source-policy absent; #549 exact-source Actions 수용
 rust/tools/navd_cases.py	7d8cde4adf508a0681197ff98eb229f4c4cdbaa4	pending	-
 rust/tools/navd_config_source.py	e972ccd5c41587698b9252dfa7154dffa3ce245b	replaced-local	rust/crates/dev-tools/src/navd_config_check/source.rs; independent native Params, signatures, JSON and GPS reference
 rust/tools/navd_destination_source.py	84e5e3fe0c6b139f13a24b4a05a33a69d4ac33dd	pending	-

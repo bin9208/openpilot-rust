@@ -312,6 +312,47 @@ fn dbc_native_tools_are_built_before_every_required_consumer() {
     }
 }
 #[test]
+fn fast_native_cold_bootstrap_uses_one_worker_and_pinned_closed_launch_helper() {
+    use sha2::{Digest, Sha256};
+    // 위 DBC 전용 jobs2 계약은 그대로 둔다. Fast disk guard의 실제 행을 검사한다.
+    let bootstrap = read("rust/tools/check-disk-space");
+    let build = "    CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1 \"${bootstrap_cargo[@]}\" build \\";
+    assert_eq!(bootstrap.lines().filter(|line| *line == build).count(), 1);
+    assert!(!bootstrap.contains(&build.replace("CARGO_BUILD_JOBS=1", "CARGO_BUILD_JOBS=2")));
+    let helper = read("tools/ci/fast_native_cold_560.sh");
+    let source_guard = format!("grep -Fxq '{build}' \"$source/rust/tools/check-disk-space\"");
+    let prepare = "start_owned provider-prepare 120 /usr/bin/bash \"$preparer\" build";
+    let cold = "inherited_command cold 420 pass none \"$tracer\"";
+    required(&helper, &[
+        &source_guard,
+        prepare,
+        cold,
+        "preparer=$source/tools/ci/prepare-cold-strace-560",
+        "CARGO_BUILD_JOBS=1 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0",
+        "RUSTC=\"$sdk/bin/rustc\" RUSTDOC=\"$sdk/bin/rustdoc\"",
+        "--debug --seccomp-bpf -f -qq -s 65535 -e trace=execve,execveat",
+        "-o \"$job/proof/prepared-cold-bootstrap.exec\" \"$source/rust/tools/check-disk-space\" --path \"$source\" --growth-mib 2048",
+        ". \"/proc/$launch_shared_pid/fd/$launch_shared_fd\"",
+        "tracer=$root/bin/strace;fixture=$root/bin/approve-launch",
+    ]);
+    assert!(helper.find(&source_guard).unwrap() < helper.find(prepare).unwrap());
+    assert!(helper.find(prepare).unwrap() < helper.find(cold).unwrap());
+    for (path, declaration) in [
+        ("tools/ci/cold_tracer_launch_560.sh", "launch_shared_sha="),
+        (
+            "tools/ci/prepare-cold-strace-560",
+            "export COLD560_PREPARE_HELPER_SHA256=",
+        ),
+    ] {
+        let pinned = format!("{declaration}{:x}", Sha256::digest(read(path).as_bytes()));
+        assert_eq!(
+            helper.lines().filter(|line| *line == pinned).count(),
+            1,
+            "{path}"
+        );
+    }
+}
+#[test]
 fn workspace_source_tests_use_the_real_msgq_binding_before_importing_oracles() {
     let config = workflow();
     let steps = config["jobs"]["workspace"]["steps"].as_array().unwrap();

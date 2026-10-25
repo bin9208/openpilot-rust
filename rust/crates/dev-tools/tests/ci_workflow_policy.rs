@@ -367,12 +367,15 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "ci_disk_bootstrap",
         "ci_process_probe",
     ];
-    let cold_audit = "CI_PREPARED_RUST_PROOF=\"$CI_JOB_TEMP/proof\" cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test ci_disk_bootstrap prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- --ignored --exact --nocapture 2>&1 | tee \"$CI_JOB_TEMP/proof/prepared-cold-native-audit.log\"";
+    let cold_audit = "CI_PREPARED_RUST_PROOF=\"$CI_JOB_TEMP/proof\" \"$CI_PREPARED_RUST_ROOT/bin/cargo\" test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test ci_disk_bootstrap prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- --ignored --exact --nocapture 2>&1 | tee \"$CI_JOB_TEMP/proof/prepared-cold-native-audit.log\"";
+    let cold_call = "\"$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh\" cold";
+    let after_call = "\"$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh\" after";
     let caller_prepare = "\"$GITHUB_WORKSPACE/rust/tools/prepare-changed-files-caller\" \"$CI_JOB_TEMP/proof/changed-files-caller\" \"$CI_JOB_TEMP/changed-files-caller.env\"";
     let caller_context = "source \"$CI_JOB_TEMP/changed-files-caller.env\"";
     let service = "cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked";
     let owned_commands = [
         (cold_audit, "native"),
+        (after_call, "native"),
         (
             "grep -F 'test result: ok. 1 passed;' \"$CI_JOB_TEMP/proof/prepared-cold-native-audit.log\"",
             "native",
@@ -398,6 +401,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "native-alert-manager",
     ] {
         let job = &workflow["jobs"][worker];
+        assert_eq!(job["timeout-minutes"], "7", "{worker} deadline");
         assert_eq!(
             job["runs-on"],
             if worker == "native" {
@@ -504,7 +508,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         }
         let disk_guard = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048";
         let disk_guard = if worker == "native" {
-            format!("OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" exec /usr/bin/strace --debug --seccomp-bpf -f -qq -s 65535 -e trace=execve,execveat -o \"$CI_JOB_TEMP/proof/prepared-cold-bootstrap.exec\" {disk_guard}")
+            cold_call.to_owned()
         } else {
             format!("OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" {disk_guard}")
         };
@@ -544,6 +548,201 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
             assert!(at(operation_guard) < at(command));
         }
         if worker == "native" {
+            use openpilot_dev_tools::ci_policy::DIAGNOSTIC_TRUSTED_SOURCE;
+            use sha2::{Digest, Sha256};
+            let helper =
+                fs::read_to_string(root().join("tools/ci/fast_native_cold_560.sh")).unwrap();
+            let steps = job["steps"].as_array().unwrap();
+            let step_at = |id: &str| {
+                let matches = steps
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, step)| step["id"] == id)
+                    .collect::<Vec<_>>();
+                assert_eq!(matches.len(), 1, "unique {id}");
+                matches[0].0
+            };
+            let cold = step_at("fast_cold");
+            let after = step_at("fast_cold_final");
+            assert_eq!(steps[cold]["name"], "Prepare native CI validation");
+            let trust = DIAGNOSTIC_TRUSTED_SOURCE
+                .strip_prefix("${{ ")
+                .unwrap()
+                .strip_suffix(" }}")
+                .unwrap();
+            let guard = |clauses: &[&str]| {
+                format!(
+                    "${{{{ ({trust}) && (always() && {}) }}}}",
+                    clauses.join(" && ")
+                )
+            };
+            for (index, phase) in [(cold, cold_call), (after, after_call)] {
+                assert_eq!(steps[index]["run"].as_str().unwrap().trim(), phase);
+                assert_eq!(steps[index]["shell"], "bash");
+                assert_eq!(steps[index]["working-directory"], "${{ env.DIAG_SOURCE }}");
+                assert_eq!(
+                    steps[index]["env"]["SOURCE_ALLOWED"],
+                    DIAGNOSTIC_TRUSTED_SOURCE
+                );
+                assert_eq!(
+                    steps[index]["env"]["FAST560_HELPER_SHA256"],
+                    format!("{:x}", Sha256::digest(helper.as_bytes()))
+                );
+                assert!(steps[index].get("continue-on-error").is_none());
+            }
+            assert_eq!(steps[cold]["if"], DIAGNOSTIC_TRUSTED_SOURCE);
+            assert_eq!(
+                steps[after]["if"],
+                guard(&[
+                    "steps.fast_cold.outcome != 'skipped'",
+                    "env.DIAG_SOURCE != ''"
+                ])
+            );
+            let first = steps[0]["run"].as_str().unwrap();
+            let clock = "printf 'COLD560_JOB_DEADLINE_EPOCH=%s\\n' \"$((EPOCHSECONDS+420))\" >> \"$GITHUB_ENV\"";
+            assert!(
+                first.find("test \"${SOURCE_ALLOWED:-}\" = true").unwrap()
+                    < first.find(clock).unwrap()
+            );
+            assert_eq!(
+                commands
+                    .iter()
+                    .filter(|line| line.as_str() == clock)
+                    .count(),
+                1
+            );
+            assert!(first.contains("test -z \"${COLD560_JOB_DEADLINE_EPOCH:-}\""));
+            assert_eq!(steps[0]["env"]["SOURCE_ALLOWED"], DIAGNOSTIC_TRUSTED_SOURCE);
+            let source = steps
+                .iter()
+                .position(|step| step["name"] == "Admit exact private Fast source and Git history")
+                .unwrap();
+            assert!(source < step_at("prepared_rust") && step_at("prepared_rust") < cold);
+            assert_eq!(
+                steps[step_at("prepared_rust")]["run"].as_str().unwrap(),
+                "\"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust\" before"
+            );
+            assert_eq!(
+                steps[step_at("prepared_rust_final")]["run"]
+                    .as_str()
+                    .unwrap(),
+                "\"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust\" after"
+            );
+            assert!(
+                cold < after
+                    && after < step_at("prepared_rust_final")
+                    && step_at("prepared_rust_final") < step_at("source_final")
+            );
+            assert!(
+                step_at("source_final") < step_at("fast_evidence")
+                    && step_at("fast_evidence") < step_at("fast_source_cleanup")
+            );
+            for step in &steps[..cold] {
+                let run = step["run"].as_str().unwrap_or("");
+                for warmup in [
+                    "cargo build",
+                    "cargo test",
+                    "cargo run",
+                    "cargo clippy",
+                    "bin/cargo\" build",
+                    "bin/cargo\" test",
+                ] {
+                    assert!(!run.contains(warmup), "Cargo before actual cold: {warmup}");
+                }
+            }
+            assert!(at(NAVI_POLICY[1]) < at(after_call));
+            let cleanup = &steps[step_at("fast_source_cleanup")];
+            assert_eq!(
+                cleanup["if"],
+                guard(&[
+                    "steps.fast_evidence.outcome == 'success'",
+                    "steps.fast_evidence.outputs.artifact-id != ''",
+                    "steps.fast_evidence.outputs.artifact-digest != ''",
+                    "env.DIAG_SOURCE_OWNER != ''",
+                    "steps.source_final.outcome == 'success'",
+                    "steps.prepared_rust_final.outcome == 'success'",
+                    "steps.sdk_permissions_final.outcome == 'success'",
+                    "steps.fast_cold_final.outcome == 'success'",
+                ])
+            );
+            let common = steps
+                .iter()
+                .position(|step| step["name"] == "Clean common owned Fast job temporary paths")
+                .unwrap();
+            assert!(step_at("fast_source_cleanup") < common);
+            assert_eq!(
+                steps[common]["if"],
+                guard(&[
+                    "steps.fast_evidence.outcome == 'success'",
+                    "steps.fast_evidence.outputs.artifact-id != ''",
+                    "steps.fast_evidence.outputs.artifact-digest != ''",
+                    "steps.fast_source_cleanup.outcome == 'success'",
+                    "steps.fast_cold_final.outcome == 'success'",
+                ])
+            );
+            // WF literal run의 검증 대상을 실제 pinned helper source로 옮긴다.
+            for needle in [
+                "job=${CI_JOB_TEMP:?}; source=${DIAG_SOURCE:?}; owner=${DIAG_SOURCE_OWNER:?}; workspace=${DIAG_ACTIONS_WORKSPACE:?}",
+                "sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu",
+                "bin-actions:self-hosted:Linux:X64", "${SOURCE_ALLOWED:-} == true",
+                "$PWD == \"$source\" && $GITHUB_WORKSPACE == \"$source\"",
+                "CARGO_BUILD_JOBS=1 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0",
+                "RUSTC=\"$sdk/bin/rustc\" RUSTDOC=\"$sdk/bin/rustdoc\"",
+                "caps=($((2*1024*1024*1024)) $((4*1024*1024*1024)))",
+                "COLD560_NONPROVIDER_GROWTH_BYTES=$((5632*1048576))", "((allocated<=512*1048576))",
+                "((available>=need[$dev]))", "((remaining>0 && remaining<=420))", "deadline=$((SECONDS+remaining-20))",
+                "start_owned provider-prepare 120 /usr/bin/bash \"$preparer\" build",
+                "tracer=$root/bin/strace;fixture=$root/bin/approve-launch",
+                "inherited_command cold 420 pass none \"$tracer\" --debug --seccomp-bpf -f -qq -s 65535 -e trace=execve,execveat",
+                "-o \"$job/proof/prepared-cold-bootstrap.exec\" \"$source/rust/tools/check-disk-space\" --path \"$source\" --growth-mib 2048",
+                "hold \"$out/observer.log\";hold \"$job/proof/prepared-cold-bootstrap.exec\"",
+                "OPENPILOT_CI_PREPARED_RUST_ROOT=\"$sdk\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\"",
+                "cold failure remains sticky", "out=$held_output verify_held || final=1", "seal_after \"$suffix\" || final=1",
+                "provider_after \"$suffix\" || final=1", "first-failure",
+            ] { assert!(helper.contains(needle), "missing actual Fast helper contract: {needle}"); }
+            assert_eq!(
+                helper
+                    .matches("\"$job/proof/prepared-cold-bootstrap.exec\"")
+                    .count(),
+                2,
+                "raw trace has one producer and a read-only hold"
+            );
+            assert!(
+                helper
+                    .find("provider preparation warmed cold bootstrap")
+                    .unwrap()
+                    < helper.find("inherited_command cold").unwrap()
+            );
+            for (file, pin) in [
+                ("cold_tracer_launch_560.sh", "launch_shared_sha="),
+                (
+                    "prepare-cold-strace-560",
+                    "export COLD560_PREPARE_HELPER_SHA256=",
+                ),
+            ] {
+                let body = fs::read(root().join("tools/ci").join(file)).unwrap();
+                assert!(helper
+                    .lines()
+                    .any(|line| line == format!("{pin}{:x}", Sha256::digest(&body))));
+            }
+            let auditor = fs::read_to_string(
+                root().join("rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs"),
+            )
+            .unwrap();
+            for needle in [
+                "audit_trace_for_sdk(&trace.text, &sdk)?",
+                "Some(fast_provider(&job, &source, &sdk, &source_sha)?)",
+                "trace.verify_unchanged()?",
+                "program.verify()?",
+                "input.verify_unchanged()?",
+                "trace_sha256",
+                "private-patched-stopped-source-560-v1",
+            ] {
+                assert!(
+                    auditor.contains(needle),
+                    "missing native actual audit: {needle}"
+                );
+            }
             assert!(at(operation_guard) < at(cold_audit));
             assert!(at(cold_audit) < at(caller_prepare));
             assert!(at(caller_prepare) < at(caller_context));
@@ -588,209 +787,240 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         );
     }
 }
-
 #[test]
 fn cold_bootstrap_stderr_collection_is_owned_bounded_and_preserves_failure_evidence() {
     let workflow =
         parse(&fs::read_to_string(root().join(".github/workflows/fast-checks.yml")).unwrap())
             .unwrap();
-    let script = workflow["jobs"]["native"]["steps"]
+    let caller = workflow["jobs"]["native"]["steps"]
         .as_array()
         .unwrap()
         .iter()
-        .find(|step| step["name"] == "Prepare native CI validation")
-        .unwrap()["run"]
-        .as_str()
+        .find(|step| step["id"] == "fast_cold")
         .unwrap();
-    let status_at = script.find("> \"$cold_proof/cold-tracer.status\"").unwrap();
-    let collect_at = script.find("cold_collect_stderr 100 20").unwrap();
-    assert!(
-        status_at < collect_at,
-        "persist tracer status before draining"
+    assert_eq!(
+        caller["run"].as_str().unwrap().trim(),
+        "\"$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh\" cold"
     );
-    let functions = script
-        .split_once("cold_collector_current() {\n")
+    let script = fs::read_to_string(root().join("tools/ci/fast_native_cold_560.sh")).unwrap();
+    let common_path = root().join("tools/ci/cold_tracer_launch_560.sh");
+    let common = fs::read_to_string(&common_path).unwrap();
+    let fail = script
+        .lines()
+        .find(|line| line.starts_with("fail() {"))
+        .unwrap();
+    let finish = script
+        .split_once("finish() {\n")
         .unwrap()
         .1
-        .split_once("cold_provider before\n")
+        .split_once("\n}\ntrap finish EXIT")
         .unwrap()
         .0;
-    let launch = script
-        .split_once("exec {cold_stderr_fd}> >(\n")
-        .unwrap()
-        .1
-        .split_once("cold_status=0\n")
-        .unwrap()
-        .0;
-    let finish = script.split_once("cold_records_status=0\n").unwrap().1;
-    assert_eq!(launch.matches("ulimit -f 524288 || exit 1").count(), 1);
-    // Actions-only: reuse the real collector and finalization code. Shorten only
-    // its private poll counts; no production environment override is introduced.
-    assert_eq!(finish.matches("cold_collect_stderr 100 20").count(), 1);
-    let finish = finish.replace("cold_collect_stderr 100 20", "cold_collect_stderr 2 20");
-    for (case, expected_status, collection_status, wait_status, timed_out, reaped) in [
-        ("normal", 0, 0, "0", false, true),
-        ("tracer_failure", 23, 0, "0", false, true),
-        ("collector_failure", 1, 1, "1", false, true),
-        ("held_pipe", 1, 124, "137", true, true),
-        ("wrong_start_ticks", 1, 125, "not_waited", false, false),
-        ("wrong_parent", 1, 125, "not_waited", false, false),
-        ("drift_kernel", 1, 0, "0", false, true),
-        ("drift_proc-version", 1, 0, "0", false, true),
-        ("drift_package", 1, 0, "0", false, true),
-        ("drift_package-provider", 1, 0, "0", false, true),
+    // 별도 pipe collector는 사라졌다. 실제 공유 launcher가 직접 stderr 파일을
+    // 제한하고, status를 STOP 전에 보존하며 같은 소유 leader를 direct wait한다.
+    assert!(common.contains("ulimit -f 524288 || exit 125"));
+    assert!(common
+        .contains("> \"$out/logs/$label.stdout\" 2> \"$out/logs/$label.stderr\" < /dev/null &"));
+    assert!(
+        common
+            .find("printf \"%s\\n\" \"$code\" > \"$status\"")
+            .unwrap()
+            < common.find("kill -STOP \"$$\"").unwrap()
+    );
+    for needle in [
+        "${fields[1]} == \"$$\"",
+        "${fields[19]} =~ ^[0-9]+$",
+        "$(pid_identity \"$active\") == \"$identity\"",
+        "wait -f \"$leader\"",
+        "group live/unknown after direct wait",
+        "live-member",
+    ] {
+        assert!(
+            common.contains(needle),
+            "missing owned launch boundary: {needle}"
+        );
+    }
+    for needle in [
+        "if kill_owned;then wait -f \"$leader\";else final=1;groups_ok=false;fi",
+        "out=$held_output verify_held || final=1",
+        "seal_after \"$suffix\" || final=1",
+        "provider_after \"$suffix\" || final=1",
+        "admit || final=1",
+        "$original == 0 && $final == 0 && $groups_ok == true && $passed == true",
+        "> \"$out/$operation.status\"",
+        "> \"$out/first-failure\"",
+    ] {
+        assert!(
+            finish.contains(needle),
+            "missing sticky finalization: {needle}"
+        );
+    }
+    // GHA의 authored lifecycle controls다. production 함수 본문/timeout은 그대로
+    // 사용한다. source/SDK/provider after의 probe는 실패 전파만 검사하며 실제 SDK
+    // qualification은 별도의 ignored native audit가 담당한다. Cargo/ptrace는 호출하지 않는다.
+    for (case, original, target_code, expected, nonlive) in [
+        ("normal", 0, 0, 0, true),
+        ("tracer_failure", 23, 23, 1, true),
+        ("collector_failure", 1, 1, 1, true),
+        ("held_pipe", 1, 0, 1, false),
+        ("wrong_start_ticks", 1, 0, 1, false),
+        ("wrong_parent", 1, 0, 1, false),
+        ("drift_kernel", 0, 0, 1, true),
+        ("drift_proc-version", 0, 0, 1, true),
+        ("drift_package", 0, 0, 1, true),
+        ("drift_package-provider", 0, 0, 1, true),
+        ("seal_failure", 0, 0, 1, true),
+        ("provider_after_failure", 0, 0, 1, true),
+        ("admission_failure", 0, 0, 1, true),
     ] {
         let proof = tempfile::tempdir().unwrap();
         let environment = BTreeMap::from([
             ("PATH".into(), "/usr/bin:/bin".into()),
             ("COLD_CASE".into(), case.into()),
             ("COLD_PROOF".into(), proof.path().to_str().unwrap().into()),
+            (
+                "COLD_LAUNCH_SOURCE".into(),
+                common_path.to_str().unwrap().into(),
+            ),
         ]);
         let harness = format!(
             r#"set -u
+set +m
 umask 077
-set -C
-cold_parent=$BASHPID
-cold_proof=$COLD_PROOF
-cold_started=unit-test
-cold_collector_current() {{
-{functions}
-cold_launch() {{
-exec {{cold_stderr_fd}}> >(
-{launch}
-}}
-if [[ $COLD_CASE == collector_failure ]]; then cold_launch 2>/dev/full; else cold_launch; fi
-for ((poll=0; poll<100; poll++)); do
-  [[ ! -s $cold_proof/cold-stderr.start.stat ]] || break
-  /usr/bin/sleep 0.01
-done
-cold_status=0
-if [[ $COLD_CASE == tracer_failure ]]; then cold_status=23; fi
-printf 'stderr payload\n' >&"$cold_stderr_fd"
-cold_writer=
-if [[ $COLD_CASE == held_pipe || $COLD_CASE == wrong_* ]]; then
-  /usr/bin/mkfifo "$cold_proof/writer-release"
-  exec {{cold_release_fd}}<> "$cold_proof/writer-release"
-  (
-    IFS= read -r writer_row < "/proc/$BASHPID/stat"
-    printf '%s\n' "$writer_row" > "$cold_proof/writer-ready"
-    IFS= read -r -t 3 release <&"$cold_release_fd"
-    test "$release" = release
-  ) 2>&"$cold_stderr_fd" &
-  cold_writer=$!
-  for ((poll=0; poll<100; poll++)); do
-    [[ ! -s $cold_proof/writer-ready ]] || break
-    /usr/bin/sleep 0.01
-  done
-  IFS= read -r writer_row < "$cold_proof/writer-ready"
-  [[ $writer_row == "$cold_writer "* ]]
-  tail=${{writer_row##*) }}
-  IFS=' ' read -r -a writer_fields <<< "$tail"
-  [[ ${{writer_fields[1]}} == "$cold_parent" && ${{writer_fields[19]}} =~ ^[1-9][0-9]*$ ]]
-fi
-if [[ $COLD_CASE == wrong_* ]]; then
-  IFS= read -r real_row < "$cold_proof/cold-stderr.start.stat"
-  tail=${{real_row##*) }}
-  IFS=' ' read -r -a fields <<< "$tail"
-  real_ticks=${{fields[19]}}
-  if [[ $COLD_CASE == wrong_parent ]]; then fields[1]=0; else fields[19]=$((real_ticks+1)); fi
-  printf '%s (negative) %s\n' "$cold_stderr_pid" "${{fields[*]}}" >| "$cold_proof/cold-stderr.start.stat"
-fi
-for record in metadata sha256 version version.stderr kernel kernel.stderr proc-version proc-version.stderr package package.stderr package-provider; do
-  printf 'unit-provider\n' > "$cold_proof/cold-strace.before.$record"
-done
-cold_provider() {{
-  test "$1" = after && test -s "$cold_proof/cold-tracer.status" || return 1
-  printf 'after\n' > "$cold_proof/provider-after" || return 1
-  for record in metadata sha256 version version.stderr kernel kernel.stderr proc-version proc-version.stderr package package.stderr package-provider; do
-    printf 'unit-provider\n' > "$cold_proof/cold-strace.after.$record" || return 1
-  done
-  if [[ $COLD_CASE == drift_* ]]; then
-    printf 'changed-provider\n' >| "$cold_proof/cold-strace.after.${{COLD_CASE#drift_}}" || return 1
-  fi
-}}
-cold_finish() {{
-cold_records_status=0
+out=$COLD_PROOF;held_output=$out;operation=cold;phase=unit
+GITHUB_SHA=authored-lifecycle-control
+active= identity=;owned_code= owned_waited=;groups_ok=true;passed=true;provider_sha=authored
+mode=run-inherited;launch_label= launch_dir= launch_fault=;launch_seen=false
+base_env=(PATH=/usr/bin:/bin LC_ALL=C COLD_CASE="$COLD_CASE" COLD_PROOF="$out");extra_env=()
+declare -A held_fd=() held_id=() held_sha=() aliases=() alias_id=()
+mkdir "$out/logs"
+. "$COLD_LAUNCH_SOURCE"
+{fail}
+admit() {{ [[ $phase != final || $COLD_CASE != admission_failure ]]; }}
+seal_after() {{ printf '%s\n' "$1" > "$out/source-sdk-after";[[ $COLD_CASE != seal_failure ]]; }}
+provider_after() {{ printf '%s\n' "$1" > "$out/provider-after";[[ $COLD_CASE != provider_after_failure ]]; }}
+finish() {{
 {finish}
 }}
+for record in kernel proc-version package package-provider;do
+  printf 'authored provider metadata\n' > "$out/$record"
+  hold "$out/$record"
+done
+if [[ $COLD_CASE == collector_failure ]];then ln -s /dev/full "$out/logs/cold.stderr";fi
+deadline=$((SECONDS+3))
+start_owned cold 1 /usr/bin/bash --noprofile --norc -c '
+  if [[ $COLD_CASE == held_pipe || $COLD_CASE == wrong_parent ]];then
+    (printf "%s\n" "$BASHPID" > "$COLD_PROOF/held-child";exec /usr/bin/sleep 2) &
+  fi
+  printf "stderr payload\n" >&2 || exit 1
+  [[ $COLD_CASE != tracer_failure ]] || exit 23
+'
+leader=$active;real_identity=$identity;child=;child_ticks=
+if [[ -s $out/held-child ]];then
+  IFS= read -r child < "$out/held-child"
+  IFS= read -r -n 8193 row < "/proc/$child/stat"
+  rest=${{row##*) }};read -r -a fields <<< "$rest"
+  [[ ${{#fields[@]}} -ge 20 && ${{fields[19]}} =~ ^[0-9]+$ ]]
+  child_ticks=${{fields[19]}}
+fi
+IFS= read -r observed < "$out/logs/cold.status"
+[[ $observed == {target_code} ]]
+if [[ $COLD_CASE == held_pipe || $COLD_CASE == wrong_* ]];then
+  if [[ $COLD_CASE == wrong_start_ticks ]];then
+    identity=$((real_identity+1))
+    if kill_owned;then exit 91;fi
+    [[ $(pid_identity "$leader" T) == "$real_identity" ]]
+  elif [[ $COLD_CASE == wrong_parent ]];then
+    [[ $child =~ ^[1-9][0-9]*$ ]]
+    active=$child;identity=$real_identity
+    if pid_identity "$child";then exit 92;fi
+    if kill_owned;then exit 93;fi
+    kill -0 "$child"
+  else
+    guard=0;group_quiet "$leader" "$leader" "$out/logs/unit-live.group" || guard=$?
+    [[ $guard == 1 ]]
+    grep -Fx 'kind=live-member' "$out/logs/unit-live.group"
+  fi
+  # 오염된 identity는 신호 대상으로 쓰지 않는다. fixture의 원래 소유 leader를
+  # 복구·재검증한 뒤 회수하며, 그 이전 거부 상태는 groups_ok=false로 남긴다.
+  active=$leader;identity=$real_identity
+  [[ $(pid_identity "$leader" T) == "$identity" ]]
+  kill_owned
+  waited=0;wait -f "$leader" || waited=$?
+  [[ $waited == 137 ]]
+  if [[ -n $child ]];then
+    terminal=false
+    for ((poll=0;poll<100;poll++));do
+      if [[ ! -d /proc/$child ]];then terminal=true;break;fi
+      row=
+      if ! IFS= read -r -n 8193 row < "/proc/$child/stat";then
+        [[ ! -d /proc/$child ]] || exit 94
+        terminal=true;break
+      fi
+      rest=${{row##*) }};read -r -a fields <<< "$rest"
+      [[ ${{#fields[@]}} -ge 20 && ${{fields[2]}} == "$leader" && ${{fields[19]}} == "$child_ticks" ]]
+      if [[ ${{fields[0]}} == Z || ${{fields[0]}} == X ]];then terminal=true;break;fi
+      sleep 0.01
+    done
+    [[ $terminal == true ]]
+  fi
+  group_quiet "$leader" '' "$out/logs/unit-cleaned.group"
+  active= identity=;groups_ok=false
+else
+  group_quiet "$leader" "$leader" "$out/logs/unit-before-release.group"
+  complete_owned cold
+  [[ $owned_code == {target_code} && $owned_waited == {target_code} ]]
+fi
+if [[ $COLD_CASE == drift_* ]];then printf 'changed provider metadata\n' > "$out/${{COLD_CASE#drift_}}";fi
+phase=final
 result=0
-cold_finish || result=$?
-if [[ $COLD_CASE == wrong_* ]]; then
-  cold_stderr_ticks=$real_ticks
-  cold_collector_current
-  printf '%s\n' "$real_row" >| "$cold_proof/cold-stderr.start.stat"
+(
+  set +e
+  (exit {original})
+  finish
+) || result=$?
+[[ $result == {expected} ]]
+[[ $(cat "$out/source-sdk-after") == after-cold && $(cat "$out/provider-after") == after-cold ]]
+[[ $(cat "$out/logs/cold.status") == {target_code} ]]
+[[ $(cat "$out/cold.status") == $'original_exit={original}\nfinalizer_exit={expected}\nowned_groups_nonlive={nonlive}' ]]
+if [[ $result == 0 ]];then
+  [[ ! -e $out/first-failure && $(cat "$out/cold-complete") == "$GITHUB_SHA" ]]
+else
+  [[ -s $out/first-failure && ! -e $out/cold-complete ]]
 fi
-if [[ -n $cold_writer ]]; then
-  printf 'release\n' >&"$cold_release_fd"
-  exec {{cold_release_fd}}>&-
-  # Writer has its own 3s read deadline; NativeRunner owns the outer 5s cleanup.
-  wait "$cold_writer"
-fi
-if [[ $COLD_CASE == wrong_* ]]; then
-  cold_collect_stderr 2 20
-  test "$cold_stderr_wait_status" = 0 || exit 91
-  test "$cold_stderr_reaped" = true || exit 92
-fi
-printf 'postconditions-verified\n' > "$cold_proof/collector-control-complete"
+printf 'postconditions-verified\n' > "$out/collector-control-complete"
 exit "$result"
 "#
         );
         let status = run_shell(&harness, &environment).unwrap();
-        assert_eq!(status.code(), Some(expected_status), "{case}");
-        if case != "tracer_failure" {
-            assert_eq!(
-                fs::read_to_string(proof.path().join("collector-control-complete")).unwrap(),
-                "postconditions-verified\n",
-                "{case}: a failed cleanup assertion must not count as expected exit 1"
-            );
-        }
-        let tracer_status = if case == "tracer_failure" { 23 } else { 0 };
+        assert_eq!(status.code(), Some(expected), "{case}");
         assert_eq!(
-            fs::read_to_string(proof.path().join("cold-tracer.status")).unwrap(),
-            format!("shell_wait_status={tracer_status}\n"),
-            "{case}"
+            fs::read_to_string(proof.path().join("collector-control-complete")).unwrap(),
+            "postconditions-verified\n",
+            "{case}: failed assertions cannot count as expected exit 1"
         );
-        let receipt = fs::read_to_string(proof.path().join("cold-tracer.result")).unwrap();
-        for line in [
-            format!("shell_wait_status={tracer_status}"),
-            format!("stderr_collection_status={collection_status}"),
-            format!("stderr_wait_status={wait_status}"),
-            format!("stderr_timed_out={timed_out}"),
-            format!("stderr_reaped={reaped}"),
-            "strace_debug_requested=true".into(),
-            "diagnostic_only=true".into(),
-            "stderr_file_limit_bytes=536870912".into(),
-            "seccomp_bpf_activation=unproven".into(),
+        for (name, value) in [
+            ("source-sdk-after", "after-cold\n"),
+            ("provider-after", "after-cold\n"),
         ] {
-            assert!(
-                receipt.lines().any(|actual| actual == line),
-                "{case}: {line}"
-            );
-        }
-        let stderr_bytes = receipt
-            .lines()
-            .find_map(|line| line.strip_prefix("stderr_bytes_observed="))
-            .unwrap()
-            .parse::<u64>()
-            .unwrap();
-        assert!(stderr_bytes <= 512 * 1024 * 1024, "{case}");
-        if reaped {
             assert_eq!(
-                stderr_bytes,
-                fs::metadata(proof.path().join("prepared-cold-bootstrap.stderr"))
-                    .unwrap()
-                    .len(),
-                "{case}"
+                fs::read_to_string(proof.path().join(name)).unwrap(),
+                value,
+                "{case}: finalization must run on failure"
             );
         }
         assert_eq!(
-            fs::read_to_string(proof.path().join("provider-after")).unwrap(),
-            "after\n",
-            "{case}: provider-after must run even when collection fails"
+            fs::read_to_string(proof.path().join("logs/cold.status")).unwrap(),
+            format!("{target_code}\n"),
+            "{case}: original command status"
         );
+        if case != "collector_failure" {
+            let stderr = fs::read(proof.path().join("logs/cold.stderr")).unwrap();
+            assert_eq!(stderr, b"stderr payload\n", "{case}");
+            assert!(stderr.len() <= 512 * 1024 * 1024);
+        }
     }
 }
-
 #[test]
 fn future_diagnostic_runner_and_fork_refusal_require_static_approved_routing() {
     let workflow =

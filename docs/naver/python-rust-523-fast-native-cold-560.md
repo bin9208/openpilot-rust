@@ -1,0 +1,244 @@
+# #560 Fast private provider와 STOP 승인기 연결
+
+작성: 2026-10-26. 추적: [#560](https://github.com/bin9208/openpilot-rust/issues/560).
+시작 시 읽은 HEAD: `561f20d9f2a0d2986b7bf271fabab237b7b3d0e6`.
+공유 worktree의 다른 작업은 보존했다. **helper/native admission 구현 완료,
+WF 연결·bootstrap jobs1 등록·GHA 수용은 부모 대기, 7분/6GiB fit는 UNRUN**이다.
+
+## 실제 구현과 호출 경계
+
+- `tools/ci/fast_native_cold_560.sh cold`: 실제 `bin-actions/self-hosted/Linux/X64`,
+  `GITHUB_JOB=native`, `SOURCE_ALLOWED=true`, owned private source/job/SDK와 compile
+  profile을 검사한다. 현재 target/cache가 비어 있는 상태에서 provider를 준비하고,
+  공유 `inherited_command cold 420 pass none`으로 기존 `check-disk-space --path
+  "$DIAG_SOURCE" --growth-mib 2048`를 관측한다. Cargo warmup은 없다.
+- `tools/ci/prepare-cold-strace-560`: 기존 pinned Ubuntu6.8+observer+inherited patch
+  provider preparation을 재사용한다. 변경 없는 `cold560_exec_inheritance.rs`를 실제
+  공식 SDK의 absolute rustc로 컴파일하여 `$CI_JOB_TEMP/cold-strace-560/bin/approve-launch`에
+  둔다. 이 std-only approver 컴파일과 ELF/DSO 봉인도 **같은120초/512MiB**에 포함한다.
+  추가 설치나 apt, 공유 `/usr/bin`/SDK 변경은 없다. runtime의 jq/setsid/sleep 및 rustc도
+  기존 preparation 도구/DSO 봉인에 추가했다.
+- `tools/ci/fast_native_cold_560.sh after`: maintained routing 검사 뒤 항상 실행한다.
+  cold 때 보유한 canonical path/full metadata/SHA를 다시 확인하고 provider 전체,
+  source/index, 원래 SDK의 full manifest/roster를 검증한다. `cold` 자체의 EXIT에서도
+  동일 범위를 `after-cold`로 검증한다. prepare의 기존 `verify` 기본값 `after-fast`와
+  `verify-complete`는 유지하며, 새 `COLD560_VERIFY_PHASE=after-cold`에 별도 1회 marker를 둔다.
+  after의 새 held FD 기록은 `final-held/`에 분리하여 native auditor가 소비한 cold의
+  `held-before.tsv`/`held-after.tsv`/`cold-held.tsv`를 덮거나 append하지 않는다.
+- 실제 감사 파일은 `src/prepared_audit.rs`가 아니라 기존 등록된
+  `rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs`다. 새 mod/Cargo 등록은 없다.
+  `self-hosted/native` actual receipt에는 private provider admission이 **필수**다.
+  환경 flag 생략으로 stock strace 경로로 되돌아갈 수 없다. 기존 hosted diagnostic의
+  실제 receipt 경로와 marker schema `openpilot.prepared-cold-bootstrap.native.v1`은 유지한다.
+
+실제 selected path는 `$CI_JOB_TEMP/cold-strace-560/bin/strace`다. 공통 library를 검토된
+SHA로 확인한 **동일 열린 FD**에서 source한다. source할 때는 함수 정의 외 부작용이 없다.
+unchanged approver가 STOP 중인 tracer와 timeout의 실제 ELF/device/inode,
+PID/startticks/PPID/PGID/session, 정확한 두 argv, source/common/provider SHA를 검증하고,
+fresh private directory의 O_EXCL 승인 뒤 같은 tracer를 CONT한다.
+`COLD560_FILTER_INHERIT=1` 단독 실행이나 승인 파일 수동 작성은 사용하지 않는다.
+
+native admission은 실제 private ELF 전체 hash와 metadata를 직접 읽는다. preparation의
+bin roster에 기록된 inode/mode/UID/GID/nlink/size/nanosecond mtime/ctime도 대조한다.
+보유 전후 roster, source/index/SDK 전후, provider의 inputs/source/build/bin 전체 봉인,
+ready/approve byte 일치, binding/승인 출력, 정상 EOF인 inherited5 records, 두 NUL argv와
+**50개 실제 local root environment**를 검사한다. 입력과 프로그램은 receipt 원자 발행
+직전에 다시 검사한다. 기존 trace parser에서 unknown/미완성/잘못된 exec를 거부하는 정책은
+바꾸지 않았다. provider admission이 실제 raw trace의 strict 감사를 대체하지 않는다.
+
+## 예산과 실패 처리
+
+첫 trusted step에서 고정한 `COLD560_JOB_DEADLINE_EPOCH`가 원래420초 종료값이다.
+helper 호출 시 새420초를 부여하면 안 된다. shared launcher의 기존 timeout/15초 KILL/
+20초 tail body는 바꾸지 않고, 잔여 시간에서 그20초를 내부 예약한다. provider의 바깥
+owned command cap120초와 preparation 자체의120초 종료값을 함께 적용한다.
+diagnostic의45분 job/shared1200초/configure180초/make300초/`-j2`는 그대로다.
+
+디스크는 다음 **합계6GiB**를 operation-specific envelope로 admission한다.
+같은 filesystem이면 잔여 예상 증가량을 합산하고, 다르면 filesystem별로 검사한다.
+allocated/apparent 사용량을 모두 제한하며 고정25/35GiB floor는 없다.
+
+| 범위 | cap/포함 관계 |
+| --- | --- |
+| source owner 전체 | 2GiB. `.git`, checkout, `$DIAG_SOURCE/rust/target` 포함 |
+| owned job 전체 | 4GiB. 기존 venv/cache, registry, cold guard, proof, provider, private work 포함 |
+| provider root + provider preparation proof | 위4GiB 안의512MiB. prepare/fixture/봉인 모두 포함 |
+| provider 이외 최대 forecast | 5632MiB. 별도6GiB를 더 할당하지 않음 |
+
+운영 전 `/proc/meminfo`의 실제 MemAvailable와 읽을 수 있는 현재 cgroup v2 및 그 조상들의
+`memory.max-memory.current` 중 최소값을 확인한다. 시작 compile forecast는2GiB이며,
+진행 중에는 실제 잔여64MiB 미만을 거부한다. cgroup을 읽어야 하는데 읽지 못하면 거부한다.
+worker1/incremental0/dev-test debug0이며 release 설정을 사용하지 않는다. 현재 공유
+`rust/Cargo.toml`에는 release thin LTO/codegen-units1과 num-bigint-dig dev opt3 예외가
+있으며 이 작업은 변경하지 않았다.
+
+이 cap은 자원 가정과 phase/poll admission이다. provider120초/512MiB, source2GiB 안의
+native target, 전체7분/6GiB의 실제 peak·fit를 측정했다고 주장하지 않는다. 특히 preparation의
+full SDK/도구/헤더 봉인 비용과 local RAM4GB 하에서의 compile 여유는 GHA에서 확인해야 한다.
+fit하지 않으면 별도 dependency job에서 exact pinned source/flags로 준비한 provider+approver를
+입력·원래 SDK·실제 ELF/DSO·source/build manifest와 함께 봉인해 인계하고, Fast에서는 그
+artifact를 strict admission 후 사용하도록 별도 구성할 수 있다. 현재 helper는 이 대안을
+자동 fallback으로 실행하지 않는다. cap/기한 증가나 stock provider 재시도는 없다.
+
+실패는 `first-failure`, `cold.status`/`after.status` 및 각 단계 stdout/stderr에 남긴다.
+loader/preflight 실패도 private proof 입장 뒤부터 기록한다. source/job 소유성 자체가
+불명확하면 그 위치에 쓰거나 삭제하지 않으며, 부모의 기존 입장 증거를 보존한다.
+현재 identity를 검증한 소유 leader/group만 KILL/direct wait한다. identity 불명은 signal/wait
+대신 실패로 남긴다. 정상 종료 전후에도 group nonlive를 요구한다. finalizer 실패가 기존
+실패를 성공으로 덮지 않고, cold 실패는 `after`에서 재승인되지 않는다.
+helper는 source/job/provider를 삭제하지 않는다. 부모 cleanup은 upload와 source/SDK final
+외에 **`fast_cold_final` 성공까지** 요구해야 한다. 실패/소유성 불명은 회수 승인으로 간주하지 않는다.
+
+## 부모가 반영할 정확 변경
+
+현재 `rust/tools/check-disk-space`는 bootstrap에 `CARGO_BUILD_JOBS=2`를 하드코딩한다.
+외부 env1은 이를 덮지 못한다. 이 파일은 허용 쓰기 범위 밖이므로 변경하지 않았다.
+부모가 다음 **한 줄**을 적용하고 관련 policy 검사도 함께 갱신해야 한다. 새 helper는
+아래 실제 행이 없으면 preparation/Cargo 전에 실패한다. source를 private copy로 바꾸거나
+다른 SHA로 위장하지 않는다.
+
+```diff
+-    CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 "${bootstrap_cargo[@]}" build \
++    CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1 "${bootstrap_cargo[@]}" build \
+```
+
+WF는 수정하지 않았다. 기존 Fast native 첫 trusted step의 source/runner 검증 뒤에 다음을
+추가하여 원래7분 clock을 시작한다. 기존 timeout-minutes7, job-temp/private checkout,
+source precheckout2GiB admission, SDK before/after, 모든 후속 trusted 조건은 유지한다.
+
+```bash
+test -z "${COLD560_JOB_DEADLINE_EPOCH:-}"
+printf 'COLD560_JOB_DEADLINE_EPOCH=%s\n' "$((EPOCHSECONDS+420))" >> "$GITHUB_ENV"
+```
+
+현재 긴 inline `Prepare native CI validation` run을 다음 step으로 연결한다. 기존 stock
+tracer와 stderr collector를 이 helper와 함께 이중 실행하면 안 된다.
+
+```yaml
+- name: Prepare native CI validation
+  id: fast_cold
+  if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+  working-directory: ${{ env.DIAG_SOURCE }}
+  shell: bash
+  env:
+    SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    FAST560_HELPER_SHA256: 645a23e3eed36c6663093cabd71f3618ba3f98af9ccf9848098659b25da1feec
+  run: '"$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh" cold'
+```
+
+이어지는 기존 routing step에서 기존6GiB warm admission을 유지한 뒤 실제 current auditor를
+빌드·실행한다. cold보다 앞서 Cargo/테스트를 실행하지 않는다.
+
+```bash
+OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" \
+  OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" \
+  "$DIAG_SOURCE/rust/tools/check-disk-space" --path "$DIAG_SOURCE" --growth-mib 6144
+CI_PREPARED_RUST_PROOF="$CI_JOB_TEMP/proof" \
+  "$CI_PREPARED_RUST_ROOT/bin/cargo" test --manifest-path rust/Cargo.toml \
+  -p openpilot-dev-tools --locked --test ci_disk_bootstrap \
+  prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- \
+  --ignored --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/prepared-cold-native-audit.log"
+grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/prepared-cold-native-audit.log"
+```
+
+기존 나머지 routing 검사 뒤, SDK/source final보다 앞에 다음 final step을 둔다.
+이 결과가 cleanup에 필수다. original failure를 무시하는 continue-on-error는 사용하지 않는다.
+
+```yaml
+- name: Seal Fast private cold provider after maintained checks
+  id: fast_cold_final
+  if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && steps.fast_cold.outcome != 'skipped' && env.DIAG_SOURCE != '' }}
+  working-directory: ${{ env.DIAG_SOURCE }}
+  shell: bash
+  env:
+    SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    FAST560_HELPER_SHA256: 645a23e3eed36c6663093cabd71f3618ba3f98af9ccf9848098659b25da1feec
+  run: '"$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh" after'
+```
+
+추가한 일반3개 회귀와 기존 parser 검사의 focused GHA 명령은 다음과 같다. ignored actual은
+위 실제 cold 증거가 준비된 동일 job에서만 실행한다.
+
+```bash
+"$CI_PREPARED_RUST_ROOT/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+  --no-default-features -p openpilot-dev-tools --test ci_disk_bootstrap prepared_audit::
+"$CI_PREPARED_RUST_ROOT/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
+  --no-default-features -p openpilot-dev-tools --test ci_disk_bootstrap -- -D warnings
+```
+
+## 소스 불변 증명과 납품 pin
+
+공유 library와 diagnostic은 이번 연결에서 변경0이다. 기존 Git blob
+`a8c80cad02466ecaf9110d4e3e4dfaec9c136df6`의 네 함수 구간을 현재 diagnostic에 역투영하면
+원본 **전체 bytes**가 같으며 SHA256은
+`b3e7266fdc4d7275c7e9ef58eeb4fda66070bd09ab8eb6e5985974ad3a38f4d5`다.
+따라서 원래18control/순서, marker10, protocol3, caps, strict audit body와 타이머를 보존한다.
+Fast의 observer-health AWK도 diagnostic에서 byte 동일하게 가져왔다.
+native 기존 parser/SDK admission prefix와 모든 기존 일반 테스트 원문도 보존했다.
+
+| 파일 | SHA256 |
+| --- | --- |
+| `tools/ci/fast_native_cold_560.sh` | `645a23e3eed36c6663093cabd71f3618ba3f98af9ccf9848098659b25da1feec` |
+| `tools/ci/prepare-cold-strace-560` | `6c7d99e6f5c1ee7fc4929c105a8bbb80334a47ec75e7e990ca5ea47c3d81bd58` |
+| `tools/ci/cold_tracer_launch_560.sh` | `1d5d0ab9d736e5cf24844a38ac6b35e9a02a0a279b7abb2d25e6fff82aff926a` |
+| `tools/ci/cold_tracer_diagnostic_560.sh` | `8a7383587589d01404f7e6573db8fd1ad458c22fbc6ff2755298b5a4a35ddc4b` |
+| `rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs` | `67c00cf93a2e73c40d6c0e43b938bcfd4f3379a2b2e3bde50478516ab83f47c7` |
+
+로컬에서 `bash -n`, 단일 Rust 파일 `rustfmt --check`, source 역투영·원문 비교,
+include 경로/50개 env key 대조 및 diff만 확인했다. 기능/ptrace/provider/helper source 실행,
+Cargo/build/test/Clippy/GHA 실행은0이다. 이 자료는 Rust type-check나 runtime 성공 증거가 아니다.
+부모가 WF/Focus/pins/원장/commit/push/GHA를 통합하고, exact-SHA의 새 회귀·실제 Fast cold
+strict receipt·전체 자원 fit와 기존18/marker10/protocol3 수용을 확인해야 한다.
+
+## 후속 좁은 정적 등록 — 2026-10-26
+
+기준 HEAD: `83620dd1d74c03c84370079aada18bbcb9d2b48f`.
+`ci_rust_isolation.rs`에
+`fast_native_cold_bootstrap_uses_one_worker_and_pinned_closed_launch_helper`만 추가했다.
+실제 `rust/tools/check-disk-space`의 jobs1 build 행이 정확히1회 있고 기존 jobs2 build 행은
+없어야 한다. 새 helper가 그 실제 source 행을 확인한 뒤 provider120초 준비와 공유 STOP
+승인 cold 호출을 순서대로 수행하는지, 같은 helper의 실제 absolute SDK/jobs1/debug0 환경,
+raw exec trace·원래2048MiB 인자, private tracer/approver 선택도 검사한다.
+library와 prepare source 전체 SHA가 helper의 정확한 literal pin에 연결되어야 한다.
+parent의 check-disk-space jobs1 한 줄과 같은 batch로 반영해야 하며, 아직 jobs2인 source를
+새 test가 성공으로 인정하지 않는다.
+
+**지목된 기존 jobs2 literal은 Fast 검사가 아니었다.** 기존
+`dbc_native_tools_are_built_before_every_required_consumer`의 literal은
+`rust/tools/build-dbc-generator`를 검사한다. 실제 DBC helper도 jobs2이고 Darwin 등에서
+사용한다. 이 기대행을 단순1로 바꾸면 변경하지 않은 DBC helper에 허위 실패가 생기므로,
+기존 DBC jobs2 검증은 byte 그대로 보존하고 실제 Fast disk bootstrap에 jobs1 검증을
+별도로 등록했다. DBC 소스나 정책을 약화·삭제하지 않았다.
+
+허용 범위의 `ci_rust_isolation.rs` 및 `ci_disk_bootstrap.rs`/그 leaf에서 구 Fast inline/
+stock strace에 의존하는 기대는 발견하지 못했다. `prepared_audit.rs`는 이미 실제 새
+provider/source를 검사하므로 이번 좁은 등록에서 수정하지 않았다.
+**실제 구 inline 의존은 허용 범위 밖 `ci_workflow_policy.rs`에 있다.** 이 파일도 수정하지
+않았다. 부모의 WF 연결과 함께 다음 두 함수를 계속 옮겨야 한다.
+
+- `native_fast_split_preserves_every_suite_and_build_check_once`: 기준 source507 부근의
+  native용 `exec /usr/bin/strace ...` 전체행 기대를 fixed helper의 정확한1회 호출과 source/SHA
+  binding으로 옮긴다. native 이외 worker의 기존 guard, 전체73 suite의 정확1회 분할,
+  원래6144MiB admission 및 cold→admission→audit→기존 suite 순서 검사는 보존한다.
+  actual ignored audit의 literal command도 부모가 변경하면 같은 실제 step source로 연결한다.
+- `cold_bootstrap_stderr_collection_is_owned_bounded_and_preserves_failure_evidence`:
+  기준 source593~790은 WF inline에서 `cold_collector_current`/`cold_provider before`/
+  process-substitution collector/finalizer를 추출한다. 새 WF의 literal run에는 이 함수들이
+  없으므로, source 검사/기능 harness의 대상을 새 고정 helper와 공통 launch 함수의 실제
+  source로 옮겨야 한다. 기존 정상/command 실패/출력 실패/남은 프로세스/잘못된 startticks·
+  parent/provider drift의 거부·상태 보존·after 실행 경계는 삭제하거나 skip하지 않는다.
+  source가 없을 때 임의 fallback으로 옛 inline을 재구성하면 안 된다.
+
+이 두 함수는 부모의 `ci_policy`/WF 통합과 함께 처리할 **남은 항목**이다. 새 helper의
+기능 수용이 끝났다는 뜻이 아니며 GHA는 여전히0회다. 새 일반 정적 등록의 focused GHA 명령:
+
+```bash
+"$CI_PREPARED_RUST_ROOT/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+  -p openpilot-dev-tools --test ci_rust_isolation \
+  fast_native_cold_bootstrap_uses_one_worker_and_pinned_closed_launch_helper -- --exact
+```
+
+로컬은 새 함수만 stdin으로 `rustfmt --edition 2021 --emit stdout` 처리하고 source/diff를
+확인했다. 파일 전체를 rustfmt하지 않았다. 새 함수 구간을 제거하면 기준 commit의 파일
+**전체 bytes**가 일치하므로, 부모가 방금 반영한 SDK escape18을 포함한 기존 함수/검사/
+baseline 형식은 변경0이다. Cargo/기능/GHA 실행, WF/Focus/ci_policy/SDK helper 수정은0이다.

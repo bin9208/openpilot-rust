@@ -49,6 +49,7 @@ pub struct CommandRecord {
     pub argv: Vec<String>,
     pub returncode: i32,
     pub free_before: u64,
+    pub growth_bytes: u64,
 }
 
 #[derive(Debug)]
@@ -115,6 +116,7 @@ pub fn run_checks(
             argv,
             returncode: result.code,
             free_before: space.free_bytes,
+            growth_bytes: check.growth_bytes,
         });
         write_json(&output.join("commands.json"), &records)?;
         println!("{} {}", check.name, result.code);

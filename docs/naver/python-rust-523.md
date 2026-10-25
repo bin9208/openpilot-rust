@@ -15,8 +15,9 @@
 1. 기존 실패의 실제 로그와 현재 소스를 대조하고, 이미 수정된 원인과 남은
    결함을 구분한다. 모델 수치·안전·시간·유효성 기준은 유지한다.
 2. 독립적인 생성기와 개발 도구 전환을 진행하고, 공유 등록·검증은 부모가 통합한다.
-3. 로컬에서는 문법·서식·diff만 확인한다. 기능·원본 비교·빌드·Clippy와
-   필요한 ARM QEMU 검사는 GitHub 기본 러너에서 실행한다. 초기 `bin-actions` 이력은 아래에 보존한다.
+3. 로컬 checkout에서는 문법·서식·diff만 확인한다. 기능·원본 비교·빌드·Clippy는
+   GitHub Actions에서 실행한다. 작은 native 검사는 등록된 `bin-actions`의4코어/4GiB/80GB,
+   jobs1·작업별 admission을 사용하고 ISA·큰 원본/ARM은 적합한 hosted 러너에 배정한다.
 4. 기능군별 실제 호출부와 원본 부재 검사를 통과한 뒤 인벤토리와 하위 이슈를
    갱신한다. 성공한 불변 검사는 재사용하고 최종 필수 PR/병합 후 게이트는 보존한다.
 5. 소스와 일치하는 전달 산출물까지 확인한다. 사용자 실기 수용과 전체 전환
@@ -1357,3 +1358,15 @@ collision DD artifact12606243075는 실제8개 충돌 case 자체와 그 trace �
 Carrot sourcef1의 분리 실행40217812565는 Python probe 격리 뒤 strict fresh와 공식 SDK 설치/before, SDK/source/index after에 도달했다. 다음 실패는 caller line24의 private proxy regular/nonsymlink 조건이다. 공식 Rustup1.29.1은 기본 symlink 우선이므로 준비 호출에 공식 `RUSTUP_HARDLINK_PROXIES=1`만 추가하고 기존 strict proxy 소유/원본 byte 조건을 유지한다. 설치 후 수리·symlink 허용·부분 채택은 하지 않는다. main은499723B이고 escape18개와 새 source GHA에서 확인한다.
 
 source561 모델 [40216927059](https://github.com/bin9208/openpilot-rust/actions/runs/40216927059)의 actual half99 관측은 원본/native 모두 little-endian `0080`(half -0)이었다. kernel92/call175/view365/alloc16/offset9472/arg1/worker0 및 source/object/image 대응을 확인했고 whole6/plain↔tap 출력도 동일했다. output99는 두 현재 경로에서+0이고 frozen만-0이므로 D1 strict 실패를 유지한다. artifact12608182890은27434534B/SHA256 `b7a9337a893a1addaa97804d3bc25ca8da7dc23d6f066478a053f2dffb425780`,2103safe unique/non-symlink/CRC 정상, final-seals failures=[]/pass/owned reaped=true다. 현재 입력의 최초 upstream 산술 producer나 역사 provider를 관측했다는 주장과 분리하며 expected/수학은 그대로다. Planner source33923의 native11/원본4/adapter13(real native160)/strictClippy 검증40216487452도 실제 성공했고 재실행하지 않는다.
+
+### #549 원본2 수용과 다음 actual caller 묶음 — 2026-10-26
+
+predelete5bee의 동일 checker present/absence·재등장 음성, DD full absent, f1collision8과 [main exact logger40217812664](https://github.com/bin9208/openpilot-rust/actions/runs/40217812664) 전체 성공 및 부모의 두 artifact 실물 감사를 결합해 #549의 Python 원본2만 교체 인정했다. inventory/families는 **3580=296교체/3부분/3281대기**다. old27의 역사17/대기10과 R4/전체 manager/기기 미수용을 그대로 둔다. sourcef1의 deep logger 준비/기능/Miri/ASAN/after/upload/cleanup 성공으로 #592의 완료 조건도 충족한다.
+
+Carrot source836의 [40218262329/job121244017130](https://github.com/bin9208/openpilot-rust/actions/runs/40218262329/job/121244017130)는 strict fresh/private hardlink proxy·전체 SDK before/after, original policy/실제 owned Params·IPC·socket/upload 및 cleanup까지 성공했다. private artifact12608431465=322456B/SHA `7ed75344375fc8b1b2c1dded587afe40f08c3218fee50129f4d4b4e9ab9b05b7`,36CRC,source/index/SDK5쌍 동일; 기능 artifact12608985622=10028070B/SHA `5366cf6dc03e2822d567cb430f3a4a6641bf343e342cfc3e17623b62c6b18dbe`,147CRC다. 정책32/ingress19/publication24/time6와 실제 owned12가 성공했다. 기존 #530의 Fast actual cold/routing 전체 조건은 다음 수정본 수용까지 열린 상태다.
+
+source836 Focus는278개 source pin 뒤 workflow outside-block 기준 hash 하나가 오래돼 중단됐다. 부모의 등록 누락을 확인했고 실제 허용 변경을 다시 대조한 뒤 검토한 바깥 원문의 정확 hash로 갱신한다. 검사를 제거·완화하거나 이를 runtime 실패로 분류하지 않는다.
+
+다음 묶음은 Planner host/ARM12·sanitizer3의 실제 호출을 native controller로 연결하고, Fast private patched tracer/STOP 승인/strict native auditor와 bootstrap jobs1을 연결한다. Fast7분·6GiB·provider120초/512MiB·원래18통제/marker10/protocol3 및 실패 전파는 유지한다. 실제 fit와 새 controller 기능은 GHA 대기다. 신규 memory wrapper unittest5와 Bash의 기존 Python memory 호출도 pending으로 등록하며 원본 outer controller는 독립 원본5/관측 corpus 수집용으로 보존한다. 원본 삭제나 compiler/Planner 전체 퇴역 credit을 앞당기지 않는다.
+
+이번 actual caller 묶음의 추가 실행 원장은153개(26교체/123대기/1기존native/2비실행/1제거)다. 새 host Planner 진입점, memory wrapper5, 이동한 Python memory dispatch도 대기로 추적한다. standalone ARM Planner도 같은 helper로 연결했다. source5의 실제 원본 JSON/bit/raw-log는 기존 Python process 수를 늘리지 않고 별도 bounded corpus로 보존해 향후 원본 퇴역 근거로 쓴다. 현재 corpus reader/남은 import 제거·원본 outer 삭제는 미완료다. Fast 새 경로는 별도 Sol 동료의 읽기 전용 검토에서도 구체 계약 불일치를 찾지 못했으나 실제 기능/fit 수용은 여전히 GHA 대기다.

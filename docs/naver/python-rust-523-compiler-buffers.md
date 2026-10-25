@@ -196,3 +196,7 @@ Cargo/test/Clippy·모델은 실행하지 않았다. 수정 후 원본 비교는
 부모가 같은 ignored exact selector를 실제1개 실행하여 32/147개 원본 비교를 확인해야 한다.
 앞선 일반6/Clippy 성공은 이 원본 비교의 성공을 대신하지 않으며 baseline 삭제 credit는0이다.
 수정 test SHA256: `2c391995d28a4cd64ad25cf10ec2dc2bb8625226c8bf493c7bc34905269eda64`.
+
+### 실제 original byte-copy API 보정 — 2026-10-26
+
+source33923의 [40216716675](https://github.com/bin9208/openpilot-rust/actions/runs/40216716675)는 native6와 strictClippy는 통과했으나 원본 recipe 생성 중 CPU allocator의 `ctypes.from_buffer`가 readonly 입력을 거부했다. 앞선 root import 수정 이후 실제 `tinygrad.device.Buffer.copyin`→`HCQAllocator._copyin`→`helpers.from_mv`까지 도달한 실패로, native trace 불일치는 아직 관측하지 않았다. fixture의 두 `memoryview(bytes(JSON_data))`만 `memoryview(bytearray(JSON_data))`로 바꿔 같은 길이·같은 모든 bytes를 writable backing으로 전달한다. 원본 method/allocator·native runtime·32 descriptor/147 recipe/비교 기준은 그대로다. 새 원본 비교는 GHA 대기이며 Python/F02 퇴역 credit은0이다.

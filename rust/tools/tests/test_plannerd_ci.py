@@ -71,6 +71,9 @@ def functional_steps(job: dict) -> list[dict]:
 
 
 def assert_planner_native_contract(main: dict, native: dict) -> None:
+  # 기존 inline 명령이 위임된 helper의 검토된 원문까지 묶는다.
+  assert hashlib.sha256((ROOT / 'tools/ci/planner_native_controller_523.sh').read_bytes()).hexdigest() == (
+      'a1416e3dc4ac16c31214b871576ec663564bcda8fcf0184f9285cd48175878ef')
   jobs, native_jobs = main["jobs"], native["jobs"]
   assert main["env"]["RUSTUP_TOOLCHAIN"] == native["env"]["RUSTUP_TOOLCHAIN"] == "1.94.0"
   assert jobs["native-arm"] == {"uses": "./.github/workflows/rust-native-arm.yml"}
@@ -233,9 +236,15 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
       "cargo test --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked",
       "cargo build --manifest-path rust/Cargo.toml -p openpilot-plannerd --bins --examples --locked",
       "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked -- -D warnings"]
-  assert named_step(planner, stages[4])["run"] == ('python -P rust/tools/check_plannerd_ci.py --bin-dir rust/target/debug '
-      + '--artifact "$RUNNER_TEMP/planner-artifact" --source-native "$RUNNER_TEMP/planner-source" '
-      + '--binding "$PLANNER_PARAMS_BINDING" --output "$RUNNER_TEMP/planner-comparison"\n')
+  assert named_step(planner, stages[4])["run"] == '/usr/bin/bash "$CI296_SOURCE/tools/ci/planner_native_controller_523.sh" runtime\n'
+  sanitizer = named_step(planner, "Check generated C with ASan, UBSan and allocator leak detection")
+  assert sanitizer["if"] == ("${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) "
+                              + "&& (matrix.runner == 'local-x64') }}")
+  assert sanitizer["run"] == ('python rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --sanitize '
+      '--python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl '
+      '--output "$RUNNER_TEMP/planner-sanitized"\n'
+      '/usr/bin/bash "$CI296_SOURCE/tools/ci/planner_native_controller_523.sh" memory\n')
+  assert planner["steps"].index(named_step(planner, stages[4])) < planner["steps"].index(sanitizer)
   aggregate = native_jobs["native-arm-checks"]
   assert aggregate["needs"] == list(NATIVE_ARM_FAMILIES)
   assert aggregate["if"] == "${{ always() }}" and "continue-on-error" not in aggregate

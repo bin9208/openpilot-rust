@@ -2219,7 +2219,7 @@ F03-runtime-model-media-comparators	rust/tools/check_model_outputs.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_model_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_model_startup.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_msgq_ion.py	pending
-F03-runtime-model-media-comparators	rust/tools/check_native_logging.py	pending
+F03-runtime-model-media-comparators	rust/tools/check_native_logging.py	replaced-local
 F03-runtime-model-media-comparators	rust/tools/check_navd_destination.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_navd_engine.py	pending
 F03-runtime-model-media-comparators	rust/tools/check_navd_http.py	pending
@@ -2444,7 +2444,7 @@ F03-runtime-model-media-comparators	rust/tools/lpa_source.py	pending
 F03-runtime-model-media-comparators	rust/tools/model_output_fixtures.py	pending
 F03-runtime-model-media-comparators	rust/tools/model_output_reference.py	pending
 F03-runtime-model-media-comparators	rust/tools/model_startup_reference.py	pending
-F03-runtime-model-media-comparators	rust/tools/native_logging_transport.py	pending
+F03-runtime-model-media-comparators	rust/tools/native_logging_transport.py	replaced-local
 F03-runtime-model-media-comparators	rust/tools/navd_cases.py	pending
 F03-runtime-model-media-comparators	rust/tools/navd_destination_source.py	pending
 F03-runtime-model-media-comparators	rust/tools/navd_runtime_source.py	pending

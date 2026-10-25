@@ -173,7 +173,7 @@ if [[ ! -x $binary ]]; then
   fi
   mkdir -p -- "$cache"
   env -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u CARGO_BUILD_TARGET -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
-    CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 "${bootstrap_cargo[@]}" build \
+    CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1 "${bootstrap_cargo[@]}" build \
     --manifest-path "$root/rust/Cargo.toml" -p openpilot-disk-space --bin disk-space-guard \
     --locked --target "$host" --target-dir "$cache/build" >&2
   temporary=$(mktemp "$cache/.publish.XXXXXXXX")

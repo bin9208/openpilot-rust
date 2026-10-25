@@ -1,6 +1,7 @@
 //! test_plannerd_ci.py의 구조 계약. YAML scalar는 ci_policy::parse처럼 문자열이다.
 use openpilot_dev_tools::ci_policy::{parse, validate_private_job_layout, TRUSTED_SOURCE};
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::{collections::BTreeSet, fs, path::PathBuf};
 
 pub const FAMILIES: [(&str, &str, usize, &str); 8] = [
@@ -130,6 +131,13 @@ fn replace_once(row: &mut Value, from: &str, to: &str) {
 }
 
 pub fn assert_contract(main: &Value, native: &Value) {
+    // 기존 inline 명령이 위임된 helper의 검토된 원문까지 묶는다.
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let helper = fs::read(root.join("tools/ci/planner_native_controller_523.sh")).unwrap();
+    assert_eq!(
+        format!("{:x}", Sha256::digest(helper)),
+        "a1416e3dc4ac16c31214b871576ec663564bcda8fcf0184f9285cd48175878ef"
+    );
     let jobs = &main["jobs"];
     let native_jobs = &native["jobs"];
     assert_eq!(main["env"]["RUSTUP_TOOLCHAIN"], "1.94.0");
@@ -379,7 +387,25 @@ pub fn assert_contract(main: &Value, native: &Value) {
         "cargo build --manifest-path rust/Cargo.toml -p openpilot-plannerd --bins --examples --locked",
         "cargo clippy --manifest-path rust/Cargo.toml -p openpilot-plannerd --all-targets --locked -- -D warnings",
     ]);
-    assert_eq!(named_step(planner, stages[4])["run"], "python -P rust/tools/check_plannerd_ci.py --bin-dir rust/target/debug --artifact \"$RUNNER_TEMP/planner-artifact\" --source-native \"$RUNNER_TEMP/planner-source\" --binding \"$PLANNER_PARAMS_BINDING\" --output \"$RUNNER_TEMP/planner-comparison\"\n");
+    assert_eq!(
+        named_step(planner, stages[4])["run"],
+        "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" runtime\n"
+    );
+    let sanitizer = named_step(
+        planner,
+        "Check generated C with ASan, UBSan and allocator leak detection",
+    );
+    assert_eq!(sanitizer["if"], "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.runner == 'local-x64') }}");
+    assert_eq!(
+        sanitizer["run"],
+        concat!(
+            "python rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --sanitize ",
+            "--python \"$(command -v python)\" --acados \"$PLANNER_GENERATOR\" --wheel \"$RUNNER_TEMP\"/planner-wheel/*.whl ",
+            "--output \"$RUNNER_TEMP/planner-sanitized\"\n",
+            "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" memory\n"
+        )
+    );
+    assert!(index(planner, named_step(planner, stages[4])) < index(planner, sanitizer));
     let aggregate = &native_jobs["native-arm-checks"];
     assert_eq!(aggregate["needs"], json!(FAMILIES.map(|(name, ..)| name)));
     assert_eq!(aggregate["if"], "${{ always() }}");
