@@ -19,7 +19,7 @@ import traceback
 
 MIB, GIB = 1024**2, 1024**3
 BASE = "tools/ci/model_current_triplet_482.py"
-BASE_SHA = "9d9d6366f2e3079a85de8218892b9d6f27d6d54f453f391ff69483656f4f9b98"
+BASE_SHA = "52b1aae365f2a5d99c06bb08f116e9f41b5dcf77aa5c49c3466010846172795c"
 WORKFLOW = "bin9208/openpilot-rust/.github/workflows/python-rust-523-model-pr1344-replay.yml@refs/heads/codex/feat-523-python-rust"
 FIXTURE_SHA = "afe1c795d7f609801eb4cd5a5a7748c3c996929403a3c0fa102f232f2a8d248d"
 ARCHIVE_SHA = "3ddfb1213cccbbf0d4d0ef7854b79cef5637acdfd7b59d883b13063d6968b4fe"

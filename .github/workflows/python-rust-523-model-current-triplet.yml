@@ -7,6 +7,7 @@ name: Python Rust 523 current model triplet and worker-cell diagnostic
     - .github/workflows/python-rust-523-model-current-triplet.yml
     - tools/ci/model_current_triplet_482.py
     - rust/crates/model-runtime/src/cpu/diagnostic_482_tests.rs
+    - rust/crates/model-runtime/src/cpu/diagnostic_482_cached.rs
     - rust/crates/model-runtime/src/cpu/diagnostic_482_pr1344.rs
     - rust/crates/model-runtime/src/cpu.rs
     - rust/crates/model-runtime/src/cached_code.rs
@@ -29,7 +30,7 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
       PYTHONDONTWRITEBYTECODE: '1'
-      MODEL482_HELPER_SHA256: 9d9d6366f2e3079a85de8218892b9d6f27d6d54f453f391ff69483656f4f9b98
+      MODEL482_HELPER_SHA256: 52b1aae365f2a5d99c06bb08f116e9f41b5dcf77aa5c49c3466010846172795c
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
       shell: bash
@@ -264,7 +265,7 @@ jobs:
         r=json.loads(raw)
         assert type(r['schema']) is int and r['schema']==1 and r['source']==os.environ['GITHUB_SHA'] and r['pass'] is True
         assert r['input_origin']=='authored-metadata-controls' and r['compiler_started'] is False and r['actual_race_recovered'] is False
-        assert r['helper_sha256']=='9d9d6366f2e3079a85de8218892b9d6f27d6d54f453f391ff69483656f4f9b98'
+        assert r['helper_sha256']=='52b1aae365f2a5d99c06bb08f116e9f41b5dcf77aa5c49c3466010846172795c'
         assert hashlib.sha256((Path(os.environ['DIAG_SOURCE'])/'tools/ci/model_current_triplet_482.py').read_bytes()).hexdigest()==r['helper_sha256']
         positive=['actual-du-allocated-apparent-sparse-hardlink-symlink','strict-child-ENOENT']
         negative=['target-root','outside-target','permission','currently-present','non-ENOENT','third-incomplete','deadline','allocated-cap','apparent-cap','group-cap','root-missing','root-replaced']

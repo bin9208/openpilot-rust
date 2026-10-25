@@ -219,6 +219,8 @@ fn host_has(feature: &str) -> bool {
         "avx512vl" => std::is_x86_feature_detected!("avx512vl"),
         "avx512dq" => std::is_x86_feature_detected!("avx512dq"),
         "avx512bw" => std::is_x86_feature_detected!("avx512bw"),
+        "avx512fp16" => std::is_x86_feature_detected!("avx512fp16"),
+        "avx512vbmi" => std::is_x86_feature_detected!("avx512vbmi"),
         _ => false,
     }
     #[cfg(not(all(target_arch = "x86_64", target_os = "linux")))]
@@ -777,6 +779,33 @@ mod tests {
     }
     #[test]
     fn omitted_final_program_abi_change_and_unknown_isa_reject() {
+        // Decoder와 issuer가 별도 host vocabulary를 갖더라도 서로 어긋나면 안 된다.
+        #[cfg(all(
+            feature = "cached-program-isa",
+            target_arch = "x86_64",
+            target_os = "linux"
+        ))]
+        {
+            let decoded_host = crate::cached_isa::current_host();
+            for feature in ["avx512fp16", "avx512vbmi"] {
+                assert_eq!(
+                    host_has(feature),
+                    decoded_host.contains(feature),
+                    "{feature}: issuer/decoder host contract"
+                );
+            }
+        }
+        for unknown in [
+            "avx512_fp16",
+            "AVX512_VBMI",
+            "avx512vbmi2",
+            "unadmitted-future-extension",
+        ] {
+            assert!(
+                !host_has(unknown),
+                "unreviewed host feature admitted: {unknown}"
+            );
+        }
         let (expected, mut certificate, mut receipt, graph, library, container) = fixture();
         certificate.programs.clear();
         assert!(validate(
@@ -802,6 +831,35 @@ mod tests {
         )
         .is_err());
         let (_, certificate, _, _, _, _) = fixture();
+        // 둘 중 하나를 지원해도 나머지 요구사항을 생략할 수 없다.
+        let original_requirements = receipt.programs[0].required.clone();
+        receipt.programs[0].required = vec!["avx512fp16".into(), "avx512vbmi".into()];
+        validate(
+            &certificate,
+            &receipt,
+            &expected,
+            &graph,
+            &library,
+            &container,
+            |_| true,
+        )
+        .unwrap();
+        for unavailable in ["avx512fp16", "avx512vbmi"] {
+            assert!(
+                validate(
+                    &certificate,
+                    &receipt,
+                    &expected,
+                    &graph,
+                    &library,
+                    &container,
+                    |feature| feature != unavailable
+                )
+                .is_err(),
+                "missing {unavailable} must reject"
+            );
+        }
+        receipt.programs[0].required = original_requirements;
         receipt.programs[0]
             .required
             .push("unadmitted-future-extension".into());

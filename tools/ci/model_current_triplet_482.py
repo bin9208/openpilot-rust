@@ -33,6 +33,7 @@ STORE_SOURCE = "e223a2c36c6bde7cf676bb92fd2529858a723f9ecfa91c811b2b941756a9bea0
 PREFIX = "cpu::diagnostic_482_tests::"
 READONLY = PREFIX + "fresh_program_roster_triplets_and_host_isa_are_bound_without_execution"
 TAPPED = PREFIX + "bound_road1928_two_frame_producer_capture"
+CACHED_CONTEXT = PREFIX + "cached_context::complete_fresh91_cached_context_matches_existing_original"
 CELLS = (100, 101, 1349)
 # source-locked NumPy2.5.3 wheel의 DT_NEEDED가 없는 두 CPython test extension만 해당한다.
 ZERO_NEEDED_NUMPY = {
@@ -488,6 +489,26 @@ def two_frames(root, job, m, tapped):
     finally:
         if callback:
             callback.restore()
+
+
+def cached_context_export(root, job, m):
+    """Export the already captured fresh PKL; never execute an original stage."""
+    worker_environment(root)
+    from model_export import export_cpu
+    from model_export.native import cached_export_session
+    from model_export.original import driving
+    build = job / "build/model482"
+    before = import_seal(m, root, job)
+    original = driving(build / "driving_tinygrad.pkl", (1928, 1208))
+    with cached_export_session() as session:
+        need(session is not None, "C requires explicit admitted native issuer")
+        cached = session.for_model(original.pipeline.jit)
+        need(len(cached.operations) == 91, "C requires every fresh PROGRAM")
+        export_cpu(original.pipeline.jit, original.bindings, build / "cached-context/bundle",
+                   entrypoints=original.pipeline.entrypoints, cached=cached)
+    after = import_seal(m, root, job)
+    need(all(after.get(k) == v for k, v in before.items()), "C import bytes/identity changed")
+    save(job / "proof/model482/cached-export-imports.json", after)
 
 
 class OriginalTap:
@@ -947,7 +968,7 @@ class Controller:
         # index는 두 원문 파일 뒤에 게시한다. 세 파일 모두 기존 O_EXCL/NOFOLLOW 경계다.
         write(self.out / "budget-du-first-failure.json", raw)
 
-    def budget(self, force=False):
+    def budget(self, force=False, extra_build=0):
         if not force and time.monotonic() - self.last_budget < 2:
             for path in (self.job, self.root):
                 v = os.statvfs(path)
@@ -986,6 +1007,8 @@ class Controller:
                         if option: apparent += int(match[1])
                         else: allocated += int(match[1])
             need(max(allocated, apparent) <= cap, f"scope cap: {paths}")
+            if extra_build and cap == 8*GIB:
+                need(max(allocated, apparent) + extra_build <= cap, "C projected build/registry8GiB cap")
             parent = paths[0] if paths[0].exists() else paths[0].parent
             device = parent.stat().st_dev
             need(all((p if p.exists() else p.parent).stat().st_dev == device for p in paths), "grouped budget filesystem differs")
@@ -1009,7 +1032,8 @@ class Controller:
             if label == "triplet-readonly":
                 resource.setrlimit(resource.RLIMIT_CPU, (60, 60))
                 resource.setrlimit(resource.RLIMIT_AS, (4*GIB, 4*GIB))
-            elif label in ('fresh-original','original-plain','original-tapped','native-plain','native-tapped'):
+            elif label in ('fresh-original','original-plain','original-tapped','native-plain','native-tapped',
+                           'cached-context-export','cached-context-native'):
                 resource.setrlimit(resource.RLIMIT_AS, (4*GIB, 4*GIB))
         try:
             with (self.out / f"{label}.stdout").open("xb") as stdout, (self.out / f"{label}.stderr").open("xb") as stderr:
@@ -1169,16 +1193,18 @@ class Controller:
         cargo = self.sdk / "bin/cargo"
         common_args = ["--manifest-path", self.root / "rust/Cargo.toml", "--locked", "-p", "openpilot-model-runtime",
                        "--no-default-features", "--features", "cached-program-isa", "--message-format=json"]
-        raw = self.command([cargo, "build", *common_args, "--bin", "model-run", "--bin", "offline-llvm-guarded-add"], "current-bins", 900)
+        raw = self.command([cargo, "build", *common_args, "--bin", "model-run", "--bin", "offline-llvm-guarded-add",
+                            "--bin", "offline-cached-code"], "current-bins", 900)
         binary = self.select(raw, "model-run", "bin", "rust/crates/model-runtime/src/bin/model-run.rs", False)
         guarded = self.select(raw, "offline-llvm-guarded-add", "bin", "rust/crates/model-runtime/src/bin/offline-llvm-guarded-add.rs", False)
+        cached_issuer = self.select(raw, "offline-cached-code", "bin", "rust/crates/model-runtime/src/bin/offline-cached-code.rs", False)
         raw = self.command([cargo, "test", *common_args, "--lib", "--no-run"], "current-libtest", 900)
         test = self.select(raw, "openpilot_model_runtime", "lib", "rust/crates/model-runtime/src/lib.rs", True)
         self.command([cargo, "clippy", *common_args, "--lib", "--tests", "--", "-D", "warnings"],
                      "current-clippy", 900)
         registry=self.job/'cargo-home/registry'
         self.baselines['registry']=(registry,None,self.m.snapshot(registry,self.m.walk(registry)))
-        for i,path in enumerate((binary,guarded,test,Path(os.environ['ORIGINAL_PYTHON']),Path(sys.executable),Path(os.environ['LLVM_PATH']),self.sdk/'bin/rustc',self.sdk/'bin/cargo')):
+        for i,path in enumerate((binary,guarded,test,Path(os.environ['ORIGINAL_PYTHON']),Path(sys.executable),Path(os.environ['LLVM_PATH']),self.sdk/'bin/rustc',self.sdk/'bin/cargo',cached_issuer)):
             self.dso(path,f'provider-dso-{i}')
         for i,path in enumerate(sorted((self.job/'venv').rglob('*.so*'))):
             need(path.is_file() and not path.is_symlink(),'extension provider must be regular')
@@ -1271,7 +1297,133 @@ class Controller:
             "cached_issuer_invoked": False, "cached_runtime_enabled": False, "ssa_first_producer_observed": False,
             "historical_half_snan5_resolved": False, "full128_acceptance": False, "full_model_runtime_acceptance": False,
             "historical_provider_proven": False, "retirement_credit": 0})
+        # C is additive. Even a successful C can never promote the existing B mismatch.
+        c_error = None
+        try:
+            self.cached_context(data, request, readonly, traffic, guarded, cached_issuer, test, helper, python)
+        except Exception:
+            c_error = traceback.format_exc()
+            save(self.out / "cached-context-failure.json", {"source": os.environ["GITHUB_SHA"],
+                "error": c_error, "b_failure_sticky": bool(mismatches), "numerical_acceptance": False})
         need(not mismatches, "strict original/native byte mismatch retained; diagnostic is not numerical acceptance")
+        need(c_error is None, "additive cached-context diagnostic failed; existing A/B retained")
+
+    def cached_context(self, data, request, readonly, traffic, guarded, issuer, test, helper, python):
+        self.holds.verify()  # A/B identities must still match before deriving C expectations.
+        canonical = lambda v: json.dumps(v, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False).encode()
+        proof = self.m.unique_json(self.m.read(readonly, 4*MIB))
+        need(proof['strict_triplet_all'] is True and proof['host_isa_all'] is True
+             and proof['source'] == data['source_sha256'] == os.environ['GITHUB_SHA']
+             and proof['complete_roster'] == len(data['programs']) == len(proof['programs']) == 91,
+             "C requires independent A complete fresh91")
+        destination = self.build/'cached-context'
+        need(not destination.exists() and not destination.is_symlink(), "fresh C namespace")
+        # Existing 8GiB build/512MiB proof/finish reserve and global deadline stay fixed.
+        existing_outputs = self.m.unique_json(self.m.read(traffic/'outputs.json', 4*MIB))
+        need(len(existing_outputs) == 12 and all(Path(name).name == name for name in existing_outputs), "C existing twelve B outputs")
+        output_forecast = sum((traffic/'original'/name).stat().st_size for name in existing_outputs)
+        need(output_forecast <= 64*MIB, "C existing output total64MiB")
+        forecast = ((traffic/'bundle/weights.bin').stat().st_size + output_forecast
+                    + 4*sum(p['image']['bytes'] for p in data['programs']) + 64*MIB)
+        need(forecast <= 256*MIB, "C additive growth forecast256MiB")
+        self.budget(force=True, extra_build=forecast)
+        v = os.statvfs(self.build)
+        need(v.f_bavail*v.f_frsize >= forecast + 512*MIB, "C growth plus existing finish reserve")
+        destination.mkdir(mode=0o700)
+        temporary = self.target/'model482-cached-tmp'
+        need(not temporary.exists() and not temporary.is_symlink(), "fresh C temporary namespace")
+        temporary.mkdir(mode=0o700)
+        save(self.out/'cached-context-capacity.json', {'forecast_bytes': forecast, 'existing_output_bytes': output_forecast,
+            'candidate_cap_bytes': 256*MIB, 'existing_build_registry_cap_bytes': 8*GIB,
+            'existing_proof_cap_bytes': 512*MIB, 'remaining_seconds': self.deadline-time.monotonic(),
+            'temporary': str(temporary), 'old_caps_or_deadline_extended': False})
+        def held_binding(path):
+            row = spec_file(self.m, path, 128*MIB)
+            info = path.stat()
+            return {'enabled': True, **row,
+                    'identity': [info.st_dev, info.st_ino, info.st_size, info.st_mode, info.st_mtime_ns, info.st_ctime_ns]}
+        guarded_binding, issuer_binding = held_binding(guarded), held_binding(issuer)
+        guarded_paths = ['guarded_add.rs', 'bin/offline-llvm-guarded-add.rs', 'owned_outputs.rs', 'lib.rs']
+        cached_paths = ['cached_code.rs', 'bin/offline-cached-code.rs', 'cached_elf.rs', 'cached_isa.rs',
+                        'cpu.rs', 'graph.rs', 'error.rs', 'entrypoint.rs', 'assets.rs', 'buffer.rs']
+        guarded_paths = ['rust/crates/model-runtime/src/'+p for p in guarded_paths] + [
+            'rust/crates/model-runtime/Cargo.toml', 'rust/Cargo.toml', 'rust/Cargo.lock', 'rust/rust-toolchain.toml']
+        cached_paths = ['rust/crates/model-runtime/src/'+p for p in cached_paths]
+        seals = lambda paths: [{'path': p, 'sha256': data['sources'][p]} for p in paths]
+        exporter = {'source': os.environ['GITHUB_SHA'], 'files': {
+            str(p.relative_to(self.root)): spec_file(self.m, p, 32*MIB)['sha256']
+            for p in self.m.walk(self.root/'rust/tools/model_export') if p.is_file()}}
+        roster_path = destination/'exporter-roster.json'
+        save(roster_path, exporter)
+        isa = {'status': 'COMPLETE_INERT_ISA_ADMISSION', 'generated_code_executed': False,
+               'ABI_or_numeric_acceptance': False, 'host_features': proof['host_features'], 'programs': []}
+        for index, (row, decoded) in enumerate(zip(data['programs'], proof['programs'], strict=True)):
+            need(row['index'] == decoded['index'] == index, "C original/A index order")
+            isa['programs'].append({'index': index, 'source_sha256': row['source']['sha256'],
+                'image_sha256': row['image']['sha256'], 'text_bytes': decoded['text_bytes'],
+                'instructions': decoded['instructions'], 'required': decoded['required']})
+        isa_path = destination/'independent-isa.json'
+        save(isa_path, isa)
+        current = {'helper_sha256': guarded_binding['sha256'], 'helper_binding_sha256': sha(canonical(guarded_binding)),
+            'cached_helper_sha256': issuer_binding['sha256'], 'cached_helper_binding_sha256': sha(canonical(issuer_binding)),
+            'guarded_add_sources': seals(guarded_paths), 'cached_sources': seals(cached_paths),
+            'exporter_roster_sha256': spec_file(self.m, roster_path, 4*MIB)['sha256'],
+            'isa_verifier_sha256': spec_file(self.m, test, 128*MIB)['sha256'],
+            'isa_verifier_source_sha256': data['sources']['rust/crates/model-runtime/src/cached_isa.rs'],
+            'isa_receipt_sha256': spec_file(self.m, isa_path, 4*MIB)['sha256']}
+        admission = {'original_manifest_sha256': spec_file(self.m, request, 4*MIB)['sha256'],
+            'original_model_sha256': data['model']['sha256'], 'current': current,
+            'programs': [row['original'] for row in data['programs']]}
+        admission_path = destination/'independent-admission.json'
+        save(admission_path, admission)
+        issuer_request = {'source_root': str(self.root), 'original_manifest': str(request),
+            'original_model': data['model']['path'], 'isa_receipt': str(isa_path), 'admission': admission,
+            'programs': [{'original_index': row['index'], 'kernel': row['kernel'], 'source': row['source']['path'],
+                          'image': row['image']['path'], 'reconstruction_object': row['object']['path']}
+                         for row in data['programs']], 'library': None, 'graph': None}
+        issuer_path = destination/'issuer-request.json'
+        save(issuer_path, issuer_request)
+        for path in (roster_path, isa_path, admission_path, issuer_path): self.holds.add(path)
+        env = {**self.env, 'MODEL_CACHED_CODE_BINARY': str(issuer), 'MODEL_CACHED_CODE_SHA256': issuer_binding['sha256'],
+            'MODEL_CACHED_CODE_REQUEST': str(issuer_path), 'MODEL_CACHED_CODE_REQUEST_SHA256': spec_file(self.m, issuer_path, 4*MIB)['sha256'],
+            'TMPDIR': str(temporary)}
+        self.command([python, '-I', '-B', helper, 'cached-context-export'], 'cached-context-export', 180, env=env)
+        self.holds.verify()  # Never re-pin changed B original outputs as C goldens.
+        need(sum(p.stat().st_size for p in self.m.walk(destination) if p.is_file()) + 68*MIB <= 256*MIB,
+             "C candidate plus output64MiB/request4MiB within256MiB")
+        bundle = destination/'bundle'
+        self.dso(bundle/'kernels.so', 'cached-context-bundle-dso')
+        for path in self.m.walk(bundle):
+            if path.is_file(): self.holds.add(path)
+        c_request = {'schema': 1, 'triplet_request': spec_file(self.m, request, 4*MIB),
+            'readonly': spec_file(self.m, readonly, 4*MIB), 'admission': spec_file(self.m, admission_path, 4*MIB),
+            'issuer': spec_file(self.m, issuer, 128*MIB), 'guarded': spec_file(self.m, guarded, 128*MIB),
+            'exporter_roster': spec_file(self.m, roster_path, 4*MIB), 'traffic': str(traffic), 'bundle': str(bundle),
+            'diagnostic': spec_file(self.m, self.root/'rust/crates/model-runtime/src/cpu/diagnostic_482_cached.rs', 32*MIB),
+            'bundle_files': {str(p.relative_to(bundle)): spec_file(self.m, p, 512*MIB)
+                             for p in self.m.walk(bundle) if p.is_file()},
+            'files': {str(p.relative_to(traffic)): spec_file(self.m, p, 512*MIB)
+                      for p in self.m.walk(traffic) if p.is_file()}}
+        cpath = destination/'native-request.json'
+        need(len(json.dumps(c_request, sort_keys=True, indent=2).encode()) + 1 <= 4*MIB, "C request4MiB before write")
+        save(cpath, c_request)
+        self.holds.add(cpath)
+        env = {**self.env, 'MODEL482_CACHED_REQUEST': str(cpath),
+               'MODEL482_CACHED_REQUEST_SHA256': spec_file(self.m, cpath, 4*MIB)['sha256']}
+        self.test(test, CACHED_CONTEXT, 'cached-context-native', 180, env=env)
+        result = self.m.unique_json(self.m.read(self.out/'cached-context.json', 4*MIB))
+        need(result['diagnostic_complete'] is True and result['existing_original_all12_equal'] is True
+             and set(result['outputs']) == set(existing_outputs), "C complete existing-output comparison")
+        self.holds.verify()
+        for name, row in result['outputs'].items():
+            actual = self.m.read(destination/'outputs'/name, 64*MIB)
+            original = self.m.read(traffic/'original'/name, 64*MIB)
+            need(actual == original and sha(actual) == row['cached_sha256'] == row['existing_original_sha256'],
+                 "C retained raw/current original bytes differ: " + name)
+        for path in self.m.walk(destination/'outputs'):
+            if path.is_file(): self.holds.add(path)
+        need(sum(p.stat().st_size for p in self.m.walk(destination) if p.is_file()) <= 256*MIB,
+             "C actual retained namespace256MiB cap")
 
     def finish(self, error):
         failures = []
@@ -1328,6 +1480,10 @@ class Controller:
         if traffic.is_dir():
             for path in self.m.walk(traffic):
                 if path.is_file() and path.name != 'weights.bin': selected.add(path)
+        cached = self.build/'cached-context'
+        if cached.is_dir():
+            for path in self.m.walk(cached):
+                if path.is_file() and path.name != 'weights.bin': selected.add(path)
         total = sum(p.stat().st_size for p in selected)
         proof_size = sum(p.stat().st_size for p in self.m.walk(self.job/'proof') if p.is_file())
         need(total + proof_size <= 512*MIB, 'retained proof512MiB apparent cap')
@@ -1356,8 +1512,9 @@ def main():
     root, job = trusted()
     m = common(root)
     if len(sys.argv) == 2:
-        need(sys.argv[1] in ("collect", "plain", "tapped"), "unknown worker mode")
+        need(sys.argv[1] in ("collect", "plain", "tapped", "cached-context-export"), "unknown worker mode")
         if sys.argv[1] == "collect": collect(root, job, m)
+        elif sys.argv[1] == "cached-context-export": cached_context_export(root, job, m)
         else: two_frames(root, job, m, sys.argv[1] == "tapped")
         return
     need(len(sys.argv) == 1 and sys.flags.isolated and sys.flags.no_site, "stdlib controller requires -I -B -S")

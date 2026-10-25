@@ -1,6 +1,7 @@
 name: Python Rust 523 runner capacity inventory
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: python-rust-523-capacity
   cancel-in-progress: false
@@ -13,6 +14,8 @@ jobs:
     - X64
     - dev-md-local
     timeout-minutes: 10
+    env:
+      CAPACITY_OPERATION: ${{ inputs.operation || 'inventory' }}
     steps:
     - name: Deny fork source and require registered local runner
       shell: bash
@@ -24,11 +27,30 @@ jobs:
         test "$RUNNER_NAME" = bin-actions
         test "$RUNNER_ENVIRONMENT" = self-hosted
         test "$RUNNER_ARCH" = X64
+        case "$CAPACITY_OPERATION" in inventory|preserve-driver476-witness) ;; *) exit 64 ;; esac
+        if [[ $CAPACITY_OPERATION == preserve-driver476-witness ]]; then
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
+          test "$GITHUB_WORKFLOW_REF" = "bin9208/openpilot-rust/.github/workflows/python-rust-523-capacity.yml@$GITHUB_REF"
+          test "$RUNNER_OS" = Linux
+          test "$(uname -s)" = Linux
+          test "$(uname -m)" = x86_64
+          [[ $GITHUB_SHA =~ ^[0-9a-f]{40}$ && $GITHUB_JOB == inventory ]]
+          test ! -L "$RUNNER_TEMP"
+          test "$(/usr/bin/realpath -e -- "$RUNNER_TEMP")" = "$RUNNER_TEMP"
+          umask 077
+          set -C
+        fi
         report=$(mktemp -d "$RUNNER_TEMP/python-rust-523-capacity.XXXXXX")
         printf '%s:%s:%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_JOB" > "$report/owner"
         printf 'CAPACITY_REPORT=%s\n' "$report" >> "$GITHUB_ENV"
+        if [[ $CAPACITY_OPERATION == preserve-driver476-witness ]]; then
+          printf 'CAPACITY_REPORT_IDENTITY=%s\n' "$(/usr/bin/stat -c '%d:%i:%u:%f' -- "$report")" >> "$GITHUB_ENV"
+        fi
     - name: Inspect shared compiler caches and historical policy cache ownership
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (env.CAPACITY_OPERATION == 'inventory') }}
       shell: bash
       run: |
         set -euo pipefail
@@ -59,7 +81,7 @@ jobs:
           find "$root" -maxdepth 2 -type f \( -name '*owner*' -o -name '*receipt*' -o -name '*manifest*' \) -printf '%p\n' >> "$report/known-marker-paths.txt"
         done
     - name: Inventory exact historical cache identities and all-UID references without deletion
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (env.CAPACITY_OPERATION == 'inventory') }}
       shell: bash
       run: |
         set -euo pipefail
@@ -149,7 +171,7 @@ jobs:
         print('Readonly exact-root cache inventory',count,'entries; physical deletions=0')
         INVENTORY
     - name: Preserve read-only inventory
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CAPACITY_REPORT
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CAPACITY_OPERATION == 'inventory' && env.CAPACITY_REPORT
         != '') }}
       uses: actions/upload-artifact@v6
       with:
@@ -157,6 +179,300 @@ jobs:
         path: ${{ env.CAPACITY_REPORT }}
         if-no-files-found: error
         retention-days: 14
+    - name: Authenticate and hold the fixed driver476 witness
+      id: witness_auth
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (env.CAPACITY_OPERATION == 'preserve-driver476-witness') }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        set -C
+        umask 077
+        for tool in curl jq sha256sum unzip timeout stat realpath df date head wc id cmp; do
+          test -x "/usr/bin/$tool"
+        done
+        report=$CAPACITY_REPORT
+        [[ $report == "$RUNNER_TEMP"/python-rust-523-capacity.?????? ]]
+        test -d "$report" && test ! -L "$report"
+        test "$(/usr/bin/realpath -e -- "$report")" = "$report"
+        test "$(/usr/bin/stat -c '%d:%i:%u:%f' -- "$report")" = "$CAPACITY_REPORT_IDENTITY"
+        test "$(/usr/bin/stat -c '%u:%a' -- "$report")" = "$(/usr/bin/id -u):700"
+        test -f "$report/owner" && test ! -L "$report/owner"
+        test "$(/usr/bin/stat -c '%u:%a' -- "$report/owner")" = "$(/usr/bin/id -u):600"
+        test "$(cat "$report/owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        available=$(/usr/bin/df -PB1 -- "$report" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]] && ((available >= 64 * 1024 * 1024))
+        mkdir -m 700 "$report/payload" "$report/provenance" "$report/roundtrip"
+        api=https://api.github.com/repos/bin9208/openpilot-rust
+        digest=a318335767594bfe8bcd08878f15e4f6a03bb0d8d13541d56f3b83243b19f461
+        origin_head=0e522bf2a968082195f08ffa4692a3f2ecf6d775
+        checkout=a29832fd0d046253465621a05f02a91e9cfdb1d1
+        get_json() (
+          # Exclusive creation plus a kernel file-size limit also bounds chunked responses.
+          ulimit -f 1024
+          test ! -e "$2" && test ! -L "$2"
+          exec {fd}>"$2"
+          status=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+            --connect-timeout 10 --max-time 30 --max-filesize 1048576 \
+            --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' \
+            --output "/dev/fd/$fd" --write-out '%{http_code}' "$api/$1")
+          test "$status" = 200
+        )
+        get_json actions/artifacts/12393290469 "$report/provenance/origin-artifact.json"
+        get_json actions/runs/39700512883 "$report/provenance/origin-run.json"
+        /usr/bin/jq -e --arg head "$origin_head" --arg digest "sha256:$digest" '
+          .id == 12393290469 and .name == "model-driver-cpu-context-296-0" and
+          .size_in_bytes == 20550808 and .digest == $digest and .expired == false and
+          .workflow_run.id == 39700512883 and .workflow_run.head_sha == $head and
+          .workflow_run.repository_id == 1395501963 and .workflow_run.head_repository_id == 1395501963
+        ' "$report/provenance/origin-artifact.json" > /dev/null
+        /usr/bin/jq -e --arg head "$origin_head" '
+          .id == 39700512883 and .run_attempt == 1 and .head_sha == $head and
+          .status == "completed" and .conclusion == "success" and .event == "push" and
+          .path == ".github/workflows/model-driver-cpu-context-296-once.yml" and
+          .repository.full_name == "bin9208/openpilot-rust" and .repository.id == 1395501963 and
+          .head_repository.full_name == "bin9208/openpilot-rust" and .head_repository.id == 1395501963
+        ' "$report/provenance/origin-run.json" > /dev/null
+        get_json "actions/runs/$GITHUB_RUN_ID" "$report/provenance/preservation-run.json"
+        /usr/bin/jq -e --arg id "$GITHUB_RUN_ID" --arg attempt "$GITHUB_RUN_ATTEMPT" --arg head "$GITHUB_SHA" '
+          (.id | tostring) == $id and (.run_attempt | tostring) == $attempt and .head_sha == $head and
+          .event == "workflow_dispatch" and .head_branch == "codex/feat-523-python-rust" and
+          .path == ".github/workflows/python-rust-523-capacity.yml" and
+          .repository.full_name == "bin9208/openpilot-rust" and .repository.id == 1395501963 and
+          .head_repository.full_name == "bin9208/openpilot-rust" and .head_repository.id == 1395501963
+        ' "$report/provenance/preservation-run.json" > /dev/null
+        # Only the API request carries Authorization; the signed HTTPS GET does not.
+        redirect=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+          --connect-timeout 10 --max-time 30 --header "Authorization: Bearer $GH_TOKEN" \
+          --output /dev/null --write-out '%{http_code}\n%{redirect_url}' "$api/actions/artifacts/12393290469/zip")
+        [[ $redirect == $'302\nhttps://'* ]]
+        url=${redirect#*$'\n'}
+        [[ $url != *$'\n'* && $url != *$'\r'* ]]
+        payload=$report/payload/driver476-object-witness-12393290469.zip
+        (
+          test ! -e "$payload" && test ! -L "$payload"
+          exec {fd}>"$payload"
+          /usr/bin/timeout --signal=TERM --kill-after=5s 120s \
+            /usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+            --connect-timeout 10 --max-time 110 --max-filesize 20550808 "$url" |
+            /usr/bin/head -c 20550809 >&"$fd"
+        )
+        test -f "$payload" && test ! -L "$payload"
+        test "$(/usr/bin/stat -c '%u:%a:%s' -- "$payload")" = "$(/usr/bin/id -u):600:20550808"
+        printf '%s  %s\n' "$digest" "$payload" | /usr/bin/sha256sum --check --strict -
+        /usr/bin/timeout --signal=TERM --kill-after=5s 30s /usr/bin/unzip -t "$payload" > "$report/provenance/origin-crc.txt"
+        /usr/bin/unzip -Z1 "$payload" > "$report/provenance/origin-members.txt"
+        test "$(/usr/bin/wc -l < "$report/provenance/origin-members.txt")" = 258
+        /usr/bin/unzip -p "$payload" SOURCE_COMMIT > "$report/provenance/SOURCE_COMMIT"
+        /usr/bin/unzip -p "$payload" WORKFLOW_COMMIT > "$report/provenance/WORKFLOW_COMMIT"
+        test "$(/usr/bin/wc -c < "$report/provenance/SOURCE_COMMIT")" = 41
+        test "$(/usr/bin/wc -c < "$report/provenance/WORKFLOW_COMMIT")" = 41
+        test "$(cat "$report/provenance/SOURCE_COMMIT")" = "$checkout"
+        test "$(cat "$report/provenance/WORKFLOW_COMMIT")" = "$origin_head"
+        /usr/bin/jq -n --arg source "$GITHUB_SHA" --arg owner "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" \
+          --arg identity "$CAPACITY_REPORT_IDENTITY" --argjson available "$available" --arg digest "$digest" \
+          --arg head "$origin_head" --arg checkout "$checkout" '{
+            schema: "openpilot.driver476-witness-preservation.v1", status: "AUTHENTICATED_ORIGIN_ONLY",
+            preservation_source: $source, owner: $owner, report_identity: $identity,
+            available_bytes_before: $available, admitted_growth_bytes: 67108864,
+            origin: {artifact: 12393290469, run: 39700512883, workflow_source: $head,
+              checkout_source: $checkout, bytes: 20550808, sha256: $digest},
+            replay_executed: false, consumer_binding_changed: false
+          }' > "$report/provenance/origin-binding.json"
+        printf 'CAPACITY_PAYLOAD_IDENTITY=%s\n' "$(/usr/bin/stat -c '%d:%i:%u:%f:%s:%Y:%Z' -- "$payload")" >> "$GITHUB_ENV"
+    - name: Preserve authenticated driver476 witness bytes as-is
+      id: witness_zip
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (env.CAPACITY_OPERATION == 'preserve-driver476-witness' && steps.witness_auth.outcome == 'success') }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        path: ${{ env.CAPACITY_REPORT }}/payload/driver476-object-witness-12393290469.zip
+        archive: false
+        retention-days: 90
+        if-no-files-found: error
+        overwrite: false
+    - name: Verify the new artifact through the unchanged ZIP API
+      id: witness_roundtrip
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (env.CAPACITY_OPERATION == 'preserve-driver476-witness' && steps.witness_zip.outcome == 'success') }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        WITNESS_ARTIFACT_ID: ${{ steps.witness_zip.outputs.artifact-id }}
+        WITNESS_ARTIFACT_DIGEST: ${{ steps.witness_zip.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        set -C
+        umask 077
+        report=$CAPACITY_REPORT
+        [[ $report == "$RUNNER_TEMP"/python-rust-523-capacity.?????? ]]
+        test -d "$report" && test ! -L "$report"
+        test "$(/usr/bin/realpath -e -- "$report")" = "$report"
+        test "$(/usr/bin/stat -c '%d:%i:%u:%f' -- "$report")" = "$CAPACITY_REPORT_IDENTITY"
+        test "$(/usr/bin/stat -c '%u:%a' -- "$report")" = "$(/usr/bin/id -u):700"
+        test -f "$report/owner" && test ! -L "$report/owner"
+        test "$(cat "$report/owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        for leaf in payload provenance roundtrip; do
+          test -d "$report/$leaf" && test ! -L "$report/$leaf"
+          test "$(/usr/bin/realpath -e -- "$report/$leaf")" = "$report/$leaf"
+          test "$(/usr/bin/stat -c '%u:%a' -- "$report/$leaf")" = "$(/usr/bin/id -u):700"
+        done
+        available=$(/usr/bin/df -PB1 -- "$report" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]] && ((available >= 20550809 + 4 * 1024 * 1024))
+        digest=a318335767594bfe8bcd08878f15e4f6a03bb0d8d13541d56f3b83243b19f461
+        [[ $WITNESS_ARTIFACT_ID =~ ^[1-9][0-9]{0,18}$ && $WITNESS_ARTIFACT_ID != 12393290469 ]]
+        test "$WITNESS_ARTIFACT_DIGEST" = "$digest"
+        payload=$report/payload/driver476-object-witness-12393290469.zip
+        test -f "$payload" && test ! -L "$payload"
+        test "$(/usr/bin/stat -c '%d:%i:%u:%f:%s:%Y:%Z' -- "$payload")" = "$CAPACITY_PAYLOAD_IDENTITY"
+        printf '%s  %s\n' "$digest" "$payload" | /usr/bin/sha256sum --check --strict -
+        api=https://api.github.com/repos/bin9208/openpilot-rust
+        (
+          ulimit -f 1024
+          test ! -e "$report/provenance/preserved-artifact.json" && test ! -L "$report/provenance/preserved-artifact.json"
+          exec {fd}>"$report/provenance/preserved-artifact.json"
+          status=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+            --connect-timeout 10 --max-time 30 --max-filesize 1048576 \
+            --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' \
+            --output "/dev/fd/$fd" --write-out '%{http_code}' "$api/actions/artifacts/$WITNESS_ARTIFACT_ID")
+          test "$status" = 200
+        )
+        /usr/bin/jq -e --arg id "$WITNESS_ARTIFACT_ID" --arg run "$GITHUB_RUN_ID" --arg head "$GITHUB_SHA" --arg digest "sha256:$digest" '
+          (.id | tostring) == $id and .name == "driver476-object-witness-12393290469.zip" and
+          .size_in_bytes == 20550808 and .digest == $digest and .expired == false and
+          (.workflow_run.id | tostring) == $run and .workflow_run.head_sha == $head and
+          .workflow_run.repository_id == 1395501963 and .workflow_run.head_repository_id == 1395501963
+        ' "$report/provenance/preserved-artifact.json" > /dev/null
+        run_start=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/preservation-run.json")" +%s)
+        expires=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .expires_at "$report/provenance/preserved-artifact.json")" +%s)
+        ((expires >= run_start + 90 * 86400 && expires <= run_start + 90 * 86400 + 600))
+        redirect=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+          --connect-timeout 10 --max-time 30 --header "Authorization: Bearer $GH_TOKEN" \
+          --output /dev/null --write-out '%{http_code}\n%{redirect_url}' "$api/actions/artifacts/$WITNESS_ARTIFACT_ID/zip")
+        [[ $redirect == $'302\nhttps://'* ]]
+        url=${redirect#*$'\n'}
+        [[ $url != *$'\n'* && $url != *$'\r'* ]]
+        (
+          test ! -e "$report/roundtrip/artifact.zip" && test ! -L "$report/roundtrip/artifact.zip"
+          exec {fd}>"$report/roundtrip/artifact.zip"
+          /usr/bin/timeout --signal=TERM --kill-after=5s 120s \
+            /usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+            --connect-timeout 10 --max-time 110 --max-filesize 20550808 "$url" |
+            /usr/bin/head -c 20550809 >&"$fd"
+        )
+        test -f "$report/roundtrip/artifact.zip" && test ! -L "$report/roundtrip/artifact.zip"
+        test "$(/usr/bin/stat -c '%u:%a:%s' -- "$report/roundtrip/artifact.zip")" = "$(/usr/bin/id -u):600:20550808"
+        printf '%s  %s\n' "$digest" "$report/roundtrip/artifact.zip" | /usr/bin/sha256sum --check --strict -
+        /usr/bin/cmp -- "$payload" "$report/roundtrip/artifact.zip"
+        test "$(/usr/bin/stat -c '%d:%i:%u:%f:%s:%Y:%Z' -- "$payload")" = "$CAPACITY_PAYLOAD_IDENTITY"
+        /usr/bin/jq -n --arg id "$WITNESS_ARTIFACT_ID" --arg digest "$digest" --arg source "$GITHUB_SHA" \
+          --arg run "$GITHUB_RUN_ID" --argjson expires "$expires" '{
+            schema: "openpilot.driver476-witness-roundtrip.v1", status: "ROUNDTRIP_VERIFIED",
+            artifact_id: $id, run_id: $run, source_commit: $source, bytes: 20550808,
+            sha256: $digest, expires_epoch: $expires, requested_retention_days: 90,
+            endpoint: "/zip", unwrapped: false, original_bytes_equal: true
+          }' > "$report/provenance/roundtrip.json"
+        printf 'roundtrip_verified=true\n' >> "$GITHUB_OUTPUT"
+    - name: Preserve separate origin and roundtrip provenance
+      id: witness_proof
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CAPACITY_OPERATION == 'preserve-driver476-witness' && steps.witness_auth.outcome == 'success') }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: driver476-witness-provenance-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CAPACITY_REPORT }}/provenance
+        retention-days: 90
+        if-no-files-found: error
+        overwrite: false
+    - name: Authenticate upload receipts and clean only the owned preservation report
+      id: witness_complete
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (env.CAPACITY_OPERATION == 'preserve-driver476-witness' && steps.witness_roundtrip.outcome == 'success' && steps.witness_roundtrip.outputs.roundtrip_verified == 'true' && steps.witness_proof.outcome == 'success') }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        WITNESS_ARTIFACT_ID: ${{ steps.witness_zip.outputs.artifact-id }}
+        WITNESS_ARTIFACT_DIGEST: ${{ steps.witness_zip.outputs.artifact-digest }}
+        WITNESS_PROOF_ID: ${{ steps.witness_proof.outputs.artifact-id }}
+        WITNESS_PROOF_DIGEST: ${{ steps.witness_proof.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        set -C
+        umask 077
+        report=$CAPACITY_REPORT
+        [[ $report == "$RUNNER_TEMP"/python-rust-523-capacity.?????? ]]
+        test -d "$report" && test ! -L "$report"
+        test "$(/usr/bin/realpath -e -- "$report")" = "$report"
+        test "$(/usr/bin/stat -c '%d:%i:%u:%f' -- "$report")" = "$CAPACITY_REPORT_IDENTITY"
+        test "$(/usr/bin/stat -c '%u:%a' -- "$report")" = "$(/usr/bin/id -u):700"
+        test -f "$report/owner" && test ! -L "$report/owner"
+        test "$(/usr/bin/stat -c '%u:%a' -- "$report/owner")" = "$(/usr/bin/id -u):600"
+        test "$(cat "$report/owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        for leaf in payload provenance roundtrip; do
+          test -d "$report/$leaf" && test ! -L "$report/$leaf"
+          test "$(/usr/bin/realpath -e -- "$report/$leaf")" = "$report/$leaf"
+          test "$(/usr/bin/stat -c '%u:%a' -- "$report/$leaf")" = "$(/usr/bin/id -u):700"
+        done
+        [[ $WITNESS_ARTIFACT_ID =~ ^[1-9][0-9]{0,18}$ && $WITNESS_PROOF_ID =~ ^[1-9][0-9]{0,18}$ ]]
+        [[ $WITNESS_PROOF_ID != "$WITNESS_ARTIFACT_ID" && $WITNESS_PROOF_ID != 12393290469 ]]
+        [[ $WITNESS_PROOF_DIGEST =~ ^[0-9a-f]{64}$ ]]
+        digest=a318335767594bfe8bcd08878f15e4f6a03bb0d8d13541d56f3b83243b19f461
+        test "$WITNESS_ARTIFACT_DIGEST" = "$digest"
+        test -f "$report/provenance/roundtrip.json" && test ! -L "$report/provenance/roundtrip.json"
+        /usr/bin/jq -e --arg id "$WITNESS_ARTIFACT_ID" --arg run "$GITHUB_RUN_ID" --arg head "$GITHUB_SHA" --arg digest "$digest" '
+          .status == "ROUNDTRIP_VERIFIED" and .artifact_id == $id and .run_id == $run and
+          .source_commit == $head and .bytes == 20550808 and .sha256 == $digest and
+          .original_bytes_equal == true and .unwrapped == false and .requested_retention_days == 90
+        ' "$report/provenance/roundtrip.json" > /dev/null
+        api=https://api.github.com/repos/bin9208/openpilot-rust
+        run_start=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/preservation-run.json")" +%s)
+        for role in payload proof; do
+          if [[ $role == payload ]]; then
+            artifact=$WITNESS_ARTIFACT_ID; expected_digest=$digest
+            name=driver476-object-witness-12393290469.zip
+          else
+            artifact=$WITNESS_PROOF_ID; expected_digest=$WITNESS_PROOF_DIGEST
+            name=driver476-witness-provenance-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT
+          fi
+          (
+            ulimit -f 1024
+            test ! -e "$report/roundtrip/$role-upload.json" && test ! -L "$report/roundtrip/$role-upload.json"
+            exec {fd}>"$report/roundtrip/$role-upload.json"
+            status=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+              --connect-timeout 10 --max-time 30 --max-filesize 1048576 \
+              --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' \
+              --output "/dev/fd/$fd" --write-out '%{http_code}' "$api/actions/artifacts/$artifact")
+            test "$status" = 200
+          )
+          /usr/bin/jq -e --arg id "$artifact" --arg name "$name" --arg digest "sha256:$expected_digest" \
+            --arg run "$GITHUB_RUN_ID" --arg head "$GITHUB_SHA" '
+            (.id | tostring) == $id and .name == $name and .digest == $digest and .expired == false and
+            (.workflow_run.id | tostring) == $run and .workflow_run.head_sha == $head and
+            .workflow_run.repository_id == 1395501963 and .workflow_run.head_repository_id == 1395501963
+          ' "$report/roundtrip/$role-upload.json" > /dev/null
+          bytes=$(/usr/bin/jq -er .size_in_bytes "$report/roundtrip/$role-upload.json")
+          [[ $bytes =~ ^[0-9]+$ ]]
+          if [[ $role == payload ]]; then ((bytes == 20550808)); else ((bytes > 0 && bytes <= 1048576)); fi
+          expires=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .expires_at "$report/roundtrip/$role-upload.json")" +%s)
+          ((expires >= run_start + 90 * 86400 && expires <= run_start + 90 * 86400 + 600))
+        done
+        payload=$report/payload/driver476-object-witness-12393290469.zip
+        test -f "$payload" && test ! -L "$payload"
+        test "$(/usr/bin/stat -c '%d:%i:%u:%f:%s:%Y:%Z' -- "$payload")" = "$CAPACITY_PAYLOAD_IDENTITY"
+        printf '%s  %s\n' "$digest" "$payload" | /usr/bin/sha256sum --check --strict -
+        test -f "$report/roundtrip/artifact.zip" && test ! -L "$report/roundtrip/artifact.zip"
+        test "$(/usr/bin/stat -c '%u:%a:%s' -- "$report/roundtrip/artifact.zip")" = "$(/usr/bin/id -u):600:20550808"
+        printf '%s  %s\n' "$digest" "$report/roundtrip/artifact.zip" | /usr/bin/sha256sum --check --strict -
+        completion=$(/usr/bin/jq -n --arg source "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" \
+          --arg artifact "$WITNESS_ARTIFACT_ID" --arg proof "$WITNESS_PROOF_ID" \
+          --arg digest "$digest" --arg proof_digest "$WITNESS_PROOF_DIGEST" '{
+            status: "PRESERVATION_VERIFIED", source_commit: $source, run_id: $run,
+            artifact_id: $artifact, sha256: $digest, proof_artifact_id: $proof,
+            proof_sha256: $proof_digest, requested_retention_days: 90, original_bytes_equal: true
+          }')
+        test "$(/usr/bin/stat -c '%d:%i:%u:%f' -- "$report")" = "$CAPACITY_REPORT_IDENTITY"
+        test "$(cat "$report/owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        rm -rf --one-file-system -- "$report"
+        printf '%s\n' "$completion"
+        printf '```json\n%s\n```\n' "$completion" >> "$GITHUB_STEP_SUMMARY"
+        printf 'preservation_verified=true\n' >> "$GITHUB_OUTPUT"
 'on':
   push:
     branches:
@@ -164,4 +480,13 @@ jobs:
     paths:
     - .github/workflows/python-rust-523-capacity.yml
   # 2026-10-25: 복구된80GB 러너의 후속 읽기 전용 용량 확인도 지원한다.
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 기존 용량 조사 또는 인증된 고정 driver476 증거 보존
+        type: choice
+        required: true
+        default: inventory
+        options:
+        - inventory
+        - preserve-driver476-witness

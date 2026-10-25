@@ -1,4 +1,6 @@
 //! #482 전용 Actions 관측. production API/execute/수학/기준을 바꾸지 않는다.
+#[path = "diagnostic_482_cached.rs"]
+mod cached_context;
 #[path = "diagnostic_482_pr1344.rs"]
 mod pr1344;
 use super::*;

@@ -1,6 +1,6 @@
 # #595 SSH recorder의 임시 object 배치 수정
 
-작성: 2026-10-26. 상위 #523. 상태: 원인 확인·한 literal 수정, 새 actual Focus 수용 대기.
+작성: 2026-10-26. 상위 #523. 상태: 원인 확인·한 literal 수정과 source3f532 실제 Focus 수용 완료.
 
 source `7a928cefe22e3c81bcb941f6ed20eaa80eeabc59`의
 [Focus40236805939](https://github.com/bin9208/openpilot-rust/actions/runs/40236805939)는
@@ -33,3 +33,25 @@ trace/소유 회수 함수는 바꾸지 않았다. 원본 source는 이미 부�
 로컬은 Bash syntax, 한 literal diff와 경로 소비자 읽기만 확인했다. GHA의 실제 recorder build,
 원래 runtime4와 source/index/SDK/held 후검증·업로드/소유 정리를 확인한 뒤 #595를 판정한다.
 새 Python 경로·baseline retirement credit·전체 Python 부재 수용은0이다.
+
+
+## 새 source3f532 실제 수용
+
+[Focus40240059303/job121309736866](https://github.com/bin9208/openpilot-rust/actions/runs/40240059303/job/121309736866)은
+source `3f5329dcf76f461bde804d09dfef0c4e5980893b`에서 전체 성공했다.
+registry-copy/public-build/entry-build/recorder-build/strace-help와 원래entry0~3은
+각각 command0/finalizer0이다. recorder는 실제 `$build/target/developer-ssh-entry-recorder`에서
+생성됐고 SHA256은 `574c4754385710cb352a8529fba6b6de24139e66a51ef789e62059ec9e73c0e1`이다.
+native summary7개/public summary1개는 complete/reaped/held_verified=true, error=null이다.
+실제 원격 SSH 연결은 없고 bounded recorder가 argv를 관측했다.
+
+artifact12616482211은41,558,023B, SHA256
+`81d8b43515df22713270ebc7842fdbdcf5d983b46be1ebf863a2f94996dea52c`다.
+1,713 safe unique regular member/전체 CRC, expanded98,165,877B를 inert 감사했다.
+source/index, SDK file/program/roster, frozen input/roster와 original venv file/link의
+전후9쌍이 byte 동일하다. original deletion/부재6통제, Unicode 원본 비교, native regression,
+strict auth/SSH Clippy, final source/SDK 봉인·부재closure·업로드 뒤 소유 정리까지 성공했다.
+부재closure는 sampled_absence=true이며 전체 Python 부재 주장은 false를 유지한다.
+
+이 결과로 #595 한 경로 배치 수정의 수용 조건을 충족한다. 과거7a928 실패는 그대로 보존하며
+전체 runtime exec/mmap 완전 해석, installed provider 전체 closure 또는 #523 완료로 확대하지 않는다.
