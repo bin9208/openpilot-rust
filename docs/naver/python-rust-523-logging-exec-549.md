@@ -217,3 +217,54 @@ artifact12590267474는82,302,246B/SHA256 `f77efe071f9175d1fc8ed61bf2e6def0624eef
 이번 실행에서 전체 exec15/음성4/새 cleanup은 미수용이다. helper 최종 held/untraced/paired
 exit0과 전체 job FAIL을 구분하며 새 source는 구문/diff만 확인했다. local 기능 실행0,
 old27/runtime2/R4/caller/원본 제거 credit0을 유지한다.
+
+## 9bff env 배열 결합 오류와 초기 고정 데이터 replay
+
+[40172175607/job121105151101](https://github.com/bin9208/openpilot-rust/actions/runs/40172175607/job/121105151101),
+source `9bff62174b81f3759b5ef220f360edf8e0c0be61`는 첫 prefix `first_int`의
+raw50/전체 directory roster1804 중 prefix50 projection을 통과한 뒤 exit5였다.
+실제 stderr는 `array (["PATH=/usr...) and object ({"wanted":[...) cannot be added`다.
+env 배열 합 전체가 아닌 오른쪽 항에 `as $env`가 결합해 policy state 객체와 배열을 더했다.
+후속은166–169행 env 합 **전체에 괄호2문자만** 추가한다. argv/env 원문, 다른 guard,
+타이머·상한·unknown 거부와 helper 동작은 변경하지 않는다.
+
+artifact12590991670은82,239,249B/SHA256
+`b95b6f542ba3a63356e4c45cdb6f6f77addbfafc1b0c453f2ee98aabe210eed8`,5983CRC다.
+실제 core61/metadata1/traced14/untraced1과 retained-once 완료, source/index/SDK final 및
+upload 성공과 qualifier 실패·cleanup skipped를 구분한다. exact15 policy와4음성은 미수용이다.
+
+같은 유형의 정책 오류를 native 본문 뒤에서 처음 찾지 않도록, 부모 통합용 초기 GHA step을
+ignored `logging-exec-788-replay.steps.yml`에 준비한다. source-before·SDK before·native dependency
+준비 뒤, 기존 full qualification 전에 넣는다. 현재 helper4b9는 편집하지 않는다.
+고정 artifact12590267474의 ZIP82,302,246B/SHA256
+`f77efe071f9175d1fc8ed61bf2e6def0624eeff806b454e294e533e6a1af350d`를
+`actions: read` 권한으로 한 번 읽고 전체5983 member CRC/SHA를 검사한다.
+아래 두 member만 `unzip -p`로 새 private proof에 저장하고 각 size/SHA를 고정 검증한다.
+
+| 고정 member | bytes | SHA256 |
+| --- | ---: | --- |
+| `logging/inspect/first_int.json` |494947| `75e80a5e4a017ef5971ed3306b4ba308198c4b0aa57c201c5a8e523c4c116a0d` |
+| `logging/exec-policy/binding.json` |82900| `e06a4f5ac76f6f2c356aa01b75ecbecdd03bd7b4d7cfb56134a8c4aeb6060fa0` |
+
+두 JSON의 source는 `78896f19db29d5cbe305d6f788bac9d0db4ce552` 그대로다.
+과거 ROOT/DEST/provider 경로를 현재 경로로 바꾸거나 실제 파일로 열지 않는다.
+현재 literal SHA의 jq policy를 `first_int`로 정확1회 평가하고 원래 출력·stderr·exit와
+현재 policy SHA/과거 fixture origin/ZIP 전체 CRC·SHA/두 member SHA·size를 receipt에 남긴다.
+기록의 CPP/Python0은 **해당 과거 first_int fixture의 exact exec 평가**에만 해당한다.
+archive code/ELF/원본 실행0이며 새 capture/expected 생성은 없다.
+full lexical 재실행/current15·legacy2 수용/closed PID·cwd·FD·DSO/R4/credit은 false/0이다.
+
+replay 실패도 기존 final seal/upload를 실행하고 full qualification은 미실행으로 남긴다.
+replay 성공 뒤에는 원래 current61/14/15 및 별도 legacy2를 같은 기준으로1회 실행한다.
+이 고정 데이터 replay 자체를 현재 source 기능 성공이나 과거 실행의 현재 PASS 승계로 쓰지 않는다.
+새 약600KiB JSON과82.3MB ZIP은 기존 private proof2GiB 안에 포함되며 상한을 늘리지 않는다.
+WF 통합·literal pins·실제 replay 및 full gate 판정은 부모 후속이다.
+로컬은 JSON metadata/두 member SHA 확인, jq 미실행 branch의 compile-only,
+YAML/Bash 문법·diff만 확인하며 policy 기능 평가는 하지 않는다. stage/commit/push0이다.
+
+
+부모 통합은 hosted dependency 준비 뒤/전체 default cohort 앞에 replay1단계를 넣는다.
+그 단계의 과거 source 값은 그대로788이며 현재 정책 source와 구분한다. 성공 뒤 과거 ZIP의
+binary 사본은 소유 경로에서 제거하고 pin된 JSON2개·CRC/SHA/출처·정책 결과만 남긴다.
+업로드 후 cleanup도 replay 성공과 입력/출력 SHA를 재확인한다. 이 사전 검증 성공은 이후의
+현재 full61/14/exec15 및 legacy2 실제 실행을 대체하지 않는다. 기능 결과는 GHA 대기다.

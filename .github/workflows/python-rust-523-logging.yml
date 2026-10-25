@@ -181,6 +181,135 @@ jobs:
         for provider in bash sh ranlib nm git gh curl clang clang++ cc c++ ar as ld pkg-config capnp ldd strace timeout; do
           command -v "$provider" > /dev/null
         done
+    - name: Replay pinned historical first_int data with the current exact exec policy
+      id: exec_policy_replay
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.hosted_dependencies.outcome == 'success')
+        }}
+      timeout-minutes: 6
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        umask 077
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux && test "$RUNNER_ARCH" = X64
+        test -x /usr/bin/gh && test -x /usr/bin/unzip && test -x /usr/bin/timeout
+        test "$PWD" = "$DIAG_SOURCE" && test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        test "$(realpath -e -- "$CI_JOB_TEMP")" = "$CI_JOB_TEMP"
+        test -d "$CI_JOB_TEMP" && test ! -L "$CI_JOB_TEMP"
+        test "$(stat -c '%u:%a' -- "$CI_JOB_TEMP")" = "$UID:700"
+        test -d "$CI_JOB_TEMP/proof" && test ! -L "$CI_JOB_TEMP/proof"
+        proof=$CI_JOB_TEMP/proof/logging-exec-replay-788
+        mkdir -m 700 -- "$proof"
+        set -C
+        phase=admission
+        finish() {
+          status=$?
+          trap - EXIT
+          /usr/bin/jq -n --arg phase "$phase" --argjson status "$status" \
+            '{schema:1,phase:$phase,exit_code:$status,historical_data_replay_only:true,current15_accepted:false,
+              legacy2_accepted:false,closed_pid:false,closed_cwd:false,closed_fd:false,closed_dso:false,
+              R4_acceptance:false,retirement_credit:0}' > "$proof/outcome.json" || status=1
+          exit "$status"
+        }
+        trap finish EXIT
+        policy=$DIAG_SOURCE/tools/ci/logging_retained_exec_policy_549.jq
+        policy_sha=23efe5d4bf093d793e1943c49952c75311711f8420bea5f2438da2762fb03638
+        test -f "$policy" && test ! -L "$policy"
+        printf '%s  %s\n' "$policy_sha" "$policy" > "$proof/policy.sha256"
+        sha256sum --check --strict "$proof/policy.sha256" > "$proof/policy-check.before.txt"
+        stat -c '%d:%i:%f:%u:%g:%s:%y:%z' -- "$policy" > "$proof/policy.before.stat"
+        jq_elf=$(realpath -e /usr/bin/jq)
+        test -f "$jq_elf" && test ! -L "$jq_elf"
+        sha256sum -- "$jq_elf" > "$proof/jq.sha256"
+        stat -c '%d:%i:%f:%u:%g:%s:%y:%z' -- "$jq_elf" > "$proof/jq.before.stat"
+        /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C "$jq_elf" --version > "$proof/jq-version.txt"
+        # 128MiB/file는 고정82.3MB ZIP을 위한 별도 download bound다. 원래 report cap은 아래64MiB다.
+        ulimit -f 131072
+        phase=artifact-download
+        /usr/bin/timeout --signal=TERM --kill-after=5s 90s /usr/bin/env -i \
+          PATH=/usr/bin:/bin HOME="$CI_JOB_TEMP/home" GH_HOST=github.com GH_TELEMETRY=false GH_TOKEN="$GH_TOKEN" \
+          /usr/bin/gh api repos/bin9208/openpilot-rust/actions/artifacts/12590267474 \
+          > "$proof/artifact-api.json" 2> "$proof/artifact-api.stderr"
+        /usr/bin/jq -e '.id==12590267474 and .size_in_bytes==82302246 and .expired==false and
+          .digest=="sha256:f77efe071f9175d1fc8ed61bf2e6def0624eeff806b454e294e533e6a1af350d" and
+          .workflow_run.id==40171227327 and .workflow_run.head_sha=="78896f19db29d5cbe305d6f788bac9d0db4ce552"' \
+          "$proof/artifact-api.json" > "$proof/artifact-api.scope.txt"
+        /usr/bin/timeout --signal=TERM --kill-after=5s 90s /usr/bin/env -i \
+          PATH=/usr/bin:/bin HOME="$CI_JOB_TEMP/home" GH_HOST=github.com GH_TELEMETRY=false GH_TOKEN="$GH_TOKEN" \
+          /usr/bin/gh api repos/bin9208/openpilot-rust/actions/artifacts/12590267474/zip \
+          > "$proof/archive.zip" 2> "$proof/artifact-download.stderr"
+        unset GH_TOKEN GITHUB_TOKEN
+        test "$(stat -c %s -- "$proof/archive.zip")" = 82302246
+        printf '%s  %s\n' f77efe071f9175d1fc8ed61bf2e6def0624eeff806b454e294e533e6a1af350d "$proof/archive.zip" > "$proof/archive.sha256"
+        sha256sum --check --strict "$proof/archive.sha256" > "$proof/archive-check.before.txt"
+        phase=archive-crc
+        /usr/bin/timeout --signal=TERM --kill-after=5s 90s /usr/bin/unzip -tqq "$proof/archive.zip" \
+          > "$proof/archive-crc.stdout" 2> "$proof/archive-crc.stderr"
+        /usr/bin/unzip -Z1 "$proof/archive.zip" > "$proof/archive-members.txt"
+        test "$(wc -l < "$proof/archive-members.txt")" -eq 5983
+        LC_ALL=C sort -u "$proof/archive-members.txt" > "$proof/archive-members.unique.txt"
+        test "$(wc -l < "$proof/archive-members.unique.txt")" -eq 5983
+        phase=two-json-members
+        /usr/bin/unzip -p "$proof/archive.zip" logging/inspect/first_int.json > "$proof/first_int.json"
+        /usr/bin/unzip -p "$proof/archive.zip" logging/exec-policy/binding.json > "$proof/binding.json"
+        test "$(stat -c %s -- "$proof/first_int.json")" = 494947
+        test "$(stat -c %s -- "$proof/binding.json")" = 82900
+        printf '%s  %s\n' \
+          75e80a5e4a017ef5971ed3306b4ba308198c4b0aa57c201c5a8e523c4c116a0d "$proof/first_int.json" \
+          e06a4f5ac76f6f2c356aa01b75ecbecdd03bd7b4d7cfb56134a8c4aeb6060fa0 "$proof/binding.json" > "$proof/members.sha256"
+        sha256sum --check --strict "$proof/members.sha256" > "$proof/members-check.before.txt"
+        # 다음 policy가 실패해도 검증한 원문 출처를 남긴다. 성공 출력/expected를 만들지 않는다.
+        /usr/bin/jq -n --arg current "$GITHUB_SHA" --arg policy "$policy_sha" \
+          '{schema:1,scope:"historical-first-int-current-policy-replay",policy_source_commit:$current,policy_sha256:$policy,
+            fixture_source_commit:"78896f19db29d5cbe305d6f788bac9d0db4ce552",fixture_run:40171227327,
+            fixture_artifact:12590267474,zip_bytes:82302246,zip_sha256:"f77efe071f9175d1fc8ed61bf2e6def0624eeff806b454e294e533e6a1af350d",
+            whole_zip_crc_checked:true,zip_members:5983,
+            members:[{name:"logging/inspect/first_int.json",bytes:494947,sha256:"75e80a5e4a017ef5971ed3306b4ba308198c4b0aa57c201c5a8e523c4c116a0d"},
+              {name:"logging/exec-policy/binding.json",bytes:82900,sha256:"e06a4f5ac76f6f2c356aa01b75ecbecdd03bd7b4d7cfb56134a8c4aeb6060fa0"}],
+            raw_trace_redecoded:false,archive_code_executions:0,archive_elf_executions:0,original_executions:0,
+            current15_accepted:false,legacy2_accepted:false,closed_pid:false,closed_cwd:false,closed_fd:false,closed_dso:false,
+            all_adopted_reaped:false,old27_accepted:false,R4_acceptance:false,retirement_credit:0}' > "$proof/inputs.json"
+        # literal old paths는 JSON 값이다. 열기/치환/현재 provider 재수용은 하지 않는다.
+        phase=historical-first-int-policy
+        (ulimit -f 65536
+          /usr/bin/timeout --signal=TERM --kill-after=5s 60s /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C \
+            "$jq_elf" -e --arg prefix first_int --slurpfile binding "$proof/binding.json" \
+            -f "$policy" "$proof/first_int.json") > "$proof/policy.stdout.json" 2> "$proof/policy.stderr"
+        phase=replay-output-and-seals
+        /usr/bin/jq -se 'length==1 and (.[0] | .schema==1 and .prefix=="first_int" and
+          .source_commit=="78896f19db29d5cbe305d6f788bac9d0db4ce552" and .summary_schema==2 and
+          .selected_exec_attempts==7 and .source_expected_exec_attempts==7 and .checker_attempts==1 and
+          .case_keys==["retained-first-int"] and .exact_exec_argv_env==true and .structural_detail_counts_equal==true and
+          .python_exec_attempts==0 and .cpp_exec_attempts==0 and .full_event_index==false and
+          .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and
+          .all_adopted_reaped==false and .old27_accepted==false and .pending_runtime2_accepted==false and
+          .R4_acceptance==false and .retirement_credit==0)' "$proof/policy.stdout.json" > "$proof/policy-output.scope.txt"
+        sha256sum --check --strict "$proof/archive.sha256" > "$proof/archive-check.after.txt"
+        sha256sum --check --strict "$proof/members.sha256" > "$proof/members-check.after.txt"
+        sha256sum --check --strict "$proof/policy.sha256" > "$proof/policy-check.after.txt"
+        sha256sum --check --strict "$proof/jq.sha256" > "$proof/jq-check.after.txt"
+        stat -c '%d:%i:%f:%u:%g:%s:%y:%z' -- "$policy" > "$proof/policy.after.stat"
+        stat -c '%d:%i:%f:%u:%g:%s:%y:%z' -- "$jq_elf" > "$proof/jq.after.stat"
+        cmp "$proof/policy.before.stat" "$proof/policy.after.stat"
+        cmp "$proof/jq.before.stat" "$proof/jq.after.stat"
+        sha256sum -- "$proof/policy.stdout.json" > "$proof/policy-output.sha256"
+        /usr/bin/jq -n --slurpfile admission "$proof/inputs.json" \
+          --arg output_sha "$(cut -d' ' -f1 "$proof/policy-output.sha256")" \
+          '$admission[0]+{policy_invocations:1,policy_output_sha256:$output_sha,
+            fixture_cpp_exec_attempts:0,fixture_python_exec_attempts:0,cpp_python_zero_scope:"captured788-first_int-exec-only"}' \
+          > "$proof/receipt.json"
+        phase=historical-data-replay-observed
+        # 검증을 마친 과거 ZIP의 binary 사본은 남기지 않고 두 JSON/출처만 보존한다.
+        test -f "$proof/archive.zip" && test ! -L "$proof/archive.zip"
+        test "$(realpath -e -- "$proof/archive.zip")" = "$proof/archive.zip"
+        test "$(stat -c '%u:%h' -- "$proof/archive.zip")" = "$UID:1"
+        rm -- "$proof/archive.zip"
+        test ! -e "$proof/archive.zip" && test ! -L "$proof/archive.zip"
     - name: Build and observe retained native logging without deleting originals
       id: qualify
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -194,7 +323,7 @@ jobs:
         umask 077
         # 첫 candidate의 실제 결과를 수집한다. old27/P2/closed-trace/caller/absence 수용은 별도다.
         printf '%s  %s\n' 4b9c87534731c123be6836401acd84cf37d3a80f3ac103bd7f76b4588c097ffe tools/ci/logging_retained_549.sh | sha256sum --check --strict -
-        printf '%s  %s\n' 303ed6814d90fe387f832023238b1393edd785acd975bb1ea1572ac3cdcc0825 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check --strict -
+        printf '%s  %s\n' 23efe5d4bf093d793e1943c49952c75311711f8420bea5f2438da2762fb03638 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check --strict -
         /usr/bin/timeout --signal=TERM --kill-after=180s 60m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh
         jq -e '.schema==1 and .states==8 and .status_pairs==8 and .authored_status_equal==true and .fs_check_passed==true and .fixture_cap_bytes==16777216 and .source_prime==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-cache-554/complete.json"
         jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .fs_check_passed==true and .source_prime_statuses==1 and .status_channels_equal==true and .tracked_source_entries_flags_equal==true and .source_config_unchanged==true and .sdk_equal==true and .raw_index_immutable==false and .fixture_child_optional_locks_zero==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-source-cache-554/complete.json"
@@ -287,7 +416,7 @@ jobs:
     - name: Clean only uploaded unchanged owned logging source and private job
       id: logging_owned_cleanup
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.source_before.outcome
-        == 'success' && steps.prepared_rust.outcome == 'success' && steps.qualify.outcome == 'success' && steps.legacy_runtime2.outcome == 'success' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome
+        == 'success' && steps.prepared_rust.outcome == 'success' && steps.exec_policy_replay.outcome == 'success' && steps.qualify.outcome == 'success' && steps.legacy_runtime2.outcome == 'success' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome
         == 'success' && steps.proof_upload.outcome == 'success' && steps.proof_upload.outputs.artifact-id != '' && steps.proof_upload.outputs.artifact-digest != '' &&
         env.DIAG_SOURCE_OWNER != '' && env.CI_JOB_TEMP != '') }}
       shell: bash
@@ -343,6 +472,13 @@ jobs:
         printf '%s  %s\n' "$CURRENT_HELPER_SHA256" "$DIAG_SOURCE/tools/ci/logging_retained_549.sh" | sha256sum --check --strict --quiet -
         required_file "$proof/logging/outcome.json"
         jq -e '.phase=="candidate-observed" and .exit_code==0 and .held_final_exit_code==0 and .untraced_exit_code==0 and .paired_final_exit_code==0 and .retirement_credit==0 and .closed_trace_admitted==false and .old27_admitted==false' "$proof/logging/outcome.json"
+        replay=$proof/logging-exec-replay-788
+        for leaf in outcome.json receipt.json first_int.json binding.json members.sha256 policy.stdout.json policy-output.sha256; do required_file "$replay/$leaf"; done
+        jq -e '.schema==1 and .phase=="historical-data-replay-observed" and .exit_code==0 and .historical_data_replay_only==true and .current15_accepted==false and .legacy2_accepted==false and .R4_acceptance==false and .retirement_credit==0' "$replay/outcome.json"
+        jq -e --arg source "$GITHUB_SHA" '.policy_source_commit==$source and .policy_sha256=="23efe5d4bf093d793e1943c49952c75311711f8420bea5f2438da2762fb03638" and .fixture_source_commit=="78896f19db29d5cbe305d6f788bac9d0db4ce552" and .policy_invocations==1 and .whole_zip_crc_checked==true and .archive_code_executions==0 and .archive_elf_executions==0 and .current15_accepted==false and .legacy2_accepted==false and .R4_acceptance==false and .retirement_credit==0' "$replay/receipt.json"
+        sha256sum --check --strict --quiet "$replay/members.sha256"
+        sha256sum --check --strict --quiet "$replay/policy-output.sha256"
+        test ! -e "$replay/archive.zip" && test ! -L "$replay/archive.zip"
         legacy=$proof/logging-legacy-runtime2
         for leaf in outcome.json complete.json reuse-admission.txt cases.check runtime2-monotonic.tsv fixture-command.argv0 source-after.sha256 index-after.bin sdk-after.roster.bin; do required_file "$legacy/$leaf"; done
         jq -e '.schema==1 and .mode=="legacy-runtime2" and .phase=="legacy-runtime2-observed" and .exit_code==0 and .source_sdk_final_exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .provider_alias_final_exit_code==0 and .resource_final_exit_code==0 and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$legacy/outcome.json"

@@ -163,10 +163,10 @@ need(($rows|length)==(if $prefix=="forbidden_executable_options" then 3 else 1 e
    ($normal or $r.held!=null) as $positive |
    ($r.escaped_descendants_reaped==true) as $escaped |
    ($r.case_key//""|startswith("retained-reject-")) as $forbid |
-   (if $normal then $b.direct_env else $b.checker_env end) +
+   ((if $normal then $b.direct_env else $b.checker_env end) +
      (if $positive and $normal==false then ["NATIVE_LOGGING_QA_HOLD="+$r.hold,"NATIVE_LOGGING_QA_RECORDS="+$row.root+"/records"]
         + (if $escaped then ["NATIVE_LOGGING_QA_ESCAPED=1"] else [] end)
-      elif $positive==false and $forbid==false then ["NATIVE_LOGGING_QA_HOLD=first","NATIVE_LOGGING_QA_RECORDS="+$row.root+"/unexpected-child"] else [] end) as $env |
+      elif $positive==false and $forbid==false then ["NATIVE_LOGGING_QA_HOLD=first","NATIVE_LOGGING_QA_RECORDS="+$row.root+"/unexpected-child"] else [] end)) as $env |
    (if $normal then [$b.checker,"retained","--root",$b.source,"--binary",$b.probe,"--context",$b.context,
       "--output",$b.proof+"/native","--source-commit",$b.commit,"--binary-sha256",$b.binary_sha]
     else checker_argv($b;$row.root)+(if $forbid then ["--"+($r.case_key|ltrimstr("retained-reject-")),$b.probe] else [] end) end) as $argv |
