@@ -102,6 +102,7 @@ jobs:
         ssh_helper_pid=$BASHPID
         test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
         test ! -e rust/tools/check_plannerd_ci.py && test ! -L rust/tools/check_plannerd_ci.py
+        printf '%s  %s\n' 1c37bf09742aa37ccbe671a781f686dec5acefddeccf7b06c79f948435387223 rust/crates/carrot-recovery/src/terminal/pty_tests.rs | sha256sum --check -
         printf '%s  %s\n' 9f67c7a017b0cbdf25a756ecc88595fbac54987e13583553977aa66e68fff64a rust/crates/dev-tools/tests/fast_cold_measure.rs | sha256sum --check -
         printf '%s  %s\n' 952adc3a2a68af3521dd7fa05bb68ad3b68862e063dd8c553ea1e010b8eca64a rust/crates/model-runtime/tests/fixtures/compiler-buffer-original/README.md | sha256sum --check -
         printf '%s  %s\n' e8e52475eba99d6e13287ecb957ec650c8e4d64b1e517caea1fd3b08fdddf257 rust/crates/model-runtime/tests/fixtures/compiler-buffer-original/observation.json | sha256sum --check -
@@ -327,6 +328,9 @@ jobs:
         git diff --no-renames --name-only -z 97f7ad36dfa0919b4e5c216fb16f44ed29161663 HEAD > "$CI_JOB_TEMP/proof/changed-paths.bin"
         while IFS= read -r -d '' changed; do
           case "$changed" in
+            docs/naver/python-rust-523-planner-capture-host-aa79-audit.md) ;;
+            docs/naver/python-rust-523-ssh-recorder-595.md) ;;
+            rust/crates/carrot-recovery/src/terminal/pty_tests.rs) ;;
             docs/naver/python-rust-523-model-family-ee74-audit.md) ;;
             docs/naver/python-rust-523-planner-ipc-next.md) ;;
             docs/naver/python-rust-523-buffer-corpus-100-audit.md) ;;
@@ -877,7 +881,7 @@ jobs:
         printf '%s  %s\n' 96885476f165d7614a03e0e9f29c019b75b216843694439981f047c9e7d22c8f .github/workflows/rust-dbc-darwin.yml | sha256sum --check -
         printf '%s  %s\n' b51def7342359305c818f15ec59e9002d6b7c1ee73752dc08e91442444cfface .github/workflows/rust.yml | sha256sum --check -
         printf '%s  %s\n' 9215c2d98492683f7f3c87fe549339cb584588fe754a8589d661415d95244c97 .github/workflows/tests.yaml | sha256sum --check -
-        printf '%s  %s\n' c406d646cdba2952c6276cd8bafda7a51c989a55bf533876aa611d3c053ac09e rust/crates/dev-tools/tests/ci_rust_isolation.rs | sha256sum --check -
+        printf '%s  %s\n' 9dade48702946f0bc41cefe0dc2c6e7033916f7d52f93bfa1b12027d4b3b75d3 rust/crates/dev-tools/tests/ci_rust_isolation.rs | sha256sum --check -
         printf '%s  %s\n' c72e4559be431905873798265782f5a028dcce41d4748dd6920b8b6e0933670b rust/crates/dev-tools/tests/ci_receipt_metadata.rs | sha256sum --check -
         printf '%s  %s\n' 737ee9b35c7b7e69eb9b759f869574dbfd6bb9c6f983b869cae652cc1a1aa8d4 rust/crates/dev-tools/src/model_family_retirement_support.rs | sha256sum --check -
         printf '%s  %s\n' 6030e76ba176d3d50b9191b98adf081f123bb2208185380749d8139689bbef75 tools/ci/diagnostic-296-contract.json | sha256sum --check -
@@ -981,7 +985,7 @@ jobs:
         printf '%s  %s\n' 532281d6682b2d5a4ae8b8acf354b3a39d04eaf98cd49cc9a2c1432be30b8795 rust/crates/dev-tools/tests/fixtures/driver-pipeline-dependency/collector-reference-manifest.json | sha256sum --check -
         printf '%s  %s\n' 41d9b4d37e59d76e318fe8f0cecf5a3469d67814ce5e5f5a5e2c8ef0f9ec5f3d rust/crates/dev-tools/tests/developer_ssh_entry.rs | sha256sum --check -
         printf '%s  %s\n' c2562fa8c3b60108024c3f3ef0ddf4a35800d42b73eb44e1028003096974a0e6 rust/crates/dev-tools/tests/fixtures/developer-ssh-entry/exec_recorder.rs | sha256sum --check -
-        printf '%s  %s\n' 0554a00a43a7a7cccb28ba70456df4dac2244ca1f66fdb65f6edc0abf7a24287 tools/ci/developer_ssh_entry_523.sh | sha256sum --check -
+        printf '%s  %s\n' 58a883fa4db66ef232f5a1fdc95e7a2797e34cb88da157258b237893c61081e1 tools/ci/developer_ssh_entry_523.sh | sha256sum --check -
         printf '%s  %s\n' 9c5630ce70c61e635dce8d0f577f24142ca70ef34ff795a1de4d91476c862325 .github/workflows/rust-native-arm.yml | sha256sum --check -
         printf '%s  %s\n' 066604c954c2d738ae2220632f7334e2a4aaabd5597a9539071fb2159af5c6ca .github/workflows/python-rust-523-native-arm-final-two.yml | sha256sum --check -
         printf '%s  %s\n' 84390180df379ec736e83f1e442acedc8d904321101b44353774f4a321af39bb .github/workflows/python-rust-523-native-arm-remaining.yml | sha256sum --check -
@@ -1070,7 +1074,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='ebb5b0809b6e607c16916f9295f8aeadb706a5804106c0a76fd59377dc153bd9', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='17f46eebeb2e7fe28933f2c148b476fb8160f6d3ce1cb7b9c8fc690169e1d784', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile

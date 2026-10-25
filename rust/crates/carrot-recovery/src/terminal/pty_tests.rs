@@ -31,6 +31,73 @@ fn process_state(pid: u32) -> Option<String> {
         })
 }
 
+fn wait_for_sleeping_descendant(pid: u32, pgid: u32, deadline: Instant) {
+    use std::os::unix::fs::MetadataExt;
+
+    // Linux syscall ABIs, without adding a dependency just for this test.
+    let sleep_syscalls = match std::env::consts::ARCH {
+        "x86_64" => ["35", "230"], // nanosleep, clock_nanosleep
+        "aarch64" => ["101", "115"],
+        arch => panic!("unsupported sleep readiness syscall ABI: {arch}"),
+    };
+    let executable = std::fs::canonicalize("/usr/bin/sleep").unwrap();
+    let expected = std::fs::metadata(&executable).unwrap();
+    let directory = PathBuf::from(format!("/proc/{pid}"));
+    let snapshot = || {
+        let text = std::fs::read_to_string(directory.join("stat")).unwrap();
+        let fields: Vec<_> = text
+            .rsplit_once(')')
+            .unwrap()
+            .1
+            .split_whitespace()
+            .collect();
+        (
+            fields[0].parse::<char>().unwrap(),
+            fields[2].parse::<u32>().unwrap(),
+            fields[19].parse::<u64>().unwrap(),
+        )
+    };
+    let start = snapshot().2;
+    loop {
+        assert!(
+            Instant::now() < deadline,
+            "sleep process {pid} did not reach post-exec readiness within the cleanup deadline"
+        );
+        let before = snapshot();
+        assert_eq!(
+            (before.1, before.2),
+            (pgid, start),
+            "sleep process identity"
+        );
+        let path = std::fs::read_link(directory.join("exe")).unwrap();
+        let actual = std::fs::metadata(directory.join("exe")).unwrap();
+        let syscall = std::fs::read_to_string(directory.join("syscall")).unwrap();
+        let after = snapshot();
+        assert_eq!((after.1, after.2), (pgid, start), "sleep process identity");
+        // exe can already name sleep at PTRACE_EVENT_EXEC. Requiring a sleep
+        // syscall bracketed by S states proves that execution resumed past it.
+        if before.0 == 'S'
+            && after.0 == 'S'
+            && path == executable
+            && (actual.dev(), actual.ino()) == (expected.dev(), expected.ino())
+            && syscall
+                .split_whitespace()
+                .next()
+                .is_some_and(|number| sleep_syscalls.contains(&number))
+            && Instant::now() < deadline
+        {
+            println!(
+                "PTY474_SLEEP_READY pid={pid} pgid={pgid} start={start} state=S syscall={} dev={} ino={}",
+                syscall.split_whitespace().next().unwrap(),
+                actual.dev(),
+                actual.ino()
+            );
+            break;
+        }
+        std::thread::yield_now();
+    }
+}
+
 #[test]
 fn exited_leader_remains_reserved_until_owned_descendant_cleanup() {
     // Given an owned PTY group with a leader and a HUP-resistant descendant.
@@ -70,13 +137,14 @@ fn exited_leader_remains_reserved_until_owned_descendant_cleanup() {
     assert_eq!(exit_code(status), 23);
     let before = process_state(leader);
     assert_eq!(before.as_deref(), Some("Z"));
+    let deadline = Instant::now() + Duration::from_secs(2);
+    wait_for_sleeping_descendant(descendant, leader, deadline);
     let mut unrelated = std::process::Command::new("/bin/sleep")
         .arg("600")
         .spawn()
         .unwrap();
     // When the generation closes its owned group before reaping the leader.
     drop(generation);
-    let deadline = Instant::now() + Duration::from_secs(2);
     let descendant_after = loop {
         let state = process_state(descendant);
         if state.as_deref().is_none_or(|state| state == "Z") {

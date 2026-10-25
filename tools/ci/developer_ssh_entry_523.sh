@@ -540,7 +540,7 @@ fixture=$(artifact entry-build developer_ssh_entry test "$source/rust/crates/dev
 cli=$(artifact entry-build developer-ssh bin "$source/rust/crates/dev-tools/src/bin/developer_ssh.rs" false)
 [[ $public_cli == "$build/target/x86_64-unknown-linux-gnu/debug/developer-ssh" && $cli == "$public_cli" &&
    $fixture == "$build/target/x86_64-unknown-linux-gnu/debug/deps/"* && $(readlink -e "$fixture") == "$fixture" ]]
-recorder=$build/developer-ssh-entry-recorder
+recorder=$build/target/developer-ssh-entry-recorder
 run recorder-build 120 /usr/bin/env -i "${build_env[@]}" "$sdk/bin/rustc" --edition=2021 -C debuginfo=0 -C opt-level=1 \
   "$source/rust/crates/dev-tools/tests/fixtures/developer-ssh-entry/exec_recorder.rs" -o "$recorder"
 bind_elf "$fixture"; bind_elf "$cli"; bind_elf "$recorder"

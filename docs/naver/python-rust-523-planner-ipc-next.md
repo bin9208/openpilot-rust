@@ -387,3 +387,16 @@ capture 두 Python 파일의 SHA와 adapter14 구성은 변경하지 않았다.
 새 capture의 actual host/ARM/adapter14 결과는 아직 미수용이며 기준/추가 ledger credit0이다.
 현재 native IPC/client/C++ candidate16개는 local WIP이고 공유 module/CLI/Cargo에 등록하지
 않았다. 이 문서의 해당 candidate SHA와 설계는 배포된 native 실행 증거가 아니다.
+
+## 실제 aa79 capture 및 ARM standalone 관측 경계
+
+sourceaa79의 host runtime12/ASan3과 ARM runtime12, adapter14/실제 native160·원래 frozen/memory/
+strict Clippy가 통과했다. parser35의 독립 원문은 native-units artifact12615269988에9160B/
+SHA `afe5ea47497bf9ea1af07231400055f348c3c8e555020c1f747c97eb51168acd`로 보존됐다.
+이는 기존 Python adapter와 input capture의 수용이며 새 native IPC의 실행·퇴역 수용은 아니다.
+
+source51fd Fast는 기존 CI source-trust와 cap 계약은 통과했지만 standalone ARM의 추가 capture
+step과 canonical reusable ARM job을 통째로 같다고 요구하던 기존 isolation 검사에서 실패했다.
+검사는 정확한 capture env2개·512MiB admission+원래 helper 호출을 먼저 확인한 뒤 그 관측 추가만
+정규화하고 나머지 전체 job을 계속 비교하도록 보완한다. main/reusable ARM의 원래 동작은
+그대로이며 임의 env/command 차이를 허용하지 않는다. 실제 후속 정책 검증은 대기다.

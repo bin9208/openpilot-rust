@@ -2092,6 +2092,30 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
     ] {
         let data = parse(&read(&format!(".github/workflows/{candidate}"))).unwrap();
         let mut expected = data["jobs"][name].clone();
+        if name == "planner-runtime" {
+            // Standalone capture만 추가됐다. 정확한 두 env와 admission을 확인한 뒤
+            // 그 관측 경계를 빼고 나머지 전체 job은 canonical source와 비교한다.
+            let captures = expected["steps"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .filter(|step| {
+                    step["name"] == "Compare exact policies, main loops, real IPC and lifecycle"
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(captures.len(), 1);
+            let capture = captures.into_iter().next().unwrap();
+            assert_eq!(
+                capture["env"],
+                serde_json::json!({
+                    "PLANNER_IPC_CAPTURE_DIR":"${{ env.CI_JOB_TEMP }}/proof/planner-ipc-original-inputs",
+                    "PLANNER_IPC_GROWTH_MIB":"512"
+                })
+            );
+            assert_eq!(capture["run"], "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$CI_JOB_TEMP\" --growth-mib 512\n/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" runtime\n");
+            capture.as_object_mut().unwrap().remove("env");
+            capture["run"] = "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" runtime\n".into();
+        }
         // #572 final-two는 이미 canonical SDK를 갖는다. 나머지6role만
         // 기존 설치→검증/전후 봉인 overlay를 적용하며 전체 job 비교는 유지한다.
         if !["radar-arm", "carrot-navi-arm"].contains(&name) {

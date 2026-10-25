@@ -3,9 +3,14 @@
 2026-10-26. 추적: [#474](https://github.com/bin9208/openpilot-rust/issues/474),
 [#560](https://github.com/bin9208/openpilot-rust/issues/560), [#523](https://github.com/bin9208/openpilot-rust/issues/523).
 
-**상태: 후속 소유 확대에 따라 `recovery474` 명시 context를 구현하여9.5GiB 대5.5GiB의
-source 계약 충돌을 해소했다. hosted 실행 준비 source는 연결했으며 실제 provider build/
-통제26개/full traced8/strict audit·자원 fit는 GHA UNRUN이다.** Fast 기본 scope는 그대로다.
+**상태: Batch9 source `7a928cefe`의 실제 hosted GHA는 provider 준비/context3/closure18/
+protocol3/untraced8을 통과했다. 추가 PTY 통제의 원문 exec 결과 `= ?`를 strict하게 거부해
+job은 실패했다. STOP/CONT PTY 통제와 full traced8/direct-root/strict post audit는 UNRUN이다.**
+provider/SDK/source 최종 봉인은 통과했다. 아래 Batch9 관측에 exact artifact와 범위 밖 전제를
+기록했다. Fast 기본 scope와 unknown 거부 정책은 그대로다.
+
+후속 사용자 허용으로 기존 Rust PTY 테스트에 exec 이후 sleep readiness barrier를 추가했다.
+새 source의 기능/Clippy/full traced8 수용은 GHA UNRUN이며, 아래 별도 절에 변경과 인계를 기록했다.
 
 ## 근거와 수정 범위
 
@@ -154,7 +159,8 @@ disk-guard 전에 실행해야 하는 원래 계약을 유지한다. protocol3�
 두 통제의 unknown/unavailable trace는 실패하며, 이러한 kernel 동작 통제가 full traced8의
 strict exec audit를 대신하지 않는다. 기존 marker10/cold auditor의 실제 실행을 했다고도
 주장하지 않는다. 전체 요구는 새 context음성3 + closure18 + 기존 protocol3 + PTY2 =
-**26개**이며 모두 **GHA UNRUN**이다. 원래 closure18의 개수와 본문은 그대로다.
+**26개**다. 최초 준비 때 모두 GHA UNRUN이었으며, Batch9의 실제 통과/실패/미실행은 아래에
+구분했다. 원래 closure18의 개수와 본문은 그대로다.
 
 ## 실패, 전후 봉인과 인계
 
@@ -238,3 +244,181 @@ provider의 고정 inheritance receipt에서 root PID를 받고, 원래 prefligh
 못했다. 이후 사용자 소유 확대로 위 명시 recovery context를 구현해 preparation 계약 충돌은
 source에서 해소했다. 실제 current provider/full traced8/direct-root 결합의 GHA 수용은
 미검증이며, 그 전의 퇴역 credit은0이다.
+
+## Batch9 exact-source GHA 관측
+
+source `7a928cefe22e3c81bcb941f6ed20eaa80eeabc59`의
+[run40236805934/job121300012622](https://github.com/bin9208/openpilot-rust/actions/runs/40236805934/job/121300012622)을
+읽기 전용으로 관측했다. 2026-10-26 06:54 KST 종료 결과는 **failure**다. 상태가 그대로인
+조회 뒤에는 간격을 늘렸고, cancel/rerun/dispatch는 하지 않았다.
+
+| 대상 | 실제 결과 |
+| --- | --- |
+| private provider 준비 + context 음성3 | PASS. 세 거부 receipt와 provider build-complete가 current source에 결합됨 |
+| 원래 closure18 + STOP/CONT protocol3 | PASS. 원래18행과 protocol3행 및 native semantic verifier/direct wait 결과 보존 |
+| 동일7실행물 build/select | PASS. 관련 native unit32 및 Clippy도 해당 step에서 성공 |
+| untraced full8 | PASS. harness exit0, `1 passed; 0 failed`, 256.91s |
+| 실제 CWP HUP→KILL PTY 통제 | native test/tracer/direct wait0. 원문 selected exec의 `= ?` 때문에 adapter는 실패 |
+| 별도 controlling PTY STOP/CONT 통제 | 앞 통제 실패로 compile/실행 모두 UNRUN |
+| full traced8 / strict post / direct-root guard | 앞 PTY 완료 marker가 없어 시작 전 거부. driver1/harness125, `recovery-trace/exec.*`0개 |
+| provider after-fast / SDK after / source·index after | PASS. 실패 상태를 성공으로 바꾸지는 않음 |
+| artifact upload / cleanup | upload PASS. 두 cleanup은 AND 조건에 따라 skipped |
+
+따라서 전체26개 중 context3 + closure18 + protocol3의 **24개 통과**이며, 추가 PTY 첫 통제는
+실패, 두 번째는 미실행이다. full8×2나 strict auditor/direct-root 성공을 주장하지 않는다.
+
+artifact는 `recovery-native-lanes-40236805934-1`, ID `12615328251`이다.
+ZIP55,004,275B, unique/safe/CRC 정상6,717 members, expanded194,492,371B를 inert하게 확인했다.
+원문 archive는 `.analysis/scratch/2026-10-25-523-completion/ci/12615328251.zip`에 있다.
+
+| 실제 산출물 | SHA256 |
+| --- | --- |
+| artifact ZIP | `0b55c63a1b00564eba07dfa01c2401726acb28b0f5c5fdd920e009df7bd152ad` |
+| `cold-strace-560/bin/strace` | `e4cc9502be3826da01635e6f7b2ce9cf59c49e7d95b30b58f0628d8bf29973d1` |
+| `proof/recovery-provider-474/pty/pty.exec` | `55c153b631a3eaeb90b1bf1b283e4eb12f5eb46e63ee98a439ba32d90104c053` |
+| `proof/recovery-provider-474/controls/inheritance/controls.tsv` | `fcd0a76afcd4a81bac7c4e7163a5d36efc216064fe42b338d9af503c5cbbd14a` |
+| `proof/recovery-provider-474/controls/protocol-controls.tsv` | `12f483f6f046a525df229b1e3400c0b046d694154c307a102147fde9315042b2` |
+| `proof/recovery-provider-474/prepare/context-controls.tsv` | `dfcdfd8ebb7b0aed2d51c40607c7d2ac3dedf1aeb35c3b2076ecb10e7b375f47` |
+
+### 첫 실제 실패와 소유 범위 밖 전제
+
+job log의 `2026-10-25T21:54:11.3147009Z`에서
+`recovery tracer 474: unclassified/unavailable PTY control trace`로 실패했다.
+원문 `proof/recovery-provider-474/pty/pty.exec`는24행/7,441B다.
+
+- 3행: PID36634의 `/bin/sh -c`가 HUP-resistant background child를 시작하고 PID를 출력한 뒤 exit23.
+- 6–8행: PID36638의 descendant `/bin/sh` exec가 시작·성공.
+- 9–19행: PID36638이 실제 hosted PATH의 `sleep` 후보를 탐색하며 ENOENT를 기록.
+- **20행: PID36638 `execve("\\x2f\\x75\\x73\\x72\\x2f\\x62\\x69\\x6e\\x2f\\x73\\x6c\\x65\\x65\\x70", ... ) = ?`**.
+- 21행: 같은 PID36638 `+++ killed by SIGKILL +++`; 22행은 harness PID36630의 CLD_KILLED receipt.
+
+이는 처음 조사한 dd3의 `???( <unfinished ...>`와 다른 **selected exec 결과 미확정**이다.
+해당 trace의 다른 exec entry/resume 쌍은 남아 있지만 이 결과를0/ENOENT/exec 부재로 추정할
+근거는 없다. 실제 ptrace errno나 마지막 kernel stop은 이 artifact에 없으며, 특정 errno 또는
+provider 내부 분기의 결함으로 단정하지 않는다. unknown/result 거부를 유지한다.
+
+소스에서 좁힌 통제의 문제는
+`rust/crates/carrot-recovery/src/terminal/pty_tests.rs:41,61–78`의 준비 완료 조건 부재다.
+`OWNED_CHILD`는 background PID만 전달한다. 테스트는 descendant의 exec 이후 준비 완료를
+기다리지 않고 `drop(generation)`을 호출한다. 실제 production
+`rust/crates/carrot-recovery/src/terminal/pty.rs:129–140`은 HUP 직후 KILL을 보내므로,
+이번처럼 descendant의 exec 관측 완료와 종료가 겹칠 수 있다. native ownership/cleanup
+assertion 자체는 통과했지만 lossless exec 관측 통제로는 그 준비 조건이 부족하다.
+
+bounded 후속은 **이 native 통제에서 descendant의 exec 이후 준비 완료를 실제로 확인한 뒤**
+동일 `Generation::drop`과 leader reservation/descendant cleanup/unrelated child assertion을
+실행하는 것이다. 단순 PID 출력, exec 직전 printf 또는 고정 sleep 지연은 완료 증거가 아니다.
+예를 들어 고정 sleep ELF/동일 PID identity와 실제 sleep syscall 도달을 함께 확인하는
+조건을 native test에 둘 수 있다. production의 HUP/KILL 순서·timers나 audit 정책을 바꾸는
+제안이 아니다. Batch9 관측 당시 이 테스트 파일은 recovery4 소유 범위 밖이므로 수정하지 않았다.
+후속 사용자 허용으로 이 파일의 최소 barrier만 구현한 내용은 아래에 따로 기록했다.
+
+owned adapter/preparer/WF에서 이 trace를 성공으로 만들려면 결과 거부 완화, trace 제외 또는
+실제 종료 순서 변경이 필요하므로 그런 patch는 만들지 않았다. 첫 원인과 범위 충돌을 부모에게
+먼저 알렸다. 부모가 별도로 통보한 recovery WF 두 `if`의 outer guard 수정과 Fast literal/
+`Vec<OsString>` 수정도 부모 소유이며 이 관측 patch에서 건드리지 않는다.
+
+### 실패 뒤에도 확인한 봉인과 자원 관측
+
+`after-build`, `after-cold`, `after-fast` 각각의 SDK 전체 및 provider inputs/source/build/bin
+roster/SHA와 tracked source/index/stage가 before와 byte 동일했다. 준비 tool/ELF/DSO120행,
+compiler input tree6개와 각 outer admission receipt도 원래 verify에서 성공했다.
+별도 SDK files/programs before/after, workflow index/source before/after도 byte 동일했다.
+tracked source tar digest는 `c88e97d5e9590bb627009091436544c85aa02716c1647917f9a304747c86780d`다.
+
+각 phase의 held FD/path/stat/SHA receipt는 순서와 반복 검증을 고려한 고유 행 집합이 전후
+동일했다: prepare6, controls78, PTY17, trace7, after7. controls after는 각 행을 두 번 기록한
+156행이며 다른 값은 없다. PTY와 trace의 실패 status는 그대로1이며 owned group nonlive는
+true다. PTY의 provider inheritance receipt는 실제 root36630/root_seccomp1/fresh4/inherited4/
+additional_ptrace0/parent_link_observed0이고 observer io_error0/overflow0다. 이 정상 receipt가
+selected exec 결과 미확정 실패를 덮지 않는다.
+
+prepare step의 실제 구간은21:43:58.505–21:45:32.298 UTC로 약93.8초다. admission에 기록된
+최대 provider/proof allocated223,854,592B, apparent179,959,301B는512MiB 이하이며,
+after-fast의 available86,723,317,760B였다. 이는 이 hosted 실행의 sampled 관측이고 Fast
+7분/6GiB 또는 다른 runner의 peak/fit 보장이 아니다. recovery의 scoped10GiB와 outer17GiB,
+provider120초·512MiB 상한은 완화하지 않았다.
+
+Batch9 관측 변경은 이 문서뿐이었다. 로컬은 archive CRC/SHA/텍스트·source/diff 검사만 수행했다.
+로컬 기능·Cargo·compile·strace·project CLI 실행과 GHA dispatch/cancel/rerun, stage/commit/push는0이다.
+이 결과로 원래 PTRACE_LISTEN 결함 전체의 해결 또는 이슈 종료·퇴역 credit을 주장하지 않는다.
+
+## 후속 native PTY 통제의 exec 완료 barrier
+
+2026-10-26 후속 사용자 허용으로
+`rust/crates/carrot-recovery/src/terminal/pty_tests.rs`와 이 문서만 수정했다.
+기존 `process_state`와 production/session helper를 먼저 읽었다. 기존 executable identity
+helper는 다른 crate의 private API이고 sleep 진입을 증명하지 않으므로 새 의존성/공유 API 없이
+이 test module에 `wait_for_sleeping_descendant` 함수 하나를 추가했다.
+
+barrier는 기존 `OWNED_CHILD`의 실제 PID를 받아 다음 조건을 모두 요구한다.
+
+- `/proc/<pid>/stat`의 PGID가 아직 reap하지 않은 leader의 예약 PGID와 일치.
+- 수집 전후 stat의 startticks와 PGID가 같은 실제 process identity를 유지.
+- `/proc/<pid>/exe` 링크가 canonical `/usr/bin/sleep`이며 실제 dev/inode도 그 파일과 일치.
+- `/proc/<pid>/syscall`을 읽기 전후의 state가 모두 `S`이고, 실제 syscall이 `nanosleep` 또는
+  `clock_nanosleep`. x86_64의35/230, aarch64의101/115는 해당 Linux syscall ABI이며
+  알 수 없는 architecture에는 성공 fallback을 두지 않았다.
+- 준비 완료를 받아들이는 시점도 기존2초 deadline 안에 있어야 함.
+
+exe 링크만 먼저 바뀐 ptrace exec-stop은 state/syscall 조건을 만족하지 않는다. 실제 sleep
+syscall까지 진행해야 하므로 exec 이후 userspace 실행을 요구한다. `/proc/wchan`이나 임의
+시간 지연을 사용하지 않는다. process가 아직 준비되지 않았을 때의 `yield_now` 대기만 있으며,
+trace/parser의 unknown을 재시도하거나 건너뛰는 로직은 없다. proc 읽기/identity 실패도 그대로
+실패한다. GHA stdout에 실제 PID/PGID/startticks/S/syscall/dev/inode를
+`PTY474_SLEEP_READY` 한 행으로 남긴다.
+
+실행 전제는 Linux procfs에서 해당 PID의 `stat`/`exe`/`syscall`을 실제로 읽을 수 있는 것이다.
+기존 `set_child_subreaper(Some(Pid::INIT))`에 의해 orphan descendant는 테스트의 직접 소유
+자식으로 입양되므로 same-uid attach-read 접근이 가능할 근거는 있다. 그러나 이는 권한,
+ptrace 보안 정책과 실제 tracer가 연결된 상태에서의 가시성을 입증한 결과가 아니다.
+**untraced와 private-provider traced GHA 각각에서 `/proc/<pid>/syscall` 읽기 및 readiness
+receipt를 확인해야 한다.** 가시성 실패에는 fallback이 없고 그대로 실패한다. 현재 수치
+분기는 Linux x86_64/aarch64 ABI에 한정하며 다른 architecture나 kernel/security 설정에
+이식 가능하다고 주장하지 않는다. aarch64 기능 검증도 UNRUN이며 `/proc/wchan`은 사용하지 않는다.
+
+기존 post-drop cleanup의2초 deadline 생성 위치를 barrier 앞에 옮겨 readiness와 cleanup이
+같은 한도를 공유한다. 새 대기 한도/timeout 연장은 없다. 준비가 실패하면 unrelated child를
+생성하기 전이며, 소유 `Generation`의 원래 Drop 회수는 그대로다. 이후 unrelated `/bin/sleep`,
+`Generation::drop`의 HUP→KILL, leader exit23/Z/reserved PGID/reap, descendant 제거와
+unrelated child 생존/최종 kill·wait assertion은 모두 원문 그대로다.
+
+selector는 기존
+`terminal::pty::tests::exited_leader_remains_reserved_until_owned_descendant_cleanup`,
+이 파일의 `#[test]` 수는1→1이다. closure18/protocol3/context3/PTY2의 전체26개 구성과
+full8×2, source-authored program roster/strict root auditor, tracer raw 출력은 바꾸지 않았다.
+WF/adapter/preparer/provider patch/fixture/pin/Cargo/production 변경은0이다.
+
+### source-only 확인과 부모 GHA 인계
+
+새 helper와 barrier/deadline 이동을 제거·역투영한 파일은 패치 작성 기준 HEAD `51fd430f76dd6bd28776ac1fbd04c16955bd977e`의
+기존3,525B와 byte 동일하다. 그 원문 SHA256은
+`b54b1533523b58052352f4bdb92990929bc0f6ba81fe22c9ae2c1d1f273b0942`다.
+새 파일6,212B의 SHA256은
+`1c37bf09742aa37ccbe671a781f686dec5acefddeccf7b06c79f948435387223`이다.
+Rust2021 rustfmt로 전체 source의 구문을 확인하고 새 함수만 서식을 대조했다. 기존 부분에는
+전체 rustfmt를 적용하지 않았다. source/diff 확인 외 로컬 Cargo/compile/test/helper 실행은0이다.
+
+현재 발행 중인 `51fd` recovery run에는 구 PTY 코드가 들어 있다. 동일 readiness 부재에 따른
+경합 실패를 예상하며 새 barrier의 검증 run으로 세지 않는다. 실제 결과를 확인하기 전에 실패로
+확정하지 않으며, 이 후속에서 해당 run을 cancel/rerun/dispatch하지 않았다.
+
+부모는 다음 source batch의 기존 recovery build/select 이후 동일 helper 호출로 실제
+private-provider PTY2와 전체 lane을 검증한다. 새 registration이나 승인 program 추가는 필요 없다.
+다음 명령은 모두 **GHA 전용**이며 이 작업에서 실행하지 않았다.
+
+```bash
+cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --locked terminal::pty::tests::exited_leader_remains_reserved_until_owned_descendant_cleanup -- --exact --test-threads=1 --nocapture
+cargo clippy --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --tests --locked -- -D warnings
+# 기존 cohort build/select 완료 뒤, 실제 patched provider/STOP 승인 아래 같은 selector를 검증:
+/usr/bin/bash "$GITHUB_WORKSPACE/tools/ci/recovery_tracer_474.sh" pty
+```
+
+actual readiness receipt/CWP cleanup/PTY STOP·CONT와 full traced8/strict post/direct-root 및 최종
+봉인이 모두 필요한 수용 증거다. 다른 종료 경로에서 미확정 exec가 나오면 원래 strict 거부를
+유지한다. 이 통제의 동기화 수정으로 원래 PTRACE_LISTEN이나 모든 종료 경합이 해결됐다고
+주장하지 않는다. 새 source의 실제 기능/Clippy/자원 fit는 **GHA UNRUN**이다.
+
+부모 검토 후 이 PTY source와 문서를 batch12 인계 상태로 동결했다. 부모가 SSH595의 별도
+한 경로 수정과 함께 통합한다. 추가 testcase/count/selector 변경과 stage/commit/push는0이다.
+새 genuine compiler WF는 다음 batch의 부모 작업이며 이 후속에서는 읽거나 수정·stage하지 않았다.
