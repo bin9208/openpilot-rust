@@ -139,13 +139,13 @@ jobs:
         working-directory: ${{ env.DIAG_SOURCE }}
       - name: Admit and prepare the unchanged private recovery tracer
         id: recovery_provider
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && steps.prepared_rust.outcome == 'success' && steps.recovery_hosts.outcome == 'success' }}
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.prepared_rust.outcome == 'success' && steps.recovery_hosts.outcome == 'success') }}
         timeout-minutes: 4
         working-directory: ${{ env.DIAG_SOURCE }}
         run: /usr/bin/bash "$GITHUB_WORKSPACE/tools/ci/recovery_tracer_474.sh" prepare
       - name: Require the original 18 closure and three STOP CONT protocol controls
         id: recovery_provider_controls
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && steps.recovery_provider.outcome == 'success' }}
+        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.recovery_provider.outcome == 'success') }}
         timeout-minutes: 8
         working-directory: ${{ env.DIAG_SOURCE }}
         run: /usr/bin/bash "$GITHUB_WORKSPACE/tools/ci/recovery_tracer_474.sh" controls

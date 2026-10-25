@@ -275,3 +275,10 @@ frozen5/guard6/memory15·strict Clippy 수용과 source/index/SDK 봉인을 결�
 Python 원본 실행과 Bash의 옛 직접 wrapper dispatch를 닫았으며 나머지 Python leaf/IPC/
 Cython/컴파일러는 대기다. 세부 artifact SHA와 한계는
 [삭제 후 수용 기록](python-rust-523-planner-retirement-acceptance.md)을 따른다.
+
+## 2026-10-26 buffer 원본179 비교 실행경계의 후속 수용
+
+source7a928의 buffers 일반7/ignored0, serde_json/preserve_order union1과 strict Clippy2 및
+source/index/SDK 봉인이 실제 통과했다. [원문 감사와 후속 증거](python-rust-523-buffer-corpus-100-audit.md)를
+근거로 추가 원장 한 행만 갱신했다. 최신 추가 원장162개는31교체/127대기/1기존native/2비실행/1제거다.
+기준3580의299교체/3부분/3278대기와 production Python buffer/compiler 상태는 그대로다.

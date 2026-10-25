@@ -1493,3 +1493,17 @@ Buffer179 원문 수집은 source100의 native6/original1/Clippy 실제 성공�
 두 policy count를 sourceee74에서 수정했다. fullsix는 같은 원래 selector·기한·원문·수치/
 부재/복원·봉인 조건으로 다시 검증한다. #474 provider 준비와 실제 IPC/컴파일러 전환을
 계속하며 대단원 전체·필수 PR·전달·실기 완료 조건은 남아 있다.
+
+## 2026-10-26 buffer native frozen 및 ISA #593의 실제 범위
+
+source7a928의 원문 buffer179 frozen 비교는 일반7/ignored0·feature union1·strict Clippy2와
+source/index/SDK 전후 봉인이 통과했다. 추가 실행경계1개만31교체/127대기로 갱신했으며 기준3580은
+299교체/3부분/3278대기다. production offline emitter의 Python 계산은 아직 다음 전환 중이다.
+sourceee74의 ISA14/Clippy/whole91은 자연 Intel(VBMI=true)·AMD(false)에서 모두 성공했다.
+[#593 원문 증거](python-rust-523-model-482-425-vbmi-audit.md)는 current의 세 signed-zero 및
+PR1344 frozen99 실패를 명시적으로 남긴다. ISA 경계 완료는 #482 수치/전체 모델 완료가 아니다.
+
+sourceaa79는 기존 host/ARM runtime12 안에서만 IPC raw401x4/initial Params를 수집하고 같은
+adapter14 interpreter에서 parser35를 수집한다. 원래 수학·ModelScheduler·기존 adapter13 class
+bytes와 실제 native160 비skip 기준을 보존했다. 새 native IPC candidate는 아직 미등록이며,
+raw 수집 성공·reader 연결·actual native 비교와 Python 삭제는 각각 남아 있다.

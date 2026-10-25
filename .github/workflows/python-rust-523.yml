@@ -102,7 +102,7 @@ jobs:
         ssh_helper_pid=$BASHPID
         test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
         test ! -e rust/tools/check_plannerd_ci.py && test ! -L rust/tools/check_plannerd_ci.py
-        printf '%s  %s\n' e5305859c2da1b53bf1b0163151ce442865eab5a75113d4d93930f4a7f045a99 rust/crates/dev-tools/tests/fast_cold_measure.rs | sha256sum --check -
+        printf '%s  %s\n' 9f67c7a017b0cbdf25a756ecc88595fbac54987e13583553977aa66e68fff64a rust/crates/dev-tools/tests/fast_cold_measure.rs | sha256sum --check -
         printf '%s  %s\n' 952adc3a2a68af3521dd7fa05bb68ad3b68862e063dd8c553ea1e010b8eca64a rust/crates/model-runtime/tests/fixtures/compiler-buffer-original/README.md | sha256sum --check -
         printf '%s  %s\n' e8e52475eba99d6e13287ecb957ec650c8e4d64b1e517caea1fd3b08fdddf257 rust/crates/model-runtime/tests/fixtures/compiler-buffer-original/observation.json | sha256sum --check -
         printf '%s  %s\n' 2b4747903018e15f3f99eabf62a6fb052f4899bfd0bee1ac44ce7bb5501cf371 rust/crates/model-runtime/tests/fixtures/compiler-buffer-original/oracle.txt | sha256sum --check -
@@ -125,7 +125,7 @@ jobs:
         printf '%s  %s\n' efe6b3040bc822369fc86a159cff5f1d17f24b33045e442fadaefe6825183864 rust/crates/model-runtime/src/bin/offline-qcom-compile.rs | sha256sum --check -
         printf '%s  %s\n' bc1b7b572c8dd2f84f3ea0ca38b1744e4c7120155c33f3dabb633eabaf7f0144 rust/tools/model_export/offline_schedule.py | sha256sum --check -
         printf '%s  %s\n' 5662ad3f13321685a8cae67f2740cb3b889895d007085402a1ab3f2e6a88f5d7 .github/workflows/python-rust-523-driver-retained.yml | sha256sum --check -
-        printf '%s  %s\n' 97ac1675ab4dd27e0b0e0c9f2ee48f9ab19401c2dd0c37e7bb53ab27c8dfb509 .github/workflows/python-rust-523-recovery-lanes.yml | sha256sum --check -
+        printf '%s  %s\n' 4c376f70c9cf789d228cd381b0f3d1a103d32b0900a17b57cc4b982d10822091 .github/workflows/python-rust-523-recovery-lanes.yml | sha256sum --check -
         printf '%s  %s\n' ed44b213ce67176f3a3193a5ad2f15b80983e8d0ee4fea6c2981adbfb9a4c958 rust/crates/dev-tools/src/planner_ci_controller/memory.rs | sha256sum --check -
         printf '%s  %s\n' a3da18546ea67f9a5cae541eed5ebd9108da2926079ddae65124ff0d263c3419 rust/crates/dev-tools/tests/fixtures/planner-controller-original/PROVENANCE.md | sha256sum --check -
         printf '%s  %s\n' dddc951fd972043d0170e9ad3f90988245099974f594d2f7e52b61ea0aeccd3f rust/crates/dev-tools/tests/fixtures/planner-controller-original/failure-forward.json | sha256sum --check -
@@ -171,7 +171,7 @@ jobs:
         printf '%s  %s\n' 113ea5c869276176f47a79c937594bcf0aa03ceb43481a934e707c80134ef6f7 rust/crates/model-runtime/src/compiler_onnx/mod.rs | sha256sum --check -
         printf '%s  %s\n' 6c586aa3432fd650e2e9942d96a033c885b6f9fcd62c1684f87264da3d3a575e rust/crates/model-runtime/src/qcom/mod.rs | sha256sum --check -
         printf '%s  %s\n' ab651a93d6fa2425c3a7f2725c20fa0fb7df39c308f13a6f910d07f4046d3712 rust/crates/model-runtime/src/entrypoint.rs | sha256sum --check -
-        printf '%s  %s\n' c95ea0c7cf6c78bc92246ac208ce161ed2634c23365947003689c48ac6c915be .github/workflows/python-rust-523-native-units.yml | sha256sum --check -
+        printf '%s  %s\n' 769be0b41ff447ffa87a410ec085b63b7eb6e4a0e84f8955255c054af72682b0 .github/workflows/python-rust-523-native-units.yml | sha256sum --check -
         printf '%s  %s\n' 7550f9299bf323106eb1fd6352c9ccf257d38aeca7b1ec2cf15dbf81dcf1bf66 rust/crates/control-policy/tests/drive.rs | sha256sum --check -
         printf '%s  %s\n' 2411aa2d77de51fd2c1552f3955032e6a734301e4ed692330b4cd4e5e13463b4 rust/crates/control-policy/src/drive.rs | sha256sum --check -
         printf '%s  %s\n' a065d00bab2accb1aae19ec89d5293ee321829b85dc0cbd654a84b0535d26f6a rust/crates/model-runtime/tests/compiler_schedule.rs | sha256sum --check -
@@ -779,7 +779,7 @@ jobs:
         printf '%s  %s\n' 1227b87bdfba7e0ea03d2542766133f75925200bfd0fb7f1eea7f121738294f7 rust/crates/dev-tools/tests/argparse_scan.rs | sha256sum --check -
         printf '%s  %s\n' 0493fa066fed9bc8b1dda5e66d97986f9373d19e17b6ff230d49d58715f8023a rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
         printf '%s  %s\n' 67c00cf93a2e73c40d6c0e43b938bcfd4f3379a2b2e3bde50478516ab83f47c7 rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs | sha256sum --check -
-        printf '%s  %s\n' 81e345e19c7c6fd341023583e203f489653203a5640286faa89b3483a21a682b rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
+        printf '%s  %s\n' c3ede9aa026847569c17a34abb1177e06b072eecda6d57f1ccef09b47ff29340 rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
         printf '%s  %s\n' 9e621eff405a28331789a89ef00b6bb66449a6a6a73fe3b0cabce920777d5e6e rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
         printf '%s  %s\n' 4f75a8815b2f07ed28b3a4b40a870ec7a6e5e84373f12f27280b7d4a9e5df728 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
         printf '%s  %s\n' 513c97916187d5ab5b7d6868faf2073bd89bb71807f549b7a00b2f3ce2a2adc9 rust/crates/dev-tools/tests/developer_cli_original/ssh_frozen.rs | sha256sum --check -
@@ -1070,7 +1070,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='a86799bf4c21278c812bd67d845a762a3ce985550ba0eb96ba429a66773cbc0e', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='ebb5b0809b6e607c16916f9295f8aeadb706a5804106c0a76fd59377dc153bd9', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile

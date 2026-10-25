@@ -114,3 +114,14 @@ provider after를 우회하지 않았다. workflow/pins/Focus/ledger/Cargo/provi
 새 tools 단위 검사에8개/42 Bash fixture와 strict Clippy를 연결하며 실제 Fast 수용은 대기다.
 
 최종 preparer SHA256 `051332a53de80a8debc38c7ef1fcaf0fa43a113d03300b33ea7e6660687f0c5c`, Fast helper SHA256 `bb9f23ef5aaf179e444533e3804d09c2eb275a7df1efa161980c8fe7c47db2f8`.
+
+## 첫 원격 컴파일과 CI 정책 보완
+
+source7a928의 tools job121300012517은 새 fixture의 `env_remove`가 `Vec<OsString>`인데
+`Vec<String>`을 만든 E0308로 실패했다. map을 `OsString::from`으로 고쳤으며 실제8개는
+그 실행에서 미도달이다. 기존 policy/cold audit 검사는 성공했지만 이를 새8개 성공으로 세지 않는다.
+같은 source의 Fast routing job121300012801은 기존 cap 계약의 옛 literal과 recovery 단계2개의
+조건 괄호 때문에39성공/3실패다. cap 계약은 여전히512MiB를 한 GNU du 호출로 측정하는 정확한
+새 literal로 연결하고, recovery 조건은 기존 source-trust 괄호 형식 안에 모두 넣었다.
+신뢰 policy 함수를 완화하거나 cap·상한·기한을 바꾸지 않았다. 이 보완의 실제8개/Clippy/정책42와
+Fast provider/first Rust/after 수용은 다음 exact-source Actions에서 확인한다.

@@ -411,3 +411,24 @@ Hypatia stage collector/actual-caller 전환, CI pin/edge 통합과 새7-test ac
 array의 순서·숫자/boolean 종류·각 값은 그대로 비교하고 원문 stdout/179경계는 변경하지 않는다.
 부모는 default feature의 frozen7/Clippy 뒤 preserve_order feature에서 같은 frozen1과 strict
 Clippy를 추가로 확인한다. 전체 source/원문 data·기존 native6/입력 생성/비교 본문은 유지한다.
+
+## 삭제된 live 비교의 native frozen 실제 수용 — source7a928
+
+[run40236805936/job121300012677](https://github.com/bin9208/openpilot-rust/actions/runs/40236805936/job/121300012677),
+source `7a928cefe22e3c81bcb941f6ed20eaa80eeabc59`의 buffers job은 success다.
+기존 native6+원문 frozen1의 일반7개/ignored0과 `serde_json/preserve_order` union의 정확 frozen1,
+두 구성의 strict Clippy가 모두exit0이다. 원본179개 generator/assertion과 raw7개의 bytes는
+source100 관측을 유지하며 object key 순서만 구조적으로 비교한다. 새로운 원본 실행은0이다.
+
+artifact12614893457은1581957B/SHA256
+`089496cef778632e44ad4f2d4136747294b7f71b6b3b3bd099985d85cbead3ea`다.
+40 safe unique regular member/전체CRC, expanded6923024B를 inert 확인했다.
+SOURCE_COMMIT과 네 exit code0, index19571경로/source tar·stage index 및 prepared SDK294파일/
+roster/rejected의 전후6쌍이 같다. 정확 Git tree와 index 경로도 맞는다. 별도 SDK program seal은
+원래 after helper의 검증을 통과했다. jobs1/debug0/기존 memory·growth admission과 업로드/소유
+정리도 성공했다. model/external numerics provider execution=false, SDK install0이다.
+
+이 결과로 `compiler_buffers.rs`의 기존 live Python179 비교 실행경계 **1개만** replaced-local로
+인정한다. 기준3580과 production buffer/offline compiler 파일은 바꾸지 않으며 baseline credit0이다.
+추가 장부162개는 replaced-local31/pending127/native-existing1/non-executing-text2/removed1이다.
+전체 native-units run의 다른 tools 컴파일 실패와 이 buffers 성공은 각각 분리해 기록한다.

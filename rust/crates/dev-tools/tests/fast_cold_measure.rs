@@ -152,7 +152,7 @@ impl Fixture {
             Duration::from_secs(5),
         );
         spec.env_remove = ["BASH_ENV", "ENV", "LD_PRELOAD", "LD_LIBRARY_PATH"]
-            .map(str::to_owned)
+            .map(std::ffi::OsString::from)
             .to_vec();
         for (key, value) in [
             ("LC_ALL", "C".into()),

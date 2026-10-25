@@ -237,3 +237,45 @@ PR1344의 BASE_SHA·각 WF의 helper 환경과 outcome hash가 같은 새 source
 
 순서가 올바르다는 정적 역투영과 AST/YAML/Bash/rustfmt만 확인했다. 실제 source SHA의
 unit14/Clippy/whole admission·모델 수치 결과 및 #593 완료 판정은 GHA 원문 감사를 기다린다.
+
+## #593 실제 ISA 경계 완료 증거 — ee74, 2026-10-26
+
+source `ee74a75ffa4762397e3498d597e78135ef015d90`의 아래 두 실행에서 ISA14와 strict
+model Clippy, complete fresh91/calls176 SOURCE/object/image 및 natural host ISA admission이
+모두 성공했다. 두 receipt의 `strict_triplet_all=true`, `host_isa_all=true`, `isa_error=null`이다.
+ISA14 stdout SHA256은 양쪽 모두
+`ab478b5aa71e2a49ff5be6437babcc7b3c11e7a173d53c9c8e22078787cc38c3`다.
+
+| 실제 실행 | 자연 host/검출 | artifact/API bytes/SHA256 |
+| --- | --- | --- |
+| [current40232519102/job121287077015](https://github.com/bin9208/openpilot-rust/actions/runs/40232519102/job/121287077015) | Intel Xeon Platinum8573C, Rust avx512vbmi=true |12613144560 /37211660B /`fd96ce8e52c0164e405ff99ff7a0c7ef6ccc80e376ab2cecf20b9a9dd332f9b2` |
+| [PR1344 40232519230/job121287077126](https://github.com/bin9208/openpilot-rust/actions/runs/40232519230/job/121287077126) | AMD EPYC7763, Rust avx512vbmi=false |12613814043 /27446372B /`ef2bbcee54a5827f98c697d0886c93f21047839626a9107e4c4cc92b0ef1a74f` |
+
+각 ZIP의 API expected bytes/digest, safe unique canonical path/no symlink/special/encrypted
+entry 및 전체 CRC를 확인했다. 각각1026개/expanded105264007B,2104개/expanded118415659B다.
+두 실행의 source/index·SDK·독립 immutable/provider/child gate와 cleanup, 내부 final-seals의
+pass=true/failures=[]/all_owned_children_reaped=true도 성공했다. PR1344 retirement Clippy도
+성공했다. VBMI 후보 source SHA는 위 a62a9eca…와 같다. AMD에서 VBMI를 허위 활성화하지 않고
+같은 decode-only 양성/host-missing 음성 및 detector 대응14개가 통과한 증거다.
+
+current의 `triplet-readonly.json` SHA256은
+`a67789c0a616d3b1b68a38c1b7c7d3b82093b734d648cdeb1c05659a0256cf81`, final-seals는
+`b023e174208743d2e4f2d936aff732dbdc55270a06d1c7de18eb978378de3fe8`다.
+PR1344의 readonly SHA256은 `0572b86edacbeb8df4fbacd7e2844ea5cd6aec42427e021d61063a470b0a37cc`,
+final-seals는 `3245b09bebfc2e1d301b06ca0f50d50d53e0faff9e5c095f9c681a9980e02391`다.
+
+별도 [historical40232519164/job121287076934](https://github.com/bin9208/openpilot-rust/actions/runs/40232519164/job/121287076934)도
+ISA14는 성공했고 old image는 `host lacks avx512bw`로 정상 거부했다. 지원하지 않는 명령을
+실행하거나 이 거부를 우회하지 않았다.
+
+따라서 #593의14개/Clippy/natural Intel·AMD fresh91/후봉인 경계는 실제 증거가 완료됐다.
+부모가 이 기록을 검토한 뒤 이슈를 닫으며, 이 담당은 이슈 상태를 바꾸지 않았다.
+
+모델 수치 게이트는 별도로 실패 상태다. current step13/required17은 genuinely same-host
+fresh PKL91의 frame1 model[100,101,1349]에서 original -0/native +0만 다르며 다른11개
+output 파일은 같다. 원본/native plain↔tap은 같다. PR1344 step12/required16은 D2 전체6output
+original/native 동일과 실제 half99 양쪽8000 뒤 기존 frozen99 -0/current 양쪽+0의 D1 sticky다.
+두 numerical failure를 ISA 회귀로 분류하지 않고, full128/full-model/역사 provider·기기·
+retirement 수용으로 승격하지 않는다. current fresh91을 old PR1344의 미확인20개 역사 image
+context와 혼동하지 않는다. raw 출력 독립 비교와 상세 triage는 private scratch의
+`ci/model-ee74-readonly-triage.md`에 보존했다.
