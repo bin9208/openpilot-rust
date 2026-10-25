@@ -524,7 +524,7 @@ jobs:
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
-        printf '%s  %s\n' e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764 tools/ci/prepare-readonly-arm-rust-530 | sha256sum --check -
+        printf '%s  %s\n' faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b tools/ci/prepare-readonly-arm-rust-530 | sha256sum --check -
         printf '%s  %s\n' 339e29c91502e6c612e3b1b96b95c5e4aff9a1b4a4df0f80249733c9a265d1d9 rust/crates/dev-tools/tests/ci_native_staging.rs | sha256sum --check -
         printf '%s  %s\n' f6c1516cf7990bd05d13f7aeffa7a45ae051517c5273e77dab26b82584585f44 rust/crates/control-policy/src/numerics.rs | sha256sum --check -
         printf '%s  %s\n' 5447ec625e551820fcb98dc17dea6c369bd4d54614bf6592df80e2130584ffbe rust/crates/carrot-recovery/src/support/transport/tunnel.rs | sha256sum --check -
@@ -559,7 +559,7 @@ jobs:
         test ! -e openpilot/tools/lib/sanitizer.py && test ! -L openpilot/tools/lib/sanitizer.py
         printf '%s  %s\n' 57bf49e67e030b6b51c0ae79bfbe9a60627b2adbd3c9f641dfaf9c8d208a4b99 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
         printf '%s  %s\n' a2e53b5164624f1946ca40fe188915493329dd25fe7abe37a9f7958dcf56adaa rust/crates/dev-tools/src/argparse_scan.rs | sha256sum --check -
-        printf '%s  %s\n' 7813f7e8ce48b881e28e4ebe2f24c87beff43cce75ab1dc2bb190109a28c5135 rust/crates/dev-tools/src/ci_policy.rs | sha256sum --check -
+        printf '%s  %s\n' 796befd21b01292be4515f8fc6067e881118d6985a1ed44d7c9c8b627f4fcbd0 rust/crates/dev-tools/src/ci_policy.rs | sha256sum --check -
         printf '%s  %s\n' 45f5c9880964d2ce954f02997cf0b85c8b429051aa6900daaa822258f07546ee rust/crates/dev-tools/src/developer_ssh.rs | sha256sum --check -
         printf '%s  %s\n' 390141ed26fb0afbaffed631bfbc61462044b033e2afea14e0eeecaf86c5aef6 rust/crates/dev-tools/src/developer_ssh/cli.rs | sha256sum --check -
         printf '%s  %s\n' 4ec4ac3923e32ed834dffee608080b31c5806205823ede2221b057020b172496 rust/crates/dev-tools/src/developer_ssh/login/cli.rs | sha256sum --check -
@@ -570,9 +570,9 @@ jobs:
         printf '%s  %s\n' bf2758c92e1cfdc9f69249ce1c16b6a96e393ad062adf259e15d6120148e38a0 rust/crates/dev-tools/src/developer_ssh/unicode_lower15_original.rs | sha256sum --check -
         printf '%s  %s\n' 1dd943c418bee41bc2a7d4b850a6d0cf9dfce885fb1182fb437f59a0747ae03f rust/crates/dev-tools/src/route_sanitizer_tests.rs | sha256sum --check -
         printf '%s  %s\n' 1227b87bdfba7e0ea03d2542766133f75925200bfd0fb7f1eea7f121738294f7 rust/crates/dev-tools/tests/argparse_scan.rs | sha256sum --check -
-        printf '%s  %s\n' f8ef5886936fd05376ede18888affc9d0eff941c4928b6b1ca4174631a66bbd2 rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
+        printf '%s  %s\n' 0493fa066fed9bc8b1dda5e66d97986f9373d19e17b6ff230d49d58715f8023a rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
         printf '%s  %s\n' d8034f578df45c9c68b889eb83c7fb6ec85c3e1cd6d109a36d6e5ecebde189f6 rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs | sha256sum --check -
-        printf '%s  %s\n' 6fb298d85aeed0ec56e94303826516b2e668a763b9ad2930770829c01b9b1b20 rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
+        printf '%s  %s\n' 2a28077c34f8e2552ca1de724575bc07a5e9055766d3b286434ab826f88655ca rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
         printf '%s  %s\n' 9e621eff405a28331789a89ef00b6bb66449a6a6a73fe3b0cabce920777d5e6e rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
         printf '%s  %s\n' 4f75a8815b2f07ed28b3a4b40a870ec7a6e5e84373f12f27280b7d4a9e5df728 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
         printf '%s  %s\n' 513c97916187d5ab5b7d6868faf2073bd89bb71807f549b7a00b2f3ce2a2adc9 rust/crates/dev-tools/tests/developer_cli_original/ssh_frozen.rs | sha256sum --check -
@@ -670,7 +670,7 @@ jobs:
         printf '%s  %s\n' 96885476f165d7614a03e0e9f29c019b75b216843694439981f047c9e7d22c8f .github/workflows/rust-dbc-darwin.yml | sha256sum --check -
         printf '%s  %s\n' 010e358170683f64599c0c4b911bcdbe097eafdc8e97f5e1c45ba0e6bb157678 .github/workflows/rust.yml | sha256sum --check -
         printf '%s  %s\n' 9215c2d98492683f7f3c87fe549339cb584588fe754a8589d661415d95244c97 .github/workflows/tests.yaml | sha256sum --check -
-        printf '%s  %s\n' 2a88bb1b18185a14938e6a71881625112e7743c9cc4b28a210e52a4329c621a6 rust/crates/dev-tools/tests/ci_rust_isolation.rs | sha256sum --check -
+        printf '%s  %s\n' 145b001544c21b2a273230f0a3c333a0587e7ecfc5877c6c093db9a5ec565287 rust/crates/dev-tools/tests/ci_rust_isolation.rs | sha256sum --check -
         printf '%s  %s\n' c72e4559be431905873798265782f5a028dcce41d4748dd6920b8b6e0933670b rust/crates/dev-tools/tests/ci_receipt_metadata.rs | sha256sum --check -
         printf '%s  %s\n' 737ee9b35c7b7e69eb9b759f869574dbfd6bb9c6f983b869cae652cc1a1aa8d4 rust/crates/dev-tools/src/model_family_retirement_support.rs | sha256sum --check -
         printf '%s  %s\n' 6030e76ba176d3d50b9191b98adf081f123bb2208185380749d8139689bbef75 tools/ci/diagnostic-296-contract.json | sha256sum --check -
@@ -682,7 +682,7 @@ jobs:
         printf '%s  %s\n' a079f5880b7227f213d299925e10f95279b39b71cd37ecfdebc446840d4e857a rust/crates/dev-tools/tests/ui_emoji_ci.rs | sha256sum --check -
         printf '%s  %s\n' b522e2d415b1913e3e421f6213cfba482dd84564fb1e0fa86fbac64f5067313b rust/crates/dev-tools/tests/updated_check.rs | sha256sum --check -
         printf '%s  %s\n' e664f52dd71378fc01297498ff758b3c2395f2864639d16c0d49f62fe31dbb75 rust/tools/tests/test_card_ci.py | sha256sum --check -
-        printf '%s  %s\n' 849e1d08ced628f150c9d3232057f54638022c09e4971f1f7d9c8cc83ce47510 rust/tools/tests/test_plannerd_ci.py | sha256sum --check -
+        printf '%s  %s\n' 5e3ecb97ccd5c6524aabe4c7cc4d95e65fd1c6470e9dd371d1921c72164d7c66 rust/tools/tests/test_plannerd_ci.py | sha256sum --check -
         printf '%s  %s\n' 4eaa70dde1cb654bdef3b14cdd4d8a46ae552c507b6ecdc095e62880dc5a4411 rust/tools/tests/test_xiaoge_ci.py | sha256sum --check -
         printf '%s  %s\n' 64e31d933062bc144dc79dce68b9c7828dca1ad21f6cd9b2ea553cfc5c869d08 rust/crates/dev-tools/tests/registration_utf7_ci.rs | sha256sum --check -
         printf '%s  %s\n' 836c65ed0b09b614a15fe0a1d39290dfee19749e7e3163e562d8d31e3fb95966 tools/ci/prepare-lfs-source-535 | sha256sum --check -
@@ -761,8 +761,8 @@ jobs:
         printf '%s  %s\n' 41d9b4d37e59d76e318fe8f0cecf5a3469d67814ce5e5f5a5e2c8ef0f9ec5f3d rust/crates/dev-tools/tests/developer_ssh_entry.rs | sha256sum --check -
         printf '%s  %s\n' c2562fa8c3b60108024c3f3ef0ddf4a35800d42b73eb44e1028003096974a0e6 rust/crates/dev-tools/tests/fixtures/developer-ssh-entry/exec_recorder.rs | sha256sum --check -
         printf '%s  %s\n' 0554a00a43a7a7cccb28ba70456df4dac2244ca1f66fdb65f6edc0abf7a24287 tools/ci/developer_ssh_entry_523.sh | sha256sum --check -
-        printf '%s  %s\n' 600898844d6907469d0124df166d9b56a20ab8790b2ec19bf18143b92bf0a34f .github/workflows/rust-native-arm.yml | sha256sum --check -
-        printf '%s  %s\n' b54581a0b216e33df7f2454a835baaf374943f5c52114cb3623d45934b1f537a .github/workflows/python-rust-523-native-arm-final-two.yml | sha256sum --check -
+        printf '%s  %s\n' 0e8ed89a6840254fa3a5100cfe5b19ed0a0c9a7e87be575c31dc040e71000d96 .github/workflows/rust-native-arm.yml | sha256sum --check -
+        printf '%s  %s\n' 066604c954c2d738ae2220632f7334e2a4aaabd5597a9539071fb2159af5c6ca .github/workflows/python-rust-523-native-arm-final-two.yml | sha256sum --check -
         printf '%s  %s\n' 84390180df379ec736e83f1e442acedc8d904321101b44353774f4a321af39bb .github/workflows/python-rust-523-native-arm-remaining.yml | sha256sum --check -
         printf '%s  %s\n' 910d83f44909352ace57d1bf1c59f7e3da00a1878106448eee4a7fa712b2c8ae rust/crates/dev-tools/src/ui_application_lifecycle_reference.rs | sha256sum --check -
         printf '%s  %s\n' cd6233cbe31283b47f3d8a4d6dac9c4a11b60739ec5fa54d25cd23630473c458 rust/crates/dev-tools/tests/ui_application_lifecycle_reference.rs | sha256sum --check -

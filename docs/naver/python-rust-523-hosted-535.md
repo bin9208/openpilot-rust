@@ -1214,3 +1214,12 @@ PR343의 bacda Rust40173790842는 최종 실패다. AArch64 실제 build12111114
 - 기존 protocol3·marker10 거부통제, source19477/index와 SDK/headers/GCC/Perl/native source 등27전후쌍, held144개 전체identity/SHA 집합(행순서만다름), 모든finalizer20단계·upload/cleanup이 통과했습니다.
 
 이는 diagnostic provider가 빌드돼 한 VM을 관측한 성공입니다. Ubuntu distro ELF 동일성·간헐 오류 root 해결은 아닙니다. `root_fixed=false/nonreproduction_is_fix=false/additional_ptrace_requests=0/all_adopted_children_reaped=false/closed_dso=false/retirement_credit=0`을 유지해 #560은 열어둡니다. 이전 Fast855 실제 unknown trace201은 실패로 보존합니다.
+
+
+## #572 별도 ARM 후보의 strict SDK 연결 누락
+
+source9a0de324d의 [40182915448/job121137583142](https://github.com/bin9208/openpilot-rust/actions/runs/40182915448/job/121137583142) Navi는 첫 capacity/bootstrap 단계에서 `clippy-preview-aarch64-unknown-linux-gnu`의 `bin/cargo-clippy` 충돌로 실패했다. build/inspect는 미실행이다. 원문log98388B/SHA256 `a604680a10428f1b73889ad565950368190911f04c758db94a53b9ca7a096039`에서 partial recovery를 확인했으나 최초 partial 생성자/원인은 미관측이다. main canonical ARM8의 별도 성공을 이 후보의 SDK 증거로 바꾸지 않는다.
+
+[#572](https://github.com/bin9208/openpilot-rust/issues/572) 후보는 Radar/Navi의 정확한 final-two push workflow/ref/role에 기존 ARM530을 연결한다. 첫 maintained/capacity command 전에 새 owned SDK를 준비하고 뒤 install/target-add를 인증된 SDK verify로 바꾼다. 기존 partial prefix는 변경하지 않으며 독립 SDKafter와 cleanup AND를 추가한다. main8/PR/dispatch trust 및 helper의 SDK/소유성/공식payload·시간/성장 본문은 유지한다.
+
+기존 canonical validator/동일 job 투영·정책 음성 matrix를 두 candidate에도 적용하고 exact caller 양성·14변조 거부 경계를 Actions에 연결한다. main reusable은 helper SHA literal16개만 연결하고 모든 기능명령/조건/역할8개/aggregate를 유지한다. 이전 문서의 historical helper SHA는 과거 원문으로 보존한다. 소스/문법/서식/diff만 확인했으며 실제 caller/정책·SDK·기능/ELF·최종봉인/회수는 GHA 실행 전이다.

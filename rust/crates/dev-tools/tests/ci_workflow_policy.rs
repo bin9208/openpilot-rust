@@ -2873,9 +2873,16 @@ fn native_arm_final_binary_evidence_requires_exact_trusted_always_condition() {
 fn native_arm_eight_prepared_sdks_require_before_after_binding_and_cleanup_success() {
     use openpilot_dev_tools::ci_policy::validate_private_job_layout;
     let (main, callee) = native_arm_reuse_inputs();
-    // main의 X64 role과 예전 후보 workflow에는 새 SDK 경로를 강요하지 않는다.
+    // main X64/다른 옛 후보는 그대로 두고 main8과 #572 final-two2를 모두 검증한다.
     validate_private_job_layout(&main["jobs"]["webcam-runtime"]).unwrap();
-    for name in [
+    let candidate = parse(
+        &fs::read_to_string(
+            root().join(".github/workflows/python-rust-523-native-arm-final-two.yml"),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let main_roles = [
         "planner-runtime",
         "carrot-man-runtime",
         "webrtc-runtime",
@@ -2884,8 +2891,16 @@ fn native_arm_eight_prepared_sdks_require_before_after_binding_and_cleanup_succe
         "radard-runtime",
         "radar-arm",
         "carrot-navi-arm",
-    ] {
-        let original = &callee["jobs"][name];
+    ];
+    let contexts = main_roles
+        .iter()
+        .map(|name| (*name, &callee["jobs"][*name]))
+        .chain(
+            ["radar-arm", "carrot-navi-arm"]
+                .into_iter()
+                .map(|name| (name, &candidate["jobs"][name])),
+        );
+    for (name, original) in contexts {
         validate_private_job_layout(original).unwrap();
         let stages = original["steps"].as_array().unwrap();
         let before = stages.iter().position(|s| s["id"] == "arm530_sdk").unwrap();

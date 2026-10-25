@@ -6,6 +6,7 @@ name: Python Rust 523 native ARM RadarCAN and Carrot Navi candidates
     paths:
     - .github/workflows/python-rust-523-native-arm-final-two.yml
     - tools/ci/native-arm
+    - tools/ci/prepare-readonly-arm-rust-530
     - .github/actions/native-json11/**
     - rust/crates/radarcan/**
     - rust/crates/can/**
@@ -184,6 +185,17 @@ jobs:
         ((available >= 512 * 1024 * 1024))
         python -m venv "$CI_JOB_TEMP/venv"
         printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
+    - name: Prepare exact fresh ARM 1.94 SDK for all eight admitted roles
+      timeout-minutes: 20
+      id: arm530_sdk
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" before
     - name: Configure original Radar IPC imports
       run: printf 'PYTHONPATH=%s/radar-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -196,8 +208,7 @@ jobs:
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
         python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-        rustup toolchain install 1.94.0 --profile minimal
-        rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" verify
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
@@ -288,6 +299,17 @@ jobs:
           ${{ env.CI_JOB_TEMP }}/local-arm/disk-before.txt
         if-no-files-found: warn
       id: local_evidence_1
+    - name: Verify ARM SDK after every attempted maintained command
+      timeout-minutes: 10
+      id: arm530_sdk_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.arm530_sdk.outcome != 'skipped' && env.CI296_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" after
     - name: Finish native ARM execution evidence
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         && (always() && steps.ci296_source_admission.outcome == 'success') }}
@@ -332,7 +354,7 @@ jobs:
         && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' &&
         steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id
         != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success'
-        && env.CI296_SOURCE_OWNER != '') }}
+        && steps.arm530_sdk_final.outcome == 'success' && env.CI296_SOURCE_OWNER != '') }}
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
@@ -368,7 +390,7 @@ jobs:
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' &&
         steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id
-        != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success')
+        != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.arm530_sdk_final.outcome == 'success' && steps.ci296_source_cleanup.outcome == 'success')
         }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       with:
@@ -534,13 +556,23 @@ jobs:
         ((available >= 512 * 1024 * 1024))
         python -m venv "$CI_JOB_TEMP/venv"
         printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
+    - name: Prepare exact fresh ARM 1.94 SDK for all eight admitted roles
+      timeout-minutes: 20
+      id: arm530_sdk
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" before
     - name: Reserve runner capacity and install native ARM build dependencies
       run: |
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
         sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" update && sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y capnproto g++ binutils
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-        rustup toolchain install 1.94.0 --profile minimal
-        rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" verify
         mkdir -p "$RUNNER_TEMP/carrot-navi-arm"
         git rev-parse HEAD > "$RUNNER_TEMP/carrot-navi-arm/source-commit.txt"
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -573,6 +605,17 @@ jobs:
           ${{ env.CI_JOB_TEMP }}/local-arm/disk-before.txt
         if-no-files-found: warn
       id: local_evidence_1
+    - name: Verify ARM SDK after every attempted maintained command
+      timeout-minutes: 10
+      id: arm530_sdk_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.arm530_sdk.outcome != 'skipped' && env.CI296_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" after
     - name: Finish native ARM execution evidence
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         && (always() && steps.ci296_source_admission.outcome == 'success') }}
@@ -617,7 +660,7 @@ jobs:
         && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' &&
         steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id
         != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success'
-        && env.CI296_SOURCE_OWNER != '') }}
+        && steps.arm530_sdk_final.outcome == 'success' && env.CI296_SOURCE_OWNER != '') }}
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
@@ -653,7 +696,7 @@ jobs:
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' &&
         steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id
-        != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success')
+        != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.arm530_sdk_final.outcome == 'success' && steps.ci296_source_cleanup.outcome == 'success')
         }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       with:

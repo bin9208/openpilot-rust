@@ -2564,3 +2564,175 @@ fn prepared_arm_rejects_nonleaf_and_near_match_roles_before_installation() {
         assert!(!f.cache().exists(), "rejected role created a cold cache");
     }
 }
+
+#[test]
+fn arm530_caller_policy_admits_only_exact_main_and_final_two_contexts() {
+    // 실제 helper의 caller 함수만 평가한다. host/SDK/설치 테스트라고 주장하지 않는다.
+    let helper = fs::read_to_string(root().join("tools/ci/prepare-readonly-arm-rust-530")).unwrap();
+    let start = helper.find("arm530_caller() {\n").unwrap();
+    let end = helper[start..].find("\narm530_caller\n").unwrap() + start;
+    assert_eq!(helper.matches("\narm530_caller\n").count(), 1);
+    let program = format!(
+        "set -euo pipefail\nfail() {{ printf '%s\\n' \"$*\" >&2; exit 1; }}\n{}\narm530_caller\nprintf 'caller-admitted\\n'\n",
+        &helper[start..end]
+    );
+    let candidate = BTreeMap::from([
+        ("GITHUB_EVENT_NAME", "push"),
+        ("GITHUB_REF", "refs/heads/codex/feat-523-python-rust"),
+        ("GITHUB_WORKFLOW_REF", "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-final-two.yml@refs/heads/codex/feat-523-python-rust"),
+        ("GITHUB_JOB", "radar-arm"),
+    ]);
+    let invoke = |context: &BTreeMap<&str, &str>| {
+        let mut argv = vec![
+            "/usr/bin/env".into(),
+            "-i".into(),
+            "PATH=/usr/bin:/bin".into(),
+        ];
+        argv.extend(context.iter().map(|(key, value)| format!("{key}={value}")));
+        argv.extend(["/usr/bin/bash".into(), "-c".into(), program.clone()]);
+        let mut spec = CommandSpec::new(argv, Duration::from_secs(3));
+        spec.stdout_limit = 4096;
+        spec.stderr_limit = 4096;
+        NativeRunner.run(&spec).unwrap()
+    };
+    for role in ["radar-arm", "carrot-navi-arm"] {
+        let mut context = candidate.clone();
+        context.insert("GITHUB_JOB", role);
+        let output = invoke(&context);
+        assert_eq!(output.code, 0, "{role}: {:?}", output.stderr);
+        assert_eq!(output.stdout, b"caller-admitted\n");
+        assert!(output.stderr.is_empty());
+    }
+    for (key, value, message) in [
+        ("GITHUB_JOB", "planner-runtime", "unapproved final-two ARM SDK role"),
+        ("GITHUB_JOB", "radar-arm-extra", "unapproved final-two ARM SDK role"),
+        ("GITHUB_JOB", "", "unapproved final-two ARM SDK role"),
+        ("GITHUB_EVENT_NAME", "pull_request", "exact final-two ARM caller required"),
+        ("GITHUB_EVENT_NAME", "workflow_dispatch", "exact final-two ARM caller required"),
+        ("GITHUB_REF", "refs/heads/dev", "exact final-two ARM caller required"),
+        ("GITHUB_WORKFLOW_REF", "other/repo/.github/workflows/python-rust-523-native-arm-final-two.yml@refs/heads/codex/feat-523-python-rust", "exact final-two ARM caller required"),
+        ("GITHUB_WORKFLOW_REF", "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-more.yml@refs/heads/codex/feat-523-python-rust", "exact final-two ARM caller required"),
+        ("GITHUB_WORKFLOW_REF", "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-final-two.yml@refs/heads/dev", "exact final-two ARM caller required"),
+        ("CI296_NATIVE_ARM_CALLER", "rust.yml", "exact native ARM caller required"),
+        ("CI296_NATIVE_ARM_CALLER", "unknown.yml", "exact final-two ARM caller required"),
+    ] {
+        let mut context = candidate.clone();
+        context.insert(key, value);
+        let output = invoke(&context);
+        assert_eq!(output.code, 1, "{key}={value}: {:?}", output.stderr);
+        assert!(output.stdout.is_empty());
+        assert_eq!(String::from_utf8(output.stderr).unwrap(), format!("{message}\n"));
+    }
+    let main = BTreeMap::from([
+        ("CI296_NATIVE_ARM_CALLER", "rust.yml"),
+        ("GITHUB_EVENT_NAME", "push"),
+        ("GITHUB_REF", "refs/heads/dev"),
+        (
+            "GITHUB_WORKFLOW_REF",
+            "bin9208/openpilot-rust/.github/workflows/rust.yml@refs/heads/dev",
+        ),
+        ("GITHUB_JOB", "planner-runtime"),
+    ]);
+    for (event, reference, workflow, base, repository) in [
+        (
+            "push",
+            "refs/heads/dev",
+            "bin9208/openpilot-rust/.github/workflows/rust.yml@refs/heads/dev",
+            "",
+            "",
+        ),
+        (
+            "push",
+            "refs/heads/main",
+            "bin9208/openpilot-rust/.github/workflows/rust.yml@refs/heads/main",
+            "",
+            "",
+        ),
+        (
+            "pull_request",
+            "refs/pull/343/merge",
+            "bin9208/openpilot-rust/.github/workflows/rust.yml@refs/pull/343/merge",
+            "dev",
+            "bin9208/openpilot-rust",
+        ),
+        (
+            "workflow_dispatch",
+            "refs/tags/probe",
+            "bin9208/openpilot-rust/.github/workflows/rust.yml@refs/tags/probe",
+            "",
+            "",
+        ),
+    ] {
+        let mut context = main.clone();
+        for (key, value) in [
+            ("GITHUB_EVENT_NAME", event),
+            ("GITHUB_REF", reference),
+            ("GITHUB_WORKFLOW_REF", workflow),
+            ("GITHUB_BASE_REF", base),
+            ("CI296_PR_HEAD_REPOSITORY", repository),
+        ] {
+            context.insert(key, value);
+        }
+        let output = invoke(&context);
+        assert_eq!(output.code, 0, "{event}/{reference}: {:?}", output.stderr);
+        assert_eq!(output.stdout, b"caller-admitted\n");
+        assert!(output.stderr.is_empty());
+    }
+    for role in [
+        "planner-runtime",
+        "carrot-man-runtime",
+        "webrtc-runtime",
+        "webcam-runtime",
+        "xiaoge-runtime",
+        "radard-runtime",
+        "radar-arm",
+        "carrot-navi-arm",
+    ] {
+        let mut context = main.clone();
+        context.insert("GITHUB_JOB", role);
+        let output = invoke(&context);
+        assert_eq!(output.code, 0, "main/{role}: {:?}", output.stderr);
+        assert_eq!(output.stdout, b"caller-admitted\n");
+        assert!(output.stderr.is_empty());
+    }
+    for (key, value, message) in [
+        ("GITHUB_JOB", "native-arm", "unapproved ARM SDK role"),
+        (
+            "CI296_NATIVE_ARM_CALLER",
+            "",
+            "exact final-two ARM caller required",
+        ),
+        (
+            "GITHUB_WORKFLOW_REF",
+            "bin9208/openpilot-rust/.github/workflows/other.yml@refs/heads/dev",
+            "exact native ARM caller required",
+        ),
+    ] {
+        let mut context = main.clone();
+        context.insert(key, value);
+        let output = invoke(&context);
+        assert_eq!(output.code, 1);
+        assert!(output.stdout.is_empty());
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("{message}\n")
+        );
+    }
+    let mut fork = main.clone();
+    for (key, value) in [
+        ("GITHUB_EVENT_NAME", "pull_request"),
+        ("GITHUB_REF", "refs/pull/343/merge"),
+        (
+            "GITHUB_WORKFLOW_REF",
+            "bin9208/openpilot-rust/.github/workflows/rust.yml@refs/pull/343/merge",
+        ),
+        ("GITHUB_BASE_REF", "dev"),
+        ("CI296_PR_HEAD_REPOSITORY", "foreign/repo"),
+    ] {
+        fork.insert(key, value);
+    }
+    let output = invoke(&fork);
+    assert_eq!(output.code, 1);
+    assert!(output.stdout.is_empty());
+    assert_eq!(output.stderr, b"PR source differs\n");
+}

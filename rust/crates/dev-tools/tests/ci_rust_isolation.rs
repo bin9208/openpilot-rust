@@ -1893,9 +1893,10 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
     ] {
         let data = parse(&read(&format!(".github/workflows/{candidate}"))).unwrap();
         let mut expected = data["jobs"][name].clone();
-        // pilot은 기존 SDK 설치를 보존한다. main의 정확8role에만 승인한
-        // fresh SDK 전후 봉인과 같은 dependency 명령 치환을 반영한다.
-        let (dependency, install) = match name {
+        // #572 final-two는 이미 canonical SDK를 갖는다. 나머지6role만
+        // 기존 설치→검증/전후 봉인 overlay를 적용하며 전체 job 비교는 유지한다.
+        if !["radar-arm", "carrot-navi-arm"].contains(&name) {
+            let (dependency, install) = match name {
             "planner-runtime" => (
                 "Reserve capacity and install original planner dependencies",
                 "rustup toolchain install 1.94.0 --profile minimal --component clippy\n",
@@ -1930,44 +1931,44 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
             ),
             _ => unreachable!(),
         };
-        let trusted = "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}";
-        let sdk_env = serde_json::json!({
-            "CI296_HOST_CONTROL": "1",
-            "ARM530_HELPER_SHA256": "e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764"
-        });
-        let steps = expected["steps"].as_array_mut().unwrap();
-        let dep = steps
-            .iter_mut()
-            .find(|step| step["name"] == dependency)
-            .unwrap();
-        let run = dep["run"].as_str().unwrap();
-        assert_eq!(
-            run.matches(install).count(),
-            1,
-            "{name}: fixed pilot SDK install"
-        );
-        dep["run"] = run
+            let trusted = "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}";
+            let sdk_env = serde_json::json!({
+                "CI296_HOST_CONTROL": "1",
+                "ARM530_HELPER_SHA256": "faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b"
+            });
+            let steps = expected["steps"].as_array_mut().unwrap();
+            let dep = steps
+                .iter_mut()
+                .find(|step| step["name"] == dependency)
+                .unwrap();
+            let run = dep["run"].as_str().unwrap();
+            assert_eq!(
+                run.matches(install).count(),
+                1,
+                "{name}: fixed pilot SDK install"
+            );
+            dep["run"] = run
             .replace(
                 install,
                 "/usr/bin/bash \"$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530\" verify\n",
             )
             .into();
-        let first = steps
-            .iter()
-            .position(|step| step["shell"] == "openpilot-local-shell {0}")
-            .unwrap();
-        steps.insert(first, serde_json::json!({
+            let first = steps
+                .iter()
+                .position(|step| step["shell"] == "openpilot-local-shell {0}")
+                .unwrap();
+            steps.insert(first, serde_json::json!({
             "name": "Prepare exact fresh ARM 1.94 SDK for all eight admitted roles",
             "timeout-minutes": "20", "id": "arm530_sdk", "if": trusted,
             "shell": "bash", "working-directory": "${{ env.CI296_SOURCE }}",
             "env": sdk_env,
             "run": "/usr/bin/bash \"$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530\" before\n"
         }));
-        let finish = steps
-            .iter()
-            .position(|step| step["name"] == "Finish native ARM execution evidence")
-            .unwrap();
-        steps.insert(finish, serde_json::json!({
+            let finish = steps
+                .iter()
+                .position(|step| step["name"] == "Finish native ARM execution evidence")
+                .unwrap();
+            steps.insert(finish, serde_json::json!({
             "name": "Verify ARM SDK after every attempted maintained command",
             "timeout-minutes": "10", "id": "arm530_sdk_final",
             "if": "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.arm530_sdk.outcome != 'skipped' && env.CI296_SOURCE != '') }}",
@@ -1975,29 +1976,44 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
             "env": sdk_env,
             "run": "/usr/bin/bash \"$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530\" after\n"
         }));
-        for (label, needle) in [
-            (
-                "Clean only uploaded owned source alias and target",
-                " && env.CI296_SOURCE_OWNER != ''",
-            ),
-            (
-                "Clean common owned temporary paths after uploaded source",
-                " && steps.ci296_source_cleanup.outcome == 'success'",
-            ),
-        ] {
-            let step = steps.iter_mut().find(|step| step["name"] == label).unwrap();
-            let condition = step["if"].as_str().unwrap();
-            assert_eq!(
-                condition.matches(needle).count(),
-                1,
-                "{name}: fixed cleanup condition"
-            );
-            step["if"] = condition
-                .replace(
-                    needle,
-                    &format!(" && steps.arm530_sdk_final.outcome == 'success'{needle}"),
-                )
-                .into();
+            for (label, needle) in [
+                (
+                    "Clean only uploaded owned source alias and target",
+                    " && env.CI296_SOURCE_OWNER != ''",
+                ),
+                (
+                    "Clean common owned temporary paths after uploaded source",
+                    " && steps.ci296_source_cleanup.outcome == 'success'",
+                ),
+            ] {
+                let step = steps.iter_mut().find(|step| step["name"] == label).unwrap();
+                let condition = step["if"].as_str().unwrap();
+                assert_eq!(
+                    condition.matches(needle).count(),
+                    1,
+                    "{name}: fixed cleanup condition"
+                );
+                step["if"] = condition
+                    .replace(
+                        needle,
+                        &format!(" && steps.arm530_sdk_final.outcome == 'success'{needle}"),
+                    )
+                    .into();
+            }
+        } else {
+            let stages = expected["steps"].as_array().unwrap();
+            for (id, phase) in [("arm530_sdk", "before"), ("arm530_sdk_final", "after")] {
+                let selected = stages
+                    .iter()
+                    .filter(|step| step["id"] == id)
+                    .collect::<Vec<_>>();
+                assert_eq!(
+                    selected.len(),
+                    1,
+                    "{name}: duplicate/missing canonical SDK stage"
+                );
+                assert_eq!(selected[0]["run"], format!("/usr/bin/bash \"$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530\" {phase}\n"));
+            }
         }
         let mut actual = native["jobs"][name].clone();
         actual["steps"][0] = expected["steps"][0].clone();

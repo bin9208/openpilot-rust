@@ -154,9 +154,15 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
           "carrot-navi-arm": "Reserve runner capacity and install native ARM build dependencies",
       }[name]
       dependency = next(step for step in original if step["name"] == dependency_name)
-      assert dependency["run"].count(old_sdk) == 1
-      dependency["run"] = dependency["run"].replace(
-          old_sdk, '/usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" verify\n')
+      verify = '/usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" verify\n'
+      if name in ("radar-arm", "carrot-navi-arm"):
+        # #572 candidate도 이미 canonical SDK를 사용하므로 중복 투영하지 않는다.
+        assert dependency["run"].count(verify) == 1
+        assert 'rustup toolchain install' not in dependency["run"]
+        assert 'rustup target add' not in dependency["run"]
+      else:
+        assert dependency["run"].count(old_sdk) == 1
+        dependency["run"] = dependency["run"].replace(old_sdk, verify)
       before = named_step(job, "Prepare exact fresh ARM 1.94 SDK for all eight admitted roles")
       after = named_step(job, "Verify ARM SDK after every attempted maintained command")
       assert before["if"] == TRUSTED_SOURCE
@@ -166,7 +172,7 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
         assert step["id"] == identifier and step["timeout-minutes"] == timeout
         assert step["shell"] == "bash" and step["working-directory"] == "${{ env.CI296_SOURCE }}"
         assert step["env"] == {"CI296_HOST_CONTROL": "1", "ARM530_HELPER_SHA256":
-                               "e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764"}
+                               "faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b"}
         assert step["run"] == '/usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" ' + phase + '\n'
       assert steps.index(venv) < steps.index(before) == steps.index(actual[0]) - 1
       assert steps.index(actual[-1]) < steps.index(after) < steps.index(finish)

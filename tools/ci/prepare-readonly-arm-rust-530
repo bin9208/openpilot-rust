@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# #530: main caller의 정확한 native ARM 8개 role만 새 SDK를 준비한다. 기존 partial prefix는 읽기 전용이다.
+# #530/#572: main8 또는 exact final-two2 caller의 새 SDK. 기존 partial prefix는 읽기 전용이다.
 set -euo pipefail
 umask 077
 original_path=$PATH
@@ -10,8 +10,11 @@ phase=$1
 [[ ${GITHUB_ACTIONS:-}:${GITHUB_REPOSITORY:-} == true:bin9208/openpilot-rust &&
    ${RUNNER_ENVIRONMENT:-}:${RUNNER_OS:-}:${RUNNER_ARCH:-} == github-hosted:Linux:ARM64 &&
    $(uname -s):$(uname -m) == Linux:aarch64 && ${LOCAL_CI_ARCH:-} == aarch64 &&
-   ${CI296_NATIVE_ARM:-}:${CI296_NATIVE_ARM_CALLER:-} == 1:rust.yml &&
-   ${GITHUB_WORKFLOW_REF:-} == "bin9208/openpilot-rust/.github/workflows/rust.yml@${GITHUB_REF:-}" ]] || fail 'exact native ARM caller required'
+   ${CI296_NATIVE_ARM:-} == 1 ]] || fail 'exact native ARM caller required'
+# 이 함수는 caller 정책만 판정한다. host/소유성/SDK 봉인은 별도 필수 경계다.
+arm530_caller() {
+if [[ ${CI296_NATIVE_ARM_CALLER:-} == rust.yml ]];then
+  [[ ${GITHUB_WORKFLOW_REF:-} == "bin9208/openpilot-rust/.github/workflows/rust.yml@${GITHUB_REF:-}" ]] || fail 'exact native ARM caller required'
 case ${GITHUB_JOB:-} in
   planner-runtime|carrot-man-runtime|webrtc-runtime|webcam-runtime|xiaoge-runtime|radard-runtime|radar-arm|carrot-navi-arm) ;;
   *) fail 'unapproved ARM SDK role';;
@@ -24,6 +27,17 @@ case ${GITHUB_EVENT_NAME:-} in
   workflow_dispatch) case ${GITHUB_REF:-} in refs/heads/?*|refs/tags/?*) ;; *) fail 'dispatch ref differs';; esac;;
   *) fail 'event differs';;
 esac
+else
+  [[ -z ${CI296_NATIVE_ARM_CALLER:-} && ${GITHUB_EVENT_NAME:-} == push &&
+     ${GITHUB_REF:-} == refs/heads/codex/feat-523-python-rust &&
+     ${GITHUB_WORKFLOW_REF:-} == "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-final-two.yml@refs/heads/codex/feat-523-python-rust" ]] || fail 'exact final-two ARM caller required'
+  case ${GITHUB_JOB:-} in
+    radar-arm|carrot-navi-arm) ;;
+    *) fail 'unapproved final-two ARM SDK role';;
+  esac
+fi
+}
+arm530_caller
 job=${CI_JOB_TEMP:?}; source_dir=${CI296_SOURCE:?}; owner=${CI296_SOURCE_OWNER:?}
 [[ $job == /tmp/openpilot-ci.?????? && $source_dir == "$owner/source" &&
    ${HOME:-} == "$job/home" && ${CARGO_HOME:-} == "$job/cargo-home" &&

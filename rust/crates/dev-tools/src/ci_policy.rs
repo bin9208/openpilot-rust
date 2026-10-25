@@ -299,12 +299,15 @@ fn private_upload_conditions(steps: &[Value]) -> Result<Vec<String>, String> {
     Ok(conditions)
 }
 
-// #530은 main caller의 실패2role에만 새 SDK를 요구한다. 기존 candidate들은 별도다.
+// main8과 #572 final-two의 정확 두 alias는 같은 strict SDK validator를 사용한다.
 fn arm_sdk530_role(job: &Value) -> bool {
-    job["env"]["CI296_NATIVE_ARM"] == "1"
-        && job["env"]["CI296_NATIVE_ARM_CALLER"] == "rust.yml"
-        && matches!(
-            job["env"]["CI296_ALIAS_BASENAME"].as_str(),
+    if job["env"]["CI296_NATIVE_ARM"] != "1" {
+        return false;
+    }
+    let alias = job["env"]["CI296_ALIAS_BASENAME"].as_str();
+    match job["env"].get("CI296_NATIVE_ARM_CALLER") {
+        Some(caller) if caller == "rust.yml" => matches!(
+            alias,
             Some(
                 ".ci296-source-rust--planner-runtime"
                     | ".ci296-source-rust--carrot-man-runtime"
@@ -315,8 +318,15 @@ fn arm_sdk530_role(job: &Value) -> bool {
                     | ".ci296-source-rust--radar-arm"
                     | ".ci296-source-rust--carrot-navi-arm"
             )
-        )
+        ),
+        None => matches!(
+            alias,
+            Some(".ci296-source-rust--radar-arm" | ".ci296-source-rust--carrot-navi-arm")
+        ),
+        _ => false,
+    }
 }
+
 fn validate_arm_sdk530_steps(job: &Value, steps: &[Value]) -> Result<(), String> {
     let index = |label: &str| {
         let positions = steps
@@ -397,7 +407,7 @@ fn validate_arm_sdk530_steps(job: &Value, steps: &[Value]) -> Result<(), String>
             && step["if"] == condition && step["timeout-minutes"] == minutes
             && step["working-directory"] == "${{ env.CI296_SOURCE }}" && step["shell"] == "bash"
             && step["env"] == serde_json::json!({"CI296_HOST_CONTROL":"1",
-                "ARM530_HELPER_SHA256":"e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764"})
+                "ARM530_HELPER_SHA256":"faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b"})
             && step["run"] == format!("/usr/bin/bash \"$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530\" {phase}\n"),
             format!("ARM SDK530 exact {phase} binding changed"))?;
     }

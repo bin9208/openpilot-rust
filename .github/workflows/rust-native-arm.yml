@@ -181,7 +181,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" before
     - name: Reserve capacity and install original planner dependencies
@@ -274,7 +274,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" after
     - name: Finish native ARM execution evidence
@@ -535,7 +535,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" before
     - name: Reserve runner capacity and install pinned dependencies
@@ -621,7 +621,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" after
     - name: Finish native ARM execution evidence
@@ -885,7 +885,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" before
     - name: Reserve capacity and install pinned source and native providers
@@ -978,7 +978,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" after
     - name: Finish native ARM execution evidence
@@ -1244,7 +1244,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" before
     - name: Install exact source closure and native capture providers
@@ -1335,7 +1335,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" after
     - name: Finish native ARM execution evidence
@@ -1598,7 +1598,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" before
     - name: Reserve capacity and install Xiaoge build prerequisites
@@ -1683,7 +1683,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" after
     - name: Finish native ARM execution evidence
@@ -1936,7 +1936,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" before
     - name: Reserve capacity and install original oracle dependencies
@@ -2100,7 +2100,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" after
     - name: Finish native ARM execution evidence
@@ -2363,7 +2363,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" before
     - name: Configure original Radar IPC imports
@@ -2472,7 +2472,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" after
     - name: Finish native ARM execution evidence
@@ -2730,7 +2730,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" before
     - name: Reserve runner capacity and install native ARM build dependencies
@@ -2778,7 +2778,7 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-        ARM530_HELPER_SHA256: e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764
+        ARM530_HELPER_SHA256: faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" after
     - name: Finish native ARM execution evidence
