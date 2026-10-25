@@ -607,3 +607,32 @@ artifact12589909513은3,631,153B/SHA256 `0debbbb38f3fceb1ea5001666bdd2f1e4e4a5c5
 후속은 기존 성공 model workflow가 고정한 `/usr/lib/x86_64-linux-gnu/libLLVM-18.so`를 canonical
 해석하고 같은 SHA `5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`를 검사한다.
 package version도 위 정확값으로 검사한다. provider 교체·숫자 기대값·허용오차·runtime 수용 변경은 없다.
+
+### ffa의 현재 compile/Clippy 성공 뒤 DSO 목록 parser 실패
+
+[40170689564/job121100726744](https://github.com/bin9208/openpilot-rust/actions/runs/40170689564/job/121100726744),
+source `ffa09722288ecfa98c4cb0fb461ab3ad53b63690`은 LLVM 준비를 통과했다. 단독 감사한
+artifact12590250880은7,348,756B/SHA256 `028a7f239c9b63259d027f29b9cf45b444bd438df298be41df205f9124e09762`,
+114CRC/전개36,455,098B다. current bins16.603초/libtest compile5.423초/strict Clippy15.293초는
+각 exit0이었다. 최초 실패는 `python-dso-2`의 `ldd` 응답 해석이다.
+
+NumPy2.5.3 `_operand_flag_tests.cpython-312-x86_64-linux-gnu.so`의 실제 `ldd`는 exit0,
+stdout `statically linked`였으나 helper는 이를 `unknown/missing DSO provider`로 거부했다.
+이때 fresh original import/compile·전체 triplet A·2frame B는 미도달이다. source/index/전체 SDK/
+Python base·venv/registry/held final과 자손 회수는 pass이며 전체 진단/closure는 FAIL이다.
+이를 모델 수치 실패나 compile 결함 수용으로 표시하지 않는다.
+
+기존 로컬 감사 ZIP의 동일 source-lock NumPy wheel16,717,410B/SHA
+`b7e18c623bb5c95acb3b3328861272816ba199fb531921c5d6d0b675f1fde9e3`을 inert read하여 확인했다.
+문제 파일은16,800B/SHA `d985fc6e648abe43a0d11d9e9c1c49c15a3020936c6105c159cc9ab2ff2e41f0`이고,
+동일 wheel의 `_struct_ufunc_tests.cpython-312-x86_64-linux-gnu.so`는16,936B/SHA
+`895b0c3376a227d8f2f9f35465876cd6b381daa177effa7a3070c7d31bba8688`이다. 두 파일은 실제
+ELF64 little-endian/ET_DYN/x86_64/PT_INTERP0/PT_DYNAMIC1/DT_NULL 종료/DT_NEEDED0이다.
+이는 선언된 DT_NEEDED edge가 없다는 뜻이며 Python runtime symbol/provider 폐쇄 증거는 아니다.
+
+후속 source는 exact-single-line `statically linked`에만 위 두 venv exact member·크기·SHA와
+실제 ELF 구조를 교차검증해 한정 영수증을 쓴다. GHA에서는 실제 bytes의 needed 삽입/동적 header
+누락·중복/절단/ET_EXEC 변조5종도 거부해야 한다. 다른 unknown/누락 library/root/count 거부는
+그대로다. LLVM pin·CPU·생산 수학·Rust test·cached 정책·한도·expected 변경은 없다.
+로컬은 AST/YAML/Bash 문법·inert wheel/ELF metadata·diff만 확인했으며 수정 경로와 통제의
+기능은 **Actions UNRUN**이다. fresh original/A/B와 기존 half·sNaN/역사·runtime 미수용도 유지한다.

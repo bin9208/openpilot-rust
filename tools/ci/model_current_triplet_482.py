@@ -17,6 +17,7 @@ import resource
 import runpy
 import signal
 import stat
+import struct
 import subprocess
 import sys
 import threading
@@ -32,6 +33,13 @@ PREFIX = "cpu::diagnostic_482_tests::"
 READONLY = PREFIX + "fresh_program_roster_triplets_and_host_isa_are_bound_without_execution"
 TAPPED = PREFIX + "bound_road1928_two_frame_producer_capture"
 CELLS = (100, 101, 1349)
+# source-locked NumPy2.5.3 wheel의 DT_NEEDED가 없는 두 CPython test extension만 해당한다.
+ZERO_NEEDED_NUMPY = {
+    "numpy/_core/_operand_flag_tests.cpython-312-x86_64-linux-gnu.so":
+        (16800, "d985fc6e648abe43a0d11d9e9c1c49c15a3020936c6105c159cc9ab2ff2e41f0"),
+    "numpy/_core/_struct_ufunc_tests.cpython-312-x86_64-linux-gnu.so":
+        (16936, "895b0c3376a227d8f2f9f35465876cd6b381daa177effa7a3070c7d31bba8688"),
+}
 
 
 def need(value, message):
@@ -41,6 +49,36 @@ def need(value, message):
 
 def sha(raw):
     return hashlib.sha256(raw).hexdigest()
+
+
+def zero_needed_elf(raw):
+    """ET_DYN의 선언된 needed edge만 확인한다. runtime symbol/provider 폐쇄 주장은 아니다."""
+    need(64 <= len(raw) <= 64*1024 and raw[:7] == b"\x7fELF\x02\x01\x01", "bounded ELF64 little endian")
+    need(struct.unpack_from("<HHI", raw, 16) == (3, 62, 1), "ET_DYN x86_64 version1 required")
+    phoff = struct.unpack_from("<Q", raw, 32)[0]
+    ehsize, phsize, count = struct.unpack_from("<HHH", raw, 52)
+    need(ehsize == 64 and phsize == 56 and 0 < count <= 128
+         and phoff >= 64 and phoff + phsize*count <= len(raw), "bounded ELF program headers")
+    dynamic = []
+    for index in range(count):
+        header = phoff + phsize*index
+        kind, _, offset, _, _, size, _, _ = struct.unpack_from("<IIQQQQQQ", raw, header)
+        need(kind != 3, "Python extension must not have PT_INTERP")
+        if kind == 2:
+            need(size >= 16 and size % 16 == 0 and offset + size <= len(raw), "bounded PT_DYNAMIC")
+            dynamic.append((header, offset, size))
+    need(len(dynamic) == 1, "unique PT_DYNAMIC required")
+    header, offset, size = dynamic[0]
+    ended = False
+    for cursor in range(offset, offset + size, 16):
+        tag, value = struct.unpack_from("<qQ", raw, cursor)
+        need(not ended or (tag, value) == (0, 0), "nonzero dynamic data after DT_NULL")
+        need(tag != 1, "DT_NEEDED cannot be omitted by ldd")
+        if tag == 0:
+            need(value == 0, "DT_NULL value")
+            ended = True
+    need(ended, "DT_NULL terminator required")
+    return {"phoff": phoff, "dynamic_header": header, "dynamic_offset": offset, "dynamic_bytes": size}
 
 
 def write(path, raw):
@@ -674,6 +712,36 @@ class Controller:
     def dso(self, binary, label):
         self.holds.add(binary,elf=True)
         raw=self.command(['/usr/bin/ldd',binary],label,60).decode()
+        if raw.strip() == 'statically linked':
+            need(len(raw.splitlines()) == 1, 'single zero-needed ldd response')
+            binary = Path(binary)
+            site = self.job/'venv/lib/python3.12/site-packages'
+            need(binary.resolve(strict=True) == binary and binary.is_relative_to(site), 'exact venv extension root')
+            relative = str(binary.relative_to(site))
+            need(relative in ZERO_NEEDED_NUMPY, 'unknown zero-needed provider')
+            size, pin = ZERO_NEEDED_NUMPY[relative]
+            data = self.m.read(binary, 64*1024)
+            need(len(data) == size and sha(data) == pin, 'source-locked zero-needed NumPy extension')
+            elf = zero_needed_elf(data)
+            # 실제 admission bytes의 한 경계씩 변조한다. 이 통제는 GHA에서만 실행한다.
+            needed, missing, duplicate, executable = (bytearray(data) for _ in range(4))
+            struct.pack_into('<q', needed, elf['dynamic_offset'], 1)
+            struct.pack_into('<I', missing, elf['dynamic_header'], 0)
+            other = elf['phoff'] if elf['phoff'] != elf['dynamic_header'] else elf['phoff']+56
+            duplicate[other:other+56] = data[elf['dynamic_header']:elf['dynamic_header']+56]
+            struct.pack_into('<H', executable, 16, 2)
+            for changed in (needed, missing, duplicate, data[:63], executable):
+                try:
+                    zero_needed_elf(changed)
+                except RuntimeError:
+                    pass
+                else:
+                    raise RuntimeError('zero-needed ELF mutation accepted')
+            self.holds.verify()
+            save(self.out/(label+'-zero-needed.json'), {'path':str(binary), 'bytes':size, 'sha256':pin,
+                'elf':elf, 'declared_needed':0, 'negative_data_controls':5,
+                'scope':'exact wheel extension; Python runtime symbol/provider closure is not established'})
+            return
         count=0
         for line in raw.splitlines():
             line=line.strip()
