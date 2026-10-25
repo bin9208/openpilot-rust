@@ -488,9 +488,15 @@ jobs:
             rust/crates/dev-tools/tests/ui_application_lifecycle_reference/source_binding.rs) ;;
             tools/ci/ssh_source_absence_523.sh) ;;
             tools/scripts/ssh.py) ;;
+            .github/workflows/python-rust-523-cold-tracer.yml) ;;
+            tools/ci/cold_tracer_diagnostic_560.sh) ;;
+            tools/ci/fixtures/strace-6.8-560-observer.patch) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
+        printf '%s  %s\n' 12a205b83228f881f7627f8c8a5aec7820ac25bf1ae21488bfcb74a112263574 .github/workflows/python-rust-523-cold-tracer.yml | sha256sum --check -
+        printf '%s  %s\n' daafeeeae03cc4719d043849a3abcc7d94b17de4078e0fb9617dfe26abd2661a tools/ci/cold_tracer_diagnostic_560.sh | sha256sum --check -
+        printf '%s  %s\n' b32a9508ded464e5c08b22444064ba2de300b0373e0bce643974f4e21775d51a tools/ci/fixtures/strace-6.8-560-observer.patch | sha256sum --check -
         printf '%s  %s\n' 68f0f800ef5fbb456a06986a8695a5c3aaa2cbdf86160b47826e913edd792f85 .github/workflows/carrot-route-vault-publish.yaml | sha256sum --check -
         printf '%s  %s\n' fb9445c81a96d2848a2e0f732cc601af0c13a7b3910d7e29b0e946eb956dd4a1 .github/workflows/fast-checks.yml | sha256sum --check -
         printf '%s  %s\n' ada137e1a1bbe957903a930c49dc5496f5d685193b8d09970accd90f632c2a0c .github/workflows/python-rust-523-bundle.yml | sha256sum --check -

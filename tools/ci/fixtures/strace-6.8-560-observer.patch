@@ -1,0 +1,172 @@
+--- a/src/syscall.c
++++ b/src/syscall.c
+@@ -27,0 +28 @@
++#include <sys/stat.h>
+@@ -49,0 +51,131 @@
++
++
++/* #560 private diagnostic only: no ptrace retry, no trace-text normalization. */
++void cold560_begin(void);
++void cold560_observe(const char *, struct tcb *, long, int, int,
++                     unsigned int, unsigned int);
++
++static int cold560_fd = -1;
++static pid_t cold560_owner;
++static unsigned long cold560_seen, cold560_events, cold560_written;
++static unsigned long cold560_sci, cold560_entry, cold560_exit;
++static unsigned long cold560_seccomp, cold560_abnormal;
++static size_t cold560_bytes;
++static bool cold560_io_error, cold560_overflow;
++
++static void
++cold560_write(const char *text, size_t length)
++{
++	if (cold560_fd < 0 || write(cold560_fd, text, length) != (ssize_t) length)
++		cold560_io_error = true;
++	else
++		cold560_bytes += length;
++}
++
++static void
++cold560_finish(void)
++{
++	const int saved_errno = errno;
++	if (getpid() == cold560_owner && cold560_fd >= 0) {
++		char text[512];
++		int length = snprintf(text, sizeof(text),
++			"COLD560 finish pid=%ld seen=%lu written=%lu sci=%lu "
++			"entry=%lu exit=%lu seccomp=%lu abnormal=%lu bytes=%zu "
++			"io_error=%u overflow=%u\n", (long) cold560_owner,
++			cold560_seen, cold560_written, cold560_sci, cold560_entry,
++			cold560_exit, cold560_seccomp, cold560_abnormal, cold560_bytes,
++			(unsigned int) cold560_io_error,
++			(unsigned int) cold560_overflow);
++		if (length > 0 && (size_t) length < sizeof(text))
++			cold560_write(text, (size_t) length);
++		close(cold560_fd);
++	}
++	errno = saved_errno;
++}
++
++void
++cold560_begin(void)
++{
++	const int saved_errno = errno;
++	const char *path = getenv("COLD560_LOG");
++	struct stat st;
++	cold560_owner = getpid();
++	if (path && path[0] == '/')
++		cold560_fd = open(path, O_WRONLY | O_CREAT | O_EXCL |
++				 O_NOFOLLOW | O_CLOEXEC, 0600);
++	if (cold560_fd < 0 || fstat(cold560_fd, &st) ||
++	    !S_ISREG(st.st_mode) || st.st_uid != getuid() ||
++	    (st.st_mode & 0777) != 0600 || st.st_nlink != 1 || st.st_size) {
++		if (cold560_fd >= 0)
++			close(cold560_fd);
++		cold560_fd = -1;
++		cold560_io_error = true;
++	} else {
++		static const char header[] = "COLD560 start schema=1\n";
++		cold560_write(header, sizeof(header) - 1);
++		if (atexit(cold560_finish))
++			cold560_io_error = true;
++	}
++	errno = saved_errno;
++}
++
++void
++cold560_observe(const char *stage, struct tcb *tcp, long result,
++                int observed_errno, int op, unsigned int status,
++                unsigned int event)
++{
++	const int saved_errno = errno;
++	if (getpid() == cold560_owner && cold560_fd >= 0) {
++		char text[384];
++		++cold560_seen;
++		if (!strcmp(stage, "get_syscall_info")) {
++			size_t required = 0;
++			++cold560_sci;
++			/* Unevaluated sizes only: no nr/args/rval buffer reads. */
++			switch (op) {
++			case PTRACE_SYSCALL_INFO_ENTRY:
++				required = offsetof(struct_ptrace_syscall_info, entry.args)
++					 + sizeof(((struct_ptrace_syscall_info *) 0)->entry.args);
++				break;
++			case PTRACE_SYSCALL_INFO_EXIT:
++				required = offsetof(struct_ptrace_syscall_info, exit.is_error)
++					 + sizeof(((struct_ptrace_syscall_info *) 0)->exit.is_error);
++				break;
++			case PTRACE_SYSCALL_INFO_SECCOMP:
++				required = offsetof(struct_ptrace_syscall_info, seccomp.ret_data)
++					 + sizeof(((struct_ptrace_syscall_info *) 0)->seccomp.ret_data);
++				break;
++			}
++			if (required && required <= sizeof(struct_ptrace_syscall_info)
++			    && result >= (long) required) {
++				if (op == PTRACE_SYSCALL_INFO_ENTRY)
++					++cold560_entry;
++				else if (op == PTRACE_SYSCALL_INFO_EXIT)
++					++cold560_exit;
++				else
++					++cold560_seccomp;
++				errno = saved_errno;
++				return;
++			}
++			++cold560_abnormal;
++		}
++		++cold560_events;
++		int length = snprintf(text, sizeof(text),
++			"COLD560 event seq=%lu stage=%s tracer=%ld tracee=%d "
++			"rc=%ld errno=%d op=%d flags=%#lx entering=%u "
++			"wait=%#x event=%u\n", cold560_events, stage,
++			(long) cold560_owner, tcp->pid, result, observed_errno,
++			op, (unsigned long) tcp->flags,
++			(unsigned int) entering(tcp), status, event);
++		/* Reserve 512 bytes for a terminal health record, even on overflow. */
++		if (length <= 0 || (size_t) length >= sizeof(text) ||
++		    cold560_bytes + (size_t) length > 65536 - 512)
++			cold560_overflow = true;
++		else if (!cold560_io_error && !cold560_overflow) {
++			cold560_write(text, (size_t) length);
++			if (!cold560_io_error)
++				++cold560_written;
++		}
++	}
++	errno = saved_errno;
++}
+@@ -589,0 +722 @@
++	const bool cold560_scno_failed = res != 1;
+@@ -590,0 +724,4 @@
++		const int cold560_errno = errno;
++		cold560_observe(cold560_scno_failed ? "get_scno" : "get_syscall_args",
++				tcp, res, cold560_errno, -1, 0, 0);
++		errno = cold560_errno;
+@@ -1292,2 +1429,10 @@
+-		if (ptrace(PTRACE_GET_SYSCALL_INFO, tcp->pid,
+-			   (void *) size, &ptrace_sci) < 0) {
++		const long cold560_result = ptrace(PTRACE_GET_SYSCALL_INFO, tcp->pid,
++					      (void *) size, &ptrace_sci);
++		const int cold560_errno = errno;
++		/* Only op is read, and never from an unsuccessful/empty result. */
++		const int cold560_op = cold560_result >= 1 && size >= 1
++			? ptrace_sci.op : -1;
++		cold560_observe("get_syscall_info", tcp, cold560_result,
++				cold560_errno, cold560_op, 0, 0);
++		errno = cold560_errno;
++		if (cold560_result < 0) {
+--- a/src/strace.c
++++ b/src/strace.c
+@@ -50,0 +51,5 @@
++
++/* #560 observers preserve errno and never change trace/dispatch decisions. */
++extern void cold560_begin(void);
++extern void cold560_observe(const char *, struct tcb *, long, int, int,
++                            unsigned int, unsigned int);
+@@ -3954,0 +3960,5 @@
++			const int cold560_errno = errno;
++			cold560_observe("decode_failure", current_tcp, -1,
++					cold560_errno, -1, (unsigned int) status,
++					(unsigned int) status >> 16);
++			errno = cold560_errno;
+@@ -4231,0 +4242 @@
++	cold560_begin();

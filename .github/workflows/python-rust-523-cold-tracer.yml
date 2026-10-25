@@ -1,0 +1,233 @@
+name: Python Rust 523 isolated cold tracer diagnostic
+'on':
+  push:
+    branches: [codex/feat-523-python-rust]
+    paths:
+    - .github/workflows/python-rust-523-cold-tracer.yml
+    - tools/ci/cold_tracer_diagnostic_560.sh
+    - tools/ci/fixtures/strace-6.8-560-observer.patch
+    - docs/naver/python-rust-523-cold-tracer-560.md
+    - rust/tools/prepare-readonly-ci-rust
+    - rust/tools/check-disk-space
+    - rust/crates/disk-space/**
+    - rust/crates/dev-tools/tests/ci_disk_bootstrap.rs
+    - rust/crates/dev-tools/tests/ci_disk_bootstrap/**
+    - rust/Cargo.toml
+    - rust/Cargo.lock
+permissions:
+  contents: read
+concurrency:
+  group: python-rust-523-cold-tracer-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  cold-tracer:
+    name: Isolated exact-source syscall-info observer
+    if: ${{ github.repository == 'bin9208/openpilot-rust' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TERM_COLOR: never
+      COLD560_HELPER_SHA256: daafeeeae03cc4719d043849a3abcc7d94b17de4078e0fb9617dfe26abd2661a
+      COLD560_PATCH_SHA256: b32a9508ded464e5c08b22444064ba2de300b0373e0bce643974f4e21775d51a
+    steps:
+    - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        set -euo pipefail
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$GITHUB_EVENT_NAME" = push
+        test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -s)" = Linux
+        test "$(uname -m)" = x86_64
+    - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Admit simultaneous diagnostic growth and allocate private source
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        umask 077
+        workspace=$(realpath -e "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        test "$(stat -c '%u:%a' "$job")" = "$(id -u):700"
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        declare -A needs=() representatives=()
+        roots=("$workspace" "$job" /)
+        # source2GiB + build8/SDK3/coldcache1/proof0.5GiB + apt1GiB.
+        growth_mib=(2048 12800 1024)
+        for n in "${!roots[@]}";do
+          dev=$(stat -c %d "${roots[$n]}")
+          needs[$dev]=$(( ${needs[$dev]:-0}+growth_mib[n]*1024*1024 ))
+          representatives[$dev]=${roots[$n]}
+        done
+        for dev in "${!needs[@]}";do
+          available=$(df --output=avail -B1 "${representatives[$dev]}" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+          required=$((needs[$dev]+512*1024*1024))
+          printf '%s\t%s\t%s\n' "$dev" "$available" "$required" >> "$job/proof/cold560-initial-admission.tsv"
+          ((available>=required))
+        done
+        source_owner=$(mktemp -d "$workspace/.cold560-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" \
+          "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' "$source_owner")" "DIAG_SOURCE=$source" \
+          "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" \
+          "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$job/build/audit-target" "XDG_CACHE_HOME=$job/cache" \
+          "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' \
+          "$owner" "$job" "$source_owner" "$(stat -c '%d:%i' "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" / > "$job/proof/disk-before.txt"
+    - uses: actions/checkout@v7
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+        set-safe-directory: false
+        clean: false
+        lfs: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+    - name: Seal current source and index before preparation
+      id: source_before
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+        /usr/bin/bash tools/ci/cold_tracer_diagnostic_560.sh admit
+    - name: Prepare official pinned private Rust SDK
+      id: prepared_rust
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      timeout-minutes: 16
+      run: |
+        set -euo pipefail
+        /usr/bin/bash tools/ci/cold_tracer_diagnostic_560.sh admit
+        "$DIAG_SOURCE/rust/tools/prepare-readonly-ci-rust" before
+        /usr/bin/bash tools/ci/cold_tracer_diagnostic_560.sh admit
+    - name: Admit bounded native compiler dependencies
+      id: packages
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      timeout-minutes: 6
+      run: |
+        set -euo pipefail
+        /usr/bin/bash tools/ci/cold_tracer_diagnostic_560.sh admit
+        before=$(df --output=avail -B1 / | awk 'NR==2&&NF==1&&$1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+        (ulimit -f 524288; /usr/bin/env -i HOME="$CI_JOB_TEMP/home" PATH=/usr/bin:/bin LC_ALL=C \
+          /usr/bin/sudo -n /usr/bin/timeout --signal=TERM --kill-after=15s 120s \
+          /usr/bin/apt-get -o APT::Architectures=amd64 update) > "$CI_JOB_TEMP/proof/apt-update.stdout" 2> "$CI_JOB_TEMP/proof/apt-update.stderr"
+        (ulimit -f 524288; /usr/bin/env -i HOME="$CI_JOB_TEMP/home" PATH=/usr/bin:/bin LC_ALL=C \
+          /usr/bin/sudo -n /usr/bin/timeout --signal=TERM --kill-after=15s 180s \
+          /usr/bin/apt-get -o APT::Architectures=amd64 install -y --no-install-recommends \
+          gcc make libc6-dev libunwind-dev libdw-dev libiberty-dev pkg-config patch xz-utils jq dpkg-dev binutils curl) \
+          > "$CI_JOB_TEMP/proof/apt-install.stdout" 2> "$CI_JOB_TEMP/proof/apt-install.stderr"
+        after=$(df --output=avail -B1 / | awk 'NR==2&&NF==1&&$1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+        printf '%s\t%s\n' "$before" "$after" > "$CI_JOB_TEMP/proof/apt-growth.tsv"
+        ((before-after<=1024*1024*1024))
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/cold560-packages.done"
+        dpkg-query -W gcc make libc6-dev libunwind-dev libdw-dev libiberty-dev pkg-config patch xz-utils jq dpkg-dev binutils curl > "$CI_JOB_TEMP/proof/native-packages.txt"
+        /usr/bin/bash tools/ci/cold_tracer_diagnostic_560.sh admit
+    - name: Build private diagnostic provider and observe one fresh cold bootstrap
+      id: qualify
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.source_before.outcome == 'success' && steps.prepared_rust.outcome == 'success' && steps.packages.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        /usr/bin/timeout --signal=TERM --kill-after=180s 25m /usr/bin/bash tools/ci/cold_tracer_diagnostic_560.sh run
+    - name: Verify whole SDK after all attempted checks
+      id: prepared_rust_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: '"$DIAG_SOURCE/rust/tools/prepare-readonly-ci-rust" after'
+    - name: Seal current source after all attempted checks
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.source_before.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        /usr/bin/bash tools/ci/cold_tracer_diagnostic_560.sh final-source
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+    - name: Require independent diagnostic outcomes
+      id: closure
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        QUALIFY_OUTCOME: ${{ steps.qualify.outcome }}
+        SOURCE_OUTCOME: ${{ steps.source_final.outcome }}
+        SDK_OUTCOME: ${{ steps.prepared_rust_final.outcome }}
+      run: |
+        set -euo pipefail
+        test "$QUALIFY_OUTCOME" = success
+        test "$SOURCE_OUTCOME" = success
+        test "$SDK_OUTCOME" = success
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source==$source and .pass==true and .immutable_seals==true and .owned_processes_nonlive==true and .observer_complete==true and .strict_cold_audit==true and .root_fixed==false and .ubuntu_elf_identical==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/cold560/outcome.json"
+    - name: Upload current proof including every failure
+      id: evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: diagnostic-cold-tracer560-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        include-hidden-files: true
+        if-no-files-found: error
+        retention-days: 14
+    - name: Clean only uploaded unchanged private source
+      id: source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.evidence.outcome == 'success' && steps.evidence.outputs.artifact-id != '' && steps.evidence.outputs.artifact-digest != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.qualify.outputs.immutable_seals == 'true' && steps.qualify.outputs.owned_processes_nonlive == 'true') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        UPLOAD_ID: ${{ steps.evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ && $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$DIAG_ACTIONS_WORKSPACE/.cold560-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1;;esac
+        test -d "$p" && test ! -L "$p"
+        test "$(readlink -e "$p")" = "$p"
+        test "$(stat -c '%u' "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.diag296-owner" && test ! -L "$p/.diag296-owner"
+        test "$(cat "$p/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned paths after uploaded source cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.source_cleanup.outcome == 'success' && steps.evidence.outcome == 'success' && steps.evidence.outputs.artifact-id != '' && steps.evidence.outputs.artifact-digest != '') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'
