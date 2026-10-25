@@ -1267,3 +1267,9 @@ main의 x64 CarrotMan 한 job에만 fresh SDK before와 독립 always after를 �
 11월 15일 완료를 목표로 10월 27일까지 실제 미구현/검증 대기/CI 차단을 기능군별로 구분하고, 11월 7일 구현·원본 제거, 11월 11일 정확 소스 통합 검사, 11월 12~15일 전달 및 가능한 사용자 실기 확인의 내부 목표를 둔다. 날짜는 검증 생략이나 미완료 항목 제외를 허용하지 않는다. 기기는 현재 사용자 소유 검증 경계이며 없는 실기 결과를 만들어 기록하지 않는다.
 
 인계 시 baseline3580=294교체/3부분/3283대기, 추가 실행142=26교체/112대기/1기존native/2비실행/1제거다. 로깅 원본2 삭제 WIP는 실제 삭제 후 CI 수용 전까지 추가 실적0이다.
+
+### 로컬 Actions 러너 활용 조건 — 2026-10-26
+
+사용자는 로컬 Actions 러너의 속도 이점과 디스크80GB/i9 할당4core/RAM4GB를 명시했다. API에서 runner22 `bin-actions`의 online/idle 및 `self-hosted/Linux/X64/dev-md-local`을 확인했다. [40202955990](https://github.com/bin9208/openpilot-rust/actions/runs/40202955990)의 읽기 전용 inventory artifact12603175511은 여유38786977792B와 기존 공식Rust1.94 SDK의321entry를 기록했다. 현재의 영구 가용량 보장으로 해석하지 않는다.
+
+F01/F02의 순수 native 검사부터 작업별 디스크·메모리 admission과 `CARGO_BUILD_JOBS=1`을 사용해 별도로 실행한다. 모델 수치·CPU ISA·전체 PR 요구는 해당 검사에 맞는 플랫폼에서 유지한다. 기존 원격 실행은 취소하거나 러너 변경만을 위해 반복하지 않는다.

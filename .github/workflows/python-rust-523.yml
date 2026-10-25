@@ -101,6 +101,7 @@ jobs:
         exec {ssh_helper_fd}<"$ssh_helper"
         ssh_helper_pid=$BASHPID
         test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 2045383f9af44e9fdaff0e11333923fef70cdf1c2409bdfbed07b0f1683f4481 .github/workflows/python-rust-523-native-units.yml | sha256sum --check -
         printf '%s  %s\n' 7550f9299bf323106eb1fd6352c9ccf257d38aeca7b1ec2cf15dbf81dcf1bf66 rust/crates/control-policy/tests/drive.rs | sha256sum --check -
         printf '%s  %s\n' 2411aa2d77de51fd2c1552f3955032e6a734301e4ed692330b4cd4e5e13463b4 rust/crates/control-policy/src/drive.rs | sha256sum --check -
         printf '%s  %s\n' 15688511f6d947a65ce96be621c393d9c7a7f10006fe32b4723c72ed18db6ef1 rust/crates/model-runtime/tests/compiler_schedule.rs | sha256sum --check -
@@ -361,6 +362,8 @@ jobs:
             rust/crates/model-runtime/src/cached_code.rs) ;;
             rust/crates/model-runtime/src/cached_isa.rs) ;;
             rust/crates/model-runtime/src/lib.rs) ;;
+            docs/naver/python-rust-523-native-units.md) ;;
+            .github/workflows/python-rust-523-native-units.yml) ;;
             docs/naver/python-rust-523-drive-helpers.md) ;;
             rust/crates/control-policy/tests/drive.rs) ;;
             rust/crates/control-policy/src/drive.rs) ;;
@@ -1239,15 +1242,6 @@ jobs:
         ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" clippy-after
         after=$?
         (( action == 0 && after == 0 ))
-    - name: Validate native compiler stage boundaries against original sources
-      id: compiler_schedule
-      working-directory: ${{ env.DIAG_SOURCE }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-control-policy --no-default-features --locked --test drive --test math
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-model-runtime --locked --test compiler_launch --test compiler_schedule
-        cargo test --manifest-path rust/Cargo.toml -p openpilot-model-runtime --locked --test compiler_schedule original_python_pipeline_boundaries_match_native -- --ignored --exact --nocapture
     - name: Seal Fast source and index after all maintained checks
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
       working-directory: ${{ env.DIAG_SOURCE }}
