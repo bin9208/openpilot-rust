@@ -6,6 +6,8 @@ name: Python Rust 523 isolated cold tracer diagnostic
     - .github/workflows/python-rust-523-cold-tracer.yml
     - tools/ci/cold_tracer_diagnostic_560.sh
     - tools/ci/fixtures/strace-6.8-560-observer.patch
+    - tools/ci/fixtures/strace-6.8-560-inherited-filter.patch
+    - tools/ci/fixtures/cold560_exec_inheritance.rs
     - docs/naver/python-rust-523-cold-tracer-560.md
     - rust/tools/prepare-readonly-ci-rust
     - rust/tools/check-disk-space
@@ -33,7 +35,9 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
-      COLD560_HELPER_SHA256: af0c460406e8fc9580dc651ab3935bc0d8f28f1dbf679c8a6a49ebbf3bbcad43
+      COLD560_HELPER_SHA256: 19f16a843af707b86728f975d5a8bbc87b3346444fa3a1b9767bc357aee3ba74
+      COLD560_INHERITED_PATCH_SHA256: 62be9fd4960295fe04784f7021b3d9ea608ac21dbd524791327e873aa22ecdac
+      COLD560_FIXTURE_SHA256: e92f1b3e0f7b1f437661dbd2acf205ba5a7060a893aa74ded06e889c7479823e
       COLD560_PATCH_SHA256: b32a9508ded464e5c08b22444064ba2de300b0373e0bce643974f4e21775d51a
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
@@ -119,6 +123,7 @@ jobs:
         git diff --exit-code
         git diff --cached --exit-code
         printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        printf '%s  %s\n' "$COLD560_INHERITED_PATCH_SHA256" tools/ci/fixtures/strace-6.8-560-inherited-filter.patch "$COLD560_FIXTURE_SHA256" tools/ci/fixtures/cold560_exec_inheritance.rs | sha256sum --check --strict --quiet -
         git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
         tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
         /usr/bin/bash tools/ci/cold_tracer_diagnostic_560.sh admit
@@ -164,7 +169,7 @@ jobs:
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
-        /usr/bin/timeout --signal=TERM --kill-after=180s 25m /usr/bin/bash tools/ci/cold_tracer_diagnostic_560.sh run
+        /usr/bin/timeout --signal=TERM --kill-after=180s 25m /usr/bin/bash tools/ci/cold_tracer_diagnostic_560.sh run-inherited
     - name: Verify whole SDK after all attempted checks
       id: prepared_rust_final
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}
@@ -194,6 +199,8 @@ jobs:
         test "$QUALIFY_OUTCOME" = success
         test "$SOURCE_OUTCOME" = success
         test "$SDK_OUTCOME" = success
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source==$source and (.provider_sha256|type=="string" and test("^[0-9a-f]{64}$")) and .positive==7 and .negative_binding==4 and .negative_context==7 and .actual_vfork_event_required==true and .additional_ptrace_requests==0 and .parent_link_observed==false and .nommu_and_old_seccomp_order_host_controls_run==false and .source_bound_fresh_timeout_launch==true and .root_fixed==false and .nonreproduction_is_fix==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/cold560/inheritance/controls.json"
+        printf '%s\n' $'fork\tpositive\tPASS' $'vfork\tpositive\tPASS' $'thread\tpositive\tPASS' $'nonleader\tpositive\tPASS' $'execve\tpositive\tPASS' $'execveat\tpositive\tPASS' $'root-first\tpositive\tPASS' $'missing\tnegative-binding\tPASS' $'wrong-start\tnegative-binding\tPASS' $'wrong-parent\tnegative-binding\tPASS' $'wrong-provider\tnegative-binding\tPASS' $'bad-mode\tnegative-context\tPASS' $'attach\tnegative-context\tPASS' $'mixed-attach\tnegative-context\tPASS' $'daemon\tnegative-context\tPASS' $'no-bpf\tnegative-context\tPASS' $'no-follow\tnegative-context\tPASS' $'pipe\tnegative-context\tPASS' | cmp - "$CI_JOB_TEMP/proof/cold560/inheritance/controls.tsv"
         jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source==$source and .pass==true and .immutable_seals==true and .owned_processes_nonlive==true and .observer_complete==true and .strict_cold_audit==true and .root_fixed==false and .ubuntu_elf_identical==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/cold560/outcome.json"
     - name: Upload current proof including every failure
       id: evidence

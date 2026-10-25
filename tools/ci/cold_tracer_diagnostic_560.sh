@@ -5,7 +5,7 @@ set +m
 umask 077
 export LC_ALL=C PATH=/usr/bin:/bin
 fail() { printf 'cold tracer 560: %s\n' "$*" >&2; exit 1; }
-[[ $# == 1 && ( $1 == admit || $1 == run || $1 == final-source ) ]] || fail 'admit|run|final-source required'
+[[ $# == 1 && ( $1 == admit || $1 == run || $1 == run-inherited || $1 == final-source ) ]] || fail 'admit|run|run-inherited|final-source required'
 mode=$1
 [[ ${GITHUB_ACTIONS:-}:${GITHUB_REPOSITORY:-} == true:bin9208/openpilot-rust &&
    ${GITHUB_EVENT_NAME:-}:${GITHUB_REF:-} == push:refs/heads/codex/feat-523-python-rust &&
@@ -518,6 +518,154 @@ base_env=(PATH="$sdk/bin:/usr/bin:/bin" HOME="$job/home" LC_ALL=C TZ=UTC TMPDIR=
   CI_JOB_TEMP="$job" GITHUB_WORKSPACE="$source" CI_PREPARED_RUST_ROOT="$sdk" CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST"
   CARGO_TERM_COLOR=never GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1)
 extra_env=()
+# 명시 run-inherited에서만 사용한다. 기존 run의 launcher/observer 경로는 유지한다.
+launch_label= launch_dir= launch_fault= launch_seen=false
+launch_tracer= launch_parent=
+declare -a launch_strip=()
+approve_launch() {
+  local record tag schema pid start dev ino parent pstart pdev pino source_sha helper_sha provider_sha extra
+  [[ $mode == run-inherited && -n $launch_label && $phase == "$launch_label" && $launch_seen == false ]] || return 0
+  [[ -e $launch_dir/ready || -L $launch_dir/ready ]] || return 0
+  record=$(/usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C /usr/bin/timeout --signal=KILL 5s "$fixture" ready "$launch_dir") || fail 'launch request reader'
+  read -r tag schema pid start dev ino parent pstart pdev pino source_sha helper_sha provider_sha extra <<< "$record"
+  [[ $tag == COLD560_LAUNCH && $schema == 1 && -z $extra && $pid =~ ^[1-9][0-9]*$ && $parent =~ ^[1-9][0-9]*$ &&
+     $source_sha == "$GITHUB_SHA" && $helper_sha == "$COLD560_HELPER_SHA256" && $provider_sha == "${held_sha[$tracer]}" ]] || fail 'launch request binding'
+  # 실제 STOP한 tracer/timeout의 ELF를 이미 열린 provider FD의 full SHA/identity와 연결한다.
+  [[ $(readlink -e "/proc/$pid/exe") == "$tracer" && $(stamp "/proc/$pid/exe") == "${held_id[$tracer]}" &&
+     $(readlink -e "/proc/$parent/exe") == "$(readlink -e /usr/bin/timeout)" &&
+     $(stamp "/proc/$parent/exe") == "${held_id[$(readlink -e /usr/bin/timeout)]}" ]] || fail 'live launch ELF identity'
+  printf '%s  %s\n' "${held_sha[$tracer]}" "/proc/$pid/exe" \
+    "${held_sha[$(readlink -e /usr/bin/timeout)]}" "/proc/$parent/exe" | sha256sum --check --strict --quiet - || fail 'live launch ELF SHA'
+  /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C /usr/bin/timeout --signal=KILL 5s "$fixture" approve "$launch_dir" \
+    "$active" "$identity" "$(stat -c '%d:%i' "$tracer")" "$(stat -Lc '%d:%i' /usr/bin/timeout)" \
+    "$launch_dir/tracer.argv.nul" "$launch_dir/timeout.argv.nul" "$GITHUB_SHA" "$COLD560_HELPER_SHA256" "${held_sha[$tracer]}" strict "$launch_fault" \
+    > "$launch_dir/approval.stdout" 2> "$launch_dir/approval.stderr" || fail 'fresh launch approval refused'
+  [[ $(stat -c %s "$launch_dir/approval.stdout") -le 4096 && $(stat -c %s "$launch_dir/approval.stderr") -le 4096 &&
+     $(pid_identity "$active") == "$identity" && $(stamp "/proc/$pid/exe") == "${held_id[$tracer]}" ]] || fail 'launch changed before CONT'
+  (set -o noclobber;ulimit -f 4
+    jq -n --arg source "$GITHUB_SHA" --arg helper "$COLD560_HELPER_SHA256" --arg provider "${held_sha[$tracer]}" \
+      --arg request "$record" --arg leader "$active" --arg leader_start "$identity" --arg fault "$launch_fault" \
+      '{schema:1,source:$source,helper_sha256:$helper,provider_sha256:$provider,request:$request,
+        owned_leader:$leader,owned_leader_start:$leader_start,approval_fault:$fault,
+        actual_timeout_parent_and_exact_argv_verified:true,parent_link_observed:false}' > "$launch_dir/binding.json"
+  ) || fail 'bounded launch binding receipt'
+  # ready/argv/approval은 아직 tracee startup 전이다. proc start는 approver가 두 번 대조했다.
+  launch_tracer=$pid;launch_parent=$parent;launch_seen=true
+  kill -CONT "$pid" || fail 'fresh tracer CONT'
+}
+inherited_command() {
+  local label=$1 seconds=$2 expectation=$3 fault=$4 path
+  shift 4
+  local -a saved_env=("${extra_env[@]}")
+  launch_label=$label;launch_fault=$fault;launch_seen=false;launch_tracer=;launch_parent=
+  launch_dir=$out/inheritance/$label
+  mkdir -- "$launch_dir"
+  local value=1
+  [[ $expectation != bad-mode ]] || value=2
+  extra_env+=(COLD560_FILTER_INHERIT="$value" COLD560_LAUNCH_DIR="$launch_dir" COLD560_SOURCE_SHA="$GITHUB_SHA"
+    COLD560_HELPER_SHA="$COLD560_HELPER_SHA256" COLD560_PROVIDER_SHA="${held_sha[$tracer]}")
+  start_owned "$label" "$seconds" "$@"
+  group_quiet "$active" "$active" "$out/logs/$label.group-before-release" || fail 'inherited command live/unknown group'
+  complete_owned "$label"
+  if [[ $expectation == pass ]];then
+    [[ $owned_code == 0 && $launch_seen == true ]] || fail "$label inherited invocation failed"
+    [[ -f $launch_dir/inherit.log && ! -L $launch_dir/inherit.log && $(stat -c '%u:%a:%h' "$launch_dir/inherit.log") == "$(id -u):600:1" &&
+       $(stat -c %s "$launch_dir/inherit.log") -le 16384 ]] || fail 'inherited receipt shape/bound'
+    # 고정 다섯 record와 정상 EOF를 함께 요구한다.
+    awk -v tracer="$launch_tracer" -v parent="$launch_parent" '
+      NR==1 {if($0!="COLD560_INHERIT start schema=1 tracer=" tracer " parent=" parent)bad=1;next}
+      NR==2 {if($0!~/^COLD560_INHERIT root pid=[1-9][0-9]*$/)bad=1;split($3,a,"=");root=a[2];next}
+      NR==3 {if($0!="COLD560_INHERIT root_seccomp pid=" root)bad=1;next}
+      NR==4 {if($0!="COLD560_INHERIT root_exit pid=" root)bad=1;next}
+      NR==5 {if(NF!=8||$1!="COLD560_INHERIT"||$2!="finish"||$3!="root=" root||$4!="root_seccomp=1"||$5!~/^fresh=[0-9]+$/||$6!~/^inherited=[0-9]+$/||$7!="additional_ptrace=0"||$8!="parent_link_observed=0")bad=1;split($5,a,"=");split($6,b,"=");if(a[2]!=b[2]||a[2]<0)bad=1;next}
+      {bad=1} END {if(bad||NR!=5)exit 1}
+    ' "$launch_dir/inherit.log" || fail 'inherited receipt health'
+    for path in "$launch_dir/ready" "$launch_dir/approve" "$launch_dir/inherit.log" "$launch_dir/binding.json" "$launch_dir/approval.stdout" "$launch_dir/tracer.argv.nul" "$launch_dir/timeout.argv.nul";do hold "$path";done
+  else
+    [[ $owned_code == 1 && ! -s $out/logs/$label.stdout && ! -e $launch_dir/inherit.log && ! -L $launch_dir/inherit.log ]] || fail 'negative executed target/accepted context'
+    if [[ $expectation == binding ]];then
+      [[ $launch_seen == true ]] && grep -Fq 'COLD560_INHERIT launch approval' "$out/logs/$label.stderr" || fail 'wrong approval exact error'
+    else
+      [[ $launch_seen == false ]] && grep -Fq 'COLD560_INHERIT unsupported context' "$out/logs/$label.stderr" || fail 'unsupported context exact error'
+    fi
+    [[ ! -s $out/inheritance/$label.exec ]] || fail 'negative has target exec trace'
+  fi
+  extra_env=("${saved_env[@]}");launch_label=;launch_fault=;launch_dir=
+  admit
+}
+inherited_controls() {
+  mkdir "$out/inheritance" "$build/semantic"
+  fixture=$build/semantic/cold560-exec-inheritance
+  run inheritance-fixture-build 60 "$sdk/bin/rustc" --edition=2021 --crate-name cold560_exec_inheritance -C opt-level=2 \
+    "$source/tools/ci/fixtures/cold560_exec_inheritance.rs" -o "$fixture"
+  [[ ! -e $cache && ! -L $cache ]] || fail 'semantic fixture warmed cold cache'
+  bind_elf "$fixture"
+  launch_strip=(-E COLD560_LOG -E COLD560_FILTER_INHERIT -E COLD560_LAUNCH_DIR -E COLD560_SOURCE_SHA -E COLD560_HELPER_SHA -E COLD560_PROVIDER_SHA)
+  local name label receipt
+  local -a options=(--debug --seccomp-bpf -f -qq -s 65535 -v -xx -e trace=execve,execveat)
+  for name in fork vfork thread nonleader execve execveat root-first;do
+    label=inherit-$name;receipt=$out/inheritance/$label/inherit.log
+    (set -o noclobber;printf '%s\0' "${base_env[@]}" > "$out/inheritance/$label.env.nul")
+    extra_env=(COLD560_LOG="$out/inheritance/$label.observer")
+    inherited_command "$label" 20 pass none "$tracer" "${options[@]}" "${launch_strip[@]}" \
+      -o "$out/inheritance/$label.exec" "$fixture" scenario "$name" "$receipt"
+    [[ $(stat -c %s "$out/inheritance/$label.observer") -le 65536 &&
+       $(grep -Ec '^COLD560 finish .* io_error=0 overflow=0$' "$out/inheritance/$label.observer") == 1 ]] || fail 'semantic observer health'
+    case $name in
+      fork|vfork|thread|nonleader) grep -Eq ' fresh=[1-9][0-9]* inherited=[1-9][0-9]* ' "$receipt" || fail 'fresh child detail absent';;
+      root-first) awk 'END {split($5,a,"=");if(a[2]<2)exit 1}' "$receipt" || fail 'root-first descendant coverage';;
+    esac
+    case $name in
+      fork|vfork|root-first) printf 'COLD560_FIXTURE leaf %s\nCOLD560_FIXTURE done %s\n' "$name" "$name";;
+      thread) printf 'COLD560_FIXTURE done thread\n';;
+      *) printf 'COLD560_FIXTURE leaf %s\n' "$name";;
+    esac > "$out/inheritance/$label.stdout.expected"
+    cmp "$out/inheritance/$label.stdout.expected" "$out/logs/$label.stdout" || fail 'semantic exact stdout'
+    hold "$out/inheritance/$label.exec";hold "$out/inheritance/$label.env.nul"
+    extra_env=()
+    run "verify-$label" 10 "$fixture" verify "$out/inheritance/$label.exec" "$name" "$fixture" "$out/inheritance/$label.env.nul" "$receipt"
+    [[ $(grep -Ec '^COLD560_SEMANTIC .+ PASS$' "$out/logs/verify-$label.stdout") == 1 ]] || fail 'semantic exact marker'
+    [[ $name != vfork ]] || grep -Eq ',EVENT_VFORK \([0-9]+\)' "$out/logs/$label.stderr" || fail 'actual VFORK event unobserved (HOLD)'
+    printf '%s\tpositive\tPASS\n' "$name" >> "$out/inheritance/controls.tsv"
+  done
+  # 실제 fresh chain을 먼저 검증한 뒤 승인 한 필드만 오염한다. target stdout/exec는 모두0이다.
+  for name in missing wrong-start wrong-parent wrong-provider;do
+    label=inherit-bind-$name
+    extra_env=(COLD560_LOG="$out/inheritance/$label.observer")
+    inherited_command "$label" 10 binding "$name" "$tracer" "${options[@]}" "${launch_strip[@]}" \
+      -o "$out/inheritance/$label.exec" "$fixture" leaf forbidden
+    printf '%s\tnegative-binding\tPASS\n' "$name" >> "$out/inheritance/controls.tsv"
+  done
+  local -a varied=()
+  for name in bad-mode attach mixed-attach daemon no-bpf no-follow pipe;do
+    label=inherit-context-$name;varied=("${options[@]}")
+    case $name in
+      attach|mixed-attach) varied+=(-p "$$");;
+      daemon) varied+=(-D);;
+      no-bpf) varied=(--debug -f -qq -s 65535 -v -xx -e trace=execve,execveat);;
+      no-follow) varied=(--debug --seccomp-bpf -qq -s 65535 -v -xx -e trace=execve,execveat);;
+    esac
+    extra_env=(COLD560_LOG="$out/inheritance/$label.observer")
+    local output=$out/inheritance/$label.exec
+    [[ $name != pipe ]] || output="|$fixture leaf forbidden"
+    local -a target=("$fixture" leaf forbidden)
+    [[ $name != attach ]] || target=()
+    local expectation=context
+    [[ $name != bad-mode ]] || expectation=bad-mode
+    inherited_command "$label" 10 "$expectation" none "$tracer" "${varied[@]}" "${launch_strip[@]}" -o "$output" "${target[@]}"
+    printf '%s\tnegative-context\tPASS\n' "$name" >> "$out/inheritance/controls.tsv"
+  done
+  extra_env=()
+  [[ $(wc -l < "$out/inheritance/controls.tsv") == 18 && ! -e $cache && ! -L $cache ]] || fail 'inherited controls/count/cold-cache'
+  hold "$out/inheritance/controls.tsv"
+  jq -n --arg source "$GITHUB_SHA" --arg provider "${held_sha[$tracer]}" \
+    '{schema:1,source:$source,provider_sha256:$provider,positive:7,negative_binding:4,negative_context:7,
+      actual_vfork_event_required:true,additional_ptrace_requests:0,parent_link_observed:false,
+      nommu_and_old_seccomp_order_host_controls_run:false,
+      source_bound_fresh_timeout_launch:true,root_fixed:false,nonreproduction_is_fix:false,retirement_credit:0}' > "$out/inheritance/controls.json"
+  hold "$out/inheritance/controls.json";verify_held
+}
+
 start_owned() {
   local label=$1 seconds=$2 leader ready go done release status count end remaining row
   shift 2;phase=$label;admit
@@ -548,10 +696,16 @@ start_owned() {
     sleep 0.01
   done
   [[ -n $identity ]] || fail 'owned leader handshake failed'
+  if [[ $mode == run-inherited && $label == "$launch_label" ]];then
+    (set -o noclobber;printf '%s\0' "$@" > "$launch_dir/tracer.argv.nul") || fail 'tracer argv create-new'
+    (set -o noclobber;printf '%s\0' /usr/bin/timeout --foreground --signal=TERM --kill-after=15s "${seconds}s" /usr/bin/env -i \
+      "${base_env[@]}" "${extra_env[@]}" "$@" > "$launch_dir/timeout.argv.nul") || fail 'timeout argv create-new'
+  fi
   : > "$go";end=$((SECONDS+seconds+20))
   while [[ ! -e $done ]];do
     [[ $(pid_identity "$leader") == "$identity" ]] || fail 'leader disappeared before status'
     ((SECONDS<end)) || fail 'owned command deadline'
+    if [[ $mode == run-inherited && $label == "$launch_label" ]];then approve_launch;fi
     admit || fail 'resource guard failed'
     sleep 0.5
   done
@@ -664,6 +818,13 @@ for path in "$CI_PREPARED_RUST_MANIFEST" "$job/proof/index-before.bin" "$job/pro
 patchfile=$source/tools/ci/fixtures/strace-6.8-560-observer.patch
 printf '%s  %s\n' "${COLD560_PATCH_SHA256:?}" "$patchfile" | sha256sum --check --strict --quiet -
 hold "$patchfile";cp "$patchfile" "$out/inputs/observer.patch"
+if [[ $mode == run-inherited ]];then
+  inherited_patch=$source/tools/ci/fixtures/strace-6.8-560-inherited-filter.patch
+  fixture_source=$source/tools/ci/fixtures/cold560_exec_inheritance.rs
+  printf '%s  %s\n' "${COLD560_INHERITED_PATCH_SHA256:?}" "$inherited_patch" "${COLD560_FIXTURE_SHA256:?}" "$fixture_source" | sha256sum --check --strict --quiet -
+  hold "$inherited_patch";hold "$fixture_source"
+  cp "$inherited_patch" "$out/inputs/inherited-filter.patch"
+fi
 printf '%s  %s\n' 28f957c227012de0b18d1bd7fff2d396cb693ea60ed8013be68de071e84b5001 /usr/bin/strace | sha256sum --check --strict --quiet -
 add_tree source "$source";add_tree sdk "$sdk";add_tree headers /usr/include;add_tree gcc /usr/lib/gcc/x86_64-linux-gnu
 add_tree perl-source /usr/share/perl;add_tree dpkg-perl /usr/share/perl5
@@ -712,6 +873,12 @@ printf '%s  %s\n' 0d8c5449b011a8cd16f0b5d0864f57fa633867876682270fee294390bb0e62
 run observer-patch 30 /usr/bin/patch --directory="$native" --batch --fuzz=0 --no-backup-if-mismatch -p1 --input="$patchfile"
 printf '%s  %s\n' 41b9dffd742377a76215b75c6a9b1a76d63483493dca2afb50bac87e8877d777 "$native/src/syscall.c" \
   07397b01bc0bcea2c58aa4a8b5a1cfe71778f929934529155a7c35ae55cbd638 "$native/src/strace.c" | sha256sum --check --strict --quiet -
+if [[ $mode == run-inherited ]];then
+  run inherited-patch 30 /usr/bin/patch --directory="$native" --batch --fuzz=0 --no-backup-if-mismatch -p1 --input="$inherited_patch"
+  printf '%s  %s\n' ef7b41e35c2cdc4ddf3b7c74348e9e36d298f4e6dd137f20f1e42054802dd75b "$native/src/strace.c" \
+    41b9dffd742377a76215b75c6a9b1a76d63483493dca2afb50bac87e8877d777 "$native/src/syscall.c" \
+    8073129838f921c5c0286c3c6cc0bebf7832b04f476340114ea25e5c8216c4a1 "$native/src/filter_seccomp.c" | sha256sum --check --strict --quiet -
+fi
 cp "$native/COPYING" "$out/licenses/COPYING";cp "$native/LGPL-2.1-or-later" "$out/licenses/LGPL-2.1-or-later"
 cp "$native/debian/copyright" "$out/licenses/debian.copyright";cp "$native/bundled/linux/COPYING" "$out/licenses/linux.COPYING"
 cp "$native/debian/rules" "$out/inputs/debian.rules"
@@ -740,10 +907,16 @@ cp "$build/native-build/src/config.h" "$out/inputs/config.h"
 tracer=$build/native-build/src/strace
 [[ -x $tracer && ! -L $tracer && $(readlink -e "$tracer") == "$tracer" ]]
 bind_elf "$tracer"
+if [[ $mode == run-inherited ]];then inherited_controls;fi
 [[ ! -e $cache && ! -L $cache ]] || fail 'cold cache was prepared before observation'
 extra_env=(COLD560_LOG="$out/observer.log" OPENPILOT_CI_PREPARED_RUST_ROOT="$sdk" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST")
+if [[ $mode == run-inherited ]];then
+  inherited_command cold 420 pass none "$tracer" --debug --seccomp-bpf -f -qq -s 65535 -e trace=execve,execveat "${launch_strip[@]}" \
+    -o "$job/proof/prepared-cold-bootstrap.exec" "$source/rust/tools/check-disk-space" --path "$source" --growth-mib 2048
+else
 run cold 420 "$tracer" --debug --seccomp-bpf -f -qq -s 65535 -e trace=execve,execveat -E COLD560_LOG \
   -o "$job/proof/prepared-cold-bootstrap.exec" "$source/rust/tools/check-disk-space" --path "$source" --growth-mib 2048
+fi
 extra_env=()
 [[ $(stat -c '%u:%a:%h' "$out/observer.log") == "$(id -u):600:1" && $(stat -c %s "$out/observer.log") -le 65536 ]]
 awk '

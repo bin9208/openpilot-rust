@@ -269,3 +269,56 @@ source/SDK/provider/owned 회수·strict audit/unknown 실패를 유지한다. �
 새 ELF는 source-instrumented diagnostic provider이며 system Ubuntu ELF와 동일하다고 하지 않는다.
 로컬은 고정 source/Bash/YAML/diff만 확인했고 build/옵션 적용/실제 ptrace 관측은 Actions UNRUN이다.
 이 변경 자체는 #560 syscall/errno 원인의 해결이나 원본 제거 credit이 아니다.
+
+## 닫힌 fresh-root 상속 후보 — 명시 mode, 아직 GHA UNRUN
+
+새 helper 입구는 `run-inherited`다. 기존 `admit`, `run`, `final-source`와 observer patch는
+유지한다. `run`은 여전히 기존 observer-only source를 build한다. `run-inherited`만 observer
+postimage `07397b01bc0bcea2c58aa4a8b5a1cfe71778f929934529155a7c35ae55cbd638` 뒤에
+`strace-6.8-560-inherited-filter.patch`를 fuzz0으로 적용하며, syscall.c와 filter_seccomp.c의
+원래 postimage SHA를 다시 검사한다. 새 patch는 provider의 상태 결정을 바꾸는 후보이며
+Ubuntu 배포 ELF와 동일하거나 이미 root가 해결됐다는 기록이 아니다.
+
+환경변수1개나 nprocs0/PPID만으로 launch를 수용하지 않는다. 원래 `start_owned`의 fresh
+`setsid Bash → timeout → env -i → 직접 private provider` 경로에서 provider가 target startup
+전에 owned0700 디렉터리의 `ready`를 create_new로 쓰고 SIGSTOP한다. std-only native fixture의
+제한된 metadata 명령이 실제 tracer T상태/PID/startticks/PGID/session, timeout 부모와 owned
+leader/startticks, 두 ELF dev/ino, timeout과 tracer의 정확 NUL argv를 대조한다. helper도 실제
+`/proc/PID/exe`를 기존 held provider/timeout FD의 identity·전체 SHA에 대조한다. 현재 sourceSHA와
+helper/provider SHA에 일치하는 승인만 create_new로 발행하고 CONT한다. provider는 승인 FD를
+NOFOLLOW|NONBLOCK으로 열어 전후 FD/path identity·원문과 자기/부모 start 및 exe를 다시 검사한다.
+이 source-bound launcher 외 임의 기존 프로세스의 ptrace 관계를 승인하는 일반 입구가 아니다.
+
+새 mode는 attach/mixed attach, daemonize, NOMMU, 오래된 seccomp event 순서, no-bpf, no-follow,
+username, syscall-limit/detach, pipe output과 기존 output을 target startup 전에 거부한다. root의
+**실제 첫 SECCOMP**를 관측한 뒤에만 auto-follow로 새로 할당하는 TCB에 원래 filter flag를 준다.
+이 latch는 root 종료 뒤에도 유지하며 nonleader exec의 기존 TCB 교체는 바꾸지 않는다.
+추가 ptrace 요청0이며 실제 parent-event linkage를 관측했다는 뜻은 아니다. 원래 BPF 생성/filter,
+execve·execveat 선택, quiet/default 경로, GETINFO 반환/errno/실패 buffer 처리와 strict unknown
+거부를 바꾸지 않는다. mode가 없을 때의 삽입은 비활성 분기로 한정하고 원래 source로의 역투영을
+확인한다. 기존 observer64KiB/schema는 그대로이며 별도 `inherit.log`는16KiB 상한이다.
+
+GHA 전용 통제는 양성7개(`fork`, `vfork`, `thread`, `nonleader`, `execve`, `execveat`,
+`root-first`)와 음성11개(승인 누락/start/부모/provider4개, mode값/attach/mixed attach/daemon/
+no-bpf/no-follow/pipe7개)다. execve/execveat 양성은 ENOENT 실패 시도와 성공을 각각 원문에서
+검사한다. 정상 recipe의 모든 선택 exec는 고정 absolute path·argv·env·결과와 정확 개수를 비교하며
+생략/잘못된 resume/PID·unknown·잘린 EOF는 통과시키지 않는다. nonleader의 원래 strace PID 교체
+문법은 그 recipe와 initial PID·pending exec의 일치에만 한정한다. root-first 자손은 tracer의 실제
+root_exit record를 확인한 뒤에만 다음 fork를 수행한다. 일반 프로세스 생성 의미를 새 parser로
+수용한 것은 아니며 기존 cold strict auditor는 수정하지 않는다.
+
+`vfork()`를 Rust extern FFI로 직접 부르지 않는다. std::process::Command가 선택한 경로의
+**actual `EVENT_VFORK` debug 원문**이 있을 때만 해당 통제를 수용한다. libc/host가 그 경로를
+선택하지 않으면 HOLD 사유로 FAIL하며 이름만으로 vfork 성공을 쓰지 않는다. NOMMU와 옛 event
+순서는 현재 host의 실제 양음성 통제로 검증했다고 하지 않는다. fixture는 SDK rustc로 직접
+build하고 Cargo/원래 diskguard cache를 준비하지 않는다. 통제 뒤에만 원래 fresh cold1회와
+현재 strict audit를 실행한다. 전체1200초/각 cold420초/audit60초와 기존 용량·FS별 admission,
+FD/DSO·source/SDK 전후 봉인·소유 PGID 회수·최종 실패·upload/cleanup 조건은 유지한다.
+
+부모 연결에는 새 mode argv, `COLD560_INHERITED_PATCH_SHA256`, `COLD560_FIXTURE_SHA256` 및 현재
+helper literal 갱신이 필요하다. 별도 통제 receipt `inheritance/controls.json`의7/4/7 정확 수와
+18행 PASS, cold의 실제 root_seccomp·held 승인 receipt를 보존해야 한다. 기존 outcome schema1은
+그대로이며 `passed`는 새 통제와 기존 strict audit 모두 통과해야 true가 된다. parent linkage,
+all-adopted reap/DSO closure/root-fixed/비재현=해결/retirement credit은 승격하지 않는다.
+로컬은 Bash 문법·Rustfmt·text postimage/역투영·diff만 확인한다. patch 적용/C·Rust compile,
+fixture/프로젝트/CLI/Actions 실행은0이며 실제 적합성과 성능은 아직 UNRUN이다.

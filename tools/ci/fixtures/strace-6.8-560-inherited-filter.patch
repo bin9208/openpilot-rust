@@ -1,0 +1,221 @@
+--- a/src/strace.c
++++ b/src/strace.c
+@@ -2238,0 +2239,181 @@
++/* #560 private closed-launch candidate, not a general strace birth policy. */
++static bool c560_inherit, c560_root_seen;
++static pid_t c560_tracer, c560_root;
++static unsigned long c560_fresh, c560_inherited;
++static int c560_log = -1;
++static size_t c560_log_bytes;
++
++static void
++c560_record(const char *format, ...)
++{
++	const int saved_errno = errno;
++	char text[512];
++	va_list ap;
++	va_start(ap, format);
++	int n = vsnprintf(text, sizeof(text), format, ap);
++	va_end(ap);
++	if (n <= 0 || (size_t) n >= sizeof(text) ||
++	    c560_log_bytes + (size_t) n > 16384 ||
++	    write(c560_log, text, n) != n)
++		error_msg_and_die("COLD560_INHERIT receipt write/bound");
++	c560_log_bytes += n;
++	errno = saved_errno;
++}
++
++static void
++c560_finish(void)
++{
++	if (getpid() != c560_tracer || c560_log < 0)
++		return;
++	c560_record("COLD560_INHERIT finish root=%ld root_seccomp=%u "
++		    "fresh=%lu inherited=%lu additional_ptrace=0 "
++		    "parent_link_observed=0\n", (long) c560_root,
++		    (unsigned int) c560_root_seen, c560_fresh, c560_inherited);
++	if (close(c560_log))
++		_exit(1);
++	c560_log = -1;
++}
++
++static unsigned long long
++c560_start(pid_t pid)
++{
++	char name[64], text[4096], *tail, *save, *field;
++	snprintf(name, sizeof(name), "/proc/%ld/stat", (long) pid);
++	int fd = open(name, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC);
++	ssize_t n = fd < 0 ? -1 : read(fd, text, sizeof(text) - 1);
++	if (fd >= 0)
++		close(fd);
++	if (n <= 0 || n == sizeof(text) - 1)
++		error_msg_and_die("COLD560_INHERIT proc stat");
++	text[n] = '\0';
++	tail = strrchr(text, ')');
++	if (!tail || tail[1] != ' ')
++		error_msg_and_die("COLD560_INHERIT proc stat shape");
++	field = strtok_r(tail + 2, " ", &save);
++	for (unsigned int i = 0; i < 19 && field; ++i)
++		field = strtok_r(NULL, " ", &save);
++	if (!field || !*field || strspn(field, "0123456789") != strlen(field))
++		error_msg_and_die("COLD560_INHERIT proc start");
++	errno = 0;
++	unsigned long long value = strtoull(field, &tail, 10);
++	if (errno || *tail || !value)
++		error_msg_and_die("COLD560_INHERIT proc start range");
++	return value;
++}
++
++static void
++c560_exe(pid_t pid, struct stat *st)
++{
++	char name[64];
++	snprintf(name, sizeof(name), "/proc/%ld/exe", (long) pid);
++	if (stat(name, st) || !S_ISREG(st->st_mode))
++		error_msg_and_die("COLD560_INHERIT proc exe");
++}
++
++static const char *
++c560_hexenv(const char *name, size_t length)
++{
++	const char *value = getenv(name);
++	if (!value || strlen(value) != length ||
++	    strspn(value, "0123456789abcdef") != length)
++		error_msg_and_die("COLD560_INHERIT binding value");
++	return value;
++}
++
++static void
++c560_context(int argc)
++{
++	const char *value = getenv("COLD560_FILTER_INHERIT");
++	if (!value)
++		return;
++	if (strcmp(value, "1") || !argc || nprocs || !followfork ||
++	    !seccomp_filtering || seccomp_before_sysentry || !use_seize ||
++	    daemonized_tracer || NOMMU_SYSTEM || username || detach_on_execve ||
++	    syscall_limit > 0 || !outfname || outfname[0] != '/')
++		error_msg_and_die("COLD560_INHERIT unsupported context");
++	struct stat st;
++	if (!lstat(outfname, &st) || errno != ENOENT)
++		error_msg_and_die("COLD560_INHERIT output must be absent");
++	c560_inherit = true;
++}
++
++static void
++c560_launch(void)
++{
++	if (!c560_inherit)
++		return;
++	const char *path = getenv("COLD560_LAUNCH_DIR");
++	char canonical[PATH_MAX], expected[1024], approved[1024];
++	struct stat dir, exe, parent, ready, before, after;
++	if (!path || path[0] != '/' || !realpath(path, canonical) ||
++	    strcmp(path, canonical))
++		error_msg_and_die("COLD560_INHERIT launch directory");
++	int dfd = open(path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
++	if (dfd < 0 || fstat(dfd, &dir) || dir.st_uid != getuid() ||
++	    (dir.st_mode & 0777) != 0700)
++		error_msg_and_die("COLD560_INHERIT private launch directory");
++	c560_tracer = getpid();
++	pid_t ppid = getppid();
++	unsigned long long start = c560_start(c560_tracer), pstart = c560_start(ppid);
++	c560_exe(c560_tracer, &exe);
++	c560_exe(ppid, &parent);
++	int n = snprintf(expected, sizeof(expected),
++		"COLD560_LAUNCH 1 %ld %llu %llu %llu %ld %llu %llu %llu %s %s %s\n",
++		(long) c560_tracer, start, (unsigned long long) exe.st_dev,
++		(unsigned long long) exe.st_ino, (long) ppid, pstart,
++		(unsigned long long) parent.st_dev, (unsigned long long) parent.st_ino,
++		c560_hexenv("COLD560_SOURCE_SHA", 40),
++		c560_hexenv("COLD560_HELPER_SHA", 64),
++		c560_hexenv("COLD560_PROVIDER_SHA", 64));
++	int fd = openat(dfd, "ready", O_WRONLY | O_CREAT | O_EXCL |
++			O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC, 0600);
++	if (n <= 0 || (size_t) n >= sizeof(expected) || fd < 0 ||
++	    fstat(fd, &ready) || !S_ISREG(ready.st_mode) ||
++	    ready.st_uid != getuid() || ready.st_nlink != 1 ||
++	    (ready.st_mode & 0777) != 0600 || write(fd, expected, n) != n || close(fd))
++		error_msg_and_die("COLD560_INHERIT ready create");
++	if (raise(SIGSTOP))
++		error_msg_and_die("COLD560_INHERIT stop");
++	/* Only the held-source fresh timeout launcher may approve this STOP. */
++	fd = openat(dfd, "approve", O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC);
++	if (fd < 0 || fstat(fd, &before) || !S_ISREG(before.st_mode) ||
++	    before.st_uid != getuid() || before.st_nlink != 1 ||
++	    (before.st_mode & 0777) != 0600 || before.st_size != n ||
++	    read(fd, approved, sizeof(approved)) != n || memcmp(expected, approved, n) ||
++	    fstat(fd, &after) || before.st_dev != after.st_dev ||
++	    before.st_ino != after.st_ino || before.st_size != after.st_size ||
++	    before.st_mtime != after.st_mtime || before.st_ctime != after.st_ctime ||
++	    before.st_mtim.tv_nsec != after.st_mtim.tv_nsec ||
++	    before.st_ctim.tv_nsec != after.st_ctim.tv_nsec || after.st_nlink != 1 ||
++	    fstatat(dfd, "approve", &ready, AT_SYMLINK_NOFOLLOW) ||
++	    ready.st_dev != before.st_dev || ready.st_ino != before.st_ino ||
++	    ready.st_mode != before.st_mode || ready.st_uid != before.st_uid ||
++	    ready.st_size != before.st_size || ready.st_nlink != 1 ||
++	    ready.st_mtim.tv_sec != before.st_mtim.tv_sec ||
++	    ready.st_mtim.tv_nsec != before.st_mtim.tv_nsec ||
++	    ready.st_ctim.tv_sec != before.st_ctim.tv_sec ||
++	    ready.st_ctim.tv_nsec != before.st_ctim.tv_nsec || close(fd) ||
++	    getppid() != ppid || c560_start(c560_tracer) != start ||
++	    c560_start(ppid) != pstart)
++		error_msg_and_die("COLD560_INHERIT launch approval");
++	if (stat(path, &ready) || ready.st_dev != dir.st_dev ||
++	    ready.st_ino != dir.st_ino || ready.st_uid != dir.st_uid ||
++	    ready.st_mode != dir.st_mode)
++		error_msg_and_die("COLD560_INHERIT launch directory changed");
++	c560_exe(c560_tracer, &after);
++	c560_exe(ppid, &ready);
++	if (after.st_dev != exe.st_dev || after.st_ino != exe.st_ino ||
++	    ready.st_dev != parent.st_dev || ready.st_ino != parent.st_ino)
++		error_msg_and_die("COLD560_INHERIT launch executable changed");
++	c560_log = openat(dfd, "inherit.log", O_WRONLY | O_CREAT | O_EXCL |
++			  O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC, 0600);
++	if (c560_log < 0 || fstat(c560_log, &after) || !S_ISREG(after.st_mode) ||
++	    after.st_uid != getuid() || after.st_nlink != 1 ||
++	    (after.st_mode & 0777) != 0600 || close(dfd))
++		error_msg_and_die("COLD560_INHERIT receipt create");
++	c560_record("COLD560_INHERIT start schema=1 tracer=%ld parent=%ld\n",
++		    (long) c560_tracer, (long) ppid);
++	if (atexit(c560_finish))
++		error_msg_and_die("COLD560_INHERIT atexit");
++}
++
+@@ -3016,0 +3198,2 @@
++	c560_context(argc);
++
+@@ -3097,0 +3281 @@
++		c560_launch();
+@@ -3098,0 +3283,7 @@
++		if (c560_inherit) {
++			c560_root = strace_child;
++			if (c560_root <= 0)
++				error_msg_and_die("COLD560_INHERIT root missing");
++			c560_record("COLD560_INHERIT root pid=%ld\n",
++				    (long) c560_root);
++		}
+@@ -3295,0 +3487,2 @@
++		if (c560_inherit)
++			error_msg_and_die("COLD560_INHERIT unknown terminal PID");
+@@ -3312,0 +3506,2 @@
++		if (c560_inherit && !c560_root_seen)
++			error_msg_and_die("COLD560_INHERIT child before root SECCOMP");
+@@ -3313,0 +3509,5 @@
++		if (c560_inherit) {
++			++c560_fresh;
++			tcp->flags |= TCB_SECCOMP_FILTER;
++			++c560_inherited;
++		}
+@@ -3428,0 +3629,2 @@
++	if (c560_inherit && pid == c560_root)
++		c560_record("COLD560_INHERIT root_signalled pid=%ld\n", (long) pid);
+@@ -3447,0 +3650,2 @@
++	if (c560_inherit && pid == c560_root)
++		c560_record("COLD560_INHERIT root_exit pid=%ld\n", (long) pid);
+@@ -3937,0 +4142,5 @@
++		if (c560_inherit && current_tcp->pid == c560_root && !c560_root_seen) {
++			c560_root_seen = true;
++			c560_record("COLD560_INHERIT root_seccomp pid=%ld\n",
++				    (long) c560_root);
++		}

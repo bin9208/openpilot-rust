@@ -503,6 +503,8 @@ jobs:
             .github/workflows/python-rust-523-cold-tracer.yml) ;;
             tools/ci/cold_tracer_diagnostic_560.sh) ;;
             tools/ci/fixtures/strace-6.8-560-observer.patch) ;;
+            tools/ci/fixtures/strace-6.8-560-inherited-filter.patch) ;;
+            tools/ci/fixtures/cold560_exec_inheritance.rs) ;;
             rust/crates/dev-tools/tests/ci_artifact_list.rs) ;;
             rust/crates/dev-tools/tests/ci_disk_bootstrap/workflow_roles.rs) ;;
             rust/crates/dev-tools/src/ui_diagnostic_reference.rs) ;;
@@ -543,9 +545,11 @@ jobs:
         printf '%s  %s\n' b127a4a5105a11be26b34ffd05e892c8b5c4965daf54b3ca62202ca860a19ade rust/crates/dev-tools/src/ui_diagnostic_reference.rs | sha256sum --check -
         printf '%s  %s\n' 0f00b918cee943df42166c4314a1196b6b6c27427df7c3272e9642c47a072e28 rust/crates/dev-tools/tests/ci_disk_bootstrap/workflow_roles.rs | sha256sum --check -
         printf '%s  %s\n' 22cd90b18133848d44940066dd9643ce6f2d88b612b0e97c4da52a51adeab125 rust/crates/dev-tools/tests/ci_artifact_list.rs | sha256sum --check -
-        printf '%s  %s\n' 8dbd94e9f7593d3eb829a92418a8d5e0c077a8f6fe00533b84d5676ac942dbf4 .github/workflows/python-rust-523-cold-tracer.yml | sha256sum --check -
-        printf '%s  %s\n' af0c460406e8fc9580dc651ab3935bc0d8f28f1dbf679c8a6a49ebbf3bbcad43 tools/ci/cold_tracer_diagnostic_560.sh | sha256sum --check -
+        printf '%s  %s\n' a26270c744cb06d18261604eb8677195346f5c4ee6b49eb2ef047a4fbe7fc9ef .github/workflows/python-rust-523-cold-tracer.yml | sha256sum --check -
+        printf '%s  %s\n' 19f16a843af707b86728f975d5a8bbc87b3346444fa3a1b9767bc357aee3ba74 tools/ci/cold_tracer_diagnostic_560.sh | sha256sum --check -
         printf '%s  %s\n' b32a9508ded464e5c08b22444064ba2de300b0373e0bce643974f4e21775d51a tools/ci/fixtures/strace-6.8-560-observer.patch | sha256sum --check -
+        printf '%s  %s\n' 62be9fd4960295fe04784f7021b3d9ea608ac21dbd524791327e873aa22ecdac tools/ci/fixtures/strace-6.8-560-inherited-filter.patch | sha256sum --check -
+        printf '%s  %s\n' e92f1b3e0f7b1f437661dbd2acf205ba5a7060a893aa74ded06e889c7479823e tools/ci/fixtures/cold560_exec_inheritance.rs | sha256sum --check -
         printf '%s  %s\n' 68f0f800ef5fbb456a06986a8695a5c3aaa2cbdf86160b47826e913edd792f85 .github/workflows/carrot-route-vault-publish.yaml | sha256sum --check -
         printf '%s  %s\n' 50e86403dd521a54dc166d160ad6f5720fdb4d5905c1deb2fd960a1c6ff82958 .github/workflows/fast-checks.yml | sha256sum --check -
         printf '%s  %s\n' ada137e1a1bbe957903a930c49dc5496f5d685193b8d09970accd90f632c2a0c .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
