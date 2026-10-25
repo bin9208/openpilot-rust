@@ -359,12 +359,16 @@ jobs:
           --no-default-features -p openpilot-dev-tools --test planner_ci_policy --test release_files
         grep -F 'test result: ok. 21 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-policy.log" || failed=1
         grep -F 'test result: ok. 3 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-policy.log" || failed=1
+        run_once carrot-sdk-policy "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --test ci_rust_isolation \
+          carrot_x64_cold_bootstrap_rejects_partial_sdk_proxy_and_cleanup_escapes -- --exact
+        grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/carrot-sdk-policy.log" || failed=1
         run_once registered-sdk-policy "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-dev-tools --test ci_disk_bootstrap \
           prepared_audit::prepared_audit_admits_only_registered_local_sdk_and_private_tool_homes -- --exact
         grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/registered-sdk-policy.log" || failed=1
         run_once planner-policy-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
-          --no-default-features -p openpilot-dev-tools --test planner_ci_policy --test release_files --test ci_disk_bootstrap -- -D warnings
+          --no-default-features -p openpilot-dev-tools --lib --test planner_ci_policy --test release_files --test ci_disk_bootstrap --test ci_rust_isolation -- -D warnings
             ;;
           *) echo "unknown native crate" >&2; exit 1 ;;
         esac
@@ -493,4 +497,4 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: ${{ fromJSON(inputs.crate == 'control' && '["control"]' || inputs.crate == 'model' && '["model"]' || inputs.crate == 'tools' && '["tools"]' || inputs.crate == 'buffers' && '["buffers"]' || inputs.crate == 'planner' && '["planner"]' || '["control","model","tools","buffers","planner"]') }}
+        crate: ${{ fromJSON(inputs.crate == 'all' && '["control","model","tools","buffers","planner"]' || inputs.crate == 'control' && '["control"]' || inputs.crate == 'model' && '["model"]' || inputs.crate == 'buffers' && '["buffers"]' || inputs.crate == 'planner' && '["planner"]' || '["tools"]') }}

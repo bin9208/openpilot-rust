@@ -171,3 +171,14 @@ PR Fast40171299893/job121102496420도 같은 whole-job 검사에서 실패했다
 독립 감사의 artifact7은 총293CRC/전개41,200,268B이며 모든 source/index/SDK 전후5쌍과
 실패 후 source/job cleanup이 동일/성공이었다. 이 결과로 전체 Fast나 main ARM8 기능 성공을 주장하지 않는다.
 실제 수정 후 기능 결과는 GHA 대기다.
+
+## CarrotMan x64 초기 shim 단계의 실제 선행 충돌 — 2026-10-26
+
+source126fdbea36598566d1040be0a35a365c909be4e4의
+[Rust40209691630/job121222236242](https://github.com/bin9208/openpilot-rust/actions/runs/40209691630/job/121222236242)에서 공통 `Expose provisioned Rust shims`가 실제 Rustup1.29.1 복원을 실행했고, 이후 새 SDK 준비는 정확 line7의 `[[ ! -e $path && ! -L $path ]]`에서 실패했다. 부분 prefix 생성 전 최초 관측과 fresh 거부의 순서가 확인됐다. 이 로그만으로 loop의 어느 prefix가 최초 거부됐는지까지 단정하지 않는다. 이전 source301f의 출력 없는 실패 전부를 이 단일 관측으로 소급 확정하지 않는다.
+
+후보는 CarrotMan job의 공통 shim 단계 한 개를 fresh SDK 준비 뒤로 옮긴다. 준비 단계는 기존의 빈 prefix·공식 init/whole SDK·proxy checksum·RUSTUP_AUTO_INSTALL=0 검증을 모두 유지한다. 준비가 내보낸 private CARGO_HOME/bin을 후속 shim 발견이 읽으므로 먼저 부분 설치를 만드는 순서를 피한다. 공통 action 코드나 다른43개 job/native ARM8·기능 run 본문·타이머·예산은 바꾸지 않는다. YAML alias `*B`의 실제 항목만6→11로 이동했고, 본문/다른 job 전체 구조 동일성과499477B 한도를 source로 확인했다.
+
+shared policy는 legacy shim 발견이 fresh SDK보다 앞서면 거부한다. 기존 cold/proxy/cleanup 음성12개에 앞선 installer 재삽입1개를 추가해13개로 보강했다. local 집중 tools role에서 해당 기존 selector1개와 strictClippy를 연결한다. source/문법/서식 검토만 수행했고 실제 fresh 준비·runtime/ARM/PR·SDK 후검증은 GHA 대기다. #530을 닫거나 기준을 낮추지 않는다.
+
+부모는 필요한 실제 x64 검증을43개 무관 job과 분리하기 위해 `python-rust-523-carrot-sdk.yml`을 추가했다. 현재 main의 CarrotMan job·global env·모든 기능/SDK/cap/기한/후검사/회수 객체는 동일하며, checkout 뒤 main workflow 전체 SHA를 확인하는 host read-only 단계 하나만 추가한다. 따라서 다른 main 원문으로 오래된 복사본을 실행해 수용할 수 없다. 신규 파일 변경 시에만 branch 검사를 실행하며, 기존 PR의 실제 필수 Rust/ARM·통합 검사를 대체하지 않는다. 실제 GITHUB_WORKFLOW_REF는 새 workflow 경로로 기록하고 원래 PR 실행이라고 위장하지 않는다. 현재 기능 GHA는 미실행이다.

@@ -1321,3 +1321,9 @@ source126의 등록 local tools job121217757597에서 Planner 구조21/release3�
 Fast local routing40209583336/job121217757300도 strict cold trace의157행 `???( <detached ...>`를 거부했다. artifact12605218513은626538B/SHA256 `434a226361dd588f9e7ba1acad539284617cf44d3b6009e01c2ad51d2f85f79a`,66 unique/safe/CRC를 확인했다. 실제 local kernel7.0.2-6-pve/strace6.8이며 플랫폼 변경만으로 #560이 해결되지 않았다. 별도 patched observer의 성공을 maintained Fast 성공으로 대체하지 않고 producer 연결을 검토한다. 전체 Fast는 실패, source126 Focus40209583375와 user-docs40209691291은 성공, 필수 Rust/통합은 별도 상태다.
 
 추가 실행 원장은148개(26교체/118대기/1기존native/2비실행/1제거)다. 새 compiler/Planner 원본 비교, Python adapter 회귀 및 native controller의 기존12 Python leaf 호출을 모두 pending으로 등록했다. baseline3580=294/3/3283과 전체 전환·전달·사용자 실기 미완료는 유지한다. 로컬 기능/모델/원본 실행은0회다.
+
+### #530의 확인된 초기 단계 순서 수정 후보
+
+source126의 필수 Rust40209691630/job121222236242는 실제 legacy Rustup shim 복원 뒤 fresh SDK의 line7에서 중단됐다. 기존 비어 있어야 할 prefix를 채택·수리하지 않고, CarrotMan 한 job의 동일 shim 발견 항목만 fresh 준비 뒤로 옮긴다. 원래 preparation/후검사 body·실행물 checksum·자동설치 금지·기능/ARM·예산/기한은 같다. policy는 선행 legacy 발견을 거부하고 기존 SDK escape12에 재삽입1을 더한다. 이 변경은 실제 기능 GHA 대기이며 #530은 열린 상태다.
+
+sourceDD의 신규 buffers/planner 단위는 이미 각 독립 role에 배정했다. 다음 workflow 변경의 자동 push는 필요한 tools role만 선택하며 다른 불변 성공을 일괄 반복하지 않는다. 수동 선택의 all/control/model/buffers/planner와 기존 필수 PR/Fast/통합은 유지한다. 이 추가 tools에는 Carrot SDK selector1 및 library/해당 target의 엄격Clippy를 연결한다.

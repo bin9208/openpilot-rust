@@ -522,7 +522,7 @@ fn carrot_x64_cold_bootstrap_rejects_partial_sdk_proxy_and_cleanup_escapes() {
     use openpilot_dev_tools::ci_policy::validate_private_job_layout;
     let original = workflow()["jobs"]["carrot-man-runtime"].clone();
     validate_private_job_layout(&original).unwrap();
-    for mode in 0..12 {
+    for mode in 0..13 {
         let mut job = original.clone();
         let steps = job["steps"].as_array_mut().unwrap();
         let before = steps
@@ -585,12 +585,20 @@ fn carrot_x64_cold_bootstrap_rejects_partial_sdk_proxy_and_cleanup_escapes() {
                 assert_eq!(condition.matches(needle).count(), 1);
                 step["if"] = condition.replace(needle, "").into();
             }
-            _ => {
+            11 => {
                 let seal = steps
                     .iter()
                     .position(|s| s["id"] == "ci296_source_seal")
                     .unwrap();
                 steps.swap(after, seal);
+            }
+            _ => {
+                steps.insert(before, serde_json::json!({
+                    "name":"Expose provisioned Rust shims",
+                    "if":TRUSTED_SOURCE,
+                    "uses":"bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2",
+                    "env":{"CI296_HOST_CONTROL":"1"}
+                }));
             }
         }
         assert!(

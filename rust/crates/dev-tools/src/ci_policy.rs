@@ -343,6 +343,14 @@ fn validate_carrot_x64_sdk530_steps(steps: &[Value]) -> Result<(), String> {
     };
     let (before, first) = stage("carrot530_sdk")?;
     let (after, last) = stage("carrot530_sdk_final")?;
+    require(
+        !steps[..before].iter().any(|step| {
+            step["uses"]
+                .as_str()
+                .is_some_and(|action| action.contains("/.github/actions/rust-path"))
+        }),
+        "CarrotMan fresh SDK must precede legacy shim discovery",
+    )?;
     for (step, name, condition, digest) in [
         (
             first,
