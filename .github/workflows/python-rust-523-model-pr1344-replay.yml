@@ -8,6 +8,7 @@ name: Python Rust 523 same-VM PR1344 whole triplet and first-packet diagnostic
     - tools/ci/model_pr1344_replay_482.py
     - rust/crates/model-runtime/src/cpu/diagnostic_482_pr1344.rs
     - rust/crates/model-runtime/src/cached_isa.rs
+    - rust/crates/model-runtime/src/bin/offline-qcom-compile.rs
     - rust/crates/dev-tools/tests/driving_daemon_retirement/model_482_pr1344.rs
 permissions:
   contents: read

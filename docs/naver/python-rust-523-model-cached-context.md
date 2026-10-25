@@ -364,3 +364,91 @@ Cargo/build/test/Clippy 및 CI dispatch/cancel은 로컬에서 실행하지 않�
 pins와 publication을 통합한다. git stage/commit/push는 하지 않았다. native C의 실제12출력
 수용은 아직 미완료이며, 이후 native C 알고리즘 수정이 필요하면 먼저 실제 원인과 scope를
 보고한다. 이 변경으로 full128/full-model 또는 retirement 수용을 주장하지 않는다.
+
+## actual602 감사 — C copy 미도달, QCOM bin-test Clippy가 최초 실패
+
+2026-10-26. source `602040b066e37487feb0595a09c8460023bf755e`,
+[run40244158586/job121322096232](https://github.com/bin9208/openpilot-rust/actions/runs/40244158586/job/121322096232).
+이미 완료된 failure를 원시 job API/log와 artifact로 감사했다. 실제 CPU는
+Intel Xeon Platinum8573C/logical4다. CPU 이름만으로 아직 실행하지 않은 ISA/모델 수용을
+추정하지 않는다. 발행 helper379507…/기존 진단103f…/새 C module d9c1…/production #596
+f696…의 source SHA는 위 인계값과 같다.
+
+### 실제 단계별 상태
+
+| 범위 | 실제 상태 |
+| --- | --- |
+| current-bins | exit0/17.183590초; 기존3개 binary 선택·hold |
+| current-libtest | exit0/6.166915초; lib test ELF build 성공, test 실행 아님 |
+| current-clippy | exit101/14.798662초; 최초 실패 |
+| native15 / ISA14 | command와 stdout 모두 없음, **미실행** |
+| A whole91 / host ISA | request/readonly receipt 없음, **미실행** |
+| B strict/plain/tap/output12 | comparison.json 없음, **미실행**. B sticky가 원인이 아니며 true/false를 판정할 값도 없음 |
+| C copy/issuer/native/output12 | capacity/helper-copies/cached-context receipt와 C namespace 모두 없음, **미실행** |
+| source/index·SDK 외부 후검사 | step14·15 success |
+| 전체 독립 immutable 후검사 | step16 failure; 아래 registry baseline 미등록 때문에 fail-closed |
+| 자식 회수 | `subreaper=true`, `live=[]`, `all_owned_children_reaped=true` |
+| upload/cleanup | step18 success, 불완전 seal 때문에19·20 cleanup은 skipped |
+
+step13의 원래 오류는 `current-clippy: exit101; preserve stderr`다. 그 뒤 finalizer가
+`independent final seals failed`를 기록하며 required step17도 실패했다. 이번에는 이전972의
+nlink 거부나 B 수치 실패까지 도달한 것이 아니다. C copy 수정의 실제 성공·실패를 이 결과로
+판정하지 않고 full128/역사 실패/전체 모델·기기·retirement 수용은 계속0으로 둔다.
+
+### 원시 Cargo JSON의 정확한 세 Clippy 오류
+
+stderr의 마지막 `offline-qcom-compile test due to 3 previous errors`만으로 원인을 추측하지
+않고, `model482/current-clippy.stdout`222551B의 `compiler-message` JSON을 읽었다.
+세 오류 모두 `clippy::unused_unit`, message=`unneeded unit expression`이다.
+
+| source602 위치 | 실제 코드/문맥 |
+| --- | --- |
+| `rust/crates/model-runtime/src/bin/offline-qcom-compile.rs:69` | read-exact stream의 Interrupted/WouldBlock match arm에 trailing `()` |
+| 같은 파일93행 | write-all stream의 Interrupted/WouldBlock match arm에 trailing `()` |
+| 같은 파일143행 | trailing-input 검사 Interrupted/WouldBlock match arm에 trailing `()` |
+
+`cargo clippy --lib --tests ... -D warnings`가 bin test target도 검사하므로 C 진단 앞에서
+이 target의 lint가 gate를 막았다. published QCOM file8195B/SHA256은
+`3687cc13749eed58b25bd204b246f77a1b0a4d6298221c35fc355b5d1d703aa0`다.
+이는 실제 compiler diagnostic이며 model/ISA/cap/deadline 실패가 아니다.
+
+부모 쪽 최소 source 수정 후보는 해당 세 arm의 **trailing `()`만 제거**해 implicit unit
+빈 block으로 두는 것이다. Interrupted/WouldBlock 재시도와 deadline/오류 분기는 그대로
+유지할 수 있다. bin test target을 빼거나 lint를 허용/무시하는 우회는 제안하지 않는다.
+이 파일은 담당 소유 범위 밖이며 이번에는 코드 수정하지 않았다.
+
+### helper 불변성과 후봉인 실패의 인과관계
+
+원래 Cargo issuer4578440B와 guarded1449872B는 UID1001/nlink2 그대로 hold돼 있고,
+final held verification에 해당 오류는 없다. C-private nlink1 사본은 생성 단계 자체가
+미실행이므로 사본의 immutability 성공을 주장하지 않는다.
+
+`final-seals.json`은 `pass=false`, `failures=["baseline unavailable: registry"]`,
+phase=`current-clippy`다. controller는 strict Clippy 성공 **뒤에** registry baseline을 등록한다.
+이번 조기 종료에서는 그 등록문에 도달하지 않아 required baseline이 없었다. source/SDK/
+Python/venv의 after snapshot은 보존됐고 child recovery도 성공했지만 전체 immutable guard는
+불완전한 baseline을 성공으로 승격하지 않았다. registry 변조가 실제 관측됐다는 뜻은 아니다.
+Clippy 원인을 먼저 고치면 원래 순서로 registry seal에 도달할 수 있으며 후검사를 완화할
+이유는 없다.
+
+### 원본 증거와 로컬 작업 범위
+
+artifact12618012224는 API/download7222550B/SHA256
+`63d113ce83ed53824c82e4e4bbd2c942fe33edb65914816bcb3de1e42b6924b6`다.20MiB download cap,
+API expected bytes/digest 확인 후126개 safe unique canonical path/no symlink·special·encrypted
+entry와 전체 CRC, expanded35501461B를 검증했다. 실제 archive에는 A/B/C receipt가 없다는
+점도 확인했다. 압축 해제·모델/ELF 실행 없이 metadata와 Clippy 원문만 읽었다.
+
+| 원문 | SHA256 |
+| --- | --- |
+| `current-clippy.stdout` | `daafa01a4b606441c75af155e89c70cc0269cb0a948ad6a03fff9cc047a06fac` |
+| `current-clippy.stderr` | `e1c52503ab6040ca46d1ef4d3e3916e02578e83d4083f578d62aabf8ba5ddeab` |
+| `commands.json` | `46e972f5cb4bbf5444235f6009e6ee74fffdecceac6265a5f7b1826a3f8b93ca` |
+| `final-seals.json` | `c97aecc8f02232dc23bdcf8d52fc1307908cb4885e95c5d63e0cd6aeac2f6880` |
+
+실제 API structuredContent.content 원시 log95239B/SHA256은
+`d30b05ea5775d94945741c8c2af72bcb573ac9a19240d4a396eb377327b168c3`다. private scratch/ci에
+`model602-current-final-{run,job}.json`, `model602-current-published-sources.json`,
+`model602-current-job121322096232.log`, `12618012224.zip`으로 보존했다. 이번 tracked 변경은
+이 audit append뿐이다. source/model/oracle/Cargo/build/test/Clippy 로컬 실행과 CI dispatch/
+cancel, stage/push는0이다.

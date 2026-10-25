@@ -66,3 +66,27 @@ privateartifact12617945264는327,587B/SHA256
 20 safe unique regular member/전체CRC, expanded2,556,115B다. source/index전후동일,
 SDK227파일/roster252 전후 byte 동일과 LLVM후hash가 성공했다. 비교artifact 미생성과
 cleanup skipped는 그대로 보존한다. 이 수정의 실제 linker/후속검사는 다음 source로 확인한다.
+
+
+## source602의 실제 native/genuine 비교와 마지막 lint
+
+[40244158549/job121322096387](https://github.com/bin9208/openpilot-rust/actions/runs/40244158549/job/121322096387),
+source `602040b066e37487feb0595a09c8460023bf755e`는 ARM compiler build/stage와
+native10/ignored2·COPY exact1·genuine mixed exact1이 모두 성공했다. mixed/order7의
+원본/후보 lowering·compiler count는 각각0,0,1,1,0,0,0이며 음성5건의 오류 우선순위·
+destination 부재와 lazy 양성2건이 일치한다. mixed의88.64초는 전체 작은 검사의 시간이며
+모델 성능 측정이 아니다. 원본prefix native 호출0, 미래compiler진입=false를 원문에서 확인했다.
+
+마지막 strict Clippy가 CLI의 match arm에 남은 명시적 `()`3개를 `clippy::unused_unit`으로
+거부해 전체 job은 failure다. 동일 세 경고가 current-model602의 선행 Clippy도 막았으므로
+그 모델 run의15/14/A/B/C는 미실행이다. 세 trailing unit만 빈 block으로 정리하며 frame/
+기한·compiler·정책·기대값·수치 조건을 바꾸지 않는다. 최종 Clippy 수용은 다음 source로 확인한다.
+
+functionalartifact12618236836은16,493B/SHA256
+`5f0837cc8c8f6cc8beabe4473a87aaa58047e26dec1a2c243d12b8e3a72a4866`,
+22 safe unique regular member/전체CRC다. privateartifact12617413226은337,041B/SHA256
+`01f5c413dc9972ded5983b696620d9a5fc204a94789f09a01764750d408caac6`,
+32 safe unique regular member/전체CRC다. source/index는 historical19,596개와 일치하고
+SDK227파일/roster252 전후 byte 동일, 두 upload/source/common cleanup도 실제 성공했다.
+원본 SHA·historical bytes와 weights64B·Plan의 allocations/views/entrypoints를 직접 대조했다.
+whole_model_accepted=false/retirement_credit0을 유지하며 Python file 전체 퇴역으로 세지 않는다.

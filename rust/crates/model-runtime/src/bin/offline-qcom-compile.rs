@@ -64,10 +64,7 @@ fn export_stream() -> Result<(), Box<dyn std::error::Error>> {
                     if matches!(
                         error.kind(),
                         io::ErrorKind::Interrupted | io::ErrorKind::WouldBlock
-                    ) =>
-                {
-                    ()
-                }
+                    ) => {}
                 Err(error) => return Err(error),
             }
         }
@@ -88,10 +85,7 @@ fn export_stream() -> Result<(), Box<dyn std::error::Error>> {
                     if matches!(
                         error.kind(),
                         io::ErrorKind::Interrupted | io::ErrorKind::WouldBlock
-                    ) =>
-                {
-                    ()
-                }
+                    ) => {}
                 Err(error) => return Err(error),
             }
         }
@@ -138,10 +132,7 @@ fn export_stream() -> Result<(), Box<dyn std::error::Error>> {
                         if matches!(
                             error.kind(),
                             io::ErrorKind::Interrupted | io::ErrorKind::WouldBlock
-                        ) =>
-                    {
-                        ()
-                    }
+                        ) => {}
                     Err(error) => return Err(error.into()),
                 }
             }

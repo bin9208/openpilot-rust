@@ -12,6 +12,7 @@ name: Python Rust 523 current model triplet and worker-cell diagnostic
     - rust/crates/model-runtime/src/cpu.rs
     - rust/crates/model-runtime/src/cached_code.rs
     - rust/crates/model-runtime/src/cached_isa.rs
+    - rust/crates/model-runtime/src/bin/offline-qcom-compile.rs
 permissions:
   contents: read
 concurrency:

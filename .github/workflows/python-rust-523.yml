@@ -138,7 +138,7 @@ jobs:
         printf '%s  %s\n' b3e9c642c96c0e35806db68823b092a9336d179201013080c8117fc10c6783ce rust/crates/dmonitoringmodeld/src/main.rs | sha256sum --check -
         printf '%s  %s\n' 6a2cee8579df83713a6c92516b08ef7a3fbb438a7c930facd1f8633c1a37a511 rust/crates/dmonitoringmodeld/src/runtime.rs | sha256sum --check -
         printf '%s  %s\n' 44f50fc0990fa15ca934de66dd7b3c4ac8c7ae4456a65840ec7b1c046c55e14a rust/crates/model-runtime/src/bin/model-run.rs | sha256sum --check -
-        printf '%s  %s\n' 3687cc13749eed58b25bd204b246f77a1b0a4d6298221c35fc355b5d1d703aa0 rust/crates/model-runtime/src/bin/offline-qcom-compile.rs | sha256sum --check -
+        printf '%s  %s\n' 6e3e00ae77a3d275c3aa0e3a664a5baa2a0516d430bdb41911587daf88ce4ec6 rust/crates/model-runtime/src/bin/offline-qcom-compile.rs | sha256sum --check -
         printf '%s  %s\n' 2aba522b6af945a290be66203f4dfed9a278a4bc4cf7f7d7841e23a7b51a3a01 rust/tools/model_export/offline_schedule.py | sha256sum --check -
         printf '%s  %s\n' 5662ad3f13321685a8cae67f2740cb3b889895d007085402a1ab3f2e6a88f5d7 .github/workflows/python-rust-523-driver-retained.yml | sha256sum --check -
         printf '%s  %s\n' 6f960f102735612b05a0c0c9b12c25b877207c864157a9f5fe109c70a34caeda .github/workflows/python-rust-523-recovery-lanes.yml | sha256sum --check -
@@ -940,7 +940,7 @@ jobs:
         printf '%s  %s\n' 7d16dd07d3ee9696da18a902c0e91ec19097dd81921189e39c49ab62b128d530 .github/workflows/python-rust-523-logging.yml | sha256sum --check -
         printf '%s  %s\n' 3d8e2ecc791a91923352a85642d407c32d5a9d513746ddf5b953112f83d8f627 tools/ci/logging_retained_549.sh | sha256sum --check -
         printf '%s  %s\n' 8874db13719fa04669b12b7a062e2090055218be64c9612c4fced405bc10a869 rust/crates/dev-tools/src/selfdrive_params_process.rs | sha256sum --check -
-        printf '%s  %s\n' 605fb95e0281f5420406e38c41abbfd4d13c6cb30d662b2b11d4bd7cae2db723 .github/workflows/python-rust-523-model-pr1344-replay.yml | sha256sum --check -
+        printf '%s  %s\n' 6c645bc88ebddfd0967fcc800c16c3a912c1090aa57ccdce0e7dca7017422951 .github/workflows/python-rust-523-model-pr1344-replay.yml | sha256sum --check -
         printf '%s  %s\n' 1d49344a8d3ba470fa906cfd1425f01aff0b0c4179a04f5240e129e1d4ec0a2f tools/ci/model_pr1344_replay_482.py | sha256sum --check -
         printf '%s  %s\n' 3ac762795a793e29f613aec53993058032efc92c86df09c1116722ccf78cd283 rust/crates/model-runtime/src/cpu/diagnostic_482_pr1344.rs | sha256sum --check -
         printf '%s  %s\n' 4dcc040ed795819356969801e395f1c50fb5a1e38ad9dadb924676c0e96ac376 rust/crates/dev-tools/tests/driving_daemon_retirement/model_482_pr1344.rs | sha256sum --check -
@@ -1031,7 +1031,7 @@ jobs:
         printf '%s  %s\n' cd6233cbe31283b47f3d8a4d6dac9c4a11b60739ec5fa54d25cd23630473c458 rust/crates/dev-tools/tests/ui_application_lifecycle_reference.rs | sha256sum --check -
         printf '%s  %s\n' 9aa47cb3cc2403e24d13d4faf1ae0b9155d980a8b6696f72931432d321a60ce6 rust/crates/dev-tools/tests/ui_application_lifecycle_reference/source_binding.rs | sha256sum --check -
         printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa tools/ci/ssh_source_absence_523.sh | sha256sum --check -
-        printf '%s  %s\n' ac99c39658158d7bb46e3162b24f426bf0d4bc801a74b28133e01fd5af6a7eb3 .github/workflows/python-rust-523-model-current-triplet.yml | sha256sum --check -
+        printf '%s  %s\n' 89e43edc780a9740efb8ce0d42662a12ce0836a7f209a9abf45248f877e4d7a6 .github/workflows/python-rust-523-model-current-triplet.yml | sha256sum --check -
         printf '%s  %s\n' 379507cb2fc7b9d6c35c83f9851f9b541acad86a9d0085e8bb95cf71e03dfd24 tools/ci/model_current_triplet_482.py | sha256sum --check -
         printf '%s  %s\n' 679a6e6e3e54276c218edc4d8ec85aac355b9650bf97aa2f498ff16dd3dc95ac .github/workflows/python-rust-523-model-packet-d0.yml | sha256sum --check -
         printf '%s  %s\n' b447e1ae79cf277d7608f7afc55758565b4dbbdcca3bfdfc2ee1346220156af1 tools/ci/model_packet_d0_482.py | sha256sum --check -
@@ -1112,7 +1112,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='30a87c547fcfc60d1faa5e9d3f739b898fa8159f65bad592c2ede3d2dd2b7677', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='870840fd678a23557edcddeca7895e616b8c4e1c76bb61c526d20351f377f1fd', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile
