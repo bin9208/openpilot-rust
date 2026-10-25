@@ -451,3 +451,48 @@ baseline 없는 내부 final-seals false/cleanupskip을 구분한다.
 확인해 다른 클래스나 statement 변조를 막는다. 원본 bytes/고정 SHA·기존 instrument_pid와 RuntimeError,
 exact4/12/receipt/기한·caps·normal·실제target/Replay/최종bool AND는 유지한다.
 로컬은 AST 구문·outside byte projection·diff만 확인했다. 새 실제4/12 및 normal/final 성공은 **GHA UNRUN**이다.
+
+
+## #577: authored 연산과 whole-job IO guard의 timer 수명 분리
+
+56f source의 [40191172970/job121162317017](https://github.com/bin9208/openpilot-rust/actions/runs/40191172970/job/121162317017)은
+preflight 첫 budget/held 검사 뒤5초 deadline에서 실패했다. authored4/12·#576 AST 음성·receipt·normal/Cargo는
+모두 미도달이다. artifact12597902333은336581B/SHA256
+`775fa8481527950f9f6296502b1197451e222b8bd3b5791922df873349b2b5d9`,61CRC/전개2539842B다.
+outer source/index·SDK6쌍 동일·회수/live0/upload 성공과 baseline 미준비 내부 final-seals false/cleanupskip을
+구분했다. budget과 held SHA 각각의 소요는 기존 원문에 없어서 어느 쪽이 지연을 주도했는지는 미확정이다.
+
+부모가 승인한 운영 변경은 **전체 preflight5초**를 **authored4/12와 bounded receipt의5초 + 전후 whole-job IO의
+기존52분 global deadline**으로 분리하는 것이다. 이전 timer와 동일하다고 표시하지 않는다. initial owner/live guard,
+budget2회와 전체 held verify3회를 모두 유지한다. post budget/held 검사는 receipt 게시 뒤에도 필수이며, 마지막
+전체 held·owner/live/global 검사까지 성공해야 `target_protocol_controls_pass`가 true가 된다.
+IO guard를 global 밖으로 빼거나 시간 재부여·새 예산·재시도를 추가하지 않는다.
+
+`outcome.json.target_protocol_timing`은 private 함수에 참조로 전달한 작은 dict다. 고정7개
+`initial_guard`, `initial_budget`, `initial_holds`, `core_publication`, `post_budget`, `post_holds`, `final_guard`의
+monotonic elapsed를 `stage_elapsed_seconds`에 기록한다. 시작 시 전부 null이고, 진입한 단계는 예외여도 finally에서
+실제 elapsed가 남는다. `last_stage`와 `last_completed_stage`로 미완료 경계를 구분한다. 각 단계는 전후 모두 원래
+`normal.deadline`을 확인한다. `core_publication`은 추가로 시작+5초와 global 잔여의 min을 적용하고, 그 단계의 실제
+총 elapsed≤5를 요구한다. 독립 watchdog이나20ms·5초의 scheduler 보장은 주장하지 않는다.
+
+receipt의 새 계약은 `timer_scope="authored-controls-and-bounded-receipt"`, `deadline_seconds=5`,
+`whole_job_io_timer_scope="existing-global-deadline"`, `global_deadline_seconds=3120`이다.
+기존 `elapsed_before_publication_seconds`는 이제 core 시작 기준의 **게시 전** 값이다. immutable create_new receipt
+자신의 fsync/hold/read 완료 시간을 같은 파일에 사후 재기록하지 않는다. 대신
+`core_elapsed_location="outcome.json#target_protocol_timing.core_elapsed_seconds"`를 명시하고, 실제 전체 core+publication
+elapsed는 그 outcome 필드에 기록한다. 여기에는4/12·#576 AST·bounded source binding/serialize/create_new/fsync/
+receipt hold·byte roundtrip까지 포함한다. 이후 whole-job IO는 별도 global 단계다.
+
+부모 WF는 기존64KiB/exact4/12/16결과/4sourcepin/flags 검사를 유지하며 다음을 함께 요구한다.
+
+- receipt와 timing의 timer scope가 위 literal과 같고5/3120초가 일치한다.
+- timing의 `core_elapsed_seconds`가 finite·0이상·5이하이고 `stage_elapsed_seconds.core_publication`과 같다.
+  receipt의 게시 전 elapsed는 이 실제 총 elapsed 이하이어야 한다.
+- 7단계 key가 정확하고 모든 elapsed가 finite·0이상이다. `last_stage`/`last_completed_stage`는 모두 `final_guard`다.
+- `complete=true`, `global_deadline_met=true`, `global_remaining_seconds>=0`, 기존 protocol bool과 wrapper pass가 true다.
+
+한 단계라도 예외/시간 초과/guard 실패면 timing은 남지만 complete/global-met/bool은 true가 되지 않는다.
+receipt가 게시된 뒤 post IO에서 실패해도 기존 최종 AND와 부모 WF 검사가 성공을 차단한다. 기존 actual normal/target/
+Replay·#576 AST 선택/거부·diagnostic/COMMON/trace·원문/기대값·수학·CPU 정책 및700/600/32분·전체52분·공간 caps는
+그대로다. 새 selector/프로세스/패키지/pending source edge는 없다. 로컬은 AST/source projection/diff만 확인했으며
+새 timing·실제4/12·receipt/finalizer 및 normal 연결은 **GHA UNRUN**이다. #577/#576 및 #553 수용을 주장하지 않는다.

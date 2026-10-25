@@ -793,8 +793,8 @@ jobs:
         printf '%s  %s\n' 2601aad679b268263da30337d9edb6dcdfab48c0c82b0beb6a668d5dfaee2086 rust/crates/model-runtime/src/cpu/diagnostic_482_tests.rs | sha256sum --check -
         printf '%s  %s\n' 4df8b0ce31223799cd0838020776716e929b68990b9ebfc10c8070331f7e81be rust/crates/model-runtime/src/cpu.rs | sha256sum --check -
         printf '%s  %s\n' f34fba101f712e6434199b2336c8736c581b9bc4549edde32b0c9f9b5aec99e6 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check -
-        printf '%s  %s\n' 7a6fe7fb611596c250448019e8f8943c03653ae2f783024bd249b4c7aaae3993 .github/workflows/python-rust-523-controls-same-job.yml | sha256sum --check -
-        printf '%s  %s\n' d70ef7b77f5331d476bcdf1df2a7c9e53b1db82bbb2b530c8cae0c8e445bfdde tools/ci/controlsd_same_job_553.py | sha256sum --check -
+        printf '%s  %s\n' 1e57731b7ac3fb3322982b34c80e1eddaf723710df88a64cb49573b86cbb0cf3 .github/workflows/python-rust-523-controls-same-job.yml | sha256sum --check -
+        printf '%s  %s\n' a64d32a1f74733626f71f6aac2b22c2932acbcf54c03b291d65982ab78451295 tools/ci/controlsd_same_job_553.py | sha256sum --check -
         python - <<'MANIFEST'
         import hashlib,subprocess,tomllib
         from collections import Counter

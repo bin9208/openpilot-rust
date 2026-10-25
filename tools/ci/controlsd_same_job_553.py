@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """#553 같은 VM fullnormal40 뒤 한정 삼각 관측. 기능은 Actions 전용, 로컬 UNRUN."""
 import argparse
+from contextlib import contextmanager
 import hashlib
 import importlib.util
 import json
@@ -82,123 +83,166 @@ def failure_execs(c, normal, artifacts, raw):
     return calls
 
 
-def target_protocol_controls(c, d, normal, evidence):
-    """실제 target 재현과 별개인 authored 프로토콜4양성/12음성 preflight다."""
-    started = time.monotonic()
-    deadline = min(started + 5, normal.deadline)
-    owner = evidence.lstat()
-    need(evidence == normal.job / "proof/controls-same-job-553"
-         and evidence.resolve(strict=True) == evidence and stat.S_ISDIR(owner.st_mode)
-         and owner.st_uid == os.getuid() and stat.S_IMODE(owner.st_mode) == 0o700,
-         "owned protocol evidence directory")
+def target_protocol_controls(c, d, normal, evidence, timing=None):
+    """authored4/12+게시5초와 필수 whole-job IO의 기존 global 수명을 분리한다."""
+    if timing is None:
+        timing = {}
+    need(type(timing) is dict and not timing, "fresh private protocol timing state")
+    stages = ("initial_guard", "initial_budget", "initial_holds", "core_publication",
+              "post_budget", "post_holds", "final_guard")
+    global_deadline = normal.deadline
+    timing.update(timer_scope="authored-controls-and-bounded-receipt", core_deadline_seconds=5,
+                  whole_job_io_timer_scope="existing-global-deadline", global_deadline_seconds=52*60,
+                  stage_elapsed_seconds={name: None for name in stages}, last_stage=None,
+                  last_completed_stage=None, core_elapsed_seconds=None, global_remaining_seconds=None,
+                  global_deadline_met=False, complete=False)
 
-    def checkpoint():
-        need(time.monotonic() <= deadline, "target protocol controls deadline")
+    @contextmanager
+    def stage(name):
+        before = time.monotonic()
+        timing["last_stage"] = name
+        finished = False
+        try:
+            need(before <= global_deadline, "target protocol global deadline before " + name)
+            yield before
+            finished = True
+        finally:
+            after = time.monotonic()
+            elapsed = after - before
+            timing["stage_elapsed_seconds"][name] = elapsed
+            timing["global_remaining_seconds"] = global_deadline - after
+            if name == "core_publication":
+                timing["core_elapsed_seconds"] = elapsed
+            if finished:
+                need(after <= global_deadline, "target protocol global deadline after " + name)
+                if name == "core_publication":
+                    need(elapsed <= 5, "target protocol controls and publication deadline")
+                timing["last_completed_stage"] = name
+
+    def checkpoint(deadline):
+        need(time.monotonic() <= min(deadline, global_deadline), "target protocol controls deadline")
         need(c.ident(evidence.lstat())[:5] == c.ident(owner)[:5]
              and not normal.children.scan(), "protocol owner changed/live child")
-        need(time.monotonic() <= deadline, "target protocol controls scan deadline")
+        need(time.monotonic() <= min(deadline, global_deadline), "target protocol controls scan deadline")
 
-    checkpoint()
-    normal.budget(force=True)
-    normal.holds.verify()
-    checkpoint()
-    zero, one = "0000000000000000", "3ff0000000000000"
+    with stage("initial_guard"):
+        owner = evidence.lstat()
+        need(evidence == normal.job / "proof/controls-same-job-553"
+             and evidence.resolve(strict=True) == evidence and stat.S_ISDIR(owner.st_mode)
+             and owner.st_uid == os.getuid() and stat.S_IMODE(owner.st_mode) == 0o700,
+             "owned protocol evidence directory")
+        checkpoint(global_deadline)
+    with stage("initial_budget"):
+        normal.budget(force=True)
+    with stage("initial_holds"):
+        normal.holds.verify()
+    with stage("core_publication") as started:
+        deadline = min(started + 5, global_deadline)
+        checkpoint(deadline)
+        zero, one = "0000000000000000", "3ff0000000000000"
 
-    def scalar(pattern, runtime):
-        return {"dtype": "f64", "bits": pattern, "runtime_type": runtime}
+        def scalar(pattern, runtime):
+            return {"dtype": "f64", "bits": pattern, "runtime_type": runtime}
 
-    original = {"schema": 1, "observer": "original", "case": "HYUNDAI_PALISADE-torque", "frame": 0,
-        "used_kp_scalar_observed": True,
-        "fields": {name: scalar(one if name == "used_kp" else zero, "builtins.float")
-                   for name in ("error", "error_cast", "used_kp", "p")},
-        "inputs": [{"call": i, "values": [{"dtype": "int", "value": 0, "runtime_type": "builtins.int"},
-                    {"dtype": "f32", "bits": "3f800000", "runtime_type": "numpy.float32"}]} for i in range(4)]}
-    native = {"schema": 1, "observer": "native", "case": "HYUNDAI_PALISADE-torque", "frame": 0,
-        "used_kp_scalar_observed": False,
-        "fields": {name: scalar(zero, "rust.f64") for name in ("error", "p", "speed")},
-        "gain_x": [scalar(zero, "rust.f64")], "gain_y": [scalar(one, "rust.f64")]}
-    state = {"lat_pid": [0.0]}
-    marker = b"CONTROLSD_553_SCALAR " + json.dumps(native, allow_nan=False).encode() + b"\n"
-    need(d.native_scalar_record(marker) == native, "authored native marker positive")
-    comparison = d.validate_target_scalars(original, native, state, state)
-    need(comparison["p_bits_equal"] is True and comparison["error_bits_equal"] is True
-         and comparison["native_used_gain_scalar_observed"] is False
-         and comparison["native_stored_gain_constant_one"] is True, "authored scalar envelope positive")
-    need(d.target_reproduced(state, state, state) is True, "authored equal state positive")
-    pid_name = "openpilot/common/pid.py"
-    pid_pin = d.SOURCE_PINS[pid_name]
-    pid_path = normal.holds.add(normal.root / pid_name, pid_pin)
-    raw = c.read(pid_path, 4*MIB)
-    need(c.sha(raw) == pid_pin, "exact held PID source for AST-only controls")
-    _, ast_record = d.instrument_pid(d.ast.parse(raw, filename=str(pid_path)))
-    need(ast_record["restored_equals_original"] is True
-         and ast_record["original_ast_sha256"] == ast_record["restored_ast_sha256"],
-         "exact PID AST roundtrip positive")
-    positives = ["valid_native_marker", "valid_scalar_envelope", "equal_state_triplet", "exact_pid_ast_roundtrip"]
-    checkpoint()
-    negatives = ["foreign_case", "wrong_scalar_width", "missing_p", "p_output_mismatch", "wrong_gain_curve",
-                 "missing_marker", "duplicate_marker", "malformed_marker", "foreign_marker_prefix"]
-    controls = d.target_scalar_controls(original, native, state, state, marker)
-    need(controls == {"pass": True, "negative_controls": negatives, "local_execution": False},
-         "exact nine scalar/marker protocol controls")
-    foreign = dict(state, _foreign=True)
-    need(d.target_reproduced(state, foreign, state) is False, "foreign one-frame protocol state accepted")
-    need(d.target_reproduced(state, state, foreign) is False, "foreign prefix protocol state accepted")
-    negatives += ["oneframe_foreign_state", "prefix_foreign_state"]
-    mutant = d.ast.parse(raw, filename=str(pid_path))
-    original_dump = d.ast.dump(mutant, include_attributes=False)
-    classes = [node for node in mutant.body if isinstance(node, d.ast.ClassDef) and node.name == "PIDController"]
-    need(len(classes) == 1, "exact PIDController class for protocol mutation")
-    methods = [node for node in classes[0].body if isinstance(node, d.ast.FunctionDef) and node.name == "update"]
-    need(len(methods) == 1, "exact PIDController.update for protocol mutation")
-    assignment = d.ast.dump(d.ast.parse("self.p = float(error) * self.k_p").body[0], include_attributes=False)
-    targets = [node for node in methods[0].body if d.ast.dump(node, include_attributes=False) == assignment]
-    need(len(targets) == 1, "exact target PID p assignment for protocol mutation")
-    expression = targets[0].value
-    operator = expression.op
-    expression.op = d.ast.Add()
-    need(d.ast.dump(mutant, include_attributes=False) != original_dump, "PID operator mutation absent")
-    expression.op = operator
-    need(d.ast.dump(mutant, include_attributes=False) == original_dump, "PID operator mutation changed other AST")
-    expression.op = d.ast.Add()
-    try:
-        d.instrument_pid(mutant)
-    except RuntimeError as problem:
-        need(str(problem) == "exact original PID p expression once", "unexpected PID AST rejection")
-    else:
-        raise RuntimeError("changed PID p operator protocol was accepted")
-    negatives.append("pid_p_operator_changed")
-    need(len(positives) == len(set(positives)) == 4 and len(negatives) == len(set(negatives)) == 12,
-         "exact protocol control cardinality")
-    checkpoint()
-    normal.budget(force=True)
-    normal.holds.verify()
-    checkpoint()
-    source_bindings = {name: c.regular(normal.root / name, 128*1024)["sha256"]
-                       for name in ("tools/ci/controlsd_same_job_553.py", DIAGNOSTIC, COMMON)}
-    need(source_bindings[DIAGNOSTIC] == DIAGNOSTIC_SHA and source_bindings[COMMON] == COMMON_SHA,
-         "protocol helper source pins changed")
-    source_bindings[pid_name] = pid_pin
-    receipt = {"schema": 1, "source": normal.source, "source_bindings": source_bindings,
-        "input_origin": "authored-protocol-control", "pass": True,
-        "positive_controls": positives, "negative_controls": negatives, "positive_count": 4, "negative_count": 12,
-        "control_results": {name: True for name in positives + negatives},
-        "pid_ast": ast_record, "deadline_seconds": 5, "elapsed_before_publication_seconds": time.monotonic() - started,
-        "actual_failure_reproduced": False, "actual_scalar_layer_observed": False,
-        "original_or_native_runtime_invocations": 0, "numerical_acceptance": False,
-        "substitutes_actual_target_observation": False, **d.FLAGS}
-    encoded = (json.dumps(receipt, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
-    need(len(encoded) <= 64*1024, "protocol receipt exceeds 64KiB")
-    checkpoint()
-    path = evidence / "target-protocol-controls.json"
-    c.write_new(path, encoded)
-    info = path.lstat()
-    need(stat.S_ISREG(info.st_mode) and info.st_uid == os.getuid() and info.st_nlink == 1
-         and stat.S_IMODE(info.st_mode) == 0o600, "owned single-link protocol receipt")
-    normal.holds.add(path, c.sha(encoded))
-    need(c.read(path, 64*1024) == encoded, "protocol receipt byte roundtrip")
-    normal.holds.verify()
-    checkpoint()
+        original = {"schema": 1, "observer": "original", "case": "HYUNDAI_PALISADE-torque", "frame": 0,
+            "used_kp_scalar_observed": True,
+            "fields": {name: scalar(one if name == "used_kp" else zero, "builtins.float")
+                       for name in ("error", "error_cast", "used_kp", "p")},
+            "inputs": [{"call": i, "values": [{"dtype": "int", "value": 0, "runtime_type": "builtins.int"},
+                        {"dtype": "f32", "bits": "3f800000", "runtime_type": "numpy.float32"}]} for i in range(4)]}
+        native = {"schema": 1, "observer": "native", "case": "HYUNDAI_PALISADE-torque", "frame": 0,
+            "used_kp_scalar_observed": False,
+            "fields": {name: scalar(zero, "rust.f64") for name in ("error", "p", "speed")},
+            "gain_x": [scalar(zero, "rust.f64")], "gain_y": [scalar(one, "rust.f64")]}
+        state = {"lat_pid": [0.0]}
+        marker = b"CONTROLSD_553_SCALAR " + json.dumps(native, allow_nan=False).encode() + b"\n"
+        need(d.native_scalar_record(marker) == native, "authored native marker positive")
+        comparison = d.validate_target_scalars(original, native, state, state)
+        need(comparison["p_bits_equal"] is True and comparison["error_bits_equal"] is True
+             and comparison["native_used_gain_scalar_observed"] is False
+             and comparison["native_stored_gain_constant_one"] is True, "authored scalar envelope positive")
+        need(d.target_reproduced(state, state, state) is True, "authored equal state positive")
+        pid_name = "openpilot/common/pid.py"
+        pid_pin = d.SOURCE_PINS[pid_name]
+        pid_path = normal.holds.add(normal.root / pid_name, pid_pin)
+        raw = c.read(pid_path, 4*MIB)
+        need(c.sha(raw) == pid_pin, "exact held PID source for AST-only controls")
+        _, ast_record = d.instrument_pid(d.ast.parse(raw, filename=str(pid_path)))
+        need(ast_record["restored_equals_original"] is True
+             and ast_record["original_ast_sha256"] == ast_record["restored_ast_sha256"],
+             "exact PID AST roundtrip positive")
+        positives = ["valid_native_marker", "valid_scalar_envelope", "equal_state_triplet", "exact_pid_ast_roundtrip"]
+        checkpoint(deadline)
+        negatives = ["foreign_case", "wrong_scalar_width", "missing_p", "p_output_mismatch", "wrong_gain_curve",
+                     "missing_marker", "duplicate_marker", "malformed_marker", "foreign_marker_prefix"]
+        controls = d.target_scalar_controls(original, native, state, state, marker)
+        need(controls == {"pass": True, "negative_controls": negatives, "local_execution": False},
+             "exact nine scalar/marker protocol controls")
+        foreign = dict(state, _foreign=True)
+        need(d.target_reproduced(state, foreign, state) is False, "foreign one-frame protocol state accepted")
+        need(d.target_reproduced(state, state, foreign) is False, "foreign prefix protocol state accepted")
+        negatives += ["oneframe_foreign_state", "prefix_foreign_state"]
+        mutant = d.ast.parse(raw, filename=str(pid_path))
+        original_dump = d.ast.dump(mutant, include_attributes=False)
+        classes = [node for node in mutant.body if isinstance(node, d.ast.ClassDef) and node.name == "PIDController"]
+        need(len(classes) == 1, "exact PIDController class for protocol mutation")
+        methods = [node for node in classes[0].body if isinstance(node, d.ast.FunctionDef) and node.name == "update"]
+        need(len(methods) == 1, "exact PIDController.update for protocol mutation")
+        assignment = d.ast.dump(d.ast.parse("self.p = float(error) * self.k_p").body[0], include_attributes=False)
+        targets = [node for node in methods[0].body if d.ast.dump(node, include_attributes=False) == assignment]
+        need(len(targets) == 1, "exact target PID p assignment for protocol mutation")
+        expression = targets[0].value
+        operator = expression.op
+        expression.op = d.ast.Add()
+        need(d.ast.dump(mutant, include_attributes=False) != original_dump, "PID operator mutation absent")
+        expression.op = operator
+        need(d.ast.dump(mutant, include_attributes=False) == original_dump, "PID operator mutation changed other AST")
+        expression.op = d.ast.Add()
+        try:
+            d.instrument_pid(mutant)
+        except RuntimeError as problem:
+            need(str(problem) == "exact original PID p expression once", "unexpected PID AST rejection")
+        else:
+            raise RuntimeError("changed PID p operator protocol was accepted")
+        negatives.append("pid_p_operator_changed")
+        need(len(positives) == len(set(positives)) == 4 and len(negatives) == len(set(negatives)) == 12,
+             "exact protocol control cardinality")
+        checkpoint(deadline)
+        source_bindings = {name: c.regular(normal.root / name, 128*1024)["sha256"]
+                           for name in ("tools/ci/controlsd_same_job_553.py", DIAGNOSTIC, COMMON)}
+        need(source_bindings[DIAGNOSTIC] == DIAGNOSTIC_SHA and source_bindings[COMMON] == COMMON_SHA,
+             "protocol helper source pins changed")
+        source_bindings[pid_name] = pid_pin
+        receipt = {"schema": 1, "source": normal.source, "source_bindings": source_bindings,
+            "input_origin": "authored-protocol-control", "pass": True,
+            "positive_controls": positives, "negative_controls": negatives, "positive_count": 4, "negative_count": 12,
+            "control_results": {name: True for name in positives + negatives},
+            "pid_ast": ast_record, "deadline_seconds": 5, "elapsed_before_publication_seconds": time.monotonic() - started,
+            "timer_scope": "authored-controls-and-bounded-receipt", "global_deadline_seconds": 52*60,
+            "whole_job_io_timer_scope": "existing-global-deadline",
+            "core_elapsed_location": "outcome.json#target_protocol_timing.core_elapsed_seconds",
+            "actual_failure_reproduced": False, "actual_scalar_layer_observed": False,
+            "original_or_native_runtime_invocations": 0, "numerical_acceptance": False,
+            "substitutes_actual_target_observation": False, **d.FLAGS}
+        encoded = (json.dumps(receipt, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+        need(len(encoded) <= 64*1024, "protocol receipt exceeds 64KiB")
+        checkpoint(deadline)
+        path = evidence / "target-protocol-controls.json"
+        c.write_new(path, encoded)
+        info = path.lstat()
+        need(stat.S_ISREG(info.st_mode) and info.st_uid == os.getuid() and info.st_nlink == 1
+             and stat.S_IMODE(info.st_mode) == 0o600, "owned single-link protocol receipt")
+        normal.holds.add(path, c.sha(encoded))
+        need(c.read(path, 64*1024) == encoded, "protocol receipt byte roundtrip")
+    with stage("post_budget"):
+        normal.budget(force=True)
+    with stage("post_holds"):
+        normal.holds.verify()
+        checkpoint(global_deadline)
+    with stage("final_guard"):
+        normal.holds.verify()
+        checkpoint(global_deadline)
+    timing.update(global_deadline_met=True, complete=True)
     return True
 
 
@@ -217,7 +261,8 @@ def main():
     evidence.mkdir(mode=0o700)
     state = {"schema": 1, "source": os.environ["GITHUB_SHA"], "normal_status": None, "normal_attempted": False,
              "normal_pass": False, "triage_observed": False, "normal_status_promoted": False,
-             "normal_workflow_replaced": False, "target_protocol_controls_pass": False, **d.FLAGS}
+             "normal_workflow_replaced": False, "target_protocol_controls_pass": False,
+             "target_protocol_timing": {}, **d.FLAGS}
 
     class Normal(c.Probe):
         def command(self, argv, label, seconds=60, env=None, limit=32*MIB, allowed=None, trace=None):
@@ -263,7 +308,8 @@ def main():
             boot_id = stream.read(128).strip()
         need(re.fullmatch(r"[0-9a-f-]{36}",boot_id), "bounded actual boot identity")
         state["boot_id"] = boot_id
-        state["target_protocol_controls_pass"] = target_protocol_controls(c, d, normal, evidence)
+        state["target_protocol_controls_pass"] = target_protocol_controls(
+            c, d, normal, evidence, state["target_protocol_timing"])
         state["normal_attempted"] = True
         try:
             normal.run()
