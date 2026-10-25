@@ -161,3 +161,41 @@ numerics::diagnostic_553::tests::getter_strings_require_nonempty_bounded_termina
 기존과 동일함을 확인했다. normal40 helper의 CORE 중 이 두 source hash literal만 현재 bytes로
 갱신한다. 원문/frozen input/output/4case/40normal 명령·수치·재현 criteria는 변경하지 않는다.
 이는 새 source 바인딩이며 이전 normal40 성공을 현재 전체 수용으로 소급하지 않는다.
+
+## 54diag tapped-build 실제 macro 거부와 최소 compile 후보
+
+[run40164032004/job121081294666](https://github.com/bin9208/openpilot-rust/actions/runs/40164032004/job/121081294666),
+source `54b7b8d326b7b1aa3e96852287297e20c5dbcc4f`는 plain-build exit0 뒤 tapped-build exit101로
+실패했다. 직접 원문은 `controls-diagnostic-553/tapped-build.stdout`의 Cargo compiler-message다.
+`crates/control-policy/src/numerics.rs:573:121`의 `cpu_environment` 값에서 배열 literal 뒤
+`.map(...)`의 `.`를 `json!` macro가 거부했다(`no rules expected '.'`). stderr에는 crate compile
+실패 요약만 있다. plain-build92.989초/tapped-build17.819초이며 deadline나 getter runtime 실패가 아니다.
+Clippy·unit2·original/native plain/tapped 계산과 getter는 모두 미도달이다.
+
+최소 후보는 기존 배열/map/collect 표현식 전체에 괄호 한 쌍을 추가하는1행 수정이다. serde_json의
+macro는 `: [...]`를 JSON array로 먼저 처리하고, 괄호로 묶은 값은 Rust expression으로 처리한다.
+환경4키/조회 값/None 처리/collect 결과와 관측 위치·동일 Library·production default-off projection은
+그대로다. diagnostic helper의 numerics source SHA와 해당 WF helper literal만 연결해 갱신한다.
+기존 unit2 exact 명령·Clippy/재현 조건·math/expected/52분 deadline·모든 cap/finalizer는 바꾸지 않는다.
+
+artifact12588080846은88,186,524B/SHA256
+`d4f9da45e25b97483e068f232ce82294f1415b04519bdd67ab95c0902c4a28f8`이며 API digest와 직접 SHA가 같다.
+104개 전수 CRC/SHA 정상, expanded357,840,437B/largest101,555,623B다. source/index/전체 SDK 등
+9쌍은 전바이트 같다. child receipt20개는 모두 회수 완료이며 final children.live는 빈 목록이다.
+다만 `numerics/originaldeps/packages/python-provider`의 runtime baseline4개는 build 뒤 설정 전이라
+미확립으로 기록됐고 final-seals.pass/immutable_seals_pass는 **false**다. 이를 true로 고쳐 쓰지 않는다.
+source·SDK after와 upload는 success, immutable/qualification은 failure, 두 owned cleanup은 skipped다.
+held-after140개는 존재하지만 별도 held-before-runtime 원문이 없으므로 독립 전후 pair140개라고 세지 않는다.
+
+로컬은 source/AST/Rustfmt/YAML/Bash/diff와 ZIP inert 감사만 수행했다. macro expansion/수정 뒤
+compile·Clippy·unit2·getter/수치/CI는 **UNRUN**이다. 다음 actual은 같은 tapped-build부터 시작해
+기존 엄격한 흐름을 통과해야 한다. 상세 원문은 ignored `hosted-54diag-12588080846.audit/`와
+`hosted-54diag-12588080846-audit.md`, 최소 계획은 `hosted-54diag-tapped-build-fix-plan.md`에 있다.
+부모 소유 normal helper CORE의 numerics pin도 새 source로 갱신해야 하며 그 helper bytes가 바뀌면
+diagnostic COMMON_SHA를 새 actual SHA에 다시 연결해야 한다. 여기서는 normal/Focus/원장을 편집하지 않았다.
+
+
+부모는 위 macro 괄호 정정의 numerics SHA를 normal CORE의 해당 literal1곳에도 연결하고,
+변경된 normal helper의 전체 SHA를 diagnostic COMMON_SHA와 WF helper literal에 순서대로 다시 묶었다.
+normal40/frozen input/output/재현 비교 기준이나 production 수학 변경은 없다. 이 바인딩은 새 source를
+검증하는 것이며 미도달 unit2/getter runtime의 성공을 선점하지 않는다.

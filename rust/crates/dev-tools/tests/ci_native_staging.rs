@@ -3,6 +3,9 @@ use openpilot_dev_tools::ci_policy::{parse, uses_native_action};
 use serde_json::Value;
 use std::{fs, path::PathBuf};
 
+#[path = "ci_disk_bootstrap/workflow_roles.rs"]
+mod workflow_roles;
+
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..")
 }
@@ -50,8 +53,12 @@ fn callers(workflow: &Value) -> Result<usize, String> {
 }
 #[test]
 fn all_runtime_and_template_callers_select_a_prepared_current_host_stager() {
-    let workflow =
+    let main =
         parse(&fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap()).unwrap();
+    let native =
+        parse(&fs::read_to_string(root().join(".github/workflows/rust-native-arm.yml")).unwrap())
+            .unwrap();
+    let workflow = workflow_roles::resolve(&main, &native).unwrap();
     // HardwareInfo's retired Python comparison no longer builds a Params
     // binding. Its bootlog builders own their JSON11 staging internally.
     assert_eq!(callers(&workflow).unwrap(), 22);

@@ -27,7 +27,7 @@ import zipfile
 MIB = 1024**2
 GIB = 1024**3
 COMMON = "tools/ci/controlsd_normal_523.py"
-COMMON_SHA = "f066e458ef5cf31f008d3fe3ae94edf3a121f4016531c1115b42ad2ca05fe739"
+COMMON_SHA = "9225692b3647a75983298ac92f84de91ea9f151f06921bcafcedb4de617cb553"
 ARTIFACT = 12577798385
 ARTIFACT_RUN = 40137010441
 ACTUAL_SHA = "602ea095f7cd89769ffd9233a04a28983ca59d1f"
@@ -58,7 +58,7 @@ SOURCE_PINS = {
     "rust/tools/locationd_loop_source.py": "d6239cd4e66e66d87aef577bbc49512f88aeea18270a20fe9263979153939de4",
     "rust/tools/locationd_source.py": "bcd257dde90ea11b68d4bf9f28affc139dd6e92f70d6829cd3464291bd62d87c",
     "rust/tools/check_message_state.py": "928e7cf946a1fbf3c6c0bc9135c580e8f108179cfe78349956eb895f6d0c710a",
-    "rust/crates/control-policy/src/numerics.rs": "4ff5f530577cc6faa1d5e5e6011ca0108f959fdea46edfa98f20d304a36ef09b",
+    "rust/crates/control-policy/src/numerics.rs": "f6c1516cf7990bd05d13f7aeffa7a45ae051517c5273e77dab26b82584585f44",
     "rust/crates/control-policy/src/numpy_exp.rs": "829c0ab3e3ba15857f87e2fa6f4e8207f3a31e4abe75be713e8b3480aa386a47",
     "rust/crates/controlsd/src/torque_neural.rs": "58894ebce7550555b765429d450c9ef2f2ff3510ba66d8a20fef7c4d47586744",
     "rust/crates/controlsd/examples/controlsd_trace.rs": "bf74be75ec58db816f94d3f67ee413cdf8b6163c1ead27b7c600418c8b8c035f",

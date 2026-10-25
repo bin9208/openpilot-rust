@@ -570,7 +570,7 @@ mod diagnostic_553 {
             "tasks_before":before_tasks,"tasks_after":after_tasks,
             "provider_fd_held_through_observation":true,"executable_mapping_roster_equal":true,
             "process_start_ticks":start.1,"thread_lifecycle_complete":false,"load_already_called_config":true,
-            "cpu_environment": ["OPENBLAS_NUM_THREADS","OMP_NUM_THREADS","OPENBLAS_CORETYPE","NPY_DISABLE_CPU_FEATURES"].map(|key|(key,std::env::var(key).ok())).into_iter().collect::<BTreeMap<_,_>>(),
+            "cpu_environment": (["OPENBLAS_NUM_THREADS","OMP_NUM_THREADS","OPENBLAS_CORETYPE","NPY_DISABLE_CPU_FEATURES"].map(|key|(key,std::env::var(key).ok())).into_iter().collect::<BTreeMap<_,_>>()),
             "string_pointer_scope":"same dladdr image base; readable file mapping or anonymous BSS"}),
         )
     }

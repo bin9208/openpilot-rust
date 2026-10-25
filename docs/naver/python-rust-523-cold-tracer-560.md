@@ -124,3 +124,30 @@ hosted 전용 protocol 통제는 다음3개다. 일반 오류나 통제 setup �
 성장 cap·observer64KiB·원문 pins·C postimages·Fast/parser/unknown strict 실패는 그대로다.
 로컬은 Bash/YAML 문법·source diff/hash만 확인했다. 새 통제·회수·C build·실제 errno·cold audit는
 Actions **UNRUN**이며 이 후보의 기능 합격·root fix·원본 제거 credit은0이다.
+
+
+## 8ae 실제 resource 실패와 최초 분기 관측 후보
+
+[40163930447/job121081003286](https://github.com/bin9208/openpilot-rust/actions/runs/40163930447/job/121081003286),
+source `8ae95f73330fa8a18bc78b3b6192de7485443719`은 configure 단계에서 resource guard가
+실패해 owned leader를 kill했다. protocol3은 완료됐으나 provider make/cold/strict audit는
+미실행이다. 이 결과를94c ESRCH의 재현이나 수정 수용으로 세지 않는다.
+artifact12587378265=11131248B/SHA256
+`5861e41d4118e37aeb3f6b4fa62466cfdc577ce30770e1b451eefbb768929fa7`,493CRC/expanded57682916B를
+부모가 감사했다. 실제 configure는 depfiles commands까지 출력했고 mutable native-build/tests/.deps의
+Po-t 파일3개의 du ENOENT가 races.log에 남았다. 마지막 source/SDK/provider/held/index tree 비교는0이나
+resource-admission1/owned wait137 때문에 immutable_seals와 pass는false다. 마지막 du.stderr는
+후속 admission이 비워 최초 거부 분기·각 root 값은 여전히 확정할 수 없다.
+
+후보는 measure/admit의 원래 실패 분기마다 최초 이유·phase·root·cap·allocated/apparent 종류·du exit·
+관측값·attempt를 하나의 create-new TSV에 기록한다. 해당 du stderr가64KiB 안일 때만 별도
+noclobber 파일에 보존한다. root/출력 모양/부분합 cap/status·scope/ENOENT 형태·실제 부재/3회 소진,
+SDK 합계/marker/df/용량 기록·여유 공간 분기를 구별한다. 후속 finalizer가 최초 기록을 덮지 않는다.
+원래 source2GiB/build8GiB/guardcache1GiB/proof512MiB/SDK3GiB/reserve512MiB와3attempt,
+실패 sticky/KILL/wait·원래 exit는 그대로다. 새 fallback/오류 성공 처리나 반복 상한 확대는 없다.
+
+ptrace observer/C patch/추가 query 수0/원문 unknown 거부/현재 tracer provider 및 cold 명령은
+무변경이다. 공식 ptrace 문서의 ESRCH는 dead/not-stopped/not-traced를 구별하지 못하므로
+새 resource 기록만으로 미확인 syscall 번호나 #560 root 해결을 주장하지 않는다.
+로컬은 Bash/YAML/embedded source syntax·diff만 확인한다. 새 실제 최초 분기와 source/SDK/provider
+봉인·strict audit·모든 결과는 정확 source Actions 대기다.

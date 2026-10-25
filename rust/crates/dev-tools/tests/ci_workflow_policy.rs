@@ -306,6 +306,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "ui_state_scheduler_check",
         "ui_translation_check",
         "ui_application_logic_check",
+        "ui_diagnostic_reference",
         "ui_headless_check",
         "ui_scroll_check",
         "diagnostic_check",
@@ -479,7 +480,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
             "{worker} baseline command signature changed"
         );
         if matches!(worker, "native" | "native-tools") {
-            assert_eq!(selected.len(), if worker == "native" { 4 } else { 53 });
+            assert_eq!(selected.len(), if worker == "native" { 4 } else { 54 });
             native_split.extend(selected.iter().map(|suite| (*suite).to_owned()));
         }
         for suite in selected {
@@ -539,7 +540,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         }
         all_commands.extend(commands);
     }
-    assert_eq!(expected.len(), 72);
+    assert_eq!(expected.len(), 73);
     assert_eq!(seen.len(), expected.len());
     assert!(seen.values().all(|count| *count == 1));
     let original_native = expected
@@ -553,7 +554,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         })
         .map(str::to_owned)
         .collect::<Vec<_>>();
-    assert_eq!(native_split.len(), 57);
+    assert_eq!(native_split.len(), 58);
     assert_eq!(native_split, original_native);
     for command in [
         CHANGED_FILES_REGRESSION,
@@ -2865,5 +2866,108 @@ fn native_arm_final_binary_evidence_requires_exact_trusted_always_condition() {
             validate_native_arm_reuse(&main, &changed).is_err(),
             "{condition:?}"
         );
+    }
+}
+
+#[test]
+fn native_arm_two_prepared_sdks_require_before_after_binding_and_cleanup_success() {
+    use openpilot_dev_tools::ci_policy::validate_private_job_layout;
+    let (main, callee) = native_arm_reuse_inputs();
+    // main의 X64 role과 예전 후보 workflow에는 새 SDK 경로를 강요하지 않는다.
+    validate_private_job_layout(&main["jobs"]["webcam-runtime"]).unwrap();
+    for name in ["webcam-runtime", "carrot-navi-arm"] {
+        let original = &callee["jobs"][name];
+        validate_private_job_layout(original).unwrap();
+        let stages = original["steps"].as_array().unwrap();
+        let before = stages.iter().position(|s| s["id"] == "arm530_sdk").unwrap();
+        let after = stages
+            .iter()
+            .position(|s| s["id"] == "arm530_sdk_final")
+            .unwrap();
+        let dependency = before + 1;
+        let source_cleanup = stages
+            .iter()
+            .position(|s| s["id"] == "ci296_source_cleanup")
+            .unwrap();
+        let common = stages
+            .iter()
+            .position(|s| s["name"] == "Clean common owned temporary paths after uploaded source")
+            .unwrap();
+        for mutation in [
+            "missing-before",
+            "missing-after",
+            "duplicate-before",
+            "before-skip",
+            "after-success-only",
+            "after-optional",
+            "before-timeout",
+            "pin",
+            "command",
+            "order",
+            "source-cleanup",
+            "common-cleanup",
+            "reinstall",
+            "missing-verify",
+        ] {
+            let mut changed = original.clone();
+            let steps = changed["steps"].as_array_mut().unwrap();
+            match mutation {
+                "missing-before" => {
+                    steps.remove(before);
+                }
+                "missing-after" => {
+                    steps.remove(after);
+                }
+                "duplicate-before" => steps.push(steps[before].clone()),
+                "before-skip" => steps[before]["if"] = "${{ false }}".into(),
+                "after-success-only" => {
+                    steps[after]["if"] = openpilot_dev_tools::ci_policy::TRUSTED_SOURCE.into()
+                }
+                "after-optional" => steps[after]["continue-on-error"] = true.into(),
+                "before-timeout" => steps[before]["timeout-minutes"] = "1".into(),
+                "pin" => steps[before]["env"]["ARM530_HELPER_SHA256"] = "0".repeat(64).into(),
+                "command" => steps[before]["run"] = "true\n".into(),
+                "order" => steps.swap(before, dependency),
+                "source-cleanup" | "common-cleanup" => {
+                    let at = if mutation == "source-cleanup" {
+                        source_cleanup
+                    } else {
+                        common
+                    };
+                    let condition = steps[at]["if"].as_str().unwrap();
+                    assert_eq!(
+                        condition
+                            .matches(" && steps.arm530_sdk_final.outcome == 'success'")
+                            .count(),
+                        1
+                    );
+                    steps[at]["if"] = condition
+                        .replace(" && steps.arm530_sdk_final.outcome == 'success'", "")
+                        .into();
+                }
+                "reinstall" => {
+                    steps[dependency]["run"] = format!(
+                        "{}\nrustup target add aarch64-unknown-linux-gnu\n",
+                        steps[dependency]["run"].as_str().unwrap()
+                    )
+                    .into()
+                }
+                "missing-verify" => {
+                    steps[dependency]["run"] = steps[dependency]["run"]
+                        .as_str()
+                        .unwrap()
+                        .replace(
+                            "prepare-readonly-arm-rust-530\" verify",
+                            "prepare-readonly-arm-rust-530\" ignored",
+                        )
+                        .into()
+                }
+                _ => unreachable!(),
+            }
+            assert!(
+                validate_private_job_layout(&changed).is_err(),
+                "{name}/{mutation}"
+            );
+        }
     }
 }

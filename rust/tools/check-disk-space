@@ -57,11 +57,19 @@ validate_existing() {
   if [[ -e $path || -L $path ]]; then validate "$path" "$kind"; fi
 }
 prepared=false
+prepared_arm=false
+[[ -z ${OPENPILOT_CI_PREPARED_RUST_MODE:-} || ${OPENPILOT_CI_PREPARED_RUST_MODE:-} == native-arm-530-v1 ]] || fail 'unknown prepared Rust mode'
+[[ -z ${OPENPILOT_CI_PREPARED_RUST_MODE:-} || -n ${OPENPILOT_CI_PREPARED_RUST_ROOT:-} ]] || fail 'prepared Rust mode requires an SDK root'
 if [[ -n ${OPENPILOT_CI_PREPARED_RUST_ROOT+x}${OPENPILOT_CI_PREPARED_RUST_MANIFEST+x} ]]; then
   prepared_root=${OPENPILOT_CI_PREPARED_RUST_ROOT:-}
   prepared_manifest=${OPENPILOT_CI_PREPARED_RUST_MANIFEST:-}
   [[ -n $prepared_root && -n $prepared_manifest ]] || fail 'prepared Rust root and manifest are both required'
-  if [[ ${RUNNER_ENVIRONMENT:-} == github-hosted ]]; then
+  if [[ ${OPENPILOT_CI_PREPARED_RUST_MODE:-} == native-arm-530-v1 ]]; then
+    [[ ${RUNNER_ENVIRONMENT:-}:${RUNNER_OS:-}:${RUNNER_ARCH:-} == github-hosted:Linux:ARM64 && $host == aarch64-unknown-linux-gnu ]] || fail 'prepared ARM host differs'
+    [[ $prepared_root == "${CI_JOB_TEMP:?}/arm530-sdk/rustup-home/toolchains/1.94.0-aarch64-unknown-linux-gnu" &&
+       $prepared_manifest == "$CI_JOB_TEMP/proof/arm530-sdk/sdk.before.sha256" ]] || fail 'prepared ARM root/manifest differs'
+    prepared_arm=true
+  elif [[ ${RUNNER_ENVIRONMENT:-} == github-hosted ]]; then
     [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $host == x86_64-unknown-linux-gnu ]] || fail 'prepared Rust requires trusted Linux X64 Actions'
     [[ ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.?????? && ${CI_JOB_TEMP%/*} == /tmp ]] || fail 'prepared hosted job path differs'
     [[ $prepared_root == "$CI_JOB_TEMP/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu" && $prepared_manifest == "$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256" ]] || fail 'unapproved private hosted Rust binding'
@@ -76,6 +84,11 @@ if [[ -n ${OPENPILOT_CI_PREPARED_RUST_ROOT+x}${OPENPILOT_CI_PREPARED_RUST_MANIFE
   prepared=true
 fi
 validate_prepared() {
+  if $prepared_arm; then
+    [[ ${CI296_SOURCE:-} == "$root" ]] || fail 'prepared ARM source differs'
+    /usr/bin/bash "$root/tools/ci/prepare-readonly-arm-rust-530" verify || fail 'prepared ARM SDK binding rejected'
+    return
+  fi
   local entry cargo_seen=false rustc_seen=false
   validate "$prepared_manifest" file
   [[ $(readlink -e -- "$prepared_manifest") == "$prepared_manifest" ]] || fail 'prepared Rust manifest must have a canonical nonsymlink path'

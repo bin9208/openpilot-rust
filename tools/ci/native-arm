@@ -38,7 +38,17 @@ job=${CI_JOB_TEMP:?}; source_dir=${CI296_SOURCE:?}
 [[ -d $source_dir && ! -L $source_dir && $(realpath -e "$source_dir") == "$source_dir" &&
    $GITHUB_SHA =~ ^[0-9a-f]{40}$ && $(git -C "$source_dir" --no-optional-locks rev-parse HEAD) == "$GITHUB_SHA" &&
    ${HOME:-} == "$job/home" && ${CARGO_HOME:-} == "$job/cargo-home" &&
-   ${RUSTUP_HOME:-} == "$job/rustup-home" ]] || fail 'Private exact source and tool homes required'
+   ( ${RUSTUP_HOME:-} == "$job/rustup-home" ||
+     ( ${OPENPILOT_CI_PREPARED_RUST_MODE:-} == native-arm-530-v1 &&
+       ${RUSTUP_HOME:-} == "$job/arm530-sdk/rustup-home" &&
+       ( ${GITHUB_JOB:-} == webcam-runtime || ${GITHUB_JOB:-} == carrot-navi-arm ) ) ) ]] || fail 'Private exact source and tool homes required'
+if [[ -n ${OPENPILOT_CI_PREPARED_RUST_MODE:-} ]]; then
+  [[ ${OPENPILOT_CI_PREPARED_RUST_MODE:-} == native-arm-530-v1 &&
+     ${RUSTUP_HOME:-} == "$job/arm530-sdk/rustup-home" ]] || fail 'Prepared ARM mode/home differs'
+fi
+if [[ ${RUSTUP_HOME:-} == "$job/arm530-sdk/rustup-home" ]]; then
+  /usr/bin/bash "$source_dir/tools/ci/prepare-readonly-arm-rust-530" verify
+fi
 transport="$job/local-arm"
 case ${1:-} in
   prepare)

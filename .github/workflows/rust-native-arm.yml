@@ -1170,6 +1170,17 @@ jobs:
         ((available >= 512 * 1024 * 1024))
         python -m venv "$CI_JOB_TEMP/venv"
         printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
+    - name: Prepare exact fresh ARM 1.94 SDK for the two admitted roles
+      timeout-minutes: 20
+      id: arm530_sdk
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        ARM530_HELPER_SHA256: e46156705665b9ec7d0dfad26b16b6c9e1f5e2266e008502807e4edcdfaad3a8
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" before
     - name: Install exact source closure and native capture providers
       run: |
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
@@ -1177,7 +1188,7 @@ jobs:
         sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y g++ clang-18 libclang-18-dev cmake pkg-config file capnproto libcapnp-dev libzmq3-dev 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*' 'libswscale-dev=7:6.1.1-*'
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
         python -m pip install -r rust/tools/webcam_source_requirements.txt
-        rustup toolchain install 1.94.0 --profile minimal --component clippy
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" verify
         mkdir -p "$RUNNER_TEMP/webcam"
         git rev-parse HEAD > "$RUNNER_TEMP/webcam/SOURCE_COMMIT"
         uname -m > "$RUNNER_TEMP/webcam/machine.txt"
@@ -1250,6 +1261,17 @@ jobs:
           ${{ env.CI_JOB_TEMP }}/local-arm/kernel.txt
           ${{ env.CI_JOB_TEMP }}/local-arm/disk-before.txt
       id: local_evidence_1
+    - name: Verify ARM SDK after every attempted maintained command
+      timeout-minutes: 10
+      id: arm530_sdk_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.arm530_sdk.outcome != 'skipped' && env.CI296_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        ARM530_HELPER_SHA256: e46156705665b9ec7d0dfad26b16b6c9e1f5e2266e008502807e4edcdfaad3a8
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" after
     - name: Finish native ARM execution evidence
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.ci296_source_admission.outcome == 'success') }}
       env:
@@ -1287,7 +1309,7 @@ jobs:
         if-no-files-found: error
     - name: Clean only uploaded owned source alias and target
       id: ci296_source_cleanup
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success' && env.CI296_SOURCE_OWNER != '') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success' && steps.arm530_sdk_final.outcome == 'success' && env.CI296_SOURCE_OWNER != '') }}
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
@@ -1320,7 +1342,7 @@ jobs:
           sudo -n rm -rf --one-file-system -- "$p"
         fi
     - name: Clean common owned temporary paths after uploaded source
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.arm530_sdk_final.outcome == 'success' && steps.ci296_source_cleanup.outcome == 'success') }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       with:
         cleanup: 'true'
@@ -2569,13 +2591,23 @@ jobs:
         ((available >= 512 * 1024 * 1024))
         python -m venv "$CI_JOB_TEMP/venv"
         printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
+    - name: Prepare exact fresh ARM 1.94 SDK for the two admitted roles
+      timeout-minutes: 20
+      id: arm530_sdk
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        ARM530_HELPER_SHA256: e46156705665b9ec7d0dfad26b16b6c9e1f5e2266e008502807e4edcdfaad3a8
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" before
     - name: Reserve runner capacity and install native ARM build dependencies
       run: |
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
         sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" update && sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y capnproto g++ binutils
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-        rustup toolchain install 1.94.0 --profile minimal
-        rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" verify
         mkdir -p "$RUNNER_TEMP/carrot-navi-arm"
         git rev-parse HEAD > "$RUNNER_TEMP/carrot-navi-arm/source-commit.txt"
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -2607,6 +2639,17 @@ jobs:
           ${{ env.CI_JOB_TEMP }}/local-arm/disk-before.txt
         if-no-files-found: warn
       id: local_evidence_1
+    - name: Verify ARM SDK after every attempted maintained command
+      timeout-minutes: 10
+      id: arm530_sdk_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.arm530_sdk.outcome != 'skipped' && env.CI296_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        ARM530_HELPER_SHA256: e46156705665b9ec7d0dfad26b16b6c9e1f5e2266e008502807e4edcdfaad3a8
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" after
     - name: Finish native ARM execution evidence
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.ci296_source_admission.outcome == 'success') }}
       env:
@@ -2644,7 +2687,7 @@ jobs:
         if-no-files-found: error
     - name: Clean only uploaded owned source alias and target
       id: ci296_source_cleanup
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success' && env.CI296_SOURCE_OWNER != '') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success' && steps.arm530_sdk_final.outcome == 'success' && env.CI296_SOURCE_OWNER != '') }}
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
@@ -2677,7 +2720,7 @@ jobs:
           sudo -n rm -rf --one-file-system -- "$p"
         fi
     - name: Clean common owned temporary paths after uploaded source
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.arm530_sdk_final.outcome == 'success' && steps.ci296_source_cleanup.outcome == 'success') }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       with:
         cleanup: 'true'

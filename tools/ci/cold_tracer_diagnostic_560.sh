@@ -30,28 +30,62 @@ out=$job/proof/cold560; build=$job/build; cache=$job/openpilot-disk-guard
 sdk=$job/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu
 gib=$((1024*1024*1024)); reserve=$((512*1024*1024)); phase=preflight
 free_bytes() { df --output=avail -B1 "$1" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1) exit 1;print v}'; }
+admission_failure() {
+  # 최초 거부 분기만 보존한다. 종료 admission이 원인을 덮어쓰지 못한다.
+  local reason=$1 root=$2 cap=$3 kind=$4 code=$5 bytes=$6 attempt=$7
+  local record=$job/proof/cold560-first-admission-failure.tsv
+  if [[ ! -e $record && ! -L $record ]];then
+    (set -o noclobber;printf 'phase\treason\troot\tcap\tkind\tdu_exit\tobserved_bytes\tattempt\n%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "$phase" "$reason" "$root" "$cap" "$kind" "$code" "$bytes" "$attempt" > "$record") || return 1
+    if [[ $code =~ ^[0-9]+$ && -f $job/proof/cold560-du.stderr && ! -L $job/proof/cold560-du.stderr &&
+          $(stat -c %s "$job/proof/cold560-du.stderr") -le 65536 ]];then
+      (set -o noclobber;cat -- "$job/proof/cold560-du.stderr" > "$job/proof/cold560-first-admission-du.stderr") || return 1
+    fi
+  fi
+  return 1
+}
 measure() {
   local root=$1 cap=$2 apparent=$3 count code value bytes before line path suffix
   [[ -e $root || -L $root ]] || { printf '0\n'; return; }
-  [[ -d $root && ! -L $root && $(readlink -e "$root") == "$root" ]] || return 1
-  before=$(stat -c '%d:%i' "$root") || return 1
+  [[ -d $root && ! -L $root && $(readlink -e "$root") == "$root" ]] || {
+    admission_failure canonical-root "$root" "$cap" "${apparent:-allocated}" - - 0;return 1;
+  }
+  before=$(stat -c '%d:%i' "$root") || {
+    admission_failure root-identity-read "$root" "$cap" "${apparent:-allocated}" - - 0;return 1;
+  }
   for count in 1 2 3; do
     code=0
     value=$(du -sx --block-size=1 $apparent -- "$root" 2> "$job/proof/cold560-du.stderr") || code=$?
-    [[ $(stat -c '%d:%i' "$root") == "$before" ]] || return 1
+    [[ $(stat -c '%d:%i' "$root") == "$before" ]] || {
+      admission_failure root-identity-changed "$root" "$cap" "${apparent:-allocated}" "$code" - "$count";return 1;
+    }
     bytes=${value%%$'\t'*}
-    [[ $bytes =~ ^[0-9]+$ && $value == "$bytes"$'\t'"$root" ]] && ((bytes<=cap)) || return 1
+    [[ $bytes =~ ^[0-9]+$ && $value == "$bytes"$'\t'"$root" ]] || {
+      admission_failure du-output-shape "$root" "$cap" "${apparent:-allocated}" "$code" - "$count";return 1;
+    }
+    ((bytes<=cap)) || {
+      admission_failure measured-cap "$root" "$cap" "${apparent:-allocated}" "$code" "$bytes" "$count";return 1;
+    }
     if [[ $code == 0 && ! -s $job/proof/cold560-du.stderr ]]; then printf '%s\n' "$bytes"; return; fi
-    [[ $code == 1 && $root == "$build" && -s $job/proof/cold560-du.stderr ]] || return 1
+    [[ $code == 1 && $root == "$build" && -s $job/proof/cold560-du.stderr ]] || {
+      admission_failure du-status-or-scope "$root" "$cap" "${apparent:-allocated}" "$code" "$bytes" "$count";return 1;
+    }
     # mutable build의 실제 ENOENT만 최대3회 재표본한다. 부분합 cap 초과는 위에서 즉시 실패한다.
     suffix="': No such file or directory"
     while IFS= read -r line; do
-      [[ $line == "du: cannot access '$build/"*"$suffix" ]] || return 1
+      [[ $line == "du: cannot access '$build/"*"$suffix" ]] || {
+        admission_failure du-error-shape "$root" "$cap" "${apparent:-allocated}" "$code" "$bytes" "$count";return 1;
+      }
       path=${line#"du: cannot access '"};path=${path%"$suffix"}
-      [[ $path != *$'\n'* && ! -e $path && ! -L $path ]] || return 1
+      [[ $path != *$'\n'* && ! -e $path && ! -L $path ]] || {
+        admission_failure du-absent-path "$root" "$cap" "${apparent:-allocated}" "$code" "$bytes" "$count";return 1;
+      }
     done < "$job/proof/cold560-du.stderr"
-    cat "$job/proof/cold560-du.stderr" >> "$job/proof/cold560-du-races.log" || return 1
+    cat "$job/proof/cold560-du.stderr" >> "$job/proof/cold560-du-races.log" || {
+      admission_failure du-race-record "$root" "$cap" "${apparent:-allocated}" "$code" "$bytes" "$count";return 1;
+    }
   done
+  admission_failure du-three-attempts-exhausted "$root" "$cap" "${apparent:-allocated}" "$code" "$bytes" 3
   return 1
 }
 admit() {
@@ -62,29 +96,43 @@ admit() {
     path=${roots[$n]};cap=${caps[$n]}
     bytes=$(measure "$path" "$cap" '') || return 1
     apparent=$(measure "$path" "$cap" --apparent-size) || return 1
-    dev=$(stat -c %d "$( [[ -d $path ]] && printf '%s' "$path" || printf '%s' "$job" )") || return 1
+    dev=$(stat -c %d "$( [[ -d $path ]] && printf '%s' "$path" || printf '%s' "$job" )") || {
+      admission_failure filesystem-identity "$path" "$cap" device - - 0;return 1;
+    }
     representative[$dev]=$( [[ -d $path ]] && printf '%s' "$path" || printf '%s' "$job" )
     need[$dev]=$(( ${need[$dev]:-0}+cap-bytes ))
   done
   for path in "$job/rustup-home" "$job/cargo-home" "$job/rust-bootstrap"; do
-    [[ ! -e $path ]] || [[ $(stat -c %d "$path") == "$(stat -c %d "$job")" ]] || return 1
+    [[ ! -e $path ]] || [[ $(stat -c %d "$path") == "$(stat -c %d "$job")" ]] || {
+      admission_failure sdk-filesystem "$path" "$((3*gib))" device - - 0;return 1;
+    }
     bytes=$(measure "$path" $((3*gib)) '') || return 1
     apparent=$(measure "$path" $((3*gib)) --apparent-size) || return 1
     sdk_bytes=$((sdk_bytes+bytes));sdk_apparent=$((sdk_apparent+apparent))
   done
-  ((sdk_bytes<=3*gib && sdk_apparent<=3*gib)) || return 1
+  ((sdk_bytes<=3*gib && sdk_apparent<=3*gib)) || {
+    admission_failure sdk-aggregate "$job" "$((3*gib))" allocated-apparent - "$sdk_bytes/$sdk_apparent" 0;return 1;
+  }
   dev=$(stat -c %d "$job");representative[$dev]=$job
   need[$dev]=$(( ${need[$dev]:-0}+3*gib-sdk_bytes ))
   if [[ ! -e $job/proof/cold560-packages.done ]]; then
     dev=$(stat -c %d /);representative[$dev]=/
     need[$dev]=$(( ${need[$dev]:-0}+gib ))
   else
-    [[ ! -L $job/proof/cold560-packages.done && $(cat "$job/proof/cold560-packages.done") == "$GITHUB_SHA" ]] || return 1
+    [[ ! -L $job/proof/cold560-packages.done && $(cat "$job/proof/cold560-packages.done") == "$GITHUB_SHA" ]] || {
+      admission_failure packages-source-marker "$job/proof/cold560-packages.done" 0 source-binding - - 0;return 1;
+    }
   fi
   for dev in "${!need[@]}"; do
-    available=$(free_bytes "${representative[$dev]}") || return 1
-    printf '%s\t%s\t%s\t%s\n' "$EPOCHREALTIME" "$dev" "$available" "$((need[$dev]+reserve))" >> "$job/proof/cold560-admission.tsv" || return 1
-    ((available>=need[$dev]+reserve)) || return 1
+    available=$(free_bytes "${representative[$dev]}") || {
+      admission_failure free-bytes-read "${representative[$dev]}" "$((need[$dev]+reserve))" free - - 0;return 1;
+    }
+    printf '%s\t%s\t%s\t%s\n' "$EPOCHREALTIME" "$dev" "$available" "$((need[$dev]+reserve))" >> "$job/proof/cold560-admission.tsv" || {
+      admission_failure capacity-record "${representative[$dev]}" "$((need[$dev]+reserve))" free - "$available" 0;return 1;
+    }
+    ((available>=need[$dev]+reserve)) || {
+      admission_failure free-capacity "${representative[$dev]}" "$((need[$dev]+reserve))" free - "$available" 0;return 1;
+    }
   done
 }
 source_final() {

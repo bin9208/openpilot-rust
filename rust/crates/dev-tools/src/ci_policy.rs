@@ -299,6 +299,89 @@ fn private_upload_conditions(steps: &[Value]) -> Result<Vec<String>, String> {
     Ok(conditions)
 }
 
+// #530은 main caller의 실패2role에만 새 SDK를 요구한다. 기존 candidate들은 별도다.
+fn arm_sdk530_role(job: &Value) -> bool {
+    job["env"]["CI296_NATIVE_ARM"] == "1"
+        && job["env"]["CI296_NATIVE_ARM_CALLER"] == "rust.yml"
+        && matches!(
+            job["env"]["CI296_ALIAS_BASENAME"].as_str(),
+            Some(".ci296-source-rust--webcam-runtime" | ".ci296-source-rust--carrot-navi-arm")
+        )
+}
+fn validate_arm_sdk530_steps(job: &Value, steps: &[Value]) -> Result<(), String> {
+    let index = |label: &str| {
+        let positions = steps
+            .iter()
+            .enumerate()
+            .filter_map(|(i, step)| (step["name"] == label).then_some(i))
+            .collect::<Vec<_>>();
+        require(
+            positions.len() == 1,
+            format!("ARM SDK530 stage missing or duplicated: {label}"),
+        )?;
+        Ok::<usize, String>(positions[0])
+    };
+    let before = index("Prepare exact fresh ARM 1.94 SDK for the two admitted roles")?;
+    let after = index("Verify ARM SDK after every attempted maintained command")?;
+    let webcam = job["env"]["CI296_ALIAS_BASENAME"] == ".ci296-source-rust--webcam-runtime";
+    let dependency = index(if webcam {
+        "Install exact source closure and native capture providers"
+    } else {
+        "Reserve runner capacity and install native ARM build dependencies"
+    })?;
+    let finish = index("Finish native ARM execution evidence")?;
+    let seal = index("Seal private source and index after maintained checks")?;
+    require(
+        before < dependency && dependency < after && after < finish && finish < seal,
+        "ARM SDK530 preparation and finalizer order changed",
+    )?;
+    for (at, id, minutes, phase, condition) in [
+        (
+            before,
+            "arm530_sdk",
+            "20",
+            "before",
+            TRUSTED_SOURCE.to_owned(),
+        ),
+        (
+            after,
+            "arm530_sdk_final",
+            "10",
+            "after",
+            private_source_condition(
+                "always() && steps.arm530_sdk.outcome != 'skipped' && env.CI296_SOURCE != ''",
+            ),
+        ),
+    ] {
+        let step = &steps[at];
+        absent(step, &["continue-on-error", "uses"])?;
+        require(step["id"] == id && steps.iter().filter(|s| s["id"] == id).count() == 1
+            && step["if"] == condition && step["timeout-minutes"] == minutes
+            && step["working-directory"] == "${{ env.CI296_SOURCE }}" && step["shell"] == "bash"
+            && step["env"] == serde_json::json!({"CI296_HOST_CONTROL":"1",
+                "ARM530_HELPER_SHA256":"e46156705665b9ec7d0dfad26b16b6c9e1f5e2266e008502807e4edcdfaad3a8"})
+            && step["run"] == format!("/usr/bin/bash \"$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530\" {phase}\n"),
+            format!("ARM SDK530 exact {phase} binding changed"))?;
+    }
+    let run = steps[dependency]["run"]
+        .as_str()
+        .ok_or("missing ARM SDK530 dependency body")?;
+    require(
+        run.lines()
+            .filter(|line| {
+                *line ==
+        "/usr/bin/bash \"$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530\" verify"
+            })
+            .count()
+            == 1
+            && !run.lines().any(|line| {
+                line.contains("rustup toolchain install") || line.contains("rustup target add")
+            }),
+        "ARM SDK530 dependencies must verify the sealed SDK without reinstalling it",
+    )?;
+    Ok(())
+}
+
 /// Validate the #296 owned source/alias consumer. Existing private x64
 /// diagnostics and the separately admitted Fast schema retain their own gates.
 pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
@@ -311,6 +394,10 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
     )?;
     let steps = job["steps"].as_array().ok_or("missing private job steps")?;
     let native_arm = job["env"]["CI296_NATIVE_ARM"] == "1";
+    let arm_sdk530 = arm_sdk530_role(job);
+    if arm_sdk530 {
+        validate_arm_sdk530_steps(job, steps)?;
+    }
     if native_arm {
         validate_hosted_arm_boundary(job)?;
         require(
@@ -696,6 +783,9 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
         }
         expected.push("steps.ci296_mac_sdk_seal.outcome == 'success'".into());
     }
+    if arm_sdk530 {
+        expected.push("steps.arm530_sdk_final.outcome == 'success'".into());
+    }
     expected.push("env.CI296_SOURCE_OWNER != ''".into());
     require(
         condition == private_source_condition(&expected.join(" && ")),
@@ -704,6 +794,9 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
     let common = &steps[position("Clean common owned temporary paths after uploaded source")?];
     let mut expected = private_upload_conditions(steps)?;
     expected.splice(1..1, native_success.iter().cloned());
+    if arm_sdk530 {
+        expected.push("steps.arm530_sdk_final.outcome == 'success'".into());
+    }
     expected.push("steps.ci296_source_cleanup.outcome == 'success'".into());
     require(
         common["if"] == private_source_condition(&expected.join(" && ")),

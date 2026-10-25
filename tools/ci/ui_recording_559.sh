@@ -493,7 +493,7 @@ cache_alias_metadata() {
     if ($builder|length)!=1 or ($outputs|length)!=1 or ($cxx|length)!=1 or
       $cxx[0].target.src_path!=($cxx[0].manifest_path|rtrimstr("/Cargo.toml"))+"/src/lib.rs"
       then error("exact Cargo CXX provider/build-script required") else
-      {out_dir:$outputs[0].out_dir,header:($cxx[0].manifest_path|rtrimstr("/Cargo.toml"))+"/include/cxx.h",
+      {out_dir:$outputs[0].out_dir,header:(($cxx[0].manifest_path|rtrimstr("/Cargo.toml"))+"/include/cxx.h"),
         builder:$builder[0],build_script:$outputs[0],registry:$cxx[0]} end' "$log" > "$output"
   cache_jpeg_out=$(jq -er '.out_dir' "$output")
   cache_header=$(jq -er '.header' "$output")

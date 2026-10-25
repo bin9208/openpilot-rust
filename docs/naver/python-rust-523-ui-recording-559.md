@@ -135,3 +135,20 @@ copy 직후 candidate에는 symlink0, regular nlink1, source/candidate regular·
 snapshot60초/copy120초/control30초/current alias60초 모두 기존 shared1200 remaining 안에서만 실행한다. build8GiB/proof1GiB/file512MiB·실제 FS admission·성장 감시·source/SDK final·upload/cleanup은 그대로다. tar COPY는 CoW 절감에 기대지 않으므로 physical/apparent fit은 실제 GHA에서 판정한다. baseline copied workspace를 Cargo가 fresh=true로 재사용하면 여전히 실패하며, 자동 fallback/산출물 삭제/Cargo clean/expected 재생성은 없다.
 
 이 후보는 helper/WF helper literal pin/이 한국어 기록3파일만 수정한다. 로컬은 Bash·고정 본문 문법/YAML/소스·diff만 확인했으며 새 controls/copy/metadata worker/Cargo freshness/alias 재생성·fit·원문5/RED-GREEN9/source4/Clippy는 **UNRUN**이다. 기존 Cargo/prod/test/fixture/expected와1200·8GiB를 바꾸지 않았고 #559 또는 runtime 전체 수용을 주장하지 않는다.
+
+
+## 54b actual jq 구문 실패와 최소 정정
+
+[40164031999/job121081294345](https://github.com/bin9208/openpilot-rust/actions/runs/40164031999/job/121081294345),
+source54b7b8d32의 최초 실패는 baseline RED 뒤 `cache_alias_metadata` jq compile이다.
+`header:(...)+"/include/cxx.h"` object value의 합 전체를 괄호로 묶지 않아 unexpected '+'를 냈다.
+baseline_exact_red=true이며 aliascontrols/cachecopy/currentfresh/sourcebinding/recording9/5mode는 미실행이다.
+후보는 해당 식을 `header:((...)+"/include/cxx.h")`로만 정정하고 WF의 helper literal SHA를 갱신한다.
+원문 expected/실제 alias6 대상·negative5/첫 current freshness/시간·cap·원본5mode는 그대로다.
+
+artifact12587279330=22955599B/SHA256
+`c8dc6729c54fb0863bc1c0b3ead14baf12d59aa6fae75562702370fe57a00236`,12348CRC/expanded131572606B를
+부모가 감사했다. finalizer0/immutable_seals=true/owned_processes_nonlive=true와 source/index/SDK
+봉인은 별도 성공이다. outcome phase는 baseline-red/command_exit3이며 pass 및 retirement_credit은false/0이다.
+local Bash/YAML와 새 jq 식의 syntax compilation만 확인하며 다음 실제 positive·negative/cachecopy 수용은
+Actions 대기다. compile문법 오류를 cache/source/timeout 수치 결함으로 오인하지 않는다.

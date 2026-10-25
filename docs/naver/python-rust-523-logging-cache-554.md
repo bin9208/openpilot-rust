@@ -287,3 +287,29 @@ e4a8463ff1025a7ab3f248d69b1f70e9ef4c2c57a0b741be495be299a232bcce,2,403CRC다.
 바뀌지 않았다. 신규 회귀만 기존 계약에 맞춰true를 요구하도록 정정한다. parser·원문·기존20본문·
 summary6·frozen expected·2초/600초 기준은 수정하지 않는다. 더 강한 payload/FD closure를
 주장하려고 기존 보수적 flag를false로 바꾸지 않는다. 전체24와 실제15prefix는 다시 Actions로 확인한다.
+
+
+## 8ae trace24 성공과 남은 actual runtime2초 실패
+
+[40163930563/job121081003972](https://github.com/bin9208/openpilot-rust/actions/runs/40163930563/job/121081003972),
+source8ae95f733은 새 trace24/summary와 원래 fixed corpus 준비를 통과했으나 첫
+retained::runtime_directory_int에서 `backpressure send and shutdown exceeded bound`로 실패했다.
+원래2초 기준은 유지한다. artifact12588030653=42803801B/SHA256
+`b4e01c9fdb02d715b2059f9f33807c6e97938de5448d1e8a3d415aaaef823348`,3323CRC/expanded424015173B를
+부모가 감사했다. outcome phase=lifecycle-runtime_directory_int/exit101/held-final0/paired-final0,
+retirement_credit0/closed_trace_admitted=false/old27_admitted=false다.
+
+실제 traced backpressure는 sent1000/dropped4000/filtered0이며 start_peer2.080270586초,
+command0.183952623초·finish0.106576780초로 전체2.370799989초다. 앞선 untraced 동일 case는
+0.429260519초(start0.175901704/command0.151719152/finish0.101639663)로 통과했다.
+원문 recovered reference는0.298449283초다. source/native wire·2초 기준 또는원문expected 변경은 없다.
+actual first_int/term/eof는 통과했으나 나머지 lifecycle 및 retained-once와15prefix lexical 최종gate는
+이 실패 뒤에 미도달이다. trace24 unit 성공을 full-prefix 또는 #565 전체 해결로 확대하지 않는다.
+
+traced current Git status는 고정 core.preloadIndex=false이며 선택 PID22021/22025가 각각24955개
+newfstatat를 수행했다. 같은 job의 한 쌍 status 진단은 false197cs/true102cs였으나 실행순서의
+cache효과를 완전히 분리하지 않았다. Git 공식 문서는 core.preloadIndex가 filesystem 비교를
+병렬로 수행하며 기본true라고 설명한다: https://git-scm.com/docs/git-config#Documentation/git-config.txt-corepreloadIndex
+현재자료만으로 true의 full runtime2초 성공이나 원래 #554 root 해결을 주장하지 않는다.
+다음 최소안은 동일held root/index/source에서 순서와warm효과를 구별한 실제 대조 및 scope검토다.
+ptrace필터/원문 시간·수치/원본삭제·retirement조건을 완화하지 않는다.

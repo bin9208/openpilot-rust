@@ -1049,3 +1049,25 @@ source 조건은 그대로이며 WF 실행 body/조건을 변경하지 않는다
 조건삭제/trusted-only/always-only/false/success-only5개를 거부하는 새 회귀1개를 추가했다.
 원래 failures에서도 증거를 남기는 동작과 fork 거부를 모두 요구한다. 기능과 Fast 전체 수용은
 다음 정확 source Actions에서 판정하며 숫자558/37 또는strict 원문 기준을 낮추지 않는다.
+
+
+### db Fast의 남은 native stager 조회 scope
+
+[40164444310/job121082845887](https://github.com/bin9208/openpilot-rust/actions/runs/40164444310/job/121082845887)의
+ci_artifact_list는 앞선 조건 오류를 통과했으며, 뒤의 ci_native_staging이 main21/기존22 caller 차이로
+실패했다. 이동한 RadarCAN의 Params caller 하나도 exact caller/proxy/callee 검증 뒤 기존 shared
+resolver에서 조회하도록 연결한다. expected22와 template1, 모든 실제 stager 준비·명시 선택·음성 변조
+본문은 그대로 유지하며 전체6 ARM 중복 합산이나 count완화는 없다. 기능 수용은 다음 Actions 대기다.
+
+
+같은 db Fast routing은 strict cold 실제 audit1과 ci_disk_bootstrap35(ignored1)를 통과했다.
+ci_workflow_policy는40PASS/1FAIL이며 새 Fast UI diagnostic target을 독립 exact suite roster에
+추가하지 않은 것이 원인이었다. 기존72개와 순서/한 번 실행 판정은 그대로 두고 새 target1만
+추가해73개를 요구한다. CI target을 추가한 부모 변경의 등록 누락을 보완하며 skip/중복/기존 제거를
+허용하지 않는다. 이후 정확 소스 Fast 전체 성공은 아직 대기다.
+
+
+독립 Sol source 검토가 발견한 추가 등록 누락도 반영했다. 새 UI target은 native-tools 부분 합계에
+포함되므로53→54, native+tools 합계57→58로 정확히1개씩 늘린다. 기존72개/분할/순서/단일 실행 및
+새1개 외 항목은 보존한다. 전체73만 바꾸고 부분 합계를 남기는 오류를 source 검토에서 정정했으며
+actual 수용은 여전히 다음 GitHub Actions의 결과를 요구한다.

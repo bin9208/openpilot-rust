@@ -125,6 +125,7 @@ chmod +x "$target/$host/debug/disk-space-guard"
         for key in [
             "OPENPILOT_CI_PREPARED_RUST_ROOT",
             "OPENPILOT_CI_PREPARED_RUST_MANIFEST",
+            "OPENPILOT_CI_PREPARED_RUST_MODE",
         ] {
             if !self.env.contains_key(key) {
                 spec.env_remove.push(key.into());
@@ -2431,3 +2432,84 @@ fn zero_and_maximum_growth_keep_bootstrap_integer_semantics() {
 
 #[path = "ci_disk_bootstrap/prepared_audit.rs"]
 mod prepared_audit;
+
+#[test]
+fn prepared_arm_mode_rejects_missing_root_and_unknown_modes_before_installation() {
+    for (mode, expected) in [
+        (
+            "native-arm-530-v1",
+            "prepared Rust mode requires an SDK root",
+        ),
+        ("native-arm-530-v2", "unknown prepared Rust mode"),
+    ] {
+        let mut f = Fixture::new("999999999999");
+        f.env
+            .insert("OPENPILOT_CI_PREPARED_RUST_MODE".into(), mode.into());
+        let output = f.invoke();
+        assert_ne!(output.code, 0);
+        assert!(String::from_utf8_lossy(&output.stderr).contains(expected));
+        assert!(!f.log.exists(), "rejected mode reached an installer");
+        assert!(!f.cache().exists(), "rejected mode created a cold cache");
+    }
+}
+
+#[test]
+fn prepared_arm_rejects_other_hosts_before_installation() {
+    for (environment, architecture) in [("github-hosted", "X64"), ("self-hosted", "ARM64")] {
+        let mut f = Fixture::new("999999999999");
+        executable(&f.path.join("commands/uname"), "printf 'aarch64\\n'\n");
+        for (key, value) in [
+            ("OPENPILOT_CI_PREPARED_RUST_MODE", "native-arm-530-v1"),
+            ("OPENPILOT_CI_PREPARED_RUST_ROOT", "/unadmitted/sdk"),
+            (
+                "OPENPILOT_CI_PREPARED_RUST_MANIFEST",
+                "/unadmitted/manifest",
+            ),
+            ("RUNNER_ENVIRONMENT", environment),
+            ("RUNNER_OS", "Linux"),
+            ("RUNNER_ARCH", architecture),
+        ] {
+            f.env.insert(key.into(), value.into());
+        }
+        let output = f.invoke();
+        assert_ne!(output.code, 0);
+        assert!(String::from_utf8_lossy(&output.stderr).contains("prepared ARM host differs"));
+        assert!(!f.log.exists());
+        assert!(!f.cache().exists());
+    }
+}
+
+#[test]
+fn prepared_arm_rejects_root_manifest_cross_binding_before_installation() {
+    for (root_path, manifest_path) in [
+        (
+            "/tmp/openpilot-ci.abcdef/rustup-home/toolchains/1.94.0-aarch64-unknown-linux-gnu",
+            "/tmp/openpilot-ci.abcdef/proof/arm530-sdk/sdk.before.sha256",
+        ),
+        (
+            "/tmp/openpilot-ci.abcdef/arm530-sdk/rustup-home/toolchains/1.94.0-aarch64-unknown-linux-gnu",
+            "/tmp/openpilot-ci.other1/proof/arm530-sdk/sdk.before.sha256",
+        ),
+    ] {
+        let mut f = Fixture::new("999999999999");
+        executable(&f.path.join("commands/uname"), "printf 'aarch64\\n'\n");
+        for (key, value) in [
+            ("OPENPILOT_CI_PREPARED_RUST_MODE", "native-arm-530-v1"),
+            ("OPENPILOT_CI_PREPARED_RUST_ROOT", root_path),
+            ("OPENPILOT_CI_PREPARED_RUST_MANIFEST", manifest_path),
+            ("CI_JOB_TEMP", "/tmp/openpilot-ci.abcdef"),
+            ("RUNNER_ENVIRONMENT", "github-hosted"),
+            ("RUNNER_OS", "Linux"),
+            ("RUNNER_ARCH", "ARM64"),
+        ] {
+            f.env.insert(key.into(), value.into());
+        }
+        let output = f.invoke();
+        assert_ne!(output.code, 0);
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains("prepared ARM root/manifest differs")
+        );
+        assert!(!f.log.exists());
+        assert!(!f.cache().exists());
+    }
+}

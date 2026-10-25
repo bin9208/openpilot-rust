@@ -113,25 +113,209 @@ tree() {
   find -P "$root" -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%y\t%p\t%l\0' | sort -z > "$out.stable" || return 1
   cmp "$out.roster" "$out.stable"
 }
+usage_identity() {
+  [[ -d $1 && ! -L $1 && $(readlink -e -- "$1") == "$1" && $(stat -c %u -- "$1") == "$UID" ]] || return 1
+  # mutable directory의 mtime/nlink는 고정하지 않는다.
+  stat -c '%d:%i:%f:%u:%g' -- "$1"
+}
+# 0=깨끗한 전체 du, 75=target ENOENT 재관측, 1=즉시 실패. 원문을 고치지 않는다.
+usage_result() {
+  local usage_root=$1 usage_before=$2 usage_target_before=$3 usage_cap=$4 usage_code=$5 usage_out=$6 usage_err=$7
+  local usage_value usage_bytes_value usage_line usage_relative usage_raw
+  local LC_ALL=C
+  [[ $(usage_identity "$usage_root") == "$usage_before" ]] || { printf 'root-identity\n'; return 1; }
+  if [[ $usage_root == "$build" || $usage_root == "$build/target" ]]; then
+    [[ $(usage_identity "$build/target") == "$usage_target_before" ]] || { printf 'target-identity\n'; return 1; }
+  fi
+  for usage_raw in "$usage_out" "$usage_err"; do
+    [[ -f $usage_raw && ! -L $usage_raw && $(stat -c '%u:%h' -- "$usage_raw") == "$UID:1" &&
+       $(stat -c %s -- "$usage_raw") -lt 65536 ]] || { printf 'raw-bound\n'; return 1; }
+  done
+  usage_value=$(cat -- "$usage_out") || return 1
+  # 정확한 단일 LF 행. command substitution의 NUL/LF 소실도 byte 대조로 거부한다.
+  printf '%s\n' "$usage_value" | cmp -s - "$usage_out" || { printf 'output-shape\n'; return 1; }
+  usage_bytes_value=${usage_value%%$'\t'*}
+  [[ $usage_bytes_value =~ ^(0|[1-9][0-9]*)$ && $usage_value == "$usage_bytes_value"$'\t'"$usage_root" ]] || { printf 'output-shape\n'; return 1; }
+  # 산술 변환 전에 비교하여 overflow와 failed scan의 부분 합 초과도 즉시 거부한다.
+  if (( ${#usage_bytes_value} > ${#usage_cap} )) ||
+     { (( ${#usage_bytes_value} == ${#usage_cap} )) && [[ $usage_bytes_value > $usage_cap ]]; }; then
+    printf 'partial-cap\n'; return 1
+  fi
+  if [[ $usage_code == 0 && ! -s $usage_err ]]; then printf 'clean:%s\n' "$usage_bytes_value"; return 0; fi
+  [[ ( $usage_root == "$build" || $usage_root == "$build/target" ) && $usage_code == 1 && -s $usage_err ]] || { printf 'status\n'; return 1; }
+  while IFS= read -r usage_line || [[ -n $usage_line ]]; do
+    [[ $usage_line == "du: cannot access '$build/target/"*"': No such file or directory" ]] || { printf 'error-line\n'; return 1; }
+    usage_relative=${usage_line#"du: cannot access '$build/target/"}
+    usage_relative=${usage_relative%"': No such file or directory"}
+    [[ $usage_relative =~ ^[A-Za-z0-9_./+-]+$ ]] || { printf 'error-path\n'; return 1; }
+    case "/$usage_relative/" in *'/../'*|*'/./'*|*'//'*) printf 'error-components\n'; return 1;; esac
+    [[ ! -e $build/target/$usage_relative && ! -L $build/target/$usage_relative ]] || { printf 'error-present\n'; return 1; }
+  done < "$usage_err"
+  # read는 NUL을 버릴 수 있다. 모든 행을 동일하게 재구성할 수 있어야 한다.
+  usage_value=$(cat -- "$usage_err") || return 1
+  printf '%s\n' "$usage_value" | cmp -s - "$usage_err" || { printf 'error-shape\n'; return 1; }
+  printf 'target-enoent\n'; return 75
+}
+usage_failure() {
+  # command substitution 안의 실패도 파일로 sticky하게 남긴다.
+  (set -C; printf '%s\n' "$phase" > "$driver/resource-failure") 2>/dev/null || true
+  return 1
+}
 usage_bytes() {
-  local value
-  value=$(du -sx --block-size=1 -- "$1") || return 1
-  value=${value%%$'\t'*}; [[ $value =~ ^[0-9]+$ ]] || return 1
-  printf '%s\n' "$value"
+  local usage_root=$1 usage_cap=$2 usage_admission=$3 usage_before usage_target_before=unused
+  local usage_tag usage_dir usage_attempt usage_code usage_decision usage_reason usage_classified_reason usage_after usage_target_after
+  case "$usage_root" in
+    "$build") usage_tag=build ;;
+    "$build/target") usage_tag=target ;;
+    "$build/cargo-home") usage_tag=cargo ;;
+    "$proof") usage_tag=proof ;;
+    "$job/cargo-home/registry") usage_tag=registry ;;
+    "$job/cargo-home/git") usage_tag=git ;;
+    *) usage_failure; return 1 ;;
+  esac
+  [[ $usage_cap =~ ^[1-9][0-9]{0,9}$ ]] || { usage_failure; return 1; }
+  usage_before=$(usage_identity "$usage_root") || { usage_failure; return 1; }
+  if [[ $usage_root == "$build" || $usage_root == "$build/target" ]]; then
+    usage_target_before=$(usage_identity "$build/target") || { usage_failure; return 1; }
+  fi
+  usage_dir=$driver/usage.$usage_tag.$BASHPID.$EPOCHREALTIME
+  mkdir -m 700 -- "$usage_dir" || { usage_failure; return 1; }
+  for usage_attempt in 1 2 3; do
+    usage_code=0; usage_decision=0
+    [[ $(usage_identity "$usage_root") == "$usage_before" ]] || { usage_failure; return 1; }
+    # 파일 상한은 이 du subprocess의 원문 출력에만 적용하며 Cargo/ELF에는 전파하지 않는다.
+    (trap - EXIT ERR INT TERM HUP; ulimit -c 0 && ulimit -f 64 && LC_ALL=C du -sx --block-size=1 -- "$usage_root") \
+      > "$usage_dir/$usage_attempt.stdout" 2> "$usage_dir/$usage_attempt.stderr" || usage_code=$?
+    usage_reason=$(usage_result "$usage_root" "$usage_before" "$usage_target_before" "$usage_cap" "$usage_code" \
+      "$usage_dir/$usage_attempt.stdout" "$usage_dir/$usage_attempt.stderr") || usage_decision=$?
+    usage_classified_reason=$usage_reason
+    usage_after=$(usage_identity "$usage_root") || usage_after=unavailable
+    usage_target_after=unused
+    if [[ $usage_root == "$build" || $usage_root == "$build/target" ]]; then
+      usage_target_after=$(usage_identity "$build/target") || usage_target_after=unavailable
+    fi
+    if [[ $usage_after != "$usage_before" ]]; then usage_decision=1; usage_reason=root-identity-after
+    elif [[ $usage_target_after != "$usage_target_before" ]]; then usage_decision=1; usage_reason=target-identity-after
+    fi
+    (set -C; printf 'phase=%s\nadmission=%s\nroot=%s\nattempt=%s\nroot_before=%s\nroot_after=%s\ntarget_before=%s\ntarget_after=%s\ncap=%s\ndu_code=%s\ndecision=%s\nclassified_reason=%s\nreason=%s\n' \
+      "$phase" "$usage_admission" "$usage_root" "$usage_attempt" "$usage_before" "$usage_after" \
+      "$usage_target_before" "$usage_target_after" "$usage_cap" "$usage_code" "$usage_decision" "$usage_classified_reason" "$usage_reason" > "$usage_dir/$usage_attempt.meta") || { usage_failure; return 1; }
+    if [[ $usage_decision == 0 ]]; then printf '%s\n' "${usage_reason#clean:}"; return 0; fi
+    if [[ $usage_attempt == 1 ]]; then
+      (set -C; printf '%s\n' "$usage_dir/$usage_attempt.meta" > "$usage_dir/first-failure") || { usage_failure; return 1; }
+    fi
+    [[ $usage_decision == 75 ]] || { usage_failure; return 1; }
+  done
+  (set -C; printf 'attempts=3\nreason=retry-exhausted\n' > "$usage_dir/exhausted") || true
+  usage_failure
+}
+
+# GHA에서만 호출하는 authored preflight. 실제 du/compile/SSH 수용을 대신하지 않는다.
+usage_controls() {
+  local usage_controls=$driver/usage-controls usage_control_identity usage_control_reason usage_control_code usage_control_case usage_control_expected
+  local usage_control_dir usage_control_decision usage_control_expected_reason
+  local usage_control_root=$build/target usage_control_fixture=$build/target/ssh-usage-controls
+  local -a usage_control_scans=()
+  local phase=usage-controls
+  mkdir -m 700 "$usage_controls" "$usage_control_fixture"
+  : > "$usage_control_fixture/present"
+  ln -s absent "$usage_control_fixture/dangling"
+  usage_control_identity=$(usage_identity "$usage_control_root")
+  for usage_control_case in clean target-enoent build-target-enoent partial-cap outside permission present dangling traversal status overflow identity malformed nul-stdout nul-stderr mixed raw-bound; do
+    usage_control_dir=$usage_controls/$usage_control_case
+    mkdir -m 700 "$usage_control_dir"
+    usage_control_root=$build/target
+    [[ $usage_control_case != build-target-enoent ]] || usage_control_root=$build
+    usage_control_identity=$(usage_identity "$usage_control_root")
+    printf '9\t%s\n' "$usage_control_root" > "$usage_control_dir/stdout"
+    usage_control_code=1; usage_control_expected=1
+    printf "du: cannot access '%s/target/ssh-usage-controls/missing': No such file or directory\n" "$build" > "$usage_control_dir/stderr"
+    case "$usage_control_case" in
+      clean) usage_control_code=0; usage_control_expected=0; usage_control_expected_reason=clean:9; : > "$usage_control_dir/stderr" ;;
+      target-enoent|build-target-enoent) usage_control_expected=75; usage_control_expected_reason=target-enoent ;;
+      partial-cap) usage_control_expected_reason=partial-cap; printf '11\t%s\n' "$usage_control_root" > "$usage_control_dir/stdout" ;;
+      outside) usage_control_expected_reason=error-line; printf "du: cannot access '%s/cargo-home/missing': No such file or directory\n" "$build" > "$usage_control_dir/stderr" ;;
+      permission) usage_control_expected_reason=error-line; printf "du: cannot read directory '%s/private': Permission denied\n" "$usage_control_root" > "$usage_control_dir/stderr" ;;
+      present|dangling|traversal)
+        usage_control_expected_reason=error-present
+        usage_control_reason=ssh-usage-controls/$usage_control_case
+        [[ $usage_control_case != traversal ]] || { usage_control_reason=../missing; usage_control_expected_reason=error-components; }
+        printf "du: cannot access '%s/%s': No such file or directory\n" "$usage_control_root" "$usage_control_reason" > "$usage_control_dir/stderr" ;;
+      status) usage_control_expected_reason=status; usage_control_code=2 ;;
+      overflow) usage_control_expected_reason=partial-cap; printf '18446744073709551616\t%s\n' "$usage_control_root" > "$usage_control_dir/stdout" ;;
+      identity) usage_control_expected_reason=root-identity; usage_control_identity=wrong-identity ;;
+      malformed) usage_control_expected_reason=output-shape; printf '9\t%s\nextra\n' "$usage_control_root" > "$usage_control_dir/stdout" ;;
+      nul-stdout) usage_control_expected_reason=output-shape; printf '9\t%s\0' "$usage_control_root" > "$usage_control_dir/stdout" ;;
+      nul-stderr) usage_control_expected_reason=error-shape; printf "du: cannot access '%s/ssh-usage-controls/missing': No such file or directory\0" "$usage_control_root" > "$usage_control_dir/stderr" ;;
+      mixed) usage_control_expected_reason=error-line; printf 'du: Permission denied\n' >> "$usage_control_dir/stderr" ;;
+      raw-bound) usage_control_expected_reason=raw-bound; printf '%*s' 65536 '' > "$usage_control_dir/stderr" ;;
+    esac
+    usage_control_decision=0
+    usage_result "$usage_control_root" "$usage_control_identity" "$(usage_identity "$build/target")" \
+      10 "$usage_control_code" "$usage_control_dir/stdout" "$usage_control_dir/stderr" \
+      > "$usage_control_dir/reason" 2> "$usage_control_dir/parse.stderr" || usage_control_decision=$?
+    [[ $usage_control_decision == "$usage_control_expected" && $(cat "$usage_control_dir/reason") == "$usage_control_expected_reason" ]]
+    printf '%s\t%s\t%s\n' "$usage_control_case" "$usage_control_decision" "$usage_control_expected_reason" >> "$driver/usage-controls.tsv"
+  done
+  for usage_control_case in then-clean exhausted cap-first; do
+    mkdir -m 700 "$usage_controls/$usage_control_case"
+    usage_control_code=0
+    (
+      # 함수 mock은 이 합성 subshell에만 존재한다. PATH/provider override는 없다.
+      trap - EXIT ERR INT TERM HUP
+      driver=$usage_controls/$usage_control_case
+      printf '0\n' > "$driver/calls"
+      du() {
+        local usage_mock_count
+        [[ $# == 4 && $1 == -sx && $2 == --block-size=1 && $3 == -- && $4 == "$build/target" ]] || return 99
+        IFS= read -r usage_mock_count < "$driver/calls" || return 99
+        [[ $usage_mock_count =~ ^[0-2]$ ]] || return 99
+        usage_mock_count=$((usage_mock_count+1)); printf '%s\n' "$usage_mock_count" > "$driver/calls"
+        if [[ $usage_control_case == then-clean && $usage_mock_count == 3 ]]; then printf '9\t%s\n' "$build/target"; return 0; fi
+        if [[ $usage_control_case == cap-first ]]; then printf '11\t%s\n' "$build/target"; else printf '9\t%s\n' "$build/target"; fi
+        printf "du: cannot access '%s/ssh-usage-controls/missing': No such file or directory\n" "$build/target" >&2
+        return 1
+      }
+      usage_bytes "$build/target" 10 selftest > "$driver/result"
+    ) || usage_control_code=$?
+    if [[ $usage_control_case == then-clean ]]; then
+      [[ $usage_control_code == 0 && $(cat "$usage_controls/$usage_control_case/result") == 9 && ! -e $usage_controls/$usage_control_case/resource-failure ]]
+    else
+      [[ $usage_control_code == 1 && -f $usage_controls/$usage_control_case/resource-failure && ! -s $usage_controls/$usage_control_case/result ]]
+    fi
+    usage_control_expected=3; [[ $usage_control_case != cap-first ]] || usage_control_expected=1
+    [[ $(cat "$usage_controls/$usage_control_case/calls") == "$usage_control_expected" ]]
+    usage_control_scans=("$usage_controls/$usage_control_case"/usage.target.*)
+    [[ ${#usage_control_scans[@]} == 1 && -d ${usage_control_scans[0]} && -f ${usage_control_scans[0]}/first-failure ]]
+    case "$usage_control_case" in
+      then-clean)
+        grep -Fxq 'du_code=0' "${usage_control_scans[0]}/3.meta"
+        grep -Fxq 'reason=clean:9' "${usage_control_scans[0]}/3.meta" ;;
+      exhausted)
+        [[ $(cat "${usage_control_scans[0]}/exhausted") == $'attempts=3\nreason=retry-exhausted' ]]
+        grep -Fxq 'reason=target-enoent' "${usage_control_scans[0]}/3.meta" ;;
+      cap-first)
+        [[ ! -e ${usage_control_scans[0]}/2.meta ]]
+        grep -Fxq 'reason=partial-cap' "${usage_control_scans[0]}/1.meta" ;;
+    esac
+    printf '%s\t%s\tattempts=%s\n' "$usage_control_case" "$usage_control_code" "$usage_control_expected" >> "$driver/usage-controls.tsv"
+  done
+  [[ $(wc -l < "$driver/usage-controls.tsv") == 20 ]]
+  printf 'SSH_USAGE_PREFLIGHT cases=20 passed=true synthetic_only=true\n' > "$driver/usage-controls.pass"
 }
 # 6GiB target + 2GiB Cargo home + 512MiB proof. reserve는 예상 growth와 별도다.
 admit() {
   local label=$1 target_growth=$2 cargo_growth=$3 proof_growth=$4 path dev available need target_bytes cargo_bytes proof_bytes build_bytes absence_bytes
-  target_bytes=$(usage_bytes "$build/target") || return 1
-  cargo_bytes=$(usage_bytes "$build/cargo-home") || return 1
-  proof_bytes=$(usage_bytes "$proof") || return 1
+  target_bytes=$(usage_bytes "$build/target" $((6144*1048576)) "$label") || return 1
+  cargo_bytes=$(usage_bytes "$build/cargo-home" $((2048*1048576)) "$label") || return 1
+  proof_bytes=$(usage_bytes "$proof" $((512*1048576)) "$label") || return 1
   # 공통 proof에 둔 작은 absence journal/sidecar도 기존512MiB에 합산한다.
   absence_bytes=$(du -scx --block-size=1 -- "$job/proof"/ssh-absence-* \
     "$job/proof/ssh-original-deletion.diff" "$job/proof/ssh-historical-original.sha256") || return 1
   absence_bytes=${absence_bytes##*$'\n'}; absence_bytes=${absence_bytes%%$'\t'*}
   [[ $absence_bytes =~ ^[0-9]+$ ]] || return 1
   proof_bytes=$((proof_bytes+absence_bytes))
-  build_bytes=$(usage_bytes "$build") || return 1
+  build_bytes=$(usage_bytes "$build" $((8192*1048576)) "$label") || return 1
   (( target_bytes <= 6144*1048576 && cargo_bytes <= 2048*1048576 && build_bytes <= 8192*1048576 && proof_bytes <= 512*1048576 )) || return 1
   # 각 실제 mount의 수요를 합산하며 같은 filesystem의 요구를 중복해서 빼지 않는다.
   local -A demand=() representative=()
@@ -312,12 +496,13 @@ for path in "$source/tools/ci/developer_ssh_entry_523.sh" "$source/rust/Cargo.to
 sha256sum --check --strict --quiet "$job/proof/prepared-rust-programs.sha256"
 absence sampled-budget
 for path in "$sdk/bin/cargo" "$sdk/bin/rustc" "$sdk/bin/rustdoc" "$sdk/bin/clippy-driver" "$CI_PREPARED_RUSTUP_BIN"; do bind_elf "$path"; done
-for tool in bash env git df awk basename dirname uname sed find readlink jq strace timeout setsid stat sha256sum du cp readelf sort xargs sleep cat cmp cut grep mkdir wc id \
+for tool in bash env git df awk basename dirname uname sed find readlink jq strace timeout setsid stat sha256sum du cp readelf sort xargs sleep cat cmp cut grep mkdir wc id ln \
   cc c++ ar as ld ranlib nm pkg-config capnp; do
   path=$(command -v "$tool"); [[ $path == /* ]]; bind_elf "$path"
 done
 # public shell의 /bin alias도 실행 전 묶는다.
 bind_elf /bin/bash
+usage_controls
 admit registry-before 0 2048 32
 registry_bytes=0
 for name in registry git; do
@@ -326,7 +511,7 @@ for name in registry git; do
     [[ -d $path && ! -L $path && $(readlink -e "$path") == "$path" ]]
     rejected=$(find -P "$path" ! -type d ! -type f -printf x)
     [[ -z $rejected ]]
-    registry_bytes=$((registry_bytes+$(usage_bytes "$path")))
+    registry_bytes=$((registry_bytes+$(usage_bytes "$path" $((2016*1048576)) "registry-input-$name")))
     (( registry_bytes <= 2016*1048576 )) # 새 Cargo 상태 파일에32MiB를 남긴다.
     registry_roots+=("$path"); registry_names+=("$name")
     tree "$path" "$driver/registry-$name.before"

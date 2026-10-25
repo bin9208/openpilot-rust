@@ -121,3 +121,49 @@ recorder 컴파일과 Cargo build/test는 GitHub Actions에서만 수행한다. 
 [Focus40154418302/job121052614023](https://github.com/bin9208/openpilot-rust/actions/runs/40154418302/job/121052614023), source `c00c7a11fbee357cbfb39bee45125d73596bf56c`가 최종 성공했다. artifact12584392161=41,123,890B/SHA256 `ee697e2a5b4a80acd1f661235e98eba4d9eadfb3c4efc0d28ca17518985b5fe7`,336CRC/해제97,856,834B를 전수 감사했다. 기본음성2·native7·public1과 두 mode의 초기14/unique14/전후raw동일, supervisor worker0/all_owned_children_reaped=true를 확인했다. driver116경로의 종료232행도 전부같고 명시 불변21쌍이 같았다.
 
 driver outcome은 entry4-checked/command0/final0/entry4_candidate=true다. 실제 공개helper warm ELF/exec·mmap 점검, strictClippy, source/index/wholeSDK 마지막봉인·upload/소유cleanup이 모두 성공해 #564를 개별 종료했다. 실제 원격SSH/ProxyCommand·기기·closed trace·전체builddependencyclosure·원본삭제/부재/credit은0이다. 위 초기 UNRUN 문단은 작성 시점의 기록이며 이 실행의 정확 범위만 새로 수용한다. 원본1 삭제는 별도 absent phase와 source-sensitive 재검증 뒤 판정한다.
+
+## #567 Focus593의 mutable target 집계 경합과 최소 재관측 후보
+
+source `593186e6a66b036c8817f0184723f839867d6856`의
+[Focus40161286994](https://github.com/bin9208/openpilot-rust/actions/runs/40161286994)은
+public-build 단계에서 실패했다. 부모가 감사한 artifact12587125165는38,684,242B/SHA256
+`a481a8524f658bd1e271c59ab74671c0207c6072a7f3fb9358e1fc14a3189181`,143CRC/해제89,013,620B다.
+`du`가 private target의 `.tmpaWru3X.temp-archive`와 dev-tools의 `-cgu.01.rcgu.o`를
+순회하다 ENOENT를 출력했고, watcher가 이를 admission 실패로 받아 소유 PGID를 종료했다.
+public-build의 command137/watcher1, build-finished0이며 actual entry4는 도달하지 않았다.
+마지막 정상 target836,358,144B, 종료 뒤893,120,512B였고 cap 초과·Rust compiler 오류 근거는 없다.
+기존 기록에는 실패한 du의 원래 exit code와 target/whole-build scan 구분이 없어 이를 추정 확정하지 않는다.
+개별 관측·집계 경합은 [#567](https://github.com/bin9208/openpilot-rust/issues/567)에서 추적한다.
+held99개와 registry/source/index/SDK 전후는 같지만 sticky resource-failure가 남아 전체 실패를 유지한다.
+
+후보는 기존 helper 안에서 `du -sx --block-size=1`을 그대로 사용하여 allocated/xdev/hardlink
+집계 의미를 보존한다. target6GiB/Cargo home2GiB/build8GiB/proof512MiB와 filesystem별 reserve,
+2초 sampling, build900초·driver2700초 및 fixture/trace/회수·closure·cleanup 기준은 바꾸지 않는다.
+target와 whole-build scan에서만 code1이고 **모든** 오류가 정확한 target 하위 ENOENT,
+안전한 상대경로이며 현재 파일·symlink가 모두 없을 때 총3회까지 재관측한다.
+clean code0/빈 stderr/정확한 단일 LF 전체 결과가 있어야 값을 채택한다.
+실패 scan의 부분 합이라도 cap 초과는 overflow 없는 비교 뒤 즉시 sticky 실패다.
+permission/외부 경로/혼합 오류/현재 존재·dangling link/기형 raw/다른 종료/3회 소진은 거부한다.
+registry/proof/absence journal 오류는 재관측으로 통과시키지 않는다.
+
+각 실제 scan은 소유한 실제 directory/no-symlink root와 dev/ino/mode/uid/gid를 전후 대조하며 mutable
+directory의 mtime/nlink를 고정하지 않는다. 고유 private directory에 각 attempt의 stdout/stderr,
+phase·admission·root·identity·cap·du exit·판정 metadata와 첫 오류를 남기고 덮어쓰지 않는다.
+raw stdout/stderr는 du subprocess에만64KiB file limit을 적용하고 경계 도달도 거부한다.
+Cargo/ELF output에 이 작은 상한을 전파하지 않는다. per-file Linux Bash 한도이며
+filesystem hard quota나 측정 peak 보장으로 표현하지 않는다.
+
+새 공개 인자/환경 fallback 없이 기존 helper가 provider hold 뒤, compile 전에 authored preflight20개를
+실행한다. classifier17개는 clean/target와 whole-build ENOENT/partial-cap/outside/permission/
+existing·dangling/traversal/다른 status/overflow/identity/malformed/NUL2/혼합/출력경계를 검사한다.
+나머지3개는 private subshell의 함수 mock으로 동일 retry loop를 사용하여
+두 ENOENT 뒤3번째 clean,3회 소진,첫 부분 합 초과의 정확한 reason·attempt 수·sticky 상태를 검사한다.
+mock은 그 합성 subshell 밖에 존재하지 않으며 실제 provider 선택이나 PATH를 바꾸지 않는다.
+`driver/usage-controls.tsv`20행과 `usage-controls.pass`의 synthetic_only marker를 남긴다.
+추가 coreutils `ln`도 현재 ELF/DSO hold 대상이며 actual native7/public1·원문 expected는 그대로다.
+
+로컬은 Bash 문법/YAML·AST·source/diff만 확인했다. preflight20·fresh build·원래 entry4와
+현재 source/SDK 최종 봉인·upload/cleanup은 **Actions UNRUN**이다.
+기존 Focus SSH step에서 실행하므로 새 step/command roster 항목은 없고 helper literal SHA만
+`0554a00a43a7a7cccb28ba70456df4dac2244ca1f66fdb65f6edc0abf7a24287`로 갱신했다.
+부모의 최종 원장 blob pin/다음 exact-source Actions 감사는 별도이며 이 후보를 과거 성공으로 소급하지 않는다.
