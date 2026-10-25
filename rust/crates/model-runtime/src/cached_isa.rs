@@ -122,6 +122,8 @@ mod instruction_isa {
             F::F16C => "f16c",
             F::AVX512F => "avx512f",
             F::AVX512VL => "avx512vl",
+            F::AVX512DQ => "avx512dq",
+            F::AVX512BW => "avx512bw",
             _ => {
                 return Err(format!(
                     "unadmitted cached instruction extension: {feature:?}"
@@ -187,6 +189,8 @@ mod instruction_isa {
             ("f16c", std::is_x86_feature_detected!("f16c")),
             ("avx512f", std::is_x86_feature_detected!("avx512f")),
             ("avx512vl", std::is_x86_feature_detected!("avx512vl")),
+            ("avx512dq", std::is_x86_feature_detected!("avx512dq")),
+            ("avx512bw", std::is_x86_feature_detected!("avx512bw")),
         ] {
             if supported {
                 result.insert(name);
@@ -243,10 +247,12 @@ mod instruction_isa {
 
         #[test]
         fn unknown_extension_fails_even_on_a_claimed_capable_host() {
-            let claimed = BTreeSet::from(["avx512f", "avx512vl", "avx512dq", "popcnt"]);
+            let claimed = BTreeSet::from([
+                "avx512f", "avx512vl", "avx512dq", "avx512bw", "avx512cd", "popcnt",
+            ]);
             for (bytes, feature) in [
-                // VPMULLQ zmm0,zmm0,zmm0 requires the still unmodeled DQ extension.
-                (&[0x62, 0xf2, 0xfd, 0x48, 0x40, 0xc0, 0xc3][..], "AVX512DQ"),
+                // VPCONFLICTD zmm0,zmm0 requires the still unmodeled CD extension.
+                (&[0x62, 0xf2, 0x7d, 0x48, 0xc4, 0xc0, 0xc3][..], "AVX512CD"),
                 (&[0xf3, 0x0f, 0xb8, 0xc0, 0xc3][..], "POPCNT"),
             ] {
                 assert!(admit_all(&[(bytes, bytes.len())], 1, &claimed)
@@ -263,22 +269,44 @@ mod instruction_isa {
             // Decode only: these instructions and the simulated host are never executed.
             let current = [0x62, 0xc1, 0x46, 0x00, 0x2a, 0xc0, 0xc3];
             let historical = [0x62, 0xf2, 0x7d, 0x08, 0x7c, 0xd6, 0xc3];
+            let historical_bw = [
+                0x62, 0xe2, 0x7d, 0x08, 0x79, 0x05, 0x74, 0x35, 0x00, 0x00, 0xc3,
+            ];
+            let current_dq = [0x62, 0xc3, 0x7d, 0x00, 0x22, 0xc2, 0x01, 0xc3];
             let images = [
                 (&current[..], current.len()),
                 (&historical[..], historical.len()),
+                (&historical_bw[..], historical_bw.len()),
+                (&current_dq[..], current_dq.len()),
             ];
-            let capable = BTreeSet::from(["avx512f", "avx512vl"]);
-            let proofs = admit_all(&images, 2, &capable).unwrap();
+            let capable = BTreeSet::from(["avx512f", "avx512vl", "avx512bw", "avx512dq"]);
+            let proofs = admit_all(&images, 4, &capable).unwrap();
             assert_eq!(proofs[0].required, BTreeSet::from(["avx512f"]));
-            assert_eq!(proofs[1].required, capable);
-            assert!(proofs
-                .iter()
-                .all(|proof| proof.instructions == 2 && proof.text_bytes == 7));
-            for (feature, program) in [("avx512f", 0), ("avx512vl", 1)] {
+            assert_eq!(proofs[1].required, BTreeSet::from(["avx512f", "avx512vl"]));
+            assert_eq!(proofs[2].required, BTreeSet::from(["avx512vl", "avx512bw"]));
+            assert_eq!(proofs[3].required, BTreeSet::from(["avx512dq"]));
+            for (proof, (bytes, text_bytes)) in proofs.iter().zip(&images) {
+                assert_eq!(proof.instructions, 2);
+                assert_eq!(proof.text_bytes, bytes.len());
+                for &feature in &proof.required {
+                    let mut missing = capable.clone();
+                    missing.remove(feature);
+                    assert_eq!(
+                        admit_all(&[(*bytes, *text_bytes)], 1, &missing).unwrap_err(),
+                        format!("cached program 0: host lacks {feature}")
+                    );
+                }
+            }
+            for (feature, program) in [
+                ("avx512f", 0),
+                ("avx512vl", 1),
+                ("avx512bw", 2),
+                ("avx512dq", 3),
+            ] {
                 let mut missing = capable.clone();
                 missing.remove(feature);
                 assert_eq!(
-                    admit_all(&images, 2, &missing).unwrap_err(),
+                    admit_all(&images, 4, &missing).unwrap_err(),
                     format!("cached program {program}: host lacks {feature}")
                 );
             }
@@ -288,22 +316,34 @@ mod instruction_isa {
         fn avx512_at_roster_end_and_after_return_still_requires_the_host() {
             let baseline = [0xc3];
             let after_return = [0xc3, 0x62, 0xf2, 0x7d, 0x08, 0x7c, 0xd6, 0xc3];
-            let mut images = vec![(&baseline[..], baseline.len()); 91];
-            images[90] = (&after_return, after_return.len());
-            let capable = BTreeSet::from(["avx512f", "avx512vl"]);
-            let proofs = admit_all(&images, 91, &capable).unwrap();
-            assert_eq!(proofs.len(), 91);
-            assert_eq!(proofs[90].instructions, 3);
-            assert_eq!(proofs[90].required, capable);
-            for feature in ["avx512f", "avx512vl"] {
-                let mut missing = capable.clone();
-                missing.remove(feature);
-                assert_eq!(
-                    admit_all(&images, 91, &missing).unwrap_err(),
-                    format!("cached program 90: host lacks {feature}")
-                );
+            let after_return_bw = [
+                0xc3, 0x62, 0xe2, 0x7d, 0x08, 0x79, 0x05, 0x74, 0x35, 0x00, 0x00, 0xc3,
+            ];
+            let after_return_dq = [0xc3, 0x62, 0xc3, 0x7d, 0x00, 0x22, 0xc2, 0x01, 0xc3];
+            for (bytes, capable) in [
+                (&after_return[..], BTreeSet::from(["avx512f", "avx512vl"])),
+                (
+                    &after_return_bw[..],
+                    BTreeSet::from(["avx512vl", "avx512bw"]),
+                ),
+                (&after_return_dq[..], BTreeSet::from(["avx512dq"])),
+            ] {
+                let mut images = vec![(&baseline[..], baseline.len()); 91];
+                images[90] = (bytes, bytes.len());
+                let proofs = admit_all(&images, 91, &capable).unwrap();
+                assert_eq!(proofs.len(), 91);
+                assert_eq!(proofs[90].instructions, 3);
+                assert_eq!(proofs[90].required, capable);
+                for &feature in &capable {
+                    let mut missing = capable.clone();
+                    missing.remove(feature);
+                    assert_eq!(
+                        admit_all(&images, 91, &missing).unwrap_err(),
+                        format!("cached program 90: host lacks {feature}")
+                    );
+                }
+                assert!(admit_all(&images[..90], 91, &capable).is_err());
             }
-            assert!(admit_all(&images[..90], 91, &capable).is_err());
         }
 
         #[test]

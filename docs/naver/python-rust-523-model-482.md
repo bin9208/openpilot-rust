@@ -749,3 +749,33 @@ source/SDK/provider/resource final 실패는 upload 뒤 소유 cleanup을 거부
 
 독립 검토의 P2에 따라 command remaining은 용량 검사와 argv 기록 **뒤**에 다시 계산한다.
 이미41분 종료 목표를 넘겼으면 명령을 시작하지 않으며, 남은 시간으로 개별 bound를 제한한다.
+
+
+### 111f에서 관측한 DQ/BW와 정확 지원 후보
+
+[현재40176419883/job121117963146](https://github.com/bin9208/openpilot-rust/actions/runs/40176419883/job/121117963146)의
+actual111f는 strict triplet/ABI91개 뒤 program0 `ip=0x1be`의 AVX512DQ
+`EVEX_Vpinsrd_xmm_xmm_rm32_imm8`, raw `62 c3 7d 00 22 c2 01`에서 거부됐다.
+natural CPU는 XEON8573C/Sapphire Rapids이며 F/VL std detector는 실제 true다.
+artifact12593110708은11514371B/SHA
+`5713389e3804bf4c4743e20d24c6d177366796552a69a77f0ec7e3cda13501ca`/444CRC다.
+
+[history40176419778/job121117962877](https://github.com/bin9208/openpilot-rust/actions/runs/40176419778/job/121117962877)는
+같은111f의 strict triplet 뒤 `ip=0x2e6`의 AVX512BW
+`EVEX_Vpbroadcastw_xmm_k1z_xmmm16`, raw `62 e2 7d 08 79 05 74 35 00 00`에서 거부됐다.
+artifact12593190092는5426138B/SHA
+`a916dd8c280d64975af3f54a41015eb9cef39bcf7eb3491f1e0f9fb8f2e66c37`/84CRC다.
+실제 EPYC7763에는 std F/VL이 없으므로 새 BW 지원 뒤에도 같은 CPU의 역사 image는 거부해야 한다.
+ISA7/cached15/streamed5·strict Clippy/catalog 소비자 compile·표준 hosted SDK 준비와 source/index/SDK
+final/upload/소유 cleanup은 성공했지만 모델 B·수치·역사 image의 host 적합성 수용은 아니다.
+
+두 실제 확장만 닫힌 feature match와 current_host/로드 host_has의 공식 Rust detector에 연결했다.
+production6줄 추가이며 나머지 production/ABI/수치/CPU target/source10·guarded8/원문/한도는 그대로다.
+원문 DQ7byte/BW10byte의 readonly fixture와 각 필수 기능 부재·91번째 image/ret 뒤 검사를 추가하고,
+이제 지원하는 DQ의 unknown 음성은 미수용 CD로 바꿨다. POPCNT 거부와 나머지4 test 본문은 유지한다.
+ISA7/cached15/streamed5 수는 그대로다. 새 issuer/catalog/request/source는 독립 봉인하며 과거 receipt를
+다시 표기하지 않는다. 로컬은 source/형식/diff뿐이고 신규 동작은 Actions UNRUN이다.
+
+별도 PRbacda의 `same_elf_complete_fixture_survives_all_retired_python_absences`는 raw prediction 불일치로
+계속 실패다. 이를 ABI91·ISA 단위 성공이나 이번 지원으로 해결됐다고 주장하지 않는다. 전체128/R4,
+historical half/sNaN5와 runtime 수용·원본 제거 credit0은 계속 별도로 추적한다.

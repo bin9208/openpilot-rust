@@ -61,3 +61,28 @@ cargo clippy --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --l
 이후 새 same-source main PR/dispatch에서 x64 기존 기능과 native 3개, 두 aggregate, 전후 seals/upload/cleanup을 확인해야 한다. 과거 QEMU Planner 90분 timeout은 부모가 annotation으로 확인한 기존 결과이며 새 후보의 성능 성공을 뜻하지 않는다. 다른 ARM 5개는 별도 실제 수용 전까지 기존 경로를 유지한다.
 
 로컬 수행은 Rustfmt edition2021, YAML/BaseLoader model 비교, native adapter Bash 문법, callee embedded Bash 42개 문법 및 diff 검사뿐이다. Cargo·빌드·기능·원본 실행·Actions 시작·stage·commit·push는 수행하지 않았다. Focus pins/원장 갱신과 실제 CI는 부모 소유다.
+
+
+### bacda PR의 native8·aggregate·proxy 실제 감사 수용
+
+[Rust40173790842](https://github.com/bin9208/openpilot-rust/actions/runs/40173790842)의 실제 merge
+`e0e55f32161f3613bfd93bd23a18816abb159b04`와 head `bacda68cf229eae5f5f757774e943afeb287c0c8`는
+tree7dc06826f3a7eb3ed908e9899ddccf3f5b507335가 같다. native8/aggregate121115516353/proxy2는 SUCCESS다.
+각 native job의 upload ID에 직접 결합한16 ZIP302855641B/전개2695126780B/35876CRC와 실제 ELF96개를
+감사했다. ELF 전부 AArch64이며 receipt8개는 native-host/aarch64/native_arm_vm=true,
+device_validated=false/bare_metal_verified=false다. 예전 local-arm 디렉터리 이름을 QEMU 증거로 쓰지 않는다.
+source/index+SDK256쌍, Xiaoge LFS5쌍·OID2/22820800B, receipt의48개 source/file identity가 모두 같다.
+8개 source/index/SDK final·upload·소유 source/common cleanup도 성공했다. all-adopted wait=false와
+retirement credit0은 그대로다.
+
+CarrotMan121111148782는352초/owned12 scenario, Navi121111148776는267초/release ELF build·헤더·SHA까지
+성공했다. 두 native callee60분과 x64 CarrotMan25분을 보존했다. 승인된 native VM 이관을 해결 경로로
+명시해 #548을 개별 종료했으며 과거 QEMU의25분 timeout이나 Navi build 범위를 runtime 성공으로 바꾸지 않는다.
+
+Planner routing은 native121111148799와 x64 121111148552에서 각각24개, Xiaoge는 native121111148755와
+x64 121111148656에서 각각10개가 통과했다. memory 두 job121111148594/121111148673의 four-Miri-modes도
+API/실제 로그상 SUCCESS이며 별도 memory ZIP을 내려받은 것으로 확대하지 않는다. x64/native/Miri,
+결손·다른 caller·틀린 matrix·비성공 집계 거부를 유지해 #542를 개별 종료했다.
+전체 main/PR·#523/#296·원본 제거·실기 수용은 여전히 미완료다. 로컬은 ZIP/JSON/ELF 헤더만 읽었다.
+세부 raw receipt·16 ZIP/member SHA·정확 upload 결합은 ignored hosted-bacda-native8-audit.md와
+acceptance/private/functional/receipt-file-bindings audit JSON에 보존했다. 중복 다운로드·기능 실행0이다.

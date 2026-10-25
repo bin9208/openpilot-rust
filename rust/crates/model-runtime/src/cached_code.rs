@@ -216,6 +216,8 @@ fn host_has(feature: &str) -> bool {
         "f16c" => std::is_x86_feature_detected!("f16c"),
         "avx512f" => std::is_x86_feature_detected!("avx512f"),
         "avx512vl" => std::is_x86_feature_detected!("avx512vl"),
+        "avx512dq" => std::is_x86_feature_detected!("avx512dq"),
+        "avx512bw" => std::is_x86_feature_detected!("avx512bw"),
         _ => false,
     }
     #[cfg(not(all(target_arch = "x86_64", target_os = "linux")))]
