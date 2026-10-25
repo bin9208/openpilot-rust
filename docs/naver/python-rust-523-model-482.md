@@ -880,3 +880,10 @@ phase/attempt/부분합/identity/ENOENT 경로는 경로당 1024B·시도당 16�
 원래 모델 byte 비교·전체 모델 수용·원본 제거 credit는 여전히 false/0이다.
 
 이 resource observer의 개별 결함·완료 조건은 [#573](https://github.com/bin9208/openpilot-rust/issues/573)으로 추적하며, #482의 원본 모델 수치 수용과 구분한다.
+
+
+## 9ae D0 실제 완료와 PR 첫 raw 차이
+
+source `9ae67e412eeb8d9c4b3e19ee9f3b586fe2855739`의 [40185757021/job121146069197](https://github.com/bin9208/openpilot-rust/actions/runs/40185757021/job/121146069197)은 성공했다. artifact12595518605(3850388B/SHA256 `b4f8b99dfde59f477f6979487d66afa300b2e2e67142efff2441fb6133eba533`)142unique/safe CRC와 원문·receipt를 감사했다. metadata1양성/8음성·decoder거부6·Cargo360행의 고유성공EOF/testELF1·선언DSO·actual1PASS/0FAIL/0ignored를 확인했다. build79.424초, decode0.060초이며 source19482/SDK188/전후7쌍/held22/live0/회수·봉인·closure/upload/두cleanup이 성공했다.58scan은 모두clean/ENOENT0으로, 실제build에서경합후재관측복구한사례로세지않는다. #573의새policy/기능완료와31e의원래실패·cleanupskip을구분해개별종료했다.
+
+현재decoder가고정PRpacket에서읽은10304B를고정frozen raw전체와 little-endian u32로직접대조했다. **2576중2575동일/1차이**, 정확히index99만actual `00000000`(+0)/frozen `80000000`(-0)이며 다른차이는없다. actual raw SHA256 `069099e1d4d8081ed9de155494cd18dd00cf2d8be3e12cfe04be08d2e6857f87`, frozen `9afb2defff4ff29e5bf70e54db32d0d531d5e2b44507c8de652ee2c0dfcb67fe`다. 이는PR593의다른입력/index100·101·1349 세차이와같다고가정하지않는다. byte_equal=false·모델/원본/daemon실행0·half/sNaN5/full128/역사provider/firstproducer/retirementcredit=false/0을유지한다. 새epsilon/zero mask/expected/runtime수학변경은0이다.

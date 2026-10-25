@@ -29,9 +29,13 @@ checker/probe/fixture 및 legacy2에서 fresh 선택한 builder를 새 FD로 hol
 ## private copy와 예산
 
 copy는 `$CI_JOB_TEMP/logging-source-absence-copy/source`다. copy 전에 실제 tracked leaf의 block 추정,
-Git metadata 실제 할당량과 entry별 보수적 block을 계산한다. 기존 target을 제외한 실제 source owner와
-독립 copy의 합계는 source2GiB 안이어야 한다. source/job이 다른 filesystem이면 각각 free reserve를 확인하고,
-job filesystem에는 계획 copy 성장과512MiB reserve를 요구한다. target8GiB/proof2GiB,
+Git metadata 실제 할당량과 entry별 보수적 block을 계산한다. 기존 target을 제외한 실제 source owner는2GiB,
+독립 copy의 실제 할당량+계획 성장은 별도2GiB 안이어야 한다(두 root 합산 최대4GiB).
+이 단계의 기존 source 계획 성장은0이며 source/Git/index의 전후 불변 검사는 그대로 요구한다.
+실제 고유 filesystem마다 해당 device에 추가될 copy 예정 성장+proof 예정 성장+finish512MiB reserve를
+합산한다. copy 전 호출은 세 번째 인자67108864로 별도 manifest 예정 성장64MiB를 전달한다.
+따라서 같은 FS에서는 copy 예정량+manifest64MiB+finish512MiB를 해당 operation 전에 함께 admit한다.
+이는 기존 proof2GiB cap을 올리지 않는다. 서로 다른 device도 각각 검사하고, 같은 device를 중복 합산하지 않는다. target8GiB/proof2GiB,
 원래 command512MiB/file·trace512MiB/file/1GiB aggregate·event100만/line200만 상한은 유지한다.
 이는 command 전후 admission이며 copy/test 도중의 hard quota라고 표현하지 않는다.
 
@@ -80,3 +84,29 @@ copy는 job root 안에서만 제거한다. global SDK/다른 root는 건드리�
 
 collision8은 fixture에 sibling 등록4줄만 추가된 새 SHA를 연결한다. 원래8 body/selector/caps/closure를 바꾸지 않는다.
 shared main/Focus/ledger의 allow/pin/edge 및 향후 absent argv 전환·실제 원본삭제는 부모의 별도 단계다.
+
+
+## 288 실제 실패와 독립 copy 예산 교정 후보 — Actions UNRUN
+
+source `288824f824eb682fc6fe1f2d896a086c64442a65`의
+[run40184284624/job121141668791](https://github.com/bin9208/openpilot-rust/actions/runs/40184284624/job/121141668791)은
+67unit/default14·15정책/legacy INT·TERM 성공 뒤 source-guard의 copy 전 admission에서 실패했다.
+artifact12595996672는128,203,435B/SHA
+`d903b2a5aad584af39366a72b1f3acb71cf72840a730ea9759ac89df3c556e60`/9390CRC다.
+final 재관측 source-owner allocated는1,182,326,784B이며 사건 시점의 planned 합계는 저장되지 않았다.
+기존 source+copy 합산2GiB 검사가 원인이라는 판단은 마지막 생성물·함수 순서와 정적 projection에 따른 추론이다.
+그 실제 산술 tuple을 뒤늦게 만든 관측값으로 대체하지 않는다. 실제 CLI20/raw21/policy3는 미실행이며,
+copy 미준비로 copy-final1/closureFAIL/cleanupskip였다. source/SDK/held/resource final은0이었다.
+
+승인된 교정은 full tracked+실제 Git copy를 유지하면서 source2GiB와 독립 copy2GiB를 분리한 것이다.
+이는 기존 정책의 명시적인 변경이며 과거 실패를 PASS로 다시 표기하지 않는다.
+각 cap/space 거부 전에 `copy-admission-N.tsv`에 phase/label, source·copy allocated/planned,
+source/job/proof/copy의 dev·ino, 각 cap·검사결과와 고유 FS별 free/필요량을 기록한다.
+기존 combined2GiB predicate의 would_pass는 새 실행의 관측값일 뿐 수용 조건이 아니다.
+sidecar는 create_new, record8192B/256회로 제한하고 경로·고정 label만 포함한다.
+기존 source의 추가 계획 성장0, 전후 Git/source 불변과 모든 기존 resource/finalizer/closure/cleanup 조건은 유지한다.
+source/copy 허용량은 각각2GiB로 보존하며 target8GiB/SDK/proof2GiB·시간·기능 본문·JQ·원문/패킷은 변경하지 않는다.
+
+로컬 Bash 문법·함수 외 byte projection(위 예산 인자1개 예외)·diff만 확인한다.
+새 admission 숫자와 copy 실제 적합성, CLI20/raw21/policy3 및 cleanup 완료는 새 Actions에서 검증해야 한다.
+원본2 삭제/postdelete full/old27/R4/retirement credit는 계속0이다.

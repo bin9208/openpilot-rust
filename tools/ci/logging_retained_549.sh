@@ -501,22 +501,66 @@ legacy_runtime2() {
 }
 # source-guard만의 독립 copy/CLI20 통제. 실제 source/present 기능은 변경하지 않는다.
 source_guard_resource() {
-  local label=$1 planned=$2 proof_growth=${3:-0} actual=0 origin free path device
+  local LC_ALL=C
+  local label=$1 planned=$2 proof_growth=${3:-0} actual=0 origin free path device identity required fs_pass
+  local copy=$CI_JOB_TEMP/logging-source-absence-copy copy_identity=absent copy_device proof_device
+  local source_cap=2147483648 copy_cap=2147483648 reserve=536870912 source_pass copy_pass old_pass result=0
+  local source_identity job_identity proof_identity seen=: record row diagnostic record_size
+  local -a paths=("$DIAG_SOURCE_OWNER" "$source" "$CI_JOB_TEMP" "$CI_JOB_TEMP/proof") rows=()
+  [[ $label =~ ^[a-zA-Z0-9_-]{1,96}$ && $phase =~ ^[a-zA-Z0-9_-]{1,96}$ ]]
+  [[ $planned =~ ^[0-9]{1,12}$ && $proof_growth =~ ^[0-9]{1,12}$ ]]
+  source_identity=$(stat -c '%d:%i' "$DIAG_SOURCE_OWNER")
+  job_identity=$(stat -c '%d:%i' "$CI_JOB_TEMP")
+  proof_identity=$(stat -c '%d:%i' "$CI_JOB_TEMP/proof")
+  copy_device=${job_identity%%:*}; proof_device=${proof_identity%%:*}
   origin=$(du -sx --block-size=1 --exclude="$CARGO_TARGET_DIR" "$DIAG_SOURCE_OWNER" | cut -f1)
-  if [[ -d $CI_JOB_TEMP/logging-source-absence-copy ]]; then
-    actual=$(du -sx --block-size=1 "$CI_JOB_TEMP/logging-source-absence-copy" | cut -f1)
+  if [[ -e $copy || -L $copy ]]; then
+    [[ -d $copy && ! -L $copy && $(realpath -e "$copy") == "$copy" && $(stat -c %u "$copy") == "$UID" ]]
+    copy_identity=$(stat -c '%d:%i' "$copy")
+    copy_device=${copy_identity%%:*}
+    actual=$(du -sx --block-size=1 "$copy" | cut -f1)
+    [[ $(stat -c '%d:%i' "$copy") == "$copy_identity" ]]
+    paths+=("$copy")
   fi
-  [[ $origin =~ ^[0-9]+$ && $actual =~ ^[0-9]+$ && $planned =~ ^[0-9]+$ ]]
-  ((origin + actual + planned <= 2147483648))
-  # 서로 다른 filesystem도 각각 확인한다. copy는 job filesystem에만 추가된다.
+  [[ $(stat -c '%d:%i' "$DIAG_SOURCE_OWNER") == "$source_identity" ]]
+  [[ $origin =~ ^[0-9]{1,12}$ && $actual =~ ^[0-9]{1,12}$ ]]
+  source_pass=$((origin <= source_cap)); copy_pass=$((actual + planned <= copy_cap))
+  old_pass=$((origin + actual + planned <= source_cap))
+  result=$((!source_pass || !copy_pass))
+  # 기존 source는 추가 성장0이다. FS가 같으면 copy/proof의 추가 성장만 합산한다.
+  for path in "${paths[@]}"; do
+    identity=$(stat -c '%d:%i' "$path"); device=${identity%%:*}
+    [[ $seen != *":$device:"* ]] || continue
+    seen+="$device:"
+    free=$(df -PB1 "$path" | awk 'NR==2 {print $4}')
+    [[ $free =~ ^[0-9]{1,15}$ ]]
+    required=$((reserve + (device == copy_device ? planned : 0) + (device == proof_device ? proof_growth : 0)))
+    fs_pass=$((free >= required)); result=$((result || !fs_pass))
+    printf -v row 'filesystem\t%s\t%s\t%s\t%s\t%s\t%s' "$path" "$device" "${identity#*:}" "$free" "$required" "$fs_pass"
+    rows+=("$row")
+  done
+  printf -v record 'schema\t1\nphase\t%s\nlabel\t%s\nsource_owner\t%s\nsource_identity\t%s\ncopy_root\t%s\ncopy_identity\t%s\njob_identity\t%s\nproof_identity\t%s\norigin_allocated\t%s\ncopy_allocated\t%s\ncopy_planned\t%s\nsource_planned\t0\nproof_planned_growth\t%s\nsource_cap\t%s\ncopy_cap\t%s\ncombined_max\t4294967296\nfinish_reserve\t%s\nold_combined2GiB_would_pass\t%s\nsource_cap_pass\t%s\ncopy_cap_pass\t%s\ncheck_result\t%s\n' \
+    "$phase" "$label" "$DIAG_SOURCE_OWNER" "$source_identity" "$copy" "$copy_identity" "$job_identity" "$proof_identity" \
+    "$origin" "$actual" "$planned" "$proof_growth" "$source_cap" "$copy_cap" "$reserve" "$old_pass" "$source_pass" "$copy_pass" "$result"
+  record_size=${#record}
+  for row in "${rows[@]}"; do record_size=$((record_size + ${#row} + 1)); done
+  ((record_size <= 8192))
+  source_guard_resource_count=${source_guard_resource_count:-0}
+  [[ $source_guard_resource_count =~ ^[0-9]{1,3}$ ]]
+  ((10#$source_guard_resource_count < 256))
+  source_guard_resource_count=$((10#$source_guard_resource_count + 1))
+  diagnostic=$proof/copy-admission-$source_guard_resource_count.tsv
+  # cap/space 거부로 반환하기 전에 원문 숫자와 각 결과를 create_new로 남긴다.
+  (set -C; { printf '%s' "$record"; printf '%s\n' "${rows[@]}"; } > "$diagnostic")
+  if ((result != 0)); then
+    printf 'source/copy admission rejected; see %s\n' "$diagnostic" >&2
+    return 1
+  fi
   for path in "$source" "$CI_JOB_TEMP"; do
     device=$(stat -c %d "$path")
     free=$(df -PB1 "$path" | awk 'NR==2 {print $4}')
     [[ $free =~ ^[0-9]+$ ]]
     printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$label" "$path" "$device" "$free" "$origin" "$((actual+planned))" >> "$proof/copy-growth.tsv"
-    if [[ $device == "$(stat -c %d "$CI_JOB_TEMP")" ]]; then
-      ((free >= planned + proof_growth + 536870912))
-    else ((free >= 536870912)); fi
   done
 }
 source_guard_copy_seal() {
@@ -605,7 +649,7 @@ source_guard() {
   # metadata directory/파일마다 추가 block도 보수적으로 admit한다.
   size=$(find -P "$source/.git" -printf x | wc -c)
   estimate=$((estimate + git_bytes + size*8192))
-  source_guard_resource before-copy "$estimate"
+  source_guard_resource before-copy "$estimate" 67108864
   mkdir -m 700 -- "$copy" "$root"
   source_guard_copy_identity=$(stat -c '%d:%i:%f:%u:%g' "$copy")
   (ulimit -f 524288; tar --hard-dereference --null --no-recursion --verbatim-files-from -T "$proof/copy-selected.bin" -cf -) | tar -xf - -C "$root"
