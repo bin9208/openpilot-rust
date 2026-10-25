@@ -76,3 +76,88 @@ command·budget·finalizer 본문은 그대로다. WF는 helper literal SHA1개 
 기존 native-plain과 새 A는 출력 argv가 다르다는 flag를 남긴다. 그 비교가 다르면 output path/배치 등
 미분리 요인이 남은 것으로 읽고 loader 원인으로 단정하지 않는다. A/B끼리는 고정 argv가 같다.
 추가 getter·alignment·새 kernel 관측·재시도는0이며 실제 A/B와 전후 봉인·회수는 아직 UNRUN이다.
+
+## 2026-10-25 같은 loaded instance의 계산 후 getter 후보
+
+이 절은 위 loader A/B와 별개로 승인된 진단5파일 구현의 후속 기록이다. c00
+[run40154418251/job121052613887](https://github.com/bin9208/openpilot-rust/actions/runs/40154418251/job/121052613887)의
+actual에서는 현재 original/native4호출·2329bit field와 각각의 plain/tapped 출력이 같고 LD A/B도
+같았다. 그러나 original의 historical frozen state는 미재현이어서 기존 strict gate는 실패했다.
+새 getter는 그 사실을 고치거나 역사 provider/core/thread를 소급 관측한 것으로 쓰지 않는다.
+
+승인된 변경은 진단 helper, `control-policy/src/numerics.rs`, `controlsd_trace.rs`, 진단 WF의 helper
+literal pin 및 이 문서5개다. 새 crate/feature/Cargo/lib/원본·expected 변경은 없다. 기존
+`diagnostic-553` feature는 default-off다. production loader와 float/double matrix·dimensions,
+`flux.rs` 전체 수치/관측 본문은 그대로다. getter는 추가 dot/warmup/setter/CPU envforcing 없이
+config → core → thread 순서로 각각1회만 호출한다.
+
+- original-tapped: 원래 adapter.trace의4회 계산과 결과 JSON/tap 원문 저장 뒤 관측한다.
+  plain worker에는 추가하지 않는다. 계산 전 provider-before에 이미 존재하는 ctypes/_ctypes,
+  libffi/loader, NumPy extension 및 고정 OpenBLAS가 없으면 FAIL이며 새 import/load fallback은 없다.
+- `ctypes.CDLL(path, mode=NOLOAD|LAZY)`는 사용하지 않는다. CPython3.12.15의
+  [callproc.c](https://github.com/python/cpython/blob/v3.12.15/Modules/_ctypes/callproc.c#L1420-L1445)가
+  RTLD_NOW를 OR하기 때문이다. 이미 존재한 pythonapi handle에서 얻은 실제 loader 함수로만
+  extension/provider의 정확 절대경로에 RTLD_NOLOAD|RTLD_LAZY를 전달한다. miss는 FAIL이며
+  namespace/link-map/base, extension scope의 SGEMV/SDOT symbol 주소와 provider 주소의 일치,
+  주소→mapping dev/inode→heldFD/SHA를 확인한다. 획득한 NOLOAD reference만 역순으로 반환한다.
+- native-tapped: feature 전용 one-case/one-frame guard 아래 기존 Controls를 살아 있게 보유하고,
+  publication/snapshot과 기존 output.flush 뒤 `controls.interface.numerics`의 `_library`만 빌린다.
+  새 Library/dlopen/instance를 만들거나 handle 소유권을 이전하지 않는다. 이미 저장된 네 연산
+  pointer와 getter3의 실행 map 및 dladdr image base가 같은 고정 DSO인지 검사한다.
+
+고정 provider SHA는 `432e1c1739731468ba305771af96773939e43016643e2d630f58cb45b6670e96`,
+wheel SHA는 `b7e18c623bb5c95acb3b3328861272816ba199fb531921c5d6d0b675f1fde9e3`로 유지한다.
+실제 ELF export는 기존 inert 자료가 확인했고, ABI는
+[OpenBLAS0.3.34 cblas.h](https://github.com/OpenMathLib/OpenBLAS/blob/v0.3.34/cblas.h#L42-L51)의
+config/core `char *(void)`, threads `int(void)`를 따른다. ILP64 suffix를 thread 반환형 i64로
+오해하지 않는다. upstream tag가 wheel0.3.34.106.0 patch source와 byte 동일하다는 주장은 없다.
+
+반환 문자열은 NULL/빈 문자열/NUL 누락을 거부하고 읽기 가능한 단일 map 안에서 최대4096B만
+복사한다. static config의 BSS가 inode0 anonymous map일 수 있으므로 문자열도 dladdr가 같은
+image base를 가리켜야 한다. file-backed이면 추가로 held provider dev/inode/path를 요구한다.
+함수 pointer에는 anonymous map 예외가 없다. 같은 file SHA만으로 서로 다른 loaded instance를
+같다고 하지 않으며 original/native 서로 다른 PID의 주소가 같을 것을 요구하지 않는다.
+
+[thread getter source](https://github.com/OpenMathLib/OpenBLAS/blob/v0.3.34/driver/others/memory.c#L479-L486)는
+필요시 초기화를 거칠 수 있다. 따라서 관측 자체가 무할당·무초기화라고 선언하지 않는다. config의
+MAX_THREADS는 build capacity이며 현재 thread 수와 구분한다. getter 전후 executable map roster,
+PID/starttime·task roster와 provider FD identity/SHA를 기록한다. 이는 시점 관측이며 모든 과거
+thread/allocator lifecycle이나 실제 BLAS entry/kernel의 관측이 아니다. native load가 원래부터
+config를 호출했다는 점도 receipt에 명시한다.
+
+새 proof는 다음 세 문서다. original/native receipt는 각1개·64KiB 이하이며 원문 getter byte array와
+C int 값, source/phase/PID/starttime, 같은-instance binding 및 실패를 기록한다.
+
+- `original-tapped-getters.json`: 결과/tap 저장 후 original 관측. NOLOAD miss/참조 반환 실패도 FAIL.
+- `native-tapped-getters.json`: flush 뒤 stderr의 정확1개 `CONTROLSD_553_GETTERS` receipt를 보존·hold.
+- `same-instance-getters.json`: 양쪽4 complete call·receipt 건강/FD/범위/false flags를 검증한 뒤
+  config/core/thread가 각각 같은지 비교한다. 값이 다른 것 자체는 자료이며 억지로 맞추지 않는다.
+
+기존 plain/tapped 전체 결과 bits 동일성 및 2329field 관측은 실제 Actions에서 다시 확인해야 한다.
+receipt checkpoint는 기존 historical/602 reproduction need 이전에 저장되며 새 자료가 기존
+재현 실패를 대신 통과시키지 않는다. prefix601/LD A/B·기대값/type/수학/tolerance/normal40·기존
+command700/600초·전체52분/helper60분/job75분·모든 file/log/proof/growth 상한과 final source/SDK/
+provider/owned-child 검사는 유지한다. getter/receipt 오류는 strict FAIL이며 원래 finalizer는
+실패에서도 독립 실행된다. get_num_threads/core의 같은 값이 개별 dot의 과거 실행 경로를 입증하지 않는다.
+
+새 native unit2개는 실제 Library/BLAS 결과를 흉내 내지 않고 pointer→mapping의 exact identity·
+중복/미매핑 경계와 bounded NUL 문자열 거부를 검사한다. 기존 진단 Clippy는 production cfg 본문을
+포함하지만 unit 실행 등록은 부모 후속이다. 정확 selector는 다음과 같다(모두 **UNRUN**).
+
+```text
+numerics::diagnostic_553::tests::getter_pointer_requires_unique_mapping_and_exact_provider_identity
+numerics::diagnostic_553::tests::getter_strings_require_nonempty_bounded_terminator
+```
+
+로컬은 AST/Rustfmt/YAML/Bash/diff/source 비교뿐이다. getter/원본/native/PKL/빌드/test/Clippy/GHA
+실행·stage/commit/push0이다. 이 후보의 실제 parity/provider/예산 fit과 getter 값은 아직 미관측이다.
+`actual_blas_call_observed`/`actual_kernel_observed`/`complete_provider_closure`/
+`historical_provider_closure_recorded`/`full_normal40_acceptance`는 false, `retirement_credit=0`,
+`original_expected_regenerated=false`를 계속 유지한다. Focus·normal 등 바깥 source pin/원장 등록은
+부모 소유이며 기존 accepted cohort의 성공을 새 source로 restamp하지 않는다.
+
+
+부모 source 검토에서 default-off diagnostic block을 제외한 numerics/example production projection이
+기존과 동일함을 확인했다. normal40 helper의 CORE 중 이 두 source hash literal만 현재 bytes로
+갱신한다. 원문/frozen input/output/4case/40normal 명령·수치·재현 criteria는 변경하지 않는다.
+이는 새 source 바인딩이며 이전 normal40 성공을 현재 전체 수용으로 소급하지 않는다.

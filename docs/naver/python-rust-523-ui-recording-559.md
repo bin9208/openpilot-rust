@@ -92,3 +92,46 @@ outcome의 `independent_cache_copy`, `seeded_current_workspace_fresh`는 초기 
 ### 검증 상태와 남은 실제 조건
 
 로컬은 source/인자/diff, Bash·고정 snapshot/copy 본문의 문법 및 YAML만 검토한다. cache copy/Cargo freshness/새 cwd 관측/추가 proof·8GiB fit/1200초 절약량/최종 five modes는 전부 Actions UNRUN이다. baseline target에 symlink·특수파일이 있거나 Cargo가 copied path artifact를 fresh로 사용하거나, 필수 cwd/exec를 관측하지 못하면 실패한다. 이를 자동 완화하지 않는다. SDK·Cargo·features·selector·기대 bytes·cap/timeout을 바꾸거나 #559 해결을 선언하지 않는다. 부모 독립 source review와 exact source GHA가 필요하다.
+
+## 772 실제 CXX alias6 거부와 제한된 seed 제외 후보
+
+[772 run40160682062/job121071387390](https://github.com/bin9208/openpilot-rust/actions/runs/40160682062/job/121071387390), source `7720ce770a07cce7c39d29113d7eb88f2330164d`는 baseline build와 정확한 RED101 뒤 `cache-source-before`에서 exit1/watcher0으로 실패했다. 실제 helper는 `db6f3252ae29c497a568ec318a2b1b31f2b40c2dd9d443c8273337058b301438`였다. job log558행의 원인은 snapshot이 정상 CXX symlink6개와 그 mode777을 regular/dir 입장 조건으로 거부한 것이다. shared1200 deadline이나 current compiler freshness/cwd 실패가 아니다. copy와 current build에는 도달하지 않았다.
+
+[artifact12586947032](https://github.com/bin9208/openpilot-rust/actions/runs/40160682062/artifacts/12586947032)는23,044,524B/SHA256 `66c99af66873385236aefff0f522344b17c42e30b3f6425d009030324ba0f10e`, 전수12,356CRC/expanded131,262,104B 정상이다. source/index/SDK/baseline/provider 비교38쌍과 held378paths의 identity/SHA가 같았다. finalizer0/immutable_seals=true/owned_processes_nonlive=true 및 source·SDK after/upload/cleanup success는 부분 증거이며 GREEN/recording9/source4/five-modes/Clippy 수용이 아니다. 상세 API/log/member SHA/봉인은 ignored `hosted-772-ui-12586947032-audit.md`와 `hosted-772-ui-40160682062/`에 있다.
+
+### 실제 Cargo OUT_DIR와 고정 registry에 연결
+
+원문 `ui559/logs/baseline-build.stdout`는334,249B/SHA256 `f8697c2156cf426db46107cd293863503041a4a33d77fdecf420d349b0fe84a4`,409 JSONL records다. exact baseline JPEG package의 custom-build artifact와 같은 package의 build-script-executed record가 `debug/build/openpilot-jpeg-6a49348a96bf129c/out`을 연결한다. registry cxx1.0.202의 lib artifact는 같은 job의 cargo-home 아래 manifest/src를 가리킨다. `profile.test=false`이며 target 자체의 test=true와 구분한다. 세 원문 record는 ignored `hosted-772-ui-40160682062/baseline-cxx-provenance.json`에 보존했다.
+
+후속 helper는 각 baseline/current Cargo JSONL 전체와 EOF success1개를 읽고, JPEG custom-build package/manifest/src/kind/name/fresh=false 및 유일한 OUT_DIR, cxx1.0.202 lib record를 선택한다. header는 그 registry manifest 옆 `include/cxx.h`로만 정한다. baseline/current source의 JPEG crate와 target의 OUT_DIR, 같은 sealed registry가 아래6관계의 유일한 근거다. build hash leaf는 actual OUT_DIR에서 얻으며 임의의 링크를 glob으로 허용하지 않는다.
+
+`T`는 해당 baseline 또는 candidate target, `J=T/debug/build/openpilot-jpeg-<actual16hex>/out/cxxbridge`, `S`는 해당 source의 `rust/crates/jpeg`, `H`는 same-job registry의 `cxx-1.0.202/include/cxx.h`다.
+
+| 정확한 link | 정확한 raw absolute target |
+| --- | --- |
+| `T/cxxbridge/openpilot-jpeg/src/bridge.rs.cc` | `J/sources/openpilot-jpeg/src/bridge.rs.cc` |
+| `T/cxxbridge/openpilot-jpeg/src/bridge.rs.h` | `J/include/openpilot-jpeg/src/bridge.rs.h` |
+| `T/cxxbridge/rust/cxx.h` | `H` |
+| `J/include/openpilot-jpeg/src/bridge.rs` | `J/include/openpilot-jpeg/src/bridge.rs.h` |
+| `J/include/rust/cxx.h` | `H` |
+| `J/crate/openpilot-jpeg` | `S` |
+
+5개 file target과1개 directory target의 종류/소유 UID/쓰기 mode/canonical path를 확인한다. link 자체의 lstat identity·nlink1·raw readlink와 referent FD identity/SHA를 기록하며, parent chain의 alias·broken/cycle/outside target·추가/누락 link를 거부한다. source/header는 원래 source·registry 봉인과 연결하고 metadata JSON/header/source manifest/build.rs도 hold한다. generated current files는 후속 정상 Cargo 입력이므로 영구 불변 FD 파일로 거짓 분류하지 않는다.
+
+### baseline 무변경과 독립 복사 범위
+
+이6개는 baseline에서 지우거나 고치지 않는다. full baseline roster에는6개 link와 raw target을 계속 포함한다. copy 전후 full roster·regular SHA·alias 영수증·exact6 목록·seed 목록이 같아야 하고, 기존 finalizer도 baseline source/index/target 전체를 다시 검사한다. seed에는 검증한 regular/dir만 NUL 목록으로 넣는다. 위6개 link 외에 비교에서 제외하는 파일/디렉터리는 없다.
+
+복사는 같은 env-i/owned run 안에서 GNU tar의 `--no-recursion --null --verbatim-files-from`으로 이 목록만 읽어 absent candidate root에 pipe로 푼다. `--hard-dereference`는 hardlink member 대신 각 regular bytes를 독립 저장하는 용도이며, soft symlink를 따라가는 `-h/--dereference`는 쓰지 않는다. `--format=posix`, `--same-owner --same-permissions --delay-directory-restore`로 파일과 디렉터리의 기존 mode/UID/GID/mtime 비교를 보존한다. 디렉터리 timestamp·권한의 추출 종료 시 복원은 [GNU tar 공식 설명](https://www.gnu.org/software/tar/manual/html_node/Directory-Modification-Times-and-Permissions.html), hardlink별 독립 member 의미는 [GNU tar hard links 설명](https://www.gnu.org/software/tar/manual/html_section/Portability.html)에 근거한다.
+
+copy 직후 candidate에는 symlink0, regular nlink1, source/candidate regular·dir inode 교집합0이 필수다. 모든 seed 상대경로/type/mode/UID/GID/file size/mtime payload와 모든 regular SHA가 baseline과 같아야 한다. ctime/inode 자체는 독립 copy 때문에 달라지는 필드이며, baseline 쪽 전후에는 기존 identity/ctime까지 계속 비교한다. registry/header 및 source JPEG directory를 symlink dereference로 candidate에 복제하지 않는다.
+
+첫 current recording-build의 전체 non-registry/path artifact fresh=false와 exact current test/CLI·actual rustc source/cwd 검사는 원래 그대로다. 그 검증 뒤 candidate OUT_DIR/current JPEG source/same registry에 정확6 link가 재생성됐는지 같은 worker로 검사한다. baseline source/target을 가리키는 잔존 link는 실패한다. 이후 같은 job의 current dependency cache 재사용은 기존 승인 범위이며, 첫 독립 copy의 nlink1 조건을 후속 Cargo가 만든 정상 내부 hardlink까지 무조건 확장하지 않는다.
+
+### Actions 거부 통제와 미수용 조건
+
+같은 snapshot worker에 private 구조 fixture를 주어 exact6 양성1개, extra-alias/wrong-target/broken-target/cycle-target/outside-target 거부5개를 실행하고 각 변조를 되돌린 뒤 다시 양성 입장을 요구한다. fixture는 Cargo/ELF/원문 expected 대체물이 아니다. 정확한 exit0/1과6개 markers를 요구하며, 다른 오류코드·원복 후 입장 실패·0선택을 수용하지 않는다. 새 `ln` provider도 기존 ELF/DSO FD/hash 봉인에 포함한다.
+
+snapshot60초/copy120초/control30초/current alias60초 모두 기존 shared1200 remaining 안에서만 실행한다. build8GiB/proof1GiB/file512MiB·실제 FS admission·성장 감시·source/SDK final·upload/cleanup은 그대로다. tar COPY는 CoW 절감에 기대지 않으므로 physical/apparent fit은 실제 GHA에서 판정한다. baseline copied workspace를 Cargo가 fresh=true로 재사용하면 여전히 실패하며, 자동 fallback/산출물 삭제/Cargo clean/expected 재생성은 없다.
+
+이 후보는 helper/WF helper literal pin/이 한국어 기록3파일만 수정한다. 로컬은 Bash·고정 본문 문법/YAML/소스·diff만 확인했으며 새 controls/copy/metadata worker/Cargo freshness/alias 재생성·fit·원문5/RED-GREEN9/source4/Clippy는 **UNRUN**이다. 기존 Cargo/prod/test/fixture/expected와1200·8GiB를 바꾸지 않았고 #559 또는 runtime 전체 수용을 주장하지 않는다.

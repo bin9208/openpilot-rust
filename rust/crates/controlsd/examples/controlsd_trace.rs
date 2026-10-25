@@ -107,6 +107,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let assets =
         std::env::var("CONTROLS_ASSETS").unwrap_or("opendbc_repo/opendbc/car/torque_data".into());
     let request: Request = serde_json::from_reader(std::io::stdin())?;
+    #[cfg(feature = "diagnostic-553")]
+    if request.cases.len() != 1 || request.cases[0].frames.len() != 1 {
+        return Err("#553 getter requires the bound one-case/one-frame input".into());
+    }
+    #[cfg(feature = "diagnostic-553")]
+    let mut diagnostic_controls = None;
     let mut results = Vec::new();
     for case in request.cases {
         let mut store = Store {
@@ -154,9 +160,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             rows.push(json!({"packets":packets,"params":std::mem::take(&mut store.operations),"logs":std::mem::take(&mut logs),"state":snapshot(&controls)}));
         }
         results.push(json!({"name":case.name,"printed":printed,"rows":rows}));
+        #[cfg(feature = "diagnostic-553")]
+        {
+            diagnostic_controls = Some(controls);
+        }
     }
     let mut output = BufWriter::new(std::fs::File::create(output_path)?);
     serde_json::to_writer(&mut output, &results)?;
     output.flush()?;
+    #[cfg(feature = "diagnostic-553")]
+    diagnostic_controls
+        .as_ref()
+        .ok_or("#553 missing live Controls instance")?
+        .interface
+        .numerics
+        .diagnostic_553_getters(Path::new(&numerics))?;
     Ok(())
 }

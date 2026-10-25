@@ -423,21 +423,89 @@ ok_test() {
 cache_snapshot_body=$(cat <<'CACHE_SNAPSHOT'
 set -euo pipefail
 root=$1;out=$2;copied=$3;uid=$4
+outdir=$5;jpeg=$6;header=$7;alias_mode=$8
 [[ -d $root && ! -L $root && $(readlink -e "$root") == "$root" ]]
-find -P "$root" \( ! -uid "$uid" -o -perm /0022 -o \( ! -type d ! -type f \) \) -print0 > "$out.rejected"
+[[ $alias_mode == exact || $alias_mode == none ]]
+# symlink의777은 regular writable mode가 아니다. 허용은 아래 exact6 관계뿐이다.
+find -P "$root" \( ! -uid "$uid" -o \( ! -type l -perm /0022 \) -o \( ! -type d ! -type f ! -type l \) \) -print0 > "$out.rejected"
 [[ ! -s $out.rejected ]]
-find -P "$root" -printf '%P\t%y\t%m\t%U\t%G\t%n\t%s\t%T@\t%D:%i\t%C@\0' | sort -z > "$out.roster"
+find -P "$root" -type l -printf '%P\0' | sort -z > "$out.links"
+: > "$out.expected-links";: > "$out.aliases"
+if [[ $alias_mode == exact ]];then
+  [[ $outdir == "$root/"* && ${outdir#"$root/"} =~ ^debug/build/openpilot-jpeg-[0-9a-f]{16}/out$ ]]
+  [[ -d $outdir && ! -L $outdir && $(readlink -e "$outdir") == "$outdir" ]]
+  paths=(cxxbridge/openpilot-jpeg/src/bridge.rs.cc cxxbridge/openpilot-jpeg/src/bridge.rs.h cxxbridge/rust/cxx.h
+    "${outdir#"$root/"}/cxxbridge/include/openpilot-jpeg/src/bridge.rs"
+    "${outdir#"$root/"}/cxxbridge/include/rust/cxx.h" "${outdir#"$root/"}/cxxbridge/crate/openpilot-jpeg")
+  targets=("$outdir/cxxbridge/sources/openpilot-jpeg/src/bridge.rs.cc"
+    "$outdir/cxxbridge/include/openpilot-jpeg/src/bridge.rs.h" "$header"
+    "$outdir/cxxbridge/include/openpilot-jpeg/src/bridge.rs.h" "$header" "$jpeg")
+  printf '%s\0' "${paths[@]}" | sort -z > "$out.expected-links"
+  cmp "$out.expected-links" "$out.links"
+  for n in "${!paths[@]}";do
+    link=$root/${paths[$n]};target=${targets[$n]}
+    [[ -L $link && $(stat -c %u "$link") == "$uid" && $(stat -c %h "$link") == 1 &&
+       $(readlink -e "${link%/*}") == "${link%/*}" && $(readlink -- "$link") == "$target" ]]
+    [[ $target == /* && ! -L $target && $(readlink -e "$link") == "$target" &&
+       $(readlink -e "$target") == "$target" && $(stat -c %u "$target") == "$uid" ]]
+    mode=$(stat -c %a "$target");[[ $mode =~ ^[0-7]{3,4}$ ]];(( (8#$mode & 022)==0 ))
+    if ((n==5));then [[ -d $target ]];else [[ -f $target && $(stat -c %s "$target") -le 67108864 ]];fi
+    before=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$target")
+    exec {fd}<"$target"
+    [[ $(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$$/fd/$fd") == "$before" ]]
+    hash=-
+    if ((n!=5));then hash=$(sha256sum "/proc/$$/fd/$fd");hash=${hash%% *};fi
+    [[ $(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$target") == "$before" &&
+       $(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$$/fd/$fd") == "$before" && $(readlink -- "$link") == "$target" ]]
+    printf '%s\t%s\t%s\t%s\t%s\0' "${paths[$n]}" "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$link")" "$target" "$before" "$hash" >> "$out.aliases"
+    exec {fd}<&-
+  done
+else
+  [[ $outdir == - && $jpeg == - && $header == - && ! -s $out.links ]]
+fi
+find -P "$root" -printf '%P\t%y\t%m\t%U\t%G\t%n\t%s\t%T@\t%D:%i\t%C@\t%l\0' | sort -z > "$out.roster"
 awk -v RS='\0' -v FS='\t' -v copied="$copied" '
-  NF!=10 || $1~/[\n\\]/ || ($2!="d"&&$2!="f") {exit 1}
+  NF!=11 || $1~/[\n\\]/ || ($2!="d"&&$2!="f"&&$2!="l") {exit 1}
+  $2=="l" {next}
   $2=="f"&&copied=="true"&&$6!="1" {exit 1}
   {printf "%s\t%s\t%s\t%s\t%s\t%s\t%s%c",$1,$2,$3,$4,$5,($2=="f"?$7:""),$8,0}
 ' "$out.roster" > "$out.payload"
-awk -v RS='\0' -v FS='\t' '{print $9}' "$out.roster" | sort -u > "$out.inodes"
+awk -v RS='\0' -v FS='\t' '$2!="l" {print $9}' "$out.roster" | sort -u > "$out.inodes"
+awk -v RS='\0' -v FS='\t' '$2!="l" {printf "%s%c",($1==""?".":$1),0}' "$out.roster" > "$out.seed"
 (cd "$root";find -P . -type f -print0 | sort -z | xargs -0 -r sha256sum) > "$out.sha256"
-find -P "$root" -printf '%P\t%y\t%m\t%U\t%G\t%n\t%s\t%T@\t%D:%i\t%C@\0' | sort -z > "$out.stable"
+find -P "$root" -printf '%P\t%y\t%m\t%U\t%G\t%n\t%s\t%T@\t%D:%i\t%C@\t%l\0' | sort -z > "$out.stable"
 cmp "$out.roster" "$out.stable"
 CACHE_SNAPSHOT
 )
+cache_alias_metadata() {
+  local log=$1 case_source=$2 case_target=$3 output=$4 leaf
+  jq -ser --arg package "path+file://$case_source/rust/crates/jpeg#openpilot-jpeg@0.1.0" \
+    --arg manifest "$case_source/rust/crates/jpeg/Cargo.toml" --arg src "$case_source/rust/crates/jpeg/build.rs" '
+    if length<1 or .[-1]!={reason:"build-finished",success:true} or
+      ([.[]|select(.reason=="build-finished")]|length)!=1 then error("Cargo EOF") else . end |
+    . as $all |
+    [.[]|select(.reason=="compiler-artifact" and .package_id==$package and .manifest_path==$manifest and
+      .target.kind==["custom-build"] and .target.name=="build-script-build" and .target.src_path==$src and
+      .profile.test==false and .fresh==false)] as $builder |
+    [$all[]|select(.reason=="build-script-executed" and .package_id==$package)] as $outputs |
+    [$all[]|select(.reason=="compiler-artifact" and .package_id=="registry+https://github.com/rust-lang/crates.io-index#cxx@1.0.202" and
+      .target.kind==["lib"] and .target.name=="cxx" and .profile.test==false)] as $cxx |
+    if ($builder|length)!=1 or ($outputs|length)!=1 or ($cxx|length)!=1 or
+      $cxx[0].target.src_path!=($cxx[0].manifest_path|rtrimstr("/Cargo.toml"))+"/src/lib.rs"
+      then error("exact Cargo CXX provider/build-script required") else
+      {out_dir:$outputs[0].out_dir,header:($cxx[0].manifest_path|rtrimstr("/Cargo.toml"))+"/include/cxx.h",
+        builder:$builder[0],build_script:$outputs[0],registry:$cxx[0]} end' "$log" > "$output"
+  cache_jpeg_out=$(jq -er '.out_dir' "$output")
+  cache_header=$(jq -er '.header' "$output")
+  cache_jpeg_source=$case_source/rust/crates/jpeg
+  [[ $cache_jpeg_out == "$case_target/"* ]]
+  leaf=${cache_jpeg_out#"$case_target/"};[[ $leaf =~ ^debug/build/openpilot-jpeg-[0-9a-f]{16}/out$ ]]
+  [[ $cache_header == "$registry_source/"* ]]
+  leaf=${cache_header#"$registry_source/"};[[ $leaf =~ ^index\.crates\.io-[0-9a-f]{16}/cxx-1\.0\.202/include/cxx\.h$ ]]
+  [[ -d $cache_jpeg_source && ! -L $cache_jpeg_source && $(readlink -e "$cache_jpeg_source") == "$cache_jpeg_source" ]]
+  hold "$output";hold "$log";hold "$cache_header"
+  hold "$case_source/rust/crates/jpeg/Cargo.toml";hold "$case_source/rust/crates/jpeg/build.rs"
+}
 verify_seeded_workspace() {
   local log=$proof/logs/recording-build.stdout
   # 복사 직후 최초 current build 전체다. registry 외 source 종류/과거 root/하나의 fresh=true도 거부한다.
@@ -486,7 +554,7 @@ audit_rustc_source() {
   hold "$file";hold "$receipt"
 }
 extra_env=()
-for tool in bash sh env git find sort xargs sha256sum stat readlink readelf sed awk grep head od tr cat dd true cmp comm df du jq strace timeout setsid sleep curl clang++ g++ cc as ar ranlib ld nm pkg-config capnp tar gzip cmake make gmake xauth Xvfb xvfb-run ffmpeg ffprobe cp chmod mkdir id dirname basename cut rm ldd mktemp touch ps tail wc uname which getopt; do
+for tool in bash sh env git find sort xargs sha256sum stat readlink readelf sed awk grep head od tr cat dd true cmp comm df du jq strace timeout setsid sleep curl clang++ g++ cc as ar ranlib ld nm pkg-config capnp tar gzip cmake make gmake xauth Xvfb xvfb-run ffmpeg ffprobe cp chmod mkdir id dirname basename cut rm ln ldd mktemp touch ps tail wc uname which getopt; do
   # command -v true는 builtin 이름을 반환한다. 봉인할 외부 PATH provider를 선택한다.
   path=$(type -P "$tool") || fail "external provider missing: $tool"
   [[ $path == /* ]] || fail "external provider path is not absolute: $tool"
@@ -604,24 +672,80 @@ registry_source=$build/cargo-home/registry/src
 [[ -d $registry_source && ! -L $registry_source && $(readlink -e "$registry_source") == "$registry_source" ]]
 tree "$registry_source" "$proof/cache-copy/registry.before"
 add_tree cache-baseline "$build/baseline-target"
+cache_alias_metadata "$proof/logs/baseline-build.stdout" "$baseline" "$build/baseline-target" "$proof/cache-copy/baseline-cxx.json"
+run cache-alias-controls 30 0 /bin/bash -c '
+  set -euo pipefail;umask 077
+  body=$1;fixture=$2;out=$3;uid=$4
+  [[ ! -e $fixture && ! -L $fixture && ! -e $out && ! -L $out ]]
+  mkdir "$fixture" "$out"
+  root=$fixture/target;jpeg=$fixture/source/rust/crates/jpeg;header=$fixture/registry/cxx/include/cxx.h
+  gen=$root/debug/build/openpilot-jpeg-0000000000000000/out
+  mkdir -p "$root/cxxbridge/openpilot-jpeg/src" "$root/cxxbridge/rust" "$jpeg" "${header%/*}" \
+    "$gen/cxxbridge/sources/openpilot-jpeg/src" "$gen/cxxbridge/include/openpilot-jpeg/src" \
+    "$gen/cxxbridge/include/rust" "$gen/cxxbridge/crate"
+  printf "control header\n" > "$header"
+  printf "control generated header\n" > "$gen/cxxbridge/include/openpilot-jpeg/src/bridge.rs.h"
+  printf "control generated source\n" > "$gen/cxxbridge/sources/openpilot-jpeg/src/bridge.rs.cc"
+  ln -s "$gen/cxxbridge/sources/openpilot-jpeg/src/bridge.rs.cc" "$root/cxxbridge/openpilot-jpeg/src/bridge.rs.cc"
+  ln -s "$gen/cxxbridge/include/openpilot-jpeg/src/bridge.rs.h" "$root/cxxbridge/openpilot-jpeg/src/bridge.rs.h"
+  ln -s "$header" "$root/cxxbridge/rust/cxx.h"
+  ln -s "$gen/cxxbridge/include/openpilot-jpeg/src/bridge.rs.h" "$gen/cxxbridge/include/openpilot-jpeg/src/bridge.rs"
+  ln -s "$header" "$gen/cxxbridge/include/rust/cxx.h"
+  ln -s "$jpeg" "$gen/cxxbridge/crate/openpilot-jpeg"
+  inspect() {
+    local label=$1 wanted=$2 code=0
+    # 외부 Bash는 자기 set-e를 유지한다. expected nonzero로 caller의 상태를 덮지 않는다.
+    /bin/bash -c "$body" ui559-alias-control "$root" "$out/$label" false "$uid" "$gen" "$jpeg" "$header" exact \
+      > "$out/$label.stdout" 2> "$out/$label.stderr" || code=$?
+    [[ $code == "$wanted" ]]
+  }
+  inspect positive 0
+  for label in extra-alias wrong-target broken-target cycle-target outside-target;do
+    case $label in
+      extra-alias) ln -s "$header" "$root/unexpected";;
+      wrong-target) rm -- "$root/cxxbridge/rust/cxx.h";ln -s "$gen/cxxbridge/sources/openpilot-jpeg/src/bridge.rs.cc" "$root/cxxbridge/rust/cxx.h";;
+      broken-target) rm -- "$header";;
+      cycle-target) rm -r -- "$jpeg";ln -s "$gen/cxxbridge/crate/openpilot-jpeg" "$jpeg";;
+      outside-target) rm -r -- "$jpeg";ln -s /usr/include "$jpeg";;
+    esac
+    inspect "$label" 1
+    case $label in
+      extra-alias) rm -- "$root/unexpected";;
+      wrong-target) rm -- "$root/cxxbridge/rust/cxx.h";ln -s "$header" "$root/cxxbridge/rust/cxx.h";;
+      broken-target) printf "control header\n" > "$header";;
+      cycle-target|outside-target) rm -- "$jpeg";mkdir "$jpeg";;
+    esac
+    inspect "$label-restored" 0
+    printf "UI559_ALIAS_CONTROL rejected %s\n" "$label"
+  done
+  printf "UI559_ALIAS_CONTROL positive exact6\n"
+' ui559-alias-controls "$cache_snapshot_body" "$build/cache-alias-controls" "$proof/cache-copy/controls" "$(id -u)"
+[[ $(grep -Ec '^UI559_ALIAS_CONTROL rejected (extra-alias|wrong-target|broken-target|cycle-target|outside-target)$' "$proof/logs/cache-alias-controls.stdout") == 5 ]]
+[[ $(grep -Fxc 'UI559_ALIAS_CONTROL positive exact6' "$proof/logs/cache-alias-controls.stdout") == 1 ]]
 run cache-source-before 60 0 /bin/bash -c "$cache_snapshot_body" ui559-cache-snapshot \
-  "$build/baseline-target" "$proof/cache-copy/source.before" false "$(id -u)"
+  "$build/baseline-target" "$proof/cache-copy/source.before" false "$(id -u)" "$cache_jpeg_out" "$cache_jpeg_source" "$cache_header" exact
+hold "$proof/cache-copy/source.before.seed"
+hold "$proof/cache-copy/source.before.expected-links"
+hold "$proof/cache-copy/source.before.aliases"
 read -r copy_used copy_apparent <<< "$(usage "$build" $((8*gib)))"
 printf '%s\t%s\n' "$copy_used" "$copy_apparent" > "$proof/cache-copy/build.before.tsv"
 run cache-copy 120 0 /bin/bash -c '
   set -euo pipefail
   [[ -d $1 && ! -L $1 && $(readlink -e "$1") == "$1" && ! -e $2 && ! -L $2 ]]
-  # -a/--link/--preserve=links 없이 각 regular file을 독립 inode로 만든다.
-  cp -R --reflink=auto --preserve=mode,timestamps -- "$1" "$2"
-' ui559-cache-copy "$build/baseline-target" "$build/candidate-target"
+  mkdir -m 700 "$2"
+  # soft -h는 쓰지 않는다. exact6 symlink를 뺀 목록만 읽고 hardlink도 독립 file로 푼다.
+  # POSIX pax는 nanosecond mtime을 보존하며 마지막 directory metadata를 지연 복원한다.
+  tar -C "$1" --format=posix --hard-dereference --no-recursion --null --verbatim-files-from -T "$3" -cf - |
+    tar -C "$2" --same-owner --same-permissions --delay-directory-restore -xf -
+' ui559-cache-copy "$build/baseline-target" "$build/candidate-target" "$proof/cache-copy/source.before.seed"
 run cache-source-after 60 0 /bin/bash -c "$cache_snapshot_body" ui559-cache-snapshot \
-  "$build/baseline-target" "$proof/cache-copy/source.after" false "$(id -u)"
-for suffix in roster sha256;do
+  "$build/baseline-target" "$proof/cache-copy/source.after" false "$(id -u)" "$cache_jpeg_out" "$cache_jpeg_source" "$cache_header" exact
+for suffix in roster sha256 aliases expected-links seed;do
   cmp "$proof/cache-copy/source.before.$suffix" "$proof/cache-copy/source.after.$suffix"
 done
 run cache-copy-seal 60 0 /bin/bash -c "$cache_snapshot_body" ui559-cache-snapshot \
-  "$build/candidate-target" "$proof/cache-copy/candidate.initial" true "$(id -u)"
-for suffix in payload sha256;do
+  "$build/candidate-target" "$proof/cache-copy/candidate.initial" true "$(id -u)" - - - none
+for suffix in payload sha256 seed;do
   cmp "$proof/cache-copy/source.before.$suffix" "$proof/cache-copy/candidate.initial.$suffix"
 done
 comm -12 "$proof/cache-copy/source.before.inodes" "$proof/cache-copy/candidate.initial.inodes" > "$proof/cache-copy/shared-inodes.txt"
@@ -634,6 +758,11 @@ run recording-build 900 0 "$sdk/bin/cargo" test --manifest-path "$source/rust/Ca
 verify_seeded_workspace
 audit_rustc_source recording-build openpilot_dev_tools crates/dev-tools/src/lib.rs
 audit_rustc_source recording-build ui_application_lifecycle_recording crates/dev-tools/tests/ui_application_lifecycle_recording.rs
+cache_alias_metadata "$proof/logs/recording-build.stdout" "$source" "$build/candidate-target" "$proof/cache-copy/current-cxx.json"
+run current-cxx-alias-seal 60 0 /bin/bash -c "$cache_snapshot_body" ui559-cache-snapshot \
+  "$build/candidate-target" "$proof/cache-copy/current.cxx" false "$(id -u)" "$cache_jpeg_out" "$cache_jpeg_source" "$cache_header" exact
+hold "$proof/cache-copy/current.cxx.expected-links"
+hold "$proof/cache-copy/current.cxx.aliases"
 tree "$registry_source" "$proof/cache-copy/registry.after-first-current"
 for suffix in roster sha256;do
   cmp "$proof/cache-copy/registry.before.$suffix" "$proof/cache-copy/registry.after-first-current.$suffix"

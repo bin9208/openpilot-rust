@@ -11,6 +11,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path, PurePosixPath
+import re
 import resource
 import shutil
 import signal
@@ -26,7 +27,7 @@ import zipfile
 MIB = 1024**2
 GIB = 1024**3
 COMMON = "tools/ci/controlsd_normal_523.py"
-COMMON_SHA = "54719b4d868b079de1d6d835388e55c45dc8545eba11bdae35043dff83d9f02c"
+COMMON_SHA = "f066e458ef5cf31f008d3fe3ae94edf3a121f4016531c1115b42ad2ca05fe739"
 ARTIFACT = 12577798385
 ARTIFACT_RUN = 40137010441
 ACTUAL_SHA = "602ea095f7cd89769ffd9233a04a28983ca59d1f"
@@ -57,10 +58,10 @@ SOURCE_PINS = {
     "rust/tools/locationd_loop_source.py": "d6239cd4e66e66d87aef577bbc49512f88aeea18270a20fe9263979153939de4",
     "rust/tools/locationd_source.py": "bcd257dde90ea11b68d4bf9f28affc139dd6e92f70d6829cd3464291bd62d87c",
     "rust/tools/check_message_state.py": "928e7cf946a1fbf3c6c0bc9135c580e8f108179cfe78349956eb895f6d0c710a",
-    "rust/crates/control-policy/src/numerics.rs": "c7e475ffc1b58d621ea8a90260a352488054ffdb49314d8362e12d5d1cdcb8cc",
+    "rust/crates/control-policy/src/numerics.rs": "4ff5f530577cc6faa1d5e5e6011ca0108f959fdea46edfa98f20d304a36ef09b",
     "rust/crates/control-policy/src/numpy_exp.rs": "829c0ab3e3ba15857f87e2fa6f4e8207f3a31e4abe75be713e8b3480aa386a47",
     "rust/crates/controlsd/src/torque_neural.rs": "58894ebce7550555b765429d450c9ef2f2ff3510ba66d8a20fef7c4d47586744",
-    "rust/crates/controlsd/examples/controlsd_trace.rs": "3f9491a0cd690aca1f8e3749e7caa7fa1e0c48daf1b10e8bb50d4c362a3d82e3",
+    "rust/crates/controlsd/examples/controlsd_trace.rs": "bf74be75ec58db816f94d3f67ee413cdf8b6163c1ead27b7c600418c8b8c035f",
 }
 PACKAGES = {"numpy": "2.5.3", "pycapnp": "2.1.0", "zstandard": "0.25.0",
             "pycryptodome": "3.23.0", "cffi": "2.1.1", "pyzmq": "27.2.0", "pycparser": "3.0"}
@@ -580,6 +581,32 @@ class Diagnostic:
         self.budget(force=True)
         need(self.usage["build"]-before <= 512*MIB, "Clippy append exceeds 512 MiB")
 
+    def getter_units(self):
+        label = "same-instance-getter-unit2"
+        self.phase = label
+        selectors = [
+            "numerics::diagnostic_553::tests::getter_pointer_requires_unique_mapping_and_exact_provider_identity",
+            "numerics::diagnostic_553::tests::getter_strings_require_nonempty_bounded_terminator",
+        ]
+        # libtest의 복수 exact 필터만 실행한다. 0선택/부분 선택/추가 실행/ignored는 수용하지 않는다.
+        raw = self.command([self.sdk / "bin/cargo", "test", "--manifest-path", self.root / "rust/Cargo.toml",
+            "--locked", "-p", "openpilot-control-policy", "--no-default-features", "--features", "diagnostic-553",
+            "--lib", *self.c.SHA2_PROFILE_ARGS, "--", "--exact", *selectors,
+            "--nocapture", "--test-threads=1", "--color=never", "--format=pretty"], label, seconds=600)
+        output = raw.decode()
+        roster = re.findall(r"^test (\S+) \.\.\. ([^\n]+)$", output, re.M)
+        results = re.findall(r"^test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; "
+                             r"(\d+) measured; (\d+) filtered out;", output, re.M)
+        need(output.splitlines().count("running 2 tests") == 1
+             and roster == [(name, "ok") for name in selectors]
+             and len(results) == 1 and results[0][:4] == ("2", "0", "0", "0"),
+             "exact same-instance getter unit2 roster/summary")
+        self.save(label+".json", {"schema": 1, "source": self.source, "selectors": selectors,
+            "passed": 2, "failed": 0, "ignored": 0, "measured": 0, "filtered_out": int(results[0][4]),
+            "stdout_sha256": sha(raw), "command_label": label, "diagnostic_only": True, **FLAGS})
+        for suffix in (".stdout", ".stderr", ".json"):
+            self.holds.add(self.out / (label+suffix))
+
     def loader_environment_comparison(self, plain, native_env, native_plain):
         directory = self.out / "native-loader-ab"
         directory.mkdir(mode=0o700)
@@ -721,6 +748,7 @@ class Diagnostic:
         plain = self.build_trace(False)
         tapped = self.build_trace(True)
         self.clippy()
+        self.getter_units()
         for label, root in (("originaldeps", self.deps), ("packages", self.packages), ("numerics", self.numerics),
                             ("python-provider", self.python_prefix)):
             self.baselines[label] = self.snapshot(root)
@@ -749,6 +777,7 @@ class Diagnostic:
                 if mode == "original-tapped":
                     self.holds.add(self.out / "original-tapped-layers.json")
                     self.holds.add(self.out / "original-tapped-ast.json")
+                    self.holds.add(self.out / "original-tapped-getters.json")
             else:
                 with self.request.open("rb") as source:
                     self.command([tapped if mode.endswith("tapped") else plain, output], mode,
@@ -760,11 +789,22 @@ class Diagnostic:
         original_reproduced = bits(traces["original-plain"][0]["rows"][0]["state"]) == bits(self.expected_original)
         native_reproduced = bits(traces["native-plain"][0]["rows"][0]["state"]) == bits(self.expected_native)
         original = loads(self.c.read(self.out / "original-tapped-layers.json", 32*MIB))
-        native = []
+        native, getter_records = [], []
         for line in self.c.read(self.out / "native-tapped.stderr", 32*MIB).splitlines():
             if line.startswith(b"CONTROLSD_553_LAYER "):
                 native.append(loads(line.removeprefix(b"CONTROLSD_553_LAYER ")))
+            if line.startswith(b"CONTROLSD_553_GETTERS "):
+                raw = line.removeprefix(b"CONTROLSD_553_GETTERS ")
+                need(len(raw) <= 64*1024, "native getter receipt bound")
+                getter_records.append(loads(raw))
         comparison = compare_layers(original, native)
+        need(len(getter_records) == 1, "single native same-instance getter receipt")
+        self.save("native-tapped-getters.json", getter_records[0])
+        self.holds.add(self.out / "native-tapped-getters.json")
+        getters = compare_getters(loads(self.c.read(self.out / "original-tapped-getters.json", 64*1024)),
+                                  getter_records[0], self.source, self.site, self.numerics, comparison)
+        self.save("same-instance-getters.json", getters)
+        self.holds.add(self.out / "same-instance-getters.json")
         self.result = {"schema": 1, "scope": "case3/frame0 controlled original/native diagnostic only",
             "current_source": self.source, "actual_failure_source": ACTUAL_SHA,
             "plain_original_reproduces_frozen_state_bits": original_reproduced,
@@ -773,7 +813,7 @@ class Diagnostic:
             "native_observation_preserves_result_bits": native_same,
             "observation_valid": original_same and native_same,
             "reduced_replay_reproduced": original_reproduced and native_reproduced,
-            "layer_comparison": comparison, **FLAGS}
+            "layer_comparison": comparison, "same_instance_getters": getters, **FLAGS}
         # 별도 프로세스지만 같은 VM/held plain ELF/환경으로 이력 효과만 대조한다.
         # prefix는 tap하지 않는다. 기존16호출/단일 Palisade topology 상한은 그대로다.
         self.phase = "native-prefix-plain"
@@ -1096,6 +1136,8 @@ def original_worker(args):
             need(ast_record is not None and observation.current is None and observation.calls, "complete original tap records")
             c.save(out / "original-tapped-layers.json", observation.calls)
             c.save(out / "original-tapped-ast.json", ast_record)
+            need(len(observation.calls) == 4, "four completed calls before original getters")
+            original_getters(c, holds, before, provider_files, site, out, config["source"])
         dispatch = np.lib.introspect.opt_func_info(func_name="^(exp|subtract|add|divide)$", signature="float32")
         c.save(out / (prefix+"-numpy-dispatch.json"), {"ufunc_dispatch": dispatch,
             "actual_blas_kernel_observed": False, "environment": {k: os.environ.get(k) for k in
@@ -1117,6 +1159,215 @@ def original_worker(args):
         finally:
             holds.close()
         need(not errors, "original current-provider final seals failed")
+
+
+def original_getters(c, holds, before, providers, site, out, source):
+    """계산/결과 저장 후 이미 로드된 extension/provider reference만 빌린다."""
+    record = {"schema": 553, "diagnostic_only": True, "observer": "original-tapped",
+              "phase": "after-output-flush", "source": source, "pid": os.getpid(), "pass": False, **FLAGS}
+    handles, close, failure = [], None, None
+    def mappings():
+        with open("/proc/self/maps", "rb") as stream:
+            raw = stream.read(2*MIB+1)
+        need(len(raw) <= 2*MIB and raw.endswith(b"\n"), "getter maps bound/EOF")
+        rows = []
+        for line in raw.decode().splitlines():
+            fields = line.split(None, 5)
+            need(len(fields) >= 5 and len(fields[1]) == 4, "getter maps fields")
+            start, end = (int(v, 16) for v in fields[0].split("-"))
+            major, minor = (int(v, 16) for v in fields[3].split(":"))
+            need(start < end, "getter maps range")
+            rows.append({"start": start, "end": end, "permissions": fields[1],
+                         "offset": int(fields[2], 16), "major": major, "minor": minor,
+                         "inode": int(fields[4]), "path": fields[5] if len(fields) == 6 else ""})
+        return rows
+    def executable(rows):
+        return [r for r in rows if "x" in r["permissions"] and r["path"].startswith("/")]
+    def readable(rows, address, size):
+        selected = [r for r in rows if r["start"] <= address < r["end"]]
+        need(address and size > 0 and len(selected) == 1 and "r" in selected[0]["permissions"]
+             and size <= selected[0]["end"]-address, "getter bounded readable pointer")
+        return selected[0]
+    def tasks():
+        result = []
+        for path in Path("/proc/self/task").iterdir():
+            need(path.name.isascii() and path.name.isdecimal() and len(result) < 1024, "getter task roster")
+            row = c.proc_stat(int(path.name))
+            result.append([row["pid"], row["start"]])
+        return sorted(result)
+    try:
+        ctypes = sys.modules.get("ctypes")
+        extension = sys.modules.get("numpy._core._multiarray_umath")
+        need(ctypes is not None and "_ctypes" in sys.modules and extension is not None,
+             "preexisting ctypes/NumPy extension required; no import fallback")
+        api = ctypes.__dict__.get("pythonapi")
+        need(api is not None and api._handle, "preexisting pythonapi handle required")
+        pre = providers()
+        need(set(pre["executable_mappings"]) == set(before["executable_mappings"]),
+             "provider changed before post-compute getters")
+        rows = mappings()
+        before_exec, before_tasks = executable(rows), tasks()
+        extension_path = Path(extension.__file__).resolve(strict=True)
+        provider = site / "numpy.libs/libscipy_openblas64_-f48b354e.so"
+        need(provider.resolve(strict=True) == provider and str(provider) in before["executable_mappings"]
+             and str(extension_path) in before["executable_mappings"], "preexisting exact numerical mappings")
+        held = holds.records()[str(provider)]
+        need(held["sha256"] == DSOS[provider.name], "same held original numerical pin")
+        device, inode = held["identity"][:2]
+        def belongs(address, execute=False):
+            need(type(address) is int and address > 0, "NULL/invalid getter pointer")
+            selected = [r for r in rows if r["start"] <= address < r["end"]]
+            need(address and len(selected) == 1, "getter pointer unmapped/ambiguous")
+            row = selected[0]
+            need(row["path"] == str(provider) and row["inode"] == inode
+                 and os.makedev(row["major"], row["minor"]) == device
+                 and ("x" if execute else "r") in row["permissions"], "getter pointer/provider FD mismatch")
+            return row
+        def loader(name, restype, argtypes):
+            fn = api[name]  # preexisting handle의 fresh wrapper; CDLL/dlopen wrapper 생성0.
+            address = ctypes.cast(fn, ctypes.c_void_p).value
+            selected = [r for r in before_exec if r["start"] <= address < r["end"]]
+            need(len(selected) == 1 and selected[0]["path"] in before["executable_mappings"],
+                 "loader function must already be mapped and held")
+            fn.restype, fn.argtypes = restype, argtypes
+            return fn
+        pointer = ctypes.c_void_p
+        integer = ctypes.c_int
+        dlopen = loader("dlopen", pointer, [ctypes.c_char_p, integer])
+        dlsym = loader("dlsym", pointer, [pointer, ctypes.c_char_p])
+        dlinfo = loader("dlinfo", integer, [pointer, integer, pointer])
+        dladdr = loader("dladdr", integer, [pointer, pointer])
+        close = loader("dlclose", integer, [pointer])
+        class DlInfo(ctypes.Structure):
+            _fields_ = [("name", pointer), ("base", pointer), ("symbol", pointer), ("address", pointer)]
+        class LinkMap(ctypes.Structure):
+            _fields_ = [("base", ctypes.c_ulong), ("name", pointer), ("dynamic", pointer),
+                        ("next", pointer), ("previous", pointer)]
+        def existing(path):
+            # _ctypes.dlopen would OR RTLD_NOW; call the existing loader function directly.
+            mode = os.RTLD_NOLOAD | os.RTLD_LAZY
+            need(not mode & os.RTLD_NOW, "NOLOAD|LAZY only")
+            handle = dlopen(os.fsencode(path), mode)
+            need(handle, "RTLD_NOLOAD miss; no load fallback")
+            handles.append(handle)
+            namespace, link = ctypes.c_long(), pointer()
+            need(dlinfo(handle, 1, ctypes.byref(namespace)) == 0 and namespace.value == 0
+                 and dlinfo(handle, 2, ctypes.byref(link)) == 0, "same base namespace/link-map")
+            readable(mappings(), link.value, ctypes.sizeof(LinkMap))
+            base = ctypes.cast(link, ctypes.POINTER(LinkMap)).contents.base
+            return handle, {"namespace": namespace.value, "link_map": link.value, "load_base": base}
+        extension_handle, extension_info = existing(extension_path)
+        provider_handle, provider_info = existing(provider)
+        base = provider_info["load_base"]
+        need(base and any(r["path"] == str(provider) and r["start"] == base and r["offset"] == 0 for r in rows),
+             "provider base must preexist")
+        def symbol(handle, name):
+            address = dlsym(handle, name.encode()+b"\0")
+            need(address, "required same-instance symbol missing")
+            belongs(address, True)
+            info = DlInfo()
+            need(dladdr(address, ctypes.byref(info)) and info.base == base, "different provider instance")
+            return address
+        symbols = {}
+        for name in ("scipy_cblas_sgemv64_", "scipy_cblas_sdot64_"):
+            address = symbol(extension_handle, name)
+            need(address == symbol(provider_handle, name), "extension/provider lookup binding differs")
+            symbols[name] = address
+        for name in ("scipy_openblas_get_config64_", "scipy_openblas_get_corename64_", "scipy_openblas_get_num_threads64_"):
+            symbols[name] = symbol(provider_handle, name)
+        def string(name):
+            address = ctypes.PYFUNCTYPE(pointer)(symbols[name])()
+            need(type(address) is int and address > 0, "NULL getter string")
+            row = readable(rows, address, 1)
+            info = DlInfo()
+            need(dladdr(address, ctypes.byref(info)) and info.base == base, "getter string belongs to another image")
+            # static config의 BSS는 inode0 anonymous map일 수 있다. same dladdr base를 필수로 한다.
+            if row["inode"] or row["path"]:
+                belongs(address)
+            raw = ctypes.string_at(address, min(4096, row["end"]-address))
+            end = raw.find(b"\0")
+            need(end > 0, "getter string NULL/empty/unterminated")
+            return list(raw[:end])
+        config_bytes = string("scipy_openblas_get_config64_")
+        core_bytes = string("scipy_openblas_get_corename64_")
+        thread_count = ctypes.PYFUNCTYPE(integer)(symbols["scipy_openblas_get_num_threads64_"])()
+        need(thread_count > 0, "invalid getter thread count")
+        after = mappings()
+        need(before_exec == executable(after), "getter executable mappings changed")
+        holds.verify()
+        record["observation"] = {"library_handle_source": "RTLD_NOLOAD|RTLD_LAZY", "new_library_opened": False,
+            "provider": {"path": str(provider), **held, **provider_info}, "extension": extension_info,
+            "symbol_addresses": symbols, "config_bytes": config_bytes, "core_bytes": core_bytes, "threads": thread_count,
+            "executable_mappings_before": before_exec, "executable_mappings_after": executable(after),
+            "tasks_before": before_tasks, "tasks_after": tasks(), "provider_fd_held_through_observation": True,
+            "executable_mapping_roster_equal": True, "thread_lifecycle_complete": False,
+            "process_start_ticks": c.proc_stat(os.getpid())["start"],
+            "string_pointer_scope": "same dladdr image base; readable file mapping or anonymous BSS",
+            "cpu_environment": {k: os.environ.get(k) for k in
+                ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "OPENBLAS_CORETYPE", "NPY_DISABLE_CPU_FEATURES")},
+            "lookup_is_not_actual_blas_entry_observation": True}
+        record["pass"] = True
+    except BaseException:
+        failure = traceback.format_exc()
+    finally:
+        try:
+            close_errors = []
+            for handle in reversed(handles):
+                try:
+                    need(close is not None and close(handle) == 0, "NOLOAD reference close failed")
+                except BaseException:
+                    close_errors.append(traceback.format_exc())
+            need(not close_errors, "\n".join(close_errors))
+            if handles:
+                need(before_exec == executable(mappings()), "mapping changed after NOLOAD reference close")
+            holds.verify()
+        except BaseException:
+            failure = (failure or "") + traceback.format_exc()
+        if failure:
+            record["pass"], record["error"] = False, failure
+        raw = (json.dumps(record, allow_nan=False)+"\n").encode()
+        if len(raw) > 64*1024:
+            failure = "getter receipt exceeds 64 KiB"
+            record = {k: v for k, v in record.items() if k != "observation"}
+            record.update({"pass": False, "error": failure})
+            raw = (json.dumps(record, allow_nan=False)+"\n").encode()
+        need(len(raw) <= 64*1024, "getter failure receipt bound")
+        c.write_new(out / "original-tapped-getters.json", raw)
+    need(failure is None and record["pass"], "original same-instance getter observation failed")
+
+
+def compare_getters(original, native, source, site, numerics, layers):
+    need(layers["original_calls"] == layers["native_calls"] == 4, "four completed calls per getter process")
+    for record, observer, path in ((original, "original-tapped", site / "numpy.libs"),
+                                   (native, "native-tapped", numerics)):
+        need(record.get("schema") == 553 and record.get("diagnostic_only") is True
+             and record.get("observer") == observer and record.get("phase") == "after-output-flush"
+             and record.get("source") == source and record.get("pass") is True
+             and type(record.get("pid")) is int and record["pid"] > 0, "getter receipt source/phase/health")
+        need(all(type(record.get(k)) is type(v) and record[k] == v for k, v in FLAGS.items()), "getter scope flags")
+        value = record["observation"]
+        need(value.get("new_library_opened") is False and value.get("provider_fd_held_through_observation") is True
+             and value.get("executable_mapping_roster_equal") is True
+             and value["executable_mappings_before"] == value["executable_mappings_after"]
+             and value["provider"]["path"] == str(path / "libscipy_openblas64_-f48b354e.so")
+             and value["provider"]["sha256"] == DSOS["libscipy_openblas64_-f48b354e.so"], "same-instance provider receipt")
+        start = str(value["process_start_ticks"])
+        need(start.isascii() and start.isdecimal() and all(any(tid == record["pid"] and str(ticks) == start
+             for tid, ticks in value[key]) for key in ("tasks_before", "tasks_after")), "getter process starttime binding")
+        for key in ("config_bytes", "core_bytes"):
+            raw = value[key]
+            need(isinstance(raw, list) and 0 < len(raw) < 4096
+                 and all(type(b) is int and 0 < b <= 255 for b in raw), "bounded raw getter string")
+        need(type(value["threads"]) is int and value["threads"] > 0, "C int thread getter value")
+    left, right = original["observation"], native["observation"]
+    return {"schema": 553, "diagnostic_only": True, "source": source,
+            "observation_valid": True, "completed_calls_per_process": 4,
+            "same_reported_config": left["config_bytes"] == right["config_bytes"],
+            "same_reported_core": left["core_bytes"] == right["core_bytes"],
+            "same_reported_threads": left["threads"] == right["threads"],
+            "different_pids_not_same_cross_process_instance": True,
+            "getters_do_not_observe_past_blas_calls": True,
+            "original_receipt": "original-tapped-getters.json", "native_receipt": "native-tapped-getters.json", **FLAGS}
 
 
 def observation_index(calls, original):
