@@ -750,7 +750,7 @@ jobs:
         printf '%s  %s\n' cd6233cbe31283b47f3d8a4d6dac9c4a11b60739ec5fa54d25cd23630473c458 rust/crates/dev-tools/tests/ui_application_lifecycle_reference.rs | sha256sum --check -
         printf '%s  %s\n' 9aa47cb3cc2403e24d13d4faf1ae0b9155d980a8b6696f72931432d321a60ce6 rust/crates/dev-tools/tests/ui_application_lifecycle_reference/source_binding.rs | sha256sum --check -
         printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa tools/ci/ssh_source_absence_523.sh | sha256sum --check -
-        printf '%s  %s\n' 07562d664e5ebd78bfbe0dc5a6372dbd9990655045856dc2df9af940d5d77ab3 .github/workflows/python-rust-523-model-current-triplet.yml | sha256sum --check -
+        printf '%s  %s\n' 9adb8c7c727df6088c75b0db8bd3007bdbc8ede50a59a114e50a087e13b9a63a .github/workflows/python-rust-523-model-current-triplet.yml | sha256sum --check -
         printf '%s  %s\n' c4438f1d8f94ad39f852e578653aaf1a560a431c7e20bc8b089ee4f600307918 tools/ci/model_current_triplet_482.py | sha256sum --check -
         printf '%s  %s\n' f24908683c706b46102d4f5ffceca3b830e283a71e95ea01b629c0de28a0619c rust/crates/model-runtime/src/cpu/diagnostic_482_tests.rs | sha256sum --check -
         printf '%s  %s\n' 4df8b0ce31223799cd0838020776716e929b68990b9ebfc10c8070331f7e81be rust/crates/model-runtime/src/cpu.rs | sha256sum --check -

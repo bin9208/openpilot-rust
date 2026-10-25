@@ -592,3 +592,18 @@ full128/full-runtime/historical-provider/half-sNaN5/retirement flags는 false/0�
 
 로컬 검증은 AST/YAML/Bash 문법·Rustfmt·source/diff뿐이다. 새 source의 실제 compile/readonly decoder/
 original capture/2frame plain-tap/회수 및 모든 기능은 **Actions UNRUN**이다.
+
+
+### d514의 첫 hosted 준비 실패와 파일명 정정
+
+[40170396030/job121099875349](https://github.com/bin9208/openpilot-rust/actions/runs/40170396030/job/121099875349),
+source `d514956d7b9365beabc0687b39cd80c366a290a8`은 LLVM 준비에서 실패했다.
+artifact12589909513은3,631,153B/SHA256 `0debbbb38f3fceb1ea5001666bdd2f1e4e4a5c5c51b9fc36557dca08db15e72a`,
+64CRC/전개13,020,924B다. 실제 apt update/install은 성공했고 libllvm18은
+`1:18.1.3-1ubuntu1`이었다. 잘못 지정한 `libLLVM-18.so.1`을 찾지 못해 LLVM before manifest가
+작성되지 않았다. Python 준비·현재 모델 compile·2frame 관측은 도달하지 않았으며 source/SDK
+최종 봉인은 성공했다. 전체 진단 수용은 실패 상태다.
+
+후속은 기존 성공 model workflow가 고정한 `/usr/lib/x86_64-linux-gnu/libLLVM-18.so`를 canonical
+해석하고 같은 SHA `5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`를 검사한다.
+package version도 위 정확값으로 검사한다. provider 교체·숫자 기대값·허용오차·runtime 수용 변경은 없다.
