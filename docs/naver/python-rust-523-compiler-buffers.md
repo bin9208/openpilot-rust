@@ -3,7 +3,8 @@
 작성: 2026-10-26. 추적: [#523](https://github.com/bin9208/openpilot-rust/issues/523).
 읽기 기준 HEAD: `126fdbea36598566d1040be0a35a365c909be4e4`.
 작업 루트: `/home/fma1/.codex/worktrees/python-rust-523-completion/openpilot-rust`.
-상태: 최소 native 경계 구현·독립 원본 비교 소스 전달. 기능 GHA **UNRUN**.
+상태: 일반6/strict Clippy GHA 통과(부모 보고), 원본 비교는 import 실패.
+실제 checkout root 추가 수정 후 원본 비교 GHA 재수용 대기.
 **baseline 삭제 credit 0**. 기존 Python caller/원본 삭제·전환 수용을 뜻하지 않는다.
 
 ## 기존 구현 조사와 실제 추가 범위
@@ -154,7 +155,7 @@ Clippy도 이 경계를 포함하되 기존 성공 검사를 불필요하게 반
 통과했다. source/diff를 검토했으며 새 파일의 diff whitespace 오류 출력은 없었다.
 `git diff --no-index --check /dev/null <path>`의 종료코드 1은 새 파일 차이다.
 Cargo/build/test/Clippy/원본 호출/모델 실행은 하지 않았다.
-기능 GHA는 **UNRUN**, commit/push/dispatch 0회다.
+초기 납품 당시 기능 GHA는 **UNRUN**이었다. 이 sidecar의 commit/push/dispatch는0회다.
 
 남은 작업은 부모의 gated mod 등록, 실제 compiler caller 연결, Focus/CI/원장
 등록과 exact-SHA Actions 결과 기록이다. 기존 Python caller가 남아 있고 native
@@ -164,6 +165,34 @@ caller의 전체 exporter 원본 대체도 미수용이므로 **baseline 삭제 
 
 부모는 production mod를 기존 `native-skip-miri` 경계에 등록하고 test import를 정식
 library API로 연결했다. 등록 local Actions의 `buffers` role에 일반6/원본1(32 descriptor
-+147 recipe)/strictClippy와 정확 실행수 확인을 추가했다. 실제 결과는 아직 GHA 대기다.
++147 recipe)/strictClippy와 정확 실행수 확인을 추가했다. 최초 실행 결과는 아래에 기록한다.
 집중 workflow는 변경 시 전체 role를 검증하고, 이후 source 변경은 필요한 role만
 명시 dispatch한다. 기존 PR/전체 integration 요구는 유지한다.
+
+## source DD 원본 비교 import 실패와 최소 수정 — 2026-10-26
+
+사용자/부모가 전달한
+[native units40212410286/buffers job121226283307](https://github.com/bin9208/openpilot-rust/actions/runs/40212410286/job/121226283307)
+결과에서 일반 native6개와 strict Clippy는 통과했다. 그러나 ignored
+`original_python_buffer_tables_match_native`는 tinygrad CPU provider import 도중
+`openpilot.common.usbgpu_bus_lock` 의존성을 찾지 못해
+**`ModuleNotFoundError: No module named 'openpilot'`**로 실패했다.
+이를 원본/native 결과 불일치나 32/147개 입력 비교의 수용으로 기록하지 않는다.
+이 sidecar는 해당 GHA를 조작하거나 재실행하지 않았다.
+
+원인은 `python3 -I` snippet이 `sys.path`에 `tinygrad_repo`만 추가하여 실제 checkout의
+`openpilot` package를 검색하지 못한 것이다. 입력으로 이미 받은 **실제 checkout root**를
+한 줄 추가했다. 삽입 순서는 checkout root 다음 tinygrad root이므로 최종 검색 우선순위는
+`tinygrad_repo`, checkout root 순이다. `-I/-B` 및 원래 환경·device/compile 금지는 유지한다.
+
+stub·fallback·예외 무시·새 package 설치를 추가하지 않았다. 원본 Python 정의/AST 추출·
+실제 CPU byte-copy·native 수학·일반6개 테스트·32 descriptor/147 recipe·expected trace
+비교 로직은 그대로다. 현재 checkout에 있는 genuine dependency를 import하도록 경로만
+연결했다. 공통 launcher/prepare helper·WF/Focus/원장은 수정하지 않았다.
+
+로컬 Rust 서식·내장 Python 구문 검사가 통과했고, 추가한 `sys.path` 한 줄을 제거하면
+수정 전 test 전체 bytes와 동일함을 역투영/diff로 확인했다. 실제 import·원본 함수·
+Cargo/test/Clippy·모델은 실행하지 않았다. 수정 후 원본 비교는 **GHA UNRUN**이다.
+부모가 같은 ignored exact selector를 실제1개 실행하여 32/147개 원본 비교를 확인해야 한다.
+앞선 일반6/Clippy 성공은 이 원본 비교의 성공을 대신하지 않으며 baseline 삭제 credit는0이다.
+수정 test SHA256: `2c391995d28a4cd64ad25cf10ec2dc2bb8625226c8bf493c7bc34905269eda64`.

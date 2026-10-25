@@ -1327,3 +1327,11 @@ Fast local routing40209583336/job121217757300도 strict cold trace의157행 `???
 source126의 필수 Rust40209691630/job121222236242는 실제 legacy Rustup shim 복원 뒤 fresh SDK의 line7에서 중단됐다. 기존 비어 있어야 할 prefix를 채택·수리하지 않고, CarrotMan 한 job의 동일 shim 발견 항목만 fresh 준비 뒤로 옮긴다. 원래 preparation/후검사 body·실행물 checksum·자동설치 금지·기능/ARM·예산/기한은 같다. policy는 선행 legacy 발견을 거부하고 기존 SDK escape12에 재삽입1을 더한다. 이 변경은 실제 기능 GHA 대기이며 #530은 열린 상태다.
 
 sourceDD의 신규 buffers/planner 단위는 이미 각 독립 role에 배정했다. 다음 workflow 변경의 자동 push는 필요한 tools role만 선택하며 다른 불변 성공을 일괄 반복하지 않는다. 수동 선택의 all/control/model/buffers/planner와 기존 필수 PR/Fast/통합은 유지한다. 이 추가 tools에는 Carrot SDK selector1 및 library/해당 target의 엄격Clippy를 연결한다.
+
+### DD 원본 실행 연결과 #591 수용
+
+sourceDD native40212410286의 Planner는 일반11/adapter13(실제 Rust160호출)/Clippy가 성공했으나, 원본4개는 부모 workflow가 `PLANNER_REFERENCE_PYTHON`을 넘기지 않아 실패했다. 선택한 실제 `/usr/bin/python3`의 canonical 실행물/version/hash를 기록·전후 확인하고 명시 env를 전달한다. buffers도 일반6/Clippy는 성공했지만 isolated Python 경로에 checkout root가 없어 실제 openpilot dependency import에서 실패했다. 원본 코드·기대값을 바꾸거나 stub을 넣지 않고 root 한 줄을 추가한다. 두 수정 후 원본 검증은 GHA 대기다.
+
+모델 DD40212410219는 original/native×plain/tapped 네 mode와 전체6출력 bytes가 일치했고 source/index·SDK6쌍·회수가 성공했다. artifact12606905172의2098CRC/실제 SHA를 부모가 감사해 #591만 해결했다. D1의 frozen -0/current+0는 그대로 sticky FAIL이다. 현재 original과 native도+0로 같다는 관측만으로 기대값을 교체하지 않는다. 필요한 다음 관측은 기존 writer의 실제 half 입력2B이며 산술은 변경하지 않는다.
+
+sourceb961의 Carrot 분리 검사도 prefix 거부가 남아 원래 순서 관측만으로 전체 원인을 확정하지 않는다. 고정 prefix의 내용 없이 존재/소유/시각 metadata만 추가 관측한다. 신규 Carrot CI 진입점도 pending으로 등록해 추가 실행149(26교체/119대기/1기존native/2비실행/1제거), baseline3580=294/3/3283을 유지한다.

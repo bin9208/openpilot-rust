@@ -182,3 +182,5 @@ source126fdbea36598566d1040be0a35a365c909be4e4의
 shared policy는 legacy shim 발견이 fresh SDK보다 앞서면 거부한다. 기존 cold/proxy/cleanup 음성12개에 앞선 installer 재삽입1개를 추가해13개로 보강했다. local 집중 tools role에서 해당 기존 selector1개와 strictClippy를 연결한다. source/문법/서식 검토만 수행했고 실제 fresh 준비·runtime/ARM/PR·SDK 후검증은 GHA 대기다. #530을 닫거나 기준을 낮추지 않는다.
 
 부모는 필요한 실제 x64 검증을43개 무관 job과 분리하기 위해 `python-rust-523-carrot-sdk.yml`을 추가했다. 현재 main의 CarrotMan job·global env·모든 기능/SDK/cap/기한/후검사/회수 객체는 동일하며, checkout 뒤 main workflow 전체 SHA를 확인하는 host read-only 단계 하나만 추가한다. 따라서 다른 main 원문으로 오래된 복사본을 실행해 수용할 수 없다. 신규 파일 변경 시에만 branch 검사를 실행하며, 기존 PR의 실제 필수 Rust/ARM·통합 검사를 대체하지 않는다. 실제 GITHUB_WORKFLOW_REF는 새 workflow 경로로 기록하고 원래 PR 실행이라고 위장하지 않는다. 현재 기능 GHA는 미실행이다.
+
+sourceb961의 분리 검사40214441214/job121232422747도 fresh-prefix line7에서 실패했다. 이 실행에는 선행 legacy shim 복원이 없으므로 순서 변경만으로 원인이 전부 해결된 것은 아니다. 다음 후보는 기존 거부를 유지한 채 각 고정 prefix의 경로와 존재 시 type/UID/mode/크기/mtime/ctime만 읽어 출력한다. 내용·credential은 읽지 않고 SDK body의 새 정확 SHA를 policy/회귀에 고정한다. 실제 prefix와 생성 시점은 새 관측 전까지 미확정이다. 다른 main job/기능/한도는 그대로이며 main은499630B다.

@@ -196,7 +196,7 @@ jobs:
         CI296_HOST_CONTROL: '1'
       run: 'set -euo pipefail
 
-        printf ''%s  %s\n'' 27cc10a7c06b04926e7cd573092399419e542c5b9c7a310ff0d920a186791b8f .github/workflows/rust.yml
+        printf ''%s  %s\n'' d1b049eff773e65b8928e822925dd126432615dc0aed3cc09e7497c6b4eb9950 .github/workflows/rust.yml
         | sha256sum --check --strict -
 
         '
@@ -271,20 +271,21 @@ jobs:
         \ >&2' ERR\n[[ $RUNNER_ENVIRONMENT:$RUNNER_OS:$RUNNER_ARCH == github-hosted:Linux:X64 && $LOCAL_CI_ARCH\
         \ == x86_64 ]]\n[[ $HOME == \"$CI_JOB_TEMP/home\" && $CARGO_HOME == \"$CI_JOB_TEMP/cargo-home\"\
         \ && $RUSTUP_HOME == \"$CI_JOB_TEMP/rustup-home\" ]]\n[[ $(cat \"$CI_JOB_TEMP/owner\") == \"$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB\"\
-        \ ]]\nfor path in \"$RUSTUP_HOME\" \"$CARGO_HOME\" \"$CI_JOB_TEMP/rust-bootstrap\"; do\n  [[ !\
-        \ -e $path && ! -L $path ]]\ndone\n[[ $(stat -c %d \"$CI296_SOURCE_OWNER\") == \"$(stat -c %d\
-        \ \"$CI_JOB_TEMP\")\" ]]\nused=$(du -s -B1 -- \"$CI296_SOURCE_OWNER\" | awk 'NF==2 && $1~/^[0-9]+$/\
-        \ {print $1}')\nfree=$(df --output=avail -B1 -- \"$CI_JOB_TEMP\" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/\
-        \ {print $1}')\n[[ $used =~ ^[0-9]+$ && $free =~ ^[0-9]+$ ]]\ngib=$((1024*1024*1024))\n((used<=2*gib))\n\
-        required=$((2*gib-used+3*gib+8*gib+gib+gib+gib/2))\nprintf '{\"source_used_bytes\":%s,\"available_bytes\"\
-        :%s,\"remaining_growth_bytes\":%s,\"partial_prefix_adopted\":false}\n' \"$used\" \"$free\" \"\
-        $required\" > \"$CI_JOB_TEMP/proof/carrot530-admission.json\"\n((free>=required))\nDIAG_SOURCE=\"\
-        $CI296_SOURCE\" GITHUB_PATH=\"$CI_JOB_TEMP/proof/carrot530-sdk-path.txt\" /usr/bin/bash \"$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust\"\
-        \ before\nsdk=$CI_JOB_TEMP/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu\n[[ $(cat \"\
-        $CI_JOB_TEMP/proof/carrot530-sdk-path.txt\") == \"$sdk/bin\" ]]\nfor tool in rustup cargo rustc;\
-        \ do\n  path=$CARGO_HOME/bin/$tool\n  [[ -f $path && ! -L $path && $(stat -c %u \"$path\") ==\
-        \ \"$(id -u)\" ]]\n  cmp \"$CI_JOB_TEMP/rust-bootstrap/rustup-init\" \"$path\"\ndone\nprintf '%s\n\
-        ' \"OPENPILOT_CI_PREPARED_RUST_ROOT=$sdk\" \"OPENPILOT_CI_PREPARED_RUST_MANIFEST=$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256\"\
+        \ ]]\nfor path in \"$RUSTUP_HOME\" \"$CARGO_HOME\" \"$CI_JOB_TEMP/rust-bootstrap\"; do\n  printf\
+        \ 'CarrotMan fresh-prefix probe: %s\\n' \"$path\" >&2\n  if [[ -e $path || -L $path ]]; then stat\
+        \ -c '%F %u:%g %a %s %y %z' -- \"$path\" >&2; fi\n  [[ ! -e $path && ! -L $path ]]\ndone\n[[ $(stat\
+        \ -c %d \"$CI296_SOURCE_OWNER\") == \"$(stat -c %d \"$CI_JOB_TEMP\")\" ]]\nused=$(du -s -B1 --\
+        \ \"$CI296_SOURCE_OWNER\" | awk 'NF==2 && $1~/^[0-9]+$/ {print $1}')\nfree=$(df --output=avail\
+        \ -B1 -- \"$CI_JOB_TEMP\" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {print $1}')\n[[ $used =~ ^[0-9]+$\
+        \ && $free =~ ^[0-9]+$ ]]\ngib=$((1024*1024*1024))\n((used<=2*gib))\nrequired=$((2*gib-used+3*gib+8*gib+gib+gib+gib/2))\n\
+        printf '{\"source_used_bytes\":%s,\"available_bytes\":%s,\"remaining_growth_bytes\":%s,\"partial_prefix_adopted\"\
+        :false}\n' \"$used\" \"$free\" \"$required\" > \"$CI_JOB_TEMP/proof/carrot530-admission.json\"\
+        \n((free>=required))\nDIAG_SOURCE=\"$CI296_SOURCE\" GITHUB_PATH=\"$CI_JOB_TEMP/proof/carrot530-sdk-path.txt\"\
+        \ /usr/bin/bash \"$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust\" before\nsdk=$CI_JOB_TEMP/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu\n\
+        [[ $(cat \"$CI_JOB_TEMP/proof/carrot530-sdk-path.txt\") == \"$sdk/bin\" ]]\nfor tool in rustup\
+        \ cargo rustc; do\n  path=$CARGO_HOME/bin/$tool\n  [[ -f $path && ! -L $path && $(stat -c %u \"\
+        $path\") == \"$(id -u)\" ]]\n  cmp \"$CI_JOB_TEMP/rust-bootstrap/rustup-init\" \"$path\"\ndone\n\
+        printf '%s\n' \"OPENPILOT_CI_PREPARED_RUST_ROOT=$sdk\" \"OPENPILOT_CI_PREPARED_RUST_MANIFEST=$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256\"\
         \ \"RUSTUP_AUTO_INSTALL=0\" \"RUSTUP_TOOLCHAIN=1.94.0\" >> \"$GITHUB_ENV\"\nprintf '%s\n' \"$CARGO_HOME/bin\"\
         \ >> \"$GITHUB_PATH\"\n"
     - name: Expose provisioned Rust shims

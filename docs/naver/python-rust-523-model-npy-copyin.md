@@ -41,3 +41,9 @@ SOURCE의 worker0·outer index24·vector lane3으로 model index99를 역투영�
 data1[99]의 정적 allocation16 byte 구간은9670..9672다. 그 구간에 겹치는 마지막 선행 인자는 call147/kernel67의 출력 slot0/view365와 call148/kernel68의 입력 slot3/view365다. kernel68 SOURCE는 data0에만 store하므로 이 두 call 사이에서 view365를 다시 쓰는 경로가 아니다. kernel67 SOURCE는217245B/SHA256 `2d46595564d66783b4846a87bf02247e200ba3dec4a6ea03b02204103064e948`이고 data0의 half 결과를 store한다. 이로써 좁은 선행 producer 후보를 정적으로 식별했지만, 실제 D1의 half bits·해당 producer 입력과 원본 fresh/tapped 결과는 없다. historical half/sNaN5와 이번 실제 입력을 같은 원인으로 합치지 않는다.
 
 따라서 index99의 실제 최초 부호 생성 지점이나 frozen-0/current+0 차이의 원인을 확정하지 않는다. 다음 existing D2에서 동일 입력의 original/native plain·tapped 결과와 writer 경계를 먼저 확인해야 하며, 그 전에는 guarded-add를 copy로 바꾸거나 zero/expected/tolerance를 조정할 근거가 없다. 이번 산술 조사는 read-only이며 새 모델 실행·instrumentation·코드 수정은0이다.
+
+## NPY 분기의 실제 수용 — 2026-10-26
+
+sourceDD의 [40212410219/job121226282705](https://github.com/bin9208/openpilot-rust/actions/runs/40212410219/job/121226282705)에서 original/native × plain/tapped가 모두 exit0/error=null이고 기존3stage·전체6output의 bytes가 일치했다. artifact12606905172(27425271B/SHA256 `71d370b2638e719eb2973274c4f16622e2358930bcfdb4e18e8d6ab585b7bf85`)의2098 safe/unique/CRC, source/index·SDK6쌍 및 final-seals PASS/자식 회수·업로드·cleanup을 부모가 감사했다. #591의 이 분기만 수용한다.
+
+D1 frozen index99는 여전히 -0/current+0이고 run 전체는 sticky FAIL이다. current direct original/native 둘 다+0라는 D2 관측은 frozen expected 교체 근거가 아니다. half[99]는 아직 관측하지 않았고 후속 private read만 준비한다. full128/half·sNaN5/역사 provider·기기/대단원 수용과 retirement credit0은 유지한다.

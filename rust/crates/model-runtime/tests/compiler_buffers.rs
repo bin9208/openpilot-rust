@@ -127,6 +127,7 @@ import ast, dataclasses, hashlib, json, os, pathlib, sys, types
 from collections.abc import Mapping
 root = pathlib.Path(sys.argv[1])
 os.environ.update(DEV='CPU', CACHELEVEL='0', DEBUG='0', PROFILE='0', PYTHONDONTWRITEBYTECODE='1', TYPED='0')
+sys.path.insert(0, str(root))
 sys.path.insert(0, str(root/'tinygrad_repo'))
 from tinygrad.device import Buffer, MultiBuffer, Device, Compiler
 from tinygrad.dtype import dtypes
