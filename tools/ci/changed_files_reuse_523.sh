@@ -81,10 +81,12 @@ SEMANTIC = DEV + 'Cargo.toml::excluding-test-registration'
 # 부모 검토용 고정 postimage. 외부 env/새 HEAD로 자동 갱신하지 않는다.
 # prepare-changed-files-context의 정확한 path/required-features 등록을 포함한 Cargo semantic 핀.
 # 새 builder/wrapper는 옛58파일 baseline 외 current binding proof 대상이며 unknown diff 허용 없음.
+# source3b7492faa의 Planner 등록과 prepared-cold-audit workspace/lock만 아래 역투영으로 추가 수용한다.
 OVERLAY = {
-    'rust/Cargo.lock': 'a82648159767a21268e61ed4f2aba64940b7458733333ece0fab653017929ea0',
-    DEV + 'src/lib.rs': 'b817e5ccecebacdf904632a5d8705b266c6e00998516e5b13092c9c8c9be9412',
-    SEMANTIC: 'cc35942a27ad0ba982fca4147ab4ef32726511bbfd2a80ddecc58caa475f333f',
+    'rust/Cargo.toml': '8eb939a78d8527f4f96713bbb25a4ec68988c56d37143660b0e6f7c909281bcb',
+    'rust/Cargo.lock': '9586516b4adda7abc3f739f2c3360a6cd2370e8f2d785a6b36a4adfcf54f6b9a',
+    DEV + 'src/lib.rs': 'fce263ca2e8ea1c9ff937920cf466aaaed196eded598ba25bf1d917b8aa1e924',
+    SEMANTIC: '3b9329b6b073594cf04303b7d62ec600902d8c07b987890546a6a52351784db0',
 }
 JOBS = {
     'initial-subset': 119943476311, 'focused-registry': 119982392508,
@@ -298,7 +300,7 @@ def source_roster():
 
 
 def overlay_semantics(old_cargo, current_cargo, old_lock, current_lock):
-    # 정확히 여섯 별도 feature/일곱 bin/네 optional dependency 추가만 허용한다.
+    # 정확히 여섯 별도 feature/여덟 bin/네 optional dependency 추가만 허용한다.
     trimmed = copy.deepcopy(current_cargo)
     for name in ('route-sanitizer-native', 'kbhit-native', 'github-utils-native',
                  'developer-ssh-native', 'route-vault-bundle-native', 'current-catalog-export-native'):
@@ -309,7 +311,11 @@ def overlay_semantics(old_cargo, current_cargo, old_lock, current_lock):
              'overlay dependency must be new and optional')
         del trimmed['dependencies'][name]
     new_bins = {'build-route-vault-bundle', 'export-current-driving-catalog', 'developer-ssh',
-                'setup-ssh-keys', 'developer-auth', 'developer-auth-json', 'prepare-changed-files-context'}
+                'setup-ssh-keys', 'developer-auth', 'developer-auth-json', 'prepare-changed-files-context',
+                'check-plannerd-ci'}
+    need([b for b in trimmed['bin'] if b['name'] == 'check-plannerd-ci']
+         == [{'name': 'check-plannerd-ci', 'path': 'src/bin/check_plannerd_ci.rs'}],
+         'exact reviewed Planner binary registration required')
     need({b['name'] for b in trimmed['bin']} - {b['name'] for b in old_cargo['bin']} == new_bins,
          'unexpected binary registration')
     trimmed['bin'] = [b for b in trimmed['bin'] if b['name'] not in new_bins]
@@ -323,6 +329,11 @@ def overlay_semantics(old_cargo, current_cargo, old_lock, current_lock):
     need(len(packages) == 1, 'ambiguous dev-tools lock package')
     for name in ('cookie_store', 'openpilot-http-transport', 'openpilot-registration', 'ureq'):
         packages[0]['dependencies'].remove(name)
+    prepared = [p for p in trimmed_lock['package'] if p['name'] == 'openpilot-prepared-cold-audit']
+    need(prepared == [{'name': 'openpilot-prepared-cold-audit', 'version': '0.1.0',
+                       'dependencies': ['rustix', 'serde_json', 'sha2', 'tempfile']}],
+         'exact reviewed prepared-cold-audit lock registration required')
+    trimmed_lock['package'].remove(prepared[0])
     need(trimmed_lock == old_lock, 'unreviewed lock resolver difference')
 
 
@@ -428,7 +439,17 @@ def main():
     current[SEMANTIC] = json_hash(semantic(cargo.raw))
     expected_pins = {**pins, **OVERLAY}
     need(current == expected_pins, 'unreviewed current source or overlay pin mismatch')
-    need(sum(current[n] == pins[n] for n in names) == 56, 'expected 56 unchanged physical inputs')
+    need(sum(current[n] == pins[n] for n in names) == 55, 'expected 55 unchanged physical inputs')
+    # 59개 전체 pin은 그대로 검사하고 새 metadata 두 경계의 원문을 정확히 역투영한다.
+    member = b',"crates/prepared-cold-audit"'
+    workspace = source['rust/Cargo.toml'].raw
+    need(workspace.count(member) == 1 and sha(workspace.replace(member, b'')) == pins['rust/Cargo.toml'],
+         'unreviewed workspace membership or bytes')
+    module = b'pub mod planner_ci_controller;\n'
+    lib = source[DEV + 'src/lib.rs'].raw
+    need(lib.count(module) == 1 and sha(lib.replace(module, b''))
+         == 'b817e5ccecebacdf904632a5d8705b266c6e00998516e5b13092c9c8c9be9412',
+         'unreviewed Planner module overlay bytes')
     old_cargo = historical_blob(BASE, DEV + 'Cargo.toml')
     old_lock = historical_blob(BASE, 'rust/Cargo.lock')
     old_lib = historical_blob(BASE, DEV + 'src/lib.rs')
@@ -443,7 +464,7 @@ def main():
     save('source.before.json', {**{n: v.record() for n, v in source.items()},
                                 DEV + 'Cargo.toml': cargo.record(), 'admission_script': script.record()})
     save('current-overlay.json', {'historical_inputs_sha256': pins, 'current_inputs_sha256': current,
-                                'overlay_sha256': OVERLAY, 'unchanged_files': 56,
+                                'overlay_sha256': OVERLAY, 'unchanged_files': 55,
                                 'test_registration_excluded_only_from_cargo_semantic_hash': True,
                                 'full_cargo_toml_sha256': cargo.pin})
     providers = manifest['cp949_runtime_providers_sha256']

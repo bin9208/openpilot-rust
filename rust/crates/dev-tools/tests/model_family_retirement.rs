@@ -694,16 +694,17 @@ fn cached_driver_uses_actual_model_run_and_daemon_before_full_retirement() {
         Some(&inputs.driver_receipt),
         false,
     );
-    let report = success(&result, &output, 4);
-    assert_eq!(
-        report["current_catalog"]["receipt"]["sha256"],
-        pin(&inputs.driver_receipt)["sha256"]
-    );
+    // 실패도 원래 status/assertion을 유지하며 실제 model-run prestate를 먼저 보존한다.
     diagnostic::run_driver_frame_diagnostic_from(
         &output.join("1344-raw-1"),
         &proof.join("model-run"),
     )
     .unwrap();
+    let report = success(&result, &output, 4);
+    assert_eq!(
+        report["current_catalog"]["receipt"]["sha256"],
+        pin(&inputs.driver_receipt)["sha256"]
+    );
     let diagnostic = read_json(&proof.join("model-run/diagnostic.json"));
     assert_eq!(diagnostic["model_run_exit"], 0);
     let comparisons = diagnostic["comparisons"].as_array().unwrap();

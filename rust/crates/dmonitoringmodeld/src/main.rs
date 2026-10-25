@@ -24,6 +24,7 @@ struct Options {
     catalog: PathBuf,
     frames: Option<u64>,
     cached_admission: Option<(PathBuf, String)>,
+    driver_prestate_476: Option<PathBuf>,
 }
 
 fn options() -> Result<Option<Options>, Error> {
@@ -32,6 +33,7 @@ fn options() -> Result<Option<Options>, Error> {
     let mut frames = None;
     let mut cached_admission = None;
     let mut cached_sha = None;
+    let mut driver_prestate_476 = None;
     while let Some(arg) = args.next() {
         if arg == "--help" {
             println!("openpilot-dmonitoringmodeld --trusted-catalog PATH [--frames N] [--cached-admission PATH --cached-admission-sha256 SHA256]\n\nRuns the driver VisionIPC/native-model/driverStateV2 loop. PATH must contain\ntrusted immutable executable model artifacts. Omit --frames to run continuously.\nUses the original OPENPILOT_PREFIX namespace and SEND_RAW_PRED behavior.");
@@ -64,9 +66,19 @@ fn options() -> Result<Option<Options>, Error> {
                     .into_string()
                     .map_err(|_| Error::Contract("cached admission SHA256 is not UTF8"))?,
             );
+        } else if arg == "--driver-prestate-476" && driver_prestate_476.is_none() {
+            driver_prestate_476 = Some(PathBuf::from(
+                args.next()
+                    .ok_or(Error::Contract("driver476 output required"))?,
+            ));
         } else {
             return Err(Error::Contract("unknown or duplicate option; see --help"));
         }
+    }
+    if driver_prestate_476.is_some() && (cached_admission.is_none() || cached_sha.is_none()) {
+        return Err(Error::Contract(
+            "driver476 requires explicit cached admission",
+        ));
     }
     Ok(Some(Options {
         catalog: catalog.ok_or(Error::Contract("--trusted-catalog is required"))?,
@@ -80,6 +92,7 @@ fn options() -> Result<Option<Options>, Error> {
                 ))
             }
         },
+        driver_prestate_476,
     }))
 }
 
@@ -196,6 +209,14 @@ fn run_loop(options: Options, logger: &mut Logger, stop: &Arc<AtomicBool>) -> Re
             None => DriverRuntime::load(bundle, priority),
         }
     }?;
+    if let Some(output) = &options.driver_prestate_476 {
+        runtime.enable_driver_prestate_476(
+            output,
+            admission
+                .as_ref()
+                .ok_or(Error::Contract("driver476 admission"))?,
+        )?;
+    }
     logger.emit(
         log_site!(),
         Record::text(

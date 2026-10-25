@@ -38,14 +38,19 @@ fn run() -> Result<(), Box<dyn Error>> {
         );
         return Ok(());
     }
-    if !matches!(args.len(), 3 | 7)
+    if !matches!(args.len(), 3 | 7 | 9)
         || args[0] != "--trusted-bundle"
-        || (args.len() == 7
+        || (args.len() >= 7
             && (args[3] != "--cached-admission" || args[5] != "--cached-admission-sha256"))
+        || (args.len() == 9 && args[7] != "--driver-prestate-476")
     {
         return Err(
             "usage: model-run --check-catalog ROOT | --catalog-generation ROOT | --trusted-bundle BUNDLE SEQUENCE.json [--cached-admission PATH --cached-admission-sha256 SHA256]".into(),
         );
+    }
+    #[cfg(not(unix))]
+    if args.len() == 9 {
+        return Err("driver476 prestate requires Unix cached runtime".into());
     }
     let directory = PathBuf::from(&args[1]);
     let sequence_path = PathBuf::from(&args[2]);
@@ -56,7 +61,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     // SAFETY: --trusted-bundle explicitly selects executable model code under the
     // same trust boundary as running a local program; its bundle must be immutable.
     #[cfg(unix)]
-    let admission = if args.len() == 7 {
+    let admission = if args.len() >= 7 {
         let expected = args[6].to_str().ok_or("cached admission SHA is not UTF8")?;
         Some(
             openpilot_model_runtime::cached_code::Admission::read_authenticated(
@@ -85,13 +90,49 @@ fn run() -> Result<(), Box<dyn Error>> {
         // SAFETY: ordinary --trusted-bundle contract above applies.
         unsafe { CpuModel::load(&directory) }?
     };
-    for frame in frames {
+    #[cfg(unix)]
+    let trace = (args.len() == 9).then(|| PathBuf::from(&args[8]));
+    #[cfg(unix)]
+    if let Some(output) = &trace {
+        if frames.len() != 4 {
+            return Err("driver476 requires the exact warmup/frame0 four-stage sequence".into());
+        }
+        model.write_driver_prestate_476(
+            &directory,
+            output,
+            "loaded",
+            admission.as_ref().ok_or("driver476 admission")?,
+        )?;
+    }
+    for (_index, frame) in frames.into_iter().enumerate() {
         for (name, path) in frame.inputs {
             model.write_input(&name, &fs::read(parent.join(path))?)?;
         }
-        match frame.entrypoint {
-            Some(name) => model.run_entry(&name)?,
-            None => model.run(),
+        #[cfg(unix)]
+        if let Some(output) = &trace {
+            let phase = [
+                "warmup-prepare",
+                "warmup-model",
+                "frame-0-prepare",
+                "frame-0-model",
+            ][_index];
+            let entry = if _index % 2 == 0 { "prepare" } else { "model" };
+            if frame.entrypoint.as_deref() != Some(entry) {
+                return Err("driver476 entrypoint order".into());
+            }
+            model.run_driver_entry_476(
+                &directory,
+                output,
+                phase,
+                entry,
+                admission.as_ref().ok_or("driver476 admission")?,
+            )?;
+        }
+        if args.len() != 9 {
+            match frame.entrypoint {
+                Some(name) => model.run_entry(&name)?,
+                None => model.run(),
+            }
         }
         for (name, path) in frame.outputs {
             let mut output = vec![0; model.output_size(&name)?];

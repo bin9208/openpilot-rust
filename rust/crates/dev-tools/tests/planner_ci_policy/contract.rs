@@ -136,7 +136,7 @@ pub fn assert_contract(main: &Value, native: &Value) {
     let helper = fs::read(root.join("tools/ci/planner_native_controller_523.sh")).unwrap();
     assert_eq!(
         format!("{:x}", Sha256::digest(helper)),
-        "40e07c4d3261197a4c1be5d5acf0959cc2450ec30ba7c6ff8c87633c0de32c8f"
+        "32cfc4a9b57010c57bf3bdd112c4339ee22ea2ecd5618c39f6b1aa441de5ea63"
     );
     let jobs = &main["jobs"];
     let native_jobs = &native["jobs"];

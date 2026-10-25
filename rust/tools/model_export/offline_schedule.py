@@ -4,8 +4,9 @@ import hashlib
 import json
 import re
 import struct
+import subprocess
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from collections.abc import Generator
 from typing import TYPE_CHECKING
@@ -25,7 +26,7 @@ from .offline_constants import prepare_constants
 from .offline_devices import host_build
 from .offline_model import InitializedBuffer as InitializedBuffer, OfflineModel
 from .qcom import BufferArgument, CopyCall, ImageArgument, Kernel, KernelCall, Manifest
-from .schema import Binding, Entrypoint, ExportError, entrypoint_version
+from .schema import Allocation, Binding, Entrypoint, ExportError, View, entrypoint_version
 
 if TYPE_CHECKING:
     from .offline_pipeline import OfflinePipeline
@@ -113,6 +114,39 @@ def launch_dimensions(info: ProgramInfo, source: str, binary: bytes) -> tuple[tu
     return tuple(size // group for size, group in zip(info.global_size, local, strict=True)), tuple(local)
 
 
+def _number(value: int | float | bool) -> dict:
+    if type(value) is int:
+        return {"type": "integer", "value": str(value)}
+    if type(value) is float:
+        return {"type": "float", "value": value}
+    if type(value) is bool:
+        return {"type": "boolean", "value": value}
+    raise ExportError("unsupported native export dimension")
+
+
+def _native_export_plan(compiler: OfflineQcomCompiler, request: dict) -> dict:
+    # Reuse the actual staged ARM/native compiler command, including QEMU argv.
+    # This mode does bookkeeping only; genuine kernel compilation ran separately.
+    raw = json.dumps(request, separators=(",", ":"), allow_nan=False).encode()
+    if len(raw) > 256 * 1024 * 1024:
+        raise ExportError("native export-plan request exceeds bound")
+    try:
+        result = subprocess.run((*compiler.command.argv, "--export-plan"), input=raw, capture_output=True,
+                                timeout=compiler.command.timeout_seconds, check=False)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise ExportError("native export-plan process failed") from error
+    if result.returncode != 0 or len(result.stdout) > 256 * 1024 * 1024:
+        raise ExportError("native export-plan failed: " + result.stderr[:65536].decode(errors="replace"))
+    try:
+        value = json.loads(result.stdout)
+    except (UnicodeError, ValueError) as error:
+        raise ExportError("invalid native export-plan response") from error
+    if not isinstance(value, dict) or set(value) != {"version", "allocations", "views", "event_views", "weights",
+                                                   "weights_sha256", "launches", "entrypoints"}:
+        raise ExportError("native export-plan response contract differs")
+    return value
+
+
 def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination: Path) -> OfflineCompilation:
     model = schedule.model
     outputs = tuple(model.bindings.outputs.values())
@@ -123,14 +157,35 @@ def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination
     held.update(item.buffer.buf_uop for item in model.initialized)
     linear = plan_linear(linear, held)
     table = OfflineBufferTable({descriptor(item.buffer): item.data for item in model.initialized})
+    events, view_checks, launches = [], [], []
+
+    def storage(buffer):
+        return {"base": id(buffer.base), "allocation_bytes": buffer.base.nbytes, "offset": buffer.offset,
+                "bytes": buffer.nbytes, "device": buffer.device, "allocated": buffer.is_allocated()}
+
+    def view(buffer):
+        event = len(events)
+        events.append({"op": "view", "buffer": storage(buffer)})
+        index = table.view(buffer)
+        view_checks.append((event, index))
+        return index
+
+    def read(buffer):
+        events.append({"op": "read", "buffer": storage(buffer)})
+        table.read(buffer)
+
+    def write(buffer):
+        events.append({"op": "write", "buffer": storage(buffer)})
+        table.write(buffer)
+
     inputs = []
     for name, tensor in model.bindings.inputs.items():
         buffer = descriptor(tensor.uop)
-        inputs.append(Binding(name, table.view(buffer)))
+        inputs.append(Binding(name, view(buffer)))
         if buffer.base in table.initialized:
-            table.read(buffer)
-        table.write(buffer)
-    result_bindings = tuple(Binding(name, table.view(descriptor(tensor.uop))) for name, tensor in model.bindings.outputs.items())
+            read(buffer)
+        write(buffer)
+    result_bindings = tuple(Binding(name, view(descriptor(tensor.uop))) for name, tensor in model.bindings.outputs.items())
     kernels: list[Kernel] = []
     calls: list[KernelCall | CopyCall] = []
     binaries: list[bytes] = []
@@ -146,9 +201,9 @@ def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination
         if call.src[0].op is Ops.COPY:
             if len(buffers) != 2 or buffers[0].nbytes != buffers[1].nbytes:
                 raise ExportError("offline copy requires equally sized buffers")
-            table.read(buffers[1])
-            table.write(buffers[0])
-            calls.append(CopyCall(table.view(buffers[1]), table.view(buffers[0])))
+            read(buffers[1])
+            write(buffers[0])
+            calls.append(CopyCall(view(buffers[1]), view(buffers[0])))
             emitted_by_source.append(len(calls))
             continue
         if call.src[0].op is not Ops.SINK:
@@ -168,9 +223,9 @@ def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination
             raise ExportError("offline kernel lacks genuine source or compiled bytes")
         global_size, local_size = launch_dimensions(info, source, binary)
         for index in info.ins:
-            table.read(buffers[index])
+            read(buffers[index])
         for index in info.outs:
-            table.write(buffers[index])
+            write(buffers[index])
         kernel = Kernel(info.function_name, hashlib.sha256(binary).hexdigest(), len(binary), arguments)
         if kernel not in kernel_ids:
             kernel_ids[kernel] = len(kernels)
@@ -178,11 +233,13 @@ def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination
             programs.append(program)
             binaries.append(binary)
             sources.append(source)
-        calls.append(KernelCall(kernel_ids[kernel], tuple(table.view(buffers[index]) for index in info.globals), (),
+        launches.append({"program": kernel_ids[kernel], "global": [_number(value) for value in info.global_size],
+                         "local": None if info.local_size is None else [_number(value) for value in info.local_size]})
+        calls.append(KernelCall(kernel_ids[kernel], tuple(view(buffers[index]) for index in info.globals), (),
                                 global_size, local_size))
         emitted_by_source.append(len(calls))
     for tensor in outputs:
-        table.read(descriptor(tensor.uop))
+        read(descriptor(tensor.uop))
     allocations, weights = table.weights()
     entries = []
     start = 0
@@ -193,6 +250,56 @@ def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination
                         allocations, tuple(table.views), tuple(inputs), result_bindings, tuple(kernels), tuple(calls), tuple(entries))
     serialized = asdict(manifest)
     if not entries:
+        del serialized["entrypoints"]
+    for call_data in serialized["calls"]:
+        if "global_" in call_data:
+            call_data["global"] = call_data.pop("global_")
+    native = _native_export_plan(compiler, {
+        "version": 1, "initialized": [{"key": id(buffer), "data": bytes(data).hex()} for buffer, data in table.initialized.items()],
+        "events": events, "programs": [{"source": source, "binary": binary.hex()} for source, binary in zip(sources, binaries, strict=True)],
+        "launches": launches, "emitted_by_source": emitted_by_source,
+        "stage_ends": [{"name": name, "end": end} for name, end in schedule.stage_ends],
+    })
+    try:
+        native_weights = bytes.fromhex(native["weights"])
+        if len(native["event_views"]) != len(events) or any(native["event_views"][event] != index for event, index in view_checks):
+            raise ExportError("native export view identity differs")
+        native_launches = []
+        for launch in native["launches"]:
+            sizes = []
+            for name in ("global", "local"):
+                sizes.append(tuple(int(value["value"]) if value["type"] == "integer" else value["value"] for value in launch[name]))
+            native_launches.append(tuple(sizes))
+        kernel_calls = [call for call in calls if isinstance(call, KernelCall)]
+        expected_launches = [(call.global_, call.local) for call in kernel_calls]
+        # Canonical JSON preserves the distinction between integers/floats/bools.
+        def equal(left, right):
+            return json.dumps(left, sort_keys=True, allow_nan=False) == json.dumps(right, sort_keys=True, allow_nan=False)
+
+        if (native_weights != weights or native["weights_sha256"] != serialized["weights_sha256"]
+                or not equal(native_launches, expected_launches)
+                or any(not equal(native[name], serialized.get(name, [])) for name in ("version", "allocations", "views", "entrypoints"))):
+            raise ExportError("native export bookkeeping differs from genuine Python boundary")
+        allocations = tuple(Allocation(**value) for value in native["allocations"])
+        native_views = tuple(View(**value) for value in native["views"])
+        native_entries = tuple(Entrypoint(**value) for value in native["entrypoints"])
+        launch_iter = iter(native_launches)
+        native_calls = []
+        for call in calls:
+            if isinstance(call, KernelCall):
+                global_size, local_size = next(launch_iter)
+                call = replace(call, global_=global_size, local=local_size)
+            native_calls.append(call)
+        native_calls = tuple(native_calls)
+    except (KeyError, TypeError, ValueError, StopIteration) as error:
+        raise ExportError("invalid native export bookkeeping") from error
+    # Native bytes and indices feed the existing writer. Failure/mismatch has no
+    # Python success fallback; the retained source is an independent handoff check.
+    weights = native_weights
+    manifest = replace(manifest, version=native["version"], allocations=allocations, views=native_views,
+                       calls=native_calls, entrypoints=native_entries, weights_sha256=native["weights_sha256"])
+    serialized = asdict(manifest)
+    if not native_entries:
         del serialized["entrypoints"]
     for call_data in serialized["calls"]:
         if "global_" in call_data:

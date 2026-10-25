@@ -288,3 +288,41 @@ Focus도 admission 단계에서 실패 상태다. 새 routing YAML의 parsed run
 그대로 두고 새 job의 sequence 들여쓰기를 원래 형식으로 복구했다. 소스 diff에서 baseline의
 모든 보호 Cargo 행/count(기존 prefix 추가1 포함)가 그대로임을 확인했다. 이 정적 대조는
 새 GHA 기능/전체 fit 결과를 대신하지 않는다. helper/감사 모듈/기한/자원은 변경0이다.
+
+
+## 3b7492 실제 전체 Fast 수용 — 2026-10-26
+
+source `3b7492faa24f7ad37945246d470a0c9447f7f3b5`의
+[Fast40224700444](https://github.com/bin9208/openpilot-rust/actions/runs/40224700444)는
+기존6개와 cold/routing을 합친8개 worker·aggregate가 전부 성공했다. native cold job
+[121266542772](https://github.com/bin9208/openpilot-rust/actions/runs/40224700444/job/121266542772)은
+전체308초로 원래7분 안 끝났다. cold140초, actual audit step63초, provider after18초와
+SDK/source final·upload·두 cleanup이 성공했다. 감사 compile은12.44초, actual test47.89초였다.
+앞선 source73의 compile163초와 비교되는 관측이며 일반적인 속도/peak 보장으로 확대하지 않는다.
+
+| 실물 artifact | bytes | SHA256 | safe unique/non-symlink/CRC member |
+| --- | ---: | --- | ---: |
+| local cold12611247608 | 13268463 | `1b2fb853106ed2fde0840d636d2a9a6631d6cc1ce3554d4f2d099f514c36123c` | 1406 |
+| hosted routing12610679097 | 374718 | `1313cd0814af47563645f4d8faa70115f735bd788ef301fc7fabe17163d07b50` | 47 |
+| native tools12610752849 | 1585074 | `77d1b9fef43b8e2478e2e9d3d6f45a34717eff323d347a96d502ba9eb72ea761` | 44 |
+| hosted diagnostic12610847299 | 11493618 | `00e1dca21ababf012f2335357379ef3f8d4e4fd49f36418c0918408d3c3e5eba` | 969 |
+
+모두 해당 source3b7492를 보존한다. local receipt는 absolute cargo1/rustc37,
+exec181/실패29, Python/Rustup0, SDK regular294다. cold/after의 original/final exit0과
+추적한 owned groups nonlive=true, provider inputs/source/build/bin의 전후
+SHA/roster/stable12쌍 및 `verify-complete`를 확인했다. source/index/SDK files·roster·program도
+동일하다. 프로세스 전체의 추가 reap/closed DSO 또는 poll 사이 peak를 측정한 뜻은 아니다.
+
+routing job121266542803은 changed-files5와 lib83, disk44/ignored1, process3,
+isolation89, workflow42 및 Navi exact2가 성공했다. 전체73 suite/추가 회귀·13종 fail-closed와
+private source roster77/ARM24 검증도 통과했다. routing source/index/SDK5쌍과 program roster도
+동일했다. native tools run40224818843은 기존 prepared11과 새 thin11/ignored1·strictClippy를
+포함한 모든6개 exit-code0 및 source/index/SDK6쌍 동일을 확인했다.
+
+별도 hosted diagnostic40224700325는18control(7+4+7), marker10/protocol3와 실제 cold의
+cargo1/rustc37/exec180/실패29/Python0/Rustup0/SDK165를 확인했다. 기존 root-fixed=false,
+parent-link=false·옛seccomp/nommu 미측정과 retirement credit0은 유지한다.
+
+따라서 #530의 prepared SDK/cold/routing 결함 범위는 수용 가능하다. #560은 새로운 Fast
+관측 경계 수용과 원래 Ubuntu race 원인·정확 PR 통합 조건을 구분해 계속 추적한다.
+PR343의 전체 통합·모델·recovery·기기 수용과 전체 #523 완료를 뜻하지 않는다.

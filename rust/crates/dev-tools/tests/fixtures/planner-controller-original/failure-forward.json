@@ -1,0 +1,68 @@
+{
+  "argv": [
+    "/usr/bin/python3.12",
+    "-I",
+    "-c",
+    "\nimport json, pathlib, runpy, subprocess, sys, types, unittest.mock\nns = runpy.run_path(str(pathlib.Path(sys.argv[1]) / 'rust/tools/check_plannerd_ci.py'))\nchecks = tuple(ns['Check'](name, pathlib.Path(path)) for name, path in zip(('first', 'later'), sys.argv[2:4]))\noutput = pathlib.Path(sys.argv[4])\n# 기존 고정 admission을 이 실패 전파 비교에서만 독립시킨다. 함수/명령/실패는 원문이다.\nwith unittest.mock.patch.object(ns['shutil'], 'disk_usage', return_value=types.SimpleNamespace(free=1 << 60)):\n    try:\n        ns['run_checks'](checks, output)\n    except subprocess.CalledProcessError as error:\n        code = error.returncode\n    else:\n        raise AssertionError('original controller accepted the failing comparison')\nprint(json.dumps({'python': sys.executable, 'returncode': code, 'rows': json.loads((output / 'commands.json').read_text())}))\n",
+    "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source",
+    "/tmp/openpilot-ci.PLvbgO/.tmpddvdka/failing.py",
+    "/tmp/openpilot-ci.PLvbgO/.tmpddvdka/later.py",
+    "/tmp/openpilot-ci.PLvbgO/.tmpddvdka/source-result"
+  ],
+  "cases": {
+    "disk_usage_free_override": 1152921504606846976,
+    "failing_path": "/tmp/openpilot-ci.PLvbgO/.tmpddvdka/failing.py",
+    "failing_script": "import sys\nprint('out')\nprint('err', file=sys.stderr)\nraise SystemExit(42)\n",
+    "later_path": "/tmp/openpilot-ci.PLvbgO/.tmpddvdka/later.py",
+    "later_script": "from pathlib import Path\nPath(__file__).with_name('sentinel').touch()\n",
+    "sentinel_path": "/tmp/openpilot-ci.PLvbgO/.tmpddvdka/sentinel",
+    "source_output": "/tmp/openpilot-ci.PLvbgO/.tmpddvdka/source-result"
+  },
+  "github_sha": "73e17ff10ec9be7a7001ab9cbf415a779c436f78",
+  "kind": "independent-python-observation",
+  "native_comparison": "enclosing test assertions must pass; observation alone is not acceptance",
+  "original_first_log_utf8": "out\nerr\n",
+  "original_result": {
+    "python": "/usr/bin/python3.12",
+    "returncode": 42,
+    "rows": [
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/tmp/openpilot-ci.PLvbgO/.tmpddvdka/failing.py",
+          "--output",
+          "/tmp/openpilot-ci.PLvbgO/.tmpddvdka/source-result/first"
+        ],
+        "free_before": 1152921504606846976,
+        "name": "first",
+        "returncode": 42
+      }
+    ]
+  },
+  "original_returncode": 0,
+  "original_stderr_utf8": "",
+  "original_stdout_utf8": "first 42\n{\"python\": \"/usr/bin/python3.12\", \"returncode\": 42, \"rows\": [{\"name\": \"first\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/tmp/openpilot-ci.PLvbgO/.tmpddvdka/failing.py\", \"--output\", \"/tmp/openpilot-ci.PLvbgO/.tmpddvdka/source-result/first\"], \"returncode\": 42, \"free_before\": 1152921504606846976}]}\n",
+  "python": {
+    "executable": "/usr/bin/python3.12",
+    "executable_sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f",
+    "sha256_proof": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f  /usr/bin/python3.12\n",
+    "version_proof": "Python 3.12.3\n"
+  },
+  "schema_version": 1,
+  "source_sha256": {
+    "rust/crates/dev-tools/src/bin/check_plannerd_ci.rs": "32d2b777eec4ff960ea70195aa0d7b6ac553aee8621658462033ddcf933985d9",
+    "rust/crates/dev-tools/src/planner_ci_controller.rs": "c5b738aaba3f219307611d2bdd6efee92c341487a0463e5a9d484394af069b62",
+    "rust/crates/dev-tools/src/planner_ci_controller/cli.rs": "f336e849a7554ea154df1c55ee4f721a894eafd1585075ae97556d6cbe8bc87e",
+    "rust/crates/dev-tools/src/planner_ci_controller/plan.rs": "c1dddd235346b8f415c9b131aba7a371cb67ae80d0db5f13a86b450c4d0a8b44",
+    "rust/crates/dev-tools/src/planner_ci_controller/scheduler.rs": "a35ad7f6c4eab2348ef3ceae318e8bd37980e251e84e59d5d17480e7b9d55f0a",
+    "rust/crates/dev-tools/src/qa_process.rs": "aa9fda1ed867fe6dcf7befb19fc6857fa419bbaa33fcc518264276abef7c6633",
+    "rust/crates/dev-tools/tests/planner_ci_controller.rs": "a5e38fcfff88611926b04c334988f05faaf63754362b6d4989d4771668a3493f",
+    "rust/crates/disk-space/src/lib.rs": "fa920db8d68ffbe2772c8c60a7e793346427b5d9add0a81184d3fa162ea34bd0",
+    "rust/tools/check_plannerd_ci.py": "dda14614fe042939bd6758cffda69da95dc141ca8ce4b0c7e67d046ebaff2157",
+    "rust/tools/plannerd_ipc.py": "c2099127901a2883925305dc3bf0c563b338494cd5bd829cb7bd3e916ffdd031"
+  },
+  "stdin_utf8": null,
+  "test_name": "source_failure_forward_matches_native_controller_and_raw_log"
+}

@@ -125,9 +125,9 @@ else
   sha256sum --check --strict -- "$proof/controller.sha256"
   [[ -x $controller && ! -L $controller ]]
   admit sanitizer-wrapper "$job" 128
-  "$planner_python" -P "$source_dir/rust/tools/check_plannerd_native_memory.py" \
+  "$controller" memory --root "$source_dir" \
     --bin-dir "$source_dir/rust/target/debug" --artifact "$job/planner-sanitized" \
     --source-native "$job/planner-source" --binding "${PLANNER_PARAMS_BINDING:?}" \
     --asan-library "$(gcc -print-file-name=libasan.so)" --output "$job/planner-native-memory" \
-    --controller "$controller" --python "$planner_python" --timeout-seconds "$seconds" "${growth_args[@]}"
+    --python "$planner_python" --timeout-seconds "$seconds" "${growth_args[@]}"
 fi

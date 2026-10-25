@@ -18,6 +18,7 @@ name: Python Rust 523 native units
         - tools
         - buffers
         - planner
+        - compiler-export
 permissions:
   contents: read
 concurrency:
@@ -288,7 +289,7 @@ jobs:
         printf 'jobs=%s\nincremental=%s\ndev_debug=%s\ntest_debug=%s\nrustc=%s\ncargo=%s\nfeatures=no-default-features\n' \
           "$CARGO_BUILD_JOBS" "$CARGO_INCREMENTAL" "$CARGO_PROFILE_DEV_DEBUG" "$CARGO_PROFILE_TEST_DEBUG" \
           "$RUSTC" "$sdk/bin/cargo" > "$CI_JOB_TEMP/proof/compile-profile.txt"
-        if [[ $NATIVE_UNITS_CRATE == buffers ]]; then
+        if [[ $NATIVE_UNITS_CRATE == buffers || $NATIVE_UNITS_CRATE == compiler-export ]]; then
           printf 'additional_features=native-skip-miri\n' >> "$CI_JOB_TEMP/proof/compile-profile.txt"
         fi
         failed=0
@@ -337,6 +338,18 @@ jobs:
         run_once compiler-buffer-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --lib --test compiler_buffers -- -D warnings
             ;;
+          compiler-export)
+        run_once compiler-export-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_export_caller
+        grep -F 'test result: ok. 4 passed; 0 failed; 1 ignored;' "$CI_JOB_TEMP/proof/compiler-export-units.log" || failed=1
+        run_once maintained-compiler-export "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_export_caller \
+          maintained_python_export_calls_native_plan_without_fallback -- --ignored --exact --nocapture
+        grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/maintained-compiler-export.log" || failed=1
+        run_once compiler-export-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
+          --no-default-features --features native-skip-miri -p openpilot-model-runtime --lib \
+          --bin offline-qcom-compile --test compiler_export_caller -- -D warnings
+            ;;
           planner)
         run_once planner-controller-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-dev-tools --test planner_ci_controller
@@ -359,8 +372,19 @@ jobs:
         run_once planner-memory-wrapper "$oracle_python" -I -B -S -m unittest discover -s rust/tools/tests -p test_plannerd_native_memory_controller.py -v
         grep -E '^Ran 5 tests in ' "$CI_JOB_TEMP/proof/planner-memory-wrapper.log" || failed=1
         grep -Fx 'OK' "$CI_JOB_TEMP/proof/planner-memory-wrapper.log" || failed=1
+        run_once planner-controller-frozen "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --test planner_controller_frozen -- --nocapture
+        grep -F 'test result: ok. 5 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-controller-frozen.log" || failed=1
+        run_once planner-native-memory-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --test planner_memory_controller
+        grep -F 'test result: ok. 8 passed; 0 failed; 1 ignored;' "$CI_JOB_TEMP/proof/planner-native-memory-units.log" || failed=1
+        run_once original-planner-memory /usr/bin/env PLANNER_REFERENCE_PYTHON="$oracle_python" "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --test planner_memory_controller \
+          source_memory_wrapper_five_boundaries_match_native_and_capture_original_results -- --ignored --exact --nocapture
+        grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/original-planner-memory.log" || failed=1
+        sha256sum --check --strict "$CI_JOB_TEMP/proof/planner-oracle-python.sha256" || failed=1
         run_once planner-controller-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
-          --no-default-features -p openpilot-dev-tools --lib --bin check-plannerd-ci --test planner_ci_controller -- -D warnings
+          --no-default-features -p openpilot-dev-tools --lib --bin check-plannerd-ci --test planner_ci_controller --test planner_controller_frozen --test planner_memory_controller -- -D warnings
             ;;
           tools)
         run_once planner-policy "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
@@ -510,4 +534,4 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: ${{ fromJSON(github.event_name == 'push' && '["tools"]' || inputs.crate == 'all' && '["control","model","tools","buffers","planner"]' || inputs.crate == 'control' && '["control"]' || inputs.crate == 'model' && '["model"]' || inputs.crate == 'buffers' && '["buffers"]' || inputs.crate == 'planner' && '["planner"]' || '["tools"]') }}
+        crate: "${{ fromJSON(github.event_name == 'push' && '[\"planner\",\"compiler-export\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"

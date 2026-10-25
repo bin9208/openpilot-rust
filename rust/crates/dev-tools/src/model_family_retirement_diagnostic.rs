@@ -202,6 +202,8 @@ pub fn run_driver_frame_diagnostic_from(
                 .as_str()
                 .ok_or("cached admission SHA missing")?
                 .into(),
+            "--driver-prestate-476".into(),
+            output.join("prestate476").into_os_string(),
         ]);
     }
     let result = run(&executable, &args, &output.join("invocation"), None, true); // diagnostic's bound is 120 seconds

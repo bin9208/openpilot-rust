@@ -1,0 +1,98 @@
+{
+  "argv": [
+    "/usr/bin/python3.12",
+    "-I",
+    "-c",
+    "\nimport ast, json, pathlib, struct, sys\ntree = ast.parse((pathlib.Path(sys.argv[1]) / 'rust/tools/plannerd_ipc.py').read_text())\nfunction = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'next_model_target')\nnamespace = {}\nexec(compile(ast.Module([function], type_ignores=[]), '<original public IPC scheduler>', 'exec'), namespace)\ncases = [[struct.unpack('>d', struct.pack('>Q', bits))[0] for bits in case] for case in json.load(sys.stdin)]\nprint(json.dumps([struct.unpack('>Q', struct.pack('>d', namespace['next_model_target'](*case)))[0] for case in cases]))\n",
+    "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source"
+  ],
+  "cases": {
+    "encoding": "ieee754-binary64-bits",
+    "timestamps": [
+      [
+        9223372036854775808,
+        13810738617294363034,
+        13810738617294363034
+      ],
+      [
+        0,
+        13810738617294363034,
+        13810738617294363034
+      ],
+      [
+        9223372036854775808,
+        13815242216921733530,
+        13810738617294363034
+      ],
+      [
+        0,
+        13815242216921733530,
+        13810738617294363034
+      ],
+      [
+        9221120237041090626,
+        0,
+        4590429028186199163
+      ],
+      [
+        4636740809791845171,
+        9221120237041090626,
+        4636742920854170501
+      ],
+      [
+        4636740809791845171,
+        4636737291354636288,
+        9221120237041090626
+      ],
+      [
+        18442240474082181120,
+        18442240474082181120,
+        18442240474082181120
+      ],
+      [
+        9218868437227405312,
+        4636737291354636288,
+        4636742920854170501
+      ]
+    ]
+  },
+  "github_sha": "73e17ff10ec9be7a7001ab9cbf415a779c436f78",
+  "kind": "independent-python-observation",
+  "native_comparison": "enclosing test assertions must pass; observation alone is not acceptance",
+  "original_first_log_utf8": null,
+  "original_result": [
+    9223372036854775808,
+    0,
+    9223372036854775808,
+    0,
+    9221120237041090626,
+    4636740809791845171,
+    4636740809791845171,
+    18442240474082181120,
+    9218868437227405312
+  ],
+  "original_returncode": 0,
+  "original_stderr_utf8": "",
+  "original_stdout_utf8": "[9223372036854775808, 0, 9223372036854775808, 0, 9221120237041090626, 4636740809791845171, 4636740809791845171, 18442240474082181120, 9218868437227405312]\n",
+  "python": {
+    "executable": "/usr/bin/python3.12",
+    "executable_sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f",
+    "sha256_proof": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f  /usr/bin/python3.12\n",
+    "version_proof": "Python 3.12.3\n"
+  },
+  "schema_version": 1,
+  "source_sha256": {
+    "rust/crates/dev-tools/src/bin/check_plannerd_ci.rs": "32d2b777eec4ff960ea70195aa0d7b6ac553aee8621658462033ddcf933985d9",
+    "rust/crates/dev-tools/src/planner_ci_controller.rs": "c5b738aaba3f219307611d2bdd6efee92c341487a0463e5a9d484394af069b62",
+    "rust/crates/dev-tools/src/planner_ci_controller/cli.rs": "f336e849a7554ea154df1c55ee4f721a894eafd1585075ae97556d6cbe8bc87e",
+    "rust/crates/dev-tools/src/planner_ci_controller/plan.rs": "c1dddd235346b8f415c9b131aba7a371cb67ae80d0db5f13a86b450c4d0a8b44",
+    "rust/crates/dev-tools/src/planner_ci_controller/scheduler.rs": "a35ad7f6c4eab2348ef3ceae318e8bd37980e251e84e59d5d17480e7b9d55f0a",
+    "rust/crates/dev-tools/src/qa_process.rs": "aa9fda1ed867fe6dcf7befb19fc6857fa419bbaa33fcc518264276abef7c6633",
+    "rust/crates/dev-tools/tests/planner_ci_controller.rs": "a5e38fcfff88611926b04c334988f05faaf63754362b6d4989d4771668a3493f",
+    "rust/crates/disk-space/src/lib.rs": "fa920db8d68ffbe2772c8c60a7e793346427b5d9add0a81184d3fa162ea34bd0",
+    "rust/tools/check_plannerd_ci.py": "dda14614fe042939bd6758cffda69da95dc141ca8ce4b0c7e67d046ebaff2157",
+    "rust/tools/plannerd_ipc.py": "c2099127901a2883925305dc3bf0c563b338494cd5bd829cb7bd3e916ffdd031"
+  },
+  "stdin_utf8": "[[9223372036854775808,13810738617294363034,13810738617294363034],[0,13810738617294363034,13810738617294363034],[9223372036854775808,13815242216921733530,13810738617294363034],[0,13815242216921733530,13810738617294363034],[9221120237041090626,0,4590429028186199163],[4636740809791845171,9221120237041090626,4636742920854170501],[4636740809791845171,4636737291354636288,9221120237041090626],[18442240474082181120,18442240474082181120,18442240474082181120],[9218868437227405312,4636737291354636288,4636742920854170501]]",
+  "test_name": "source_public_scheduler_preserves_python_ordered_comparison_at_float_boundaries"
+}

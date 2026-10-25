@@ -1408,3 +1408,40 @@ controller runtime/memory exit0이다. functional artifact12609249847은55,184,9
 맞춘다. Focus의 기존 raw Cargo 행 보존도 유지하도록 새 YAML 들여쓰기만 복구한다.
 검사를 삭제하거나 성공으로 우회하지 않으며 실제 local cold·ARM·다른 진행 중 job은
 그대로 완료를 기다린다.
+
+
+### 3b7492 Fast 전체 수용과 다음 Python caller 전환
+
+[Fast40224700444](https://github.com/bin9208/openpilot-rust/actions/runs/40224700444)의8개 worker와
+aggregate가 전부 성공했다. local cold는308초/7분, thin compile12.44초/actual audit47.89초다.
+source/SDK/provider after·upload·owned cleanup과 actual exec cargo1/rustc37/Python0/Rustup0을
+실물에서 확인했다. [근거와4개 artifact SHA](python-rust-523-fast-native-cold-560.md)를 기록했다.
+#530의 결함 범위와 #560의 원래 root/PR 조건, PR343 전체 통합은 구분한다.
+3f57cccff Focus40224625786도 raw Cargo 행 서식 복구 뒤 성공했고 기존 조건은 유지했다.
+
+ARM standalone [40224180784/job121261950074](https://github.com/bin9208/openpilot-rust/actions/runs/40224180784/job/121261950074)는
+helper40e07의 실제 aarch64 twelve-check를 통과했다. private artifact12611155653은294044B/SHA
+`f26e3c4060edcfacfa3e985c6368414757fd8b6b2c65ff0779946ea445bd7268`,22CRC/source-index 동일;
+functional12610522791은44840908B/SHA
+`34ba7193fbe3ea4da36c766c292dded8da5797d4712bfc18b5caf9050204d834`,29679safe/CRC로
+source6d0bd2/aarch64/runtime12 PASS를 확인했다. 이 standalone은 기존 job rustup home이며
+canonical reusable ARM의 whole arm530 SDK를 이 artifact가 검증했다고 하지 않는다.
+host 재검증40224251309도 성공했다. 새 native memory 호출의 실제 ASan3은 다음 source 수용이다.
+
+다음 변경은 실제 Bash memory 호출을 기존 Rust CLI로 옮기고 독립 원본5 경계 관측을 남긴다.
+source73의 원본 관측 JSON5는 byte 불변 데이터로 보존하여 새 native5 비교에 사용한다.
+compiler의 실제 offline emit은 기존 native CLI에서 buffer/launch/stage 결과를 소비한다.
+float 정밀도 손실에 대한 peer finding은 JSON float_roundtrip과 실제 CLI 회귀로 보완한다.
+driver는 원본 PKL model44/warp1과 고정 object witness를 독립 기대값으로 쓰고 실제 ABI/ISA,
+raw/prestate를 거친다. fresh 실패·전체 수치 기준은 그대로다. #474는 같은 빌드의 complete
+기능 lane과 별도 strict exec lane을 준비한다. 이 후속들은 실제 GHA 수용 전이고 삭제 credit0,
+전체3580=296/3/3281 및 #523 미완료 상태를 유지한다.
+
+
+이번 후속 batch의 실행 원장은 **161개=26교체/131대기/1기존native/2비실행문자열/1제거**다.
+새 native memory 원본 비교와 compiler의 genuine Python 호출 각1, driver 임시 Python
+orchestration/PKL metadata/original retained worker3과 CI heredoc3을 모두 pending으로 등록했다.
+새 frozen JSON5는 실행하지 않는 독립 과거 관측 데이터다. 기존 original/source5·memory wrapper/test5는
+유지하며 새 native8·frozen5·compiler4+1·실제 memory3 및 driver/recovery 수용 전 삭제하지 않는다.
+source3b7492의 Focus40224700438도 성공했다. 이후 helper/feature/실제 caller 변경은 새 source에서
+검증하며 이전 성공을 새 기능의 수용으로 바꾸지 않는다.

@@ -1,0 +1,680 @@
+name: Python Rust 523 driver retained prestate failure-only diagnostic
+'on':
+  push:
+    branches: [codex/feat-523-python-rust]
+    paths:
+    - .github/workflows/python-rust-523-driver-retained.yml
+    - tools/ci/driver_retained_program_476.py
+    - rust/crates/model-runtime/src/cpu/driver_prestate_476.rs
+    - rust/crates/model-runtime/src/bin/model-run.rs
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: python-rust-523-driver-retained-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  model-family-retirement:
+    name: Driver fresh failure and actual retained prestate (never six-source acceptance)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TERM_COLOR: never
+      PYTHONDONTWRITEBYTECODE: '1'
+      DRIVER476_HELPER_SHA256: 1d58aa2b2e2eb9b911c61051da116def2b2ac3a7f1b9b134e6fe4525c59f0202
+      DRIVER476_SOURCE_ALLOWED: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/codex/feat-523-python-rust' }}
+    steps:
+    - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+          }}
+        EVENT_NAME: ${{ github.event_name }}
+        SOURCE_REF: ${{ github.ref }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied for normal40 qualification' >&2; exit 1; }
+        set -euo pipefail
+        [[ $EVENT_NAME = push || $EVENT_NAME = workflow_dispatch ]]
+        test "$SOURCE_REF" = refs/heads/codex/feat-523-python-rust
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -m)" = x86_64
+        printf 'DRIVER476_JOB_START=%s\n' "$EPOCHSECONDS" >> "$GITHUB_ENV"
+    - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Allocate private source cache and target before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.ci296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Actions의 workspace와 Bash가 사용하는 private checkout을 구분한다.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "CI296_SOURCE=$source" "CI296_SOURCE_OWNER=$source_owner" "CI296_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+    - name: Admit operation-specific growth on the actual filesystems before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        /usr/bin/python3 -I -B -S - <<'ADMISSION'
+        import json,os
+        from pathlib import Path
+        job=Path(os.environ['CI_JOB_TEMP']); source=Path(os.environ['DIAG_SOURCE_OWNER'])
+        # 같은 device의 예상 동시 증가를 합산한다. peak 실측/하드 quota 주장은 아니다.
+        plans=[('source',source,2048),('target',source,6144),('registry',job,2048),
+          ('SDK',job,3072),('venv',job,1024),('frozen',job,512),('fresh',job,1024),
+          ('proof',job,2048),('cache',job,512),('apt',Path('/'),2048),('reserve',job,512)]
+        groups={}
+        for name,path,mib in plans:
+          group=groups.setdefault(str(path.stat().st_dev),{'path':str(path),'planned_bytes':0,'items':[]})
+          group['planned_bytes']+=mib*1024**2; group['items'].append([name,mib*1024**2])
+        for group in groups.values():
+          s=os.statvfs(group['path']); group['available_bytes']=s.f_bavail*s.f_frsize
+        (job/'proof/driver476-initial-admission.json').write_text(json.dumps(groups,sort_keys=True,indent=2))
+        assert all(g['available_bytes']>=g['planned_bytes'] for g in groups.values())
+        ADMISSION
+    - uses: actions/checkout@v7
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+    - name: Seal exact source HEAD and tracked index before checks
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      id: source_before
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+        allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ ]]
+        printf '{"allocated_private_source_bytes":%s,"planned_source_growth_bytes":2147483648}\n' "$allocated" > "$CI_JOB_TEMP/proof/source-growth-after-checkout.json"
+        git ls-tree -r -l HEAD | awk '$4 ~ /^[0-9]+$/ {bytes+=$4; files++} END {printf "{\"tracked_blob_bytes\":%.0f,\"files\":%d}\n",bytes,files}' > "$CI_JOB_TEMP/proof/tracked-source-size.json"
+        ((allocated <= 2 * 1024 * 1024 * 1024))
+    - name: Prepare official pinned Rust in the owned private rustup root and seal it
+      id: prepared_rust
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before
+    - name: Prepare source-pinned LLVM provider with bounded native package growth
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        before=$(df --output=avail -B1 / | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+        ((before >= 2 * 1024 * 1024 * 1024 + 512 * 1024 * 1024))
+        (ulimit -f 524288; sudo -n /usr/bin/timeout --signal=TERM --kill-after=30s 600s apt-get -o APT::Architecture=amd64 update) > "$CI_JOB_TEMP/proof/driver476-apt-update.log" 2>&1
+        (ulimit -f 524288; sudo -n /usr/bin/timeout --signal=TERM --kill-after=30s 600s apt-get -o APT::Architecture=amd64 install --no-install-recommends -y build-essential clang libllvm18 capnproto pkg-config libzmq3-dev) > "$CI_JOB_TEMP/proof/driver476-apt-install.log" 2>&1
+        after=$(df --output=avail -B1 / | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+        ((before - after <= 2 * 1024 * 1024 * 1024 && after >= 512 * 1024 * 1024))
+        provider=$(readlink -e /usr/lib/llvm-18/lib/libLLVM.so.1)
+        printf '%s  %s\n' 5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0 "$provider" > "$CI_JOB_TEMP/proof/driver476-llvm.before.sha256"
+        sha256sum --check "$CI_JOB_TEMP/proof/driver476-llvm.before.sha256"
+        test "$(dpkg-query -W -f='${Version}' libllvm18:amd64)" = 1:18.1.3-1ubuntu1
+        dpkg-query -W -f='${binary:Package}\t${Version}\n' libllvm18:amd64 capnproto g++ pkg-config > "$CI_JOB_TEMP/proof/driver476-llvm-package.txt"
+        printf '%s\n' "LLVM_PATH=$provider" >> "$GITHUB_ENV"
+    - name: Select exact Python3.12.15 provider
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.15
+        check-latest: false
+    - name: Prepare isolated original venv within its one GiB growth scope
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        base=$(readlink -e "$pythonLocation")
+        [[ $base == /opt/hostedtoolcache/Python/3.12.15/x64 ]]
+        free=$(df --output=avail -B1 "$CI_JOB_TEMP" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+        ((free >= 1024 * 1024 * 1024 + 512 * 1024 * 1024))
+        export LD_LIBRARY_PATH="$base/lib"
+        /usr/bin/timeout --signal=TERM --kill-after=10s 120s "$base/bin/python3.12" -I -B -m venv "$CI_JOB_TEMP/venv"
+        PIP_CACHE_DIR="$CI_JOB_TEMP/cache/pip" /usr/bin/timeout --signal=TERM --kill-after=10s 240s "$CI_JOB_TEMP/venv/bin/python" -I -B -m pip install --no-cache-dir --no-compile --only-binary=:all: numpy==2.5.3 zstandard==0.25.0 > "$CI_JOB_TEMP/proof/driver476-pip.log" 2>&1
+        allocated=$(du -sx -B1 "$CI_JOB_TEMP/venv" | cut -f1)
+        apparent=$(du -sx -B1 --apparent-size "$CI_JOB_TEMP/venv" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]]
+        ((allocated <= 1024 * 1024 * 1024 && apparent <= 1024 * 1024 * 1024))
+        "$CI_JOB_TEMP/venv/bin/python" -I -B -c 'import sys; assert sys.version_info[:3] == (3,12,15); print(sys.version)' > "$CI_JOB_TEMP/proof/driver476-python-version.txt"
+        "$CI_JOB_TEMP/venv/bin/python" -I -B -m pip freeze > "$CI_JOB_TEMP/proof/driver476-python-packages.txt"
+        printf '%s\n' "ORIGINAL_PYTHON_BASE=$base" "ORIGINAL_PYTHON=$CI_JOB_TEMP/venv/bin/python" >> "$GITHUB_ENV"
+    - name: Run four new units then one explicit fresh driver and failure-only retained diagnostic
+      id: qualify
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        printf '%s  %s\n' "$DRIVER476_HELPER_SHA256" tools/ci/driver_retained_program_476.py | sha256sum --check --strict -
+        # 40분 VM 안에서 command cutoff34분, independent seals/upload/cleanup6분을 남긴다.
+        export LD_LIBRARY_PATH="$ORIGINAL_PYTHON_BASE/lib"
+        export DRIVER476_COMMAND_DEADLINE=$((DRIVER476_JOB_START + 34 * 60))
+        /usr/bin/python3 -I -B -S - <<'DRIVER476'
+        import argparse,hashlib,io,json,os,re,signal,stat,struct,sys,time,traceback,types,zipfile
+        from pathlib import Path,PurePosixPath
+        root=Path(os.environ['CI296_SOURCE']); job=Path(os.environ['CI_JOB_TEMP'])
+        raw=(root/'tools/ci/driver_retained_program_476.py').read_bytes()
+        assert hashlib.sha256(raw).hexdigest()==os.environ['DRIVER476_HELPER_SHA256']
+        h=types.ModuleType('_driver476'); h.__file__=str(root/'tools/ci/driver_retained_program_476.py')
+        exec(compile(raw,h.__file__,'exec'),h.__dict__)
+        m=h.common(root); need=h.need; sha=h.digest; MIB=h.MIB; GIB=h.GIB
+        os.umask(0o077)
+        args=argparse.Namespace(request=str(job/'proof/driver476-request.json'),request_sha256='',
+          fresh_exit_status=None,deadline_epoch=int(os.environ['DRIVER476_COMMAND_DEADLINE']))
+        c=h.Candidate(args,root,job,m); original_budget=c.budget
+        sdk=Path(os.environ['CI_PREPARED_RUST_ROOT']); target=root/'rust/target'
+        preparation=job/'driver476-fresh'; frozen=job/'driver476-frozen'
+        error=None; fresh_status=None
+        def used(path):
+          if not path.exists(): return 0
+          allocated=apparent=0
+          for p in m.walk(path,mutable=True):
+            info=p.lstat()
+            need(stat.S_ISREG(info.st_mode) or stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode),'growth special file')
+            allocated+=info.st_blocks*512; apparent+=info.st_size
+          return max(allocated,apparent)
+        def budget():
+          original_budget()
+          # 동적 metadata는 원자 rename 중 부분 성공으로 집계하지 않는다.
+          # 기존 candidate2GiB live guard는 유지하고 나머지 경로 cap은 command 전후 확정한다.
+          process=c.children.process
+          if process is not None and process.returncode is None:
+            for path in (root,job):
+              fs=os.statvfs(path); need(fs.f_bavail*fs.f_frsize>=512*MIB,'active command filesystem reserve')
+            return
+          caps=[(target,6*GIB),(job/'cargo-home',2*GIB),(job/'rustup-home',3*GIB),
+            (job/'venv',GIB),(preparation,GIB),(frozen,256*MIB),(job/'driver476-original-request',256*MIB),(job/'cache',512*MIB)]
+          for path,cap in caps: need(used(path)<=cap,'actual growth cap: '+str(path))
+          need(used(root.parent)-used(target)<=2*GIB,'source2GiB excluding target')
+          need(used(c.out)+used(job/'proof')<=2*GIB,'combined proof/candidate2GiB')
+          groups={}
+          for path,cap in caps+[(root.parent,2*GIB+6*GIB),(c.out,2*GIB)]:
+            ancestor=path
+            while not ancestor.exists(): ancestor=ancestor.parent
+            dev=ancestor.stat().st_dev
+            # source cap includes target; target remaining growth is already charged above.
+            remaining=max(0,cap-used(path))
+            if path==root.parent: remaining=max(0,2*GIB-(used(root.parent)-used(target)))
+            groups[dev]=(ancestor,groups.get(dev,(ancestor,0))[1]+remaining)
+          for path,growth in groups.values():
+            fs=os.statvfs(path); need(fs.f_bavail*fs.f_frsize>=growth+512*MIB,'same-FS remaining growth/reserve')
+        c.budget=budget
+        def command(argv,label,seconds=120,allow_failure=False,env=None):
+          return c.command(argv,label,seconds,env,allow_failure)
+        def select(raw,name,package,source,features,test=False,kind='bin'):
+          rows=[m.unique_json(line) for line in raw.splitlines()]
+          need(rows and rows[-1]=={'reason':'build-finished','success':True}
+            and sum(r['reason']=='build-finished' for r in rows)==1,'Cargo terminal')
+          need(all(r['reason'] in {'compiler-artifact','compiler-message','build-script-executed','build-finished'} for r in rows),'Cargo unknown record')
+          chosen=[]; seen=set()
+          for r in rows:
+            if r['reason']!='compiler-artifact': continue
+            key=json.dumps(r,sort_keys=True); need(key not in seen,'duplicate Cargo artifact'); seen.add(key)
+            t=r['target']
+            if t['name']!=name or t['kind']!=[kind] or r['profile']['test'] is not test: continue
+            manifest=root/'rust/crates'/package/'Cargo.toml'
+            need(r['manifest_path']==str(manifest) and r['package_id']==f'path+file://{manifest.parent}#openpilot-{package}@0.1.0'
+              and t['src_path']==str(root/source) and set(r['features'])==set(features),'Cargo package/source/features')
+            p=Path(r['executable']); need(p.resolve(strict=True)==p and p.is_relative_to(target),'same-source private ELF')
+            c.holds.add(p,elf=True); chosen.append(p)
+          need(len(chosen)==1,'unique Cargo target '+name)
+          return chosen[0]
+        def rlib(raw,name,features=None):
+          rows=[m.unique_json(line) for line in raw.splitlines()]
+          matches=[r for r in rows if r['reason']=='compiler-artifact' and r['target']['name']==name
+            and r['target']['kind']==['lib'] and r['profile']['test'] is False]
+          need(len(matches)==1,'unique current Cargo rlib '+name)
+          row=matches[0]
+          if features is not None:
+            need(set(row['features'])==set(features) and row['manifest_path']==str(root/'rust/crates/model-runtime/Cargo.toml')
+              and row['target']['src_path']==str(root/'rust/crates/model-runtime/src/lib.rs'),'runtime rlib source/features')
+          else:
+            manifest=Path(row['manifest_path'])
+            need(manifest.is_relative_to(job/'cargo-home/registry/src') and manifest.resolve(strict=True)==manifest
+              and row['package_id'].startswith('registry+https://github.com/rust-lang/crates.io-index#'+name+'@'), 'locked dependency rlib source')
+          files=[Path(v) for v in row['filenames'] if v.endswith('.rlib')]
+          need(len(files)==1 and files[0].parent==target/'debug/deps' and files[0].resolve(strict=True)==files[0],'current rlib path')
+          c.holds.add(files[0]); return files[0]
+        def pin(path): return {'path':str(path),'sha256':m.regular(path.resolve(strict=True))['sha256']}
+        def canon(value): return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+        def binding(path):
+          info=path.stat()
+          return {'enabled':True,'path':str(path),'bytes':info.st_size,'sha256':sha(m.read(path,128*MIB)),
+            'identity':[info.st_dev,info.st_ino,info.st_size,info.st_mode,info.st_mtime_ns,info.st_ctime_ns]}
+        for number in (signal.SIGINT,signal.SIGTERM,signal.SIGALRM): signal.signal(number,h.interrupted)
+        signal.setitimer(signal.ITIMER_REAL,max(0.001,c.deadline-time.monotonic()))
+        try:
+          need(os.environ['DRIVER476_SOURCE_ALLOWED']=='true' and root==Path.cwd()==Path(os.environ['GITHUB_WORKSPACE']), 'source trust/binding')
+          need(not os.environ.get('LD_PRELOAD'),'LD_PRELOAD forbidden')
+          need(job.resolve(strict=True)==job and root.resolve(strict=True)==root and job.stat().st_mode&0o077==0,'canonical private job/source')
+          info=root.parent.stat()
+          need(f'{info.st_dev}:{info.st_ino}'==os.environ['CI296_SOURCE_IDENTITY'],'source owner inode')
+          need(os.environ['RUNNER_ENVIRONMENT']=='github-hosted' and os.environ['RUNNER_OS']=='Linux'
+            and os.environ['RUNNER_ARCH']=='X64' and os.uname().machine=='x86_64','actual host')
+          owner=':'.join(os.environ[k] for k in ('GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','GITHUB_JOB'))
+          need((job/'owner').read_text().strip()==owner and (root.parent/'.ci296-owner').read_text().strip()==owner,'owner')
+          names=m.read(job/'proof/index-before.bin',4*MIB).split(b'\0')
+          c.baseline('source',root,[root]+[root/os.fsdecode(n) for n in names[:-1]])
+          c.baseline('sdk',sdk,sdk=True)
+          c.baseline('venv',job/'venv'); c.baseline('python-base',Path(os.environ['ORIGINAL_PYTHON_BASE']))
+          # 기존 공용 ELF/DSO parser를 재사용한다. static ELF 이외 empty/unresolved ldd는 실패한다.
+          tools={n:Path('/usr/bin')/n for n in ('git','gh','g++','gcc','cc','c++','clang','as','ld','ar','ldd','pkg-config','capnp','make','bash')}
+          adapter=types.SimpleNamespace(holds=c.holds,out=c.proof,tools={'ldd':tools['ldd']},sdk_root=sdk,
+            target=job,numerics=Path(os.environ['ORIGINAL_PYTHON_BASE']),
+            command=lambda argv,label,limit=MIB: command(argv,label,60))
+          def dso(path,label):
+            p=path.resolve(strict=True); c.holds.add(path,elf=True)
+            m.Probe.dso(adapter,p,label)
+          for i,p in enumerate([*tools.values(),sdk/'bin/rustc',sdk/'bin/cargo',sdk/'bin/rustdoc',
+            Path(os.environ['ORIGINAL_PYTHON']),Path(os.environ['LLVM_PATH'])]):
+            c.holds.add(p); p=p.resolve(strict=True)
+            with p.open('rb') as f: magic=f.read(7)
+            if magic.startswith(b'\x7fELF'): dso(p,'provider-'+str(i))
+          for name in ('cc1','cc1plus','collect2','lto-wrapper'):
+            p=Path(command([tools['g++'],'-print-prog-name='+name],'provider-'+name,30).decode().strip()).resolve(strict=True)
+            dso(p,'provider-backend-'+name)
+          for name in ('crtbeginS.o','crtendS.o','libstdc++.so','libgcc_s.so.1'):
+            p=Path(command([tools['g++'],'-print-file-name='+name],'provider-file-'+name.replace('.','-'),30).decode().strip())
+            need(p.is_absolute(),'unresolved compiler file provider')
+            c.holds.add(p,elf=True)
+            if '.so' in name: dso(p,'provider-library-'+name.replace('.','-'))
+          for i,p in enumerate(sorted((job/'venv').rglob('*.so*'))):
+            # wheel 전체는 venv 전후 snapshot으로 봉인. 실행에 쓰는 extensions와 vendored DSOs의 needed closure.
+            if ('/tests/' not in str(p) and '/_core/_' not in str(p)) or p.name.startswith(('_multiarray_umath','_umath_linalg')):
+              dso(p,'venv-dso-'+str(i))
+          flags=['--manifest-path',root/'rust/Cargo.toml','--locked','--config','profile.dev.package.sha2.opt-level=3',
+            '--config','profile.test.package.sha2.opt-level=3','--message-format=json']
+          bins={'model-run':('model-runtime','src/bin/model-run.rs'),
+            'offline-llvm-guarded-add':('model-runtime','src/bin/offline-llvm-guarded-add.rs'),
+            'offline-cached-code':('model-runtime','src/bin/offline-cached-code.rs'),
+            'publish-model-catalog':('model-runtime','src/bin/publish-model-catalog.rs'),
+            'prepare-model-family-catalog':('dev-tools','src/bin/prepare_model_family_catalog.rs'),
+            'check-driver-daemon':('dev-tools','src/bin/check_driver_daemon.rs'),
+            'stage-driver-daemon-fixture':('dev-tools','src/bin/stage_driver_daemon_fixture.rs'),
+            'generate-services-header':('dev-tools','src/bin/generate_services_header.rs'),
+            'openpilot-dmonitoringmodeld':('dmonitoringmodeld','src/main.rs'),
+            'openpilot-logmessaged':('logmessaged','src/main.rs')}
+          feat={'model-runtime':['cached-program-isa','native-skip-miri'],'dev-tools':['driver-daemon-native','driving-daemon-native'],
+            'dmonitoringmodeld':[],'logmessaged':[]}
+          elfs={}
+          for group,packages,features in [('runtime',['model-runtime'],'cached-program-isa'),
+            ('tools',['dev-tools'],'driver-daemon-native'),('consumers',['dmonitoringmodeld','logmessaged'],None)]:
+            argv=[sdk/'bin/cargo','build',*flags,'--no-default-features']
+            if features: argv+=['--features',features]
+            for package in packages: argv+=['-p','openpilot-'+package]
+            selected={n:(p,s) for n,(p,s) in bins.items() if p in packages}
+            for n in selected: argv+=['--bin',n]
+            built=command(argv,'build-'+group,900)
+            for n,(p,s) in selected.items(): elfs[n]=select(built,n,p,'rust/crates/'+p+'/'+s,feat[p])
+            if group=='runtime':
+              admission_rlibs={name:rlib(built,name,feat['model-runtime'] if name=='openpilot_model_runtime' else None)
+                for name in ('openpilot_model_runtime','serde_json','sha2','libc')}
+              raw=command([sdk/'bin/cargo','test',*flags,'-p','openpilot-model-runtime','--no-default-features',
+                '--features','cached-program-isa','--lib','--no-run'],'build-units',900)
+              unit=select(raw,'openpilot_model_runtime','model-runtime','rust/crates/model-runtime/src/lib.rs',['cached-program-isa','native-skip-miri'],True,'lib')
+              units=command([unit,'cpu::driver_prestate_476::tests::','--nocapture','--test-threads=1'],'four-prestate-units',120).decode()
+              need(len(re.findall(r'^test result: ok\. 4 passed; 0 failed; 0 ignored;',units,re.M))==1,'four new units required')
+          raw=command([sdk/'bin/cargo','test',*flags,'-p','openpilot-dev-tools','--no-default-features',
+            '--features','driver-daemon-native','--test','model_family_retirement','--no-run'],'build-selector',900)
+          elfs['model_family_retirement']=select(raw,'model_family_retirement','dev-tools',
+            'rust/crates/dev-tools/tests/model_family_retirement.rs',feat['dev-tools'],True,'test')
+          c.baseline('registry',job/'cargo-home/registry')
+          for i,p in enumerate(elfs.values()): dso(p,'native-dso-'+str(i))
+          preparation.mkdir(mode=0o700); (preparation/'peer').mkdir(mode=0o700)
+          header=command([elfs['generate-services-header']],'services-header',30)
+          m.write_new(preparation/'peer/services.h',header)
+          cpp=[root/'msgq_repo/msgq'/n for n in ('ipc.cc','event.cc','impl_msgq.cc','impl_fake.cc','msgq.cc')]
+          cpp += [root/'msgq_repo/msgq/visionipc'/n for n in ('visionipc.cc','visionipc_client.cc','visionipc_server.cc','visionbuf.cc')]
+          peer=preparation/'peer/driver-daemon-peer'
+          command([tools['g++'],'-std=c++17','-pthread','-I'+str(root/'msgq_repo'),'-I'+str(preparation/'peer'),
+            root/'rust/tools/driver_daemon_peer.cc',*cpp,'-o',peer],'build-peer',120)
+          dso(peer,'peer-dso')
+          command([elfs['stage-driver-daemon-fixture'],'--root',root,'--output',preparation/'driver-fixture'],'stage-driver',120)
+          family=root/'rust/crates/dev-tools/tests/fixtures/model-family-original'
+          c.env.update(MODEL_FAMILY_GATE_ROOT=str(root),MODEL_FAMILY_GATE_PREPARATION=str(preparation),MODEL_FAMILY_GATE_ORIGINAL=str(family),
+            MODEL_FAMILY_STARTUP_MANIFEST_SHA256=sha(m.read(family/'startup/original/manifest.json')),
+            MODEL_FAMILY_USBGPU_MANIFEST_SHA256=sha(m.read(family/'usbgpu/original/manifest.json')))
+          os.environ.update({k:v for k,v in c.env.items() if k.startswith('MODEL_FAMILY_')})
+          for stem,n in [('MODEL_LLVM_GUARDED_ADD','offline-llvm-guarded-add'),('MODEL_CATALOG_PUBLISH','publish-model-catalog')]:
+            c.env[stem+'_BINARY']=str(elfs[n]); c.env[stem+'_SHA256']=pin(elfs[n])['sha256']
+          command([elfs['prepare-model-family-catalog'],'--root',root,'--models',preparation/'driver-fixture/no-collector/models',
+            '--expected-model-manifest',preparation/'driver-fixture/no-collector/observations/reference-manifest.json',
+            '--expected-model-manifest-sha256',h.MANIFEST_SHA,'--kind','driver','--python',os.environ['ORIGINAL_PYTHON'],
+            '--llvm',os.environ['LLVM_PATH'],'--output',preparation/'driver-catalog'],'fresh-catalog',900,False,c.env)
+          receipt=preparation/'driver-catalog/current-catalog-receipt.json'
+          failed=preparation/'grouped-native/root-0/driver-collector-ordinary-output'
+          failed.parent.mkdir(parents=True,mode=0o700)
+          command([elfs['check-driver-daemon'],'--binary',elfs['openpilot-dmonitoringmodeld'],'--catalog',preparation/'driver-catalog/catalog',
+            '--models',preparation/'driver-fixture/no-collector/models','--output',failed,'--native-peer',peer,
+            '--native-original-dir',preparation/'driver-fixture/collector-current/observations','--native-original-manifest-sha256',h.COLLECTOR_SHA,
+            '--native-source-commit','2ecf3f6813f601ea52e7a61ccf75219952daefa0','--native-root',root,'--native-source-policy','retired-driver',
+            '--native-current-catalog-receipt',receipt,'--native-current-catalog-receipt-sha256',pin(receipt)['sha256'],
+            '--collector',elfs['openpilot-logmessaged']],'fresh-driver',1200,True,c.env)
+          fresh_status=c.commands[-1]['returncode']
+          need(type(fresh_status) is int and 1<=fresh_status<=255,'fresh driver did not reproduce a failure; no cached execution')
+          args.fresh_exit_status=fresh_status
+          m.save(job/'proof/fresh-status.json',{'exit':fresh_status,'source':os.environ['GITHUB_SHA'],'full_six_source_acceptance':False})
+          command([elfs['model_family_retirement'],'--ignored','--exact','diagnose_first_driver_frame_on_same_host_and_catalog',
+            '--nocapture','--test-threads=1'],'fresh-postmortem',130,False,c.env)
+          # 고정 retired PKL의 원문 metadata와 #476의 보존 object를 별도로 인증한다.
+          # archive/source pin은 기존 이슈/실제 artifact에서 확인한 literal이며 신규 입력은 없다.
+          witness=h.RETAINED_OBJECTS
+          artifact=str(witness['artifact']); run=str(witness['run'])
+          meta=m.unique_json(command([tools['gh'],'api','repos/bin9208/openpilot-rust/actions/artifacts/'+artifact],'object-auth',60))
+          need(meta['id']==witness['artifact'] and not meta['expired'] and meta['size_in_bytes']==witness['bytes']
+            and meta['digest']=='sha256:'+witness['sha256'] and meta['workflow_run']['id']==witness['run']
+            and meta['workflow_run']['head_sha']==witness['workflow_source'],'authenticated object artifact')
+          runmeta=m.unique_json(command([tools['gh'],'api','repos/bin9208/openpilot-rust/actions/runs/'+run],'object-run-auth',60))
+          need(runmeta['status']=='completed' and runmeta['head_sha']==witness['workflow_source']
+            and runmeta['repository']['full_name']==runmeta['head_repository']['full_name']=='bin9208/openpilot-rust','object run/source authentication')
+          frozen.mkdir(mode=0o700)
+          command([tools['bash'],'-c','exec /usr/bin/gh api "$1" > "$2"','driver476-download',
+            'repos/bin9208/openpilot-rust/actions/artifacts/'+artifact+'/zip',frozen/'artifact.zip'],'object-download',120)
+          zraw=m.read(frozen/'artifact.zip',witness['bytes'])
+          need(len(zraw)==witness['bytes'] and sha(zraw)==witness['sha256'],'whole witness ZIP bytes/SHA')
+          c.holds.add(frozen/'artifact.zip',witness['sha256'])
+          collect_request=job/'proof/driver476-collection-request.json'
+          m.save(collect_request,{'source_commit':os.environ['GITHUB_SHA'],'preparation':str(preparation)})
+          command([Path(os.environ['ORIGINAL_PYTHON']),root/'tools/ci/driver_retained_program_476.py',
+            '--collect-retained','--request',collect_request,'--request-sha256',pin(collect_request)['sha256']],
+            'retained-collection',120,False,c.env)
+          inputs=job/'driver476-original-request'
+          collection_path=inputs/'collection.json'; collection=m.unique_json(m.read(collection_path,4*MIB))
+          c.holds.add(collection_path,pin(collection_path)['sha256'])
+          need(collection['model']['sha256']==h.RETAINED_MODEL_SHA and len(collection['programs'])==44
+            and len(collection['warp_programs'])==1
+            and collection['model_PROGRAMs_executed']==collection['source_compilations']==0
+            and collection['expected_from_native_fresh'] is False,'independent inert fixed-PKL collection')
+          current_catalog=m.unique_json(m.read(preparation/'driver-catalog/catalog/current.json'))
+          generation=current_catalog['generation']; need(re.fullmatch('[0-9a-f]{64}',generation),'fresh graph generation')
+          graph=m.unique_json(m.read(preparation/'driver-catalog/catalog'/generation/'driver-1344x760/graph.json'))
+          for key in ('allocations','views','inputs','outputs','calls','entrypoints'):
+            need(collection[key]==graph[key],'fixed original/current '+key+' differs')
+          need(collection['initial_weights']['sha256']==graph['weights_sha256'],'independent original initial weights differ')
+          by_source={p['source']['sha256']:p for p in collection['programs']}
+          warp_by_source={p['source']['sha256']:p for p in collection['warp_programs']}
+          need(len(by_source)==44 and len(warp_by_source)==1 and not set(by_source)&set(warp_by_source),'unique original model/warp source roster')
+          selected=[]
+          with zipfile.ZipFile(io.BytesIO(zraw)) as z:
+            infos=z.infolist()
+            need(len(infos)==258 and len({i.filename for i in infos})==258
+              and sum(i.file_size for i in infos)<=256*MIB,'whole witness ZIP roster/bounds')
+            need(z.testzip() is None,'whole witness ZIP CRC')
+            def extract(name,limit):
+              info=z.getinfo(name); mode=info.external_attr>>16
+              need(not info.is_dir() and not info.flag_bits&1 and info.file_size<=limit
+                and stat.S_IFMT(mode) in (0,stat.S_IFREG),'regular witness member')
+              with z.open(info) as f: data=f.read(limit+1)
+              need(len(data)==info.file_size,'complete member bytes')
+              return data
+            old_receipt=m.unique_json(extract('driver-catalog/current-catalog-receipt.json',4*MIB))
+            need(old_receipt['source_commit']==witness['checkout_source']
+              and old_receipt['models']['dmonitoring_model_tinygrad.pkl']['sha256']==h.RETAINED_MODEL_SHA,'historical checkout/model binding')
+            seen=set()
+            for kernel in range(3,47):
+              stem=witness['bundle']+f'kernel-{kernel}'
+              source=extract(stem+'.txt',16*MIB); source_sha=sha(source)
+              need(source_sha in by_source and source_sha not in seen,'exact44 witness SOURCE roster')
+              seen.add(source_sha); row=by_source[source_sha]
+              # BINARY 기대값은 collection의 고정 PKL literal 그대로다. object만 보존 원문에서 복사한다.
+              data=extract(stem+'.o',16*MIB); path=inputs/f"object-{row['index']}.o"
+              m.write_new(path,data); row['object']={'path':str(path),'bytes':len(data),'sha256':sha(data)}
+              c.holds.add(path,sha(data)); selected.append({'index':row['index'],'member':stem+'.o',
+                'source_sha256':source_sha,'object_sha256':sha(data)})
+            need(len(seen)==44,'no partial object admission')
+            warp_seen=set()
+            for kernel in range(3):
+              stem=witness['bundle']+f'kernel-{kernel}'
+              source=extract(stem+'.txt',16*MIB); source_sha=sha(source)
+              if source in (b'copy:36',b'copy:12'):
+                need(stem+'.o' not in z.namelist(),'COPY must not introduce executable object'); continue
+              need(source_sha in warp_by_source and source_sha not in warp_seen,'exact original warp SOURCE witness')
+              warp_seen.add(source_sha); row=warp_by_source[source_sha]
+              data=extract(stem+'.o',16*MIB); path=inputs/f"warp-object-{row['index']}.o"
+              m.write_new(path,data); row['object']={'path':str(path),'bytes':len(data),'sha256':sha(data)}
+              c.holds.add(path,sha(data)); selected.append({'kind':'warp','index':row['index'],'member':stem+'.o',
+                'source_sha256':source_sha,'object_sha256':sha(data)})
+            need(len(warp_seen)==1,'retained warp must be admitted before original execution')
+          bound_collection=inputs/'collection-with-objects.json'; m.save(bound_collection,collection)
+          bridge_source=frozen/'retained-admission.rs'; m.write_new(bridge_source,h.RETAINED_ISA_BRIDGE.encode())
+          bridge=frozen/'retained-admission'; bridge_sha=sha(h.RETAINED_ISA_BRIDGE.encode())
+          argv=[sdk/'bin/rustc','--edition=2021','--crate-name','driver476_retained_admission',bridge_source,
+            '-L','dependency='+str(target/'debug/deps'),'-o',bridge]
+          for name,path in admission_rlibs.items(): argv+=['--extern',name+'='+str(path)]
+          command(argv,'build-retained-admission',120,False,c.env|{'DRIVER476_ADMISSION_SOURCE_SHA256':bridge_sha})
+          c.holds.add(bridge_source,bridge_sha); dso(bridge,'retained-admission-dso')
+          # 기존 공개 Rust API: full object reconstruction/ordinary SOURCE ABI/actual host ISA. PROGRAM 실행0.
+          command([bridge,bound_collection,pin(bound_collection)['sha256'],inputs],'whole44-native-admission',120)
+          binding_receipt=m.unique_json(m.read(inputs/'native-api-binding.json'))
+          need(binding_receipt['source_commit']==os.environ['GITHUB_SHA'] and binding_receipt['bridge_source_sha256']==bridge_sha
+            and binding_receipt['collection_sha256']==pin(bound_collection)['sha256']
+            and binding_receipt['whole44_triplets'] is True and binding_receipt['actual_host_isa'] is True
+            and binding_receipt['generated_code_executed'] is False and len(binding_receipt['warp_programs'])==1,
+            'whole44 and original warp native API receipt')
+          originals=m.unique_json(m.read(inputs/'original-programs.json')); need(len(originals)==44,'whole44 original ABI metadata')
+          fresh=m.unique_json(m.read(receipt))
+          files=fresh['exporter_dependency_files']
+          def source_roster(symbol):
+            text=(root/'rust/crates/model-runtime/src/cached_code.rs').read_text()
+            body=re.search(r'pub const '+symbol+r': \[&str; (\d+)\] = \[(.*?)\];',text,re.S)
+            need(body is not None,'existing native source roster')
+            names=re.findall(r'"([^"\n]+)"',body[2]); need(len(names)==int(body[1]),'source roster exact count')
+            return [{'path':n,'sha256':files[n]['sha256']} for n in names]
+          guarded=binding(elfs['offline-llvm-guarded-add']); cached=binding(elfs['offline-cached-code'])
+          current={'helper_sha256':guarded['sha256'],'helper_binding_sha256':sha(canon(guarded)),
+            'cached_helper_sha256':cached['sha256'],'cached_helper_binding_sha256':sha(canon(cached)),
+            'guarded_add_sources':source_roster('GUARDED_ADD_SOURCES'),'cached_sources':source_roster('CACHED_SOURCES'),
+            'exporter_roster_sha256':sha(canon(files)),'isa_verifier_sha256':pin(bridge)['sha256'],
+            'isa_verifier_source_sha256':bridge_sha,'isa_receipt_sha256':pin(inputs/'isa.json')['sha256']}
+          q={'source_root':str(root),'original_manifest':collection['manifest']['path'],'original_model':collection['model']['path'],
+            'isa_receipt':str(inputs/'isa.json'),'admission':{'original_manifest_sha256':h.MANIFEST_SHA,
+              'original_model_sha256':h.RETAINED_MODEL_SHA,'current':current,'programs':originals},
+            'programs':[{'original_index':p['index'],'kernel':p['index'],'source':p['source']['path'],
+              'image':p['image']['path'],'reconstruction_object':p['object']['path']} for p in collection['programs']],
+            'library':None,'graph':None}
+          m.save(inputs/'request.json',q)
+          m.copy_new(inputs/'isa.json',job/'proof/whole44-isa.receipt.json',4*MIB)
+          m.copy_new(inputs/'native-api-binding.json',job/'proof/whole44-native-api-binding.json',4*MIB)
+          m.copy_new(collection_path,job/'proof/retained-collection.json',4*MIB)
+          qpath=job/'proof/driver476-request.json'
+          request={'schema':1,'source_commit':os.environ['GITHUB_SHA'],'source_index':pin(job/'proof/index-before.bin'),
+            'preparation':str(preparation),'sdk':str(sdk),'python':pin(Path(os.environ['ORIGINAL_PYTHON'])),
+            'python_base':os.environ['ORIGINAL_PYTHON_BASE'],'llvm':pin(Path(os.environ['LLVM_PATH'])),
+            'elfs':{n:pin(elfs[n]) for n in h.ELFS},'cached_request':pin(inputs/'request.json'),
+            'retained_preflight':pin(inputs/'native-api-binding.json')}
+          m.save(qpath,request); args.request_sha256=pin(qpath)['sha256']
+          m.save(job/'proof/frozen-authentication.json',{'artifact':meta,'run':runmeta,'witness':witness,'selected':selected,
+            'whole_zip_verified':True,'all258_CRC_verified':True,'whole44_from_fixed_PKL':True,'original_warp_PROGRAMs':1,
+            'current_request_sha256':request['cached_request']['sha256'],'expected_from_native_fresh':False,
+            'original_compiler_history_proven':False,'full_six_source_acceptance':False})
+          c.env.pop('GH_TOKEN',None)
+          # 같은 Candidate/subreaper/deadline를 이어 쓴다. candidate 준비로 fresh status를 바꾸지 않는다.
+          c.run()
+        except BaseException:
+          error=traceback.format_exc(); print(error,file=sys.stderr)
+        finally:
+          try:
+            signal.alarm(90)
+            c.finish(error)
+          except BaseException:
+            print(traceback.format_exc(),file=sys.stderr)
+          finally: signal.alarm(0)
+        sys.exit(fresh_status if type(fresh_status) is int and 1<=fresh_status<=255 else 1)
+        DRIVER476
+    - name: Seal source and index after all attempted contracts
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()
+        && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        du -sx --block-size=1 "$DIAG_SOURCE_OWNER" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/private-output-bytes.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$CI_JOB_TEMP/proof/cgroup-memory-after.txt"; fi
+        find "$CARGO_TARGET_DIR" -name '*.d' -type f -exec sha256sum {} + > "$CI_JOB_TEMP/proof/build-dep-info.sha256" || test ! -d "$CARGO_TARGET_DIR"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 2 * 1024 * 1024 * 1024))
+    - name: Verify whole prepared private Rust SDK after all attempted model diagnostic contracts
+      id: prepared_rust_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()
+        && steps.prepared_rust.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        "$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after
+        proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
+        [[ $proof_bytes =~ ^[0-9]+$ ]]
+        ((proof_bytes <= 2 * 1024 * 1024 * 1024))
+    - name: Independently require final source provider and owned-child seals even after sticky failure
+      id: immutable_seals
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        sha256sum --check "$CI_JOB_TEMP/proof/driver476-llvm.before.sha256"
+        /usr/bin/python3 -I -B -S - <<'CHECK'
+        import json,os
+        from pathlib import Path
+        job=Path(os.environ['CI_JOB_TEMP'])
+        q=json.loads((job/'driver-retained476/proof/outcome.json').read_bytes())
+        assert q['source']==os.environ['GITHUB_SHA'] and q['all_owned_children_reaped'] is True
+        assert q['final_seals_passed'] is True and q['finalizer_failures']==[]
+        assert q['full_six_source_acceptance'] is False and q['retirement_credit']==0
+        assert q['fresh_exit_observed'] is True and q['fresh_failure_sticky'] is True and 1<=q['fresh_gate_exit']<=255
+        f=json.loads((job/'proof/fresh-status.json').read_bytes())
+        assert f['exit']==q['fresh_gate_exit'] and f['source']==q['source']
+        assert q['selector_invocations']<=1
+        commands=q['commands']
+        assert sum(c['label']=='fresh-driver' for c in commands)==1
+        assert sum(c['label']=='original-prestate' for c in commands)<=1
+        assert sum(c['label']=='cached-driver' for c in commands)<=1
+        assert sum(c['label']=='retained-collection' for c in commands)==1
+        assert sum(c['label']=='whole44-native-admission' for c in commands)==1
+        CHECK
+    - name: Retain driver fresh failure raw/prestate and bounded authentication evidence
+      id: fast_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: driver-retained-476-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          ${{ env.CI_JOB_TEMP }}/proof
+          ${{ env.CI_JOB_TEMP }}/driver-retained476/proof
+          ${{ env.CI_JOB_TEMP }}/driver476-original-request/request.json
+          ${{ env.CI_JOB_TEMP }}/driver476-original-request/collection*.json
+          ${{ env.CI_JOB_TEMP }}/driver476-original-request/source-*.ll
+          ${{ env.CI_JOB_TEMP }}/driver476-original-request/image-*.bin
+          ${{ env.CI_JOB_TEMP }}/driver476-original-request/object-*.o
+          ${{ env.CI_JOB_TEMP }}/driver476-original-request/original-programs.json
+          ${{ env.CI_JOB_TEMP }}/driver476-original-request/native-api-binding.json
+          ${{ env.CI_JOB_TEMP }}/driver476-original-request/warp-*
+          ${{ env.CI_JOB_TEMP }}/driver476-frozen/retained-admission.rs
+          ${{ env.CI_JOB_TEMP }}/driver-retained476/preparation/cached-first-native/model-run
+          ${{ env.CI_JOB_TEMP }}/driver-retained476/preparation/cached-first-native/driver-output
+          ${{ env.CI_JOB_TEMP }}/driver476-fresh/driver-first-frame-diagnostic
+          ${{ env.CI_JOB_TEMP }}/driver476-fresh/grouped-native
+          ${{ env.CI_JOB_TEMP }}/driver476-fresh/driver-catalog/current-catalog-receipt.json
+          ${{ env.CI_JOB_TEMP }}/driver476-fresh/driver-catalog/compiler-target.json
+          ${{ env.CI_JOB_TEMP }}/driver-retained476/preparation/driver-catalog/current-catalog-receipt.json
+          ${{ env.CI_JOB_TEMP }}/driver-retained476/preparation/driver-catalog/compiler-target.json
+        if-no-files-found: error
+        retention-days: 14
+        include-hidden-files: true
+    - name: Clean only uploaded private model diagnostic source after immutable seals and child recovery
+      id: fast_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()
+        && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest
+        != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.immutable_seals.outcome == 'success'
+        && steps.prepared_rust_final.outcome == 'success') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.fast_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.ci296-owner" && test ! -L "$p/.ci296-owner"
+        test "$(cat "$p/.ci296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned job temporary paths after evidence upload
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()
+        && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest
+        != '' && steps.fast_source_cleanup.outcome == 'success') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'

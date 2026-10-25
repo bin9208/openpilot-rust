@@ -7,6 +7,9 @@ use crate::entrypoint::{self, Entrypoint};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
+#[cfg(feature = "native-skip-miri")]
+pub mod export;
+
 #[derive(Debug, Deserialize)]
 pub struct PipelineStage {
     pub name: String,

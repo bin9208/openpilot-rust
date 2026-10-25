@@ -4,6 +4,9 @@ use std::{ffi::c_void, fs, io::Read, path::Path};
 
 type KernelFn = unsafe extern "C" fn(*const *mut c_void, *const i32);
 
+#[cfg(unix)]
+mod driver_prestate_476;
+
 #[cfg(all(
     test,
     feature = "cached-program-isa",

@@ -7,6 +7,7 @@ use serde::Serialize;
 use std::{fmt, fs, io::Write, path::Path};
 
 mod cli;
+pub mod memory;
 pub mod plan;
 pub mod scheduler;
 pub use cli::cli;

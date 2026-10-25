@@ -40,3 +40,9 @@ diff 검사에 한정한다. Cargo/build/test/Clippy 및 실제 감사 실행은
 
 
 6d0bd2의 actual [native units121261949714](https://github.com/bin9208/openpilot-rust/actions/runs/40224180732/job/121261949714)는 원본 모듈의 fully-qualified `rustix::process::geteuid`와 `rustix::fs::OFlags` 세 참조의 직접 dependency 등록 누락을 발견했다. 기존 lock의 rustix1 및 필요한 fs/process 기능만 추가했다. 감사 구현/의미는 변경0이며 테스트를 제외하지 않는다. compile 성공·thin 시간 개선은 수정본 Actions에서 확인한다.
+
+
+3b7492 actual Fast40224700444/job121266542772에서 thin compile12.44초/actual audit47.89초,
+전체 native308초로7분 안 성공했다. native tools40224818843도 thin 일반11/ignored1과 strictClippy가
+성공했다. 원본 module은 변경0이며 자세한 artifact/SHA/전후 검증은
+[Fast 수용 기록](python-rust-523-fast-native-cold-560.md)에 남겼다.

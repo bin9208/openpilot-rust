@@ -1328,6 +1328,12 @@ fn case(context: &CaseContext<'_>) -> Result<Value> {
             "--cached-admission-sha256".into(),
             sha.as_str().into(),
         ]);
+        if width == 1344 && height == 760 && raw {
+            daemon_args.extend([
+                "--driver-prestate-476".into(),
+                destination.join("prestate476").into_os_string(),
+            ]);
+        }
     }
     let mut daemon = OwnedChild::spawn(
         &options.binary,

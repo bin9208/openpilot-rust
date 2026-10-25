@@ -10,7 +10,10 @@ use openpilot_modeld::{
     prediction::DriverPrediction,
 };
 use openpilot_msgq::{VisionFrame, VisionMetadata};
-use std::time::Instant;
+use std::{
+    path::{Path, PathBuf},
+    time::Instant,
+};
 
 enum Backend {
     Cpu(CpuModel),
@@ -56,6 +59,11 @@ pub struct DriverRuntime<'a> {
     output_bytes: Vec<u8>,
     output_values: Vec<f32>,
     transform: Vec<u8>,
+    driver_prestate_476: Option<(
+        PathBuf,
+        openpilot_model_runtime::cached_code::Admission,
+        u64,
+    )>,
 }
 
 impl<'a> DriverRuntime<'a> {
@@ -129,7 +137,44 @@ impl<'a> DriverRuntime<'a> {
             output_bytes: vec![0; output],
             output_values: vec![0.0; output / 4],
             transform,
+            driver_prestate_476: None,
         })
+    }
+
+    pub fn enable_driver_prestate_476(
+        &mut self,
+        output: &Path,
+        admission: &openpilot_model_runtime::cached_code::Admission,
+    ) -> Result<(), Error> {
+        if self.driver_prestate_476.is_some() {
+            return Err(Error::Contract("driver476 already enabled"));
+        }
+        let Backend::Cpu(model) = &self.model else {
+            return Err(Error::Contract("driver476 requires cached CPU"));
+        };
+        model.write_driver_prestate_476(&self.bundle.directory, output, "loaded", admission)?;
+        self.driver_prestate_476 = Some((output.to_owned(), admission.clone(), 0));
+        Ok(())
+    }
+
+    fn execute_driver_prestate_476(&mut self, entry: &str) -> Result<(), Error> {
+        if let Some((output, admission, frame)) = &self.driver_prestate_476 {
+            if *frame < 2 {
+                let Backend::Cpu(model) = &mut self.model else {
+                    return Err(Error::Contract("driver476 CPU changed"));
+                };
+                let label = if *frame == 0 { "warmup" } else { "frame-0" };
+                model.run_driver_entry_476(
+                    &self.bundle.directory,
+                    output,
+                    &format!("{label}-{entry}"),
+                    entry,
+                    admission,
+                )?;
+                return Ok(());
+            }
+        }
+        self.model.execute(entry)
     }
 
     pub fn validate_frame(&self, metadata: &VisionMetadata) -> Result<(), Error> {
@@ -154,8 +199,11 @@ impl<'a> DriverRuntime<'a> {
         frame.copy_into(&mut self.frame_bytes)?;
         self.model.write("frame", &self.frame_bytes)?;
         self.model.write("transform", &self.transform)?;
-        self.model.execute("prepare")?;
-        self.model.execute("model")?;
+        self.execute_driver_prestate_476("prepare")?;
+        self.execute_driver_prestate_476("model")?;
+        if let Some((_, _, frame)) = &mut self.driver_prestate_476 {
+            *frame += 1;
+        }
         self.model.read(&mut self.output_bytes)?;
         for (value, bytes) in self
             .output_values

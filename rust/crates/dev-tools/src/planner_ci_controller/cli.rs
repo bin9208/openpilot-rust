@@ -1,11 +1,12 @@
 use super::{
+    memory,
     plan::{self, Inputs},
     run_checks, scheduler,
 };
 use crate::{qa_process::NativeRunner, seal::Result};
 use std::{collections::BTreeMap, ffi::OsString, fs::OpenOptions, path::PathBuf, time::Duration};
 
-const HELP: &str = "check-plannerd-ci schedule\ncheck-plannerd-ci [memory] --root PATH --python PATH --bin-dir PATH --artifact PATH --source-native PATH --binding PATH --output PATH --timeout-seconds N --growth-mib NAME=MIB (all 12 operations, or abi/owner/fault in memory mode)";
+const HELP: &str = "check-plannerd-ci schedule\ncheck-plannerd-ci [memory [--asan-library PATH]] --root PATH --python PATH --bin-dir PATH --artifact PATH --source-native PATH --binding PATH --output PATH --timeout-seconds N --growth-mib NAME=MIB (all 12 operations, or abi/owner/fault in memory mode; --asan-library prepares sanitizer wrappers and writes the memory receipt)";
 
 pub fn cli() -> Result<()> {
     let mut arguments = std::env::args_os().skip(1).peekable();
@@ -54,6 +55,7 @@ pub fn cli() -> Result<()> {
                 "--binding",
                 "--output",
                 "--timeout-seconds",
+                "--asan-library",
             ]
             .contains(&name)
                 || options.insert(name.to_owned(), value).is_some()
@@ -61,6 +63,10 @@ pub fn cli() -> Result<()> {
                 return Err(HELP.into());
             }
         }
+    }
+    let asan = options.remove("--asan-library");
+    if asan.is_some() && !memory {
+        return Err("--asan-library requires memory mode".into());
     }
     let mut take = |name: &str| -> Result<OsString> {
         options
@@ -85,17 +91,29 @@ pub fn cli() -> Result<()> {
         .to_str()
         .ok_or(HELP)?
         .parse::<u64>()?;
+    let mut runner = NativeRunner;
+    if let Some(asan) = asan {
+        let receipt = memory::run(
+            &inputs,
+            &PathBuf::from(asan),
+            &output,
+            &growth,
+            Duration::from_secs(timeout),
+            &mut runner,
+        )?;
+        println!("{receipt}");
+        return Ok(());
+    }
     let checks = if memory {
         plan::memory_checks(&inputs, &growth, Duration::from_secs(timeout))?
     } else {
         plan::runtime_checks(&inputs, &growth, Duration::from_secs(timeout))?
     };
-    let mut runner = NativeRunner;
     run_checks(&checks, &output, &inputs.root, &mut runner)?;
     if !memory {
         let receipt = plan::write_receipt(&inputs, &checks, &output, &mut runner)?;
         println!("{receipt}");
     }
-    // memory의 sanitizer/binary/final receipt는 호출 wrapper가 원래 형식으로 기록한다.
+    // --asan-library 없는 memory core는 원본 Python wrapper의 독립 비교 경로로 보존한다.
     Ok(())
 }

@@ -1,0 +1,258 @@
+{
+  "argv": [
+    "/usr/bin/python3.12",
+    "-I",
+    "-c",
+    "\nimport json, pathlib, runpy, sys\nns = runpy.run_path(str(pathlib.Path(sys.argv[1]) / 'rust/tools/check_plannerd_ci.py'))\nconfig = json.loads(sys.argv[2])\ninputs = ns['Inputs'](*(pathlib.Path(config[key]) for key in ('binaries', 'artifact', 'source', 'binding')))\nchecks = [{'name': check.name, 'argv': [sys.executable, '-u', '-P', str(check.script), *check.arguments, check.output_option, str(pathlib.Path(config['output']) / check.name)]} for check in ns['runtime_checks'](inputs)]\nprint(json.dumps({'python': sys.executable, 'checks': checks}))\n",
+    "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source",
+    "{\"artifact\":\"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact\",\"binaries\":\"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin\",\"binding\":\"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/params.so\",\"output\":\"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output\",\"source\":\"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source\"}"
+  ],
+  "cases": {
+    "artifact": "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact",
+    "binaries": "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin",
+    "binding": "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/params.so",
+    "output": "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output",
+    "source": "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source"
+  },
+  "github_sha": "73e17ff10ec9be7a7001ab9cbf415a779c436f78",
+  "kind": "independent-python-observation",
+  "native_comparison": "enclosing test assertions must pass; observation alone is not acceptance",
+  "original_first_log_utf8": null,
+  "original_result": {
+    "checks": [
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_acados_source.py",
+          "--baseline",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source",
+          "--artifact",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact",
+          "--trace",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_solver_trace",
+          "--evidence",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/abi"
+        ],
+        "name": "abi"
+      },
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_policy_source.py",
+          "--trace",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_policy_trace",
+          "--evidence",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/policy"
+        ],
+        "name": "policy"
+      },
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_radar_source.py",
+          "--binary",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_radar_trace",
+          "--output",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/radar"
+        ],
+        "name": "radar"
+      },
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_gap_source.py",
+          "--binary",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_gap_trace",
+          "--output",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/gap"
+        ],
+        "name": "gap"
+      },
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_owner_source.py",
+          "--source-native",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source",
+          "--artifact",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact",
+          "--binary",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_owner_trace",
+          "--output",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/owner"
+        ],
+        "name": "owner"
+      },
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_runtime_source.py",
+          "--source-native",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source",
+          "--artifact",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact",
+          "--binary",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_runtime_trace",
+          "--output",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/main"
+        ],
+        "name": "main"
+      },
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_runtime_source.py",
+          "--source-native",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source",
+          "--artifact",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact",
+          "--binary",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_runtime_trace",
+          "--faults",
+          "--frames",
+          "80",
+          "--output",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/fault"
+        ],
+        "name": "fault"
+      },
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_runtime_source.py",
+          "--source-native",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source",
+          "--artifact",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact",
+          "--binary",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_runtime_trace",
+          "--brand",
+          "volkswagen",
+          "--output",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/volkswagen"
+        ],
+        "name": "volkswagen"
+      },
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_runtime_source.py",
+          "--source-native",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source",
+          "--artifact",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact",
+          "--binary",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_runtime_trace",
+          "--stock-longitudinal",
+          "--output",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/stock-longitudinal"
+        ],
+        "name": "stock-longitudinal"
+      },
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_runtime_source.py",
+          "--source-native",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source",
+          "--artifact",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact",
+          "--binary",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_runtime_trace",
+          "--radar-mode",
+          "0",
+          "--output",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/radar-off"
+        ],
+        "name": "radar-off"
+      },
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_ipc.py",
+          "--source-native",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source",
+          "--artifact",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact",
+          "--python",
+          "/usr/bin/python3.12",
+          "--binding",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/params.so",
+          "--binary",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/openpilot-plannerd",
+          "--output",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/ipc"
+        ],
+        "name": "ipc"
+      },
+      {
+        "argv": [
+          "/usr/bin/python3.12",
+          "-u",
+          "-P",
+          "/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/check_plannerd_lifecycle.py",
+          "--source-native",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source",
+          "--artifact",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact",
+          "--python",
+          "/usr/bin/python3.12",
+          "--binding",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/params.so",
+          "--binary",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/openpilot-plannerd",
+          "--output",
+          "/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/lifecycle"
+        ],
+        "name": "lifecycle"
+      }
+    ],
+    "python": "/usr/bin/python3.12"
+  },
+  "original_returncode": 0,
+  "original_stderr_utf8": "",
+  "original_stdout_utf8": "{\"python\": \"/usr/bin/python3.12\", \"checks\": [{\"name\": \"abi\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_acados_source.py\", \"--baseline\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source\", \"--artifact\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact\", \"--trace\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_solver_trace\", \"--evidence\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/abi\"]}, {\"name\": \"policy\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_policy_source.py\", \"--trace\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_policy_trace\", \"--evidence\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/policy\"]}, {\"name\": \"radar\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_radar_source.py\", \"--binary\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_radar_trace\", \"--output\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/radar\"]}, {\"name\": \"gap\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_gap_source.py\", \"--binary\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_gap_trace\", \"--output\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/gap\"]}, {\"name\": \"owner\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_owner_source.py\", \"--source-native\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source\", \"--artifact\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact\", \"--binary\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_owner_trace\", \"--output\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/owner\"]}, {\"name\": \"main\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_runtime_source.py\", \"--source-native\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source\", \"--artifact\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact\", \"--binary\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_runtime_trace\", \"--output\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/main\"]}, {\"name\": \"fault\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_runtime_source.py\", \"--source-native\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source\", \"--artifact\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact\", \"--binary\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_runtime_trace\", \"--faults\", \"--frames\", \"80\", \"--output\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/fault\"]}, {\"name\": \"volkswagen\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_runtime_source.py\", \"--source-native\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source\", \"--artifact\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact\", \"--binary\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_runtime_trace\", \"--brand\", \"volkswagen\", \"--output\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/volkswagen\"]}, {\"name\": \"stock-longitudinal\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_runtime_source.py\", \"--source-native\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source\", \"--artifact\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact\", \"--binary\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_runtime_trace\", \"--stock-longitudinal\", \"--output\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/stock-longitudinal\"]}, {\"name\": \"radar-off\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_runtime_source.py\", \"--source-native\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source\", \"--artifact\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact\", \"--binary\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/examples/plannerd_runtime_trace\", \"--radar-mode\", \"0\", \"--output\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/radar-off\"]}, {\"name\": \"ipc\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/plannerd_ipc.py\", \"--source-native\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source\", \"--artifact\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact\", \"--python\", \"/usr/bin/python3.12\", \"--binding\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/params.so\", \"--binary\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/openpilot-plannerd\", \"--output\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/ipc\"]}, {\"name\": \"lifecycle\", \"argv\": [\"/usr/bin/python3.12\", \"-u\", \"-P\", \"/home/actions/actions-runner/_work/openpilot-rust/openpilot-rust/.diag296-source-40220990602-1.4puVsL/source/rust/tools/check_plannerd_lifecycle.py\", \"--source-native\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/source\", \"--artifact\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/artifact\", \"--python\", \"/usr/bin/python3.12\", \"--binding\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/params.so\", \"--binary\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/bin/openpilot-plannerd\", \"--output\", \"/tmp/openpilot-ci.PLvbgO/.tmpmDbI65/output/lifecycle\"]}]}\n",
+  "python": {
+    "executable": "/usr/bin/python3.12",
+    "executable_sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f",
+    "sha256_proof": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f  /usr/bin/python3.12\n",
+    "version_proof": "Python 3.12.3\n"
+  },
+  "schema_version": 1,
+  "source_sha256": {
+    "rust/crates/dev-tools/src/bin/check_plannerd_ci.rs": "32d2b777eec4ff960ea70195aa0d7b6ac553aee8621658462033ddcf933985d9",
+    "rust/crates/dev-tools/src/planner_ci_controller.rs": "c5b738aaba3f219307611d2bdd6efee92c341487a0463e5a9d484394af069b62",
+    "rust/crates/dev-tools/src/planner_ci_controller/cli.rs": "f336e849a7554ea154df1c55ee4f721a894eafd1585075ae97556d6cbe8bc87e",
+    "rust/crates/dev-tools/src/planner_ci_controller/plan.rs": "c1dddd235346b8f415c9b131aba7a371cb67ae80d0db5f13a86b450c4d0a8b44",
+    "rust/crates/dev-tools/src/planner_ci_controller/scheduler.rs": "a35ad7f6c4eab2348ef3ceae318e8bd37980e251e84e59d5d17480e7b9d55f0a",
+    "rust/crates/dev-tools/src/qa_process.rs": "aa9fda1ed867fe6dcf7befb19fc6857fa419bbaa33fcc518264276abef7c6633",
+    "rust/crates/dev-tools/tests/planner_ci_controller.rs": "a5e38fcfff88611926b04c334988f05faaf63754362b6d4989d4771668a3493f",
+    "rust/crates/disk-space/src/lib.rs": "fa920db8d68ffbe2772c8c60a7e793346427b5d9add0a81184d3fa162ea34bd0",
+    "rust/tools/check_plannerd_ci.py": "dda14614fe042939bd6758cffda69da95dc141ca8ce4b0c7e67d046ebaff2157",
+    "rust/tools/plannerd_ipc.py": "c2099127901a2883925305dc3bf0c563b338494cd5bd829cb7bd3e916ffdd031"
+  },
+  "stdin_utf8": null,
+  "test_name": "source_runtime_plan_matches_every_native_leaf_and_argument"
+}
