@@ -128,6 +128,28 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
         row = next(step for step in original if step["name"] == label)
         assert row["run"].count("${{ matrix.machine }}") == 1
         row["run"] = row["run"].replace("${{ matrix.machine }}", "${{ matrix.arch }}")
+    if name in ("webcam-runtime", "carrot-navi-arm"):
+      # 기능 명령은 보존하고 두 role의 SDK 설치만 별도 검증 단계로 이동했다.
+      old_sdk = ('rustup toolchain install 1.94.0 --profile minimal --component clippy\n'
+                 if name == "webcam-runtime" else
+                 'rustup toolchain install 1.94.0 --profile minimal\n'
+                 'rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu\n')
+      assert original[0]["run"].count(old_sdk) == 1
+      original[0]["run"] = original[0]["run"].replace(
+          old_sdk, '/usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" verify\n')
+      before = named_step(job, "Prepare exact fresh ARM 1.94 SDK for the two admitted roles")
+      after = named_step(job, "Verify ARM SDK after every attempted maintained command")
+      assert before["if"] == TRUSTED_SOURCE
+      assert after["if"] == ("${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) "
+                             + "&& (always() && steps.arm530_sdk.outcome != 'skipped' && env.CI296_SOURCE != '') }}")
+      for step, phase, identifier, timeout in ((before, "before", "arm530_sdk", 20), (after, "after", "arm530_sdk_final", 10)):
+        assert step["id"] == identifier and step["timeout-minutes"] == timeout
+        assert step["shell"] == "bash" and step["working-directory"] == "${{ env.CI296_SOURCE }}"
+        assert step["env"] == {"CI296_HOST_CONTROL": "1", "ARM530_HELPER_SHA256":
+                               "e46156705665b9ec7d0dfad26b16b6c9e1f5e2266e008502807e4edcdfaad3a8"}
+        assert step["run"] == '/usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" ' + phase + '\n'
+      assert steps.index(venv) < steps.index(before) == steps.index(actual[0]) - 1
+      assert steps.index(actual[-1]) < steps.index(after) < steps.index(finish)
     assert actual == original and len(actual) == {"planner-runtime": 6, "carrot-man-runtime": 6, "webrtc-runtime": 5,
         "webcam-runtime": 4, "xiaoge-runtime": 6, "radard-runtime": 10, "radar-arm": 8, "carrot-navi-arm": 2}[name]
     assert steps.index(admission) < steps.index(prepare) < steps.index(python) < steps.index(venv) < steps.index(actual[0])

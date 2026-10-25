@@ -313,3 +313,64 @@ cache효과를 완전히 분리하지 않았다. Git 공식 문서는 core.prelo
 현재자료만으로 true의 full runtime2초 성공이나 원래 #554 root 해결을 주장하지 않는다.
 다음 최소안은 동일held root/index/source에서 순서와warm효과를 구별한 실제 대조 및 scope검토다.
 ptrace필터/원문 시간·수치/원본삭제·retirement조건을 완화하지 않는다.
+
+## A/B/A 진단과 exact fixed-true qualification 후보
+
+2026-10-25. 위 false-schema와 각 과거 run의 성공·실패는 당시 source의 기록이다.
+이번 후보는 별도 `fixed-true-554-v1` qualification profile로 명시 전환한다.
+helper runtime 및 fixture의 정확한 세 키는 `GIT_CONFIG_COUNT=1`,
+`GIT_CONFIG_KEY_0=core.preloadIndex`, `GIT_CONFIG_VALUE_0=true`다.
+과거 false receipt·원문 기대값·기존 실제 실패를 수정하거나 true PASS로 승격하지 않는다.
+생산 logger/probe/원본2와 maintained caller, 원장·credit은 변경하지 않았다.
+
+fixture는 기존 `retained::fixed_git_preload_environment_rejects_missing_or_mutated_schema`
+selector1개를 유지한다. 정확9키 전달과 기존 global/system/SSH 설정 제거를 확인하고,
+고정3키의 누락/변조6개(false/COUNT2/다른 key 포함), 추가 runtime config6개
+(`KEY_1`, `VALUE_1`, `KEY_00`, `VALUE_00`, `GIT_CONFIG_PARAMETERS`, `GIT_CONFIG`),
+전체 schema 부재1개를 거부하는 **음성13개**를 검사한다.
+검증 뒤 env_clear하고 원래 기본6키+정확3키만 전달한다. 현재 metadata test 본문 외
+`struct Inputs` 이후의 실제 lifecycle14 본문·assertions·기대값은 byte 동일하다.
+true를 임의 선택 옵션이나 값 누락시 기본값으로 받아들이지 않는다.
+
+standalone Git 진단은 고유 slot `false-a1` → `true-b` → `false-a2` 각1회다.
+각 command/prefix는 `git-preload-$slot`, paired 자료는 `paired-554/git-$slot/`이며,
+같은 false의 두 원문을 덮어쓰지 않는다. 동일 held Git/DSO·source/cwd·status argv와
+동일한6+3키·QA context에서 VALUE_0만 false/true/false로 다르게 한다.
+이 직접 Git 진단은 fixture의 fixed-true qualification 실행과 별도이며,
+fixture에 false를 우회 전달하거나 Git status를 lifecycle timer 밖으로 옮기는 방식이 아니다.
+
+각 slot의 원래 전후 source/config/index entries·flags·provider 검사를 보존한다.
+세 stdout/stderr/exit를 그대로 저장·비교하고 실제 exec1의 exact program/argv/env와
+정상 terminal, 전체 raw의 strict lexical·immutable 검증을 요구한다.
+세 slot의 전후6개 raw index bytes와 identity/SHA receipt를 A1-before와 대조한다.
+read 자체의 identity/hash 불안정이나 I/O 오류는 FAIL이며, 안정적으로 읽었지만 slot 사이
+bytes/identity가 달라지면 `raw-index-comparison.json`에 성능 비교 **HOLD**를 남긴다.
+원문 index를 복원·정규화하지 않으며 이 진단 HOLD를 lifecycle PASS로 표현하지 않는다.
+실제 source/config/논리 entries·flags 변화와 출력/실행 실패는 원래대로 실패한다.
+
+새 `git-preload-profile.json`은 고정 qualification profile을 명시하는 held metadata다.
+`git-preload-status-554/complete.json`은 새 schema2이며 정확3관측/순서와 두 baseline channel 비교,
+모든 opcode counts/elapsed, B−A1/B−A2/A2−A1의 차이를 함께 저장한다.
+`full_lifecycle_causality_proven`, `performance_claim`, `root_cause_fixed`,
+`runtime_acceptance`, `R4_acceptance`는 모두false다. snapshot 자체의 warming과 runner load가
+남으므로 A/B/A의 결과를 full lifecycle2초 인과 증명이나 가장 빠른 값 선택으로 쓰지 않는다.
+원래 raw trace·stdout/stderr/exit·index 전후 원문은 모두 유지한다.
+
+mini preload4상태/2048파일/동일blob과 별도 cache8상태의 authored status 기준은 그대로다.
+현재 qualification profile에 맞춘 시작 schema literal만 true로 바꾸며, mini의 true/false 및
+cache off/on 대조 본문·출력 기대값은 변경하지 않는다. source prime1도 그대로다.
+untraced1+traced14의 원래 공유600초 시작점, transport2초·각95초·retained-once360초·
+15prefix inspector각180초, trace flags/classes/raw read/pread64·unknown 거부와
+source2GiB/build8GiB/proof2GiB/file512MiB/selected-prefix1GiB/report64MiB·reserve를 유지한다.
+추가 A2 저장·관측도 같은 admission 안에서만 허용한다. 전체14/retained-once/15prefix는
+동일한 새 source의 fixed-true profile로 실제 검증해야 하며 과거 일부 PASS를 대입하지 않는다.
+
+부모가 별도 감사한 source593 collision8 run40161287114/artifact12587195042는
+ZIP39,396,698B/SHA256 `68c84975b3084dc1ca36a5d16069e26ac231530629cad664d9da45d5ba316078`,
+10,146CRC다. current8의 exactargv/env/exit1·spawn/session0·foreign8쌍·source 전후/final0
+수용은 그 원문 source에 귀속한다. 이 후보에서 재다운로드·전수 CRC 감사를 반복하지 않았다.
+그 성공도 old27/runtime2/R4/caller/absence/closed flags의 수용이나 원본2 퇴역 credit이 아니다.
+이번 후보는 더 넓은 R4 framework나 새로운 caller/absence 입구를 추가하지 않는다.
+로컬 확인은 Bash 문법(heredoc 포함)·Rustfmt·diff/source 비교뿐이며,
+새 metadata13음성/A/B/A/full14·retained-once·15prefix/Clippy 기능은 **Actions UNRUN**이다.
+workflow/Focus/ledger의 helper literal·fixture pin 갱신과 실제 Actions 실행은 부모가 소유한다.

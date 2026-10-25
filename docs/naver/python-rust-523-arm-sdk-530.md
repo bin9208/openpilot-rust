@@ -67,3 +67,10 @@ policy를 연결한다. 예전 candidate workflow와 main X64 role은 이 조건
 source/common cleanup 모두 기존 upload/source 성공에 SDK-final 성공을 정확히 더한다.
 두 실제 양성과 각14가지 누락/skip/선택실패·pin/명령/순서/cleanup/재설치 변조를 거부하는
 새 정책회귀1개를 추가한다. 원래6 ARM 및 X64의 행동은 유지하며 기능 수용은 Actions 대기다.
+
+
+### a483 실제 planner 정책 검사의 source expectation 후속
+
+[a483 pilot40166180655/job121087586875](https://github.com/bin9208/openpilot-rust/actions/runs/40166180655/job/121087586875)의 planner는 기존 Python CI fixture가 두 role의 dependency 전체 원문을 옛 `rustup toolchain install`과 비교해 실패했다. 같은 실행의 WebRTC는 성공했다. 기능·ARM compiler 실패로 오인하지 않는다.
+
+`test_plannerd_ci.py`의 x64/pilot reference는 보존하고, 정확 Webcam/Carrot Navi 두 role에만 확인된 원래 설치 문자열1개를 새 SDK verify1개로 치환해 전체 functional step 동등 비교를 유지한다. before/after의 유일한 이름·id·20/10분·고정 helper SHA·명령·trusted/always 조건과 venv/기능/finish 사이 순서도 명시 검증한다. 기존 나머지6 role·전체 명령과 음성 통제는 보존한다. 이 source 보완의 Python AST만 확인했으며 기능은 다음 Actions에서 판정한다.

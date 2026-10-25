@@ -186,10 +186,27 @@ jobs:
         set -euo pipefail
         umask 077
         # 첫 candidate의 실제 결과를 수집한다. old27/P2/closed-trace/caller/absence 수용은 별도다.
-        printf '%s  %s\n' 623295a8200a098c48c0b503cb1df09de4d70973b4837eefe5d73cf0e7e85bd3 tools/ci/logging_retained_549.sh | sha256sum --check --strict -
+        printf '%s  %s\n' 0781d4a13b78bc4125d3903751466a33431176e118f41469596723a8d3ed5109 tools/ci/logging_retained_549.sh | sha256sum --check --strict -
         /usr/bin/timeout --signal=TERM --kill-after=180s 60m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh
         jq -e '.schema==1 and .states==8 and .status_pairs==8 and .authored_status_equal==true and .fs_check_passed==true and .fixture_cap_bytes==16777216 and .source_prime==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-cache-554/complete.json"
         jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .fs_check_passed==true and .source_prime_statuses==1 and .status_channels_equal==true and .tracked_source_entries_flags_equal==true and .source_config_unchanged==true and .sdk_equal==true and .raw_index_immutable==false and .fixture_child_optional_locks_zero==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-source-cache-554/complete.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .qualification_profile=="fixed-true-554-v1" and .preload_index=="true" and .historical_false_receipts_relabelled==false and .production_preload_changed==false and .R4_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-preload-profile.json"
+        jq -e --arg source "$GITHUB_SHA" '
+          .schema==2 and .source_commit==$source and .order==["false-a1","true-b","false-a2"] and
+          .preload_order==["false","true","false"] and .status_observations==3 and .status_comparisons==2 and
+          .status_channels_equal==true and (.observations|length)==3 and
+          all(.observations[]; .source_commit==$source and .command_exit==0 and .diagnostic_only==true and .runtime_acceptance==false and .R4_acceptance==false and .retirement_credit==0) and
+          .raw_index_comparison.schema==1 and .raw_index_comparison.index_restored==false and
+          (.raw_index_comparison.same_raw_index_bytes|type)=="boolean" and
+          (.raw_index_comparison.same_raw_index_identity|type)=="boolean" and
+          (if .raw_index_comparison.same_raw_index_bytes and .raw_index_comparison.same_raw_index_identity
+           then .raw_index_comparison.performance_comparison=="eligible_observation_only"
+           else .raw_index_comparison.performance_comparison=="HOLD" end) and
+          .qualification_profile=="fixed-true-554-v1" and .qualification_preload_index=="true" and
+          .qualification_profile_changed==true and .historical_false_receipts_relabelled==false and
+          .production_preload_changed==false and .full_lifecycle_causality_proven==false and
+          .performance_claim==false and .root_cause_fixed==false and .runtime_acceptance==false and .R4_acceptance==false and .retirement_credit==0
+        ' "$CI_JOB_TEMP/proof/logging/git-preload-status-554/complete.json"
     - name: Seal source and index after all attempted contracts
       id: source_final
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)

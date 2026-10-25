@@ -13,9 +13,9 @@ fn fixed_git_preload_environment(
     let fixed = [
         ("GIT_CONFIG_COUNT", "1"),
         ("GIT_CONFIG_KEY_0", "core.preloadIndex"),
-        ("GIT_CONFIG_VALUE_0", "false"),
+        ("GIT_CONFIG_VALUE_0", "true"),
     ];
-    // 이 실험의 정확한 schema만 전달한다. 누락을 기본 true로 숨기지 않는다.
+    // fixed-true-554-v1 qualification만 전달한다. 과거 false receipt의 재수용이 아니다.
     for (key, expected) in fixed {
         assert_eq!(
             values
@@ -23,6 +23,16 @@ fn fixed_git_preload_environment(
                 .map(OsString::as_os_str),
             Some(std::ffi::OsStr::new(expected)),
             "retained fixture requires fixed #554 {key}"
+        );
+    }
+    for key in values.keys() {
+        let bytes = key.as_encoded_bytes();
+        assert!(
+            !(bytes.starts_with(b"GIT_CONFIG_KEY_") && bytes != b"GIT_CONFIG_KEY_0"
+                || bytes.starts_with(b"GIT_CONFIG_VALUE_") && bytes != b"GIT_CONFIG_VALUE_0"
+                || bytes == b"GIT_CONFIG_PARAMETERS"
+                || bytes == b"GIT_CONFIG"),
+            "retained fixture refuses extra #554 runtime config {key:?}"
         );
     }
     command.env_clear();
@@ -47,21 +57,14 @@ fn fixed_git_preload_environment_rejects_missing_or_mutated_schema() {
         ("LC_ALL", "C.UTF-8"),
         ("GIT_CONFIG_COUNT", "1"),
         ("GIT_CONFIG_KEY_0", "core.preloadIndex"),
-        ("GIT_CONFIG_VALUE_0", "false"),
+        ("GIT_CONFIG_VALUE_0", "true"),
     ];
     let expected: BTreeMap<OsString, OsString> = selected
         .into_iter()
         .map(|(key, value)| (key.into(), value.into()))
         .collect();
     let mut supplied = expected.clone();
-    for key in [
-        "GIT_CONFIG_KEY_1",
-        "GIT_CONFIG_VALUE_1",
-        "GIT_CONFIG_PARAMETERS",
-        "GIT_CONFIG_GLOBAL",
-        "GIT_CONFIG_SYSTEM",
-        "GIT_SSH_COMMAND",
-    ] {
+    for key in ["GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_SSH_COMMAND"] {
         supplied.insert(key.into(), "must-not-inherit".into());
     }
     let mut command = Command::new(CHECKER);
@@ -75,7 +78,7 @@ fn fixed_git_preload_environment_rejects_missing_or_mutated_schema() {
     for (key, mutation) in [
         ("GIT_CONFIG_COUNT", "2"),
         ("GIT_CONFIG_KEY_0", "core.hooksPath"),
-        ("GIT_CONFIG_VALUE_0", "true"),
+        ("GIT_CONFIG_VALUE_0", "false"),
     ] {
         for replacement in [None, Some(mutation)] {
             let mut invalid = expected.clone();
@@ -88,6 +91,21 @@ fn fixed_git_preload_environment_rejects_missing_or_mutated_schema() {
             }))
             .is_err());
         }
+    }
+    for key in [
+        "GIT_CONFIG_KEY_1",
+        "GIT_CONFIG_VALUE_1",
+        "GIT_CONFIG_KEY_00",
+        "GIT_CONFIG_VALUE_00",
+        "GIT_CONFIG_PARAMETERS",
+        "GIT_CONFIG",
+    ] {
+        let mut invalid = expected.clone();
+        invalid.insert(key.into(), "must-be-rejected".into());
+        assert!(catch_unwind(AssertUnwindSafe(|| {
+            fixed_git_preload_environment(&mut Command::new(CHECKER), &invalid);
+        }))
+        .is_err());
     }
     assert!(catch_unwind(AssertUnwindSafe(|| {
         fixed_git_preload_environment(&mut Command::new(CHECKER), &BTreeMap::new());

@@ -1071,3 +1071,25 @@ ci_workflow_policy는40PASS/1FAIL이며 새 Fast UI diagnostic target을 독립 
 포함되므로53→54, native+tools 합계57→58로 정확히1개씩 늘린다. 기존72개/분할/순서/단일 실행 및
 새1개 외 항목은 보존한다. 전체73만 바꾸고 부분 합계를 남기는 오류를 source 검토에서 정정했으며
 actual 수용은 여전히 다음 GitHub Actions의 결과를 요구한다.
+
+
+## a483 기본 러너 수정 묶음과 정확 PR 재검증
+
+2026-10-25. `a4838fc4e7d09499d1dbc50045ec049af995ffbc`를 issue branch와 PR343 head에 force 없이 fast-forward했다. 정확 merge는 `e4f7d4a868f3aaee36a1b485af29923f2e24cee6`이며 dev/main 통합은 아니다. 새 필수 [Rust40166518729](https://github.com/bin9208/openpilot-rust/actions/runs/40166518729)·[Integration40166518680](https://github.com/bin9208/openpilot-rust/actions/runs/40166518680)·[Fast40166518662](https://github.com/bin9208/openpilot-rust/actions/runs/40166518662)·[docs40166518613](https://github.com/bin9208/openpilot-rust/actions/runs/40166518613)는 대기/진행 상태로 기록한다.
+
+두 ARM 작업의 새 정확 SDK 준비와 policy 양성/음성 연결, SSH 용량 관측의 한정 ENOENT 재검사, controls getter 컴파일 구문과 UI alias jq 구문, Fast role/suite 등록 및 cold 최초 admission 실패 보존을 독립 검토했다. staged26의 YAML5/Bash135/embedded AST9/Bash파일6/Python AST2·Rust서식5·diff와 sourceguard가 통과했다. main489835B 불변/Focus allow251·pins218·외부 block SHA 불변이다. 신규 SDK metadata의 Python TOML 실행을 숨기지 않고 pending1을 추가해 execution114=26교체/84대기/기존native1/텍스트2/삭제1이다. baseline3580=294/3/3283은 그대로다.
+
+branch [a483 Fast40166180682](https://github.com/bin9208/openpilot-rust/actions/runs/40166180682)의 routing은 strict cold audit `unrecognized trace line159`에서 실패해 후속 policy 실행에 도달하지 않았다. artifact12588492365는589313B/SHA256 `b8609e26daf995d4dc6961862caa62386db063760d02773e36d85058234d2d4e`,78CRC/expanded25678090B다. 불명 행을 허용하거나 재작성하지 않는다. 다른 leaf/Focus/UI/controls/cold의 현재 실행도 완료 전에 수용하지 않는다.
+
+[593 collision8 40161287114](https://github.com/bin9208/openpilot-rust/actions/runs/40161287114)은 실제 성공이다. artifact12587195042는39396698B/SHA256 `68c84975b3084dc1ca36a5d16069e26ac231530629cad664d9da45d5ba316078`,10146CRC/expanded394194477B다. digest4와 raw10파일663858B의 SHA/전후identity, 실제fixture1/checker8의 exactargv/env·exit1·spawn/session변경0·고정8순서·foreign8쌍 및 source3쌍/final0을 부모가 확인했다. fixture-build80분할/1793파일/72419761rawbytes의 성공 보고 및 누락·중복 음성 거부도 확인했다. current collision8만 수용하며 old27/runtime2/R4/caller/absence·closed PID/cwd/FD/DSO false와 credit0은 보존한다.
+
+이전 PR593의 Integration/docs와 LLVM20 개별 작업은 성공했지만 전체 Rust는 미완료/실패 범위를 가진다. generic AArch64는 진행 중이며 기존 compile/root 실패의 수정 후보를 전체 성공으로 확대하지 않는다. 모델 signed zero3·controls54ULP·logging strict2초와 필수 게이트·통합 후·전달/실기 수용이 남아 #523/#296는 계속 열린다.
+
+
+### a483 후속 확정과 fixed-true-554-v1 후보
+
+branch Fast40166180682는6leaf 성공/routing1실패/aggregate실패로 확정됐다. routing의 cold 불명행 거부 때문에 policy 후속은 미도달이며 native-tools의 role 등록 수정은 실제 통과했다. PR593 Rust40161295597도52job=40성공/12실패로 확정됐고 LLVM20와 generic AArch64 개별 작업은 성공했다. generic artifact12588816327은75766641B/SHA256 `2954ed56f1fefb0886e84f76264e74468faee23277936dd6a0c97dc2bfd87cba`,83CRC/expanded202614489B이며 ELF49개의 class64/machine183(AArch64)을 inert로 확인했다. 네트워크로 첫 다운로드가 실패해 빈 부분 파일을 제거한 뒤1회 재시도했다. 기기 검증·설치 수용은 아니다. LLVM20 private artifact12588405827은3596244B/SHA256 `6e670d97b5eaa2adfcb792a535f16a09b265941dfc9c1bebaf05075357835982`,35CRC와 source/provider 전후 동일을 확인했다.
+
+54b normal40/run40164032028/artifact12588865005는 실제 numeric 실패다. ZIP52138327B/SHA256 `75dbe6ea56cb79a6c34f256f0c5f5ae2c7436d6a1abfbd4acdb85a62b316a31c`,208CRC를 담당자가 감사했다. build/Clippy·negative2·trace40case/EXIT0 뒤 첫 `controls[3].rows[0].state.lat_pid[0]` 기대 `-0.034913528710603714`/현재 `-0.03491372987627983`에서 실패했다. source/SDK/243held는 동일하고 native failure seals pass true지만 외부 baseline unavailable로 최종 seal은 false다. tolerance·원문·700/600초를 바꾸지 않고 getter 진단을 이어간다.
+
+#554에서는 원래 필수값이 아닌 실험 고정false를 별도 `fixed-true-554-v1` 검증 profile로 명시 변경하는 후보를 구현했다. Git의 기본 병렬 preload를 선택하되 status/dirty 확인·packet/console/rate·전체2초와14본문·공유600초·15prefix 및 raw 한도를 유지한다. 고유 A1=false/B=true/A2=false는 각1회 진단이며 raw index 차이는 원문을 보존하고 성능 비교 HOLD로 남긴다. metadata exact positive/음성13과 고정 profile·ABA 영수증을 workflow에 연결했다. 실제 기능은 다음 Actions UNRUN이고, 과거 false receipt·old27/R4·원본2 퇴역 및 credit0은 유지한다.

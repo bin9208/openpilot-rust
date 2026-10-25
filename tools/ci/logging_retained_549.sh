@@ -57,7 +57,7 @@ run() {
   local label=$1 seconds=$2 command_status side started_cs ended_cs; shift 2
   phase=$label
   admit "$label" 512
-  if [[ $label == lifecycle-runtime_directory_int || $label == git-preload-false || $label == git-preload-true ]]; then
+  if [[ $label == lifecycle-runtime_directory_int || $label == git-preload-false-a1 || $label == git-preload-true-b || $label == git-preload-false-a2 ]]; then
     side=traced
     if [[ $label != lifecycle-runtime_directory_int ]]; then side=git-${label#git-preload-}; fi
     printf '%s\0' "$@" > "$proof/paired-554/$side/command.argv0"
@@ -158,7 +158,9 @@ printf '%s  %s\n' 05ff6420f05f8b51f457b85ecf34ad514bc75b6b6147e4abf5d8f78d7f8546
 hold "$archive"
 # 인증 다운로드 뒤의 실행/trace에는 허용한 비밀 없는 환경만 전달한다.
 unset GH_TOKEN GITHUB_TOKEN
-runtime=(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" TMPDIR="$TMPDIR" LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.preloadIndex GIT_CONFIG_VALUE_0=false GITHUB_ACTIONS=true RUNNER_ENVIRONMENT=github-hosted RUNNER_OS=Linux RUNNER_ARCH=X64 GITHUB_REPOSITORY=bin9208/openpilot-rust)
+runtime=(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" TMPDIR="$TMPDIR" LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.preloadIndex GIT_CONFIG_VALUE_0=true GITHUB_ACTIONS=true RUNNER_ENVIRONMENT=github-hosted RUNNER_OS=Linux RUNNER_ARCH=X64 GITHUB_REPOSITORY=bin9208/openpilot-rust)
+printf '{"schema":1,"source_commit":"%s","qualification_profile":"fixed-true-554-v1","preload_index":"true","historical_false_receipts_relabelled":false,"production_preload_changed":false,"R4_acceptance":false,"retirement_credit":0}\n' "$GITHUB_SHA" > "$proof/git-preload-profile.json"
+hold "$proof/git-preload-profile.json"
 # #554: 동일 Git provider의 의미 비교다. ptrace 성능 개선은 아직 가설이다.
 admit git-preload-fixture 16
 run git-preload-equivalence 90 "${runtime[@]}" /usr/bin/bash --noprofile --norc -euo pipefail -s -- "$proof/git-preload-554" <<'GIT_PRELOAD_554'
@@ -170,7 +172,7 @@ available=$(df -PB1 -- "${base%/*}" | awk 'NR==2 {print $4}')
 ((available >= (16 + 512) * 1024 * 1024))
 mkdir -m 700 -- "$base"
 test "$(stat -c '%u:%a' -- "$base")" = "$UID:700"
-test "$GIT_CONFIG_COUNT:$GIT_CONFIG_KEY_0:$GIT_CONFIG_VALUE_0" = 1:core.preloadIndex:false
+test "$GIT_CONFIG_COUNT:$GIT_CONFIG_KEY_0:$GIT_CONFIG_VALUE_0" = 1:core.preloadIndex:true
 mkdir -m 700 -- "$base/fixture"
 usage() {
   local label=$1 bytes
@@ -259,7 +261,7 @@ available=$(df -PB1 -- "${base%/*}" | awk 'NR==2 {print $4}')
 ((available >= (16 + 512) * 1024 * 1024))
 mkdir -m 700 -- "$base"
 test "$(stat -c '%u:%a' -- "$base")" = "$UID:700"
-test "$GIT_OPTIONAL_LOCKS:$GIT_CONFIG_COUNT:$GIT_CONFIG_KEY_0:$GIT_CONFIG_VALUE_0" = 0:1:core.preloadIndex:false
+test "$GIT_OPTIONAL_LOCKS:$GIT_CONFIG_COUNT:$GIT_CONFIG_KEY_0:$GIT_CONFIG_VALUE_0" = 0:1:core.preloadIndex:true
 usage() {
   local bytes
   bytes=$(du -sx --block-size=1 -- "$base" | cut -f1) || return 1
@@ -468,7 +470,7 @@ done
 test "$(stat -c '%d:%i' -- "$source_owner")" = "$source_identity"
 test -f "$source_owner/.diag296-owner" && test ! -L "$source_owner/.diag296-owner"
 test "$(cat "$source_owner/.diag296-owner")" = "$owner"
-test "$GIT_OPTIONAL_LOCKS:$GIT_CONFIG_COUNT:$GIT_CONFIG_KEY_0:$GIT_CONFIG_VALUE_0" = 0:1:core.preloadIndex:false
+test "$GIT_OPTIONAL_LOCKS:$GIT_CONFIG_COUNT:$GIT_CONFIG_KEY_0:$GIT_CONFIG_VALUE_0" = 0:1:core.preloadIndex:true
 [[ $commit =~ ^[a-f0-9]{40}$ ]]
 git_dir=$root/.git
 test "$(/usr/bin/git rev-parse --absolute-git-dir)" = "$git_dir"
@@ -505,7 +507,7 @@ require_unset() {
 require_unset runtime-config
 # 동결 fixture의 env_clear 뒤 실제 config lookup도 확인한다. 새 runtime 키를 전달하지 않는다.
 fixture_env=(/usr/bin/env -i PATH="$PATH" HOME="$HOME" TMPDIR="$TMPDIR" TZ="$TZ" LANG="$LANG" LC_ALL="$LC_ALL" \
-  GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.preloadIndex GIT_CONFIG_VALUE_0=false)
+  GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.preloadIndex GIT_CONFIG_VALUE_0=true)
 require_unset fixture-config "${fixture_env[@]}"
 raw_index() {
   local label=$1 fd identity hash reader=$BASHPID
@@ -631,7 +633,7 @@ paired_snapshot() (
   test "$(cat "$DIAG_SOURCE_OWNER/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
   if [[ $side == untraced ]]; then
     printf '%s\0' "${runtime[@]}" "${untraced_env[@]}" > "$destination.environment.argv0"
-  elif [[ $side == git-false || $side == git-true ]]; then
+  elif [[ $side == git-false-a1 || $side == git-true-b || $side == git-false-a2 ]]; then
     printf '%s\0' "${git_preload_runtime[@]}" > "$destination.environment.argv0"
   else
     test "$side" = traced
@@ -686,37 +688,61 @@ printf '%s\0' "${runtime[@]}" "${untraced_env[@]}" > "$proof/paired-554/untraced
 printf '%s\0' "${runtime[@]}" "${lifecycle_env[@]}" > "$proof/paired-554/traced/environment.argv0"
 untraced_command=("${runtime[@]}" "${untraced_env[@]}" "$fixture" --ignored --exact retained::runtime_directory_int --test-threads=1 --color=never)
 printf '%s\0' "${untraced_command[@]}" > "$proof/paired-554/untraced/command.argv0"
-# #554 B: 실제 source의 Git만 false→true 각1회 관측한다. fixture의 false-schema는 바꾸지 않는다.
-mkdir -m 700 "$proof/paired-554/git-false" "$proof/paired-554/git-true" "$proof/git-preload-status-554"
+# #554 A/B/A 진단과 fixed-true qualification은 별개다. 세 관측은 각1회이며 빠른 값 선택은 없다.
+git_preload_slots=(false-a1 true-b false-a2)
+mkdir -m 700 "$proof/paired-554/git-false-a1" "$proof/paired-554/git-true-b" "$proof/paired-554/git-false-a2" "$proof/git-preload-status-554"
 mkdir -m 700 "$proof/git-preload-status-554/qa"
 elf git-preload-git /usr/bin/git
 elf git-preload-strace /usr/bin/strace
 grep -F -- --argv0 "$proof/build/strace-help.stdout" > "$proof/git-preload-status-554/argv0-supported.txt"
-for setting in false true; do
+for slot in "${git_preload_slots[@]}"; do
+  case $slot in false-a1|false-a2) setting=false;; true-b) setting=true;; *) exit 1;; esac
   # env_clear 뒤 실제 checker/Git의6+3키 및 QA context만 복제한다. OPTIONAL_LOCKS=0을 새로 넣지 않는다.
   git_preload_runtime=(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" TMPDIR="$TMPDIR" LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC
     GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.preloadIndex GIT_CONFIG_VALUE_0="$setting"
     NATIVE_LOGGING_QA_HOLD=runtime NATIVE_LOGGING_QA_RECORDS="$proof/git-preload-status-554/qa")
-  printf '%s\0' "${git_preload_runtime[@]}" > "$proof/paired-554/git-$setting/environment.argv0"
-  printf '%s\0' "${git_preload_runtime[@]:2}" | jq -Rs 'split("\u0000")[:-1]' > "$proof/paired-554/git-$setting/expected-environment.json"
-  run "git-preload-$setting" 10 "${git_preload_runtime[@]}" /usr/bin/strace --argv0=git --seccomp-bpf --kill-on-exit \
+  printf '%s\0' "${git_preload_runtime[@]}" > "$proof/paired-554/git-$slot/environment.argv0"
+  printf '%s\0' "${git_preload_runtime[@]:2}" | jq -Rs 'split("\u0000")[:-1]' > "$proof/paired-554/git-$slot/expected-environment.json"
+  run "git-preload-$slot" 10 "${git_preload_runtime[@]}" /usr/bin/strace --argv0=git --seccomp-bpf --kill-on-exit \
     -ff -ttt -x -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns \
-    -e raw=read,pread64 -o "$proof/trace/git-preload-$setting" /usr/bin/git status --porcelain --untracked-files=normal
+    -e raw=read,pread64 -o "$proof/trace/git-preload-$slot" /usr/bin/git status --porcelain --untracked-files=normal
 done
 phase=git-preload-channels
 for channel in stdout stderr; do
-  cmp "$proof/build/git-preload-false.$channel" "$proof/build/git-preload-true.$channel"
+  cmp "$proof/build/git-preload-false-a1.$channel" "$proof/build/git-preload-true-b.$channel"
+  cmp "$proof/build/git-preload-false-a1.$channel" "$proof/build/git-preload-false-a2.$channel"
   # stderr에는 tracer 진단도 모인다. nonempty이면 분리/정규화해 허용하지 않는다.
-  test ! -s "$proof/build/git-preload-false.$channel" && test ! -s "$proof/build/git-preload-true.$channel"
+  for slot in "${git_preload_slots[@]}"; do test ! -s "$proof/build/git-preload-$slot.$channel"; done
 done
-cmp "$proof/paired-554/git-false/command.exit" "$proof/paired-554/git-true/command.exit"
-for setting in false true; do
-  run "inspect-git-preload-$setting" 180 "${runtime[@]}" "$checker" inspect-trace-summary --directory "$proof/trace" \
-    --prefix "git-preload-$setting" --output "$proof/git-preload-status-554/$setting.summary.json"
-  phase=git-preload-$setting-bind
-  jq -e --arg root "$source" --arg source "$GITHUB_SHA" --arg setting "$setting" \
-    --slurpfile expected "$proof/paired-554/git-$setting/expected-environment.json" \
-    --slurpfile elapsed "$proof/paired-554/git-$setting/elapsed.json" '
+cmp "$proof/paired-554/git-false-a1/command.exit" "$proof/paired-554/git-true-b/command.exit"
+cmp "$proof/paired-554/git-false-a1/command.exit" "$proof/paired-554/git-false-a2/command.exit"
+phase=git-preload-index-bind
+same_raw_index_bytes=true
+same_raw_index_identity=true
+for slot in "${git_preload_slots[@]}"; do
+  for moment in before after; do
+    if cmp -s -- "$proof/paired-554/git-false-a1/before.index.bin" "$proof/paired-554/git-$slot/$moment.index.bin"; then :; else
+      compare_status=$?; ((compare_status == 1)); same_raw_index_bytes=false
+    fi
+    if cmp -s -- "$proof/paired-554/git-false-a1/before.index.tsv" "$proof/paired-554/git-$slot/$moment.index.tsv"; then :; else
+      compare_status=$?; ((compare_status == 1)); same_raw_index_identity=false
+    fi
+  done
+done
+comparison_disposition=HOLD
+if [[ $same_raw_index_bytes == true && $same_raw_index_identity == true ]]; then comparison_disposition=eligible_observation_only; fi
+# raw index는 복원하지 않는다. 각 read의 불변 검사는 필수이며 slot 간 차이는 성능 비교 HOLD다.
+printf '{"schema":1,"same_raw_index_bytes":%s,"same_raw_index_identity":%s,"performance_comparison":"%s","index_restored":false}\n' \
+  "$same_raw_index_bytes" "$same_raw_index_identity" "$comparison_disposition" > "$proof/git-preload-status-554/raw-index-comparison.json"
+hold "$proof/git-preload-status-554/raw-index-comparison.json"
+for slot in "${git_preload_slots[@]}"; do
+  case $slot in false-a1|false-a2) setting=false;; true-b) setting=true;; *) exit 1;; esac
+  run "inspect-git-preload-$slot" 180 "${runtime[@]}" "$checker" inspect-trace-summary --directory "$proof/trace" \
+    --prefix "git-preload-$slot" --output "$proof/git-preload-status-554/$slot.summary.json"
+  phase=git-preload-$slot-bind
+  jq -e --arg root "$source" --arg source "$GITHUB_SHA" --arg setting "$setting" --arg slot "$slot" \
+    --slurpfile expected "$proof/paired-554/git-$slot/expected-environment.json" \
+    --slurpfile elapsed "$proof/paired-554/git-$slot/elapsed.json" '
     if (.schema==2 and .raw_immutable==true and .requires_exit_status_zero==true and
       .full_event_index==false and .lexically_checked_all_events==true and .event_count>0 and
       .event_count<=1000000 and .physical_lines>=.event_count and .physical_lines<=2000000 and
@@ -734,27 +760,35 @@ for setting in false true; do
       then . else error("Git actual argv/environment differs") end |
     [.events[] | select(.pid==$call.pid and .kind=="terminal_exit")] as $terminal |
     if ($terminal|length)==1 then . else error("Git normal terminal missing") end |
-    {schema:1,source_commit:$source,root:$root,preload_index:$setting,command_exit:0,
+    {schema:1,source_commit:$source,root:$root,slot:$slot,preload_index:$setting,command_exit:0,
      exec_pid:$call.pid,exec_timestamp:$call.source[0].timestamp,terminal_timestamp:$terminal[0].source[0].timestamp,
      exec_to_terminal_seconds:(($terminal[0].source[0].timestamp|tonumber)-($call.source[0].timestamp|tonumber)),
      collector_elapsed:$elapsed[0],raw_files:.raw_files,selected_raw_bytes:.selected_raw_bytes,
      event_count:.event_count,physical_lines:.physical_lines,event_counts:.event_counts,
      diagnostic_only:true,bpf_activation_proven:false,full_event_index:false,closed_pid:false,closed_cwd:false,
      closed_fd:false,closed_dso:false,R4_acceptance:false,runtime_acceptance:false,retirement_credit:0}' \
-    "$proof/git-preload-status-554/$setting.summary.json" > "$proof/git-preload-status-554/$setting.observation.json"
+    "$proof/git-preload-status-554/$slot.summary.json" > "$proof/git-preload-status-554/$slot.observation.json"
 done
-phase=git-preload-pair-bind
-jq -s -e 'if (length==2 and .[0].preload_index=="false" and .[1].preload_index=="true" and
-    .[0].source_commit==.[1].source_commit and .[0].root==.[1].root) then
-    . as $pair | ((.[0].event_counts|keys)+(.[1].event_counts|keys)|unique) as $keys |
-    {schema:1,source_commit:.[0].source_commit,root:.[0].root,order:["false","true"],status_pairs:1,
-     status_channels_equal:true,observations:.,diagnostic_only:true,production_preload_changed:false,
-     true_minus_false:{collector_elapsed_cs:(.[1].collector_elapsed.elapsed_cs-.[0].collector_elapsed.elapsed_cs),
-       exec_to_terminal_seconds:(.[1].exec_to_terminal_seconds-.[0].exec_to_terminal_seconds),
-       event_count:(.[1].event_count-.[0].event_count),
-       event_counts:(reduce $keys[] as $key ({}; .[$key]=(($pair[1].event_counts[$key]//0)-($pair[0].event_counts[$key]//0))))},
+phase=git-preload-aba-bind
+jq -s -e --slurpfile index "$proof/git-preload-status-554/raw-index-comparison.json" '
+    def delta($left;$right):
+      (($left.event_counts|keys)+($right.event_counts|keys)|unique) as $keys |
+      {collector_elapsed_cs:($right.collector_elapsed.elapsed_cs-$left.collector_elapsed.elapsed_cs),
+       exec_to_terminal_seconds:($right.exec_to_terminal_seconds-$left.exec_to_terminal_seconds),
+       event_count:($right.event_count-$left.event_count),
+       event_counts:(reduce $keys[] as $key ({}; .[$key]=(($right.event_counts[$key]//0)-($left.event_counts[$key]//0))))};
+    . as $observations |
+    if (length==3 and (map(.slot)==["false-a1","true-b","false-a2"]) and
+        (map(.preload_index)==["false","true","false"]) and
+        all(.[]; .source_commit==$observations[0].source_commit and .root==$observations[0].root)) then
+    {schema:2,source_commit:.[0].source_commit,root:.[0].root,order:["false-a1","true-b","false-a2"],
+     preload_order:["false","true","false"],status_observations:3,status_comparisons:2,
+     status_channels_equal:true,observations:.,raw_index_comparison:$index[0],diagnostic_only:true,
+     qualification_profile:"fixed-true-554-v1",qualification_preload_index:"true",qualification_profile_changed:true,
+     historical_false_receipts_relabelled:false,production_preload_changed:false,full_lifecycle_causality_proven:false,
+     true_b_minus_false_a1:delta(.[0];.[1]),true_b_minus_false_a2:delta(.[2];.[1]),false_a2_minus_false_a1:delta(.[0];.[2]),
      performance_claim:false,root_cause_fixed:false,runtime_acceptance:false,R4_acceptance:false,retirement_credit:0}
-    else error("Git diagnostic pair differs") end' "$proof/git-preload-status-554/"{false,true}.observation.json \
+    else error("Git diagnostic A/B/A differs") end' "$proof/git-preload-status-554/"{false-a1,true-b,false-a2}.observation.json \
     > "$proof/git-preload-status-554/complete.json"
 verify_held
 hold "$proof/git-preload-status-554/complete.json"
