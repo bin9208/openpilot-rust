@@ -31,6 +31,10 @@ const RECOVERY_ZIP: &str = "05ff6420f05f8b51f457b85ecf34ad514bc75b6b6147e4abf5d8
 const PROOF_GZIP: &str = "2dfea2b755d8267132c81a240a84d1fb4f653cc4373f3d2328bc11891f7b1879";
 const PROBE: &str = "rust/crates/logging/examples/native_logging_probe.rs";
 const CPP_SITE: &str = "rust/tools/native_logging_reference.cc";
+const SOURCE_LEAVES: [&str; 2] = [
+    "rust/tools/check_native_logging.py",
+    "rust/tools/native_logging_transport.py",
+];
 // This is an import/source scope, not a claim of complete Cargo/DSO closure.
 const SOURCE_FILES: &[&str] = &[
     "rust/Cargo.toml",
@@ -846,6 +850,233 @@ impl HeldFile {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum SourcePolicy {
+    Present,
+    Absent,
+}
+impl SourcePolicy {
+    pub(super) fn parse(value: Option<&std::ffi::OsStr>) -> Result<Self> {
+        match value.and_then(std::ffi::OsStr::to_str) {
+            None if value.is_none() => Ok(Self::Present),
+            Some("present") => Ok(Self::Present),
+            Some("absent") => Ok(Self::Absent),
+            _ => Err(crate::argparse_scan::ArgumentError(
+                "--source-policy must be present or absent".into(),
+            )
+            .into()),
+        }
+    }
+    pub(super) fn as_str(self) -> &'static str {
+        match self {
+            Self::Present => "present",
+            Self::Absent => "absent",
+        }
+    }
+}
+const SOURCE_PARENT_ERROR: &str = "logging source parent boundary invalid";
+fn source_node(meta: &fs::Metadata) -> (u64, u64, u32, u32, u32) {
+    (meta.dev(), meta.ino(), meta.mode(), meta.uid(), meta.gid())
+}
+// Preserve the legacy ../.. spelling while refusing symlinks before canonicalize
+// could hide them. No source file is opened by this directory-only walk.
+fn source_root(path: &Path) -> Result<(PathBuf, File)> {
+    let path = std::path::absolute(path).map_err(|_| SOURCE_PARENT_ERROR)?;
+    let mut fd = File::open("/").map_err(|_| SOURCE_PARENT_ERROR)?;
+    for part in path.components() {
+        let name = match part {
+            Component::RootDir | Component::CurDir => continue,
+            Component::Normal(name) => name,
+            Component::ParentDir => std::ffi::OsStr::new(".."),
+            _ => return Err(SOURCE_PARENT_ERROR.into()),
+        };
+        fd = File::from(
+            rustix::fs::openat(
+                &fd,
+                Path::new(name),
+                rustix::fs::OFlags::RDONLY
+                    | rustix::fs::OFlags::DIRECTORY
+                    | rustix::fs::OFlags::NOFOLLOW
+                    | rustix::fs::OFlags::NONBLOCK
+                    | rustix::fs::OFlags::CLOEXEC,
+                rustix::fs::Mode::empty(),
+            )
+            .map_err(|_| SOURCE_PARENT_ERROR)?,
+        );
+    }
+    let canonical = path.canonicalize().map_err(|_| SOURCE_PARENT_ERROR)?;
+    let (current, _) = walk(&canonical, true).map_err(|_| SOURCE_PARENT_ERROR)?;
+    require(
+        source_node(&fd.metadata()?) == source_node(&current.metadata()?),
+        SOURCE_PARENT_ERROR,
+    )?;
+    Ok((canonical, fd))
+}
+struct SourceParent {
+    path: PathBuf,
+    file: File,
+    anchors: Vec<Node>,
+    identity: (u64, u64, u32, u32, u32),
+}
+impl SourceParent {
+    fn open(path: PathBuf) -> Result<Self> {
+        let (file, anchors) = walk(&path, true).map_err(|_| SOURCE_PARENT_ERROR)?;
+        let metadata = file.metadata()?;
+        require(
+            metadata.uid() == fs::metadata("/proc/self")?.uid() && metadata.mode() & 0o022 == 0,
+            SOURCE_PARENT_ERROR,
+        )?;
+        Ok(Self {
+            path,
+            file,
+            anchors,
+            identity: source_node(&metadata),
+        })
+    }
+    fn verify(&self) -> Result<()> {
+        let (current, anchors) = walk(&self.path, true).map_err(|_| SOURCE_PARENT_ERROR)?;
+        require(
+            anchors == self.anchors
+                && source_node(&current.metadata()?) == self.identity
+                && source_node(&self.file.metadata()?) == self.identity,
+            SOURCE_PARENT_ERROR,
+        )
+    }
+}
+pub(super) struct SourceGuard {
+    requested: PathBuf,
+    root: PathBuf,
+    policy: SourcePolicy,
+    parents: Vec<SourceParent>,
+    present: Vec<(HeldFile, Value)>,
+    failure: std::cell::RefCell<Option<String>>,
+}
+impl SourceGuard {
+    pub(super) fn open(root: &Path, policy: SourcePolicy) -> Result<Self> {
+        let requested = std::path::absolute(root).map_err(|_| SOURCE_PARENT_ERROR)?;
+        let (root, raw) = source_root(&requested)?;
+        let parents = [root.clone(), root.join("rust"), root.join("rust/tools")]
+            .into_iter()
+            .map(SourceParent::open)
+            .collect::<Result<Vec<_>>>()?;
+        require(
+            source_node(&raw.metadata()?) == parents[0].identity,
+            SOURCE_PARENT_ERROR,
+        )?;
+        let mut present = Vec::new();
+        if policy == SourcePolicy::Present {
+            for name in SOURCE_LEAVES {
+                let file = HeldFile::open(&root.join(name), 2 * 1024 * 1024)
+                    .map_err(|_| format!("logging source present file invalid: {name}"))?;
+                let before = file
+                    .snapshot()
+                    .map_err(|_| format!("logging source present file invalid: {name}"))?;
+                present.push((file, before));
+            }
+        }
+        let guard = Self {
+            requested,
+            root,
+            policy,
+            parents,
+            present,
+            failure: std::cell::RefCell::new(None),
+        };
+        guard.verify()?;
+        Ok(guard)
+    }
+    pub(super) fn root(&self) -> &Path {
+        &self.root
+    }
+    pub(super) fn verify(&self) -> Result<()> {
+        if let Some(error) = self.failure.borrow().as_ref() {
+            return Err(error.clone().into());
+        }
+        let result = self.verify_current();
+        if let Err(error) = &result {
+            *self.failure.borrow_mut() = Some(error.to_string());
+        }
+        result
+    }
+    fn verify_current(&self) -> Result<()> {
+        let (root, current) = source_root(&self.requested)?;
+        require(
+            root == self.root && source_node(&current.metadata()?) == self.parents[0].identity,
+            SOURCE_PARENT_ERROR,
+        )?;
+        for parent in &self.parents {
+            parent.verify()?;
+        }
+        match self.policy {
+            SourcePolicy::Present => {
+                for ((file, before), name) in self.present.iter().zip(SOURCE_LEAVES) {
+                    let after = file
+                        .snapshot()
+                        .map_err(|_| format!("logging source present file changed: {name}"))?;
+                    require(
+                        &after == before,
+                        &format!("logging source present file changed: {name}"),
+                    )?;
+                }
+            }
+            SourcePolicy::Absent => {
+                let parent = &self.parents[2];
+                for name in SOURCE_LEAVES {
+                    let leaf = Path::new(name).file_name().ok_or(SOURCE_PARENT_ERROR)?;
+                    match rustix::fs::statat(
+                        &parent.file,
+                        Path::new(leaf),
+                        rustix::fs::AtFlags::SYMLINK_NOFOLLOW,
+                    ) {
+                        Err(rustix::io::Errno::NOENT) => {}
+                        Ok(_) => {
+                            return Err(format!("logging retired source reappeared: {name}").into())
+                        }
+                        Err(_) => {
+                            return Err(
+                                format!("logging source absence inspection failed: {name}").into()
+                            )
+                        }
+                    }
+                    match fs::symlink_metadata(self.root.join(name)) {
+                        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                        Ok(_) => {
+                            return Err(format!("logging retired source reappeared: {name}").into())
+                        }
+                        Err(_) => {
+                            return Err(
+                                format!("logging source absence inspection failed: {name}").into()
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        for parent in &self.parents {
+            parent.verify()?;
+        }
+        Ok(())
+    }
+    pub(super) fn complete<T>(&self, actual: Result<T>) -> Result<T> {
+        checked_result(actual, self.verify())
+    }
+}
+// Always evaluate the final check, but never replace the first command failure.
+pub(super) fn checked_result<T>(actual: Result<T>, final_check: Result<()>) -> Result<T> {
+    match actual {
+        Err(error) => {
+            if let Err(secondary) = final_check {
+                eprintln!("logging final check after failure: {secondary}");
+            }
+            Err(error)
+        }
+        Ok(value) => {
+            final_check?;
+            Ok(value)
+        }
+    }
+}
+
 fn layout(root: &Path, names: &BTreeSet<String>) -> Result<()> {
     let mut pending = vec![root.to_path_buf()];
     let mut actual = BTreeSet::new();
@@ -1262,6 +1493,7 @@ fn run_args(args: &[OsString]) -> Result<()> {
             OptionSpec::value("--root", true),
             OptionSpec::value("--source-commit", true),
             OptionSpec::value("--binary-sha256", true),
+            OptionSpec::value("--source-policy", false),
         ],
     )
     .map_err(|error| {
@@ -1281,7 +1513,7 @@ fn run_args(args: &[OsString]) -> Result<()> {
     })?;
     if parsed.help {
         println!(
-            "usage: check-native-logging retained --binary BINARY --root ROOT --context INDEX --output OUTPUT --source-commit SHA40 --binary-sha256 SHA256"
+            "usage: check-native-logging retained --binary BINARY --root ROOT --context INDEX --output OUTPUT --source-commit SHA40 --binary-sha256 SHA256 [--source-policy present|absent]"
         );
         return Ok(());
     }
@@ -1304,98 +1536,120 @@ fn run_args(args: &[OsString]) -> Result<()> {
         "retained source/provider pin invalid",
     )?;
     fresh_provider_pin(binary_sha)?;
-    let inputs = Inputs::open(&context, &root)?;
-    let provider_file = HeldFile::open(&binary, 512 * 1024 * 1024)?;
-    let provider = HeldBinary::open(&binary)?;
-    let provider_before = provider.snapshot()?;
-    let provider_file_before = provider_file.snapshot()?;
-    require(
-        provider_before["sha256"] == binary_sha
-            && provider_file_before["sha256"] == binary_sha
-            && provider_before["dev"] == provider_file_before["dev"]
-            && provider_before["ino"] == provider_file_before["ino"],
-        "fresh native ELF pin differs",
+    let policy = SourcePolicy::parse(
+        parsed
+            .values
+            .get("--source-policy")
+            .map(OsString::as_os_str),
     )?;
-    let corpus = Corpus::load(&inputs)?; // Every inert predicate precedes native traffic.
-    inputs.unchanged()?;
-    require(
-        provider.snapshot()? == provider_before,
-        "native provider changed before launch",
-    )?;
-    let _cancel = lifecycle::Cancel::new()?;
-    let source_before = source_state(&root, commit)?;
-    use std::os::unix::fs::DirBuilderExt;
-    fs::DirBuilder::new().mode(0o700).create(&output)?;
-    let (output_directory, output_parents) = walk(&output, true)?;
-    save(
-        &output_directory,
-        "providers.before.json",
-        &json!([provider_before]),
-    )?;
-    save(
-        &output_directory,
-        "context-inputs.before.json",
-        &inputs.before,
-    )?;
-    save(
-        &output_directory,
-        "source-state.before.json",
-        &source_before,
-    )?;
-    // Execute only the held, freshly built native inode. This descriptor is
-    // inherited until exec; CLOEXEC closes it after the kernel loads the ELF.
-    let launch = PathBuf::from(format!("/proc/self/fd/{}", provider.file.as_raw_fd()));
-    let actual = compare_native(&corpus, &inputs, &launch, &root, &output, commit);
-    lifecycle::reaped()?;
-    lifecycle::check()?;
-    let source_after = source_state(&root, commit)?;
-    require(
-        source_before == source_after,
-        "fresh source root/state changed",
-    )?;
-    let provider_after = provider.snapshot()?;
-    let inputs_after = inputs.unchanged()?;
-    let (output_after, parents_after) = walk(&output, true)?;
-    require(
-        output_parents == parents_after
-            && node(&output_directory.metadata()?) == node(&output_after.metadata()?),
-        "retained output root changed",
-    )?;
-    require(
-        provider_after == provider_before && provider_file.snapshot()? == provider_file_before,
-        "fresh native provider changed",
-    )?;
-    save(
-        &output_directory,
-        "providers.after.json",
-        &json!([provider_after]),
-    )?;
-    save(
-        &output_directory,
-        "context-inputs.after.json",
-        &inputs_after,
-    )?;
-    save(&output_directory, "source-state.after.json", &source_after)?;
-    let mut report = actual?;
-    report["result"] = json!("pass: retained native comparison only");
-    report["R4_acceptance"] = json!(false);
-    report["lifecycle_reuse_granted"] = json!(false);
-    report["source_commit"] = json!(commit);
-    report["native_binary_sha256"] = json!(binary_sha);
-    report["native_exec_path"] = json!(launch);
-    report["recovery_run"] = json!(39894886676_u64);
-    report["cpp_executions"] = json!(0);
-    report["limits"] = json!([
-        "same-UID visible checks; no hostile same-UID/privileged mutation exclusion",
-        "historical original root inode unrecorded; recovery did not revalidate current source",
-        "import source roster is not complete Cargo/DSO/build provenance",
-        "old units/grammar/31 controls/17 cases remain conditionally attributed to their original contexts; none reused by this command",
-        "lifecycle case ledger, exact descendant trace, complete seal/upload and parent admission remain external R4 gates",
-        "UTF8 host and existing fixture/projection scope only"
-    ]);
-    save(&output_directory, "report.json", &report)?;
-    println!("{report}");
-    Ok(())
+    let source_guard = SourceGuard::open(&root, policy)?;
+    let actual = (|| -> Result<()> {
+        let inputs = Inputs::open(&context, &root)?;
+        let provider_file = HeldFile::open(&binary, 512 * 1024 * 1024)?;
+        let provider = HeldBinary::open(&binary)?;
+        let provider_before = provider.snapshot()?;
+        let provider_file_before = provider_file.snapshot()?;
+        require(
+            provider_before["sha256"] == binary_sha
+                && provider_file_before["sha256"] == binary_sha
+                && provider_before["dev"] == provider_file_before["dev"]
+                && provider_before["ino"] == provider_file_before["ino"],
+            "fresh native ELF pin differs",
+        )?;
+        let corpus = Corpus::load(&inputs)?; // Every inert predicate precedes native traffic.
+        inputs.unchanged()?;
+        require(
+            provider.snapshot()? == provider_before,
+            "native provider changed before launch",
+        )?;
+        let _cancel = lifecycle::Cancel::new()?;
+        source_guard.verify()?;
+        let source_before = source_state(&root, commit)?;
+        use std::os::unix::fs::DirBuilderExt;
+        source_guard.verify()?;
+        fs::DirBuilder::new().mode(0o700).create(&output)?;
+        let (output_directory, output_parents) = walk(&output, true)?;
+        save(
+            &output_directory,
+            "providers.before.json",
+            &json!([provider_before]),
+        )?;
+        save(
+            &output_directory,
+            "context-inputs.before.json",
+            &inputs.before,
+        )?;
+        save(
+            &output_directory,
+            "source-state.before.json",
+            &source_before,
+        )?;
+        // Execute only the held, freshly built native inode. This descriptor is
+        // inherited until exec; CLOEXEC closes it after the kernel loads the ELF.
+        let launch = PathBuf::from(format!("/proc/self/fd/{}", provider.file.as_raw_fd()));
+        source_guard.verify()?;
+        let actual = compare_native(&corpus, &inputs, &launch, &root, &output, commit);
+        let final_checks = (|| -> Result<()> {
+            lifecycle::reaped()?;
+            lifecycle::check()?;
+            let source_after = source_state(&root, commit)?;
+            require(
+                source_before == source_after,
+                "fresh source root/state changed",
+            )?;
+            let provider_after = provider.snapshot()?;
+            let inputs_after = inputs.unchanged()?;
+            let (output_after, parents_after) = walk(&output, true)?;
+            require(
+                output_parents == parents_after
+                    && node(&output_directory.metadata()?) == node(&output_after.metadata()?),
+                "retained output root changed",
+            )?;
+            require(
+                provider_after == provider_before
+                    && provider_file.snapshot()? == provider_file_before,
+                "fresh native provider changed",
+            )?;
+            save(
+                &output_directory,
+                "providers.after.json",
+                &json!([provider_after]),
+            )?;
+            save(
+                &output_directory,
+                "context-inputs.after.json",
+                &inputs_after,
+            )?;
+            save(&output_directory, "source-state.after.json", &source_after)?;
+            Ok(())
+        })();
+        let mut report = checked_result(actual, final_checks)?;
+        report["result"] = json!("pass: retained native comparison only");
+        report["R4_acceptance"] = json!(false);
+        report["lifecycle_reuse_granted"] = json!(false);
+        report["source_commit"] = json!(commit);
+        report["native_binary_sha256"] = json!(binary_sha);
+        report["native_exec_path"] = json!(launch);
+        report["recovery_run"] = json!(39894886676_u64);
+        report["cpp_executions"] = json!(0);
+        report["limits"] = json!([
+            "same-UID visible checks; no hostile same-UID/privileged mutation exclusion",
+            "historical original root inode unrecorded; recovery did not revalidate current source",
+            "import source roster is not complete Cargo/DSO/build provenance",
+            "old units/grammar/31 controls/17 cases remain conditionally attributed to their original contexts; none reused by this command",
+            "lifecycle case ledger, exact descendant trace, complete seal/upload and parent admission remain external R4 gates",
+            "UTF8 host and existing fixture/projection scope only"
+        ]);
+        source_guard.verify()?;
+        report["source_policy"] = json!(policy.as_str());
+        save(&output_directory, "report.json", &report)?;
+        println!("{report}");
+        Ok(())
+    })();
+    match actual {
+        Ok(()) => Ok(()),
+        Err(error) => source_guard.complete(Err(error)),
+    }
 }
 fn source_state(root: &Path, commit: &str) -> Result<Value> {
     require(

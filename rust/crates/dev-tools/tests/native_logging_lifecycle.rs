@@ -473,3 +473,7 @@ fn actual_cli_foreign_output_collisions_precede_builder_or_provider_work() {
 // Explicit retained selectors never alter the default legacy fixture.
 #[path = "native_logging_lifecycle/retained.rs"]
 mod retained;
+
+// Separate metadata/CLI controls; never part of the original lifecycle loops.
+#[path = "native_logging_lifecycle/source_absence.rs"]
+mod source_absence;

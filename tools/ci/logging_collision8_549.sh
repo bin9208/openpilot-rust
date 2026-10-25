@@ -595,7 +595,7 @@ baseline=true
 case_env=()
 printf '%s  %s\n' 81bc4b7a6f9541f61a27d96ffb2edbcdfe1ab1ea3a4b97f1dc48725e7a0a0a44 "$source/rust/crates/dev-tools/src/native_logging_build.rs" \
   9660eaa99116198dc5471b55d8048b3d19a9997568d1806aa6fe8bdac81d5469 "$source/rust/crates/dev-tools/src/json11_stage.rs" \
-  b6031484652376dd40eeb8074f3449ebdfb5c4fc225c5441f8d01ed78058f4a8 "$source/rust/crates/dev-tools/tests/native_logging_lifecycle.rs" \
+  cca0c05f5884b8b2d6b0a699c611e521af8e7c4ce3b349f1c9e647993940309f "$source/rust/crates/dev-tools/tests/native_logging_lifecycle.rs" \
   3d3a7e31e04e654a86ed332fb8b97d67f5648905ee0b276bc53cfbc87fe5dcdf "$source/uv.lock" \
   | sha256sum --check --strict --quiet -
 run strace-help 30 none unused unused build /usr/bin/strace --help

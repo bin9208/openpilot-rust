@@ -5,6 +5,245 @@ use std::os::unix::{
     fs::{symlink, PermissionsExt},
 };
 
+fn source_guard_fixture(present: bool) -> tempfile::TempDir {
+    let root = tempfile::tempdir().unwrap();
+    fs::set_permissions(root.path(), fs::Permissions::from_mode(0o700)).unwrap();
+    fs::create_dir_all(root.path().join("rust/tools")).unwrap();
+    if present {
+        for name in SOURCE_LEAVES {
+            // Guard metadata only: no original Python body or functional expected.
+            fs::write(root.path().join(name), b"inert source marker\n").unwrap();
+        }
+    }
+    root
+}
+
+#[test]
+fn source_policy_schema_defaults_and_rejects_unknown_values() {
+    assert_eq!(SourcePolicy::parse(None).unwrap(), SourcePolicy::Present);
+    for (text, expected) in [
+        ("present", SourcePolicy::Present),
+        ("absent", SourcePolicy::Absent),
+    ] {
+        assert_eq!(
+            SourcePolicy::parse(Some(std::ffi::OsStr::new(text))).unwrap(),
+            expected
+        );
+        assert_eq!(expected.as_str(), text);
+    }
+    for value in [
+        OsString::from(""),
+        "auto".into(),
+        "ABSENT".into(),
+        OsString::from_vec(vec![0xff]),
+    ] {
+        let error = SourcePolicy::parse(Some(&value)).unwrap_err();
+        assert!(error.is::<crate::argparse_scan::ArgumentError>());
+        assert_eq!(
+            error.to_string(),
+            "--source-policy must be present or absent"
+        );
+    }
+}
+
+#[test]
+fn source_policy_present_markers_and_absent_root_are_guard_metadata_only() {
+    let root = source_guard_fixture(true);
+    let guard = SourceGuard::open(root.path(), SourcePolicy::Present).unwrap();
+    guard.verify().unwrap();
+    assert_eq!(guard.root(), root.path());
+    // Legacy authored argv uses this existing parent-component spelling.
+    SourceGuard::open(&root.path().join("rust/tools/../.."), SourcePolicy::Present)
+        .unwrap()
+        .verify()
+        .unwrap();
+    let absent = source_guard_fixture(false);
+    let guard = SourceGuard::open(absent.path(), SourcePolicy::Absent).unwrap();
+    guard.verify().unwrap();
+    assert!(SOURCE_LEAVES
+        .iter()
+        .all(|name| fs::symlink_metadata(absent.path().join(name)).is_err()));
+}
+
+#[test]
+fn source_policy_present_detects_rewrite_replacement_and_hardlink_alias() {
+    for change in ["rewrite", "replace", "hardlink"] {
+        let root = source_guard_fixture(true);
+        let path = root.path().join(SOURCE_LEAVES[0]);
+        let guard = SourceGuard::open(root.path(), SourcePolicy::Present).unwrap();
+        match change {
+            "rewrite" => fs::write(&path, b"other source marker\n").unwrap(),
+            "replace" => {
+                fs::rename(&path, root.path().join("old-inode")).unwrap();
+                fs::write(&path, b"inert source marker\n").unwrap();
+            }
+            "hardlink" => fs::hard_link(&path, root.path().join("alias")).unwrap(),
+            _ => unreachable!(),
+        }
+        let expected = format!("logging source present file changed: {}", SOURCE_LEAVES[0]);
+        assert_eq!(guard.verify().unwrap_err().to_string(), expected);
+        assert_eq!(guard.verify().unwrap_err().to_string(), expected);
+        let first: Result<()> = Err("original command failure".into());
+        assert_eq!(
+            guard.complete(first).unwrap_err().to_string(),
+            "original command failure"
+        );
+    }
+}
+
+#[test]
+fn source_policy_absent_rejects_nodes_and_keeps_reappearance_sticky() {
+    for name in SOURCE_LEAVES {
+        for kind in ["regular", "directory", "symlink", "dangling"] {
+            let root = source_guard_fixture(false);
+            let path = root.path().join(name);
+            let guard = SourceGuard::open(root.path(), SourcePolicy::Absent).unwrap();
+            match kind {
+                "regular" => fs::write(&path, b"reappeared inert entry").unwrap(),
+                "directory" => fs::create_dir(&path).unwrap(),
+                "symlink" => symlink(root.path(), &path).unwrap(),
+                "dangling" => symlink("missing-target", &path).unwrap(),
+                _ => unreachable!(),
+            }
+            let expected = format!("logging retired source reappeared: {name}");
+            assert_eq!(guard.verify().unwrap_err().to_string(), expected);
+            let rejected = SourceGuard::open(root.path(), SourcePolicy::Absent)
+                .err()
+                .unwrap();
+            assert_eq!(rejected.to_string(), expected);
+            if kind == "directory" {
+                fs::remove_dir(&path).unwrap();
+            } else {
+                fs::remove_file(&path).unwrap();
+            }
+            assert_eq!(guard.verify().unwrap_err().to_string(), expected);
+            assert_eq!(guard.complete(Ok(())).unwrap_err().to_string(), expected);
+        }
+    }
+}
+
+#[test]
+fn source_policy_parent_alias_replacement_and_special_leaf_fail_closed() {
+    let replacement = source_guard_fixture(false);
+    let replacement_guard = SourceGuard::open(replacement.path(), SourcePolicy::Absent).unwrap();
+    fs::rename(
+        replacement.path().join("rust/tools"),
+        replacement.path().join("original-tools"),
+    )
+    .unwrap();
+    fs::create_dir(replacement.path().join("rust/tools")).unwrap();
+    assert_eq!(
+        replacement_guard.verify().unwrap_err().to_string(),
+        SOURCE_PARENT_ERROR
+    );
+    let permissions = source_guard_fixture(false);
+    let permissions_guard = SourceGuard::open(permissions.path(), SourcePolicy::Absent).unwrap();
+    fs::set_permissions(
+        permissions.path().join("rust/tools"),
+        fs::Permissions::from_mode(0),
+    )
+    .unwrap();
+    let error = permissions_guard.verify().unwrap_err().to_string();
+    fs::set_permissions(
+        permissions.path().join("rust/tools"),
+        fs::Permissions::from_mode(0o700),
+    )
+    .unwrap();
+    assert_eq!(error, SOURCE_PARENT_ERROR);
+    let root = source_guard_fixture(false);
+    let guard = SourceGuard::open(root.path(), SourcePolicy::Absent).unwrap();
+    fs::rename(
+        root.path().join("rust/tools"),
+        root.path().join("old-tools"),
+    )
+    .unwrap();
+    symlink(
+        root.path().join("old-tools"),
+        root.path().join("rust/tools"),
+    )
+    .unwrap();
+    assert_eq!(
+        guard.verify().unwrap_err().to_string(),
+        "logging source parent boundary invalid"
+    );
+    assert_eq!(
+        SourceGuard::open(root.path(), SourcePolicy::Absent)
+            .err()
+            .unwrap()
+            .to_string(),
+        "logging source parent boundary invalid"
+    );
+    fs::remove_file(root.path().join("rust/tools")).unwrap();
+    fs::create_dir(root.path().join("rust/tools")).unwrap();
+    assert_eq!(
+        guard.verify().unwrap_err().to_string(),
+        "logging source parent boundary invalid"
+    );
+    let alias = root.path().join("root-alias");
+    symlink(root.path(), &alias).unwrap();
+    assert_eq!(
+        SourceGuard::open(&alias, SourcePolicy::Absent)
+            .err()
+            .unwrap()
+            .to_string(),
+        "logging source parent boundary invalid"
+    );
+    for policy in [SourcePolicy::Present, SourcePolicy::Absent] {
+        let root = source_guard_fixture(policy == SourcePolicy::Present);
+        let path = root.path().join(SOURCE_LEAVES[0]);
+        if policy == SourcePolicy::Present {
+            fs::remove_file(&path).unwrap();
+        }
+        rustix::fs::mkfifoat(
+            rustix::fs::CWD,
+            &path,
+            rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+        )
+        .unwrap();
+        assert!(SourceGuard::open(root.path(), policy).is_err());
+    }
+}
+
+#[test]
+fn source_policy_admission_keeps_required_help_unknown_and_occupied_priorities() {
+    assert!(run_args(&["--help".into(), "--source-policy".into(), "unknown".into()]).is_ok());
+    assert_eq!(
+        run_args(&["--source-policy".into(), "absent".into()])
+            .unwrap_err()
+            .to_string(),
+        "--binary required"
+    );
+    let root = source_guard_fixture(false);
+    let output = root.path().join("occupied");
+    fs::write(&output, b"foreign").unwrap();
+    let mut args: Vec<OsString> = vec![
+        "--root".into(),
+        root.path().as_os_str().to_owned(),
+        "--binary".into(),
+        "/missing/provider".into(),
+        "--context".into(),
+        "/missing/context".into(),
+        "--output".into(),
+        output.clone().into_os_string(),
+        "--source-commit".into(),
+        "a".repeat(40).into(),
+        "--binary-sha256".into(),
+        "b".repeat(64).into(),
+        "--source-policy".into(),
+        "unknown".into(),
+    ];
+    assert_eq!(
+        run_args(&args).unwrap_err().to_string(),
+        "logging evidence output already exists"
+    );
+    args.extend(["--unknown-source-option".into()]);
+    assert_eq!(
+        run_args(&args).unwrap_err().to_string(),
+        "unrecognized arguments"
+    );
+    assert_eq!(fs::read(output).unwrap(), b"foreign");
+}
+
 #[test]
 fn dispatch_requires_the_first_literal_not_a_later_argument() {
     assert!(selected(&["retained".into(), "--help".into()]));

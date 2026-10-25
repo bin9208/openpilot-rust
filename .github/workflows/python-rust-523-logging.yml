@@ -218,7 +218,7 @@ jobs:
         }
         trap finish EXIT
         policy=$DIAG_SOURCE/tools/ci/logging_retained_exec_policy_549.jq
-        policy_sha=23efe5d4bf093d793e1943c49952c75311711f8420bea5f2438da2762fb03638
+        policy_sha=f34fba101f712e6434199b2336c8736c581b9bc4549edde32b0c9f9b5aec99e6
         test -f "$policy" && test ! -L "$policy"
         printf '%s  %s\n' "$policy_sha" "$policy" > "$proof/policy.sha256"
         sha256sum --check --strict "$proof/policy.sha256" > "$proof/policy-check.before.txt"
@@ -322,9 +322,10 @@ jobs:
         set -euo pipefail
         umask 077
         # 첫 candidate의 실제 결과를 수집한다. old27/P2/closed-trace/caller/absence 수용은 별도다.
-        printf '%s  %s\n' daddac5fbbe3ada80386a1ad1853b1a5ab4f35e864a0ce7ff00ec9cb53d50fe0 tools/ci/logging_retained_549.sh | sha256sum --check --strict -
-        printf '%s  %s\n' 23efe5d4bf093d793e1943c49952c75311711f8420bea5f2438da2762fb03638 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check --strict -
+        printf '%s  %s\n' 5c3df0fcd25c5aeac367d84a735e85ed44dd4ee20c89fad8ebc52d1482b3dc4f tools/ci/logging_retained_549.sh | sha256sum --check --strict -
+        printf '%s  %s\n' f34fba101f712e6434199b2336c8736c581b9bc4549edde32b0c9f9b5aec99e6 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check --strict -
         /usr/bin/timeout --signal=TERM --kill-after=180s 60m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh
+        jq -e '.schema==1 and .selected_units==67 and .retained_units==27 and .prepare_units==9 and .trace_units==24 and .summary_units==7 and .ignored==0 and .exact_rosters==true' "$CI_JOB_TEMP/proof/logging/selected-units.json"
         jq -e '.schema==1 and .states==8 and .status_pairs==8 and .authored_status_equal==true and .fs_check_passed==true and .fixture_cap_bytes==16777216 and .source_prime==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-cache-554/complete.json"
         jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .fs_check_passed==true and .source_prime_statuses==1 and .status_channels_equal==true and .tracked_source_entries_flags_equal==true and .source_config_unchanged==true and .sdk_equal==true and .raw_index_immutable==false and .fixture_child_optional_locks_zero==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-source-cache-554/complete.json"
         jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .qualification_profile=="fixed-true-554-v1" and .preload_index=="true" and .historical_false_receipts_relabelled==false and .production_preload_changed==false and .R4_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-preload-profile.json"
@@ -353,11 +354,22 @@ jobs:
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
-        printf '%s  %s\n' daddac5fbbe3ada80386a1ad1853b1a5ab4f35e864a0ce7ff00ec9cb53d50fe0 tools/ci/logging_retained_549.sh | sha256sum --check --strict --quiet -
+        printf '%s  %s\n' 5c3df0fcd25c5aeac367d84a735e85ed44dd4ee20c89fad8ebc52d1482b3dc4f tools/ci/logging_retained_549.sh | sha256sum --check --strict --quiet -
         /usr/bin/timeout --signal=TERM --kill-after=180s 30m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh legacy-runtime2
         proof=$CI_JOB_TEMP/proof/logging-legacy-runtime2
         jq -e '.schema==1 and .mode=="legacy-runtime2" and .phase=="legacy-runtime2-observed" and .exit_code==0 and .source_sdk_final_exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .provider_alias_final_exit_code==0 and .resource_final_exit_code==0 and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$proof/outcome.json"
         jq -e --arg source "$GITHUB_SHA" '.schema==1 and .mode=="legacy-runtime2" and .source_commit==$source and .logical_cases==2 and .logical_commands==2 and .libtest_passed==2 and .signal_order==["INT","TERM"] and .trace_prefixes==["legacy-runtime2-int","legacy-runtime2-term"] and .aggregate_limit_seconds==600 and .resume=="39833849895" and .selector=="actual_cli_int_term_reap_held_producer_and_preserve_runtime_foreign_replacement" and .prior_fd_continuity_claimed==false and .old17_reexecuted==false and .collision8_reexecuted==false and .retained14_reexecuted==false and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$proof/complete.json"
+    - name: Verify current native source guard CLI20 without executing producers
+      id: source_guard
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.qualify.outcome == 'success' && steps.legacy_runtime2.outcome == 'success') }}
+      timeout-minutes: 15
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        printf '%s  %s\n' 5c3df0fcd25c5aeac367d84a735e85ed44dd4ee20c89fad8ebc52d1482b3dc4f tools/ci/logging_retained_549.sh | sha256sum --check --strict --quiet -
+        printf '%s  %s\n' f34fba101f712e6434199b2336c8736c581b9bc4549edde32b0c9f9b5aec99e6 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check --strict --quiet -
+        /usr/bin/timeout --signal=TERM --kill-after=30s 14m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh source-guard
     - name: Seal source and index after all attempted contracts
       id: source_final
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
@@ -393,6 +405,29 @@ jobs:
         proof_bytes=$(du -sx --block-size=1 "$CI_JOB_TEMP/proof" | cut -f1)
         [[ $proof_bytes =~ ^[0-9]+$ ]]
         ((proof_bytes <= 2 * 1024 * 1024 * 1024))
+    - name: Bind source guard rejection controls to final source and SDK seals
+      id: source_guard_closure
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        SOURCE_GUARD_OUTCOME: ${{ steps.source_guard.outcome }}
+        SOURCE_FINAL_OUTCOME: ${{ steps.source_final.outcome }}
+        SDK_FINAL_OUTCOME: ${{ steps.prepared_rust_final.outcome }}
+      run: |
+        set -euo pipefail
+        test "$SOURCE_GUARD_OUTCOME:$SOURCE_FINAL_OUTCOME:$SDK_FINAL_OUTCOME" = success:success:success
+        proof=$CI_JOB_TEMP/proof/logging-source-absence
+        jq -e '.schema==1 and .mode=="source-guard" and .phase=="source-guard-observed" and .exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .copy_final_exit_code==0 and .resource_final_exit_code==0 and .postdelete_full_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$proof/outcome.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .actual_cli_rejections==20 and .paths==2 and .node_variants==5 and .modes==["retained","legacy"] and .providers_unchanged==true and .source_parents_unchanged==true and .outputs_absent==true and .zero_child_exec_requires_external_trace==true and .absent_root_full_functional_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$proof/complete.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .prefix=="source-absence" and .selected_exec_attempts==21 and .fixture_attempts==1 and .checker_attempts==20 and .checker_exit1==20 and .producer_exec_attempts==0 and .checker_spawn_attempts==0 and .checker_session_attempts==0 and .exact_exec_argv_env==true and .structural_detail_counts_equal==true and .python_exec_attempts==0 and .cpp_exec_attempts==0 and .probe_exec_attempts==0 and .builder_exec_attempts==0 and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .all_adopted_reaped==false and .postdelete_full_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$proof/exec-policy.json"
+        jq -e '.schema==1 and .controls==3 and .each_guard_exact_error==true and .actual_raw_changed==false and .R4_acceptance==false' "$proof/controls.json"
+        cmp "$proof/inputs.before.json" "$proof/inputs.after.json"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$proof/source-after.sha256"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/prepared-rust-roster.before.bin" "$proof/sdk-after.roster.bin"
+        for leaf in roster.bin files.bin sha256; do cmp "$proof/copy-before.$leaf" "$proof/copy-after.$leaf"; done
+        printf '%s  %s\n' "$(sha256sum "$proof/outcome.json" | cut -d' ' -f1)" "$proof/outcome.json" > "$proof/closure.sha256"
     - name: Retain current source and native logging candidate proof even on failure
       id: proof_upload
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
@@ -416,7 +451,7 @@ jobs:
     - name: Clean only uploaded unchanged owned logging source and private job
       id: logging_owned_cleanup
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.source_before.outcome
-        == 'success' && steps.prepared_rust.outcome == 'success' && steps.exec_policy_replay.outcome == 'success' && steps.qualify.outcome == 'success' && steps.legacy_runtime2.outcome == 'success' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome
+        == 'success' && steps.prepared_rust.outcome == 'success' && steps.exec_policy_replay.outcome == 'success' && steps.qualify.outcome == 'success' && steps.legacy_runtime2.outcome == 'success' && steps.source_guard.outcome == 'success' && steps.source_guard_closure.outcome == 'success' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome
         == 'success' && steps.proof_upload.outcome == 'success' && steps.proof_upload.outputs.artifact-id != '' && steps.proof_upload.outputs.artifact-digest != '' &&
         env.DIAG_SOURCE_OWNER != '' && env.CI_JOB_TEMP != '') }}
       shell: bash
@@ -425,7 +460,7 @@ jobs:
       env:
         UPLOAD_ID: ${{ steps.proof_upload.outputs.artifact-id }}
         UPLOAD_DIGEST: ${{ steps.proof_upload.outputs.artifact-digest }}
-        CURRENT_HELPER_SHA256: daddac5fbbe3ada80386a1ad1853b1a5ab4f35e864a0ce7ff00ec9cb53d50fe0
+        CURRENT_HELPER_SHA256: 5c3df0fcd25c5aeac367d84a735e85ed44dd4ee20c89fad8ebc52d1482b3dc4f
       run: |
         set -euo pipefail
         umask 077
@@ -475,7 +510,7 @@ jobs:
         replay=$proof/logging-exec-replay-788
         for leaf in outcome.json receipt.json first_int.json binding.json members.sha256 policy.stdout.json policy-output.sha256; do required_file "$replay/$leaf"; done
         jq -e '.schema==1 and .phase=="historical-data-replay-observed" and .exit_code==0 and .historical_data_replay_only==true and .current15_accepted==false and .legacy2_accepted==false and .R4_acceptance==false and .retirement_credit==0' "$replay/outcome.json"
-        jq -e --arg source "$GITHUB_SHA" '.policy_source_commit==$source and .policy_sha256=="23efe5d4bf093d793e1943c49952c75311711f8420bea5f2438da2762fb03638" and .fixture_source_commit=="78896f19db29d5cbe305d6f788bac9d0db4ce552" and .policy_invocations==1 and .whole_zip_crc_checked==true and .archive_code_executions==0 and .archive_elf_executions==0 and .current15_accepted==false and .legacy2_accepted==false and .R4_acceptance==false and .retirement_credit==0' "$replay/receipt.json"
+        jq -e --arg source "$GITHUB_SHA" '.policy_source_commit==$source and .policy_sha256=="f34fba101f712e6434199b2336c8736c581b9bc4549edde32b0c9f9b5aec99e6" and .fixture_source_commit=="78896f19db29d5cbe305d6f788bac9d0db4ce552" and .policy_invocations==1 and .whole_zip_crc_checked==true and .archive_code_executions==0 and .archive_elf_executions==0 and .current15_accepted==false and .legacy2_accepted==false and .R4_acceptance==false and .retirement_credit==0' "$replay/receipt.json"
         sha256sum --check --strict --quiet "$replay/members.sha256"
         sha256sum --check --strict --quiet "$replay/policy-output.sha256"
         test ! -e "$replay/archive.zip" && test ! -L "$replay/archive.zip"
@@ -567,6 +602,44 @@ jobs:
           [[ $group =~ ^[1-9][0-9]*$ ]]
           observed_groups[$group]=1
         done
+        guard=$proof/logging-source-absence
+        for leaf in outcome.json complete.json inputs.before.json inputs.after.json inspect.json exec-policy.json binding.json controls.json closure.sha256 copy-before.roster.bin copy-after.roster.bin copy-before.files.bin copy-after.files.bin copy-before.sha256 copy-after.sha256 source-after.sha256 index-after.bin sdk-after.roster.bin; do required_file "$guard/$leaf"; done
+        sha256sum --check --strict --quiet "$guard/closure.sha256"
+        jq -e '.mode=="source-guard" and .phase=="source-guard-observed" and .exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .copy_final_exit_code==0 and .resource_final_exit_code==0' "$guard/outcome.json" > /dev/null
+        cmp "$guard/inputs.before.json" "$guard/inputs.after.json"
+        cmp "$proof/source-after.sha256" "$guard/source-after.sha256"
+        cmp "$proof/index-after.bin" "$guard/index-after.bin"
+        cmp "$proof/prepared-rust-roster.after.bin" "$guard/sdk-after.roster.bin"
+        for leaf in roster.bin files.bin sha256; do cmp "$guard/copy-before.$leaf" "$guard/copy-after.$leaf"; done
+        copy=$job/logging-source-absence-copy/source
+        test "$(jq -er '.source_root' "$guard/inputs.after.json")" = "$copy"
+        jq -er '.parent_identities[]|map(tostring)|join(":")' "$guard/inputs.after.json" > "$scratch/copy-parents.txt"
+        for directory in "$copy" "$copy/rust" "$copy/rust/tools"; do
+          test -d "$directory" && test ! -L "$directory" && test "$(realpath -e "$directory")" = "$directory"
+          stat -c '%d:%i:%f:%u:%g' "$directory"
+        done > "$scratch/copy-parents.actual.hex.txt"
+        # Rust metadata.mode()는 정수(st_mode)다. stat의 hex %f를 정수로 변환한다.
+        while IFS=: read -r dev ino mode owner_uid owner_gid; do printf '%s:%s:%s:%s:%s\n' "$dev" "$ino" "$((16#$mode))" "$owner_uid" "$owner_gid"; done < "$scratch/copy-parents.actual.hex.txt" > "$scratch/copy-parents.actual.txt"
+        cmp "$scratch/copy-parents.txt" "$scratch/copy-parents.actual.txt"
+        for leaf in check_native_logging.py native_logging_transport.py; do test ! -e "$copy/rust/tools/$leaf" && test ! -L "$copy/rust/tools/$leaf"; done
+        # 현재 copy의 모든 regular bytes를 다시 검사한다. symlink data를 follow하지 않는다.
+        find -P "$copy" -printf '%D:%i\t%m:%U:%G:%n\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$scratch/copy.roster.bin"
+        cmp "$guard/copy-after.roster.bin" "$scratch/copy.roster.bin"
+        find -P "$copy" -type f -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%p\0' | LC_ALL=C sort -z > "$scratch/copy.files.bin"
+        cmp "$guard/copy-after.files.bin" "$scratch/copy.files.bin"
+        sha256sum --check --strict --quiet "$guard/copy-after.sha256"
+        jq -e '.schema==2 and .prefix=="source-absence" and .raw_immutable==true and .lexically_checked_all_events==true and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .full_acceptance==false' "$guard/inspect.json" > /dev/null
+        jq -e '.selected_exec_attempts==21 and .checker_attempts==20 and .producer_exec_attempts==0 and .checker_spawn_attempts==0 and .checker_session_attempts==0 and .exact_exec_argv_env==true and .structural_detail_counts_equal==true and .postdelete_full_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$guard/exec-policy.json" > /dev/null
+        jq -er '.raw_files[]|[.name,.sha256,(.pid|tostring)]|@tsv' "$guard/inspect.json" > "$scratch/guard-raw.tsv"
+        while IFS=$'\t' read -r name digest pid; do
+          [[ $pid =~ ^[1-9][0-9]*$ && $name == "source-absence.$pid" && $digest =~ ^[a-f0-9]{64}$ ]]
+          raw=$guard/trace/$name
+          test -f "$raw" && test ! -L "$raw" && test "$(realpath -e "$raw")" = "$raw"
+          test "$(stat -c '%u:%h' "$raw")" = "$UID:1"
+          (($(stat -c %s "$raw") <= 536870912))
+          printf '%s  %s\n' "$digest" "$raw" | sha256sum --check --strict --quiet -
+          observed_pids[$pid]=1
+        done < "$scratch/guard-raw.tsv"
         # collision8 group_empty와 같은 all-UID /proc/stat 검사. 새 signal/reap 동작은 없다.
         observed_absent() {
           local entry line rest pid

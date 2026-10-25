@@ -705,11 +705,12 @@ pub fn cli() -> Result<()> {
             OptionSpec::value("--output", true),
             OptionSpec::value("--root", false),
             OptionSpec::value("--reference", false),
+            OptionSpec::value("--source-policy", false),
         ],
     )?;
     if parsed.help {
         println!(
-            "usage: check-native-logging --binary BINARY --builder BUILDER --output OUTPUT [--root ROOT] [--reference PREBUILT_CPP]"
+            "usage: check-native-logging --binary BINARY --builder BUILDER --output OUTPUT [--root ROOT] [--reference PREBUILT_CPP] [--source-policy present|absent]"
         );
         return Ok(());
     }
@@ -722,14 +723,11 @@ pub fn cli() -> Result<()> {
     result
 }
 fn run_cli(parsed: crate::argparse_scan::ParsedOs) -> Result<()> {
-    let root = parsed
-        .values
-        .get("--root")
-        .map_or_else(
-            || PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."),
-            PathBuf::from,
-        )
-        .canonicalize()?;
+    let requested_root = parsed.values.get("--root").map_or_else(
+        || PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."),
+        PathBuf::from,
+    );
+    let root = requested_root.canonicalize()?;
     require(root.is_dir(), "logging source root is not a directory")?;
     let binary = PathBuf::from(&parsed.values["--binary"]).canonicalize()?;
     let builder = PathBuf::from(&parsed.values["--builder"]).canonicalize()?;
@@ -742,79 +740,105 @@ fn run_cli(parsed: crate::argparse_scan::ParsedOs) -> Result<()> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
         Err(error) => return Err(error.into()),
     }
-    let native_held = HeldBinary::open(&binary)?;
-    let _builder_held = HeldBinary::open(&builder)?;
-    let reference_held = parsed
-        .values
-        .get("--reference")
-        .map(|path| HeldBinary::open(&PathBuf::from(path).canonicalize()?))
-        .transpose()?;
-    fs::create_dir_all(
-        output
-            .parent()
-            .ok_or("logging evidence output has no parent")?,
+    let policy = retained::SourcePolicy::parse(
+        parsed
+            .values
+            .get("--source-policy")
+            .map(OsString::as_os_str),
     )?;
-    use std::os::unix::fs::DirBuilderExt;
-    fs::DirBuilder::new().mode(0o700).create(&output)?;
-    let source_held = if let Some(reference) = reference_held {
-        reference
-    } else {
-        let mut spec = CommandSpec::new_os(
-            vec![
-                builder.into_os_string(),
-                "--root".into(),
-                root.clone().into_os_string(),
-                "--output".into(),
-                output.join("reference").into_os_string(),
-            ],
-            Duration::from_secs(300),
-        );
-        spec.cwd = Some(root.clone());
-        let built = lifecycle::run(&spec)?;
-        fs::write(output.join("reference-builder.stdout"), &built.stdout)?;
-        fs::write(output.join("reference-builder.stderr"), &built.stderr)?;
-        require(built.code == 0, "native logging original builder failed")?;
-        HeldBinary::open(&PathBuf::from(std::str::from_utf8(&built.stdout)?.trim()))?
-    };
-    let source = source_held.path.clone();
-    // The C++ provider is created by the independently held native builder.
-    // Hold both actual ELF inodes continuously through every live protocol case.
-    let held = [source_held, native_held];
-    let before = held
-        .iter()
-        .map(HeldBinary::snapshot)
-        .collect::<Result<Vec<_>>>()?;
-    fs::write(
-        output.join("providers.before.json"),
-        serde_json::to_vec_pretty(&before)?,
-    )?;
-    let actual = (|| -> Result<Value> {
-        let mut report = compare(&source, &binary, &root, &output)?;
-        report["transport"] = transport::check(&source, &binary, &root, &output.join("transport"))?;
-        Ok(report)
-    })();
-    let after = held
-        .iter()
-        .map(HeldBinary::snapshot)
-        .collect::<Result<Vec<_>>>()?;
-    fs::write(
-        output.join("providers.after.json"),
-        serde_json::to_vec_pretty(&after)?,
-    )?;
+    let source_guard = retained::SourceGuard::open(&requested_root, policy)?;
     require(
-        before == after,
-        "logging ELF provider changed during live comparison",
+        source_guard.root() == root,
+        "logging source parent boundary invalid",
     )?;
-    let mut report = actual?;
-    report["result"] = json!("pass");
-    report["source_binary_sha256"] = json!(digest(&source)?);
-    report["native_binary_sha256"] = json!(digest(&binary)?);
-    fs::write(
-        output.join("report.json"),
-        serde_json::to_vec_pretty(&report)?,
-    )?;
-    println!("{report}");
-    Ok(())
+    let actual = (|| -> Result<()> {
+        let native_held = HeldBinary::open(&binary)?;
+        let _builder_held = HeldBinary::open(&builder)?;
+        let reference_held = parsed
+            .values
+            .get("--reference")
+            .map(|path| HeldBinary::open(&PathBuf::from(path).canonicalize()?))
+            .transpose()?;
+        source_guard.verify()?;
+        fs::create_dir_all(
+            output
+                .parent()
+                .ok_or("logging evidence output has no parent")?,
+        )?;
+        use std::os::unix::fs::DirBuilderExt;
+        fs::DirBuilder::new().mode(0o700).create(&output)?;
+        source_guard.verify()?;
+        let source_held = if let Some(reference) = reference_held {
+            reference
+        } else {
+            let mut spec = CommandSpec::new_os(
+                vec![
+                    builder.into_os_string(),
+                    "--root".into(),
+                    root.clone().into_os_string(),
+                    "--output".into(),
+                    output.join("reference").into_os_string(),
+                ],
+                Duration::from_secs(300),
+            );
+            spec.cwd = Some(root.clone());
+            let built = lifecycle::run(&spec)?;
+            fs::write(output.join("reference-builder.stdout"), &built.stdout)?;
+            fs::write(output.join("reference-builder.stderr"), &built.stderr)?;
+            require(built.code == 0, "native logging original builder failed")?;
+            HeldBinary::open(&PathBuf::from(std::str::from_utf8(&built.stdout)?.trim()))?
+        };
+        let source = source_held.path.clone();
+        // The C++ provider is created by the independently held native builder.
+        // Hold both actual ELF inodes continuously through every live protocol case.
+        let held = [source_held, native_held];
+        let before = held
+            .iter()
+            .map(HeldBinary::snapshot)
+            .collect::<Result<Vec<_>>>()?;
+        fs::write(
+            output.join("providers.before.json"),
+            serde_json::to_vec_pretty(&before)?,
+        )?;
+        source_guard.verify()?;
+        let actual = (|| -> Result<Value> {
+            let mut report = compare(&source, &binary, &root, &output)?;
+            report["transport"] =
+                transport::check(&source, &binary, &root, &output.join("transport"))?;
+            Ok(report)
+        })();
+        let final_checks = (|| -> Result<()> {
+            let after = held
+                .iter()
+                .map(HeldBinary::snapshot)
+                .collect::<Result<Vec<_>>>()?;
+            fs::write(
+                output.join("providers.after.json"),
+                serde_json::to_vec_pretty(&after)?,
+            )?;
+            require(
+                before == after,
+                "logging ELF provider changed during live comparison",
+            )?;
+            Ok(())
+        })();
+        let mut report = retained::checked_result(actual, final_checks)?;
+        report["result"] = json!("pass");
+        report["source_binary_sha256"] = json!(digest(&source)?);
+        report["native_binary_sha256"] = json!(digest(&binary)?);
+        source_guard.verify()?;
+        report["source_policy"] = json!(policy.as_str());
+        fs::write(
+            output.join("report.json"),
+            serde_json::to_vec_pretty(&report)?,
+        )?;
+        println!("{report}");
+        Ok(())
+    })();
+    match actual {
+        Ok(()) => Ok(()),
+        Err(error) => source_guard.complete(Err(error)),
+    }
 }
 
 #[cfg(test)]

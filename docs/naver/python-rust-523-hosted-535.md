@@ -1202,3 +1202,15 @@ PR343의 bacda Rust40173790842는 최종 실패다. AArch64 실제 build12111114
 현재 USB 검사는776634338B genuine input과 owned snapshot을 반복 검증하며 unoptimized SHA 구현을 사용한다. 최소 후보로 model-family-retirement 한 job의기존Cargo17명령(build/test/Clippy)에만 `profile.dev.package.sha2.opt-level=3` 및 `profile.test.package.sha2.opt-level=3`을 적용한다. 전체 runtime/math/test profile·원문 SHA·held 동일성/변조거부/모델·관측/120분/1200초/케이스·순서는 유지한다. test 전용 support의 기존 invocation JSON에 NativeRunner 시작 직전부터 회수 완료 직후까지 `command_elapsed_seconds`를 기록하며 출력 후처리/hash나 CPU 시간으로 표기하지 않는다.
 
 이 후보는 병목 기여율이나 해결을 미리 주장하지 않는다. 로컬은 Rustfmt/소스 모델·문법/diff만 확인하며 현재 source의 전체 gate·Clippy·최종봉인/upload/회수는 Actions 실행 전이다. [#571](https://github.com/bin9208/openpilot-rust/issues/571)에서 조사하고 기존 #482 raw 차이·dev-md·전체 runtime/실기 수용과 구분한다.
+
+
+## cold560 일회성 build와 실제 관측 성공
+
+일회성 build의 dependency tracking만 끈 source `9a0de324d90b5682e85172a731e100e3fc8c852e`에서 [40182915513/job121137583344](https://github.com/bin9208/openpilot-rust/actions/runs/40182915513/job/121137583344)이 전체 성공했습니다. artifact12594757959(11608468B/SHA256 `7c86b41379736503db33dfd0441e71a89495d21f65addd75d5130fe8be2ac69a`)599CRC를 감사했습니다.
+
+- `S["AMDEP_TRUE"]="#"` generated marker·held config.status와 make 후 비교가 통과해 `.deps/*.Po-t` churn 구간을 통과했습니다. compiler flags/observer C patch/원래caps/3attempts/strict parser는 그대로입니다.
+- observer는 실제 sci69603/entry69380/exit180/seccomp43/abnormal0/written0/overflow0/io_error0을 남겼습니다. 이번 fresh bootstrap에서 목표 `???( <detached ...>`는 미재현입니다.
+- strict cold gate는 실제180exec attempts/29failed, absolute Cargo1/rustc37, Python0/rustup0과 manifest165regular를 확인했습니다. 원문 trace SHA256 `c8c39dade8684c662859a9081dd07bc8e94b250d840464813dbdfe8dd61aa968`가 두 receipt와 일치합니다.
+- 기존 protocol3·marker10 거부통제, source19477/index와 SDK/headers/GCC/Perl/native source 등27전후쌍, held144개 전체identity/SHA 집합(행순서만다름), 모든finalizer20단계·upload/cleanup이 통과했습니다.
+
+이는 diagnostic provider가 빌드돼 한 VM을 관측한 성공입니다. Ubuntu distro ELF 동일성·간헐 오류 root 해결은 아닙니다. `root_fixed=false/nonreproduction_is_fix=false/additional_ptrace_requests=0/all_adopted_children_reaped=false/closed_dso=false/retirement_credit=0`을 유지해 #560은 열어둡니다. 이전 Fast855 실제 unknown trace201은 실패로 보존합니다.

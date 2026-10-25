@@ -112,6 +112,57 @@ def native_sequence($row; $b; $env; $parent; $full; $held):
 def reachable($edges; $from; $to; $depth):
   $from==$to or ($depth>0 and any($edges[]|select(.parent==$from); reachable($edges;.child;$to;$depth-1)));
 
+# 원본2는 실제 source에 보존된다. private absent copy의 거부만20회 검사한다.
+# commands/env는 Rust source의 유한 recipe이며 원문 trace에서 expected를 생성하지 않는다.
+def source_guard_policy($b; $trace; $edges; $execs):
+  .events as $events |
+  ["retained","legacy"] as $modes |
+  ["rust/tools/check_native_logging.py","rust/tools/native_logging_transport.py"] as $leaves |
+  ["regular","directory","symlink","dangling-symlink","parent-symlink"] as $nodes |
+  [ $modes[] as $m | $leaves[] as $l | $nodes[] as $n | [$m,$l,$n] ] as $keys |
+  need($b.mode=="source-guard" and $prefix=="source-absence" and
+    $b.selector=="source_absence::source_absence_rejects_original_nodes_before_producers" and
+    $b.copy==(($b.proof|rtrimstr("/proof/logging-source-absence"))+"/logging-source-absence-copy/source") and
+    ($b.cases|length)==20 and ($b.cases|map([.mode,.leaf,.node]))==$keys and
+    ($b.cases|map(.root)|unique|length)==20 and ($b.cases|map(.checker_pid)|unique|length)==20;
+    "source guard finite case roster differs") |
+  [$execs[]|select(.exec.program.bytes==($b.fixture|bytes))] as $fixtures |
+  [$execs[]|select(.exec.program.bytes==($b.checker|bytes))]|sort_by(clock) as $checks |
+  need(($execs|length)==21 and ($fixtures|length)==1 and ($checks|length)==20;
+    "source guard exec21 differs") |
+  $fixtures[0] as $fixture |
+  need(($fixture|exact(command($b.fixture;[$b.fixture,"--ignored","--exact",$b.selector,"--test-threads=1","--color=never"];
+    $b.fixture_env;null;[];null;"fixture"))) and terminal($events;$fixture.pid;[exited(0)]);
+    "source guard fixture argv/env/terminal differs") |
+  need(all(range(0;20); . as $i | $b.cases[$i] as $r | $checks[$i] as $check |
+    ([$b.checker]+(if $r.mode=="retained" then ["retained"] else [] end)+
+      ["--root",$b.copy,"--binary",$b.probe,"--output",$r.root+"/output","--source-policy","absent"]+
+      (if $r.mode=="retained" then ["--context",$b.context,"--source-commit",$b.commit,"--binary-sha256",$b.binary_sha]
+       else ["--builder",$b.builder] end)) as $argv |
+    ($b.checker_env+["NATIVE_LOGGING_QA_HOLD=first","NATIVE_LOGGING_QA_RECORDS="+$r.root+"/unexpected-child"]) as $env |
+    (if $r.node=="parent-symlink" then "logging source parent boundary invalid"
+     else "logging retired source reappeared: "+$r.leaf end) as $error |
+    $r.schema==1 and ($r.root|startswith($b.proof+"/lifecycle/logging-lifecycle-")) and
+    ($r.root|ltrimstr($b.proof+"/lifecycle/logging-lifecycle-")|test("^[A-Za-z0-9]{6}$")) and
+    $r.controller_argv==$argv and ($r.controller_environment|sort)==($env|sort) and
+    $r.returncode==1 and $r.expected_error==$error and $r.output_absent==true and $r.producer_barrier_absent==true and
+    $r.zero_child_exec_requires_external_trace==true and $r.absent_root_full_functional_acceptance==false and
+    $r.R4_acceptance==false and $r.retirement_credit==0 and
+    ($check|exact(command($b.checker;$argv;$env;$r.checker_pid;[];$fixture.pid;"checker"))) and
+    terminal($events;$check.pid;[exited(1)]) and
+    any($edges[]; .child==$check.pid and .time<=($check|clock) and reachable($edges;$fixture.pid;.parent;8)) and
+    all($events[]|select(.pid==$check.pid); is_detail|not));
+    "source guard argv/env/error/terminal/zero-child differs") |
+  # libtest thread를 포함한 fixture creation tree만 허용한다. checker 자체의 생성/session은0이다.
+  need(all($events[]|select(is_detail); .pid as $pid | (is_spawn and reachable($edges;$fixture.pid;$pid;8) and ([ $checks[].pid ]|index($pid))==null));
+    "source guard unsupported process/session attempt") |
+  {schema:1,prefix:$prefix,mode:"source-guard",source_commit:$b.commit,summary_schema:2,raw_immutable:true,
+   selected_exec_attempts:21,source_expected_exec_attempts:21,fixture_attempts:1,checker_attempts:20,checker_exit1:20,
+   producer_exec_attempts:0,checker_spawn_attempts:0,checker_session_attempts:0,exact_exec_argv_env:true,
+   structural_detail_counts_equal:true,python_exec_attempts:0,cpp_exec_attempts:0,probe_exec_attempts:0,builder_exec_attempts:0,
+   full_event_index:false,closed_pid:false,closed_cwd:false,closed_fd:false,closed_dso:false,all_adopted_reaped:false,
+   postdelete_full_acceptance:false,old27_accepted:false,R4_acceptance:false,retirement_credit:0};
+
 need(($binding|length)==1;"one source binding required") |
 $binding[0] as $b | . as $trace | .events as $events |
 need($b.schema==1 and $b.providers.probe.path==$b.probe and $b.providers.probe.sha256==$b.binary_sha and
@@ -141,6 +192,7 @@ need(all($spawn[]; .kind=="syscall" and (.outcome=="returned" or .outcome=="fail
 need(($edges|map(.child)|unique|length)==($edges|length) and
   all($edges[]; .child as $child | any($trace.raw_files[]; .pid==$child));"spawn child raw attribution differs") |
 need(all($events[]|select(.operation=="unshare" or .operation=="setns"); false);"unsupported namespace attempt") |
+if $prefix=="source-absence" then source_guard_policy($b;$trace;$edges;$execs) else
 ([$execs[]|select(.exec.program.bytes==($b.fixture|bytes))]) as $fixtures |
 need(if $prefix=="retained-once" then ($fixtures|length)==0 else ($fixtures|length)==1 end;"fixture count differs") |
 ($fixtures[0].pid//null) as $owner |
@@ -251,3 +303,4 @@ need(all($policy.escaped[]|select(.role=="escaped"); .pid as $pid |
  python_exec_attempts:0,cpp_exec_attempts:0,zero_child_checker_attempts:(if $prefix|startswith("output_") then 1 elif $prefix=="forbidden_executable_options" then 3 else 0 end),
  full_event_index:false,closed_pid:false,closed_cwd:false,closed_fd:false,closed_dso:false,
  all_adopted_reaped:false,old27_accepted:false,pending_runtime2_accepted:false,R4_acceptance:false,retirement_credit:0}
+end

@@ -5,8 +5,8 @@ umask 077
 # 무인자는 기존 retained recipe다. 새 mode 외의 인자는 fallback 없이 거부한다.
 case $# in
   0) mode=retained ;;
-  1) [[ $1 == legacy-runtime2 ]] || { echo 'expected no arguments or legacy-runtime2' >&2; exit 64; }; mode=legacy-runtime2 ;;
-  *) echo 'expected no arguments or legacy-runtime2' >&2; exit 64 ;;
+  1) [[ $1 == legacy-runtime2 || $1 == source-guard ]] || { echo 'expected no arguments, legacy-runtime2 or source-guard' >&2; exit 64; }; mode=$1 ;;
+  *) echo 'expected no arguments, legacy-runtime2 or source-guard' >&2; exit 64 ;;
 esac
 test "$GITHUB_ACTIONS" = true
 test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
@@ -26,6 +26,7 @@ unset NATIVE_LOGGING_LIFECYCLE_RESUME NATIVE_LOGGING_TEST_BUILDER NATIVE_LOGGING
 source=$DIAG_SOURCE
 proof=$CI_JOB_TEMP/proof/logging
 [[ $mode != legacy-runtime2 ]] || proof=$CI_JOB_TEMP/proof/logging-legacy-runtime2
+[[ $mode != source-guard ]] || proof=$CI_JOB_TEMP/proof/logging-source-absence
 sdk=$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin
 mkdir "$proof" "$proof/build" "$proof/trace" "$proof/bin" "$proof/lifecycle"
 phase=admission
@@ -59,6 +60,7 @@ admit() {
   printf '%s\t%s\t%s\t%s\t%s\n' "$label" "$growth_mib" "$available" "$target_bytes" "$proof_bytes" >> "$proof/growth.tsv"
   ((available >= growth_mib * 1024 * 1024 + 512 * 1024 * 1024))
   ((target_bytes <= 8 * 1024 * 1024 * 1024 && proof_bytes <= 2 * 1024 * 1024 * 1024))
+  if [[ $mode == source-guard ]]; then source_guard_resource "$label" 0 "$((growth_mib * 1024 * 1024))"; fi
 }
 run() {
   local label=$1 seconds=$2 command_status side started_cs ended_cs; shift 2
@@ -249,10 +251,9 @@ legacy_alias() {
   legacy_alias_ids+=("$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$path")")
   elf "provider-${#legacy_alias_paths[@]}" "$path"
 }
-legacy_runtime2() {
+reuse_retained() {
   local prior=$CI_JOB_TEMP/proof/logging receipt log role selected actual identity hash row path prior_fd
-  local name kind src tested n i cxx queried reference json11_prefix selector started ended
-  local signal label expected_exit remaining command_started command_ended case_root
+  local name kind src tested
   phase=legacy-reuse-admission
   export PATH="$sdk:/usr/bin:/bin"
   test "$CARGO_HOME" = "$CI_JOB_TEMP/cargo-home"
@@ -268,7 +269,7 @@ legacy_runtime2() {
   [[ $(stat -c '%u:%a' "$source") == "$UID:700" && $(stat -c '%u:%a' "$proof") == "$UID:700" ]]
   legacy_headers_ready=false
   declare -ga legacy_alias_paths=() legacy_alias_targets=() legacy_alias_ids=()
-  trap legacy_finish EXIT
+  if [[ $mode == source-guard ]]; then trap source_guard_finish EXIT; else trap legacy_finish EXIT; fi
   unset GH_TOKEN GITHUB_TOKEN
   runtime=(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" TMPDIR="$TMPDIR" LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC \
     GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1 \
@@ -326,6 +327,12 @@ legacy_runtime2() {
     elf "reused-$role" "$actual"
     case $role in checker) checker=$actual;; probe) probe=$actual;; fixture) fixture=$actual;; esac
   done
+}
+legacy_runtime2() {
+  local prior=$CI_JOB_TEMP/proof/logging receipt log role selected actual identity hash row path prior_fd
+  local name kind src tested n i cxx queried reference json11_prefix selector started ended
+  local signal label expected_exit remaining command_started command_ended case_root
+  reuse_retained
   # cached Cargo target을 fresh로 꾸미지 않는다. 새 builder target만 빈 namespace에 만든다.
   # 기존 admit의 단일 du가 nested builder target까지 포함하므로 8GiB를 중복/누락 없이 검사한다.
   for path in rust/crates/dev-tools/src/native_logging_build.rs rust/crates/dev-tools/src/json11_stage.rs uv.lock \
@@ -492,6 +499,218 @@ legacy_runtime2() {
       prior_fd_continuity_claimed:false,old17_reexecuted:false,collision8_reexecuted:false,retained14_reexecuted:false,
       closed_pid:false,closed_cwd:false,closed_fd:false,closed_dso:false,old27_admitted:false,R4_acceptance:false,retirement_credit:0}' > "$proof/complete.json"
 }
+# source-guard만의 독립 copy/CLI20 통제. 실제 source/present 기능은 변경하지 않는다.
+source_guard_resource() {
+  local label=$1 planned=$2 proof_growth=${3:-0} actual=0 origin free path device
+  origin=$(du -sx --block-size=1 --exclude="$CARGO_TARGET_DIR" "$DIAG_SOURCE_OWNER" | cut -f1)
+  if [[ -d $CI_JOB_TEMP/logging-source-absence-copy ]]; then
+    actual=$(du -sx --block-size=1 "$CI_JOB_TEMP/logging-source-absence-copy" | cut -f1)
+  fi
+  [[ $origin =~ ^[0-9]+$ && $actual =~ ^[0-9]+$ && $planned =~ ^[0-9]+$ ]]
+  ((origin + actual + planned <= 2147483648))
+  # 서로 다른 filesystem도 각각 확인한다. copy는 job filesystem에만 추가된다.
+  for path in "$source" "$CI_JOB_TEMP"; do
+    device=$(stat -c %d "$path")
+    free=$(df -PB1 "$path" | awk 'NR==2 {print $4}')
+    [[ $free =~ ^[0-9]+$ ]]
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$label" "$path" "$device" "$free" "$origin" "$((actual+planned))" >> "$proof/copy-growth.tsv"
+    if [[ $device == "$(stat -c %d "$CI_JOB_TEMP")" ]]; then
+      ((free >= planned + proof_growth + 536870912))
+    else ((free >= 536870912)); fi
+  done
+}
+source_guard_copy_seal() {
+  local moment=$1 root=$CI_JOB_TEMP/logging-source-absence-copy/source leaf
+  [[ $source_guard_copy_ready == true ]]
+  [[ $(stat -c '%d:%i:%f:%u:%g' "${root%/source}") == "$source_guard_copy_identity" ]]
+  for leaf in "$root" "$root/rust" "$root/rust/tools"; do
+    [[ -d $leaf && ! -L $leaf && $(realpath -e "$leaf") == "$leaf" && $(stat -c %u "$leaf") == "$UID" ]]
+  done
+  for leaf in rust/tools/check_native_logging.py rust/tools/native_logging_transport.py; do
+    # dangling symlink도 present다. lookup 불능은 find/후속 전체 snapshot에서 strict 실패한다.
+    [[ ! -e $root/$leaf && ! -L $root/$leaf ]]
+  done
+  # 통제가 생성/제거하는 directory mtime/ctime만 제외한다. 파일 identity/hash/전체 roster는 유지한다.
+  find -P "$root" -printf '%D:%i\t%m:%U:%G:%n\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$proof/copy-$moment.roster.bin"
+  find -P "$root" -type f -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%p\0' | LC_ALL=C sort -z > "$proof/copy-$moment.files.bin"
+  find -P "$root" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$proof/copy-$moment.sha256"
+  find -P "$root" -type f -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%p\0' | LC_ALL=C sort -z > "$proof/copy-$moment.stable.bin"
+  cmp "$proof/copy-$moment.files.bin" "$proof/copy-$moment.stable.bin"
+  if [[ $moment == after ]]; then
+    for leaf in roster.bin files.bin sha256; do cmp "$proof/copy-before.$leaf" "$proof/copy-after.$leaf"; done
+  fi
+}
+source_guard_finish() {
+  local result=$? source_result sdk_result held_result copy_result resource_result
+  trap - EXIT
+  set +e
+  (set -e; ulimit -f 524288; legacy_seal after) > "$proof/source-final.stdout" 2> "$proof/source-final.stderr"; source_result=$?
+  (set -e; ulimit -f 524288; legacy_sdk_seal after) > "$proof/sdk-final.stdout" 2> "$proof/sdk-final.stderr"; sdk_result=$?
+  verify_held > "$proof/held-final.stdout" 2> "$proof/held-final.stderr"; held_result=$?
+  (set -e; ulimit -f 524288; source_guard_copy_seal after) > "$proof/copy-final.stdout" 2> "$proof/copy-final.stderr"; copy_result=$?
+  (set -e; admit source-guard-exit 0) > "$proof/resource-final.stdout" 2> "$proof/resource-final.stderr"; resource_result=$?
+  if ((result == 0 && (source_result || sdk_result || held_result || copy_result || resource_result))); then result=1; fi
+  printf '{"schema":1,"mode":"source-guard","phase":"%s","exit_code":%s,"source_final_exit_code":%s,"sdk_final_exit_code":%s,"held_final_exit_code":%s,"copy_final_exit_code":%s,"resource_final_exit_code":%s,"postdelete_full_acceptance":false,"R4_acceptance":false,"retirement_credit":0}\n' \
+    "$phase" "$result" "$source_result" "$sdk_result" "$held_result" "$copy_result" "$resource_result" > "$proof/outcome.json"
+  exit "$result"
+}
+source_guard() {
+  local prior=$CI_JOB_TEMP/proof/logging legacy=$CI_JOB_TEMP/proof/logging-legacy-runtime2
+  local path hash identity prior_fd selected context builder size estimate git_bytes
+  local copy=$CI_JOB_TEMP/logging-source-absence-copy root=$CI_JOB_TEMP/logging-source-absence-copy/source
+  local selector=source_absence::source_absence_rejects_original_nodes_before_producers
+  source_guard_copy_ready=false
+  reuse_retained
+  trap source_guard_finish EXIT
+  phase=source-guard-reuse
+  for path in "$legacy/outcome.json" "$legacy/complete.json" "$legacy/build/legacy-builder-build.stdout" "$legacy/held-before.tsv"; do legacy_file "$path" 536870912; done
+  jq -e '.mode=="legacy-runtime2" and .phase=="legacy-runtime2-observed" and .exit_code==0 and .source_sdk_final_exit_code==0 and .held_final_exit_code==0 and .provider_alias_final_exit_code==0 and .resource_final_exit_code==0' "$legacy/outcome.json" > "$proof/legacy-success.check"
+  jq -e --arg sha "$GITHUB_SHA" '.source_commit==$sha and .logical_cases==2 and .logical_commands==2 and .signal_order==["INT","TERM"] and .R4_acceptance==false and .retirement_credit==0' "$legacy/complete.json" > "$proof/legacy-cases.check"
+  while IFS=$'\t' read -r prior_fd hash identity path; do
+    [[ $prior_fd =~ ^[0-9]+$ && $hash =~ ^[a-f0-9]{64}$ && $path == /* && $(realpath -e "$path") == "$path" && -f $path && ! -L $path ]]
+    [[ $(legacy_identity "$path") == "$identity" && $(sha256sum "$path" | cut -d' ' -f1) == "$hash" ]]
+    hold "$path"
+  done < "$legacy/held-before.tsv"
+  builder=$CARGO_TARGET_DIR/legacy-runtime2-builder/debug/build-native-logging-reference
+  selected=$(jq -ers --arg path "$builder" --arg src "$source/rust/crates/dev-tools/src/bin/build_native_logging_reference.rs" '
+    if .[-1].reason!="build-finished" or .[-1].success!=true then error("builder Cargo EOF") else . end |
+    [.[]|select(.reason=="compiler-artifact" and .target.name=="build-native-logging-reference" and .target.kind==["bin"] and .target.src_path==$src and .profile.test==false and .executable==$path)] |
+    if length==1 and .[0].fresh==false then .[0].executable else error("prior fresh builder required") end' "$legacy/build/legacy-builder-build.stdout")
+  [[ $selected == "$builder" ]]
+  elf source-guard-builder "$builder"
+  context=$prior/context/context.json
+  legacy_file "$context"
+  legacy_tree "$source/.git" "$proof/original-git-before"
+  printf '%s  %s\n' adee1d45e299bfd6448e8f5584b194b2dbbb53622ee3c1d57c02538d0b0d1fc4 "$source/rust/tools/check_native_logging.py" \
+    288a4fd0f9aca05d82a3f415e6632ef3e62b92f2d73f01d7a2f1b5263cdb7ad1 "$source/rust/tools/native_logging_transport.py" | sha256sum --check --strict - > "$proof/originals-present.txt"
+  [[ ! -e $copy && ! -L $copy ]]
+  # 실제 Git/index와 tracked payload만 복사한다. target/SDK/archive를 복제하지 않는다.
+  git --no-optional-locks ls-files -z > "$proof/copy-index.bin"
+  cmp "$CI_JOB_TEMP/proof/index-before.bin" "$proof/copy-index.bin"
+  : > "$proof/copy-selected.bin"
+  estimate=1048576
+  while IFS= read -r -d '' path; do
+    [[ $path != /* && $path != .git && $path != .git/* && $path != ../* && $path != */../* ]]
+    case $path in rust/tools/check_native_logging.py|rust/tools/native_logging_transport.py) continue;; esac
+    printf '%s\0' "$path" >> "$proof/copy-selected.bin"
+    size=$(stat -c %s -- "$source/$path")
+    [[ $size =~ ^[0-9]+$ ]]
+    estimate=$((estimate + ((size+4095)/4096+2)*4096))
+  done < "$proof/copy-index.bin"
+  [[ -d $source/.git && ! -L $source/.git ]]
+  find -P "$source/.git" -type l -print > "$proof/git-links.txt"
+  test ! -s "$proof/git-links.txt"
+  git_bytes=$(du -sx --block-size=1 "$source/.git" | cut -f1)
+  [[ $git_bytes =~ ^[0-9]+$ ]]
+  # metadata directory/파일마다 추가 block도 보수적으로 admit한다.
+  size=$(find -P "$source/.git" -printf x | wc -c)
+  estimate=$((estimate + git_bytes + size*8192))
+  source_guard_resource before-copy "$estimate"
+  mkdir -m 700 -- "$copy" "$root"
+  source_guard_copy_identity=$(stat -c '%d:%i:%f:%u:%g' "$copy")
+  (ulimit -f 524288; tar --hard-dereference --null --no-recursion --verbatim-files-from -T "$proof/copy-selected.bin" -cf -) | tar -xf - -C "$root"
+  cp -a -- "$source/.git" "$root/.git"
+  [[ $(git --no-optional-locks -C "$root" rev-parse HEAD) == "$GITHUB_SHA" ]]
+  git --no-optional-locks -C "$root" ls-files -z > "$proof/copied-index.bin"
+  cmp "$proof/copy-index.bin" "$proof/copied-index.bin"
+  git --no-optional-locks -C "$root" diff --cached --exit-code > "$proof/copy-cached.diff"
+  git --no-optional-locks -C "$root" diff --name-only -z > "$proof/copy-deletions.bin"
+  printf 'rust/tools/check_native_logging.py\0rust/tools/native_logging_transport.py\0' > "$proof/copy-deletions.expected.bin"
+  cmp "$proof/copy-deletions.expected.bin" "$proof/copy-deletions.bin"
+  # canonical tar와 Git metadata bytes를 source->copy 대조한다. raw index 변경도 숨기지 않는다.
+  for path in "$source" "$root"; do
+    (cd "$path"; tar --hard-dereference --null --no-recursion --verbatim-files-from -T "$proof/copy-selected.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner) | sha256sum | cut -d' ' -f1 >> "$proof/copied-source.sha256"
+  done
+  test "$(sort -u "$proof/copied-source.sha256" | wc -l)" -eq 1
+  (cd "$source/.git"; find -P . -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum) > "$proof/git-source.sha256"
+  (cd "$root/.git"; sha256sum --check --strict --quiet "$proof/git-source.sha256")
+  jq -er '.source_files|if length==19 then to_entries[]|[.key,.value.sha256,(.value.size|tostring)]|@tsv else error("current19 required") end' "$context" > "$proof/current19.tsv"
+  while IFS=$'\t' read -r path hash size; do
+    [[ $path != /* && $path != ../* && $path != */../* && $hash =~ ^[a-f0-9]{64}$ && $size =~ ^[0-9]+$ ]]
+    [[ -f $root/$path && ! -L $root/$path && $(stat -c %s "$root/$path") == "$size" ]]
+    printf '%s  %s\n' "$hash" "$root/$path" | sha256sum --check --strict --quiet -
+  done < "$proof/current19.tsv"
+  source_guard_copy_ready=true
+  source_guard_copy_seal before
+  admit source-guard-copied 0
+  NATIVE_LOGGING_RETAINED_BINARY_SHA256=$(sha256sum "$probe" | cut -d' ' -f1)
+  NATIVE_LOGGING_RETAINED_CONTEXT_SHA256=$(sha256sum "$context" | cut -d' ' -f1)
+  guard_env=(CI_JOB_TEMP="$CI_JOB_TEMP" GITHUB_SHA="$GITHUB_SHA" GITHUB_RUN_ID="$GITHUB_RUN_ID" GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" GITHUB_JOB="$GITHUB_JOB"
+    NATIVE_LOGGING_SOURCE_ABSENCE_ROOT="$root" NATIVE_LOGGING_LIFECYCLE_EVIDENCE="$proof/lifecycle"
+    NATIVE_LOGGING_RETAINED_BINARY="$probe" NATIVE_LOGGING_RETAINED_CONTEXT="$context"
+    NATIVE_LOGGING_RETAINED_BINARY_SHA256="$NATIVE_LOGGING_RETAINED_BINARY_SHA256" NATIVE_LOGGING_RETAINED_CONTEXT_SHA256="$NATIVE_LOGGING_RETAINED_CONTEXT_SHA256"
+    NATIVE_LOGGING_RETAINED_SOURCE_COMMIT="$GITHUB_SHA" NATIVE_LOGGING_TEST_BUILDER="$builder")
+  run source-absence 600 "${runtime[@]}" "${guard_env[@]}" /usr/bin/strace --seccomp-bpf --kill-on-exit -ff -ttt -x -v -s 65536 \
+    -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 \
+    -o "$proof/trace/source-absence" "$fixture" --ignored --exact "$selector" --test-threads=1 --color=never
+  test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/build/source-absence.stdout")" -eq 1
+  grep -Fx "test $selector ... ok" "$proof/build/source-absence.stdout" > "$proof/selector.check"
+  cmp "$proof/inputs.before.json" "$proof/inputs.after.json"
+  legacy_file "$proof/inputs.before.json"; legacy_file "$proof/inputs.after.json"; legacy_file "$proof/complete.json"
+  jq -e --arg source "$GITHUB_SHA" --arg selector "$selector" '.schema==1 and .source_commit==$source and .selector==$selector and .actual_cli_rejections==20 and .paths==2 and .node_variants==5 and .modes==["retained","legacy"] and .providers_unchanged==true and .source_parents_unchanged==true and .outputs_absent==true and .zero_child_exec_requires_external_trace==true and .absent_root_full_functional_acceptance==false and .R4_acceptance==false and .retirement_credit==0' "$proof/complete.json" > "$proof/complete.check"
+  find -P "$proof/lifecycle" -mindepth 1 -maxdepth 1 -print | LC_ALL=C sort > "$proof/case-roots.txt"
+  test "$(wc -l < "$proof/case-roots.txt")" -eq 20
+  : > "$proof/cases.jsonl"
+  while IFS= read -r path; do
+    [[ $path == "$proof/lifecycle/logging-lifecycle-"?????? && $(realpath -e "$path") == "$path" && ! -L $path && $(stat -c '%u:%a' "$path") == "$UID:700" ]]
+    legacy_file "$path/source-absence-case.json"
+    legacy_file "$path/checker.stdout"; legacy_file "$path/checker.stderr"
+    test ! -s "$path/checker.stdout"
+    jq -ce . "$path/source-absence-case.json" >> "$proof/cases.jsonl"
+  done < "$proof/case-roots.txt"
+  jq -se --slurpfile complete "$proof/complete.json" 'sort_by(.root)==($complete[0].cases|sort_by(.root))' "$proof/cases.jsonl" > "$proof/cases.check"
+  # raw에서 expected를 만들지 않는다. Rust source의 고정 순서와 env_clear whitelist를 사용한다.
+  printf '%s\0' "${runtime[@]:2}" "${guard_env[@]}" | jq -Rs 'split("\u0000")[:-1]' > "$proof/fixture-env.json"
+  printf '%s\0' PATH=/usr/bin:/bin HOME="$HOME" TMPDIR="$TMPDIR" TZ=UTC LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+    GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.preloadIndex GIT_CONFIG_VALUE_0=true | jq -Rs 'split("\u0000")[:-1]' > "$proof/checker-env.json"
+  jq -n --arg proof "$proof" --arg copy "$root" --arg source "$source" --arg commit "$GITHUB_SHA" --arg fixture "$fixture" \
+    --arg checker "$checker" --arg probe "$probe" --arg builder "$builder" --arg context "$context" --arg selector "$selector" \
+    --arg binary_sha "$NATIVE_LOGGING_RETAINED_BINARY_SHA256" --argjson uid "$UID" \
+    --slurpfile prior "$prior/exec-policy/binding.json" --slurpfile complete "$proof/complete.json" \
+    --slurpfile fixture_env "$proof/fixture-env.json" --slurpfile checker_env "$proof/checker-env.json" '
+    {schema:1,mode:"source-guard",source:$source,proof:$proof,copy:$copy,commit:$commit,fixture:$fixture,checker:$checker,
+     probe:$probe,builder:$builder,context:$context,selector:$selector,binary_sha:$binary_sha,uid:$uid,providers:$prior[0].providers,
+     cases:$complete[0].cases,fixture_env:$fixture_env[0],checker_env:$checker_env[0]}' > "$proof/binding.json"
+  legacy_file "$proof/binding.json"
+  legacy_file "$prior/exec-policy/binding.json"
+  legacy_file "$source/tools/ci/logging_retained_exec_policy_549.jq"
+  run inspect-source-absence 180 "${runtime[@]}" "$checker" inspect-trace-summary --directory "$proof/trace" --prefix source-absence --output "$proof/inspect.json"
+  legacy_file "$proof/inspect.json" 67108864
+  run exec-source-absence 60 "${runtime[@]}" /usr/bin/jq -e --arg prefix source-absence --slurpfile binding "$proof/binding.json" \
+    -f "$source/tools/ci/logging_retained_exec_policy_549.jq" "$proof/inspect.json"
+  mv "$proof/build/exec-source-absence.stdout" "$proof/exec-policy.json"
+  legacy_file "$proof/exec-policy.json"
+  for control in missing-structure wrong-argv wrong-env; do
+    case $control in
+      missing-structure)
+        mutation='.events|=map(select(.operation as $op|(["fork","vfork","clone","clone3","setpgid","setsid","unshare","setns"]|index($op))==null))'
+        expected_error='process/session detail cardinality differs' ;;
+      wrong-argv)
+        mutation='(.events[]|select(.exec.program.bytes==($checker|explode))|.exec.argv)+=[{bytes:[120],source:{start:0,end:1}}]'
+        expected_error='source guard argv/env/error/terminal/zero-child differs' ;;
+      wrong-env)
+        mutation='(.events[]|select(.exec.program.bytes==($checker|explode))|.exec.environment.entries)+=[{bytes:[88,61,49],source:{start:0,end:3}}]'
+        expected_error='source guard argv/env/error/terminal/zero-child differs' ;;
+    esac
+    /usr/bin/jq --arg checker "$checker" "$mutation" "$proof/inspect.json" > "$proof/control-$control.input.json"
+    run "policy-control-$control" 60 "${runtime[@]}" /usr/bin/bash --noprofile --norc -euo pipefail -c '
+      status=0
+      /usr/bin/jq -e --arg prefix source-absence --slurpfile binding "$1" -f "$2" "$3" > "$4.stdout" 2> "$4.stderr" || status=$?
+      printf "%s\n" "$status" > "$4.exit"
+      test "$status" -eq 5 && test ! -s "$4.stdout"
+      grep -F -- "$5" "$4.stderr"
+    ' source-policy-control "$proof/binding.json" "$source/tools/ci/logging_retained_exec_policy_549.jq" "$proof/control-$control.input.json" "$proof/control-$control" "$expected_error"
+  done
+  printf '{"schema":1,"controls":3,"each_guard_exact_error":true,"actual_raw_changed":false,"R4_acceptance":false}\n' > "$proof/controls.json"
+  legacy_file "$proof/controls.json"
+  legacy_tree "$source/.git" "$proof/original-git-after"
+  cmp "$proof/original-git-before.roster" "$proof/original-git-after.roster"
+  cmp "$proof/original-git-before.sha256" "$proof/original-git-after.sha256"
+  verify_held
+  phase=source-guard-observed
+}
+if [[ $mode == source-guard ]]; then source_guard; exit; fi
+
 if [[ $mode == legacy-runtime2 ]]; then legacy_runtime2; exit; fi
 
 for path in "$source/tools/ci/logging_retained_549.sh" "$source/tools/ci/logging_retained_exec_policy_549.jq" "$source/.github/workflows/python-rust-523-logging.yml" "$sdk/cargo" "$sdk/rustc" "$sdk/clippy-driver" /usr/bin/git /usr/bin/strace /usr/bin/timeout; do hold "$path"; done
@@ -724,9 +943,9 @@ hold "$context"
 verify_held
 run strace-help 30 "${runtime[@]}" /usr/bin/strace --help
 grep -F -- --kill-on-exit "$proof/build/strace-help.stdout" > "$proof/exitkill-supported.txt"
-run retained-core21 180 "${runtime[@]}" "$unit" native_logging_check::retained::tests:: --test-threads=1 --color=never
-test "$(grep -Ec '^test result: ok\. 21 passed; 0 failed; 0 ignored;' "$proof/build/retained-core21.stdout")" -eq 1
-cat > "$proof/retained-core21.expected.txt" <<'NAMES'
+run retained-core27 180 "${runtime[@]}" "$unit" native_logging_check::retained::tests:: --test-threads=1 --color=never
+test "$(grep -Ec '^test result: ok\. 27 passed; 0 failed; 0 ignored;' "$proof/build/retained-core27.stdout")" -eq 1
+cat > "$proof/retained-core27.expected.txt" <<'NAMES'
 native_logging_check::retained::tests::comparison_cannot_pass_empty_missing_reordered_or_changed_payloads
 native_logging_check::retained::tests::console_bridge_replaces_only_validated_callsite_prefix_and_preserves_all_else
 native_logging_check::retained::tests::context_root_must_be_private_before_missing_index_is_opened
@@ -746,11 +965,17 @@ native_logging_check::retained::tests::occupied_output_precedes_missing_context_
 native_logging_check::retained::tests::pinned_content_is_rechecked_not_accepted_as_a_new_baseline_after_admission
 native_logging_check::retained::tests::receipt_fd_cannot_be_redirected_by_renaming_and_replacing_output_directory
 native_logging_check::retained::tests::retained_parser_refuses_builder_reference_and_source_hook_options
+native_logging_check::retained::tests::source_policy_absent_rejects_nodes_and_keeps_reappearance_sticky
+native_logging_check::retained::tests::source_policy_admission_keeps_required_help_unknown_and_occupied_priorities
+native_logging_check::retained::tests::source_policy_parent_alias_replacement_and_special_leaf_fail_closed
+native_logging_check::retained::tests::source_policy_present_detects_rewrite_replacement_and_hardlink_alias
+native_logging_check::retained::tests::source_policy_present_markers_and_absent_root_are_guard_metadata_only
+native_logging_check::retained::tests::source_policy_schema_defaults_and_rejects_unknown_values
 native_logging_check::retained::tests::success_receipt_create_new_cannot_overwrite_foreign_bytes
 native_logging_check::retained::tests::unlisted_symlink_or_executable_in_context_never_becomes_an_ignored_role
 NAMES
-sed -nE 's/^test (native_logging_check::retained::tests::[a-z0-9_]+) \.\.\. ok$/\1/p' "$proof/build/retained-core21.stdout" | LC_ALL=C sort > "$proof/retained-core21.actual.txt"
-cmp "$proof/retained-core21.expected.txt" "$proof/retained-core21.actual.txt"
+sed -nE 's/^test (native_logging_check::retained::tests::[a-z0-9_]+) \.\.\. ok$/\1/p' "$proof/build/retained-core27.stdout" | LC_ALL=C sort > "$proof/retained-core27.actual.txt"
+cmp "$proof/retained-core27.expected.txt" "$proof/retained-core27.actual.txt"
 run prepare-controls 180 "${runtime[@]}" "$unit" native_logging_check::retained::prepare::tests:: --test-threads=1 --color=never
 test "$(grep -Ec '^test result: ok\. 9 passed; 0 failed; 0 ignored;' "$proof/build/prepare-controls.stdout")" -eq 1
 cat > "$proof/prepare-controls.expected.txt" <<'NAMES'
@@ -809,6 +1034,11 @@ native_logging_check::trace::summary_tests::summary_validates_many_metadata_rows
 NAMES
 sed -nE 's/^test (native_logging_check::trace::summary_tests::[a-z0-9_]+) \.\.\. ok$/\1/p' "$proof/build/summary-controls.stdout" | LC_ALL=C sort > "$proof/summary-controls.actual.txt"
 cmp "$proof/summary-controls.expected.txt" "$proof/summary-controls.actual.txt"
+cat "$proof/retained-core27.actual.txt" "$proof/prepare-controls.actual.txt" "$proof/trace-controls.actual.txt" "$proof/summary-controls.actual.txt" > "$proof/selected-units.actual.txt"
+test "$(wc -l < "$proof/selected-units.actual.txt")" -eq 67
+test "$(sort -u "$proof/selected-units.actual.txt" | wc -l)" -eq 67
+printf '{"schema":1,"selected_units":67,"retained_units":27,"prepare_units":9,"trace_units":24,"summary_units":7,"ignored":0,"exact_rosters":true}\n' > "$proof/selected-units.json"
+hold "$proof/selected-units.json"
 # Cargo가 더 이상 실행되지 않는 시점에만 owned source index의 cache metadata를 준비한다.
 # raw index는 mutable이며, tracked entries/source/config/held/SDK의 불변 검사와 분리한다.
 verify_held
