@@ -369,3 +369,36 @@ current 양성, font3구간 각각 변조/같은길이 제거/중복/순서 변�
 확인했고 새4/기존8·실제 Network CLI/원본 비교·source/SDK/provider 봉인은 **GHA UNRUN**이다.
 #585 해결·staged-font 기능·전체 UI/#523/원본 퇴역 credit은 주장하지 않는다.
 WF/Focus/ledger/Cargo 등록은 부모가 담당한다.
+
+## #575 Forms 실제14와 #585 후속 경계 — 2026-10-25
+
+[PR343 run40191336989/job121174299528](https://github.com/bin9208/openpilot-rust/actions/runs/40191336989/job/121174299528)는 actual merge `f8c781ede4b574cb127c51c42730e66be2078206`이며 head56f와 tree `dfc5bc8efbede54369e02689015fd876a7050efc`가 같다. Forms admission14는0FAIL/0ignored/0filtered,132.45초로 성공했고 기존10과 신규source4를 모두 포함했다. `UI_FORMS_RAW_HELPER`가 실제 설정되어 PNG/state 원본 비교 test가 실행됐다. 뒤 Network6PASS/2FAIL로 전체job은실패했으므로 UI/Clippy 전체수용과 #575종료는보류한다.
+
+부모는 artifact12600183865(15103335B/SHA `03b0ad05cf0babfa4ac00686196e7a16d755b245c49f1ca879ca3d1ebeafd646`/543safeunique+CRC), private12600558220(290333B/SHA `a9bff8f3b0c32187e1ec0badec39bee32ffc430804822f96ae6ca04dd6ec5cd1`/12safeunique+CRC)를 한 번 감사했다. private SOURCE_COMMIT/ownership은actual merge에묶이고source/index전후가byte동일하다. 성공PNG별도재보존·wholeSDKFD/DSO감사를새로입증했다고쓰지않는다. #585 새source4/full12의실제수용은다음정확source PR검사에서확인한다. 원본삭제/retirement credit0이다.
+
+
+### #586 Render validator의 같은 application 경계 누락 — source 후보
+
+#575/#585 후속 source inventory에서 Render도 기존 application old
+`d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00` 전체 SHA만
+허용하고 #557 font source 경계가 연결되지 않은 것을 확인했다. Render manifest37pin 중
+현재 다른 live34개는 정확히 같고 app1만 c659로 달라졌으며 retired originals2개는 부재다.
+PR56 UI는 Network에서 먼저 중단돼 Render의 실제 새 실패를 관측한 것은 아니다.
+
+Render public `validate_source`도 **정확 application.py path+기존 d17a expected pin 쌍**에만
+기존 `ui_application_logic_check::application_source_matches`를 호출한다. 다른 path/pin은
+원래 full SHA 비교다. manifest SHA
+`e2c03cc3d440ae44a81490ffd3153739e6c00accedc4ef0d4f5009738799cfe6`와37pin,
+Params import·font 부재·dependency·retired2/에러는 유지한다. 공통 matcher/production
+application.py를 수정하거나 current wholeSHA를 production 허용 목록에 추가하지 않았다.
+
+기존 integration root에는 nested module 등록2줄만 추가했다. 새 filesystem source 통제4개는
+current 양성, font3구간 각각 변조/같은길이 제거/중복/순서 변경, 비font FPS/stack/encoder 변조,
+같은 current bytes의 다른 path/expected pin·Params 원문/provider·font fallback·dependency 거부다.
+음성 전과 원복 후 양성도 요구하며 c659 wholeSHA는 테스트 입력의 출처 pin뿐이다.
+기존 root5/support4 총9개 test body와 원문 state/PNG/env·타 source bytes는 그대로다.
+
+로컬은 rustfmt·source 역투영·pin/보호파일 SHA·diff만 확인했다. 새4와 기존9, 실제 Render
+CLI·원본 graphics 비교·Clippy/sourceSDK/provider 후검사는 **GHA UNRUN**이다. 원본 capture/
+expected 재생성0, #586 해결·staged-font 기능·전체 UI/#523/원본 퇴역 credit0이다.
+WF/Focus/원장/Cargo 등록과 실제 수용은 부모가 담당한다.

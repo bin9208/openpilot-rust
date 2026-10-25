@@ -321,6 +321,9 @@ jobs:
             rust/crates/dev-tools/src/ui_network_reference.rs) ;;
             rust/crates/dev-tools/tests/ui_network_reference.rs) ;;
             rust/crates/dev-tools/tests/ui_network_reference/source_binding.rs) ;;
+            rust/crates/dev-tools/src/ui_render_reference.rs) ;;
+            rust/crates/dev-tools/tests/ui_render_reference.rs) ;;
+            rust/crates/dev-tools/tests/ui_render_reference/source_binding.rs) ;;
             rust/crates/dev-tools/src/model_family_prepare/catalog.rs) ;;
             rust/crates/dev-tools/tests/changed_files_caller.rs) ;;
             rust/crates/dev-tools/tests/changed_files_caller/absence.rs) ;;
@@ -719,6 +722,9 @@ jobs:
         printf '%s  %s\n' 5dd8e80ea249966722b5b2b97d06cc90fa8592b407b02d663802fe8af92ed914 rust/crates/dev-tools/src/ui_network_reference.rs | sha256sum --check -
         printf '%s  %s\n' db7cf994392bb1592d0888229b6092386f4b4a9584228aa3b1c8877b74736701 rust/crates/dev-tools/tests/ui_network_reference.rs | sha256sum --check -
         printf '%s  %s\n' fe0ea449edd9eb0674c04432507bd299f9bd991efffa342e60c5301082614c8e rust/crates/dev-tools/tests/ui_network_reference/source_binding.rs | sha256sum --check -
+        printf '%s  %s\n' 0b6101080c6fee58a413be4710b295b3fe0ff24522f556b65a91985cf1df4eb7 rust/crates/dev-tools/src/ui_render_reference.rs | sha256sum --check -
+        printf '%s  %s\n' 6d6265b10d90edeebc4b4ce597fdb909caf3970ec73ad70f939fd87d8a72838c rust/crates/dev-tools/tests/ui_render_reference.rs | sha256sum --check -
+        printf '%s  %s\n' cd7c7cd4687f5f2655c9608221a92d9986ef4cc753c6686d3b71e06fe5188f8c rust/crates/dev-tools/tests/ui_render_reference/source_binding.rs | sha256sum --check -
         printf '%s  %s\n' 879042db3d64f5b936a100de7b4880ad913499fb61213e799cde173e7a14a1d2 rust/crates/dev-tools/src/native_logging_check.rs | sha256sum --check -
         printf '%s  %s\n' b30cdd41c6abacedd04b887bf512ae4864403f7e726b2d373ee6de69d3970c33 rust/crates/dev-tools/src/native_logging_check/retained.rs | sha256sum --check -
         printf '%s  %s\n' 11f89c5612edd1230484797ce6747f55652d49250993760ac5c52d4a9450fe67 rust/crates/dev-tools/src/native_logging_check/retained_tests.rs | sha256sum --check -

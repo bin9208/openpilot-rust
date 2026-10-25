@@ -182,6 +182,15 @@ fn load_fonts(api: &mut SceneCanvas, big: bool, language: &str) -> Result<()> {
     api.call("font-select 0")
 }
 pub fn validate_source(root: &Path) -> Result<()> {
+    let source_matches = |name: &str, expected: &str, bytes: &[u8]| {
+        if name == "openpilot/system/ui/lib/application.py"
+            && expected == "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00"
+        {
+            crate::ui_application_logic_check::application_source_matches(bytes)
+        } else {
+            format!("{:x}", Sha256::digest(bytes)) == expected
+        }
+    };
     let manifest = include_str!("../tests/fixtures/ui-render/provenance.json");
     if format!("{:x}", Sha256::digest(manifest.as_bytes()))
         != "e2c03cc3d440ae44a81490ffd3153739e6c00accedc4ef0d4f5009738799cfe6"
@@ -218,7 +227,9 @@ pub fn validate_source(root: &Path) -> Result<()> {
         }
         match fs::read(root.join(name)) {
             Ok(bytes)
-                if Some(format!("{:x}", Sha256::digest(&bytes)).as_str()) != hash.as_str() =>
+                if !hash
+                    .as_str()
+                    .is_some_and(|expected| source_matches(name, expected, &bytes)) =>
             {
                 return Err(format!("{name} changed; independently recapture render").into());
             }
