@@ -1012,3 +1012,31 @@ base81782B SHA256 `6b173bb32ec045bbef9a0d2a968555a9318ff031e1d4cb1574a5254033bf2
 `ad9f19222`의 [40204820140/job121203423355](https://github.com/bin9208/openpilot-rust/actions/runs/40204820140/job/121203423355)은 최초 보유한 `stage-driving-daemon-fixture`가 바뀌었다고 거부했다. 실제 runtime 수치나 D1 시간 개선까지 도달한 성공으로 세지 않는다. 이 회귀는 [#587](https://github.com/bin9208/openpilot-rust/issues/587)에 분리했다.
 
 retirement test 한 명령에만 적용한 sha2 설정을 관련 model/dev-tools/daemon build·test·Clippy의 dev/test package profile에 일관되게 전달한다. 모델·테스트 본체 opt0, CPU/ISA·수치·시간 및 보유 파일 후검증은 유지한다. 최초 파일을 새 값으로 재봉인하여 변경을 받아들이지 않는다. 로컬 AST/diff만 확인했고 정확 소스의 실제 Actions는 대기다.
+
+## #482/#584 00c899 readonly AVX512_FP16 거부와 한정 지원 후보 — 2026-10-26
+
+지정 completion worktree에서 [source `00c899291f3c82e9a6e6449ed22ceb7fa4d691aa` / run40205795864/job121206329807](https://github.com/bin9208/openpilot-rust/actions/runs/40205795864/job/121206329807)의 보존 ZIP `.analysis/scratch/2026-10-25-523-completion/ci/12603663262.zip`을 정지 메타데이터로 읽었다. ZIP9947253B/SHA256 `383b50278a444059e2ff6f9f2162808c413b4662d6d21cd63c98eae0abeb7c82`, readonly JSON51790B/SHA256 `83553ee93a3fe4e66192f559ac87271e0e76c9fab54a7c1a33a1973e1d1c4e0c`, stderr505B/SHA256 `46bf4210e1fa38c6e66870be294c9a499cb3de1a215a3ebbb9fbc5ad8178be1f`다. 재다운로드·원본/모델/PKL/개별 코드/decoder 실행은0이며 이번 확인을 ZIP 전체 독립 재감사로 표기하지 않는다.
+
+실제 실패는 `triplet-readonly`의 `cached program 18: unadmitted cached instruction extension: AVX512_FP16; ip=0x277a; code=EVEX_Vmovw_xmm_r32m16; encoded_bytes=[62, d5, 7d, 08, 6e, 84, 52, 06, fe, ff, ff]; cpuid_features=[AVX512_FP16]`다. readonly는 strict_triplet_all=true/complete_roster91이나 host_isa_all=false이며 generated_code_executed/cached_issuer_invoked/numeric_acceptance=false다. feature census의 complete/valid는 ISA 수용이 아니다. 앞선 #587의 stage ELF 변경 거부와 이번 ISA 거부를 분리한다. 기존 정책에 FP16 매핑과 detector 항목이 모두 없어, 다른 guard 오류를 확장 허용으로 숨기는 수정이 아니다.
+
+실제 hosted-cpu.json은 x86_64/GenuineIntel/Intel Xeon6973P-C(family6/model173/stepping1), Microsoft hypervisor, online CPU0..3과 flags의 avx512_fp16·avx512f/dq/bw/vl·xsave·fma·f16c를 기록한다. 기존 readonly host_features에 avx512fp16이 없는 것은 탐지 항목 누락이며 hardware 미지원 판정이 아니다. lscpu 플래그만으로 새 수용을 선언하지 않는다. 다음 실행 host가 달라질 수 있으므로 동일 CPU 강제 없이 그 실행 host의 표준 detector와 전체 roster admission을 다시 확인해야 한다.
+
+Rust1.94의 rust-src는 로컬에 없어 공식 고정 tag의 [feature 선언](https://github.com/rust-lang/rust/blob/1.94.0/library/std_detect/src/detect/arch/x86.rs#L202)과 [OS/CPUID detector](https://github.com/rust-lang/rust/blob/1.94.0/library/std_detect/src/detect/os/x86.rs#L165-L270)를 직접 읽었다. 전자는 `is_x86_feature_detected!("avx512fp16")`를 제공한다. 후자는 CPUID leaf1 ECX의 XSAVE bit26/OSXSAVE bit27을 확인한 뒤 XGETBV(0)의 SSE/AVX bits1·2(mask0x06), AVX512 bits5·6·7(mask0xe0)을 모두 요구하고 FMA/F16C 조건 안에서 CPUID leaf7 subleaf0 EDX bit23을 읽는다. 합친 OS mask는 XCR0 & 0xe6 == 0xe6이다. 읽은 공식 raw source는 arch14503B/SHA256 `a3e874f324167c5a0aa4854666d4d57a6f9d8b2f3730145413a9dfeb7c486e0b`, os16071B/SHA256 `86116b52d471341868eebdf0185aef358716e9423cbe5b71e2a6974fd7bc4bc8`다. 새 unsafe CPUID/XGETBV 구현·컴파일 feature 강제는 추가하지 않는다.
+
+수정은 `rust/crates/model-runtime/src/cached_isa.rs`의 AVX512_FP16→avx512fp16 매핑1개와 기존 current_host의 표준 detector literal1개뿐이다. 기존 unknown-extension 거부와 각 image/전체 roster의 host 요구 검사는 그대로다. 같은 파일의 cfg(test)에 실제11바이트+synthetic ret decode/정확 code·feature·범위/양성 및 FP16 host 항목 제거 음성, roster91의 마지막 image·ret 뒤 도달 불가 명령 검사와 roster 누락 음성, 현재 host 항목과 OS-aware 표준 탐지 일치 검사를 추가했다. 기존 unknown-extension test는 FP16까지 주장하는 host에서도 AVX512CD/POPCNT를 계속 거부하도록 입력만 보강했다. 이 mutation은 host snapshot/roster를 바꾸는 검사이며 실제 CPUID/XCR0 레지스터 변경이나 개별 명령 실행 검사가 아니다. 나머지 기존8개 test 의미와 production 수학/threshold/CPU정책·시간/guard·봉인·원본 기대값은 유지한다.
+
+부모의 GHA 실행 대상은 `openpilot-model-runtime --no-default-features --features cached-program-isa --lib`이며 기존 cfg인 Linux x86_64가 필요하다. 새 exact selectors는 다음3개다.
+
+- `cached_isa::instruction_isa::tests::observed_avx512_fp16_image_requires_its_own_host_feature`
+- `cached_isa::instruction_isa::tests::avx512_fp16_at_roster_end_and_after_return_still_requires_the_host`
+- `cached_isa::instruction_isa::tests::current_host_avx512_fp16_matches_os_aware_rust_detection`
+
+같은 tests prefix 전체11개(기존8+신규3, ignored0)와 보강한 `unknown_extension_fails_even_on_a_claimed_capable_host`를 함께 검증한다. 실제 원문 경로의 재검증은 `cpu::diagnostic_482_tests::pr1344::frozen_source_whole_triplets_before_runtime`다. 이 ignored selector는 기존 same-VM/source/host/request/전체 triplet 인증을 거친 Actions 경로로만 실행하며 단독 로컬 실행하지 않는다. 새 host detector가 false인 환경에서는 FP16 image를 계속 거부하는 것이 정상이며, true여도 다른 미지원 확장·누락 host 기능은 독립적으로 거부한다.
+
+로컬 rustfmt1.94 `--edition 2021 --check`와 diff 공백 확인을 통과했다. 신규 test 블록3개·매핑1개·detector1개·설명 주석을 제거하고 기존 unknown test의 host 입력만 역투영하면 cached_isa.rs 기존 전체17667B/SHA256 `167cfbe83193264a52c9076d6126c971f89f6aa319efa4b09724befd379ae2cf`가 복원된다. 이는 source-only 검증이며 Cargo/build/test/Clippy/모델/프로젝트 CLI 로컬 실행0이다. **GHA UNRUN**: 기존8+신규3의 전체11개 test/Clippy·실제 host 탐지/whole ISA 재수용·D1/D2·원본 수치 비교 성공은 아직0이다. Focus/pins/원장/공유 CI 등록·commit/push/이슈 조작은 부모 담당이며 기기 수용·full128/half·sNaN5/전체 모델 수용 및 retirement credit0을 유지한다.
+
+### #587 실제 수용 및 #590 호출부 연결 — 2026-10-26
+
+source00c899291의40205795864/job121206329807에서5개 관련build/test와2개strictClippy가 모두0이고, 최초 held stager를 포함한 final-seals pass=true/failures=[]/all_owned_children_reaped=true였다. source/index·전체SDK·독립봉인·업로드·두cleanup도 성공했다. artifact12603663262의771 safe/unique/전체CRC를 감사했고 #587만 종료했다. 전체run은 실제AVX512_FP16 admission에서 실패했으며 모델수치·D1/D2는미도달이다.
+
+해당관측은 [#590](https://github.com/bin9208/openpilot-rust/issues/590)에분리했다. 부모는 현재same-VM helper에서 선택한library test ELF로 cached_isa::instruction_isa::tests::11개를60초한도에서직접실행하고 정확11PASS/0FAIL/0ignored를요구하도록연결했다. Cargobuild·profile·기대수치·CPU선택을바꾸지않고 그뒤같은전체triplet admission을수행한다. 새정확source의actualunit/ISA/수치결과는GHA대기다.

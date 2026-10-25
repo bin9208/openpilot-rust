@@ -671,7 +671,7 @@ jobs:
         printf '%s  %s\n' 8a93af22bb4f7dce48003a015d6f5df41e7a2a808ecb6d1f852975fc123366d5 rust/crates/dev-tools/tests/route_vault_bundle/frozen.rs | sha256sum --check -
         printf '%s  %s\n' 90125185dfc46c67f048fc7fbf46aa59ea7afd30887e547aeb7dbab5f3b0ed14 rust/crates/model-runtime/src/bin/offline-cached-code.rs | sha256sum --check -
         printf '%s  %s\n' 442530bd9bd4fcc6d6f7807deefd0fcfdcd06a0f6f0313d679a6438327b84210 rust/crates/model-runtime/src/cached_code.rs | sha256sum --check -
-        printf '%s  %s\n' 167cfbe83193264a52c9076d6126c971f89f6aa319efa4b09724befd379ae2cf rust/crates/model-runtime/src/cached_isa.rs | sha256sum --check -
+        printf '%s  %s\n' d2e3c05a91ee7316d2787815aaf847f79b898d4d3550d6f978a5736b47cc27a8 rust/crates/model-runtime/src/cached_isa.rs | sha256sum --check -
         printf '%s  %s\n' fd85a78634e8b6fae922ae873bbd7f484041e1c963585de58c9f4a9fc8984ff0 rust/crates/model-runtime/src/lib.rs | sha256sum --check -
         printf '%s  %s\n' 0fb349a7eec29b9c3b5b123980c8eaca3ea1529a8a05d4629f084bc29905ab44 rust/crates/model-runtime/tests/historical_cached_image.rs | sha256sum --check -
         printf '%s  %s\n' 186e02bf0c24b22dd0bc1ee74f7e3cdd91a146ffd2639a98fe0ac2af5bf53b9a rust/tools/prepare-changed-files-caller | sha256sum --check -
@@ -732,8 +732,8 @@ jobs:
         printf '%s  %s\n' 38e3931a4bf48de98fa68c9b88023da29bf58d96bb09b57a0092557ccbbd06ce .github/workflows/python-rust-523-logging.yml | sha256sum --check -
         printf '%s  %s\n' 90038cddfbefd63799d9c5709fd25309aff75107f8f278ae9b141af22293d300 tools/ci/logging_retained_549.sh | sha256sum --check -
         printf '%s  %s\n' 8874db13719fa04669b12b7a062e2090055218be64c9612c4fced405bc10a869 rust/crates/dev-tools/src/selfdrive_params_process.rs | sha256sum --check -
-        printf '%s  %s\n' 2d02d15a1df07a38f07f464b41b42f9ef772a2c023b52f9b2428f246a6b6418f .github/workflows/python-rust-523-model-pr1344-replay.yml | sha256sum --check -
-        printf '%s  %s\n' 6ed0809ae7890de58f9bf91cce8d16df61170a0d6c56cc78ce902cca9e5648a0 tools/ci/model_pr1344_replay_482.py | sha256sum --check -
+        printf '%s  %s\n' af619d889f8ae2851583cac3450a07fe71fe24641b70693abfca7ada7f2008e5 .github/workflows/python-rust-523-model-pr1344-replay.yml | sha256sum --check -
+        printf '%s  %s\n' 760b51ea14e9502bc2ad57d1f894d4c36a1629db7b655f50841979eeaf6ca625 tools/ci/model_pr1344_replay_482.py | sha256sum --check -
         printf '%s  %s\n' 132bbfb8ef3e2881cbe217002512d687ce5c04fbc5e65ba670087b6f82eb673c rust/crates/model-runtime/src/cpu/diagnostic_482_pr1344.rs | sha256sum --check -
         printf '%s  %s\n' 4dcc040ed795819356969801e395f1c50fb5a1e38ad9dadb924676c0e96ac376 rust/crates/dev-tools/tests/driving_daemon_retirement/model_482_pr1344.rs | sha256sum --check -
         printf '%s  %s\n' 2f3637cf74de34f9d0780f29e680a535fcae87b22d3684d1ca73112987fe76ed rust/crates/dev-tools/src/ui_forms_reference.rs | sha256sum --check -

@@ -125,6 +125,7 @@ mod instruction_isa {
             F::AVX512VL => "avx512vl",
             F::AVX512DQ => "avx512dq",
             F::AVX512BW => "avx512bw",
+            F::AVX512_FP16 => "avx512fp16",
             _ => {
                 return Err(format!(
                     "unadmitted cached instruction extension: {feature:?}"
@@ -193,6 +194,9 @@ mod instruction_isa {
             ("avx512vl", std::is_x86_feature_detected!("avx512vl")),
             ("avx512dq", std::is_x86_feature_detected!("avx512dq")),
             ("avx512bw", std::is_x86_feature_detected!("avx512bw")),
+            // Rust 1.94 std_detect checks CPUID(7,0).EDX[23] behind
+            // XSAVE/OSXSAVE, XCR0 & 0xe6 == 0xe6, FMA and F16C.
+            ("avx512fp16", std::is_x86_feature_detected!("avx512fp16")),
         ] {
             if supported {
                 result.insert(name);
@@ -250,7 +254,13 @@ mod instruction_isa {
         #[test]
         fn unknown_extension_fails_even_on_a_claimed_capable_host() {
             let claimed = BTreeSet::from([
-                "avx512f", "avx512vl", "avx512dq", "avx512bw", "avx512cd", "popcnt",
+                "avx512f",
+                "avx512vl",
+                "avx512dq",
+                "avx512bw",
+                "avx512fp16",
+                "avx512cd",
+                "popcnt",
             ]);
             for (bytes, feature) in [
                 // VPCONFLICTD zmm0,zmm0 requires the still unmodeled CD extension.
@@ -376,6 +386,69 @@ mod instruction_isa {
                 "cached program 90: host lacks sse4a"
             );
             assert!(admit_all(&images[..90], 91, &capable).is_err());
+        }
+
+        #[test]
+        fn observed_avx512_fp16_image_requires_its_own_host_feature() {
+            // run40205795864 program18 @0x277a, plus a synthetic ret. Decode only.
+            let observed = [
+                0x62, 0xd5, 0x7d, 0x08, 0x6e, 0x84, 0x52, 0x06, 0xfe, 0xff, 0xff, 0xc3,
+            ];
+            let mut decoder = Decoder::new(64, &observed, DecoderOptions::NONE);
+            let instruction = decoder.decode();
+            assert_eq!(instruction.code(), Code::EVEX_Vmovw_xmm_r32m16);
+            assert_eq!(instruction.len(), 11);
+            assert_eq!(instruction.cpuid_features(), &[CpuidFeature::AVX512_FP16]);
+            let capable = BTreeSet::from([
+                "avx",
+                "avx2",
+                "f16c",
+                "avx512f",
+                "avx512vl",
+                "avx512dq",
+                "avx512bw",
+                "avx512fp16",
+            ]);
+            let proofs = admit_all(&[(&observed, observed.len())], 1, &capable).unwrap();
+            assert_eq!(proofs[0].required, BTreeSet::from(["avx512fp16"]));
+            assert_eq!(proofs[0].instructions, 2);
+            assert_eq!(proofs[0].text_bytes, observed.len());
+            // F16C and every previously admitted AVX512 feature cannot stand in for FP16.
+            let mut missing = capable;
+            missing.remove("avx512fp16");
+            assert_eq!(
+                admit_all(&[(&observed, observed.len())], 1, &missing).unwrap_err(),
+                "cached program 0: host lacks avx512fp16"
+            );
+        }
+
+        #[test]
+        fn avx512_fp16_at_roster_end_and_after_return_still_requires_the_host() {
+            let baseline = [0xc3];
+            let after_return = [
+                0xc3, 0x62, 0xd5, 0x7d, 0x08, 0x6e, 0x84, 0x52, 0x06, 0xfe, 0xff, 0xff, 0xc3,
+            ];
+            let capable = BTreeSet::from(["avx512fp16"]);
+            let mut images = vec![(&baseline[..], baseline.len()); 91];
+            images[90] = (&after_return, after_return.len());
+            let proofs = admit_all(&images, 91, &capable).unwrap();
+            assert_eq!(proofs[90].required, capable);
+            assert_eq!(proofs[90].instructions, 3);
+            assert_eq!(
+                admit_all(&images, 91, &BTreeSet::new()).unwrap_err(),
+                "cached program 90: host lacks avx512fp16"
+            );
+            assert!(admit_all(&images[..90], 91, &capable).is_err());
+        }
+
+        #[test]
+        fn current_host_avx512_fp16_matches_os_aware_rust_detection() {
+            // Detection only: no cached instruction, CPUID override or target forcing.
+            let host = current_host();
+            assert_eq!(
+                host.contains("avx512fp16"),
+                std::is_x86_feature_detected!("avx512fp16")
+            );
         }
 
         #[test]

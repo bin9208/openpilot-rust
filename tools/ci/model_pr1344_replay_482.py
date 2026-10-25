@@ -564,6 +564,10 @@ def controller_type(base):
                 'rust/crates/drivingd/src/main.rs',False,[])
             self.command([cargo,'clippy',*model_args,'--lib','--tests','--','-D','warnings'],'current-model-clippy',900)
             self.command([cargo,'clippy',*args,'--test','driving_daemon_retirement','--','-D','warnings'],'current-retirement-clippy',900)
+            isa=self.command([test,'cached_isa::instruction_isa::tests::','--nocapture',
+                              '--test-threads=1','--color=never'],'current-isa-feature-tests',60)
+            need(b'test result: ok. 11 passed; 0 failed; 0 ignored;' in isa,
+                 'complete current cached ISA unit roster')
             registry=self.job/'cargo-home/registry'
             self.baselines['registry']=(registry,None,self.m.snapshot(registry,self.m.walk(registry)))
             for index,path in enumerate((guarded,test,stager,exporter,d1test,daemon,Path(os.environ['ORIGINAL_PYTHON']),
