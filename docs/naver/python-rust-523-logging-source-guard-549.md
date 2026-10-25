@@ -187,3 +187,43 @@ strict FAIL이다. operation 직전에는 두 raw와 이 bounded stderr 여유�
 이번 변경의 로컬 검증은 Bash-n/소스·outside projection/diff뿐이다. journal/복사/Git 명령/fixture를
 실행하지 않았으며 실제 최초 변경 지점·CLI20/raw21/policy3 및 cleanup은 새 source의 GHA UNRUN이다.
 원본2·frozen inputs·원래67/14/legacy2·15정책은 그대로이며 old27/R4/retirement credit0을 유지한다.
+
+## #582 a387 실제 index refresh와 content-aware readonly 후보
+
+run40194802656/job121173233700, sourcea3873834aefd264e37f3513c58c1f9a7ef4b32fc는
+sourceguard에서 FAIL했다. artifact12600226056는132452267B/SHA256
+`adf5e355ecd23e348e09f0fa9bdc72ac254f23349b524cd7b27c11e095526e7a`, 전체9425CRC PASS다.
+67unit/14+untraced1/retainedonce/15정책/legacyINT·TERM2 및 source/index/SDK11쌍은 유지됐다.
+18summary의 raw3499개/1743035682B도 actual size/SHA와 맞다. CLI20/rawfixture21/policy3는
+미도달이며 sourceSDK/held/resource final0, closureFAIL/uploadSUCCESS/cleanupSKIP다.
+
+journal 최초 변경은 `after-diff-files`, 실제 private copy `git --no-optional-locks … diff
+--name-only -z` exit0 직후다. 앞선cp/rev-parse/ls-files/diff--cached는 identity/hash가 같았다.
+source raw SHA는 `f7e059c72154d39339cb2f174e0fb64af0bd702c48fb7cb4bd953cd47babb62c`로
+같고 copy만 `db6935da1c720e9c49666dd3cdc87dca5e682f9be1e9b2d45dfd16b22c8b0221`로
+변경됐다. indexinode9489465→9489557/size2671826B다. inert DIRC/v2 해석상19490entry 중
+19488의 ctime_s/ctime_ns/mtime_ns/ino만 바뀌고 경로/blob/mode/dev/uid/gid/size/flags 및
+TREE/UNTR 전체SHA는 같다. checksum20B를 제외한 나머지 변경도 그 stat 필드 안에만 있다.
+이는 차이 분류이며 raw 정상화·기준재hold·waiver가 아니다. 전체 copy TAR/Git checksum은 앞선
+실패로 미도달이므로 a387에서 PASS로 소급하지 않는다.
+
+[Git2.55 builtin/diff.c](https://raw.githubusercontent.com/git/git/v2.55.0/builtin/diff.c)의
+222–234/494/608–609행과 [공식 config](https://raw.githubusercontent.com/git/git/v2.55.0/Documentation/config/diff.adoc)는
+stat-only 내용동일 판정 뒤 index refresh 경로를 설명한다. 단순 `autoRefreshIndex=false`는
+stat-only pair 제거도 끄므로 사용하지 않는다. 해당 private-copy 호출에만
+`-c diff.autoRefreshIndex=false`와 `--exit-code --name-only -z`를 함께 적용하는 후보로 바꾼다.
+[diff.c](https://raw.githubusercontent.com/git/git/v2.55.0/diff.c)의 기본 allow_external과
+--exit-code→diff_from_contents(5047–5048행), name-only 콘텐츠 판정(6799–6801행)을 사용한다.
+`--no-ext-diff`나 whitespace 무시·regex/다른config는 추가하지 않는다.
+
+고정 stage/privatecopy root/전체10argv가 일치할 때만 expected_exit1이다. 이는 의도된 정확2개
+삭제가 존재하는 Git `--exit-code` 계약이며 실제1은 journal에 그대로 남는다. 다른cp/Git3개는
+expected0이며 해당diff의0이나2이상도 실패다. expected-exit1 전용1행만 추가하여 journal정상30행,
+기존32행/32KiB상한을 유지한다. wrapper는 조건식으로 strictcheck를 감싸서 errexit를 억제하지
+않고, strictcheck가 완료된 때만 stage성공0으로 반환한다. 이후 기존 정확2NUL목록cmp와
+canonicalTAR/전체Git metadata checksum은 계속 필수AND다. status1만으로 기능을 수용하지 않는다.
+
+원래 rawindex identity/hash·원문2·예산·타이머·67/14/15/legacy2/정책/실패후봉인·upload·cleanup
+조건은 그대로다. 로컬 Bash 문법·변경span 역투영·diff만 확인하고 Git/fixture 실행0이다.
+콘텐츠/name-only/actual exit1/index불변과 CLI20/raw21/policy3·전체closure/cleanup은 새 source의
+**GHA UNRUN**이며 원본2보존·R4false/retirement credit0을 유지한다.

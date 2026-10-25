@@ -617,7 +617,8 @@ fn verify(
         if at {
             c.token(b", 0")?;
         }
-        c.token(b") =")?;
+        c.token(b")")?;
+        c.token(b"=")?;
         let ok = if c.eat(b"0") {
             true
         } else {

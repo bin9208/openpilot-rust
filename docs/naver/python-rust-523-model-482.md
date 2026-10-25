@@ -966,3 +966,15 @@ base81782B SHA256 `6b173bb32ec045bbef9a0d2a968555a9318ff031e1d4cb1574a5254033bf2
 자세한검토는 private `pr9ae-llvm20-260-355-actual-audit.md/json`, sourcebindings/testcounts/provider 및privateZIP 인덱스에 보존한다. 이미통과한108개를목적없이재실행하거나이번수치와모델전체/half5/1928·1344signedzero를혼합하지 않는다.
 
 #579 후속 보강은 정지fixture의 실제 du2회의 stdout/stderr 각64KiB prefix와 argv/status/timeout/elapsed/길이/SHA/잘림을 strict output·metric 판단 전에 create_new로 보존한다. 비정상/timeout 예외는 증거를 남긴 뒤 그대로 전파하고 증거 저장 실패도 숨기지 않는다. env/secret·재시도·추가 subprocess는 없다. 최종 인계는 private `model-579-metadata-du-evidence/handoff.md`이며 앞선 source-only 동결3609/0eec는 이를 대체하기 전의 중간 기록이다. 아직 GHA_UNRUN이다.
+
+## #579 실제 수용·#578 lint 및 #584 D1 경계 — 2026-10-25
+
+정확 source `68a1098f3c23bb006dcab29e619148e0df1cc574`의 [current40196626649](https://github.com/bin9208/openpilot-rust/actions/runs/40196626649/job/121178731808) SUCCESS 및 [PR134440196626662](https://github.com/bin9208/openpilot-rust/actions/runs/40196626662/job/121178731403)의 후속 D1 실패를 각각 전수 감사했습니다.
+
+- current artifact12599882842=37503896B/SHA256 `72d8d381564c720745578b200ac829403447d958b8e3c4de9041dec43bffadf9`/1040safe unique·1040CRC PASS, PR1344 artifact12600048061=22444202B/SHA256 `8a4000f8d2988edda5e22740c4d82faebce4f29d940870946e366af25010cb9c`/2155safe unique·2155CRC PASS입니다. 각1회다운로드/원본·모델·프로젝트 로컬실행0입니다.
+- 양쪽에서 실제 metadata 양성2/음성12·source/helper/target/held du/receipt 결합과 raw du2개의 argv/크기/SHA/완전수집을 확인했습니다. 실제 GNU du와 metadata는 allocated28672B/apparent1052939B로 일치했습니다.
+- current155/PR402개의 concurrent scan은 모두 first-attempt clean, 최대0.043785/0.119732초였습니다. 실제 ENOENT incomplete/retry는0이며 actual_race_recovered=false를 보존합니다. 실제 race 발생을 꾸미지 않고 의미 있는 strict-child/오류/소진/cap/root 통제 및 정상 compiler 경로 통과로 제한해 수용합니다. 3attempt 전체10초/원래8GiB·512MiB reserve/기한·수치·ISA는 불변입니다.
+- 두 model strictClippy 모두 exit0, A whole91 SOURCE/object/image·ABI/hostISA PASS입니다. current B의2frame×6output12개는 원본/native/tapped 전체 bytes가 같았습니다. 자연 host는양쪽 AMD EPYC7763/znver3여서 옛 Intel road1928 signedzero3건 재현·원인해결로 올리지 않습니다.
+- source19490/SDK188/venv2037/base9398 snapshot과 outer6쌍, 기존 held·최종회수/업로드/정리는 양쪽 모두 정상입니다. PR1344는그뒤D1의180초 command deadline으로FAIL했고 첫packet만남아D1strict12/33·D2·index99수치는미판정입니다. 별도 #584에서 추적하며 #482/full128/half·sNaN5/retirement credit0을 유지합니다.
+
+#579의 bounded metadata 측정/통제·원문 보존 및 compiler 관측 실패 통과 조건을 충족해 완료 처리합니다. strictClippy blocker #578은 해소됐지만 D2실제관측은미도달이므로 해당후속상태도분리합니다. 상세는 private hosted-68a-model-audit/current-audit.md와pr1344-audit.md 및 tracked모델기록입니다.

@@ -361,3 +361,29 @@ patch bytes가 정확히 복원된다. helper는 새 postimage SHA literal1곳�
 로컬은 text/source projection·Bash 문법·diff만 확인한다. 새 C compile·nonleader 실제 exit0 관측·
 전체18통제/cold/auditor는 **GHA UNRUN**이다. `= ?` 허용·원문 정규화·추가 query·재시도·provider 교체는0이며
 #581/#560 해결·전체 runtime/기기 수용이나 retirement credit을 주장하지 않는다.
+
+## #583: 실제 nonleader result0 뒤 delimiter 공백 보완 후보
+
+source `68a1098f3c23bb006dcab29e619148e0df1cc574`의
+[40196626823/job121178732127](https://github.com/bin9208/openpilot-rust/actions/runs/40196626823/job/121178732127)은
+다시 nonleader verifier의 `trace token`에서 FAIL했다. 부모가 받은 artifact12600581553은
+11309502B/SHA256 `ddab44f9b0646fd4f5e3c3c3d2abe16a856fdd441c4a8cc4654b76eb708448c7`,
+700safe unique/700CRC PASS, expanded59942049B다. 재다운로드나 전수CRC 재감사는 하지 않았다.
+
+이번 원문은 #581 이전131a의 `= ?`와 다르다. observer는 SECCOMP2/exit2/abnormal0이며,
+debug의 두 번째 sig133 syscall-exit stop과 실제
+`30949 <... execve resumed>)             = 0`이 남았다. #581의 exit-stop 개선은 관측됐지만
+fixture가 `c.token(b") =")` 내부의 단일 공백을 강제해 alignment 공백을 거부했다.
+protocol3/marker10 및 fork/vfork/thread3만 PASS했고 nonleader semantic verifier는 아직 FAIL,
+나머지 양성3/음성11·actual cold/strict auditor는 미도달이다. stdout 성공을 verifier PASS로
+대체하지 않는다.
+
+승인 후보는 이 delimiter만 `c.token(b")")`와 `c.token(b"=")`로 분리한다. 각 호출이 원래
+`Cursor::ws()`의 ASCII space 처리를 사용하며 새 whitespace 규칙이나 raw 재작성은 없다.
+opcode/path/argv/env/PID 교체·정확 개수·결과0/ENOENT·`?` 및 unknown 거부·EOF·bounds는 그대로다.
+helper/C patch/BPF/observer·시간/공간 cap은 변경하지 않는다. 부모가 새 fixture SHA의 WF/Focus/
+원장 literal을 연결하며 기존 helper/C postimage pin은 유지한다.
+
+로컬은 source text 역투영·Rustfmt·diff만 확인한다. parser/fixture/원본/프로젝트·compile/test/CI
+실행0이다. 이 후보의 semantic nonleader PASS·전체18통제/cold/auditor는 **GHA UNRUN**이며
+#583/#560 해결·전체 runtime/기기 수용이나 retirement credit으로 올리지 않는다.

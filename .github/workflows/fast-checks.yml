@@ -544,6 +544,13 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml -p openpilot-service-tools --locked
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         working-directory: ${{ env.DIAG_SOURCE }}
+      - name: Check selfdrive process cleanup library regressions
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        working-directory: ${{ env.DIAG_SOURCE }}
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features selfdrive-params-native --lib selfdrive_params_check::process::tests:: -- --test-threads=1 | tee "$CI_JOB_TEMP/proof/selfdrive-process-tests.log"
+          grep -E '^test result: ok\. 5 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/selfdrive-process-tests.log"
       - name: Verify read-only Rust SDK contents and identities after maintained checks
         id: prepared_rust_final
         if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}

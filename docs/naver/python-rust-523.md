@@ -1233,3 +1233,11 @@ GitHub 기본 러너 전환 상태에서 작업을 계속 진행 중입니다. �
 baseline3580은 교체294/부분3/대기3283으로 추가 승격0입니다. 실행 원장은141edge=26replaced/111pending/1native-existing/2text/1removed이며 새 Fast Python 회귀 경로도 정직하게 pending입니다. #523/#296 전체 전환·PR 필수검사·통합/전달·실기 수용은 미완료이고 이슈를 닫지 않았습니다. 로컬은 소스/문법/format/diff 및 저장 artifact의 inert 감사만 했습니다.
 
 후속 #579 source batch는 새 metadata provider 호출점1개도 pending으로 등록한다. 원장은142edge=26replaced/112pending/1native-existing/2text/1removed이며 baseline3580의294/3/3283은 그대로다. 아직 기능 GHA_UNRUN이다.
+
+## #574 후속 컴파일 교정 — 2026-10-25
+
+source56f PR의 selfdrived121174299458은 새 cfg(test) 회귀의 `Errno::ACCES` 상수 오타(E0599)와 그에 따른 E0282로 libtest compile에 실패했다. compiler가 제시한 실제 `Errno::ACCESS`로 한 식별자를 교정하며 production prefix/ESRCH·NotFound·Zombie 판단/기존기한·kill/wait는 byte 불변이다. 원문로그210707B/SHA256 `fd143cbf55f03be18c10d3cc58da25e403bd7f8ea06de678d1b9c29fd31aeff7`를1회 읽었다.
+
+Fast native-tools에 기존 feature-gated `selfdrive_params_check::process::tests::`5개를 별도선택하고 정확5PASS/0FAIL/0ignored를 요구한다. 기존70여 native target/선택/순서·초기예산·source/SDK후검사·업로드·cleanup은 유지한다. 기본feature에서미컴파일됐던단위모듈을실제GHA에서검증하는연결이며 새테스트/production동작/기기접근/전체PR성공을추가하지 않는다. 로컬rustfmt/diff만하며 이교정의기능은GHA_UNRUN, #574는열린상태다.
+
+Fast 정책의 기존73개 suite 선택과 baseline command signature는 유지하고, 추가 selfdrive-params-native library5 command·결과5PASS grep을 native-tools에서 정확히1회씩 service suite 뒤 실행하도록 검증한다. 기본 feature에서 빠지는 cfg(test) 컴파일을 이 좁은 실제 CI가 담당하며 로컬 기능 검증은 실행하지 않았다.

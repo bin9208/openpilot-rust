@@ -6,6 +6,8 @@ use openpilot_dev_tools::ci_policy::{
 use std::{collections::BTreeMap, fs, path::PathBuf};
 
 const CHANGED_FILES_REGRESSION: &str = "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --test changed_files_caller";
+const SELFDRIVE_PROCESS_REGRESSION: &str = "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features selfdrive-params-native --lib selfdrive_params_check::process::tests:: -- --test-threads=1 | tee \"$CI_JOB_TEMP/proof/selfdrive-process-tests.log\"";
+const SELFDRIVE_PROCESS_RESULT: &str = "grep -E '^test result: ok\\. 5 passed; 0 failed; 0 ignored;' \"$CI_JOB_TEMP/proof/selfdrive-process-tests.log\"";
 const NAVI_POLICY: [&str; 2] = [
     "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features carrot-navi-compare-native --test carrot_navi_compare maintained_policy_rejects_embedded_oracle_and_changed_traffic -- --exact",
     "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features carrot-navi-compare-native --test carrot_navi_compare maintained_policy_accepts_yaml_aliases_and_rejects_unreviewed_overlays -- --exact",
@@ -381,6 +383,8 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         (NAVI_POLICY[0], "native"),
         (NAVI_POLICY[1], "native"),
         (service, "native-tools"),
+        (SELFDRIVE_PROCESS_REGRESSION, "native-tools"),
+        (SELFDRIVE_PROCESS_RESULT, "native-tools"),
     ];
     let mut seen = BTreeMap::<String, usize>::new();
     let mut all_commands = Vec::new();
@@ -422,6 +426,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
                 .iter()
                 .filter(|line| {
                     line.as_str() != CHANGED_FILES_REGRESSION
+                    && line.as_str() != SELFDRIVE_PROCESS_REGRESSION
                     && !NAVI_POLICY.contains(&line.as_str()) && line.starts_with(
                         "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked"
                     )
@@ -434,6 +439,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
             .iter()
             .find(|line| {
                 line.as_str() != CHANGED_FILES_REGRESSION
+                && line.as_str() != SELFDRIVE_PROCESS_REGRESSION
                 && !NAVI_POLICY.contains(&line.as_str()) && line.starts_with(
                     "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked",
                 )
@@ -537,6 +543,8 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
             assert!(at(NAVI_POLICY[0]) < at(NAVI_POLICY[1]));
         } else if worker == "native-tools" {
             assert!(at(command) < at(service));
+            assert!(at(service) < at(SELFDRIVE_PROCESS_REGRESSION));
+            assert!(at(SELFDRIVE_PROCESS_REGRESSION) < at(SELFDRIVE_PROCESS_RESULT));
         }
         all_commands.extend(commands);
     }

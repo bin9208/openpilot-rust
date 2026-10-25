@@ -686,11 +686,18 @@ source_guard_index_begin() {
   hold "$sg_index_dir/source-before.raw"
 }
 source_guard_index_check() {
-  local stage=$1 command_code=$2 source_identity source_hash source_raw_identity copy_identity copy_hash copy_raw_identity command result=equal capture_code=0
+  local stage=$1 command_code=$2 source_identity source_hash source_raw_identity copy_identity copy_hash copy_raw_identity command result=equal capture_code=0 expected_code=0
   shift 2
   [[ $sg_index_failed == false && $sg_index_checks -lt 6 ]]
   sg_index_checks=$((sg_index_checks + 1))
   printf -v command '%q ' "$@"
+  if [[ $stage == after-diff-files ]]; then
+    [[ $root == "$CI_JOB_TEMP/logging-source-absence-copy/source" && $# == 10 &&
+       $1 == git && $2 == --no-optional-locks && $3 == -c && $4 == diff.autoRefreshIndex=false &&
+       $5 == -C && $6 == "$root" && $7 == diff && $8 == --exit-code && $9 == --name-only && ${10} == -z ]]
+    expected_code=1
+    source_guard_index_record expected-exit "$stage" "$expected_code" actual-exit "$command_code" "$command"
+  fi
   source_guard_index_budget "index-$stage" 16809984
   if [[ $stage == after-copy ]]; then
     sg_index_copy_parent=$(stat -c '%d:%i:%f:%u:%g' "$root/.git") || {
@@ -712,7 +719,7 @@ source_guard_index_check() {
   copy_identity=$sg_index_observed_identity; copy_hash=$sg_index_observed_sha; copy_raw_identity=$sg_index_observed_capture_identity
   if [[ $source_identity != "$sg_index_source_identity" || $source_hash != "$sg_index_source_sha" ||
         $copy_hash != "$sg_index_source_sha" || ( -n $sg_index_copy_identity && $copy_identity != "$sg_index_copy_identity" ) ]]; then result=mismatch; fi
-  if ((command_code != 0)); then
+  if ((command_code != expected_code)); then
     if [[ $result == equal ]]; then result=command-failed; else result=mismatch-and-command-failed; fi
   fi
   source_guard_index_record "$stage" "$command" "$command_code" source "$source/.git/index" "$source_identity" "$source_hash" source-current.raw "$source_raw_identity" "$result"
@@ -746,7 +753,8 @@ source_guard_index_git() {
   shift 2
   "$@" > "$output" || command_code=$?
   source_guard_index_check "$stage" "$command_code" "$@"
-  return "$command_code"
+  # actual status는 journal에 남는다. 고정 diff의 expected1만 strict 검사 후 성공이다.
+  return 0
 }
 source_guard_index_end() {
   [[ $sg_index_failed == false && $sg_index_checks == 6 ]]
@@ -822,7 +830,7 @@ source_guard() {
   source_guard_index_git after-ls-files "$proof/copied-index.bin" git --no-optional-locks -C "$root" ls-files -z
   cmp "$proof/copy-index.bin" "$proof/copied-index.bin"
   source_guard_index_git after-diff-cached "$proof/copy-cached.diff" git --no-optional-locks -C "$root" diff --cached --exit-code
-  source_guard_index_git after-diff-files "$proof/copy-deletions.bin" git --no-optional-locks -C "$root" diff --name-only -z
+  source_guard_index_git after-diff-files "$proof/copy-deletions.bin" git --no-optional-locks -c diff.autoRefreshIndex=false -C "$root" diff --exit-code --name-only -z
   printf 'rust/tools/check_native_logging.py\0rust/tools/native_logging_transport.py\0' > "$proof/copy-deletions.expected.bin"
   cmp "$proof/copy-deletions.expected.bin" "$proof/copy-deletions.bin"
   # canonical tar와 Git metadata bytes를 source->copy 대조한다. raw index 변경도 숨기지 않는다.

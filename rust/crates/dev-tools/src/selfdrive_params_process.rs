@@ -282,7 +282,7 @@ mod tests {
             )))
             .unwrap());
         }
-        for errno in [rustix::io::Errno::ACCES, rustix::io::Errno::IO] {
+        for errno in [rustix::io::Errno::ACCESS, rustix::io::Errno::IO] {
             let error =
                 descendant_stopped(Err(std::io::Error::from_raw_os_error(errno.raw_os_error())))
                     .unwrap_err();
