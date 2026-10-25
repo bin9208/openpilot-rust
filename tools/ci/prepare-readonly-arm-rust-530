@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# #530: 실패한 두 native ARM role만 새 SDK를 준비한다. 기존 partial prefix는 읽기 전용이다.
+# #530: main caller의 정확한 native ARM 8개 role만 새 SDK를 준비한다. 기존 partial prefix는 읽기 전용이다.
 set -euo pipefail
 umask 077
 original_path=$PATH
@@ -12,7 +12,10 @@ phase=$1
    $(uname -s):$(uname -m) == Linux:aarch64 && ${LOCAL_CI_ARCH:-} == aarch64 &&
    ${CI296_NATIVE_ARM:-}:${CI296_NATIVE_ARM_CALLER:-} == 1:rust.yml &&
    ${GITHUB_WORKFLOW_REF:-} == "bin9208/openpilot-rust/.github/workflows/rust.yml@${GITHUB_REF:-}" ]] || fail 'exact native ARM caller required'
-case ${GITHUB_JOB:-} in webcam-runtime|carrot-navi-arm) ;; *) fail 'unapproved ARM SDK role';; esac
+case ${GITHUB_JOB:-} in
+  planner-runtime|carrot-man-runtime|webrtc-runtime|webcam-runtime|xiaoge-runtime|radard-runtime|radar-arm|carrot-navi-arm) ;;
+  *) fail 'unapproved ARM SDK role';;
+esac
 case ${GITHUB_EVENT_NAME:-} in
   push) [[ ${GITHUB_REF:-} == refs/heads/dev || ${GITHUB_REF:-} == refs/heads/main ]] || fail 'push ref differs';;
   pull_request) [[ ${GITHUB_REF:-} =~ ^refs/pull/[1-9][0-9]*/merge$ &&

@@ -151,7 +151,7 @@ if [[ $mode == final-source ]]; then source_final;exit;fi
 [[ ${CI_PREPARED_RUST_ROOT:-} == "$sdk" && -f ${CI_PREPARED_RUST_MANIFEST:?} ]] || fail 'prepared SDK missing'
 [[ ! -e $out && ! -L $out && ! -e $build && ! -L $build && ! -e $cache && ! -L $cache ]] || fail 'fresh output/cache required'
 mkdir "$out" "$out/logs" "$out/providers" "$out/inputs" "$out/licenses" "$build" "$build/tmp" "$build/audit-target"
-deadline=$((SECONDS+1200));active= identity=;owned_code= owned_waited=;passed=false;observer=false;audit=false;protocol_complete=false;established=false;groups_ok=true
+deadline=$((SECONDS+1200));active= identity=;owned_code= owned_waited=;passed=false;observer=false;audit=false;protocol_complete=false;marker_controls_complete=false;established=false;groups_ok=true
 declare -A held_fd=() held_id=() held_sha=() aliases=() alias_id=() bound=()
 declare -a trees=() tree_names=()
 stamp() { stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$1"; }
@@ -287,8 +287,158 @@ provider_metadata() {
   (ulimit -f 64; /usr/bin/dpkg-query -W '-f=binary=${binary:Package}\nversion=${Version}\narchitecture=${Architecture}\nsource=${source:Package}\nsource_version=${source:Version}\n' strace) > "$out/provider-$phase.package" || return 1
   (ulimit -f 64; /usr/bin/strace --version) > "$out/provider-$phase.version" 2> "$out/provider-$phase.version.stderr" || return 1
 }
+marker_rejection() { printf 'cold tracer 560 marker: %s\n' "$1" >&2;return 1; }
+verify_marker_receipt() {
+  local log=$1 receipt=$2 trace=$3 parsed=$4 path n hash
+  local -a paths=("$log" "$receipt" "$trace") identities=()
+  for path in "${paths[@]}";do
+    [[ -f $path && ! -L $path && $(readlink -e "$path") == "$path" &&
+       $(stat -c '%u:%h' "$path") == "$(id -u):1" ]] || { marker_rejection input-binding;return 1; }
+    identities+=("$(stamp "$path")") || { marker_rejection input-binding;return 1; }
+  done
+  [[ $(stat -c %s "$receipt") -le 65536 && ! -e $parsed && ! -L $parsed ]] || { marker_rejection input-binding;return 1; }
+  # 허용한 두 prefix 외 marker는 무시하지 않고 거부한다. JSON payload는 단 한 줄/한 개다.
+  (set -o noclobber;ulimit -f 64 || exit 1;awk '
+    BEGIN {
+      marker="PREPARED_COLD_BOOTSTRAP_AUDIT_JSON";
+      bare=marker " ";
+      progress="test prepared_audit::prepared_audit_actual_cold_bootstrap_receipt ... " bare
+    }
+    index($0,marker) {
+      count++;
+      if(index($0,bare)==1) payload=substr($0,length(bare)+1);
+      else if(index($0,progress)==1) payload=substr($0,length(progress)+1);
+      else {bad=1;next}
+      if(length(payload)==0||length(payload)>65535) {bad=1;next}
+      print payload
+    }
+    END {if(count!=1||bad)exit 1}
+  ' "$log" > "$parsed") || { marker_rejection marker-shape;return 1; }
+  hash=$(sha256sum "$trace") || { marker_rejection input-binding;return 1; };hash=${hash%% *}
+  jq -se --slurpfile receipt "$receipt" --arg source "$GITHUB_SHA" --arg trace "$hash" '
+    length==1 and ($receipt|length)==1 and (.[0]|type)=="object" and
+    .[0]==$receipt[0] and .[0].audit_schema=="openpilot.prepared-cold-bootstrap.native.v1" and
+    .[0].source_commit==$source and .[0].trace_sha256==$trace
+  ' "$parsed" > /dev/null || { marker_rejection json-binding;return 1; }
+  for n in "${!paths[@]}";do
+    [[ ! -L ${paths[$n]} && $(readlink -e "${paths[$n]}") == "${paths[$n]}" &&
+       $(stamp "${paths[$n]}") == "${identities[$n]}" ]] || { marker_rejection input-binding;return 1; }
+  done
+}
+marker_receipt_controls() {
+  local dir=$out/marker-controls name payload expected_code expected_reason code hash
+  local marker='PREPARED_COLD_BOOTSTRAP_AUDIT_JSON '
+  local progress='test prepared_audit::prepared_audit_actual_cold_bootstrap_receipt ... '
+  [[ ! -e $dir && ! -L $dir ]] || fail 'fresh marker controls required'
+  mkdir "$dir"
+  printf 'authored-marker-control\n' > "$dir/base.trace"
+  hash=$(sha256sum "$dir/base.trace");hash=${hash%% *}
+  jq -n --arg source "$GITHUB_SHA" --arg trace "$hash" '{
+    audit_schema:"openpilot.prepared-cold-bootstrap.native.v1",source_commit:$source,
+    absolute_cargo:"/authored/sdk/bin/cargo",absolute_rustc:"/authored/sdk/bin/rustc",
+    runner_environment:"github-hosted",runner_name:"authored-marker-control",
+    exec_attempts:3,observed_rustup_exec_attempts:0,observed_python_exec_attempts:0,
+    successful_absolute_cargo_execs:1,successful_absolute_rustc_execs:1,failed_exec_attempts:0,
+    trace_sha256:$trace,manifest_sha256:("a"*64),manifest_regular_files_verified:1
+  }' > "$dir/base.receipt.json"
+  for name in bare progress missing duplicate foreign-prefix malformed multiple-json source trace whole-receipt;do
+    ((SECONDS<deadline)) || fail 'marker controls exceeded shared deadline'
+    cp "$dir/base.receipt.json" "$dir/$name.receipt.json"
+    cp "$dir/base.trace" "$dir/$name.trace"
+    payload=$(jq -c . "$dir/$name.receipt.json")
+    expected_code=1;expected_reason=json-binding
+    case $name in
+      bare) printf '%s%s\n' "$marker" "$payload" > "$dir/$name.stdout";expected_code=0;expected_reason=;;
+      progress) printf '%s%s%s\n' "$progress" "$marker" "$payload" > "$dir/$name.stdout";expected_code=0;expected_reason=;;
+      missing) printf 'ok\n' > "$dir/$name.stdout";expected_reason=marker-shape;;
+      duplicate) printf '%s%s\n%s%s%s\n' "$marker" "$payload" "$progress" "$marker" "$payload" > "$dir/$name.stdout";expected_reason=marker-shape;;
+      foreign-prefix) printf 'test foreign::test ... %s%s\n' "$marker" "$payload" > "$dir/$name.stdout";expected_reason=marker-shape;;
+      malformed) printf '%s{"source_commit":\n' "$marker" > "$dir/$name.stdout";;
+      multiple-json) printf '%s%s {}\n' "$marker" "$payload" > "$dir/$name.stdout";;
+      source|trace)
+        # payload와 receipt가 함께 틀려도 현재 source/실제 trace binding에서 거부해야 한다.
+        if [[ $name == source ]];then
+          jq '.source_commit=("f"*40)' "$dir/base.receipt.json" > "$dir/$name.receipt.json"
+        else
+          jq '.trace_sha256=("f"*64)' "$dir/base.receipt.json" > "$dir/$name.receipt.json"
+        fi
+        payload=$(jq -c . "$dir/$name.receipt.json")
+        printf '%s%s\n' "$marker" "$payload" > "$dir/$name.stdout";;
+      whole-receipt)
+        payload=$(jq -c '.exec_attempts+=1' "$dir/$name.receipt.json")
+        printf '%s%s\n' "$marker" "$payload" > "$dir/$name.stdout";;
+    esac
+    code=0
+    verify_marker_receipt "$dir/$name.stdout" "$dir/$name.receipt.json" "$dir/$name.trace" "$dir/$name.parsed.json" 2> "$dir/$name.stderr" || code=$?
+    [[ $code == "$expected_code" ]] || fail "marker control exit differs: $name"
+    if [[ $expected_code == 0 ]];then
+      [[ ! -s $dir/$name.stderr ]] || fail "positive marker control stderr: $name"
+    else
+      [[ $(grep -Fxc "cold tracer 560 marker: $expected_reason" "$dir/$name.stderr") == 1 ]] || fail "marker control rejection differs: $name"
+    fi
+    printf '%s\t%s\t%s\tPASS\n' "$name" "$code" "${expected_reason:-accepted}" >> "$out/marker-receipt-controls.tsv"
+  done
+  [[ $(wc -l < "$out/marker-receipt-controls.tsv") == 10 ]] || fail 'exact marker control count differs'
+  marker_controls_complete=true
+  admit
+}
+final_admission_trace() {
+  # reader에만 64KiB fsize를 건다. admit의 기존 출력 파일/cap에는 전파하지 않는다.
+  local trace=$out/final-admission.xtrace result=$out/final-admission.exit reader_result=$out/final-admission.reader
+  local path trace_fd reader writer_code=0 reader_code=0 open_code=0 value code
+  final_admission_status=125;final_admission_diagnostic_complete=false
+  for path in "$trace" "$result" "$reader_result";do
+    [[ ! -e $path && ! -L $path ]] || return 1
+  done
+  exec {trace_fd}> >(
+    set -o noclobber
+    ulimit -f 64 || exit 125
+    head -c 65536 > "$trace" || exit 125
+    value=
+    if IFS= read -r -N 1 value;then
+      printf 'overflow\n' > "$reader_result"
+      exit 1
+    else
+      code=$?
+      [[ $code == 1 && -z $value ]] || exit 125
+      printf 'complete\n' > "$reader_result" || exit 125
+    fi
+  ) || open_code=$?
+  reader=$!
+  if [[ $open_code != 0 ]];then
+    wait "$reader" || :
+    return 1
+  fi
+  (
+    BASH_XTRACEFD=$trace_fd
+    PS4='+cold560-final:${LINENO}:${FUNCNAME[0]:-main}:previous=$?: '
+    set -x
+    code=0;admit || code=$?
+    set +x
+    (set -o noclobber;printf '%s\n' "$code" > "$result") || exit 125
+    exit "$code"
+  ) || writer_code=$?
+  exec {trace_fd}>&-
+  wait "$reader" || reader_code=$?
+  final_admission_status=$writer_code
+  for path in "$trace" "$result" "$reader_result";do
+    [[ -f $path && ! -L $path && $(readlink -e "$path") == "$path" &&
+       $(stat -c '%u:%h' "$path") == "$(id -u):1" ]] || return 1
+  done
+  [[ $(stat -c %s "$trace") -le 65536 && $(stat -c %s "$result") -le 4 &&
+     $(stat -c %s "$reader_result") == 9 && $(cat "$reader_result") == complete && $reader_code == 0 ]] || return 1
+  value=$(cat "$result")
+  [[ $value =~ ^(0|[1-9][0-9]{0,2})$ && $(stat -c %s "$result") == $((${#value}+1)) &&
+     $value == "$writer_code" ]] || return 1
+  awk '
+    NR==1 && $0!~/^\+cold560-final:[1-9][0-9]*:final_admission_trace:previous=0: code=0$/ {bad=1}
+    {last=$0}
+    END {if(bad||NR<2||last!~/^\+cold560-final:[1-9][0-9]*:final_admission_trace:previous=[0-9]+: set \+x$/)exit 1}
+  ' "$trace" || return 1
+  final_admission_diagnostic_complete=true
+}
 finish() {
-  local original=$? final=0 nonlive=$groups_ok seals=false n status wait_code
+  local original=$? final=0 nonlive=$groups_ok seals=false n status wait_code final_admission_status=125 final_admission_diagnostic_complete=false
   trap - EXIT INT TERM HUP;set +e
   # aggregate 실패를 보존하면서 어느 final stage가 실패했는지 작은 원문 status로 분리한다.
   local finalizer_log_ready=false
@@ -338,15 +488,19 @@ finish() {
   status=0;source_final without-admission || status=$?
   finalizer_stage source-index "$status" || final=1
   [[ $status == 0 ]] || final=1
-  status=0;admit || status=$?
+  status=0;final_admission_trace || status=$?
+  finalizer_stage resource-admission-diagnostic "$status" || final=1
+  [[ $status == 0 ]] || final=1
+  status=$final_admission_status
   finalizer_stage resource-admission "$status" || final=1
   [[ $status == 0 ]] || final=1
   [[ $established == true && $final == 0 ]] && seals=true
   jq -n --arg source "$GITHUB_SHA" --arg phase "$phase" --argjson code "$original" --argjson final "$final" \
-    --argjson seals "$seals" --argjson nonlive "$nonlive" --argjson observer "$observer" --argjson audit "$audit" --argjson protocol "$protocol_complete" --argjson passed "$passed" \
+    --argjson seals "$seals" --argjson nonlive "$nonlive" --argjson observer "$observer" --argjson audit "$audit" --argjson protocol "$protocol_complete" --argjson markers "$marker_controls_complete" --argjson admission_diagnostic "$final_admission_diagnostic_complete" --argjson passed "$passed" \
     '{schema:1,source:$source,phase:$phase,command_exit:$code,finalizer_exit:$final,immutable_seals:$seals,owned_processes_nonlive:$nonlive,
       observer_complete:$observer,strict_cold_audit:$audit,protocol_controls_complete:$protocol,protocol_controls_expected:3,
-      pass:($code==0 and $final==0 and $seals and $nonlive and $observer and $audit and $protocol and $passed),
+      marker_receipt_controls_complete:$markers,marker_receipt_controls_expected:10,final_admission_diagnostic_complete:$admission_diagnostic,
+      pass:($code==0 and $final==0 and $seals and $nonlive and $observer and $audit and $protocol and $markers and $admission_diagnostic and $passed),
       diagnostic_provider:true,ubuntu_elf_identical:false,root_fixed:false,nonreproduction_is_fix:false,additional_ptrace_requests:0,
       all_adopted_children_reaped:false,closed_dso:false,measured_peak_guarantee:false,retirement_credit:0}' > "$out/outcome.json" || { final=1;seals=false; }
   printf 'immutable_seals=%s\nowned_processes_nonlive=%s\n' "$seals" "$nonlive" >> "$GITHUB_OUTPUT" || final=1
@@ -518,6 +672,7 @@ for path in /usr/lib/x86_64-linux-gnu/perl /usr/lib/x86_64-linux-gnu/perl5;do
 done
 established=true
 provider_metadata before
+marker_receipt_controls
 protocol_controls
 run system-version 30 /usr/bin/strace --version
 run kernel 30 /usr/bin/uname -rvm
@@ -619,5 +774,7 @@ bind_elf "$auditor"
 extra_env=(CI_PREPARED_RUST_PROOF="$job/proof")
 run strict-audit 60 "$auditor" --ignored --exact prepared_audit::prepared_audit_actual_cold_bootstrap_receipt --nocapture --test-threads=1 --color=never
 [[ $(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$out/logs/strict-audit.stdout") == 1 ]]
-[[ $(grep -Ec '^PREPARED_COLD_BOOTSTRAP_AUDIT_JSON ' "$out/logs/strict-audit.stdout") == 1 ]]
+hold "$out/logs/strict-audit.stdout";hold "$job/proof/prepared-cold-bootstrap.json"
+verify_marker_receipt "$out/logs/strict-audit.stdout" "$job/proof/prepared-cold-bootstrap.json" "$job/proof/prepared-cold-bootstrap.exec" "$out/strict-audit-marker.json"
+hold "$out/strict-audit-marker.json"
 audit=true;passed=true

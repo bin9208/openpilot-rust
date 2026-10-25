@@ -128,16 +128,36 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
         row = next(step for step in original if step["name"] == label)
         assert row["run"].count("${{ matrix.machine }}") == 1
         row["run"] = row["run"].replace("${{ matrix.machine }}", "${{ matrix.arch }}")
-    if name in ("webcam-runtime", "carrot-navi-arm"):
-      # 기능 명령은 보존하고 두 role의 SDK 설치만 별도 검증 단계로 이동했다.
-      old_sdk = ('rustup toolchain install 1.94.0 --profile minimal --component clippy\n'
-                 if name == "webcam-runtime" else
-                 'rustup toolchain install 1.94.0 --profile minimal\n'
-                 'rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu\n')
-      assert original[0]["run"].count(old_sdk) == 1
-      original[0]["run"] = original[0]["run"].replace(
+    if name in NATIVE_ARM_FAMILIES:
+      # 각 role의 기존 설치 문자열만 바꾸고 모든 기능 명령의 동등 비교를 유지한다.
+      clippy = 'rustup toolchain install 1.94.0 --profile minimal --component clippy\n'
+      minimal = 'rustup toolchain install 1.94.0 --profile minimal\n'
+      target = 'rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu\n'
+      old_sdk = {
+          "planner-runtime": clippy,
+          "carrot-man-runtime": minimal,
+          "webrtc-runtime": clippy,
+          "webcam-runtime": clippy,
+          "xiaoge-runtime": clippy,
+          "radard-runtime": 'rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt\n',
+          "radar-arm": minimal + target,
+          "carrot-navi-arm": minimal + target,
+      }[name]
+      dependency_name = {
+          "planner-runtime": "Reserve capacity and install original planner dependencies",
+          "carrot-man-runtime": "Reserve runner capacity and install pinned dependencies",
+          "webrtc-runtime": "Reserve capacity and install pinned source and native providers",
+          "webcam-runtime": "Install exact source closure and native capture providers",
+          "xiaoge-runtime": "Reserve capacity and install Xiaoge build prerequisites",
+          "radard-runtime": "Reserve capacity and install original oracle dependencies",
+          "radar-arm": "Reserve runner capacity and install generic ARM dependencies",
+          "carrot-navi-arm": "Reserve runner capacity and install native ARM build dependencies",
+      }[name]
+      dependency = next(step for step in original if step["name"] == dependency_name)
+      assert dependency["run"].count(old_sdk) == 1
+      dependency["run"] = dependency["run"].replace(
           old_sdk, '/usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" verify\n')
-      before = named_step(job, "Prepare exact fresh ARM 1.94 SDK for the two admitted roles")
+      before = named_step(job, "Prepare exact fresh ARM 1.94 SDK for all eight admitted roles")
       after = named_step(job, "Verify ARM SDK after every attempted maintained command")
       assert before["if"] == TRUSTED_SOURCE
       assert after["if"] == ("${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) "
@@ -146,7 +166,7 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
         assert step["id"] == identifier and step["timeout-minutes"] == timeout
         assert step["shell"] == "bash" and step["working-directory"] == "${{ env.CI296_SOURCE }}"
         assert step["env"] == {"CI296_HOST_CONTROL": "1", "ARM530_HELPER_SHA256":
-                               "e46156705665b9ec7d0dfad26b16b6c9e1f5e2266e008502807e4edcdfaad3a8"}
+                               "e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764"}
         assert step["run"] == '/usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" ' + phase + '\n'
       assert steps.index(venv) < steps.index(before) == steps.index(actual[0]) - 1
       assert steps.index(actual[-1]) < steps.index(after) < steps.index(finish)

@@ -41,7 +41,10 @@ job=${CI_JOB_TEMP:?}; source_dir=${CI296_SOURCE:?}
    ( ${RUSTUP_HOME:-} == "$job/rustup-home" ||
      ( ${OPENPILOT_CI_PREPARED_RUST_MODE:-} == native-arm-530-v1 &&
        ${RUSTUP_HOME:-} == "$job/arm530-sdk/rustup-home" &&
-       ( ${GITHUB_JOB:-} == webcam-runtime || ${GITHUB_JOB:-} == carrot-navi-arm ) ) ) ]] || fail 'Private exact source and tool homes required'
+       ( ${GITHUB_JOB:-} == planner-runtime || ${GITHUB_JOB:-} == carrot-man-runtime ||
+         ${GITHUB_JOB:-} == webrtc-runtime || ${GITHUB_JOB:-} == webcam-runtime ||
+         ${GITHUB_JOB:-} == xiaoge-runtime || ${GITHUB_JOB:-} == radard-runtime ||
+         ${GITHUB_JOB:-} == radar-arm || ${GITHUB_JOB:-} == carrot-navi-arm ) ) ) ]] || fail 'Private exact source and tool homes required'
 if [[ -n ${OPENPILOT_CI_PREPARED_RUST_MODE:-} ]]; then
   [[ ${OPENPILOT_CI_PREPARED_RUST_MODE:-} == native-arm-530-v1 &&
      ${RUSTUP_HOME:-} == "$job/arm530-sdk/rustup-home" ]] || fail 'Prepared ARM mode/home differs'

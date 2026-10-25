@@ -199,3 +199,19 @@ diagnostic COMMON_SHA를 새 actual SHA에 다시 연결해야 한다. 여기서
 변경된 normal helper의 전체 SHA를 diagnostic COMMON_SHA와 WF helper literal에 순서대로 다시 묶었다.
 normal40/frozen input/output/재현 비교 기준이나 production 수학 변경은 없다. 이 바인딩은 새 source를
 검증하는 것이며 미도달 unit2/getter runtime의 성공을 선점하지 않는다.
+
+
+## a483 실제 getter 성공·중간 bit 일치와 재현 실패
+
+
+sourcea483/Actions40166180678/job121087586862는 FAIL이다. artifact12588319492는89724404B/SHA256 `22fe0caa368306b8250e0e5eb0bfbd176633d6bab6ba8547548219bba00c5540`,162CRC/expanded368221660B를 부모가 확인했다. source/SDK/provider·자식회수 final seals는 pass true다.
+
+getter음성unit2가 실제 성공했고 original/native 각각4호출의 중간 F32/F64 bit2329개는 전부 같다. plain/tapped 관측 유효성도 통과했다. 같은 인스턴스에서 관측한 provider config/core/thread 보고는 서로 같고 core는 Haswell이다. 이는 실제 BLAS/kernel 호출 관측이 아니며 기존 false를 보존한다. with/without LD_LIBRARY_PATH 두 native 실행의 argv/cwd/held ELF/input이 같고 output/statebits도 같다.
+
+현재 원본 oneframe은 frozen state 재현 true지만 native의602 실패state 재현은 false다. prefix4/601frame도 oneframe native state와 같지만602/frozen 전체 typed-state 재현 flags는 false다. 값이 같아 보이는 일부 필드만으로 JSON type까지 포함하는 전체 gate를 통과했다고 하지 않는다. final diagnostic은 기존 reduced-reproduction 조건에서 실패했고 fullnormal40/retirement credit0이다.
+
+두 실제 CPU는 다르다. 54b normal40164032028은 AMD EPYC9V74이며 raw flags에AVX512F/DQ/BW/VL가 있다. 이번diag는 AMD EPYC7763이며 AVX2/FMA는 있지만AVX512는 없다. 이번 NumPy 실제 dispatch는 exp X86_V3다. 이 차이가 기존54ULP의 원인이라는 증명은 아직 없고, 실패 VM의 실제 BLAS core/kernel과 NumPy dispatch는 미관측이다.
+
+[NumPy2.5.3 원문](https://github.com/numpy/numpy/blob/v2.5.3/numpy/_core/src/umath/loops_exponent_log.dispatch.c.src)은 exp의AVX2/AVX512 경로를 같은 polynomial 구조로 생성한다. 따라서 CPU flags만으로 exp 구현을 바꾸거나 SVML 차이라고 단정하지 않는다. native numpy_exp는AVX2/FMA에서 현재 polynomial을 쓴다. CPU·BLAS/ufunc 선택 차이는 조사 가설이다.
+
+다음 최소 검토는 동일 job/VM의 실제 normal40 실패 ELF·provider·입력을 먼저 보존한 뒤, 같은 원본과 native의 제한된 재생을 수행해 고정 원문/현재 원본/현재 Rust 세 결과를 구분하는 것이다. 별도 VM의 nonreproduction을 성공으로 바꾸거나 CPU강제·tolerance·expected·수학을 수정하지 않는다. full40 원래700/600초와실패결과를 유지한다. 새로운 원본 관측은 frozen 기대값을 덮어쓰는 절차가 아니다. 구현은 아직0이다.

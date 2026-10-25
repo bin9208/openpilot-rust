@@ -2513,3 +2513,50 @@ fn prepared_arm_rejects_root_manifest_cross_binding_before_installation() {
         assert!(!f.cache().exists());
     }
 }
+
+#[test]
+fn prepared_arm_rejects_nonleaf_and_near_match_roles_before_installation() {
+    let roles = [
+        "planner-runtime",
+        "carrot-man-runtime",
+        "webrtc-runtime",
+        "webcam-runtime",
+        "xiaoge-runtime",
+        "radard-runtime",
+        "radar-arm",
+        "carrot-navi-arm",
+    ];
+    let mut rejected = vec![String::new(), "native-arm-checks".into(), "native-arm".into()];
+    rejected.extend(roles.map(|role| format!("{role}-unreviewed")));
+    for role in rejected {
+        let mut f = Fixture::new("999999999999");
+        executable(&f.path.join("commands/uname"), "printf 'aarch64\\n'\n");
+        for (key, value) in [
+            ("OPENPILOT_CI_PREPARED_RUST_MODE", "native-arm-530-v1"),
+            (
+                "OPENPILOT_CI_PREPARED_RUST_ROOT",
+                "/tmp/openpilot-ci.abcdef/arm530-sdk/rustup-home/toolchains/1.94.0-aarch64-unknown-linux-gnu",
+            ),
+            (
+                "OPENPILOT_CI_PREPARED_RUST_MANIFEST",
+                "/tmp/openpilot-ci.abcdef/proof/arm530-sdk/sdk.before.sha256",
+            ),
+            ("CI_JOB_TEMP", "/tmp/openpilot-ci.abcdef"),
+            ("RUNNER_ENVIRONMENT", "github-hosted"),
+            ("RUNNER_OS", "Linux"),
+            ("RUNNER_ARCH", "ARM64"),
+            ("GITHUB_JOB", role.as_str()),
+        ] {
+            f.env.insert(key.into(), value.into());
+        }
+        let output = f.invoke();
+        assert_ne!(output.code, 0, "unapproved role {role:?} was admitted");
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains("unapproved prepared ARM role"),
+            "role {role:?}: {:?}",
+            output.stderr
+        );
+        assert!(!f.log.exists(), "rejected role reached an installer");
+        assert!(!f.cache().exists(), "rejected role created a cold cache");
+    }
+}

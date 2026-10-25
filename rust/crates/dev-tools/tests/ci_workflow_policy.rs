@@ -2870,12 +2870,21 @@ fn native_arm_final_binary_evidence_requires_exact_trusted_always_condition() {
 }
 
 #[test]
-fn native_arm_two_prepared_sdks_require_before_after_binding_and_cleanup_success() {
+fn native_arm_eight_prepared_sdks_require_before_after_binding_and_cleanup_success() {
     use openpilot_dev_tools::ci_policy::validate_private_job_layout;
     let (main, callee) = native_arm_reuse_inputs();
     // main의 X64 role과 예전 후보 workflow에는 새 SDK 경로를 강요하지 않는다.
     validate_private_job_layout(&main["jobs"]["webcam-runtime"]).unwrap();
-    for name in ["webcam-runtime", "carrot-navi-arm"] {
+    for name in [
+        "planner-runtime",
+        "carrot-man-runtime",
+        "webrtc-runtime",
+        "webcam-runtime",
+        "xiaoge-runtime",
+        "radard-runtime",
+        "radar-arm",
+        "carrot-navi-arm",
+    ] {
         let original = &callee["jobs"][name];
         validate_private_job_layout(original).unwrap();
         let stages = original["steps"].as_array().unwrap();
@@ -2884,7 +2893,27 @@ fn native_arm_two_prepared_sdks_require_before_after_binding_and_cleanup_success
             .iter()
             .position(|s| s["id"] == "arm530_sdk_final")
             .unwrap();
-        let dependency = before + 1;
+        let dependency_name = match name {
+            "planner-runtime" => "Reserve capacity and install original planner dependencies",
+            "carrot-man-runtime" => "Reserve runner capacity and install pinned dependencies",
+            "webrtc-runtime" => "Reserve capacity and install pinned source and native providers",
+            "webcam-runtime" => "Install exact source closure and native capture providers",
+            "xiaoge-runtime" => "Reserve capacity and install Xiaoge build prerequisites",
+            "radard-runtime" => "Reserve capacity and install original oracle dependencies",
+            "radar-arm" => "Reserve runner capacity and install generic ARM dependencies",
+            "carrot-navi-arm" => {
+                "Reserve runner capacity and install native ARM build dependencies"
+            }
+            _ => unreachable!(),
+        };
+        let dependency = stages
+            .iter()
+            .position(|s| s["name"] == dependency_name)
+            .unwrap();
+        let first_maintained = stages
+            .iter()
+            .position(|s| s["shell"] == "openpilot-local-shell {0}")
+            .unwrap();
         let source_cleanup = stages
             .iter()
             .position(|s| s["id"] == "ci296_source_cleanup")
@@ -2927,7 +2956,7 @@ fn native_arm_two_prepared_sdks_require_before_after_binding_and_cleanup_success
                 "before-timeout" => steps[before]["timeout-minutes"] = "1".into(),
                 "pin" => steps[before]["env"]["ARM530_HELPER_SHA256"] = "0".repeat(64).into(),
                 "command" => steps[before]["run"] = "true\n".into(),
-                "order" => steps.swap(before, dependency),
+                "order" => steps.swap(before, first_maintained),
                 "source-cleanup" | "common-cleanup" => {
                     let at = if mutation == "source-cleanup" {
                         source_cleanup

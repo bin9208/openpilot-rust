@@ -152,3 +152,20 @@ artifact12587279330=22955599B/SHA256
 봉인은 별도 성공이다. outcome phase는 baseline-red/command_exit3이며 pass 및 retirement_credit은false/0이다.
 local Bash/YAML와 새 jq 식의 syntax compilation만 확인하며 다음 실제 positive·negative/cachecopy 수용은
 Actions 대기다. compile문법 오류를 cache/source/timeout 수치 결함으로 오인하지 않는다.
+
+
+## #568 첫 current workspace cache 지문 거부
+
+
+[a483 UI40166180677/job121087586932](https://github.com/bin9208/openpilot-rust/actions/runs/40166180677/job/121087586932), source `a4838fc4e7d09499d1dbc50045ec049af995ffbc`.
+artifact12588248598/27490467B/SHA256 `3ecee0c086f20557f3fed7e4207d6d85bc9e9e02c73b787f40e5af5d7341064d`의15798CRC/expanded163208313B를 부모가 감사했다.
+
+baseline exact RED, CXX exact6 aliases·음성5와 독립 cache copy는 통과했다. current recording Cargo build도 exit0/완전한 build-finished:true였지만, non-registry144개 artifact 중12개가 fresh:true라 기존 first-current-workspace guard가 정확히 거부했다. vendor ureq/ureq-proto 및 Params/JPEG/image-codecs build scripts, runtime-core/log-format/http-transport 등이다. 기능 PASS나 현재 source 입증으로 바꾸지 않는다. baseline의12 non-registry package명과191 registry package명은 중복이 없다.
+
+원인은 baseline target 전체를 독립 복사한 뒤 source 위치 변경만으로 모든 workspace 단위가 dirty가 될 것으로 가정한 데 있다. Cargo는 내용이 같은 일부 단위의 fingerprint를 재사용했다. guard를 완화하거나 fresh:true를 수용하지 않는다.
+
+후보는 정확 baseline Cargo JSON으로 registry/non-registry package명을 분류·봉인하고, 독립 복사 검증을 마친 current 전용 target에서 non-registry의 fingerprint 디렉터리만 제거한다. root/canonical/UID/inode와 이름/해시를 확인하고 삭제 journal을 보존한다. 모호한 package명·registry 중복·누락·알 수 없는 fingerprint는 거부한다. baseline/registry/SDK는 수정하지 않으며 첫 current 전체 fresh:false와 기존 rustc cwd/선택 ELF 검증을 유지한다. build8GiB/proof1GiB·shared1200초·원문/기능은 그대로다.
+
+완료 조건: 실제 첫 current의 전체 non-registry fresh:false 및 선택 source/ELF 경계, 독립 복사와 baseline/registry/source/SDK 봉인 확인. 이후 원문5mode·recording9/Clippy 등 전체 UI 수용은 #559에서 계속 별도로 추적한다. 현재 source syntax만 확인했으며 기능/기존 성공 승격/원본 삭제·credit0이다.
+
+이 후속 결함은 https://github.com/bin9208/openpilot-rust/issues/568 에 연결한다.

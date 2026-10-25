@@ -151,3 +151,61 @@ ptrace observer/C patch/추가 query 수0/원문 unknown 거부/현재 tracer pr
 새 resource 기록만으로 미확인 syscall 번호나 #560 root 해결을 주장하지 않는다.
 로컬은 Bash/YAML/embedded source syntax·diff만 확인한다. 새 실제 최초 분기와 source/SDK/provider
 봉인·strict audit·모든 결과는 정확 source Actions 대기다.
+
+
+## a483 native audit 실제 PASS 뒤 marker/최종 admission 후보
+
+[격리 observer40166180782/job121087587261](https://github.com/bin9208/openpilot-rust/actions/runs/40166180782/job/121087587261),
+source `a4838fc4e7d09499d1dbc50045ec049af995ffbc`의 artifact12588821869는11,572,636B,
+SHA256 `8cb2c36c9447f0a8b0498868470f0b88bd13062b7537b214e1620cfdc8bebe7f`,
+540 CRC·중복0·expanded98,720,546B다. protocol3/configure/make/cold/auditor-build 및 strict native
+명령은 모두 exit0이고 strict test1 PASS/38filtered다. observer는 SCI69560/abnormal0/IO0/overflow0을
+기록했다. native receipt는 exec180/failed29/cargo1/rustc37/Python0/Rustup0/manifest165이며,
+원문 trace SHA `fd31b09acd6137aa16a6ecd45d939be579177e976e21129c9aa22d8ddc839345`와 같다.
+
+그 뒤 기존 helper의 bare-marker grep이 실제 libtest progress prefix를 놓쳤다. 저장 outcome의
+command1/strictfalse/passfalse는 그 실행의 실제 실패로 보존한다. 동시에 독립 최종 단계는
+resource-admission1인데 first-admission receipt가 없고 du.stderr는0B다. 전후 source/index/SDK/
+provider/held139개는 같아도 resource 실패를 해소된 것으로 세지 않는다. 그 원인은 여전히 미확정이다.
+별도 Fast routing40166180682의 raw159 `???( <detached ...>` 거부와 이 실행을 합산하지 않는다.
+
+현재 두 파일 후보는 test-result1 검사를 그대로 두고 다음 두 prefix만 허용한다.
+
+- `PREPARED_COLD_BOOTSTRAP_AUDIT_JSON `
+- `test prepared_audit::prepared_audit_actual_cold_bootstrap_receipt ... PREPARED_COLD_BOOTSTRAP_AUDIT_JSON `
+
+marker가 포함된 행은 모두 검사하므로 foreign prefix를 무시하지 않는다. 정확1행/JSON1개를
+64KiB 이내 별도 파일로 추출하고, JSON object 전체 값이 실제 발행된
+`prepared-cold-bootstrap.json`과 같아야 한다. `audit_schema`, 현재 `GITHUB_SHA` 및 실제 raw exec
+파일 SHA도 별도로 대조한다. 입출력은 owned regular/nonsymlink/nlink1 경로와 입력 identity 전후를
+검사하고, 실제 stdout/receipt/trace/추출 payload를 기존 held FD/SHA 최종 검증에 연결한다.
+원문 trace와 stdout/receipt는 재작성하지 않는다. JSON key 순서/pretty formatting을 합격 기준으로
+삼지 않으며 모든 key/value의 동등성을 요구한다.
+
+`marker-receipt-controls.tsv`는 Actions에서만 수행할 정확10행이다. bare/progress 양성2개,
+missing/duplicate/foreign-prefix/malformed/multiple-JSON/source/trace/whole-receipt 음성8개로 구성한다.
+source/trace 음성은 inline payload와 발행 receipt를 함께 바꿔도 현재 source/실제 trace binding에서
+거부해야 한다. whole-receipt 음성은 source/trace가 맞아도 다른 수치가 다르면 거부한다.
+각각 정확 exit와 고유 rejection 이유를 요구하므로 입력 준비 실패를 음성 PASS로 대체하지 않는다.
+합성 trace는 parser 원문이 아닌 marker binding 전용 authored data이며 새 native audit 성공으로
+세지 않는다. controls 미실행/실패/행 누락은 pass를 허용하지 않는다.
+
+최종 admission만 자식 Bash subshell에서 원래 `admit`를1회 실행한다. 고정 PS4는 source line,
+함수 이름과 직전 status를 기록하고 argv/env 전체를 수집하지 않는다. 별도 FD의 trace를 reader가
+최대65,536B까지 보존하고 다음1byte로 overflow를 판별한다. 64KiB fsize는 **reader에만** 적용하므로
+기존 admission TSV나 du 출력에 새 파일 상한을 전파하지 않는다. reader와 writer는 직접 wait하며,
+reader EOF/overflow 결과와 실제 admission exit를 별도로 보존한다. trace 시작과 마지막 `set +x`,
+파일 종류/소유/nlink/크기, status 원문 일치까지 확인해야 diagnostic complete가 된다.
+
+`final-admission.xtrace`, `final-admission.exit`, `final-admission.reader` 및 기존
+`finalizer-stages.tsv`의 `resource-admission-diagnostic`/`resource-admission`으로 진단 실패와
+원래 resource 실패를 구분한다. admission1이면 diagnostic이 완전해도 최종 실패다. trace 초과·
+누락·IO/형식 불명·자식 비정상 종료도 실패이며, 기록이 없다는 이유로 성공을 만들지 않는다.
+기존 최초 failure logger와 `measure`/`admit` body·cap·정확 ENOENT3attempt는 변경하지 않았다.
+
+기존 native test1/raw unknown 거부/공식 provider와 C patch/추가 ptrace query0/observer64KiB,
+1200초 shared deadline·각 명령 timeout·성장 cap·protocol3·기존 process/source/SDK/provider
+봉인·upload/cleanup 경계는 그대로다. 새 controls와 marker 수용 및 final trace 실제 동작은
+**Actions UNRUN**이다. 로컬은 source/Bash 문법/diff/불변 body 대조만 수행한다.
+이 후보는 errno/syscall 번호/root fix/retirement 성공의 근거가 아니다. workflow/Focus/ledger와
+helper literal pin 갱신은 부모 소유로 남긴다.

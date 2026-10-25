@@ -68,6 +68,10 @@ if [[ -n ${OPENPILOT_CI_PREPARED_RUST_ROOT+x}${OPENPILOT_CI_PREPARED_RUST_MANIFE
     [[ ${RUNNER_ENVIRONMENT:-}:${RUNNER_OS:-}:${RUNNER_ARCH:-} == github-hosted:Linux:ARM64 && $host == aarch64-unknown-linux-gnu ]] || fail 'prepared ARM host differs'
     [[ $prepared_root == "${CI_JOB_TEMP:?}/arm530-sdk/rustup-home/toolchains/1.94.0-aarch64-unknown-linux-gnu" &&
        $prepared_manifest == "$CI_JOB_TEMP/proof/arm530-sdk/sdk.before.sha256" ]] || fail 'prepared ARM root/manifest differs'
+    case ${GITHUB_JOB:-} in
+      planner-runtime|carrot-man-runtime|webrtc-runtime|webcam-runtime|xiaoge-runtime|radard-runtime|radar-arm|carrot-navi-arm) ;;
+      *) fail 'unapproved prepared ARM role';;
+    esac
     prepared_arm=true
   elif [[ ${RUNNER_ENVIRONMENT:-} == github-hosted ]]; then
     [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust && ${RUNNER_OS:-} == Linux && ${RUNNER_ARCH:-} == X64 && $host == x86_64-unknown-linux-gnu ]] || fail 'prepared Rust requires trusted Linux X64 Actions'

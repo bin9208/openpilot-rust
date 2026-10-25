@@ -167,3 +167,14 @@ mock은 그 합성 subshell 밖에 존재하지 않으며 실제 provider 선택
 기존 Focus SSH step에서 실행하므로 새 step/command roster 항목은 없고 helper literal SHA만
 `0554a00a43a7a7cccb28ba70456df4dac2244ca1f66fdb65f6edc0abf7a24287`로 갱신했다.
 부모의 최종 원장 blob pin/다음 exact-source Actions 감사는 별도이며 이 후보를 과거 성공으로 소급하지 않는다.
+
+
+## #567 a483 실제 용량 관측 수정 검증
+
+[a483 Focus40166180665/job121087586740](https://github.com/bin9208/openpilot-rust/actions/runs/40166180665/job/121087586740)은 성공했습니다. 정확 source `a4838fc4e7d09499d1dbc50045ec049af995ffbc`, artifact12588363290/41547875B/SHA256 `fdb430be5bf03d6169db5378192b6ae24d23bdfcc98123ac1176bbbeaac42a99`의1697CRC를 부모가 감사했습니다.
+
+- 용량 관측20통제: clean·정확 target ENOENT, partial overcap·permission/outside/현재존재/링크/잘못된 경로·NUL·혼합 오류 거부,3회 후 clean/소진 및 cap 즉시 중단이 통과했습니다.
+- 실제 build/entry의9명령이 exit/wait0이고 entry4·native7/public1·독립 회수, SSH27/Unicode7/frozen10과 strict Clippy가 성공했습니다.
+- 원본 부재6통제/119관측·최종 closure, source/index/SDK/고정 입력 및 held124경로의 전후 불변을 확인했습니다. 원래 cap/reserve/주기/timeout을 유지합니다.
+
+이 한정 결함의 기능 검증은 성공했습니다. 이슈 본문의 PR source 봉인 조건은 현재 PR343의 해당 검증이 끝난 뒤 확인하므로 아직 열린 상태로 둡니다. 전체 Python 부재/실제 SSH 접속/전체 #523 완료나 추가 retirement credit는 주장하지 않습니다.

@@ -305,7 +305,16 @@ fn arm_sdk530_role(job: &Value) -> bool {
         && job["env"]["CI296_NATIVE_ARM_CALLER"] == "rust.yml"
         && matches!(
             job["env"]["CI296_ALIAS_BASENAME"].as_str(),
-            Some(".ci296-source-rust--webcam-runtime" | ".ci296-source-rust--carrot-navi-arm")
+            Some(
+                ".ci296-source-rust--planner-runtime"
+                    | ".ci296-source-rust--carrot-man-runtime"
+                    | ".ci296-source-rust--webrtc-runtime"
+                    | ".ci296-source-rust--webcam-runtime"
+                    | ".ci296-source-rust--xiaoge-runtime"
+                    | ".ci296-source-rust--radard-runtime"
+                    | ".ci296-source-rust--radar-arm"
+                    | ".ci296-source-rust--carrot-navi-arm"
+            )
         )
 }
 fn validate_arm_sdk530_steps(job: &Value, steps: &[Value]) -> Result<(), String> {
@@ -321,18 +330,47 @@ fn validate_arm_sdk530_steps(job: &Value, steps: &[Value]) -> Result<(), String>
         )?;
         Ok::<usize, String>(positions[0])
     };
-    let before = index("Prepare exact fresh ARM 1.94 SDK for the two admitted roles")?;
+    let before = index("Prepare exact fresh ARM 1.94 SDK for all eight admitted roles")?;
     let after = index("Verify ARM SDK after every attempted maintained command")?;
-    let webcam = job["env"]["CI296_ALIAS_BASENAME"] == ".ci296-source-rust--webcam-runtime";
-    let dependency = index(if webcam {
-        "Install exact source closure and native capture providers"
-    } else {
-        "Reserve runner capacity and install native ARM build dependencies"
+    let dependency = index(match job["env"]["CI296_ALIAS_BASENAME"].as_str() {
+        Some(".ci296-source-rust--planner-runtime") => {
+            "Reserve capacity and install original planner dependencies"
+        }
+        Some(".ci296-source-rust--carrot-man-runtime") => {
+            "Reserve runner capacity and install pinned dependencies"
+        }
+        Some(".ci296-source-rust--webrtc-runtime") => {
+            "Reserve capacity and install pinned source and native providers"
+        }
+        Some(".ci296-source-rust--webcam-runtime") => {
+            "Install exact source closure and native capture providers"
+        }
+        Some(".ci296-source-rust--xiaoge-runtime") => {
+            "Reserve capacity and install Xiaoge build prerequisites"
+        }
+        Some(".ci296-source-rust--radard-runtime") => {
+            "Reserve capacity and install original oracle dependencies"
+        }
+        Some(".ci296-source-rust--radar-arm") => {
+            "Reserve runner capacity and install generic ARM dependencies"
+        }
+        Some(".ci296-source-rust--carrot-navi-arm") => {
+            "Reserve runner capacity and install native ARM build dependencies"
+        }
+        _ => return Err("unsupported ARM SDK530 role".into()),
     })?;
     let finish = index("Finish native ARM execution evidence")?;
     let seal = index("Seal private source and index after maintained checks")?;
+    let first_maintained = steps
+        .iter()
+        .position(|step| step["shell"] == "openpilot-local-shell {0}")
+        .ok_or("missing ARM SDK530 maintained command")?;
     require(
-        before < dependency && dependency < after && after < finish && finish < seal,
+        before < first_maintained
+            && before < dependency
+            && dependency < after
+            && after < finish
+            && finish < seal,
         "ARM SDK530 preparation and finalizer order changed",
     )?;
     for (at, id, minutes, phase, condition) in [
@@ -359,7 +397,7 @@ fn validate_arm_sdk530_steps(job: &Value, steps: &[Value]) -> Result<(), String>
             && step["if"] == condition && step["timeout-minutes"] == minutes
             && step["working-directory"] == "${{ env.CI296_SOURCE }}" && step["shell"] == "bash"
             && step["env"] == serde_json::json!({"CI296_HOST_CONTROL":"1",
-                "ARM530_HELPER_SHA256":"e46156705665b9ec7d0dfad26b16b6c9e1f5e2266e008502807e4edcdfaad3a8"})
+                "ARM530_HELPER_SHA256":"e23447e67190cafaa9c98ce7a558fc7c5208b310271b2cd5e5fa3b36865af764"})
             && step["run"] == format!("/usr/bin/bash \"$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530\" {phase}\n"),
             format!("ARM SDK530 exact {phase} binding changed"))?;
     }

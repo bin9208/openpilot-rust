@@ -506,6 +506,81 @@ cache_alias_metadata() {
   hold "$output";hold "$log";hold "$cache_header"
   hold "$case_source/rust/crates/jpeg/Cargo.toml";hold "$case_source/rust/crates/jpeg/build.rs"
 }
+prune_seeded_workspace_fingerprints() {
+  # 독립 복사의 검증은 유지한다. 최초 current Cargo 전에 non-registry 지문만 제거한다.
+  local plan=$proof/cache-copy/workspace-packages.json path
+  jq -se --arg root "$baseline/rust/" --arg registry "$registry_source/" '
+    if length<1 or .[-1]!={reason:"build-finished",success:true} then error("Cargo EOF") else . end |
+    [.[]|select(.reason=="compiler-artifact")] |
+    def name:
+      (.package_id|split("#")|last) as $id |
+      if ($id|test("^[A-Za-z0-9_-]+@[0-9][A-Za-z0-9_.+-]*$")) then ($id|split("@")[0])
+      elif .manifest_path==($root+"vendor/ureq/Cargo.toml") and $id=="3.4.2" then "ureq"
+      elif .manifest_path==($root+"vendor/ureq-proto/Cargo.toml") and $id=="0.6.4" then "ureq-proto"
+      else error("unrecognized Cargo package name") end;
+    if length==0 or any(.[];
+      if (.package_id|startswith("registry+")) then
+        ((.manifest_path|startswith($registry))|not) or ((.target.src_path|startswith($registry))|not)
+      else ((.package_id|startswith("path+file://"+$root))|not) or
+        ((.manifest_path|startswith($root))|not) or ((.target.src_path|startswith($root))|not) end)
+      then error("baseline cache source kind differs") else . end |
+    {schema:1,workspace:([.[]|select((.package_id|startswith("registry+"))|not)|name]|unique),
+      registry:([.[]|select(.package_id|startswith("registry+"))|name]|unique)} |
+    . as $plan | if (.workspace|length)>0 and (.registry|length)>0 and
+      all(.workspace[]; . as $name|($plan.registry|index($name))==null)
+      then . else error("ambiguous workspace and registry fingerprint names") end
+  ' "$proof/logs/baseline-build.stdout" > "$plan"
+  hold "$plan"
+  run cache-workspace-fingerprint-prune 60 0 /bin/bash -c '
+    set -euo pipefail;umask 077
+    target=$1;plan=$2;output=$3;uid=$4
+    [[ $target == /tmp/openpilot-ci.??????/build/candidate-target ]]
+    job=${target%/build/candidate-target}
+    [[ $plan == "$job/proof/ui559/cache-copy/workspace-packages.json" &&
+       $output == "$job/proof/ui559/cache-copy/workspace-pruned.tsv" &&
+       ! -e $output && ! -L $output ]]
+    root=$target/debug/.fingerprint
+    [[ -d $root && ! -L $root && $(readlink -e "$root") == "$root" && $(stat -c %u "$root") == "$uid" ]]
+    identity=$(stat -c "%d:%i:%u" "$root")
+    declare -A workspace=() registry=() seen=()
+    workspace_names=$job/proof/ui559/cache-copy/workspace-packages.txt
+    registry_names=$job/proof/ui559/cache-copy/registry-packages.txt
+    roster=$job/proof/ui559/cache-copy/workspace-fingerprints.before.bin
+    for file in "$workspace_names" "$registry_names" "$roster";do [[ ! -e $file && ! -L $file ]];done
+    jq -er ".workspace[]" "$plan" > "$workspace_names"
+    jq -er ".registry[]" "$plan" > "$registry_names"
+    find "$root" -mindepth 1 -maxdepth 1 -print0 | sort -z > "$roster"
+    for file in "$workspace_names" "$registry_names" "$roster";do [[ $(stat -c %s "$file") -le 65536 ]];done
+    while IFS= read -r name;do
+      [[ $name =~ ^[A-Za-z0-9_-]+$ ]];workspace[$name]=1
+    done < "$workspace_names"
+    while IFS= read -r name;do
+      [[ $name =~ ^[A-Za-z0-9_-]+$ ]];registry[$name]=1
+    done < "$registry_names"
+    ((${#workspace[@]}>0 && ${#registry[@]}>0))
+    for name in "${!workspace[@]}";do [[ ! -v registry[$name] ]];done
+    (set -o noclobber;printf "package\tpath\tidentity\tresult\n" > "$output")
+    removed=0
+    while IFS= read -r -d "" path;do
+      leaf=${path##*/};[[ $leaf =~ ^[A-Za-z0-9_-]+-[0-9a-f]{16}$ ]]
+      name=${leaf%-*}
+      [[ -d $path && ! -L $path && $(readlink -e "$path") == "$path" && $(stat -c %u "$path") == "$uid" ]]
+      if [[ -v workspace[$name] ]];then
+        before=$(stat -c "%d:%i:%u" "$path")
+        [[ $(stat -c "%d:%i:%u" "$root") == "$identity" ]]
+        rm -r -- "$path"
+        [[ ! -e $path && ! -L $path ]]
+        printf "%s\t%s\t%s\tremoved\n" "$name" "$path" "$before" >> "$output"
+        seen[$name]=1;removed=$((removed+1))
+      else [[ -v registry[$name] ]];fi
+    done < "$roster"
+    ((removed>0))
+    for name in "${!workspace[@]}";do [[ -v seen[$name] ]];done
+    [[ $(stat -c "%d:%i:%u" "$root") == "$identity" ]]
+  ' ui559-workspace-prune "$build/candidate-target" "$plan" "$proof/cache-copy/workspace-pruned.tsv" "$(id -u)"
+  for path in "$proof/cache-copy/workspace-pruned.tsv" "$proof/cache-copy/workspace-fingerprints.before.bin" \
+    "$proof/cache-copy/workspace-packages.txt" "$proof/cache-copy/registry-packages.txt";do hold "$path";done
+}
 verify_seeded_workspace() {
   local log=$proof/logs/recording-build.stdout
   # 복사 직후 최초 current build 전체다. registry 외 source 종류/과거 root/하나의 fresh=true도 거부한다.
@@ -753,6 +828,7 @@ comm -12 "$proof/cache-copy/source.before.inodes" "$proof/cache-copy/candidate.i
 read -r copy_after_used copy_after_apparent <<< "$(usage "$build" $((8*gib)))"
 printf '%s\t%s\n' "$copy_after_used" "$copy_after_apparent" > "$proof/cache-copy/build.after.tsv"
 admit;cache_copied=true
+prune_seeded_workspace_fingerprints
 extra_env=(CARGO_TARGET_DIR="$build/candidate-target")
 run recording-build 900 0 "$sdk/bin/cargo" test --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-dev-tools --features image-array-native --test ui_application_lifecycle_recording --no-run --message-format=json
 verify_seeded_workspace

@@ -1,12 +1,12 @@
-# #530 두 native ARM role의 새 prepared SDK 후보
+# #530 main native ARM 8개 role의 새 prepared SDK 후보
 
-2026-10-25. [#530](https://github.com/bin9208/openpilot-rust/issues/530)의 재발을 대상으로 한 **source 후보**다. 설치·guard·기능·Clippy·실제 성장량은 모두 Actions UNRUN이며, 이 변경으로 ARM 또는 #523 수용/삭제 credit을 추가하지 않는다. 로컬은 소스, 공식 원문 inert 확인, Bash/YAML/AST 문법, 신규 Rust 코드 서식과 diff만 확인했다.
+2026-10-25. 현재 범위는 main caller의 정확8개 role이다. 아래 초기2개 role 기록을 보존하고, 끝의 SDK8 확대 절에서 현재 변경과 미검증 경계를 구분한다. [#530](https://github.com/bin9208/openpilot-rust/issues/530)의 재발을 대상으로 한 **source 후보**다. 설치·guard·기능·Clippy·실제 성장량은 모두 Actions UNRUN이며, 이 변경으로 ARM 또는 #523 수용/삭제 credit을 추가하지 않는다. 로컬은 소스, 공식 원문 inert 확인, Bash/YAML/AST 문법, 신규 Rust 코드 서식과 diff만 확인했다.
 
-## 실제 실패와 적용 범위
+## 최초 실제 실패와 초기2개 role 범위
 
 Rust run `40161295597`의 Webcam `121073229641`, CarrotNavi `121073229694`는 첫 disk guard의 일반 bootstrap에서 Rustup1.94 동기화 → `recovering from partially installed toolchain` → component 제거/재다운로드 → `clippy-preview-aarch64-unknown-linux-gnu`의 `bin/cargo-clippy` conflict/rollback으로 실패했다. API head는 `593186e6a66b036c8817f0184723f839867d6856`, 실제 checkout/callee source는 PR merge `40562f2d8068878a00b18e12f355799b4fe0405d`다. LFS/호출자 거부나 프로젝트 기능 실패로 분류하지 않는다. 과거 pilot의 같은 partial-recovery 메시지 뒤 성공도 있어 **최초 partial 상태를 만든 원인은 아직 미확정**이다.
 
-대상은 `.github/workflows/rust-native-arm.yml`의 `webcam-runtime`, `carrot-navi-arm` 둘뿐이다. 나머지6개 ARM leaf, aggregate, root 설정과 기존 기능 run/selector/feature/원래 job timeout을 유지한다. X64 prepared 경로, 기존 cold/warm 경계 및 일반 Rustup bootstrap은 변경하지 않는다.
+최초 구현 대상은 `.github/workflows/rust-native-arm.yml`의 `webcam-runtime`, `carrot-navi-arm` 둘뿐이다. 나머지6개 ARM leaf, aggregate, root 설정과 기존 기능 run/selector/feature/원래 job timeout을 유지한다. X64 prepared 경로, 기존 cold/warm 경계 및 일반 Rustup bootstrap은 변경하지 않는다.
 
 ## 새 prefix와 엄격한 준비 순서
 
@@ -74,3 +74,63 @@ source/common cleanup 모두 기존 upload/source 성공에 SDK-final 성공을 
 [a483 pilot40166180655/job121087586875](https://github.com/bin9208/openpilot-rust/actions/runs/40166180655/job/121087586875)의 planner는 기존 Python CI fixture가 두 role의 dependency 전체 원문을 옛 `rustup toolchain install`과 비교해 실패했다. 같은 실행의 WebRTC는 성공했다. 기능·ARM compiler 실패로 오인하지 않는다.
 
 `test_plannerd_ci.py`의 x64/pilot reference는 보존하고, 정확 Webcam/Carrot Navi 두 role에만 확인된 원래 설치 문자열1개를 새 SDK verify1개로 치환해 전체 functional step 동등 비교를 유지한다. before/after의 유일한 이름·id·20/10분·고정 helper SHA·명령·trusted/always 조건과 venv/기능/finish 사이 순서도 명시 검증한다. 기존 나머지6 role·전체 명령과 음성 통제는 보존한다. 이 source 보완의 Python AST만 확인했으며 기능은 다음 Actions에서 판정한다.
+
+
+## 2026-10-25 SDK8 확대 후보
+
+새 PR a483의 WebRTC `121088725361`과 RadarCAN `121088725405`도
+`clippy-preview-aarch64-unknown-linux-gnu`의 `bin/cargo-clippy` conflict로 실패했다.
+원문 `pr-a483-webrtc-job.log`, `pr-a483-radarcan-job.log`는 부모가 확보·확인했다.
+같은 PR의 Navi `121088725439`는 새 SDK job 성공, Webcam `121088725339`는 SDK 준비 뒤 실제
+build 도달로 부모가 관측했다. 이 서로 다른 job 상태를 SDK8 전체 기능 합격으로 합산하지 않는다.
+runner image의 partial Rustup을 최초로 만든 원인은 여전히 미확정이며, 이 후보는 정확 main caller의
+8개 role 모두를 기존 prefix에서 분리한다. 기존 prefix 수리·삭제·overwrite는 없다.
+
+`.github/workflows/rust-native-arm.yml`의 모든8 leaf에 다음 고정 stage를 둔다.
+
+- `Prepare exact fresh ARM 1.94 SDK for all eight admitted roles`: `arm530_sdk`,20분,
+  기존 private Python3.12.14 venv 뒤/첫 disk guard·Cargo build 앞의 `before`다.
+- `Verify ARM SDK after every attempted maintained command`: 기존 이름과
+  `arm530_sdk_final`,10분, trusted AND always 조건을 유지한 독립 `after`다.
+- source/common cleanup 모두 기존 upload/source 조건에 `arm530_sdk_final` 성공을 더한다.
+  after 실패·준비 미완료·payload/metadata/소유성 미확정은 그대로 실패다.
+
+모든 dependency step은 원래 위치에서 다음 `verify` 한 줄을 사용한다.
+Webcam/Navi는 초기2개 구현에서 이미 치환됐으므로 이번에는 dependency 원문이 바뀌지 않는다.
+나머지6개는 표의 정확한 Rustup 문자열만 치환하며 APT/pip/build/원본 비교 명령은 그대로다.
+
+| role | dependency step | 원래 문자열 (`;`는 실제 연속 LF 구분) |
+| --- | --- | --- |
+| `planner-runtime` | `Reserve capacity and install original planner dependencies` | `rustup toolchain install 1.94.0 --profile minimal --component clippy` |
+| `carrot-man-runtime` | `Reserve runner capacity and install pinned dependencies` | `rustup toolchain install 1.94.0 --profile minimal` |
+| `webrtc-runtime` | `Reserve capacity and install pinned source and native providers` | `rustup toolchain install 1.94.0 --profile minimal --component clippy` |
+| `webcam-runtime` | `Install exact source closure and native capture providers` | `rustup toolchain install 1.94.0 --profile minimal --component clippy` |
+| `xiaoge-runtime` | `Reserve capacity and install Xiaoge build prerequisites` | `rustup toolchain install 1.94.0 --profile minimal --component clippy` |
+| `radard-runtime` | `Reserve capacity and install original oracle dependencies` | `rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt` |
+| `radar-arm` | `Reserve runner capacity and install generic ARM dependencies` | `rustup toolchain install 1.94.0 --profile minimal`; `rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu` |
+| `carrot-navi-arm` | `Reserve runner capacity and install native ARM build dependencies` | `rustup toolchain install 1.94.0 --profile minimal`; `rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu` |
+
+정확한 대체 한 줄은 `/usr/bin/bash "$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530" verify`다.
+helper/check-disk-space/native adapter의 prepared 허용 role도 위8개 literal로 닫는다.
+role allowlist만으로 수용하지 않으며 main `rust.yml` 실제 caller, hosted ARM64/uname/source SHA,
+소유 root, source/role binding 및 명시 prepared mode의 기존 검사가 계속 필수다.
+X64·옛 pilot·일반 bootstrap에는 이 prepared SDK 경계를 추가하지 않는다.
+
+client/공식5component·tool7개·std61개·155개 `manifest.in` file payload·TOML 기대값과
+prestate read-only 검증,3GiB SDK cap·기존 admission·타이머·회수는 byte 동일하다.
+TOML reader는 기존 `run control-metadata 90 "$job/venv/bin/python" -I -B -S -c "$metadata_reader" ...`
+한 곳뿐이다. 새 Python 프로그램/callsite/프로젝트 기능은 추가하지 않았다. 초기 reader의 전체
+provider closure 미입증 경계와 generated TOML 실제 metadata 수용 기준은 완화하지 않는다.
+
+추가 회귀 `prepared_arm_rejects_nonleaf_and_near_match_roles_before_installation`은 empty/aggregate/
+caller job/8개 role의 유사 이름을 거부하고 installer와 cold cache가 생기지 않는지 Actions에서
+확인한다. 기존3개 ARM 음성 body와 X64/prepared cold/warm/일반 bootstrap은 그대로다.
+8개 baseline YAML model은 추가 SDK 두 stage·정확 Rustup 치환·literal helper pin·cleanup AND 외
+전체 job/root/aggregate 및 run 문자열이 같은지 source-only로 대조한다. 상세 source 비교와 치환
+원문표는 ignored `arm530-eight-implementation/`에 보존한다.
+
+현재 SDK8의 실제 설치/guard/각 기능/성장/Clippy/실패 후 after·cleanup은 **Actions UNRUN**이다.
+로컬은 Bash/YAML/embedded Python AST·새 Rust 회귀 서식·diff/source 모델 대조만 수행한다.
+부모 소유 ci_policy/ci_workflow_policy/Python planner fixture/Focus/ledger 및 다른 소비자 literal pin은
+이 변경에서 수정하지 않는다. 이들의 정확8role 연결과 기존 negative 보존이 뒤따라야 한다.
+retirement credit이나 partial prefix root 해결 입증은0이다.
