@@ -369,3 +369,26 @@ observer 무효과/새 음성12는 **GHA UNRUN**이다.
 최종 SHA를 same-job DIAGNOSTIC literal에 연결한다. 마지막에 세 helper의 WF/Focus/원장 literal을
 위상 순서로 갱신한다. heartbeat/COMMON 본문은 변경하지 않는다. 본 작업은 이 연쇄 pin/WF를
 편집하지 않았으므로 source 동결은 parent pin 통합 전 postimage이며 기능 수용을 주장하지 않는다.
+
+
+## 288 소스의 full normal40 실제 결과
+
+source `288824f824eb682fc6fe1f2d896a086c64442a65`의
+[normal40184284643/job121141668715](https://github.com/bin9208/openpilot-rust/actions/runs/40184284643/job/121141668715)와
+[samejob40184284640/job121141668703](https://github.com/bin9208/openpilot-rust/actions/runs/40184284640/job/121141668703)은
+각각 40cases/8655frames/705948comparisons/max error0로 성공했다. 현재 build/Clippy,
+frozen negative2/actual1, metadata3, source/index·SDK·provider 전후와 초기 held FD 전부의
+identity/SHA 보존, live0/최종 봉인/upload/두 cleanup도 확인했다. ELF와 OpenBLAS의 같은 native PID
+mapping dev/ino를 독립 held FD/SHA에 연결했으며 실제 BLAS 함수 호출이나 전체 역사 provider closure를 주장하지 않는다.
+artifact12595928593(54,144,675B/SHA256 `b5ebb5e7d6863af17bdf8c9e7807bb8812db4c804183769467e88d3c16ccf825`),
+12595399187(54,157,471B/SHA256 `d8822b98818dfc5463a784086cca136962313bb6c27b73fd29969789ef81606f`)를
+각1회 내려받아 전체 CRC217/227개와 API digest를 감사했다.
+
+samejob은 `normal-passed-no-target-replay`로 끝났으므로 새 target scalar/layer 분기 및 12개 음성 통제는
+미실행이다. normal 수치 성공을 그 분기의 기능 수용으로 바꾸지 않는다. 별도
+[diagnostic40184284605/job121141668593](https://github.com/bin9208/openpilot-rust/actions/runs/40184284605/job/121141668593)은
+EPYC9V74에서 native602 재현true/original historical 재현false로 기존 AND 조건에 실패했다.
+current original/native p는 모두 `-0.03491372987627983`, 4NN/2329 layer bits는 차이0이며 자기 plain/tap도 같다.
+artifact12596221433(89,719,973B/SHA256 `3b8768803eb58e2920cc80495dc7207ab01f989914cea03341e621d3455557c7`)
+162CRC, source/provider/held 전후와 final/upload/cleanup은 성공했다. 이 별도 FAIL은 그대로 유지한다.
+CPU와 결과의 동시 관측을 원인 확정으로 바꾸지 않으며 #553/전체 수치·원본 제거·기기 수용은 계속 열려 있다.

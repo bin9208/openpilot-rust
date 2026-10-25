@@ -76,3 +76,31 @@ main의 공유 `V=local-x64` scalar를 남겼고 제거되는60분 anchor의 외
 정책/tests는 정확8 roster·6x64 rows·2proxy·main42 및 모든 원래 stage를 검사한다. source/LOCAL_CI_ARCH source roster는74/22, main+callee command-file/finalizer는14이며 이 숫자는 소스 열거 결과다. 기존 Python Planner/Xiaoge matrix assertion도 단순 삭제하지 않고 x64+native/caller/aggregate/proxy 및 음성 case로 보완했다. 현재 source 선언상 Planner pytest24/Xiaoge pytest10이며 이 새 개수의 기능 실행은 UNRUN이다.
 
 로컬 확인은 YAML/token/model·Bash849블록·Python AST2파일·Rustfmt3파일·diff와 inert archive/hash 확인뿐이다. Cargo/build/test/Clippy/원본·프로젝트 실행/CI dispatch·cancel/stage/commit/push는0이다. ignored `native-arm-final-five-candidate/`에 base/candidate와 미적용 patch·source 비교 JSON을, `hosted-01f-native-seven-*`와 `hosted-338-native-xiaoge-*`에 실제 증거 감사를 보존했다. 부모가 독립 리뷰·모든 소비자 pin/Focus/ledger를 통합한 뒤 새 same-source main8/aggregate/strict42 및 양음성·Clippy를 GHA에서 검증해야 한다.
+
+
+## #572: final-two SDK 연결의 실제 수용
+
+source `6afd350f4641b3d599cbb18ce57e0c5f9a91a40f`의
+[run40185162738](https://github.com/bin9208/openpilot-rust/actions/runs/40185162738)에서
+Navi job121146114138과 Radar job121146114248이 모두 성공했다. 첫 functional/capacity
+호출 전에 fresh ARM530 SDK를 준비했고, 이후 설치 단계는 동일 SDK verify를 수행했다.
+각 source/index 2쌍과 SDK/rustup/inputs/shims/bootstrap 30쌍의 전후 원문이 같았다.
+정확 role/caller/ref/helper `faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b`,
+공식 5개 component metadata, 준비 명령 15개의 exit0, after-status0 및 upload/두 cleanup을 확인했다.
+
+Navi ELF는 AArch64/6,480,776B/SHA256 `04a6c9fe70e63850358b1951045c2f1ba92d9ec1f4c4576a332c582908d18f8e`다.
+Radar는 Cargo 성공 EOF, 실제 test ELF11개, 31PASS/0FAIL/0ignored, 원본 reference7그룹과
+IPC normal23/joined5/lifecycle15를 확인했다. 43개 IPC 사례의 processes_exited/queues_absent는 모두 true다.
+기존 lifecycle1개의 명시된 (-SIGABRT,1) 기대는 exit-byte 동일이라고 표현하지 않는다.
+4개 artifact12596287413/12595873137/12596028873/12596313192의 API 크기·whole SHA와
+전체 2218 CRC를 각각 한 번 감사했다. SDK의 `all_adopted_children_reaped:false`는 그대로 남긴다.
+
+별도 source `9ae67e412eeb8d9c4b3e19ee9f3b586fe2855739`의
+[Fast routing40185757045/job121146069612](https://github.com/bin9208/openpilot-rust/actions/runs/40185757045/job/121146069612)에서
+`arm530_caller_policy_admits_only_exact_main_and_final_two_contexts`,
+`native_arm_main_context_rejects_forks_wrong_callers_and_event_refs`,
+`native_arm_reuse_requires_exact_caller_leaf_roster_and_success_gate`가 성공했다.
+현재 source checkout, 전체 routing, SDK/source-index 후검사와 upload/두 cleanup도 성공했다.
+원문 log34,429,387B/SHA256 `b2a5bfc496d8ec3846d72401d949d72e949ac170d537ac0284ea935e8f8411b5`다.
+이 양성·음성 근거로 #572의 누락된 caller 연결을 개별 해결한다. PR 전체·전체 runtime,
+기기/NAS 수용 및 Python 원본 제거 credit과는 구분한다. 로컬 프로젝트/ELF 실행은0이다.
