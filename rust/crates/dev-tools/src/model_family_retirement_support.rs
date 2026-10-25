@@ -12,7 +12,7 @@ use std::{
         fs::{symlink, MetadataExt},
     },
     path::{Component, Path, PathBuf},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 pub fn required(name: &str) -> PathBuf {
@@ -201,7 +201,9 @@ fn run_inner(
             pin(receipt)["sha256"].as_str().unwrap().to_owned(),
         );
     }
+    let started = Instant::now();
     let result = NativeRunner.run_to_files(&spec, &proof.join("stdout"), &proof.join("stderr"));
+    let command_elapsed_seconds = started.elapsed().as_secs_f64();
     let stdout = fs::read(proof.join("stdout")).unwrap_or_default();
     let stderr = fs::read(proof.join("stderr")).unwrap_or_default();
     write_json(
@@ -209,6 +211,7 @@ fn run_inner(
         &json!({
         "argv_bytes":spec.effective_argv().iter().map(|a|a.as_bytes().to_vec()).collect::<Vec<_>>(),
         "status":result.as_ref().ok().map(|r|r.code),"error":result.as_ref().err().map(ToString::to_string),
+        "command_elapsed_seconds":command_elapsed_seconds,
         "timeout_seconds":spec.timeout.as_secs(),"stream_limit_bytes":spec.stdout_limit,
         "stdout":{"bytes":stdout.len(),"sha256":bytes_sha(&stdout)},
         "stderr":{"bytes":stderr.len(),"sha256":bytes_sha(&stderr)},

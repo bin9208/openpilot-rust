@@ -384,6 +384,7 @@ jobs:
             .github/workflows/tests.yaml) ;;
             rust/crates/dev-tools/tests/ci_rust_isolation.rs) ;;
             rust/crates/dev-tools/tests/ci_receipt_metadata.rs) ;;
+            rust/crates/dev-tools/src/model_family_retirement_support.rs) ;;
             tools/ci/diagnostic-296-contract.json) ;;
             tools/ci/local-arm) ;;
             tools/ci/local-routing-296-contract.json) ;;
@@ -661,10 +662,11 @@ jobs:
         printf '%s  %s\n' 008b02666cc7be67fb2f5d587af9022557446693c96c72b43425944cc43da82d .github/workflows/naver-apk-tools.yml | sha256sum --check -
         printf '%s  %s\n' 8ee22b6d42d58d23856a0d7c74473a9510a93290af5fc0e930bb69f9bdfc997e .github/workflows/naver-ci.yml | sha256sum --check -
         printf '%s  %s\n' 96885476f165d7614a03e0e9f29c019b75b216843694439981f047c9e7d22c8f .github/workflows/rust-dbc-darwin.yml | sha256sum --check -
-        printf '%s  %s\n' d48083da05ea0a9047e3e39d76fefc9726261d3f38d681eb299bd62210dcc127 .github/workflows/rust.yml | sha256sum --check -
+        printf '%s  %s\n' 010e358170683f64599c0c4b911bcdbe097eafdc8e97f5e1c45ba0e6bb157678 .github/workflows/rust.yml | sha256sum --check -
         printf '%s  %s\n' 9215c2d98492683f7f3c87fe549339cb584588fe754a8589d661415d95244c97 .github/workflows/tests.yaml | sha256sum --check -
         printf '%s  %s\n' 2a88bb1b18185a14938e6a71881625112e7743c9cc4b28a210e52a4329c621a6 rust/crates/dev-tools/tests/ci_rust_isolation.rs | sha256sum --check -
         printf '%s  %s\n' c72e4559be431905873798265782f5a028dcce41d4748dd6920b8b6e0933670b rust/crates/dev-tools/tests/ci_receipt_metadata.rs | sha256sum --check -
+        printf '%s  %s\n' 737ee9b35c7b7e69eb9b759f869574dbfd6bb9c6f983b869cae652cc1a1aa8d4 rust/crates/dev-tools/src/model_family_retirement_support.rs | sha256sum --check -
         printf '%s  %s\n' 6030e76ba176d3d50b9191b98adf081f123bb2208185380749d8139689bbef75 tools/ci/diagnostic-296-contract.json | sha256sum --check -
         printf '%s  %s\n' a286863a38d2d122bd97b7f648086c1763e3aa863fe36fe7101f2f7a6ae7ada0 tools/ci/local-arm | sha256sum --check -
         printf '%s  %s\n' cd5118da5812391fbe04ca7a2a0cd62b7a8eadd3547a823dcc0b0cfe921e87c0 tools/ci/local-routing-296-contract.json | sha256sum --check -

@@ -1175,3 +1175,30 @@ a1c와b240의 핵심9 source파일은 byte 동일하다. old missing10의 curren
 [40173790842/job121111148713](https://github.com/bin9208/openpilot-rust/actions/runs/40173790842/job/121111148713)의 실제 workspace 검사는 `ci_receipt_metadata` 6PASS/1FAIL/1ignored였으며, 현재 bridge 사용처13개를 과거14개로 기대한 단일 assertion에서 실패했다. 로깅 caller를 Rust `check-native-logging`으로 전환하면서 해당 caller의 `$CI_RECEIPT_METADATA` bridge1곳이 제거된 결과다. 나머지13개는 기존 native-json11 준비 후 소비·이전 interpreter snippet 부재 검사를 통과했다.
 
 기존 검사의 이름·현재 기대 개수13 및 설명만 정정한다. 과거14개 capture/manifest/원문 검사의 기대값은 유지하며, caller·metadata 생산기·runner·기존 기능 기준은 변경하지 않는다. 현재 소스의 기능 검증은 Actions 실행 전이며 로컬에서는 Rustfmt/소스·diff만 확인했다. 원본 제거/인벤토리 credit은0이다.
+
+
+## #550 시간 초과 / #543 NumPy marker 개별 수용
+
+source `855625beeff017080b50e4e421bbe6b3e5af79ac`의 [same-job40178341764/job121123797187](https://github.com/bin9208/openpilot-rust/actions/runs/40178341764/job/121123797187)이 전체 성공했다. artifact12593787659(54154961B/SHA256 `535b69f7a4918eb657c6d769d5fdf86264b731eab6fabf2b47816f86942cbd92`)의227CRC·normal40/8655frames/705948comparisons/최대오차0·strict Clippy·음성2·source/index/wholeSDK/held/native 전후·actual same-PID ELF+OpenBLAS mapping·회수/upload/cleanup을 감사했다.
+
+#550: 기존600trace/700fixture/부모 deadline을 유지한 실제 fixture343.59초·전체명령358.571418142초에 비교와 최종 봉인까지 완료했다. hash/write 비용과 구간별 CPU/wall을 구분했으며 타임아웃 증가·숫자 완화는0이다. #543: 고정 wheel/stager의 정확 `numpy.libs` marker만 size0/empty SHA로 양쪽 전후 입증했으며 ELF3 ldd/strict closure·wheel/라이선스/raw4를 보존했다. 두 개별 결함의 종료 조건을 충족했다.
+
+별도 normal40178341813은 수치 불일치로 실패했고 diagnostic40178341811도 실패했다. 이를 #553에 유지하며 standalone normal workflow 성공·모든 CPU/실제 BLAS 함수·historical provider closure·전체 runtime/실기/원본 제거 수용으로 확대하지 않는다. same-job wrapper의 보수적 acceptance false 플래그와 credit0은 유지한다.
+
+
+## a535 모델 whole91 A→B 실제 결과와 PR bacda 종료 상태
+
+source `a535db58f52c610a66dc11ff030d16be52d6a5bb`의 [current40180250158/job121129581257](https://github.com/bin9208/openpilot-rust/actions/runs/40180250158/job/121129581257)은 자연 EPYC7763에서 성공했다. artifact12593338880(37402724B/SHA256 `d83666c250a21ba2b91ecbade6bd95122514bf9517bd2ae26446441b13f0e283`)의878CRC 및 unique PROGRAM91/calls176의source/object/image273개 전체 size/SHA·ABI/실제 hostISA를 확인했다. 전체113522명령 census는 invalid0이다. original/native의 plain/tapped2frames×6출력=12raw가 모두 byte 동일하고 원래 tap의 양쪽 전체출력 무효과·worker4·source19477/SDK/venv/Python/held 전후·live0/회수/upload/cleanup이 성공했다. 역사 signedzero3는 해당 입력에서 미재현이며 historical half/sNaN5·full128·wholemodel·cached runtime·retirement credit은0/false다. du 실패도 이 VM에서 미재현이므로 #570 root 해결로 세지 않는다.
+
+같은 source의 historical40180250107/job121129580991은 자연 EPYC7763의 실제 AVX512BW 부재를 strict ISA gate가 거부했다. artifact12594287353(5426136B/SHA256 `df13463ed8b5df5172975c927aebe98e5b6d7fcb40d26d3831f5358b6e871e55`)84CRC를 확인했으며 object/image는 실행하지 않았다. vocabulary 오류와 실제 host 미지원은 구분한다.
+
+PR343의 bacda Rust40173790842는 최종 실패다. AArch64 실제 build121111148664는 성공했지만 original model raw 불일치·UI old adapter API·workspace bridge 개수3개 job이 실패했고 native model-family121111148802는2시간 job 경계에서 취소됐다. UI/개수 수정은 현재 branch에 있으나 새 PR exact-source 수용 전이다. native family는08:09:33Z grouped-native 시작 뒤09:48:31Z 취소됐으며 artifact를 조사 중이다. 전체 Rust aggregate 실패/취소를 성공으로 바꾸지 않으며 PR343은 draft, dev/main 통합·후속 전달은 미수행이다.
+
+
+## #571 native model-family 두 root 2시간 초과의 최소 후보
+
+[실제 취소121111148802](https://github.com/bin9208/openpilot-rust/actions/runs/40173790842/job/121111148802)의 check-run annotation은 정확2h0m0s 초과다. artifact12594398497(476319908B)의 authenticated range/개별CRC에서 root0의driver4/startup/USB6case와 root1 driver4/startup 성공을 확인했으며 root1USB는5case 뒤1928cancel/aggregate·최종봉인이 없다. 전체ZIP SHA/CRC 감사는 진행 중이므로 전체 수용으로 세지 않는다. 각 invocation과 process receipt에 CPU/경과시간은 없어 비용 기여율은 미확정이다.
+
+현재 USB 검사는776634338B genuine input과 owned snapshot을 반복 검증하며 unoptimized SHA 구현을 사용한다. 최소 후보로 model-family-retirement 한 job의기존Cargo17명령(build/test/Clippy)에만 `profile.dev.package.sha2.opt-level=3` 및 `profile.test.package.sha2.opt-level=3`을 적용한다. 전체 runtime/math/test profile·원문 SHA·held 동일성/변조거부/모델·관측/120분/1200초/케이스·순서는 유지한다. test 전용 support의 기존 invocation JSON에 NativeRunner 시작 직전부터 회수 완료 직후까지 `command_elapsed_seconds`를 기록하며 출력 후처리/hash나 CPU 시간으로 표기하지 않는다.
+
+이 후보는 병목 기여율이나 해결을 미리 주장하지 않는다. 로컬은 Rustfmt/소스 모델·문법/diff만 확인하며 현재 source의 전체 gate·Clippy·최종봉인/upload/회수는 Actions 실행 전이다. [#571](https://github.com/bin9208/openpilot-rust/issues/571)에서 조사하고 기존 #482 raw 차이·dev-md·전체 runtime/실기 수용과 구분한다.
