@@ -531,7 +531,7 @@ jobs:
             --test control_tools_policy_check --test five_cli --test registration_vendor_check --test ui_adapter_sanitizers \
             --test unix_argv --test python_fs --test unix_cli_paths --test panda_raw \
             --test startup_adapter_sanitizers --test python_glob --test ui_fixed_corpus_check --test ui_ci_runtime \
-            --test ui_state_scheduler_check --test ui_translation_check --test ui_application_logic_check --test ui_headless_check \
+            --test ui_state_scheduler_check --test ui_translation_check --test ui_application_logic_check --test ui_diagnostic_reference --test ui_headless_check \
             --test ui_scroll_check --test diagnostic_check --test message_state_ci --test timed_ci --test ci_artifact_list \
             --test miri_provenance --test image_array_math --test ui_egl_ci --test command_reference_check \
             --test params_reference_check --test beep_integer_ci --test ui_polygon_ci --test ui_application_lifecycle_ci --test ratekeeper_ci --test cutin_alert_ci \

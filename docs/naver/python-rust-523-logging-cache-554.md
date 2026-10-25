@@ -276,3 +276,14 @@ test/compile/CLI/원본 실행과 stage/commit/push는0이다. source 변경은 
 기존 raw512MiB/file·선택 prefix1GiB·model/report64MiB·proof2GiB·2초/600초/원문14+retained·
 held/output seal 및 `closed_pid/cwd/fd/dso/full_acceptance/retirement_credit=false`는 그대로다.
 전체 lexical 수용·의미가 닫힌 FD/DSO·old27/R4/caller/원본 퇴역 수용으로 올리지 않는다.
+
+## 2026-10-25 593 신규 positive 회귀의 범위 정정
+
+[logging40161287008/job121073199569](https://github.com/bin9208/openpilot-rust/actions/runs/40161287008/job/121073199569)은
+source593에서 trace23pass/1fail로 멈췄다. artifact12586422343은7,896,770B/SHA256
+e4a8463ff1025a7ab3f248d69b1f70e9ef4c2c57a0b741be495be299a232bcce,2,403CRC다.
+새 shift positive의438행이 write의 opaque_payload를false로 기대했다.
+기존 parser는 write/read/send 등 I/O를 항상opaque로 표시하며 이 정책은 이번 shift 수정에서
+바뀌지 않았다. 신규 회귀만 기존 계약에 맞춰true를 요구하도록 정정한다. parser·원문·기존20본문·
+summary6·frozen expected·2초/600초 기준은 수정하지 않는다. 더 강한 payload/FD closure를
+주장하려고 기존 보수적 flag를false로 바꾸지 않는다. 전체24와 실제15prefix는 다시 Actions로 확인한다.

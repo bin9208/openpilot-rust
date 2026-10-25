@@ -150,3 +150,30 @@ git_update12582258995=289,434B/SHA
 이 source mutation 결함 #557의 네 완료 조건을 수용해 개별 종료한다. 새 Python 회귀/embedded
 stage 검증의 execution-edge pending2 및 원본 제거 credit0은 유지한다. release pack overlay·
 정확 source 런타임 전달과 전체 #523/#296·PR/실기 수용은 계속 미완료다.
+
+
+## PR593의 diagnostic source 경계 추가 보완
+
+[전체 Rust40161295597/job121073229163](https://github.com/bin9208/openpilot-rust/actions/runs/40161295597/job/121073229163),
+실제 PR merge `40562f2d8068878a00b18e12f355799b4fe0405d`에서 native UI checker build 후
+`unchanged_original_checker_process_arrays_output_and_failure_artifacts`의 첫 pass case가 실패했다.
+해당 case의 PNG는68B 실제 PNG이며 원문 capture/현재 fixture가 동일하다. 현재 source pin을
+정적 대조하면 retired checker/helper2의 허용된 부재 외에 application.py 하나만 다르다.
+이는 #557의 정확한 font3구간이며, 앞서 lifecycle 경계에서 확인한 같은38593B/d17a→42048B/c659 변경이다.
+
+후보는 diagnostic validator에서도 정확 application 경로와 과거 d17a expected pin인 경우만
+기존 `application_source_matches`를 호출한다. matcher 본문·원문 manifest·pixels·fonts·없어야 할
+경로·Params/provider·locked dependency pin은 불변이다. 새 fullSHA 단독 허용이나 source 재캡처가 아니다.
+font3구간별 변조/같은 길이 제거/중복/순서 변경과 비font FPS·stack·close 영역 변조를
+실제 public validator로 거부하는 source-binding3개를 추가했다. 기존 source/font/namespace/
+provider 변조 검사와 원문 process arrays/output/artifact 비교 본문은 유지한다.
+후자의 assertion에는 실제 Error를 출력해 다음 실패의 최초 원인을 보존하도록 했다.
+
+로컬은 Rust 서식·문법과 diff만 확인했다. 새3개와 기존 원문 raster/process 비교의 기능 검증은
+GitHub Actions 대기이며, 실제 graphical5mode나 #559 전체 수용으로 확대하지 않는다.
+
+
+새 diagnostic reference의 source-binding3개와 기존7개는 Fast tools의 기존 native regression
+명령에 target 하나를 추가해 다음 push에서도 실행한다. 렌더링 픽셀을 실제로 비교하는
+image-array-native checker는 원래 전체 UI job에 유지한다. Fast의 기존 목록/준비/성장과
+main UI의 원문 PNG/process/graphics 검사를 삭제하거나 성공을 재사용하지 않는다.

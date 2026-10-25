@@ -201,7 +201,7 @@ mod tests {
             ));
         fs::create_dir_all(&root).unwrap();
         let binary = root.join("cloudflared");
-        fs::write(&binary, "#!/bin/bash\nset -m\nprintf '%s' $$ > leader.pid\n(trap '' TERM HUP; printf '%s' \"$BASHPID\" > descendant.pid; exec sleep 600) &\nprintf '%s\\n' 'https://owned-regression.trycloudflare.com'\nwait\n").unwrap();
+        fs::write(&binary, "#!/bin/bash\nset -m\nprintf '%s\\n' $$ > leader.pid.part; mv -T leader.pid.part leader.pid\n(trap '' TERM HUP; printf '%s\\n' \"$BASHPID\" > descendant.pid.part; mv -T descendant.pid.part descendant.pid; exec sleep 600) &\nprintf '%s\\n' 'https://owned-regression.trycloudflare.com'\nwait\n").unwrap();
         fs::set_permissions(&binary, fs::Permissions::from_mode(0o700)).unwrap();
         let stdout = fs::File::create(root.join("stdout.txt")).unwrap();
         let stderr = fs::File::create(root.join("stderr.txt")).unwrap();
@@ -228,6 +228,8 @@ mod tests {
             if Instant::now() >= deadline {
                 timed_out = true;
                 let descendant: i32 = fs::read_to_string(root.join("descendant.pid"))
+                    .unwrap()
+                    .strip_suffix('\n')
                     .unwrap()
                     .parse()
                     .unwrap();
@@ -290,9 +292,13 @@ mod tests {
         }
         let leader: i32 = fs::read_to_string(root.join("leader.pid"))
             .unwrap()
+            .strip_suffix('\n')
+            .unwrap()
             .parse()
             .unwrap();
         let descendant: i32 = fs::read_to_string(root.join("descendant.pid"))
+            .unwrap()
+            .strip_suffix('\n')
             .unwrap()
             .parse()
             .unwrap();

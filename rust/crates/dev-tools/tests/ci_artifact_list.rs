@@ -2,13 +2,21 @@ use openpilot_dev_tools::ci_artifact_list::select;
 use serde_json::Value;
 use std::{fs, process::Command};
 
+#[path = "ci_disk_bootstrap/workflow_roles.rs"]
+mod workflow_roles;
+
 #[test]
 fn arm_workflow_uses_native_list_and_retains_execution_and_evidence() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let workflow = openpilot_dev_tools::ci_policy::parse(
+    let main = openpilot_dev_tools::ci_policy::parse(
         &fs::read_to_string(root.join(".github/workflows/rust.yml")).unwrap(),
     )
     .unwrap();
+    let native = openpilot_dev_tools::ci_policy::parse(
+        &fs::read_to_string(root.join(".github/workflows/rust-native-arm.yml")).unwrap(),
+    )
+    .unwrap();
+    let workflow = workflow_roles::resolve(&main, &native).unwrap();
     let steps = workflow["jobs"]["radar-arm"]["steps"].as_array().unwrap();
     let run = steps
         .iter()

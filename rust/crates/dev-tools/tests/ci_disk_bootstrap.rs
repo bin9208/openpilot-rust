@@ -11,6 +11,9 @@ use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
+#[path = "ci_disk_bootstrap/workflow_roles.rs"]
+mod workflow_roles;
+
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..")
 }
@@ -407,12 +410,17 @@ fn hash(lines: &[String]) -> String {
 // Keep job/step order while resolving quoted scalars and aliases. Only live run
 // bodies belong to the growth roster; shared definitions and env values do not.
 fn workflow_run_lines(source: &str) -> Vec<String> {
+    workflow_run_lines_in_view(source, &parse(source).unwrap())
+}
+fn workflow_run_lines_in_view(source: &str, workflow: &serde_json::Value) -> Vec<String> {
     let documents = yaml_rust2::YamlLoader::load_from_str(source).unwrap();
     assert_eq!(documents.len(), 1);
     let mut lines = Vec::new();
-    for (name, job) in documents[0]["jobs"].as_hash().unwrap() {
-        lines.push(format!("  {}:", name.as_str().unwrap()));
-        let Some(steps) = job["steps"].as_vec() else {
+    for (name, _) in documents[0]["jobs"].as_hash().unwrap() {
+        let name = name.as_str().unwrap();
+        lines.push(format!("  {name}:"));
+        let job = workflow["jobs"].get(name).unwrap();
+        let Some(steps) = job["steps"].as_array() else {
             continue;
         };
         for step in steps {
@@ -467,12 +475,172 @@ jobs:
     assert_eq!(workflow_run_lines(block), expected);
     assert_eq!(workflow_run_lines(compact), expected);
 }
+
+fn main_and_native_workflows() -> (serde_json::Value, serde_json::Value) {
+    let read = |name| {
+        parse(&fs::read_to_string(root().join(".github/workflows").join(name)).unwrap()).unwrap()
+    };
+    (read("rust.yml"), read("rust-native-arm.yml"))
+}
+
+#[test]
+fn workflow_reused_roles_reject_unknown_or_missing_caller() {
+    let (main, native) = main_and_native_workflows();
+    for called in [
+        None,
+        Some("./.github/workflows/other.yml"),
+        Some("./.github/workflows/rust-native-arm.yml@main"),
+        Some("other/repo/.github/workflows/rust-native-arm.yml@main"),
+    ] {
+        let mut changed = main.clone();
+        if let Some(called) = called {
+            changed["jobs"]["native-arm"]["uses"] = called.into();
+        } else {
+            changed["jobs"]
+                .as_object_mut()
+                .unwrap()
+                .remove("native-arm");
+        }
+        let error = workflow_roles::resolve(&changed, &native).unwrap_err();
+        assert!(
+            error.contains("unconditional same-source caller"),
+            "{error}"
+        );
+    }
+}
+
+#[test]
+fn workflow_reused_roles_reject_missing_or_skipped_proxy() {
+    let (main, native) = main_and_native_workflows();
+    for role in ["radar-arm", "carrot-navi-arm"] {
+        for mutation in ["missing", "skipped", "wrong-result"] {
+            let mut changed = main.clone();
+            match mutation {
+                "missing" => {
+                    changed["jobs"].as_object_mut().unwrap().remove(role);
+                }
+                "skipped" => changed["jobs"][role]["if"] = "${{ false }}".into(),
+                "wrong-result" => {
+                    changed["jobs"][role]["steps"][0]["env"]["NATIVE_ARM"] =
+                        "${{ needs.other.result }}".into();
+                }
+                _ => unreachable!(),
+            }
+            let error = workflow_roles::resolve(&changed, &native).unwrap_err();
+            assert!(
+                error.contains(&format!("{role}: exact mandatory native ARM proxy changed")),
+                "{mutation}: {error}"
+            );
+        }
+    }
+}
+
+#[test]
+fn workflow_reused_roles_reject_missing_duplicate_or_untrusted_callee_stage() {
+    let (main, native) = main_and_native_workflows();
+    for (role, stage) in [
+        (
+            "radar-arm",
+            "Build and execute generic ARM RadarCAN tests and artifacts",
+        ),
+        (
+            "carrot-navi-arm",
+            "Build and inspect the actual native ARM executable",
+        ),
+    ] {
+        let mut missing = native.clone();
+        missing["jobs"].as_object_mut().unwrap().remove(role);
+        let error = workflow_roles::resolve(&main, &missing).unwrap_err();
+        assert!(error.contains("required leaf roster changed"), "{error}");
+        for mutation in ["missing-stage", "duplicate-stage", "untrusted-stage"] {
+            let mut changed = native.clone();
+            let steps = changed["jobs"][role]["steps"].as_array_mut().unwrap();
+            let index = steps.iter().position(|step| step["name"] == stage).unwrap();
+            match mutation {
+                "missing-stage" => {
+                    steps.remove(index);
+                }
+                "duplicate-stage" => steps.push(steps[index].clone()),
+                "untrusted-stage" => steps[index]["if"] = "${{ always() }}".into(),
+                _ => unreachable!(),
+            }
+            let error = workflow_roles::resolve(&main, &changed).unwrap_err();
+            let expected = if mutation == "untrusted-stage" {
+                "untrusted source step bypass".to_owned()
+            } else {
+                format!("missing or duplicate native ARM stage {stage}")
+            };
+            assert!(error.contains(&expected), "{mutation}: {error}");
+        }
+    }
+}
+
+#[test]
+fn workflow_reused_roles_reject_changed_guard_roster_or_result_gate() {
+    let (main, native) = main_and_native_workflows();
+    let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
+    for role in ["radar-arm", "carrot-navi-arm"] {
+        let mut changed = native.clone();
+        let step = changed["jobs"][role]["steps"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|step| step["run"].as_str().is_some_and(|run| run.contains(marker)))
+            .unwrap();
+        step["run"] = step["run"]
+            .as_str()
+            .unwrap()
+            .replacen(marker, "missing-guard", 1)
+            .into();
+        let error = workflow_roles::resolve(&main, &changed).unwrap_err();
+        assert!(
+            error.starts_with(&format!("{role}: inherited disk guard roster changed")),
+            "{error}"
+        );
+    }
+    let mut changed = native.clone();
+    changed["jobs"]["native-arm-checks"]["if"] = "${{ success() }}".into();
+    let error = workflow_roles::resolve(&main, &changed).unwrap_err();
+    assert!(
+        error.contains("result aggregate must still run and explicitly reject forks"),
+        "{error}"
+    );
+
+    let mut changed = native.clone();
+    let run = &mut changed["jobs"]["native-arm-checks"]["steps"][0]["run"];
+    *run = run
+        .as_str()
+        .unwrap()
+        .replace(
+            "test \"$RADAR_ARM\" = success",
+            "test \"$RADAR_ARM\" = failure",
+        )
+        .into();
+    let error = workflow_roles::resolve(&main, &changed).unwrap_err();
+    assert!(
+        error.contains("native ARM result bindings or strict success checks changed"),
+        "{error}"
+    );
+
+    let mut changed = main.clone();
+    changed["jobs"]["fast"]["steps"][0]["env"]["NATIVE_ARM"] =
+        "${{ needs.radar-arm.result }}".into();
+    let error = workflow_roles::resolve(&changed, &native).unwrap_err();
+    assert!(
+        error.contains("main Rust result binding/check changed: NATIVE_ARM"),
+        "{error}"
+    );
+}
+
 #[test]
 fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
     let text = fs::read_to_string(root().join(".github/workflows/rust.yml")).unwrap();
+    let native = fs::read_to_string(root().join(".github/workflows/rust-native-arm.yml")).unwrap();
     assert!(!text.contains("card_ci_space.py"));
+    assert!(!native.contains("card_ci_space.py"));
     let marker = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\"";
-    let workflow = parse(&text).unwrap();
+    let workflow =
+        workflow_roles::resolve(&parse(&text).unwrap(), &parse(&native).unwrap()).unwrap();
     let jobs = workflow["jobs"].as_object().unwrap();
     let scripts = |job: &serde_json::Value| {
         job["steps"]
@@ -511,7 +679,7 @@ fn workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths() {
             .count(),
         37
     );
-    let decoded_lines = workflow_run_lines(&text);
+    let decoded_lines = workflow_run_lines_in_view(&text, &workflow);
     let lines = decoded_lines.iter().map(String::as_str).collect::<Vec<_>>();
     let llvm20_start = lines
         .iter()

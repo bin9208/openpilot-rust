@@ -500,3 +500,28 @@ artifact12562813044(5,424,311B,SHA256 `01eb7b7d6fc9f7c60953e73c9798b5ab8499e116c
 synthetic 입력에서 검증됐으며, 실제72,045,323B 원본 PKL은 이 읽기 전용 역사 triplet 경계의
 입력이 아니므로 새 issuer로 실제 원본을 수용했다고 기록하지 않는다. generated image/모델 실행,
 FP5·전체 모델 수치 수용과 원본 compiler 최초 발행자 증명은 계속 미완료다.
+
+
+## PR593의 현재 원본·native road1928 실제 byte 차이
+
+[40161295597/job121073229367](https://github.com/bin9208/openpilot-rust/actions/runs/40161295597/job/121073229367),
+source merge `40562f2d8068878a00b18e12f355799b4fe0405d`에서 현재 원본128frame 실행 후
+`model-1.bin`에서 strict 비교가 실패했다. road1928 두 번째frame의2576 float 중
+index100/101/1349 세 원소만 원본 bits `80000000`, native `00000000`이다.
+나머지2573 원소는 전바이트 같다. frame0 및 앞서 확인한 다른 output의 성공을 전체128frame
+수용으로 확대하지 않는다. 뒤의1344/driver/publication/retirement는 이 step 실패로 미실행이다.
+
+artifact12586773257은18301B/SHA256
+`7dbdc3eedec86a9ffb86f0a49653ac3e2d252c556fa5829a462f4145d354b579`,5CRC/expanded21621B를
+부모가 감사했다. complete raw pair 각10304B와 original-preservation-verified true다.
+별도 sidecar artifact12586298677은15043364B/SHA256
+`0d13baade833e2921e3964088afb6c7ceea023f1ef5cf7cdb39a6439e0fb924f`,47CRC/expanded43321456B다.
+source40562 및 final helper/provider guards0을 확인했다. 안의 bounded tar1467개/expanded36910209B에
+현재 road1928 kernel92 원문166049B와 exact compiled source/4rewrite receipt가 남아 있다.
+자연 CPU는 AMD EPYC9V45이며 과거 i9-13900의 ISA 거부를 이 host에 소급하지 않는다.
+
+현재 pair는 같은 job에서 ONNX로 새로 생성한 original PKL과 current native compile의 비교다.
+과거 frozen1344float99와 동일 원인이라고 아직 확정하지 않는다. signed-zero 정규화/허용오차/
+기대값/CPU·target 변경 없이, 동일 원본 SOURCE/BINARY와 실제 object의 전체 재구성·ISA 및
+최초 producer를 확인할 후속 경계를 검토한다. 기존 guarded-add unit 성공을 이 raw 수치 수용으로
+대체하지 않으며 compiler/kernel/모델의 로컬 실행은0이다.

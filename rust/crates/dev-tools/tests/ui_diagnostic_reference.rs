@@ -1,3 +1,6 @@
+#[path = "ui_diagnostic_reference/source_binding.rs"]
+mod source_binding;
+
 use openpilot_dev_tools::{
     seal::Result,
     ui_diagnostic_reference::{render, Api},

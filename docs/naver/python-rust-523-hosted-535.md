@@ -1008,3 +1008,29 @@ SSH/UI/로깅/native ARM 실행은 계속 진행하며 별도 결과로 확인�
 
 
 #563은 fd 실제 `probe-build` watcher의 target 임시 archive ENOENT(find1/decision75/attempt1)와 두 번째clean scan, 독립 검토를 확인해 개별 종료했다. 첫 실패의meta/stderr/표식은 최종 admission 뒤에도 업로드됐으며 옛6a의 덮인 원문을 복원했다는 뜻은 아니다. actual18+8 및 마지막봉인/실패원문upload 조건은 위fd 실행으로 충족했다. 전체#549/retirement credit0은 유지한다.
+
+
+## PR593 전체 검사에서 드러난 source 계약·fixture 보완
+
+실제 source merge `40562f2d8068878a00b18e12f355799b4fe0405d`의 Integration40161295629와
+최신 user-docs40161450821은 성공했다. Rust/Fast 전체는 실패이며 native8 전체 통합 수용은 아니다.
+
+- Fast40161295530 routing은 main-only544/558, services는 main proxy에서 RadarCAN body lookup으로
+  실패했다. 실제 cold audit는unknown0으로 통과했지만 #560의 다른 실패가 해결됐다는 뜻은 아니다.
+  exact same-source caller/proxy8gate를 먼저 요구한 뒤 이동한 RadarCAN11/Navi3 guard만 callee에서
+  조회한다. 기존558guards/37jobs·세부growth/실제artifact 실행 roster를 유지하고4test/23변조를 추가했다.
+  두 ZIP12586692129/12586143750은89/34CRC와 전후20/6쌍을 각각 감사했다.
+- Card job121073229217의1272CarParams/35520state·actuator/91316CAN 비교는 성공했다. 뒤의 old41needs
+  계약만 새native-arm 항목을 거부했다. old41을 유지하고 exact42와 caller/8leaf/aggregate/proxy를
+  연결하며10개 누락·skip·재연결 음성case를 추가한다. 실제 수정 후 source-contract는 Actions 대기다.
+- startup job121073229115의 raw receipt fixture는 즉시 종료 /bin/true의 초기 write와 종료가 경합해
+  EOF 대신 EPIPE를 받았다. [#566](https://github.com/bin9208/openpilot-rust/issues/566)의 후보는 이
+  test만 immutable echo peer로 complete non-ready handshake를 만들고 모든 raw path/env/SHA/receipt
+  검사를 유지한다. 제품 protocol/원문 expected는 변경하지 않는다.
+- workspace job121073229126의 tunnel unit fixture는 존재만 확인한 descendant.pid가 아직 empty여서
+  실패했다. [#484](https://github.com/bin9208/openpilot-rust/issues/484)를 다시 열고 test producer의
+  leader/descendant PID를 같은 private directory의 part→rename으로 원자 공개한다. newline 정확
+  파싱과 기존5초/2초·같은session/다른group/무관child·완전 회수 판정은 유지한다.
+
+이 source 후보들은 로컬 source/문법/format/diff만 확인했으며 기능 성공은 다음 Actions의 정확
+소스에서 판정한다. 원래 check 수치/모델/안전/유효성 기준과 전체 PR gate를 생략하지 않는다.

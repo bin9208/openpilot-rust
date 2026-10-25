@@ -102,7 +102,12 @@ fn unchanged_original_checker_process_arrays_output_and_failure_artifacts() {
             &mut peer,
             &mut printed,
         );
-        assert_eq!(result.is_ok(), case["exit"] == 0, "{}", case["name"]);
+        assert_eq!(
+            result.is_ok(),
+            case["exit"] == 0,
+            "{}: {result:?}",
+            case["name"]
+        );
         assert_eq!(peer.calls, case["calls"].as_array().unwrap().len());
         assert_eq!(
             String::from_utf8(printed).unwrap(),

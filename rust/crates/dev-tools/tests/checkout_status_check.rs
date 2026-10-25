@@ -263,9 +263,9 @@ fn raw_unix_paths_and_allowlisted_environment_survive_failure_receipts_losslessl
     let raw = work
         .path()
         .join(OsString::from_vec(b"checkout-\xff".to_vec()));
-    // Use a real immutable executable; its expected EOF preserves the original
-    // failure phase while exercising both provenance and command receipts.
-    fs::copy("/bin/true", &raw).unwrap();
+    // An immutable echoing peer consumes the handshake and returns a complete
+    // non-ready reply. An immediately exiting peer races EOF against EPIPE.
+    fs::copy("/bin/cat", &raw).unwrap();
     let output = work.path().join("output");
     let unused = work
         .path()
@@ -289,7 +289,7 @@ fn raw_unix_paths_and_allowlisted_environment_survive_failure_receipts_losslessl
         .output()
         .unwrap();
     assert_eq!(actual.status.code(), Some(1), "{:?}", actual.stderr);
-    assert_eq!(actual.stderr, b"checkout peer EOF: \n");
+    assert_eq!(actual.stderr, b"checkout peer did not report ready\n");
     let provenance = fs::read_to_string(output.join("provenance.json")).unwrap();
     assert!(provenance.contains("checkout-\\udcff"));
     assert!(provenance.contains("unused-\\udcfe"));
@@ -301,7 +301,7 @@ fn raw_unix_paths_and_allowlisted_environment_survive_failure_receipts_losslessl
         .unwrap();
     assert_eq!(
         candidate.get("sha256").unwrap().to_utf8().unwrap(),
-        format!("{:x}", Sha256::digest(fs::read("/bin/true").unwrap()))
+        format!("{:x}", Sha256::digest(fs::read("/bin/cat").unwrap()))
     );
     let receipt = fs::read_to_string(output.join("metadata/rust/command.json")).unwrap();
     // Both the caller provenance and resolved actual command retain raw bytes.

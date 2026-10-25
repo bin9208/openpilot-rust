@@ -435,7 +435,8 @@ fn left_shift_tokens_preserve_raw_spans_and_both_inspection_scopes() {
                 args.as_bytes()
             );
             assert_eq!(report["events"][1]["operation"], "write");
-            assert_eq!(report["events"][1]["opaque_payload"], false);
+            // I/O payload remains opaque under the existing inspection contract.
+            assert_eq!(report["events"][1]["opaque_payload"], true);
         }
     }
 }
