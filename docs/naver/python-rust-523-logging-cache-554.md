@@ -374,3 +374,12 @@ ZIP39,396,698B/SHA256 `68c84975b3084dc1ca36a5d16069e26ac231530629cad664d9da45d5b
 로컬 확인은 Bash 문법(heredoc 포함)·Rustfmt·diff/source 비교뿐이며,
 새 metadata13음성/A/B/A/full14·retained-once·15prefix/Clippy 기능은 **Actions UNRUN**이다.
 workflow/Focus/ledger의 helper literal·fixture pin 갱신과 실제 Actions 실행은 부모가 소유한다.
+
+
+## #565 실제 전체 prefix 수용 완료
+
+source `7b277494164da62b8c1971019ad9043de86b864a`의 [logging40166934406/job121089810557](https://github.com/bin9208/openpilot-rust/actions/runs/40166934406/job/121089810557)이 성공했습니다. artifact12588129525/81924156B/SHA256 `8d361a7b2a3a4a56a64c6f72837b49103fd0c0fdc8ae78a082e0d2829ca3484b`의5956CRC와 원문/receipt 연결을 감사했습니다.
+
+기존20+shift 관련4=trace24 및 summary6, 실제14 lifecycle·retained250/697 대 원문249/694와15 raw prefix 전체 strict lexer가 통과했습니다. 실제 `logging/trace/runtime_directory_int.24520:102063`의 `udiag_states=1<<TCP_LISTEN` 행을 보존했고, 해당 raw SHA `ba3694a6827447da774cc9f721277d3fd80c707dd02b924484d4c8e078af4364`를 포함한 성공 inspection에 연결했습니다. FD annotation·기형 shift/operand·unknown 거부는 유지합니다.
+
+source/index/SDK/provider·관측한 owned peer/IPC 회수 및 업로드를 확인했습니다. 현재 PR head e856의 lexer Git blob도 실제 성공7b와 동일합니다. 이 lexical 오인 결함의 수용 조건을 충족해 #565를 종료합니다. 전체 PID/cwd/FD/DSO 폐쇄나 old27/R4/caller/원본2 퇴역은 false/0을 유지하며 #549/#554/#523/#296에서 계속 추적합니다. 별도 job/source/SDK 삭제 cleanup은 당시 workflow에 없었고, 전체 후속 수용과 구분합니다.

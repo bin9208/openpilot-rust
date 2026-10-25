@@ -4,6 +4,14 @@ use std::{ffi::c_void, fs, io::Read, path::Path};
 
 type KernelFn = unsafe extern "C" fn(*const *mut c_void, *const i32);
 
+#[cfg(all(
+    test,
+    feature = "cached-program-isa",
+    target_arch = "x86_64",
+    target_os = "linux"
+))]
+mod diagnostic_482_tests;
+
 struct Invocation {
     function: KernelFn,
     buffers: Vec<*mut c_void>,

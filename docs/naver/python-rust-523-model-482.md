@@ -525,3 +525,70 @@ source40562 및 final helper/provider guards0을 확인했다. 안의 bounded ta
 기대값/CPU·target 변경 없이, 동일 원본 SOURCE/BINARY와 실제 object의 전체 재구성·ISA 및
 최초 producer를 확인할 후속 경계를 검토한다. 기존 guarded-add unit 성공을 이 raw 수치 수용으로
 대체하지 않으며 compiler/kernel/모델의 로컬 실행은0이다.
+
+## 현재 whole triplet 뒤2frame producer 관측 후보 — Actions UNRUN
+
+PR593 source `40562f2d8068878a00b18e12f355799b4fe0405d`의 road1928 frame1
+model2576개 중100/101/1349 signed-zero3만 확인된 상황에서 다음5파일을 한정 구현했다.
+기존128frame/full-model/driver/publication 수용 gate를 바꾸거나 과거 half/sNaN5를 해결한 것으로 세지 않는다.
+
+- `.github/workflows/python-rust-523-model-current-triplet.yml`: 승인 branch push 전용 ubuntu24 X64 진단.
+- `tools/ci/model_current_triplet_482.py`: stdlib controller와 원본 worker. 새 Python 실행 edge이며 부모 원장 등록이 필요하다.
+- `rust/crates/model-runtime/src/cpu/diagnostic_482_tests.rs`: 기존 feature 아래 private ignored lib-test2개.
+- `rust/crates/model-runtime/src/cpu.rs`: 그 test module의 cfg 등록만. 생산 execute/수학/API/Cargo는 불변이다.
+- 이 문서의 후속 범위 기록.
+
+A는 absent private CACHEDB를 tinygrad import 전에 정한다. 실제 compile_cached/get/put/compile_to_obj/
+원본 jit_loader/elf_loader/CPUProgram 생성에 delegate wrapper를 두고 반환값을 교체하지 않는다.
+기존 grouped original compiler argv의1928/1344 순서를 유지한다. capture warm-up이 실제 generated code를
+실행하므로 job 전체 compile-only/실행0이라고 쓰지 않는다. 같은 job의 새 PKL에서 road1928의 전체 unique
+PROGRAM과 COPY/SLICE, 모든 emitted call·global/core/scalar·allocation/view/입출력 연결을 수집한다.
+실제 반환 원본명 object와 전체 BINARY 및 로드 주소 정렬이 연결되지 않으면 실패한다. native rename object를
+원본 object로 대신하지 않는다. LLVM18 provider SHA는 기존 `5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`이고
+실제 compiler target-machine triple/CPU/features/passes와 `llvm.dll._name`을 읽는다. CPU/feature forcing은 없다.
+
+첫 Rust selector는 exact guarded-add8/cached10+신규 test의 compiled/current source를 대조하고 기존
+`verify_original_program`의 전체 object→image/ABI 검증과 `cached_isa::admit_all`의 whole-roster/전체64MiB
+상한·실제 host ISA 검사를 적용한다. model128MiB는 streaming SHA로 읽고 PKL/이미지는 실행하지 않는다.
+유효한 입력에서 missing/duplicate/order·view bound·image 변조·global/worker ABI 거부를 확인한다.
+기존 issuer는 이미 인증된 ISA receipt를 요구하므로 자동 접속하지 않는다. 기본 cached loader도 disabled다.
+
+A 성공 뒤 B는 기존 pipeline의2frame 입력 생성식(seed20260930, frame/big_frame, matrix, packed fields,
+frame0 hidden-state)을 유지한다. 모든 original/plain-native 출력과 original/native tapped 출력을 byte로
+대조한다. original CPU worker 안에서 copyout/as_memoryview/Device.synchronize를 호출하지 않는다.
+native adapter는 같은 held kernels.so의 실함수/ABI/인자를 정확1회 forward하며 FFI에서 unwind하지 않는다.
+실제 model view가 offset0/10304B이고 정확 source `e223a2c36c6bde7cf676bb92fd2529858a723f9ecfa91c811b2b941756a9bea0`의
+단일 call/2worker 및 포인터·전체 view roster가 대응할 때만 worker0의100/101, worker1의1349 raw4bytes를
+읽는다. 다른 alias/producer가 있거나 context가 다르면 관측을 거부한다. read-only selector는 generated
+execution0이지만 B는 실제 계산이다. call producer와 최초 SSA arithmetic producer를 구분해 후자는 false다.
+
+CI의 exact selector는 다음2개이며 각각1pass/0fail/0ignored와 실제 receipt가 필수다.
+
+```text
+cpu::diagnostic_482_tests::fresh_program_roster_triplets_and_host_isa_are_bound_without_execution
+cpu::diagnostic_482_tests::bound_road1928_two_frame_producer_capture
+```
+
+둘 다 `--ignored --exact --nocapture --test-threads=1 --color=never`로 실행한다. fresh Cargo JSONL 전체를
+eager parse해 exact package/manifest/src/features/profile.test/kind/unique ELF를 선택한다. archived ELF와
+cached issuer 실행은0이다. 기존 maintained normal40 helper의 SHA 고정 stdlib `Holds/Children/snapshot`만
+재사용하며 normal40 기능은 호출하지 않는다. 실제 job key `model-pipelines`로 기존 LFS driving admission을
+사용하고 DIAG/CI296은 동일 소유 source에 명시적으로 연결한다. fresh private Rust1.94는 기존 현재 SDK
+prepare/whole seal 계약을 사용한다. 새 WF의 정적 정책·Focus/source pins·Python edge 원장 등록은 부모 소유다.
+특히 cached10의 cpu.rs postimage가 달라지므로 과거 receipt를 현재 것으로 바꾸지 말고 소비자별 새 binding이 필요하다.
+
+동시 growth 계획은 source2GiB/build+registry8GiB/SDK3GiB/venv1GiB/proof512MiB/apt2GiB/종료512MiB다.
+최초17GiB를 실제 각 filesystem에서 확인하고 helper도 allocated/apparent 상한과 남은 growth·종료 reserve를
+감시한다. du 오류/형태 미확정은 성공으로 처리하지 않는다. file512MiB/log32MiB, original source/object/image16MiB,
+request4MiB, program4096, event100000/16MiB가 후보 한도다. 별도 재시도/상한 확대는 없다. 전체 helper40분,
+readonly CPU60s/AS4GiB/wall90s, 각2frame180s를 shared remaining에 묶고 job finalizer 여유4분을 남긴다.
+새 VM의 compiler·memory·copy·growth fit은 아직 실측하지 않았다.
+
+실패에서도 source/index/whole SDK/Python base·venv/held ELF·provider의 전후 봉인과 pidfd/subreaper 회수,
+partial object/image/IR/compile events/실제2frame raw 출력의 bounded proof 보존을 독립 수행한다.
+maps는500ms 표본이며 전체 pre-dlopen 관측으로 주장하지 않는다. PKL/weights 전체는 artifact에 중복하지 않는다.
+numeric mismatch는 모든 관측이 끝나도 그대로 helper/closure FAIL로 남고 진단 완료로 대체하지 않는다.
+full128/full-runtime/historical-provider/half-sNaN5/retirement flags는 false/0이다.
+
+로컬 검증은 AST/YAML/Bash 문법·Rustfmt·source/diff뿐이다. 새 source의 실제 compile/readonly decoder/
+original capture/2frame plain-tap/회수 및 모든 기능은 **Actions UNRUN**이다.
