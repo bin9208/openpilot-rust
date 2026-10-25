@@ -535,8 +535,12 @@ def controller_type(base):
             need(not target.exists() and not target.is_symlink(),'fresh target absent')
             cargo=self.sdk/'bin/cargo'
             manifest=self.root/'rust/Cargo.toml'
+            # 모든 Cargo 단계에서 동일 SHA profile을 사용해 이미 hold한 bin 재링크를 막는다.
+            # 모델/테스트 본체 opt0과 수치·CPU·시간·후검증 계약은 유지한다.
+            hash_profiles=['--config','profile.dev.package.sha2.opt-level=3',
+                           '--config','profile.test.package.sha2.opt-level=3']
             model_args=['--manifest-path',manifest,'--locked','-p','openpilot-model-runtime','--no-default-features',
-                        '--features','cached-program-isa','--message-format=json']
+                        '--features','cached-program-isa','--message-format=json',*hash_profiles]
             raw=self.command([cargo,'build',*model_args,'--bin','offline-llvm-guarded-add'],'current-model-bins',900)
             guarded=self.select_current(raw,'openpilot-model-runtime','model-runtime','offline-llvm-guarded-add','bin',
                 'rust/crates/model-runtime/src/bin/offline-llvm-guarded-add.rs',False,['cached-program-isa','native-skip-miri'])
@@ -545,19 +549,17 @@ def controller_type(base):
                 'rust/crates/model-runtime/src/lib.rs',True,['cached-program-isa','native-skip-miri'])
             features=['current-catalog-export-native','driving-daemon-native']
             args=['--manifest-path',manifest,'--locked','-p','openpilot-dev-tools','--no-default-features',
-                  '--features',','.join(features),'--message-format=json']
+                  '--features',','.join(features),'--message-format=json',*hash_profiles]
             raw=self.command([cargo,'build',*args,'--bin','stage-driving-daemon-fixture','--bin','export-current-driving-catalog'], 'current-devtools-bins',900)
             stager=self.select_current(raw,'openpilot-dev-tools','dev-tools','stage-driving-daemon-fixture','bin',
                 'rust/crates/dev-tools/src/bin/stage_driving_daemon_fixture.rs',False,features)
             exporter=self.select_current(raw,'openpilot-dev-tools','dev-tools','export-current-driving-catalog','bin',
                 'rust/crates/dev-tools/src/bin/export_current_driving_catalog.rs',False,features)
-            # #584: private retirement 빌드의 sha2만 최적화하고 본체 opt0은 유지한다.
-            raw=self.command([cargo,'test',*args,'--config','profile.test.package.sha2.opt-level=3',
-                              '--test','driving_daemon_retirement','--no-run'],'current-retirement-test',900)
+            raw=self.command([cargo,'test',*args,'--test','driving_daemon_retirement','--no-run'],'current-retirement-test',900)
             d1test=self.select_current(raw,'openpilot-dev-tools','dev-tools','driving_daemon_retirement','test',
                 'rust/crates/dev-tools/tests/driving_daemon_retirement.rs',True,features)
             raw=self.command([cargo,'build','--manifest-path',manifest,'--locked','-p','openpilot-driving-modeld',
-                              '--no-default-features','--message-format=json'],'current-daemon',900)
+                              '--no-default-features','--message-format=json',*hash_profiles],'current-daemon',900)
             daemon=self.select_current(raw,'openpilot-driving-modeld','drivingd','openpilot-driving-modeld','bin',
                 'rust/crates/drivingd/src/main.rs',False,[])
             self.command([cargo,'clippy',*model_args,'--lib','--tests','--','-D','warnings'],'current-model-clippy',900)

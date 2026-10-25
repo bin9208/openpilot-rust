@@ -1006,3 +1006,9 @@ base81782B SHA256 `6b173bb32ec045bbef9a0d2a968555a9318ff031e1d4cb1574a5254033bf2
 로컬 Python AST 구문 확인과 source-only 역투영에서 추가 argv 두 값과 설명 주석을 제거하면 helper 기존 전체 bytes50959/SHA256 `f551bb6a54b173d61229b895726aab3cf14366c7a90c2250af38c130239cef41` 및 AST가 정확히 복원된다. 따라서 180초/global·900초 build 상한·12frame/33publication·전체2576raw/기대수치·CPU/ISA·모든 guard/후검증·strict sticky/D2 진입·독립 finalizer/upload/cleanup은 기존 소스 그대로다. docs는 기존 원문 뒤 append만 수행하고 diff 공백 검사를 확인했다. helper import/프로젝트 CLI/Cargo/build/test/Clippy/원본·모델 계산은 로컬 실행0이다.
 
 **GHA UNRUN**: 실제 최적화 적용 Cargo artifact와 빌드 성공·새28단계 전체/후검증·d1.json·D1/D2/180초 resource fit는 아직 미검증이다. 새 실행 전 helper pin·Focus·원장/WF 등록과 commit/push/CI/이슈 갱신은 부모 담당이다. 실제 GHA 결과 전 mismatch index/count·수치 원인 해결·full128/half·sNaN5/전체 모델 수용을 주장하지 않으며 retirement credit0을 유지한다. #584/#482 및 #523 전체 완료는 아직 열려 있다.
+
+## #587 해시 profile과 보유 실행 파일 재빌드 — 2026-10-26
+
+`ad9f19222`의 [40204820140/job121203423355](https://github.com/bin9208/openpilot-rust/actions/runs/40204820140/job/121203423355)은 최초 보유한 `stage-driving-daemon-fixture`가 바뀌었다고 거부했다. 실제 runtime 수치나 D1 시간 개선까지 도달한 성공으로 세지 않는다. 이 회귀는 [#587](https://github.com/bin9208/openpilot-rust/issues/587)에 분리했다.
+
+retirement test 한 명령에만 적용한 sha2 설정을 관련 model/dev-tools/daemon build·test·Clippy의 dev/test package profile에 일관되게 전달한다. 모델·테스트 본체 opt0, CPU/ISA·수치·시간 및 보유 파일 후검증은 유지한다. 최초 파일을 새 값으로 재봉인하여 변경을 받아들이지 않는다. 로컬 AST/diff만 확인했고 정확 소스의 실제 Actions는 대기다.
