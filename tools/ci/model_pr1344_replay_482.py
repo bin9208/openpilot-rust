@@ -318,6 +318,8 @@ def original_replay(root, job, m, tapped):
         for tensors, base in ((original.bindings.inputs,True),(original.bindings.outputs,False)):
             for tensor in tensors.values(): table.read(host_buffer(tensor.uop.base.buffer if base else tensor.uop.buffer))
         selected = None
+        # half99 tap: 원래 호출의 Buffer 참조만 보관하며 할당/매핑을 요청하지 않는다.
+        half_call = None
         for call in linear_calls(original.pipeline.jit.captured.linear):
             op = call.src[0]
             buffers = [host_buffer(x.buffer) for x in realize.resolve_params(call,())]
@@ -349,9 +351,43 @@ def original_replay(root, job, m, tapped):
             for i in op.arg.ins: table.read(buffers[i])
             for i in op.arg.outs: table.write(buffers[i])
             for i in op.arg.globals: table.view(buffers[i])
+            if tapped and row['source_sha256']==STORE_SOURCE:
+                need(half_call is None, 'half99 unknown: repeated writer call')
+                half_call = (runtimes[key], [buffers[i] for i in op.arg.globals])
         need(len(runtimes)==len(rows) and selected is not None,'complete runtime map before any call')
         initial = [{'bytes':len(raw),'sha256':sha(raw)} for raw in table.initial]
         need(initial == m.unique_json(m.read(build/'initial.json',4*MIB)), 'original initial allocation provenance changed')
+        half_observation, half_buffers = None, None
+        if tapped:
+            from tinygrad import dtypes
+            need(half_call is not None and half_call[0] is selected, 'half99 unknown: existing writer')
+            half_buffers = half_call[1]
+            programs = [p for p in request['programs'] if p['original']['source_sha256']==STORE_SOURCE]
+            need(len(programs)==1 and programs[0]['kernel']==92, 'half99 unknown: writer identity')
+            p = programs[0]
+            need(p['source']['sha256']==STORE_SOURCE and p['object']['sha256']==p['original']['reconstruction_object_sha256']
+                 and p['image']['sha256']==p['original']['image_sha256'], 'half99 unknown: triplet identity')
+            calls = [c for c in request['calls'] if c['program']==p['index']]
+            need(len(calls)==1 and calls[0]['workers']==2 and calls[0]['core_id']==0
+                 and calls[0]['scalars']==[0] and len(half_buffers)==10, 'half99 unknown: writer ABI')
+            call = calls[0]
+            source = read_spec(m,p['source'],16*MIB)
+            for kind in ('object','image'): read_spec(m,p[kind],16*MIB)
+            need('i16* noalias align 32 %data1' in source.decode().splitlines()[0],
+                 'half99 unknown: authenticated LLVM argument storage')
+            for b,view_id in zip(half_buffers,call['views'],strict=True):
+                allocation = table.base_ids.get(id(b.base))
+                need(allocation is not None and table.view_ids.get((allocation,b.offset,b.nbytes))==view_id
+                     and request['views'][view_id]=={'allocation':allocation,'offset':b.offset,'bytes':b.nbytes}
+                     and b.base.nbytes==request['allocations'][allocation], 'half99 unknown: actual graph range')
+            target = half_buffers[1]
+            need(target.dtype.base==dtypes.float16 and target.dtype.itemsize==2 and target.nbytes==3152
+                 and target.offset==9472 and 99*2+2<=target.nbytes, 'half99 unknown: actual dtype/extent')
+            half_observation = {'status':'unknown','operand_file':None,'worker':0,'phase':'writer-before','index':99,'element_bytes':2,
+                'call':call['index'],'kernel':92,'arg_slot':1,'view':call['views'][1],**request['views'][call['views'][1]],
+                'actual_dtype':str(target.dtype),'actual_nbytes':target.nbytes,'storage_dtype':'i16',
+                'source_sha256':STORE_SOURCE,'object_sha256':p['object']['sha256'],'image_sha256':p['image']['sha256'],
+                'buffer_address':None,'element_address':None,'allocation_byte_offset':target.offset+99*2,'input_le_hex':None}
         def runtime(device, ast, cache=True):
             key = (ast.key,device)
             need(key in runtimes and cache and realize.runtime_cache.get(key) is runtimes[key], 'unbound runtime/fallback/cache bypass')
@@ -368,6 +404,16 @@ def original_replay(root, job, m, tapped):
             if is_writer:
                 need(count==10 and len(args)==11 and args[0]==address and tid in (0,1), 'writer pointer/scalar/worker binding')
                 need(sha(program.mem[:]) == known[id(program)][1], 'writer mapped image drift')
+                need(args[count:]==(0,), 'half99 unknown: actual scalar before core override')
+                for pointer,b in zip(args[:count],half_buffers,strict=True):
+                    backing = b.base._bufs.get(program.dev.device)
+                    need(backing is not None and pointer==backing.va_addr+b.offset
+                         and b.offset+b.nbytes<=backing.size,
+                         'half99 unknown: existing actual call buffer missing or changed')
+                if tid==0:
+                    need(half_observation['input_le_hex'] is None, 'half99 unknown: repeated writer0')
+                    half_observation.update(status='observed',buffer_address=args[1],element_address=args[1]+99*2,
+                        input_le_hex=ctypes.string_at(args[1]+99*2,2).hex())
                 before = ctypes.string_at(address+99*4,4).hex() if tid==0 else None
             previous_exec(queue,tid,program,count,*args)
             if is_writer:
@@ -409,11 +455,15 @@ def original_replay(root, job, m, tapped):
                     if tapped: need(m.read(traffic/'original'/filename,16*MIB)==raw,'original whole-output plain/tapped drift')
                     outputs[name]={'bytes':len(raw),'sha256':sha(raw)}
         if tapped: need(sorted(e['worker'] for e in events)==[0,1], 'both actual worker callbacks')
+        if tapped:
+            need(half_observation['status']=='observed' and half_observation['input_le_hex'] is not None,
+                 'half99 unknown: incomplete writer0 observation')
         need(len(mappings)==len(rows),'actual mapped roster')
         save(out/('original-tapped.json' if tapped else 'original-plain.json'), {'source':os.environ['GITHUB_SHA'],
             'initial':initial,'outputs':outputs,'events':events,'mappings':mappings,
             'fresh_runtime_not_frozen_binary':True,'plain_tapped_all_outputs_equal':tapped,
-            'writer_call_observed':tapped,'ssa_first_producer_observed':False,'historical_provider_proven':False})
+            'writer_call_observed':tapped,'ssa_first_producer_observed':False,'historical_provider_proven':False,
+            **({'half_observation':half_observation} if tapped else {})})
         imports_after = import_seal(m,root,job)
         need(all(imports_after.get(k)==v for k,v in imports_before.items()),'original source/import/provider drift')
         save(out/('original-tapped-imports.json' if tapped else 'original-plain-imports.json'),imports_after)
@@ -682,8 +732,21 @@ def controller_type(base):
                 values=[x[4*index:4*index+4] for x in (frozen,a,b)]
                 if len(set(values))!=1: words.append({'index':index,'frozen_le_hex':values[0].hex(),
                     'current_original_le_hex':values[1].hex(),'current_native_le_hex':values[2].hex()})
+            original_half, native_half = original['half_observation'], native['half_observation']
+            need(original_half['status']==native_half['status']=='observed'
+                 and re.fullmatch('[0-9a-f]{4}',original_half['input_le_hex'])
+                 and len(native_half['input_le_bytes'])==2, 'half99 unknown: complete actual input observations')
+            for key in ('kernel','arg_slot','view','allocation','offset','bytes','actual_nbytes','storage_dtype',
+                        'worker','phase','index','element_bytes','allocation_byte_offset','source_sha256','object_sha256'):
+                need(original_half[key]==native_half[key], 'half99 unknown: original/native binding mismatch')
+            need(original_half['image_sha256']==native_half['original_image_sha256']
+                 and all(h['element_address']==h['buffer_address']+99*2 for h in (original_half,native_half)),
+                 'half99 unknown: image/range correspondence')
+            native_half_hex = bytes(native_half['input_le_bytes']).hex()
             save(self.out/'comparison.json',{'diagnostic_complete':True,'source':os.environ['GITHUB_SHA'],
                 'whole_words':2576,'differences':words,'all_outputs_original_native_equal':not mismatches,'output_mismatches':mismatches,
+                'half99_original_le_hex':original_half['input_le_hex'],'half99_native_le_hex':native_half_hex,
+                'half99_input_equal':original_half['input_le_hex']==native_half_hex,
                 'plain_tapped_bytes_equal':True,'d1_strict_pass':d1['strict_pass'],'d1_strict_failure_sticky':not d1['strict_pass'],
                 'd1_packet_equals_direct_native':d1['raw_sha256']==sha(b),'pr1344_first_failure_reproduced':d1['differences']==[{'index':99,'actual_bits':'00000000','frozen_bits':'80000000'}],
                 'writer_call_observed':True,'ssa_first_producer_observed':False,'cached_issuer_invoked':False,

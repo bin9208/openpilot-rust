@@ -49,6 +49,8 @@ struct State {
     address: usize,
     events: Vec<WriterEvent>,
     error: bool,
+    half_pointers: [usize; 10],
+    half_input: Option<[u8; 2]>,
 }
 thread_local! { static WRITER: RefCell<Option<State>> = const { RefCell::new(None) }; }
 
@@ -73,8 +75,23 @@ unsafe extern "C" fn writer99(buffers: *const *mut c_void, scalars: *const i32) 
             state.error = true;
             return None;
         }
+        if pointers != state.half_pointers || (worker == 0 && state.half_input.is_some()) {
+            state.error = true;
+            return None;
+        }
         let mut before = [0u8; 4];
         if worker == 0 {
+            let mut half = [0u8; 2];
+            // SAFETY: setup verifies this existing arg1 pointer and its 3152B
+            // view against the held graph/source. Read only element99's 2B.
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    (pointers[1] + 99 * 2) as *const u8,
+                    half.as_mut_ptr(),
+                    2,
+                )
+            };
+            state.half_input = Some(half);
             unsafe {
                 std::ptr::copy_nonoverlapping(
                     (state.address + 99 * 4) as *const u8,
@@ -292,13 +309,73 @@ fn first_packet_whole_outputs_and_writer99() {
         }
     }
     let function = model.calls[call_index].function;
+    let mut half_observation = None;
     if tapped {
+        // half99: native Buffer is untyped bytes. The held original SOURCE
+        // supplies the i16 storage/half-conversion contract, not a new dtype.
+        let program = selected[0];
+        assert_eq!(program.source.sha256, STORE_SOURCE);
+        let original_source = Held::open(program.source.clone(), 16 * MIB, &job).unwrap();
+        assert!(std::str::from_utf8(&original_source.bytes)
+            .unwrap()
+            .lines()
+            .next()
+            .unwrap()
+            .contains("i16* noalias align 32 %data1"));
+        guards.push(original_source);
+        for input in [&program.object, &program.image] {
+            guards.push(Held::open_mode(input.clone(), 16 * MIB, &job, false).unwrap());
+        }
+        let half_view_id = model.graph.calls[call_index].views[1];
+        let half = &model.graph.views[half_view_id];
+        assert_eq!(
+            (half.offset, half.bytes),
+            (9472, 3152),
+            "half99 unknown: view extent"
+        );
+        assert!(99 * 2 + 2 <= half.bytes, "half99 unknown: element range");
+        let half_address = model.buffers[half.allocation]
+            .view_ptr(half.offset, half.bytes)
+            .expect("half99 unknown: existing allocation range")
+            as usize;
+        let half_pointers: [usize; 10] =
+            std::array::from_fn(|i| model.calls[call_index].buffers[i] as usize);
+        assert_eq!(
+            half_pointers[1], half_address,
+            "half99 unknown: actual arg1"
+        );
+        for (pointer, view_id) in half_pointers
+            .iter()
+            .zip(&model.graph.calls[call_index].views)
+        {
+            let view = &model.graph.views[*view_id];
+            assert_eq!(
+                *pointer,
+                model.buffers[view.allocation]
+                    .view_ptr(view.offset, view.bytes)
+                    .unwrap() as usize,
+                "half99 unknown: actual pointer/graph binding"
+            );
+        }
+        half_observation = Some(
+            json!({"status":"unknown","operand_file":null,"worker":0,"phase":"writer-before","index":99,"element_bytes":2,
+            "call":call_index,"kernel":program.kernel,"arg_slot":1,"view":half_view_id,
+            "allocation":half.allocation,"offset":half.offset,"bytes":half.bytes,"actual_nbytes":half.bytes,
+            "actual_dtype":null,"dtype_evidence":"native Buffer is untyped; held LLVM i16* and half-conversion SOURCE",
+            "storage_dtype":"i16","allocation_byte_offset":half.offset+99*2,
+            "buffer_address":half_address,"element_address":half_address+99*2,"input_le_bytes":null,
+            "source_sha256":program.source.sha256,"object_sha256":program.object.sha256,
+            "original_image_sha256":program.image.sha256,"native_library_sha256":kernel_sources["kernels.so"],
+            "function_address":function as usize}),
+        );
         WRITER.with(|cell| {
             *cell.borrow_mut() = Some(State {
                 function,
                 address,
                 events: Vec::with_capacity(2),
                 error: false,
+                half_pointers,
+                half_input: None,
             })
         });
         // 필수 인자 부재 거부는 real kernel 실행 전 확인한다.
@@ -371,19 +448,28 @@ fn first_packet_whole_outputs_and_writer99() {
     let mut events = Vec::new();
     if tapped {
         let state = WRITER.with(|cell| cell.borrow_mut().take().unwrap());
-        assert!(!state.error);
+        assert!(
+            !state.error,
+            "half99 unknown: invocation binding or repeated writer0"
+        );
         assert_eq!(state.events.iter().map(|e| e.0).collect::<Vec<_>>(), [0, 1]);
+        let half = state
+            .half_input
+            .expect("half99 unknown: writer0 input was not observed");
+        let observation = half_observation.as_mut().unwrap();
+        observation["status"] = json!("observed");
+        observation["input_le_bytes"] = json!(half);
         events=state.events.iter().map(|(worker,before,after,pointers)|json!({"worker":worker,"index":if *worker==0 {Some(99)}else{None},
             "before_le_bytes":if *worker==0 {Some(before)}else{None},"after_le_bytes":if *worker==0 {Some(after)}else{None},"pointer_args":pointers})).collect();
     }
     for held in &guards {
         held.verify().unwrap();
     }
-    receipt(
-        &job,
-        &format!("native-{mode}.json"),
-        json!({"source":request.source_sha256,"outputs":outputs,"events":events,
+    let mut report = json!({"source":request.source_sha256,"outputs":outputs,"events":events,
         "initial_allocation_bytes_equal":true,"plain_tapped_all_outputs_equal":tapped,"writer_call_observed":tapped,
-        "ssa_first_producer_observed":false,"historical_half_snan5_resolved":false,"full128_acceptance":false}),
-    );
+        "ssa_first_producer_observed":false,"historical_half_snan5_resolved":false,"full128_acceptance":false});
+    if let Some(half) = half_observation {
+        report["half_observation"] = half;
+    }
+    receipt(&job, &format!("native-{mode}.json"), report);
 }
