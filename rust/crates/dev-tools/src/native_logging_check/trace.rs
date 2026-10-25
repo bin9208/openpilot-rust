@@ -506,6 +506,70 @@ fn annotation(bytes: &[u8], at: &mut usize) -> Result<bool> {
     }
     Ok(bytes[start..*at].windows(3).any(|w| w == b"..."))
 }
+fn shift_word(bytes: &[u8]) -> bool {
+    if bytes
+        .first()
+        .is_some_and(|b| b.is_ascii_alphabetic() || *b == b'_')
+    {
+        return bytes
+            .iter()
+            .all(|b| b.is_ascii_alphanumeric() || *b == b'_');
+    }
+    if let Some(hex) = bytes
+        .strip_prefix(b"0x")
+        .or_else(|| bytes.strip_prefix(b"0X"))
+    {
+        return !hex.is_empty() && hex.iter().all(u8::is_ascii_hexdigit);
+    }
+    !bytes.is_empty() && bytes.iter().all(u8::is_ascii_digit)
+}
+// A binary token pair, not an evaluated mask or a general C expression parser.
+fn left_shift(bytes: &[u8], at: &mut usize, body: usize) -> Result<()> {
+    let mut left_end = *at;
+    while left_end > body && matches!(bytes[left_end - 1], b' ' | b'\t') {
+        left_end -= 1;
+    }
+    let mut left_start = left_end;
+    while left_start > body
+        && (bytes[left_start - 1].is_ascii_alphanumeric() || bytes[left_start - 1] == b'_')
+    {
+        left_start -= 1;
+    }
+    let mut before = left_start;
+    while before > body && matches!(bytes[before - 1], b' ' | b'\t') {
+        before -= 1;
+    }
+    require(
+        shift_word(&bytes[left_start..left_end])
+            && (before == body || b"([{,=|&".contains(&bytes[before - 1])),
+        "trace shift expression invalid",
+    )?;
+    let mut right_start = *at + 2;
+    while bytes
+        .get(right_start)
+        .is_some_and(|b| matches!(*b, b' ' | b'\t'))
+    {
+        right_start += 1;
+    }
+    let mut right_end = right_start;
+    while bytes
+        .get(right_end)
+        .is_some_and(|b| b.is_ascii_alphanumeric() || *b == b'_')
+    {
+        right_end += 1;
+    }
+    let mut after = right_end;
+    while bytes.get(after).is_some_and(|b| matches!(*b, b' ' | b'\t')) {
+        after += 1;
+    }
+    require(
+        shift_word(&bytes[right_start..right_end])
+            && (after == bytes.len() || b",)]}|&".contains(&bytes[after])),
+        "trace shift expression invalid",
+    )?;
+    *at = right_end;
+    Ok(())
+}
 struct Lexed {
     end: usize,
     args: Vec<Range>,
@@ -529,6 +593,10 @@ fn balanced(bytes: &[u8], start: usize, partial: bool) -> Result<Lexed> {
         match bytes[at] {
             b'"' => {
                 quoted(bytes, &mut at)?;
+                continue;
+            }
+            b'<' if bytes.get(at + 1) == Some(&b'<') => {
+                left_shift(bytes, &mut at, start + 1)?;
                 continue;
             }
             b'<' => {

@@ -399,13 +399,16 @@ NAMES
 sed -nE 's/^test (native_logging_check::retained::prepare::tests::[a-z0-9_]+) \.\.\. ok$/\1/p' "$proof/build/prepare-controls.stdout" | LC_ALL=C sort > "$proof/prepare-controls.actual.txt"
 cmp "$proof/prepare-controls.expected.txt" "$proof/prepare-controls.actual.txt"
 run trace-controls 180 "${runtime[@]}" "$unit" native_logging_check::trace::tests:: --test-threads=1 --color=never
-test "$(grep -Ec '^test result: ok\. 20 passed; 0 failed; 0 ignored;' "$proof/build/trace-controls.stdout")" -eq 1
+test "$(grep -Ec '^test result: ok\. 24 passed; 0 failed; 0 ignored;' "$proof/build/trace-controls.stdout")" -eq 1
 cat > "$proof/trace-controls.expected.txt" <<'NAMES'
 native_logging_check::trace::tests::ancestor_symlink_and_existing_output_cannot_redirect_or_overwrite
 native_logging_check::trace::tests::dispatch_and_help_require_only_the_first_literal_and_no_files
 native_logging_check::trace::tests::duplicate_pid_spelling_and_unsafe_prefix_are_rejected
 native_logging_check::trace::tests::held_inputs_detect_same_length_rewrite_replacement_and_added_roster
 native_logging_check::trace::tests::hex_exec_failed_attempt_and_execveat_are_data_without_policy_acceptance
+native_logging_check::trace::tests::left_shift_missing_or_malformed_operands_and_boundaries_are_rejected
+native_logging_check::trace::tests::left_shift_tokens_preserve_raw_spans_and_both_inspection_scopes
+native_logging_check::trace::tests::left_shift_unfinished_resume_keeps_original_fragment_pairing
 native_logging_check::trace::tests::line_and_sparse_file_bounds_fail_before_unbounded_reads
 native_logging_check::trace::tests::malformed_cstrings_unknown_escapes_and_exec_ellipsis_are_rejected
 native_logging_check::trace::tests::malformed_delimiters_nested_pending_and_post_terminal_calls_are_rejected
@@ -419,6 +422,7 @@ native_logging_check::trace::tests::plain_exec_bytes_environment_and_raw_spans_r
 native_logging_check::trace::tests::raw_read_hex_arguments_and_returns_keep_source_ranges_and_opaque_body
 native_logging_check::trace::tests::same_pid_resume_preserves_both_physical_fragments
 native_logging_check::trace::tests::signal_cpu_comments_and_no_return_exit_are_not_successful_syscalls
+native_logging_check::trace::tests::single_left_angle_and_malformed_descriptors_stay_rejected
 native_logging_check::trace::tests::symlink_hardlink_fifo_and_public_directory_are_rejected
 native_logging_check::trace::tests::terminal_signal_keeps_interrupted_call_aborted_and_never_successful
 NAMES

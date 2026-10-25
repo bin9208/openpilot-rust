@@ -392,3 +392,155 @@ fn output_seal_rejects_same_inode_rewrite_replacement_and_added_alias() {
         );
     }
 }
+
+#[test]
+fn left_shift_tokens_preserve_raw_spans_and_both_inspection_scopes() {
+    let args = "192, [{udiag_states=1<<TCP_LISTEN, flags=(0x2 << 3)|(MASK<<SHIFT)}], 40, 0, {sa_family=AF_NETLINK}, 12";
+    let raw = format!("1.000001 sendto({args}) = 40\n1.000002 write(3</tmp/kept>, \"<<\", 2) = 2\n1.000003 +++ exited with 0 +++\n");
+    for summarized in [false, true] {
+        let f = Fixture::new();
+        f.put("21", raw.as_bytes());
+        inspect_mode(&f.directory, "case", &f.output, summarized).unwrap();
+        let report: Value = serde_json::from_slice(&fs::read(&f.output).unwrap()).unwrap();
+        assert_eq!(report["raw_immutable"], true);
+        assert_eq!(
+            report["raw_files"][0]["sha256"],
+            format!("{:x}", Sha256::digest(raw.as_bytes()))
+        );
+        for flag in [
+            "closed_pid",
+            "closed_cwd",
+            "closed_fd",
+            "closed_dso",
+            "full_acceptance",
+            "retirement_credit",
+        ] {
+            assert_eq!(report[flag], false);
+        }
+        if summarized {
+            assert_eq!(report["schema"], 2);
+            assert_eq!(report["full_event_index"], false);
+            assert_eq!(report["lexically_checked_all_events"], true);
+            assert_eq!(report["event_count"], 3);
+            assert_eq!(report["event_counts"]["syscall:sendto:returned"], 1);
+            assert_eq!(report["event_counts"]["syscall:write:returned"], 1);
+        } else {
+            assert_eq!(report["schema"], 1);
+            assert_eq!(report["events"][0]["operation"], "sendto");
+            let range = &report["events"][0]["arguments"];
+            let body = &raw.as_bytes()[b"1.000001 ".len()..];
+            assert_eq!(
+                &body[range["start"].as_u64().unwrap() as usize
+                    ..range["end"].as_u64().unwrap() as usize],
+                args.as_bytes()
+            );
+            assert_eq!(report["events"][1]["operation"], "write");
+            assert_eq!(report["events"][1]["opaque_payload"], false);
+        }
+    }
+}
+
+#[test]
+fn left_shift_missing_or_malformed_operands_and_boundaries_are_rejected() {
+    for expression in [
+        "<<",
+        "<<TCP_LISTEN",
+        "1<<",
+        "1<<<TCP_LISTEN",
+        "1<<<<1",
+        "1<<\"TCP_LISTEN\"",
+        "1<<0x",
+        "0x<<TCP_LISTEN",
+        "1TCP<<1",
+        "1<<2TCP",
+        "extra 1<<TCP_LISTEN",
+        "1<<TCP_LISTEN extra",
+        "1<<TCP_LISTEN<<1",
+        "1<<TCP_LISTEN<2",
+        "(1)<<TCP_LISTEN",
+        "1<<[TCP_LISTEN]",
+        "1<<TCP_LISTEN=2",
+        "1<<...",
+        "1<<-1",
+        "1<</* comment */TCP_LISTEN",
+    ] {
+        let raw = format!("1.000001 sendto(3, {{udiag_states={expression}}}, 0) = 0\n1.000002 +++ exited with 0 +++\n");
+        for summarized in [false, true] {
+            let f = Fixture::new();
+            f.put("21", raw.as_bytes());
+            assert_eq!(
+                inspect_mode(&f.directory, "case", &f.output, summarized)
+                    .unwrap_err()
+                    .to_string(),
+                "trace shift expression invalid",
+                "{expression}"
+            );
+            assert!(!f.output.exists());
+        }
+    }
+}
+
+#[test]
+fn left_shift_unfinished_resume_keeps_original_fragment_pairing() {
+    let first = "1.000001 sendto(3, {udiag_states=1<<TCP_LISTEN},  <unfinished ...>\n";
+    let f = Fixture::new();
+    f.put("21", format!("{first}1.000002 <... sendto resumed>40, 0, NULL, 0) = 40\n1.000003 +++ exited with 0 +++\n").as_bytes());
+    let report = f.report();
+    let event = &report["events"][0];
+    assert_eq!(event["operation"], "sendto");
+    assert_eq!(event["source"].as_array().unwrap().len(), 2);
+    assert_eq!(event["source"][0]["line"], 1);
+    assert_eq!(event["source"][1]["line"], 2);
+    assert_eq!(report["closed_fd"], false);
+    let f = Fixture::new();
+    f.put("21", format!("{first}1.000002 <... recvfrom resumed>40, 0, NULL, 0) = 40\n1.000003 +++ exited with 0 +++\n").as_bytes());
+    f.error("trace resumed syscall differs");
+    let f = Fixture::new();
+    f.put(
+        "21",
+        format!("{first}1.000003 +++ killed by SIGTERM +++\n").as_bytes(),
+    );
+    f.put(
+        "22",
+        b"1.000002 <... sendto resumed>40, 0, NULL, 0) = 40\n1.000003 +++ exited with 0 +++\n",
+    );
+    f.error("trace orphan resumed syscall");
+    let f = Fixture::new();
+    f.put("21", first.as_bytes());
+    f.error("trace unresolved pending at EOF");
+    let f = Fixture::new();
+    f.put(
+        "21",
+        b"1.000001 sendto(3, {udiag_states=1<< <unfinished ...>\n",
+    );
+    f.error("trace shift expression invalid");
+}
+
+#[test]
+fn single_left_angle_and_malformed_descriptors_stay_rejected() {
+    for body in [
+        "sendto(3, {udiag_states=1<TCP_LISTEN}, 0) = 0",
+        "sendto(3, {udiag_states=1 < TCP_LISTEN}, 0) = 0",
+        "sendto(3, {udiag_states=<TCP_LISTEN}, 0) = 0",
+        "read(3</tmp/unclosed, 0x123, 4) = 0",
+    ] {
+        let f = Fixture::new();
+        f.put(
+            "21",
+            format!("1.000001 {body}\n1.000002 +++ exited with 0 +++\n").as_bytes(),
+        );
+        f.error("trace descriptor annotation invalid");
+    }
+    let f = Fixture::new();
+    let annotation = format!(
+        "{}{}",
+        "<a".repeat(MAX_DEPTH + 1),
+        ">".repeat(MAX_DEPTH + 1)
+    );
+    f.put(
+        "21",
+        format!("1.000001 read(3{annotation}, 0x123, 4) = 0\n1.000002 +++ exited with 0 +++\n")
+            .as_bytes(),
+    );
+    f.error("trace nesting exceeds bound");
+}

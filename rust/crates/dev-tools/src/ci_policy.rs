@@ -1404,6 +1404,17 @@ const RUST_GATE_BINDINGS: &[(&str, &str)] = &[
 ];
 
 /// 최초 3개 native ARM scope와 main의 동일-source caller를 결합한다.
+pub const NATIVE_ARM_BINDINGS: &[(&str, &str)] = &[
+    ("planner-runtime", "PLANNER"),
+    ("carrot-man-runtime", "CARROT_MAN"),
+    ("webrtc-runtime", "WEBRTC"),
+    ("webcam-runtime", "WEBCAM"),
+    ("xiaoge-runtime", "XIAOGE"),
+    ("radard-runtime", "RADARD"),
+    ("radar-arm", "RADAR_ARM"),
+    ("carrot-navi-arm", "CARROT_NAVI_ARM"),
+];
+
 pub fn validate_native_arm_reuse(main: &Value, native: &Value) -> Result<(), String> {
     require(
         main["jobs"]["native-arm"]
@@ -1459,9 +1470,12 @@ pub fn validate_native_arm_reuse(main: &Value, native: &Value) -> Result<(), Str
     let jobs = native["jobs"]
         .as_object()
         .ok_or("missing native ARM jobs")?;
-    let leaves = ["planner-runtime", "carrot-man-runtime", "webrtc-runtime"];
+    let leaves = NATIVE_ARM_BINDINGS
+        .iter()
+        .map(|(name, _)| *name)
+        .collect::<Vec<_>>();
     require(
-        jobs.len() == 4
+        jobs.len() == leaves.len() + 1
             && leaves.iter().all(|name| jobs.contains_key(*name))
             && jobs.contains_key("native-arm-checks"),
         "native ARM required leaf roster changed",
@@ -1500,6 +1514,64 @@ pub fn validate_native_arm_reuse(main: &Value, native: &Value) -> Result<(), Str
                 "Compare real ownership, media, HTTP and failure boundaries",
             ][..],
         ),
+        (
+            "webcam-runtime",
+            "90",
+            &[
+                "Install exact source closure and native capture providers",
+                "Build pinned hardened videoio and unchanged source IPC bindings",
+                "Build native daemon and check all webcam targets",
+                "Compare actual pixels, independent workers, IPC and Linux entrypoints",
+            ][..],
+        ),
+        (
+            "xiaoge-runtime",
+            "75",
+            &[
+                "Admit pinned LFS models before source baseline",
+                "Reserve capacity and install Xiaoge build prerequisites",
+                "Retrieve the unchanged original Xiaoge models",
+                "Compile pinned OpenCV and original Python bindings",
+                "Compile and check all native Xiaoge targets",
+                "Compare source pixels, model results, sockets, live IPC and lifecycle",
+            ][..],
+        ),
+        (
+            "radard-runtime",
+            "90",
+            &[
+                "Reserve capacity and install original oracle dependencies",
+                "Build unchanged native Params and msgq bindings",
+                "Require actual native imports and declared source helper imports",
+                "Require Rust types, tests, complete build and Clippy",
+                "Compare existing source recordings and all Rust policy snapshots",
+                "Check radard IPC preconditioning input contract",
+                "Compare exact availability deadline with original state",
+                "Compare independent actual IPC and signal lifecycle",
+                "Preserve bounded final binaries and their identities",
+            ][..],
+        ),
+        (
+            "radar-arm",
+            "90",
+            &[
+                "Configure original Radar IPC imports",
+                "Reserve runner capacity and install generic ARM dependencies",
+                "Build unchanged native ARM bindings and generate radar assets",
+                "Stage pinned generic ARM numerical dependency",
+                "Build and execute generic ARM RadarCAN tests and artifacts",
+                "Require exact RadarCAN source comparison on native ARM",
+                "Require actual original and native ARM IPC and signal lifecycle",
+            ][..],
+        ),
+        (
+            "carrot-navi-arm",
+            "60",
+            &[
+                "Reserve runner capacity and install native ARM build dependencies",
+                "Build and inspect the actual native ARM executable",
+            ][..],
+        ),
     ] {
         let job = &jobs[name];
         absent(job, &["if", "continue-on-error", "needs"])?;
@@ -1529,10 +1601,33 @@ pub fn validate_native_arm_reuse(main: &Value, native: &Value) -> Result<(), Str
                 format!("native ARM stage condition changed: {stage}"),
             )?;
         }
+        if matches!(name, "radar-arm" | "carrot-navi-arm") {
+            let label = if name == "radar-arm" {
+                "rust RadarCAN native ARM functional validation"
+            } else {
+                "rust Carrot Navi native ARM build"
+            };
+            require(
+                main["jobs"][name]
+                    == serde_json::json!({
+                        "name":label, "needs":["native-arm"], "if":"${{ always() }}",
+                        "runs-on":HOSTED_RUNNER, "timeout-minutes":"2",
+                        "steps":[{"name":"Require native ARM family result",
+                            "env":{"SOURCE_ALLOWED":TRUSTED_SOURCE,
+                                "NATIVE_ARM":"${{ needs.native-arm.result }}"},
+                            "run":format!("{FORK_DENIAL}test \"$NATIVE_ARM\" = success\n")}]
+                    }),
+                format!("{name}: exact mandatory native ARM proxy changed"),
+            )?;
+            continue;
+        }
         let matrix = &main["jobs"][name]["strategy"]["matrix"];
         require(
             if name == "carrot-man-runtime" {
                 matrix == &serde_json::json!({"include":[{"arch":"x86_64","runner":"local-x64"}]})
+            } else if name == "radard-runtime" {
+                matrix
+                    == &serde_json::json!({"include":[{"runner":"local-x64","machine":"x86_64"}]})
             } else {
                 matrix == &serde_json::json!({"runner":["local-x64"]})
             },
@@ -1549,20 +1644,26 @@ pub fn validate_native_arm_reuse(main: &Value, native: &Value) -> Result<(), Str
             && gate["if"] == "${{ always() }}"
             && gate["runs-on"] == HOSTED_RUNNER
             && gate["timeout-minutes"] == "2",
-        "native ARM result gate must always require all three leaves",
+        "native ARM result gate must always require all eight leaves",
     )?;
     let steps = gate["steps"]
         .as_array()
         .ok_or("missing native ARM result step")?;
     require(steps.len() == 1, "native ARM result step roster changed")?;
+    absent(&steps[0], &["if", "continue-on-error"])?;
     source_result_binding(&steps[0])?;
+    let mut expected_env = serde_json::Map::new();
+    expected_env.insert("SOURCE_ALLOWED".into(), TRUSTED_SOURCE.into());
+    let mut expected_script = FORK_DENIAL.to_owned();
+    for (name, variable) in NATIVE_ARM_BINDINGS {
+        expected_env.insert(
+            (*variable).into(),
+            format!("${{{{ needs.{name}.result }}}}").into(),
+        );
+        expected_script.push_str(&format!("test \"${variable}\" = success\n"));
+    }
     require(
-        steps[0]["env"] == serde_json::json!({
-            "SOURCE_ALLOWED":TRUSTED_SOURCE,
-            "PLANNER":"${{ needs.planner-runtime.result }}",
-            "CARROT_MAN":"${{ needs.carrot-man-runtime.result }}",
-            "WEBRTC":"${{ needs.webrtc-runtime.result }}"
-        }) && steps[0]["run"] == format!("{FORK_DENIAL}test \"$PLANNER\" = success\ntest \"$CARROT_MAN\" = success\ntest \"$WEBRTC\" = success\n"),
+        steps[0]["env"].as_object() == Some(&expected_env) && steps[0]["run"] == expected_script,
         "native ARM result bindings or strict success checks changed",
     )
 }

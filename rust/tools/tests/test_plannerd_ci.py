@@ -54,7 +54,8 @@ def test_failed_comparison_is_recorded_and_stops_before_the_next_check(tmp_path:
 
 
 TRUSTED_SOURCE = "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}"
-NATIVE_ARM_FAMILIES = {"planner-runtime": 90, "carrot-man-runtime": 60, "webrtc-runtime": 90}
+NATIVE_ARM_FAMILIES = {'planner-runtime': 90, 'carrot-man-runtime': 60, 'webrtc-runtime': 90, 'webcam-runtime': 90, 'xiaoge-runtime': 75, 'radard-runtime': 90, 'radar-arm': 90, 'carrot-navi-arm': 60}
+NATIVE_ARM_RESULTS = {'PLANNER': 'planner-runtime', 'CARROT_MAN': 'carrot-man-runtime', 'WEBRTC': 'webrtc-runtime', 'WEBCAM': 'webcam-runtime', 'XIAOGE': 'xiaoge-runtime', 'RADARD': 'radard-runtime', 'RADAR_ARM': 'radar-arm', 'CARROT_NAVI_ARM': 'carrot-navi-arm'}
 
 
 def named_step(job: dict, name: str) -> dict:
@@ -65,7 +66,7 @@ def named_step(job: dict, name: str) -> dict:
 
 def functional_steps(job: dict) -> list[dict]:
   return [step for step in job["steps"] if step.get("shell") == "openpilot-local-shell {0}"
-          or step.get("uses", "").endswith("/.github/actions/native-json11")]
+          or step.get("uses", "").endswith(tuple("/.github/actions/" + name for name in ("native-json11", "native-eigen", "native-image-sdk")))]
 
 
 def assert_planner_native_contract(main: dict, native: dict) -> None:
@@ -111,14 +112,24 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
     assert python["with"]["python-version"] == "3.12.14" and python["if"] == TRUSTED_SOURCE
     venv = named_step(job, "Keep original Python installations private")
     assert venv["shell"] == "bash" and venv["if"] == TRUSTED_SOURCE
-    assert venv["run"] == named_step(jobs[name], "Keep original Python installations private")["run"]
+    if name in ("radar-arm", "carrot-navi-arm"):
+      reference = yaml.safe_load((ROOT / ".github/workflows/python-rust-523-native-arm-final-two.yml").read_text())["jobs"][name]
+    else:
+      reference = jobs[name]
+    assert venv["run"] == named_step(reference, "Keep original Python installations private")["run"]
     for line in ('((available >= 512 * 1024 * 1024))', 'python -m venv "$CI_JOB_TEMP/venv"',
                  'printf \'%s\\n\' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"'):
       assert line in venv["run"].splitlines()
     admission = next(step for step in steps if step.get("id") == "ci296_source_admission")
     # 기존 기능 step의 순서·조건·명령 전체를 x64 원문과 비교한다. ARM의 기존 ASan skip도 그대로다.
-    actual, original = functional_steps(job), functional_steps(jobs[name])
-    assert actual == original and len(actual) == {"planner-runtime": 6, "carrot-man-runtime": 6, "webrtc-runtime": 5}[name]
+    actual, original = functional_steps(job), deepcopy(functional_steps(reference))
+    if name == "radard-runtime":
+      for label in ("Reserve capacity and install original oracle dependencies", "Require Rust types, tests, complete build and Clippy"):
+        row = next(step for step in original if step["name"] == label)
+        assert row["run"].count("${{ matrix.machine }}") == 1
+        row["run"] = row["run"].replace("${{ matrix.machine }}", "${{ matrix.arch }}")
+    assert actual == original and len(actual) == {"planner-runtime": 6, "carrot-man-runtime": 6, "webrtc-runtime": 5,
+        "webcam-runtime": 4, "xiaoge-runtime": 6, "radard-runtime": 10, "radar-arm": 8, "carrot-navi-arm": 2}[name]
     assert steps.index(admission) < steps.index(prepare) < steps.index(python) < steps.index(venv) < steps.index(actual[0])
   planner = native_jobs["planner-runtime"]
   assert planner["env"]["CARGO_BUILD_JOBS"] == "2" and planner["env"]["OPENBLAS_NUM_THREADS"] == "1"
@@ -149,11 +160,18 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
   assert len(aggregate["steps"]) == 1
   gate = aggregate["steps"][0]
   assert "if" not in gate and "continue-on-error" not in gate
-  assert gate["env"] == {"SOURCE_ALLOWED": TRUSTED_SOURCE, "PLANNER": "${{ needs.planner-runtime.result }}",
-                         "CARROT_MAN": "${{ needs.carrot-man-runtime.result }}", "WEBRTC": "${{ needs.webrtc-runtime.result }}"}
+  assert gate["env"] == {"SOURCE_ALLOWED": TRUSTED_SOURCE, **{
+      variable: "${{ needs." + family + ".result }}" for variable, family in NATIVE_ARM_RESULTS.items()}}
   assert gate["run"].splitlines() == [
       'test "${SOURCE_ALLOWED:-}" = true || { echo \'Fork PR source denied on persistent bin-actions\' >&2; exit 1; }',
-      'test "$PLANNER" = success', 'test "$CARROT_MAN" = success', 'test "$WEBRTC" = success']
+      *[f'test "${variable}" = success' for variable in NATIVE_ARM_RESULTS]]
+  for name in ("radar-arm", "carrot-navi-arm"):
+    assert jobs[name] == {"name": {"radar-arm": "rust RadarCAN native ARM functional validation",
+        "carrot-navi-arm": "rust Carrot Navi native ARM build"}[name], "needs": ["native-arm"],
+        "if": "${{ always() }}", "runs-on": "ubuntu-24.04", "timeout-minutes": 2,
+        "steps": [{"name": "Require native ARM family result", "env": {"SOURCE_ALLOWED": TRUSTED_SOURCE,
+            "NATIVE_ARM": "${{ needs.native-arm.result }}"}, "run": gate["run"].splitlines(keepends=True)[0] + 'test "$NATIVE_ARM" = success\n'}]}
+
 
 
 def test_planner_host_arm_and_memory_results_are_required() -> None:
@@ -199,7 +217,7 @@ def test_planner_host_arm_and_memory_results_are_required() -> None:
   environment = dict(os.environ, **dict.fromkeys(native_gate["env"], "success"))
   environment["SOURCE_ALLOWED"] = "true"
   assert subprocess.run(["bash", "-e", "-c", native_gate["run"]], env=environment, check=False).returncode == 0
-  for name in ("PLANNER", "CARROT_MAN", "WEBRTC", "SOURCE_ALLOWED"):
+  for name in (*NATIVE_ARM_RESULTS, "SOURCE_ALLOWED"):
     for state in ("failure", "cancelled", "skipped", "", "false", "unknown"):
       result = subprocess.run(["bash", "-e", "-c", native_gate["run"]], env=dict(environment, **{name: state}), check=False)
       assert result.returncode != 0, (name, state)
@@ -211,6 +229,11 @@ def test_planner_host_arm_and_memory_results_are_required() -> None:
 
 
 @pytest.mark.parametrize(("scope", "path", "value"), [
+    ("main", ("jobs", "radar-arm", "steps", "Require native ARM family result", "run"), "true\n"),
+    ("main", ("jobs", "carrot-navi-arm", "needs"), []),
+    ("native", ("jobs", "xiaoge-runtime", "timeout-minutes"), 70),
+    ("native", ("jobs", "radar-arm", "steps", "Require actual original and native ARM IPC and signal lifecycle", "if"), "${{ false }}"),
+    ("native", ("jobs", "native-arm-checks", "steps", "Require native ARM validation", "env", "RADARD"), "${{ needs.webrtc-runtime.result }}"),
     ("main", ("jobs", "native-arm", "if"), "${{ false }}"),
     ("main", ("jobs", "native-arm", "uses"), "./.github/workflows/unknown.yml"),
     ("main", ("jobs", "fast", "needs"), ["planner-runtime", "planner-memory"]),

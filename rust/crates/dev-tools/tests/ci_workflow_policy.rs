@@ -1436,7 +1436,7 @@ fn full_private_jobs_reject_shared_checkouts_or_unsealed_cleanup() {
             assert!(validate_private_job_layout(&unsafe_alias).is_err());
         }
     }
-    assert_eq!(covered, 71, "maintained private source roster changed");
+    assert_eq!(covered, 74, "maintained private source roster changed");
 }
 
 #[test]
@@ -1625,7 +1625,16 @@ fn arm_target_steps_and_nested_native_actions_require_explicit_command_file_shel
     let native =
         parse(&fs::read_to_string(root().join(".github/workflows/rust-native-arm.yml")).unwrap())
             .unwrap();
-    for name in ["planner-runtime", "carrot-man-runtime", "webrtc-runtime"] {
+    for name in [
+        "planner-runtime",
+        "carrot-man-runtime",
+        "webrtc-runtime",
+        "webcam-runtime",
+        "xiaoge-runtime",
+        "radard-runtime",
+        "radar-arm",
+        "carrot-navi-arm",
+    ] {
         workflow["jobs"][format!("native/{name}")] = native["jobs"][name].clone();
     }
     let mut routed = 0;
@@ -1670,7 +1679,7 @@ fn arm_target_steps_and_nested_native_actions_require_explicit_command_file_shel
             }
         }
     }
-    assert_eq!(routed, 11);
+    assert_eq!(routed, 14);
     calls.sort_unstable();
     assert_eq!(
         calls,
@@ -1678,9 +1687,11 @@ fn arm_target_steps_and_nested_native_actions_require_explicit_command_file_shel
             "carrot-man-runtime",
             "native/carrot-man-runtime",
             "native/planner-runtime",
+            "native/radar-arm",
+            "native/radard-runtime",
             "native/webrtc-runtime",
+            "native/xiaoge-runtime",
             "planner-runtime",
-            "radar-arm",
             "radard-runtime",
             "webrtc-runtime",
             "xiaoge-runtime"
@@ -1784,7 +1795,7 @@ fn private_ownership_exact_guards_reject_missing_seal_or_admission() {
             }
         }
     }
-    assert_eq!((sources, arm), (71, 19));
+    assert_eq!((sources, arm), (74, 22));
 }
 
 // Evaluate the actual restricted workflow condition, not a separately invented
@@ -1941,7 +1952,16 @@ fn private_arm_finalizer_requires_fresh_admission_before_alias_load() {
     let native =
         parse(&fs::read_to_string(root().join(".github/workflows/rust-native-arm.yml")).unwrap())
             .unwrap();
-    for name in ["planner-runtime", "carrot-man-runtime", "webrtc-runtime"] {
+    for name in [
+        "planner-runtime",
+        "carrot-man-runtime",
+        "webrtc-runtime",
+        "webcam-runtime",
+        "xiaoge-runtime",
+        "radard-runtime",
+        "radar-arm",
+        "carrot-navi-arm",
+    ] {
         workflow["jobs"][format!("native/{name}")] = native["jobs"][name].clone();
     }
     let mut covered = 0;
@@ -1988,7 +2008,7 @@ fn private_arm_finalizer_requires_fresh_admission_before_alias_load() {
             );
         }
     }
-    assert_eq!(covered, 11);
+    assert_eq!(covered, 14);
 }
 
 #[test]
@@ -2347,6 +2367,11 @@ fn native_arm_reuse_requires_exact_caller_leaf_roster_and_success_gate() {
         "planner-runtime",
         "carrot-man-runtime",
         "webrtc-runtime",
+        "webcam-runtime",
+        "xiaoge-runtime",
+        "radard-runtime",
+        "radar-arm",
+        "carrot-navi-arm",
         "native-arm-checks",
     ] {
         let mut changed = callee.clone();
@@ -2373,7 +2398,40 @@ fn native_arm_reuse_requires_exact_caller_leaf_roster_and_success_gate() {
         }
         assert!(validate_native_arm_reuse(&main, &changed).is_err(), "{key}");
     }
-    for name in ["planner-runtime", "carrot-man-runtime", "webrtc-runtime"] {
+    for (name, stage) in [
+        (
+            "planner-runtime",
+            "Compile and check the complete native planner",
+        ),
+        (
+            "carrot-man-runtime",
+            "Build owner and unchanged source bindings",
+        ),
+        (
+            "webrtc-runtime",
+            "Compile and check both native service entrypoints",
+        ),
+        (
+            "webcam-runtime",
+            "Build native daemon and check all webcam targets",
+        ),
+        (
+            "xiaoge-runtime",
+            "Compile and check all native Xiaoge targets",
+        ),
+        (
+            "radard-runtime",
+            "Require Rust types, tests, complete build and Clippy",
+        ),
+        (
+            "radar-arm",
+            "Build and execute generic ARM RadarCAN tests and artifacts",
+        ),
+        (
+            "carrot-navi-arm",
+            "Build and inspect the actual native ARM executable",
+        ),
+    ] {
         let mut changed = callee.clone();
         changed["jobs"][name]["timeout-minutes"] = "5".into();
         assert!(
@@ -2384,13 +2442,7 @@ fn native_arm_reuse_requires_exact_caller_leaf_roster_and_success_gate() {
         changed["jobs"][name]["steps"]
             .as_array_mut()
             .unwrap()
-            .retain(|s| {
-                !s["name"]
-                    .as_str()
-                    .unwrap_or("")
-                    .starts_with("Compile and check")
-                    && s["name"] != "Build owner and unchanged source bindings"
-            });
+            .retain(|s| s["name"] != stage);
         assert!(
             validate_native_arm_reuse(&main, &changed).is_err(),
             "functional stage {name}"
@@ -2399,13 +2451,7 @@ fn native_arm_reuse_requires_exact_caller_leaf_roster_and_success_gate() {
             .as_array()
             .unwrap()
             .iter()
-            .position(|s| {
-                s["name"]
-                    .as_str()
-                    .unwrap_or("")
-                    .starts_with("Compile and check")
-                    || s["name"] == "Build owner and unchanged source bindings"
-            })
+            .position(|s| s["name"] == stage)
             .unwrap();
         for mode in ["duplicate", "skip", "continue"] {
             let mut changed = callee.clone();
@@ -2558,6 +2604,11 @@ fn native_arm_result_gate_rejects_each_non_success_or_missing_result() {
         ("PLANNER".into(), "success".into()),
         ("CARROT_MAN".into(), "success".into()),
         ("WEBRTC".into(), "success".into()),
+        ("WEBCAM".into(), "success".into()),
+        ("XIAOGE".into(), "success".into()),
+        ("RADARD".into(), "success".into()),
+        ("RADAR_ARM".into(), "success".into()),
+        ("CARROT_NAVI_ARM".into(), "success".into()),
     ]);
     assert!(run_shell(script, &success).unwrap().success());
     for key in success.keys() {
@@ -2580,7 +2631,16 @@ fn native_arm_result_gate_rejects_each_non_success_or_missing_result() {
             );
         }
     }
-    for key in ["PLANNER", "CARROT_MAN", "WEBRTC"] {
+    for key in [
+        "PLANNER",
+        "CARROT_MAN",
+        "WEBRTC",
+        "WEBCAM",
+        "XIAOGE",
+        "RADARD",
+        "RADAR_ARM",
+        "CARROT_NAVI_ARM",
+    ] {
         let mut changed = callee.clone();
         changed["jobs"]["native-arm-checks"]["steps"][0]["run"] = script
             .replace(&format!("test \"${key}\" = success\n"), "")
@@ -2600,4 +2660,171 @@ fn native_arm_required_workflow_cannot_be_absent() {
     assert!(check_workflow_policy(&files)
         .unwrap_err()
         .contains("missing workflow rust-native-arm.yml"));
+}
+
+#[test]
+fn native_arm_proxies_require_the_complete_unconditional_callee_result() {
+    use openpilot_dev_tools::ci_policy::validate_native_arm_reuse;
+    let (main, callee) = native_arm_reuse_inputs();
+    validate_native_arm_reuse(&main, &callee).unwrap();
+    for name in ["radar-arm", "carrot-navi-arm"] {
+        for mutation in [
+            "needs",
+            "optional",
+            "skip",
+            "success-only",
+            "host",
+            "binding",
+            "source",
+            "body",
+            "step-skip",
+        ] {
+            let mut changed = main.clone();
+            let job = &mut changed["jobs"][name];
+            match mutation {
+                "needs" => job["needs"] = serde_json::json!([]),
+                "optional" => job["continue-on-error"] = true.into(),
+                "skip" => job["if"] = "${{ false }}".into(),
+                "success-only" => job["if"] = "${{ success() }}".into(),
+                "host" => job["runs-on"] = "ubuntu-24.04-arm".into(),
+                "binding" => {
+                    job["steps"][0]["env"]["NATIVE_ARM"] = "${{ needs.workspace.result }}".into()
+                }
+                "source" => job["steps"][0]["env"]["SOURCE_ALLOWED"] = "true".into(),
+                "body" => job["steps"][0]["run"] = "true\n".into(),
+                _ => job["steps"][0]["if"] = "${{ false }}".into(),
+            }
+            assert!(
+                validate_native_arm_reuse(&changed, &callee).is_err(),
+                "{name}/{mutation}"
+            );
+        }
+        let script = main["jobs"][name]["steps"][0]["run"].as_str().unwrap();
+        let good = BTreeMap::from([
+            ("SOURCE_ALLOWED".into(), "true".into()),
+            ("NATIVE_ARM".into(), "success".into()),
+        ]);
+        assert!(run_shell(script, &good).unwrap().success());
+        for key in good.keys() {
+            for state in [
+                Some("failure"),
+                Some("cancelled"),
+                Some("skipped"),
+                Some(""),
+                Some("unknown"),
+                None,
+            ] {
+                let mut env = good.clone();
+                if let Some(state) = state {
+                    env.insert(key.clone(), state.into());
+                } else {
+                    env.remove(key);
+                }
+                assert!(
+                    !run_shell(script, &env).unwrap().success(),
+                    "{name}/{key}/{state:?}"
+                );
+            }
+        }
+    }
+    for key in ["if", "continue-on-error"] {
+        let mut changed = callee.clone();
+        changed["jobs"]["native-arm-checks"]["steps"][0][key] = "${{ false }}".into();
+        assert!(
+            validate_native_arm_reuse(&main, &changed).is_err(),
+            "aggregate step {key}"
+        );
+    }
+}
+
+#[test]
+fn native_arm_lfs_main_and_candidate_contexts_stay_exact() {
+    use openpilot_dev_tools::ci_policy::NATIVE_ARM_MAIN_CONTEXT;
+    let helper = fs::read_to_string(root().join("tools/ci/prepare-lfs-source-535")).unwrap();
+    let common = helper
+        .split("  if [[ ${GITHUB_WORKFLOW_REF:-}")
+        .next()
+        .unwrap();
+    for required in [
+        "${RUNNER_ARCH:-} == ARM64",
+        "${GITHUB_ACTIONS:-} == true",
+        "${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust",
+        "${RUNNER_ENVIRONMENT:-} == github-hosted",
+        "${RUNNER_OS:-} == Linux",
+        "$(uname -s) == Linux",
+        "$(uname -m) == aarch64",
+        "$selection == xiaoge",
+        "${GITHUB_JOB:-} == xiaoge-runtime",
+        "${CI296_NATIVE_ARM:-} == 1",
+        "${LOCAL_CI_ARCH:-} == aarch64",
+    ] {
+        assert!(
+            common.contains(required),
+            "missing common ARM LFS guard {required}"
+        );
+    }
+    let context = helper
+        .split_once("  if [[ ${GITHUB_WORKFLOW_REF:-}")
+        .unwrap()
+        .1
+        .split_once("\n  fi\nelse\n")
+        .unwrap()
+        .0;
+    let script = format!("fail() {{ return 1; }}\nif [[ ${{GITHUB_WORKFLOW_REF:-}}{context}\nfi\n");
+    assert!(script.contains(NATIVE_ARM_MAIN_CONTEXT));
+    let mut env = BTreeMap::from([
+        ("GITHUB_REPOSITORY".into(), "bin9208/openpilot-rust".into()),
+        ("CI296_NATIVE_ARM_CALLER".into(), "rust.yml".into()),
+        ("GITHUB_EVENT_NAME".into(), "push".into()),
+        ("GITHUB_REF".into(), "refs/heads/dev".into()),
+        (
+            "GITHUB_WORKFLOW_REF".into(),
+            "bin9208/openpilot-rust/.github/workflows/rust.yml@refs/heads/dev".into(),
+        ),
+    ]);
+    assert!(run_shell(&script, &env).unwrap().success());
+    for (key, value) in [
+        ("CI296_NATIVE_ARM_CALLER", ""),
+        ("GITHUB_EVENT_NAME", "pull_request"),
+        ("GITHUB_REF", "refs/heads/foreign"),
+        ("GITHUB_REPOSITORY", "foreign/repository"),
+        (
+            "GITHUB_WORKFLOW_REF",
+            "bin9208/openpilot-rust/.github/workflows/rust-native-arm.yml@refs/heads/dev",
+        ),
+    ] {
+        let mut bad = env.clone();
+        bad.insert(key.into(), value.into());
+        assert!(
+            !run_shell(&script, &bad).unwrap().success(),
+            "{key}/{value}"
+        );
+    }
+    env.insert("GITHUB_EVENT_NAME".into(), "pull_request".into());
+    env.insert("GITHUB_REF".into(), "refs/pull/343/merge".into());
+    env.insert(
+        "GITHUB_WORKFLOW_REF".into(),
+        "bin9208/openpilot-rust/.github/workflows/rust.yml@refs/pull/343/merge".into(),
+    );
+    env.insert("GITHUB_BASE_REF".into(), "dev".into());
+    env.insert(
+        "CI296_PR_HEAD_REPOSITORY".into(),
+        "bin9208/openpilot-rust".into(),
+    );
+    assert!(run_shell(&script, &env).unwrap().success());
+    env.insert(
+        "CI296_PR_HEAD_REPOSITORY".into(),
+        "foreign/repository".into(),
+    );
+    assert!(!run_shell(&script, &env).unwrap().success());
+    env.insert("GITHUB_EVENT_NAME".into(), "push".into());
+    env.insert(
+        "GITHUB_REF".into(),
+        "refs/heads/codex/feat-523-python-rust".into(),
+    );
+    env.insert("GITHUB_WORKFLOW_REF".into(), "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-remaining.yml@refs/heads/codex/feat-523-python-rust".into());
+    env.remove("CI296_NATIVE_ARM_CALLER");
+    assert!(run_shell(&script, &env).unwrap().success());
+    env.insert("GITHUB_REF".into(), "refs/heads/dev".into());
+    assert!(!run_shell(&script, &env).unwrap().success());
 }

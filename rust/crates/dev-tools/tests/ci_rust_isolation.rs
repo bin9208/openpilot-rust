@@ -229,7 +229,8 @@ fn dbc_native_tools_are_built_before_every_required_consumer() {
             &["rust/target/debug/stage-control-dbcs"][..],
         ),
     ] {
-        let job = &data["jobs"][job_name];
+        let actual = native_functional_job(&data, job_name);
+        let job = &actual;
         absent(job, &["if", "continue-on-error"]);
         let run = commands(job);
         let build = run
@@ -505,12 +506,32 @@ fn private_local_action(step: &Value, name: &str) -> bool {
             && value.ends_with(&format!("/source/.github/actions/{name}"))
     })
 }
+
+fn native_functional_job(main: &Value, name: &str) -> Value {
+    if !["radar-arm", "carrot-navi-arm"].contains(&name) {
+        return main["jobs"][name].clone();
+    }
+    let native = parse(&read(".github/workflows/rust-native-arm.yml")).unwrap();
+    openpilot_dev_tools::ci_policy::validate_native_arm_reuse(main, &native).unwrap();
+    native["jobs"][name].clone()
+}
+
 fn commands(job: &Value) -> String {
+    if job["needs"] == serde_json::json!(["native-arm"]) {
+        let main = workflow();
+        let name = ["radar-arm", "carrot-navi-arm"]
+            .into_iter()
+            .find(|name| job == &main["jobs"][*name])
+            .expect("unknown native ARM result proxy");
+        return commands(&native_functional_job(&main, name));
+    }
     if let Some(caller) = job["uses"].as_str() {
         if caller == "./.github/workflows/rust-native-arm.yml" {
             let native = parse(&read(".github/workflows/rust-native-arm.yml")).unwrap();
-            return ["planner-runtime", "carrot-man-runtime", "webrtc-runtime"]
-                .map(|name| commands(&native["jobs"][name]))
+            return openpilot_dev_tools::ci_policy::NATIVE_ARM_BINDINGS
+                .iter()
+                .map(|(name, _)| commands(&native["jobs"][*name]))
+                .collect::<Vec<_>>()
                 .join("\n");
         }
         assert_eq!(caller, "./.github/workflows/rust-dbc-darwin.yml");
@@ -646,10 +667,15 @@ fn job_check(name: &str, needles: &[&str], selectors: &[&str], artifact: bool) {
 #[test]
 fn webcam_requires_two_architectures_and_real_capture_ipc() {
     let data = workflow();
+    let native = parse(&read(".github/workflows/rust-native-arm.yml")).unwrap();
+    openpilot_dev_tools::ci_policy::validate_native_arm_reuse(&data, &native).unwrap();
+    let arm = &native["jobs"]["webcam-runtime"];
+    mandatory(arm, &["python -P rust/tools/webcam_"]);
+    some_artifact(arm);
     let job = &data["jobs"]["webcam-runtime"];
     assert_eq!(
         job["strategy"]["matrix"]["runner"],
-        serde_json::json!(["local-x64", "local-arm64-qemu"])
+        serde_json::json!(["local-x64"])
     );
     for (key, value) in [
         ("CARGO_BUILD_JOBS", "2"),
@@ -1587,7 +1613,8 @@ fn support_binding_path_is_configured_on_the_runner() {
 fn radar_requires_fresh_source_runtime_arm_and_memory_checks() {
     let data = workflow();
     for name in ["radar-runtime", "radar-arm", "radar-memory"] {
-        let job = &data["jobs"][name];
+        let actual = native_functional_job(&data, name);
+        let job = &actual;
         absent(job, &["if", "continue-on-error"]);
         required(&commands(job), &["check-disk-space"]);
         assert_eq!(job["env"]["CARGO_INCREMENTAL"], "0");
@@ -1608,11 +1635,9 @@ fn radar_requires_fresh_source_runtime_arm_and_memory_checks() {
             "--all-targets --locked -- -D warnings",
         ],
     );
-    let arm = commands(&data["jobs"]["radar-arm"]);
-    assert_eq!(
-        data["jobs"]["radar-arm"]["runs-on"],
-        serde_json::json!(HOSTED_RUNNER)
-    );
+    let native = native_functional_job(&data, "radar-arm");
+    let arm = commands(&native);
+    assert_eq!(native["runs-on"], serde_json::json!("ubuntu-24.04-arm"));
     required(
         &arm,
         &[
@@ -1627,9 +1652,20 @@ fn radar_requires_fresh_source_runtime_arm_and_memory_checks() {
             "sha256sum",
         ],
     );
-    assert_eq!(data["jobs"]["radar-arm"]["env"]["LOCAL_CI_ARCH"], "aarch64");
-    // ARM execution is explicitly emulated on the GitHub-hosted x64 runner.
-    required(&arm, &["test -x /usr/bin/qemu-aarch64-static"]);
+    assert_eq!(native["env"]["LOCAL_CI_ARCH"], "${{ matrix.arch }}");
+    assert_eq!(native["env"]["CI296_NATIVE_ARM"], "1");
+    assert_eq!(
+        native["strategy"]["matrix"]["include"],
+        serde_json::json!([{"arch":"aarch64","runner":"hosted-arm64"}])
+    );
+    // 실제 ARM 실행·최종 proof 경계를 확인하고 원래 기능 selector는 위에서 그대로 검사한다.
+    required(
+        &arm,
+        &[
+            "tools/ci/native-arm\" prepare",
+            "tools/ci/native-arm\" finish",
+        ],
+    );
     required(
         &commands(&data["jobs"]["radar-memory"]),
         &[
@@ -1829,7 +1865,7 @@ fn webrtc_requires_native_host_and_arm_real_media_and_failure_boundaries() {
 }
 
 #[test]
-fn native_arm_reuse_preserves_all_candidate_steps_and_three_x64_rows() {
+fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
     use openpilot_dev_tools::ci_policy::validate_native_arm_reuse;
     let main = workflow();
     let native = parse(&read(".github/workflows/rust-native-arm.yml")).unwrap();
@@ -1838,6 +1874,14 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_three_x64_rows() {
         ("carrot-man-runtime", "python-rust-523-native-arm.yml"),
         ("planner-runtime", "python-rust-523-native-arm-more.yml"),
         ("webrtc-runtime", "python-rust-523-native-arm-more.yml"),
+        ("webcam-runtime", "python-rust-523-native-arm-remaining.yml"),
+        ("xiaoge-runtime", "python-rust-523-native-arm-remaining.yml"),
+        ("radard-runtime", "python-rust-523-native-arm-remaining.yml"),
+        ("radar-arm", "python-rust-523-native-arm-final-two.yml"),
+        (
+            "carrot-navi-arm",
+            "python-rust-523-native-arm-final-two.yml",
+        ),
     ] {
         let data = parse(&read(&format!(".github/workflows/{candidate}"))).unwrap();
         let expected = &data["jobs"][name];
@@ -1850,22 +1894,27 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_three_x64_rows() {
             actual, *expected,
             "{name}: candidate command/env/conditions/holds changed"
         );
+        if ["radar-arm", "carrot-navi-arm"].contains(&name) {
+            assert_eq!(
+                main["jobs"][name]["needs"],
+                serde_json::json!(["native-arm"])
+            );
+            continue;
+        }
         let matrix = &main["jobs"][name]["strategy"]["matrix"];
         if name == "carrot-man-runtime" {
             assert_eq!(
                 matrix["include"],
                 serde_json::json!([{"arch":"x86_64","runner":"local-x64"}])
             );
+        } else if name == "radard-runtime" {
+            assert_eq!(
+                matrix["include"],
+                serde_json::json!([{"runner":"local-x64","machine":"x86_64"}])
+            );
         } else {
             assert_eq!(matrix["runner"], serde_json::json!(["local-x64"]));
         }
-    }
-    for name in ["webcam-runtime", "xiaoge-runtime"] {
-        assert_eq!(
-            main["jobs"][name]["strategy"]["matrix"]["runner"],
-            serde_json::json!(["local-x64", "local-arm64-qemu"]),
-            "shared strategy must retain {name} ARM"
-        );
     }
     assert_eq!(main["jobs"]["fast"]["needs"].as_array().unwrap().len(), 42);
 }
@@ -1906,9 +1955,14 @@ fn native_arm_main_gate_rejects_removed_needs_binding_or_success_check() {
 #[test]
 fn xiaoge_requires_both_architectures_and_instrumented_native_libraries() {
     let data = workflow();
+    let native = parse(&read(".github/workflows/rust-native-arm.yml")).unwrap();
+    openpilot_dev_tools::ci_policy::validate_native_arm_reuse(&data, &native).unwrap();
+    let arm = &native["jobs"]["xiaoge-runtime"];
+    mandatory(arm, &["check_xiaoge_ci.py"]);
+    artifacts(arm);
     assert_eq!(
         data["jobs"]["xiaoge-runtime"]["strategy"]["matrix"]["runner"],
-        serde_json::json!(["local-x64", "local-arm64-qemu"])
+        serde_json::json!(["local-x64"])
     );
     for (name, needles) in [
         (
@@ -3553,5 +3607,16 @@ fn paramsd_atomic_gate_car_params_caller_is_native_and_preserves_shared_original
             root().join(helper).is_file(),
             "live shared consumer removed prematurely: {helper}"
         );
+    }
+}
+
+#[test]
+fn native_arm_proxy_resolution_rejects_unreviewed_family_or_gate_changes() {
+    let main = workflow();
+    for name in ["radar-arm", "carrot-navi-arm"] {
+        assert!(!commands(&main["jobs"][name]).is_empty());
+        let mut unknown = main["jobs"][name].clone();
+        unknown["name"] = "unreviewed ARM family".into();
+        assert!(std::panic::catch_unwind(|| commands(&unknown)).is_err());
     }
 }

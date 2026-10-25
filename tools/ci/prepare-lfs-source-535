@@ -7,15 +7,31 @@ export LC_ALL=C PATH=/usr/bin:/bin
 fail() { printf 'private LFS source: %s\n' "$*" >&2; exit 1; }
 [[ $# == 1 && ( $1 == xiaoge || $1 == driving ) ]] || fail 'xiaoge or driving required'
 selection=$1
-# 실제 ARM Xiaoge 후보 한 경계만 추가하며 기존 X64 caller는 원래 조건을 유지한다.
+# 실제 ARM Xiaoge는 같은-source main 또는 기존 후보의 정확 caller만 허용한다.
 if [[ ${RUNNER_ARCH:-} == ARM64 ]]; then
   [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust &&
      ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux &&
      $(uname -s) == Linux && $(uname -m) == aarch64 &&
      $selection == xiaoge && ${GITHUB_JOB:-} == xiaoge-runtime &&
-     ${CI296_NATIVE_ARM:-} == 1 && ${LOCAL_CI_ARCH:-} == aarch64 &&
-     ${GITHUB_EVENT_NAME:-} == push && ${GITHUB_REF:-} == refs/heads/codex/feat-523-python-rust &&
-     ${GITHUB_WORKFLOW_REF:-} == "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-remaining.yml@${GITHUB_REF:-}" ]] || fail 'exact hosted ARM Xiaoge candidate required'
+     ${CI296_NATIVE_ARM:-} == 1 && ${LOCAL_CI_ARCH:-} == aarch64 ]] || fail 'exact hosted ARM Xiaoge required'
+  if [[ ${GITHUB_WORKFLOW_REF:-} == "bin9208/openpilot-rust/.github/workflows/rust.yml@${GITHUB_REF:-}" ]]; then
+test "${CI296_NATIVE_ARM_CALLER:-}" = rust.yml
+test "${GITHUB_REPOSITORY:-}" = bin9208/openpilot-rust
+test "${GITHUB_WORKFLOW_REF:-}" = "bin9208/openpilot-rust/.github/workflows/rust.yml@${GITHUB_REF:-}"
+case "${GITHUB_EVENT_NAME:-}" in
+  push) [[ ${GITHUB_REF:-} == refs/heads/dev || ${GITHUB_REF:-} == refs/heads/main ]] ;;
+  pull_request)
+    [[ ${GITHUB_REF:-} =~ ^refs/pull/[1-9][0-9]*/merge$ &&
+       ( ${GITHUB_BASE_REF:-} == dev || ${GITHUB_BASE_REF:-} == main ) &&
+       ${CI296_PR_HEAD_REPOSITORY:-} == bin9208/openpilot-rust ]] ;;
+  workflow_dispatch)
+    case "${GITHUB_REF:-}" in refs/heads/?*|refs/tags/?*) ;; *) exit 1 ;; esac ;;
+  *) exit 1 ;;
+esac
+  else
+    [[ ${GITHUB_EVENT_NAME:-} == push && ${GITHUB_REF:-} == refs/heads/codex/feat-523-python-rust &&
+       ${GITHUB_WORKFLOW_REF:-} == "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-remaining.yml@${GITHUB_REF:-}" ]] || fail 'exact hosted ARM Xiaoge candidate required'
+  fi
 else
   [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust &&
      ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux &&

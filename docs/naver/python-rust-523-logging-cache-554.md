@@ -234,3 +234,45 @@ helper와 source/SDK final의 세 cap을 함께 맞춘다. 실제 당시 가용 
 2초/공유600초·build8GiB·child파일512MiB·trace grammar·원문14/retained/전체 inspection 및
 전후 봉인/업로드/조건부 정리는 그대로다. 사용자의 고정 stop/resume 규칙 제거와 작업별 증가량
 admission에 맞춘 증거 저장량 수정이며 새 기능 성공·전체 완료를 주장하지 않는다.
+
+## 2026-10-25 fa0 netlink `<<` lexical 관측 실패의 최소 후보
+
+부모가 감사한 [40159692370/job121068458818](https://github.com/bin9208/openpilot-rust/actions/runs/40159692370/job/121068458818)의
+artifact12585831183은74,854,076B/SHA256
+`884cc86b8c029eff92a58b25aee7c815ff4a6b58dda093c1310132527745a6e6`/4,672CRC다.
+proof2GiB 문제와 source/SDK final은 통과하고 lifecycle14+retained 실행 뒤
+`inspect-runtime_directory_int`에서 `trace descriptor annotation invalid`로 실패했다.
+이는 부모의 전수 감사 결과이며 새 후보의 기능 성공으로 소급하지 않는다.
+독립 검토는 기존 ZIP에서 선택 member 주변5행만 inert로 읽었다. 새 다운로드/CRC 전수 반복0이다.
+
+`logging/trace/runtime_directory_int.21783:103768`의 실제 `sendto`는
+`udiag_states=1<<TCP_LISTEN`을 포함하며 결과40이다. `balanced()`가 quotes/comments 바깥 모든
+`<`를 FD annotation으로 보내 `<<`를 중첩 annotation으로 잘못 읽었다. 이를 enum allowlist나
+행 무시, 원문 수정으로 우회하지 않는다.
+
+후속 후보는 기존 annotation 함수 앞에서 연속 `<<` 두 바이트만 binary lexical token으로 구분한다.
+좌우 각각은 ASCII identifier 또는 unsigned decimal/`0x` hexadecimal token이고 공백/탭만
+허용한다. 왼쪽 앞은 현재 body 시작/opening delimiter/field assign/comma/bitwise 경계,
+오른쪽 뒤는 EOF/closing delimiter/comma/bitwise 경계여야 한다. 값 계산·enum 해석은 없다.
+빈 operand/숫자와 이름 혼합/빈 hex/`<<<`/붙은 token/단독 `<`를 shift로 받아들이지 않는다.
+관측하지 않은 chained shift·그룹 자체를 operand로 쓰는 C 전체 expression은 확장하지 않고 거부한다.
+기존 FD annotation·C-string·comment·depth·EOF·unfinished/resume·unknown 거부와 원문 source span은 유지한다.
+
+기존 trace20 본문은 보존하고 다음4개를 추가한다. summary6 파일과 기존 test 이름은 그대로다.
+
+- `left_shift_tokens_preserve_raw_spans_and_both_inspection_scopes`: netlink/hex/identifier/bitwise
+  token, quoted `<<` 및 FD annotation을 full/summary 공통 parser로 읽고 원문 SHA/span·false flags 확인.
+- `left_shift_missing_or_malformed_operands_and_boundaries_are_rejected`: 잘못된 token/경계20개를
+  양 mode에서 정확한 `trace shift expression invalid`와 output 부재로 확인.
+- `left_shift_unfinished_resume_keeps_original_fragment_pairing`: 정상2fragment와 wrong-operation/
+  cross-PID/미해결 EOF/미완성 shift의 기존 실패 경계 확인.
+- `single_left_angle_and_malformed_descriptors_stay_rejected`: 단독 `<` 및 닫히지 않은 annotation을
+  기존 exact error로 거부하고 기존 depth 상한 확인.
+
+정확 test prefix는 `native_logging_check::trace::tests::` 총24개(기존20+신규4)다.
+부모가 helper의 exact roster·pins·이슈 등록을 별도로 맡는다. 새 테스트와 실제 fa0 fulltrace에 대한
+동일 parser 실행은 Actions **UNRUN**이다. 로컬은 rustfmt/구문·diff·source/hash 검토뿐이며
+test/compile/CLI/원본 실행과 stage/commit/push는0이다. source 변경은 trace.rs/trace_tests.rs/이 기록3개뿐이다.
+기존 raw512MiB/file·선택 prefix1GiB·model/report64MiB·proof2GiB·2초/600초/원문14+retained·
+held/output seal 및 `closed_pid/cwd/fd/dso/full_acceptance/retirement_credit=false`는 그대로다.
+전체 lexical 수용·의미가 닫힌 FD/DSO·old27/R4/caller/원본 퇴역 수용으로 올리지 않는다.

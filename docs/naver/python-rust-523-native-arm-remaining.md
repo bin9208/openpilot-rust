@@ -42,3 +42,37 @@ source `01fcc36e09b39172f4c88954a702fa8353b2d1e8`, [run40157685759/job1210624635
 helper의 host guard 외 본문과 기존 X64 guard가 동일하고 workflow는 Xiaoge 준비 stage의 SHA literal1개만 바뀌었음을 source bytes로 확인했다. 세 job의 기능 step·조건·90/75/90분, LFS roster/pins·2GiB cap·기존 provider/소유권/봉인/cleanup을 유지한다. YAML parse, Bash46블록 및 helper1개 문법, 해당 diff 검사를 통과했다. branch의 양성/음성 실행 및 LFS hydration 등 기능은 전부 GHA 대기다.
 
 다른 current caller의 helper pin은 부모 global 검사 소유로 남긴다. 확인 시 `.github/workflows/rust.yml`2곳과 `.github/workflows/python-rust-523.yml`1곳에 이전 literal이 있으며 이 작업에서 수정하지 않았다. 새 APT·설치·환경 위장, 기대값/원본 payload 변경 및 retirement credit은0이다. Fast01f cold collector의 실제 PASS는 별도 증거이며 Xiaoge 실패나 수정 후 성공으로 합치지 않는다.
+
+
+## 2026-10-25: native8 actual 감사와 main 이관 source 후보
+
+아래 8개 candidate job의 actual 성공을 artifact 원문과 API로 감사했다. **새 main/reusable 이관의 기능 성공은 아직 UNRUN**이며 이전 source 성공을 새 source로 소급하지 않는다. 물리 기기·실차·전체 SDK/DSO closure 또는 Python retirement credit은0이다.
+
+| family | actual source / run / job | 기능·private artifact |
+| --- | --- | --- |
+| CarrotMan | `01fcc36e09b39172f4c88954a702fa8353b2d1e8` / [40157685731/121062463077](https://github.com/bin9208/openpilot-rust/actions/runs/40157685731/job/121062463077) | `12585442590` / `12585073136` |
+| Planner | 같은01f / [40157685727/121062463154](https://github.com/bin9208/openpilot-rust/actions/runs/40157685727/job/121062463154) | `12584912724` / `12584543485` |
+| WebRTC | 같은01f / [40157685727/121062463051](https://github.com/bin9208/openpilot-rust/actions/runs/40157685727/job/121062463051) | `12585497731` / `12585417745` |
+| RadarCAN | 같은01f / [40157685763/121062463233](https://github.com/bin9208/openpilot-rust/actions/runs/40157685763/job/121062463233) | `12585408189` / `12585213498` |
+| CarrotNavi ARM | 같은01f / [40157685763/121062463084](https://github.com/bin9208/openpilot-rust/actions/runs/40157685763/job/121062463084) | `12584742650` / `12584842556` |
+| webcam | 같은01f / [40157685759/121062463491](https://github.com/bin9208/openpilot-rust/actions/runs/40157685759/job/121062463491) | `12584598321` / `12584663185` |
+| radard | 같은01f / [40157685759/121062463522](https://github.com/bin9208/openpilot-rust/actions/runs/40157685759/job/121062463522) | `12585194313` / `12585573805` |
+| Xiaoge | `338fcb4cd160da8733bbcadcb932770f85d38d97` / [40158739519/121065793973](https://github.com/bin9208/openpilot-rust/actions/runs/40158739519/job/121065793973) | `12584704930` / `12585830706` |
+
+각 ZIP은 API size/digest/source와 전체 CRC를 대조했다. 16 ZIP 합계 packed301,117,817B/expanded2,686,556,719B, members33,774개, ZIP별 중복name0이다. 96 ELF header는 모두 ELF64/little-endian/AArch64다. archived ELF·원본·모델·PKL은 로컬 실행하지 않았다. 01f source/index 전후7쌍과338 Xiaoge source/index 전후가 각각 같고, 각 index는 해당 Git commit의19,462개 경로 원문과 같다. 8개 job의 final seal·기능/private upload·owned source/common cleanup은 API success다. SDK는 원래 private Rust1.94 설치/version과 Python3.12.14 실행 계약을 유지했으며, 이 private artifact에는 별도 full SDK before/after seal이 없다. cleanup success를 새 전체 자손·provider closure 증명으로 확대하지 않는다.
+
+관측 범위는 CarrotMan owned12 scenarios, Planner12 comparison commands/IPC4runs·3비교 differences0/lifecycle13쌍, WebRTC8 frontends+STUN8, RadarCAN reference6군121cases+constructor558 및 IPC23/5/lifecycle15, webcam pixels28/capture7/worker5source+native/error3/Linux CLI source·native exit0, radard 정책6군·IPC6 differences0/lifecycle8/deadline·startup이다. CarrotNavi ARM은 build/ELF inspection이며 runtime traffic 비교가 아니다. Planner sanitizer와 CarrotMan policy의 원래 x64-only skip을 native 성공으로 세지 않는다.
+
+Xiaoge338은 LFS helper의 정확 candidate ARM 예외를 실제 통과했다. `prepared.pass`는2models/22,820,800B/정확338, pull·helper exit0이며 LFS index/other/providers/source/storage-rejected 전후5쌍이 byte 동일하다. 모델 SHA는 lane.onnx `d3761c185daf33897ff3ff5edf28115c5dc829c06c538033accb616d6c67528c`, v_asm_model.onnx `00247ede5159dff9a0768c171095711d40f1ee109ac7b5e24adce344fe4ba6f9`다. 이후 OpenCV/build/test/Clippy, policy436/lane14/inference4frames·24 exact images+tensors/HTTP65/live19/lifecycle10/JPEG16/OpenCV22와 최종 seal/upload/cleanup이 성공했다. live의 원문 publication 수 source38/native37도 보존하며 comparator의19case PASS를 임의 전체 count 동일성으로 바꾸지 않는다. 새 main caller LFS 예외의 실제 성공과는 분리한다. Xiaoge 기능 ZIP은58,664,682B/SHA256 `9e0c7019f44d73e8ae7a8c8044eb6c3338b45d28b4105eae624d1dd3106c6c44`, private ZIP은3,595,986B/SHA256 `689037abe9dfb5702464a904b531bf67b803d465d7962bff545c5a8723eb3342`다.
+
+### 승인된 main/reusable8 이관 구현의 source-only 상태
+
+선행 Xiaoge actual 성공 뒤 승인된 소유8파일만 적용했다. main은489,835B/callee172,849B이며 각각500000B 이내다. main44 keys/root/fast42 needs·env·run·조건 및 target5 외39개 job의 전체 parsed model을 보존했다. 3dual job은 기존 x64 row와 나머지 body/env/timeout을 보존하고 ARM만 callee로 옮겼다. 두 ARM-only 기능 전체는 callee의 같은 key로 옮기고 기존 main name/key는 always+동일-source native-arm success만 인정하는 엄격한 결과 proxy로 남겼다. callee는 기존3 leaf의 model과 source prefix가 동일하며 새5는 첫 main Deny·caller env2개 외 candidate whole-job과 같다. 원래90/75/90/90/60분과 기능/provider/예산/원본/전후 seal/upload/cleanup을 유지한다. 원래 full ARM12GiB/workspace/generic ARM/SAN은 바꾸지 않았다.
+
+main의 공유 `V=local-x64` scalar를 남겼고 제거되는60분 anchor의 외부 참조2개는 같은 literal60으로 풀었다. callee aggregate는8개 result를 각각 success로 요구한다. 두 proxy/aggregate의 skipped/failure/cancelled/빈 값·누락/unknown/continue-on-error/step-skip을 허용하지 않으며 raw 기능 기대값을 바꾸지 않는다.
+
+`tools/ci/native-arm`은 이미 실제 main/reusable caller를 지원하므로 byte 불변이다. LFS helper는 실제 ARM Xiaoge runtime만 기존 candidate 또는 정확 main context(push dev/main, same-repo PR merge/base/head, 기존 dispatch ref)로 허용한다. X64 guard 및 그 뒤의 모든 Git/provider/소유권/pointer/OID/size/cap/후처리 body는 동일하다. 새 helper SHA는 `836c65ed0b09b614a15fe0a1d39290dfee19749e7e3163e562d8d31e3fb95966`이며 **소비자 literal pin 갱신은 부모 통합 대기**다. 기존 strict hash 검사를 우회하지 않는다.
+
+정책/tests는 정확8 roster·6x64 rows·2proxy·main42 및 모든 원래 stage를 검사한다. source/LOCAL_CI_ARCH source roster는74/22, main+callee command-file/finalizer는14이며 이 숫자는 소스 열거 결과다. 기존 Python Planner/Xiaoge matrix assertion도 단순 삭제하지 않고 x64+native/caller/aggregate/proxy 및 음성 case로 보완했다. 현재 source 선언상 Planner pytest24/Xiaoge pytest10이며 이 새 개수의 기능 실행은 UNRUN이다.
+
+로컬 확인은 YAML/token/model·Bash849블록·Python AST2파일·Rustfmt3파일·diff와 inert archive/hash 확인뿐이다. Cargo/build/test/Clippy/원본·프로젝트 실행/CI dispatch·cancel/stage/commit/push는0이다. ignored `native-arm-final-five-candidate/`에 base/candidate와 미적용 patch·source 비교 JSON을, `hosted-01f-native-seven-*`와 `hosted-338-native-xiaoge-*`에 실제 증거 감사를 보존했다. 부모가 독립 리뷰·모든 소비자 pin/Focus/ledger를 통합한 뒤 새 same-source main8/aggregate/strict42 및 양음성·Clippy를 GHA에서 검증해야 한다.
