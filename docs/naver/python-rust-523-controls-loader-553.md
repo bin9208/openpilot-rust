@@ -392,3 +392,44 @@ current original/native p는 모두 `-0.03491372987627983`, 4NN/2329 layer bits�
 artifact12596221433(89,719,973B/SHA256 `3b8768803eb58e2920cc80495dc7207ab01f989914cea03341e621d3455557c7`)
 162CRC, source/provider/held 전후와 final/upload/cleanup은 성공했다. 이 별도 FAIL은 그대로 유지한다.
 CPU와 결과의 동시 관측을 원인 확정으로 바꾸지 않으며 #553/전체 수치·원본 제거·기기 수용은 계속 열려 있다.
+
+## normal 결과와 독립인 authored protocol preflight 후보
+
+2026-10-25, 구현 기준 HEAD `21ce6f23d23350fbe8174b05f977c0bb7d6eb420`.
+`controlsd_same_job_553.py`만 exact API/source/job 및 boot identity admission 뒤, 기존
+`normal_attempted`/`normal.run()` 앞에서 private `target_protocol_controls`를 호출한다.
+따라서 normal이 성공해 actual target replay를 하지 않는 경우에도 프로토콜 통제는 실행된다.
+diagnostic/COMMON/trace/`Replay.run` 및 기존 normal·target 실행 분기는 수정하지 않는다.
+
+입력은 명시적인 `authored-protocol-control` schema envelope다. 0/1의 작은 typed bits와
+정확 case/frame literal을 guard 형식 검사에 사용하며, 모델 입력/원본 expected를 새로 만들거나
+실제 original/native를 실행하지 않는다. 양성4개는 `valid_native_marker`,
+`valid_scalar_envelope`, `equal_state_triplet`, `exact_pid_ast_roundtrip`이다. 마지막 검사는
+기존 pin `552286210f964e7fe0c2879219c0f958ea9514be11a0da78eb793cd8bbc40c65`의
+held PID source를 4MiB 이내로 읽고 AST 변환·원복 동일성만 검사한다. import/compile/exec는 없다.
+
+기존 diagnostic의 `target_scalar_controls`를 그대로 호출하여 `foreign_case`,
+`wrong_scalar_width`, `missing_p`, `p_output_mismatch`, `wrong_gain_curve`, `missing_marker`,
+`duplicate_marker`, `malformed_marker`, `foreign_marker_prefix`의 exact9를 요구한다.
+여기에 동일 기존 `target_reproduced`의 `oneframe_foreign_state`, `prefix_foreign_state`2개와
+`instrument_pid`의 `pid_p_operator_changed`1개를 합쳐 exact12다. AST 음성은 정확 anchor 거부
+RuntimeError를 요구하며 IO/구문 오류를 통제 성공으로 세지 않는다. 양성이 먼저 성공해야 한다.
+실제 target 분기의 기존12개와 그 분기에 필요한 actual 재현·plain/tap 무효과 검사는 그대로다.
+
+`controls-same-job-553/target-protocol-controls.json`은 create_new/NOFOLLOW/CLOEXEC·0600·nlink1,
+64KiB 이내이고, 게시 후 동일 bytes/SHA 및 held FD/path 검증 대상에 추가한다. schema1/source,
+현재 controller/diagnostic/COMMON/PID source SHA, exact4/12 이름·개수·각 결과를 기록한다.
+`actual_failure_reproduced=false`, `actual_scalar_layer_observed=false`, runtime invocation0,
+`numerical_acceptance=false`, `substitutes_actual_target_observation=false` 및 기존 closure/kernel
+false·credit0를 유지한다. 이 파일은 actual `target-scalar-controls.json`을 대체하지 않는다.
+
+preflight는 기존 전체 deadline과 시작+5초의 min을 사용한다. 전후 owned live0·budget·held 검사를
+수행하고, bounded 단계 뒤 deadline을 확인한다. 독립 watchdog이나 5초 실행 보장을 주장하지 않는다.
+600/700초 command·Replay32분·전체52분 및 모든 공간 cap은 그대로다. `target_protocol_controls_pass`는
+false로 시작하여 receipt hold와 최종 검사 뒤에만 true가 된다. 기존 wrapper pass에도 이를 AND하여
+누락/부분 통제/기록 오류를 normal 성공으로 숨기지 않는다.
+
+로컬은 AST·정적 source/diff만 확인하며 새4/12 실행과 receipt/finalizer 실제 연결은 **GHA UNRUN**이다.
+새 selector/API CLI/환경변수/패키지/source edge를 추가하지 않았다. 부모는 기존 samejob WF의 helper
+literal과 final receipt 요구, Focus/원장만 연결한다. diagnostic/COMMON/trace SHA와 그 연쇄 literal은
+이번 변경으로 바뀌지 않는다. #553 실제 수학 원인·target 재현·전체 수치 수용으로 승격하지 않는다.

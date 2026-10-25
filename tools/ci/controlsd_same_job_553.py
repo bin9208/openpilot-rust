@@ -82,6 +82,113 @@ def failure_execs(c, normal, artifacts, raw):
     return calls
 
 
+def target_protocol_controls(c, d, normal, evidence):
+    """실제 target 재현과 별개인 authored 프로토콜4양성/12음성 preflight다."""
+    started = time.monotonic()
+    deadline = min(started + 5, normal.deadline)
+    owner = evidence.lstat()
+    need(evidence == normal.job / "proof/controls-same-job-553"
+         and evidence.resolve(strict=True) == evidence and stat.S_ISDIR(owner.st_mode)
+         and owner.st_uid == os.getuid() and stat.S_IMODE(owner.st_mode) == 0o700,
+         "owned protocol evidence directory")
+
+    def checkpoint():
+        need(time.monotonic() <= deadline, "target protocol controls deadline")
+        need(c.ident(evidence.lstat())[:5] == c.ident(owner)[:5]
+             and not normal.children.scan(), "protocol owner changed/live child")
+        need(time.monotonic() <= deadline, "target protocol controls scan deadline")
+
+    checkpoint()
+    normal.budget(force=True)
+    normal.holds.verify()
+    checkpoint()
+    zero, one = "0000000000000000", "3ff0000000000000"
+
+    def scalar(pattern, runtime):
+        return {"dtype": "f64", "bits": pattern, "runtime_type": runtime}
+
+    original = {"schema": 1, "observer": "original", "case": "HYUNDAI_PALISADE-torque", "frame": 0,
+        "used_kp_scalar_observed": True,
+        "fields": {name: scalar(one if name == "used_kp" else zero, "builtins.float")
+                   for name in ("error", "error_cast", "used_kp", "p")},
+        "inputs": [{"call": i, "values": [{"dtype": "int", "value": 0, "runtime_type": "builtins.int"},
+                    {"dtype": "f32", "bits": "3f800000", "runtime_type": "numpy.float32"}]} for i in range(4)]}
+    native = {"schema": 1, "observer": "native", "case": "HYUNDAI_PALISADE-torque", "frame": 0,
+        "used_kp_scalar_observed": False,
+        "fields": {name: scalar(zero, "rust.f64") for name in ("error", "p", "speed")},
+        "gain_x": [scalar(zero, "rust.f64")], "gain_y": [scalar(one, "rust.f64")]}
+    state = {"lat_pid": [0.0]}
+    marker = b"CONTROLSD_553_SCALAR " + json.dumps(native, allow_nan=False).encode() + b"\n"
+    need(d.native_scalar_record(marker) == native, "authored native marker positive")
+    comparison = d.validate_target_scalars(original, native, state, state)
+    need(comparison["p_bits_equal"] is True and comparison["error_bits_equal"] is True
+         and comparison["native_used_gain_scalar_observed"] is False
+         and comparison["native_stored_gain_constant_one"] is True, "authored scalar envelope positive")
+    need(d.target_reproduced(state, state, state) is True, "authored equal state positive")
+    pid_name = "openpilot/common/pid.py"
+    pid_pin = d.SOURCE_PINS[pid_name]
+    pid_path = normal.holds.add(normal.root / pid_name, pid_pin)
+    raw = c.read(pid_path, 4*MIB)
+    need(c.sha(raw) == pid_pin, "exact held PID source for AST-only controls")
+    _, ast_record = d.instrument_pid(d.ast.parse(raw, filename=str(pid_path)))
+    need(ast_record["restored_equals_original"] is True
+         and ast_record["original_ast_sha256"] == ast_record["restored_ast_sha256"],
+         "exact PID AST roundtrip positive")
+    positives = ["valid_native_marker", "valid_scalar_envelope", "equal_state_triplet", "exact_pid_ast_roundtrip"]
+    checkpoint()
+    negatives = ["foreign_case", "wrong_scalar_width", "missing_p", "p_output_mismatch", "wrong_gain_curve",
+                 "missing_marker", "duplicate_marker", "malformed_marker", "foreign_marker_prefix"]
+    controls = d.target_scalar_controls(original, native, state, state, marker)
+    need(controls == {"pass": True, "negative_controls": negatives, "local_execution": False},
+         "exact nine scalar/marker protocol controls")
+    foreign = dict(state, _foreign=True)
+    need(d.target_reproduced(state, foreign, state) is False, "foreign one-frame protocol state accepted")
+    need(d.target_reproduced(state, state, foreign) is False, "foreign prefix protocol state accepted")
+    negatives += ["oneframe_foreign_state", "prefix_foreign_state"]
+    anchor = b"self.p = float(error) * self.k_p"
+    need(raw.count(anchor) == 1, "exact PID source operator anchor")
+    changed = raw.replace(anchor, b"self.p = float(error) + self.k_p", 1)
+    try:
+        d.instrument_pid(d.ast.parse(changed, filename=str(pid_path)))
+    except RuntimeError as problem:
+        need(str(problem) == "exact original PID p expression once", "unexpected PID AST rejection")
+    else:
+        raise RuntimeError("changed PID p operator protocol was accepted")
+    negatives.append("pid_p_operator_changed")
+    need(len(positives) == len(set(positives)) == 4 and len(negatives) == len(set(negatives)) == 12,
+         "exact protocol control cardinality")
+    checkpoint()
+    normal.budget(force=True)
+    normal.holds.verify()
+    checkpoint()
+    source_bindings = {name: c.regular(normal.root / name, 128*1024)["sha256"]
+                       for name in ("tools/ci/controlsd_same_job_553.py", DIAGNOSTIC, COMMON)}
+    need(source_bindings[DIAGNOSTIC] == DIAGNOSTIC_SHA and source_bindings[COMMON] == COMMON_SHA,
+         "protocol helper source pins changed")
+    source_bindings[pid_name] = pid_pin
+    receipt = {"schema": 1, "source": normal.source, "source_bindings": source_bindings,
+        "input_origin": "authored-protocol-control", "pass": True,
+        "positive_controls": positives, "negative_controls": negatives, "positive_count": 4, "negative_count": 12,
+        "control_results": {name: True for name in positives + negatives},
+        "pid_ast": ast_record, "deadline_seconds": 5, "elapsed_before_publication_seconds": time.monotonic() - started,
+        "actual_failure_reproduced": False, "actual_scalar_layer_observed": False,
+        "original_or_native_runtime_invocations": 0, "numerical_acceptance": False,
+        "substitutes_actual_target_observation": False, **d.FLAGS}
+    encoded = (json.dumps(receipt, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+    need(len(encoded) <= 64*1024, "protocol receipt exceeds 64KiB")
+    checkpoint()
+    path = evidence / "target-protocol-controls.json"
+    c.write_new(path, encoded)
+    info = path.lstat()
+    need(stat.S_ISREG(info.st_mode) and info.st_uid == os.getuid() and info.st_nlink == 1
+         and stat.S_IMODE(info.st_mode) == 0o600, "owned single-link protocol receipt")
+    normal.holds.add(path, c.sha(encoded))
+    need(c.read(path, 64*1024) == encoded, "protocol receipt byte roundtrip")
+    normal.holds.verify()
+    checkpoint()
+    return True
+
+
 def main():
     need(len(sys.argv) == 1 and sys.flags.isolated and sys.flags.no_site and sys.dont_write_bytecode,
          "zero-arg stdlib-only Actions controller")
@@ -97,7 +204,7 @@ def main():
     evidence.mkdir(mode=0o700)
     state = {"schema": 1, "source": os.environ["GITHUB_SHA"], "normal_status": None, "normal_attempted": False,
              "normal_pass": False, "triage_observed": False, "normal_status_promoted": False,
-             "normal_workflow_replaced": False, **d.FLAGS}
+             "normal_workflow_replaced": False, "target_protocol_controls_pass": False, **d.FLAGS}
 
     class Normal(c.Probe):
         def command(self, argv, label, seconds=60, env=None, limit=32*MIB, allowed=None, trace=None):
@@ -143,6 +250,7 @@ def main():
             boot_id = stream.read(128).strip()
         need(re.fullmatch(r"[0-9a-f-]{36}",boot_id), "bounded actual boot identity")
         state["boot_id"] = boot_id
+        state["target_protocol_controls_pass"] = target_protocol_controls(c, d, normal, evidence)
         state["normal_attempted"] = True
         try:
             normal.run()
@@ -252,7 +360,7 @@ def main():
             except BaseException:
                 failures.append(traceback.format_exc())
         state["normal_preservation_final_errors"] = failures
-        state["pass"] = passed and not failures and error is None
+        state["pass"] = passed and not failures and error is None and state["target_protocol_controls_pass"] is True
         c.save(evidence / "outcome.json", state)
     return 0 if state["pass"] else 1
 
