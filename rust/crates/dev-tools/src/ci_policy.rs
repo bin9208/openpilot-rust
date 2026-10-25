@@ -1592,6 +1592,7 @@ pub fn validate_native_arm_reuse(main: &Value, native: &Value) -> Result<(), Str
             )?;
             absent(matches[0], &["continue-on-error"])?;
             let expected = match *stage {
+                "Preserve bounded final binaries and their identities" => TRUSTED_ALWAYS,
                 "Compare affected original policy, cereal and time boundaries" => "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.arch == 'x86_64') }}",
                 "Check generated C with ASan, UBSan and allocator leak detection" => "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.runner == 'local-x64') }}",
                 _ => TRUSTED_SOURCE,

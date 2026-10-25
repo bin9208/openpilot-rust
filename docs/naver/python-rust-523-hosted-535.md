@@ -1034,3 +1034,18 @@ SSH/UI/로깅/native ARM 실행은 계속 진행하며 별도 결과로 확인�
 
 이 source 후보들은 로컬 source/문법/format/diff만 확인했으며 기능 성공은 다음 Actions의 정확
 소스에서 판정한다. 원래 check 수치/모델/안전/유효성 기준과 전체 PR gate를 생략하지 않는다.
+
+
+### 8ae Fast가 새로 노출한 final evidence condition 계약
+
+[Fast40163930502/job121081003864](https://github.com/bin9208/openpilot-rust/actions/runs/40163930502/job/121081003864),
+source8ae95f733의 ci_artifact_list가 새 resolver에서 기존 native ARM policy의 양성 검사를 먼저
+실행하다 `native ARM stage condition changed: Preserve bounded final binaries and their identities`로
+실패했다. 실제 radard artifact 보존 step은 원래 trusted AND always인데 validator의 기본trusted-only
+분류가 잘못됐다. 기존 PR593에서는 더 앞선 ci_disk failure로 policy target 전체에 미도달했다.
+
+수정은 이 정확 stage명 하나의 expected만 기존 TRUSTED_ALWAYS 상수로 연결한다. 다른 기능stage의
+source 조건은 그대로이며 WF 실행 body/조건을 변경하지 않는다. 기존 실제 전체callee 양성은 유지하고
+조건삭제/trusted-only/always-only/false/success-only5개를 거부하는 새 회귀1개를 추가했다.
+원래 failures에서도 증거를 남기는 동작과 fork 거부를 모두 요구한다. 기능과 Fast 전체 수용은
+다음 정확 source Actions에서 판정하며 숫자558/37 또는strict 원문 기준을 낮추지 않는다.

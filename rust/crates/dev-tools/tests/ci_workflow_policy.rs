@@ -2828,3 +2828,42 @@ fn native_arm_lfs_main_and_candidate_contexts_stay_exact() {
     env.insert("GITHUB_REF".into(), "refs/heads/dev".into());
     assert!(!run_shell(&script, &env).unwrap().success());
 }
+
+#[test]
+fn native_arm_final_binary_evidence_requires_exact_trusted_always_condition() {
+    use openpilot_dev_tools::ci_policy::{
+        validate_native_arm_reuse, TRUSTED_ALWAYS, TRUSTED_SOURCE,
+    };
+    let (main, callee) = native_arm_reuse_inputs();
+    validate_native_arm_reuse(&main, &callee).unwrap();
+    let label = "Preserve bounded final binaries and their identities";
+    let index = callee["jobs"]["radard-runtime"]["steps"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .position(|step| step["name"] == label)
+        .unwrap();
+    assert_eq!(
+        callee["jobs"]["radard-runtime"]["steps"][index]["if"],
+        TRUSTED_ALWAYS
+    );
+    for condition in [
+        None,
+        Some(TRUSTED_SOURCE),
+        Some("${{ always() }}"),
+        Some("${{ false }}"),
+        Some("${{ success() }}"),
+    ] {
+        let mut changed = callee.clone();
+        let step = &mut changed["jobs"]["radard-runtime"]["steps"][index];
+        if let Some(condition) = condition {
+            step["if"] = condition.into();
+        } else {
+            step.as_object_mut().unwrap().remove("if");
+        }
+        assert!(
+            validate_native_arm_reuse(&main, &changed).is_err(),
+            "{condition:?}"
+        );
+    }
+}
