@@ -217,7 +217,12 @@ jobs:
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
     - name: Compare exact policies, main loops, real IPC and lifecycle
-      run: "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" runtime\n"
+      env:
+        PLANNER_IPC_CAPTURE_DIR: ${{ env.CI_JOB_TEMP }}/proof/planner-ipc-original-inputs
+        PLANNER_IPC_GROWTH_MIB: '512'
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$CI_JOB_TEMP" --growth-mib 512
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/planner_native_controller_523.sh" runtime
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
