@@ -365,6 +365,7 @@ jobs:
             rust/crates/dev-tools/src/native_logging_check/prepare_tests.rs) ;;
             rust/crates/dev-tools/src/native_logging_check/prepare.rs) ;;
             rust/crates/dev-tools/src/native_logging_check/retained.rs) ;;
+            rust/crates/dev-tools/src/native_logging_check/retained_tests.rs) ;;
             rust/crates/dev-tools/src/native_logging_check.rs) ;;
             tools/ci/logging_retained_549.sh) ;;
             tools/ci/logging_collision8_549.sh) ;;
@@ -392,11 +393,13 @@ jobs:
             rust/crates/dev-tools/tests/lagd_ci.rs) ;;
             rust/crates/model-runtime/tests/catalog.rs) ;;
             rust/tools/check_plannerd_lifecycle.py) ;;
+            rust/crates/dev-tools/tests/developer_cli_original/ssh_frozen.rs) ;;
+            docs/naver/python-rust-523-ssh-retirement.md) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
         printf '%s  %s\n' 68f0f800ef5fbb456a06986a8695a5c3aaa2cbdf86160b47826e913edd792f85 .github/workflows/carrot-route-vault-publish.yaml | sha256sum --check -
-        printf '%s  %s\n' 871d6f1d3aee3f1c4531978ef280fb33baf5d6f6d7ff1d1349290a6e0252321c .github/workflows/fast-checks.yml | sha256sum --check -
+        printf '%s  %s\n' d3351ebe22402ced48650b2fbfc6661a093cc9e9c19961517984548591c030a8 .github/workflows/fast-checks.yml | sha256sum --check -
         printf '%s  %s\n' ada137e1a1bbe957903a930c49dc5496f5d685193b8d09970accd90f632c2a0c .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
         printf '%s  %s\n' e7718884de7e2b3f25a31d7c1fdf23f11f1a1ece82c4f86d1e84e6a9673d6388 .github/workflows/python-rust-523-capacity.yml | sha256sum --check -
         printf '%s  %s\n' 634559405e03be79cf66dfcf888bfc28a0b27a51e92b5335013dfe1b16836f59 .github/workflows/python-rust-523-model.yml | sha256sum --check -
@@ -412,7 +415,7 @@ jobs:
         printf '%s  %s\n' edc309fad27015251cdad285f7bbc62c4e647c3ca2db772b55e0a5d45bffc913 rust/crates/dev-tools/tests/updated_daemon_check.rs | sha256sum --check -
         printf '%s  %s\n' 9f12d13a1c29df1787aeb32a52f77e215b263c6a1b7026241146223cfc7822a7 rust/crates/dev-tools/tests/lagd_ci.rs | sha256sum --check -
         printf '%s  %s\n' 45de77eb9d26aeb65fc01e6dfad59bf21583281510e92221c7f24b0de30cb662 rust/crates/model-runtime/tests/catalog.rs | sha256sum --check -
-        printf '%s  %s\n' 0e15f738edd830f153ab8f63acdb33140ddf5a8165a4a6e557f2ab20fb785f68 rust/tools/check_plannerd_lifecycle.py | sha256sum --check -
+        printf '%s  %s\n' 17a012f7fa5675a2826b2ed6a5d1cbc5b2ff95c4a8bdcd7428b0caa1950c1697 rust/tools/check_plannerd_lifecycle.py | sha256sum --check -
         test ! -e openpilot/tools/lib/sanitizer.py && test ! -L openpilot/tools/lib/sanitizer.py
         printf '%s  %s\n' a1db3f1726cba01dfcb50efd8d13536de6ff9c47d5244346019010bf7be243a8 rust/crates/dev-tools/Cargo.toml | sha256sum --check -
         printf '%s  %s\n' a2e53b5164624f1946ca40fe188915493329dd25fe7abe37a9f7958dcf56adaa rust/crates/dev-tools/src/argparse_scan.rs | sha256sum --check -
@@ -429,9 +432,10 @@ jobs:
         printf '%s  %s\n' 1227b87bdfba7e0ea03d2542766133f75925200bfd0fb7f1eea7f121738294f7 rust/crates/dev-tools/tests/argparse_scan.rs | sha256sum --check -
         printf '%s  %s\n' 823178de2e6b3587e039aa9ea9267a0cfb99e7c355fd6dabbdb2790b4bfd84a3 rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
         printf '%s  %s\n' d8034f578df45c9c68b889eb83c7fb6ec85c3e1cd6d109a36d6e5ecebde189f6 rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs | sha256sum --check -
-        printf '%s  %s\n' 31b6727663dd632ca715d305558daace36bbab7a40fb75f57eaae048a35ff80a rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
+        printf '%s  %s\n' 5ca14d7fca139896fe3e034ac69547571da32311fd26fddf621bfff5fd7ea321 rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
         printf '%s  %s\n' 9e621eff405a28331789a89ef00b6bb66449a6a6a73fe3b0cabce920777d5e6e rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
-        printf '%s  %s\n' 86884528b67fab80757b46b8b0bdca6b9b593c6446933adc3ec628d7cff12c58 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
+        printf '%s  %s\n' 4f75a8815b2f07ed28b3a4b40a870ec7a6e5e84373f12f27280b7d4a9e5df728 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
+        printf '%s  %s\n' 513c97916187d5ab5b7d6868faf2073bd89bb71807f549b7a00b2f3ce2a2adc9 rust/crates/dev-tools/tests/developer_cli_original/ssh_frozen.rs | sha256sum --check -
         printf '%s  %s\n' 7ff3b5e2ca762aa2c10f0fcf6c0e915f286143e51cde7ce2e1898ec1a1cb8958 rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/car-copy-float-bits.original.json | sha256sum --check -
         printf '%s  %s\n' 8914183a7d663e5d3dd066c15450e041623d2f0e8cb5dfa70111f34c50a1eda7 rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/filter-order-laziness.original.json | sha256sum --check -
         printf '%s  %s\n' 1553bbccfaf9d20074eac1948a1f4038c31277534bdace844a77e6269d9d2924 rust/crates/dev-tools/tests/fixtures/route-sanitizer-original/malformed-boundaries.original.json | sha256sum --check -
@@ -511,7 +515,7 @@ jobs:
         printf '%s  %s\n' 8009a7377c553b8923640ce8c7b6232e0229978266f112c405f0d759bbf54620 tools/ci/paramsd_gate_523.py | sha256sum --check -
         printf '%s  %s\n' 9c455a724c5f4fcee7616197fbb057e2eda737c4810be0f758cf0a881538f58c rust/crates/dev-tools/src/controlsd_fixture_generate/audit.rs | sha256sum --check -
         printf '%s  %s\n' f32b7bffaf241cd6a28b223c029983d82c1f3b2fde26f9eee7c25719bfcb3fc6 .github/workflows/python-rust-523-controls-normal.yml | sha256sum --check -
-        printf '%s  %s\n' c4b8b278fed83c80c425c569c68c53516f3c1f1610ca9f1b65a234ec3dabd08f .github/workflows/python-rust-523-setup-keys.yml | sha256sum --check -
+        printf '%s  %s\n' c2058b9778ce24b0d04d4bec70e5f4f0e366a5bbe9f75ef7ef9cd5cb80cc83b0 .github/workflows/python-rust-523-setup-keys.yml | sha256sum --check -
         printf '%s  %s\n' 11fae1ee5c7a17594c023f5adc114dc6236e1bd078749366d0fa2f0bf3958c62 rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs | sha256sum --check -
         printf '%s  %s\n' b8d26df87779b7220168833e362466f05713c6b170a9d048d670444acefb693a rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md | sha256sum --check -
         printf '%s  %s\n' 444a47ecba9579d4042f26dd89f8438908b56d244a0f2c98c8b0dd3e1ef3a6ef rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json | sha256sum --check -
@@ -546,6 +550,7 @@ jobs:
         printf '%s  %s\n' 4bdf9bb3ca65215254ad2c241e13c97b95ab0cee0d6b2ff2e283e3995ac7f7fc tools/ci/logging_retained_549.sh | sha256sum --check -
         printf '%s  %s\n' 33a29b54b7db56a11f8d4e40c1ab707800efdb5381c50a2273e852ba3e56ec8d rust/crates/dev-tools/src/native_logging_check.rs | sha256sum --check -
         printf '%s  %s\n' 7799202c6ea4fd2ece3676b8004528274cd6487923890bcba92325010e36d2b3 rust/crates/dev-tools/src/native_logging_check/retained.rs | sha256sum --check -
+        printf '%s  %s\n' 0441581301b9bfae6e1442b4ba59d308edc8071fb7d2381486aaac873b1445b5 rust/crates/dev-tools/src/native_logging_check/retained_tests.rs | sha256sum --check -
         printf '%s  %s\n' 0a294710d272b90f8741036313dc33b917dd66179492296670fc570d38125214 rust/crates/dev-tools/src/native_logging_check/prepare.rs | sha256sum --check -
         printf '%s  %s\n' 0842c3fad82891a4c39036f7c3a36b4c4f6def63d99ccc6f48bfc8389811ec6b rust/crates/dev-tools/src/native_logging_check/prepare_tests.rs | sha256sum --check -
         printf '%s  %s\n' ba6fdf16dcf63c9a4a7516218545e30b9f010b437edd0c5bbfb12ceb05337b11 rust/crates/dev-tools/tests/native_logging_lifecycle/retained.rs | sha256sum --check -
@@ -558,8 +563,8 @@ jobs:
         printf '%s  %s\n' f2c1ae5832b5b9735c202a28eba3797e6c9f8af854250bd9d9b4a72923a9eb47 rust/crates/dev-tools/src/native_logging_check/trace.rs | sha256sum --check -
         printf '%s  %s\n' 9ccd6294f5036c556c986c02f9c2d0f47115c15dd316d7b614a88cdeb40b6233 rust/crates/dev-tools/src/native_logging_check/trace_tests.rs | sha256sum --check -
         printf '%s  %s\n' 5019593b2b61ca692dbf52ec7136901d2157961e8972050a774326196554c8a1 rust/crates/dev-tools/src/native_logging_check/trace_summary_tests.rs | sha256sum --check -
-        printf '%s  %s\n' 53ce8d3602a62789ba867e140772d586f74389d712cc14b2d6abe09a3f424416 tools/ci/logging_collision8_549.sh | sha256sum --check -
-        printf '%s  %s\n' 9a5aa11f95ab696ff4b74676f0b14ccfbb24d55d094e7ec474ca89a405bc9e05 .github/workflows/python-rust-523-logging-collision8.yml | sha256sum --check -
+        printf '%s  %s\n' 09a8c5959625d54389d52efa7b58f02c20a1a82103f4e21b20aa88fbf57c9f7c tools/ci/logging_collision8_549.sh | sha256sum --check -
+        printf '%s  %s\n' 8f3aafefe4c891ead6245fd3190114013209324844ca0374bd1158d04b3f9d91 .github/workflows/python-rust-523-logging-collision8.yml | sha256sum --check -
         printf '%s  %s\n' 2dc5533c4a03bdd91fbbaf04c2b442e6b72ca3895b797eef264574e4a2730fa7 tools/ci/setup_source_absence_523.sh | sha256sum --check -
         printf '%s  %s\n' 3f9491a0cd690aca1f8e3749e7caa7fa1e0c48daf1b10e8bb50d4c362a3d82e3 rust/crates/controlsd/examples/controlsd_trace.rs | sha256sum --check -
         test ! -e tools/carrot_route_vault/build_bundle.py && test ! -L tools/carrot_route_vault/build_bundle.py
@@ -643,7 +648,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='f46f208c0273d4a678dec98ebecd574063b54e939ca3355740ce3b15723330ba', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='2a05a74b9bc4c5d4c4793ac11259d1c4f02b2fcaa599ebd03a3f92416e80c84a', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile
@@ -671,7 +676,7 @@ jobs:
         COHORTS
         printf '%s\n' \
           '41cf Paramsd boundaries/op help/callback/API와 40efe 및 이전 terminal/HTTP/Github/camera/controller/catalog 발행 ARM 결과를 원래 source/artifact 그대로 재사용한다.' \
-          'auth parser/SSH lower 변경은 이 불변 범위 밖이다. a134 runtime-qualified auth/setup 및 fb1228 parser는 별도 admission, alias26/Unicode15/SSH27/Clippy는 fresh 단계다.' \
+          'auth parser/SSH lower 변경은 이 불변 범위 밖이다. SSH39/setup21은 고정 원문과 current native verifier로 별도 재생하며 Unicode15/SSH27/Clippy는 fresh 단계다.' \
           '642d exact overlay는 CFI/SAN/Bundle 원본 삭제나 cached/history/ISA 기능 성공을 수용하지 않는다. CFI d2c18(40097058000), SAN fb1228(40092771424), Bundle frozen/current CLI 및 history/ISA는 각 별도 gate다.' \
           '추가 batch의 reclaim은 e719 원문 SHA, controls 두 파일은 지정 SHA, Bundle harness는 tempdir chmod0700 수정 SHA에만 묶는다. controls와 수정 후 Bundle은 pending이며 새 Bundle/모델 PASS를 주장하지 않는다.' \
           '과거 ARM ELF를 current binary로 재표기하지 않는다. 현재 driver cached-source10 또는 모델/기기 전체 수용 증거가 아니며 cached native 기본 disabled 정책과 guarded-add8은 불변이다.' \
@@ -726,16 +731,53 @@ jobs:
         with Path(sys.argv[2]).open('x') as out:
             json.dump({'historical':historical,'current':current,'path_mapping':mapping},out,indent=2);out.write('\n')
         ORACLE_ORIGIN
-        printf '%s\n' 'a134 unchanged auth3/login8/setup21/scanner2 accepted; SSH27 is fresh after lower behavior changes; parser13 remained unreached. Fresh: alias26 plus full scalar/context Unicode15 comparisons and affected SSH27; parser13 reuse is admitted separately. Strict Clippy includes changed harness.' > "$CI_JOB_TEMP/proof/runtime-qualified-reuse.txt"
-    - name: Validate original SSH aliases and Unicode15 context regressions
+        printf '%s\n' 'a134 auth3/login8/setup21/scanner2는 원래 source로 재사용한다. 현재 SSH39/setup21과 importer 음성7은 고정 raw 원문을 같은 verifier로 별도 재생한다. Unicode15 scalar/context와 SSH27, 변경 harness의 strict Clippy는 별도로 실행한다. 원본 부재/실제 SSH entry는 미수용이다.' > "$CI_JOB_TEMP/proof/runtime-qualified-reuse.txt"
+    - name: Stage pinned SSH original artifacts without extracting source
+      id: ssh_frozen
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        umask 077
+        context="$CI_JOB_TEMP/proof/ssh-frozen-inputs"
+        test ! -e "$context" && test ! -L "$context"
+        available=$(df --output=avail -B1 "$CI_JOB_TEMP/proof" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2 || n!=1) exit 1;print v}')
+        required=$((32*1024*1024+512*1024*1024))
+        ((available >= required))
+        printf 'available=%s\nplanned_growth=33554432\nreserve=536870912\nmeasured_peak_guarantee=false\n' "$available" > "$CI_JOB_TEMP/proof/ssh-frozen-admission.txt"
+        mkdir -m 700 "$context"
+        for artifact in 12563952000 12560030996; do
+          (ulimit -f 16; gh api "repos/bin9208/openpilot-rust/actions/artifacts/$artifact" > "$context/artifact-$artifact.json")
+          test "$(stat -c %s "$context/artifact-$artifact.json")" -le 16384
+          case "$artifact" in
+            12563952000) packed=15834369 ;;
+            12560030996) packed=7775163 ;;
+            *) exit 1 ;;
+          esac
+          (ulimit -f "$(((packed+1023)/1024))"; gh api "repos/bin9208/openpilot-rust/actions/artifacts/$artifact/zip" > "$context/artifact-$artifact.zip")
+          test "$(stat -c %s "$context/artifact-$artifact.zip")" -eq "$packed"
+        done
+        test "$(stat -c %s "$context/artifact-12563952000.zip")" -eq 15834369
+        test "$(stat -c %s "$context/artifact-12560030996.zip")" -eq 7775163
+        printf '%s  %s\n' f32e796ddd7e8e4b5ff9c50d0af1bddefe460a6d4b5b489d975e449483a4ef6c "$context/artifact-12563952000.zip" | sha256sum --check --strict --quiet -
+        printf '%s  %s\n' 21c33f18576748c77664d0267b4c51edca8aedf0f8b3c345e8e91d477d739878 "$context/artifact-12560030996.zip" | sha256sum --check --strict --quiet -
+        allocated=$(du -sx --block-size=1 "$context" | cut -f1)
+        ((allocated <= 32*1024*1024))
+        find "$context" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/ssh-frozen-inputs.before.sha256"
+        find -P "$context" -printf '%P\t%y\t%D\t%i\t%m\t%U\t%G\t%n\t%s\t%T@\t%C@\n' | sort > "$CI_JOB_TEMP/proof/ssh-frozen-roster.before.tsv"
+        printf 'DEVELOPER_SSH_FROZEN_DIR=%s\n' "$context" >> "$GITHUB_ENV"
+    - name: Validate frozen SSH39 and setup21 with importer controls
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       run: |
         set -euo pipefail
-        export no_proxy="$NO_PROXY" DEVELOPER_CLI_ORACLE_PYTHON="$CI_JOB_TEMP/venv/bin/python"
-        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_cli_original ssh_cli_original_aliases_prefix_unicode_duplicate_order_and_exec -- --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/ssh-alias-original.log"
-        grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/ssh-alias-original.log"
+        export no_proxy="$NO_PROXY"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_cli_original -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/ssh-frozen-regression.log"
+        test "$(grep -Ec '^test result: ok\. 10 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/ssh-frozen-regression.log")" -eq 1
     - name: Admit unchanged successful fb1228 thirteen-case parser comparison
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
@@ -744,8 +786,7 @@ jobs:
         GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
-        prior="$CI_JOB_TEMP/proof/prior-fb1228-focused.zip"
-        gh api repos/bin9208/openpilot-rust/actions/artifacts/12560030996/zip > "$prior"
+        prior="$DEVELOPER_SSH_FROZEN_DIR/artifact-12560030996.zip"
         printf '21c33f18576748c77664d0267b4c51edca8aedf0f8b3c345e8e91d477d739878  %s\n' "$prior" | sha256sum --check -
         unzip -t "$prior" > "$CI_JOB_TEMP/proof/fb1228-crc.txt"
         test "$(unzip -p "$prior" SOURCE_COMMIT)" = fb1228f02e0546b6fe7a9d8d0eec098e650a86bd
@@ -814,6 +855,16 @@ jobs:
           test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$log")" -eq 1
           test "$(grep -Fxc "test $case ... ok" "$log")" -eq 1
         done
+    - name: Verify pinned SSH inputs after all attempted regressions
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DEVELOPER_SSH_FROZEN_DIR != '') }}
+      run: |
+        set -euo pipefail
+        find "$DEVELOPER_SSH_FROZEN_DIR" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/ssh-frozen-inputs.after.sha256"
+        find -P "$DEVELOPER_SSH_FROZEN_DIR" -printf '%P\t%y\t%D\t%i\t%m\t%U\t%G\t%n\t%s\t%T@\t%C@\n' | sort > "$CI_JOB_TEMP/proof/ssh-frozen-roster.after.tsv"
+        cmp "$CI_JOB_TEMP/proof/ssh-frozen-inputs.before.sha256" "$CI_JOB_TEMP/proof/ssh-frozen-inputs.after.sha256"
+        cmp "$CI_JOB_TEMP/proof/ssh-frozen-roster.before.tsv" "$CI_JOB_TEMP/proof/ssh-frozen-roster.after.tsv"
     - name: Validate strict auth and SSH Clippy
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash

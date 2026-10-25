@@ -1,8 +1,10 @@
-//! SSH는 fresh 원본, setup21은 고정 raw 원본을 같은 semantic verifier로 비교한다.
-//! 기능 실행은 Actions 전용이며 setup21은 실제 네트워크 CLI 수용이 아니다.
+//! SSH39와 setup21의 고정 원문을 같은 기존 semantic verifier로 비교한다.
+//! 기능 실행은 Actions 전용이며 실제 네트워크/SSH CLI 수용은 아니다.
 #![cfg(feature = "developer-ssh-native")]
 #[path = "developer_cli_original/setup_frozen.rs"]
 mod setup_frozen;
+#[path = "developer_cli_original/ssh_frozen.rs"]
+mod ssh_frozen;
 
 use openpilot_dev_tools::developer_ssh::{
     parse_options, prepare, setup_keys, setup_keys_with_decoder, Get, KeyParams, RequestsText,
@@ -214,176 +216,23 @@ fn candidate(input: &Value, observe_decode: bool) -> Value {
     capture.value()
 }
 
-const ORIGINAL: &str = r#"
-import ast, contextlib, hashlib, io, json, os, sys
-from types import ModuleType
-import requests as real_requests
-assert sys.version_info[:3] == (3, 12, 15), 'the prepared Python runtime must stay pinned after env_clear'
-root, cases = sys.argv[1], json.loads(sys.argv[2])
-paths = {'ssh':'tools/scripts/ssh.py', 'setup':'tools/scripts/setup_ssh_keys.py'}
-source_bytes = {tool: open(os.path.join(root, path), 'rb').read() for tool, path in paths.items()
-                if any(case['tool'] == tool for case in cases)}
-sources = {tool: data.decode('utf-8') for tool, data in source_bytes.items()}
-metadata = {'python':sys.version, 'requests':real_requests.__version__,
-            'sources':{paths[k]:hashlib.sha256(v).hexdigest() for k,v in source_bytes.items()}}
-native_paths = ['rust/crates/dev-tools/src/developer_ssh.rs',
-                'rust/crates/dev-tools/src/developer_ssh/unicode_lower15.rs',
-                'rust/crates/dev-tools/src/developer_ssh/unicode_lower15.provenance.json',
-                'rust/crates/dev-tools/src/developer_ssh/unicode_lower15.LICENSE-UNICODE-V3.txt',
-                'rust/crates/dev-tools/src/developer_ssh/unicode_lower15_original.rs']
-metadata['native_sources'] = {path:hashlib.sha256(open(os.path.join(root,path),'rb').read()).hexdigest()
-                              for path in native_paths}
-class ExecIntercept(BaseException): pass
-rows = []
-for case in cases:
-    events, writes, execution = [], [], None
-    api = ModuleType('openpilot.tools.lib.api')
-    config = ModuleType('openpilot.tools.lib.auth_config')
-    basedir = ModuleType('openpilot.common.basedir')
-    params_module = ModuleType('openpilot.common.params')
-    requests_module = ModuleType('requests')
-    basedir.BASEDIR = case.get('source_root')
-    def get_token():
-        events.append({'kind':'get_token'})
-        return case['token']
-    class CommaApi:
-        def __init__(self, token=None): self.token = token
-        def get(self, endpoint, **kwargs):
-            assert endpoint == 'v1/me/devices' and not kwargs
-            authorization = 'JWT ' + self.token if self.token else None
-            events.append(dict(kind='http', url=case['api_host'] + '/' + endpoint,
-                               timeout=None, authorization=authorization))
-            if case['fail'] == 'http': raise OSError('synthetic HTTP failure')
-            return case['devices']
-    class Params:
-        def __init__(self):
-            events.append({'kind':'Params'})
-            if case['fail'] == 'Params': raise OSError('synthetic Params failure')
-        def put_bool(self, key, value): self.put(key, b'1' if value else b'0')
-        def put(self, key, value):
-            data = value.encode('utf-8') if isinstance(value, str) else value
-            effect = dict(key=key, bytes=list(data))
-            events.append(dict(kind='put', **effect))
-            if case['fail'] == 'put:' + key: raise OSError('synthetic write failure')
-            writes.append(effect)
-    class InertResponse(real_requests.Response):
-        @property
-        def text(self):
-            events.append({'kind':'decode'})
-            if case['fail'] == 'decode': raise LookupError('synthetic decoder failure')
-            return super().text
-    def get(url, timeout):
-        events.append(dict(kind='http', url=url, timeout=timeout, authorization=None))
-        if case['fail'] == 'http': raise OSError('synthetic HTTP failure')
-        response = InertResponse()
-        response.status_code = case['status']
-        response._content = bytes(case['body'])
-        if case['content_type']: response.headers['content-type'] = case['content_type']
-        response.encoding = real_requests.utils.get_encoding_from_headers(response.headers)
-        return response
-    def execvp(file, argv):
-        global execution
-        execution = dict(file=file, argv=list(argv))
-        events.append(dict(kind='exec', **execution))
-        raise ExecIntercept()
-    api.CommaApi, config.get_token = CommaApi, get_token
-    params_module.Params, requests_module.get = Params, get
-    for name, module in [('openpilot.tools.lib.api',api), ('openpilot.tools.lib.auth_config',config),
-                         ('openpilot.common.basedir',basedir), ('openpilot.common.params',params_module),
-                         ('requests',requests_module)]: sys.modules[name] = module
-    out, err = io.StringIO(), io.StringIO()
-    code, exception = 0, None
-    old_execvp = os.execvp
-    os.execvp = execvp
-    sys.argv = [os.path.basename(paths[case['tool']])] + case['args']
-    # Site's exit helper would close stdin. Model only SystemExit, never real stdin.
-    namespace = {'__name__':'__main__', '__file__':paths[case['tool']], 'exit':sys.exit}
-    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-        try: exec(compile(ast.parse(sources[case['tool']]), paths[case['tool']], 'exec'), namespace)
-        except ExecIntercept: code = None
-        except SystemExit as e: code = e.code
-        except Exception as e: code, exception = None, dict(type=type(e).__name__, message=str(e))
-        finally: os.execvp = old_execvp
-    rows.append(dict(stdout=out.getvalue(), stderr=err.getvalue(), exit_code=code,
-                     exception=exception, effects=events, writes=writes, exec=execution))
-print(json.dumps(dict(metadata=metadata, outcomes=rows)))
-"#;
-
-fn oracle(cases: &[Case]) -> Value {
-    assert!(!cases.is_empty() && cases.len() < 100);
-    let input = cases.iter().map(|case| &case.input).collect::<Vec<_>>();
-    let interpreter = std::env::var_os("DEVELOPER_CLI_ORACLE_PYTHON")
-        .or_else(|| std::env::var_os("AUTH_CLI_ORACLE_PYTHON"))
-        .expect("prepared absolute developer CLI interpreter required");
-    assert!(Path::new(&interpreter).is_absolute());
-    let temp = tempfile::tempdir().unwrap();
-    let source_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let output = std::process::Command::new(interpreter)
-        // requests.Response is the independent default-decoding oracle. Use the
-        // parent's prepared Python/requests environment; never call requests.get.
-        .args(["-I", "-B", "-X"])
-        .arg(format!(
-            "pycache_prefix={}/fresh-pycache",
-            temp.path().display()
-        ))
-        .args(["-c", ORIGINAL])
-        .arg(source_root)
-        .arg(serde_json::to_string(&input).unwrap())
-        .stdin(std::process::Stdio::null())
-        .env_clear()
-        .env(
-            "LD_LIBRARY_PATH",
-            std::env::var_os("OPENPILOT_ORACLE_PYTHON_LIBRARY_PATH")
-                .expect("prepared Python runtime library directory required"),
-        )
-        .env("COLUMNS", "80")
-        .current_dir(temp.path())
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    serde_json::from_slice(&output.stdout).unwrap()
-}
 fn compare(group: &str, cases: &[Case]) {
-    if group == "setup-effects" {
+    let (raw, envelope) = if group == "setup-effects" {
         let envelope = setup_frozen::admit(group, cases).expect("fixed setup original admission");
-        // 21개 authored input/criteria와 원문 pin을 확인한 뒤 기존 verifier를 그대로 쓴다.
-        // 원문 bytes를 출력하며 과거 metadata에 현재 native_sources를 채우지 않는다.
-        println!(
-            "DEVELOPER_CLI_FROZEN_JSON {}",
-            std::str::from_utf8(setup_frozen::RAW).unwrap()
-        );
-        verify_envelope(&envelope);
-        return;
-    }
-    let original = oracle(cases);
-    let outcomes = original["outcomes"].as_array().unwrap();
-    assert_eq!(outcomes.len(), cases.len());
-    let records = cases
-        .iter()
-        .zip(outcomes)
-        .map(|(case, original)| {
-            json!({
-            "input":case.input, "criteria":case.criteria, "expected_original":original,
-            })
-        })
-        .collect::<Vec<_>>();
-    let envelope = json!({"schema":"openpilot.developer-cli-original.v1", "group":group,
-        "metadata":original["metadata"], "records":records});
-    // --nocapture in Actions preserves the complete source-independent JSON shape.
-    // No fixture is generated/frozen locally and no output path is implicitly written.
+        (setup_frozen::RAW.to_vec(), envelope)
+    } else {
+        ssh_frozen::admit(group, cases).expect("fixed SSH original admission")
+    };
+    // 원문 bytes와 과거 metadata를 그대로 보존한다. 새 expected를 생성하지 않는다.
     println!(
-        "DEVELOPER_CLI_ORIGINAL_JSON {}",
-        serde_json::to_string(&envelope).unwrap()
+        "DEVELOPER_CLI_FROZEN_JSON {}",
+        std::str::from_utf8(&raw).unwrap()
     );
     verify_envelope(&envelope);
 }
 
 // This checker consumes only JSON expectations, with no Python/source dependency.
-// SSH 두 그룹의 fresh 원본과 setup21의 고정 원문 모두 같은 기존 criteria를 쓴다.
+// SSH 두 그룹과 setup21의 고정 원문 모두 같은 기존 criteria를 쓴다.
 fn verify_envelope(envelope: &Value) {
     assert_eq!(envelope["schema"], "openpilot.developer-cli-original.v1");
     let (expected_count, tool) = match envelope["group"].as_str().unwrap() {

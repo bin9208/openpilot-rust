@@ -20,7 +20,8 @@ def main() -> None:
   args.python = args.python.absolute()
   for name in ["binary", "artifact", "binding", "source_native", "output"]:
     setattr(args, name, getattr(args, name).resolve())
-  assert shutil.disk_usage(args.output.parent).free >= 25 * 1024**3 + 128 * 1024**2
+  # #558: 고정25GiB floor 없이 기존 operation 증가량 추정128MiB로 판단한다.
+  assert shutil.disk_usage(args.output.parent).free >= 128 * 1024**2
   args.output.mkdir(parents=True, exist_ok=False)
   cases = [Case(f"wait-{state}-{name}", "wait", value, state) for state in ["missing", "directory", "empty"]
            for name, value in [("sigint", signal.SIGINT), ("sigterm", signal.SIGTERM)]]

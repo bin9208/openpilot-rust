@@ -272,6 +272,7 @@ jobs:
           cold_parent=$BASHPID
           # 이 background PID는 stderr 수집기뿐이다. tracer는 기존 foreground/PGID를 유지한다.
           # tee에만 512MiB/file 상한을 적용하며 overflow/수집기 실패도 단계 실패다.
+          # --debug 증가량은 미실측이다. 같은 상한으로 관측하며 unknown 거부는 유지한다.
           exec {cold_stderr_fd}> >(
             ulimit -f 524288 || exit 1
             IFS= read -r cold_row < "/proc/$BASHPID/stat" || exit 1
@@ -292,7 +293,7 @@ jobs:
             printf '%s\n' "$cold_stat" > "$cold_proof/cold-tracer.start.stat" || exit 1
             printf 'pid=%s\nstart_ticks=%s\nppid=%s\npgrp=%s\nsession=%s\nuid=%s\neuid=%s\nidentity_phase=before_exec_same_pid\n' "$cold_pid" "${cold_fields[19]}" "${cold_fields[1]}" "${cold_fields[2]}" "${cold_fields[3]}" "$UID" "$EUID" > "$cold_proof/cold-tracer.identity" || exit 1
             OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" exec \
-              /usr/bin/strace --seccomp-bpf -f -qq -s 65535 -e trace=execve,execveat -o "$CI_JOB_TEMP/proof/prepared-cold-bootstrap.exec" \
+              /usr/bin/strace --debug --seccomp-bpf -f -qq -s 65535 -e trace=execve,execveat -o "$CI_JOB_TEMP/proof/prepared-cold-bootstrap.exec" \
               "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
           ) 2>&"$cold_stderr_fd" || cold_status=$?
           cold_records_status=0
@@ -306,7 +307,11 @@ jobs:
           cold_stderr_reaped=false
           cold_collect_stderr 100 20 || cold_stderr_status=$?
           cold_ended=$(date -u +'%Y-%m-%dT%H:%M:%S.%NZ') || cold_records_status=1
-          printf 'started_utc=%s\nended_utc=%s\nshell_wait_status=%s\nstderr_collector_pid=%s\nstderr_wait_status=%s\nstderr_collection_status=%s\nstderr_state=%s\nstderr_timed_out=%s\nstderr_reaped=%s\nseccomp_bpf_requested=true\nseccomp_bpf_activation=unproven\n' "$cold_started" "$cold_ended" "$cold_status" "$cold_stderr_pid" "$cold_stderr_wait_status" "$cold_stderr_status" "$cold_stderr_state" "$cold_stderr_timed_out" "$cold_stderr_reaped" > "$cold_proof/cold-tracer.result" || cold_records_status=1
+          if ! cold_stderr_bytes=$(stat -c '%s' -- "$cold_proof/prepared-cold-bootstrap.stderr"); then
+            cold_stderr_bytes=unavailable
+            cold_records_status=1
+          fi
+          printf 'started_utc=%s\nended_utc=%s\nshell_wait_status=%s\nstderr_collector_pid=%s\nstderr_wait_status=%s\nstderr_collection_status=%s\nstderr_state=%s\nstderr_timed_out=%s\nstderr_reaped=%s\nstrace_debug_requested=true\ndiagnostic_only=true\nstderr_file_limit_bytes=536870912\nstderr_bytes_observed=%s\nseccomp_bpf_requested=true\nseccomp_bpf_activation=unproven\n' "$cold_started" "$cold_ended" "$cold_status" "$cold_stderr_pid" "$cold_stderr_wait_status" "$cold_stderr_status" "$cold_stderr_state" "$cold_stderr_timed_out" "$cold_stderr_reaped" "$cold_stderr_bytes" > "$cold_proof/cold-tracer.result" || cold_records_status=1
           cold_provider_status=0
           cold_provider after || cold_provider_status=$?
           for cold_record in metadata sha256 version version.stderr; do

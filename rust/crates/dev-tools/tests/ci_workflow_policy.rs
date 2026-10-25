@@ -487,7 +487,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         }
         let disk_guard = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048";
         let disk_guard = if worker == "native" {
-            format!("OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" exec /usr/bin/strace --seccomp-bpf -f -qq -s 65535 -e trace=execve,execveat -o \"$CI_JOB_TEMP/proof/prepared-cold-bootstrap.exec\" {disk_guard}")
+            format!("OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" exec /usr/bin/strace --debug --seccomp-bpf -f -qq -s 65535 -e trace=execve,execveat -o \"$CI_JOB_TEMP/proof/prepared-cold-bootstrap.exec\" {disk_guard}")
         } else {
             format!("OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" {disk_guard}")
         };
@@ -604,6 +604,7 @@ fn cold_bootstrap_stderr_collection_is_owned_bounded_and_preserves_failure_evide
         .unwrap()
         .0;
     let finish = script.split_once("cold_records_status=0\n").unwrap().1;
+    assert_eq!(launch.matches("ulimit -f 524288 || exit 1").count(), 1);
     // Actions-only: reuse the real collector and finalization code. Shorten only
     // its private poll counts; no production environment override is introduced.
     assert_eq!(finish.matches("cold_collect_stderr 100 20").count(), 1);
@@ -730,11 +731,30 @@ exit "$result"
             format!("stderr_wait_status={wait_status}"),
             format!("stderr_timed_out={timed_out}"),
             format!("stderr_reaped={reaped}"),
+            "strace_debug_requested=true".into(),
+            "diagnostic_only=true".into(),
+            "stderr_file_limit_bytes=536870912".into(),
             "seccomp_bpf_activation=unproven".into(),
         ] {
             assert!(
                 receipt.lines().any(|actual| actual == line),
                 "{case}: {line}"
+            );
+        }
+        let stderr_bytes = receipt
+            .lines()
+            .find_map(|line| line.strip_prefix("stderr_bytes_observed="))
+            .unwrap()
+            .parse::<u64>()
+            .unwrap();
+        assert!(stderr_bytes <= 512 * 1024 * 1024, "{case}");
+        if reaped {
+            assert_eq!(
+                stderr_bytes,
+                fs::metadata(proof.path().join("prepared-cold-bootstrap.stderr"))
+                    .unwrap()
+                    .len(),
+                "{case}"
             );
         }
         assert_eq!(

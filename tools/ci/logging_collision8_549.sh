@@ -773,7 +773,7 @@ for spec in 'cargo-trace checker checker-build' 'cargo-trace probe probe-build' 
     all($execs[]; .exec.program.bytes!=($ref|explode) and .exec.program.bytes!=($probe|explode)) and
     (if $prefix=="reference" then
       ([$execs[]|select(.outcome=="exec_succeeded" and (.exec.argv|map(.bytes))==($cpp_command[0]|map(explode)) and
-        .exec.environment.complete==true and (.exec.environment.entries|map(.bytes)|sort)==($env[0]|map(explode)))]|length)==1
+        .exec.environment.complete==true and (.exec.environment.entries|map(.bytes)|sort)==($env[0]|map(explode)|sort))]|length)==1
       else true end)
     ' "$proof/inspect/$prefix-build.json" > "$proof/inspect/$prefix-build.check"
 done

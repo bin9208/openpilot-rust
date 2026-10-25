@@ -14,6 +14,7 @@ name: Python Rust 523 setup keys frozen21 and public missing argument
     - tools/scripts/setup_ssh_keys.py
     - tools/ci/setup_source_absence_523.sh
     - rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs
+    - rust/crates/dev-tools/tests/developer_cli_original/ssh_frozen.rs
 permissions:
   contents: read
 concurrency:
@@ -707,7 +708,9 @@ jobs:
         done
         for relative in rust/tools/run-developer-tool rust/tools/prepare-readonly-ci-rust rust/tools/check-disk-space tools/ci/setup_source_absence_523.sh rust/Cargo.toml rust/Cargo.lock rust/rust-toolchain.toml rust/crates/dev-tools/Cargo.toml rust/crates/dev-tools/src/lib.rs rust/crates/dev-tools/tests/developer_cli_original.rs rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs rust/crates/dev-tools/tests/fixtures/setup-ssh-original/setup-effects-original.json rust/crates/dev-tools/tests/fixtures/setup-ssh-original/README.md rust/crates/logging/build.rs rust/crates/logging/tests/build_watch.rs .github/workflows/python-rust-523-setup-keys.yml; do bind_file "$source/$relative"; done
         for relative in rust/crates/disk-space/Cargo.toml rust/crates/disk-space/src/*.rs; do bind_file "$source/$relative"; done
-        printf '%s  %s\n' 86884528b67fab80757b46b8b0bdca6b9b593c6446933adc3ec628d7cff12c58 "$source/rust/crates/dev-tools/tests/developer_cli_original.rs" \
+        bind_file "$source/rust/crates/dev-tools/tests/developer_cli_original/ssh_frozen.rs"
+        printf '%s  %s\n' 513c97916187d5ab5b7d6868faf2073bd89bb71807f549b7a00b2f3ce2a2adc9 "$source/rust/crates/dev-tools/tests/developer_cli_original/ssh_frozen.rs" | sha256sum --check --strict --quiet -
+        printf '%s  %s\n' 4f75a8815b2f07ed28b3a4b40a870ec7a6e5e84373f12f27280b7d4a9e5df728 "$source/rust/crates/dev-tools/tests/developer_cli_original.rs" \
           11fae1ee5c7a17594c023f5adc114dc6236e1bd078749366d0fa2f0bf3958c62 "$source/rust/crates/dev-tools/tests/developer_cli_original/setup_frozen.rs" | sha256sum --check --strict --quiet -
         phase_source controls-before
         setup_absence_controls "$job" "$proof"
