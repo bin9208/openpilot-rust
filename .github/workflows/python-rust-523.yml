@@ -509,6 +509,10 @@ jobs:
             tools/ci/prepare-readonly-arm-rust-530) ;;
             .github/workflows/python-rust-523-model-current-triplet.yml) ;;
             tools/ci/model_current_triplet_482.py) ;;
+            .github/workflows/python-rust-523-model-packet-d0.yml) ;;
+            tools/ci/model_packet_d0_482.py) ;;
+            rust/crates/dev-tools/tests/driving_daemon_retirement.rs) ;;
+            rust/crates/dev-tools/tests/driving_daemon_retirement/model_482_d0.rs) ;;
             rust/crates/model-runtime/src/cpu/diagnostic_482_tests.rs) ;;
             rust/crates/model-runtime/src/cpu.rs) ;;
             tools/ci/logging_retained_exec_policy_549.jq) ;;
@@ -766,6 +770,10 @@ jobs:
         printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa tools/ci/ssh_source_absence_523.sh | sha256sum --check -
         printf '%s  %s\n' 8146579d8cfa73efc7f9977386544f6930a325c4a09b53ba7159f17d8a5b4fe0 .github/workflows/python-rust-523-model-current-triplet.yml | sha256sum --check -
         printf '%s  %s\n' 7834eb786729e2adefec36e89d5d1073dd40ef1dfa14a2e00420e8527d03b3e5 tools/ci/model_current_triplet_482.py | sha256sum --check -
+        printf '%s  %s\n' 019ae867ec3acddc37794c0ac9e62c7d98c0577c77f26149d900b177fbd4a487 .github/workflows/python-rust-523-model-packet-d0.yml | sha256sum --check -
+        printf '%s  %s\n' fef549129c213f821a1bf44f6541f0b5d8dd096b2582751bc04259c33862533c tools/ci/model_packet_d0_482.py | sha256sum --check -
+        printf '%s  %s\n' 92bd056b8611f35a80425772d65d2d67dc842b4af397e955a641390913e99983 rust/crates/dev-tools/tests/driving_daemon_retirement.rs | sha256sum --check -
+        printf '%s  %s\n' c4be46f5b9a16ad0d80cd69c5e99d77a37a6928a5e09077ee36fb66566063599 rust/crates/dev-tools/tests/driving_daemon_retirement/model_482_d0.rs | sha256sum --check -
         printf '%s  %s\n' 799340993170dbad64db71c088a048c89bb20abd8e22e389834021c7291e6431 rust/crates/model-runtime/src/cpu/diagnostic_482_tests.rs | sha256sum --check -
         printf '%s  %s\n' 4df8b0ce31223799cd0838020776716e929b68990b9ebfc10c8070331f7e81be rust/crates/model-runtime/src/cpu.rs | sha256sum --check -
         printf '%s  %s\n' f34fba101f712e6434199b2336c8736c581b9bc4549edde32b0c9f9b5aec99e6 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check -

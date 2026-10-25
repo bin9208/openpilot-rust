@@ -812,3 +812,41 @@ census와 admission을 분리하며 기존 inspect/admit_all·host 검사와 첫
 미수용 feature를 관측했다는 이유로 자동 지원하거나 수치/기대값/CPU flag·source10/guarded8을 바꾸지 않는다.
 새 source의 issuer/catalog/request 봉인이 필요하고 옛 receipt를 다시 표기하지 않는다.
 새 동작은 source/AST/Rustfmt/diff만 확인한 Actions UNRUN이며 #482 수치/전체 모델 수용은 계속 미완료다.
+
+
+## 2026-10-25 PR1344 첫 ModelV2 packet D0 연결 — Actions UNRUN
+
+원문 PR head `bacda68cf229eae5f5f757774e943afeb287c0c8`의
+[run40173790842/job121111148638](https://github.com/bin9208/openpilot-rust/actions/runs/40173790842/job/121111148638)는
+merge source `e0e55f32161f3613bfd93bd23a18816abb159b04`에서 첫 `1344-dual` raw prediction byte 비교가 실패했다.
+D0는 이 packet의 차이를 분류하는 자료 진단이며, 미리 signed zero3으로 판정하지 않는다.
+
+- 고정 artifact12592585842 ZIP 176,747,548B/SHA `22c0e16340e756c4ba438319e26455942b4d1deb64d6e47ada03166dcf47ee66`에서
+  `driving-four-source/retirement/checkout-model/1344-dual/modelV2-output-3.bin` 19,152B/SHA
+  `5c9ad58bd983e76375378fae1e27dce6267a9529c25d5707d6413ad03704dfad`만 Cereal 입력으로 사용한다.
+  API의 head SHA는 PR head이며, 같은 ZIP의 고정 `checkout-model.cli.json` 2,509B/SHA
+  `f4047be0caa5a4d8924820309329ad3fc6066ebc471d6ce3ddb768bd666de967`가 merge source와 exit1/checker 동일성을 별도 증명한다.
+- 비교 대상은 source `e25a14386582858dae25c6daca5ced3bfb4bacab`의 기존 독립 fixture manifest
+  `afe1c795d7f609801eb4cd5a5a7748c3c996929403a3c0fa102f232f2a8d248d`에 고정된
+  `observations/1344-dual/outputs/raw-pred-0.bin` 10,304B/SHA
+  `9afb2defff4ff29e5bf70e54db32d0d531d5e2b44507c8de652ee2c0dfcb67fe`다.
+  기존 XZ blob SHA/크기, memory320MiB/expanded512MiB/regular roster1564를 검증하고 이 raw만 추출한다.
+  archived ELF/PKL/원본 프로그램은 실행하지 않는다.
+- 현재 source의 `driving_daemon_retirement` private sibling selector
+  `model_482_d0::pinned_pr1344_model_v2_raw_prediction_full_bit_census`(`--ignored --exact`)가 실제 `event::Which::ModelV2`를 decode한다.
+  EOF/union/raw 길이를 검증하고 2,576개 little-endian u32 전체를 비교한다. 서로 다른 모든 index의 두 bit값과
+  signed zero/finite/nonfinite 및 qNaN/sNaN class를 보존한다. 부동소수 연산·허용오차·정규화·index mask는 없다.
+- 전용 `python-rust-523-model-packet-d0.yml`은 Ubuntu24.04/X64 private SDK1.94, 전체 source/index/SDK 전후 봉인,
+  전체 Cargo JSONL eager unique 선택과 현재 test ELF/declared DSO FD hold를 사용한다.
+  DSO 범위는 `ldd`가 선언한 현재 test closure이며 실제 전체 runtime mapping 관측이라고 주장하지 않는다.
+  새 stdlib controller `tools/ci/model_packet_d0_482.py`는 기존 common의 FD/subreaper 도구만 exact SHA로 재사용하며
+  기존 model-current/normal helper나 생산 코드·공유 Cargo를 변경하지 않는다.
+- source2GiB/SDK3GiB/apt1GiB/build+registry8GiB/input256MiB/proof512MiB/finish512MiB에 대해 실제 FS16GiB 동시 성장 admission을 둔다.
+  controller1800초 + 독립 finalizer120초, build1200초/test60초, child file512MiB/log32MiB를 유지한다.
+  실패에서도 source/SDK/held/child 회수를 독립 시도하고 업로드 뒤 봉인·소유성 검증을 통과한 root만 정리한다.
+
+D0 성공은 decode/전체 분류 완료만 뜻한다. byte equality나 원래 모델 gate 성공을 뜻하지 않는다.
+원본·모델·native daemon 실행0, 역사 provider 입증/first producer/full128/half·sNaN5/retirement credit는 모두 false/0으로 유지한다.
+D1/D2 adapter, 같은 VM 원본·native 모델 재생 및 별도 nativefamily 장기 job은 이 변경에 포함하지 않았다.
+로컬 AST/YAML/Bash/rustfmt/diff만 검토했으며 실제 build/decoder/selector/자원 적합성은 **Actions UNRUN**이다.
+부모가 Focus/정책/원장 및 새 Python execution edge를 등록한 뒤 실제 Actions 결과로 판단한다.
