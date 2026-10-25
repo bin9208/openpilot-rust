@@ -42,3 +42,9 @@ fresh guard·whole SDK 사후 봉인은 그대로 유지한다. 기존 partial p
 CarrotMan의 `setup-python`과 기존 venv 준비 두 단계에만 별도 `python-rustup-home`/`python-cargo-home` 및 `RUSTUP_AUTO_INSTALL=0`을 전달한다. 이 override는 step 단위이며 job의 실제 SDK 홈은 바꾸지 않는다. Rustup1.29.1 원문 `Cfg::should_auto_install`은 값0일 때 자동 설치를 거부한다. 작은 probe metadata는 기존 Python 준비512MiB 및 소유 job 회수 안에 포함되며 새로운 SDK 다운로드 예산을 추가하지 않는다. 이미 관측을 얻은 printf/stat 두 줄은 제거하되 원래 SDK 세 prefix 부재 검사·공식 init/proxy 해시·whole SDK 전후 봉인은 유지한다.
 
 shared native policy는 두 Python 단계와 정확한 격리 환경을 요구한다. 기존13개 SDK escape에 setup의 SDK 홈 침범/auto-install 허용과 venv의 Cargo 홈 침범/auto-install 허용4개를 더해17개로 검증한다. 기존 ARM 원문 회귀의 x64 reference에도 정확한 step 환경을 반영한다. 수정한 main의 Carrot job과 분리 SDK workflow는 main SHA pin 단계 하나를 제외하면 전체 객체가 동일하다. 실제 fresh SDK·전체 Carrot 기능/전후 봉인의 새 GHA 수용 전에는 #530을 닫지 않는다.
+
+## 격리 적용 후 actual SDK와 공식 proxy 형태
+
+sourcef1c730b02의 [40217812565](https://github.com/bin9208/openpilot-rust/actions/runs/40217812565)는 strict fresh 검사를 통과하고 공식1.94.0 SDK를 설치·봉인했다. 이후 SDK after와 source/index after도 성공했으나 private proxy의 regular/nonsymlink 조건(line24)에서 멈춰 Carrot 기능에는 도달하지 않았다. 따라서 이전 prefix 실패와 같은 원인으로 합치지 않는다.
+
+Rustup1.29.1의 [self_update.rs787–840행](https://github.com/rust-lang/rustup/blob/1.29.1/src/cli/self_update.rs#L787-L840)은 `RUSTUP_HARDLINK_PROXIES`가 없으면 proxy를 symlink 우선으로 만들고, 있으면 hardlink를 사용한다. 기존 caller가 공식 기본 symlink 형태를 전부 거부하는 계약과 맞지 않았다. 새 후보는 private SDK 준비 호출에만 공식 `RUSTUP_HARDLINK_PROXIES=1`을 전달한다. 기존 regular/nonsymlink·소유 UID·공식 init과 전체 byte 동일성 비교를 유지하며, 생성 후 proxy를 임의 복사·재작성하거나 기존 부분 prefix를 채택하지 않는다. SDK escape는 이 설정 제거1개를 더해18개다. 새 actual proxy/기능 수용은 GHA 대기다.

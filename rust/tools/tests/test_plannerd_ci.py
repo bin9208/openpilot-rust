@@ -165,7 +165,7 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
         x64_after = named_step(reference, "Verify whole x64 SDK after every attempted CarrotMan check")
         for step, identifier, condition, digest in (
             (x64_before, "carrot530_sdk", TRUSTED_SOURCE,
-             "3ac35298662ca18b12658fead672e2b4deacbb2f72e1ec68699794e167f2502f"),
+             "2cd28c9f8f7d96a021e238aaa548937e001e0ef74e8112b21e89a85f73c51736"),
             (x64_after, "carrot530_sdk_final",
              "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) "
              + "&& (always() && steps.carrot530_sdk.outcome != 'skipped' && env.CI296_SOURCE != '') }}",

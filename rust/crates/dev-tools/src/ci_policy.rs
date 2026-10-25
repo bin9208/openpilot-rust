@@ -382,7 +382,7 @@ fn validate_carrot_x64_sdk530_steps(steps: &[Value]) -> Result<(), String> {
             first,
             "Prepare exact fresh x64 SDK before CarrotMan cold bootstrap",
             TRUSTED_SOURCE.to_owned(),
-            "3ac35298662ca18b12658fead672e2b4deacbb2f72e1ec68699794e167f2502f",
+            "2cd28c9f8f7d96a021e238aaa548937e001e0ef74e8112b21e89a85f73c51736",
         ),
         (
             last,

@@ -522,7 +522,7 @@ fn carrot_x64_cold_bootstrap_rejects_partial_sdk_proxy_and_cleanup_escapes() {
     use openpilot_dev_tools::ci_policy::validate_private_job_layout;
     let original = workflow()["jobs"]["carrot-man-runtime"].clone();
     validate_private_job_layout(&original).unwrap();
-    for mode in 0..17 {
+    for mode in 0..18 {
         let mut job = original.clone();
         let steps = job["steps"].as_array_mut().unwrap();
         let before = steps
@@ -618,6 +618,11 @@ fn carrot_x64_cold_bootstrap_rejects_partial_sdk_proxy_and_cleanup_escapes() {
                     _ => ("RUSTUP_AUTO_INSTALL", "1"),
                 };
                 step["env"][key] = value.into();
+            }
+            17 => {
+                let body = steps[before]["run"].as_str().unwrap();
+                assert_eq!(body.matches("RUSTUP_HARDLINK_PROXIES=1 ").count(), 1);
+                steps[before]["run"] = body.replace("RUSTUP_HARDLINK_PROXIES=1 ", "").into();
             }
             _ => unreachable!(),
         }

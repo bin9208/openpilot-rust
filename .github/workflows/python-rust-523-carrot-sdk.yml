@@ -195,7 +195,7 @@ jobs:
         CI296_HOST_CONTROL: '1'
       run: 'set -euo pipefail
 
-        printf ''%s  %s\n'' 4c538b38a252290a2e18ad4b523ee8a45d36b84fd293add47a8be3154685bf36 .github/workflows/rust.yml
+        printf ''%s  %s\n'' 94428002215575a248ca35202dae59db7f7d7e366b1c4ad840c30a4f64d954cf .github/workflows/rust.yml
         | sha256sum --check --strict -
 
         '
@@ -281,8 +281,8 @@ jobs:
         \ =~ ^[0-9]+$ ]]\ngib=$((1024*1024*1024))\n((used<=2*gib))\nrequired=$((2*gib-used+3*gib+8*gib+gib+gib+gib/2))\n\
         printf '{\"source_used_bytes\":%s,\"available_bytes\":%s,\"remaining_growth_bytes\":%s,\"partial_prefix_adopted\"\
         :false}\n' \"$used\" \"$free\" \"$required\" > \"$CI_JOB_TEMP/proof/carrot530-admission.json\"\n((free>=required))\n\
-        DIAG_SOURCE=\"$CI296_SOURCE\" GITHUB_PATH=\"$CI_JOB_TEMP/proof/carrot530-sdk-path.txt\" /usr/bin/bash \"\
-        $CI296_SOURCE/rust/tools/prepare-readonly-ci-rust\" before\nsdk=$CI_JOB_TEMP/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu\n\
+        RUSTUP_HARDLINK_PROXIES=1 DIAG_SOURCE=\"$CI296_SOURCE\" GITHUB_PATH=\"$CI_JOB_TEMP/proof/carrot530-sdk-path.txt\"\
+        \ /usr/bin/bash \"$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust\" before\nsdk=$CI_JOB_TEMP/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu\n\
         [[ $(cat \"$CI_JOB_TEMP/proof/carrot530-sdk-path.txt\") == \"$sdk/bin\" ]]\nfor tool in rustup cargo rustc;\
         \ do\n  path=$CARGO_HOME/bin/$tool\n  [[ -f $path && ! -L $path && $(stat -c %u \"$path\") == \"$(id -u)\"\
         \ ]]\n  cmp \"$CI_JOB_TEMP/rust-bootstrap/rustup-init\" \"$path\"\ndone\nprintf '%s\n' \"OPENPILOT_CI_PREPARED_RUST_ROOT=$sdk\"\
