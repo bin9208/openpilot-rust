@@ -2,6 +2,12 @@
 # 원본 보존 후보 실행. 전체 lifecycle/closed-trace/caller/absence 퇴역 gate는 별도다.
 set -euo pipefail
 umask 077
+# 무인자는 기존 retained recipe다. 새 mode 외의 인자는 fallback 없이 거부한다.
+case $# in
+  0) mode=retained ;;
+  1) [[ $1 == legacy-runtime2 ]] || { echo 'expected no arguments or legacy-runtime2' >&2; exit 64; }; mode=legacy-runtime2 ;;
+  *) echo 'expected no arguments or legacy-runtime2' >&2; exit 64 ;;
+esac
 test "$GITHUB_ACTIONS" = true
 test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
 test "$GITHUB_EVENT_NAME" = push
@@ -19,6 +25,7 @@ export CARGO_BUILD_JOBS=1
 unset NATIVE_LOGGING_LIFECYCLE_RESUME NATIVE_LOGGING_TEST_BUILDER NATIVE_LOGGING_TEST_REFERENCE
 source=$DIAG_SOURCE
 proof=$CI_JOB_TEMP/proof/logging
+[[ $mode != legacy-runtime2 ]] || proof=$CI_JOB_TEMP/proof/logging-legacy-runtime2
 sdk=$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin
 mkdir "$proof" "$proof/build" "$proof/trace" "$proof/bin" "$proof/lifecycle"
 phase=admission
@@ -129,6 +136,320 @@ artifact() {
     [.[] | select(.reason=="compiler-artifact" and .target.name==$name and (.target.kind|index($kind))!=null and .target.src_path==$src and .profile.test==$is_test and .executable!=null) | .executable] |
     if length==1 and (.[0]|startswith("/")) then .[0] else error("ambiguous Cargo executable") end' "$proof/build/$label.stdout"
 }
+# #549: 전회 성공 provider/JSONL의 cross-call seal. 이전 FD가 계속 열려 있다고 주장하지 않는다.
+legacy_file() {
+  local path=$1 limit=${2:-1048576} file_mode
+  [[ $path == /* && $(realpath -e -- "$path") == "$path" && -f $path && ! -L $path ]]
+  [[ $(stat -c '%u:%h' -- "$path") == "$UID:1" ]]
+  file_mode=$(stat -c %a -- "$path")
+  (( (8#$file_mode & 0022) == 0 ))
+  (( $(stat -c %s -- "$path") <= limit ))
+  hold "$path"
+}
+legacy_identity() { stat -Lc '%d:%i:%u:%f:%h:%s:%y:%z' -- "$1"; }
+legacy_role() {
+  local role=$1 selected=$2 actual=$3 log=$4 name=$5 kind=$6 src=$7 tested=$8
+  local n=-1 i
+  for i in "${!held_paths[@]}"; do [[ ${held_paths[i]} != "$actual" ]] || n=$i; done
+  ((n >= 0))
+  jq -cn --arg role "$role" --arg selected "$selected" --arg path "$actual" \
+    --arg identity "${held_ids[n]}" --arg sha "${held_hashes[n]}" --arg log "$log" \
+    --arg selected_identity "$(legacy_identity "$selected")" --arg log_sha "$(sha256sum "$log" | cut -d' ' -f1)" \
+    --arg name "$name" --arg kind "$kind" --arg src "$src" --argjson tested "$tested" \
+    '{role:$role,selected:$selected,path:$path,identity:$identity,sha256:$sha,selected_identity:$selected_identity,
+      log:$log,log_sha256:$log_sha,name:$name,kind:$kind,src:$src,tested:$tested}'
+}
+legacy_publish_reuse() {
+  local reuse=$proof/legacy-reuse.json rows=$proof/legacy-reuse.roles.jsonl log
+  phase=legacy-reuse-publication
+  for log in checker-build probe-build fixture-build; do legacy_file "$proof/build/$log.stdout" 536870912; done
+  hold "$probe_built"
+  legacy_role checker "$checker" "$checker" "$proof/build/checker-build.stdout" check-native-logging bin \
+    "$source/rust/crates/dev-tools/src/bin/check_native_logging.rs" false > "$rows"
+  legacy_role probe "$probe_built" "$probe" "$proof/build/probe-build.stdout" native_logging_probe example \
+    "$source/rust/crates/logging/examples/native_logging_probe.rs" false >> "$rows"
+  legacy_role fixture "$fixture" "$fixture" "$proof/build/fixture-build.stdout" native_logging_lifecycle test \
+    "$source/rust/crates/dev-tools/tests/native_logging_lifecycle.rs" true >> "$rows"
+  verify_held
+  (set -C; cat "$proof/held-before.tsv" > "$proof/legacy-reuse.held.tsv")
+  legacy_file "$proof/legacy-reuse.held.tsv"
+  (set -C; jq -n --arg source "$source" --arg sha "$GITHUB_SHA" --arg prior "$proof" \
+    --arg owner "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" \
+    --arg root_identity "$(stat -c '%d:%i:%f:%u:%g' "$source")" \
+    --arg proof_identity "$(stat -c '%d:%i:%f:%u:%g' "$proof")" --arg held_roster "$proof/legacy-reuse.held.tsv" \
+    --arg held_sha "$(sha256sum "$proof/legacy-reuse.held.tsv" | cut -d' ' -f1)" --slurpfile roles "$rows" \
+    '{schema:1,mode:"retained",source:$source,source_commit:$sha,prior:$prior,owner:$owner,
+      root_identity:$root_identity,proof_identity:$proof_identity,roles:$roles,held_roster:$held_roster,held_roster_sha256:$held_sha,
+      prior_fd_continuity_claimed:false,historical_reuse:false,R4_acceptance:false,retirement_credit:0}' > "$reuse")
+  legacy_file "$reuse"
+  phase=candidate-observed
+}
+legacy_tree() {
+  local root=$1 stem=$2
+  LC_ALL=C find -P "$root" -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$stem.roster"
+  LC_ALL=C find -P "$root" -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$stem.sha256"
+  LC_ALL=C find -P "$root" -printf '%D:%i\t%m:%U:%G:%n\t%s\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$stem.stable"
+  cmp "$stem.roster" "$stem.stable"
+}
+legacy_seal() {
+  local moment=$1
+  [[ $(stat -c '%d:%i:%f:%u:%g' "$source") == "$legacy_source_identity" ]]
+  [[ $(stat -c '%d:%i:%f:%u:%g' "$DIAG_SOURCE_OWNER") == "$DIAG_SOURCE_IDENTITY_FULL" ]]
+  test "$(cat "$DIAG_SOURCE_OWNER/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+  git --no-optional-locks diff --exit-code > "$proof/source-$moment.diff"
+  git --no-optional-locks diff --cached --exit-code > "$proof/index-$moment.diff"
+  test "$(git --no-optional-locks rev-parse HEAD)" = "$GITHUB_SHA"
+  git --no-optional-locks ls-files -z > "$proof/index-$moment.bin"
+  cmp "$CI_JOB_TEMP/proof/index-before.bin" "$proof/index-$moment.bin"
+  tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - \
+    --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$proof/source-$moment.sha256"
+  cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$proof/source-$moment.sha256"
+}
+legacy_sdk_seal() {
+  local moment=$1 sdk_root=${sdk%/bin}
+  [[ $CI_PREPARED_RUST_ROOT == "$sdk_root" && $CI_PREPARED_RUST_MANIFEST == "$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256" ]]
+  sha256sum --check --strict --quiet "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256"
+  sha256sum --check --strict --quiet "$CI_PREPARED_RUST_MANIFEST"
+  LC_ALL=C find "$sdk_root" -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$proof/sdk-$moment.roster.bin"
+  cmp "$CI_JOB_TEMP/proof/prepared-rust-roster.before.bin" "$proof/sdk-$moment.roster.bin"
+  if [[ $moment == after && $legacy_headers_ready == true ]]; then
+    legacy_tree /usr/include "$proof/headers-after"
+    cmp "$proof/headers-before.roster" "$proof/headers-after.roster"
+    cmp "$proof/headers-before.sha256" "$proof/headers-after.sha256"
+    legacy_tree "$legacy_gcc_root" "$proof/gcc-after"
+    cmp "$proof/gcc-before.roster" "$proof/gcc-after.roster"
+    cmp "$proof/gcc-before.sha256" "$proof/gcc-after.sha256"
+  fi
+}
+legacy_finish() {
+  local result=$? sealed=0 source_result sdk_result held_result resource_result alias_result=0 i
+  trap - EXIT
+  set +e
+  (set -e; ulimit -f 524288; legacy_seal after) > "$proof/source-final.stdout" 2> "$proof/source-final.stderr"
+  source_result=$?
+  (set -e; ulimit -f 524288; legacy_sdk_seal after) > "$proof/sdk-final.stdout" 2> "$proof/sdk-final.stderr"
+  sdk_result=$?
+  if ((source_result != 0 || sdk_result != 0)); then sealed=1; fi
+  verify_held > "$proof/held-final.stdout" 2> "$proof/held-final.stderr"
+  held_result=$?
+  for i in "${!legacy_alias_paths[@]}"; do
+    [[ $(readlink -e "${legacy_alias_paths[i]}") == "${legacy_alias_targets[i]}" && \
+      $(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "${legacy_alias_paths[i]}") == "${legacy_alias_ids[i]}" ]] || alias_result=1
+  done
+  (set -e; admit legacy-runtime2-exit 0) > "$proof/resource-final.stdout" 2> "$proof/resource-final.stderr"
+  resource_result=$?
+  if ((result == 0 && (sealed != 0 || held_result != 0 || alias_result != 0 || resource_result != 0))); then result=1; fi
+  printf '{"schema":1,"mode":"legacy-runtime2","phase":"%s","exit_code":%s,"source_sdk_final_exit_code":%s,"source_final_exit_code":%s,"sdk_final_exit_code":%s,"held_final_exit_code":%s,"provider_alias_final_exit_code":%s,"resource_final_exit_code":%s,"old27_admitted":false,"R4_acceptance":false,"retirement_credit":0}\n' \
+    "$phase" "$result" "$sealed" "$source_result" "$sdk_result" "$held_result" "$alias_result" "$resource_result" > "$proof/outcome.json"
+  exit "$result"
+}
+legacy_alias() {
+  local path=$1
+  legacy_alias_paths+=("$path"); legacy_alias_targets+=("$(readlink -e "$path")")
+  legacy_alias_ids+=("$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$path")")
+  elf "provider-${#legacy_alias_paths[@]}" "$path"
+}
+legacy_runtime2() {
+  local prior=$CI_JOB_TEMP/proof/logging receipt log role selected actual identity hash row path prior_fd
+  local name kind src tested n i cxx queried reference json11_prefix selector started ended
+  phase=legacy-reuse-admission
+  export PATH="$sdk:/usr/bin:/bin"
+  test "$CARGO_HOME" = "$CI_JOB_TEMP/cargo-home"
+  [[ $CI_JOB_TEMP == /tmp/openpilot-ci.?????? && ${CI_JOB_TEMP%/*} == /tmp ]]
+  [[ $DIAG_SOURCE_OWNER == "$DIAG_ACTIONS_WORKSPACE/.logging549-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."?????? ]]
+  for path in "$CI_JOB_TEMP" "$CI_JOB_TEMP/proof" "$DIAG_SOURCE_OWNER" "$source" "$prior"; do
+    [[ -d $path && ! -L $path && $(realpath -e "$path") == "$path" && $(stat -c '%u:%a' "$path") == "$UID:700" ]]
+  done
+  legacy_source_identity=$(stat -c '%d:%i:%f:%u:%g' "$source")
+  DIAG_SOURCE_IDENTITY_FULL=$(stat -c '%d:%i:%f:%u:%g' "$DIAG_SOURCE_OWNER")
+  [[ $(stat -c '%d:%i' "$DIAG_SOURCE_OWNER") == "$DIAG_SOURCE_IDENTITY" ]]
+  [[ $source == "$DIAG_SOURCE_OWNER/source" && $(realpath -e "$source") == "$source" && ! -L $source ]]
+  [[ $(stat -c '%u:%a' "$source") == "$UID:700" && $(stat -c '%u:%a' "$proof") == "$UID:700" ]]
+  legacy_headers_ready=false
+  declare -ga legacy_alias_paths=() legacy_alias_targets=() legacy_alias_ids=()
+  trap legacy_finish EXIT
+  unset GH_TOKEN GITHUB_TOKEN
+  runtime=(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" TMPDIR="$TMPDIR" LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC \
+    GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1 \
+    GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.preloadIndex GIT_CONFIG_VALUE_0=true \
+    GITHUB_ACTIONS=true RUNNER_ENVIRONMENT=github-hosted RUNNER_OS=Linux RUNNER_ARCH=X64 GITHUB_REPOSITORY=bin9208/openpilot-rust)
+  receipt=$prior/legacy-reuse.json
+  for path in "$receipt" "$prior/outcome.json" "$prior/legacy-reuse.held.tsv" \
+    "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/source-before.sha256" \
+    "$CI_PREPARED_RUST_MANIFEST" "$CI_JOB_TEMP/proof/prepared-rust-programs.sha256" "$CI_JOB_TEMP/proof/prepared-rust-roster.before.bin"; do
+    legacy_file "$path" 33554432
+  done
+  jq -e '.phase=="candidate-observed" and .exit_code==0 and .held_final_exit_code==0 and .untraced_exit_code==0 and .paired_final_exit_code==0' "$prior/outcome.json" > "$proof/prior-success.txt"
+  jq -e --arg source "$source" --arg sha "$GITHUB_SHA" --arg prior "$prior" \
+    --arg owner "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" --arg root_identity "$legacy_source_identity" \
+    --arg proof_identity "$(stat -c '%d:%i:%f:%u:%g' "$prior")" \
+    --arg held_roster "$prior/legacy-reuse.held.tsv" --arg held_sha "$(sha256sum "$prior/legacy-reuse.held.tsv" | cut -d' ' -f1)" '
+    .schema==1 and .mode=="retained" and .source==$source and .source_commit==$sha and .prior==$prior and
+    .owner==$owner and .root_identity==$root_identity and .proof_identity==$proof_identity and
+    .held_roster==$held_roster and .held_roster_sha256==$held_sha and
+    .prior_fd_continuity_claimed==false and .historical_reuse==false and .R4_acceptance==false and .retirement_credit==0 and
+    ([.roles[].role]==["checker","probe","fixture"]) and (.roles|length)==3
+    ' "$receipt" > "$proof/reuse-admission.txt"
+  # 모든 전회 held provider/source를 원래 identity/hash와 대조한 뒤 새 FD로 hold한다.
+  test -s "$prior/legacy-reuse.held.tsv"
+  while IFS=$'\t' read -r prior_fd hash identity path; do
+    [[ $prior_fd =~ ^[0-9]+$ && $hash =~ ^[0-9a-f]{64}$ && $path == /* && $(realpath -e "$path") == "$path" && -f $path && ! -L $path ]]
+    [[ $(legacy_identity "$path") == "$identity" && $(sha256sum "$path" | cut -d' ' -f1) == "$hash" ]]
+    hold "$path"
+  done < "$prior/legacy-reuse.held.tsv"
+  legacy_seal before
+  legacy_sdk_seal before
+  for role in checker probe fixture; do
+    case $role in
+      checker) log=checker-build; name=check-native-logging; kind=bin; src=$source/rust/crates/dev-tools/src/bin/check_native_logging.rs; tested=false ;;
+      probe) log=probe-build; name=native_logging_probe; kind=example; src=$source/rust/crates/logging/examples/native_logging_probe.rs; tested=false ;;
+      fixture) log=fixture-build; name=native_logging_lifecycle; kind=test; src=$source/rust/crates/dev-tools/tests/native_logging_lifecycle.rs; tested=true ;;
+    esac
+    legacy_file "$prior/build/$log.stdout" 536870912
+    selected=$(jq -ers --arg name "$name" --arg kind "$kind" --arg src "$src" --argjson tested "$tested" '
+      if .[-1].reason!="build-finished" or .[-1].success!=true then error("prior Cargo EOF") else . end |
+      [.[]|select(.reason=="compiler-artifact" and .target.name==$name and .target.kind==[$kind] and .target.src_path==$src and .profile.test==$tested and .executable!=null)] |
+      if length==1 and (.[0].fresh|type)=="boolean" then .[0].executable else error("prior Cargo target") end
+      ' "$prior/build/$log.stdout")
+    actual=$selected; [[ $role != probe ]] || actual=$prior/bin/native_logging_probe
+    [[ $selected == "$CARGO_TARGET_DIR/"* && $(realpath -e "$selected") == "$selected" && -x $selected && ! -L $selected ]]
+    [[ $(sha256sum "$selected" | cut -d' ' -f1) == "$(sha256sum "$actual" | cut -d' ' -f1)" ]]
+    row=$(jq -ce --arg role "$role" '.roles[]|select(.role==$role)' "$receipt")
+    jq -e --arg selected "$selected" --arg actual "$actual" --arg log "$prior/build/$log.stdout" \
+      --arg identity "$(legacy_identity "$actual")" --arg selected_identity "$(legacy_identity "$selected")" \
+      --arg hash "$(sha256sum "$actual" | cut -d' ' -f1)" --arg log_sha "$(sha256sum "$prior/build/$log.stdout" | cut -d' ' -f1)" \
+      --arg name "$name" --arg kind "$kind" --arg src "$src" --argjson tested "$tested" '
+      .selected==$selected and .path==$actual and .log==$log and .identity==$identity and .selected_identity==$selected_identity and
+      .sha256==$hash and .log_sha256==$log_sha and .name==$name and .kind==$kind and .src==$src and .tested==$tested
+      ' <<< "$row" > "$proof/reuse-$role.txt"
+    elf "reused-$role" "$actual"
+    case $role in checker) checker=$actual;; probe) probe=$actual;; fixture) fixture=$actual;; esac
+  done
+  # cached Cargo target을 fresh로 꾸미지 않는다. 새 builder target만 빈 namespace에 만든다.
+  # 기존 admit의 단일 du가 nested builder target까지 포함하므로 8GiB를 중복/누락 없이 검사한다.
+  for path in rust/crates/dev-tools/src/native_logging_build.rs rust/crates/dev-tools/src/json11_stage.rs uv.lock \
+    openpilot/common/swaglog.cc openpilot/common/swaglog.h openpilot/common/timing.h rust/tools/native_logging_reference.cc; do hold "$source/$path"; done
+  legacy_builder_target=$CARGO_TARGET_DIR/legacy-runtime2-builder
+  [[ ! -e $legacy_builder_target && ! -L $legacy_builder_target ]]
+  mkdir "$legacy_builder_target"
+  admit legacy-builder-cold 8192
+  run legacy-builder-build 1800 /usr/bin/env -u GH_TOKEN -u GITHUB_TOKEN CARGO_TARGET_DIR="$legacy_builder_target" \
+    RUSTC="$sdk/rustc" RUSTDOC="$sdk/rustdoc" "$sdk/cargo" build --manifest-path "$source/rust/Cargo.toml" \
+    -p openpilot-dev-tools --locked --no-default-features --features native-logging-check-native --bin build-native-logging-reference --message-format=json
+  builder=$(artifact legacy-builder-build build-native-logging-reference bin "$source/rust/crates/dev-tools/src/bin/build_native_logging_reference.rs" false)
+  [[ $builder == "$legacy_builder_target/debug/build-native-logging-reference" && $(realpath -e "$builder") == "$builder" && ! -L $builder ]]
+  jq -se --arg path "$builder" '[.[]|select(.reason=="compiler-artifact" and .executable==$path)]|length==1 and .[0].fresh==false' \
+    "$proof/build/legacy-builder-build.stdout" > "$proof/builder-fresh.txt"
+  elf builder "$builder"
+  for path in "$source/tools/ci/logging_retained_549.sh" "$source/.github/workflows/python-rust-523-logging.yml"; do hold "$path"; done
+  for path in /usr/bin/jq /usr/bin/git /usr/bin/strace /usr/bin/timeout; do elf "tool-$(basename "$path")" "$path"; done
+  for path in /usr/bin/c++ /usr/bin/curl /usr/bin/as /usr/bin/ld; do legacy_alias "$path"; done
+  cxx=$(readlink -e /usr/bin/c++)
+  for name in cc1plus collect2 as ld; do
+    run "compiler-$name" 30 "${runtime[@]}" "$cxx" "-print-prog-name=$name"
+    queried=$(cat "$proof/build/compiler-$name.stdout")
+    [[ $queried == /* ]] || queried=$(PATH=/usr/bin:/bin command -v "$queried")
+    [[ $queried == /* && -f $queried ]]
+    legacy_alias "$queried"
+    [[ $name != cc1plus ]] || legacy_gcc_root=$(dirname "$(readlink -e "$queried")")
+  done
+  for name in Scrt1.o crti.o crtn.o crtbeginS.o crtendS.o libstdc++.so libgcc.a libgcc_s.so libc.so libc_nonshared.a libpthread.a; do
+    run "link-$name" 30 "${runtime[@]}" "$cxx" "-print-file-name=$name"
+    queried=$(cat "$proof/build/link-$name.stdout")
+    [[ $queried == /* && -f $queried ]]
+    hold "$queried"
+  done
+  legacy_alias /usr/lib/x86_64-linux-gnu/libzmq.so.5
+  run compiler-version 30 "${runtime[@]}" "$cxx" --version
+  run compiler-search 30 "${runtime[@]}" "$cxx" -print-search-dirs
+  legacy_alias /usr/bin/pkg-config
+  run zmq-pkg-config 30 "${runtime[@]}" /usr/bin/pkg-config --cflags --libs libzmq
+  phase=legacy-provider-snapshot
+  legacy_tree /usr/include "$proof/headers-before"
+  legacy_tree "$legacy_gcc_root" "$proof/gcc-before"
+  legacy_headers_ready=true
+  reference=$proof/reference-build/native_logging_reference
+  run reference-build 660 "${runtime[@]}" /usr/bin/strace --seccomp-bpf --kill-on-exit -ff -ttt -x -v -s 65536 \
+    -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 \
+    -o "$proof/trace/reference-build" "$builder" --root "$source" --output "$proof/reference-build" --zmq-include /usr/include --architecture x86_64
+  printf '%s\n' "$reference" > "$proof/reference-path.expected"
+  cmp "$proof/reference-path.expected" "$proof/build/reference-build.stdout"
+  elf fresh-reference "$reference"
+  [[ $(stat -c %s "$proof/reference-build/comma_deps_json11-20170411.0.post103-py3-none-manylinux_2_28_x86_64.whl") == 42604 ]]
+  printf '%s  %s\n' a309d401dd22b758455dafd3c28b72c4bd88c7482ddd70fe8653e53efc745a83 \
+    "$proof/reference-build/comma_deps_json11-20170411.0.post103-py3-none-manylinux_2_28_x86_64.whl" | sha256sum --check --strict - > "$proof/reference-wheel.check"
+  find -P "$proof/reference-build/json11" -mindepth 1 -maxdepth 1 -type d -name '*.data' -print0 > "$proof/reference-prefixes.bin"
+  mapfile -d '' -t prefixes < "$proof/reference-prefixes.bin"
+  [[ ${#prefixes[@]} == 1 ]]
+  json11_prefix=${prefixes[0]}/purelib/json11/install
+  jq -n --arg source "$source" --arg output "$proof/reference-build" --arg json11 "$json11_prefix" '
+    ["c++","-std=c++17","-O2","-pthread","-I"+$output+"/overlay","-I"+$source+"/openpilot",
+      "-I"+$json11+"/include","-I/usr/include",$source+"/rust/tools/native_logging_reference.cc",
+      $source+"/openpilot/common/swaglog.cc",$json11+"/lib/libjson11.a","-l:libzmq.so.5",
+      "-Wl,--wrap=zmq_send","-Wl,--wrap=zmq_setsockopt","-o",$output+"/native_logging_reference"]' > "$proof/reference-command.expected.json"
+  jq -e --slurpfile command "$proof/reference-command.expected.json" '
+    .command==$command[0] and .json11_version=="20170411.0.post103" and .json11_architecture=="x86_64" and
+    .json11_sha256=="a309d401dd22b758455dafd3c28b72c4bd88c7482ddd70fe8653e53efc745a83"
+    ' "$proof/reference-build/provenance.json" > "$proof/reference-provenance.check"
+  jq -e '.sources|keys==["openpilot/common/swaglog.cc","openpilot/common/swaglog.h","openpilot/common/timing.h","rust/tools/native_logging_reference.cc"]' \
+    "$proof/reference-build/provenance.json" > "$proof/reference-sources-roster.check"
+  for path in openpilot/common/swaglog.cc openpilot/common/swaglog.h openpilot/common/timing.h rust/tools/native_logging_reference.cc; do
+    hold "$source/$path"
+    jq -e --arg path "$path" --arg sha "$(sha256sum "$source/$path" | cut -d' ' -f1)" '.sources[$path]==$sha' \
+      "$proof/reference-build/provenance.json" > "$proof/source-$(basename "$path").check"
+  done
+  legacy_tree "$proof/reference-build" "$proof/reference-before"
+  selector=actual_cli_int_term_reap_held_producer_and_preserve_runtime_foreign_replacement
+  legacy_env=(NATIVE_LOGGING_TEST_BINARY="$probe" NATIVE_LOGGING_TEST_BUILDER="$builder" NATIVE_LOGGING_TEST_REFERENCE="$reference"
+    NATIVE_LOGGING_LIFECYCLE_EVIDENCE="$proof/lifecycle" NATIVE_LOGGING_LIFECYCLE_RESUME=39833849895)
+  printf '%s\0' "${runtime[@]}" "${legacy_env[@]}" "$fixture" --ignored --exact "$selector" --test-threads=1 --color=never > "$proof/fixture-command.argv0"
+  read -r started _ < /proc/uptime
+  run legacy-runtime2 600 "${runtime[@]}" "${legacy_env[@]}" /usr/bin/strace --seccomp-bpf --kill-on-exit -ff -ttt -x -v -s 65536 \
+    -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns -e raw=read,pread64 \
+    -o "$proof/trace/legacy-runtime2" "$fixture" --ignored --exact "$selector" --test-threads=1 --color=never
+  read -r ended _ < /proc/uptime
+  awk -v start="$started" -v end="$ended" 'BEGIN {exit !(start~/^[0-9]+[.][0-9]+$/ && end~/^[0-9]+[.][0-9]+$/ && end>=start && end-start<=600)}'
+  printf '%s\t%s\n' "$started" "$ended" > "$proof/runtime2-monotonic.tsv"
+  [[ $(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/build/legacy-runtime2.stdout") == 1 ]]
+  [[ $(grep -Fxc "test $selector ... ok" "$proof/build/legacy-runtime2.stdout") == 1 ]]
+  find -P "$proof/lifecycle" -mindepth 1 -maxdepth 1 -print0 > "$proof/case-roots.bin"
+  mapfile -d '' -t case_roots < "$proof/case-roots.bin"
+  [[ ${#case_roots[@]} == 2 ]]
+  for path in "${case_roots[@]}"; do
+    [[ $path == "$proof/lifecycle/logging-lifecycle-"?????? && ${path##*/} =~ ^logging-lifecycle-[A-Za-z0-9]{6}$ && \
+      $(realpath -e "$path") == "$path" && -d $path && ! -L $path ]]
+    [[ $(stat -c '%u:%a' "$path") == "$UID:700" ]]
+    legacy_file "$path/case.json"
+    jq -e --arg root "$path" '.held.output==($root+"/output/transport/runtime-prefix") and
+      (.held.pid|type)=="number" and .held.pid>1 and (.held.pid|floor)==.held.pid' "$path/case.json" > "$path/held-binding.check"
+  done
+  jq -se 'length==2 and all(.[]; .mode=="runtime" and .replacement=="directory" and .held.endpoint=="runtime" and
+    .actual_producer_reaped==true and .owned_directory_removed==true and .shutdown_seconds>=0) and
+    ([.[].returncode]|sort)==[130,143] and ([.[].held.pid]|unique|length)==2' \
+    "${case_roots[0]}/case.json" "${case_roots[1]}/case.json" > "$proof/cases.check"
+  legacy_tree "$proof/reference-build" "$proof/reference-after"
+  cmp "$proof/reference-before.roster" "$proof/reference-after.roster"
+  cmp "$proof/reference-before.sha256" "$proof/reference-after.sha256"
+  mkdir "$proof/inspect"
+  for name in reference-build legacy-runtime2; do
+    run "inspect-$name" 180 "${runtime[@]}" "$checker" inspect-trace-summary --directory "$proof/trace" --prefix "$name" --output "$proof/inspect/$name.json"
+    jq -e '.schema==2 and .raw_immutable==true and .lexically_checked_all_events==true and .requires_exit_status_zero==true and
+      .full_event_index==false and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and
+      .full_acceptance==false and .retirement_credit==false' "$proof/inspect/$name.json" > "$proof/inspect/$name.check"
+    hold "$proof/inspect/$name.json"
+  done
+  verify_held
+  admit legacy-runtime2-final 0
+  phase=legacy-runtime2-observed
+  jq -n --arg source "$GITHUB_SHA" --arg selector "$selector" --arg reference "$reference" \
+    --arg reference_sha "$(sha256sum "$reference" | cut -d' ' -f1)" \
+    '{schema:1,mode:"legacy-runtime2",source_commit:$source,selector:$selector,logical_cases:2,libtest_passed:1,
+      resume:"39833849895",fresh_reference:$reference,fresh_reference_sha256:$reference_sha,
+      prior_fd_continuity_claimed:false,old17_reexecuted:false,collision8_reexecuted:false,retained14_reexecuted:false,
+      closed_pid:false,closed_cwd:false,closed_fd:false,closed_dso:false,old27_admitted:false,R4_acceptance:false,retirement_credit:0}' > "$proof/complete.json"
+}
+if [[ $mode == legacy-runtime2 ]]; then legacy_runtime2; exit; fi
+
 for path in "$source/tools/ci/logging_retained_549.sh" "$source/tools/ci/logging_retained_exec_policy_549.jq" "$source/.github/workflows/python-rust-523-logging.yml" "$sdk/cargo" "$sdk/rustc" "$sdk/clippy-driver" /usr/bin/git /usr/bin/strace /usr/bin/timeout; do hold "$path"; done
 elf exec-policy-jq /usr/bin/jq
 printf '%s  %s\n' adee1d45e299bfd6448e8f5584b194b2dbbb53622ee3c1d57c02538d0b0d1fc4 rust/tools/check_native_logging.py \
@@ -975,3 +1296,4 @@ printf '%s\n' 'current held files and bytes unchanged' > "$proof/held-after.txt"
 admit final 0
 if ((untraced_status != 0)); then phase=lifecycle-untraced-failed; exit "$untraced_status"; fi
 phase=candidate-observed
+legacy_publish_reuse

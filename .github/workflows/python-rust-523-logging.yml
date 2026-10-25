@@ -193,7 +193,7 @@ jobs:
         set -euo pipefail
         umask 077
         # 첫 candidate의 실제 결과를 수집한다. old27/P2/closed-trace/caller/absence 수용은 별도다.
-        printf '%s  %s\n' 53f8108dfc715ca59fc0ab1dcd2b16ba20994ec3025f119a35f79e0813d78a3b tools/ci/logging_retained_549.sh | sha256sum --check --strict -
+        printf '%s  %s\n' 4b9c87534731c123be6836401acd84cf37d3a80f3ac103bd7f76b4588c097ffe tools/ci/logging_retained_549.sh | sha256sum --check --strict -
         printf '%s  %s\n' 303ed6814d90fe387f832023238b1393edd785acd975bb1ea1572ac3cdcc0825 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check --strict -
         /usr/bin/timeout --signal=TERM --kill-after=180s 60m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh
         jq -e '.schema==1 and .states==8 and .status_pairs==8 and .authored_status_equal==true and .fs_check_passed==true and .fixture_cap_bytes==16777216 and .source_prime==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-cache-554/complete.json"
@@ -215,6 +215,20 @@ jobs:
           .production_preload_changed==false and .full_lifecycle_causality_proven==false and
           .performance_claim==false and .root_cause_fixed==false and .runtime_acceptance==false and .R4_acceptance==false and .retirement_credit==0
         ' "$CI_JOB_TEMP/proof/logging/git-preload-status-554/complete.json"
+    - name: Verify original legacy runtime directory INT and TERM in a separate bounded cohort
+      id: legacy_runtime2
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.qualify.outcome ==
+        'success') }}
+      timeout-minutes: 35
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        printf '%s  %s\n' 4b9c87534731c123be6836401acd84cf37d3a80f3ac103bd7f76b4588c097ffe tools/ci/logging_retained_549.sh | sha256sum --check --strict --quiet -
+        /usr/bin/timeout --signal=TERM --kill-after=180s 30m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh legacy-runtime2
+        proof=$CI_JOB_TEMP/proof/logging-legacy-runtime2
+        jq -e '.schema==1 and .mode=="legacy-runtime2" and .phase=="legacy-runtime2-observed" and .exit_code==0 and .source_sdk_final_exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .provider_alias_final_exit_code==0 and .resource_final_exit_code==0 and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$proof/outcome.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .mode=="legacy-runtime2" and .source_commit==$source and .logical_cases==2 and .libtest_passed==1 and .resume=="39833849895" and .selector=="actual_cli_int_term_reap_held_producer_and_preserve_runtime_foreign_replacement" and .prior_fd_continuity_claimed==false and .old17_reexecuted==false and .collision8_reexecuted==false and .retained14_reexecuted==false and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$proof/complete.json"
     - name: Seal source and index after all attempted contracts
       id: source_final
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
@@ -273,7 +287,7 @@ jobs:
     - name: Clean only uploaded unchanged owned logging source and private job
       id: logging_owned_cleanup
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.source_before.outcome
-        == 'success' && steps.prepared_rust.outcome == 'success' && steps.qualify.outcome == 'success' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome
+        == 'success' && steps.prepared_rust.outcome == 'success' && steps.qualify.outcome == 'success' && steps.legacy_runtime2.outcome == 'success' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome
         == 'success' && steps.proof_upload.outcome == 'success' && steps.proof_upload.outputs.artifact-id != '' && steps.proof_upload.outputs.artifact-digest != '' &&
         env.DIAG_SOURCE_OWNER != '' && env.CI_JOB_TEMP != '') }}
       shell: bash
@@ -282,7 +296,7 @@ jobs:
       env:
         UPLOAD_ID: ${{ steps.proof_upload.outputs.artifact-id }}
         UPLOAD_DIGEST: ${{ steps.proof_upload.outputs.artifact-digest }}
-        CURRENT_HELPER_SHA256: 53f8108dfc715ca59fc0ab1dcd2b16ba20994ec3025f119a35f79e0813d78a3b
+        CURRENT_HELPER_SHA256: 4b9c87534731c123be6836401acd84cf37d3a80f3ac103bd7f76b4588c097ffe
       run: |
         set -euo pipefail
         umask 077
@@ -329,6 +343,13 @@ jobs:
         printf '%s  %s\n' "$CURRENT_HELPER_SHA256" "$DIAG_SOURCE/tools/ci/logging_retained_549.sh" | sha256sum --check --strict --quiet -
         required_file "$proof/logging/outcome.json"
         jq -e '.phase=="candidate-observed" and .exit_code==0 and .held_final_exit_code==0 and .untraced_exit_code==0 and .paired_final_exit_code==0 and .retirement_credit==0 and .closed_trace_admitted==false and .old27_admitted==false' "$proof/logging/outcome.json"
+        legacy=$proof/logging-legacy-runtime2
+        for leaf in outcome.json complete.json reuse-admission.txt cases.check runtime2-monotonic.tsv fixture-command.argv0 source-after.sha256 index-after.bin sdk-after.roster.bin; do required_file "$legacy/$leaf"; done
+        jq -e '.schema==1 and .mode=="legacy-runtime2" and .phase=="legacy-runtime2-observed" and .exit_code==0 and .source_sdk_final_exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .provider_alias_final_exit_code==0 and .resource_final_exit_code==0 and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$legacy/outcome.json"
+        jq -e --arg source "$GITHUB_SHA" '.source_commit==$source and .logical_cases==2 and .libtest_passed==1 and .prior_fd_continuity_claimed==false and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$legacy/complete.json"
+        cmp "$proof/source-before.sha256" "$legacy/source-after.sha256"
+        cmp "$proof/index-before.bin" "$legacy/index-after.bin"
+        cmp "$proof/prepared-rust-roster.before.bin" "$legacy/sdk-after.roster.bin"
         required_file "$proof/logging/held-after.txt"
         grep -Fx 'current held files and bytes unchanged' "$proof/logging/held-after.txt"
         # 이미 업로드한 proof를 수정하지 않는다. 마지막 검증 scratch도 삭제될 private job 안이다.
@@ -381,6 +402,35 @@ jobs:
         jq -er '.cases[].receipt|(.held.checker_observation.live_identity.group?,.held.peer_observation.live_identity.group?,.escaped_descendants[]?.group)|select(.!=null)|if type=="number" and .>1 and floor==. then . else error("group identity invalid") end' "$proof/logging/exec-policy/binding.json" > "$scratch/groups.txt"
         while IFS= read -r group; do [[ $group =~ ^[1-9][0-9]*$ ]]; observed_groups[$group]=1; done < "$scratch/groups.txt"
         ((${#observed_groups[@]} > 0 && ${#observed_pids[@]} > 0))
+        # legacy2의 두 prefix에는 retained exact15 정책을 적용하지 않는다.
+        for prefix in reference-build legacy-runtime2; do
+          report=$legacy/inspect/$prefix.json
+          required_file "$report"
+          jq -e --arg prefix "$prefix" '.schema==2 and .prefix==$prefix and .raw_immutable==true and .lexically_checked_all_events==true and .requires_exit_status_zero==true and (.raw_files|length)>0 and .closed_pid==false and .closed_cwd==false and .closed_fd==false and .closed_dso==false and .full_acceptance==false and .retirement_credit==false' "$report" > /dev/null
+          jq -er '.raw_files[]|[.name,.sha256,(.pid|tostring)]|@tsv' "$report" > "$scratch/legacy-raw.tsv"
+          while IFS=$'\t' read -r name digest pid; do
+            [[ $pid =~ ^[1-9][0-9]*$ && $name == "$prefix.$pid" && $digest =~ ^[a-f0-9]{64}$ ]]
+            raw=$legacy/trace/$name
+            test -f "$raw" && test ! -L "$raw"
+            test "$(realpath -e -- "$raw")" = "$raw"
+            test "$(stat -c '%u:%h' -- "$raw")" = "$UID:1"
+            (($(stat -c %s -- "$raw") <= 536870912))
+            printf '%s  %s\n' "$digest" "$raw" | sha256sum --check --strict --quiet -
+            observed_pids[$pid]=1
+          done < "$scratch/legacy-raw.tsv"
+        done
+        find -P "$legacy/lifecycle" -mindepth 1 -maxdepth 1 -print0 > "$scratch/legacy-cases.bin"
+        mapfile -d '' -t legacy_cases < "$scratch/legacy-cases.bin"
+        test "${#legacy_cases[@]}" -eq 2
+        for case_root in "${legacy_cases[@]}"; do
+          [[ $case_root == "$legacy/lifecycle/logging-lifecycle-"?????? && -d $case_root && ! -L $case_root ]]
+          test "$(realpath -e -- "$case_root")" = "$case_root"
+          test "$(stat -c '%u:%a' -- "$case_root")" = "$UID:700"
+          required_file "$case_root/case.json"
+          group=$(jq -er '.held.pid|if type=="number" and .>1 and floor==. then . else error("legacy peer group invalid") end' "$case_root/case.json")
+          [[ $group =~ ^[1-9][0-9]*$ ]]
+          observed_groups[$group]=1
+        done
         # collision8 group_empty와 같은 all-UID /proc/stat 검사. 새 signal/reap 동작은 없다.
         observed_absent() {
           local entry line rest pid
