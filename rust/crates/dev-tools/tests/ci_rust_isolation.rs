@@ -314,6 +314,46 @@ fn dbc_native_tools_are_built_before_every_required_consumer() {
 #[test]
 fn fast_native_cold_bootstrap_uses_one_worker_and_pinned_closed_launch_helper() {
     use sha2::{Digest, Sha256};
+    let fast = parse(&read(".github/workflows/fast-checks.yml")).unwrap();
+    for (name, jobs, runner) in [
+        (
+            "native",
+            "1",
+            serde_json::json!(openpilot_dev_tools::ci_policy::LOCAL_RUNNER),
+        ),
+        ("native-routing", "2", serde_json::json!(HOSTED_RUNNER)),
+    ] {
+        assert_eq!(fast["jobs"][name]["runs-on"], runner);
+        assert_eq!(fast["jobs"][name]["timeout-minutes"], "7");
+        assert_eq!(fast["jobs"][name]["env"]["CARGO_BUILD_JOBS"], jobs);
+    }
+    let native = commands(&fast["jobs"]["native"]);
+    required(&native, &[
+        "-p openpilot-prepared-cold-audit --locked",
+        "--lib prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- --ignored --exact --nocapture",
+    ]);
+    assert!(!native.contains("-p openpilot-dev-tools"));
+    let routing = commands(&fast["jobs"]["native-routing"]);
+    required(&routing, &[
+        "--growth-mib 6144",
+        "-p openpilot-dev-tools --locked --lib",
+        "--test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe",
+    ]);
+    assert!(!routing.contains("-p openpilot-prepared-cold-audit"));
+    let thin = read("rust/crates/prepared-cold-audit/src/lib.rs");
+    assert_eq!(
+        thin.lines()
+            .filter(|line| *line
+                == "#[path = \"../../dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs\"]")
+            .count(),
+        1
+    );
+    assert_eq!(
+        thin.lines()
+            .filter(|line| *line == "mod prepared_audit;")
+            .count(),
+        1
+    );
     // 위 DBC 전용 jobs2 계약은 그대로 둔다. Fast disk guard의 실제 행을 검사한다.
     let bootstrap = read("rust/tools/check-disk-space");
     let build = "    CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=1 \"${bootstrap_cargo[@]}\" build \\";

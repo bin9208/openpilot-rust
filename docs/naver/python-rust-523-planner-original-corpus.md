@@ -108,3 +108,22 @@ native14 본문을 포맷하지 않았고 diff whitespace를 확인했다.
 original/기능/Cargo/build/Clippy/WF/GHA/stage/commit 실행은0이다.
 
 부모 통합 후속: 이 조사 뒤 standalone `python-rust-523-native-arm-more.yml`의 Planner 두 run 본문도 동일 runtime/memory Bash helper로 전환했다. main host·canonical reusable ARM 및 standalone ARM의 actual caller 변경을 같은 batch에서 검증한다. 위 표의 old direct caller 잔존은 조사 시점의 상태이며, 이 후속 연결의 GHA 수용은 아직 대기다. 별도 host Planner workflow는 main 전체 SHA와 동일 job/global env를 묶어 무관43개 job을 반복하지 않고 실제 host12/ASan3을 검증한다. Python test 모듈과 source5의 실제 import 의존은 여전히 남아 있다.
+
+
+## 73e17 원본5 실물 감사 — 2026-10-26
+
+[run40220990602/job121252313388](https://github.com/bin9208/openpilot-rust/actions/runs/40220990602/job/121252313388)의
+artifact12609602768은1,595,595B/SHA256
+`53128e493236911d6c7b7b8468f5708eb654bb7652a436da6a4b66b0604fd576`,
+49 safe unique/non-symlink member, expanded6,979,157B와 CRC 정상이다. source는
+`73e17ff10ec9be7a7001ab9cbf415a779c436f78`다. source/index/index-stage/SDK files·roster·rejected
+6쌍이 전후 동일하며 모든 native-exit-code는0이다. 실제 native14/source5/adapter13
+(real native160)/memorywrapper5/strictClippy를 로그에서 확인했다.
+
+위 schema1 JSON5개가 모두 수집됐다. 원본 returncode는 전부0이며 원본 실패 전달 case는
+관측 JSON의 child returncode42와 raw first.log `out\nerr\n`를 별도로 보존한다.
+plan12와 memory3의 전체 argv, finite76/특수9개의 u64 target bits, 원본 source2/Rust8 SHA,
+canonical Python hash/version 및 source73e17가 함께 있다. 현재 내용은 합성 source/job/temp
+절대 경로를 포함하므로 versioned fixture로 사용할 때 원문과 명시적 경로 mapping을 함께
+보존해야 한다. 원본 JSON을 native가 다시 계산해 expected로 대체하지 않는다.
+원본 실행 의존 폐쇄와 data reader는 아직 후속이며 퇴역 credit은0이다.

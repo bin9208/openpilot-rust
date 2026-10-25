@@ -5,6 +5,36 @@
 공유 worktree의 다른 작업은 보존했다. **helper/native admission 구현 완료,
 WF 연결·bootstrap jobs1 등록·GHA 수용은 부모 대기, 7분/6GiB fit는 UNRUN**이다.
 
+## 73e17 실제 수용과 7분 분리 수정 — 2026-10-26
+
+[Fast40220990623/job121252313245](https://github.com/bin9208/openpilot-rust/actions/runs/40220990623/job/121252313245)의
+`Prepare native CI validation`은 성공했다. 같은 private provider와 STOP 승인, 원래 cold
+`check-disk-space`를 strict native auditor가 검증하고 실제 receipt를 발행했다.
+artifact12609439585는10,848,136B/SHA256
+`bfff5ac697d67cb70d2fae4afbf4fe8214f4415f1084fe073905694c3c6decd1`,
+1131개 safe unique/non-symlink member와 CRC 정상이다. 부모가 실제 receipt의 source73e17,
+absolute cargo1/rustc37, exec181/실패29, Python/Rustup 실행0, SDK regular294를 확인했다.
+source/index before/after도 동일했다. cold의 original/final exit0과 owned groups nonlive=true다.
+provider admission의 최대 관측 allocated203,632,640B는512MiB 안이며 전체 peak 측정과 다르다.
+
+그러나 dev-tools 감사 compile163초와 actual audit48.14초 뒤 routing 빌드를 시작할 때
+원래7분 job이 취소됐다. after는 원래 deadline 경과를 거부했고 upload는 성공했으나 cleanup은
+실행하지 않았다. 따라서 **전체 Fast·7분 fit·정상 회수는 미수용**이며 #530/#560은 열려 있다.
+감사 PASS가 timeout/after 실패를 덮지 않는다. 나머지 기존6개 worker는 성공했다.
+
+현재 수정은 동일 감사 파일을 `#[path]`로 사용하는 `openpilot-prepared-cold-audit` 경량 crate다.
+감사 구현·11개 일반/1개 ignored·FQName와 strict 기준을 그대로 사용한다. cold job은
+self-hosted/jobs1/7분/source2+job4GiB 및 provider120초/512MiB 그대로다. actual 감사 이후의
+원래 routing 네 Cargo 호출과 unchanged changed-files preparation은 새 필수
+`native-routing` hosted ubuntu-24.04/jobs2/7분 worker로 옮긴다. 기존6개 worker 객체는 동일하고
+aggregate가 cold/routing을 포함한8개 결과 전부를 요구한다. routing은 source2+target6,
+registry2+SDK3+proof0.5+venv0.5+reserve0.5GiB를 실제 filesystem별로 합산하여 입장하며,
+기존6144MiB 추가 성장 검사를 유지한다. 이 예상량은 peak 보장이 아니다.
+
+경량 crate·분리 routing의 실제 compile/기능/시간은 다음 exact-source Actions 전까지
+UNRUN이다. 아래의 과거 부모 반영 절차에서 dev-tools 직접 compile와 동일 job routing을
+설명한 부분은 이 수정으로 대체되며 strict parser, cap, deadline은 바꾸지 않는다.
+
 ## 실제 구현과 호출 경계
 
 - `tools/ci/fast_native_cold_560.sh cold`: 실제 `bin-actions/self-hosted/Linux/X64`,

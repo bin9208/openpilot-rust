@@ -73,7 +73,7 @@ def functional_steps(job: dict) -> list[dict]:
 def assert_planner_native_contract(main: dict, native: dict) -> None:
   # 기존 inline 명령이 위임된 helper의 검토된 원문까지 묶는다.
   assert hashlib.sha256((ROOT / 'tools/ci/planner_native_controller_523.sh').read_bytes()).hexdigest() == (
-      'a1416e3dc4ac16c31214b871576ec663564bcda8fcf0184f9285cd48175878ef')
+      '40e07c4d3261197a4c1be5d5acf0959cc2450ec30ba7c6ff8c87633c0de32c8f')
   jobs, native_jobs = main["jobs"], native["jobs"]
   assert main["env"]["RUSTUP_TOOLCHAIN"] == native["env"]["RUSTUP_TOOLCHAIN"] == "1.94.0"
   assert jobs["native-arm"] == {"uses": "./.github/workflows/rust-native-arm.yml"}

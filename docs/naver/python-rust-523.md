@@ -1370,3 +1370,34 @@ source836 Focus는278개 source pin 뒤 workflow outside-block 기준 hash 하�
 다음 묶음은 Planner host/ARM12·sanitizer3의 실제 호출을 native controller로 연결하고, Fast private patched tracer/STOP 승인/strict native auditor와 bootstrap jobs1을 연결한다. Fast7분·6GiB·provider120초/512MiB·원래18통제/marker10/protocol3 및 실패 전파는 유지한다. 실제 fit와 새 controller 기능은 GHA 대기다. 신규 memory wrapper unittest5와 Bash의 기존 Python memory 호출도 pending으로 등록하며 원본 outer controller는 독립 원본5/관측 corpus 수집용으로 보존한다. 원본 삭제나 compiler/Planner 전체 퇴역 credit을 앞당기지 않는다.
 
 이번 actual caller 묶음의 추가 실행 원장은153개(26교체/123대기/1기존native/2비실행/1제거)다. 새 host Planner 진입점, memory wrapper5, 이동한 Python memory dispatch도 대기로 추적한다. standalone ARM Planner도 같은 helper로 연결했다. source5의 실제 원본 JSON/bit/raw-log는 기존 Python process 수를 늘리지 않고 별도 bounded corpus로 보존해 향후 원본 퇴역 근거로 쓴다. 현재 corpus reader/남은 import 제거·원본 outer 삭제는 미완료다. Fast 새 경로는 별도 Sol 동료의 읽기 전용 검토에서도 구체 계약 불일치를 찾지 못했으나 실제 기능/fit 수용은 여전히 GHA 대기다.
+
+
+### 73e17 실제 native 검증과 Fast 시간 분리 — 2026-10-26
+
+source `73e17ff10ec9be7a7001ab9cbf415a779c436f78`의 [Focus40220990604](https://github.com/bin9208/openpilot-rust/actions/runs/40220990604),
+[로컬 native units40220990602](https://github.com/bin9208/openpilot-rust/actions/runs/40220990602),
+[실제 host Planner40220990726](https://github.com/bin9208/openpilot-rust/actions/runs/40220990726),
+별도 tracer40220990622, Carrot40220990621, logger40220990610, ARM WebRTC40220990592,
+ARM radar/navi40220990627, setup40220990615가 성공했다. unit은 도구/버퍼/Planner 세 작업이다.
+성공 상태와 artifact 본문 감사 범위는 구분하며 본문 수용은 각 기록에 추가한다.
+
+ARM Planner만 helper의 초기 SDK 경로 조건에서 중단됐다. 기존 standalone ARM은
+`$CI_JOB_TEMP/rustup-home`인데 새 helper가 prepared arm530 경로만 기대했다. solver/비교가
+시작되지 않은 준비 실패다. 기존 SDK 출처 검증을 보존하면서 두 실제 caller 경로를
+명시적으로 구분해 수정하고 다시 검증한다. 원본 삭제/전체 Planner credit은 아직0이다.
+
+Fast의 실제 cold+strict native auditor는 성공했으나 후속 routing 빌드가7분에 취소됐다.
+[실물 감사와 분리 변경](python-rust-523-fast-native-cold-560.md)에 기록했다. 동일 audit 모듈의
+작은 crate와 별도 필수 hosted routing 작업으로 compile 비용을 나누며 local jobs1/RAM4GB,
+전체 cold6GiB/provider120초/512MiB, Fast7분과 모든 원래 검사를 유지한다. #530/#560은 열린다.
+인벤토리3580=296/3/3281과 전체 #523 미완료 상태는 유지한다.
+
+
+host Planner의 private artifact12609399553은295,885B/SHA
+`5961fee67e933e0b84923cc1f5f9ab0079e06f8301245b67912983d6b5544f4e`,29CRC/source/index동일,
+controller runtime/memory exit0이다. functional artifact12609249847은55,184,901B/SHA
+`e1d196ac2bb999867fd45fdff50702c6fa60f0917b7d1d251576c64a7e9df030`,
+34,282 safe unique/non-symlink/CRC다. source73e17·x86_64의 actual12행 모두 exit0,
+원본/native policy/main/real IPC/lifecycle PASS와 sanitizer subset abi/owner/fault3행 exit0을
+본문에서 확인했다. sanitizer의 계측 범위는 generated solver C이고 Rust/external solver
+전체가 계측됐다는 뜻은 아니다. ARM·기기 수용과는 구분한다.

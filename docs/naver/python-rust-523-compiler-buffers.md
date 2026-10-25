@@ -200,3 +200,19 @@ Cargo/test/Clippy·모델은 실행하지 않았다. 수정 후 원본 비교는
 ### 실제 original byte-copy API 보정 — 2026-10-26
 
 source33923의 [40216716675](https://github.com/bin9208/openpilot-rust/actions/runs/40216716675)는 native6와 strictClippy는 통과했으나 원본 recipe 생성 중 CPU allocator의 `ctypes.from_buffer`가 readonly 입력을 거부했다. 앞선 root import 수정 이후 실제 `tinygrad.device.Buffer.copyin`→`HCQAllocator._copyin`→`helpers.from_mv`까지 도달한 실패로, native trace 불일치는 아직 관측하지 않았다. fixture의 두 `memoryview(bytes(JSON_data))`만 `memoryview(bytearray(JSON_data))`로 바꿔 같은 길이·같은 모든 bytes를 writable backing으로 전달한다. 원본 method/allocator·native runtime·32 descriptor/147 recipe/비교 기준은 그대로다. 새 원본 비교는 GHA 대기이며 Python/F02 퇴역 credit은0이다.
+
+
+## 73e17 actual 원본 비교 수용 — 2026-10-26
+
+[40220990602/job121252313293](https://github.com/bin9208/openpilot-rust/actions/runs/40220990602/job/121252313293)의
+native6/ignored1, 원본32 descriptor·147 recipe 비교1, strictClippy가 성공했다.
+직전 source33923의 readonly fixture 입력은 production이 요구한 writable
+`ctypes.from_buffer`와 맞지 않아 실패했고 이번 fixture만 같은 bytes의 bytearray로 바꿨다.
+원본 allocator/method AST와 production arithmetic은 바꾸지 않았다.
+
+artifact12608509710은1,577,420B/SHA256
+`eb4c7a673da790c352a3a0f832a8f2a8da5a7d07c03bb467864639cd99dc1bdd`,
+38 safe unique/non-symlink member, expanded6,906,403B와 CRC 정상이다. source73e17,
+source/index/index-stage/SDK files·roster·rejected6쌍이 동일하며 세 native-exit-code는0이다.
+이 수용은 buffer helper/독립 원본 비교 범위다. 실제 compiler/export 소비자 연결과
+Python 원본 퇴역 완료로 확장하지 않는다.

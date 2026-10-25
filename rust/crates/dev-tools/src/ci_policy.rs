@@ -1286,9 +1286,8 @@ pub const DIAGNOSTIC_PROOF: &str = "${{ (github.event_name != 'pull_request' || 
 pub const DIAGNOSTIC_CLEANUP: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success') }}";
 pub const DIAGNOSTIC_COMMON_CLEANUP: &str = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}";
 
-/// Preserve the required fast-check status while its six mandatory workers run
-/// independently. Execute the aggregate shell to reject accidental fail-open
-/// edits, including absent results that GitHub exposes as empty strings.
+/// cold·routing과 기존 여섯 worker의 필수 Fast 결과를 각각 보존한다.
+/// 실제 aggregate shell로 빈 결과와 모든 비성공 상태의 fail-open을 거부한다.
 pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
     let opt_in = [
         "OPENPILOT_CI_PREPARED_RUST_ROOT",
@@ -1305,6 +1304,7 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
     )?;
     let bindings = [
         ("NATIVE", "native"),
+        ("NATIVE_ROUTING", "native-routing"),
         ("NATIVE_TOOLS", "native-tools"),
         ("NATIVE_CORPUS", "native-corpus"),
         ("NATIVE_TIMING", "native-timing"),
@@ -1366,7 +1366,7 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
             ),
         ];
         if name == "native" {
-            // SDK 권한 준비는 기존 routing worker만 수행한다.
+            // SDK 권한 준비와 private cold provider는 cold owner만 수행한다.
             stages.extend([
                 (
                     "Remove shared write permission from the owned provisioned SDK",
@@ -1375,6 +1375,11 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
                 (
                     "Verify SDK contents after permission preparation even on failure",
                     "sdk_permissions_final",
+                ),
+                ("Prepare native CI validation", "fast_cold"),
+                (
+                    "Seal Fast private cold provider after maintained checks",
+                    "fast_cold_final",
                 ),
             ]);
         }
@@ -1409,9 +1414,12 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
         if name != "native" {
             require(
                 !steps.iter().any(|step| {
-                    step["id"] == "sdk_permissions" || step["id"] == "sdk_permissions_final"
+                    step["id"] == "sdk_permissions"
+                        || step["id"] == "sdk_permissions_final"
+                        || step["id"] == "fast_cold"
+                        || step["id"] == "fast_cold_final"
                 }),
-                "SDK permission preparation belongs only to native routing",
+                "SDK permission preparation and cold provider belong only to native cold",
             )?;
         } else {
             let permissions = steps
@@ -1422,11 +1430,77 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
                 .iter()
                 .position(|step| step["id"] == "sdk_permissions_final")
                 .unwrap();
+            let cold = steps
+                .iter()
+                .position(|step| step["id"] == "fast_cold")
+                .unwrap();
+            let cold_final = steps
+                .iter()
+                .position(|step| step["id"] == "fast_cold_final")
+                .unwrap();
+            let audit_name = "Audit actual prepared cold bootstrap with the minimal native crate";
+            let audits = steps
+                .iter()
+                .enumerate()
+                .filter(|(_, step)| step["name"] == audit_name)
+                .collect::<Vec<_>>();
+            require(
+                audits.len() == 1,
+                "Fast actual cold audit missing or duplicated",
+            )?;
+            let (audit, audit_step) = audits[0];
             require(
                 admit < permissions
                     && permissions < permissions_final
-                    && permissions_final < final_start,
-                "private SDK preparation must precede permission verification",
+                    && permissions_final < cold
+                    && cold + 1 == audit
+                    && audit + 1 == cold_final
+                    && cold_final + 1 == final_start,
+                "private SDK, cold, actual audit and final seals must retain their order",
+            )?;
+            for (index, phase) in [(cold, "cold"), (cold_final, "after")] {
+                let command = format!("\"$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh\" {phase}");
+                require(
+                    steps[index]["run"]
+                        .as_str()
+                        .is_some_and(|run| run.trim() == command)
+                        && steps[index]["shell"] == "bash"
+                        && steps[index]["working-directory"] == "${{ env.DIAG_SOURCE }}"
+                        && steps[index]["env"]["SOURCE_ALLOWED"] == DIAGNOSTIC_TRUSTED_SOURCE,
+                    "Fast cold stage must execute its bound helper and trusted source",
+                )?;
+            }
+            let pin = steps[cold]["env"]["FAST560_HELPER_SHA256"]
+                .as_str()
+                .unwrap_or("");
+            require(
+                pin.len() == 64
+                    && pin
+                        .bytes()
+                        .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+                    && steps[cold_final]["env"]["FAST560_HELPER_SHA256"] == pin,
+                "Fast cold phases must bind the same helper digest",
+            )?;
+            let audit_run = audit_step["run"]
+                .as_str()
+                .unwrap_or("")
+                .replace("\\\n", " ");
+            let audit_lines = audit_run
+                .lines()
+                .map(|line| line.split_whitespace().collect::<Vec<_>>().join(" "))
+                .collect::<Vec<_>>();
+            for command in [
+                "CI_PREPARED_RUST_PROOF=\"$CI_JOB_TEMP/proof\" \"$CI_PREPARED_RUST_ROOT/bin/cargo\" test --manifest-path rust/Cargo.toml -p openpilot-prepared-cold-audit --locked --lib prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- --ignored --exact --nocapture 2>&1 | tee \"$CI_JOB_TEMP/proof/prepared-cold-native-audit.log\"",
+                "grep -F 'test result: ok. 1 passed;' \"$CI_JOB_TEMP/proof/prepared-cold-native-audit.log\"",
+            ] {
+                require(
+                    audit_lines.iter().filter(|line| line.as_str() == command).count() == 1,
+                    "Fast actual cold audit must execute and check the bound thin-crate receipt",
+                )?;
+            }
+            require(
+                audit_step["working-directory"] == "${{ env.DIAG_SOURCE }}",
+                "Fast actual cold audit must use its private source",
             )?;
         }
         for (index, phase) in [(admit, "before"), (final_start, "after")] {
@@ -1464,6 +1538,9 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
                 ("native", "Verify SDK contents after permission preparation even on failure") => private_source_condition(
                     "always() && steps.sdk_permissions.outcome != 'skipped' && env.DIAG_SOURCE != ''",
                 ),
+                ("native", "Seal Fast private cold provider after maintained checks") => private_source_condition(
+                    "always() && steps.fast_cold.outcome != 'skipped' && env.DIAG_SOURCE != ''",
+                ),
                 (_, stage) if stage == prepared_final => private_source_condition(
                     "always() && steps.prepared_rust.outcome == 'success'",
                 ),
@@ -1471,7 +1548,10 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
                     "always() && env.DIAG_SOURCE != ''",
                 ),
                 ("native", "Clean only uploaded private Fast source") => private_source_condition(
-                    "always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.sdk_permissions_final.outcome == 'success'",
+                    "always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.sdk_permissions_final.outcome == 'success' && steps.fast_cold_final.outcome == 'success'",
+                ),
+                ("native", "Clean common owned Fast job temporary paths") => private_source_condition(
+                    "always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success' && steps.fast_cold_final.outcome == 'success'",
                 ),
                 (_, "Retain Fast job ownership evidence") => DIAGNOSTIC_PROOF.to_owned(),
                 (_, "Clean only uploaded private Fast source") => DIAGNOSTIC_CLEANUP.to_owned(),
@@ -1502,6 +1582,7 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
         strings(&gate["needs"])?
             == expected_strings(&[
                 "native",
+                "native-routing",
                 "native-tools",
                 "native-corpus",
                 "native-timing",
@@ -1576,6 +1657,7 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
             Some("cancelled"),
             Some("skipped"),
             Some("timed_out"),
+            Some("unknown"),
             Some(""),
             None,
         ] {

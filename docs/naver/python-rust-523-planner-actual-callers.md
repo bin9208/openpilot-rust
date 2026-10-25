@@ -186,7 +186,9 @@ WF/GHA/commit/push/stage도 **0회**이며 ready 상태로 부모 통합을 기�
 
 ## 인계 source SHA256
 
-아래7개 source의 현재 바이트에 대한 SHA다. 이 문서의 SHA는 최종 메시지에서 별도로 전달한다.
+아래7개 source는 최초 actual caller 인계 시점의 SHA 기록이다. 이후 부모 batch에서
+변경한 source 전체의 현재 SHA를 뜻하지 않는다. ARM preflight 보정 helper의 최종 SHA는
+다음 절에 별도로 고정하며, 이 문서의 최종 SHA는 인계 메시지에서 전달한다.
 
 ```text
 a1416e3dc4ac16c31214b871576ec663564bcda8fcf0184f9285cd48175878ef  tools/ci/planner_native_controller_523.sh
@@ -197,3 +199,58 @@ c1dddd235346b8f415c9b131aba7a371cb67ae80d0db5f13a86b450c4d0a8b44  rust/crates/de
 4da95b95176d911bfc62de3b6250d913e92f22f2c3f9bf6219727d86c16d163e  rust/crates/dev-tools/tests/planner_ci_controller.rs
 67006fee5e1a81e8350a4b514debd6f7e170af3541afa740c797fe0086016fb4  rust/tools/tests/test_plannerd_native_memory_controller.py
 ```
+
+## source73 ARM preflight 보정과 최종 helper 고정
+
+2026-10-26. run `40220990592`의 ARM job `121252313088` 로그를
+`.analysis/scratch/2026-10-25-523-completion/ci/planner-arm73.log`에서 읽었다.
+standalone `python-rust-523-native-arm-more.yml`은 prepared mode 없이
+`RUSTUP_HOME=$job/rustup-home`과 hosted ARM의 `native-host` transport를 제공했다.
+기존 helper가 aarch64 전체에 `arm530-sdk/rustup-home`을 요구해 controller 호출 전에
+거부했다. main/reusable/standalone의 현재 Planner 환경과 실제 SDK 제공 단계를 비교해
+helper의 host/mode 검증만 보정했다.
+
+| caller | 허용하는 SDK 계약 |
+| --- | --- |
+| main host Planner | mode/root/manifest 없음, `$job/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu` |
+| standalone ARM Planner | mode/root/manifest 및 reusable caller 표시 없음, `$job/rustup-home/toolchains/1.94.0-aarch64-unknown-linux-gnu` |
+| reusable ARM Planner | `native-arm-530-v1`, `$job/arm530-sdk/rustup-home/toolchains/1.94.0-aarch64-unknown-linux-gnu`와 같은 prepared root, `$job/proof/arm530-sdk/sdk.before.sha256`, `RUSTUP_AUTO_INSTALL=0` |
+
+ARM은 추가로 `CI296_NATIVE_ARM=1`, `github-hosted:Linux:ARM64`, `native-host`,
+host/target architecture `aarch64:aarch64`를 요구한다. 미지원 mode, 섞인 metadata,
+reusable caller의 prepared 누락은 오류를 출력하고 거부한다. 임의 SDK 경로나 prepared
+오류 뒤 일반 SDK fallback을 허용하지 않는다. 공통 job/source 소유권·SHA·venv 검사와
+SDK 실행물 검사부터 실행 끝까지의 본문은 이전 helper와 바이트가 같다. jobs1,
+host2700초/ARM5400초, leaf 순서·growth admission·첫 실패 전파도 그대로다.
+
+standalone의 현재 installer 경로를 유지하면 arm530 템플릿 이식은 필요하지 않다.
+추후 이식한다면 reusable의 `arm530_sdk` before, dependency 단계 verify,
+`arm530_sdk_final` after와 기존 always/outcome 조건을 함께 옮겨야 한다.
+mode만 지정해서는 통과하지 않는다. standalone push paths에는 현재 helper 경로가
+없으므로 helper 변경을 해당 workflow에 연결할 때 부모가 path filter도 함께 다룬다.
+기존 ARM sanitizer의 `matrix.runner == 'local-x64'` false 조건은 유지한다.
+main host에 whole-SDK before/after 범위를 추가하지 않는다.
+
+최종 helper SHA256:
+
+```text
+40e07c4d3261197a4c1be5d5acf0959cc2450ec30ba7c6ff8c87633c0de32c8f  tools/ci/planner_native_controller_523.sh
+```
+
+부모가 안정된 위 값으로 `rust/tools/tests/test_plannerd_ci.py`와
+`rust/crates/dev-tools/tests/planner_ci_policy/contract.rs`의 helper pin을 갱신한다.
+부모의 nativeunitpush tools-only 라우팅에 따라 변경 없는 buffers/Planner 검사를
+재실행하지 않는다. 이 작업에서는 공유 pin·workflow·master/corpus 문서를 수정하지 않았다.
+
+부모 전달 host 실제 artifact 감사 결과는 다음과 같다. 이 세션의 독립 다운로드·감사
+결과가 아니며, source73의 성공을 위 새 ARM preflight 보정의 실행 검증으로 대신하지 않는다.
+
+| artifact | 부모 전달 SHA256 | 부모 전달 감사 결과 |
+| --- | --- | --- |
+| private `12609399553` | `5961fee67e933e0b84923cc1f5f9ab0079e06f8301245b67912983d6b5544f4e` | 29 members |
+| functional `12609249847` | `e1d196ac2bb999867fd45fdff50702c6fa60f0917b7d1d251576c64a7e9df030` | 34,282 safe/CRC |
+
+부모가 확인한 host job `121252313424`는 source73의 runtime12·memory3 모두 exit0,
+result PASS다. 원본 보존과 retirement credit0은 계속 유지한다. 이번 보정의 로컬 확인은
+`bash -n`, 소스 바이트 비교, diff에 한정했다. 기능/build/Cargo/Clippy·stage·GHA 실행은
+0회이며 helper와 이 문서가 ready 상태다.

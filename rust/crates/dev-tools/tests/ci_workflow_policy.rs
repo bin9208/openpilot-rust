@@ -130,6 +130,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     let success = BTreeMap::from([
         ("SOURCE_ALLOWED".into(), "true".into()),
         ("NATIVE".into(), "success".into()),
+        ("NATIVE_ROUTING".into(), "success".into()),
         ("NATIVE_TOOLS".into(), "success".into()),
         ("NATIVE_CORPUS".into(), "success".into()),
         ("NATIVE_TIMING".into(), "success".into()),
@@ -140,6 +141,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     assert!(run_shell(script, &success).unwrap().success());
     for name in [
         "NATIVE",
+        "NATIVE_ROUTING",
         "NATIVE_TOOLS",
         "NATIVE_CORPUS",
         "NATIVE_TIMING",
@@ -154,6 +156,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
             Some("cancelled"),
             Some("skipped"),
             Some("timed_out"),
+            Some("unknown"),
         ] {
             let mut env = success.clone();
             if let Some(state) = state {
@@ -169,6 +172,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     }
     for dependency in [
         "native",
+        "native-routing",
         "native-tools",
         "native-corpus",
         "native-timing",
@@ -179,6 +183,12 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
         let mut missing = original.clone();
         missing["jobs"].as_object_mut().unwrap().remove(dependency);
         assert!(validate_fast_gate(&missing).is_err());
+        let mut omitted = original.clone();
+        omitted["jobs"]["fast"]["needs"]
+            .as_array_mut()
+            .unwrap()
+            .retain(|name| name != dependency);
+        assert!(validate_fast_gate(&omitted).is_err());
         let mut optional = original.clone();
         optional["jobs"][dependency]["if"] = "false".into();
         assert!(validate_fast_gate(&optional).is_err());
@@ -200,6 +210,7 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
     }
     for name in [
         "NATIVE",
+        "NATIVE_ROUTING",
         "NATIVE_TOOLS",
         "NATIVE_CORPUS",
         "NATIVE_TIMING",
@@ -232,6 +243,15 @@ fn parallel_fast_gate_requires_every_worker_and_actual_success() {
         assert!(validate_fast_gate(&bypass).is_err());
     }
     for needs in [
+        serde_json::json!([
+            "native",
+            "native-tools",
+            "native-corpus",
+            "native-timing",
+            "native-alerts",
+            "native-alert-manager",
+            "python-android"
+        ]),
         serde_json::json!([
             "native",
             "native-corpus",
@@ -367,7 +387,8 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
         "ci_disk_bootstrap",
         "ci_process_probe",
     ];
-    let cold_audit = "CI_PREPARED_RUST_PROOF=\"$CI_JOB_TEMP/proof\" \"$CI_PREPARED_RUST_ROOT/bin/cargo\" test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --test ci_disk_bootstrap prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- --ignored --exact --nocapture 2>&1 | tee \"$CI_JOB_TEMP/proof/prepared-cold-native-audit.log\"";
+    let cold_audit = "CI_PREPARED_RUST_PROOF=\"$CI_JOB_TEMP/proof\" \"$CI_PREPARED_RUST_ROOT/bin/cargo\" test --manifest-path rust/Cargo.toml -p openpilot-prepared-cold-audit --locked --lib prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- --ignored --exact --nocapture 2>&1 | tee \"$CI_JOB_TEMP/proof/prepared-cold-native-audit.log\"";
+    let cold_result = "grep -F 'test result: ok. 1 passed;' \"$CI_JOB_TEMP/proof/prepared-cold-native-audit.log\"";
     let cold_call = "\"$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh\" cold";
     let after_call = "\"$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh\" after";
     let caller_prepare = "\"$GITHUB_WORKSPACE/rust/tools/prepare-changed-files-caller\" \"$CI_JOB_TEMP/proof/changed-files-caller\" \"$CI_JOB_TEMP/changed-files-caller.env\"";
@@ -376,15 +397,12 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
     let owned_commands = [
         (cold_audit, "native"),
         (after_call, "native"),
-        (
-            "grep -F 'test result: ok. 1 passed;' \"$CI_JOB_TEMP/proof/prepared-cold-native-audit.log\"",
-            "native",
-        ),
-        (caller_prepare, "native"),
-        (caller_context, "native"),
-        (CHANGED_FILES_REGRESSION, "native"),
-        (NAVI_POLICY[0], "native"),
-        (NAVI_POLICY[1], "native"),
+        (cold_result, "native"),
+        (caller_prepare, "native-routing"),
+        (caller_context, "native-routing"),
+        (CHANGED_FILES_REGRESSION, "native-routing"),
+        (NAVI_POLICY[0], "native-routing"),
+        (NAVI_POLICY[1], "native-routing"),
         (service, "native-tools"),
         (SELFDRIVE_PROCESS_REGRESSION, "native-tools"),
         (SELFDRIVE_PROCESS_RESULT, "native-tools"),
@@ -394,6 +412,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
     let mut native_split = Vec::new();
     for worker in [
         "native",
+        "native-routing",
         "native-tools",
         "native-corpus",
         "native-timing",
@@ -446,12 +465,15 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
                     )
                 })
                 .count(),
-            1,
-            "{worker} must execute one baseline native suite command"
+            usize::from(worker != "native"),
+            "{worker} baseline native suite command count changed"
         );
         let command = commands
             .iter()
             .find(|line| {
+                if worker == "native" {
+                    return line.as_str() == cold_audit;
+                }
                 line.as_str() != CHANGED_FILES_REGRESSION
                 && line.as_str() != SELFDRIVE_PROCESS_REGRESSION
                 && !NAVI_POLICY.contains(&line.as_str()) && line.starts_with(
@@ -460,7 +482,10 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
             })
             .unwrap();
         let args = command.split_whitespace().collect::<Vec<_>>();
-        assert_eq!(args.contains(&"--lib"), worker == "native");
+        assert_eq!(
+            args.contains(&"--lib"),
+            matches!(worker, "native" | "native-routing")
+        );
         let selected = args
             .windows(2)
             .filter(|pair| pair[0] == "--test")
@@ -474,7 +499,8 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
                 "native-alerts" => alerts.contains(name),
                 "native-corpus" => corpus.contains(name),
                 "native-timing" => timing.contains(name),
-                "native" => policy.contains(name),
+                "native" => false,
+                "native-routing" => policy.contains(name),
                 "native-tools" => {
                     !corpus.contains(name)
                         && !timing.contains(name)
@@ -486,9 +512,12 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
             })
             .collect::<Vec<_>>();
         assert_eq!(selected, assigned, "{worker} suite selection changed");
-        let mut exact =
-            "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked".to_owned();
-        if worker == "native" {
+        let mut exact = if worker == "native" {
+            cold_audit.to_owned()
+        } else {
+            "cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked".to_owned()
+        };
+        if worker == "native-routing" {
             exact.push_str(" --lib");
         }
         for suite in &assigned {
@@ -499,14 +528,20 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
             command, &exact,
             "{worker} baseline command signature changed"
         );
-        if matches!(worker, "native" | "native-tools") {
-            assert_eq!(selected.len(), if worker == "native" { 4 } else { 54 });
+        if matches!(worker, "native-routing" | "native-tools") {
+            assert_eq!(
+                selected.len(),
+                if worker == "native-routing" { 4 } else { 54 }
+            );
             native_split.extend(selected.iter().map(|suite| (*suite).to_owned()));
         }
         for suite in selected {
             *seen.entry(suite.to_owned()).or_default() += 1;
         }
-        let disk_guard = "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048";
+        let disk_guard = format!(
+            "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib {}",
+            if worker == "native-routing" { 6144 } else { 2048 }
+        );
         let disk_guard = if worker == "native" {
             cold_call.to_owned()
         } else {
@@ -518,7 +553,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
             "{worker} disk guard changed"
         );
         let operation_guard = "OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 6144";
-        let split_worker = matches!(worker, "native" | "native-tools");
+        let split_worker = matches!(worker, "native-routing" | "native-tools");
         assert_eq!(
             commands
                 .iter()
@@ -526,6 +561,15 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
                 .count(),
             usize::from(split_worker),
             "{worker} operation admission changed"
+        );
+        let audit_guard = "OPENPILOT_CI_PREPARED_RUST_ROOT=\"$CI_PREPARED_RUST_ROOT\" OPENPILOT_CI_PREPARED_RUST_MANIFEST=\"$CI_PREPARED_RUST_MANIFEST\" \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 1024";
+        assert_eq!(
+            commands
+                .iter()
+                .filter(|line| line.as_str() == audit_guard)
+                .count(),
+            usize::from(worker == "native"),
+            "{worker} thin audit admission changed"
         );
         for (owned, owner) in owned_commands {
             assert_eq!(
@@ -543,8 +587,10 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
                 .position(|line| line.as_str() == expected)
                 .unwrap()
         };
-        if split_worker {
+        if worker == "native-tools" {
             assert!(at(&disk_guard) < at(operation_guard));
+        }
+        if split_worker {
             assert!(at(operation_guard) < at(command));
         }
         if worker == "native" {
@@ -650,7 +696,7 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
                     assert!(!run.contains(warmup), "Cargo before actual cold: {warmup}");
                 }
             }
-            assert!(at(NAVI_POLICY[1]) < at(after_call));
+            assert!(at(cold_result) < at(after_call));
             let cleanup = &steps[step_at("fast_source_cleanup")];
             assert_eq!(
                 cleanup["if"],
@@ -743,8 +789,11 @@ fn native_fast_split_preserves_every_suite_and_build_check_once() {
                     "missing native actual audit: {needle}"
                 );
             }
-            assert!(at(operation_guard) < at(cold_audit));
-            assert!(at(cold_audit) < at(caller_prepare));
+            assert!(at(cold_call) < at(audit_guard));
+            assert!(at(audit_guard) < at(cold_audit));
+            assert!(at(cold_audit) < at(cold_result));
+        } else if worker == "native-routing" {
+            assert!(at(operation_guard) < at(caller_prepare));
             assert!(at(caller_prepare) < at(caller_context));
             assert!(at(caller_context) < at(CHANGED_FILES_REGRESSION));
             assert!(at(CHANGED_FILES_REGRESSION) < at(command));
@@ -1073,6 +1122,7 @@ fn future_diagnostic_runner_and_fork_refusal_require_static_approved_routing() {
     for state in [None, Some(""), Some("false"), Some("skipped")] {
         let mut values = BTreeMap::from([
             ("NATIVE".into(), "success".into()),
+            ("NATIVE_ROUTING".into(), "success".into()),
             ("NATIVE_TOOLS".into(), "success".into()),
             ("NATIVE_CORPUS".into(), "success".into()),
             ("NATIVE_TIMING".into(), "success".into()),
@@ -1306,6 +1356,7 @@ fn native_fast_after_guards_reject_skipped_audits_and_unsealed_cleanup() {
     // after 검사는 실패 때도 실행해야 하며 fork/source 경계 밖으로 빠져나갈 수 없다.
     for id in [
         "sdk_permissions_final",
+        "fast_cold_final",
         "prepared_rust_final",
         "source_final",
     ] {
@@ -1336,6 +1387,11 @@ fn native_fast_after_guards_reject_skipped_audits_and_unsealed_cleanup() {
         ),
         ("sdk_permissions_final", " && env.DIAG_SOURCE != ''"),
         (
+            "fast_cold_final",
+            " && steps.fast_cold.outcome != 'skipped'",
+        ),
+        ("fast_cold_final", " && env.DIAG_SOURCE != ''"),
+        (
             "prepared_rust_final",
             " && steps.prepared_rust.outcome == 'success'",
         ),
@@ -1361,6 +1417,7 @@ fn native_fast_after_guards_reject_skipped_audits_and_unsealed_cleanup() {
         " && steps.source_final.outcome == 'success'",
         " && steps.prepared_rust_final.outcome == 'success'",
         " && steps.sdk_permissions_final.outcome == 'success'",
+        " && steps.fast_cold_final.outcome == 'success'",
     ] {
         assert!(condition.contains(clause));
         let mut changed = workflow.clone();
@@ -1373,6 +1430,8 @@ fn native_fast_after_guards_reject_skipped_audits_and_unsealed_cleanup() {
     for id in [
         "sdk_permissions",
         "sdk_permissions_final",
+        "fast_cold",
+        "fast_cold_final",
         "prepared_rust",
         "prepared_rust_final",
         "source_final",
@@ -1395,6 +1454,70 @@ fn native_fast_after_guards_reject_skipped_audits_and_unsealed_cleanup() {
             "accepted duplicated {id}"
         );
     }
+    for id in ["fast_cold", "fast_cold_final"] {
+        let index = at(id);
+        let body = steps[index]["run"].as_str().unwrap();
+        let wrong_phase = if id == "fast_cold" {
+            body.replace(" cold", " after")
+        } else {
+            body.replace(" after", " cold")
+        };
+        for replacement in ["true", wrong_phase.as_str()] {
+            let mut changed = workflow.clone();
+            changed["jobs"]["native"]["steps"][index]["run"] = replacement.into();
+            assert!(
+                validate_fast_gate(&changed).is_err(),
+                "accepted {id} helper bypass"
+            );
+        }
+        for (field, value) in [
+            ("shell", "sh"),
+            ("working-directory", "${{ github.workspace }}"),
+        ] {
+            let mut changed = workflow.clone();
+            changed["jobs"]["native"]["steps"][index][field] = value.into();
+            assert!(
+                validate_fast_gate(&changed).is_err(),
+                "accepted {id} {field}"
+            );
+        }
+        let mut changed = workflow.clone();
+        changed["jobs"]["native"]["steps"][index]["env"]["SOURCE_ALLOWED"] = "true".into();
+        assert!(
+            validate_fast_gate(&changed).is_err(),
+            "accepted {id} untrusted source"
+        );
+        let mut changed = workflow.clone();
+        changed["jobs"]["native"]["steps"][index]["env"]["FAST560_HELPER_SHA256"] =
+            "0".repeat(64).into();
+        assert!(
+            validate_fast_gate(&changed).is_err(),
+            "accepted {id} mismatched helper digest"
+        );
+    }
+    let mut reordered = workflow.clone();
+    reordered["jobs"]["native"]["steps"]
+        .as_array_mut()
+        .unwrap()
+        .swap(at("fast_cold_final"), at("fast_cold_final") - 1);
+    assert!(
+        validate_fast_gate(&reordered).is_err(),
+        "accepted cold finalizer before actual audit"
+    );
+    let common = steps
+        .iter()
+        .position(|step| step["name"] == "Clean common owned Fast job temporary paths")
+        .unwrap();
+    let mut unsealed = workflow.clone();
+    unsealed["jobs"]["native"]["steps"][common]["if"] = steps[common]["if"]
+        .as_str()
+        .unwrap()
+        .replace(" && steps.fast_cold_final.outcome == 'success'", "")
+        .into();
+    assert!(
+        validate_fast_gate(&unsealed).is_err(),
+        "accepted common cleanup without cold final seal"
+    );
 }
 
 #[test]
@@ -1437,6 +1560,7 @@ fn all_fast_workers_require_bound_sdk_seals_and_sealed_cleanup() {
     validate_fast_gate(&workflow).unwrap();
     for worker in [
         "native",
+        "native-routing",
         "native-tools",
         "native-corpus",
         "native-alerts",
@@ -1692,7 +1816,7 @@ fn full_private_jobs_reject_shared_checkouts_or_unsealed_cleanup() {
             assert!(validate_private_job_layout(&unsafe_alias).is_err());
         }
     }
-    assert_eq!(covered, 74, "maintained private source roster changed");
+    assert_eq!(covered, 77, "maintained private source roster changed");
 }
 
 #[test]
@@ -2051,7 +2175,7 @@ fn private_ownership_exact_guards_reject_missing_seal_or_admission() {
             }
         }
     }
-    assert_eq!((sources, arm), (74, 22));
+    assert_eq!((sources, arm), (77, 24));
 }
 
 // Evaluate the actual restricted workflow condition, not a separately invented

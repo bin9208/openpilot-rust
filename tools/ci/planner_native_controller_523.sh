@@ -15,8 +15,15 @@ host=${NATIVE_TOOLS_HOST:?}
 [[ $(git --no-optional-locks -C "$source_dir" rev-parse HEAD) == "$GITHUB_SHA" ]]
 [[ $(cat "$job/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]]
 case $(uname -m) in
-  x86_64) [[ $host == x86_64-unknown-linux-gnu && $RUSTUP_HOME == "$job/rustup-home" ]]; seconds=2700 ;;
-  aarch64) [[ $host == aarch64-unknown-linux-gnu && ${CI296_NATIVE_ARM:-} == 1 && $RUSTUP_HOME == "$job/arm530-sdk/rustup-home" ]]; seconds=5400 ;;
+  x86_64) [[ $host == x86_64-unknown-linux-gnu ]]; seconds=2700 ;;
+  aarch64)
+    [[ $host == aarch64-unknown-linux-gnu && ${CI296_NATIVE_ARM:-} == 1 &&
+       ${RUNNER_ENVIRONMENT:-}:${RUNNER_OS:-}:${RUNNER_ARCH:-} == github-hosted:Linux:ARM64 &&
+       ${OPENPILOT_CI_EXECUTION_MODE:-} == native-host &&
+       ${OPENPILOT_CI_HOST_ARCH:-}:${OPENPILOT_CI_TARGET_ARCH:-} == aarch64:aarch64 ]] || {
+      echo 'Planner requires provisioned native ARM host transport' >&2; exit 1;
+    }
+    seconds=5400 ;;
   *) echo 'unsupported Planner host' >&2; exit 1 ;;
 esac
 [[ $mode != memory || $host == x86_64-unknown-linux-gnu ]]
@@ -24,13 +31,23 @@ esac
 planner_python=$(command -v python)
 [[ $planner_python == "$job/venv/bin/python" && -x $planner_python ]]
 sdk=${RUSTUP_HOME:?}/toolchains/1.94.0-$host
-if [[ ${OPENPILOT_CI_PREPARED_RUST_MODE:-} == native-arm-530-v1 ]]; then
-  [[ $sdk == "${OPENPILOT_CI_PREPARED_RUST_ROOT:?}" &&
-     ${OPENPILOT_CI_PREPARED_RUST_MANIFEST:-} == "$job/proof/arm530-sdk/sdk.before.sha256" &&
-     ${RUSTUP_AUTO_INSTALL:-} == 0 ]]
-else
-  [[ $host == x86_64-unknown-linux-gnu && -z ${OPENPILOT_CI_PREPARED_RUST_MODE:-} ]]
-fi
+case ${OPENPILOT_CI_PREPARED_RUST_MODE:-} in
+  native-arm-530-v1)
+    [[ $host == aarch64-unknown-linux-gnu && $RUSTUP_HOME == "$job/arm530-sdk/rustup-home" &&
+       $sdk == "${OPENPILOT_CI_PREPARED_RUST_ROOT:-}" &&
+       ${OPENPILOT_CI_PREPARED_RUST_MANIFEST:-} == "$job/proof/arm530-sdk/sdk.before.sha256" &&
+       ${RUSTUP_AUTO_INSTALL:-} == 0 ]] || {
+      echo 'Planner prepared ARM SDK mode, root, manifest or installer policy differs' >&2; exit 1;
+    } ;;
+  '')
+    # host 및 기존 standalone ARM installer 경로다. reusable ARM의 prepared 누락은 거부한다.
+    [[ $RUSTUP_HOME == "$job/rustup-home" &&
+       -z ${OPENPILOT_CI_PREPARED_RUST_ROOT:-} && -z ${OPENPILOT_CI_PREPARED_RUST_MANIFEST:-} &&
+       ( $host == x86_64-unknown-linux-gnu || -z ${CI296_NATIVE_ARM_CALLER:-} ) ]] || {
+      echo 'Planner requires the provisioned job Rust home without prepared SDK metadata' >&2; exit 1;
+    } ;;
+  *) echo 'unsupported Planner prepared SDK mode' >&2; exit 1 ;;
+esac
 [[ -x $sdk/bin/cargo && -x $sdk/bin/rustc && -x $sdk/bin/rustdoc ]]
 export CARGO_BUILD_JOBS=1 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
 export OPENBLAS_NUM_THREADS=1 RUSTUP_AUTO_INSTALL=0

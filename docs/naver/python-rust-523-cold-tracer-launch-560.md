@@ -206,3 +206,15 @@ std-only approver compile과 after-cold 검증 phase를 추가하여 현재 pin�
 held SHA를 새 caller가 직접 사용한다. 따라서 이 공통 함수는 여전히 source-only library이며
 provider 준비/실제 cold/strict audit 성공을 스스로 발행하지 않는다.
 부모의 WF/Focus/bootstrap worker1 등록과 exact-SHA GHA18/Fast fit는 미완료다.
+
+
+## 73e17 분리 diagnostic 실물 수용 — 2026-10-26
+
+[40220990622/job121252313115](https://github.com/bin9208/openpilot-rust/actions/runs/40220990622/job/121252313115)는
+공유 launcher 추출 뒤 원래18control(positive7/binding음성4/context음성7), marker10,
+protocol3 및 실제 cold 감사까지 성공했다. artifact12609109860은11,513,744B/SHA256
+`9397b23d53bb9afc8a61177170d3047c1a21194deaa7a07a3e6beb5eec7cbdf0`,
+969 safe unique/non-symlink member, expanded61,860,622B와 CRC 정상이다.
+source73e17, source/index, SDK/header/GCC/Perl/source/roster 포함24쌍이 전후 동일했다.
+actual receipt는 cargo1/rustc37,exec180/실패29,Python/Rustup0과regular165를 기록했다.
+이 hosted diagnostic 성공은 self-hosted Fast7분/전체 회수 수용과 별개다.

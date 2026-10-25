@@ -14,7 +14,11 @@ concurrency:
 jobs:
   native:
     name: fast native routing checks
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on:
+    - self-hosted
+    - Linux
+    - X64
+    - dev-md-local
     timeout-minutes: 7
     env:
       RUSTUP_TOOLCHAIN: 1.94.0
@@ -23,261 +27,454 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
     steps:
-      - name: Deny fork source and require registered local runner
-        shell: bash
-        working-directory: ${{ github.workspace }}
-        env:
-          SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        run: |
-          test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          set -euo pipefail
-          test "$GITHUB_ACTIONS" = true
-          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
-          test "$RUNNER_NAME" = bin-actions
-          test "$RUNNER_ENVIRONMENT" = self-hosted
-          test "$RUNNER_OS" = Linux
-          test "$RUNNER_ARCH" = X64
-          test "$(uname -m)" = x86_64
-          df -PB1 "$GITHUB_WORKSPACE" /tmp
-          test -z "${COLD560_JOB_DEADLINE_EPOCH:-}"
-          printf 'COLD560_JOB_DEADLINE_EPOCH=%s\n' "$((EPOCHSECONDS+420))" >> "$GITHUB_ENV"
-      - name: Common owned Fast job temporary paths
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
-      - name: Allocate private Fast source cache and target before checkout
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        working-directory: ${{ github.workspace }}
-        run: |
-          set -euo pipefail
-          workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
-          job=$CI_JOB_TEMP
-          owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
-          test "$(cat "$job/owner")" = "$owner"
-          umask 077
-          mkdir "$job/proof" "$job/home" "$job/cache"
-          # Source capacity is checked on the actual source filesystem BEFORE checkout.
-          available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
-          [[ $available =~ ^[0-9]+$ ]]
-          required=$((2 * 1024 * 1024 * 1024))
-          printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
-          cat "$job/proof/source-growth-before-checkout.json"
-          ((available >= required))
-          source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
-          printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
-          mkdir "$source_owner/source"
-          source="$source_owner/source"
-          # Preserve Actions' real workspace separately. Only Bash consumers see the
-          # unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.
-          printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
-          printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
-          printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
-          df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
-          cat /proc/meminfo > "$job/proof/memory-before.txt"
-          if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
-          printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-          path: ${{ env.DIAG_CHECKOUT_PATH }}
-          set-safe-directory: false
-          clean: false
-          lfs: false
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-      - name: Admit exact private Fast source and Git history
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        working-directory: ${{ env.DIAG_SOURCE }}
-        run: |
-          set -euo pipefail
-          test "$PWD" = "$DIAG_SOURCE"
-          test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git diff --exit-code
-          git diff --cached --exit-code
-          printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
-          git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
-          tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
-      - name: Admit provisioned Rust without installing a second toolchain
-        id: prepared_rust
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        working-directory: ${{ env.DIAG_SOURCE }}
-        shell: bash
-        run: '"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before'
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-      - name: Isolate original Python package installation
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        working-directory: ${{ env.DIAG_SOURCE }}
-        run: |
-          set -euo pipefail
-          available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
-          [[ $available =~ ^[0-9]+$ ]]
-          ((available >= 512 * 1024 * 1024))
-          python -m venv "$CI_JOB_TEMP/venv"
-          printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
-      - run: python -m pip install pytest==9.0.2 PyYAML==6.0.2
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        working-directory: ${{ env.DIAG_SOURCE }}
-      - name: Remove shared write permission from the owned provisioned SDK
-        id: sdk_permissions
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        working-directory: ${{ env.DIAG_SOURCE }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          umask 077
-          sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
-          test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
-          test "$CI_PREPARED_RUST_ROOT" = "$sdk"
-          test -d "$sdk" && test ! -L "$sdk"
-          test "$(readlink -e "$sdk")" = "$sdk"
-          # SDK 소유권/type/device/content 검사를 유지하고 공유 쓰기 권한은 거부한다.
-          find "$sdk" -xdev ! -uid "$(id -u)" -print0 > "$CI_JOB_TEMP/proof/sdk-foreign-owners.bin"
-          test ! -s "$CI_JOB_TEMP/proof/sdk-foreign-owners.bin"
-          find "$sdk" -xdev ! -type d ! -type f -print0 > "$CI_JOB_TEMP/proof/sdk-unapproved-kinds.bin"
-          test ! -s "$CI_JOB_TEMP/proof/sdk-unapproved-kinds.bin"
-          sdk_device=$(stat -c '%d' -- "$sdk")
-          find "$sdk" -xdev -printf '%D\n' > "$CI_JOB_TEMP/proof/sdk-devices.before.txt"
-          while IFS= read -r device; do test "$device" = "$sdk_device"; done < "$CI_JOB_TEMP/proof/sdk-devices.before.txt"
-          printf '%s  %s\n' 103b60e1b1339968c1d74202ea1d45686037e82c4ea3e0569de24b18a1e6836a "$sdk/bin/rustc" > "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
-          printf '%s  %s\n' 77f14b761b02b47e6747473f556b3bc9f98f7e4525b7c3b8d74898ff816e4636 "$sdk/bin/cargo" >> "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
-          printf '%s  %s\n' d1c6d8c0e2fae4fbb686d421415d2f471e409ade6babb3e491d9ac5d9c70c602 "$sdk/bin/rustfmt" >> "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
-          printf '%s  %s\n' 2ff45d07196eec4f57a631103a877631d3579e86db2770bcfaa3b9d92a0b9d15 "$sdk/bin/clippy-driver" >> "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
-          sha256sum --check --quiet "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
-          LC_ALL=C find "$sdk" -xdev -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/sdk-permission-content.before.sha256"
-          LC_ALL=C find "$sdk" -xdev -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/sdk-permission-roster.before.bin"
-          find "$sdk" -xdev \( -type d -o -type f \) -perm /0022 -print0 > "$CI_JOB_TEMP/proof/sdk-permission-candidates.bin"
-          : > "$CI_JOB_TEMP/proof/sdk-permission-journal.tsv"
-          # 공유 SDK를 수정하지 않고 기존 0022 거부를 검증한다.
-          test ! -s "$CI_JOB_TEMP/proof/sdk-permission-candidates.bin"
-      - name: Verify SDK contents after permission preparation even on failure
-        id: sdk_permissions_final
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.sdk_permissions.outcome != 'skipped' && env.DIAG_SOURCE != '') }}
-        working-directory: ${{ env.DIAG_SOURCE }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
-          test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
-          test "$CI_PREPARED_RUST_ROOT" = "$sdk"
-          LC_ALL=C find "$sdk" -xdev -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/sdk-permission-content.after.sha256"
-          LC_ALL=C find "$sdk" -xdev -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/sdk-permission-roster.after.bin"
-          cmp "$CI_JOB_TEMP/proof/sdk-permission-content.before.sha256" "$CI_JOB_TEMP/proof/sdk-permission-content.after.sha256"
-          cmp "$CI_JOB_TEMP/proof/sdk-permission-roster.before.bin" "$CI_JOB_TEMP/proof/sdk-permission-roster.after.bin"
-          # 권한 변경도 허용하지 않는다. 기존 나머지 field 불변식 검사도 유지한다.
-          for phase in before after; do
-            while IFS=$'\t' read -r -d '' identity permissions mtime ctime kind entry link; do
-              test -z "$link"
-              [[ $kind == d || $kind == f ]]
-              [[ $entry == "$sdk" || $entry == "$sdk/"* ]]
-              [[ $entry != *$'\n'* && $entry != *$'\t'* ]]
-              mode=${permissions%%:*}
-              printf '%s\t%o:%s\t%s\t%s\t%s\0' "$identity" "$((8#$mode & ~0022))" "${permissions#*:}" "$mtime" "$kind" "$entry"
-            done < "$CI_JOB_TEMP/proof/sdk-permission-roster.$phase.bin" > "$CI_JOB_TEMP/proof/sdk-permission-invariants.$phase.bin"
-          done
-          cmp "$CI_JOB_TEMP/proof/sdk-permission-invariants.before.bin" "$CI_JOB_TEMP/proof/sdk-permission-invariants.after.bin"
-          find "$sdk" -xdev \( -type d -o -type f \) -perm /0022 -print0 > "$CI_JOB_TEMP/proof/sdk-remaining-shared-writes.bin"
-          test ! -s "$CI_JOB_TEMP/proof/sdk-remaining-shared-writes.bin"
-      - name: Prepare native CI validation
-        id: fast_cold
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        working-directory: ${{ env.DIAG_SOURCE }}
-        shell: bash
-        env:
-          SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-          FAST560_HELPER_SHA256: 645a23e3eed36c6663093cabd71f3618ba3f98af9ccf9848098659b25da1feec
-        run: |
-          "$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh" cold
-      - name: Check CI routing and upstream synchronization guards
-        run: |
-          set -euo pipefail
-          OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" \
-            "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
-          # The original 6GiB routing admission also covers compiling this native verifier.
-          # Reuse that target for the unchanged routing selectors below.
-          CI_PREPARED_RUST_PROOF="$CI_JOB_TEMP/proof" "$CI_PREPARED_RUST_ROOT/bin/cargo" test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked \
-            --test ci_disk_bootstrap prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- --ignored --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/prepared-cold-native-audit.log"
-          grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/prepared-cold-native-audit.log"
-          "$GITHUB_WORKSPACE/rust/tools/prepare-changed-files-caller" "$CI_JOB_TEMP/proof/changed-files-caller" "$CI_JOB_TEMP/changed-files-caller.env"
-          source "$CI_JOB_TEMP/changed-files-caller.env"
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --test changed_files_caller
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --lib \
-            --test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features carrot-navi-compare-native --test carrot_navi_compare maintained_policy_rejects_embedded_oracle_and_changed_traffic -- --exact
-          cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features carrot-navi-compare-native --test carrot_navi_compare maintained_policy_accepts_yaml_aliases_and_rejects_unreviewed_overlays -- --exact
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        working-directory: ${{ env.DIAG_SOURCE }}
-      - name: Seal Fast private cold provider after maintained checks
-        id: fast_cold_final
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_cold.outcome != 'skipped' && env.DIAG_SOURCE != '') }}
-        working-directory: ${{ env.DIAG_SOURCE }}
-        shell: bash
-        env:
-          SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-          FAST560_HELPER_SHA256: 645a23e3eed36c6663093cabd71f3618ba3f98af9ccf9848098659b25da1feec
-        run: |
-          "$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh" after
-      - name: Verify provisioned Rust SDK contents and identities after routing
-        id: prepared_rust_final
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}
-        working-directory: ${{ env.DIAG_SOURCE }}
-        shell: bash
-        run: '"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after'
-      - name: Seal Fast source and index after all maintained checks
-        id: source_final
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
-        working-directory: ${{ env.DIAG_SOURCE }}
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
-          cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
-          tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
-          cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
-          git diff --exit-code
-          git diff --cached --exit-code
-          df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
-          cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
-      - name: Retain Fast job ownership evidence
-        id: fast_evidence
-        if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: diagnostic-fast-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ env.CI_JOB_TEMP }}/proof
-          if-no-files-found: error
-          retention-days: 14
-      - name: Clean only uploaded private Fast source
-        id: fast_source_cleanup
-        if: "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.sdk_permissions_final.outcome == 'success' && steps.fast_cold_final.outcome == 'success') }}"
-        working-directory: ${{ github.workspace }}
-        env:
-          UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
-          UPLOAD_DIGEST: ${{ steps.fast_evidence.outputs.artifact-digest }}
-        run: |
-          set -euo pipefail
-          [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
-          [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
-          workspace=$DIAG_ACTIONS_WORKSPACE
-          p=$DIAG_SOURCE_OWNER
-          case "$p" in "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
-          test -d "$p" && test ! -L "$p"
-          test "$(realpath -e -- "$p")" = "$p"
-          test "$(stat -c '%u' -- "$p")" = "$(id -u)"
-          test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
-          test -f "$p/.diag296-owner" && test ! -L "$p/.diag296-owner"
-          test "$(cat "$p/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
-          test "$DIAG_SOURCE" = "$p/source"
-          test -d "$p/source" && test ! -L "$p/source"
-          test "$(realpath -e -- "$p/source")" = "$p/source"
-          rm -rf --one-file-system -- "$p"
-      - name: Clean common owned Fast job temporary paths
-        if: "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success' && steps.fast_cold_final.outcome == 'success') }}"
-        uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
-        with:
-          cleanup: 'true'
+    - name: Deny fork source and require registered local runner
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        set -euo pipefail
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_NAME" = bin-actions
+        test "$RUNNER_ENVIRONMENT" = self-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -m)" = x86_64
+        df -PB1 "$GITHUB_WORKSPACE" /tmp
+        test -z "${COLD560_JOB_DEADLINE_EPOCH:-}"
+        printf 'COLD560_JOB_DEADLINE_EPOCH=%s\n' "$((EPOCHSECONDS+420))" >> "$GITHUB_ENV"
+    - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Allocate private Fast source cache and target before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        # Source capacity is checked on the actual source filesystem BEFORE checkout.
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        cat "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Preserve Actions' real workspace separately. Only Bash consumers see the
+        # unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    - name: Admit exact private Fast source and Git history
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+    - name: Admit provisioned Rust without installing a second toolchain
+      id: prepared_rust
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: '"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before'
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    - name: Isolate original Python package installation
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        ((available >= 512 * 1024 * 1024))
+        python -m venv "$CI_JOB_TEMP/venv"
+        printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
+    - run: python -m pip install pytest==9.0.2 PyYAML==6.0.2
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+    - name: Remove shared write permission from the owned provisioned SDK
+      id: sdk_permissions
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        umask 077
+        sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+        test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
+        test "$CI_PREPARED_RUST_ROOT" = "$sdk"
+        test -d "$sdk" && test ! -L "$sdk"
+        test "$(readlink -e "$sdk")" = "$sdk"
+        # SDK 소유권/type/device/content 검사를 유지하고 공유 쓰기 권한은 거부한다.
+        find "$sdk" -xdev ! -uid "$(id -u)" -print0 > "$CI_JOB_TEMP/proof/sdk-foreign-owners.bin"
+        test ! -s "$CI_JOB_TEMP/proof/sdk-foreign-owners.bin"
+        find "$sdk" -xdev ! -type d ! -type f -print0 > "$CI_JOB_TEMP/proof/sdk-unapproved-kinds.bin"
+        test ! -s "$CI_JOB_TEMP/proof/sdk-unapproved-kinds.bin"
+        sdk_device=$(stat -c '%d' -- "$sdk")
+        find "$sdk" -xdev -printf '%D\n' > "$CI_JOB_TEMP/proof/sdk-devices.before.txt"
+        while IFS= read -r device; do test "$device" = "$sdk_device"; done < "$CI_JOB_TEMP/proof/sdk-devices.before.txt"
+        printf '%s  %s\n' 103b60e1b1339968c1d74202ea1d45686037e82c4ea3e0569de24b18a1e6836a "$sdk/bin/rustc" > "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
+        printf '%s  %s\n' 77f14b761b02b47e6747473f556b3bc9f98f7e4525b7c3b8d74898ff816e4636 "$sdk/bin/cargo" >> "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
+        printf '%s  %s\n' d1c6d8c0e2fae4fbb686d421415d2f471e409ade6babb3e491d9ac5d9c70c602 "$sdk/bin/rustfmt" >> "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
+        printf '%s  %s\n' 2ff45d07196eec4f57a631103a877631d3579e86db2770bcfaa3b9d92a0b9d15 "$sdk/bin/clippy-driver" >> "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
+        sha256sum --check --quiet "$CI_JOB_TEMP/proof/sdk-permission-program-pins.sha256"
+        LC_ALL=C find "$sdk" -xdev -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/sdk-permission-content.before.sha256"
+        LC_ALL=C find "$sdk" -xdev -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/sdk-permission-roster.before.bin"
+        find "$sdk" -xdev \( -type d -o -type f \) -perm /0022 -print0 > "$CI_JOB_TEMP/proof/sdk-permission-candidates.bin"
+        : > "$CI_JOB_TEMP/proof/sdk-permission-journal.tsv"
+        # 공유 SDK를 수정하지 않고 기존 0022 거부를 검증한다.
+        test ! -s "$CI_JOB_TEMP/proof/sdk-permission-candidates.bin"
+    - name: Verify SDK contents after permission preparation even on failure
+      id: sdk_permissions_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.sdk_permissions.outcome != 'skipped' && env.DIAG_SOURCE != '') }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        sdk=/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu
+        test "$RUSTUP_HOME" = "$CI_JOB_TEMP/rustup-home"
+        test "$CI_PREPARED_RUST_ROOT" = "$sdk"
+        LC_ALL=C find "$sdk" -xdev -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/sdk-permission-content.after.sha256"
+        LC_ALL=C find "$sdk" -xdev -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$CI_JOB_TEMP/proof/sdk-permission-roster.after.bin"
+        cmp "$CI_JOB_TEMP/proof/sdk-permission-content.before.sha256" "$CI_JOB_TEMP/proof/sdk-permission-content.after.sha256"
+        cmp "$CI_JOB_TEMP/proof/sdk-permission-roster.before.bin" "$CI_JOB_TEMP/proof/sdk-permission-roster.after.bin"
+        # 권한 변경도 허용하지 않는다. 기존 나머지 field 불변식 검사도 유지한다.
+        for phase in before after; do
+          while IFS=$'\t' read -r -d '' identity permissions mtime ctime kind entry link; do
+            test -z "$link"
+            [[ $kind == d || $kind == f ]]
+            [[ $entry == "$sdk" || $entry == "$sdk/"* ]]
+            [[ $entry != *$'\n'* && $entry != *$'\t'* ]]
+            mode=${permissions%%:*}
+            printf '%s\t%o:%s\t%s\t%s\t%s\0' "$identity" "$((8#$mode & ~0022))" "${permissions#*:}" "$mtime" "$kind" "$entry"
+          done < "$CI_JOB_TEMP/proof/sdk-permission-roster.$phase.bin" > "$CI_JOB_TEMP/proof/sdk-permission-invariants.$phase.bin"
+        done
+        cmp "$CI_JOB_TEMP/proof/sdk-permission-invariants.before.bin" "$CI_JOB_TEMP/proof/sdk-permission-invariants.after.bin"
+        find "$sdk" -xdev \( -type d -o -type f \) -perm /0022 -print0 > "$CI_JOB_TEMP/proof/sdk-remaining-shared-writes.bin"
+        test ! -s "$CI_JOB_TEMP/proof/sdk-remaining-shared-writes.bin"
+    - name: Prepare native CI validation
+      id: fast_cold
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        FAST560_HELPER_SHA256: 645a23e3eed36c6663093cabd71f3618ba3f98af9ccf9848098659b25da1feec
+      run: |
+        "$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh" cold
+    - name: Audit actual prepared cold bootstrap with the minimal native crate
+      run: |
+        set -euo pipefail
+        OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST" \
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        # 경량 감사 crate/fixture의 예상 추가 성장1GiB다. 전체 cold cap6GiB는 유지한다.
+        CI_PREPARED_RUST_PROOF="$CI_JOB_TEMP/proof" "$CI_PREPARED_RUST_ROOT/bin/cargo" test --manifest-path rust/Cargo.toml -p openpilot-prepared-cold-audit --locked \
+          --lib prepared_audit::prepared_audit_actual_cold_bootstrap_receipt -- --ignored --exact --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/prepared-cold-native-audit.log"
+        grep -F 'test result: ok. 1 passed;' "$CI_JOB_TEMP/proof/prepared-cold-native-audit.log"
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+    - name: Seal Fast private cold provider after maintained checks
+      id: fast_cold_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_cold.outcome != 'skipped' && env.DIAG_SOURCE != '') }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        FAST560_HELPER_SHA256: 645a23e3eed36c6663093cabd71f3618ba3f98af9ccf9848098659b25da1feec
+      run: |
+        "$DIAG_SOURCE/tools/ci/fast_native_cold_560.sh" after
+    - name: Verify provisioned Rust SDK contents and identities after routing
+      id: prepared_rust_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: '"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after'
+    - name: Seal Fast source and index after all maintained checks
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+    - name: Retain Fast job ownership evidence
+      id: fast_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: diagnostic-fast-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        if-no-files-found: error
+        retention-days: 14
+    - name: Clean only uploaded private Fast source
+      id: fast_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id !=
+        '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.sdk_permissions_final.outcome
+        == 'success' && steps.fast_cold_final.outcome == 'success') }}
+      working-directory: ${{ github.workspace }}
+      env:
+        UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.fast_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.diag296-owner" && test ! -L "$p/.diag296-owner"
+        test "$(cat "$p/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned Fast job temporary paths
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id !=
+        '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success' && steps.fast_cold_final.outcome == 'success') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'
+  native-routing:
+    name: fast native routing policy checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    env:
+      GH_HOSTED: '1'
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+    - name: Deny fork source and require GitHub-hosted Linux X64
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        set -euo pipefail
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$GH_HOSTED" = 1
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -m)" = x86_64
+        df -PB1 "$GITHUB_WORKSPACE" /tmp
+    - name: Common owned Fast job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Allocate private Fast source cache and target before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        # Source capacity is checked on the actual source filesystem BEFORE checkout.
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        cat "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        # 새 routing 작업의 동시 잔여 성장 admission. 다른 worker의 예산은 바꾸지 않는다.
+        workspace_device=$(stat -c %d -- "$workspace")
+        job_device=$(stat -c %d -- "$job")
+        workspace_growth=$((8 * 1024 * 1024 * 1024))
+        job_growth=$((13 * 1024 * 1024 * 1024 / 2))
+        if [[ $workspace_device == "$job_device" ]]; then
+          ((available >= workspace_growth + job_growth))
+        else
+          ((available >= workspace_growth))
+          job_available=$(df --output=avail -B1 -- "$job" | awk 'NR==2 {print $1}')
+          [[ $job_available =~ ^[0-9]+$ ]] && ((job_available >= job_growth))
+        fi
+        printf '{"workspace_device":%s,"job_device":%s,"workspace_growth_bytes":%s,"job_growth_bytes":%s,"peak_guarantee":false}\n'   "$workspace_device" "$job_device" "$workspace_growth" "$job_growth" > "$job/proof/routing-growth-before-checkout.json"
+        source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Preserve Actions' real workspace separately. Only Bash consumers see the
+        # unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/diagnostic-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/diagnostic-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    - name: Admit exact private Fast source and Git history
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+    - name: Admit provisioned Rust without installing a second toolchain
+      id: prepared_rust
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: '"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" before'
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    - name: Isolate original Python package installation
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        ((available >= 512 * 1024 * 1024))
+        python -m venv "$CI_JOB_TEMP/venv"
+        printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
+    - run: python -m pip install pytest==9.0.2 PyYAML==6.0.2
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+    - name: Check CI routing and upstream synchronization guards
+      run: |
+        set -euo pipefail
+        # source2 + target6 + registry2 + SDK3 + proof0.5 + venv0.5 + reserve0.5 GiB.
+        # 첫 Cargo 전 실제 여유를 다시 확인한다. peak 사용량을 보장하는 값은 아니다.
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/routing-memory-before.txt"
+        cat /proc/self/cgroup > "$CI_JOB_TEMP/proof/routing-cgroup-before.txt"
+        OPENPILOT_CI_PREPARED_RUST_ROOT="$CI_PREPARED_RUST_ROOT" OPENPILOT_CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST"   "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 6144
+        "$GITHUB_WORKSPACE/rust/tools/prepare-changed-files-caller" "$CI_JOB_TEMP/proof/changed-files-caller" "$CI_JOB_TEMP/changed-files-caller.env"
+        source "$CI_JOB_TEMP/changed-files-caller.env"
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --no-default-features --features changed-files-native --test changed_files_caller
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --lib \
+          --test ci_workflow_policy --test ci_rust_isolation --test ci_disk_bootstrap --test ci_process_probe
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features carrot-navi-compare-native --test carrot_navi_compare maintained_policy_rejects_embedded_oracle_and_changed_traffic -- --exact
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --features carrot-navi-compare-native --test carrot_navi_compare maintained_policy_accepts_yaml_aliases_and_rejects_unreviewed_overlays -- --exact
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+    - name: Verify read-only Rust SDK contents and identities after maintained checks
+      id: prepared_rust_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.prepared_rust.outcome == 'success') }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: '"$GITHUB_WORKSPACE/rust/tools/prepare-readonly-ci-rust" after'
+    - name: Seal Fast source and index after all maintained checks
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+    - name: Retain Fast job ownership evidence
+      id: fast_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: diagnostic-fast-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        if-no-files-found: error
+        retention-days: 14
+    - name: Clean only uploaded private Fast source
+      id: fast_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id !=
+        '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success') }}
+      working-directory: ${{ github.workspace }}
+      env:
+        UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.fast_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.diag296-owner" && test ! -L "$p/.diag296-owner"
+        test "$(cat "$p/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned Fast job temporary paths
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id !=
+        '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'
   native-tools:
     name: fast native service and tool checks
     runs-on: ubuntu-24.04
@@ -1349,26 +1546,36 @@ jobs:
   fast:
     name: fast checks
     if: ${{ always() }}
-    needs: [native, native-tools, native-corpus, native-timing, native-alerts, native-alert-manager, python-android]
+    needs:
+    - native
+    - native-routing
+    - native-tools
+    - native-corpus
+    - native-timing
+    - native-alerts
+    - native-alert-manager
+    - python-android
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
-      - name: Require every fast worker to succeed
-        env:
-          NATIVE: ${{ needs.native.result }}
-          NATIVE_TOOLS: ${{ needs.native-tools.result }}
-          NATIVE_CORPUS: ${{ needs.native-corpus.result }}
-          NATIVE_TIMING: ${{ needs.native-timing.result }}
-          NATIVE_ALERTS: ${{ needs.native-alerts.result }}
-          NATIVE_ALERT_MANAGER: ${{ needs.native-alert-manager.result }}
-          PYTHON_ANDROID: ${{ needs.python-android.result }}
-          SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        run: |
-          test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
-          test "$NATIVE" = success
-          test "$NATIVE_TOOLS" = success
-          test "$NATIVE_CORPUS" = success
-          test "$NATIVE_TIMING" = success
-          test "$NATIVE_ALERTS" = success
-          test "$NATIVE_ALERT_MANAGER" = success
-          test "$PYTHON_ANDROID" = success
+    - name: Require every fast worker to succeed
+      env:
+        NATIVE: ${{ needs.native.result }}
+        NATIVE_TOOLS: ${{ needs.native-tools.result }}
+        NATIVE_CORPUS: ${{ needs.native-corpus.result }}
+        NATIVE_TIMING: ${{ needs.native-timing.result }}
+        NATIVE_ALERTS: ${{ needs.native-alerts.result }}
+        NATIVE_ALERT_MANAGER: ${{ needs.native-alert-manager.result }}
+        PYTHON_ANDROID: ${{ needs.python-android.result }}
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        NATIVE_ROUTING: ${{ needs.native-routing.result }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        test "$NATIVE" = success
+        test "$NATIVE_ROUTING" = success
+        test "$NATIVE_TOOLS" = success
+        test "$NATIVE_CORPUS" = success
+        test "$NATIVE_TIMING" = success
+        test "$NATIVE_ALERTS" = success
+        test "$NATIVE_ALERT_MANAGER" = success
+        test "$PYTHON_ANDROID" = success
