@@ -351,12 +351,38 @@ fn validate_carrot_x64_sdk530_steps(steps: &[Value]) -> Result<(), String> {
         }),
         "CarrotMan fresh SDK must precede legacy shim discovery",
     )?;
+    // pip의 User-Agent probe도 rustc proxy를 실행한다. 준비 전 Python
+    // 설치는 sealed SDK와 다른 소유 namespace를 사용하고 자동 설치를 막는다.
+    let python_setup = steps[..before]
+        .iter()
+        .filter(|s| s["uses"] == "actions/setup-python@v6")
+        .collect::<Vec<_>>();
+    let python_venv = steps[..before]
+        .iter()
+        .filter(|s| s["name"] == "Keep original Python installations private")
+        .collect::<Vec<_>>();
+    require(
+        python_setup.len() == 1 && python_venv.len() == 1,
+        "CarrotMan requires both original Python preparation stages",
+    )?;
+    for step in [python_setup[0], python_venv[0]] {
+        require(
+            step["env"]
+                == serde_json::json!({
+                    "CI296_HOST_CONTROL":"1",
+                    "RUSTUP_HOME":"${{ env.CI_JOB_TEMP }}/python-rustup-home",
+                    "CARGO_HOME":"${{ env.CI_JOB_TEMP }}/python-cargo-home",
+                    "RUSTUP_AUTO_INSTALL":"0"
+                }),
+            "CarrotMan Python probes must use isolated homes without automatic Rust installation",
+        )?;
+    }
     for (step, name, condition, digest) in [
         (
             first,
             "Prepare exact fresh x64 SDK before CarrotMan cold bootstrap",
             TRUSTED_SOURCE.to_owned(),
-            "851b90c7b9c20c34a75827b7f76eb6539bc115726d26932b66ccbe60195eac55",
+            "3ac35298662ca18b12658fead672e2b4deacbb2f72e1ec68699794e167f2502f",
         ),
         (
             last,

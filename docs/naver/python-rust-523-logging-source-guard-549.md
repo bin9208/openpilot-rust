@@ -333,3 +333,84 @@ root/child 두 파일의 `rustfmt --edition 2021 --check --config skip_children=
 [retained40209583376/job121217757349](https://github.com/bin9208/openpilot-rust/actions/runs/40209583376/job/121217757349)은 실제 부재 정책의 빌드/두 strictClippy·선택 단위67개와 Git source-cache 준비까지 성공한 뒤 실패했다. artifact12605605211(12335462B/SHA256 `0f218f2ab955393e587cc3db36b77124b32091dbe904eb7a2e701801abb6b23b`)의2494 unique/safe/전체CRC를 확인했다. 최종 phase는 git-source-cache-prime/exit1이며 held-final=0이다. source-cache complete는 성공했으므로 이를 Git cache 실패로 분류하지 않는다. 직후 untraced 환경의 기존6개 개수 검사에 새 absent 정책키1개가 포함돼 실패한 것을 source/부분 출력으로 확인했다. 기존6키/순서·evidence index5를 유지하고 present6/absent7과 정확 정책키를 검증하도록 수정한다. lifecycle14/현재15/CLI/raw/policy/source-guard는 미도달이다.
 
 [collision40209583383/job121217757350](https://github.com/bin9208/openpilot-rust/actions/runs/40209583383/job/121217757350)은 실제 fixture 실행 전 root lifecycle 소스의 옛 SHA pin에서 실패했다. 해당 현재 파일의 검토한 부재정책 한 줄을 포함하는 정확 SHA로 고정한다. 검사·기한·거부 조건을 없애지 않는다. 두 실패의 원본 삭제 credit은0이며 수정 후 실제 부재/재등장·호출부 수용이 필요하다.
+
+## DD collision 실제 lexer 거부와 capture 보완 — 2026-10-26
+
+[collision run40212410241/job121226282810](https://github.com/bin9208/openpilot-rust/actions/runs/40212410241/job/121226282810)의 source는
+`dd6157c3984a73a59fb808b551cdab73f04dba35`다. 부모가 받던
+`.analysis/scratch/2026-10-25-523-completion/ci/12606243075.zip`은 확인 시16700250B이며,
+중앙 디렉터리가 있고 열린 writer FD가 없었다. 부모 session11862는 이 작업자의 session
+namespace에서는 조회되지 않았다. 중복 다운로드 없이 기존 ZIP을 inert로 읽었다.
+7672개 전체 이름의 safe/unique·비암호화·symlink 없음과 전체CRC를 확인했고,
+expanded162055841B, ZIP SHA256은
+`c8c3061eb7d4c7f04f48884838d493913d5a1965436711d4737c28cbcc26f49c`다.
+ZIP의 파일을 추출·실행하거나 GHA를 시작하지 않았다.
+
+실제 실패 step은 `Build fresh reference only and observe current collision8`, 내부 phase는
+`inspect-checker-build`다. checker/probe/fixture/reference build와 collision8/inspect-collision의
+command/watcher exit는 모두0이다. collision fixture는1 selector 성공이고 policy check는
+`true`, rich report는 exec9(fixture1+checker8), raw10/665882B다. 그 뒤 inspector stderr가
+정확히 `check-native-logging: trace syscall name invalid`(49B)를 남겼고 command exit1이다.
+전체 cohort 성공으로 확대하지 않는다. outcome은 source_policy=absent,
+command_exit=1/finalizer_exit=1/immutable_seals=false/collision8_current_pass=false다.
+
+문제 원문은 `c8/cargo-trace/checker.11407`(SHA256
+`ff97a61bb76b1ba61ddacdf8be6212999368767e4a111d0d5e5331359dfd6c4b`)의 두 줄이다.
+
+```text
+1792946238.358436 ???( <unfinished ...>
+1792946238.359013 +++ exited with 0 +++
+```
+
+부모raw `checker.11406`에는1792946238.357738의 CLONE_THREAD 등을 포함한 clone3→11407,
+1792946238.358411의 exit_group(0)이 있다. 이는 짧은 thread의 관측 순서이며 `???`를
+어떤 syscall로 복원하거나 안전한 exit로 수용할 근거가 아니다. build raw 전수의
+checker3801파일/36616993B/16993행, probe441/2724104B/1531행,
+fixture1812/73043143B/6871행, reference10/5599181B/16618행에서 이 이름은 한 줄뿐이다.
+현재 Rust `trace::name_end`가 이를 거부한 것은 유지해야 할 동작이다.
+
+resource/source-policy sticky marker와 admission-failure/first-failure 파일은 이 ZIP에 없다.
+source·system-headers·gcc-provider·reference·cases의 before/after roster/hash와 after의
+stable roster는 모두 같다. held158행도 순서만 다르고 정렬 후 bytes가 같다. 따라서 이 자료를
+용량 초과나 source 재등장 실패로 분류하지 않는다. finalizer_exit1의 추가 원인은 기존 자료로
+확정하지 못했다. 특히 alias별 관측 결과가 이전 proof에 따로 없어 모든 finalizer 조건의 성공을
+소급 주장할 수 없다.
+
+수정은 `tools/ci/logging_collision8_549.sh`에 한정한다. build trace만 기존 retained capture의
+`--seccomp-bpf`를 요청하고, 실제 보존된 strace help의 지원을 확인한다. `trace=$profile`,
+`--kill-on-exit/-ff/-ttt/-yy/-xx/-v/-s65536`, argv/env, raw/lexer 및 runtime collision trace는
+유지한다. `build/$label.capture.json`에는 요청 여부와 activation_proven=false를 기록한다.
+BPF 실제 활성이나 `???` 발생 인과·해소는 이번 로컬 소스 검토로 입증하지 않았다. unknown을
+skip·치환·재시도하지 않으며 다음 collision GHA에서도 같은 raw가 생기면 그대로 실패해야 한다.
+
+명령/감시자/소유 group 중 하나라도 실패하면 create-new
+`c8/command-first-failure.txt`에 최초 phase와 세 exit를 보존하고 CI 로그에 최대4096B stderr
+prefix를 표시한다. stderr 전체는 기존 build 파일에 그대로 남긴다. 기존 exit-codes.tsv의3열도
+그대로다. finalizer는 held/path/FD/alias의 실패 메시지, tree별 tree/roster/hash exit와
+미도달 표시, source-policy/resource stdout/stderr 및 각 exit를 outcome의 추가 필드에 남긴다.
+기존 finalizer AND와 immutable_seals/candidate 조건은 유지하며 failed marker의 dangling
+symlink도 거부한다. proof의 기존 용량·원래 timeout·PGID/watcher·readonly 후검사와
+old27/runtime2/caller/source_absence/closed PID·cwd·FD·DSO/retirement 경계는 완화하지 않았다.
+
+부모 인계 pin은 다음과 같다. `logging_collision8_batches_549.sh`와 Rust/lexer/tests는 변경하지
+않았으므로 Rust test 추가 통지는 필요하지 않다. workflow/main/Focus/원장/commit/push/GHA는
+부모 소유로 변경·실행하지 않았다. 다음 필요한 검증은 변경된 collision만이며 retained 재실행은
+필요하지 않다. collision workflow의 `COLLISION8_HELPER_SHA256`와 관련 Focus pin만 새 helper
+SHA로 갱신한다.
+
+| 파일 | SHA256 |
+| --- | --- |
+| `tools/ci/logging_collision8_549.sh` | `5b01ff90076714db598915bcef27c80e114d2c44f355c321b791dd1b83b2467d` |
+| `tools/ci/logging_collision8_batches_549.sh` (불변) | `52d4ca212c28cad44579360b8531c915f6fe8e3060c0b480f0f7ec1cdb659a79` |
+
+로컬은 ZIP inert 감사, Bash 구문과 diff 검토만 수행했다. build/test/Clippy/원본/모델/프로젝트
+CLI/jq 정책 평가/GHA 실행은0이며 수정 후 collision 기능은 **GHA UNRUN**이다.
+
+부모가 별도로 감사한 retained run40212410474/job121226283640/sourceDD의 전체SUCCESS와
+artifact12607036666(136138137B/SHA256
+`fcdd3b591e544cf57ccfd0038ec7ef6c7a1f7da6126ae92175f82d5c6aafc681`,9696safe unique·nosymlink·전체CRC)는
+부모 보고로 수령했다. 이 작업자는 해당 ZIP을 다시 다운로드/CRC하지 않았다. candidate
+exit/held/untraced/paired=0, CLI20/providers·parents unchanged, legacy2 및 absent 성공을 유지한다.
+main logger는 APT 단계의 Azure HTTP 다운로드 지연으로20분 timeout되어 actual step19에
+미도달했다는 부모 조사도 수령했다. 따라서 main maintained caller+collision이 남아 있으며
+원본2 full retirement credit은 계속0이다.

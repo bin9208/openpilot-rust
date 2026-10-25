@@ -522,7 +522,7 @@ fn carrot_x64_cold_bootstrap_rejects_partial_sdk_proxy_and_cleanup_escapes() {
     use openpilot_dev_tools::ci_policy::validate_private_job_layout;
     let original = workflow()["jobs"]["carrot-man-runtime"].clone();
     validate_private_job_layout(&original).unwrap();
-    for mode in 0..13 {
+    for mode in 0..17 {
         let mut job = original.clone();
         let steps = job["steps"].as_array_mut().unwrap();
         let before = steps
@@ -592,7 +592,7 @@ fn carrot_x64_cold_bootstrap_rejects_partial_sdk_proxy_and_cleanup_escapes() {
                     .unwrap();
                 steps.swap(after, seal);
             }
-            _ => {
+            12 => {
                 steps.insert(before, serde_json::json!({
                     "name":"Expose provisioned Rust shims",
                     "if":TRUSTED_SOURCE,
@@ -600,6 +600,26 @@ fn carrot_x64_cold_bootstrap_rejects_partial_sdk_proxy_and_cleanup_escapes() {
                     "env":{"CI296_HOST_CONTROL":"1"}
                 }));
             }
+            13..=16 => {
+                let step = steps
+                    .iter_mut()
+                    .find(|s| {
+                        if mode <= 14 {
+                            s["uses"] == "actions/setup-python@v6"
+                        } else {
+                            s["name"] == "Keep original Python installations private"
+                        }
+                    })
+                    .unwrap();
+                let (key, value) = match mode {
+                    13 => ("RUSTUP_HOME", "${{ env.RUSTUP_HOME }}"),
+                    14 => ("RUSTUP_AUTO_INSTALL", "1"),
+                    15 => ("CARGO_HOME", "${{ env.CARGO_HOME }}"),
+                    _ => ("RUSTUP_AUTO_INSTALL", "1"),
+                };
+                step["env"][key] = value.into();
+            }
+            _ => unreachable!(),
         }
         assert!(
             validate_private_job_layout(&job).is_err(),

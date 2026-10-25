@@ -1335,3 +1335,21 @@ sourceDD native40212410286의 Planner는 일반11/adapter13(실제 Rust160호출
 모델 DD40212410219는 original/native×plain/tapped 네 mode와 전체6출력 bytes가 일치했고 source/index·SDK6쌍·회수가 성공했다. artifact12606905172의2098CRC/실제 SHA를 부모가 감사해 #591만 해결했다. D1의 frozen -0/current+0는 그대로 sticky FAIL이다. 현재 original과 native도+0로 같다는 관측만으로 기대값을 교체하지 않는다. 필요한 다음 관측은 기존 writer의 실제 half 입력2B이며 산술은 변경하지 않는다.
 
 sourceb961의 Carrot 분리 검사도 prefix 거부가 남아 원래 순서 관측만으로 전체 원인을 확정하지 않는다. 고정 prefix의 내용 없이 존재/소유/시각 metadata만 추가 관측한다. 신규 Carrot CI 진입점도 pending으로 등록해 추가 실행149(26교체/119대기/1기존native/2비실행/1제거), baseline3580=294/3/3283을 유지한다.
+
+### 로컬 Actions 자원과 postdelete 실제 결과 — 2026-10-26
+
+사용자가 지정한 `bin-actions`의 배정 자원은 i9 4코어/4 GiB, 저장공간80 GB다. 작은 native 단위 검사는 jobs1/incremental0/debug0와 실제 cgroup 여유2 GiB·파일시스템별 합산 잔여 성장 admission을 유지한다. 모델 ISA/큰 원본 비교·필수 ARM은 각 실제 환경이 맞는 hosted 검증과 분리한다. 실행 중 검사는 취소하지 않으며 성공한 불변 cohort를 수동으로 반복하지 않는다.
+
+sourceDD의 retained postdelete [40212410474/job121226283640](https://github.com/bin9208/openpilot-rust/actions/runs/40212410474/job/121226283640)는 전체 성공했다. artifact12607036666은136138137B/SHA256 `fcdd3b591e544cf57ccfd0038ec7ef6c7a1f7da6126ae92175f82d5c6aafc681`, 9696개 safe unique/non-symlink/CRC 정상이며 expanded1973631690B다. 부모가 sourceDD, source/index와 전체 SDK file/roster/program 전후 동일성, candidate exit/held/untraced/paired0, 원본 부재 CLI20 및 policy14, legacy INT/TERM2의 독립 실제 성공을 확인했다. 각 receipt의 old27/R4/full acceptance/retirement credit0은 그대로다. collision8 [40212410241/job121226282810](https://github.com/bin9208/openpilot-rust/actions/runs/40212410241/job/121226282810)는 다른 실패로 남아 별도로 수정한다.
+
+필수 PR source126의 [Rust40209691630](https://github.com/bin9208/openpilot-rust/actions/runs/40209691630)는 support runtime와8개 표준 ARM VM family가 실제 성공했다. original route logger job121222236443은 Azure HTTP APT가 `libclang-18-dev`28.8MB를 받던 중 원래20분 job 상한에 도달해 취소됐다. 새 native CLI caller19·후속 logger 기능은 실행하지 않았으며, 지원 런타임 성공이나 retained 별도 성공으로 이 호출부를 통과 처리하지 않는다. workspace/aarch64와 모델 실패도 전체 PR 성공으로 합치지 않는다.
+
+source33923f8의 Carrot 분리 [40216388430](https://github.com/bin9208/openpilot-rust/actions/runs/40216388430)는 실제 private `rustup-home` 디렉터리가 fresh SDK 전 이미 생긴 것을 관측했다(uid1001, mode755, mtime/ctime17:25:44.951294751 UTC). 시각은 setup-python의 pip upgrade 구간 안이다. 생성 코드의 원인은 추가 조사 중이며 시각 일치만으로 Python 또는 Rustup을 확정하지 않는다. strict fresh guard를 유지한다. source561f20d9f의 model tap은 기존 writer arg1의 실제 half99 두 바이트만 읽고 whole6-output/plain↔tap·D1 sticky·수학을 보존하며 [40216927059](https://github.com/bin9208/openpilot-rust/actions/runs/40216927059)에서 새 수용을 기다린다. 인벤토리3580=294/3/3283과 추가 실행149개 및 전체 #523 미완료 상태는 유지한다.
+
+### #530 Python probe 격리와 #592 logger 준비 후보
+
+보존한 실제 Python3.12.14 archive의 pip25.0.1은 User-Agent 수집 중 PATH의 `rustc --version`을 호출하고, Rustup1.29.1 proxy 초기화는 toolchain 선택 전 RUSTUP_HOME을 만든다. 부모는 원문과 실제 시각을 대조하고 CarrotMan의 setup-python/venv에 별도 job-private 두 홈과 자동 설치 금지0을 적용했다. syscall 직접 귀속 증거와 코드 경로 근거는 [조사 기록](python-rust-523-sdk-530-python-rustc-probe.md)에서 구분한다. strict fresh·whole SDK after는 유지하고 부재 검사를 우회하지 않는다. source 기준 body pin과 원본 ARM 회귀를 갱신하고 SDK escape17개를 새 source에서 확인한다.
+
+별도 [#592](https://github.com/bin9208/openpilot-rust/issues/592)는 original route logger의 APT 준비 중20분 취소를 추적한다. 명시 패키지는 그대로 두고 권장 패키지 설치만 끄며, 이 deep job의 외부 상한을45분으로 둔다. 내부 기능·Miri·ASAN·회수 상한과 다른 Fast7분/로컬 자원은 바꾸지 않는다. 새 `python-rust-523-logger-caller.yml`은 현재 main logger job/global env 전체에 main 전체 SHA read-only pin 하나만 더한 별도 진입점이다. 모든 기능/봉인/업로드/회수 객체의 동일성을 소스에서 확인했고 실제 검증은 GHA 대기다. 새 Python 호출 진입점도 pending으로 등록해 실행 원장150개(26교체/120대기/1기존native/2비실행/1제거), baseline3580=294/3/3283을 유지한다.
+
+collision DD artifact12606243075는 실제8개 충돌 case 자체와 그 trace 검사까지 성공한 뒤, 앞선 checker build의 새 thread raw `???( <unfinished ...>`를 strict lexer가 거부했다. unknown을 허용하지 않고 build capture에 기존 retained와 같은 seccomp-bpf 요청을 적용하며 최초 명령 실패와 finalizer별 세부 status를 보존한다. 이것이 producer를 고친다는 결론은 새 실제 GHA 전까지 내리지 않는다. 기존 cap·타이머·runtime trace와 성공한 retained cohort는 그대로다.

@@ -428,13 +428,19 @@ hold() {
 verify_held() {
   local path fd hash status=0
   for path in "${!aliases[@]}"; do
-    [[ $(readlink -e "$path") == "${aliases[$path]}" && $(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$path") == "${alias_id[$path]}" ]] || status=1
+    [[ $(readlink -e "$path") == "${aliases[$path]}" && $(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$path") == "${alias_id[$path]}" ]] || {
+      printf 'held alias identity differs: %s\n' "$path" >&2; status=1;
+    }
   done
   for path in "${!held_fd[@]}"; do
     fd=${held_fd[$path]}
-    [[ $(idfile "$path") == "${held_id[$path]}" && $(idfile "/proc/$$/fd/$fd") == "${held_id[$path]}" ]] || { status=1; continue; }
-    hash=$(sha256sum "/proc/$$/fd/$fd") || { status=1; continue; }; hash=${hash%% *}
-    [[ $hash == "${held_sha[$path]}" && $(idfile "$path") == "${held_id[$path]}" ]] || status=1
+    [[ $(idfile "$path") == "${held_id[$path]}" && $(idfile "/proc/$$/fd/$fd") == "${held_id[$path]}" ]] || {
+      printf 'held path/FD identity differs: %s\n' "$path" >&2; status=1; continue;
+    }
+    hash=$(sha256sum "/proc/$$/fd/$fd") || { printf 'held FD hash read failed: %s\n' "$path" >&2; status=1; continue; }; hash=${hash%% *}
+    [[ $hash == "${held_sha[$path]}" && $(idfile "$path") == "${held_id[$path]}" ]] || {
+      printf 'held hash/final identity differs: %s\n' "$path" >&2; status=1;
+    }
     printf '%s\t%s\t%s\n' "$path" "${held_id[$path]}" "$hash" >> "$proof/held-after.tsv" || status=1
   done
   return "$status"
@@ -513,24 +519,43 @@ group_empty() {
   printf '%s\tabsent-after-direct-wait\n' "$target" >> "$proof/group-final.tsv"
 }
 finish() {
-  local original=$? status=0 n sealed=false
+  local original=$? status=0 n sealed=false held_code tree_code roster_code hash_code
+  local tree_status=0 source_policy_code resource_code stop_code=0
   trap - EXIT INT TERM HUP
   set +e
   if [[ -n $active ]]; then kill_owned || status=1; wait "$active"; group_empty "$active" || status=1; active=; fi
   if [[ -n $watcher ]]; then : > "$stop"; wait "$watcher" || status=1; fi
-  verify_held > "$proof/held-final.stdout" 2> "$proof/held-final.stderr" || status=1
+  verify_held > "$proof/held-final.stdout" 2> "$proof/held-final.stderr"
+  held_code=$?
+  ((held_code == 0)) || status=1
+  : > "$proof/final-tree-status.tsv" || status=1
   for n in "${!tree_paths[@]}"; do
-    tree "${tree_paths[$n]}" "$proof/${tree_names[$n]}.after" &&
-      cmp "$proof/${tree_names[$n]}.before.roster" "$proof/${tree_names[$n]}.after.roster" &&
-      cmp "$proof/${tree_names[$n]}.before.sha256" "$proof/${tree_names[$n]}.after.sha256" || status=1
+    tree "${tree_paths[$n]}" "$proof/${tree_names[$n]}.after" > "$proof/final-tree-${tree_names[$n]}.stdout" 2> "$proof/final-tree-${tree_names[$n]}.stderr"
+    tree_code=$?; roster_code=not-reached; hash_code=not-reached
+    if ((tree_code == 0)); then
+      cmp "$proof/${tree_names[$n]}.before.roster" "$proof/${tree_names[$n]}.after.roster" > "$proof/final-roster-${tree_names[$n]}.stdout" 2> "$proof/final-roster-${tree_names[$n]}.stderr"
+      roster_code=$?
+      if ((roster_code == 0)); then
+        cmp "$proof/${tree_names[$n]}.before.sha256" "$proof/${tree_names[$n]}.after.sha256" > "$proof/final-hash-${tree_names[$n]}.stdout" 2> "$proof/final-hash-${tree_names[$n]}.stderr"
+        hash_code=$?
+      fi
+    fi
+    [[ $tree_code == 0 && $roster_code == 0 && $hash_code == 0 ]] || { tree_status=1; status=1; }
+    printf '%s\t%s\t%s\t%s\n' "${tree_names[$n]}" "$tree_code" "$roster_code" "$hash_code" >> "$proof/final-tree-status.tsv" || status=1
   done
-  originals || status=1
-  admit || status=1
-  [[ ! -e $job/proof/c8-resource-stop ]] || status=1
+  originals > "$proof/source-policy-final.stdout" 2> "$proof/source-policy-final.stderr"
+  source_policy_code=$?
+  ((source_policy_code == 0)) || status=1
+  admit > "$proof/resource-final.stdout" 2> "$proof/resource-final.stderr"
+  resource_code=$?
+  ((resource_code == 0)) || status=1
+  [[ ! -e $job/proof/c8-resource-stop && ! -L $job/proof/c8-resource-stop ]] || { stop_code=1; status=1; }
   [[ $baseline == true && $status == 0 ]] && sealed=true
   jq -n --arg source_policy "$source_policy" --arg source "$GITHUB_SHA" --arg phase "$phase" --argjson code "$original" --argjson final "$status" \
-    --argjson sealed "$sealed" --argjson pass "$passed" \
+    --argjson sealed "$sealed" --argjson pass "$passed" --argjson held "$held_code" --argjson trees "$tree_status" \
+    --argjson source_policy_final "$source_policy_code" --argjson resource "$resource_code" --argjson stop "$stop_code" \
     '{schema:1,source_policy:$source_policy,source_commit:$source,phase:$phase,command_exit:$code,finalizer_exit:$final,immutable_seals:$sealed,
+      held_final_exit_code:$held,tree_final_exit_code:$trees,source_policy_final_exit_code:$source_policy_final,resource_final_exit_code:$resource,resource_stop_exit_code:$stop,
       collision8_current_pass:($code==0 and $final==0 and $sealed and $pass),logical_cases:(if $pass then 8 else 0 end),
       original_cpp_executions:(if $pass then 0 else null end),probe_executions:(if $pass then 0 else null end),historical_pass_inherited:false,old27_admitted:false,
       runtime2_admitted:false,caller_admitted:false,source_absence_admitted:false,retirement_credit:0,
@@ -553,7 +578,8 @@ build_env=(HOME="$job/home" PATH="$sdk/bin:/usr/bin:/bin" TMPDIR="$build/tmp" LC
 runtime_env=(HOME="$job/home" PATH="$sdk/bin:/usr/bin:/bin" TMPDIR="$build/tmp" LC_ALL=C TZ=UTC)
 # 명령 전체에 독립 PGID/상한. wrapper shell이 만든 PWD/SHLVL/_도 두 번째 env-i에서 제거한다.
 run() {
-  local label=$1 seconds=$2 trace_dir=$3 prefix=$4 profile=$5 env_kind=$6 code=0 watch_code=0 leader ready go stamp count
+  local label=$1 seconds=$2 trace_dir=$3 prefix=$4 profile=$5 env_kind=$6 code=0 watch_code=0 group_code=0 leader ready go stamp count
+  local seccomp_requested=false
   local -a selected_env payload
   shift 6
   phase=$label
@@ -565,7 +591,13 @@ run() {
   if [[ $trace_dir != none ]]; then
     printf '%s\0' "$@" | jq -Rs 'split("\u0000")[:-1]' > "$proof/build/$label.argv.expected.json"
     printf '%s\n' "${selected_env[@]}" | jq -Rs 'split("\n")[:-1]' > "$proof/build/$label.env.expected.json"
-    payload+=(/usr/bin/strace --kill-on-exit -ff -ttt -yy -xx -v -s 65536 -e "trace=$profile" -o "$trace_dir/$prefix")
+    payload+=(/usr/bin/strace)
+    # dd6157 build의 짧은 clone3 thread에서 ??? 미완료 기록이 관측됐다.
+    # syscall 선택/lexer는 그대로 두고 build capture만 기존 retained 방식으로 요청한다.
+    if [[ $env_kind == build ]]; then payload+=(--seccomp-bpf); seccomp_requested=true; fi
+    payload+=(--kill-on-exit -ff -ttt -yy -xx -v -s 65536 -e "trace=$profile" -o "$trace_dir/$prefix")
+    jq -n --arg label "$label" --arg prefix "$prefix" --arg profile "$profile" --argjson seccomp "$seccomp_requested" \
+      '{schema:1,label:$label,prefix:$prefix,trace_profile:$profile,seccomp_bpf_requested:$seccomp,seccomp_bpf_activation_proven:false,unknown_trace_accepted:false,retirement_credit:0}' > "$proof/build/$label.capture.json"
   fi
   payload+=("$@")
   ready=$proof/build/owned-$label.ready; go=$proof/build/owned-$label.go; stop=$proof/build/owned-$label.stop
@@ -606,9 +638,16 @@ run() {
   : > "$stop"
   wait "$watcher" || watch_code=$?
   active= active_identity= watcher=
-  group_empty "$leader" || fail 'group present or unverifiable after direct leader wait'
+  group_empty "$leader" || group_code=$?
   printf '%s\t%s\t%s\n' "$label" "$code" "$watch_code" >> "$proof/exit-codes.tsv"
-  ((code == 0 && watch_code == 0))
+  if ((code != 0 || watch_code != 0 || group_code != 0)); then
+    # 최초 command 실패는 그대로 남긴다. finalizer/후속 진단이 덮어쓰지 않는다.
+    (set -C; printf 'phase=%s\ncommand_exit=%s\nwatcher_exit=%s\ngroup_exit=%s\nstderr=%s\n' \
+      "$label" "$code" "$watch_code" "$group_code" "$proof/build/$label.stderr" > "$proof/command-first-failure.txt") || return 1
+    printf 'logging collision8 failed: phase=%s command=%s watcher=%s group=%s; stderr prefix (max4096B):\n' "$label" "$code" "$watch_code" "$group_code" >&2
+    head -c 4096 -- "$proof/build/$label.stderr" >&2 || return 1
+    return 1
+  fi
   admit
   [[ ! -e $job/proof/c8-resource-stop ]]
 }
@@ -676,6 +715,7 @@ printf '%s  %s\n' 81bc4b7a6f9541f61a27d96ffb2edbcdfe1ab1ea3a4b97f1dc48725e7a0a0a
   | sha256sum --check --strict --quiet -
 run strace-help 30 none unused unused build /usr/bin/strace --help
 grep -F -- --kill-on-exit "$proof/build/strace-help.stdout" > "$proof/exitkill-supported.txt"
+grep -F -- --seccomp-bpf "$proof/build/strace-help.stdout" > "$proof/seccomp-bpf-supported.txt"
 common=(--manifest-path "$source/rust/Cargo.toml" -p openpilot-dev-tools --locked --no-default-features --features native-logging-check-native)
 run checker-build 1800 "$proof/cargo-trace" checker process build "$sdk/bin/cargo" build "${common[@]}" --bin check-native-logging --bin build-native-logging-reference --message-format=json
 run probe-build 1800 "$proof/cargo-trace" probe process build "$sdk/bin/cargo" build --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-logging --example native_logging_probe --message-format=json

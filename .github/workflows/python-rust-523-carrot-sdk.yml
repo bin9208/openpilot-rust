@@ -39,8 +39,8 @@ jobs:
         SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name
           == github.repository }}
         CI296_HOST_CONTROL: '1'
-      run: 'test "${SOURCE_ALLOWED:-}" = true || { echo ''Fork PR source denied on persistent bin-actions''
-        >&2; exit 1; }
+      run: 'test "${SOURCE_ALLOWED:-}" = true || { echo ''Fork PR source denied on persistent bin-actions'' >&2;
+        exit 1; }
 
         set -euo pipefail
 
@@ -61,14 +61,14 @@ jobs:
         '
       working-directory: ${{ github.workspace }}
     - name: Common owned job temporary paths
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       env: &id001
         CI296_HOST_CONTROL: '1'
     - name: Allocate private source cache target and local action alias before checkout
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       shell: bash
       working-directory: ${{ github.workspace }}
       env: *id001
@@ -94,8 +94,7 @@ jobs:
 
         required=$((2 * 1024 * 1024 * 1024))
 
-        printf ''{"available_bytes":%s,"planned_source_growth_bytes":%s}\n'' "$available" "$required"
-        > "$job/proof/source-growth-before-checkout.json"
+        printf ''{"available_bytes":%s,"planned_source_growth_bytes":%s}\n'' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
 
         ((available >= required))
 
@@ -111,18 +110,18 @@ jobs:
 
         # unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.
 
-        printf ''source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n''
-        "$BASH_ENV" "$workspace" "$source" > "$job/ci296-shell-env"
+        printf ''source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n'' "$BASH_ENV"
+        "$workspace" "$source" > "$job/ci296-shell-env"
 
         printf ''%s\n'' "CI296_ACTIONS_WORKSPACE=$workspace" "CI296_SOURCE_OWNER=$source_owner" "CI296_SOURCE_IDENTITY=$(stat
-        -c ''%d:%i'' -- "$source_owner")" "CI296_SOURCE=$source" "CI296_CHECKOUT_PATH=${source#"$workspace/"}"
-        "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target"
-        "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle"
-        "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/ci296-shell-env" >> "$GITHUB_ENV"
+        -c ''%d:%i'' -- "$source_owner")" "CI296_SOURCE=$source" "CI296_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home"
+        "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache"
+        "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/ci296-shell-env"
+        >> "$GITHUB_ENV"
 
         printf ''owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n''
-        "$owner" "$job" "$workspace" "$source_owner" "$(stat -c ''%d:%i'' -- "$source_owner")" "$source"
-        "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        "$owner" "$job" "$workspace" "$source_owner" "$(stat -c ''%d:%i'' -- "$source_owner")" "$source" "$GITHUB_SHA"
+        > "$job/proof/ownership.txt"
 
         df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
 
@@ -144,11 +143,11 @@ jobs:
 
         ln -sT -- "$source_owner" "$alias_path"
 
-        printf ''%s\n'' "CI296_SOURCE_ALIAS=$alias_path" "CI296_ALIAS_IDENTITY=$(stat -c ''%d:%i'' --
-        "$alias_path")" "LOCAL_CI_SOURCE_ROOT=$source" >> "$GITHUB_ENV"
+        printf ''%s\n'' "CI296_SOURCE_ALIAS=$alias_path" "CI296_ALIAS_IDENTITY=$(stat -c ''%d:%i'' -- "$alias_path")"
+        "LOCAL_CI_SOURCE_ROOT=$source" >> "$GITHUB_ENV"
 
-        printf ''source_alias=%s\nalias_identity=%s\n'' "$alias_path" "$(stat -c ''%d:%i'' -- "$alias_path")"
-        >> "$job/proof/ownership.txt"
+        printf ''source_alias=%s\nalias_identity=%s\n'' "$alias_path" "$(stat -c ''%d:%i'' -- "$alias_path")" >>
+        "$job/proof/ownership.txt"
 
         '
     - uses: actions/checkout@v7
@@ -158,12 +157,12 @@ jobs:
         clean: false
         lfs: false
         path: ${{ env.CI296_CHECKOUT_PATH }}
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
     - name: Admit exact private source and index
       id: ci296_source_admission
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       shell: bash
       working-directory: ${{ env.CI296_SOURCE }}
       env: *id001
@@ -183,26 +182,26 @@ jobs:
 
         git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
 
-        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf -
-        --mtime=''UTC 1970-01-01'' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime=''UTC
+        1970-01-01'' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
 
         '
     - name: Require reviewed maintained CarrotMan source
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       shell: bash
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
       run: 'set -euo pipefail
 
-        printf ''%s  %s\n'' d1b049eff773e65b8928e822925dd126432615dc0aed3cc09e7497c6b4eb9950 .github/workflows/rust.yml
+        printf ''%s  %s\n'' 4c538b38a252290a2e18ad4b523ee8a45d36b84fd293add47a8be3154685bf36 .github/workflows/rust.yml
         | sha256sum --check --strict -
 
         '
     - name: Configure source-dependent job environment on private paths
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       shell: bash
       working-directory: ${{ env.CI296_SOURCE }}
       env:
@@ -214,38 +213,42 @@ jobs:
 
         '
     - name: Require QEMU host executable before ARM transport
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       shell: bash
       run: "set -euo pipefail\nif [[ $LOCAL_CI_ARCH == aarch64 ]]; then\n  if [[ ! -x /usr/bin/qemu-aarch64-static\
         \ ]]; then\n    # QEMU 설치는 transport 준비 전에 별도 1 GiB 증가량을 승인한다.\n    df -PB1 /usr/bin /var/lib/apt/lists\
-        \ /var/cache/apt/archives > \"$CI_JOB_TEMP/proof/qemu-host-disk-before.txt\"\n    for path in\
-        \ /usr/bin /var/lib/apt/lists /var/cache/apt/archives; do\n      available=$(df -PB1 \"$path\"\
-        \ | awk 'NR == 2 {print $4}')\n      [[ $available =~ ^[0-9]+$ ]]\n      ((available >= 1024 *\
-        \ 1024 * 1024))\n    done\n    sudo -n timeout --signal=TERM --kill-after=10s 180s apt-get -o\
-        \ APT::Architectures=amd64 update\n    sudo -n timeout --signal=TERM --kill-after=10s 180s apt-get\
-        \ -o APT::Architectures=amd64 install -y --no-install-recommends qemu-user-static\n    df -PB1\
-        \ /usr/bin /var/lib/apt/lists /var/cache/apt/archives > \"$CI_JOB_TEMP/proof/qemu-host-disk-after.txt\"\
-        \n  fi\n  test -x /usr/bin/qemu-aarch64-static\n  /usr/bin/qemu-aarch64-static --version > \"\
-        $CI_JOB_TEMP/proof/qemu-host-version.txt\"\nfi\n"
+        \ /var/cache/apt/archives > \"$CI_JOB_TEMP/proof/qemu-host-disk-before.txt\"\n    for path in /usr/bin /var/lib/apt/lists\
+        \ /var/cache/apt/archives; do\n      available=$(df -PB1 \"$path\" | awk 'NR == 2 {print $4}')\n      [[\
+        \ $available =~ ^[0-9]+$ ]]\n      ((available >= 1024 * 1024 * 1024))\n    done\n    sudo -n timeout --signal=TERM\
+        \ --kill-after=10s 180s apt-get -o APT::Architectures=amd64 update\n    sudo -n timeout --signal=TERM --kill-after=10s\
+        \ 180s apt-get -o APT::Architectures=amd64 install -y --no-install-recommends qemu-user-static\n    df -PB1\
+        \ /usr/bin /var/lib/apt/lists /var/cache/apt/archives > \"$CI_JOB_TEMP/proof/qemu-host-disk-after.txt\"\n\
+        \  fi\n  test -x /usr/bin/qemu-aarch64-static\n  /usr/bin/qemu-aarch64-static --version > \"$CI_JOB_TEMP/proof/qemu-host-version.txt\"\
+        \nfi\n"
       working-directory: ${{ env.CI296_SOURCE }}
       env: *id001
     - name: Common explicit x64 or QEMU ARM transport
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       uses: ./.ci296-source-rust--carrot-man-runtime/source/.github/actions/local-arm
       env: *id001
     - uses: actions/setup-python@v6
       with:
         python-version: 3.12.14
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository) && ((true) && env.LOCAL_CI_ARCH == 'x86_64') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && ((true) && env.LOCAL_CI_ARCH == 'x86_64') }}
+      env: &id002
+        CI296_HOST_CONTROL: '1'
+        RUSTUP_HOME: ${{ env.CI_JOB_TEMP }}/python-rustup-home
+        CARGO_HOME: ${{ env.CI_JOB_TEMP }}/python-cargo-home
+        RUSTUP_AUTO_INSTALL: '0'
     - name: Keep original Python installations private
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository) && ((true) && env.LOCAL_CI_ARCH == 'x86_64') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && ((true) && env.LOCAL_CI_ARCH == 'x86_64') }}
       shell: bash
       working-directory: ${{ env.CI296_SOURCE }}
-      env: *id001
+      env: *id002
       run: 'set -euo pipefail
 
         available=$(df -PB1 "$CI_JOB_TEMP" | awk ''NR == 2 {print $4}'')
@@ -261,36 +264,33 @@ jobs:
         '
     - name: Prepare exact fresh x64 SDK before CarrotMan cold bootstrap
       id: carrot530_sdk
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       shell: bash
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
-      run: "set -euo pipefail\ntrap 'printf \"CarrotMan SDK preflight failed at line %s\\n\" \"$LINENO\"\
-        \ >&2' ERR\n[[ $RUNNER_ENVIRONMENT:$RUNNER_OS:$RUNNER_ARCH == github-hosted:Linux:X64 && $LOCAL_CI_ARCH\
-        \ == x86_64 ]]\n[[ $HOME == \"$CI_JOB_TEMP/home\" && $CARGO_HOME == \"$CI_JOB_TEMP/cargo-home\"\
-        \ && $RUSTUP_HOME == \"$CI_JOB_TEMP/rustup-home\" ]]\n[[ $(cat \"$CI_JOB_TEMP/owner\") == \"$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB\"\
-        \ ]]\nfor path in \"$RUSTUP_HOME\" \"$CARGO_HOME\" \"$CI_JOB_TEMP/rust-bootstrap\"; do\n  printf\
-        \ 'CarrotMan fresh-prefix probe: %s\\n' \"$path\" >&2\n  if [[ -e $path || -L $path ]]; then stat\
-        \ -c '%F %u:%g %a %s %y %z' -- \"$path\" >&2; fi\n  [[ ! -e $path && ! -L $path ]]\ndone\n[[ $(stat\
-        \ -c %d \"$CI296_SOURCE_OWNER\") == \"$(stat -c %d \"$CI_JOB_TEMP\")\" ]]\nused=$(du -s -B1 --\
-        \ \"$CI296_SOURCE_OWNER\" | awk 'NF==2 && $1~/^[0-9]+$/ {print $1}')\nfree=$(df --output=avail\
-        \ -B1 -- \"$CI_JOB_TEMP\" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {print $1}')\n[[ $used =~ ^[0-9]+$\
-        \ && $free =~ ^[0-9]+$ ]]\ngib=$((1024*1024*1024))\n((used<=2*gib))\nrequired=$((2*gib-used+3*gib+8*gib+gib+gib+gib/2))\n\
+      run: "set -euo pipefail\ntrap 'printf \"CarrotMan SDK preflight failed at line %s\\n\" \"$LINENO\" >&2' ERR\n\
+        [[ $RUNNER_ENVIRONMENT:$RUNNER_OS:$RUNNER_ARCH == github-hosted:Linux:X64 && $LOCAL_CI_ARCH == x86_64 ]]\n\
+        [[ $HOME == \"$CI_JOB_TEMP/home\" && $CARGO_HOME == \"$CI_JOB_TEMP/cargo-home\" && $RUSTUP_HOME == \"$CI_JOB_TEMP/rustup-home\"\
+        \ ]]\n[[ $(cat \"$CI_JOB_TEMP/owner\") == \"$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB\" ]]\nfor path\
+        \ in \"$RUSTUP_HOME\" \"$CARGO_HOME\" \"$CI_JOB_TEMP/rust-bootstrap\"; do\n  [[ ! -e $path && ! -L $path\
+        \ ]]\ndone\n[[ $(stat -c %d \"$CI296_SOURCE_OWNER\") == \"$(stat -c %d \"$CI_JOB_TEMP\")\" ]]\nused=$(du\
+        \ -s -B1 -- \"$CI296_SOURCE_OWNER\" | awk 'NF==2 && $1~/^[0-9]+$/ {print $1}')\nfree=$(df --output=avail\
+        \ -B1 -- \"$CI_JOB_TEMP\" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {print $1}')\n[[ $used =~ ^[0-9]+$ && $free\
+        \ =~ ^[0-9]+$ ]]\ngib=$((1024*1024*1024))\n((used<=2*gib))\nrequired=$((2*gib-used+3*gib+8*gib+gib+gib+gib/2))\n\
         printf '{\"source_used_bytes\":%s,\"available_bytes\":%s,\"remaining_growth_bytes\":%s,\"partial_prefix_adopted\"\
-        :false}\n' \"$used\" \"$free\" \"$required\" > \"$CI_JOB_TEMP/proof/carrot530-admission.json\"\
-        \n((free>=required))\nDIAG_SOURCE=\"$CI296_SOURCE\" GITHUB_PATH=\"$CI_JOB_TEMP/proof/carrot530-sdk-path.txt\"\
-        \ /usr/bin/bash \"$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust\" before\nsdk=$CI_JOB_TEMP/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu\n\
-        [[ $(cat \"$CI_JOB_TEMP/proof/carrot530-sdk-path.txt\") == \"$sdk/bin\" ]]\nfor tool in rustup\
-        \ cargo rustc; do\n  path=$CARGO_HOME/bin/$tool\n  [[ -f $path && ! -L $path && $(stat -c %u \"\
-        $path\") == \"$(id -u)\" ]]\n  cmp \"$CI_JOB_TEMP/rust-bootstrap/rustup-init\" \"$path\"\ndone\n\
-        printf '%s\n' \"OPENPILOT_CI_PREPARED_RUST_ROOT=$sdk\" \"OPENPILOT_CI_PREPARED_RUST_MANIFEST=$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256\"\
-        \ \"RUSTUP_AUTO_INSTALL=0\" \"RUSTUP_TOOLCHAIN=1.94.0\" >> \"$GITHUB_ENV\"\nprintf '%s\n' \"$CARGO_HOME/bin\"\
-        \ >> \"$GITHUB_PATH\"\n"
+        :false}\n' \"$used\" \"$free\" \"$required\" > \"$CI_JOB_TEMP/proof/carrot530-admission.json\"\n((free>=required))\n\
+        DIAG_SOURCE=\"$CI296_SOURCE\" GITHUB_PATH=\"$CI_JOB_TEMP/proof/carrot530-sdk-path.txt\" /usr/bin/bash \"\
+        $CI296_SOURCE/rust/tools/prepare-readonly-ci-rust\" before\nsdk=$CI_JOB_TEMP/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu\n\
+        [[ $(cat \"$CI_JOB_TEMP/proof/carrot530-sdk-path.txt\") == \"$sdk/bin\" ]]\nfor tool in rustup cargo rustc;\
+        \ do\n  path=$CARGO_HOME/bin/$tool\n  [[ -f $path && ! -L $path && $(stat -c %u \"$path\") == \"$(id -u)\"\
+        \ ]]\n  cmp \"$CI_JOB_TEMP/rust-bootstrap/rustup-init\" \"$path\"\ndone\nprintf '%s\n' \"OPENPILOT_CI_PREPARED_RUST_ROOT=$sdk\"\
+        \ \"OPENPILOT_CI_PREPARED_RUST_MANIFEST=$CI_JOB_TEMP/proof/prepared-rust-files.before.sha256\" \"RUSTUP_AUTO_INSTALL=0\"\
+        \ \"RUSTUP_TOOLCHAIN=1.94.0\" >> \"$GITHUB_ENV\"\nprintf '%s\n' \"$CARGO_HOME/bin\" >> \"$GITHUB_PATH\"\n"
     - name: Expose provisioned Rust shims
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       env: *id001
     - name: Reserve runner capacity and install pinned dependencies
@@ -301,8 +301,8 @@ jobs:
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
-        python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0
-        zstandard==0.25.0 requests==2.34.2 aiohttp==3.13.3 psutil==7.2.2 pytest==9.0.2
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 pyzmq==27.2.0 zstandard==0.25.0
+        requests==2.34.2 aiohttp==3.13.3 psutil==7.2.2 pytest==9.0.2
 
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
 
@@ -313,8 +313,8 @@ jobs:
         sha256sum --check --strict --quiet -- "$CI_PREPARED_RUST_MANIFEST"
 
         '
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
     - name: Stage exact optional GEOS provider
@@ -334,14 +334,14 @@ jobs:
         cat "$RUNNER_TEMP/carrot-man-geos/environment.txt" >> "$GITHUB_ENV"
 
         '
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
     - name: Build current native dependency stager
       uses: ./.ci296-source-rust--carrot-man-runtime/source/.github/actions/native-json11
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       with:
         run-shell: openpilot-local-shell {0}
     - name: Build owner and unchanged source bindings
@@ -357,28 +357,27 @@ jobs:
 
         python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/carrot-man-msgq"
 
-        "$CI_RECEIPT_METADATA" first-binding CARROT_PARAMS_BINDING "$RUNNER_TEMP/carrot-man-params" >>
-        "$GITHUB_ENV"
+        "$CI_RECEIPT_METADATA" first-binding CARROT_PARAMS_BINDING "$RUNNER_TEMP/carrot-man-params" >> "$GITHUB_ENV"
 
         '
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
     - name: Compare affected original policy, cereal and time boundaries
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository) && (matrix.arch == 'x86_64') }}
-      run: 'python rust/tools/carrot_man_compare.py --binary rust/target/debug/examples/carrot_man_trace
-        --evidence "$RUNNER_TEMP/carrot-man-policy"
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (matrix.arch == 'x86_64') }}
+      run: 'python rust/tools/carrot_man_compare.py --binary rust/target/debug/examples/carrot_man_trace --evidence
+        "$RUNNER_TEMP/carrot-man-policy"
 
-        python rust/tools/carrot_man_serv_compare.py --binary rust/target/debug/examples/carrot_man_trace
-        --params-binding "$CARROT_PARAMS_BINDING" --evidence "$RUNNER_TEMP/carrot-man-policy"
+        python rust/tools/carrot_man_serv_compare.py --binary rust/target/debug/examples/carrot_man_trace --params-binding
+        "$CARROT_PARAMS_BINDING" --evidence "$RUNNER_TEMP/carrot-man-policy"
 
-        python rust/tools/carrot_man_ingress_compare.py --binary rust/target/debug/examples/carrot_man_trace
-        --evidence "$RUNNER_TEMP/carrot-man-policy"
+        python rust/tools/carrot_man_ingress_compare.py --binary rust/target/debug/examples/carrot_man_trace --evidence
+        "$RUNNER_TEMP/carrot-man-policy"
 
-        python rust/tools/carrot_man_time_compare.py --binary rust/target/debug/examples/carrot_man_trace
-        --evidence "$RUNNER_TEMP/carrot-man-policy"
+        python rust/tools/carrot_man_time_compare.py --binary rust/target/debug/examples/carrot_man_trace --evidence
+        "$RUNNER_TEMP/carrot-man-policy"
 
         '
       working-directory: ${{ env.CI296_SOURCE }}
@@ -391,17 +390,17 @@ jobs:
         python -P -m pytest -c /dev/null --noconftest -p no:cacheprovider rust/tools/test_carrot_man_fixture_inputs.py
         -q --basetemp "$RUNNER_TEMP/carrot-man-input-tests"
 
-        python -P rust/tools/carrot_man_owned_compare.py --binary rust/target/debug/examples/carrot_man_owned
-        --params-binding "$CARROT_PARAMS_BINDING" --evidence "$RUNNER_TEMP/carrot-man-owned"
+        python -P rust/tools/carrot_man_owned_compare.py --binary rust/target/debug/examples/carrot_man_owned --params-binding
+        "$CARROT_PARAMS_BINDING" --evidence "$RUNNER_TEMP/carrot-man-owned"
 
         '
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        }}
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
     - uses: actions/upload-artifact@v6
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository) && (always()) }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always()) }}
       with:
         name: carrot-man-owner-${{ matrix.arch }}-evidence
         path: '${{ env.CI_JOB_TEMP }}/carrot-man-policy/**
@@ -424,31 +423,29 @@ jobs:
           '
       id: local_evidence_1
     - name: Finish emulated architecture evidence
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository) && (always() && steps.ci296_source_admission.outcome == 'success') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.ci296_source_admission.outcome == 'success') }}
       uses: ./.ci296-source-rust--carrot-man-runtime/source/.github/actions/local-arm
       with:
         cleanup: 'true'
       env: *id001
     - name: Verify whole x64 SDK after every attempted CarrotMan check
       id: carrot530_sdk_final
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository) && (always() && steps.carrot530_sdk.outcome != 'skipped' && env.CI296_SOURCE
-        != '') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.carrot530_sdk.outcome != 'skipped' && env.CI296_SOURCE != '') }}
       shell: bash
       working-directory: ${{ env.CI296_SOURCE }}
       env:
         CI296_HOST_CONTROL: '1'
       run: 'set -euo pipefail
 
-        DIAG_SOURCE="$CI296_SOURCE" /usr/bin/bash "$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust"
-        after
+        DIAG_SOURCE="$CI296_SOURCE" /usr/bin/bash "$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust" after
 
         '
     - name: Seal private source and index after maintained checks
       id: ci296_source_seal
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository) && (always() && env.CI296_SOURCE != '') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI296_SOURCE != '') }}
       shell: bash
       working-directory: ${{ env.CI296_SOURCE }}
       env: *id001
@@ -460,8 +457,8 @@ jobs:
 
         cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
 
-        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf -
-        --mtime=''UTC 1970-01-01'' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime=''UTC
+        1970-01-01'' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
 
         cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
 
@@ -476,8 +473,8 @@ jobs:
         '
     - name: Retain private job ownership and source evidence
       id: ci296_private_evidence
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI_JOB_TEMP != '') }}
       uses: actions/upload-artifact@v6
       with:
         name: private-rust-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_id }}-${{ github.run_attempt
@@ -487,37 +484,35 @@ jobs:
         if-no-files-found: error
     - name: Clean only uploaded owned source alias and target
       id: ci296_source_cleanup
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id
-        != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome
-        == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest
-        != '' && steps.ci296_source_seal.outcome == 'success' && steps.carrot530_sdk_final.outcome ==
-        'success' && env.CI296_SOURCE_OWNER != '') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id
+        != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome ==
+        'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest
+        != '' && steps.ci296_source_seal.outcome == 'success' && steps.carrot530_sdk_final.outcome == 'success'
+        && env.CI296_SOURCE_OWNER != '') }}
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
         CI296_HOST_CONTROL: '1'
         UPLOAD_ID: ${{ steps.ci296_private_evidence.outputs.artifact-id }}
         UPLOAD_DIGEST: ${{ steps.ci296_private_evidence.outputs.artifact-digest }}
-      run: "set -euo pipefail\n[[ $UPLOAD_ID =~ ^[0-9]+$ ]]\n[[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]\n\
-        workspace=$CI296_ACTIONS_WORKSPACE\np=$CI296_SOURCE_OWNER\ncase \"$p\" in \"$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.\"\
-        ??????) ;; *) exit 1 ;; esac\ntest -d \"$p\" && test ! -L \"$p\"\ntest \"$(realpath -e -- \"$p\"\
-        )\" = \"$p\"\ntest \"$(stat -c '%u' -- \"$p\")\" = \"$(id -u)\"\ntest \"$(stat -c '%d:%i' -- \"\
-        $p\")\" = \"$CI296_SOURCE_IDENTITY\"\ntest -f \"$p/.ci296-owner\" && test ! -L \"$p/.ci296-owner\"\
-        \ntest \"$(cat \"$p/.ci296-owner\")\" = \"$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB\"\ntest\
-        \ \"$CI296_SOURCE\" = \"$p/source\"\ntest -d \"$p/source\" && test ! -L \"$p/source\"\ntest \"\
-        $(realpath -e -- \"$p/source\")\" = \"$p/source\"\nalias_path=\"$CI296_ACTIONS_WORKSPACE/$CI296_ALIAS_BASENAME\"\
-        \ntest \"$CI296_SOURCE_ALIAS\" = \"$alias_path\"\ntest -L \"$alias_path\"\ntest \"$(readlink --\
-        \ \"$alias_path\")\" = \"$p\"\ntest \"$(stat -c '%d:%i' -- \"$alias_path\")\" = \"$CI296_ALIAS_IDENTITY\"\
-        \nrm -- \"$alias_path\"\nif ! rm -rf --one-file-system -- \"$p\"; then\n  sudo -n rm -rf --one-file-system\
-        \ -- \"$p\"\nfi\n"
+      run: "set -euo pipefail\n[[ $UPLOAD_ID =~ ^[0-9]+$ ]]\n[[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]\nworkspace=$CI296_ACTIONS_WORKSPACE\n\
+        p=$CI296_SOURCE_OWNER\ncase \"$p\" in \"$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.\"\
+        ??????) ;; *) exit 1 ;; esac\ntest -d \"$p\" && test ! -L \"$p\"\ntest \"$(realpath -e -- \"$p\")\" = \"\
+        $p\"\ntest \"$(stat -c '%u' -- \"$p\")\" = \"$(id -u)\"\ntest \"$(stat -c '%d:%i' -- \"$p\")\" = \"$CI296_SOURCE_IDENTITY\"\
+        \ntest -f \"$p/.ci296-owner\" && test ! -L \"$p/.ci296-owner\"\ntest \"$(cat \"$p/.ci296-owner\")\" = \"\
+        $GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB\"\ntest \"$CI296_SOURCE\" = \"$p/source\"\ntest -d \"$p/source\"\
+        \ && test ! -L \"$p/source\"\ntest \"$(realpath -e -- \"$p/source\")\" = \"$p/source\"\nalias_path=\"$CI296_ACTIONS_WORKSPACE/$CI296_ALIAS_BASENAME\"\
+        \ntest \"$CI296_SOURCE_ALIAS\" = \"$alias_path\"\ntest -L \"$alias_path\"\ntest \"$(readlink -- \"$alias_path\"\
+        )\" = \"$p\"\ntest \"$(stat -c '%d:%i' -- \"$alias_path\")\" = \"$CI296_ALIAS_IDENTITY\"\nrm -- \"$alias_path\"\
+        \nif ! rm -rf --one-file-system -- \"$p\"; then\n  sudo -n rm -rf --one-file-system -- \"$p\"\nfi\n"
     - name: Clean common owned temporary paths after uploaded source
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
-        github.repository) && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id
-        != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome
-        == 'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest
-        != '' && steps.carrot530_sdk_final.outcome == 'success' && steps.ci296_source_cleanup.outcome
-        == 'success') }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id
+        != '' && steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome ==
+        'success' && steps.ci296_private_evidence.outputs.artifact-id != '' && steps.ci296_private_evidence.outputs.artifact-digest
+        != '' && steps.carrot530_sdk_final.outcome == 'success' && steps.ci296_source_cleanup.outcome == 'success')
+        }}
       uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
       with:
         cleanup: 'true'

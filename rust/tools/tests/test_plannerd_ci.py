@@ -165,7 +165,7 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
         x64_after = named_step(reference, "Verify whole x64 SDK after every attempted CarrotMan check")
         for step, identifier, condition, digest in (
             (x64_before, "carrot530_sdk", TRUSTED_SOURCE,
-             "851b90c7b9c20c34a75827b7f76eb6539bc115726d26932b66ccbe60195eac55"),
+             "3ac35298662ca18b12658fead672e2b4deacbb2f72e1ec68699794e167f2502f"),
             (x64_after, "carrot530_sdk_final",
              "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) "
              + "&& (always() && steps.carrot530_sdk.outcome != 'skipped' && env.CI296_SOURCE != '') }}",
@@ -177,6 +177,11 @@ def assert_planner_native_contract(main: dict, native: dict) -> None:
           assert hashlib.sha256(step["run"].encode()).hexdigest() == digest
         reference_steps = reference["steps"]
         x64_venv = named_step(reference, "Keep original Python installations private")
+        x64_python = next(step for step in reference_steps if step.get("uses") == "actions/setup-python@v6")
+        for step in (x64_python, x64_venv):
+          assert step["env"] == {"CI296_HOST_CONTROL": "1", "RUSTUP_AUTO_INSTALL": "0",
+                                 "RUSTUP_HOME": "${{ env.CI_JOB_TEMP }}/python-rustup-home",
+                                 "CARGO_HOME": "${{ env.CI_JOB_TEMP }}/python-cargo-home"}
         seal = next(step for step in reference_steps if step.get("id") == "ci296_source_seal")
         assert reference_steps.index(x64_venv) < reference_steps.index(x64_before)
         assert reference_steps.index(x64_before) < reference_steps.index(original[0])
