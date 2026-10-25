@@ -551,7 +551,9 @@ def controller_type(base):
                 'rust/crates/dev-tools/src/bin/stage_driving_daemon_fixture.rs',False,features)
             exporter=self.select_current(raw,'openpilot-dev-tools','dev-tools','export-current-driving-catalog','bin',
                 'rust/crates/dev-tools/src/bin/export_current_driving_catalog.rs',False,features)
-            raw=self.command([cargo,'test',*args,'--test','driving_daemon_retirement','--no-run'],'current-retirement-test',900)
+            # #584: private retirement 빌드의 sha2만 최적화하고 본체 opt0은 유지한다.
+            raw=self.command([cargo,'test',*args,'--config','profile.test.package.sha2.opt-level=3',
+                              '--test','driving_daemon_retirement','--no-run'],'current-retirement-test',900)
             d1test=self.select_current(raw,'openpilot-dev-tools','dev-tools','driving_daemon_retirement','test',
                 'rust/crates/dev-tools/tests/driving_daemon_retirement.rs',True,features)
             raw=self.command([cargo,'build','--manifest-path',manifest,'--locked','-p','openpilot-driving-modeld',

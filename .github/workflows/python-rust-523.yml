@@ -712,8 +712,8 @@ jobs:
         printf '%s  %s\n' 38e3931a4bf48de98fa68c9b88023da29bf58d96bb09b57a0092557ccbbd06ce .github/workflows/python-rust-523-logging.yml | sha256sum --check -
         printf '%s  %s\n' 90038cddfbefd63799d9c5709fd25309aff75107f8f278ae9b141af22293d300 tools/ci/logging_retained_549.sh | sha256sum --check -
         printf '%s  %s\n' 8874db13719fa04669b12b7a062e2090055218be64c9612c4fced405bc10a869 rust/crates/dev-tools/src/selfdrive_params_process.rs | sha256sum --check -
-        printf '%s  %s\n' 46772702d70a67ff8dced93ae8f9ba26bebc449598817c81f84d827a7f5f3bfc .github/workflows/python-rust-523-model-pr1344-replay.yml | sha256sum --check -
-        printf '%s  %s\n' f551bb6a54b173d61229b895726aab3cf14366c7a90c2250af38c130239cef41 tools/ci/model_pr1344_replay_482.py | sha256sum --check -
+        printf '%s  %s\n' e2a26ab3ae09ae3e4571a0eda73879a62e38d5b94632e3e93fda5061c1ad0a02 .github/workflows/python-rust-523-model-pr1344-replay.yml | sha256sum --check -
+        printf '%s  %s\n' 146ec228dbaa4c7cb9d3fbefb796695914bf9f91705d4cd0e72c57768b3aa85b tools/ci/model_pr1344_replay_482.py | sha256sum --check -
         printf '%s  %s\n' 132bbfb8ef3e2881cbe217002512d687ce5c04fbc5e65ba670087b6f82eb673c rust/crates/model-runtime/src/cpu/diagnostic_482_pr1344.rs | sha256sum --check -
         printf '%s  %s\n' 4dcc040ed795819356969801e395f1c50fb5a1e38ad9dadb924676c0e96ac376 rust/crates/dev-tools/tests/driving_daemon_retirement/model_482_pr1344.rs | sha256sum --check -
         printf '%s  %s\n' 2f3637cf74de34f9d0780f29e680a535fcae87b22d3684d1ca73112987fe76ed rust/crates/dev-tools/src/ui_forms_reference.rs | sha256sum --check -

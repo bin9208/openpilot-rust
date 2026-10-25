@@ -990,3 +990,19 @@ base81782B SHA256 `6b173bb32ec045bbef9a0d2a968555a9318ff031e1d4cb1574a5254033bf2
 기존 selector `model_482_pr1344::same_vm_current_dual_first_packet`, 요청/Options·Fixture/Original/Current/held 후검증·12frame/33publication·전체2576 raw·원래 오류 분기/strict sticky 및 controller의 D2 진입 조건은 그대로다. 수학/expected/CPU/ISA/180초·global·caps/independent finalizer·회수·upload/cleanup을 변경하지 않는다. run_only_dual 진입 표본만 남으면 내부 receive/compare/error Drop을 구분할 수 없다는 한계를 유지한다. elapsed_ns는 각 JSON 기록 전에 채취하므로 두 표본의 간격에는 앞선 관측의 write/sync 비용도 포함되며 순수 함수 실행시간으로 쓰지 않는다. 관측에서 확인되지 않은 hash 병목이나 단계 시각을 추정하지 않는다. full128/half·sNaN5/역사provider 및 모델/runtime 전체 수용·retirement credit0도 유지한다.
 
 로컬은 source·rustfmt·정적 exact 역투영·diff만 확인한다. 새 writer/guard/test/helper/프로젝트/모델 실행·빌드·CI 조작0이며 실제 새 단계·resource fit·Clippy·D1/D2는 **GHA UNRUN**이다. 동결 근거와 preimage/유지 상수는 private `model-584-d1-stages/`에 보존한다. 부모가 WF/Focus/원장 바인딩과 실제 Actions를 담당한다.
+
+## #584 301f 실제 21단계와 private sha2 빌드 최적화 후보 — 2026-10-25
+
+지정된 `/home/fma1/.codex/worktrees/python-rust-523-completion/openpilot-rust`에서 인계 원문 `imported/continuation-523-pause-20261025.md`와 Curie 체크포인트를 읽었다. 기존 다른 WIP는 보존한다. [source301f의 run40201220135/job121192613485](https://github.com/bin9208/openpilot-rust/actions/runs/40201220135/job/121192613485)의 보존 artifact12602092284(22459484B/SHA256 `c54c8bfbb6643021d47bab0b6b643a483f52f9b8e4fef173f123b91a9c550dce`)에서 단계 JSON21개만 정지 데이터로 읽었다. 다운로드·PKL/모델·packet decoder 실행은 없다. 기존 부모의 2173 member 감사와 이번 제한된 JSON 확인을 구분한다.
+
+- source는 `301f88ccd19a2f0921cdefd75da7615d8cc50984`다. 단계2 fixture-open-after24.308101489초, 단계4 current-open-after106.605216397초, 단계6 original-open-after115.363367624초, 단계8 frozen-daemon-admission-after116.922956190초를 확인했다.
+- 단계9 run-only-dual-before116.923824476초에서 단계10 반환147.106823595초까지 약30.183초다. 실제 반환은 `raw predictions differ from original model bytes`의 Err(48B, 잘림 없음)다. 단계16 whole-raw-diff-after147.111699779초와 단계18 input-guards-after147.115082154초가 뒤따른다.
+- 단계19 fixture-verify-before147.115609602초에서 단계20 fixture-verify-after180.263173903초까지 약33.148초다. 마지막 단계21 original-verify-before180.263959625초 뒤 command deadline이며 original/current/held-daemon 후검증 완료와 d1.json은 없다. 단계 시간에는 앞선 기록 IO/sync도 포함된다. 차이 벡터 생성 관측만으로 mismatch index/count를 확정하지 않는다.
+
+소스 검토에서 `Fixture::verify`는 내부 Original 검증과 fixture 재개방을 수행하고, inventory fingerprint는 전체 bounded 파일을 `sha2::Sha256`으로 읽어 dev/ino/size/time·FD/path identity와 hash를 재확인한다. `Original::verify`도 manifest/roster와 각 파일 SHA를 다시 검사한다. private retirement test의 CurrentCatalog/DataSeal도 같은 sha2 의존성을 사용한다. 이 경로와 위 관측은 SHA 검증 비용을 줄이는 좁은 후보의 근거이며, 33.148초 전체의 hash 귀속이나 opt3 효과·180초 내 완료를 측정한 증거는 아니다. 별도 #571 결과로 이번 실패 원인을 확정하지 않는다.
+
+실제 수정은 `tools/ci/model_pr1344_replay_482.py`의 `current-retirement-test` 빌드 argv 한 곳에 `--config profile.test.package.sha2.opt-level=3`만 추가한다. 공통 args/env/Cargo.toml·다른 build/Clippy 호출에는 전파하지 않는다. 해당 test 빌드의 sha2에 적용되므로 admission과 후검증 양쪽 hash 경로에 영향을 줄 수 있다. 모델/runtime/test 본체 opt0 및 fresh Cargo JSONL의 opt0/debug assertions/overflow checks·unique ELF 선택을 유지한다. private `model_482_pr1344.rs`16073B/SHA256 `4dcc040ed795819356969801e395f1c50fb5a1e38ad9dadb924676c0e96ac376`는 변경하지 않는다.
+
+로컬 Python AST 구문 확인과 source-only 역투영에서 추가 argv 두 값과 설명 주석을 제거하면 helper 기존 전체 bytes50959/SHA256 `f551bb6a54b173d61229b895726aab3cf14366c7a90c2250af38c130239cef41` 및 AST가 정확히 복원된다. 따라서 180초/global·900초 build 상한·12frame/33publication·전체2576raw/기대수치·CPU/ISA·모든 guard/후검증·strict sticky/D2 진입·독립 finalizer/upload/cleanup은 기존 소스 그대로다. docs는 기존 원문 뒤 append만 수행하고 diff 공백 검사를 확인했다. helper import/프로젝트 CLI/Cargo/build/test/Clippy/원본·모델 계산은 로컬 실행0이다.
+
+**GHA UNRUN**: 실제 최적화 적용 Cargo artifact와 빌드 성공·새28단계 전체/후검증·d1.json·D1/D2/180초 resource fit는 아직 미검증이다. 새 실행 전 helper pin·Focus·원장/WF 등록과 commit/push/CI/이슈 갱신은 부모 담당이다. 실제 GHA 결과 전 mismatch index/count·수치 원인 해결·full128/half·sNaN5/전체 모델 수용을 주장하지 않으며 retirement credit0을 유지한다. #584/#482 및 #523 전체 완료는 아직 열려 있다.
