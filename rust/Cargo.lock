@@ -3750,6 +3750,7 @@ dependencies = [
 name = "openpilot-prepared-cold-audit"
 version = "0.1.0"
 dependencies = [
+ "rustix",
  "serde_json",
  "sha2",
  "tempfile",

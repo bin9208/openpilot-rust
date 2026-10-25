@@ -4,7 +4,7 @@
 `rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs`를 `#[path]`로 읽는다.
 감사 구현·정책·계산·실패 전달을 복제하거나 수정하지 않는다. 기존 dev-tools의
 `ci_disk_bootstrap` 45개 테스트와 원본 모듈 등록은 그대로 보존한다.
-직접 의존성은 `serde_json`, `sha2`이고 dev 의존성은 `tempfile`뿐이다.
+직접 의존성은 `rustix`(fs/process), `serde_json`, `sha2`이고 dev 의존성은 `tempfile`뿐이다.
 
 두 패키지의 `CARGO_MANIFEST_DIR`는 모두 `rust/crates/<package>` 깊이이므로
 원래 `root()`와 동일한 `../../..`가 저장소 루트다. `#[path]`는 원본 파일을
@@ -37,3 +37,6 @@ CARGO_BUILD_JOBS=1 cargo clippy --manifest-path rust/Cargo.toml --locked -p open
 diff 검사에 한정한다. Cargo/build/test/Clippy 및 실제 감사 실행은 0회다.
 
 원본 감사가 Unix fs metadata API를 사용하므로 새 wrapper의 root/module도 `cfg(all(test, unix))`로 묶었다. 기존 Linux/Darwin 감사 selector와 구현에는 영향이 없고 non-Unix workspace에 Unix import를 추가하지 않는다.
+
+
+6d0bd2의 actual [native units121261949714](https://github.com/bin9208/openpilot-rust/actions/runs/40224180732/job/121261949714)는 원본 모듈의 fully-qualified `rustix::process::geteuid`와 `rustix::fs::OFlags` 세 참조의 직접 dependency 등록 누락을 발견했다. 기존 lock의 rustix1 및 필요한 fs/process 기능만 추가했다. 감사 구현/의미는 변경0이며 테스트를 제외하지 않는다. compile 성공·thin 시간 개선은 수정본 Actions에서 확인한다.

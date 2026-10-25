@@ -101,7 +101,7 @@ jobs:
         exec {ssh_helper_fd}<"$ssh_helper"
         ssh_helper_pid=$BASHPID
         test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
-        printf '%s  %s\n' 3b332f1dcd73439b2b9c9259502427de52e562b517943c1ff17ce514876ead10 rust/crates/prepared-cold-audit/Cargo.toml | sha256sum --check -
+        printf '%s  %s\n' caa06cd8f48297baf619e335a6837c02686cdfb6cb338212ff11fe7deff4547e rust/crates/prepared-cold-audit/Cargo.toml | sha256sum --check -
         printf '%s  %s\n' a9a26ce4808ea839814c97a3eca81640df3ff7c31d19fa2133a14587c14a9893 rust/crates/prepared-cold-audit/src/lib.rs | sha256sum --check -
         printf '%s  %s\n' cad10c6a2eee0ac505d34b67f4aad200b5c5c7769b52352ad89fbb8d0fce69c6 .github/workflows/python-rust-523-planner-caller.yml | sha256sum --check -
         printf '%s  %s\n' 4f36c97c584d11cccafa53a327893f0d0155f2da0e988ea774d2615396110782 rust/tools/check_plannerd_native_memory.py | sha256sum --check -
@@ -751,7 +751,7 @@ jobs:
         printf '%s  %s\n' 6f75ef40f6904dc9174ffa132de49c5095ae4f5d4b5765dea4f521607bdae32a tools/ci/changed_files_reuse_523.sh | sha256sum --check -
         printf '%s  %s\n' a20688786622f9cb4600d46e9ee2adc57a03950fc5fe4a1d7b0318558631f814 tools/ci/model_history_image_482.sh | sha256sum --check -
         printf '%s  %s\n' 8eb939a78d8527f4f96713bbb25a4ec68988c56d37143660b0e6f7c909281bcb rust/Cargo.toml | sha256sum --check -
-        printf '%s  %s\n' c61a3e4741e01115ca635221807b93be8d1962c33aa7496a08772ea0e8649c01 rust/Cargo.lock | sha256sum --check -
+        printf '%s  %s\n' 9586516b4adda7abc3f739f2c3360a6cd2370e8f2d785a6b36a4adfcf54f6b9a rust/Cargo.lock | sha256sum --check -
         printf '%s  %s\n' 474342a18df37f923f59df43b1b90e6c0b0d6758612462bbc0dadbe37fe2cadf rust/rust-toolchain.toml | sha256sum --check -
         printf '%s  %s\n' fce263ca2e8ea1c9ff937920cf466aaaed196eded598ba25bf1d917b8aa1e924 rust/crates/dev-tools/src/lib.rs | sha256sum --check -
         printf '%s  %s\n' b7fae464db25af5b1c13b64ce0e1556d3c4e6f88553641c927ff6f9d8f294980 rust/crates/model-runtime/Cargo.toml | sha256sum --check -
@@ -977,7 +977,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='f432d41d5800ac822c00e335732dd8cd48135cb863627bf8806b9bdf1885f17b', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='01c0c6dd17ea4c28e48bc18982ee9ec139643180fc5eb0badbdcd3ab444364cb', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile
