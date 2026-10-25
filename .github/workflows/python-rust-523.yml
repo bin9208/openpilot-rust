@@ -587,7 +587,7 @@ jobs:
         printf '%s  %s\n' 909149861958d56886f847da128e48dbaa868b3a8b4197091f996ff507a2ad90 .github/workflows/python-rust-523-controls.yml | sha256sum --check -
         printf '%s  %s\n' 9316a0b17ba6c50c6e56b62058286f02199751989b363376af8eeaa168923b00 tools/ci/controlsd_fixture_523.py | sha256sum --check -
         printf '%s  %s\n' fd7ff5380cb3d31cff675f27580969dd7ddec87d7e10b3e7dd08981328deb715 .github/workflows/python-rust-523-changed-files.yml | sha256sum --check -
-        printf '%s  %s\n' 440e677fe2ef07ad629bb63fe8ef27affac406fa14b30ea8ff70d742958c8ee3 .github/workflows/python-rust-523-history-image.yml | sha256sum --check -
+        printf '%s  %s\n' 85df48f6734d7ef513ede62f48d1263ca7ecc80482b6428aa984aad1685821c8 .github/workflows/python-rust-523-history-image.yml | sha256sum --check -
         printf '%s  %s\n' b47da7e2bda55afe1c6229f8b55ab539bdb72a87490a169049c77fc2b9c94ff2 rust/crates/dev-tools/src/bin/prepare_changed_files_context.rs | sha256sum --check -
         printf '%s  %s\n' f6e9bdba494dba9307a34269c0ac199e855e52b8c3d307e69e2d68d61270f7c9 rust/crates/dev-tools/src/driver_daemon_current_catalog.rs | sha256sum --check -
         printf '%s  %s\n' b757dbb0cbc65cf802c34f4b4fda04b19a5ac4fa3ae4661d02ac7519adf3acf0 rust/crates/dev-tools/src/model_family_prepare/catalog.rs | sha256sum --check -
@@ -620,10 +620,10 @@ jobs:
         printf '%s  %s\n' b59604fb24c5e05fe704c5d99b9d3ea6a48bcfd3a2afe38066475f7e2b7a2e86 rust/crates/dev-tools/tests/fixtures/route-vault-bundle-original/original-3139316-000022.json | sha256sum --check -
         printf '%s  %s\n' 8a93af22bb4f7dce48003a015d6f5df41e7a2a808ecb6d1f852975fc123366d5 rust/crates/dev-tools/tests/route_vault_bundle/frozen.rs | sha256sum --check -
         printf '%s  %s\n' 90125185dfc46c67f048fc7fbf46aa59ea7afd30887e547aeb7dbab5f3b0ed14 rust/crates/model-runtime/src/bin/offline-cached-code.rs | sha256sum --check -
-        printf '%s  %s\n' e0962acb92692f7bb320a9b53dec486361a26f63daf3f11ea0ca55e27b608a32 rust/crates/model-runtime/src/cached_code.rs | sha256sum --check -
-        printf '%s  %s\n' 015e710c54ef879927443d3014bddcdb9fc27c2d5539b3ed500b16f05643cf55 rust/crates/model-runtime/src/cached_isa.rs | sha256sum --check -
+        printf '%s  %s\n' addc8d8b7b396f0a47f1fa1a84c22d8214e9012a740db37ebe7df3973082e3ff rust/crates/model-runtime/src/cached_code.rs | sha256sum --check -
+        printf '%s  %s\n' 2231f20511cc2326d36634d31dd941d7f8542fd83f1f4ea282de8a99dc67e6f7 rust/crates/model-runtime/src/cached_isa.rs | sha256sum --check -
         printf '%s  %s\n' 3e88a87de7afbe8319c75a130afc4e6942f60f66ed577fbcc5c7ee759be95031 rust/crates/model-runtime/src/lib.rs | sha256sum --check -
-        printf '%s  %s\n' 203cec3da143a5cea6d9015c527e93e0496e0da6bba20ade83ad4fab8b6e72f8 rust/crates/model-runtime/tests/historical_cached_image.rs | sha256sum --check -
+        printf '%s  %s\n' 0fb349a7eec29b9c3b5b123980c8eaca3ea1529a8a05d4629f084bc29905ab44 rust/crates/model-runtime/tests/historical_cached_image.rs | sha256sum --check -
         printf '%s  %s\n' 186e02bf0c24b22dd0bc1ee74f7e3cdd91a146ffd2639a98fe0ac2af5bf53b9a rust/tools/prepare-changed-files-caller | sha256sum --check -
         printf '%s  %s\n' 6f75ef40f6904dc9174ffa132de49c5095ae4f5d4b5765dea4f521607bdae32a tools/ci/changed_files_reuse_523.sh | sha256sum --check -
         printf '%s  %s\n' a20688786622f9cb4600d46e9ee2adc57a03950fc5fe4a1d7b0318558631f814 tools/ci/model_history_image_482.sh | sha256sum --check -

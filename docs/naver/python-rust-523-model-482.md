@@ -687,3 +687,65 @@ arity/global order·source/object/image·ISA/issuer의 혼합 거부는 유지�
 CACHED_SOURCES10은 그대로이며 새 binary/current catalog/admission은 변경된 cached_code.rs를
 현재 source로 독립 봉인해야 한다. 기존 certificate/receipt를 현재 것으로 다시 표기하지 않는다.
 현재 source의 whole91 A·ISA/B 수치·기존 full128·historical half/sNaN5·runtime 수용은 모두 GHA 대기다.
+
+### 13ed의 bool ABI 회귀 통과와 기존 AVX512 admission 거부
+
+source `13ed850409ac7ba6e79055be036e4466ffd3a21e`의
+[current40173413003/job121108900384](https://github.com/bin9208/openpilot-rust/actions/runs/40173413003/job/121108900384)와
+[history40173413094/job121108900571](https://github.com/bin9208/openpilot-rust/actions/runs/40173413094/job/121108900571)는
+모두 FAIL이지만 새 bool 회귀나 compile/Clippy 실패는 아니다. cached_code source는
+`e0962acb92692f7bb320a9b53dec486361a26f63daf3f11ea0ca55e27b608a32`다.
+
+단독 감사한 current artifact12591930120은11,655,829B/SHA
+`f0c523a1d819720ce1ce31c1b89620bfdfb4c246ec40849b63df158b81f9a79e`, 444CRC/전개60,542,606B다.
+GitHub-hosted Ubuntu24/EPYC9V74에서 bin2/libtest1은 현재 package/manifest/src/features/profile의 유일
+Cargo artifact이며 모두 fresh=false다. strict Clippy와 cached-code15개는 exit0이다. fresh original은
+50.721초/exit0, PROGRAM91/호출176/compile-link104개를 기록했다. readonly의 strict_triplet_all=true,
+triplet_error=null로 전체 source/object/image 재구성·ABI가 통과했다. 첫 실패는 program0의
+AVX512F: `ip=0xf3`, `EVEX_Vcvtsi2ss_xmm_xmm_rm32_er`, 원문 image bytes `62 c1 46 00 2a c0`다.
+실제 compiler getter cpu는 znver4이며 LLVM pin은 기존5c3a... 그대로다. B의2frame/수치 비교는 미도달이다.
+
+history artifact12591460785는5,425,373B/SHA
+`5e08f77fa2bceabc0960b7cd53951ff09f9d3c4a427719fbc828a4545bc3ed62`, 51CRC/전개10,073,415B다.
+실제 runner는 self-hosted bin-actions/XeonE3-1230V2이므로 hosted 증거로 확대하지 않는다. frozen 단일
+triplet 검증은 통과했으나 AVX512VL: `ip=0x14c`, `EVEX_Vpbroadcastd_xmm_k1z_r32`, 원문 image bytes
+`62 f2 7d 08 7c d6`에서 거부됐다. ISA controls5/cached-code15/strict Clippy와 두 catalog 소비자 compile은
+성공했다. image/model 실행0이며 historical 첫 compiler/provider·전체 model roster 수용은 여전히 false다.
+
+두 오류는 `cached_isa::feature_name`의 기존 미수용 extension 거부이며 단순 host-feature 누락과 구분한다.
+current의 source/SDK/Python base·venv/held383개와 자손 live0, history의 source/index/SDK·held 입력은
+각 실제 봉인 검사를 통과했고 양쪽 upload/소유 cleanup도 성공했다. 전체 진단/ISA gate는 FAIL 그대로다.
+이번에는 production/helper/WF/ISA를 더 바꾸지 않았다. CPU 강제·type/ISA 허용 확장·기대값/수치/128R4
+변경은 없으며, bool readonly·unit15 성공을 B·역사 half/sNaN5·모델/runtime 수용으로 확대하지 않는다.
+
+
+### 실제 관측 F/VL 지원과 history의 기본 GitHub 러너 이전 후보
+
+앞 절의 실제 실패를 근거로 `cached_isa.rs`는 AVX512F/VL 두 종류만 해독 허용 집합에 추가하고,
+`current_host()`와 로드 시 `cached_code::host_has()` 양쪽에서 Rust의 실제 host detector를 요구한다.
+[Rust1.94 detector](https://github.com/rust-lang/rust/blob/1.94.0/library/std_detect/src/detect/os/x86.rs)의
+CPUID 및 OSXSAVE/XCR0 상태 확인을 사용한다. 기능 누락과 미수용 extension은 계속 거부한다.
+컴파일 target/LLVM 옵션·CPU 강제·수치·기대값·기존128R4 및 historical half/sNaN5 조건은 바꾸지 않는다.
+
+현재 program0의 `62 c1 46 00 2a c0`와 역사 image의 `62 f2 7d 08 7c d6` 원문을
+실행하지 않는 단위 fixture로 연결했다. 각각의 F/VL host 기능 제거, 마지막91번째 image/ret 뒤 명령,
+미수용 DQ·POPCNT 거부를 검사한다. ISA 단위는5→7이며 cached15/streamed5는 유지한다.
+CACHED_SOURCES10/GUARDED_ADD_SOURCES8은 유지하고 새 source·issuer·catalog를 독립 봉인한다.
+과거 receipt를 새 source로 다시 표기하지 않는다.
+
+별도로 historical workflow를 `ubuntu-24.04`로 이전했다. 실제 GitHub-hosted/Linux/X64 및 OS/arch를
+두 readonly test에서도 확인하고 RUNNER_NAME 위조나 skip을 사용하지 않는다. private Rust1.94 SDK의
+기존4ELF 및 전체 SDK roster, source/index/provider 전후 검사를 유지한다. 역사 입력 artifact12560955339,
+고정5member·원문 SHA/기대값, Cargo selectors, 이미지·모델 비실행 경계는 그대로다.
+
+새 runner의 입장은 실제 FS별9GiB 동시 여유(source2/build+registry2/SDK3/apt1/proof0.5/finish0.5)를
+요구한다. phase 전후 실제 allocated/apparent 크기와 종료 reserve를 확인한다. 경로별 hard quota나
+실측 peak 보장은 아니다. job45분/시작 후 command 종료 목표41분/개별 Cargo900초를 적용하며,
+source/SDK/provider/resource final 실패는 upload 뒤 소유 cleanup을 거부한다.
+
+로컬은 Rustfmt2021·YAML/Bash/생성 BASH_ENV·source/diff만 검토했다. 새 ISA7/cached15/Clippy,
+현재91 A/B 및 historical readonly의 실제 hosted fit은 모두 Actions UNRUN이다. 현재 수용·원본 제거
+또는 inventory credit을 추가하지 않는다. 13ed의 실패와 위 부분 성공은 계속 그 source에만 귀속된다.
+
+독립 검토의 P2에 따라 command remaining은 용량 검사와 argv 기록 **뒤**에 다시 계산한다.
+이미41분 종료 목표를 넘겼으면 명령을 시작하지 않으며, 남은 시간으로 개별 bound를 제한한다.

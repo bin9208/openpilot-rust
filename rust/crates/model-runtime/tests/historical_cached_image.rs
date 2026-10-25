@@ -92,7 +92,14 @@ fn historical_object_reconstructs_the_entire_frozen_binary_without_execution() {
         std::env::var("GITHUB_REPOSITORY").unwrap(),
         "bin9208/openpilot-rust"
     );
-    assert_eq!(std::env::var("RUNNER_NAME").unwrap(), "bin-actions");
+    assert_eq!(
+        std::env::var("RUNNER_ENVIRONMENT").unwrap(),
+        "github-hosted"
+    );
+    assert_eq!(std::env::var("RUNNER_OS").unwrap(), "Linux");
+    assert_eq!(std::env::var("RUNNER_ARCH").unwrap(), "X64");
+    assert_eq!(std::env::consts::OS, "linux");
+    assert_eq!(std::env::consts::ARCH, "x86_64");
     let proof = PathBuf::from(std::env::var_os("HISTORICAL_IMAGE_PROOF").unwrap());
     assert!(proof.is_absolute() && proof.canonicalize().unwrap() == proof);
     let metadata = fs::symlink_metadata(&proof).unwrap();
@@ -179,7 +186,14 @@ fn historical_program_triplet_and_current_host_isa_are_admitted_without_executio
         std::env::var("GITHUB_REPOSITORY").unwrap(),
         "bin9208/openpilot-rust"
     );
-    assert_eq!(std::env::var("RUNNER_NAME").unwrap(), "bin-actions");
+    assert_eq!(
+        std::env::var("RUNNER_ENVIRONMENT").unwrap(),
+        "github-hosted"
+    );
+    assert_eq!(std::env::var("RUNNER_OS").unwrap(), "Linux");
+    assert_eq!(std::env::var("RUNNER_ARCH").unwrap(), "X64");
+    assert_eq!(std::env::consts::OS, "linux");
+    assert_eq!(std::env::consts::ARCH, "x86_64");
     let proof = PathBuf::from(std::env::var_os("HISTORICAL_IMAGE_PROOF").unwrap());
     assert!(proof.is_absolute() && proof.canonicalize().unwrap() == proof);
     let metadata = fs::symlink_metadata(&proof).unwrap();

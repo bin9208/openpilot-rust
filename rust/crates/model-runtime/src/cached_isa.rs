@@ -120,6 +120,8 @@ mod instruction_isa {
             F::BMI2 => "bmi2",
             F::FMA => "fma",
             F::F16C => "f16c",
+            F::AVX512F => "avx512f",
+            F::AVX512VL => "avx512vl",
             _ => {
                 return Err(format!(
                     "unadmitted cached instruction extension: {feature:?}"
@@ -162,7 +164,7 @@ mod instruction_isa {
         Ok(proofs)
     }
 
-    /// Rust's AVX/FMA/AVX2 detection includes the OS XSAVE state requirements.
+    /// Rust's AVX/FMA/AVX2/AVX512 detection includes the OS XSAVE state requirements.
     /// This snapshot must be checked again at actual load on the executing host;
     /// exporter-time checks alone do not admit a copied artifact on another machine.
     #[cfg(all(target_arch = "x86_64", target_os = "linux"))]
@@ -183,6 +185,8 @@ mod instruction_isa {
             ("bmi2", std::is_x86_feature_detected!("bmi2")),
             ("fma", std::is_x86_feature_detected!("fma")),
             ("f16c", std::is_x86_feature_detected!("f16c")),
+            ("avx512f", std::is_x86_feature_detected!("avx512f")),
+            ("avx512vl", std::is_x86_feature_detected!("avx512vl")),
         ] {
             if supported {
                 result.insert(name);
@@ -239,10 +243,67 @@ mod instruction_isa {
 
         #[test]
         fn unknown_extension_fails_even_on_a_claimed_capable_host() {
-            let bytes = [0x62, 0xf1, 0x7c, 0x48, 0x58, 0xc0, 0xc3]; // AVX512 vaddps zmm0,zmm0,zmm0
-            assert!(inspect(&bytes, bytes.len())
-                .unwrap_err()
-                .contains("unadmitted"));
+            let claimed = BTreeSet::from(["avx512f", "avx512vl", "avx512dq", "popcnt"]);
+            for (bytes, feature) in [
+                // VPMULLQ zmm0,zmm0,zmm0 requires the still unmodeled DQ extension.
+                (&[0x62, 0xf2, 0xfd, 0x48, 0x40, 0xc0, 0xc3][..], "AVX512DQ"),
+                (&[0xf3, 0x0f, 0xb8, 0xc0, 0xc3][..], "POPCNT"),
+            ] {
+                assert!(admit_all(&[(bytes, bytes.len())], 1, &claimed)
+                    .unwrap_err()
+                    .contains(&format!(
+                        "unadmitted cached instruction extension: {feature}"
+                    )));
+            }
+        }
+
+        #[test]
+        fn observed_avx512_images_require_each_host_feature() {
+            // Actual current program0 / historical image bytes, with a synthetic ret.
+            // Decode only: these instructions and the simulated host are never executed.
+            let current = [0x62, 0xc1, 0x46, 0x00, 0x2a, 0xc0, 0xc3];
+            let historical = [0x62, 0xf2, 0x7d, 0x08, 0x7c, 0xd6, 0xc3];
+            let images = [
+                (&current[..], current.len()),
+                (&historical[..], historical.len()),
+            ];
+            let capable = BTreeSet::from(["avx512f", "avx512vl"]);
+            let proofs = admit_all(&images, 2, &capable).unwrap();
+            assert_eq!(proofs[0].required, BTreeSet::from(["avx512f"]));
+            assert_eq!(proofs[1].required, capable);
+            assert!(proofs
+                .iter()
+                .all(|proof| proof.instructions == 2 && proof.text_bytes == 7));
+            for (feature, program) in [("avx512f", 0), ("avx512vl", 1)] {
+                let mut missing = capable.clone();
+                missing.remove(feature);
+                assert_eq!(
+                    admit_all(&images, 2, &missing).unwrap_err(),
+                    format!("cached program {program}: host lacks {feature}")
+                );
+            }
+        }
+
+        #[test]
+        fn avx512_at_roster_end_and_after_return_still_requires_the_host() {
+            let baseline = [0xc3];
+            let after_return = [0xc3, 0x62, 0xf2, 0x7d, 0x08, 0x7c, 0xd6, 0xc3];
+            let mut images = vec![(&baseline[..], baseline.len()); 91];
+            images[90] = (&after_return, after_return.len());
+            let capable = BTreeSet::from(["avx512f", "avx512vl"]);
+            let proofs = admit_all(&images, 91, &capable).unwrap();
+            assert_eq!(proofs.len(), 91);
+            assert_eq!(proofs[90].instructions, 3);
+            assert_eq!(proofs[90].required, capable);
+            for feature in ["avx512f", "avx512vl"] {
+                let mut missing = capable.clone();
+                missing.remove(feature);
+                assert_eq!(
+                    admit_all(&images, 91, &missing).unwrap_err(),
+                    format!("cached program 90: host lacks {feature}")
+                );
+            }
+            assert!(admit_all(&images[..90], 91, &capable).is_err());
         }
 
         #[test]
