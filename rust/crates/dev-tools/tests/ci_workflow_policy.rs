@@ -1429,7 +1429,7 @@ fn full_private_jobs_reject_shared_checkouts_or_unsealed_cleanup() {
             assert!(validate_private_job_layout(&unsafe_alias).is_err());
         }
     }
-    assert_eq!(covered, 61, "maintained private source roster changed");
+    assert_eq!(covered, 63, "maintained private source roster changed");
 }
 
 #[test]
@@ -1768,7 +1768,7 @@ fn private_ownership_exact_guards_reject_missing_seal_or_admission() {
             }
         }
     }
-    assert_eq!((sources, arm), (61, 9));
+    assert_eq!((sources, arm), (63, 11));
 }
 
 // Evaluate the actual restricted workflow condition, not a separately invented

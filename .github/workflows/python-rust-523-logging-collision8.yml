@@ -59,7 +59,7 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
       RUSTUP_TOOLCHAIN: 1.94.0
-      COLLISION8_HELPER_SHA256: 09a8c5959625d54389d52efa7b58f02c20a1a82103f4e21b20aa88fbf57c9f7c
+      COLLISION8_HELPER_SHA256: d75c8fa740c9302e88876a6fa4003f31c8f7b4b6d6a0d4ebf8f6ef4c5d10551b
       COLLISION8_BATCHES_SHA256: 52d4ca212c28cad44579360b8531c915f6fe8e3060c0b480f0f7ec1cdb659a79
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
@@ -187,9 +187,22 @@ jobs:
         (set -o noclobber; printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/c8-packages.done")
         dpkg-query -W build-essential clang pkg-config capnproto libcapnp-dev libzmq3-dev strace curl jq binutils > "$CI_JOB_TEMP/proof/native-packages.txt"
         /usr/bin/bash tools/ci/logging_collision8_549.sh admit
+    - name: Check synthetic oversize scan admission boundaries before actual collision8
+      id: oversize_controls
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      timeout-minutes: 2
+      run: |
+        set -euo pipefail
+        # 실제 compiler/collision8의 대체가 아닌 해석 경계18개다. 임의 find/실행파일 mock은 없다.
+        /usr/bin/bash tools/ci/logging_collision8_549.sh oversize-controls
+        jq -e --arg source "$GITHUB_SHA" --arg helper "$COLLISION8_HELPER_SHA256" \
+          '.schema==1 and .source_commit==$source and .helper_sha256==$helper and .synthetic_only==true and .actual_collision8_admitted==false and .all_pass==true and .count==18 and (.controls|length)==18' \
+          "$CI_JOB_TEMP/proof/c8-oversize-controls/complete.json"
     - name: Build fresh reference only and observe current collision8
       id: qualify
-      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && steps.oversize_controls.outcome == 'success' }}
       shell: bash
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |

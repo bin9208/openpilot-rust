@@ -1,4 +1,4 @@
-//! One reviewed original-helper dependency; never an exporter or source skip.
+//! Exact reviewed original-helper provenance pairs; never an exporter or source skip.
 use super::{real_parent_chain, InputPin, OriginalCapture};
 use crate::seal::Result;
 use serde_json::{json, Value};
@@ -52,20 +52,25 @@ pub(super) fn attest(
 ) -> Result<Attestation> {
     let review: Value =
         serde_json::from_str(include_str!("driver_pipeline_dependency_attestation.json"))?;
+    let pair = [&review, &review["collector_pair"]]
+        .into_iter()
+        .find(|pair| {
+            pair["collector_enabled"] == context.original.collector_enabled
+                && pair["original_manifest_sha256"] == context.original.manifest_sha256
+                && pair["original_source_commit"] == context.original.manifest["source_commit"]
+        })
+        .ok_or("driver original-helper dependency is outside the reviewed pair")?;
     if !context.retired_current_catalog
         || name != HELPER
         || review["historical_helper_sha256"] != historical
         || review["current_helper_sha256"] != pin.digest
         || pin.path != context.root.join(name)
-        || context.original.collector_enabled
-        || review["original_manifest_sha256"] != context.original.manifest_sha256
-        || context.original.manifest["source_commit"] != review["original_source_commit"]
         || context.checkout.len() != 40
         || !context
             .checkout
             .bytes()
             .all(|byte| byte.is_ascii_hexdigit())
-        || review["original_source_commit"] == context.checkout
+        || pair["original_source_commit"] == context.checkout
     {
         return Err("driver original-helper dependency is outside the reviewed pair".into());
     }
@@ -78,12 +83,17 @@ pub(super) fn attest(
     )?;
     if current.identity != pin.identity
         || current.digest != pin.digest
-        || review["original_manifest_sha256"] != manifest.digest
+        || pair["original_manifest_sha256"] != manifest.digest
     {
         return Err("driver dependency helper or immutable manifest changed".into());
     }
     let value = json!({
         "review":review, "current_checkout_commit":context.checkout,
+        "original_pair":{
+            "collector_enabled":pair["collector_enabled"],
+            "original_source_commit":pair["original_source_commit"],
+            "original_manifest_sha256":pair["original_manifest_sha256"]
+        },
         "current_helper":current.receipt(), "original_manifest":manifest.receipt(),
         "current_catalog_authenticated":true, "full_acceptance":false
     });

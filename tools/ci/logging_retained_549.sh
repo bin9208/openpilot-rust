@@ -208,6 +208,105 @@ hold "$proof/git-preload-554/complete.json"
 hold "$proof/git-preload-554/status.sha256"
 run git-preload-env-controls 30 "${runtime[@]}" "$fixture" --exact retained::fixed_git_preload_environment_rejects_missing_or_mutated_schema --test-threads=1 --color=never
 test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/build/git-preload-env-controls.stdout")" -eq 1
+# source와 분리한16MiB 자료에서 cache invalidation을 먼저 대조한다.
+admit git-cache-fixture 16
+run git-cache-equivalence 120 "${runtime[@]}" /usr/bin/bash --noprofile --norc -euo pipefail -s -- "$proof/git-cache-554" <<'GIT_CACHE_554'
+umask 077
+base=$1
+[[ $base == /* && $(realpath -m -- "$base") == "$base" ]]
+available=$(df -PB1 -- "${base%/*}" | awk 'NR==2 {print $4}')
+[[ $available =~ ^[0-9]+$ ]]
+((available >= (16 + 512) * 1024 * 1024))
+mkdir -m 700 -- "$base"
+test "$(stat -c '%u:%a' -- "$base")" = "$UID:700"
+test "$GIT_OPTIONAL_LOCKS:$GIT_CONFIG_COUNT:$GIT_CONFIG_KEY_0:$GIT_CONFIG_VALUE_0" = 0:1:core.preloadIndex:false
+usage() {
+  local bytes
+  bytes=$(du -sx --block-size=1 -- "$base" | cut -f1) || return 1
+  [[ $bytes =~ ^[0-9]+$ ]] || return 1
+  printf '%s\n' "$bytes" >> "$base/allocated.tsv" || return 1
+  ((bytes <= 16 * 1024 * 1024))
+}
+finish_fixture() {
+  local result=$?
+  trap - EXIT
+  if ! usage; then if ((result == 0)); then result=1; fi; fi
+  exit "$result"
+}
+trap finish_fixture EXIT
+printf '{"available_bytes":%s,"fixture_cap_bytes":16777216,"reserve_bytes":536870912}\n' "$available" > "$base/admission.json"
+mkdir -m 700 -- "$base/fixture"
+cd "$base/fixture"
+/usr/bin/git init --quiet --initial-branch=cache-554 --template=
+mkdir nested
+printf 'fixed tracked bytes\n' > tracked
+printf 'fixed nested anchor\n' > nested/tracked
+/usr/bin/git add -- .
+GIT_AUTHOR_NAME=cache-554 GIT_AUTHOR_EMAIL=cache-554@example.invalid \
+  GIT_COMMITTER_NAME=cache-554 GIT_COMMITTER_EMAIL=cache-554@example.invalid \
+  /usr/bin/git commit --quiet -m 'private untracked cache fixture'
+test "$(/usr/bin/git config --bool --get core.fileMode)" = true
+if /usr/bin/git config --get-all core.untrackedCache > "$base/config.stdout" 2> "$base/config.stderr"; then exit 1; else test "$?" -eq 1; fi
+test ! -s "$base/config.stdout" && test ! -s "$base/config.stderr"
+sha256sum .git/config > "$base/config.sha256"
+/usr/bin/git ls-files --stage -z > "$base/entries.before.bin"
+/usr/bin/git update-index --test-untracked-cache > "$base/fs-check.stdout" 2> "$base/fs-check.stderr"
+/usr/bin/git update-index --untracked-cache
+GIT_OPTIONAL_LOCKS=1 /usr/bin/git status --porcelain --untracked-files=normal > "$base/initial-prime.stdout" 2> "$base/initial-prime.stderr"
+test ! -s "$base/initial-prime.stdout" && test ! -s "$base/initial-prime.stderr"
+matched=0
+compare_status() {
+  local state=$1 expected=$2 setting status before
+  printf '%s' "$expected" > "$base/$state.expected"
+  usage
+  before=$(sha256sum .git/index | cut -d' ' -f1)
+  for setting in off on prime; do
+    local -a command=(/usr/bin/git status --porcelain --untracked-files=normal)
+    if [[ $setting == off ]]; then command=(/usr/bin/git -c core.untrackedCache=false status --porcelain --untracked-files=normal); fi
+    if GIT_OPTIONAL_LOCKS=$([[ $setting == prime ]] && printf 1 || printf 0) "${command[@]}" \
+        > "$base/$state-$setting.stdout" 2> "$base/$state-$setting.stderr"; then status=0; else status=$?; fi
+    printf '%s\n' "$status" > "$base/$state-$setting.exit"
+    test "$status" -eq 0
+    cmp "$base/$state.expected" "$base/$state-$setting.stdout"
+    test ! -s "$base/$state-$setting.stderr"
+    if [[ $setting != prime ]]; then test "$(sha256sum .git/index | cut -d' ' -f1)" = "$before"; fi
+  done
+  cmp "$base/$state-off.stdout" "$base/$state-on.stdout"
+  cmp "$base/$state-off.stderr" "$base/$state-on.stderr"
+  cmp "$base/$state-off.exit" "$base/$state-on.exit"
+  sha256sum -- "$base/$state-"{off,on,prime}.stdout >> "$base/status.sha256"
+  matched=$((matched + 1))
+  usage
+}
+compare_status clean ''
+printf 'changed tracked bytes\n' > tracked
+compare_status tracked-content $' M tracked\n'
+printf 'fixed tracked bytes\n' > tracked
+chmod 700 tracked
+compare_status tracked-mode $' M tracked\n'
+chmod 600 tracked
+printf 'untracked bytes\n' > untracked-only
+compare_status untracked-add $'?? untracked-only\n'
+rm -- untracked-only
+compare_status untracked-delete ''
+mkdir nested/inner
+printf 'nested untracked bytes\n' > nested/inner/value
+compare_status nested-add $'?? nested/inner/\n'
+mv -- nested/inner nested/renamed
+compare_status nested-rename $'?? nested/renamed/\n'
+rm -- nested/renamed/value
+rmdir -- nested/renamed
+compare_status nested-remove ''
+test "$matched" -eq 8
+/usr/bin/git ls-files --stage -z > "$base/entries.after.bin"
+cmp "$base/entries.before.bin" "$base/entries.after.bin"
+sha256sum --check --strict "$base/config.sha256"
+usage
+printf '{"schema":1,"states":8,"status_pairs":8,"authored_status_equal":true,"fs_check_passed":true,"fixture_cap_bytes":16777216,"source_prime":false,"performance_claim":false,"runtime_acceptance":false,"retirement_credit":0}\n' > "$base/complete.json"
+GIT_CACHE_554
+verify_held
+hold "$proof/git-cache-554/complete.json"
+hold "$proof/git-cache-554/status.sha256"
 context=$proof/context
 run prepare-context 180 "${runtime[@]}" "$checker" prepare-context --root "$source" --archive "$archive" --output "$context"
 jq -e '.schema==1 and .members==108 and .member_bytes==700585 and .current_source_files==19 and .archive_members==107 and .r11_tar_members==70 and .nested_r3_members==37 and .fixed_current_reference_source_members==1 and .historical_executable_executions==0 and .python_executions==0 and .current_native_functional_acceptance==false and .historical_pass_inherited==false and .complete_cargo_dso_closure==false and .R4_acceptance==false and .retirement_credit==false' "$context.prepare.json" > "$proof/import-admission.txt"
@@ -297,6 +396,160 @@ native_logging_check::trace::summary_tests::summary_validates_many_metadata_rows
 NAMES
 sed -nE 's/^test (native_logging_check::trace::summary_tests::[a-z0-9_]+) \.\.\. ok$/\1/p' "$proof/build/summary-controls.stdout" | LC_ALL=C sort > "$proof/summary-controls.actual.txt"
 cmp "$proof/summary-controls.expected.txt" "$proof/summary-controls.actual.txt"
+# Cargo가 더 이상 실행되지 않는 시점에만 owned source index의 cache metadata를 준비한다.
+# raw index는 mutable이며, tracked entries/source/config/held/SDK의 불변 검사와 분리한다.
+verify_held
+run git-source-cache-prime 240 "${runtime[@]}" /usr/bin/bash --noprofile --norc -euo pipefail -s -- \
+  "$source" "$DIAG_SOURCE_OWNER" "$DIAG_SOURCE_IDENTITY" "$CI_JOB_TEMP" "$GITHUB_SHA" \
+  "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" "$CI_PREPARED_RUST_ROOT" "$CI_PREPARED_RUST_MANIFEST" "$DIAG_ACTIONS_WORKSPACE" <<'GIT_SOURCE_CACHE_554'
+umask 077
+root=$1; source_owner=$2; source_identity=$3; job=$4; commit=$5; owner=$6; sdk_root=$7; sdk_manifest=$8; workspace=$9
+[[ $job == /tmp/openpilot-ci.?????? && $(realpath -e -- "$job") == "$job" && ! -L $job ]]
+test "$(stat -c '%u:%a' -- "$job")" = "$UID:700"
+test -f "$job/owner" && test ! -L "$job/owner"
+test "$(cat "$job/owner")" = "$owner"
+IFS=: read -r run_id attempt job_id <<< "$owner"
+[[ $run_id =~ ^[0-9]+$ && $attempt =~ ^[0-9]+$ && -n $job_id ]]
+test -d "$workspace" && test ! -L "$workspace"
+test "$(realpath -e -- "$workspace")" = "$workspace"
+[[ $source_owner == "$workspace/.logging549-source-${run_id}-${attempt}."?????? && $root == "$source_owner/source" && $PWD == "$root" ]]
+test "$(stat -c '%u:%a' -- "$source_owner")" = "$UID:700"
+for directory in "$source_owner" "$root" "$root/.git"; do
+  test -d "$directory" && test ! -L "$directory"
+  test "$(realpath -e -- "$directory")" = "$directory"
+  test "$(stat -c %u -- "$directory")" = "$UID"
+  mode=$(stat -c %a -- "$directory"); (( (8#$mode & 0022) == 0 ))
+  test "$(stat -c %d -- "$directory")" = "$(stat -c %d -- "$root")"
+done
+test "$(stat -c '%d:%i' -- "$source_owner")" = "$source_identity"
+test -f "$source_owner/.diag296-owner" && test ! -L "$source_owner/.diag296-owner"
+test "$(cat "$source_owner/.diag296-owner")" = "$owner"
+test "$GIT_OPTIONAL_LOCKS:$GIT_CONFIG_COUNT:$GIT_CONFIG_KEY_0:$GIT_CONFIG_VALUE_0" = 0:1:core.preloadIndex:false
+[[ $commit =~ ^[a-f0-9]{40}$ ]]
+git_dir=$root/.git
+test "$(/usr/bin/git rev-parse --absolute-git-dir)" = "$git_dir"
+test "$(realpath -e -- "$(/usr/bin/git rev-parse --git-common-dir)")" = "$git_dir"
+index=$git_dir/index
+test "$(/usr/bin/git rev-parse --path-format=absolute --git-path index)" = "$index"
+test ! -e "$index.lock" && test ! -L "$index.lock"
+git_identity=$(stat -c '%d:%i:%u:%g:%f' -- "$git_dir")
+out=$job/proof/logging/git-source-cache-554
+mkdir -m 700 -- "$out"
+for path in "$git_dir/config" "$index"; do
+  test -f "$path" && test ! -L "$path"
+  test "$(stat -c '%u:%h:%d' -- "$path")" = "$UID:1:$(stat -c %d -- "$root")"
+  mode=$(stat -c %a -- "$path"); (( (8#$mode & 0022) == 0 ))
+done
+exec {config_fd}< "$git_dir/config"
+config_identity=$(stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "/proc/$$/fd/$config_fd")
+config_hash=$(sha256sum -- "/proc/$$/fd/$config_fd" | cut -d' ' -f1)
+config_seal() {
+  test ! -L "$git_dir/config"
+  test "$(stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "$git_dir/config")" = "$config_identity"
+  test "$(stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "/proc/$$/fd/$config_fd")" = "$config_identity"
+  test "$(sha256sum -- "/proc/$$/fd/$config_fd" | cut -d' ' -f1)" = "$config_hash"
+  test "$(sha256sum -- "$git_dir/config" | cut -d' ' -f1)" = "$config_hash"
+}
+config_seal
+require_unset() {
+  local label=$1 status; shift
+  if "$@" /usr/bin/git config --get-all core.untrackedCache > "$out/$label.stdout" 2> "$out/$label.stderr"; then status=0; else status=$?; fi
+  printf '%s\n' "$status" > "$out/$label.exit"
+  test "$status" -eq 1
+  test ! -s "$out/$label.stdout" && test ! -s "$out/$label.stderr"
+}
+require_unset runtime-config
+# 동결 fixture의 env_clear 뒤 실제 config lookup도 확인한다. 새 runtime 키를 전달하지 않는다.
+fixture_env=(/usr/bin/env -i PATH="$PATH" HOME="$HOME" TMPDIR="$TMPDIR" TZ="$TZ" LANG="$LANG" LC_ALL="$LC_ALL" \
+  GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.preloadIndex GIT_CONFIG_VALUE_0=false)
+require_unset fixture-config "${fixture_env[@]}"
+raw_index() {
+  local label=$1 fd identity hash reader=$BASHPID
+  test -f "$index" && test ! -L "$index"
+  test "$(stat -c '%u:%h:%d' -- "$index")" = "$UID:1:$(stat -c %d -- "$root")"
+  mode=$(stat -c %a -- "$index"); (( (8#$mode & 0022) == 0 ))
+  exec {fd}< "$index"
+  identity=$(stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "/proc/$reader/fd/$fd")
+  test "$(stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "$index")" = "$identity"
+  cp -- "/proc/$reader/fd/$fd" "$out/index-$label.bin"
+  hash=$(sha256sum -- "/proc/$reader/fd/$fd" | cut -d' ' -f1)
+  test "$(sha256sum -- "$out/index-$label.bin" | cut -d' ' -f1)" = "$hash"
+  test "$(stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "$index")" = "$identity"
+  test "$(stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "/proc/$reader/fd/$fd")" = "$identity"
+  printf '%s\t%s\n' "$identity" "$hash" > "$out/index-$label.tsv"
+  exec {fd}<&-
+}
+seals() {
+  local label=$1 allocated
+  test "$(stat -c '%d:%i:%u:%g:%f' -- "$git_dir")" = "$git_identity"
+  config_seal
+  test "$(/usr/bin/git --no-optional-locks rev-parse HEAD)" = "$commit"
+  /usr/bin/git --no-optional-locks ls-files -z > "$out/files-$label.bin"
+  /usr/bin/git --no-optional-locks ls-files --stage -z > "$out/entries-$label.bin"
+  /usr/bin/git --no-optional-locks ls-files -v -z > "$out/flags-$label.bin"
+  cmp "$job/proof/index-before.bin" "$out/files-$label.bin"
+  tar --null --no-recursion --verbatim-files-from -T "$out/files-$label.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$out/source-$label.sha256"
+  cmp "$job/proof/source-before.sha256" "$out/source-$label.sha256"
+  # source 내 target은 기존 독립8GiB build cap에서 검사하므로 이중 계산하지 않는다.
+  allocated=$(du -sx --block-size=1 --exclude="$root/rust/target" -- "$source_owner" | cut -f1)
+  [[ $allocated =~ ^[0-9]+$ ]]
+  printf '%s\n' "$allocated" > "$out/source-$label.bytes"
+  ((allocated <= 2 * 1024 * 1024 * 1024))
+  /usr/bin/git --no-optional-locks diff --exit-code
+  /usr/bin/git --no-optional-locks diff --cached --exit-code
+  test "$sdk_root" = "$job/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu"
+  test "$(realpath -e -- "$sdk_root")" = "$sdk_root"
+  test "$sdk_manifest" = "$job/proof/prepared-rust-files.before.sha256"
+  sha256sum --check --strict --quiet "$sdk_manifest"
+  LC_ALL=C find "$sdk_root" -printf '%D:%i\t%m:%U:%G\t%T@\t%C@\t%y\t%p\t%l\0' | LC_ALL=C sort -z > "$out/sdk-$label.bin"
+  cmp "$job/proof/prepared-rust-roster.before.bin" "$out/sdk-$label.bin"
+}
+status() {
+  local label=$1 code; shift
+  if "$@" > "$out/$label.stdout" 2> "$out/$label.stderr"; then code=0; else code=$?; fi
+  printf '%s\n' "$code" > "$out/$label.exit"
+  test "$code" -eq 0
+}
+finish_cache() {
+  local result=$?
+  trap - EXIT
+  if ((result != 0)); then
+    # mutation 이후 실패해도 raw index 사후 관측을 시도하며 원래 실패를 보존한다.
+    set +e
+    (set -e; raw_index failed) > "$out/failed-index.stdout" 2> "$out/failed-index.stderr"
+    printf '%s\n' "$?" > "$out/failed-index.exit"
+  fi
+  exit "$result"
+}
+trap finish_cache EXIT
+seals before
+raw_index before
+before_hash=$(sha256sum -- "$index" | cut -d' ' -f1)
+status cache-off /usr/bin/git -c core.untrackedCache=false status --porcelain --untracked-files=normal
+test ! -s "$out/cache-off.stdout" && test ! -s "$out/cache-off.stderr"
+test "$(sha256sum -- "$index" | cut -d' ' -f1)" = "$before_hash"
+/usr/bin/git update-index --test-untracked-cache > "$out/fs-check.stdout" 2> "$out/fs-check.stderr"
+/usr/bin/git update-index --untracked-cache > "$out/enable.stdout" 2> "$out/enable.stderr"
+# sourceではこれだけが選択的index書き込みを許すstatusである。
+status prime /usr/bin/env GIT_OPTIONAL_LOCKS=1 /usr/bin/git status --porcelain --untracked-files=normal
+raw_index primed
+primed_hash=$(sha256sum -- "$index" | cut -d' ' -f1)
+status cache-on /usr/bin/git status --porcelain --untracked-files=normal
+for channel in stdout stderr exit; do
+  cmp "$out/cache-off.$channel" "$out/prime.$channel"
+  cmp "$out/cache-off.$channel" "$out/cache-on.$channel"
+done
+test "$(sha256sum -- "$index" | cut -d' ' -f1)" = "$primed_hash"
+test ! -e "$index.lock" && test ! -L "$index.lock"
+require_unset runtime-config-after
+require_unset fixture-config-after "${fixture_env[@]}"
+seals after
+raw_index after
+for roster in files entries flags; do cmp "$out/$roster-before.bin" "$out/$roster-after.bin"; done
+printf '{"schema":1,"source_commit":"%s","fs_check_passed":true,"source_prime_statuses":1,"status_channels_equal":true,"tracked_source_entries_flags_equal":true,"source_config_unchanged":true,"sdk_equal":true,"raw_index_immutable":false,"fixture_child_optional_locks_zero":false,"performance_claim":false,"runtime_acceptance":false,"retirement_credit":0}\n' "$commit" > "$out/complete.json"
+GIT_SOURCE_CACHE_554
+verify_held
+hold "$proof/git-source-cache-554/complete.json"
 export NATIVE_LOGGING_RETAINED_BINARY=$probe NATIVE_LOGGING_RETAINED_CONTEXT=$context
 export NATIVE_LOGGING_RETAINED_SOURCE_COMMIT=$GITHUB_SHA
 export NATIVE_LOGGING_RETAINED_BINARY_SHA256 NATIVE_LOGGING_RETAINED_CONTEXT_SHA256

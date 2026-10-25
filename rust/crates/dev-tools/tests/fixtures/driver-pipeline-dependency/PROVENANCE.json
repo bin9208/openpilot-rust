@@ -5,5 +5,20 @@
   "policy": "Data-only provenance fixture; no packet outputs generated or changed; production still opens actual capture and verifies its complete roster before this attestation.",
   "first_actual_rejection_run": 39875010351,
   "historical_helper_sha256": "63e8d880b79603215d7319011809dd3b5ec6699dae1e10c79c105b7dc5cc258b",
-  "current_helper_sha256": "10dfebf12b3d8fa5abdaff7764e80c11468043349ce44f3cc4e57a59b30312e5"
+  "current_helper_sha256": "10dfebf12b3d8fa5abdaff7764e80c11468043349ce44f3cc4e57a59b30312e5",
+  "collector_current": {
+    "source": "2ecf3f6813f601ea52e7a61ccf75219952daefa0",
+    "original_manifest_sha256": "532281d6682b2d5a4ae8b8acf354b3a39d04eaf98cd49cc9a2c1432be30b8795",
+    "bytes": 29876,
+    "origin": "기존 고정 observations.tar.xz의 정확 collector-current/observations/reference-manifest.json 원문. 재capture/기대값 생성/원본 실행 없음.",
+    "archive_sha256": "0b4cbeb4b8c6201c150ccc85c916e5ff979b66da433c217a2f198ad4bd8c1210",
+    "archive_member": "collector-current/observations/reference-manifest.json",
+    "issue": 562,
+    "original_checker_sha256": "ea1266dc395dab662319bd3637ad90440989db3d2937756dbf07fbb993520f5b",
+    "historical_helper_sha256": "63e8d880b79603215d7319011809dd3b5ec6699dae1e10c79c105b7dc5cc258b",
+    "current_helper_sha256": "10dfebf12b3d8fa5abdaff7764e80c11468043349ce44f3cc4e57a59b30312e5",
+    "full_capture_validation_in_unit": false,
+    "numerical_provider_equivalence_claimed": false,
+    "retirement_credit": 0
+  }
 }

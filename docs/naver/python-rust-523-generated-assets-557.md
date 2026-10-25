@@ -118,3 +118,35 @@ open3/실제 stage parent 검사는 그대로이며 수정 재검토에서 추�
 [tests40149194155/job121036927945](https://github.com/bin9208/openpilot-rust/actions/runs/40149194155/job/121036927945)의 기존 scons는 성공했으나 consumer 연결이 fonts/.ready 부재로 실패했다. artifact12582183272=4575380B/SHA `cd17d3851cfd12263ca274e54c52003a3e64dca6676fbc65ca836b6416ddc31b`/46CRC·해제15463160B다. source/index seal은 실제 동일하고 staged DBC103/ready/manifest는 존재하지만 fonts는 빈 directory뿐이었다. 새6consumer/원래 후속 native_models/camera/pytest는 미실행이다.
 
 [SCons 공식 FAQ](https://scons.org/faq.html)의 external target 규칙에 따라 root 밖의 font node는 암묵적 기본root 순회에 포함되지 않는다. staged mode에서만 Default(Dir("#"), font_nodes)를 추가해 원래 root의 모든 target과 외부 font를 함께 기본 선택한다. glyph/provider/출력 알고리즘·명시 CLI target은 바꾸지 않는다. 수정 후 실제 생성/실소비는 다음 Actions 전까지 UNRUN이다.
+
+## 6a 실제 전체 build_release 수용
+
+[tests40151465044/job121043713179](https://github.com/bin9208/openpilot-rust/actions/runs/40151465044/job/121043713179),
+exact source `6a231dc938d35e9da80e0615cfb2570e64f23911`에서12분56초 동안 원래 전체
+SCons/native_models/camera216assertions·4cases/exposure972transitions/기존 pytest570과 새6개
+생성물 회귀가 모두 성공했다. source/index seal·실패 포함 증거 보존·upload·소유 정리도 성공했다.
+동일 workflow의 model_web 및 git_update job도 성공했다. 이것은 해당 branch source의 원래
+build_release job 수용이며 PR343 전체 integration gate 또는 패키지 전달 완료가 아니다.
+
+artifact12583102196=6,347,187B/SHA
+`e16882c54dd2dd50040c3884a75792bf6885ec182ae52826a9d5882607b11a51`,172CRC/해제22,654,990B를
+부모가 전수 감사했다. model_web12582661438=289,438B/SHA
+`ace8e71f9ec9bc82d74e4ab1031be4e08e8178251fd4b0a87c043ededb79cb3a`,12CRC와
+git_update12582258995=289,434B/SHA
+`14410cec71d34e6a788a942a28a831d8160da8ab87993d9b039d9919d6a549e6`,12CRC도 확인했다.
+각 SOURCE_COMMIT과 source/index 전후는 일치한다.
+
+- staged DBC103 전체가 기존 RadarCAN103 frozen SHA와 일치하고 card97과 다른 것은 기존
+  corner radar180/235 두 항뿐이다. generator 및 source133개 전후 SHA가 동일하다.
+  실제 named parser의 open3개와 현재 Jot 공통 resolver의 variant2개가 외부 stage를 읽었다.
+- font14개의 atlas/metrics28개는 독립 output 경로로 같은 current source/provider를 다시
+  실행한 결과와 byte 동일하다. source30개와 provider3개 전후·glyph14개 provenance도 동일하다.
+  실제 GUI loader가 staged atlas7개를 열어 유효 texture를 확인했다. 잘못된 root/부분 publication/
+  alias/role/source/추가DBC/missing atlas 거부와 foreign user bytes 보존도 실제6회귀에 포함됐다.
+- historical_font_equivalence=false를 유지한다. 이 결과는 같은 current 알고리즘의 경로 분리
+  동등성과 fresh glyph provenance이며 과거226 glyph와 새 glyph의 동등성을 주장하거나 역사
+  expected를 갱신하지 않는다.
+
+이 source mutation 결함 #557의 네 완료 조건을 수용해 개별 종료한다. 새 Python 회귀/embedded
+stage 검증의 execution-edge pending2 및 원본 제거 credit0은 유지한다. release pack overlay·
+정확 source 런타임 전달과 전체 #523/#296·PR/실기 수용은 계속 미완료다.

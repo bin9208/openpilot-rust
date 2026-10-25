@@ -229,7 +229,8 @@ bind_elf() {
   # shell script provider도 본문/실제 interpreter를 별도로 봉인한다.
   if [[ $(head -c 4 "$canonical" | od -An -tx1 | tr -d ' \n') != 7f454c46 ]]; then
     IFS= read -r line < "$canonical" || return 1
-    case $line in '#!/bin/sh'|'#!/usr/bin/sh') bind_elf /bin/sh;;
+    # actual which.debianutils의 동일 /bin/sh 표기이며 본문/인터프리터 hold는 유지한다.
+    case $line in '#!/bin/sh'|'#!/usr/bin/sh'|'#! /bin/sh') bind_elf /bin/sh;;
       '#!/bin/bash'|'#!/usr/bin/bash') bind_elf /bin/bash;; *) return 1;; esac
     return
   fi

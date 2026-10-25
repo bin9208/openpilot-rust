@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # #549 현재 collision8 전용 후보. 로컬 UNRUN; 원본/expected/old27/퇴역 credit을 변경하지 않는다.
-# 고정 interface: admit | run | final-source. 용량/시간/selector override는 받지 않는다.
+# 고정 interface: admit | oversize-controls | run | final-source. 용량/시간/selector override는 받지 않는다.
 set -euo pipefail
 set +m
 umask 077
 export LC_ALL=C
 export PATH=/usr/bin:/bin
 fail() { printf 'logging collision8: %s\n' "$*" >&2; exit 1; }
-[[ $# == 1 && ( $1 == admit || $1 == run || $1 == final-source ) ]] || fail 'admit, run or final-source required'
+[[ $# == 1 && ( $1 == admit || $1 == oversize-controls || $1 == run || $1 == final-source ) ]] || fail 'admit, oversize-controls, run or final-source required'
 mode=$1
 [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust &&
    ${GITHUB_EVENT_NAME:-} == push && ${GITHUB_REF:-} == refs/heads/codex/feat-523-python-rust &&
@@ -52,14 +52,171 @@ scan_role=main
 free_bytes() {
   df --output=avail -B1 -- "$1" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2 || n!=1) exit 1; print v}'
 }
+# 실패 뒤 final admit이 role별 scratch를 덮기 전에 원문을 별도 create-new 기록으로 남긴다.
+# 진단 저장 실패도 원래 admission 거부를 성공으로 바꾸지 않는다.
+admission_failure() {
+  local c8_failure_code=$1 c8_failure_stage=$2 c8_failure_root=$3 c8_failure_detail=$4
+  local c8_failure_base c8_failure_input c8_failure_index=0 c8_failure_size
+  local c8_failure_pid=$BASHPID c8_failure_time=$EPOCHREALTIME
+  shift 4
+  c8_failure_base=$job/proof/c8-admission-failure.$scan_role.$c8_failure_pid.$c8_failure_time
+  (
+    set -C
+    printf 'phase=%s\nrole=%s\npid=%s\ntime=%s\nstage=%s\nroot=%s\ncode=%s\nadmission_exit=1\ndetail=%s\n' \
+      "${phase:-$mode}" "$scan_role" "$c8_failure_pid" "$c8_failure_time" "$c8_failure_stage" "$c8_failure_root" "$c8_failure_code" "$c8_failure_detail" > "$c8_failure_base.meta" || exit 1
+    for c8_failure_input in "$@"; do
+      c8_failure_index=$((c8_failure_index+1))
+      printf 'snapshot_%s_path=%s\n' "$c8_failure_index" "$c8_failure_input" >> "$c8_failure_base.meta" || exit 1
+      [[ -f $c8_failure_input && ! -L $c8_failure_input ]] || exit 1
+      c8_failure_size=$(stat -c %s "$c8_failure_input") || exit 1
+      [[ $c8_failure_size =~ ^[0-9]+$ ]] && ((c8_failure_size<=536870912)) || exit 1
+      cat -- "$c8_failure_input" > "$c8_failure_base.$c8_failure_index.raw" || exit 1
+    done
+    printf 'snapshots_complete=true\n' >> "$c8_failure_base.meta"
+  ) || printf 'logging collision8: admission diagnostic incomplete: %s\n' "$c8_failure_base" >&2
+  return 0
+}
+# 실제 find/compiler를 모사하지 않고 동일 판정 함수의 authored 입력 경계만 검사한다.
+oversize_control() {
+  local c8_control_name=$1 c8_control_root=$2 c8_control_before=$3 c8_control_code=$4
+  local c8_control_errors=$5 c8_control_list=$6 c8_control_expected_code=$7 c8_control_expected_reason=$8
+  local c8_control_actual_code=0 c8_control_actual_reason
+  c8_control_actual_reason=$(oversize_result "$c8_control_root" "$c8_control_before" "$c8_control_code" "$c8_control_errors" "$c8_control_list") || c8_control_actual_code=$?
+  printf '%s\t%s\t%s\t%s\t%s\n' "$c8_control_name" "$c8_control_actual_code" "$c8_control_actual_reason" "$c8_control_expected_code" "$c8_control_expected_reason" >> "$job/proof/c8-oversize-controls/results.tsv" || return 1
+  [[ $c8_control_actual_code == "$c8_control_expected_code" && $c8_control_actual_reason == "$c8_control_expected_reason" ]]
+}
+oversize_controls() {
+  local c8_controls=$job/proof/c8-oversize-controls c8_controls_identity c8_controls_relative
+  # 이 mode의 synthetic root뿐이다. 실제 run의 전역 build/target은 생성·변경하지 않는다.
+  local build=$job/proof/c8-oversize-controls/build
+  mkdir "$c8_controls" "$build" "$build/target" "$build/target/debug" "$build/target/debug/deps" "$c8_controls/registry" || return 1
+  (
+    set -C
+    : > "$c8_controls/results.tsv" || exit 1
+    : > "$c8_controls/empty.stderr" || exit 1
+    : > "$c8_controls/empty.txt" || exit 1
+    : > "$build/target/debug/deps/present.o" || exit 1
+    ln -s missing-target "$build/target/debug/deps/dangling.o" || exit 1
+    for c8_controls_relative in \
+      debug/deps/rustls-329f250fb5c1037d.rustls.93c795f2bef50a4-cgu.02.rcgu.o \
+      debug/deps/rustls-329f250fb5c1037d.rustls.93c795f2bef50a4-cgu.03.rcgu.o \
+      debug/deps/rustls-329f250fb5c1037d.rustls.93c795f2bef50a4-cgu.00.rcgu.o \
+      debug/deps/rustcVcJzBi \
+      debug/deps/rustls-329f250fb5c1037d.rustls.93c795f2bef50a4-cgu.01.rcgu.o; do
+      printf "find: '%s/target/%s': No such file or directory\n" "$build" "$c8_controls_relative"
+    done > "$c8_controls/historical-shape.stderr" || exit 1
+    printf "find: '%s/outside': No such file or directory\n" "$c8_controls" > "$c8_controls/outside.stderr" || exit 1
+    printf "find: '%s/target/debug/deps/missing.o': Permission denied\n" "$build" > "$c8_controls/permission.stderr" || exit 1
+    printf "find: '%s/target/debug/deps/present.o': No such file or directory\n" "$build" > "$c8_controls/present.stderr" || exit 1
+    printf "find: '%s/target/debug/deps/dangling.o': No such file or directory\n" "$build" > "$c8_controls/dangling.stderr" || exit 1
+    printf "find: '%s/target/../missing.o': No such file or directory\n" "$build" > "$c8_controls/parent.stderr" || exit 1
+    printf "find: '%s/target/./missing.o': No such file or directory\n" "$build" > "$c8_controls/dot.stderr" || exit 1
+    printf "find: '%s/target/debug//missing.o': No such file or directory\n" "$build" > "$c8_controls/slashes.stderr" || exit 1
+    printf "find: '%s/registry/missing': No such file or directory\n" "$c8_controls" > "$c8_controls/registry.stderr" || exit 1
+    cat "$c8_controls/historical-shape.stderr" "$c8_controls/permission.stderr" > "$c8_controls/mixed.stderr" || exit 1
+    # 양성 목록은 authored scanner output이며 512MiB 실제 파일을 만들거나 검사했다고 세지 않는다.
+    printf '%s/target/debug/deps/oversized.o\n' "$build" > "$c8_controls/oversize.txt" || exit 1
+    c8_controls_identity=$(stat -c '%d:%i' "$build") || exit 1
+    oversize_control clean "$build" "$c8_controls_identity" 0 "$c8_controls/empty.stderr" "$c8_controls/empty.txt" 0 clean || exit 1
+    oversize_control historical-five-enoent "$build" "$c8_controls_identity" 1 "$c8_controls/historical-shape.stderr" "$c8_controls/empty.txt" 75 retryable-target-enoent || exit 1
+    oversize_control outside-path "$build" "$c8_controls_identity" 1 "$c8_controls/outside.stderr" "$c8_controls/empty.txt" 1 retry-line || exit 1
+    oversize_control permission "$build" "$c8_controls_identity" 1 "$c8_controls/permission.stderr" "$c8_controls/empty.txt" 1 retry-line || exit 1
+    oversize_control existing-path "$build" "$c8_controls_identity" 1 "$c8_controls/present.stderr" "$c8_controls/empty.txt" 1 retry-present || exit 1
+    oversize_control dangling-path "$build" "$c8_controls_identity" 1 "$c8_controls/dangling.stderr" "$c8_controls/empty.txt" 1 retry-present || exit 1
+    oversize_control parent-traversal "$build" "$c8_controls_identity" 1 "$c8_controls/parent.stderr" "$c8_controls/empty.txt" 1 retry-components || exit 1
+    oversize_control dot-component "$build" "$c8_controls_identity" 1 "$c8_controls/dot.stderr" "$c8_controls/empty.txt" 1 retry-components || exit 1
+    oversize_control duplicate-slash "$build" "$c8_controls_identity" 1 "$c8_controls/slashes.stderr" "$c8_controls/empty.txt" 1 retry-components || exit 1
+    oversize_control positive-partial-enoent "$build" "$c8_controls_identity" 1 "$c8_controls/historical-shape.stderr" "$c8_controls/oversize.txt" 1 oversize-file || exit 1
+    oversize_control positive-clean-status "$build" "$c8_controls_identity" 0 "$c8_controls/empty.stderr" "$c8_controls/oversize.txt" 1 oversize-file || exit 1
+    oversize_control proof-root "$job/proof" "$(stat -c '%d:%i' "$job/proof")" 1 "$c8_controls/historical-shape.stderr" "$c8_controls/empty.txt" 1 scan-status || exit 1
+    oversize_control registry-error "$build" "$c8_controls_identity" 1 "$c8_controls/registry.stderr" "$c8_controls/empty.txt" 1 retry-line || exit 1
+    oversize_control other-exit "$build" "$c8_controls_identity" 2 "$c8_controls/historical-shape.stderr" "$c8_controls/empty.txt" 1 scan-status || exit 1
+    oversize_control root-identity "$build" 0:0 0 "$c8_controls/empty.stderr" "$c8_controls/empty.txt" 1 root-identity || exit 1
+    oversize_control success-with-stderr "$build" "$c8_controls_identity" 0 "$c8_controls/historical-shape.stderr" "$c8_controls/empty.txt" 1 scan-status || exit 1
+    oversize_control failure-without-stderr "$build" "$c8_controls_identity" 1 "$c8_controls/empty.stderr" "$c8_controls/empty.txt" 1 scan-status || exit 1
+    oversize_control mixed-errors "$build" "$c8_controls_identity" 1 "$c8_controls/mixed.stderr" "$c8_controls/empty.txt" 1 retry-line || exit 1
+    jq -Rn --arg source "$GITHUB_SHA" --arg helper "$COLLISION8_HELPER_SHA256" \
+      '[inputs | split("\t") | {name:.[0],code:(.[1]|tonumber),reason:.[2],expected_code:(.[3]|tonumber),expected_reason:.[4]}] |
+       if length!=18 or ([.[].name]|unique|length)!=18 or any(.[]; .code!=.expected_code or .reason!=.expected_reason) then error("control roster/result differs") else
+       {schema:1,source_commit:$source,helper_sha256:$helper,synthetic_only:true,actual_collision8_admitted:false,all_pass:true,count:length,controls:.} end' \
+      < "$c8_controls/results.tsv" > "$c8_controls/complete.json"
+  )
+}
+# 0=깨끗한 전체 scan, 75=한정 target ENOENT 재관측, 1=즉시 거부.
+# 양성 목록을 제일 먼저 거부하므로 부분 결과가 다음 scan에서 사라져도 PASS가 되지 않는다.
+oversize_result() {
+  local c8_result_root=$1 c8_result_before=$2 c8_result_code=$3 c8_result_errors=$4 c8_result_list=$5
+  local c8_result_line c8_result_relative c8_result_size
+  local c8_result_prefix="find: '$build/target/" c8_result_suffix="': No such file or directory"
+  [[ -f $c8_result_list && ! -L $c8_result_list && -f $c8_result_errors && ! -L $c8_result_errors ]] || { printf 'scan-evidence\n'; return 1; }
+  [[ ! -s $c8_result_list ]] || { printf 'oversize-file\n'; return 1; }
+  [[ -d $c8_result_root && ! -L $c8_result_root && $(readlink -e "$c8_result_root") == "$c8_result_root" &&
+     $(stat -c '%d:%i' "$c8_result_root") == "$c8_result_before" ]] || { printf 'root-identity\n'; return 1; }
+  if [[ $c8_result_code == 0 && ! -s $c8_result_errors ]]; then printf 'clean\n'; return 0; fi
+  [[ $c8_result_root == "$build" && $c8_result_code == 1 && -s $c8_result_errors ]] || { printf 'scan-status\n'; return 1; }
+  c8_result_size=$(stat -c %s "$c8_result_errors") || { printf 'scan-evidence\n'; return 1; }
+  [[ $c8_result_size =~ ^[0-9]+$ ]] && ((c8_result_size<=536870912)) || { printf 'scan-evidence\n'; return 1; }
+  # Bash read가 NUL을 버려 잘못된 원문을 정규화하지 않도록 먼저 원문 byte를 확인한다.
+  if ! tr -d '\000' < "$c8_result_errors" | cmp -s - "$c8_result_errors"; then printf 'retry-line\n'; return 1; fi
+  while IFS= read -r c8_result_line || [[ -n $c8_result_line ]]; do
+    [[ $c8_result_line == "$c8_result_prefix"*"$c8_result_suffix" ]] || { printf 'retry-line\n'; return 1; }
+    c8_result_relative=${c8_result_line#"$c8_result_prefix"}; c8_result_relative=${c8_result_relative%"$c8_result_suffix"}
+    [[ $c8_result_relative =~ ^[A-Za-z0-9_./+-]+$ ]] || { printf 'retry-path\n'; return 1; }
+    case "/$c8_result_relative/" in *'/../'*|*'/./'*|*'//'*) printf 'retry-components\n'; return 1;; esac
+    [[ ! -e $build/target/$c8_result_relative && ! -L $build/target/$c8_result_relative ]] || { printf 'retry-present\n'; return 1; }
+  done < "$c8_result_errors"
+  printf 'retryable-target-enoent\n'
+  return 75
+}
+oversize_scan() {
+  local c8_scan_root=$1 c8_scan_before c8_scan_after c8_scan_attempt c8_scan_code c8_scan_decision c8_scan_reason
+  local c8_scan_base c8_scan_errors c8_scan_list c8_scan_list_fd c8_scan_error_fd
+  [[ $c8_scan_root == "$build" || $c8_scan_root == "$job/proof" ]] || { admission_failure 1 admit.oversize-root "$c8_scan_root" 'unapproved root'; return 1; }
+  [[ -d $c8_scan_root && ! -L $c8_scan_root && $(readlink -e "$c8_scan_root") == "$c8_scan_root" ]] || { admission_failure 1 admit.oversize-root "$c8_scan_root" 'canonical directory required'; return 1; }
+  c8_scan_before=$(stat -c '%d:%i' "$c8_scan_root") || { admission_failure "$?" admit.oversize-identity-before "$c8_scan_root" 'command=stat'; return 1; }
+  for c8_scan_attempt in 1 2 3; do
+    [[ -d $c8_scan_root && ! -L $c8_scan_root && $(readlink -e "$c8_scan_root") == "$c8_scan_root" &&
+       $(stat -c '%d:%i' "$c8_scan_root") == "$c8_scan_before" ]] || { admission_failure 1 admit.oversize-identity-before "$c8_scan_root" "attempt=$c8_scan_attempt before=$c8_scan_before"; return 1; }
+    c8_scan_base=$job/proof/c8-oversize.$scan_role.$BASHPID.$EPOCHREALTIME.$c8_scan_attempt
+    c8_scan_errors=$c8_scan_base.stderr
+    c8_scan_list=$c8_scan_base.txt
+    c8_scan_code=0
+    (
+      set -C
+      exec {c8_scan_list_fd}> "$c8_scan_list" || exit 125
+      exec {c8_scan_error_fd}> "$c8_scan_errors" || exit 125
+      find -P "$c8_scan_root" -type f -size +536870912c -print >&"$c8_scan_list_fd" 2>&"$c8_scan_error_fd"
+    ) || c8_scan_code=$?
+    c8_scan_after=$(stat -c '%d:%i' "$c8_scan_root") || c8_scan_after=unavailable
+    c8_scan_decision=0
+    c8_scan_reason=$(oversize_result "$c8_scan_root" "$c8_scan_before" "$c8_scan_code" "$c8_scan_errors" "$c8_scan_list") || c8_scan_decision=$?
+    # 첫 scan부터 모든 원문을 고유 경로로 유지한다. final admit도 이전 시도를 덮지 않는다.
+    (
+      set -C
+      printf 'phase=%s\nrole=%s\nattempt=%s\nroot=%s\nroot_before=%s\nroot_after=%s\nfind_code=%s\ndecision=%s\nreason=%s\nstderr=%s\nlist=%s\n' \
+        "${phase:-$mode}" "$scan_role" "$c8_scan_attempt" "$c8_scan_root" "$c8_scan_before" "$c8_scan_after" "$c8_scan_code" "$c8_scan_decision" "$c8_scan_reason" "$c8_scan_errors" "$c8_scan_list" > "$c8_scan_base.meta" || exit 1
+      if [[ $c8_scan_attempt == 1 && $c8_scan_decision != 0 ]]; then
+        printf 'first_failed_scan=%s\nfind_code=%s\ndecision=%s\nreason=%s\n' "$c8_scan_base.meta" "$c8_scan_code" "$c8_scan_decision" "$c8_scan_reason" > "$c8_scan_base.first-failure" || exit 1
+      fi
+    ) || { admission_failure 1 admit.oversize-journal "$c8_scan_root" "attempt=$c8_scan_attempt find_code=$c8_scan_code" "$c8_scan_errors" "$c8_scan_list"; return 1; }
+    [[ $c8_scan_after == "$c8_scan_before" ]] || { admission_failure 1 admit.oversize-identity-after "$c8_scan_root" "attempt=$c8_scan_attempt find_code=$c8_scan_code before=$c8_scan_before after=$c8_scan_after" "$c8_scan_errors" "$c8_scan_list"; return 1; }
+    if [[ $c8_scan_decision == 0 ]]; then return 0; fi
+    if [[ $c8_scan_decision != 75 ]]; then
+      admission_failure "$c8_scan_code" "admit.oversize-$c8_scan_reason" "$c8_scan_root" "attempt=$c8_scan_attempt find_code=$c8_scan_code decision=$c8_scan_decision file_cap=536870912" "$c8_scan_errors" "$c8_scan_list"
+      return 1
+    fi
+  done
+  admission_failure "$c8_scan_code" admit.oversize-retry-exhausted "$c8_scan_root" 'attempts=3 file_cap=536870912' "$c8_scan_errors" "$c8_scan_list"
+  return 1
+}
 # mutable target의 정확한 ENOENT만 3회 재관측한다. 부분 합의 초과는 즉시 실패한다.
 usage() {
   local root=$1 cap=$2 attempt code values bytes apparent line relative before
   local errors=$job/proof/c8-scan-$scan_role.stderr
   local prefix="find: '$build/target/" suffix="': No such file or directory"
   if [[ ! -e $root && ! -L $root ]]; then printf '0 0\n'; return; fi
-  [[ -d $root && ! -L $root && $(readlink -e "$root") == "$root" ]] || return 1
-  before=$(stat -c '%d:%i' "$root") || return 1
+  [[ -d $root && ! -L $root && $(readlink -e "$root") == "$root" ]] || { admission_failure "$?" usage.root "$root" "cap=$cap"; return 1; }
+  before=$(stat -c '%d:%i' "$root") || { admission_failure "$?" usage.identity-before "$root" "cap=$cap"; return 1; }
   for attempt in 1 2 3; do
     code=0
     values=$(
@@ -67,50 +224,51 @@ usage() {
       find -P "$root" -ignore_readdir_race -printf '%b %s\n' 2> "$errors" |
         awk '{b+=$1*512;s+=$2} END {printf "%.0f %.0f\n",b,s}'
       codes=("${PIPESTATUS[@]}")
-      ((codes[1] == 0)) || exit 125
+      ((codes[1] == 0)) || { admission_failure "${codes[1]}" usage.awk "$root" "attempt=$attempt find_code=${codes[0]} awk_code=${codes[1]}" "$errors"; exit 125; }
       exit "${codes[0]}"
     ) || code=$?
-    [[ $(stat -c '%d:%i' "$root") == "$before" ]] || return 1
+    [[ $(stat -c '%d:%i' "$root") == "$before" ]] || { admission_failure "$?" usage.identity-after "$root" "attempt=$attempt find_pipeline_code=$code before=$before" "$errors"; return 1; }
     if [[ $code == 0 || $code == 1 ]]; then
       read -r bytes apparent <<< "$values"
-      [[ $bytes =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] || return 1
-      ((bytes <= cap && apparent <= cap)) || return 1
+      [[ $bytes =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] || { admission_failure "$?" usage.values "$root" "attempt=$attempt find_pipeline_code=$code values=$values" "$errors"; return 1; }
+      ((bytes <= cap && apparent <= cap)) || { admission_failure "$?" usage.cap "$root" "attempt=$attempt find_pipeline_code=$code cap=$cap allocated=$bytes apparent=$apparent" "$errors"; return 1; }
     fi
     if [[ $code == 0 && ! -s $errors ]]; then printf '%s\n' "$values"; return; fi
-    [[ $root == "$build" && $code == 1 && -s $errors ]] || return 1
+    [[ $root == "$build" && $code == 1 && -s $errors ]] || { admission_failure "$code" usage.scan-status "$root" "attempt=$attempt stderr_not_empty=$([[ -s $errors ]] && printf true || printf false)" "$errors"; return 1; }
     while IFS= read -r line || [[ -n $line ]]; do
-      [[ $line == "$prefix"*"$suffix" ]] || return 1
+      [[ $line == "$prefix"*"$suffix" ]] || { admission_failure "$?" usage.retry-line "$root" "attempt=$attempt find_pipeline_code=$code" "$errors"; return 1; }
       relative=${line#"$prefix"}; relative=${relative%"$suffix"}
-      [[ $relative =~ ^[A-Za-z0-9_./+-]+$ ]] || return 1
-      case "/$relative/" in *'/../'*|*'/./'*|*'//'*) return 1;; esac
-      [[ ! -e $build/target/$relative && ! -L $build/target/$relative ]] || return 1
+      [[ $relative =~ ^[A-Za-z0-9_./+-]+$ ]] || { admission_failure "$?" usage.retry-path "$root" "attempt=$attempt find_pipeline_code=$code" "$errors"; return 1; }
+      case "/$relative/" in *'/../'*|*'/./'*|*'//'*) admission_failure 1 usage.retry-components "$root" "attempt=$attempt find_pipeline_code=$code" "$errors"; return 1;; esac
+      [[ ! -e $build/target/$relative && ! -L $build/target/$relative ]] || { admission_failure "$?" usage.retry-present "$root" "attempt=$attempt find_pipeline_code=$code" "$errors"; return 1; }
     done < "$errors"
-    cat "$errors" >> "$job/proof/c8-budget-races.log" || return 1
+    cat "$errors" >> "$job/proof/c8-budget-races.log" || { admission_failure "$?" usage.retry-journal "$root" "attempt=$attempt find_pipeline_code=$code" "$errors"; return 1; }
   done
+  admission_failure 1 usage.retry-exhausted "$root" "attempts=3 find_pipeline_code=$code" "$errors"
   return 1
 }
 admit() {
   local path cap used apparent remaining device available n sdk_used=0 sdk_apparent=0
   local -A needs=() representatives=()
   local -a paths=("$owner" "$build" "$job/proof") caps=($((2*gib)) $((8*gib)) "$gib")
-  [[ $(stat -c %d "$source") == "$(stat -c %d "$owner")" ]] || return 1
+  [[ $(stat -c %d "$source") == "$(stat -c %d "$owner")" ]] || { admission_failure "$?" admit.source-device "$source" "owner=$owner"; return 1; }
   for path in "$build" "$job/proof" "$job/rustup-home" "$job/cargo-home" "$job/rust-bootstrap"; do
-    if [[ -e $path ]]; then [[ $(stat -c %d "$path") == "$(stat -c %d "$job")" ]] || return 1; fi
+    if [[ -e $path ]]; then [[ $(stat -c %d "$path") == "$(stat -c %d "$job")" ]] || { admission_failure "$?" admit.job-device "$path" "job=$job"; return 1; }; fi
   done
   for n in "${!paths[@]}"; do
     path=${paths[$n]}; cap=${caps[$n]}
-    read -r used apparent <<< "$(usage "$path" "$cap")" || return 1
-    [[ $used =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] || return 1
+    read -r used apparent <<< "$(usage "$path" "$cap")" || { admission_failure "$?" admit.usage-read "$path" "cap=$cap"; return 1; }
+    [[ $used =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] || { admission_failure "$?" admit.usage-values "$path" "cap=$cap allocated=$used apparent=$apparent"; return 1; }
     remaining=$((cap-used))
     case "$path" in "$owner") device=$(stat -c %d "$owner"); representatives[$device]=$owner ;;
       *) device=$(stat -c %d "$job"); representatives[$device]=$job ;; esac
     needs[$device]=$(( ${needs[$device]:-0}+remaining ))
   done
   for path in "$job/rustup-home" "$job/cargo-home" "$job/rust-bootstrap"; do
-    read -r used apparent <<< "$(usage "$path" $((3*gib)))" || return 1
-    [[ $used =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] || return 1
+    read -r used apparent <<< "$(usage "$path" $((3*gib)))" || { admission_failure "$?" admit.sdk-read "$path" "cap=$((3*gib))"; return 1; }
+    [[ $used =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]] || { admission_failure "$?" admit.sdk-values "$path" "cap=$((3*gib)) allocated=$used apparent=$apparent"; return 1; }
     sdk_used=$((sdk_used+used)); sdk_apparent=$((sdk_apparent+apparent))
-    ((sdk_used <= 3*gib && sdk_apparent <= 3*gib)) || return 1
+    ((sdk_used <= 3*gib && sdk_apparent <= 3*gib)) || { admission_failure "$?" admit.sdk-sum "$path" "cap=$((3*gib)) allocated=$sdk_used apparent=$sdk_apparent"; return 1; }
   done
   device=$(stat -c %d "$job")
   needs[$device]=$(( ${needs[$device]:-0}+3*gib-sdk_used ))
@@ -118,19 +276,18 @@ admit() {
     device=$(stat -c %d /); representatives[$device]=/
     needs[$device]=$(( ${needs[$device]:-0}+2*gib ))
   else
-    [[ -f $job/proof/c8-packages.done && ! -L $job/proof/c8-packages.done && $(stat -c %s "$job/proof/c8-packages.done") == 41 && $(cat "$job/proof/c8-packages.done") == "$GITHUB_SHA" ]] || return 1
+    [[ -f $job/proof/c8-packages.done && ! -L $job/proof/c8-packages.done && $(stat -c %s "$job/proof/c8-packages.done") == 41 && $(cat "$job/proof/c8-packages.done") == "$GITHUB_SHA" ]] || { admission_failure "$?" admit.package-marker "$job/proof/c8-packages.done" "source=$GITHUB_SHA"; return 1; }
   fi
   for device in "${!needs[@]}"; do
-    available=$(free_bytes "${representatives[$device]}") || return 1
-    [[ $available =~ ^[0-9]+$ ]] || return 1
-    printf '%s\t%s\t%s\t%s\n' "$EPOCHREALTIME" "$device" "$available" "$((needs[$device]+reserve))" >> "$job/proof/c8-admission.tsv" || return 1
-    ((available >= needs[$device]+reserve)) || return 1
+    available=$(free_bytes "${representatives[$device]}") || { admission_failure "$?" admit.free-read "${representatives[$device]}" "device=$device"; return 1; }
+    [[ $available =~ ^[0-9]+$ ]] || { admission_failure "$?" admit.free-value "${representatives[$device]}" "device=$device available=$available"; return 1; }
+    printf '%s\t%s\t%s\t%s\n' "$EPOCHREALTIME" "$device" "$available" "$((needs[$device]+reserve))" >> "$job/proof/c8-admission.tsv" || { admission_failure "$?" admit.free-journal "${representatives[$device]}" "device=$device"; return 1; }
+    ((available >= needs[$device]+reserve)) || { admission_failure "$?" admit.free-cap "${representatives[$device]}" "device=$device available=$available required=$((needs[$device]+reserve))"; return 1; }
   done
   # foreign symlink/socket은 collision 본문 자료다. follow하지 않으며 실제 regular-file 상한만 검사한다.
   for path in "$job/proof" "$build"; do
     if [[ -d $path ]]; then
-      find -P "$path" -type f -size +536870912c -print > "$job/proof/c8-oversize-$scan_role.txt" || return 1
-      [[ ! -s $job/proof/c8-oversize-$scan_role.txt ]] || return 1
+      oversize_scan "$path" || return 1
     fi
   done
 }
@@ -156,6 +313,7 @@ source_final() {
   return "$status"
 }
 if [[ $mode == admit ]]; then admit; exit; fi
+if [[ $mode == oversize-controls ]]; then admit; oversize_controls; admit; exit; fi
 if [[ $mode == final-source ]]; then source_final; exit; fi
 
 [[ ${CI_PREPARED_RUST_ROOT:-} == "$sdk" && ${CI_PREPARED_RUST_MANIFEST:-} == "$job/proof/prepared-rust-files.before.sha256" ]] || fail 'prepared SDK binding differs'

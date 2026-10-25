@@ -1,10 +1,16 @@
 {
   "version": 1,
   "method": "reviewed exact full-helper pair; unchanged imported function source and Python3.12 AST checked independently, not parsed at native runtime",
-  "scope": "no-collector driver original dependency only; no numerical/provider equivalence claim",
+  "scope": "exact no-collector and collector driver original dependency pairs only; no numerical/provider equivalence claim",
   "helper": "rust/tools/check_pipeline_reference.py",
   "original_source_commit": "481ae6fec39ecc68786c4c2813b1205fb4567141",
   "original_manifest_sha256": "1b8e6cea511e9f212cd7737688b3e2ec0a165b9ff985b492f0e98c4639f18380",
+  "collector_enabled": false,
+  "collector_pair": {
+    "original_source_commit": "2ecf3f6813f601ea52e7a61ccf75219952daefa0",
+    "original_manifest_sha256": "532281d6682b2d5a4ae8b8acf354b3a39d04eaf98cd49cc9a2c1432be30b8795",
+    "collector_enabled": true
+  },
   "historical_helper_sha256": "63e8d880b79603215d7319011809dd3b5ec6699dae1e10c79c105b7dc5cc258b",
   "current_helper_sha256": "10dfebf12b3d8fa5abdaff7764e80c11468043349ce44f3cc4e57a59b30312e5",
   "imported_functions": {

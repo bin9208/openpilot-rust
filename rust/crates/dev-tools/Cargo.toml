@@ -2531,6 +2531,10 @@ required-features = ["developer-ssh-native"]
 name = "developer_ssh"
 required-features = ["developer-ssh-native"]
 
+[[test]]
+name = "developer_ssh_entry"
+required-features = ["developer-ssh-native"]
+
 [[bin]]
 name = "developer-auth"
 path = "src/developer_ssh/auth_main.rs"

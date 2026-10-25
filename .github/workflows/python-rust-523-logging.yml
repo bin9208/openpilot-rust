@@ -6,6 +6,7 @@ name: Python Rust 523 shared logging retained candidate
     paths:
     - .github/workflows/python-rust-523-logging.yml
     - tools/ci/logging_retained_549.sh
+    - docs/naver/python-rust-523-logging-cache-554.md
     - rust/crates/dev-tools/src/native_logging_check.rs
     - rust/crates/dev-tools/src/native_logging_check/**
     - rust/crates/dev-tools/tests/native_logging_lifecycle.rs
@@ -185,8 +186,10 @@ jobs:
         set -euo pipefail
         umask 077
         # 첫 candidate의 실제 결과를 수집한다. old27/P2/closed-trace/caller/absence 수용은 별도다.
-        printf '%s  %s\n' a4738c0339fc7b82cc9ce3b1705b735a6c6dc95a344f18452650addd31a5845f tools/ci/logging_retained_549.sh | sha256sum --check --strict -
+        printf '%s  %s\n' c8a9f3c8b46320cb1e34ee19143dea9c4da4a33243411a2beeb2cf1ac41d415d tools/ci/logging_retained_549.sh | sha256sum --check --strict -
         /usr/bin/timeout --signal=TERM --kill-after=180s 60m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh
+        jq -e '.schema==1 and .states==8 and .status_pairs==8 and .authored_status_equal==true and .fs_check_passed==true and .fixture_cap_bytes==16777216 and .source_prime==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-cache-554/complete.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_commit==$source and .fs_check_passed==true and .source_prime_statuses==1 and .status_channels_equal==true and .tracked_source_entries_flags_equal==true and .source_config_unchanged==true and .sdk_equal==true and .raw_index_immutable==false and .fixture_child_optional_locks_zero==false and .performance_claim==false and .runtime_acceptance==false and .retirement_credit==0' "$CI_JOB_TEMP/proof/logging/git-source-cache-554/complete.json"
     - name: Seal source and index after all attempted contracts
       id: source_final
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)

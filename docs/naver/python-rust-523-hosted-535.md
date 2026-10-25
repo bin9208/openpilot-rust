@@ -909,3 +909,80 @@ Focus exact 허용211경로/188literal pin 및 baseline delta211개가 일치하
 `2a05a74b9bc4c5d4c4793ac11259d1c4f02b2fcaa599ebd03a3f92416e80c84a`로 유지됐다.
 main Rust workflow498181B의 parsed 변경은 model-pipelines의 lexical Python env 한 필드뿐이다.
 이 정적 확인은 실제 compiler/test/원문 실행의 성공을 뜻하지 않는다.
+
+## 6a 실제 빠른 수용과 남은 실패
+
+source `6a231dc938d35e9da80e0615cfb2570e64f23911`의
+[Fast40151446382](https://github.com/bin9208/openpilot-rust/actions/runs/40151446382)는7leaf와
+aggregate가 성공했다.7 ZIP 합계2,552,643B/279CRC와 source/index·SDK file/roster의 불변42쌍을
+전수 감사했다. UI application 기존5+새4=9개가 모두 성공해 #557의 source projection 경계도
+확인했다. routing의 현재 정책33개 및 cold 감사가 성공했다. cold raw SHA
+`5fd676da17b329948ffd2eba9ce929163bd218ce76a2e0ec528f789c41d2c271`의323exec/실패172,
+absolute Cargo1/rustc37·Python0/rustup0을 확인했다. 비재발 한 번으로 #560 경합을 종료하지 않는다.
+
+[Focus40151446395/job121043654395](https://github.com/bin9208/openpilot-rust/actions/runs/40151446395/job/121043654395)도
+성공했다. artifact12581479973=31,703,902B/SHA
+`2bea91d94bcb77701ac566767aa6ec2b8dc8bb61924b193b901e43a42923fab1`,95CRC/해제40,476,535B와
+불변15쌍을 확인했다. frozen SSH39/setup21·importer7을 포함한10tests, 영향 SSH27·Unicode·camera
+정책·Clippy와 실제 source/SDK/venv·고정입력 전후가 성공했다. 아직 새 SSH entry actual 경계나
+원본 파일 추가 제거 수용은 아니다. native CarrotMan12개 실제 owner 비교도 성공했고 별도 ARM
+문서에2 ZIP/146CRC 및 실행 범위를 기록했다.
+
+UI40151446362는 아직 preflight 실패다. type-P 이후 which.debianutils의 정확 `#! /bin/sh`
+표기를 기존 script provider가 거부했다. artifact12581699376=380,996B/SHA
+`7cf00d499a497d0a6b77a7ed19975202a8a076246de5271171d3cd750fd50377`,54CRC이고 held312개 및
+source/index/SDK5쌍은 동일했다. 같은 /bin/sh를 가리키는 정확 표기 하나만 추가한 후보이며
+RED/GREEN/전체9·원문5모드·빌드는 여전히 UNRUN이다.
+
+collision40151446301/job121043653805는 checker-build 중 oversize find가 사라진 target entry를
+보고한 뒤 resource watcher가 종료해 실패했다. artifact12581509647=7,088,783B/SHA
+`6d7a36bbcabbcad0375905dbe2092713bef636f77b4dfdf6ac3eda3d58c33313`,2437CRC다. actual narrow8은0회,
+held141개와 source/index/SDK는 유지됐다. 후속 조사에서 job log의 target ENOENT5개를 확인했고
+관측 파일의 최종 덮어쓰기는 #563에 기록했다. 사건 당시 용량 부족·Rust 오류·#554와 같은
+원인으로 단정하지 않는다. 기존 usage와 같은 target 한정3회 재관측·oversize 즉시 거부 및
+실패 순간 sidecar 보존을 준비하며 실제 수용은 대기다.
+
+logging40151446356/job121043653993는 Git preload4state 동등성·env schema1·retained core21·prepare9·
+trace20·summary6·Clippy와 처음3lifecycle을 통과했으나 runtime_directory_int의 실제 backpressure
+총3.265316554초가 원래2초보다 커 실패했다. artifact12582772050=33,846,507B/SHA
+`67e6020444172f624ac438fa6a46fbd3bc15c8e9cd313d6fde3540863e4dcb20`,2686CRC/해제390,108,825B다.
+start_peer2.97520767/command0.182980405/finish0.107128479초이며 해당 Git status11개가 각각 약
+2.8~3.0초/37318syscall을 기록했다. preload false만으로 해결됐다는 가설은 수용하지 않는다.
+공식 untracked cache의 filesystem 검증·현재 status byte 동등성 및 private index 준비를 다음
+한정 후보로 검토하며2초/600초·전체 trace·dirty 판정은 유지한다.
+
+#561은 exact202a의 인증·자식 회수·고정 archive·수치 단계 진입과 final-seals 결과를 확인해
+개별 종료했다. #553 수치602 미재현 FAIL 및 전체 normal40는 계속 열려 있다. build40151465044는
+원래 전체 SCons/native_models/camera216assertions·4cases/exposure972transitions/pytest570과
+새6회귀·source/index seal·upload·소유 정리까지 성공했다.3 ZIP196CRC와 DBC97/103·font14쌍·
+실소비 기록을 감사하고 #557을 개별 수용했다. 자세한 SHA와 한계는 generated-assets-557 문서에
+기록했다. 전체 PR/패키지 전달 또는 원본 제거 수용은 아니다.
+PR343은 아직 f55 head/dev draft다. 새 #562 tuple 및 SSH actual 연결/native planner·WebRTC는
+검토 후보이며 baseline3580의293/3/3284와 전체 전환·통합·전달·사용자 실기 미완료를 유지한다.
+
+## 다음 검토 배치 — 기능 UNRUN
+
+새 SSH Actions는 현재 SDK로 만든 test/CLI/recorder와 실제 공개 helper를 exact4selectors로
+연결한다. 기존 원문39/27·Clippy를 보존하고 별도 private Cargo home2GiB/target6GiB/build8GiB·
+proof512MiB admission, env-i·FD/DSO/registry 전후·actual exec/mmap·중첩 worker marker/회수를
+확인한다. 원격 계정/차량 접속과 원본 삭제/부재 credit은0이다. 두 독립 source review에서
+추가 P1/P2가 없었으나 실제 registry/fingerprint/provider/자원 fit은 새 Actions의 판단 대상이다.
+
+#563은 oversize 양성 목록을 즉시 거부하고 정확한 사라진 target entry만 최대3회 재관측한다.
+proof/registry/권한/현재 존재·dangling/traversal/다른 code/혼합 오류는 즉시 거부한다.
+모든 시도의 원문과 첫 실패를 보존하며18개 해석 통제는 synthetic으로 명시해 실제 compiler/
+현재 collision8 수용과 구분한다. cap·예산·시간·trace와 원래8개 기준은 유지한다.
+
+#554의 source Git cache는 private index에만 준비하고 실제 filesystem test와 현재 status의
+모든 channel 동등성, tracked entries/flags/source/config/held/SDK를 다시 확인한다. 별도8상태
+cache invalidation과 기존 preload4상태를 보존한다. source prime status1회와 이후 readonly
+조회·기존 fixture 자식 환경을 구분하고2초/600초 및 dirty 판정을 유지한다. 캐시 효과나 실제
+성능 성공은 아직 수용하지 않는다. native planner/WebRTC와 #562의 범위는 각각 별도 문서에 있다.
+
+선택한 index25파일의 YAML5/Bash본문68/embedded Python AST6/단독 Bash4 및 선택 Rustfmt·diff를
+확인했다. exact 허용223경로/197literal SHA와 baseline delta223이 일치한다. Cargo model은
+기존 SAN/CFI 및 새 SSH test의 검토한3등록뿐이다. main Rust workflow498181B는6a와 동일하다.
+새 SSH 실행 단계와 Clippy 등록에 따라 Focus의 실행 영역 SHA는
+`9b851b03193ced1673bfe00c9e8ccdc35204d9ab60c20b916a7bb89f4ee5560c`다. 이 새 영역을 과거
+실행과 동일하다고 재사용하지 않는다. 실행-edge100행은26교체/70pending/1기존native/2text/1removed,
+baseline3580은293/3/3284로 유지한다. 로컬 기능/빌드/원본 실행0이며 모든 새 수용은 대기다.
