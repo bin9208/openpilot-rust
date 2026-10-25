@@ -78,3 +78,49 @@ Git diff 서식 검사가 unified patch의 원문 context인 공백·탭을 코�
 모든 기존 context를 읽기 전용으로 대조해 재구성했고, 결과 C SHA256은 이전 계측과 동일하다.
 원문 preimage/postimage 전체 SHA 고정과 `--fuzz=0`을 유지한다. C 빌드·실제 patch 도구 적용은
 로컬에서 실행하지 않았으며 Actions가 확인한다. 전역 서식 예외는 추가하지 않았다.
+
+## 2026-10-25 392 첫 실행과 stopped-leader 후속 후보
+
+[40159289213/job121067255595](https://github.com/bin9208/openpilot-rust/actions/runs/40159289213/job/121067255595)는
+source `392ff232b83a10b89e5485dfdbfbba610fa827e1`에서 실패했다. artifact12585755866은
+8,831,269B/SHA256 `a44beafbf77b82f175f40043e6e67d2730b2eb111f442219fbaf7c86237f3858`,
+전체334 CRC·중복0·expanded45,637,157B다. 마지막 deb 다운로드는584172B/status0이지만,
+release 전에 `command left live/unknown group members`로 중단돼 마지막 SHA 검사는 미도달이다.
+C patch 적용·configure/make·새 tracer·cold bootstrap·errno 관측·strict auditor도 모두 미도달이다.
+source/index와 외부 SDK final은 성공하고8개 내부 tree와127개 held canonical 파일은 전후 같았다.
+그러나 실제 finalizer1/immutable_seals=false/closure 실패를 성공으로 바꾸지 않는다.
+
+기존 leader는 command 완료 후 release를 기다리며 외부 `sleep 0.01` 자식을 만들었다.
+parent는 leader만 제외하므로 이 대기 자식과 group 검사가 충돌할 수 있다. 이전 proof는 실패
+PID/stat을 저장하지 않아 이번 실제 잔류자가 sleep이었는지는 미확정이다. 커널/strace의
+unknown 원인이 이 controller 결함으로 해결됐다는 뜻도 아니다.
+
+승인된 후속 후보는 command status/done 뒤 builtin `kill -STOP "$$"`으로 대기한다.
+parent는 PID/PPID/PGID/session/startticks와 T 상태를 최대300회/기존 command deadline 안에서
+확인하고 원래 group 검사를 수행한다. 성공하면 release 생성→동일 stopped identity 확인→CONT→
+`wait -f`로 원래 종료코드를 받는다. release 없는 CONT는125로 실패한다. 완료 후 release
+대기에는 외부 자식이 없으며 실제 다른 live member와 unreadable/malformed proc 항목은 계속 거부한다.
+실패 회수는 현재 소유성을 확인한 group만 KILL하고 직접 wait한다. 소유성 확인 실패는 신호·wait를
+시도하지 않고 finalizer 실패/nonlive=false로 남기며 adopted 전체 wait를 주장하지 않는다.
+
+`logs/<label>.stopped.stat`, `exit-codes.tsv`, `group-scans.tsv`를 보존한다. group 실패는
+`logs/<label>.group-before-release`/`.group-after-wait` 또는 `logs/finalizer.group-failure`에
+create-new·64KiB 상한으로 kind/return/PID/raw stat/state/PPID/PGID/session/startticks/가능한 exe를
+남긴다. raw stat 읽기 상한은8192B이며 argv/env는 수집하지 않는다. 이미 사라진 proc와 남아 있지만
+읽을 수 없거나 형식이 불명확한 항목을 구분하고 후자는 실패한다. `finalizer-stages.tsv`도64KiB로
+회수/direct wait/provider/held/tree/source-index/admission의 반환을 구분하며 aggregate 실패를 보존한다.
+
+hosted 전용 protocol 통제는 다음3개다. 일반 오류나 통제 setup 실패를 음성 PASS로 세지 않는다.
+
+- `childless-stop-cont`: 실제 command0와 원래 direct wait0, 잔류 group 부재.
+- `original-nonzero-direct-wait`: 실제 command7을 direct wait7로 그대로 전달.
+- `genuine-live-member-rejected`: 같은 session/group의 실제 추가 stopped child와 정확한
+  `live-member`/return1/해당 PID sidecar를 확인한 뒤 owned group KILL/direct wait137 및 nonlive 확인.
+  이 통제에서 KILL한 특정 자식의 종료 전이만 최대300회/기존 shared deadline 안에서 관측한다.
+  일반 command의 live/unknown 판정에는 재시도나 유예를 추가하지 않는다.
+
+`protocol-controls.tsv`는 정확3행이며 `outcome.json`의 `protocol_controls_complete`와
+`protocol_controls_expected=3`으로 분리된다. 기존1200초 공유deadline·각command timeout·모든
+성장 cap·observer64KiB·원문 pins·C postimages·Fast/parser/unknown strict 실패는 그대로다.
+로컬은 Bash/YAML 문법·source diff/hash만 확인했다. 새 통제·회수·C build·실제 errno·cold audit는
+Actions **UNRUN**이며 이 후보의 기능 합격·root fix·원본 제거 credit은0이다.

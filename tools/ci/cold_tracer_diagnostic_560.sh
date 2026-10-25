@@ -95,7 +95,7 @@ source_final() {
     sha256sum > "$job/proof/source-after.sha256" || status=1
   cmp "$job/proof/source-before.sha256" "$job/proof/source-after.sha256" || status=1
   git diff --exit-code || status=1;git diff --cached --exit-code || status=1
-  admit || status=1
+  if [[ ${1:-} != without-admission ]];then admit || status=1;fi
   return "$status"
 }
 if [[ $mode == admit ]]; then admit;exit;fi
@@ -103,7 +103,7 @@ if [[ $mode == final-source ]]; then source_final;exit;fi
 [[ ${CI_PREPARED_RUST_ROOT:-} == "$sdk" && -f ${CI_PREPARED_RUST_MANIFEST:?} ]] || fail 'prepared SDK missing'
 [[ ! -e $out && ! -L $out && ! -e $build && ! -L $build && ! -e $cache && ! -L $cache ]] || fail 'fresh output/cache required'
 mkdir "$out" "$out/logs" "$out/providers" "$out/inputs" "$out/licenses" "$build" "$build/tmp" "$build/audit-target"
-deadline=$((SECONDS+1200));active= identity=;passed=false;observer=false;audit=false;established=false;groups_ok=true
+deadline=$((SECONDS+1200));active= identity=;owned_code= owned_waited=;passed=false;observer=false;audit=false;protocol_complete=false;established=false;groups_ok=true
 declare -A held_fd=() held_id=() held_sha=() aliases=() alias_id=() bound=()
 declare -a trees=() tree_names=()
 stamp() { stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$1"; }
@@ -171,21 +171,66 @@ bind_elf() {
 }
 pid_identity() {
   local row rest;local -a fields
-  IFS= read -r row < "/proc/$1/stat" || return 1
+  { IFS= read -r -n 8193 row < "/proc/$1/stat"; } 2>/dev/null || return 1
   rest=${row##*) };read -r -a fields <<< "$rest"
-  [[ $row == "$1 "* && ${#fields[@]} -ge 20 && ${fields[0]} != Z && ${fields[0]} != X &&
-     ${fields[1]} == "$$" && ${fields[2]} == "$1" && ${fields[3]} == "$1" ]] || return 1
+  [[ ${#row} -le 8192 && $row == "$1 ("*") "* && ${#fields[@]} -ge 20 && ${fields[0]} != Z && ${fields[0]} != X &&
+     ${fields[1]} == "$$" && ${fields[2]} == "$1" && ${fields[3]} == "$1" && ${fields[19]} =~ ^[0-9]+$ &&
+     ( -z ${2:-} || ${fields[0]} == "$2" ) ]] || return 1
   printf '%s\n' "${fields[19]}"
 }
 kill_owned() { [[ -n $active && -n $identity && $(pid_identity "$active") == "$identity" ]] && kill -KILL -- "-$active"; }
+group_failure() {
+  local report=$1 kind=$2 code=$3 pgid=$4 exempt=$5 entry=$6 row=$7 disappeared=$8 rest exe_code=0
+  local -a fields=()
+  rest=${row##*) };read -r -a fields <<< "$rest" || :
+  # 최초 실패만 create-new/64KiB에 보존한다. proc comm/raw stat와 exe 외 argv/env는 읽지 않는다.
+  (
+    set -o noclobber;ulimit -f 64 || exit 1
+    {
+      printf 'schema=1\nkind=%s\nreturn_code=%s\nexpected_pgid=%s\nexempt_pid=%s\nentry=%s\ndisappeared_before_failure=%s\n' \
+        "$kind" "$code" "$pgid" "$exempt" "$entry" "$disappeared" || exit 1
+      printf 'state=%s\nppid=%s\npgid=%s\nsession=%s\nstartticks=%s\nraw_stat_bytes=%s\nraw_stat=%s\n' \
+        "${fields[0]:-unavailable}" "${fields[1]:-unavailable}" "${fields[2]:-unavailable}" \
+        "${fields[3]:-unavailable}" "${fields[19]:-unavailable}" "${#row}" "$row" || exit 1
+      printf 'exe=' || exit 1
+      /usr/bin/readlink -e -- "${entry%/stat}/exe" 2>/dev/null || exe_code=$?
+      printf '\nexe_read_status=%s\n' "$exe_code" || exit 1
+    } > "$report"
+  )
+}
 group_quiet() {
-  local entry row rest;local -a fields
+  local pgid=$1 exempt=${2:-} report=$3 entry row rest pid disappeared=0 seen=0
+  local -a fields
   for entry in /proc/[0-9]*/stat;do
-    if ! IFS= read -r row < "$entry";then [[ ! -e $entry ]] && continue;return 2;fi
+    row=;fields=();pid=${entry#/proc/};pid=${pid%/stat};seen=$((seen+1))
+    if ! { IFS= read -r -n 8193 row < "$entry"; } 2>/dev/null;then
+      if [[ ! -e $entry && ! -d ${entry%/stat} ]];then disappeared=$((disappeared+1));continue;fi
+      group_failure "$report" unreadable-stat 2 "$pgid" "$exempt" "$entry" "$row" "$disappeared" || return 2
+      return 2
+    fi
     rest=${row##*) };read -r -a fields <<< "$rest"
-    [[ ${#fields[@]} -ge 20 && ${fields[2]} =~ ^[0-9]+$ ]] || return 2
-    [[ ${fields[2]} != "$1" || ${row%% *} == "${2:-}" || ${fields[0]} == Z || ${fields[0]} == X ]] || return 1
+    if [[ ${#row} -gt 8192 || $row != "$pid ("*") "* || ${#fields[@]} -lt 20 ||
+          ! ${fields[0]} =~ ^[A-Za-z]$ || ! ${fields[1]} =~ ^[0-9]+$ || ! ${fields[2]} =~ ^[0-9]+$ ||
+          ! ${fields[3]} =~ ^[0-9]+$ || ! ${fields[19]} =~ ^[0-9]+$ ]];then
+      group_failure "$report" malformed-stat 2 "$pgid" "$exempt" "$entry" "$row" "$disappeared" || return 2
+      return 2
+    fi
+    if [[ ${fields[2]} == "$pgid" && $pid != "$exempt" && ${fields[0]} != Z && ${fields[0]} != X ]];then
+      group_failure "$report" live-member 1 "$pgid" "$exempt" "$entry" "$row" "$disappeared" || return 2
+      return 1
+    fi
   done
+  (ulimit -f 64 || exit 1;printf '%s\t%s\t%s\t%s\t%s\n' "$pgid" "$exempt" "$seen" "$disappeared" "$EPOCHREALTIME" >> "$out/group-scans.tsv") || return 2
+}
+await_stopped() {
+  local leader=$1 start=$2 end=$3 count
+  for ((count=0;count<300;count++));do
+    [[ $(pid_identity "$leader") == "$start" ]] || return 1
+    [[ $(pid_identity "$leader" T) != "$start" ]] || return 0
+    ((SECONDS<end)) || return 1
+    sleep 0.01
+  done
+  return 1
 }
 provider_metadata() {
   local phase=$1
@@ -195,31 +240,65 @@ provider_metadata() {
   (ulimit -f 64; /usr/bin/strace --version) > "$out/provider-$phase.version" 2> "$out/provider-$phase.version.stderr" || return 1
 }
 finish() {
-  local original=$? final=0 nonlive=$groups_ok seals=false n
+  local original=$? final=0 nonlive=$groups_ok seals=false n status wait_code
   trap - EXIT INT TERM HUP;set +e
+  # aggregate 실패를 보존하면서 어느 final stage가 실패했는지 작은 원문 status로 분리한다.
+  local finalizer_log_ready=false
+  (set -o noclobber;printf 'stage\tstatus\n' > "$out/finalizer-stages.tsv") && finalizer_log_ready=true || final=1
+  finalizer_stage() {
+    $finalizer_log_ready && (ulimit -f 64 || exit 1;printf '%s\t%s\n' "$1" "$2" >> "$out/finalizer-stages.tsv")
+  }
   if [[ -n $active ]];then
-    kill_owned || final=1
-    wait "$active"
-    group_quiet "$active" || { final=1;nonlive=false; }
-    active=
+    status=0;kill_owned || status=$?
+    finalizer_stage owned-kill "$status" || final=1
+    if [[ $status == 0 ]];then
+      wait_code=0;wait -f "$active" || wait_code=$?
+      finalizer_stage owned-direct-wait "$wait_code" || final=1
+    else
+      final=1;nonlive=false
+      finalizer_stage owned-direct-wait skipped-unverified-owner || final=1
+    fi
+    status=0;group_quiet "$active" '' "$out/logs/finalizer.group-failure" || status=$?
+    finalizer_stage owned-group "$status" || final=1
+    [[ $status == 0 ]] || { final=1;nonlive=false; }
+    active= identity=
   fi
-  cd "$source" || final=1
+  status=0;cd "$source" || status=$?
+  finalizer_stage source-cwd "$status" || final=1
+  [[ $status == 0 ]] || final=1
   if $established;then
-    provider_metadata after || final=1
-    for n in kernel proc-version package version version.stderr;do cmp "$out/provider-before.$n" "$out/provider-after.$n" || final=1;done
+    status=0;provider_metadata after || status=$?
+    finalizer_stage provider-metadata "$status" || final=1
+    [[ $status == 0 ]] || final=1
+    for n in kernel proc-version package version version.stderr;do
+      status=0;cmp "$out/provider-before.$n" "$out/provider-after.$n" || status=$?
+      finalizer_stage "provider-$n" "$status" || final=1
+      [[ $status == 0 ]] || final=1
+    done
   fi
-  verify_held || final=1
+  status=0;verify_held || status=$?
+  finalizer_stage held-fd-path-hash "$status" || final=1
+  [[ $status == 0 ]] || final=1
   for n in "${!trees[@]}";do
+    status=0
     tree "${trees[$n]}" "$out/${tree_names[$n]}.after" &&
       cmp "$out/${tree_names[$n]}.before.roster" "$out/${tree_names[$n]}.after.roster" &&
-      cmp "$out/${tree_names[$n]}.before.sha256" "$out/${tree_names[$n]}.after.sha256" || final=1
+      cmp "$out/${tree_names[$n]}.before.sha256" "$out/${tree_names[$n]}.after.sha256" || status=$?
+    finalizer_stage "tree-${tree_names[$n]}" "$status" || final=1
+    [[ $status == 0 ]] || final=1
   done
-  source_final || final=1
+  status=0;source_final without-admission || status=$?
+  finalizer_stage source-index "$status" || final=1
+  [[ $status == 0 ]] || final=1
+  status=0;admit || status=$?
+  finalizer_stage resource-admission "$status" || final=1
+  [[ $status == 0 ]] || final=1
   [[ $established == true && $final == 0 ]] && seals=true
   jq -n --arg source "$GITHUB_SHA" --arg phase "$phase" --argjson code "$original" --argjson final "$final" \
-    --argjson seals "$seals" --argjson nonlive "$nonlive" --argjson observer "$observer" --argjson audit "$audit" --argjson passed "$passed" \
+    --argjson seals "$seals" --argjson nonlive "$nonlive" --argjson observer "$observer" --argjson audit "$audit" --argjson protocol "$protocol_complete" --argjson passed "$passed" \
     '{schema:1,source:$source,phase:$phase,command_exit:$code,finalizer_exit:$final,immutable_seals:$seals,owned_processes_nonlive:$nonlive,
-      observer_complete:$observer,strict_cold_audit:$audit,pass:($code==0 and $final==0 and $seals and $nonlive and $observer and $audit and $passed),
+      observer_complete:$observer,strict_cold_audit:$audit,protocol_controls_complete:$protocol,protocol_controls_expected:3,
+      pass:($code==0 and $final==0 and $seals and $nonlive and $observer and $audit and $protocol and $passed),
       diagnostic_provider:true,ubuntu_elf_identical:false,root_fixed:false,nonreproduction_is_fix:false,additional_ptrace_requests:0,
       all_adopted_children_reaped:false,closed_dso:false,measured_peak_guarantee:false,retirement_credit:0}' > "$out/outcome.json" || { final=1;seals=false; }
   printf 'immutable_seals=%s\nowned_processes_nonlive=%s\n' "$seals" "$nonlive" >> "$GITHUB_OUTPUT" || final=1
@@ -237,14 +316,15 @@ base_env=(PATH="$sdk/bin:/usr/bin:/bin" HOME="$job/home" LC_ALL=C TZ=UTC TMPDIR=
   CI_JOB_TEMP="$job" GITHUB_WORKSPACE="$source" CI_PREPARED_RUST_ROOT="$sdk" CI_PREPARED_RUST_MANIFEST="$CI_PREPARED_RUST_MANIFEST"
   CARGO_TERM_COLOR=never GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1)
 extra_env=()
-run() {
-  local label=$1 seconds=$2 code=0 leader ready go done release status count end remaining
+start_owned() {
+  local label=$1 seconds=$2 leader ready go done release status count end remaining row
   shift 2;phase=$label;admit
+  [[ -z $active && -z $identity && $label =~ ^[A-Za-z0-9_.-]+$ ]] || fail 'owned command overlap/label'
   remaining=$((deadline-SECONDS));((remaining>0)) || fail '1200s diagnostic deadline'
   ((seconds<=remaining)) || seconds=$remaining
   ready=$out/logs/$label.ready;go=$out/logs/$label.go;done=$out/logs/$label.done;release=$out/logs/$label.release;status=$out/logs/$label.status
   printf '%s\0' "$label" "$@" >> "$out/commands.nul"
-  # leader는 command 종료 후에도 release까지 살아 있어 현재 소유성으로만 group을 정리한다.
+  # command 종료 뒤 builtin STOP만 한다. release 대기용 외부 자식을 만들지 않는다.
   /usr/bin/setsid /usr/bin/bash --noprofile --norc -c '
     set -u;ulimit -c 0;ulimit -f 524288 || exit 125
     ready=$1;go=$2;done=$3;release=$4;status=$5;seconds=$6;shift 6
@@ -254,9 +334,10 @@ run() {
     code=0
     /usr/bin/timeout --foreground --signal=TERM --kill-after=15s "${seconds}s" "$@" || code=$?
     printf "%s\n" "$code" > "$status" || exit 125
-    : > "$done"
-    for ((n=0;n<6000;n++));do [[ ! -e $release ]] || exit "$code";sleep 0.01;done
-    exit 125
+    : > "$done" || exit 125
+    kill -STOP "$$" || exit 125
+    [[ -f $release && ! -L $release ]] || exit 125
+    exit "$code"
   ' cold560-owned "$ready" "$go" "$done" "$release" "$status" "$seconds" /usr/bin/env -i "${base_env[@]}" "${extra_env[@]}" "$@" \
     > "$out/logs/$label.stdout" 2> "$out/logs/$label.stderr" < /dev/null &
   leader=$!;active=$leader;identity=
@@ -272,15 +353,103 @@ run() {
     admit || fail 'resource guard failed'
     sleep 0.5
   done
-  [[ $(pid_identity "$leader") == "$identity" ]] || fail 'leader identity changed before release'
-  group_quiet "$leader" "$leader" || fail 'command left live/unknown group members'
-  IFS= read -r code < "$status";[[ $code =~ ^[0-9]+$ ]] && ((code<=255)) || fail 'command status malformed'
-  : > "$release"
-  local waited=0;wait "$leader" || waited=$?
+  await_stopped "$leader" "$identity" "$end" || fail 'owned leader did not reach stable T state'
+  { IFS= read -r -n 8193 row < "/proc/$leader/stat"; } 2>/dev/null || fail 'stopped leader stat unreadable'
+  [[ ${#row} -le 8192 && $(pid_identity "$leader" T) == "$identity" ]] || fail 'stopped leader identity differs'
+  (set -o noclobber;printf '%s\n' "$row" > "$out/logs/$label.stopped.stat") || fail 'stopped leader proof failed'
+}
+complete_owned() {
+  local label=$1 leader=$active code waited=0
+  [[ $(pid_identity "$leader" T) == "$identity" ]] || fail 'leader not owned/stopped before release'
+  IFS= read -r code < "$out/logs/$label.status"
+  [[ $code =~ ^[0-9]+$ ]] && ((code<=255)) || fail 'command status malformed'
+  (set -o noclobber;: > "$out/logs/$label.release") || fail 'release marker failed'
+  [[ $(pid_identity "$leader" T) == "$identity" ]] || fail 'leader identity changed before CONT'
+  kill -CONT "$leader" || fail 'owned CONT failed'
+  wait -f "$leader" || waited=$?
+  owned_code=$code;owned_waited=$waited
   active= identity=
-  group_quiet "$leader" || { groups_ok=false;fail 'group live after direct wait'; }
+  group_quiet "$leader" '' "$out/logs/$label.group-after-wait" || { groups_ok=false;fail 'group live/unknown after direct wait'; }
   printf '%s\t%s\t%s\t%s\n' "$label" "$code" "$waited" "$EPOCHREALTIME" >> "$out/exit-codes.tsv"
-  [[ $waited == "$code" && $code == 0 ]] || fail "$label exit $code (wait $waited)"
+  [[ $waited == "$code" ]] || fail "$label status/wait mismatch $code/$waited"
+}
+run() {
+  local label=$1 seconds=$2
+  shift 2
+  start_owned "$label" "$seconds" "$@"
+  group_quiet "$active" "$active" "$out/logs/$label.group-before-release" || fail 'command left live/unknown group members'
+  complete_owned "$label"
+  [[ $owned_code == 0 ]] || fail "$label exit $owned_code (wait $owned_waited)"
+  admit
+}
+protocol_controls() {
+  local label child child_start row rest group_code=0 waited=0 code count child_nonlive=false
+  local -a fields
+  # 모두 hosted에서만 실행한다. 합성 성공은 cold/errno/auditor의 실제 성공이 아니다.
+  run protocol-childless 5 /usr/bin/bash --noprofile --norc -c 'exit 0'
+  printf 'childless-stop-cont\t0\t0\tPASS\n' >> "$out/protocol-controls.tsv"
+  label=protocol-exit7
+  start_owned "$label" 5 /usr/bin/bash --noprofile --norc -c 'exit 7'
+  group_quiet "$active" "$active" "$out/logs/$label.group-before-release" || fail 'nonzero control left live/unknown group'
+  complete_owned "$label"
+  [[ $owned_code == 7 && $owned_waited == 7 ]] || fail 'nonzero control lost original status'
+  printf 'original-nonzero-direct-wait\t7\t7\tPASS\n' >> "$out/protocol-controls.tsv"
+  label=protocol-live-member
+  start_owned "$label" 5 /usr/bin/bash --noprofile --norc -c '
+    set -eu
+    /usr/bin/bash --noprofile --norc -c '\''printf "%s\n" "$$" > "$1";kill -STOP "$$";exit 0'\'' cold560-live-child "$1" &
+    child=$!
+    for ((n=0;n<300;n++));do
+      if [[ -s $1 ]];then
+        IFS= read -r value < "$1";[[ $value == "$child" ]] || exit 125
+        IFS= read -r row < "/proc/$child/stat" || exit 125
+        rest=${row##*) };read -r -a fields <<< "$rest"
+        [[ ${#fields[@]} -ge 20 && ${fields[0]} == T && ${fields[1]} == "$$" ]] && exit 0
+      fi
+      sleep 0.01
+    done
+    exit 125
+  ' cold560-live-control "$out/logs/$label.child"
+  IFS= read -r code < "$out/logs/$label.status"
+  [[ $code == 0 ]] || fail 'live control command did not complete'
+  IFS= read -r child < "$out/logs/$label.child"
+  [[ $child =~ ^[1-9][0-9]*$ && $child != "$active" ]] || fail 'live control child marker malformed'
+  { IFS= read -r -n 8193 row < "/proc/$child/stat"; } 2>/dev/null || fail 'live control child absent'
+  rest=${row##*) };read -r -a fields <<< "$rest"
+  [[ ${#row} -le 8192 && $row == "$child ("*") "* && ${#fields[@]} -ge 20 &&
+     ${fields[0]} == T && ${fields[2]} == "$active" && ${fields[3]} == "$active" && ${fields[19]} =~ ^[0-9]+$ ]] || fail 'live control child identity/state differs'
+  child_start=${fields[19]}
+  group_quiet "$active" "$active" "$out/logs/$label.group-before-release" || group_code=$?
+  [[ $group_code == 1 ]] || fail 'live control did not reach exact live-member rejection'
+  grep -Fx 'kind=live-member' "$out/logs/$label.group-before-release" >/dev/null
+  grep -Fx "entry=/proc/$child/stat" "$out/logs/$label.group-before-release" >/dev/null
+  kill_owned || fail 'live control owned cleanup failed'
+  wait -f "$active" || waited=$?
+  [[ $waited == 137 ]] || fail 'live control direct wait did not observe KILL'
+  # 이 통제에서 KILL한 특정 자식의 kernel 종료 전이만 bounded하게 기다린다.
+  # 일반 command의 live/unknown 검사에는 재시도/유예를 적용하지 않는다.
+  for ((count=0;count<300;count++));do
+    ((SECONDS<deadline)) || fail 'control cleanup exceeded shared deadline'
+    if [[ ! -e /proc/$child/stat && ! -d /proc/$child ]];then child_nonlive=true;break;fi
+    if ! { IFS= read -r -n 8193 row < "/proc/$child/stat"; } 2>/dev/null;then
+      if [[ ! -e /proc/$child/stat && ! -d /proc/$child ]];then child_nonlive=true;break;fi
+      fail 'killed control child stat unreadable'
+    fi
+    rest=${row##*) };read -r -a fields <<< "$rest"
+    [[ ${#row} -le 8192 && $row == "$child ("*") "* && ${#fields[@]} -ge 20 &&
+       ${fields[2]} == "$active" && ${fields[3]} == "$active" && ${fields[19]} == "$child_start" ]] || fail 'killed control child identity changed'
+    if [[ ${fields[0]} == Z || ${fields[0]} == X ]];then child_nonlive=true;break;fi
+    sleep 0.01
+  done
+  if ! $child_nonlive;then
+    group_quiet "$active" '' "$out/logs/$label.group-cleanup-timeout" || :
+    fail 'killed control child did not become nonlive'
+  fi
+  group_quiet "$active" '' "$out/logs/$label.group-after-kill" || { groups_ok=false;fail 'live control group not nonlive after KILL'; }
+  active= identity=
+  printf 'genuine-live-member-rejected\t1\t137\tPASS\n' >> "$out/protocol-controls.tsv"
+  [[ $(wc -l < "$out/protocol-controls.tsv") == 3 ]] || fail 'exact protocol control count differs'
+  protocol_complete=true
   admit
 }
 for tool in bash sh env git find sort xargs sha256sum stat readlink readelf sed awk grep head od tr cat cmp df du jq timeout setsid sleep curl gcc cc make as ar ranlib ld nm pkg-config dpkg-query dpkg-deb dpkg-buildflags perl tar xz patch cp chmod mkdir id dirname basename rm ldd wc;do
@@ -301,6 +470,7 @@ for path in /usr/lib/x86_64-linux-gnu/perl /usr/lib/x86_64-linux-gnu/perl5;do
 done
 established=true
 provider_metadata before
+protocol_controls
 run system-version 30 /usr/bin/strace --version
 run kernel 30 /usr/bin/uname -rvm
 run package 30 /usr/bin/dpkg-query -W '-f=binary=${binary:Package}\nversion=${Version}\nsource=${source:Package}\nsource_version=${source:Version}\n' strace

@@ -33,7 +33,7 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
-      COLD560_HELPER_SHA256: daafeeeae03cc4719d043849a3abcc7d94b17de4078e0fb9617dfe26abd2661a
+      COLD560_HELPER_SHA256: 72d0778d003def163534bccd2f74695b13d00fb75519d1a8858b069ad43d49cb
       COLD560_PATCH_SHA256: b32a9508ded464e5c08b22444064ba2de300b0373e0bce643974f4e21775d51a
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
