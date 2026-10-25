@@ -219,3 +219,12 @@
 +			c560_record("COLD560_INHERIT root_seccomp pid=%ld\n",
 +				    (long) c560_root);
 +		}
+@@ -4057 +4266,2 @@
+-		if (!maybe_switch_current_tcp() && entering(current_tcp)) {
++		struct tcb *const switched_tcp = maybe_switch_current_tcp();
++		if (!switched_tcp && entering(current_tcp)) {
+@@ -4081,0 +4292,4 @@
++		if (c560_inherit && switched_tcp)
++			restart_op = has_seccomp_filter(current_tcp)
++				? seccomp_filter_restart_operator(current_tcp)
++				: PTRACE_SYSCALL;

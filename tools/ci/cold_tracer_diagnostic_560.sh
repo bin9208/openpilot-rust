@@ -875,7 +875,7 @@ printf '%s  %s\n' 41b9dffd742377a76215b75c6a9b1a76d63483493dca2afb50bac87e8877d7
   07397b01bc0bcea2c58aa4a8b5a1cfe71778f929934529155a7c35ae55cbd638 "$native/src/strace.c" | sha256sum --check --strict --quiet -
 if [[ $mode == run-inherited ]];then
   run inherited-patch 30 /usr/bin/patch --directory="$native" --batch --fuzz=0 --no-backup-if-mismatch -p1 --input="$inherited_patch"
-  printf '%s  %s\n' ef7b41e35c2cdc4ddf3b7c74348e9e36d298f4e6dd137f20f1e42054802dd75b "$native/src/strace.c" \
+  printf '%s  %s\n' 8776b1d2afc63900a3c6da12147f0154a04ac11d2f2ed915285444ac26451bbf "$native/src/strace.c" \
     41b9dffd742377a76215b75c6a9b1a76d63483493dca2afb50bac87e8877d777 "$native/src/syscall.c" \
     8073129838f921c5c0286c3c6cc0bebf7832b04f476340114ea25e5c8216c4a1 "$native/src/filter_seccomp.c" | sha256sum --check --strict --quiet -
 fi

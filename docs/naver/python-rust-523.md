@@ -1219,3 +1219,17 @@ baseline3580=294교체/3부분/3283대기는 그대로다. 진단 자체도 전�
 #576 후보는 authored PID 음성을 정확 class/method/assignment AST로 제한하고 전체 원복동일성을 확인한다.
 기존 actual normal·target/Replay·4+12·최종bool AND/시간·용량 기준은 유지한다. 두 후보의 로컬 검증은
 소스·구문·서식·diff와 독립 검토뿐이며 실제 새4선택자/D1↔direct/4+12/봉인·회수는 Actions 대기다.
+
+## 기본 러너 후속 검증·분리 수정 — 2026-10-25
+
+GitHub 기본 러너 전환 상태에서 작업을 계속 진행 중입니다. 현재 issuebranch source는 `a3873834aefd264e37f3513c58c1f9a7ef4b32fc`이며 PR343은 draft/dev, source56f 단계와 분리해 유지합니다. dev-md는 수정하지 않았습니다.
+
+- #570은 [40193190050](https://github.com/bin9208/openpilot-rust/actions/runs/40193190050)의 완전한 첫 du 실패 원문/82CRC 감사로 관측 누락 조건을 충족해 종료했습니다. 실제 target9개 소멸 경합 수정은 #579로 분리했습니다. 모델 strict Clippy/A/B/D1/D2는 아직 미도달입니다.
+- #577은 authored4/12+게시5초와 필수 I/O의 기존 global52분을 분리한 source8aedd0dc2를 [40193481527](https://github.com/bin9208/openpilot-rust/actions/runs/40193481527)에서 검증 중입니다. 원래 normal/수치/기한·caps·최종 AND는 유지하며 성공으로 올리지 않았습니다.
+- #560 후보 source131a789f8의 [40193797145](https://github.com/bin9208/openpilot-rust/actions/runs/40193797145)는 fork/vfork/thread3통제·protocol3·marker10을 통과한 뒤 nonleader exec의 `= ?`를 엄격히 거부해 실패했습니다. 700CRC/source-provider32쌍/held177 및 finalizer/upload/cleanup은 확인했으나 전체18/cold/auditor는 미도달입니다. TCB 교체 후 stale restart operator 경계는 #581에서 최소 수정 중이며 parser를 완화하지 않습니다.
+- #549 새 원본·복사본 index journal sourcea3873834a는 [40194802656](https://github.com/bin9208/openpilot-rust/actions/runs/40194802656)에서 실행 중입니다. 이전8fcbc의 mode/TAR 통과 뒤 raw index 불일치 원인을 좁히며 원본2는 보존합니다. CLI20/raw21/policy3/원본 삭제 수용은 아직 없습니다.
+- 기존 PR9ae [Rust40187340482](https://github.com/bin9208/openpilot-rust/actions/runs/40187340482)의 LLVM20 job은30target/108PASS/0FAIL로 source/provider 봉인·upload/cleanup까지 실제 성공했습니다. #355의 input-binding/strict-prefix 조건을 뒷받침하지만 AMD 전용 #260 검사를 대신하지 않습니다. workspace239PASS/1FAIL의 UI CI 경로 해석 문제는 #580 source0fa20a144에서 수정해 Fast에 정확 selector를 연결했습니다. 전체 run은 ARM UI 빌드가 남아 있고, 실패는 originalmodel/selfdrived/UIconnectivity/workspace 및 그 aggregate로 유지합니다.
+
+baseline3580은 교체294/부분3/대기3283으로 추가 승격0입니다. 실행 원장은141edge=26replaced/111pending/1native-existing/2text/1removed이며 새 Fast Python 회귀 경로도 정직하게 pending입니다. #523/#296 전체 전환·PR 필수검사·통합/전달·실기 수용은 미완료이고 이슈를 닫지 않았습니다. 로컬은 소스/문법/format/diff 및 저장 artifact의 inert 감사만 했습니다.
+
+후속 #579 source batch는 새 metadata provider 호출점1개도 pending으로 등록한다. 원장은142edge=26replaced/112pending/1native-existing/2text/1removed이며 baseline3580의294/3/3283은 그대로다. 아직 기능 GHA_UNRUN이다.

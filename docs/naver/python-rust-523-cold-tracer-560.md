@@ -322,3 +322,42 @@ helper literal 갱신이 필요하다. 별도 통제 receipt `inheritance/contro
 all-adopted reap/DSO closure/root-fixed/비재현=해결/retirement credit은 승격하지 않는다.
 로컬은 Bash 문법·Rustfmt·text postimage/역투영·diff만 확인한다. patch 적용/C·Rust compile,
 fixture/프로젝트/CLI/Actions 실행은0이며 실제 적합성과 성능은 아직 UNRUN이다.
+
+## #581: nonleader exec의 실제 TCB 교체 뒤 restart 선택 후보
+
+source131a789f82c1f3c9eb4eadab7c91a6315df0ccd9의
+[40193797145/job121170192981](https://github.com/bin9208/openpilot-rust/actions/runs/40193797145/job/121170192981)은
+fork/vfork/thread3개 통제만 PASS한 뒤 `verify-inherit-nonleader`에서 FAIL했다. 부모가 받은
+artifact12598474079은11296091B/SHA256
+`d2a0a70a4c33223f650d9a163fccb4368f47c661ec39f169b8b29b3b214cd8c3`,700unique/700CRC,
+전개59745854B다. 비교 가능한 source/index/SDK/provider32쌍은 byte 동일, held177행은 전후 집합 동일,
+finalizer20단계·source/SDK after·upload/cleanup은 성공했다. 이는 기능 closure PASS가 아니다.
+nonleader 실행은 exit0/정확 leaf stdout이지만 thread33054의 exec가 root33051로 옮겨진 뒤
+`<... execve resumed>) = ?`로 끝나므로 기존 strict verifier의 `trace token` 거부를 보존한다.
+나머지 양성3/음성11·실제 cold/strict auditor는 미도달이다.
+
+6.8의 `dispatch_event`는 old leader의 TCB로 restart operator를 먼저 선택한다. 이후
+`maybe_switch_current_tcp()`가 executing thread의 TCB로 바꿔도 기존 선택은 재계산하지 않는다.
+actual debug는 두 번째 EVENT_EXEC 뒤 syscall-exit stop 없이 EVENT_EXIT로 가며 observer는
+SECCOMP2/exit1/anomaly0이다. 이는 stale 선택 경로와 부합하지만 실제 PTRACE_CONT 요청 값이나
+전후 flags 숫자를 직접 관측한 것은 아니다. stdout 성공을 exec result0으로 대신하지 않는다.
+
+승인 후보는 기존 `maybe_switch_current_tcp()`를 한 번 호출한 결과를 const local에 저장하고,
+**`c560_inherit`이며 실제 switch가 성공했을 때만** 새 current TCB로 기존 filter restart 함수를
+다시 호출한다. 기존 recovery 본문·detach·non-switch·observer-only default·BPF/fixture/parser와
+18통제·기한/공간 cap은 그대로다. 추가 ptrace query/ptrace callsite는0이다. 기존 receipt의
+`additional_ptrace_requests=0`을 실제 동적 ptrace 총수가 전후 같다는 측정으로 확대하지 않는다.
+정상 exit stop을 다시 받으면 기존 restart/GETINFO callsite의 실행 횟수는 달라질 수 있으며,
+이 후보의 실제 총수 동일성은 미측정이다. 별도 GETEVENTMSG 조회를 추가하지 않는다.
+
+observer postimage `07397b01bc0bcea2c58aa4a8b5a1cfe71778f929934529155a7c35ae55cbd638`에 대한
+새 inherited text postimage SHA는
+`8776b1d2afc63900a3c6da12147f0154a04ac11d2f2ed915285444ac26451bbf`다.
+로컬에서 unified diff를 순수 데이터로 구성·역투영했으며 C patch 명령이나 compiler를 실행하지 않았다.
+이 delta를 되돌리면 이전 inherited postimage `ef7b41e35c2cdc4ddf3b7c74348e9e36d298f4e6dd137f20f1e42054802dd75b`와
+patch bytes가 정확히 복원된다. helper는 새 postimage SHA literal1곳만 갱신했다.
+부모가 patch/helper의 WF·Focus·원장 literal을 연결한다. 새 source 실행 callsite나 pending edge는 없다.
+
+로컬은 text/source projection·Bash 문법·diff만 확인한다. 새 C compile·nonleader 실제 exit0 관측·
+전체18통제/cold/auditor는 **GHA UNRUN**이다. `= ?` 허용·원문 정규화·추가 query·재시도·provider 교체는0이며
+#581/#560 해결·전체 runtime/기기 수용이나 retirement credit을 주장하지 않는다.

@@ -932,3 +932,37 @@ helper가 현재 leaf의 SHA를 읽어 `MODEL482_NATIVE_TEST_SHA256`에 전달�
 로컬 rustfmt·source/diff만 확인했고 수정 후 Clippy 및 A/B/D1/D2 실제 수용은 **GHA UNRUN**이다.
 private 전체 감사는 `model-56f-two-runs-audit.md`에 보존했다. road1928의3개 signedzero와
 PR1344의 index99, historical half/sNaN5·normal128 및 전체 모델/runtime 수용은 계속 구별한다.
+
+## #578 후속 current-model 경로 연결 — 2026-10-25
+
+`4ea1baccd`의 private WriterEvent 별칭 수정은 PR1344 경로에서만 자동 실행됐다. current-triplet의 push paths는 부모 `diagnostic_482_tests.rs`만 포함하고 새 private leaf를 직접 포함하지 않았다. 실제 strict model Clippy가 leaf도 컴파일하므로 current-triplet trigger에 `rust/crates/model-runtime/src/cpu/diagnostic_482_pr1344.rs` 한 경로를 추가한다. helper·steps·env·원래 whole PROGRAM/2frame 수치·deadline·자원·source/SDK 봉인은 byte 불변이며 branch/source binding을 속이지 않는다. current 재검증은 새 exact source의 Actions가 필요하고 이 source-only 연결을 Clippy/모델 성공으로 세지 않는다.
+
+## #570 원문 보존 수용·#579 후속 — 2026-10-25
+
+정확 source `4ea1baccd7cbc288fdb3c7150e135675a69237bf`의 [40193190050/job121168391183](https://github.com/bin9208/openpilot-rust/actions/runs/40193190050/job/121168391183)에서 첫 du 실패 원문 보존을 실제 확인했습니다.
+
+artifact12599126105=3939577B/SHA256 `ad21161e97d661416e40529b98f1f9b9c8a44921beb56102a0f15bc6df3feb9d`, 82unique/82CRC PASS입니다. current-daemon allocated scan exit1/0.02078924초/timeoutfalse이며 stderr1674B와 부분stdout42B를 완전 보존했습니다. 각 SHA는 `782f869b358a7942545b7b048a7a994da161ce11d6619ba824f5790c73a51b87`와 `568136f205f1aa2da8287c1f9577de9ad0762c767521a3370c25b23363a9db27`입니다. 원문은 정확 build/target/debug/deps 하위9개 missing-file 경로를 기록했고 retry/ignore는0입니다. 부분합1555288064B는 clean scan/cap PASS가 아닙니다.
+
+source19487/SDK188/venv2037/base9398 snapshot과 outer6쌍은 실제 동일하며 children.live=[]/회수true/uploadSUCCESS입니다. registry baseline 미도달로 내부 final-seals=false, cleanupSKIP을 보존합니다. Clippy/A/B/D1/D2 미도달입니다. 관측 누락 문제 #570의 조건은 충족했으며 실제 mutable target 측정 경합 수정은 #579로 분리했습니다. #482/#523/#296 전체 수용은 미완료입니다. 상세 감사는 private `model-4ea-pr1344-firstfailure-audit.md`와 후속 tracked 모델 기록에 연결합니다.
+
+## #579 mutable build metadata 후보 — 2026-10-25
+
+#570에서 확보한 current-daemon9개 ENOENT는 exact mutable `job/build/target/debug/deps` 안의 compiler 임시파일이었다. build root만 FD-relative NOFOLLOW metadata로 측정하며 target의 고정dev/ino/mode/uid/gid와 현재 실제 ENOENT·strict child를 확인한 incomplete pass만 최대3회/전체10초 안에서 다시 관측한다. source/SDK/registry/venv/proof의 원래 du/unknown 거부·원문 보존은 유지한다. directory의 변하는시간·크기·nlink를 불변 조건으로 쓰지 않는다. Cargo 재실행0이며 root/부모 소멸·교체·권한·다른오류·현재존재·소진은 FAIL이다.
+
+allocated(st_blocks×512)와 GNU usable apparent 양쪽, per-root hardlink중복제거/xdev/symlink대상미순회, registry prefix+build 합산8GiB의 partial 초과 sticky와 원래 모든 caps/512MiBreserve/global/command 시간을 보존한다. 각 scan은16개×1024B missing/32KiB record/2048scan으로 제한하며 증거저장 실패도 숨기지 않는다. 원래 scan은 peak 보장이 아니며 이 metadata 관측도 peak를 보장하지 않는다. [GNU du 원문](https://github.com/coreutils/coreutils/blob/v9.4/src/du.c)의 의미를 검토했고 실제 runner provider 동등성은 아래 GHA 통제가 필요하다.
+
+첫 고정 Cargo build 직전 emptytarget0700을 만들고 원래 fresh absence 검사를 보존한다. 양성2는 정지 sparse/hardlink/symlink/dir fixture의 실제 GNU du 두 metric 일치와 exact absent child다. 음성12는 root/outside/permission/현재존재/다른errno/소진/deadline/allocated·apparent·합산cap/root부재·교체를 엄격히 거부한다. 실제 Cargo race 복구로 표시하지 않는다. 64KiB create_new receipt는 source/base/helper/du/targetidentity를 묶고 FD SHA hold에 넣는다. 두 WF는 exact2/12/3attempt10초·정지fixture두값·rawreceipt SHA+fullidentity+alias·du heldSHA와 기존 finalseals/children/수치AND를 독립 확인한다.
+
+base81782B SHA256 `6b173bb32ec045bbef9a0d2a968555a9318ff031e1d4cb1574a5254033bf2759`, PR1344 helper50959B SHA256 `f551bb6a54b173d61229b895726aab3cf14366c7a90c2250af38c130239cef41`다. PR1344 실행 본문은 BASE_SHA 한 literal 외 byte 동일하며 기존 전체모델/ISA·cached10/guarded8·math/expected/normal128/half5는 불변이다. private 인계는 `model-579-bounded-build-scan/handoff.md`/`source-freeze.json`이다. 새 GNU metadata provider callsite는 기존 Python 조정 의존성의 pending으로 추가했고 모델·baseline3580 제거 credit0이다.
+
+로컬 AST/YAML/Bash/diff/sourceprojection만 확인하며 controller/guard/fixture/du·모델/원본/프로젝트 실행0이다. metadata양성2/음성12, 실제 compile 경합 처리, strictClippy/A/B/D1/D2·전체 동등성은 **GHA UNRUN**이다. 이 후보 또는 source-only 독립리뷰를 실제 수용으로 올리지 않는다.
+
+## PR9ae LLVM20 경계 수용 — 2026-10-25
+
+[run40187340482/job121150827092](https://github.com/bin9208/openpilot-rust/actions/runs/40187340482/job/121150827092)은 실제 merge `75d0cfd49912b631946721e58979487935372828`에서30target/108PASS/0FAIL/0ignored/0filtered로 성공했다. source/index 및LFS7쌍이 동일하고, provider pin/ldd·두upload·소유source/target cleanup까지 실제 성공했다. provider artifact12598113892=426B/SHA256 `f4d6c764696630a9cab962f1aa0d7ece0c12b0fab55d671db752f1e16996b3d6`/1CRC, private12597789608=3600018B/SHA256 `ae60a16744bc76a3ab211a262c904d22db7bc91c97672955954f90227f857dfc`/35CRC를 담당자가 각각1회 감사했다.
+
+#355 unused input binding2개와 frozen strict actual-prefix의 두memory mode가 실제 통과했다. 이를 최신전체PR/실기 수용으로 올리지 않는다. 이 job은 #260 AMD emulator의mode3/8instruction/310kernel/473+473replay를 실행하지 않아 #260의 새수용으로 세지 않는다. 자연 CPU model/ISA census·whole SDK/모든DSO/전체자손FD의전후closure는 이artifact계약에 없으므로추가성공으로 주장하지 않는다. 기존원본prefix의251호출은역사capturemetadata이며 이번Python재실행횟수가 아니다.
+
+자세한검토는 private `pr9ae-llvm20-260-355-actual-audit.md/json`, sourcebindings/testcounts/provider 및privateZIP 인덱스에 보존한다. 이미통과한108개를목적없이재실행하거나이번수치와모델전체/half5/1928·1344signedzero를혼합하지 않는다.
+
+#579 후속 보강은 정지fixture의 실제 du2회의 stdout/stderr 각64KiB prefix와 argv/status/timeout/elapsed/길이/SHA/잘림을 strict output·metric 판단 전에 create_new로 보존한다. 비정상/timeout 예외는 증거를 남긴 뒤 그대로 전파하고 증거 저장 실패도 숨기지 않는다. env/secret·재시도·추가 subprocess는 없다. 최종 인계는 private `model-579-metadata-du-evidence/handoff.md`이며 앞선 source-only 동결3609/0eec는 이를 대체하기 전의 중간 기록이다. 아직 GHA_UNRUN이다.

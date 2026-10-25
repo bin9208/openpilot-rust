@@ -496,3 +496,13 @@ receipt가 게시된 뒤 post IO에서 실패해도 기존 최종 AND와 부모 
 Replay·#576 AST 선택/거부·diagnostic/COMMON/trace·원문/기대값·수학·CPU 정책 및700/600/32분·전체52분·공간 caps는
 그대로다. 새 selector/프로세스/패키지/pending source edge는 없다. 로컬은 AST/source projection/diff만 확인했으며
 새 timing·실제4/12·receipt/finalizer 및 normal 연결은 **GHA UNRUN**이다. #577/#576 및 #553 수용을 주장하지 않는다.
+
+## #576/#577 실제 수용과 normal40 경계 — 2026-10-25
+
+정확 source `8aedd0dc2d693985e7beadf40954adfdd53c6401`/helper SHA256 `a64d32a1f74733626f71f6aac2b22c2932acbcf54c03b291d65982ab78451295`의 [40193481527/job121169250583](https://github.com/bin9208/openpilot-rust/actions/runs/40193481527/job/121169250583)이 최종 SUCCESS입니다. artifact12599716253=54157066B/SHA256 `2f483585bf4e1685848f6f80fda9ccc72474c25c2b41478155fa328715ac2fbf`,228safe unique/228CRC PASS를 담당자가1회 전수 감사했습니다.
+
+- 정확4양성/12음성/16결과·source4pin/receipt FD-SHA/0600·nlink1을 실제 확인했습니다. PID AST 원복 digest 동일 및 p-operator 변조 거부도 PASS입니다.
+- authored4/12+게시 core는0.028725942초로5초 이내입니다. initial/post budget은6.429557471/6.496287675초였고 held/owner/live를 포함한7단계가 모두 기존52분 global 아래 완료됐습니다. 전후 I/O를 생략하거나 전체기한을 늘리지 않았습니다.
+- 기존 normal40은40case/8655frame/705948비교/최대오차0, 정확 actual test1PASS/0FAIL/0ignored로 통과했습니다. source/SDK/원본·native manifest17raw쌍과 system-provider before.files/after3개가 같고, runtime전 held252개가 after에 그대로 있으며 finalseals/자손 회수/upload/두cleanup도 모두 SUCCESS입니다.
+
+해당 protocol AST/타이머 운영 조건을 충족해 완료 처리합니다. `disposition=normal-passed-no-target-replay`여서 실제 실패 target triage/scalar-layer는 미도달입니다. full109·#553 최초 수학차이 원인/진단·normal standalone 교체·모델/전체 전환·실기 수용으로 확대하지 않으며 retirement credit0을 유지합니다. 전수 근거는 private hosted-8a-controls-audit.md/json과 tracked controls-loader553 기록에 연결합니다.

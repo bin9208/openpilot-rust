@@ -7,6 +7,7 @@ controller만 stdlib이며 worker의 원본 import/compile/PKL 실행은 Actions
 from __future__ import annotations
 
 import ctypes
+import errno
 import hashlib
 import importlib.util
 import json
@@ -554,6 +555,11 @@ class Controller:
         self.out.mkdir()
         self.build = job / "build/model482"
         self.build.mkdir(parents=True)
+        self.build_root = job / "build"
+        self.target = self.build_root / "target"
+        self.build_root_before = self.build_identity(self.build_root)
+        self.target_before = None
+        self.build_scan_count = 0
         soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
         need(hard == resource.RLIM_INFINITY or hard >= 4096, 'held file descriptor capacity')
         resource.setrlimit(resource.RLIMIT_NOFILE, (max(soft,4096), hard))
@@ -580,6 +586,338 @@ class Controller:
             JIT_BATCH_SIZE="0", CPU_COUNT="2", OPENPILOT_HACKS="1", LLVMOPT="1", TMPDIR=str(job / "cache"),
             XDG_CACHE_HOME=str(job / "cache"), CACHEDB=str(self.build / "original-cache.db"),
             CC=str(Path("/usr/bin/clang").resolve(strict=True)))
+
+    def build_identity(self, path):
+        try:
+            info = path.lstat()
+        except FileNotFoundError as problem:
+            raise RuntimeError("build scan root unavailable") from problem
+        need(stat.S_ISDIR(info.st_mode) and info.st_uid == os.getuid()
+             and not info.st_mode & 0o022 and path.resolve(strict=True) == path,
+             "build scan root boundary")
+        # Cargo가 바꾸는 directory 크기·시간·nlink는 고정하지 않는다.
+        return (info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid)
+
+    def build_roots(self):
+        need(self.build_identity(self.build_root) == self.build_root_before, "build scan root changed")
+        if self.target_before is None:
+            try:
+                self.target.lstat()
+            except FileNotFoundError as problem:
+                need(problem.errno == errno.ENOENT, "fresh target absence errno")
+            else:
+                raise RuntimeError("target appeared before first Cargo admission")
+        else:
+            need(self.build_identity(self.target) == self.target_before, "mutable target root changed")
+
+    def build_missing(self, path, problem):
+        need(isinstance(problem, FileNotFoundError) and problem.errno == errno.ENOENT,
+             "build scan accepts only ENOENT")
+        need(self.target_before is not None and path.is_absolute() and ".." not in path.parts
+             and path != self.target and path.is_relative_to(self.target),
+             "build ENOENT outside exact target child")
+        self.build_roots()
+        try:
+            path.lstat()
+        except FileNotFoundError as current:
+            need(current.errno == errno.ENOENT, "build scan accepts only ENOENT")
+        else:
+            raise RuntimeError("build ENOENT entry is currently present")
+        self.build_roots()
+        need(len(os.fsencode(path)) <= 1024, "build ENOENT path1024B bound")
+        return str(path)
+
+    def build_scan_time(self, deadline):
+        need(time.monotonic() <= min(deadline, self.deadline), "build metadata scan10s/global deadline")
+
+    @staticmethod
+    def build_charge(totals, allocated, apparent, prefix, cap):
+        need(allocated >= 0 and apparent >= 0, "negative build metadata size")
+        totals[0] += allocated
+        totals[1] += apparent
+        need(max(totals[0] + prefix[0], totals[1] + prefix[1]) <= cap,
+             "build/registry allocated or apparent cap")
+
+    @staticmethod
+    def build_complete(attempt, missing):
+        need(not missing or attempt < 2, "build metadata scan exhausted3attempts")
+        return not missing
+
+    def build_scan_record(self, attempt, totals, prefix, missing, status, started, error=None):
+        text = None if error is None else str(error)
+        value = {"schema": 1, "source": os.environ["GITHUB_SHA"], "phase": self.phase,
+            "scan": self.build_scan_count, "attempt": attempt+1, "root": str(self.build_root),
+            "root_identity": self.build_root_before, "target": str(self.target),
+            "target_identity": self.target_before, "partial_allocated_bytes": totals[0],
+            "partial_apparent_bytes": totals[1], "registry_prefix_bytes": list(prefix),
+            "cap_bytes": 8*GIB, "missing_paths": missing, "status": status,
+            "elapsed_seconds": time.monotonic()-started, "deadline_seconds": 10,
+            "error": text[:2048] if text is not None else None,
+            "error_truncated": text is not None and len(text) > 2048, "Cargo_restarted": False}
+        raw = (json.dumps(value, sort_keys=True, allow_nan=False)+"\n").encode()
+        need(len(raw) <= 32*1024, "build scan diagnostic32KiB bound")
+        self.m.write_new(self.out/f"budget-build-{self.build_scan_count:04d}-{attempt+1}-{status}.json", raw)
+
+    def measure_build(self, prefix=(0, 0), cap=8*GIB):
+        started = time.monotonic()
+        deadline = min(started+10, self.deadline)
+        self.build_scan_count += 1
+        need(self.build_scan_count <= 2048, "build scan count2048 bound")
+        for attempt in range(3):
+            totals, missing, seen = [0, 0], [], set()
+
+            def absent(path, problem):
+                self.build_scan_time(deadline)
+                text = self.build_missing(path, problem)
+                if text not in missing:
+                    need(len(missing) < 16, "build ENOENT path count16 bound")
+                    missing.append(text)
+
+            def charge(info):
+                if info.st_dev != self.build_root_before[0]:
+                    return False  # du -x와 같이 다른 filesystem은 순회/합산하지 않는다.
+                key = (info.st_dev, info.st_ino)
+                if key in seen:
+                    return False
+                seen.add(key)
+                need(stat.S_ISREG(info.st_mode) or stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode),
+                     "special build metadata entry")
+                apparent = max(0, info.st_size) if stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode) else 0
+                self.build_charge(totals, info.st_blocks*512, apparent, prefix, cap)
+                return True
+
+            def visit(fd, path, depth):
+                need(depth <= 64, "build directory depth64 bound")
+                self.build_scan_time(deadline)
+                try:
+                    with os.scandir(fd) as entries:
+                        for entry in entries:
+                            self.build_scan_time(deadline)
+                            child = path / entry.name
+                            try:
+                                info = os.stat(entry.name, dir_fd=fd, follow_symlinks=False)
+                            except FileNotFoundError as problem:
+                                absent(child, problem)
+                                continue
+                            if not charge(info) or not stat.S_ISDIR(info.st_mode):
+                                continue
+                            try:
+                                child_fd = os.open(entry.name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC,
+                                                   dir_fd=fd)
+                            except FileNotFoundError as problem:
+                                absent(child, problem)
+                                continue
+                            try:
+                                identity = lambda value: (value.st_dev, value.st_ino, value.st_mode, value.st_uid, value.st_gid)
+                                need(identity(os.fstat(child_fd)) == identity(info), "build directory replaced before open")
+                                visit(child_fd, child, depth+1)
+                                self.build_scan_time(deadline)
+                                try:
+                                    current = os.stat(entry.name, dir_fd=fd, follow_symlinks=False)
+                                except FileNotFoundError as problem:
+                                    absent(child, problem)
+                                else:
+                                    need(identity(current) == identity(info) == identity(os.fstat(child_fd)),
+                                         "build directory replaced during scan")
+                            finally:
+                                os.close(child_fd)
+                except FileNotFoundError as problem:
+                    absent(path, problem)
+
+            try:
+                self.build_scan_time(deadline)
+                self.build_roots()
+                fd = os.open(self.build_root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
+                try:
+                    info = os.fstat(fd)
+                    need((info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid) == self.build_root_before,
+                         "build scan root changed at open")
+                    charge(info)  # root directory의 allocated blocks도 포함한다.
+                    visit(fd, self.build_root, 0)
+                finally:
+                    os.close(fd)
+                self.build_roots()
+                self.build_scan_time(deadline)
+                clean = self.build_complete(attempt, missing)
+                self.build_scan_record(attempt, totals, prefix, missing, "clean" if clean else "retry", started)
+                self.build_scan_time(deadline)
+                if clean:
+                    return tuple(totals)
+            except BaseException as problem:
+                try:
+                    self.build_scan_record(attempt, totals, prefix, missing, "failed", started, problem)
+                except BaseException as diagnostic:
+                    problem.add_note(f"build scan diagnostic unavailable: {diagnostic}")
+                raise
+        raise RuntimeError("build metadata scan did not complete")
+
+    def prepare_build_target(self):
+        self.build_scan_time(self.deadline)
+        self.build_roots()
+        need(self.target_before is None, "fresh target already admitted")
+        self.target.mkdir(mode=0o700)
+        self.target_before = self.build_identity(self.target)
+        need(stat.S_IMODE(self.target_before[2]) == 0o700, "fresh target0700")
+        self.build_metadata_controls()
+        self.build_scan_time(self.deadline)
+
+    def metadata_control_du_record(self, argv, apparent, started, seconds, result, error=None):
+        # 정지 fixture 표본이며 budget의 전역 첫 실패 원문과 구분한다.
+        status = getattr(error, "returncode", None) if result is None else result.returncode
+        timed_out = isinstance(error, subprocess.TimeoutExpired)
+        elapsed = time.monotonic()-started
+        stem = "metadata-control-du-" + ("apparent" if apparent else "allocated")
+        streams = {}
+        for name, attribute in (("stdout", "output"), ("stderr", "stderr")):
+            raw = getattr(error, attribute, None)
+            if raw is None:
+                raw = getattr(result, name, b"") if result is not None else b""
+            need(isinstance(raw, bytes), "metadata du diagnostic requires original bytes")
+            retained = raw[:64*1024]
+            filename = f"{stem}.{name}"
+            write(self.out/filename, retained)
+            streams[name] = {"file": filename, "captured_bytes": len(raw), "retained_bytes": len(retained),
+                "sha256": sha(retained), "truncated": len(raw) != len(retained),
+                "capture_complete": status is not None and not timed_out}
+        message = None if error is None else str(error)
+        value = {"schema": 1, "source": os.environ["GITHUB_SHA"], "phase": self.phase,
+            "input_origin": "authored-metadata-controls", "root": str(self.build_root),
+            "kind": "apparent" if apparent else "allocated", "argv": argv,
+            "returncode": status, "timed_out": timed_out, "timeout_seconds": seconds,
+            "elapsed_seconds": elapsed, "exception": None if error is None else type(error).__name__,
+            "exception_message": None if message is None else message[:4096],
+            "exception_message_truncated": message is not None and len(message) > 4096,
+            "raw_prefix_limit_bytes": 64*1024, "streams": streams, "retried": False,
+            "outcome_promoted": False}
+        raw = (json.dumps(value, sort_keys=True, indent=2, allow_nan=False)+"\n").encode()
+        need(len(raw) <= 16*1024, "metadata du diagnostic index16KiB limit")
+        # 두 raw 뒤 index를 게시하고, 그 뒤에만 기존 output/metric 조건을 판정한다.
+        write(self.out/f"{stem}.json", raw)
+
+    def build_metadata_controls(self):
+        # 첫 Cargo 전 실제 private metadata만 사용한다. 모델/원본 실행이나 기대값 생성이 아니다.
+        fixture = self.target / "model482-budget-controls"
+        fixture.mkdir(mode=0o700)
+        fixture_before = self.build_identity(fixture)
+        paths = []
+        owned = {}
+        directory_before = None
+        negatives = []
+        def expect(name, operation, message):
+            try:
+                operation()
+            except RuntimeError as problem:
+                need(str(problem) == message, "unexpected build metadata control: "+name)
+            else:
+                raise RuntimeError("build metadata negative accepted: "+name)
+            negatives.append(name)
+        try:
+            for name, sparse in (("regular", False), ("sparse", True)):
+                path = fixture/name
+                with path.open("xb") as stream:
+                    if sparse:
+                        stream.truncate(MIB)
+                    else:
+                        stream.write(b"metadata-control\n"*256)
+                paths.append(path)
+                owned[path] = self.m.ident(path.lstat())[:5]
+            os.link(fixture/"regular", fixture/"hardlink", follow_symlinks=False)
+            paths.append(fixture/"hardlink")
+            owned[paths[-1]] = self.m.ident(paths[-1].lstat())[:5]
+            for name, destination in (("link", "sparse"), ("outside-link", "/proc")):
+                os.symlink(destination, fixture/name)
+                paths.append(fixture/name)
+                owned[paths[-1]] = self.m.ident(paths[-1].lstat())[:5]
+            directory = fixture/"directory"
+            directory.mkdir(mode=0o700)
+            directory_before = self.build_identity(directory)
+            measured = self.measure_build()
+            du = Path("/usr/bin/du")
+            self.holds.add(du, elf=True)
+            expected = []
+            for option in ([], ["--apparent-size"]):
+                argv = [str(du), "-sx", "--block-size=1", *option, "--", str(self.build_root)]
+                started, result = time.monotonic(), None
+                seconds = min(10, max(0.001, self.deadline-started))
+                try:
+                    result = subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+                                            timeout=seconds, env=self.env)
+                except BaseException as error:
+                    try:
+                        self.metadata_control_du_record(argv, bool(option), started, seconds, result, error)
+                    except BaseException as evidence_error:
+                        error.add_note(f"metadata control du evidence incomplete: {evidence_error}")
+                    raise
+                self.metadata_control_du_record(argv, bool(option), started, seconds, result)
+                match = re.fullmatch(rb"([0-9]+)\t"+re.escape(os.fsencode(self.build_root))+b"\n", result.stdout)
+                need(match and not result.stderr, "metadata control GNU du output")
+                expected.append(int(match[1]))
+            need(measured == tuple(expected), "build allocated/apparent differs from actual GNU du")
+            missing = fixture/"missing"
+            absent_error = FileNotFoundError(errno.ENOENT, "authored metadata control", str(missing))
+            need(self.build_missing(missing, absent_error) == str(missing), "build ENOENT control")
+            expect("target-root", lambda: self.build_missing(self.target, absent_error), "build ENOENT outside exact target child")
+            expect("outside-target", lambda: self.build_missing(self.out/"missing", absent_error), "build ENOENT outside exact target child")
+            expect("permission", lambda: self.build_missing(missing, PermissionError(errno.EACCES, "authored")), "build scan accepts only ENOENT")
+            expect("currently-present", lambda: self.build_missing(fixture/"regular", absent_error), "build ENOENT entry is currently present")
+            expect("non-ENOENT", lambda: self.build_missing(missing, FileNotFoundError(errno.EIO, "authored")), "build scan accepts only ENOENT")
+            expect("third-incomplete", lambda: self.build_complete(2, [str(missing)]), "build metadata scan exhausted3attempts")
+            expect("deadline", lambda: self.build_scan_time(time.monotonic()-1), "build metadata scan10s/global deadline")
+            for name, allocated, apparent, prefix, cap in (
+                ("allocated-cap", 2, 0, (0, 0), 1), ("apparent-cap", 0, 2, (0, 0), 1),
+                ("group-cap", 1, 0, (8*GIB, 0), 8*GIB)):
+                expect(name, lambda a=allocated, b=apparent, p=prefix, c=cap: self.build_charge([0, 0], a, b, p, c),
+                       "build/registry allocated or apparent cap")
+            original = self.build_root/"target-metadata-control-original"
+            need(not original.exists() and not original.is_symlink(), "metadata control backup absent")
+            for replace in (False, True):
+                self.target.rename(original)
+                replacement = None
+                try:
+                    if replace:
+                        self.target.mkdir(mode=0o700)
+                        replacement = self.build_identity(self.target)
+                    expect("root-replaced" if replace else "root-missing", self.build_roots,
+                           "mutable target root changed" if replace else "build scan root unavailable")
+                finally:
+                    if replacement is not None:
+                        need(self.build_identity(self.target) == replacement, "metadata control replacement changed")
+                        self.target.rmdir()
+                    need(self.build_identity(original) == self.target_before, "metadata control original changed")
+                    try:
+                        self.target.lstat()
+                    except FileNotFoundError as problem:
+                        need(problem.errno == errno.ENOENT, "metadata control restore absence")
+                    else:
+                        raise RuntimeError("metadata control foreign target preserved")
+                    original.rename(self.target)
+                    self.build_roots()
+        finally:
+            self.build_roots()
+            need(self.build_identity(fixture) == fixture_before, "metadata control fixture replaced")
+            for path in reversed(paths):
+                need(self.m.ident(path.lstat())[:5] == owned[path], "metadata control file replaced")
+                path.unlink()
+            if directory_before is not None:
+                need(self.build_identity(fixture/"directory") == directory_before, "metadata control directory replaced")
+                (fixture/"directory").rmdir()
+            fixture.rmdir()
+        need(len(negatives) == len(set(negatives)) == 12, "metadata negative roster12")
+        self.build_roots()
+        self.holds.verify()
+        receipt = {"schema": 1, "source": os.environ["GITHUB_SHA"], "input_origin": "authored-metadata-controls",
+            "helper_sha256": self.m.regular(Path(__file__).resolve())["sha256"],
+            "target": str(self.target), "target_identity": self.target_before,
+            "positive_controls": ["actual-du-allocated-apparent-sparse-hardlink-symlink", "strict-child-ENOENT"],
+            "negative_controls": negatives, "positive_count": 2, "negative_count": 12,
+            "du_sha256": self.m.regular(du)["sha256"], "actual_du_bytes": expected,
+            "metadata_bytes": list(measured), "max_attempts": 3, "scan_total_seconds": 10,
+            "compiler_started": False, "actual_race_recovered": False, "pass": True}
+        raw = (json.dumps(receipt, sort_keys=True, allow_nan=False)+"\n").encode()
+        need(len(raw) <= 64*1024, "metadata controls receipt64KiB")
+        path = self.out/"build-metadata-controls.json"
+        self.m.write_new(path, raw)
+        self.holds.add(path, sha(raw))
 
     def du_failure(self, argv, path, cap, apparent, started, result, error):
         # 첫 실패 원문만 보존한다. errno를 추정하거나 실패를 재시도하지 않는다.
@@ -617,13 +955,18 @@ class Controller:
             return
         self.last_budget = time.monotonic()
         # registry도 build8GiB에 포함하고 SDK3GiB는 rustup+bootstrap의 합계다.
-        scope = [([self.root], 2*GIB), ([self.job / "build", self.job / "cargo-home"], 8*GIB),
+        scope = [([self.root], 2*GIB), ([self.job / "cargo-home", self.job / "build"], 8*GIB),
                  ([self.job / "rustup-home", self.job / "rust-bootstrap"], 3*GIB),
                  ([self.job / "venv"], GIB), ([self.job / "proof"], 512*MIB)]
         need_by_device, representatives = {}, {}
         for paths, cap in scope:
             allocated = apparent = 0
             for path in paths:
+                if path == self.build_root:
+                    built = self.measure_build((allocated, apparent), cap)
+                    allocated += built[0]
+                    apparent += built[1]
+                    continue
                 if path.exists():
                     for option in ([], ["--apparent-size"]):
                         argv = ["/usr/bin/du", "-sx", "--block-size=1", *option, "--", str(path)]
@@ -655,6 +998,9 @@ class Controller:
     def command(self, argv, label, seconds, env=None):
         self.phase = label
         need(not self.children.scan(), "live child before command")
+        if self.target_before is None and label in ("current-bins", "current-model-bins"):
+            need(list(map(str, argv[:2])) == [str(self.sdk/"bin/cargo"), "build"], "first exact Cargo build")
+            self.prepare_build_target()
         self.budget(True)
         started, failure, process = time.monotonic(), None, None
         def limits():

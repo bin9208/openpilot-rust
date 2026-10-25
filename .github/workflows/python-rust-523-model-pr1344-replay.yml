@@ -26,7 +26,7 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
       PYTHONDONTWRITEBYTECODE: '1'
-      MODEL482_PR1344_HELPER_SHA256: 60db7b111ffd49f9de4ec466c35837982f270f0289b2d05a065a1dd63ba76837
+      MODEL482_PR1344_HELPER_SHA256: f551bb6a54b173d61229b895726aab3cf14366c7a90c2250af38c130239cef41
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
       shell: bash
@@ -233,13 +233,42 @@ jobs:
         set -euo pipefail
         sha256sum --check "$CI_JOB_TEMP/proof/model482-llvm.before.sha256"
         /usr/bin/python3 -I -B -S - <<'CHECK'
-        import json,os
+        import hashlib,json,os,stat
         from pathlib import Path
         p=Path(os.environ['CI_JOB_TEMP'])/'proof/model482'
         s=json.loads((p/'final-seals.json').read_bytes())
         c=json.loads((p/'children.json').read_bytes())
         assert s['pass'] is True and s['failures']==[] and s['source']==os.environ['GITHUB_SHA']
         assert s['all_owned_children_reaped'] is True and c['subreaper'] is True and c['live']==[]
+        q=p/'build-metadata-controls.json'
+        fd=os.open(q,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK|os.O_CLOEXEC)
+        identity=lambda v:(v.st_dev,v.st_ino,v.st_mode,v.st_uid,v.st_gid,v.st_nlink,v.st_size,v.st_mtime_ns,v.st_ctime_ns)
+        try:
+         info=os.fstat(fd)
+         assert stat.S_ISREG(info.st_mode) and info.st_uid==os.getuid() and stat.S_IMODE(info.st_mode)==0o600 and info.st_nlink==1 and info.st_size<=65536
+         raw=os.pread(fd,65537,0)
+         assert len(raw)==info.st_size and identity(info)==identity(os.fstat(fd))==identity(q.lstat())
+        finally:os.close(fd)
+        r=json.loads(raw)
+        assert type(r['schema']) is int and r['schema']==1 and r['source']==os.environ['GITHUB_SHA'] and r['pass'] is True
+        assert r['input_origin']=='authored-metadata-controls' and r['compiler_started'] is False and r['actual_race_recovered'] is False
+        assert r['helper_sha256']=='6b173bb32ec045bbef9a0d2a968555a9318ff031e1d4cb1574a5254033bf2759'
+        assert hashlib.sha256((Path(os.environ['DIAG_SOURCE'])/'tools/ci/model_current_triplet_482.py').read_bytes()).hexdigest()==r['helper_sha256']
+        positive=['actual-du-allocated-apparent-sparse-hardlink-symlink','strict-child-ENOENT']
+        negative=['target-root','outside-target','permission','currently-present','non-ENOENT','third-incomplete','deadline','allocated-cap','apparent-cap','group-cap','root-missing','root-replaced']
+        assert r['positive_controls']==positive and r['negative_controls']==negative
+        assert type(r['positive_count']) is int and r['positive_count']==2 and type(r['negative_count']) is int and r['negative_count']==12
+        assert type(r['max_attempts']) is int and r['max_attempts']==3 and type(r['scan_total_seconds']) is int and r['scan_total_seconds']==10
+        assert type(r['metadata_bytes']) is list and len(r['metadata_bytes'])==2 and all(type(v) is int and v>=0 for v in r['metadata_bytes'])
+        assert r['actual_du_bytes']==r['metadata_bytes'] and hashlib.sha256(Path('/usr/bin/du').read_bytes()).hexdigest()==r['du_sha256']
+        target=Path(os.environ['CI_JOB_TEMP'])/'build/target'
+        t=target.lstat()
+        assert r['target']==str(target) and stat.S_ISDIR(t.st_mode) and t.st_uid==os.getuid() and stat.S_IMODE(t.st_mode)==0o700 and target.resolve(strict=True)==target
+        assert r['target_identity']==[t.st_dev,t.st_ino,t.st_mode,t.st_uid,t.st_gid]
+        held=json.loads((p/'holds-after.json').read_bytes())
+        receipt=held[str(q.resolve(strict=True))]
+        assert receipt['sha256']==hashlib.sha256(raw).hexdigest() and receipt['identity']==[info.st_dev,info.st_ino,info.st_mode,info.st_uid,info.st_gid,info.st_size,info.st_nlink,info.st_mtime_ns,info.st_ctime_ns] and str(q) in receipt['aliases']
+        assert held[str(Path('/usr/bin/du').resolve(strict=True))]['sha256']==r['du_sha256']
         CHECK
     - name: Require complete current diagnostic with historical and runtime acceptance separated
       id: closure
