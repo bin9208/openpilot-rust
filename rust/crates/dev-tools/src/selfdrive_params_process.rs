@@ -201,6 +201,21 @@ impl Drop for Process {
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    fn descendant_stopped(stat: std::io::Result<String>) -> std::io::Result<bool> {
+        match stat {
+            Ok(stat) => Ok(stat
+                .rsplit_once(") ")
+                .is_some_and(|(_, fields)| fields.starts_with('Z'))),
+            Err(error)
+                if error.kind() == std::io::ErrorKind::NotFound
+                    || error.raw_os_error() == Some(rustix::io::Errno::SRCH.raw_os_error()) =>
+            {
+                Ok(true)
+            }
+            Err(error) => Err(error),
+        }
+    }
     #[test]
     fn readiness_request_eof_and_reap_preserve_interactive_order() {
         let temp = tempfile::tempdir().unwrap();
@@ -254,6 +269,27 @@ mod tests {
         child.finish().unwrap();
     }
     #[test]
+    fn descendant_observation_accepts_only_dead_or_missing_processes() {
+        for stat in ["12 (sleep) Z 1", "12 (sleep (child)) Z 1"] {
+            assert!(descendant_stopped(Ok(stat.to_owned())).unwrap());
+        }
+        for stat in ["12 (sleep) S 1", "12 (sleep) R 1", "malformed"] {
+            assert!(!descendant_stopped(Ok(stat.to_owned())).unwrap());
+        }
+        for errno in [rustix::io::Errno::NOENT, rustix::io::Errno::SRCH] {
+            assert!(descendant_stopped(Err(std::io::Error::from_raw_os_error(
+                errno.raw_os_error(),
+            )))
+            .unwrap());
+        }
+        for errno in [rustix::io::Errno::ACCES, rustix::io::Errno::IO] {
+            let error =
+                descendant_stopped(Err(std::io::Error::from_raw_os_error(errno.raw_os_error())))
+                    .unwrap_err();
+            assert_eq!(error.raw_os_error(), Some(errno.raw_os_error()));
+        }
+    }
+    #[test]
     fn finish_and_error_drop_kill_descendants_before_reaping_the_leader() {
         let temp = tempfile::tempdir().unwrap();
         let binary = temp.path().join("peer");
@@ -293,13 +329,9 @@ mod tests {
             );
             let deadline = Instant::now() + Duration::from_secs(2);
             loop {
-                let stopped = match std::fs::read_to_string(format!("/proc/{descendant}/stat")) {
-                    Ok(stat) => stat
-                        .rsplit_once(") ")
-                        .is_some_and(|(_, fields)| fields.starts_with('Z')),
-                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => true,
-                    Err(error) => panic!("{error}"),
-                };
+                let stopped =
+                    descendant_stopped(std::fs::read_to_string(format!("/proc/{descendant}/stat")))
+                        .unwrap_or_else(|error| panic!("{error}"));
                 if stopped {
                     break;
                 }

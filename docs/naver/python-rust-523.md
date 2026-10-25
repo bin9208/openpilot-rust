@@ -1151,3 +1151,24 @@ PR343 head419/mergee882의 docs는 성공했으나 나머지 deep 검증에서 v
 controls54ULP 차이 #553은 기대값을 유지한 첫 연산 관측으로 좁힌다.
 정확 Actions/ZIP/SHA·완료와 미완료 범위는 `python-rust-523-hosted-535.md`에 기록한다.
 baseline3580의293교체/3부분/3284대기와 전체 #523/#296 미완료 상태는 유지한다.
+
+
+## PR9ae의 현재 검증과 #574 테스트 관측 수정 후보
+
+PR343 head `9ae67e412eeb8d9c4b3e19ee9f3b586fe2855739`/실행 merge
+`75d0cfd49912b631946721e58979487935372828`의 Fast40187340400 및 docs40187340388은 성공했다.
+Rust40187340482는 진행 중이며 original-model121150826818와 selfdrived121150826942의 실패를 확인했다.
+전체 run 완료나 다른 leaf의 성공으로 두 실패를 덮지 않는다.
+
+[selfdrived121150826942](https://github.com/bin9208/openpilot-rust/actions/runs/40187340482/job/121150826942)는
+Params process unit9 중8PASS/1FAIL이다. kill/drop 뒤 사라지는 descendant의 `/proc/<pid>/stat` 읽기가
+ESRCH를 반환했고, ENOENT만 인정하던 test observer가 panic했다. 원문209451B/SHA256
+`5db624a280d751366feddb5fd64dc60894bb553e04333b667022a5fac361196c`를 확인했다.
+이는 실제 누수나2초 제한 초과가 입증된 결과와 구분한다. 뒤 seam/원본 비교/IPC 기능은 미도달이다.
+
+#574 후보는 cfg(test) 안에서만 종료 관측을 분리해 기존 zombie/NotFound와 정확 ESRCH를 인정한다.
+live/malformed stat은 계속false, EACCES/EIO 등 다른 오류는 그대로 실패한다. 새 오류 분류 unit1개와
+기존 actual finish/drop test를 유지하며 production Process/kill/wait/ECHILD/2초 제한은 byte 불변이다.
+로컬 확인은 Rust 서식·diff·production prefix 비교뿐이며 기능은 새 Actions 대기다.
+#572의 ARM caller 개별 완료와 controls288의 full normal40 두 성공은 각각 별도 기록에 남겼다.
+baseline3580=294교체/3부분/3283대기와 전체 #523/#296/원본 제거·기기 미완료 상태는 유지한다.
