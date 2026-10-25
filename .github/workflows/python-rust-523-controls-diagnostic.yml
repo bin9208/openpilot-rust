@@ -218,7 +218,7 @@ jobs:
       run: |
         set -euo pipefail
         umask 077
-        printf '%s  %s\n' 1fe4370e96a812b8127ecf8372f55567d4dd40dbe37ec140e1245a0abd04ae2e tools/ci/controlsd_diagnostic_553.py | sha256sum --check --strict --quiet -
+        printf '%s  %s\n' 0a16fd670a0e573e681fa50f53bb1fb30c28a875e4eb57269becc0e2b51ac3c7 tools/ci/controlsd_diagnostic_553.py | sha256sum --check --strict --quiet -
         # 원본 current cohort와 native를 각각 plain/tapped로 관측한다. 전체 원본 재capture가 아니다.
         /usr/bin/timeout --signal=TERM --kill-after=180s 60m \
           /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH \

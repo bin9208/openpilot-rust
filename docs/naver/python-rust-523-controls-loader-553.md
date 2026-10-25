@@ -234,3 +234,57 @@ normal PASS 또는 다른 실패는 목표 미관측으로 구분한다. 목표 
 계속 FAIL이다. 기존 diag helper에는 이 명시 모드의 별도 완료 receipt6줄만 추가했으며 기본 경로의
 projection과 기존 workflow의 pin1개 이외 bytes는 동일하다. 새 Python 실행 edge6개는 pending이며
 credit0이다. 독립 source 검토 P1/P2 없음·구문/format/diff만 확인했고 기능은 GHA UNRUN이다.
+
+## 3393 실제 mapping 부재와 COMMON heartbeat 후보
+
+2026-10-25. source `3393c2ee9c8a923ca94f46951e8959bb382dac7b`의
+[samejob40171142732/job121102032163](https://github.com/bin9208/openpilot-rust/actions/runs/40171142732/job/121102032163)은
+normal40 ignored fixture1개를343.45초에 통과했고, fresh 결과는40cases/8655frames/705948비교/
+max_absolute_error0.0이었다. 하지만 helper는 실제 trace PID12222/start165326의 필수 OpenBLAS
+mapping 양성 부재로 실패했다. 같은 PID의 current trace ELF는 관측됐다. ELF까지 미관측이었다고
+넓히거나 수치 실패로 바꾸지 않는다. 원본 ZIP12591246390은54,150,429B/SHA256
+`d8849732966a43fc66fe2fb0e1843873c5c3eb48456223cefc28c4537ffb9f3a`,222CRC이며 기존 감사 자료를 재사용했다.
+
+기존 command의20ms sleep 사이에 source/job 전체 budget 순회가 있었다. 실제 trace는 case별로
+numerics Library를 load/drop하므로 전체 command의360.58초가 provider resident 시간은 아니다.
+순회 중 표본 공백 가설은 source와 맞지만 실제 load/unload 시각·빠진 간격은 미관측이다.
+소스 실행 사실만으로 실제 mmap 양성을 대신하거나 provider를 강제로 resident로 남기지 않는다.
+
+승인된 수정은 COMMON `tools/ci/controlsd_normal_523.py`와 이 기록뿐이다. 기존 private runtime
+command에서 `allowed is not None`일 때 Popen 뒤 관측 상태를 켜고, 같은 command/global deadline을
+사용한다. 기존 loop 외에 `budget_scan()`의 각 yielded entry에서20ms 이상 경과했으면 **같은
+Children.scan/maps**를 호출한다. 기존 전체 walk/stat/분류/합산/180000roster/상한/3resample은
+그대로 완료한다. heartbeat가 budget 검사를 대체하거나 partial 표본을 수용하지 않는다.
+모든 finally 경로에서 child 정리 전에 관측 상태를 해제하므로 finalizer나 다음 command에는 남지 않는다.
+순회 뒤에도 동일 deadline을 확인한다. thread·새 env/CLI mode·CPU/수학/provider lifetime 변경은 없다.
+
+기존 exact target PID의 `trace ELF AND numerical_library` 양성 조건과 오류 문자열은 private
+`_require_runtime_mappings`로 공통화했다. 다른 PID의 union이나 ELF 단독 관측으로 통과시키지 않는다.
+각 runtime command receipt의 `mapping_heartbeat`에는 완료 표본 수, budget 중 표본 수,
+실제 최대 간격·완료 표본 소요시간, 파일별 첫 관측 PID/start/path/dev/inode/시각을 기록한다.
+관측 자료는1MiB로 제한하며 초과는 FAIL이다. `hard_interval_guarantee`와
+`complete_mapping_closure`는 false다. blocking OS 연산이나 scheduling 때문에20ms hard maximum은
+보장하지 않으며, 새 source에서도 필수 mapping이 실제로 관측되지 않으면 기존대로 FAIL이다.
+
+별도 harness 파일 없이 COMMON의 `_mapping_heartbeat_controls`를 기존 providers 준비 뒤 한 번
+실행한다. 이는 추가 GHA metadata 통제이며 기존 Rust fixture selector/2negative/actual1을 대체하지 않는다.
+이미 hold한 Bash/libc를 사용해 실제 owned Bash child가 READY 뒤 private stdin PIPE의 RELEASE를
+기다리게 한다. 현재 터미널 stdin, 원본 Python, 모델, BLAS 연산은 사용하지 않는다.
+
+1. `budget_walk_observes_owned_elf_and_libc`: 실제 전체 budget 순회 내부 heartbeat가 같은 child
+   PID/start의 Bash ELF와 libc를 관측해야 한다. command loop의 사전 maps로 채우지 않는다.
+2. `wrong_start_ticks_rejected`: 살아 있는 실제 child의 잘못된 startticks는 기존 strict maps가 거부해야 한다.
+3. `missing_required_provider_rejected`: 같은 PID에서 실제 미관측인 held timeout provider를 요구하면
+   production과 같은 AND postcondition이 거부해야 한다.
+
+통제 전체는 기존 controller deadline 안의60초 상한이며, 정상 RELEASE/exit0·stderr0·live empty와
+provider FD/경로 seal 보존을 요구한다. 실패는 sticky FAIL이고 기존 finalizer로 이어진다.
+receipt는 `mapping-heartbeat-controls.json`, stderr는 `mapping-heartbeat-control.stderr`다.
+metadata 통제의 `actual_openblas_observed`/`full_normal40_acceptance`는 false다. 실제 OpenBLAS
+관측은 이후의 원래 normal40 target PID gate에서 별도로 반드시 필요하다.
+
+기존52분/command1200초/inner700·600초, source2GiB/SDK3GiB/build8GiB/proof1GiB/
+raw512MiB·free admission·수치/expected/원문/40cases 기준과 final source/SDK/FD/child 조건은 유지한다.
+로컬 AST·Bash 구문·정적 body 비교·diff만 확인한다. 통제3개와 heartbeat, 전체 normal40 실제 포착·
+성능·qualification은 **GHA UNRUN**이다. #553 수치 원인 해결이나 기존3393 전체 수용을 주장하지 않는다.
+COMMON3helper literal/WF/Focus/ledger의 새 SHA 연결·실행 및 실제 산출물 감사는 부모 후속이다.

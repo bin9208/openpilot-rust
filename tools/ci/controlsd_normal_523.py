@@ -452,6 +452,7 @@ class Probe:
         self.staged_before = None
         self.observed_runtime = set()
         self.runtime_pid_maps = {}
+        self._runtime_sample = None
         self.runtime = {}
         self.build_started = False
         self.finalizing = False
@@ -475,6 +476,7 @@ class Probe:
         observed = set()
         error = None
         process = None
+        sample = None
         if not self.finalizing:
             self.budget(force=True)
         with (self.out / f"{label}.stdout").open("xb") as stdout, (self.out / f"{label}.stderr").open("xb") as stderr:
@@ -483,14 +485,21 @@ class Probe:
                                            stdin=subprocess.DEVNULL, stdout=stdout, stderr=stderr,
                                            preexec_fn=lambda: self.child_limits(allowed is not None))
                 self.children.process = process
+                if allowed is not None:
+                    sample = self._start_runtime_sample(allowed, label, min(before + seconds, self.deadline), observed)
                 while True:
-                    rows = self.children.scan()
-                    observed.update(self.maps(rows, allowed))
+                    if allowed is None:
+                        rows = self.children.scan()
+                        observed.update(self.maps(rows, allowed))
+                    else:
+                        self._runtime_heartbeat(force=True)
                     self.children.reap()
                     need(time.monotonic() <= min(before + seconds, self.deadline), f"command deadline: {label}")
                     need(stdout.tell() <= limit and stderr.tell() <= limit, f"command log bound: {label}")
                     if not self.finalizing:
                         self.budget()
+                    if sample is not None:
+                        need(time.monotonic() <= min(before + seconds, self.deadline), f"command deadline: {label}")
                     if process.returncode is not None:
                         need(not self.children.scan(), f"live adopted/escaped-group child after {label}")
                         need(process.returncode == 0, f"{label}: exit {process.returncode}; preserve stderr")
@@ -500,16 +509,63 @@ class Probe:
                 error = str(problem)
                 raise
             finally:
+                self._runtime_sample = None
                 self.children.stop()
                 self.commands.append({"label": label, "argv": argv,
                     "returncode": process.returncode if process else None, "error": error,
                     "elapsed_seconds": time.monotonic() - before, "sampled_executable_mappings": sorted(observed),
-                    "mapping_scope": "20ms loop samples plus hashing overhead; not complete/pre-dlopen observation",
+                    "mapping_scope": ("20ms loop and budget-entry heartbeat; blocking/scheduling gaps remain; not complete/pre-dlopen observation"
+                                      if sample is not None else "20ms loop samples plus hashing overhead; not complete/pre-dlopen observation"),
+                    **({"mapping_heartbeat": self._runtime_sample_record(sample)} if sample is not None else {}),
                     "all_owned_children_reaped": not self.children.scan()})
                 self.children.process = None
         if not self.finalizing:
             self.budget(force=True)
         return read(self.out / f"{label}.stdout", limit)
+
+
+    def _start_runtime_sample(self, allowed, label, deadline, observed):
+        need(self._runtime_sample is None and not self.finalizing, "runtime sampling already active or finalizing")
+        now = time.monotonic()
+        need(now <= deadline, f"command deadline: {label}")
+        self._runtime_sample = {"allowed": allowed, "label": label, "deadline": deadline,
+            "observed": observed, "started": now, "last": None, "samples": 0, "budget_samples": 0,
+            "max_interval_seconds": 0, "max_sample_seconds": 0, "first_mappings": {}, "record_bytes": 0}
+        return self._runtime_sample
+
+    def _runtime_heartbeat(self, force=False, budget=False):
+        sample = self._runtime_sample
+        if sample is None:
+            return
+        now = time.monotonic()
+        if not force and sample["last"] is not None and now - sample["last"] < 0.02:
+            return
+        need(now <= sample["deadline"], f"command deadline: {sample['label']}")
+        previous = sample["last"] if sample["last"] is not None else sample["started"]
+        sample["max_interval_seconds"] = max(sample["max_interval_seconds"], now - previous)
+        sample["last"] = now
+        rows = self.children.scan()
+        sample["observed"].update(self.maps(rows, sample["allowed"]))
+        after = time.monotonic()
+        sample["max_sample_seconds"] = max(sample["max_sample_seconds"], after - now)
+        need(after <= sample["deadline"], f"command deadline: {sample['label']}")
+        sample["samples"] += 1
+        sample["budget_samples"] += int(budget)
+
+    @staticmethod
+    def _runtime_sample_record(sample):
+        result = {"period_seconds": 0.02, **{key: sample[key] for key in
+            ("samples", "budget_samples", "max_interval_seconds", "max_sample_seconds")},
+            "first_mappings": list(sample["first_mappings"].values()),
+            "hard_interval_guarantee": False, "complete_mapping_closure": False}
+        need(len(json.dumps(result, sort_keys=True, indent=2).encode()) <= MIB,
+             "runtime mapping observation exceeds 1 MiB")
+        return result
+
+    def _require_runtime_mappings(self, pid, trace, numerical_library):
+        mapped = self.runtime_pid_maps.get(pid, {}).get("files", set())
+        need(str(trace) in mapped and str(numerical_library) in mapped,
+             "actual trace and numerical library were not observed mapped by its PID")
 
 
     def git(self, args, label):
@@ -806,6 +862,7 @@ class Probe:
         count = 0
         for root, default in ((self.root.parent, "source"), (self.job, "build")):
             for path in walk(root, mutable=True, missing=missing):
+                self._runtime_heartbeat(budget=True)
                 try:
                     info = path.lstat()
                 except FileNotFoundError:
@@ -876,6 +933,15 @@ class Probe:
                         item = self.runtime_pid_maps.setdefault(pid, {"start": row["start"], "files": set()})
                         need(item["start"] == row["start"], "runtime mapping PID reused")
                         item["files"].add(str(canonical))
+                        sample = self._runtime_sample
+                        key = (pid, str(canonical))
+                        if sample is not None and key not in sample["first_mappings"]:
+                            record = {"pid": pid, "start": row["start"], "path": str(canonical),
+                                      "dev_inode": [info.st_dev, info.st_ino],
+                                      "elapsed_seconds": time.monotonic() - sample["started"]}
+                            sample["record_bytes"] += len(json.dumps(record).encode())
+                            need(sample["record_bytes"] <= MIB, "runtime mapping observation exceeds 1 MiB")
+                            sample["first_mappings"][key] = record
             except (FileNotFoundError, ProcessLookupError):
                 continue
         return observed
@@ -1154,6 +1220,7 @@ class Probe:
         self.resources("before")
         self.sdk_before = self.sdk("before")
         self.providers()
+        _mapping_heartbeat_controls(self)
         self.source_before = self.sources("before")
         for name, pin in CORE.items():
             self.holds.add(self.root / name, pin)
@@ -1232,9 +1299,7 @@ class Probe:
         need(admission["argv"] == executions[2]["argv"] and len(executions[2]["argv"]) == 2
              and executions[2]["argv"][0] == str(trace)
              and Path(executions[2]["argv"][1]).is_relative_to(evidence), "actual trace output argv differs")
-        mapped = self.runtime_pid_maps.get(executions[2]["pid"], {}).get("files", set())
-        need(str(trace) in mapped and str(self.numerical_library) in mapped,
-             "actual trace and numerical library were not observed mapped by its PID")
+        self._require_runtime_mappings(executions[2]["pid"], trace, self.numerical_library)
         need(admission["reference_id"] == REFERENCE_ID and admission["reference_kind"] == "historical-original-data"
              and admission["current_source_commit"] == self.source and admission["original_source_commit"] == CHECKOUT
              and admission["original_backend_execs"] == 0 and admission["historical_original_provider_closure_complete"] is False
@@ -1317,6 +1382,112 @@ class Probe:
              "rejection27_health5_continuous140x2_accepted": False, "device_acceptance": False,
              "temporary_python_controller": "pending", "growth": self.usage})
         return True
+
+
+def _mapping_heartbeat_controls(probe):
+    """GHA에서만 실제 owned child와 같은 mapping guard를 검사한다."""
+    need(not probe.children.scan() and probe._runtime_sample is None, "mapping controls require idle ownership")
+    bash = probe.tools["bash"]
+    libraries = [path for path in probe.holds.files if path.name == "libc.so.6"]
+    need(len(libraries) == 1, "mapping control requires one held libc")
+    libc = libraries[0]
+    absent = probe.tools["timeout"]
+    allowed = set(probe.holds.files)
+    previous_maps = probe.runtime_pid_maps
+    probe.runtime_pid_maps = {}
+    previous_phase = probe.phase
+    probe.phase = "mapping-heartbeat-controls"
+    deadline = min(time.monotonic() + 60, probe.deadline)
+    report = {"schema": 1, "pass": False, "controls": {}, "actual_openblas_observed": False,
+              "full_normal40_acceptance": False, "complete_mapping_closure": False}
+    process = sample = None
+    try:
+        with (probe.out / "mapping-heartbeat-control.stderr").open("xb") as stderr:
+            process = subprocess.Popen([bash, "--noprofile", "--norc", "-c",
+                'printf "READY\\n"; IFS= read -r release; test "$release" = RELEASE'],
+                cwd=probe.root, env=probe.env, start_new_session=True, stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE, stderr=stderr, preexec_fn=lambda: probe.child_limits(True))
+            probe.children.process = process
+            os.set_blocking(process.stdout.fileno(), False)
+            ready = b""
+            while ready != b"READY\n":
+                need(time.monotonic() <= deadline, "mapping control readiness deadline")
+                probe.children.reap()
+                need(process.returncode is None and stderr.tell() <= MIB, "mapping control exited/log overflow before READY")
+                try:
+                    block = os.read(process.stdout.fileno(), 64)
+                    need(block, "mapping control READY EOF")
+                    ready += block
+                    need(b"READY\n".startswith(ready), "mapping control foreign READY bytes")
+                except BlockingIOError:
+                    time.sleep(0.02)
+            sample = probe._start_runtime_sample(allowed, "mapping-heartbeat-controls", deadline, set())
+            # 최초 표본을 command loop가 아닌 실제 전체 budget 순회에서 취한다.
+            probe.budget(force=True)
+            need(sample["budget_samples"] > 0, "budget traversal did not sample owned mappings")
+            probe._require_runtime_mappings(process.pid, bash, libc)
+            report["controls"]["budget_walk_observes_owned_elf_and_libc"] = True
+            row = probe.children.scan()[process.pid]
+            try:
+                probe.maps({process.pid: {**row, "start": row["start"] + 1}}, allowed)
+            except RuntimeError as error:
+                need(str(error) == "mapping PID reused", "wrong-start control failed for another reason")
+            else:
+                raise RuntimeError("mapping guard accepted wrong start ticks")
+            report["controls"]["wrong_start_ticks_rejected"] = True
+            need(str(absent) not in probe.runtime_pid_maps[process.pid]["files"], "absent-provider control is not absent")
+            try:
+                probe._require_runtime_mappings(process.pid, bash, absent)
+            except RuntimeError as error:
+                need(str(error) == "actual trace and numerical library were not observed mapped by its PID",
+                     "missing-provider control failed for another reason")
+            else:
+                raise RuntimeError("mapping postcondition accepted absent required provider")
+            report["controls"]["missing_required_provider_rejected"] = True
+            need(time.monotonic() <= deadline, "mapping control release deadline")
+            probe._runtime_sample = None
+            process.stdin.write(b"RELEASE\n")
+            process.stdin.close()
+            while process.returncode is None:
+                need(time.monotonic() <= deadline, "mapping control release/reap deadline")
+                probe.children.reap()
+                time.sleep(0.02)
+            need(process.returncode == 0 and not probe.children.scan() and stderr.tell() == 0,
+                 "mapping control release/exit/children/stderr differs")
+            for path in (bash, libc):
+                item = probe.holds.files[path]
+                need(ident(os.fstat(item["fd"])) == item["seal"]["identity"] and regular(path) == item["seal"],
+                     "mapping control provider seal changed")
+            need(time.monotonic() <= deadline, "mapping control final deadline")
+            report["pid"] = process.pid
+            report["start"] = row["start"]
+            report["pass"] = True
+    except BaseException as error:
+        report["error"] = str(error)
+        raise
+    finally:
+        probe._runtime_sample = None
+        try:
+            probe.children.stop()
+        except BaseException as error:
+            report["pass"] = False
+            report["cleanup_error"] = str(error)
+            raise
+        finally:
+            probe.children.process = None
+            if process is not None:
+                for stream in (process.stdin, process.stdout):
+                    if stream is not None:
+                        stream.close()
+            report["live"] = sorted(probe.children.scan())
+            if report["live"]:
+                report["pass"] = False
+            report["mapping_heartbeat"] = probe._runtime_sample_record(sample) if sample is not None else None
+            probe.runtime_pid_maps = previous_maps
+            save(probe.out / "mapping-heartbeat-controls.json", report)
+            need(not report["live"], "mapping control left owned children")
+            if report["pass"]:
+                probe.phase = previous_phase
 
 
 def interrupted(number, _frame):

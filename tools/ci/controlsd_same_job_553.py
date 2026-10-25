@@ -14,9 +14,9 @@ import time
 import traceback
 
 COMMON = "tools/ci/controlsd_normal_523.py"
-COMMON_SHA = "9225692b3647a75983298ac92f84de91ea9f151f06921bcafcedb4de617cb553"
+COMMON_SHA = "937f9a0adca788625e291b147be48445d14235a4c1a0c61e9f0b4d61881c113b"
 DIAGNOSTIC = "tools/ci/controlsd_diagnostic_553.py"
-DIAGNOSTIC_SHA = "1fe4370e96a812b8127ecf8372f55567d4dd40dbe37ec140e1245a0abd04ae2e"
+DIAGNOSTIC_SHA = "0a16fd670a0e573e681fa50f53bb1fb30c28a875e4eb57269becc0e2b51ac3c7"
 WORKFLOW = ".github/workflows/python-rust-523-controls-same-job.yml"
 JOB = "controls-same-job-553"
 JOB_NAME = "Same VM normal40 and frozen original native triage"

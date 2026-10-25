@@ -219,9 +219,9 @@ jobs:
       run: |
         set -euo pipefail
         umask 077
-        printf '%s  %s\n' 38a708beea89ccd2faa0dbb3c32661f02c417dde0aa520bd2996b38e6acab355 tools/ci/controlsd_same_job_553.py | sha256sum --check --strict --quiet -
-        printf '%s  %s\n' 1fe4370e96a812b8127ecf8372f55567d4dd40dbe37ec140e1245a0abd04ae2e tools/ci/controlsd_diagnostic_553.py | sha256sum --check --strict --quiet -
-        printf '%s  %s\n' 9225692b3647a75983298ac92f84de91ea9f151f06921bcafcedb4de617cb553 tools/ci/controlsd_normal_523.py | sha256sum --check --strict --quiet -
+        printf '%s  %s\n' 45f280c153ee44485465c9f42669a0611f128c18b6a107e6da7274d7d517ed98 tools/ci/controlsd_same_job_553.py | sha256sum --check --strict --quiet -
+        printf '%s  %s\n' 0a16fd670a0e573e681fa50f53bb1fb30c28a875e4eb57269becc0e2b51ac3c7 tools/ci/controlsd_diagnostic_553.py | sha256sum --check --strict --quiet -
+        printf '%s  %s\n' 937f9a0adca788625e291b147be48445d14235a4c1a0c61e9f0b4d61881c113b tools/ci/controlsd_normal_523.py | sha256sum --check --strict --quiet -
         # normal의 52분/CLI700/native600초와 실패 status는 그대로다. 후속 관측이 FAIL을 승격하지 않는다.
         /usr/bin/timeout --signal=TERM --kill-after=180s 90m \
           /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH \
