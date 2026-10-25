@@ -1436,7 +1436,7 @@ fn full_private_jobs_reject_shared_checkouts_or_unsealed_cleanup() {
             assert!(validate_private_job_layout(&unsafe_alias).is_err());
         }
     }
-    assert_eq!(covered, 66, "maintained private source roster changed");
+    assert_eq!(covered, 71, "maintained private source roster changed");
 }
 
 #[test]

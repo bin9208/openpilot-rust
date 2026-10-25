@@ -444,7 +444,7 @@ jobs:
         set -euo pipefail
         helper="$GITHUB_WORKSPACE/tools/ci/prepare-lfs-source-535"
         test -f "$helper" && test ! -L "$helper"
-        printf '%s  %s\n' 1d6c6c57f313bc73f1a378649c1d4a0a3f0e3eba5b868b064ffb2976cd78b3ec "$helper" | sha256sum --check -
+        printf '%s  %s\n' be7ba0db79e941674ea2adf31dfbf0e5c3dfa63e68b42e01e51f51da3ff68082 "$helper" | sha256sum --check -
         "$helper" xiaoge
     - name: Admit exact private source and index
       id: ci296_source_admission

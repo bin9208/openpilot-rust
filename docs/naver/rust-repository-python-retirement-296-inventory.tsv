@@ -3578,4 +3578,4 @@ tools/scripts/extract_audio.py	2a6ad9f9e3ab5be2747ab2578dcd28cb8a2b71f8	pending	
 tools/scripts/fetch_image_from_route.py	77bf48f946a7fa2c006df38e5c047f55a01e1f9a	pending	-
 tools/scripts/save_ubloxraw_stream.py	b5354a7831fb8a7cfc21a9e604c714a069c355f5	pending	-
 tools/scripts/setup_ssh_keys.py	45dc0aa9775c227dd820f42864b91a5e161986d1	replaced-local	rust/crates/dev-tools/src/developer_ssh/cli.rs; rust/tools/run-developer-tool setup-ssh-keys; frozen original21/negative3/public1/absence6 accepted Actions40137010381 source602ea095f; docs/naver/python-rust-523-hosted-535.md
-tools/scripts/ssh.py	fe8d7d72d3434677b4c5b4f1a3dbcacd2c24e379	pending	-
+tools/scripts/ssh.py	fe8d7d72d3434677b4c5b4f1a3dbcacd2c24e379	replaced-local	rust/crates/dev-tools/src/developer_ssh/cli.rs; rust/tools/run-developer-tool ssh; frozen39/setup21/importer7/native7/public1/absence6 accepted Actions40157685746 source01fcc36e0; docs/naver/python-rust-523-ssh-retirement.md

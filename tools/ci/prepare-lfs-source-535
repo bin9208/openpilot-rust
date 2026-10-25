@@ -7,9 +7,20 @@ export LC_ALL=C PATH=/usr/bin:/bin
 fail() { printf 'private LFS source: %s\n' "$*" >&2; exit 1; }
 [[ $# == 1 && ( $1 == xiaoge || $1 == driving ) ]] || fail 'xiaoge or driving required'
 selection=$1
-[[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust &&
-   ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux &&
-   ${RUNNER_ARCH:-} == X64 && $(uname -s) == Linux && $(uname -m) == x86_64 ]] || fail 'actual hosted Linux/X64 required'
+# 실제 ARM Xiaoge 후보 한 경계만 추가하며 기존 X64 caller는 원래 조건을 유지한다.
+if [[ ${RUNNER_ARCH:-} == ARM64 ]]; then
+  [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust &&
+     ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux &&
+     $(uname -s) == Linux && $(uname -m) == aarch64 &&
+     $selection == xiaoge && ${GITHUB_JOB:-} == xiaoge-runtime &&
+     ${CI296_NATIVE_ARM:-} == 1 && ${LOCAL_CI_ARCH:-} == aarch64 &&
+     ${GITHUB_EVENT_NAME:-} == push && ${GITHUB_REF:-} == refs/heads/codex/feat-523-python-rust &&
+     ${GITHUB_WORKFLOW_REF:-} == "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-remaining.yml@${GITHUB_REF:-}" ]] || fail 'exact hosted ARM Xiaoge candidate required'
+else
+  [[ ${GITHUB_ACTIONS:-} == true && ${GITHUB_REPOSITORY:-} == bin9208/openpilot-rust &&
+     ${RUNNER_ENVIRONMENT:-} == github-hosted && ${RUNNER_OS:-} == Linux &&
+     ${RUNNER_ARCH:-} == X64 && $(uname -s) == Linux && $(uname -m) == x86_64 ]] || fail 'actual hosted Linux/X64 required'
+fi
 case "$selection:${GITHUB_JOB:-}" in
   driving:workspace|driving:model-pipelines|driving:model-llvm20|xiaoge:xiaoge-runtime|xiaoge:xiaoge-memory) ;;
   *) fail 'model selection does not match an admitted Rust job' ;;

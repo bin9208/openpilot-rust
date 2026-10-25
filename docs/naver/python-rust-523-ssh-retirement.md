@@ -1,6 +1,7 @@
 # #523 SSH 원본1 퇴역 준비 구현 계획
 
-> 현재 단계는 아래의 postabsence 구현 후보다. 승인에 따라 `tools/scripts/ssh.py`
+> 아래 UNRUN/credit0은 구현 시점의 역사 기록이다. 최종 실제 수용은 문서 끝의 2026-10-25 기록을 따른다.
+> 당시 단계는 아래의 postabsence 구현 후보다. 승인에 따라 `tools/scripts/ssh.py`
 > 1개를 삭제했으며 새 source의 기능·부재 수용은 **UNRUN**, retirement credit은0이다.
 > 먼저 보존한 아래 본문은 frozen importer 초기 구현 기록이며 당시의 미실행 상태를 뜻한다.
 
@@ -232,3 +233,21 @@ upload 뒤 rm 직전에는 journal·sticky 파일을 변경하지 않는 read-on
 frozen39/음성7·setup21, native7/public1·기본 음성2, Clippy/봉인/새 Actions는 실행하지 않았다.
 부모 allow/pins/원장 등록 후 같은 새 SHA의 Focus에서 이 기존 대상과 새 absence6/closure를
 실제로 실행하고 artifact·최종 seals/upload/cleanup을 감사해야 이 파일1의 퇴역 credit을 줄 수 있다.
+
+## 2026-10-25 SSH 원본1 실제 부재 수용
+
+source `01fcc36e09b39172f4c88954a702fa8353b2d1e8`의
+[집중 검사40157685746/job121062463242](https://github.com/bin9208/openpilot-rust/actions/runs/40157685746/job/121062463242)는
+GitHub 기본 X64 러너에서 최종 성공했다. artifact12585103692의41,120,449B와 SHA256
+`ff144ca306527bc9d231beb83dcc1f60a7e7312e8e1a234ea1681261a8f6ade9`,343멤버 CRC를 확인했다.
+원본 `tools/scripts/ssh.py`의 정확한 역사 SHA와 삭제 diff/HEAD/index 부재, 재출현 통제6,
+127개 부재 기록과 명령9개의 전후18경계가 일치한다. frozen SSH39/setup21·importer7의
+기존10회귀, Unicode7, 현재 native7/public1 및 entry4가 통과했다.
+source/index·Rust/venv·held executable·고정 입력의 전후 봉인과 최종 closure/upload/소유 정리가 성공했다.
+held provider의123개 기록은 두 차례 사후 검사 모두 원문과 동일하다.
+
+baseline은 **294 replaced-local / 3 partially-replaced / 3283 pending = 3580**이며
+routing map은20 accepted /3286 pending·partial이다. 이번 추가 수용은 원본1개에 한한다.
+`replaced-local`은 기존 원장 이름이며 기능 검사는 Actions에서 실행했다.
+실제 원격 SSH 연결, 전체 Python 부재, 완전한 build dependency closure 또는 전체 전환 완료를 뜻하지 않는다.
+원시 receipt의 retirement_credit0/범위 제한은 원문 그대로 보존한다.

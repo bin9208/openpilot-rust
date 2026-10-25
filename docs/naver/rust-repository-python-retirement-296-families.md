@@ -242,3 +242,21 @@ Python 없이 metadata를 처리하지만 legacy proof admission이 제거된 �
 fresh caller 뒤 provider 최종 seal을 수행하는 새 changed-files workflow의 metadata Python
 대표 위치도 추가했다. 현재 행은25 replaced-local/52 pending/native-existing1/non-executing-text2다.
 이는 발견한 행의 상태이며 exhaustive interpreter 부재 수용이 아니다.
+
+## 2026-10-25 SSH 원본1 실제 부재 수용
+
+source `01fcc36e09b39172f4c88954a702fa8353b2d1e8`의
+[집중 검사40157685746/job121062463242](https://github.com/bin9208/openpilot-rust/actions/runs/40157685746/job/121062463242)는
+GitHub 기본 X64 러너에서 최종 성공했다. artifact12585103692의41,120,449B와 SHA256
+`ff144ca306527bc9d231beb83dcc1f60a7e7312e8e1a234ea1681261a8f6ade9`,343멤버 CRC를 확인했다.
+원본 `tools/scripts/ssh.py`의 정확한 역사 SHA와 삭제 diff/HEAD/index 부재, 재출현 통제6,
+127개 부재 기록과 명령9개의 전후18경계가 일치한다. frozen SSH39/setup21·importer7의
+기존10회귀, Unicode7, 현재 native7/public1 및 entry4가 통과했다.
+source/index·Rust/venv·held executable·고정 입력의 전후 봉인과 최종 closure/upload/소유 정리가 성공했다.
+held provider의123개 기록은 두 차례 사후 검사 모두 원문과 동일하다.
+
+baseline은 **294 replaced-local / 3 partially-replaced / 3283 pending = 3580**이며
+routing map은20 accepted /3286 pending·partial이다. 이번 추가 수용은 원본1개에 한한다.
+`replaced-local`은 기존 원장 이름이며 기능 검사는 Actions에서 실행했다.
+실제 원격 SSH 연결, 전체 Python 부재, 완전한 build dependency closure 또는 전체 전환 완료를 뜻하지 않는다.
+원시 receipt의 retirement_credit0/범위 제한은 원문 그대로 보존한다.
