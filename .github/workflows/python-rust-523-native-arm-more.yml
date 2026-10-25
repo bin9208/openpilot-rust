@@ -19,6 +19,9 @@ concurrency:
   queue: max
 jobs:
   planner-runtime:
+    permissions:
+      contents: read
+      actions: read
     name: Planner original and native on standard ARM VM
     runs-on: ubuntu-24.04-arm
     strategy:
@@ -36,6 +39,7 @@ jobs:
       OPENBLAS_NUM_THREADS: '1'
       LOCAL_CI_ARCH: ${{ matrix.arch }}
       CI296_ALIAS_BASENAME: .ci296-source-rust--planner-runtime
+      PLANNER_NATIVE_IPC_PROFILE: planner-ipc-native-v1
       CI296_NATIVE_ARM: '1'
     steps:
     - name: Deny fork source and require GitHub-hosted Linux ARM64
@@ -232,6 +236,35 @@ jobs:
       run: "python rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --sanitize --python \"$(command -v python)\" --acados \"$PLANNER_GENERATOR\" --wheel \"$RUNNER_TEMP\"/planner-wheel/*.whl --output \"$RUNNER_TEMP/planner-sanitized\"\n/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" memory\n"
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
+    - name: Qualify full native Planner IPC lib and strict Clippy
+      id: planner_ipc_qualify
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      timeout-minutes: 15
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/planner_native_controller_523.sh" ipc-check
+    - name: Stage the fixed independently audited original Planner IPC
+      id: planner_ipc_stage
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.planner_ipc_qualify.outcome == 'success') }}
+      timeout-minutes: 10
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: bash
+      env:
+        CI296_HOST_CONTROL: '1'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        set -euo pipefail
+        printf '%s  %s\n' 6ffd6376165474048e225241499a9284cc8e7dc227ab8cdbbb340ed45bd588bb "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh" | sha256sum --check --strict -
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh"
+    - name: Compare all four source and Rust native Planner IPC runs
+      id: planner_ipc_native
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.planner_ipc_qualify.outcome == 'success' && steps.planner_ipc_stage.outcome == 'success') }}
+      timeout-minutes: 25
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/planner_native_controller_523.sh" ipc
     - uses: actions/upload-artifact@v6
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         && (always()) }}

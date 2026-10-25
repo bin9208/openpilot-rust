@@ -2071,12 +2071,169 @@ fn webrtc_requires_native_host_and_arm_real_media_and_failure_boundaries() {
     }
 }
 
+fn planner_ipc_overlay_steps() -> Vec<Value> {
+    let qualify =
+        "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" ipc-check\n";
+    let stage = concat!(
+        "set -euo pipefail\n",
+        "printf '%s  %s\\n' 6ffd6376165474048e225241499a9284cc8e7dc227ab8cdbbb340ed45bd588bb ",
+        "\"$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh\" | sha256sum --check --strict -\n",
+        "/usr/bin/bash \"$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh\"\n"
+    );
+    let native = "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" ipc\n";
+    vec![
+        serde_json::json!({
+            "name":"Qualify full native Planner IPC lib and strict Clippy", "id":"planner_ipc_qualify",
+            "if":TRUSTED_SOURCE, "timeout-minutes":"15", "working-directory":"${{ env.CI296_SOURCE }}",
+            "shell":"openpilot-local-shell {0}", "run":qualify
+        }),
+        serde_json::json!({
+            "name":"Stage the fixed independently audited original Planner IPC", "id":"planner_ipc_stage",
+            "if":"${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.planner_ipc_qualify.outcome == 'success') }}",
+            "timeout-minutes":"10", "working-directory":"${{ env.CI296_SOURCE }}", "shell":"bash",
+            "env":{"CI296_HOST_CONTROL":"1", "GITHUB_TOKEN":"${{ secrets.GITHUB_TOKEN }}"}, "run":stage
+        }),
+        serde_json::json!({
+            "name":"Compare all four source and Rust native Planner IPC runs", "id":"planner_ipc_native",
+            "if":"${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.planner_ipc_qualify.outcome == 'success' && steps.planner_ipc_stage.outcome == 'success') }}",
+            "timeout-minutes":"25", "working-directory":"${{ env.CI296_SOURCE }}",
+            "shell":"openpilot-local-shell {0}", "run":native
+        }),
+    ]
+}
+
+fn planner_ipc_projection(job: &Value) -> Result<Value, String> {
+    use sha2::{Digest, Sha256};
+    if job["env"]["PLANNER_NATIVE_IPC_PROFILE"] != "planner-ipc-native-v1"
+        || job["permissions"] != serde_json::json!({"contents":"read","actions":"read"})
+    {
+        return Err("Planner IPC profile or job permissions changed".into());
+    }
+    let steps = job["steps"].as_array().ok_or("missing Planner steps")?;
+    let memory = steps
+        .iter()
+        .enumerate()
+        .filter(|(_, s)| {
+            s["name"] == "Check generated C with ASan, UBSan and allocator leak detection"
+        })
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    if memory.len() != 1 {
+        return Err("unique original Planner memory stage required".into());
+    }
+    let first = memory[0] + 1;
+    let expected = planner_ipc_overlay_steps();
+    let digests = [
+        "b637025349f5ad452b2ed62eff46480b2e0c3983d38502bb89ce715d41c7629a",
+        "870ca340c07b0a490596cc6dfc8b046aa34fc608d74b748ee8c450157f35a2e7",
+        "b1a4149c8743b86f252e19f90202e7cb83b66cac4080d23117db223b64c32305",
+    ];
+    for (offset, (wanted, digest)) in expected.iter().zip(digests).enumerate() {
+        let actual = steps
+            .get(first + offset)
+            .ok_or("missing Planner IPC stage")?;
+        if actual != wanted
+            || steps
+                .iter()
+                .filter(|s| s["name"] == wanted["name"] || s["id"] == wanted["id"])
+                .count()
+                != 1
+            || format!(
+                "{:x}",
+                Sha256::digest(actual["run"].as_str().ok_or("missing IPC run")?.as_bytes())
+            ) != digest
+        {
+            return Err("unreviewed, duplicate or reordered Planner IPC stage".into());
+        }
+    }
+    if steps.get(first + 3).and_then(|s| s["uses"].as_str()) != Some("actions/upload-artifact@v6") {
+        return Err("Planner IPC stages must precede the unchanged upload".into());
+    }
+    // 검토한 세 단계/feature bit/권한만 제거한다. 나머지 whole job은 그대로 비교한다.
+    let mut projected = job.clone();
+    drop(
+        projected["steps"]
+            .as_array_mut()
+            .unwrap()
+            .drain(first..first + 3),
+    );
+    projected["env"]
+        .as_object_mut()
+        .unwrap()
+        .remove("PLANNER_NATIVE_IPC_PROFILE");
+    projected.as_object_mut().unwrap().remove("permissions");
+    Ok(projected)
+}
+
+fn planner_capture_projection(job: &mut Value) {
+    let captures = job["steps"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .filter(|s| s["name"] == "Compare exact policies, main loops, real IPC and lifecycle")
+        .collect::<Vec<_>>();
+    assert_eq!(captures.len(), 1);
+    let capture = captures.into_iter().next().unwrap();
+    assert_eq!(
+        capture["env"],
+        serde_json::json!({
+            "PLANNER_IPC_CAPTURE_DIR":"${{ env.CI_JOB_TEMP }}/proof/planner-ipc-original-inputs",
+            "PLANNER_IPC_GROWTH_MIB":"512"
+        })
+    );
+    assert_eq!(capture["run"], "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$CI_JOB_TEMP\" --growth-mib 512\n/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" runtime\n");
+    capture.as_object_mut().unwrap().remove("env");
+    capture["run"] =
+        "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" runtime\n"
+            .into();
+}
+
 #[test]
 fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
     use openpilot_dev_tools::ci_policy::validate_native_arm_reuse;
     let main = workflow();
     let native = parse(&read(".github/workflows/rust-native-arm.yml")).unwrap();
     validate_native_arm_reuse(&main, &native).unwrap();
+    {
+        use sha2::{Digest, Sha256};
+        assert_eq!(
+            format!(
+                "{:x}",
+                Sha256::digest(read(".github/workflows/rust.yml").as_bytes())
+            ),
+            "b51def7342359305c818f15ec59e9002d6b7c1ee73752dc08e91442444cfface"
+        );
+        let host = parse(&read(
+            ".github/workflows/python-rust-523-planner-caller.yml",
+        ))
+        .unwrap();
+        let mut projected = planner_ipc_projection(&host["jobs"]["planner-runtime"]).unwrap();
+        planner_capture_projection(&mut projected);
+        let steps = projected["steps"].as_array_mut().unwrap();
+        let reviewed = steps
+            .iter()
+            .enumerate()
+            .filter(|(_, s)| s["name"] == "Require reviewed maintained Planner source")
+            .map(|(i, _)| i)
+            .collect::<Vec<_>>();
+        assert_eq!(reviewed.len(), 1);
+        let reviewed = reviewed[0];
+        assert_eq!(
+            steps[reviewed],
+            serde_json::json!({
+                "name":"Require reviewed maintained Planner source", "if":TRUSTED_SOURCE,
+                "shell":"bash", "working-directory":"${{ env.CI296_SOURCE }}", "env":{"CI296_HOST_CONTROL":"1"},
+                "run":concat!("set -euo pipefail\nprintf '%s  %s\\n' ",
+                    "b51def7342359305c818f15ec59e9002d6b7c1ee73752dc08e91442444cfface ",
+                    ".github/workflows/rust.yml | sha256sum --check --strict -\n")
+            })
+        );
+        steps.remove(reviewed);
+        assert_eq!(
+            projected, main["jobs"]["planner-runtime"],
+            "HOST whole canonical job changed"
+        );
+    }
     for (name, candidate) in [
         ("carrot-man-runtime", "python-rust-523-native-arm.yml"),
         ("planner-runtime", "python-rust-523-native-arm-more.yml"),
@@ -2091,31 +2248,52 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
         ),
     ] {
         let data = parse(&read(&format!(".github/workflows/{candidate}"))).unwrap();
-        let mut expected = data["jobs"][name].clone();
-        if name == "planner-runtime" {
-            // Standalone capture만 추가됐다. 정확한 두 env와 admission을 확인한 뒤
-            // 그 관측 경계를 빼고 나머지 전체 job은 canonical source와 비교한다.
-            let captures = expected["steps"]
-                .as_array_mut()
-                .unwrap()
-                .iter_mut()
-                .filter(|step| {
-                    step["name"] == "Compare exact policies, main loops, real IPC and lifecycle"
-                })
-                .collect::<Vec<_>>();
-            assert_eq!(captures.len(), 1);
-            let capture = captures.into_iter().next().unwrap();
-            assert_eq!(
-                capture["env"],
-                serde_json::json!({
-                    "PLANNER_IPC_CAPTURE_DIR":"${{ env.CI_JOB_TEMP }}/proof/planner-ipc-original-inputs",
-                    "PLANNER_IPC_GROWTH_MIB":"512"
-                })
-            );
-            assert_eq!(capture["run"], "\"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$CI_JOB_TEMP\" --growth-mib 512\n/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" runtime\n");
-            capture.as_object_mut().unwrap().remove("env");
-            capture["run"] = "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" runtime\n".into();
-        }
+        let mut expected = if name == "planner-runtime" {
+            let job = &data["jobs"][name];
+            // 기존 test 안에서 잘못된 overlay의 거부도 확인한다. testcase 수는 유지한다.
+            for mutation in [
+                "profile",
+                "permission",
+                "missing",
+                "duplicate",
+                "reorder",
+                "weak-if",
+                "unknown",
+                "run",
+                "env",
+            ] {
+                let mut bad = job.clone();
+                let first = bad["steps"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .position(|s| s["id"] == "planner_ipc_qualify")
+                    .unwrap();
+                match mutation {
+                    "profile" => bad["env"]["PLANNER_NATIVE_IPC_PROFILE"] = "unknown".into(),
+                    "permission" => bad["permissions"]["actions"] = "write".into(),
+                    "missing" => {
+                        bad["steps"].as_array_mut().unwrap().remove(first);
+                    }
+                    "duplicate" => {
+                        let step = bad["steps"][first].clone();
+                        bad["steps"].as_array_mut().unwrap().insert(first, step);
+                    }
+                    "reorder" => bad["steps"].as_array_mut().unwrap().swap(first, first + 1),
+                    "weak-if" => bad["steps"][first]["if"] = "${{ always() }}".into(),
+                    "unknown" => bad["steps"][first]["continue-on-error"] = true.into(),
+                    "run" => bad["steps"][first]["run"] = "true\n".into(),
+                    "env" => bad["steps"][first + 1]["env"]["GITHUB_TOKEN"] = "unreviewed".into(),
+                    _ => unreachable!(),
+                }
+                assert!(planner_ipc_projection(&bad).is_err(), "accepted {mutation}");
+            }
+            let mut job = planner_ipc_projection(job).unwrap();
+            planner_capture_projection(&mut job);
+            job
+        } else {
+            data["jobs"][name].clone()
+        };
         // #572 final-two는 이미 canonical SDK를 갖는다. 나머지6role만
         // 기존 설치→검증/전후 봉인 overlay를 적용하며 전체 job 비교는 유지한다.
         if !["radar-arm", "carrot-navi-arm"].contains(&name) {

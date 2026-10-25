@@ -1,0 +1,39 @@
+{
+  "artifact_id": 12612670103,
+  "artifact_bytes": 55186524,
+  "artifact_sha256": "96b275577f6d9eec3fe106d65b258e00cbfcd3be8421d0659122e73a6f007252",
+  "run_id": 40227447987,
+  "source_commit": "425f29d5ffa4ae0e603ceddf5dce8c605e49bc35",
+  "members": {
+    "receipt.json": {
+      "member": "tmp/openpilot-ci.ho7PkS/planner-comparison/ipc/source-0/receipt.json",
+      "bytes": 452536,
+      "sha256": "a5ac1d44574a05c1d94488c5a0a872375f97b17e85b360b487e307fd167c1b4d"
+    },
+    "0005-longitudinalPlan.bin": {
+      "member": "tmp/openpilot-ci.ho7PkS/planner-comparison/ipc/source-0/0005-longitudinalPlan.bin",
+      "bytes": 488,
+      "sha256": "090a3442a8268c0466d7ebb272bff2708b4d9657c16a03db8bcc83f1fd3fe0da",
+      "service": "longitudinalPlan"
+    },
+    "0003-lateralPlan.bin": {
+      "member": "tmp/openpilot-ci.ho7PkS/planner-comparison/ipc/source-0/0003-lateralPlan.bin",
+      "bytes": 1136,
+      "sha256": "e37bd4347ac03c6d7dd8bf5e18723855949a932917cee5c9a119da6503c6fd44",
+      "service": "lateralPlan"
+    },
+    "0004-driverAssistance.bin": {
+      "member": "tmp/openpilot-ci.ho7PkS/planner-comparison/ipc/source-0/0004-driverAssistance.bin",
+      "bytes": 48,
+      "sha256": "58b76eddd419621517de996f3b968e106a833149a0eb07fcc244674c486d87bd",
+      "service": "driverAssistance"
+    },
+    "CarParams.bin": {
+      "member": "tmp/openpilot-ci.ho7PkS/planner-comparison/ipc/source-0/params/planner_r6u1jvsa/CarParams",
+      "bytes": 280,
+      "sha256": "74de9e672b5d93d21bfeeb57ec6f45677bec4dce85afeffcee027b11c15763df",
+      "scope": "original saved input CarParams; all four observed copies identical"
+    }
+  },
+  "scope": "output decoder samples and saved CarParams only; model/live/initial Params input corpus is not available"
+}

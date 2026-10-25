@@ -1,0 +1,64 @@
+{
+  "artifacts": {
+    "capture": {
+      "archive": "capture.zip",
+      "bytes": 1239760,
+      "extracted": "capture",
+      "id": 12615287431,
+      "sha256": "efa5a289799a4e1fbcd63cc8baae5f3379df20240f6c48ecad6dc68b15c5682b"
+    },
+    "receipt": {
+      "archive": "receipt.zip",
+      "bytes": 44843072,
+      "extracted": "receipt",
+      "id": 12614614983,
+      "sha256": "2726bee5baa231c56c1856cea7bc0096b549bd6bb600cd262e04836551311798"
+    }
+  },
+  "host_architecture": "aarch64",
+  "identities": {
+    "binary": {
+      "captured_path": "/home/runner/work/openpilot-rust/openpilot-rust/.ci296-source-40237263421-1.gsAqQC/source/rust/target/debug/openpilot-plannerd",
+      "sha256": "e287eb82a5be2be2be0a832798a725ce02adebf7bfab97e0f79a92b6152ed41e"
+    },
+    "cpp_binding": {
+      "captured_path": "/tmp/openpilot-ci.hHf287/planner-original/ipc/msgq/ipc_pyx.cpython-312-aarch64-linux-gnu.so",
+      "sha256": "606c78f15402a5af42dfd4681b131dd0c9bd9a07c26ea1ab84ec0e2cb5d6f84a"
+    },
+    "params_binding": {
+      "captured_path": "/tmp/openpilot-ci.hHf287/planner-original/params/params_pyx.cpython-312-aarch64-linux-gnu.so",
+      "sha256": "31f9c777dfff8230f4462724e82b4347404485fe798fb60edbf12e53329264e5"
+    },
+    "solver_manifest": {
+      "captured_path": "/tmp/openpilot-ci.hHf287/planner-artifact/manifest.json",
+      "sha256": "7f75765aaba92a6e22587941c82e7e5d5352facc5d34e187895b6410739d2c83"
+    }
+  },
+  "index": {
+    "bytes": 2467,
+    "path": "planner-ipc-original-inputs/index.json",
+    "sha256": "2983ef06918d9cdc667cdae75f061d2a97c4fbd875819d4f2ffc15b961765c4e"
+  },
+  "kind": "audited-original-planner-ipc-capture",
+  "origin_job": "planner-runtime",
+  "origin_run_attempt": "1",
+  "origin_run_id": "40237263421",
+  "receipt": {
+    "bytes": 2035,
+    "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/receipt.json",
+    "sha256": "3628d937d6df5db8f1ac3cb9664b0ff9ccad0c354138e3710a94ab6a0f3810b7"
+  },
+  "schema_version": 1,
+  "source_commit": "aa79c7cd21a4b9bbb6bfb4c68ded9e857511f1cf",
+  "source_sha256": {
+    "opendbc_repo/opendbc/car/car.capnp": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda",
+    "openpilot/cereal/custom.capnp": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693",
+    "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+    "openpilot/cereal/messaging/__init__.py": "1938c80c71dba0855700015bc03371786a711c67bfe3a0c5e073ed790d5e10a9",
+    "openpilot/cereal/services.py": "a0745e2ef00036f0eef08b453a4798b4281549ea9ac6dc91c8b348ef76131edb",
+    "openpilot/common/params_keys.h": "b8422e8ad2cd74ec3c5750c3e919f6546519d84fabb5f6ec868b5372713b4d7f",
+    "openpilot/selfdrive/modeld/constants.py": "5d597d287df626d08b234a17db05e884302fead646ff4e7f0153079547c8010c",
+    "rust/tools/plannerd_ipc.py": "a4aec1991a6751af60f5616698e75e0861b0a1f8b1c478e5382889681598c8dc",
+    "rust/tools/plannerd_owner_fixtures.py": "03b22ad4d2d0fb87270338e0f485a9936f7c4c8f48613bb9a44887add19da98c"
+  }
+}

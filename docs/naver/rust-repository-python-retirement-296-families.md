@@ -321,3 +321,16 @@ source/index/index-stage·SDK file/program/roster6쌍 전후 byte 동일, SDK in
 **32교체/127대기/1기존native/2비실행/1제거**다. production ordered emitter의 실제 genuine
 검증은 별도 진행 중이며 이 테스트 파일1개 수용으로 전체 compiler/모델/Python 제거를
 완료 처리하지 않는다.
+
+
+## 2026-10-26 Planner native IPC 첫 통합 후보
+
+baseline은 **300 replaced-local /3 partially-replaced /3277 pending =3580**, routing은
+**26 accepted /3 partial /3277 pending =3306**을 유지한다. 이번 등록은 소스 제거 수용이 아니다.
+기존 HOST12/ASan3/ARM12 뒤에 native reader4·strict Clippy·독립 원본401×4 공급·새 native IPC
+네 run을 추가한다. 정확한 계약과 원본 artifact 출처는
+[통합 기록](python-rust-523-planner-ipc-reader-next.md)에 남겼다. 첫 실제 새 feature 수용은 대기다.
+
+새 Rust driver도 source 비교용 원래 Python daemon을 실행하므로 추가 실행 원장에 해당 경계1개를
+pending으로 등록했다. 추가 원장 **164 =32 replaced-local /128 pending /1 native-existing
+/2 non-executing-text /1 removed**이며 native transport 등록만으로 Python 실행 부재를 주장하지 않는다.

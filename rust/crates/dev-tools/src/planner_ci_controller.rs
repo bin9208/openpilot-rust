@@ -9,7 +9,11 @@ use std::{fmt, fs, io::Write, path::Path};
 mod cli;
 pub mod memory;
 pub mod plan;
+#[cfg(feature = "planner-ipc-native")]
+pub mod planner_ipc_native;
 pub mod scheduler;
+#[cfg(feature = "planner-ipc-native")]
+pub mod scheduler_client;
 pub use cli::cli;
 
 #[derive(Clone, Debug)]
