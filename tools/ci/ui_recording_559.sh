@@ -134,10 +134,11 @@ if [[ $mode == admit ]]; then admit; exit; fi
 if [[ $mode == final-source ]]; then source_final; exit; fi
 [[ ${CI_PREPARED_RUST_ROOT:-} == "$sdk" && -f ${CI_PREPARED_RUST_MANIFEST:?} ]] || fail 'prepared SDK missing'
 [[ ! -e $proof && ! -L $proof && ! -e $build && ! -L $build && ! -e $tools && ! -L $tools && ! -e $base_owner && ! -L $base_owner ]]
-mkdir "$proof" "$proof/logs" "$proof/trace" "$proof/elfs" "$proof/failures" "$build" "$build/cargo-home" "$build/tmp" "$build/home" "$build/cache" "$tools" "$base_owner"
+mkdir "$proof" "$proof/logs" "$proof/trace" "$proof/elfs" "$proof/failures" "$proof/cache-copy" "$build" "$build/cargo-home" "$build/tmp" "$build/home" "$build/cache" "$tools" "$base_owner"
 printf '%s\n' "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" > "$base_owner/owner"
 printf '%s\n' "$(stat -c '%d:%i' "$base_owner")" > "$proof/baseline-owner.identity"
 phase=preflight; passed=false; established=false; baseline_sealed=false; red=false; green=false; suite=false; graphics=false; clippy=false; source_controls=false
+cache_copied=false; cache_current_fresh=false
 active= active_identity= watcher= stop=
 deadline=$((SECONDS+1200))
 ulimit -Sn 4096
@@ -314,9 +315,12 @@ finish() {
   jq -n --arg source "$GITHUB_SHA" --arg phase "$phase" --argjson code "$original" --argjson final "$status" \
     --argjson seals "$sealed" --argjson nonlive "$nonlive" --argjson red "$red" --argjson green "$green" \
     --argjson suite "$suite" --argjson graphics "$graphics" --argjson clippy "$clippy" --argjson source_controls "$source_controls" \
+    --argjson cache_copied "$cache_copied" --argjson cache_fresh "$cache_current_fresh" \
     '{schema:1,source:$source,phase:$phase,command_exit:$code,finalizer_exit:$final,immutable_seals:$seals,
       owned_processes_nonlive:$nonlive,baseline_exact_red:$red,candidate_exact_green:$green,recording9:$suite,
-      original_five_modes:$graphics,strict_clippy:$clippy,source_binding4:$source_controls,pass:($code==0 and $final==0 and $seals and $nonlive and $red and $green and $suite and $graphics and $clippy and $source_controls),
+      original_five_modes:$graphics,strict_clippy:$clippy,source_binding4:$source_controls,
+      independent_cache_copy:$cache_copied,seeded_current_workspace_fresh:$cache_fresh,
+      pass:($code==0 and $final==0 and $seals and $nonlive and $red and $green and $suite and $graphics and $clippy and $source_controls and $cache_copied and $cache_fresh),
       historical_success_inherited:false,original_expected_regenerated:false,actual_root_confirmed:false,
       all_adopted_children_reaped:false,closed_fd:false,closed_dso:false,retirement_credit:0,
       cleanup_scope:"current owned leader waited; process tracees non-live; adopted wait not claimed",measured_peak_guarantee:false}' \
@@ -334,12 +338,14 @@ build_env=(HOME="$build/home" XDG_CACHE_HOME="$build/cache" PATH="$sdk/bin:/usr/
   CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TERM_COLOR=never
   GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_OPTIONAL_LOCKS=0 GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1 GIT_LFS_SKIP_SMUDGE=1)
 run() {
-  local label=$1 seconds=$2 expected=$3 code=0 watch_code=0 leader ready go count remaining started=$EPOCHREALTIME
+  local label=$1 seconds=$2 expected=$3 code=0 watch_code=0 leader ready go count remaining started=$EPOCHREALTIME trace_calls=process
   shift 3
   phase=$label;admit
   [[ ! -e $job/proof/ui559-resource-stop ]]
   remaining=$((deadline-SECONDS));((remaining>0)) || fail '20-minute execution deadline'
   ((seconds<=remaining)) || seconds=$remaining
+  # 세 current compiler phase에서만 상대 source 인자를 실제 cwd와 묶는다. 기능 trace는 그대로다.
+  case $label in recording-build|reference-build|stager-build) trace_calls=process,chdir,fchdir;; esac
   mkdir "$proof/trace/$label"
   ready=$proof/logs/$label.ready; go=$proof/logs/$label.go; stop=$proof/logs/$label.stop
   printf '%s\0' "$label" "$@" >> "$proof/commands.nul"
@@ -351,7 +357,7 @@ run() {
     exec "$@"
   ' ui559-owned "$ready" "$go" /usr/bin/env -i "${build_env[@]}" "${extra_env[@]}" \
     /usr/bin/timeout --foreground --signal=TERM --kill-after=15s "${seconds}s" \
-    /usr/bin/strace --kill-on-exit -ff -qq -s 65535 -e trace=process -o "$proof/trace/$label/trace" "$@" \
+    /usr/bin/strace --kill-on-exit -ff -qq -s 65535 -e "trace=$trace_calls" -o "$proof/trace/$label/trace" "$@" \
     > "$proof/logs/$label.stdout" 2> "$proof/logs/$label.stderr" < /dev/null &
   leader=$!;active=$leader;active_identity=
   for ((count=0;count<300;count++)); do
@@ -398,7 +404,7 @@ artifact() {
       ([.[]|select(.reason=="build-finished")]|length)!=1 then error("Cargo EOF") else . end |
     [.[]|select(.reason=="compiler-artifact" and .package_id==$package and .manifest_path==$manifest and
       .target.name==$name and .target.kind==[$kind] and .target.src_path==$src and .profile.test==$tested and
-      (.features|sort)==$features and .profile.opt_level=="0" and .executable!=null)] |
+      (.features|sort)==$features and .profile.opt_level=="0" and .fresh==false and .executable!=null)] |
     if length==1 then .[0].executable else error("exact current Cargo target required") end' "$log"
 }
 copy_elf() {
@@ -413,8 +419,74 @@ ok_test() {
   local label=$1 count=$2
   [[ $(grep -Ec "^test result: ok\\. $count passed; 0 failed; 0 ignored;" "$proof/logs/$label.stdout") == 1 ]]
 }
+# 고정 snapshot worker도 기존 env-i/owned run/remaining deadline/file cap/감시 안에서만 실행한다.
+cache_snapshot_body=$(cat <<'CACHE_SNAPSHOT'
+set -euo pipefail
+root=$1;out=$2;copied=$3;uid=$4
+[[ -d $root && ! -L $root && $(readlink -e "$root") == "$root" ]]
+find -P "$root" \( ! -uid "$uid" -o -perm /0022 -o \( ! -type d ! -type f \) \) -print0 > "$out.rejected"
+[[ ! -s $out.rejected ]]
+find -P "$root" -printf '%P\t%y\t%m\t%U\t%G\t%n\t%s\t%T@\t%D:%i\t%C@\0' | sort -z > "$out.roster"
+awk -v RS='\0' -v FS='\t' -v copied="$copied" '
+  NF!=10 || $1~/[\n\\]/ || ($2!="d"&&$2!="f") {exit 1}
+  $2=="f"&&copied=="true"&&$6!="1" {exit 1}
+  {printf "%s\t%s\t%s\t%s\t%s\t%s\t%s%c",$1,$2,$3,$4,$5,($2=="f"?$7:""),$8,0}
+' "$out.roster" > "$out.payload"
+awk -v RS='\0' -v FS='\t' '{print $9}' "$out.roster" | sort -u > "$out.inodes"
+(cd "$root";find -P . -type f -print0 | sort -z | xargs -0 -r sha256sum) > "$out.sha256"
+find -P "$root" -printf '%P\t%y\t%m\t%U\t%G\t%n\t%s\t%T@\t%D:%i\t%C@\0' | sort -z > "$out.stable"
+cmp "$out.roster" "$out.stable"
+CACHE_SNAPSHOT
+)
+verify_seeded_workspace() {
+  local log=$proof/logs/recording-build.stdout
+  # 복사 직후 최초 current build 전체다. registry 외 source 종류/과거 root/하나의 fresh=true도 거부한다.
+  jq -se --arg root "$source/rust/" --arg source "$GITHUB_SHA" '
+    if length<1 or .[-1]!={reason:"build-finished",success:true} or
+      ([.[]|select(.reason=="build-finished")]|length)!=1 then error("Cargo EOF") else . end |
+    [.[]|select(.reason=="compiler-artifact")] |
+    if length==0 then error("empty compiler artifacts") else . end |
+    [.[]|select((.package_id|startswith("registry+"))|not)] |
+    if length==0 or any(.[]; .fresh!=false or
+      ((.package_id|startswith("path+file://"+$root))|not) or
+      ((.manifest_path|startswith($root))|not) or ((.target.src_path|startswith($root))|not))
+      then error("seeded non-registry artifact was not freshly built from current source")
+      else {schema:1,source:$source,phase:"recording-build",scope:"first_current_cargo_after_copy",
+        non_registry_artifacts:length,all_fresh_false:true,later_current_dependency_cache_reuse:true} end
+  ' "$log" > "$proof/cache-copy/current-workspace.json"
+  hold "$log"
+}
+audit_rustc_source() {
+  local label=$1 crate=$2 relative=$3 file receipt=$proof/cache-copy/$1-$2.rustc
+  local prefix="execve(\"$sdk/bin/rustc\", [\"$sdk/bin/rustc\", \"--crate-name\", \"$crate\", \"--edition=2021\", \"$relative\","
+  # xargs의 유한 argv batch로 읽고 전체 Event를 메모리에 합치지 않는다.
+  # run()의 trace_nonlive가 이미 전체 trace.PID의 regular type/이름/종료를 확인했다.
+  find -P "$proof/trace/$label" -mindepth 1 -maxdepth 1 -type f -name 'trace.*' -print0 | sort -z |
+    xargs -0 -r awk -v prefix="$prefix" -v cwd="chdir(\"$source/rust\")" \
+      -v output="\"--out-dir\", \"$build/candidate-target/debug/deps\"" '
+      function finish_file() {
+        if(bad||attempts>1)exit 1
+        if(attempts==1) {if(!ended)exit 1;print name}
+      }
+      FNR==1 {if(NR>1)finish_file();current=selected=attempts=bad=ended=0;name=FILENAME}
+      /^chdir\(/ {current=(index($0,cwd)==1 && substr($0,length(cwd)+1)~/^[ \t]+=[ \t]+0$/)}
+      /^fchdir\(/ {current=0}
+      /^execve(at)?\(/ {
+        selected=0
+        if(index($0,prefix)==1) {
+          attempts++
+          if(!current||$0!~/\) = 0$/||!index($0,output)||!index($0,"\"--emit=dep-info,link\""))bad=1;else selected=1
+        }
+      }
+      /^exit_group\(0\)[ \t]*=[ \t]*\?$/ {if(selected)ended=1}
+      END {if(NR)finish_file()}
+    ' > "$receipt" || { printf 'UI recording 559: current rustc cwd/exec audit failed: %s/%s\n' "$label" "$crate" >&2;return 1; }
+  [[ $(wc -l < "$receipt") == 1 ]] || { printf 'UI recording 559: unique current rustc observation missing: %s/%s\n' "$label" "$crate" >&2;return 1; }
+  IFS= read -r file < "$receipt"
+  hold "$file";hold "$receipt"
+}
 extra_env=()
-for tool in bash sh env git find sort xargs sha256sum stat readlink readelf sed awk grep head od tr cat dd true cmp df du jq strace timeout setsid sleep curl clang++ g++ cc as ar ranlib ld nm pkg-config capnp tar gzip cmake make gmake xauth Xvfb xvfb-run ffmpeg ffprobe cp chmod mkdir id dirname basename cut rm ldd mktemp touch ps tail wc uname which getopt; do
+for tool in bash sh env git find sort xargs sha256sum stat readlink readelf sed awk grep head od tr cat dd true cmp comm df du jq strace timeout setsid sleep curl clang++ g++ cc as ar ranlib ld nm pkg-config capnp tar gzip cmake make gmake xauth Xvfb xvfb-run ffmpeg ffprobe cp chmod mkdir id dirname basename cut rm ldd mktemp touch ps tail wc uname which getopt; do
   # command -v true는 builtin 이름을 반환한다. 봉인할 외부 PATH provider를 선택한다.
   path=$(type -P "$tool") || fail "external provider missing: $tool"
   [[ $path == /* ]] || fail "external provider path is not absolute: $tool"
@@ -461,12 +533,12 @@ grep -F -- --kill-on-exit "$proof/logs/strace-help.stdout" > "$proof/exitkill-su
 # work/archive는 build8GiB, 설치는 raylib과 tools2GiB를 공유한다. cap/deadline은 늘리지 않는다.
 image_sdk_source=$source/rust/crates/image-codecs/native/sdk
 for name in stage.rs receipt.rs sources.json CMakeLists.txt dav1d.cmake tiff.cmake; do hold "$image_sdk_source/$name"; done
-extra_env=(CARGO_TARGET_DIR="$build/candidate-target")
+extra_env=(CARGO_TARGET_DIR="$build/bootstrap-target")
 run image-disk-guard-build 120 0 "$sdk/bin/cargo" build --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-disk-space --bin disk-space-guard --message-format=json
 disk_guard=$(artifact "$proof/logs/image-disk-guard-build.stdout" "$source" disk-space-guard bin rust/crates/disk-space/src/main.rs false '[]' disk-space)
-copy_elf "$disk_guard" image-disk-guard candidate
-run image-stager-build 120 0 "$sdk/bin/rustc" --edition=2021 "$image_sdk_source/stage.rs" -o "$build/candidate-target/stage-image-codecs"
-copy_elf "$build/candidate-target/stage-image-codecs" image-codecs-stager candidate
+copy_elf "$disk_guard" image-disk-guard bootstrap
+run image-stager-build 120 0 "$sdk/bin/rustc" --edition=2021 "$image_sdk_source/stage.rs" -o "$build/bootstrap-target/stage-image-codecs"
+copy_elf "$build/bootstrap-target/stage-image-codecs" image-codecs-stager bootstrap
 mkdir "$build/image-codecs-archives"
 jq -er 'if .schema==1 and (.sources|length)==9 and ([.sources[].archive]|unique|length)==9
   then .sources[] | [.archive,.url,.sha256] | @tsv else error("exact decoder source roster required") end' \
@@ -502,6 +574,8 @@ baseline_tree "$proof/baseline.before"
 git -C "$baseline" --no-optional-locks ls-files -z > "$proof/baseline-index.before"
 baseline_sealed=true
 extra_env=(CARGO_TARGET_DIR="$build/baseline-target")
+printf '%s\0' "${build_env[@]}" > "$proof/cache-copy/baseline.environment.nul"
+hold "$proof/cache-copy/baseline.environment.nul"
 run baseline-build 900 0 "$sdk/bin/cargo" test --manifest-path "$baseline/rust/Cargo.toml" --locked -p openpilot-dev-tools --features image-array-native --test ui_application_lifecycle_recording --no-run --message-format=json
 base_bin=$(artifact "$proof/logs/baseline-build.stdout" "$baseline" ui_application_lifecycle_recording test rust/crates/dev-tools/tests/ui_application_lifecycle_recording.rs true '["image-array","image-array-native"]')
 copy_elf "$base_bin" baseline-recording baseline
@@ -515,16 +589,66 @@ baseline_tree "$proof/baseline.after"
 cmp "$proof/baseline.before.roster" "$proof/baseline.after.roster"
 cmp "$proof/baseline.before.sha256" "$proof/baseline.after.sha256"
 # baseline source는 실패 이후 최종 봉인에서도 별도로 재검사한다.
+# 같은 job의 cache만 독립 복사한다. copied workspace가 fresh이면 아래 current 입장에서 실패한다.
+[[ ! -e $build/candidate-target && ! -L $build/candidate-target ]]
+for path in rust/Cargo.toml rust/Cargo.lock rust/crates/dev-tools/Cargo.toml;do
+  cmp "$baseline/$path" "$source/$path"
+  hold "$baseline/$path";hold "$source/$path"
+done
+hold "$CI_PREPARED_RUST_MANIFEST"
+sha256sum --check --strict --quiet "$CI_PREPARED_RUST_MANIFEST"
+printf '%s\0' "${build_env[@]}" > "$proof/cache-copy/current.environment.nul"
+cmp "$proof/cache-copy/baseline.environment.nul" "$proof/cache-copy/current.environment.nul"
+hold "$proof/cache-copy/current.environment.nul"
+registry_source=$build/cargo-home/registry/src
+[[ -d $registry_source && ! -L $registry_source && $(readlink -e "$registry_source") == "$registry_source" ]]
+tree "$registry_source" "$proof/cache-copy/registry.before"
+add_tree cache-baseline "$build/baseline-target"
+run cache-source-before 60 0 /bin/bash -c "$cache_snapshot_body" ui559-cache-snapshot \
+  "$build/baseline-target" "$proof/cache-copy/source.before" false "$(id -u)"
+read -r copy_used copy_apparent <<< "$(usage "$build" $((8*gib)))"
+printf '%s\t%s\n' "$copy_used" "$copy_apparent" > "$proof/cache-copy/build.before.tsv"
+run cache-copy 120 0 /bin/bash -c '
+  set -euo pipefail
+  [[ -d $1 && ! -L $1 && $(readlink -e "$1") == "$1" && ! -e $2 && ! -L $2 ]]
+  # -a/--link/--preserve=links 없이 각 regular file을 독립 inode로 만든다.
+  cp -R --reflink=auto --preserve=mode,timestamps -- "$1" "$2"
+' ui559-cache-copy "$build/baseline-target" "$build/candidate-target"
+run cache-source-after 60 0 /bin/bash -c "$cache_snapshot_body" ui559-cache-snapshot \
+  "$build/baseline-target" "$proof/cache-copy/source.after" false "$(id -u)"
+for suffix in roster sha256;do
+  cmp "$proof/cache-copy/source.before.$suffix" "$proof/cache-copy/source.after.$suffix"
+done
+run cache-copy-seal 60 0 /bin/bash -c "$cache_snapshot_body" ui559-cache-snapshot \
+  "$build/candidate-target" "$proof/cache-copy/candidate.initial" true "$(id -u)"
+for suffix in payload sha256;do
+  cmp "$proof/cache-copy/source.before.$suffix" "$proof/cache-copy/candidate.initial.$suffix"
+done
+comm -12 "$proof/cache-copy/source.before.inodes" "$proof/cache-copy/candidate.initial.inodes" > "$proof/cache-copy/shared-inodes.txt"
+[[ ! -s $proof/cache-copy/shared-inodes.txt ]]
+read -r copy_after_used copy_after_apparent <<< "$(usage "$build" $((8*gib)))"
+printf '%s\t%s\n' "$copy_after_used" "$copy_after_apparent" > "$proof/cache-copy/build.after.tsv"
+admit;cache_copied=true
 extra_env=(CARGO_TARGET_DIR="$build/candidate-target")
 run recording-build 900 0 "$sdk/bin/cargo" test --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-dev-tools --features image-array-native --test ui_application_lifecycle_recording --no-run --message-format=json
+verify_seeded_workspace
+audit_rustc_source recording-build openpilot_dev_tools crates/dev-tools/src/lib.rs
+audit_rustc_source recording-build ui_application_lifecycle_recording crates/dev-tools/tests/ui_application_lifecycle_recording.rs
+tree "$registry_source" "$proof/cache-copy/registry.after-first-current"
+for suffix in roster sha256;do
+  cmp "$proof/cache-copy/registry.before.$suffix" "$proof/cache-copy/registry.after-first-current.$suffix"
+done
+cache_current_fresh=true
 record_bin=$(artifact "$proof/logs/recording-build.stdout" "$source" ui_application_lifecycle_recording test rust/crates/dev-tools/tests/ui_application_lifecycle_recording.rs true '["image-array","image-array-native"]')
 copy_elf "$record_bin" candidate-recording candidate
 run reference-build 900 0 "$sdk/bin/cargo" test --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-dev-tools --features ui-application-lifecycle-native --test ui_application_lifecycle_reference --no-run --message-format=json
+audit_rustc_source reference-build ui_application_lifecycle_reference crates/dev-tools/tests/ui_application_lifecycle_reference.rs
 ref_bin=$(artifact "$proof/logs/reference-build.stdout" "$source" ui_application_lifecycle_reference test rust/crates/dev-tools/tests/ui_application_lifecycle_reference.rs true '["image-array","image-array-native","ui-application-lifecycle-native"]')
 copy_elf "$ref_bin" candidate-reference candidate
 run reference-source-binding 120 0 "$proof/elfs/candidate-reference" source_binding:: --nocapture --test-threads=1 --color=never
 ok_test reference-source-binding 4;source_controls=true
 run stager-build 900 0 "$sdk/bin/cargo" build --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-dev-tools --bin stage-startup-ui-raylib --message-format=json
+audit_rustc_source stager-build stage_startup_ui_raylib crates/dev-tools/src/bin/stage_startup_ui_raylib.rs
 stager=$(artifact "$proof/logs/stager-build.stdout" "$source" stage-startup-ui-raylib bin rust/crates/dev-tools/src/bin/stage_startup_ui_raylib.rs false '[]')
 copy_elf "$stager" raylib-stager candidate
 run raylib-stage 300 0 "$proof/elfs/raylib-stager" --arch x86_64 --output "$tools/raylib" --shared
