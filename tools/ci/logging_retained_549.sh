@@ -22,14 +22,24 @@ proof=$CI_JOB_TEMP/proof/logging
 sdk=$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin
 mkdir "$proof" "$proof/build" "$proof/trace" "$proof/bin" "$proof/lifecycle"
 phase=admission
+untraced_status=0
+paired_active=
 finish() {
   result=$?
   trap - EXIT
   set +e
+  paired_final_result=0
+  if [[ -n $paired_active ]]; then
+    (set -e; paired_snapshot "$paired_active" failed-after) > "$proof/paired-554/$paired_active/final-snapshot.stdout" 2> "$proof/paired-554/$paired_active/final-snapshot.stderr"
+    paired_final_result=$?
+    printf '%s\n' "$paired_final_result" > "$proof/paired-554/$paired_active/final-snapshot.exit"
+    if ((result == 0 && paired_final_result != 0)); then result=$paired_final_result; fi
+  fi
   verify_held > "$proof/held-final.stdout" 2> "$proof/held-final.stderr"
   held_result=$?
   if ((result == 0 && held_result != 0)); then result=$held_result; fi
-  printf '{"phase":"%s","exit_code":%s,"held_final_exit_code":%s,"retirement_credit":0,"closed_trace_admitted":false,"old27_admitted":false}\n' "$phase" "$result" "$held_result" > "$proof/outcome.json"
+  if ((result == 0 && untraced_status != 0)); then result=$untraced_status; phase=lifecycle-untraced-failed; fi
+  printf '{"phase":"%s","exit_code":%s,"held_final_exit_code":%s,"untraced_exit_code":%s,"paired_final_exit_code":%s,"retirement_credit":0,"closed_trace_admitted":false,"old27_admitted":false}\n' "$phase" "$result" "$held_result" "$untraced_status" "$paired_final_result" > "$proof/outcome.json"
   exit "$result"
 }
 trap finish EXIT
@@ -44,10 +54,27 @@ admit() {
   ((target_bytes <= 8 * 1024 * 1024 * 1024 && proof_bytes <= 1024 * 1024 * 1024))
 }
 run() {
-  local label=$1 seconds=$2; shift 2
+  local label=$1 seconds=$2 command_status; shift 2
   phase=$label
   admit "$label" 512
-  (ulimit -f 524288; /usr/bin/timeout --signal=TERM --kill-after=30s "${seconds}s" "$@") > "$proof/build/$label.stdout" 2> "$proof/build/$label.stderr"
+  if [[ $label == lifecycle-runtime_directory_int ]]; then
+    printf '%s\0' "$@" > "$proof/paired-554/traced/command.argv0"
+    paired_active=traced
+    paired_snapshot traced before
+    seconds=$(paired_bound)
+    printf '%s\n' "$seconds" > "$proof/paired-554/traced/bound-seconds.txt"
+    # 함수 전체를 if로 호출하지 않는다. 자식의 실제 status를 admit보다 먼저 보존한다.
+    set +e
+    (set -e; ulimit -f 524288; /usr/bin/timeout --signal=TERM --kill-after=30s "${seconds}s" "$@") > "$proof/build/$label.stdout" 2> "$proof/build/$label.stderr"
+    command_status=$?
+    set -e
+    printf '%s\n' "$command_status" > "$proof/paired-554/traced/command.exit"
+    if ((command_status != 0)); then return "$command_status"; fi
+    paired_snapshot traced after
+    paired_active=
+  else
+    (ulimit -f 524288; /usr/bin/timeout --signal=TERM --kill-after=30s "${seconds}s" "$@") > "$proof/build/$label.stdout" 2> "$proof/build/$label.stderr"
+  fi
   admit "$label-after" 0
 }
 declare -a held_paths=() held_fds=() held_ids=() held_hashes=()
@@ -564,11 +591,104 @@ monotonic_cs() {
   whole=${stamp%.*}; fraction=${stamp#*.}
   printf '%s\n' "$((10#$whole * 100 + 10#$fraction))"
 }
+# #554 A: provider와 source를 그대로 두고 계측 유무만 관측한다.
+paired_bound() {
+  local remaining bound_cs now
+  now=$(monotonic_cs) || return 1
+  [[ $now =~ ^[0-9]+$ ]] || return 1
+  remaining=$((60000 - (now - started)))
+  ((remaining > 0)) || return 1
+  bound_cs=$remaining; ((bound_cs <= 9500)) || bound_cs=9500
+  printf '%s.%02d' "$((bound_cs / 100))" "$((bound_cs % 100))"
+}
+paired_snapshot() (
+  set -e
+  ulimit -f 524288
+  local side=$1 moment=$2 destination reader=$BASHPID index_fd identity hash path
+  destination=$proof/paired-554/$side/$moment
+  admit "paired-$side-$moment" 512
+  verify_held
+  test "$PWD" = "$source"
+  test "$(realpath -e -- "$source")" = "$source" && test ! -L "$source"
+  test "$(stat -c '%d:%i' -- "$DIAG_SOURCE_OWNER")" = "$DIAG_SOURCE_IDENTITY"
+  test "$(cat "$DIAG_SOURCE_OWNER/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+  if [[ $side == untraced ]]; then
+    printf '%s\0' "${runtime[@]}" "${untraced_env[@]}" > "$destination.environment.argv0"
+  else
+    test "$side" = traced
+    printf '%s\0' "${runtime[@]}" "${lifecycle_env[@]}" > "$destination.environment.argv0"
+  fi
+  cmp "$proof/paired-554/$side/environment.argv0" "$destination.environment.argv0"
+  test -d "$source/.git" && test ! -L "$source/.git"
+  test "$(realpath -e -- "$source/.git")" = "$source/.git"
+  test "$("${runtime[@]}" /usr/bin/timeout 10s /usr/bin/git --no-optional-locks rev-parse HEAD)" = "$GITHUB_SHA"
+  "${runtime[@]}" /usr/bin/timeout 10s /usr/bin/git --no-optional-locks ls-files -z > "$destination.files.bin"
+  "${runtime[@]}" /usr/bin/timeout 10s /usr/bin/git --no-optional-locks ls-files --stage -z > "$destination.entries.bin"
+  "${runtime[@]}" /usr/bin/timeout 10s /usr/bin/git --no-optional-locks ls-files -v -z > "$destination.flags.bin"
+  cmp "$CI_JOB_TEMP/proof/index-before.bin" "$destination.files.bin"
+  for path in files entries flags; do
+    cmp "$proof/git-source-cache-554/$path-after.bin" "$destination.$path.bin"
+  done
+  /usr/bin/timeout 30s tar --null --no-recursion --verbatim-files-from -T "$destination.files.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$destination.source.sha256"
+  cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$destination.source.sha256"
+  stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "$source" "$source/.git" "$source/.git/config" > "$destination.source-config.identity"
+  sha256sum -- "$source/.git/config" > "$destination.config.sha256"
+  for path in "$fixture" "$checker" "$probe" "$context"; do
+    printf '%s\t' "$path"
+    stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "$path"
+    sha256sum -- "$path"
+  done > "$destination.inputs.txt"
+  # Git는 cache/stat metadata를 갱신할 수 있다. raw index는 각 시점만 안정적으로 읽는다.
+  path=$source/.git/index
+  test -f "$path" && test ! -L "$path"
+  test "$(stat -c '%u:%h:%d' -- "$path")" = "$UID:1:$(stat -c %d -- "$source")"
+  test ! -e "$source/.git/index.lock" && test ! -L "$source/.git/index.lock"
+  exec {index_fd}< "$path"
+  identity=$(stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "/proc/$reader/fd/$index_fd")
+  test "$(stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "$path")" = "$identity"
+  cp -- "/proc/$reader/fd/$index_fd" "$destination.index.bin"
+  hash=$(sha256sum -- "/proc/$reader/fd/$index_fd" | cut -d' ' -f1)
+  test "$(sha256sum -- "$destination.index.bin" | cut -d' ' -f1)" = "$hash"
+  test "$(stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "$path")" = "$identity"
+  test "$(stat -Lc '%d:%i:%u:%g:%f:%h:%s:%y:%z' -- "/proc/$reader/fd/$index_fd")" = "$identity"
+  printf '%s\t%s\n' "$identity" "$hash" > "$destination.index.tsv"
+  exec {index_fd}<&-
+  test "$(du -sx --block-size=1 --exclude="$source/rust/target" -- "$DIAG_SOURCE_OWNER" | cut -f1)" -le $((2 * 1024 * 1024 * 1024))
+  verify_held
+  admit "paired-$side-$moment-after" 0
+)
+mkdir -m 700 "$proof/paired-554" "$proof/paired-554/untraced" "$proof/paired-554/traced" "$proof/paired-554/untraced/evidence"
+hold "$source/.git/config"
+untraced_env=("${lifecycle_env[@]}")
+test "${#untraced_env[@]}" -eq 6
+test "${untraced_env[5]}" = "NATIVE_LOGGING_LIFECYCLE_EVIDENCE=$proof/lifecycle"
+untraced_env[5]="NATIVE_LOGGING_LIFECYCLE_EVIDENCE=$proof/paired-554/untraced/evidence"
+printf '%s\0' "${runtime[@]}" "${untraced_env[@]}" > "$proof/paired-554/untraced/environment.argv0"
+printf '%s\0' "${runtime[@]}" "${lifecycle_env[@]}" > "$proof/paired-554/traced/environment.argv0"
+untraced_command=("${runtime[@]}" "${untraced_env[@]}" "$fixture" --ignored --exact retained::runtime_directory_int --test-threads=1 --color=never)
+printf '%s\0' "${untraced_command[@]}" > "$proof/paired-554/untraced/command.argv0"
 # read/pread64는 FD/주소/길이/결과를 raw hex로 유지한다. 반복 해시의 대형 버퍼 사본만 펼치지 않는다.
 # 입력·packet 원문은 별도 context/실제 결과에서 봉인한다. exec/argv/path 및 mapping은 계속 해석 출력한다.
 # -x는 비ASCII 문자열의 byte escape를 유지한다. FD 번호·실제 path/metadata 인자는 그대로 두고
 # -yy의 반복 파생 FD-path/protocol annotation만 생략한다. closed FD/cwd/DSO 수용은 계속 false다.
 started=$(monotonic_cs)
+phase=lifecycle-runtime_directory_int-untraced
+paired_active=untraced
+paired_snapshot untraced before
+bound=$(paired_bound)
+printf '%s\n' "$bound" > "$proof/paired-554/untraced/bound-seconds.txt"
+set +e
+(set -e; ulimit -f 524288; /usr/bin/timeout --signal=TERM --kill-after=30s "${bound}s" "${untraced_command[@]}") > "$proof/build/lifecycle-runtime_directory_int-untraced.stdout" 2> "$proof/build/lifecycle-runtime_directory_int-untraced.stderr"
+untraced_status=$?
+set -e
+printf '%s\n' "$untraced_status" > "$proof/paired-554/untraced/command.exit"
+# timeout/실행 불가/신호는 일반 test 실패와 구분해 즉시 전파한다. EXIT가 사후 관측을 시도한다.
+if ((untraced_status >= 124)); then exit "$untraced_status"; fi
+paired_snapshot untraced after
+paired_active=
+if ((untraced_status == 0)); then
+  test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$proof/build/lifecycle-runtime_directory_int-untraced.stdout")" -eq 1
+fi
 for name in first_int first_term first_eof runtime_directory_int runtime_directory_term escaped_descendant_int escaped_descendant_term escaped_descendant_eof output_file output_directory output_live_directory output_symlink output_dangling_symlink forbidden_executable_options; do
   remaining=$((60000 - ($(monotonic_cs) - started)))
   ((remaining > 0))
@@ -592,4 +712,5 @@ done
 verify_held
 printf '%s\n' 'current held files and bytes unchanged' > "$proof/held-after.txt"
 admit final 0
+if ((untraced_status != 0)); then phase=lifecycle-untraced-failed; exit "$untraced_status"; fi
 phase=candidate-observed

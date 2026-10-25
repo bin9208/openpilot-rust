@@ -589,8 +589,8 @@ jobs:
         printf '%s  %s\n' 1d6c6c57f313bc73f1a378649c1d4a0a3f0e3eba5b868b064ffb2976cd78b3ec tools/ci/prepare-lfs-source-535 | sha256sum --check -
         printf '%s  %s\n' dfd8e9c0a5faff24058f8f570790a625646a4ba17001eff74efc1c3279f81149 rust/crates/logging/build.rs | sha256sum --check -
         printf '%s  %s\n' b70ad5b50c56e3ce3299efb5db87a0aca006488a936e297cca117424b9123423 rust/crates/logging/tests/build_watch.rs | sha256sum --check -
-        printf '%s  %s\n' afde2c12173dbc9ddeda54560be1ed38374e679081797ca558f3eb5714fc6bc3 .github/workflows/python-rust-523-logging.yml | sha256sum --check -
-        printf '%s  %s\n' c8a9f3c8b46320cb1e34ee19143dea9c4da4a33243411a2beeb2cf1ac41d415d tools/ci/logging_retained_549.sh | sha256sum --check -
+        printf '%s  %s\n' 6d436d202fac7412cdeb9aca286b4f8d400d956dce24290d1deeb9766102174d .github/workflows/python-rust-523-logging.yml | sha256sum --check -
+        printf '%s  %s\n' 8acab2da04c84df6fe5c31ee7d96c395f1ad981aad0324d0a167d779f1bb455e tools/ci/logging_retained_549.sh | sha256sum --check -
         printf '%s  %s\n' 33a29b54b7db56a11f8d4e40c1ab707800efdb5381c50a2273e852ba3e56ec8d rust/crates/dev-tools/src/native_logging_check.rs | sha256sum --check -
         printf '%s  %s\n' 7799202c6ea4fd2ece3676b8004528274cd6487923890bcba92325010e36d2b3 rust/crates/dev-tools/src/native_logging_check/retained.rs | sha256sum --check -
         printf '%s  %s\n' 0441581301b9bfae6e1442b4ba59d308edc8071fb7d2381486aaac873b1445b5 rust/crates/dev-tools/src/native_logging_check/retained_tests.rs | sha256sum --check -

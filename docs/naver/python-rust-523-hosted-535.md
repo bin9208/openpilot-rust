@@ -1005,3 +1005,6 @@ SSH/UI/로깅/native ARM 실행은 계속 진행하며 별도 결과로 확인�
 - [fd logging40153172264](https://github.com/bin9208/openpilot-rust/actions/runs/40153172264)는 source cache/8state 및 첫 lifecycle3이 성공했지만 runtime_directory_int가2.405423463초로 기존2초 기준을 넘었다. Git status는 실제 checker의 Peer::start에서 매회 수행되며 기존 원본 checker도 같은 시간 범위에 포함한다. logger/runtime-version의 추측 변경이나 dirty 검사 생략은 하지 않는다. 별도 같은held ELF 비계측1회와 현재계측 관측으로 원인을 좁히며 기존2초/600초·packet/expected를 유지한다.
 
 #553은 같은 held plain ELF·입력·absolute output argv로 LD_LIBRARY_PATH만 다른 A/B2회를 추가한 진단 후보를 작성했다. 기존602 미재현 FAIL과 정상40의 수치 기준은 그대로다. 소스 독립 검토는 #553·UI SDK·#564 모두 추가P1/P2가 없었으며 로컬 검사는 AST/YAML/Bash/Rust 서식·diff뿐이다. 후보의 기능은 새 Actions 전까지 UNRUN이다. baseline3580=293교체/3부분/3284대기, execution100개 상태 및 #523/#296 전체 미완료는 유지한다.
+
+
+#563은 fd 실제 `probe-build` watcher의 target 임시 archive ENOENT(find1/decision75/attempt1)와 두 번째clean scan, 독립 검토를 확인해 개별 종료했다. 첫 실패의meta/stderr/표식은 최종 admission 뒤에도 업로드됐으며 옛6a의 덮인 원문을 복원했다는 뜻은 아니다. actual18+8 및 마지막봉인/실패원문upload 조건은 위fd 실행으로 충족했다. 전체#549/retirement credit0은 유지한다.

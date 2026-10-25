@@ -112,3 +112,5 @@ recorder 컴파일과 Cargo build/test는 GitHub Actions에서만 수행한다. 
 종료 목록의15번째 항목은 새로운 경로가 아니라 public 실행 직전에 다시 hold한 동일 `developer-ssh` ELF다. 초기14개의 모든 행은 byte 동일하며, 중복된2행도 identity·SHA를 포함해 같다. fixture가 초기 경로 set으로 전체 누적 held 목록을 필터링해, 같은 경로의 후속 hold도 초기 snapshot에 포함한 것이 원인이다.
 
 최소 수정은 초기 held 개수를 저장하고 종료 검증 성공 뒤 누적 목록의 초기 prefix만 기록하는 것이다. 목록은 append만 하며 전체 누적 FD 검증과 per-use 보고는 그대로 유지한다. driver의 정확14개·unique14·전후 byte 일치, 동결 case/기대값/marker·회수·자원 기준은 바꾸지 않는다. 다음 Actions에서 기존 두 음성 및 실제 두 selector, driver의 provider trace와 Clippy까지 다시 확인한다. 이 수정 후보의 기능은 아직 UNRUN이며 원본 실행/삭제·credit은0이다.
+
+초기 snapshot 중복의 개별 결함은 [#564](https://github.com/bin9208/openpilot-rust/issues/564)에서 추적한다. 수정 source `c00c7a11fbee357cbfb39bee45125d73596bf56c`의 [Focus40154418302](https://github.com/bin9208/openpilot-rust/actions/runs/40154418302)는 실행 중이며 새 성공은 아직 수용하지 않았다.
