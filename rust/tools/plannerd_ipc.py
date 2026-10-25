@@ -5,10 +5,13 @@ import gc
 import hashlib
 import importlib
 import json
+import math
 import os
 from pathlib import Path
+import select
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -24,6 +27,122 @@ def next_model_target(nominal, previous_sent, previous_model_done):
   if previous_model_done - previous_sent >= 0.05:
     target = max(target, previous_model_done + 0.05)
   return target
+
+
+class ModelScheduler:
+  """선택된 native endpoint는 run당 한 번 열고 오류를 oracle로 대체하지 않는다."""
+
+  def __init__(self, stderr_path):
+    self.binary = os.environ.get('PLANNER_NATIVE_SCHEDULER')
+    self.stderr_path = stderr_path
+    self.process = None
+    self.stderr = None
+    self.failed = False
+
+  def __enter__(self):
+    if self.binary is None:
+      return self
+    if not self.binary:
+      raise RuntimeError('PLANNER_NATIVE_SCHEDULER must name an executable')
+    self.stderr = self.stderr_path.open('wb')
+    try:
+      self.process = subprocess.Popen([self.binary, 'schedule'], stdin=subprocess.PIPE,
+                                      stdout=subprocess.PIPE, stderr=self.stderr, bufsize=0)
+      os.set_blocking(self.process.stdin.fileno(), False)
+      os.set_blocking(self.process.stdout.fileno(), False)
+    except BaseException:
+      # Popen 성공 뒤 pipe 설정 실패도 child를 남기지 않는다.
+      self.__exit__(*sys.exc_info())
+      raise
+    return self
+
+  @staticmethod
+  def _ready(descriptor, reading, deadline):
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+      raise TimeoutError('native scheduler response exceeded 2 seconds')
+    readers, writers, _ = select.select(
+      [descriptor] if reading else [], [] if reading else [descriptor], [], remaining,
+    )
+    if not (readers if reading else writers):
+      raise TimeoutError('native scheduler response exceeded 2 seconds')
+
+  def target(self, nominal, previous_sent, previous_model_done):
+    if self.binary is None:
+      return next_model_target(nominal, previous_sent, previous_model_done)
+    try:
+      if self.failed or self.process is None or self.process.poll() is not None:
+        raise RuntimeError('native scheduler is not running')
+      if not all(math.isfinite(value) for value in (nominal, previous_sent, previous_model_done)):
+        raise ValueError('native scheduler wire timestamps must be finite')
+      deadline = time.monotonic() + 2.0
+      request = f'{nominal!r}\t{previous_sent!r}\t{previous_model_done!r}\n'.encode('ascii')
+      descriptor = self.process.stdin.fileno()
+      while request:
+        self._ready(descriptor, False, deadline)
+        try:
+          count = os.write(descriptor, request)
+        except BlockingIOError:
+          continue
+        if count == 0:
+          raise RuntimeError('native scheduler request pipe closed')
+        request = request[count:]
+      response = bytearray()
+      descriptor = self.process.stdout.fileno()
+      while b'\n' not in response:
+        if len(response) >= 256:
+          raise RuntimeError('native scheduler response is too long')
+        self._ready(descriptor, True, deadline)
+        try:
+          chunk = os.read(descriptor, 256 - len(response))
+        except BlockingIOError:
+          continue
+        if not chunk:
+          raise RuntimeError('native scheduler EOF before target')
+        response.extend(chunk)
+      line, _, extra = response.partition(b'\n')
+      if extra:
+        raise RuntimeError('native scheduler returned multiple responses')
+      target = float(line.decode('ascii'))
+      if not math.isfinite(target):
+        raise RuntimeError('native scheduler returned a nonfinite target')
+      return target
+    except BaseException:
+      self.failed = True
+      raise
+
+  def __exit__(self, exc_type, _exc, _traceback):
+    process = self.process
+    try:
+      if process is not None:
+        deadline = time.monotonic() + 3.0
+        try:
+          process.stdin.close()
+        except OSError:
+          pass
+        if (exc_type is not None or self.failed) and process.poll() is None:
+          process.terminate()
+        forced = False
+        try:
+          status = process.wait(timeout=min(1.0, max(0.0, deadline - time.monotonic())))
+        except subprocess.TimeoutExpired:
+          forced = True
+          process.terminate()
+          try:
+            status = process.wait(timeout=min(1.0, max(0.0, deadline - time.monotonic())))
+          except subprocess.TimeoutExpired:
+            process.kill()
+            status = process.wait(timeout=max(0.0, deadline - time.monotonic()))
+        if exc_type is None and (self.failed or forced or status != 0):
+          raise RuntimeError(f'native scheduler did not close normally: {status}')
+    finally:
+      if process is not None:
+        for stream in (process.stdin, process.stdout):
+          if stream is not None:
+            stream.close()
+      if self.stderr is not None:
+        self.stderr.close()
+    return False
 
 
 def policy(raw):
@@ -74,7 +193,8 @@ def run(args, root, mode, epoch, prefix):
   )
   records, timing = [], []
   subscribers = {}
-  with (case / 'stdout.log').open('wb') as stdout, (case / 'stderr.log').open('wb') as stderr:
+  with (case / 'stdout.log').open('wb') as stdout, (case / 'stderr.log').open('wb') as stderr, \
+       ModelScheduler(case / 'scheduler.stderr.log') as scheduler:
     child = subprocess.Popen(command, env=child_env, stdout=stdout, stderr=stderr)
     try:
       time.sleep(0.15)
@@ -120,7 +240,7 @@ def run(args, root, mode, epoch, prefix):
         # Pace from the previous send, so ordinary solver work does not slow
         # the source's inputs relative to the native candidate. If processing
         # overruns a complete period, recover without a catch-up burst.
-        target = next_model_target(started + index * 0.05, previous_sent, previous_model_done)
+        target = scheduler.target(started + index * 0.05, previous_sent, previous_model_done)
         time.sleep(max(0.0, target - time.monotonic()))
         packets = messages(messaging.new_message, 45 + index, 1.0 + index * 0.05)
         packets['selfdriveState'].selfdriveState.experimentalMode = 12 <= index < 16

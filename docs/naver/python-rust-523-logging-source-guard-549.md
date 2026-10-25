@@ -327,3 +327,9 @@ root/child 두 파일의 `rustfmt --edition 2021 --check --config skip_children=
 `git diff --check`만 확인했다. 모두 PASS이며 jq 평가/프로젝트 CLI/Cargo/build/test/Clippy/
 원본·모델 실행/GHA 실행은0이다. 새 strict 정책의 실제 거부와 postdelete 전체 수용은 아직
 **GHA UNRUN**이다. 다른 기능군의 동시 WIP는 보존했다.
+
+## source126 삭제 후 최초 결과와 수정 — 2026-10-26
+
+[retained40209583376/job121217757349](https://github.com/bin9208/openpilot-rust/actions/runs/40209583376/job/121217757349)은 실제 부재 정책의 빌드/두 strictClippy·선택 단위67개와 Git source-cache 준비까지 성공한 뒤 실패했다. artifact12605605211(12335462B/SHA256 `0f218f2ab955393e587cc3db36b77124b32091dbe904eb7a2e701801abb6b23b`)의2494 unique/safe/전체CRC를 확인했다. 최종 phase는 git-source-cache-prime/exit1이며 held-final=0이다. source-cache complete는 성공했으므로 이를 Git cache 실패로 분류하지 않는다. 직후 untraced 환경의 기존6개 개수 검사에 새 absent 정책키1개가 포함돼 실패한 것을 source/부분 출력으로 확인했다. 기존6키/순서·evidence index5를 유지하고 present6/absent7과 정확 정책키를 검증하도록 수정한다. lifecycle14/현재15/CLI/raw/policy/source-guard는 미도달이다.
+
+[collision40209583383/job121217757350](https://github.com/bin9208/openpilot-rust/actions/runs/40209583383/job/121217757350)은 실제 fixture 실행 전 root lifecycle 소스의 옛 SHA pin에서 실패했다. 해당 현재 파일의 검토한 부재정책 한 줄을 포함하는 정확 SHA로 고정한다. 검사·기한·거부 조건을 없애지 않는다. 두 실패의 원본 삭제 credit은0이며 수정 후 실제 부재/재등장·호출부 수용이 필요하다.

@@ -5,20 +5,19 @@ name: Python Rust 523 native units
     - codex/feat-523-python-rust
     paths:
     - .github/workflows/python-rust-523-native-units.yml
-    - .github/actions/job-temp/**
-    - rust/Cargo.toml
-    - rust/Cargo.lock
-    - rust/rust-toolchain.toml
-    - rust/crates/control-policy/**
-    - rust/crates/model-runtime/**
-    - rust/tools/prepare-readonly-ci-rust
-    - rust/tools/model_export/offline_schedule.py
-    - rust/tools/model_export/schema.py
-    - rust/crates/dev-tools/tests/planner_ci_policy.rs
-    - rust/crates/dev-tools/tests/planner_ci_policy/**
-    - rust/crates/dev-tools/tests/release_files.rs
-    - rust/crates/dev-tools/src/ci_policy.rs
-  workflow_dispatch: null
+  workflow_dispatch:
+    inputs:
+      crate:
+        description: 필요한 집중 검사만 선택한다. 필수 PR 게이트는 별도로 유지한다.
+        type: choice
+        default: all
+        options:
+        - all
+        - control
+        - model
+        - tools
+        - buffers
+        - planner
 permissions:
   contents: read
 concurrency:
@@ -289,6 +288,9 @@ jobs:
         printf 'jobs=%s\nincremental=%s\ndev_debug=%s\ntest_debug=%s\nrustc=%s\ncargo=%s\nfeatures=no-default-features\n' \
           "$CARGO_BUILD_JOBS" "$CARGO_INCREMENTAL" "$CARGO_PROFILE_DEV_DEBUG" "$CARGO_PROFILE_TEST_DEBUG" \
           "$RUSTC" "$sdk/bin/cargo" > "$CI_JOB_TEMP/proof/compile-profile.txt"
+        if [[ $NATIVE_UNITS_CRATE == buffers ]]; then
+          printf 'additional_features=native-skip-miri\n' >> "$CI_JOB_TEMP/proof/compile-profile.txt"
+        fi
         failed=0
         run_once() {
           local label=$1 rc
@@ -324,13 +326,45 @@ jobs:
         run_once model-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-model-runtime --lib --test compiler_launch --test compiler_schedule -- -D warnings
             ;;
+          buffers)
+        run_once compiler-buffer-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_buffers
+        grep -F 'test result: ok. 6 passed; 0 failed; 1 ignored;' "$CI_JOB_TEMP/proof/compiler-buffer-units.log" || failed=1
+        run_once original-buffers "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_buffers \
+          original_python_buffer_tables_match_native -- --ignored --exact --nocapture
+        grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/original-buffers.log" || failed=1
+        run_once compiler-buffer-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
+          --no-default-features --features native-skip-miri -p openpilot-model-runtime --lib --test compiler_buffers -- -D warnings
+            ;;
+          planner)
+        run_once planner-controller-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --test planner_ci_controller
+        grep -F 'test result: ok. 11 passed; 0 failed; 4 ignored;' "$CI_JOB_TEMP/proof/planner-controller-units.log" || failed=1
+        run_once original-planner-controller "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --test planner_ci_controller source_ -- --ignored --nocapture --test-threads=1
+        grep -F 'test result: ok. 4 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/original-planner-controller.log" || failed=1
+        run_once planner-scheduler-adapter /usr/bin/env \
+          PLANNER_NATIVE_SCHEDULER_TEST_BIN="$CARGO_TARGET_DIR/debug/check-plannerd-ci" \
+          /usr/bin/python3 -I -B -m unittest discover -s rust/tools/tests -p test_plannerd_native_scheduler.py -v
+        grep -E '^Ran 13 tests in ' "$CI_JOB_TEMP/proof/planner-scheduler-adapter.log" || failed=1
+        grep -Fx 'OK' "$CI_JOB_TEMP/proof/planner-scheduler-adapter.log" || failed=1
+        grep -E '^test_real_native_binary_receives_all_160_calls_with_matching_targets .* \.\.\. ok$' \
+          "$CI_JOB_TEMP/proof/planner-scheduler-adapter.log" || failed=1
+        run_once planner-controller-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --lib --bin check-plannerd-ci --test planner_ci_controller -- -D warnings
+            ;;
           tools)
         run_once planner-policy "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-dev-tools --test planner_ci_policy --test release_files
         grep -F 'test result: ok. 21 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-policy.log" || failed=1
         grep -F 'test result: ok. 3 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-policy.log" || failed=1
+        run_once registered-sdk-policy "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
+          --no-default-features -p openpilot-dev-tools --test ci_disk_bootstrap \
+          prepared_audit::prepared_audit_admits_only_registered_local_sdk_and_private_tool_homes -- --exact
+        grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/registered-sdk-policy.log" || failed=1
         run_once planner-policy-clippy "$sdk/bin/cargo" clippy --manifest-path rust/Cargo.toml --locked \
-          --no-default-features -p openpilot-dev-tools --test planner_ci_policy --test release_files -- -D warnings
+          --no-default-features -p openpilot-dev-tools --test planner_ci_policy --test release_files --test ci_disk_bootstrap -- -D warnings
             ;;
           *) echo "unknown native crate" >&2; exit 1 ;;
         esac
@@ -459,7 +493,4 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate:
-        - control
-        - model
-        - tools
+        crate: ${{ fromJSON(inputs.crate == 'control' && '["control"]' || inputs.crate == 'model' && '["model"]' || inputs.crate == 'tools' && '["tools"]' || inputs.crate == 'buffers' && '["buffers"]' || inputs.crate == 'planner' && '["planner"]' || '["control","model","tools","buffers","planner"]') }}

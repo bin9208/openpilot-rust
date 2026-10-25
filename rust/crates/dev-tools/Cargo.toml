@@ -9,6 +9,10 @@ publish = false
 autobins = false
 
 [[bin]]
+name = "check-plannerd-ci"
+path = "src/bin/check_plannerd_ci.rs"
+
+[[bin]]
 name = "check-loggerd-io"
 path = "src/bin/check_loggerd_io.rs"
 required-features = ["loggerd-check-native"]

@@ -59,3 +59,10 @@ cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --tes
 세 테스트의 실행 결과와 통합 SHA/Actions URL은 부모가 기록한다. 재시도·skip·기한 연장이나
 새 기능·플랫폼 성공 주장은 추가하지 않는다. 수정 파일은 이 기록과
 `rust/crates/dev-tools/tests/release_files.rs` 두 개뿐이다.
+
+## 실제 수정 소스 수용 — 2026-10-26
+
+source126fdbea36598566d1040be0a35a365c909be4e4의
+[Fast40209583336/job121217757599](https://github.com/bin9208/openpilot-rust/actions/runs/40209583336/job/121217757599)에서 기존3개0FAIL/0ignored 및 해당 서비스·도구 worker 전체/후검증·회수가 성공했다. artifact12605009898(321855B/SHA256 `6024eae75803d700cfefcc76a35367a5ed5d1a96288a0880b1aa482383cb9047`)의35 unique/safe/CRC와 source/index·전체 SDK files/roster/rejected 전후 동일성을 감사했다.
+
+같은 source의 등록 local [40209583400/job121217757597](https://github.com/bin9208/openpilot-rust/actions/runs/40209583400/job/121217757597)도 release3+Planner21/strictClippy와 봉인·회수를 통과했다. artifact12605193497은1576512B/SHA256 `b1d9ad0db1dbae6d4e8f482649e16b8dc25d17006dad5e3d3ae3ee507464ecfc`,36 unique/safe/CRC가 일치한다. #588의 개별 완료 조건을 충족했으며 과거 kernel/filesystem 상세 원인·전체 PR/대단원 성공으로 확대하지 않는다.

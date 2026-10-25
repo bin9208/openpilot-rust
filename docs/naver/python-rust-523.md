@@ -1307,3 +1307,17 @@ Fast의 native 한 worker는 실제 local runner/SDK를 검증하고 Cargo 병�
 baseline3580의294교체/3부분/3283대기는 그대로이고 추가 실행 원장은144개
 (26교체/114대기/1기존native/2비실행/1제거)다. 로깅 실제 삭제 WIP와 사용되지 않는
 새 API에 선행 수용 실적을 부여하지 않는다. 필수 PR/통합·전달·사용자 실기 수용은 남아 있다.
+
+### 실제 호출 제어·버퍼 경계와 후속 묶음 — 2026-10-26
+
+source126의 등록 local tools job121217757597에서 Planner 구조21/release3와 strictClippy가 실제 성공했다. 부모가 artifact12605193497의36CRC·source/index/SDK 전후·회수를 확인했다. 같은 source의 Fast 서비스 job121217757599도 release3를 포함해 성공했고 artifact12605009898의35CRC/전후 봉인을 확인해 #588을 개별 해결했다. 모델 #590은 source0e의 실제 ISA11·whole91/strictClippy와2049CRC로 개별 해결했으며 signed-zero/NPY·전체 모델 수용은 분리한다.
+
+새 묶음은 기존 export::BufferTable을 재사용한 compiler buffer metadata/initializer 경계를 정식 library에 연결하고 native6+원본1(32 descriptor/147 recipe)을 검증한다. Planner는 실제12-leaf 명령 계획·첫 실패/로그 보존 controller와 지속 stdio scheduler를 등록한다. Python max의 첫 피연산자 유지·signed-zero/NaN을 보존하고 실제 IPC 송신 루프의 native 선택 경로를 연결했다. native11/원본4와 adapter13(실제 Rust160요청, skip 금지)을 집중 Actions에 연결한다. 유지되는 main12-leaf/메모리·ARM caller의 전환과 full IPC는 아직 남아 있다. 기존 Python IPC/원본 함수와 leaf는 명시적으로 남으며 새 API만으로 원본 삭제 실적을 부여하지 않는다.
+
+로깅 삭제 후 실패는 source SHA pin1개와 absent 정책키 추가 후 옛 환경6개 고정을 보정한다. 기존6키/evidence순서와 present6/absent7의 정확한 키 검증을 유지한다. 모델 original replay의 NPY 입력 쓰기도 기존 비교 도구의 byte-view 분기만 복구한다. 기대값·산술·시간·CPU/ISA 조건은 유지한다.
+
+집중 unit workflow는 workflow 자체 변경 때 전체 role를 확인하고, 이후 source 변경은 필요한 control/model/tools/buffers/planner role만 명시 dispatch하도록 분리한다. 성공한 불변 검사 반복을 줄이며 필수 PR/통합 검사는 유지한다. local Cargo 병렬1·현재 메모리/디스크 증가량 admission과 SDK/source 전후 확인은 같다.
+
+Fast local routing40209583336/job121217757300도 strict cold trace의157행 `???( <detached ...>`를 거부했다. artifact12605218513은626538B/SHA256 `434a226361dd588f9e7ba1acad539284617cf44d3b6009e01c2ad51d2f85f79a`,66 unique/safe/CRC를 확인했다. 실제 local kernel7.0.2-6-pve/strace6.8이며 플랫폼 변경만으로 #560이 해결되지 않았다. 별도 patched observer의 성공을 maintained Fast 성공으로 대체하지 않고 producer 연결을 검토한다. 전체 Fast는 실패, source126 Focus40209583375와 user-docs40209691291은 성공, 필수 Rust/통합은 별도 상태다.
+
+추가 실행 원장은148개(26교체/118대기/1기존native/2비실행/1제거)다. 새 compiler/Planner 원본 비교, Python adapter 회귀 및 native controller의 기존12 Python leaf 호출을 모두 pending으로 등록했다. baseline3580=294/3/3283과 전체 전환·전달·사용자 실기 미완료는 유지한다. 로컬 기능/모델/원본 실행은0회다.

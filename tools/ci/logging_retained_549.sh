@@ -1614,8 +1614,13 @@ paired_snapshot() (
 mkdir -m 700 "$proof/paired-554" "$proof/paired-554/untraced" "$proof/paired-554/traced" "$proof/paired-554/untraced/evidence"
 hold "$source/.git/config"
 untraced_env=("${lifecycle_env[@]}")
-test "${#untraced_env[@]}" -eq 6
+# 기존6개 실행 키와 source 정책 키를 정확하게 분리해 검증한다.
+test "${#untraced_env[@]}" -eq "$((6 + ${#source_policy_env[@]}))"
 test "${untraced_env[5]}" = "NATIVE_LOGGING_LIFECYCLE_EVIDENCE=$proof/lifecycle"
+if [[ $source_policy == absent ]]; then
+  test "${#source_policy_env[@]}" -eq 1
+  test "${untraced_env[6]}" = NATIVE_LOGGING_SOURCE_POLICY=absent
+else test "${#source_policy_env[@]}" -eq 0; fi
 untraced_env[5]="NATIVE_LOGGING_LIFECYCLE_EVIDENCE=$proof/paired-554/untraced/evidence"
 printf '%s\0' "${runtime[@]}" "${untraced_env[@]}" > "$proof/paired-554/untraced/environment.argv0"
 printf '%s\0' "${runtime[@]}" "${lifecycle_env[@]}" > "$proof/paired-554/traced/environment.argv0"

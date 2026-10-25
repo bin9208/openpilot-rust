@@ -393,7 +393,10 @@ def original_replay(root, job, m, tapped):
                 raw = m.read(traffic/filename,16*MIB)
                 target = tensor.uop.base.buffer
                 need(target.nbytes==len(raw),'whole input extent')
-                target.copyin(memoryview(bytearray(raw)))
+                if target.device == 'NPY':
+                    target.as_memoryview(force_zero_copy=True)[:] = raw
+                else:
+                    target.copyin(memoryview(bytearray(raw)))
             execute(stage_by_name[step['entrypoint']])
             Device.default.synchronize()
             if index==2:

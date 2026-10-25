@@ -21,6 +21,8 @@ pub mod qcom_compiler;
 
 #[cfg(all(feature = "native-skip-miri", unix))]
 pub mod compiler_backend_cpu;
+#[cfg(feature = "native-skip-miri")]
+pub mod compiler_buffers;
 pub mod compiler_launch;
 pub mod compiler_onnx;
 pub mod compiler_schedule;

@@ -330,6 +330,7 @@ pub mod panda_oracle_build;
 pub mod panda_runtime_build;
 pub mod pandad_firmware_spi_build;
 pub mod path_resolve;
+pub mod planner_ci_controller;
 pub mod python_fs;
 pub mod python_glob;
 pub mod raylib_stage;

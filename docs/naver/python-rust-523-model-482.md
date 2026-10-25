@@ -1040,3 +1040,11 @@ Rust1.94의 rust-src는 로컬에 없어 공식 고정 tag의 [feature 선언](h
 source00c899291의40205795864/job121206329807에서5개 관련build/test와2개strictClippy가 모두0이고, 최초 held stager를 포함한 final-seals pass=true/failures=[]/all_owned_children_reaped=true였다. source/index·전체SDK·독립봉인·업로드·두cleanup도 성공했다. artifact12603663262의771 safe/unique/전체CRC를 감사했고 #587만 종료했다. 전체run은 실제AVX512_FP16 admission에서 실패했으며 모델수치·D1/D2는미도달이다.
 
 해당관측은 [#590](https://github.com/bin9208/openpilot-rust/issues/590)에분리했다. 부모는 현재same-VM helper에서 선택한library test ELF로 cached_isa::instruction_isa::tests::11개를60초한도에서직접실행하고 정확11PASS/0FAIL/0ignored를요구하도록연결했다. Cargobuild·profile·기대수치·CPU선택을바꾸지않고 그뒤같은전체triplet admission을수행한다. 새정확source의actualunit/ISA/수치결과는GHA대기다.
+
+### #590 개별 ISA 수용과 D1/D2 잔여 실패 — 2026-10-26
+
+source0e521792e의 [40207816680/job121212441629](https://github.com/bin9208/openpilot-rust/actions/runs/40207816680/job/121212441629)에서 실제 ISA11개와 두 strictClippy, whole91 source/object/image·ABI/hostISA가 통과했다. artifact12605181275(26780256B/SHA256 `bc00acb0b8a38fb2a3d4a5c692aa7ae5417f8d339cad0cc02f0e42af27a565b4`)의2049 unique/safe/전체CRC와 source/index·전체 SDK files/roster/rejected 전후 동일성을 부모가 감사했다. strict_triplet_all/host_isa_all=true, triplet_error/isa_error=null이다. current host는 Xeon Platinum8573C이며 이번 fresh roster에는 FP16이 없다. 실제 관측 instruction의 필수 확장/누락 기능 거부와 OS-aware detector는 추가3unit으로 확인했고 개별 instruction 실행 검증으로 확대하지 않는다. #590은 이 명시된 ISA 경계만 해결했다.
+
+D1은28단계와 receipt까지 완료했으나2576개 중 index99에서 actual00000000/frozen80000000의 signed-zero 불일치가 남았다. strict_pass=false/strict_failure_sticky=true와 retirement_credit0을 유지한다. D2 original-plain은2.958초에 NPY copyin 미구현으로 실패했고 #591에서 최소 분기를 복구한다. final-seals의 pass=true는 source/SDK·자식 회수 검증이며 command 실패를 성공으로 바꾸지 않는다. run 전체와 모델 수치/full128/half·sNaN5/기기 수용은 미완료다.
+
+후속 source126fdbea3의 history40209583554/job121217758526은 ISA11와 cached-code15/strictClippy를 통과했으나 실제 host에 avx512bw가 없어 historical program0을 실행 전에 정확히 거부했다. 이 결과는 detector 회귀나 whole 모델 성공이 아니다. 비호환 host를 강제 통과시키거나 수치·CPU·기한 조건을 바꾸지 않는다.

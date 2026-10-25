@@ -219,3 +219,10 @@ CARGO_BUILD_JOBS=1 cargo test --manifest-path rust/Cargo.toml -p openpilot-dev-t
 나머지 3개 실행 회귀는 Python controller에 의존하므로 미완료다.
 기존 Python 24개와 caller는 유지하고, 세 실행 회귀 이전 및 전체 검증 전에는
 all24 retirement나 #523 전체 완료를 선언하지 않는다.
+
+## 실제 native 구조계약 수용 — 2026-10-26
+
+source126fdbea36598566d1040be0a35a365c909be4e4의 등록 local
+[40209583400/job121217757597](https://github.com/bin9208/openpilot-rust/actions/runs/40209583400/job/121217757597)에서 구조21(양성1/변조19/Miri 실패전파1)과 release3, strictClippy가 모두0FAIL/0ignored로 성공했다. actual compile profile은 Cargo jobs1/debug0/incremental0이다. artifact12605193497(1576512B/SHA256 `b1d9ad0db1dbae6d4e8f482649e16b8dc25d17006dad5e3d3ae3ee507464ecfc`)의36 unique/safe/CRC와 source/index·전체 SDK files/roster/rejected 전후 동일성, 명령returncode0·업로드·소유 회수를 확인했다.
+
+이는 구조계약의 native 이식 수용이며 남은 실행 회귀3개나 전체 Planner/original/controller·ARM·PR 수용을 대신하지 않는다. test_plannerd_ci.py 원본 제거 credit은 계속0이다. 실제 controller/pacing은 다음 독립 단위로 포트 중이다.
