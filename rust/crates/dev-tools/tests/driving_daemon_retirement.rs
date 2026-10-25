@@ -3,6 +3,8 @@
 mod cli;
 #[path = "driving_daemon_retirement/model_482_d0.rs"]
 mod model_482_d0;
+#[path = "driving_daemon_retirement/model_482_pr1344.rs"]
+mod model_482_pr1344;
 use openpilot_dev_tools::{
     driving_daemon_check::source_policy::RETIRED,
     driving_daemon_reference::{fixture::Fixture, Original},

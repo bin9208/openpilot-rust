@@ -433,3 +433,21 @@ false로 시작하여 receipt hold와 최종 검사 뒤에만 true가 된다. �
 새 selector/API CLI/환경변수/패키지/source edge를 추가하지 않았다. 부모는 기존 samejob WF의 helper
 literal과 final receipt 요구, Focus/원장만 연결한다. diagnostic/COMMON/trace SHA와 그 연쇄 literal은
 이번 변경으로 바뀌지 않는다. #553 실제 수학 원인·target 재현·전체 수치 수용으로 승격하지 않는다.
+
+
+## #576: authored PID 음성의 잘못된 파일 전체 유일성 수정 후보
+
+source6faf9dc0c의 [40189500145/job121157273558](https://github.com/bin9208/openpilot-rust/actions/runs/40189500145/job/121157273558)은
+normal 전에 `exact PID source operator anchor`에서 실패했다. 고정 PID 원문에는
+`PIDController.update:52`와 `MultiplicativeUnwindPID.update:133`에 같은 식이 각각 있다.
+파일 전체 count1은 새 preflight가 잘못 추가한 가정이었다. artifact12597433730(336607B/SHA256
+`a7d3f91c09c17d6fa7e5a29e3d0e604b4057d49114ac3b59966dc5ce22ad7807`)61CRC와 원문을 감사했다.
+authored 양성4와 음성 앞11의 반환 뒤까지 진행했으나 최종 receipt가 없어 완전한4/12 PASS로 세지 않는다.
+normal_attempted=false/수학·original·native 미실행이며 outer source/index/SDK6쌍 동일·live0/회수/upload성공과
+baseline 없는 내부 final-seals false/cleanupskip을 구분한다.
+
+수정은 기존 diagnostic과 같은 정확 class PIDController / method update / direct assignment AST를
+각각1개 선택하고 그 Mult 연산자만 Add로 바꾸는 것이다. 전체 원문 AST의 operator 원복 동일성을
+확인해 다른 클래스나 statement 변조를 막는다. 원본 bytes/고정 SHA·기존 instrument_pid와 RuntimeError,
+exact4/12/receipt/기한·caps·normal·실제target/Replay/최종bool AND는 유지한다.
+로컬은 AST 구문·outside byte projection·diff만 확인했다. 새 실제4/12 및 normal/final 성공은 **GHA UNRUN**이다.

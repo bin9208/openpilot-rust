@@ -145,11 +145,24 @@ def target_protocol_controls(c, d, normal, evidence):
     need(d.target_reproduced(state, foreign, state) is False, "foreign one-frame protocol state accepted")
     need(d.target_reproduced(state, state, foreign) is False, "foreign prefix protocol state accepted")
     negatives += ["oneframe_foreign_state", "prefix_foreign_state"]
-    anchor = b"self.p = float(error) * self.k_p"
-    need(raw.count(anchor) == 1, "exact PID source operator anchor")
-    changed = raw.replace(anchor, b"self.p = float(error) + self.k_p", 1)
+    mutant = d.ast.parse(raw, filename=str(pid_path))
+    original_dump = d.ast.dump(mutant, include_attributes=False)
+    classes = [node for node in mutant.body if isinstance(node, d.ast.ClassDef) and node.name == "PIDController"]
+    need(len(classes) == 1, "exact PIDController class for protocol mutation")
+    methods = [node for node in classes[0].body if isinstance(node, d.ast.FunctionDef) and node.name == "update"]
+    need(len(methods) == 1, "exact PIDController.update for protocol mutation")
+    assignment = d.ast.dump(d.ast.parse("self.p = float(error) * self.k_p").body[0], include_attributes=False)
+    targets = [node for node in methods[0].body if d.ast.dump(node, include_attributes=False) == assignment]
+    need(len(targets) == 1, "exact target PID p assignment for protocol mutation")
+    expression = targets[0].value
+    operator = expression.op
+    expression.op = d.ast.Add()
+    need(d.ast.dump(mutant, include_attributes=False) != original_dump, "PID operator mutation absent")
+    expression.op = operator
+    need(d.ast.dump(mutant, include_attributes=False) == original_dump, "PID operator mutation changed other AST")
+    expression.op = d.ast.Add()
     try:
-        d.instrument_pid(d.ast.parse(changed, filename=str(pid_path)))
+        d.instrument_pid(mutant)
     except RuntimeError as problem:
         need(str(problem) == "exact original PID p expression once", "unexpected PID AST rejection")
     else:

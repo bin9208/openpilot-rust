@@ -1,4 +1,6 @@
 //! #482 전용 Actions 관측. production API/execute/수학/기준을 바꾸지 않는다.
+#[path = "diagnostic_482_pr1344.rs"]
+mod pr1344;
 use super::*;
 use crate::{cached_code, cached_isa};
 use serde::Deserialize;

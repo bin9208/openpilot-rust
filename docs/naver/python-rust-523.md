@@ -1205,3 +1205,17 @@ source/index 전후 동일성, actual API의Clippy/최종guards/upload/source se
 일반/raw·collector/no-collector·원래parsed tolerance1e-6/raw exact 기준은불변이다.
 exec trace 없음/interpreter not_measured/device false를보존하고 전체ELF독립재해시/전체FD·DSOclosure를과장하지않는다.
 이전bacda의2시간취소와oldZIPwholeSHA미확정은그대로남긴다. #482 수치·전체PR/원본제거·전달·기기수용은미완료다.
+
+
+### PR1344 same-VM 진단과 #576 후보 등록
+
+#482의 고정1344 첫 packet을 같은 VM의 전체SOURCE/object/image·ABI/ISA 인증 뒤 current daemon과
+원본/native plain/tap3stage로 추적하는 private test/controller를 추가했다. 기존 main128/half5/cached10/
+guarded8/기대값·수학·공개runtime API는 유지하며 D1 strict raw FAIL을 진단 성공으로 덮지 않는다.
+새 임시 Python 실행은 provider 준비·metadata·controller·embedded판정2·고정base동적실행·collect/plain/tap
+총9개 role를 execution 원장에 pending으로 명시했다. 원장은140edge(26교체/110대기/1기존native/2텍스트/1제거)이며
+baseline3580=294교체/3부분/3283대기는 그대로다. 진단 자체도 전환 또는 폐기 전까지 완료로 인정하지 않는다.
+
+#576 후보는 authored PID 음성을 정확 class/method/assignment AST로 제한하고 전체 원복동일성을 확인한다.
+기존 actual normal·target/Replay·4+12·최종bool AND/시간·용량 기준은 유지한다. 두 후보의 로컬 검증은
+소스·구문·서식·diff와 독립 검토뿐이며 실제 새4선택자/D1↔direct/4+12/봉인·회수는 Actions 대기다.
