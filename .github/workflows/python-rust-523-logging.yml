@@ -322,7 +322,7 @@ jobs:
         set -euo pipefail
         umask 077
         # 첫 candidate의 실제 결과를 수집한다. old27/P2/closed-trace/caller/absence 수용은 별도다.
-        printf '%s  %s\n' d9d438e59ab691f6ccb9506af44a0d94bd5a89570d5a5dea48ecf821e133d5d5 tools/ci/logging_retained_549.sh | sha256sum --check --strict -
+        printf '%s  %s\n' d1ec7492cd4dba7cb3bb7af4bf415ef890d9e001c510624128a6a17f1049ae48 tools/ci/logging_retained_549.sh | sha256sum --check --strict -
         printf '%s  %s\n' f34fba101f712e6434199b2336c8736c581b9bc4549edde32b0c9f9b5aec99e6 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check --strict -
         /usr/bin/timeout --signal=TERM --kill-after=180s 60m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh
         jq -e '.schema==1 and .selected_units==67 and .retained_units==27 and .prepare_units==9 and .trace_units==24 and .summary_units==7 and .ignored==0 and .exact_rosters==true' "$CI_JOB_TEMP/proof/logging/selected-units.json"
@@ -354,7 +354,7 @@ jobs:
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
-        printf '%s  %s\n' d9d438e59ab691f6ccb9506af44a0d94bd5a89570d5a5dea48ecf821e133d5d5 tools/ci/logging_retained_549.sh | sha256sum --check --strict --quiet -
+        printf '%s  %s\n' d1ec7492cd4dba7cb3bb7af4bf415ef890d9e001c510624128a6a17f1049ae48 tools/ci/logging_retained_549.sh | sha256sum --check --strict --quiet -
         /usr/bin/timeout --signal=TERM --kill-after=180s 30m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh legacy-runtime2
         proof=$CI_JOB_TEMP/proof/logging-legacy-runtime2
         jq -e '.schema==1 and .mode=="legacy-runtime2" and .phase=="legacy-runtime2-observed" and .exit_code==0 and .source_sdk_final_exit_code==0 and .source_final_exit_code==0 and .sdk_final_exit_code==0 and .held_final_exit_code==0 and .provider_alias_final_exit_code==0 and .resource_final_exit_code==0 and .old27_admitted==false and .R4_acceptance==false and .retirement_credit==0' "$proof/outcome.json"
@@ -367,7 +367,7 @@ jobs:
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
         set -euo pipefail
-        printf '%s  %s\n' d9d438e59ab691f6ccb9506af44a0d94bd5a89570d5a5dea48ecf821e133d5d5 tools/ci/logging_retained_549.sh | sha256sum --check --strict --quiet -
+        printf '%s  %s\n' d1ec7492cd4dba7cb3bb7af4bf415ef890d9e001c510624128a6a17f1049ae48 tools/ci/logging_retained_549.sh | sha256sum --check --strict --quiet -
         printf '%s  %s\n' f34fba101f712e6434199b2336c8736c581b9bc4549edde32b0c9f9b5aec99e6 tools/ci/logging_retained_exec_policy_549.jq | sha256sum --check --strict --quiet -
         /usr/bin/timeout --signal=TERM --kill-after=30s 14m /usr/bin/env -u LD_PRELOAD -u LD_LIBRARY_PATH /usr/bin/bash tools/ci/logging_retained_549.sh source-guard
     - name: Seal source and index after all attempted contracts
@@ -460,7 +460,7 @@ jobs:
       env:
         UPLOAD_ID: ${{ steps.proof_upload.outputs.artifact-id }}
         UPLOAD_DIGEST: ${{ steps.proof_upload.outputs.artifact-digest }}
-        CURRENT_HELPER_SHA256: d9d438e59ab691f6ccb9506af44a0d94bd5a89570d5a5dea48ecf821e133d5d5
+        CURRENT_HELPER_SHA256: d1ec7492cd4dba7cb3bb7af4bf415ef890d9e001c510624128a6a17f1049ae48
       run: |
         set -euo pipefail
         umask 077

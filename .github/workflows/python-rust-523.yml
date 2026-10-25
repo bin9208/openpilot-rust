@@ -309,6 +309,9 @@ jobs:
             rust/crates/dev-tools/src/bin/prepare_changed_files_context.rs) ;;
             rust/crates/dev-tools/src/driver_daemon_current_catalog.rs) ;;
             rust/crates/dev-tools/src/selfdrive_params_process.rs) ;;
+            rust/crates/dev-tools/src/ui_forms_reference.rs) ;;
+            rust/crates/dev-tools/tests/ui_forms_admission.rs) ;;
+            rust/crates/dev-tools/tests/ui_forms_admission/source_binding.rs) ;;
             rust/crates/dev-tools/src/model_family_prepare/catalog.rs) ;;
             rust/crates/dev-tools/tests/changed_files_caller.rs) ;;
             rust/crates/dev-tools/tests/changed_files_caller/absence.rs) ;;
@@ -689,9 +692,12 @@ jobs:
         printf '%s  %s\n' 836c65ed0b09b614a15fe0a1d39290dfee19749e7e3163e562d8d31e3fb95966 tools/ci/prepare-lfs-source-535 | sha256sum --check -
         printf '%s  %s\n' dfd8e9c0a5faff24058f8f570790a625646a4ba17001eff74efc1c3279f81149 rust/crates/logging/build.rs | sha256sum --check -
         printf '%s  %s\n' b70ad5b50c56e3ce3299efb5db87a0aca006488a936e297cca117424b9123423 rust/crates/logging/tests/build_watch.rs | sha256sum --check -
-        printf '%s  %s\n' 608719d08630e0002ec5dfcfb64f07486eaf88fca092f39d621ff3f766c830de .github/workflows/python-rust-523-logging.yml | sha256sum --check -
-        printf '%s  %s\n' d9d438e59ab691f6ccb9506af44a0d94bd5a89570d5a5dea48ecf821e133d5d5 tools/ci/logging_retained_549.sh | sha256sum --check -
+        printf '%s  %s\n' e01043d0a4a9d16aa6105efc2b87e22fa92ddb3fc65b7add3cb256861aefe13b .github/workflows/python-rust-523-logging.yml | sha256sum --check -
+        printf '%s  %s\n' d1ec7492cd4dba7cb3bb7af4bf415ef890d9e001c510624128a6a17f1049ae48 tools/ci/logging_retained_549.sh | sha256sum --check -
         printf '%s  %s\n' 9ec97216369d7481a75ec02751aa39fd2bc2ae2482602d29ec5911a8d61d1d34 rust/crates/dev-tools/src/selfdrive_params_process.rs | sha256sum --check -
+        printf '%s  %s\n' 2f3637cf74de34f9d0780f29e680a535fcae87b22d3684d1ca73112987fe76ed rust/crates/dev-tools/src/ui_forms_reference.rs | sha256sum --check -
+        printf '%s  %s\n' 947c02365075a65b433e05dfec87f9a300905c4d2feb78333d7ec42b10fa5c26 rust/crates/dev-tools/tests/ui_forms_admission.rs | sha256sum --check -
+        printf '%s  %s\n' b101b221f05bed08b06d31cec35330624a27e5e2691f8df13bc3b86d02001e14 rust/crates/dev-tools/tests/ui_forms_admission/source_binding.rs | sha256sum --check -
         printf '%s  %s\n' 879042db3d64f5b936a100de7b4880ad913499fb61213e799cde173e7a14a1d2 rust/crates/dev-tools/src/native_logging_check.rs | sha256sum --check -
         printf '%s  %s\n' b30cdd41c6abacedd04b887bf512ae4864403f7e726b2d373ee6de69d3970c33 rust/crates/dev-tools/src/native_logging_check/retained.rs | sha256sum --check -
         printf '%s  %s\n' 11f89c5612edd1230484797ce6747f55652d49250993760ac5c52d4a9450fe67 rust/crates/dev-tools/src/native_logging_check/retained_tests.rs | sha256sum --check -

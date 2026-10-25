@@ -652,8 +652,12 @@ source_guard() {
   source_guard_resource before-copy "$estimate" 67108864
   mkdir -m 700 -- "$copy" "$root"
   source_guard_copy_identity=$(stat -c '%d:%i:%f:%u:%g' "$copy")
-  (ulimit -f 524288; tar --hard-dereference --null --no-recursion --verbatim-files-from -T "$proof/copy-selected.bin" -cf -) | tar -xf - -C "$root"
+  (ulimit -f 524288; tar --hard-dereference --null --no-recursion --verbatim-files-from -T "$proof/copy-selected.bin" -cf -) | tar --same-permissions -xf - -C "$root"
   cp -a -- "$source/.git" "$root/.git"
+  # 실제 copy mode를 기록하되 전체 canonical tar 동일성 검사는 그대로 유지한다.
+  (set -C; stat -c $'%n\t%a\t%f\t%u\t%g\t%s' --     "$source/rust/Cargo.toml" "$root/rust/Cargo.toml"     "$source/tools/ci/logging_retained_549.sh" "$root/tools/ci/logging_retained_549.sh" > "$proof/copy-source-modes.tsv")
+  test "$(stat -c %s "$proof/copy-source-modes.tsv")" -le 4096
+  hold "$proof/copy-source-modes.tsv"
   [[ $(git --no-optional-locks -C "$root" rev-parse HEAD) == "$GITHUB_SHA" ]]
   git --no-optional-locks -C "$root" ls-files -z > "$proof/copied-index.bin"
   cmp "$proof/copy-index.bin" "$proof/copied-index.bin"

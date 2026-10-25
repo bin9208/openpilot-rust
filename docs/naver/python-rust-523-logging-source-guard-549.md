@@ -110,3 +110,29 @@ source/copy 허용량은 각각2GiB로 보존하며 target8GiB/SDK/proof2GiB·�
 로컬 Bash 문법·함수 외 byte projection(위 예산 인자1개 예외)·diff만 확인한다.
 새 admission 숫자와 copy 실제 적합성, CLI20/raw21/policy3 및 cleanup 완료는 새 Actions에서 검증해야 한다.
 원본2 삭제/postdelete full/old27/R4/retirement credit는 계속0이다.
+
+
+## e859 새 admission 통과와 copy 권한 보존 후보
+
+source `e859449e3c755044a80a1cd1c4049a5205f33784`의
+[40187751113/job121152043279](https://github.com/bin9208/openpilot-rust/actions/runs/40187751113/job/121152043279)은
+새 before-copy admission을 실제 통과했다. origin1,182,470,144/copy actual0/planned1,347,977,216/
+proof growth67,108,864/reserve536,870,912B, FS2049 free85,563,207,680/required1,951,956,992B,
+source/copy cap pass1/check_result0이었다. old combined2GiB would_pass0은 이번 실행의 관측값이며
+과거288의 누락된 planned tuple을 소급하지 않는다. 최종 source1,182,470,144/copy1,198,157,824B도
+각 cap 안이었다.
+
+뒤 copy HEAD/index/빈 cached diff/정확2 Python deletion은 통과했으나 canonical tar SHA가
+source `0b13598669a1436233ab895852bbfd5de6b6c0e103137f5a5644f7dbd6c4937f`와
+copy `3d5a58f0735a4d1a96c5cce4a47cbaea02430cad0e29f1d8bd912bc0fa6bdaf2`로 달랐다.
+artifact12597463154(130459141B/SHA256 `370bdfc0c560cb06e31f440c8fb964478dc44861685c8d5c79ebd11c8913727e`)
+9397unique/safe CRC를 감사했다. actual copy mode census는 없어 차이가 권한뿐이라고 단정하지 않는다.
+source/SDK/held/resource final0, copy-final1/closureFAIL/cleanupskip이며 CLI20/raw21/policy3는 미도달이다.
+
+현재 umask077 아래 일반 사용자의 기본 tar 추출은 archive mode를 제한한다.
+[GNU tar 권한 문서](https://www.gnu.org/software/tar/manual/html_node/Setting-Access-Permissions.html)에 따라
+private copy의 추출에만 `--same-permissions`를 더한다. root0700/전역umask077, 원본 source 및
+전체 canonical tar hash 동일성 assertion은 유지한다. 고정 tracked2파일의 source/copy mode4행을
+create_new `copy-source-modes.tsv`(4096B 이하)로 기록하고 held FD/SHA 후검사에 추가한다.
+이는 진단 관측이며 전체 source·Git·현재19pin·부재·기능 비교를 대체하지 않는다.
+로컬 Bash 문법·exact outside projection·diff만 확인하며 새 copy/CLI20/raw21/policy3 수용은 **GHA UNRUN**이다.

@@ -311,3 +311,35 @@ non-registry144개는 모두 fresh:false다. upload/소유 cleanup도 성공해 
 제품 UI 전체/#523/#296/필수 PR·실기·원본 제거 credit은 계속 미완료/0이다. adopted 자손 전체 wait나
 closed FD/DSO는 주장하지 않는다. #569 partial-write RED의 별도 compile 연결 결함은 계속 열린다.
 로컬 프로젝트·원본·모델·ELF/빌드/테스트 실행0이며 ignored ui-c761-559-acceptance-audit.json에 원문 근거를 둔다.
+
+
+### #575 Forms validator에 빠진 #557 application source 경계 연결
+
+PR343 `9ae67`/merge `75d0cfd49912b631946721e58979487935372828`,
+[run40187340482](https://github.com/bin9208/openpilot-rust/actions/runs/40187340482)의
+UI/connectivity 원문에서 short-reading RED0/1은 의도대로였고 current recording9도 통과했다.
+이어 `ui_forms_admission`은7PASS/3FAIL이었으며 실제 첫 오류는
+`openpilot/system/ui/lib/application.py changed; independently recapture Forms`다.
+기존 #569의 과거 adapter/test 연결 실패와 분리한 #575다. 새 다운로드·원본 capture 재생성은 없다.
+
+Forms manifest는 원래 application SHA
+`d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00`을 유지한다.
+#557 current source `c659ce3574276546da11a7bd25e373321b62226411b1eaadda37401fe3b2110d`는
+기존 lifecycle에서 사용한 `ui_application_logic_check::application_source_matches`의3구간
+역투영 경계로 검사한다. Forms public `validate_source`도 **그 정확 path와 old expected pin의 쌍**에만
+같은 함수를 호출하도록 연결했다. 다른 path/pin은 원래 full SHA 비교이며 manifest 전체 hash,
+retired source·Params·font 부재·lock dependency 검사와 에러는 그대로다. shared matcher 본문과
+production `application.py`는 수정하지 않았고 current whole SHA를 production 허용 목록에 추가하지 않았다.
+
+`tests/ui_forms_admission.rs`에는 child module 등록2줄만 추가했다. 새 `source_binding`4개는
+current 양성, font3구간 각각의 변조/같은길이 제거/중복과 순서 변경, 비font FPS/stack/encoder 변조,
+같은 current bytes의 다른 path/expected pin·font fallback·Params provider 거부를 검사한다.
+변조 전 양성과 원복 후 양성을 요구해 모든 입력을 거부하는 퇴행을 통제 성공으로 세지 않는다.
+current whole SHA는 이 테스트 입력의 출처 pin으로만 사용한다.
+
+기존 root6/support4 총10개 테스트 본문,65개 원본 case/44개 성공 raster의 상태·PNG·env 기대값과
+manifest/원본 bytes는 그대로다. 새 child는 filesystem source admission만 검사하며 Python/graphics/
+CLI/원본 프로그램을 실행하지 않는다. 로컬 rustfmt·source projection·diff만 확인했고,
+새4·기존10/실제 Forms CLI·원본 비교와 source/SDK/provider 봉인은 **GHA UNRUN**이다.
+이 source 연결만으로 #575 해결·staged-font 기능·#557/#523/원본 퇴역 수용을 주장하지 않는다.
+WF/Focus/ledger 등록은 부모가 담당한다.

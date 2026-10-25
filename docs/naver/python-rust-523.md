@@ -1172,3 +1172,36 @@ live/malformed stat은 계속false, EACCES/EIO 등 다른 오류는 그대로 �
 로컬 확인은 Rust 서식·diff·production prefix 비교뿐이며 기능은 새 Actions 대기다.
 #572의 ARM caller 개별 완료와 controls288의 full normal40 두 성공은 각각 별도 기록에 남겼다.
 baseline3580=294교체/3부분/3283대기와 전체 #523/#296/원본 제거·기기 미완료 상태는 유지한다.
+
+
+### #569 historical RED 연결의 실제 수용과 Forms 후속
+
+PR9ae/merge75d0cfd의 [UI40187340482/job121150827016](https://github.com/bin9208/openpilot-rust/actions/runs/40187340482/job/121150827016)에서
+historical short-read exact selector가 실제 RED(0PASS/1FAIL/0ignored·partial frame 메시지)였고,
+복원한 current recording9는9PASS/0FAIL이었다. compatible-tests와current-prefix18569B는 byte 동일하고
+고정 SHA `5b26f9e5ba3db68693b00532930fd7ee509122f18372a1c6d308086cc855cddc`다.
+artifact12597532630(15103032B/SHA256 `b9088ee98d53c986f3197ff3dfa6d41586c641d0014877ff0d0ea985277068f2`)543CRC,
+private12597393030(290218B/SHA256 `e746615ea12a9341373f419dd3e356027cb53d783f4c8747477bec6fb2ed1217`)12CRC와
+source/index 전후 동일성을 확인해 #569만 개별 해결했다. 뒤 Forms7PASS/3FAIL은 #575로 분리한다.
+현재 original application.py는 #557 font staging의 검증된3구간 변경뿐이지만 Forms에는 #559의
+기존 exact projection 연결이 없다. blanket SHA 허용이나 원본/draw 기대값 재생성 없이 보완한다.
+전체 UI/PR/원본 제거·기기 수용은 계속 미완료다.
+
+
+### #571: 제한 증가 없이 native model-family 전체 gate 완료
+
+PR head9ae67/실제merge75d0cfd의 [40187340482/job121150826776](https://github.com/bin9208/openpilot-rust/actions/runs/40187340482/job/121150826776)은
+15분28초에 SUCCESS였다. exact same-ELF/two-root selector는1PASS/0FAIL/0ignored/417.34초다.
+sha2 dependency opt3만 적용하고 runtime/test opt0, 원래 job120분/command1200초와 모든 사례를 유지했다.
+artifact12597496609(479091782B/SHA256 `ca99a8ed703e7735a9292cb3eb69326e6bf83dfdb773de743a51ee3a924abaae`)의
+2915unique/safe CRC와12개 final accepted report의 실제 raw size/SHA를 감사했다.
+동일held138record, 두root의6source부재/aftertraffic, driver16/startup8/USB6 case per root,
+재등장24·badpolicy/foreignoutput8·missingunknown6 거부를 확인했다.55command는모두error=null,
+각timeout안에서끝났고 positive12의합361.192267771초/최장55.2042493초였다.
+전체command합408.369825746초와libtest의차이8.970174254초는미귀속이며 CPU·hash 단독비용으로주장하지않는다.
+
+private12597566376(290208B/SHA256 `d510ad08bfdb05c3bb19e41755912524419cfa4eef3c7687263e74e37ee6be6e`)12CRC와
+source/index 전후 동일성, actual API의Clippy/최종guards/upload/source seal/두cleanup 성공을확인해 #571만개별해결한다.
+일반/raw·collector/no-collector·원래parsed tolerance1e-6/raw exact 기준은불변이다.
+exec trace 없음/interpreter not_measured/device false를보존하고 전체ELF독립재해시/전체FD·DSOclosure를과장하지않는다.
+이전bacda의2시간취소와oldZIPwholeSHA미확정은그대로남긴다. #482 수치·전체PR/원본제거·전달·기기수용은미완료다.

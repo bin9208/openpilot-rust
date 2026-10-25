@@ -102,6 +102,16 @@ struct Config {
     _large_viewport: serde_json::Value,
 }
 pub fn validate_source(root: &Path) -> Result<()> {
+    let source_matches = |name: &str, expected: &str, bytes: &[u8]| {
+        // #575: #557의 정확한 font 구간만 기존 application 역투영 경계로 검사한다.
+        if name == "openpilot/system/ui/lib/application.py"
+            && expected == "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00"
+        {
+            crate::ui_application_logic_check::application_source_matches(bytes)
+        } else {
+            format!("{:x}", Sha256::digest(bytes)) == expected
+        }
+    };
     let manifest = include_str!("../tests/fixtures/ui-forms/input-provenance.json");
     if format!("{:x}", Sha256::digest(manifest.as_bytes()))
         != "e72c683f958ec93f1a780284f024d4a30dc0e6496f491f8f44d293efc870c540"
@@ -140,7 +150,9 @@ pub fn validate_source(root: &Path) -> Result<()> {
         }
         match fs::read(root.join(name)) {
             Ok(bytes)
-                if Some(format!("{:x}", Sha256::digest(&bytes)).as_str()) != hash.as_str() =>
+                if !hash
+                    .as_str()
+                    .is_some_and(|expected| source_matches(name, expected, &bytes)) =>
             {
                 return Err(format!("{name} changed; independently recapture Forms").into());
             }

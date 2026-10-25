@@ -7,6 +7,8 @@ use std::{
     path::Path,
     process::{Command, Output},
 };
+#[path = "ui_forms_admission/source_binding.rs"]
+mod source_binding;
 
 struct PngEvidence<'a> {
     case: &'a Value,
