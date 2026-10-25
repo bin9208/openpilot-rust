@@ -25,7 +25,9 @@ else
      -z ${CI296_NATIVE_ARM_CALLER:-} ]] || fail 'Candidate ARM source required'
   case ${GITHUB_WORKFLOW_REF:-} in
     "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm.yml@$GITHUB_REF"|\
-    "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-more.yml@$GITHUB_REF") ;;
+    "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-more.yml@$GITHUB_REF"|\
+    "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-remaining.yml@$GITHUB_REF"|\
+    "bin9208/openpilot-rust/.github/workflows/python-rust-523-native-arm-final-two.yml@$GITHUB_REF") ;;
     *) fail 'Unknown native ARM caller' ;;
   esac
 fi

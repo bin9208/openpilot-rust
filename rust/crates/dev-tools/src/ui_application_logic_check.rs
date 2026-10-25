@@ -23,7 +23,7 @@ pub enum Kind {
 fn sha(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
-fn application_source_matches(bytes: &[u8]) -> bool {
+pub(crate) fn application_source_matches(bytes: &[u8]) -> bool {
     const ORIGINAL_SHA: &str = "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00";
     if bytes.len() == 38593 && sha(bytes) == ORIGINAL_SHA {
         return true;

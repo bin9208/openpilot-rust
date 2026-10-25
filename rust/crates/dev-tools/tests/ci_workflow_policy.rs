@@ -616,6 +616,10 @@ fn cold_bootstrap_stderr_collection_is_owned_bounded_and_preserves_failure_evide
         ("held_pipe", 1, 124, "137", true, true),
         ("wrong_start_ticks", 1, 125, "not_waited", false, false),
         ("wrong_parent", 1, 125, "not_waited", false, false),
+        ("drift_kernel", 1, 0, "0", false, true),
+        ("drift_proc-version", 1, 0, "0", false, true),
+        ("drift_package", 1, 0, "0", false, true),
+        ("drift_package-provider", 1, 0, "0", false, true),
     ] {
         let proof = tempfile::tempdir().unwrap();
         let environment = BTreeMap::from([
@@ -673,15 +677,18 @@ if [[ $COLD_CASE == wrong_* ]]; then
   if [[ $COLD_CASE == wrong_parent ]]; then fields[1]=0; else fields[19]=$((real_ticks+1)); fi
   printf '%s (negative) %s\n' "$cold_stderr_pid" "${{fields[*]}}" >| "$cold_proof/cold-stderr.start.stat"
 fi
-for record in metadata sha256 version version.stderr; do
+for record in metadata sha256 version version.stderr kernel kernel.stderr proc-version proc-version.stderr package package.stderr package-provider; do
   printf 'unit-provider\n' > "$cold_proof/cold-strace.before.$record"
 done
 cold_provider() {{
   test "$1" = after && test -s "$cold_proof/cold-tracer.status" || return 1
   printf 'after\n' > "$cold_proof/provider-after" || return 1
-  for record in metadata sha256 version version.stderr; do
+  for record in metadata sha256 version version.stderr kernel kernel.stderr proc-version proc-version.stderr package package.stderr package-provider; do
     printf 'unit-provider\n' > "$cold_proof/cold-strace.after.$record" || return 1
   done
+  if [[ $COLD_CASE == drift_* ]]; then
+    printf 'changed-provider\n' >| "$cold_proof/cold-strace.after.${{COLD_CASE#drift_}}" || return 1
+  fi
 }}
 cold_finish() {{
 cold_records_status=0
@@ -1777,7 +1784,7 @@ fn private_ownership_exact_guards_reject_missing_seal_or_admission() {
             }
         }
     }
-    assert_eq!((sources, arm), (66, 14));
+    assert_eq!((sources, arm), (71, 19));
 }
 
 // Evaluate the actual restricted workflow condition, not a separately invented

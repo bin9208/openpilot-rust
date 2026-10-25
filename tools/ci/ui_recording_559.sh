@@ -137,7 +137,7 @@ if [[ $mode == final-source ]]; then source_final; exit; fi
 mkdir "$proof" "$proof/logs" "$proof/trace" "$proof/elfs" "$proof/failures" "$build" "$build/cargo-home" "$build/tmp" "$build/home" "$build/cache" "$tools" "$base_owner"
 printf '%s\n' "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" > "$base_owner/owner"
 printf '%s\n' "$(stat -c '%d:%i' "$base_owner")" > "$proof/baseline-owner.identity"
-phase=preflight; passed=false; established=false; baseline_sealed=false; red=false; green=false; suite=false; graphics=false; clippy=false
+phase=preflight; passed=false; established=false; baseline_sealed=false; red=false; green=false; suite=false; graphics=false; clippy=false; source_controls=false
 active= active_identity= watcher= stop=
 deadline=$((SECONDS+1200))
 ulimit -Sn 4096
@@ -313,10 +313,10 @@ finish() {
   [[ $established == true && $status == 0 ]] && sealed=true
   jq -n --arg source "$GITHUB_SHA" --arg phase "$phase" --argjson code "$original" --argjson final "$status" \
     --argjson seals "$sealed" --argjson nonlive "$nonlive" --argjson red "$red" --argjson green "$green" \
-    --argjson suite "$suite" --argjson graphics "$graphics" --argjson clippy "$clippy" \
+    --argjson suite "$suite" --argjson graphics "$graphics" --argjson clippy "$clippy" --argjson source_controls "$source_controls" \
     '{schema:1,source:$source,phase:$phase,command_exit:$code,finalizer_exit:$final,immutable_seals:$seals,
       owned_processes_nonlive:$nonlive,baseline_exact_red:$red,candidate_exact_green:$green,recording9:$suite,
-      original_five_modes:$graphics,strict_clippy:$clippy,pass:($code==0 and $final==0 and $seals and $nonlive and $red and $green and $suite and $graphics and $clippy),
+      original_five_modes:$graphics,strict_clippy:$clippy,source_binding4:$source_controls,pass:($code==0 and $final==0 and $seals and $nonlive and $red and $green and $suite and $graphics and $clippy and $source_controls),
       historical_success_inherited:false,original_expected_regenerated:false,actual_root_confirmed:false,
       all_adopted_children_reaped:false,closed_fd:false,closed_dso:false,retirement_credit:0,
       cleanup_scope:"current owned leader waited; process tracees non-live; adopted wait not claimed",measured_peak_guarantee:false}' \
@@ -522,6 +522,8 @@ copy_elf "$record_bin" candidate-recording candidate
 run reference-build 900 0 "$sdk/bin/cargo" test --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-dev-tools --features ui-application-lifecycle-native --test ui_application_lifecycle_reference --no-run --message-format=json
 ref_bin=$(artifact "$proof/logs/reference-build.stdout" "$source" ui_application_lifecycle_reference test rust/crates/dev-tools/tests/ui_application_lifecycle_reference.rs true '["image-array","image-array-native","ui-application-lifecycle-native"]')
 copy_elf "$ref_bin" candidate-reference candidate
+run reference-source-binding 120 0 "$proof/elfs/candidate-reference" source_binding:: --nocapture --test-threads=1 --color=never
+ok_test reference-source-binding 4;source_controls=true
 run stager-build 900 0 "$sdk/bin/cargo" build --manifest-path "$source/rust/Cargo.toml" --locked -p openpilot-dev-tools --bin stage-startup-ui-raylib --message-format=json
 stager=$(artifact "$proof/logs/stager-build.stdout" "$source" stage-startup-ui-raylib bin rust/crates/dev-tools/src/bin/stage_startup_ui_raylib.rs false '[]')
 copy_elf "$stager" raylib-stager candidate

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# #523: 새 SSH entry4만 실행한다. 원본 실행/삭제/absence credit은 없다.
+# #523: SSH entry4와 삭제1의 sampled absence 후보. 원본 실행/retirement credit은 없다.
 set -eEuo pipefail
 set +m
 umask 077
@@ -29,11 +29,16 @@ if [[ ! -e $build && ! -L $build ]]; then mkdir -m 700 "$build"; fi
 mkdir -m 700 "$build/cargo-home" "$build/target" "$build/ssh-entry-tmp" "$driver/trace"
 phase=admission
 passed=false registry_sealed=false
+absence_ready=false
 active= active_start= watcher= stop=
 declare -A held_fd=() held_id=() held_sha=() aliases=() alias_id=() elf_seen=()
 declare -a registry_roots=() registry_names=()
 idfile() { stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' -- "$1"; }
 fail() { printf 'SSH entry: %s\n' "$*" >&2; exit 1; }
+absence() {
+  [[ $absence_ready == true ]] || return 43
+  ssh_absence_verify "$source" "$GITHUB_SHA" "$1"
+}
 hold() {
   local path=$1 canonical before fd digest
   [[ $path =~ ^/[A-Za-z0-9_./+-]+$ ]] || return 1
@@ -116,10 +121,16 @@ usage_bytes() {
 }
 # 6GiB target + 2GiB Cargo home + 512MiB proof. reserve는 예상 growth와 별도다.
 admit() {
-  local label=$1 target_growth=$2 cargo_growth=$3 proof_growth=$4 path dev available need target_bytes cargo_bytes proof_bytes build_bytes
+  local label=$1 target_growth=$2 cargo_growth=$3 proof_growth=$4 path dev available need target_bytes cargo_bytes proof_bytes build_bytes absence_bytes
   target_bytes=$(usage_bytes "$build/target") || return 1
   cargo_bytes=$(usage_bytes "$build/cargo-home") || return 1
   proof_bytes=$(usage_bytes "$proof") || return 1
+  # 공통 proof에 둔 작은 absence journal/sidecar도 기존512MiB에 합산한다.
+  absence_bytes=$(du -scx --block-size=1 -- "$job/proof"/ssh-absence-* \
+    "$job/proof/ssh-original-deletion.diff" "$job/proof/ssh-historical-original.sha256") || return 1
+  absence_bytes=${absence_bytes##*$'\n'}; absence_bytes=${absence_bytes%%$'\t'*}
+  [[ $absence_bytes =~ ^[0-9]+$ ]] || return 1
+  proof_bytes=$((proof_bytes+absence_bytes))
   build_bytes=$(usage_bytes "$build") || return 1
   (( target_bytes <= 6144*1048576 && cargo_bytes <= 2048*1048576 && build_bytes <= 8192*1048576 && proof_bytes <= 512*1048576 )) || return 1
   # 각 실제 mount의 수요를 합산하며 같은 filesystem의 요구를 중복해서 빼지 않는다.
@@ -164,7 +175,7 @@ group_empty() {
   printf '%s\tabsent-after-direct-wait\n' "$1" >> "$driver/groups.tsv"
 }
 finish() {
-  local original=$? status=0 n
+  local original=$? status=0 n source_absence=false
   trap - EXIT INT TERM HUP
   set +e
   if [[ -n $active ]]; then
@@ -173,6 +184,7 @@ finish() {
     group_empty "$active" || status=1
   fi
   if [[ -n $watcher ]]; then : > "$stop"; wait "$watcher" || status=1; fi
+  absence driver-before-seals || status=1
   verify_held > "$driver/held-final.stdout" 2> "$driver/held-final.stderr" || status=1
   if [[ $registry_sealed == true ]]; then
     for n in "${!registry_roots[@]}"; do
@@ -190,10 +202,16 @@ finish() {
   fi
   admit final 0 0 0 || status=1
   [[ ! -e $driver/resource-failure ]] || status=1
-  jq -n --arg source "$GITHUB_SHA" --arg phase "$phase" --argjson command "$original" --argjson final "$status" --argjson pass "$passed" '
+  absence driver-before-receipt || status=1
+  absence driver-before-publish || status=1
+  (( status != 0 )) || source_absence=true
+  jq -n --arg source "$GITHUB_SHA" --arg phase "$phase" --argjson command "$original" --argjson final "$status" --argjson pass "$passed" --argjson absence "$source_absence" '
     {schema:1,source_sha:$source,phase:$phase,command_exit:$command,finalizer_exit:$final,
      entry4_candidate:($command==0 and $final==0 and $pass),whole_source_sdk_seal:"parent always-final required",
-     original_executed:false,original_deleted:false,source_absence_admitted:false,retirement_credit:0,
+     original_executed:false,source_phase:"absent",removed_source:"tools/scripts/ssh.py",
+     historical_source_sha256:"f4fb8dff60a0bab57643172093a6f437acb0d001929103f081d872280710eeff",
+     original_deleted:$absence,source_absence_admitted:$absence,retirement_credit:0,
+     absence_scope:"driver command boundaries and 2s sampling; parent final closure required",whole_python_absence:false,
      real_ssh:false,closed_trace:false,complete_build_dependency_closure:false,
      trace_scope:"raw runtime exec/mmap; held provider and executable file mapping checks, not full syscall decoding",
      recovery_scope:"direct owned leader wait/group scan; fixture has independent subreaper receipts",
@@ -207,9 +225,10 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 trap 'exit 129' HUP
 run() {
-  local label=$1 seconds=$2 code=0 watched=0 leader ready go count
+  local label=$1 seconds=$2 code=0 watched=0 checked=0 leader ready go count
   shift 2
   phase=$label
+  absence "command-before-$label"
   admit "$label-before" 0 0 0
   [[ ! -e $driver/resource-failure ]]
   local -a payload=(/usr/bin/timeout --foreground --signal=TERM --kill-after=15s "${seconds}s")
@@ -234,7 +253,7 @@ run() {
   : > "$go"
   (
     while [[ ! -e $stop ]] && [[ $(pid_start "$leader") == "$active_start" ]]; do
-      if ! admit "$label-watch" 0 0 0; then
+      if ! absence sampled-budget || ! admit "$label-watch" 0 0 0; then
         printf '%s\n' "$label" > "$driver/resource-failure"
         kill_owned || true
         exit 1
@@ -248,10 +267,11 @@ run() {
   wait "$watcher" || watched=$?
   active= active_start= watcher=
   # 정상 wait 이후 과거 PGID를 kill하지 않는다.
-  group_empty "$leader"
+  group_empty "$leader" || checked=1
   printf '%s\t%s\t%s\n' "$label" "$code" "$watched" >> "$driver/status.tsv"
-  admit "$label-after" 0 0 0
-  (( code == 0 && watched == 0 )) && [[ ! -e $driver/resource-failure ]]
+  absence "command-after-$label" || checked=1
+  admit "$label-after" 0 0 0 || checked=1
+  (( code == 0 && watched == 0 && checked == 0 )) && [[ ! -e $driver/resource-failure ]]
 }
 artifact() {
   local label=$1 name=$2 kind=$3 src=$4 tested=$5
@@ -272,18 +292,27 @@ bind_json() {
   hold "$1"
 }
 
-# 현재 source/SDK/provider만 hold한다. 원본은 초기 SHA presence만 확인한다.
+# 공통 absence context는 checkout 때만 생성한다. 여기서 재admit/부재 추측은 하지 않는다.
+absence_helper=$source/tools/ci/ssh_source_absence_523.sh
+[[ -f $absence_helper && ! -L $absence_helper ]]
+hold "$absence_helper"
+[[ ${held_sha[$absence_helper]} == 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa ]]
+. "/proc/$$/fd/${held_fd[$absence_helper]}"
+absence_ready=true
+absence driver-entry
+for path in "$job/proof/ssh-absence-before.tsv" "$job/proof/ssh-absence-head.bin" "$job/proof/ssh-absence-index.bin" \
+  "$job/proof/ssh-original-deletion.diff" "$job/proof/ssh-historical-original.sha256"; do hold "$path"; done
+
+# 현재 source/SDK/provider만 hold한다. 역사 SSH SHA는 metadata이며 원본 실행은 없다.
 admit provider-baseline 0 0 32
 for path in "$source/tools/ci/developer_ssh_entry_523.sh" "$source/rust/Cargo.toml" "$source/rust/Cargo.lock" \
   "$source/rust/crates/dev-tools/Cargo.toml" "$source/rust/crates/dev-tools/tests/developer_ssh_entry.rs" \
   "$source/rust/crates/dev-tools/tests/fixtures/developer-ssh-entry/exec_recorder.rs" "$source/tools/op.sh" "$source/rust/tools/run-developer-tool" \
   "$CI_PREPARED_RUST_MANIFEST" "$job/proof/prepared-rust-programs.sha256" "$job/owner"; do hold "$path"; done
 sha256sum --check --strict --quiet "$job/proof/prepared-rust-programs.sha256"
-[[ -f $source/tools/scripts/ssh.py && ! -L $source/tools/scripts/ssh.py ]]
-printf '%s  %s\n' f4fb8dff60a0bab57643172093a6f437acb0d001929103f081d872280710eeff "$source/tools/scripts/ssh.py" |
-  sha256sum --check --strict - > "$driver/original-presence.txt"
+absence sampled-budget
 for path in "$sdk/bin/cargo" "$sdk/bin/rustc" "$sdk/bin/rustdoc" "$sdk/bin/clippy-driver" "$CI_PREPARED_RUSTUP_BIN"; do bind_elf "$path"; done
-for tool in bash env git df awk basename dirname uname sed find readlink jq strace timeout setsid stat sha256sum du cp readelf sort xargs sleep cat cmp cut grep mkdir wc \
+for tool in bash env git df awk basename dirname uname sed find readlink jq strace timeout setsid stat sha256sum du cp readelf sort xargs sleep cat cmp cut grep mkdir wc id \
   cc c++ ar as ld ranlib nm pkg-config capnp; do
   path=$(command -v "$tool"); [[ $path == /* ]]; bind_elf "$path"
 done

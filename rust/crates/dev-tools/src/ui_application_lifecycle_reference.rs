@@ -108,6 +108,16 @@ pub fn draw_touch_points(
 }
 pub fn validate_source(root: &Path) -> Result<()> {
     use sha2::{Digest, Sha256};
+    let source_matches = |name: &str, expected: &str, bytes: &[u8]| {
+        // #557의 정확한 font source 변경만 두 고정 manifest에서 같은 경계로 검사한다.
+        if name == "openpilot/system/ui/lib/application.py"
+            && expected == "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00"
+        {
+            crate::ui_application_logic_check::application_source_matches(bytes)
+        } else {
+            format!("{:x}", Sha256::digest(bytes)) == expected
+        }
+    };
     let manifest = include_bytes!("../tests/fixtures/ui-application-lifecycle/provenance.json");
     if format!("{:x}", Sha256::digest(manifest))
         != "84c211425182eeffd333474ae619cef7575b73e2cb1270cfa0cdbe4d2d6b8afd"
@@ -133,9 +143,11 @@ pub fn validate_source(root: &Path) -> Result<()> {
             }
             Err(error) => return Err(error.into()),
         };
-        if format!("{:x}", Sha256::digest(bytes))
-            != expected.as_str().ok_or("invalid application source pin")?
-        {
+        if !source_matches(
+            name,
+            expected.as_str().ok_or("invalid application source pin")?,
+            &bytes,
+        ) {
             return Err(format!("application original source changed: {name}").into());
         }
     }
@@ -150,8 +162,10 @@ pub fn validate_source(root: &Path) -> Result<()> {
         .as_object()
         .ok_or("application closure sources missing")?
     {
-        if Some(format!("{:x}", Sha256::digest(fs::read(root.join(name))?)).as_str())
-            != hash.as_str()
+        let bytes = fs::read(root.join(name))?;
+        if !hash
+            .as_str()
+            .is_some_and(|expected| source_matches(name, expected, &bytes))
         {
             return Err(format!("application dependency changed: {name}").into());
         }

@@ -202,6 +202,11 @@ jobs:
             sha256sum -- "$cold_strace" > "$cold_proof/cold-strace.$cold_phase.sha256" || return 1
             # 버전 출력만 64KiB/file로 제한한다. cold build에는 file-size 제한을 전파하지 않는다.
             (ulimit -f 64; "$cold_strace" --version) > "$cold_proof/cold-strace.$cold_phase.version" 2> "$cold_proof/cold-strace.$cold_phase.version.stderr" || return 1
+            # OS 배포판/image 표기로 실제 kernel 또는 dpkg revision을 추측하지 않는다.
+            (ulimit -f 64; /usr/bin/uname -rvm) > "$cold_proof/cold-strace.$cold_phase.kernel" 2> "$cold_proof/cold-strace.$cold_phase.kernel.stderr" || return 1
+            (ulimit -f 64; /usr/bin/cat /proc/version) > "$cold_proof/cold-strace.$cold_phase.proc-version" 2> "$cold_proof/cold-strace.$cold_phase.proc-version.stderr" || return 1
+            (ulimit -f 64; /usr/bin/dpkg-query -W -f='binary=${binary:Package}\nversion=${Version}\narchitecture=${Architecture}\nsource=${source:Package}\nsource_version=${source:Version}\n' strace) > "$cold_proof/cold-strace.$cold_phase.package" 2> "$cold_proof/cold-strace.$cold_phase.package.stderr" || return 1
+            (ulimit -f 64; /usr/bin/stat -c '%n %d:%i:%f:%u:%g:%h:%s:%y:%z' /usr/bin/dpkg-query && /usr/bin/sha256sum /usr/bin/dpkg-query) > "$cold_proof/cold-strace.$cold_phase.package-provider" || return 1
             test "$cold_metadata" = "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' -- "$cold_strace")"
           }
           # 수집기만 현재 PID/start ticks/PPID로 확인한다. tracer/과거 PGID에는 신호를 보내지 않는다.
@@ -314,7 +319,7 @@ jobs:
           printf 'started_utc=%s\nended_utc=%s\nshell_wait_status=%s\nstderr_collector_pid=%s\nstderr_wait_status=%s\nstderr_collection_status=%s\nstderr_state=%s\nstderr_timed_out=%s\nstderr_reaped=%s\nstrace_debug_requested=true\ndiagnostic_only=true\nstderr_file_limit_bytes=536870912\nstderr_bytes_observed=%s\nseccomp_bpf_requested=true\nseccomp_bpf_activation=unproven\n' "$cold_started" "$cold_ended" "$cold_status" "$cold_stderr_pid" "$cold_stderr_wait_status" "$cold_stderr_status" "$cold_stderr_state" "$cold_stderr_timed_out" "$cold_stderr_reaped" "$cold_stderr_bytes" > "$cold_proof/cold-tracer.result" || cold_records_status=1
           cold_provider_status=0
           cold_provider after || cold_provider_status=$?
-          for cold_record in metadata sha256 version version.stderr; do
+          for cold_record in metadata sha256 version version.stderr kernel kernel.stderr proc-version proc-version.stderr package package.stderr package-provider; do
             cmp "$cold_proof/cold-strace.before.$cold_record" "$cold_proof/cold-strace.after.$cold_record" || cold_provider_status=1
           done
           if ((cold_status != 0)); then exit "$cold_status"; fi

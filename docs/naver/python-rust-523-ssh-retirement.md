@@ -1,7 +1,8 @@
 # #523 SSH 원본1 퇴역 준비 구현 계획
 
-> 현재 단계는 source-only candidate다. 기능·Cargo·Clippy는 Actions에서만 실행한다.
-> 이 문서의 계획에 따라 같은 작업에서 구현하며, 원본 삭제·caller 수용·credit은 아직0이다.
+> 현재 단계는 아래의 postabsence 구현 후보다. 승인에 따라 `tools/scripts/ssh.py`
+> 1개를 삭제했으며 새 source의 기능·부재 수용은 **UNRUN**, retirement credit은0이다.
+> 먼저 보존한 아래 본문은 frozen importer 초기 구현 기록이며 당시의 미실행 상태를 뜻한다.
 
 **목표:** 기존 SSH 원본 관측26+13건을 재capture 없이 고정 artifact에서 읽고,
 기존 authored input/criteria 및 native verifier와 완전히 대응시킨다.
@@ -13,7 +14,7 @@ CRC를 검증하되 보존하는 내용은 선택 log와 SOURCE_COMMIT뿐이다.
 
 **구현 도구:** 기존 Rust std/rustix/zip9.0.3/serde_json/sha2. Cargo 변경·새 의존성은 없다.
 
-**승인 범위:** 사용자 지시의 SSH1 후보. `tools/scripts/ssh.py`는 보존한다.
+**초기 승인 범위:** 사용자 지시의 SSH1 후보. 이 초기 phase에서는 `tools/scripts/ssh.py`를 보존했다.
 
 ## 소유 파일과 변경 경계
 
@@ -147,3 +148,87 @@ criteria와 별도로 검증한다. blanket path/출력 정규화 또는 argpars
 현재 phase가 수용된 뒤에만 원본 존재+exact SHA와 명시적 absent phase를 설계하고,
 same-current-ELF/seals/held/upload/cleanup을 묶어 삭제1 수용을 판정한다.
 이번 변경의 retirement credit은0이다.
+
+## 2026-10-25: 원본1 postabsence 구현 후보
+
+사용자가 전체 #523 전환 및 이번 원본1 삭제·검증을 명시 승인했다. 부모가 감사한
+pre-delete c00 source `c00c7a11fbee357cbfb39bee45125d73596bf56c`, Focus
+`40154418302/job121052614023`, artifact `12584392161`의 최종 성공은 그대로 보존한다.
+부모 수용 범위는 336CRC·immutable21쌍·entry4-checked·native7/public1·기본 음성2와
+source/index/SDK final·upload/cleanup이다. 새 ZIP 다운로드나 재감사는 하지 않았다.
+이 증거는 원본이 존재했던 phase이며 새 postdelete source의 PASS가 아니다.
+
+### 구현 경계
+
+- `tools/scripts/ssh.py` 정확1개를 삭제했다. 원래 mode/blob은
+  `100644 / fe8d7d72d3434677b4c5b4f1a3dbcacd2c24e379`, raw SHA는 위의 `f4fb8dff…`다.
+  다른 경로의 복제·encoded fixture·rename·stub·Python fallback을 추가하지 않는다.
+- 새 `tools/ci/ssh_source_absence_523.sh`는 기존 setup absence의 parent/entry 검사 패턴을
+  SSH 정확1경로에 적용한 sourced Bash helper다. setup helper는 수정하지 않았다.
+- 기존 driver에 helper literal SHA/held FD와 immutable admission5개 파일을 추가했다.
+  새로운 `id` 호출도 현재 provider ELF hold 목록에 추가한다. 기존 source9·Rust의
+  초기14/per-use FD·provider/registry·CLI/recorder·DSO 검증과 entry4 기준은 유지한다.
+- Focus에는 실행 admission/controls/역사 삭제 확인/closure와 기존 단계 전후 검사를 연결했다.
+  allowlist/cohort literal pins/원장 최종 등록은 부모 소유로 남긴다. 등록 전에는 gate의
+  자연 실패가 예상되며 source admission을 완화하거나 성공으로 재해석하지 않는다.
+
+frozen39/음성7·setup21·Case/candidate/verifier·fixture·원문 metadata·입력/criteria·원래
+Rust entry test/recorder 및 production CLI/HTTP/auth는 변경하지 않았다. `op ssh`는 기존
+`run-developer-tool developer-ssh`→현재 ELF 경로 그대로다. 원문의 help/error 이름도
+역사 기준이므로 변경하지 않았다. 부모 소유 `…-ssh-entry.md` 수용 기록은 수정하지 않았다.
+
+### 명시 부재 계약
+
+`SSH_SOURCE_PHASE=absent`만 허용한다. checkout 때 canonical source root/정확 HEAD,
+private job owner와 source owner marker를 검사하고 root/tools/tools/scripts의
+`dev/ino/mode/uid/gid`를 고정한다. HEAD ls-tree와 index ls-files의 대상 경로는 모두
+빈 raw여야 하며, 실제 디렉터리의 exact entry가 없어야 한다. dangling symlink·directory·FIFO
+등의 node도 허용하지 않는다. 부모 교체/심볼릭 링크/조사 오류는 absent로 간주하지 않는다.
+
+기존 source-reuse 단계가 fetch한 `97f7ad36dfa0919b4e5c216fb16f44ed29161663` object를
+재사용한다. exact `D\ttools/scripts/ssh.py\n` diff와 `git show`의 stream SHA를 검사한다.
+원문을 파일로 복원하거나 실행하지 않는다. 이 Git 삭제 확인과 역사 metadata는 서로 다른
+역할이며 현재 provider/source pin으로 과거 metadata를 다시 쓰지 않는다.
+
+private synthetic root의 controls는 **absent/regular 재출현/directory/symlink/dangling
+symlink/parent symlink** 6개다. 최초 absent 성공과 각 정확한 오류 code/message가 모두
+맞아야 한다. source entry는41, parent boundary는42, 문맥/조사 오류는43으로 구분한다.
+임의 guard 실패를 negative PASS로 취급하지 않는다. 실제 source에서 원본을 임시로 복원하지 않는다.
+
+helper는 source SHA/root/parent identity가 같은 private proof에만 journal을 추가한다.
+최초 부재 실패는 create-new sticky marker로 남아 뒤의 일시적인 absent 성공으로 지워지지 않는다.
+journal은 owned0600/nlink1 regular이며 읽기 상한1MiB를 둔다. finite phase와 각 command pair의
+정확1회, sampled-budget 최소1회, raw 필드/알 수 없는 stage/누락·중복을 closure에서 검증한다.
+`strace-help`를 포함한 command9개의 before/after 총18개는 각각 정확1회 필요하다.
+
+### 실패와 최종 gate
+
+driver의 기존 registry-copy/public-build/entry-build/recorder-build/strace-help/entry-0…3 실행 전후와
+기존 2초 watcher에 같은 검사를 연결했다. 발견된 실패는 기존 resource stop 및 owner/startticks로
+검증한 process group 회수 규칙을 따른다. 첫 command exit와 budget 실패를 그대로 보존한다.
+EXIT에서는 부재 검사 실패와 별개로 기존 held/provider/registry/budget final 검사를 시도한다.
+
+Focus의 frozen/Clippy 전후와 frozen input always-after/source-index always-final/SDK final에도
+부재 검사를 연결한다. always-final은 helper/absence 검사와 기존 seal을 독립 subshell에서 각각
+시도하고 모든 status가 성공해야 해당 step이 성공한다. 부재 오류 때문에 기존 seal을 건너뛰지 않는다.
+
+`ssh_absence_closure`는 admission/controls/역사 삭제/frozen10/SSH27/entry4/input-after/Clippy/
+source-final/SDK-final의 **실제 outcome 모두 success**와 driver의 새 source outcome을 요구한다.
+required journal/control 집합을 확인한 create-new receipt만 closure 결과로 남긴다.
+기존 upload는 실패에도 실행한다. source cleanup은 기존 upload id/digest·owner·source/SDK seal에
+추가로 **`steps.ssh_absence_closure.outcome == 'success'`**를 AND로 요구한다.
+upload 뒤 rm 직전에는 journal·sticky 파일을 변경하지 않는 read-only guard를 수행한다.
+그 실패는 cleanup/후속 common cleanup을 막으며 기존 업로드 증거를 수정하지 않는다.
+
+이 범위는 command boundaries와 driver active-command 2초 sampling이다. 다른 Focus 단계는
+명시 전후 경계이며 전체 Actions 시간의 연속 감시나 hostile same-UID race 증명이 아니다.
+`whole_python_absence=false`, `real_ssh=false`, `closed_trace=false`, complete provider/FD closure
+미수용 및 retirement credit0을 유지한다. target6GiB/Cargo home2GiB/build8GiB/proof512MiB,
+종료 reserve/inflight와2700초·각 command/fixture의 기존 시간·회수 상한을 늘리지 않았다.
+
+### 정적 검증 및 후속
+
+현재 로컬은 Bash 문법, YAML/AST·선택 model/문자열 diff/hash만 확인한다. helper controls,
+frozen39/음성7·setup21, native7/public1·기본 음성2, Clippy/봉인/새 Actions는 실행하지 않았다.
+부모 allow/pins/원장 등록 후 같은 새 SHA의 Focus에서 이 기존 대상과 새 absence6/closure를
+실제로 실행하고 artifact·최종 seals/upload/cleanup을 감사해야 이 파일1의 퇴역 credit을 줄 수 있다.

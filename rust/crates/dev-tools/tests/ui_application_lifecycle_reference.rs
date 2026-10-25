@@ -11,6 +11,8 @@ mod application_draw;
 #[allow(dead_code)]
 #[path = "support/ui_forms_confirm_draw.rs"]
 mod confirm_draw;
+#[path = "ui_application_lifecycle_reference/source_binding.rs"]
+mod source_binding;
 const CASE_ENV: &str = "UI_APPLICATION_REFERENCE_TEST_CASE";
 
 #[test]

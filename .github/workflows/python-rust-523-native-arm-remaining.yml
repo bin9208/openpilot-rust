@@ -1,0 +1,1066 @@
+name: Python Rust 523 remaining native ARM runtime candidates
+'on':
+  push:
+    branches:
+    - codex/feat-523-python-rust
+    paths:
+    - .github/workflows/python-rust-523-native-arm-remaining.yml
+    - tools/ci/native-arm
+    - rust/crates/webcam*/**
+    - rust/crates/xiaoge*/**
+    - rust/crates/radard/**
+    - rust/tools/webcam*.py
+    - rust/tools/xiaoge*.py
+    - rust/tools/radard*.py
+    - rust/Cargo.lock
+permissions:
+  contents: read
+concurrency:
+  group: python-rust-523-native-arm-remaining-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  webcam-runtime:
+    name: webcam-runtime original and native on standard ARM VM
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - arch: aarch64
+          runner: hosted-arm64
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      LIBCLANG_PATH: /usr/lib/llvm-18/lib
+      CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
+      LOCAL_CI_ARCH: ${{ matrix.arch }}
+      CI296_ALIAS_BASENAME: .ci296-source-rust--webcam-runtime
+      CI296_NATIVE_ARM: '1'
+    steps:
+    - name: Deny fork source and require GitHub-hosted Linux ARM64
+      shell: bash
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+          }}
+        CI296_HOST_CONTROL: '1'
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on hosted ARM' >&2; exit 1; }
+        set -euo pipefail
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = ARM64
+        test "$(uname -s)" = Linux
+        test "$(uname -m)" = aarch64
+        test "$GITHUB_EVENT_NAME" = push
+        test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
+      working-directory: ${{ github.workspace }}
+    - name: Common owned job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      env:
+        CI296_HOST_CONTROL: '1'
+    - name: Allocate private source cache target and local action alias before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        # Source capacity is checked on the actual source filesystem BEFORE checkout.
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.ci296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Preserve Actions' real workspace separately. Only Bash consumers see the
+        # unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/ci296-shell-env"
+        printf '%s\n' "CI296_ACTIONS_WORKSPACE=$workspace" "CI296_SOURCE_OWNER=$source_owner" "CI296_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "CI296_SOURCE=$source" "CI296_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/ci296-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+
+        alias_path="$workspace/$CI296_ALIAS_BASENAME"
+        case "$CI296_ALIAS_BASENAME" in .ci296-source-*) ;; *) exit 1 ;; esac
+        [[ $CI296_ALIAS_BASENAME != */* ]]
+        # -T makes this an exclusive atomic link, never traversal into a stale directory.
+        ln -sT -- "$source_owner" "$alias_path"
+        printf '%s\n' "CI296_SOURCE_ALIAS=$alias_path" "CI296_ALIAS_IDENTITY=$(stat -c '%d:%i' -- "$alias_path")" "LOCAL_CI_SOURCE_ROOT=$source" >> "$GITHUB_ENV"
+        printf 'source_alias=%s\nalias_identity=%s\n' "$alias_path" "$(stat -c '%d:%i' -- "$alias_path")" >> "$job/proof/ownership.txt"
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        set-safe-directory: false
+        clean: false
+        lfs: false
+        path: ${{ env.CI296_CHECKOUT_PATH }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    - name: Admit exact private source and index
+      id: ci296_source_admission
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$CI296_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$CI296_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+    - name: Configure source-dependent job environment on private paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_LATE_PYTHONPATH: ${{ env.CI296_SOURCE }}/rust/tools:${{ env.CI296_SOURCE }}
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        printf '%s\n' "PYTHONPATH=$CI296_LATE_PYTHONPATH" >> "$GITHUB_ENV"
+    - name: Expose provisioned Rust shims
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      env:
+        CI296_HOST_CONTROL: '1'
+    - name: Prepare native ARM command transport
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/native-arm" prepare
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.14
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    - name: Keep original Python installations private
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        ((available >= 512 * 1024 * 1024))
+        python -m venv "$CI_JOB_TEMP/venv"
+        printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
+    - name: Install exact source closure and native capture providers
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+        sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" update
+        sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y g++ clang-18 libclang-18-dev cmake pkg-config file capnproto libcapnp-dev libzmq3-dev 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*' 'libswscale-dev=7:6.1.1-*'
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        python -m pip install -r rust/tools/webcam_source_requirements.txt
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+        mkdir -p "$RUNNER_TEMP/webcam"
+        git rev-parse HEAD > "$RUNNER_TEMP/webcam/SOURCE_COMMIT"
+        uname -m > "$RUNNER_TEMP/webcam/machine.txt"
+        python -m pip freeze > "$RUNNER_TEMP/webcam/python-packages.txt"
+        dpkg-query -W libavcodec-dev libavformat-dev libavutil-dev libswscale-dev > "$RUNNER_TEMP/webcam/native-packages.txt"
+        test "$(pkg-config --modversion libavcodec)" = 60.31.102
+        test "$(pkg-config --modversion libswscale)" = 7.5.100
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Build pinned hardened videoio and unchanged source IPC bindings
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+        cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin build-xiaoge-opencv -- --prepare-only --output "$RUNNER_TEMP/webcam-opencv-source"
+        cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin build-webcam-opencv -- --source "$RUNNER_TEMP/webcam-opencv-source/opencv-fe38fc608f6acb8b68953438a62305d8318f4fcd" --output "$RUNNER_TEMP/webcam/provider" --growth-mib 4096
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+        python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/webcam/binding"
+        printf 'OPENPILOT_WEBCAM_OPENCV_ROOT=%s/webcam/provider\nLD_LIBRARY_PATH=%s/webcam/provider/install/lib\nPYTHONPATH=%s/webcam/binding:%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Build native daemon and check all webcam targets
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-webcam --features native --bins --examples --locked
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-webcam --features native --lib --locked
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-webcam --features native --all-targets --locked -- -D warnings
+        cc -shared -fPIC -std=c11 -Wall -Wextra -Werror -O2 rust/tools/webcam_owned_open.c -ldl -o "$RUNNER_TEMP/webcam/owned-open.so"
+        c++ -shared -fPIC -std=c++17 -Wall -Wextra -Werror -O2 -I"$OPENPILOT_WEBCAM_OPENCV_ROOT/install/include/opencv4" rust/tools/webcam_capture_fault.cc -ldl -o "$RUNNER_TEMP/webcam/capture-fault.so"
+        file rust/target/debug/openpilot-webcam > "$RUNNER_TEMP/webcam/elf.txt"
+        sha256sum rust/target/debug/openpilot-webcam rust/target/debug/examples/webcam_trace rust/target/debug/examples/webcam_workers > "$RUNNER_TEMP/webcam/SHA256SUMS"
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Compare actual pixels, independent workers, IPC and Linux entrypoints
+      run: |
+        python -P rust/tools/webcam_camera_compare.py "$PWD/rust/target/debug/examples/webcam_trace" "$RUNNER_TEMP/webcam/pixels" --reserve-mib 512
+        python -P rust/tools/webcam_worker_compare.py "$RUNNER_TEMP/webcam/source-workers" --cases unequal-eof odd-worker unavailable-worker odd-height unaligned-even --reserve-mib 512
+        python -P rust/tools/webcam_worker_compare.py "$RUNNER_TEMP/webcam/native-workers" --native "$PWD/rust/target/debug/examples/webcam_workers" --source "$RUNNER_TEMP/webcam/source-workers" --cases unequal-eof odd-worker unavailable-worker odd-height unaligned-even --reserve-mib 512
+        python -P rust/tools/webcam_cli_compare.py "$RUNNER_TEMP/webcam/linux-cli" --native "$PWD/rust/target/debug/openpilot-webcam" --shim "$RUNNER_TEMP/webcam/owned-open.so" --reserve-mib 512
+        python -P rust/tools/webcam_capture_errors.py "$RUNNER_TEMP/webcam/errors" --trace "$PWD/rust/target/debug/examples/webcam_trace" --workers "$PWD/rust/target/debug/examples/webcam_workers" --fault-shim "$RUNNER_TEMP/webcam/capture-fault.so" --source "$RUNNER_TEMP/webcam/source-workers/unequal-eof" --reserve-mib 512
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - uses: actions/upload-artifact@v6
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always()) }}
+      with:
+        name: rust-webcam-${{ matrix.runner }}-evidence
+        path: |
+          ${{ env.CI_JOB_TEMP }}/webcam/**/result.json
+          ${{ env.CI_JOB_TEMP }}/webcam/**/*invocation.json
+          ${{ env.CI_JOB_TEMP }}/webcam/**/*.log
+          ${{ env.CI_JOB_TEMP }}/webcam/**/*.stdout
+          ${{ env.CI_JOB_TEMP }}/webcam/**/*.stderr
+          ${{ env.CI_JOB_TEMP }}/webcam/**/*.nv12
+          ${{ env.CI_JOB_TEMP }}/webcam/**/*.bin
+          ${{ env.CI_JOB_TEMP }}/webcam/*.txt
+          ${{ env.CI_JOB_TEMP }}/webcam/SOURCE_COMMIT
+          ${{ env.CI_JOB_TEMP }}/webcam/SHA256SUMS
+          ${{ env.CI_JOB_TEMP }}/webcam/provider/receipt.json
+          ${{ env.CI_JOB_TEMP }}/webcam/provider/native-libraries.sha256
+          ${{ env.CI_JOB_TEMP }}/webcam/provider/source-files.json
+          ${{ env.CI_JOB_TEMP }}/webcam/provider/licenses/
+          ${{ env.CI_JOB_TEMP }}/webcam/provider/install/lib/
+          ${{ env.CI_JOB_TEMP }}/webcam-opencv-source/source.json
+          ${{ env.CI_JOB_TEMP }}/webcam-opencv-source/hardening.json
+          ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-webcam
+
+          ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+          ${{ env.CI_JOB_TEMP }}/local-arm/kernel.txt
+          ${{ env.CI_JOB_TEMP }}/local-arm/disk-before.txt
+      id: local_evidence_1
+    - name: Finish native ARM execution evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.ci296_source_admission.outcome == 'success') }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/native-arm" finish
+    - name: Seal private source and index after maintained checks
+      id: ci296_source_seal
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI296_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        df -PB1 "$CI296_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+    - name: Retain private job ownership and source evidence
+      id: ci296_private_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: private-rust-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        retention-days: 14
+        if-no-files-found: error
+    - name: Clean only uploaded owned source alias and target
+      id: ci296_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' &&
+        steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id
+        != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success'
+        && env.CI296_SOURCE_OWNER != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        UPLOAD_ID: ${{ steps.ci296_private_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.ci296_private_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$CI296_ACTIONS_WORKSPACE
+        p=$CI296_SOURCE_OWNER
+        case "$p" in "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$CI296_SOURCE_IDENTITY"
+        test -f "$p/.ci296-owner" && test ! -L "$p/.ci296-owner"
+        test "$(cat "$p/.ci296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$CI296_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        alias_path="$CI296_ACTIONS_WORKSPACE/$CI296_ALIAS_BASENAME"
+        test "$CI296_SOURCE_ALIAS" = "$alias_path"
+        test -L "$alias_path"
+        test "$(readlink -- "$alias_path")" = "$p"
+        test "$(stat -c '%d:%i' -- "$alias_path")" = "$CI296_ALIAS_IDENTITY"
+        rm -- "$alias_path"
+        if ! rm -rf --one-file-system -- "$p"; then
+          sudo -n rm -rf --one-file-system -- "$p"
+        fi
+    - name: Clean common owned temporary paths after uploaded source
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' &&
+        steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id
+        != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success')
+        }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'
+      env:
+        CI296_HOST_CONTROL: '1'
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
+  xiaoge-runtime:
+    name: xiaoge-runtime original and native on standard ARM VM
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - arch: aarch64
+          runner: hosted-arm64
+    timeout-minutes: 75
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      LOCAL_CI_ARCH: ${{ matrix.arch }}
+      CI296_ALIAS_BASENAME: .ci296-source-rust--xiaoge-runtime
+      CI296_NATIVE_ARM: '1'
+    steps:
+    - name: Deny fork source and require GitHub-hosted Linux ARM64
+      shell: bash
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+          }}
+        CI296_HOST_CONTROL: '1'
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on hosted ARM' >&2; exit 1; }
+        set -euo pipefail
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = ARM64
+        test "$(uname -s)" = Linux
+        test "$(uname -m)" = aarch64
+        test "$GITHUB_EVENT_NAME" = push
+        test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
+      working-directory: ${{ github.workspace }}
+    - name: Common owned job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      env:
+        CI296_HOST_CONTROL: '1'
+    - name: Allocate private source cache target and local action alias before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        # Source capacity is checked on the actual source filesystem BEFORE checkout.
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.ci296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Preserve Actions' real workspace separately. Only Bash consumers see the
+        # unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/ci296-shell-env"
+        printf '%s\n' "CI296_ACTIONS_WORKSPACE=$workspace" "CI296_SOURCE_OWNER=$source_owner" "CI296_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "CI296_SOURCE=$source" "CI296_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/ci296-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+
+        alias_path="$workspace/$CI296_ALIAS_BASENAME"
+        case "$CI296_ALIAS_BASENAME" in .ci296-source-*) ;; *) exit 1 ;; esac
+        [[ $CI296_ALIAS_BASENAME != */* ]]
+        # -T makes this an exclusive atomic link, never traversal into a stale directory.
+        ln -sT -- "$source_owner" "$alias_path"
+        printf '%s\n' "CI296_SOURCE_ALIAS=$alias_path" "CI296_ALIAS_IDENTITY=$(stat -c '%d:%i' -- "$alias_path")" "LOCAL_CI_SOURCE_ROOT=$source" >> "$GITHUB_ENV"
+        printf 'source_alias=%s\nalias_identity=%s\n' "$alias_path" "$(stat -c '%d:%i' -- "$alias_path")" >> "$job/proof/ownership.txt"
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        set-safe-directory: false
+        clean: false
+        lfs: false
+        path: ${{ env.CI296_CHECKOUT_PATH }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    - name: Admit pinned LFS models before source baseline
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        helper="$GITHUB_WORKSPACE/tools/ci/prepare-lfs-source-535"
+        test -f "$helper" && test ! -L "$helper"
+        printf '%s  %s\n' 1d6c6c57f313bc73f1a378649c1d4a0a3f0e3eba5b868b064ffb2976cd78b3ec "$helper" | sha256sum --check -
+        "$helper" xiaoge
+    - name: Admit exact private source and index
+      id: ci296_source_admission
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$CI296_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$CI296_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+    - name: Configure source-dependent job environment on private paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_LATE_PYTHONPATH: ${{ env.CI296_SOURCE }}:${{ env.CI296_SOURCE }}/opendbc_repo:${{ env.CI296_SOURCE }}/rust/tools
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        printf '%s\n' "PYTHONPATH=$CI296_LATE_PYTHONPATH" >> "$GITHUB_ENV"
+    - name: Expose provisioned Rust shims
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      env:
+        CI296_HOST_CONTROL: '1'
+    - name: Prepare native ARM command transport
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/native-arm" prepare
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.14
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    - name: Keep original Python installations private
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        ((available >= 512 * 1024 * 1024))
+        python -m venv "$CI_JOB_TEMP/venv"
+        printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
+    - name: Reserve capacity and install Xiaoge build prerequisites
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+        sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" update && sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ cmake ninja-build libzmq3-dev git-lfs
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3 pytest==9.0.2 opencv-python-headless==4.13.0.92 pillow==12.3.0 'httpx2[http2,brotli,zstd]==2.13.1'
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        rustup toolchain install 1.94.0 --profile minimal --component clippy
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Retrieve the unchanged original Xiaoge models
+      run: |
+        python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_xiaoge_ci.py
+        python -m pytest -c /dev/null --rootdir . --confcutdir=rust/tools/tests -q rust/tools/tests/test_params_native_stager.py
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
+        git lfs pull --include='openpilot/selfdrive/carrot/xiaoge/assets/*.onnx' --exclude=''
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Build current native dependency stager
+      uses: ./.ci296-source-rust--xiaoge-runtime/source/.github/actions/native-json11
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      with:
+        run-shell: openpilot-local-shell {0}
+    - name: Compile pinned OpenCV and original Python bindings
+      run: |
+        cargo +1.94.0 run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin build-xiaoge-opencv -- --output "$RUNNER_TEMP/xiaoge-opencv"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        python rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/xiaoge-original/params"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/xiaoge-original/ipc"
+        "$CI_RECEIPT_METADATA" module XIAOGE_PARAMS_BINDING "$RUNNER_TEMP/xiaoge-original/params/provenance.json" >> "$GITHUB_ENV"
+        printf 'OPENPILOT_OPENCV_ROOT=%s/xiaoge-opencv\nLD_LIBRARY_PATH=%s/xiaoge-opencv/install/lib\nPYTHONPATH=%s/xiaoge-original/ipc:%s\nOPENCV_TEST_LANE_MODEL=%s/openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Compile and check all native Xiaoge targets
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --all-targets --locked
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        cargo build --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --bins --examples --locked
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        cargo clippy --manifest-path rust/Cargo.toml -p openpilot-xiaoge -p openpilot-opencv-runtime -p openpilot-jpeg --features native-skip-miri --all-targets --locked -- -D warnings
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Compare source pixels, model results, sockets, live IPC and lifecycle
+      run: |
+        python rust/tools/check_xiaoge_ci.py --bin-dir rust/target/debug --models openpilot/selfdrive/carrot/xiaoge/assets \
+          --opencv "$OPENPILOT_OPENCV_ROOT" --binding "$XIAOGE_PARAMS_BINDING" --output "$RUNNER_TEMP/xiaoge-comparison"
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - uses: actions/upload-artifact@v6
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always()) }}
+      with:
+        name: rust-xiaoge-${{ matrix.runner }}-evidence
+        path: |
+          ${{ env.CI_JOB_TEMP }}/xiaoge-comparison/
+          ${{ env.CI_JOB_TEMP }}/xiaoge-original/params/*.json
+          ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/*.json
+          ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/*.log
+          ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/native-libraries.sha256
+          ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-xiaoge
+          ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/xiaoge_*
+          ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/opencv_trace
+          ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/jpeg_options
+
+          ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+          ${{ env.CI_JOB_TEMP }}/local-arm/kernel.txt
+          ${{ env.CI_JOB_TEMP }}/local-arm/disk-before.txt
+      id: local_evidence_1
+    - name: Finish native ARM execution evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.ci296_source_admission.outcome == 'success') }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/native-arm" finish
+    - name: Seal private source and index after maintained checks
+      id: ci296_source_seal
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI296_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        df -PB1 "$CI296_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+    - name: Retain private job ownership and source evidence
+      id: ci296_private_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: private-rust-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        retention-days: 14
+        if-no-files-found: error
+    - name: Clean only uploaded owned source alias and target
+      id: ci296_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' &&
+        steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id
+        != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success'
+        && env.CI296_SOURCE_OWNER != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        UPLOAD_ID: ${{ steps.ci296_private_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.ci296_private_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$CI296_ACTIONS_WORKSPACE
+        p=$CI296_SOURCE_OWNER
+        case "$p" in "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$CI296_SOURCE_IDENTITY"
+        test -f "$p/.ci296-owner" && test ! -L "$p/.ci296-owner"
+        test "$(cat "$p/.ci296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$CI296_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        alias_path="$CI296_ACTIONS_WORKSPACE/$CI296_ALIAS_BASENAME"
+        test "$CI296_SOURCE_ALIAS" = "$alias_path"
+        test -L "$alias_path"
+        test "$(readlink -- "$alias_path")" = "$p"
+        test "$(stat -c '%d:%i' -- "$alias_path")" = "$CI296_ALIAS_IDENTITY"
+        rm -- "$alias_path"
+        if ! rm -rf --one-file-system -- "$p"; then
+          sudo -n rm -rf --one-file-system -- "$p"
+        fi
+    - name: Clean common owned temporary paths after uploaded source
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' &&
+        steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id
+        != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success')
+        }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'
+      env:
+        CI296_HOST_CONTROL: '1'
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
+  radard-runtime:
+    name: radard-runtime original and native on standard ARM VM
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - arch: aarch64
+          runner: hosted-arm64
+    timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENBLAS_NUM_THREADS: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      LOCAL_CI_ARCH: ${{ matrix.arch }}
+      CI296_ALIAS_BASENAME: .ci296-source-rust--radard-runtime
+      CI296_NATIVE_ARM: '1'
+    steps:
+    - name: Deny fork source and require GitHub-hosted Linux ARM64
+      shell: bash
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+          }}
+        CI296_HOST_CONTROL: '1'
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on hosted ARM' >&2; exit 1; }
+        set -euo pipefail
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = ARM64
+        test "$(uname -s)" = Linux
+        test "$(uname -m)" = aarch64
+        test "$GITHUB_EVENT_NAME" = push
+        test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
+      working-directory: ${{ github.workspace }}
+    - name: Common owned job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      env:
+        CI296_HOST_CONTROL: '1'
+    - name: Allocate private source cache target and local action alias before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        # Source capacity is checked on the actual source filesystem BEFORE checkout.
+        available=$(df -PB1 "$workspace" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        required=$((2 * 1024 * 1024 * 1024))
+        printf '{"available_bytes":%s,"planned_source_growth_bytes":%s}\n' "$available" "$required" > "$job/proof/source-growth-before-checkout.json"
+        ((available >= required))
+        source_owner=$(mktemp -d "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.ci296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        # Preserve Actions' real workspace separately. Only Bash consumers see the
+        # unique source as GITHUB_WORKSPACE; GitHub/node action provenance is untouched.
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/ci296-shell-env"
+        printf '%s\n' "CI296_ACTIONS_WORKSPACE=$workspace" "CI296_SOURCE_OWNER=$source_owner" "CI296_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "CI296_SOURCE=$source" "CI296_CHECKOUT_PATH=${source#"$workspace/"}" "HOME=$job/home" "CARGO_HOME=$job/cargo-home" "RUSTUP_HOME=$job/rustup-home" "CARGO_TARGET_DIR=$source/rust/target" "XDG_CACHE_HOME=$job/cache" "PIP_CACHE_DIR=$job/cache/pip" "GRADLE_USER_HOME=$job/cache/gradle" "npm_config_cache=$job/cache/npm" "BASH_ENV=$job/ci296-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nactions_workspace=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$workspace" "$source_owner" "$(stat -c '%d:%i' -- "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+        cat /proc/meminfo > "$job/proof/memory-before.txt"
+        if test -r /sys/fs/cgroup/memory.events; then cat /sys/fs/cgroup/memory.events > "$job/proof/cgroup-memory-before.txt"; fi
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+
+        alias_path="$workspace/$CI296_ALIAS_BASENAME"
+        case "$CI296_ALIAS_BASENAME" in .ci296-source-*) ;; *) exit 1 ;; esac
+        [[ $CI296_ALIAS_BASENAME != */* ]]
+        # -T makes this an exclusive atomic link, never traversal into a stale directory.
+        ln -sT -- "$source_owner" "$alias_path"
+        printf '%s\n' "CI296_SOURCE_ALIAS=$alias_path" "CI296_ALIAS_IDENTITY=$(stat -c '%d:%i' -- "$alias_path")" "LOCAL_CI_SOURCE_ROOT=$source" >> "$GITHUB_ENV"
+        printf 'source_alias=%s\nalias_identity=%s\n' "$alias_path" "$(stat -c '%d:%i' -- "$alias_path")" >> "$job/proof/ownership.txt"
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        set-safe-directory: false
+        clean: false
+        lfs: false
+        path: ${{ env.CI296_CHECKOUT_PATH }}
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    - name: Admit exact private source and index
+      id: ci296_source_admission
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$CI296_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$CI296_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+    - name: Configure source-dependent job environment on private paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_LATE_PYTHONPATH: ${{ env.CI296_SOURCE }}:${{ env.CI296_SOURCE }}/opendbc_repo:${{ env.CI296_SOURCE }}/rust/tools
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        printf '%s\n' "PYTHONPATH=$CI296_LATE_PYTHONPATH" >> "$GITHUB_ENV"
+    - name: Expose provisioned Rust shims
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/rust-path@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      env:
+        CI296_HOST_CONTROL: '1'
+    - name: Prepare native ARM command transport
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/native-arm" prepare
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.14
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    - name: Keep original Python installations private
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        available=$(df -PB1 "$CI_JOB_TEMP" | awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]]
+        ((available >= 512 * 1024 * 1024))
+        python -m venv "$CI_JOB_TEMP/venv"
+        printf '%s\n' "$CI_JOB_TEMP/venv/bin" >> "$GITHUB_PATH"
+    - name: Reserve capacity and install original oracle dependencies
+      run: |
+        set -euo pipefail
+        mkdir -p "$RUNNER_TEMP/radard-native/logs"
+        git rev-parse HEAD > "$RUNNER_TEMP/radard-native/SOURCE_COMMIT"
+        uname -m | tee "$RUNNER_TEMP/radard-native/machine.txt"
+        test "$(uname -m)" = '${{ matrix.arch }}'
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
+        sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" update && sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ binutils libzmq3-dev
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.3.0 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1
+        python -m pip freeze > "$RUNNER_TEMP/radard-native/python-packages.txt"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Build current native dependency stager
+      uses: ./.ci296-source-rust--radard-runtime/source/.github/actions/native-json11
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      with:
+        run-shell: openpilot-local-shell {0}
+    - name: Build unchanged native Params and msgq bindings
+      run: |
+        set -euo pipefail
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        python -P rust/tools/build_params_python.py --json11-stager "$JSON11_STAGER" --output "$RUNNER_TEMP/radard-native/params" 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/params-build.log"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        python -P rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radard-native/msgq" 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/msgq-build.log"
+        "$CI_RECEIPT_METADATA" module RADARD_PARAMS_BINDING "$RUNNER_TEMP/radard-native/params/provenance.json" >> "$GITHUB_ENV"
+        printf 'PYTHONPATH=%s/radard-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+        printf 'RADARD_BINARY=%s/rust/target/debug/openpilot-radard\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Require actual native imports and declared source helper imports
+      run: |
+        set -euo pipefail
+        python -P - <<'PY' 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/imports.log"
+        import importlib
+        import os
+        from pathlib import Path
+        from card_runtime_source import load_binding
+        load_binding(Path(os.environ['RADARD_PARAMS_BINDING']))
+        for name in ('msgq.ipc_pyx', 'openpilot.common.params_pyx',
+                     'radard_geometry_source', 'radard_selection_source', 'radard_primary_source',
+                     'radard_trajectory_source', 'radard_cutout_predictor_source',
+                     'radard_controller_source', 'radard_ipc', 'radard_lifecycle'):
+            module = importlib.import_module(name)
+            print(name, module.__file__)
+        PY
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Require Rust types, tests, complete build and Clippy
+      run: |
+        set -euo pipefail
+        cargo +1.94.0 fmt --manifest-path rust/Cargo.toml --package openpilot-radard -- --check 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/fmt.log"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+        cargo +1.94.0 test --manifest-path rust/Cargo.toml -p openpilot-radard --all-targets --locked 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/tests.log"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-radard --bins --examples --locked 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/build.log"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+        cargo +1.94.0 build --manifest-path rust/Cargo.toml -p openpilot-messaging --example state_probe --locked 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/state-probe-build.log"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        cargo +1.94.0 clippy --manifest-path rust/Cargo.toml -p openpilot-radard --all-targets --locked -- -D warnings 2>&1 | tee "$RUNNER_TEMP/radard-native/logs/clippy.log"
+        if [ '${{ matrix.arch }}' = aarch64 ]; then
+          readelf -h -d -V "$RADARD_BINARY" > "$RUNNER_TEMP/radard-native/daemon.readelf.txt"
+          test "$(readelf -h "$RADARD_BINARY" | sed -n 's/.*Machine: *//p')" = AArch64
+        fi
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Compare existing source recordings and all Rust policy snapshots
+      run: |
+        set -euo pipefail
+        set -x
+        for radard_phase in geometry selection primary trajectory cutout_predictor controller; do
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+          python -P "rust/tools/radard_${radard_phase}_source.py" \
+            --binary "$GITHUB_WORKSPACE/rust/target/debug/examples/radard_${radard_phase}_trace" \
+            --output "$RUNNER_TEMP/radard-native/source-$radard_phase" \
+            2>&1 | tee "$RUNNER_TEMP/radard-native/logs/source-$radard_phase.log"
+        done
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Check radard IPC preconditioning input contract
+      run: python -P -m unittest discover -s rust/tools/tests -p test_radard_ipc_preconditioning.py -v
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Compare exact availability deadline with original state
+      run: |
+        set -euo pipefail
+        python -P rust/tools/radard_availability_state.py \
+          --binary "$GITHUB_WORKSPACE/rust/target/debug/examples/state_probe" \
+          --output "$RUNNER_TEMP/radard-native/source-availability-state" \
+          2>&1 | tee "$RUNNER_TEMP/radard-native/logs/availability-state.log"
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Compare independent actual IPC and signal lifecycle
+      run: |
+        set -euo pipefail
+        set -x
+        python -P rust/tools/radard_ipc.py --python "$(command -v python)" \
+          --binary "$RADARD_BINARY" --binding "$RADARD_PARAMS_BINDING" \
+          --output "$RUNNER_TEMP/radard-native/ipc" \
+          2>&1 | tee "$RUNNER_TEMP/radard-native/logs/ipc.log"
+        python -P rust/tools/radard_lifecycle.py --python "$(command -v python)" \
+          --binary "$RADARD_BINARY" --binding "$RADARD_PARAMS_BINDING" \
+          --output "$RUNNER_TEMP/radard-native/lifecycle" \
+          2>&1 | tee "$RUNNER_TEMP/radard-native/logs/lifecycle.log"
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - name: Preserve bounded final binaries and their identities
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always()) }}
+      run: |
+        set -euo pipefail
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
+        mkdir -p "$RUNNER_TEMP/radard-native/bin"
+        for radard_binary in rust/target/debug/openpilot-radard rust/target/debug/examples/radard_*_trace rust/target/debug/examples/state_probe; do
+          if [ -f "$radard_binary" ]; then
+            cp "$radard_binary" "$RUNNER_TEMP/radard-native/bin/"
+            sha256sum "$radard_binary" >> "$RUNNER_TEMP/radard-native/SHA256SUMS"
+          fi
+        done
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: openpilot-local-shell {0}
+    - uses: actions/upload-artifact@v6
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always()) }}
+      with:
+        name: rust-radard-${{ matrix.runner }}-not-device-validated
+        path: |
+          ${{ env.CI_JOB_TEMP }}/radard-native/logs/
+          ${{ env.CI_JOB_TEMP }}/radard-native/source-*/
+          ${{ env.CI_JOB_TEMP }}/radard-native/ipc/
+          ${{ env.CI_JOB_TEMP }}/radard-native/lifecycle/
+          ${{ env.CI_JOB_TEMP }}/radard-native/bin/
+          ${{ env.CI_JOB_TEMP }}/radard-native/*.txt
+          ${{ env.CI_JOB_TEMP }}/radard-native/SOURCE_COMMIT
+          ${{ env.CI_JOB_TEMP }}/radard-native/SHA256SUMS
+          ${{ env.CI_JOB_TEMP }}/radard-native/params/*.json
+          ${{ env.CI_JOB_TEMP }}/radard-native/params/*.so
+          ${{ env.CI_JOB_TEMP }}/radard-native/msgq/msgq/*.so
+
+          ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+          ${{ env.CI_JOB_TEMP }}/local-arm/kernel.txt
+          ${{ env.CI_JOB_TEMP }}/local-arm/disk-before.txt
+        if-no-files-found: warn
+      id: local_evidence_1
+    - name: Finish native ARM execution evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.ci296_source_admission.outcome == 'success') }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      run: |
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/native-arm" finish
+    - name: Seal private source and index after maintained checks
+      id: ci296_source_seal
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI296_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.CI296_SOURCE }}
+      env:
+        CI296_HOST_CONTROL: '1'
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        df -PB1 "$CI296_SOURCE" "$CI_JOB_TEMP" > "$CI_JOB_TEMP/proof/disk-after.txt"
+        cat /proc/meminfo > "$CI_JOB_TEMP/proof/memory-after.txt"
+    - name: Retain private job ownership and source evidence
+      id: ci296_private_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: private-rust-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        retention-days: 14
+        if-no-files-found: error
+    - name: Clean only uploaded owned source alias and target
+      id: ci296_source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' &&
+        steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id
+        != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_seal.outcome == 'success'
+        && env.CI296_SOURCE_OWNER != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        CI296_HOST_CONTROL: '1'
+        UPLOAD_ID: ${{ steps.ci296_private_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.ci296_private_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ ]]
+        [[ $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$CI296_ACTIONS_WORKSPACE
+        p=$CI296_SOURCE_OWNER
+        case "$p" in "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c '%u' -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$CI296_SOURCE_IDENTITY"
+        test -f "$p/.ci296-owner" && test ! -L "$p/.ci296-owner"
+        test "$(cat "$p/.ci296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$CI296_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e -- "$p/source")" = "$p/source"
+        alias_path="$CI296_ACTIONS_WORKSPACE/$CI296_ALIAS_BASENAME"
+        test "$CI296_SOURCE_ALIAS" = "$alias_path"
+        test -L "$alias_path"
+        test "$(readlink -- "$alias_path")" = "$p"
+        test "$(stat -c '%d:%i' -- "$alias_path")" = "$CI296_ALIAS_IDENTITY"
+        rm -- "$alias_path"
+        if ! rm -rf --one-file-system -- "$p"; then
+          sudo -n rm -rf --one-file-system -- "$p"
+        fi
+    - name: Clean common owned temporary paths after uploaded source
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        && (always() && steps.local_evidence_1.outcome == 'success' && steps.local_evidence_1.outputs.artifact-id != '' &&
+        steps.local_evidence_1.outputs.artifact-digest != '' && steps.ci296_private_evidence.outcome == 'success' && steps.ci296_private_evidence.outputs.artifact-id
+        != '' && steps.ci296_private_evidence.outputs.artifact-digest != '' && steps.ci296_source_cleanup.outcome == 'success')
+        }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'
+      env:
+        CI296_HOST_CONTROL: '1'
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}

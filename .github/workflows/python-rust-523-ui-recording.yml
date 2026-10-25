@@ -5,6 +5,9 @@ name: Python Rust 523 UI recording pending close candidate
     paths:
     - .github/workflows/python-rust-523-ui-recording.yml
     - tools/ci/ui_recording_559.sh
+    - rust/crates/dev-tools/src/ui_application_logic_check.rs
+    - rust/crates/dev-tools/tests/ui_application_lifecycle_reference/**
+    - docs/naver/python-rust-523-ui-recording-559.md
     - tools/ci/fixtures/ui-recording-559-baseline.patch
     - rust/crates/dev-tools/src/ui_application_lifecycle_recording.rs
     - rust/crates/dev-tools/src/ui_application_lifecycle_reference.rs
@@ -47,7 +50,7 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
-      UI559_HELPER_SHA256: 10cb3d55ba9a655bd1239843c4d5ab6e414695d5fef91bf0fdb52cd39682381a
+      UI559_HELPER_SHA256: a4af0a9c1e123a0ae77253aa49435ff28ae02bf41b21c6fec418ddbd8da4a645
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
       shell: bash
@@ -212,7 +215,7 @@ jobs:
         test "$QUALIFY_OUTCOME" = success
         test "$SOURCE_OUTCOME" = success
         test "$SDK_OUTCOME" = success
-        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source==$source and .pass==true and .immutable_seals==true and .owned_processes_nonlive==true and .baseline_exact_red==true and .candidate_exact_green==true and .recording9==true and .original_five_modes==true and .strict_clippy==true and .retirement_credit==0' "$CI_JOB_TEMP/proof/ui559/outcome.json"
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source==$source and .pass==true and .immutable_seals==true and .owned_processes_nonlive==true and .baseline_exact_red==true and .candidate_exact_green==true and .recording9==true and .original_five_modes==true and .strict_clippy==true and .source_binding4==true and .retirement_credit==0' "$CI_JOB_TEMP/proof/ui559/outcome.json"
     - name: Upload current proof including every failure
       id: evidence
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}

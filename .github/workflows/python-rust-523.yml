@@ -24,6 +24,7 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       NO_PROXY: 127.0.0.1,localhost
+      SSH_SOURCE_PHASE: absent
     steps:
     - name: Deny fork source and require registered local runner
       shell: bash
@@ -82,6 +83,7 @@ jobs:
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
     - name: Admit exact focused source HEAD and tracked index
+      id: ssh_absence_admission
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
       working-directory: ${{ env.DIAG_SOURCE }}
@@ -93,8 +95,44 @@ jobs:
         git diff --exit-code
         git diff --cached --exit-code
         printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        ssh_helper="$DIAG_SOURCE/tools/ci/ssh_source_absence_523.sh"
+        [[ -f $ssh_helper && ! -L $ssh_helper ]]
+        ssh_helper_id=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")
+        exec {ssh_helper_fd}<"$ssh_helper"
+        ssh_helper_pid=$BASHPID
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
+        . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
+        test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        exec {ssh_helper_fd}<&-
+        ssh_absence_admit "$DIAG_SOURCE" "$GITHUB_SHA" "$CI_JOB_TEMP/proof"
+        printf 'SSH_ABSENCE_ROOT=%s\nSSH_ABSENCE_SOURCE_SHA=%s\nSSH_ABSENCE_PARENTS=%s\n' \
+          "$SSH_ABSENCE_ROOT" "$SSH_ABSENCE_SOURCE_SHA" "$SSH_ABSENCE_PARENTS" >> "$GITHUB_ENV"
         git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
         tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+    - name: Verify six exact SSH source absence controls
+      id: ssh_absence_controls
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.ssh_absence_admission.outcome
+        == 'success') }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        ssh_helper="$DIAG_SOURCE/tools/ci/ssh_source_absence_523.sh"
+        [[ -f $ssh_helper && ! -L $ssh_helper ]]
+        ssh_helper_id=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")
+        exec {ssh_helper_fd}<"$ssh_helper"
+        ssh_helper_pid=$BASHPID
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
+        . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
+        test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        exec {ssh_helper_fd}<&-
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" controls-before
+        ssh_absence_controls "$CI_JOB_TEMP" "$CI_JOB_TEMP/proof"
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" controls-after
     - name: Expose provisioned Rust shims
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
@@ -440,11 +478,21 @@ jobs:
             docs/naver/python-rust-523-controls-loader-553.md) ;;
             .github/workflows/rust-native-arm.yml) ;;
             docs/naver/python-rust-523-native-arm-reuse.md) ;;
+            .github/workflows/python-rust-523-native-arm-final-two.yml) ;;
+            .github/workflows/python-rust-523-native-arm-remaining.yml) ;;
+            docs/naver/python-rust-523-cold-tracer-560.md) ;;
+            docs/naver/python-rust-523-native-arm-remaining.md) ;;
+            docs/naver/python-rust-523-ui-recording-559.md) ;;
+            rust/crates/dev-tools/src/ui_application_lifecycle_reference.rs) ;;
+            rust/crates/dev-tools/tests/ui_application_lifecycle_reference.rs) ;;
+            rust/crates/dev-tools/tests/ui_application_lifecycle_reference/source_binding.rs) ;;
+            tools/ci/ssh_source_absence_523.sh) ;;
+            tools/scripts/ssh.py) ;;
             *) printf 'Changed dependency invalidates reuse: %s\n' "$changed" >&2; exit 1 ;;
           esac
         done < "$CI_JOB_TEMP/proof/changed-paths.bin"
         printf '%s  %s\n' 68f0f800ef5fbb456a06986a8695a5c3aaa2cbdf86160b47826e913edd792f85 .github/workflows/carrot-route-vault-publish.yaml | sha256sum --check -
-        printf '%s  %s\n' d3351ebe22402ced48650b2fbfc6661a093cc9e9c19961517984548591c030a8 .github/workflows/fast-checks.yml | sha256sum --check -
+        printf '%s  %s\n' fb9445c81a96d2848a2e0f732cc601af0c13a7b3910d7e29b0e946eb956dd4a1 .github/workflows/fast-checks.yml | sha256sum --check -
         printf '%s  %s\n' ada137e1a1bbe957903a930c49dc5496f5d685193b8d09970accd90f632c2a0c .github/workflows/python-rust-523-bundle.yml | sha256sum --check -
         printf '%s  %s\n' e7718884de7e2b3f25a31d7c1fdf23f11f1a1ece82c4f86d1e84e6a9673d6388 .github/workflows/python-rust-523-capacity.yml | sha256sum --check -
         printf '%s  %s\n' 634559405e03be79cf66dfcf888bfc28a0b27a51e92b5335013dfe1b16836f59 .github/workflows/python-rust-523-model.yml | sha256sum --check -
@@ -477,7 +525,7 @@ jobs:
         printf '%s  %s\n' 1227b87bdfba7e0ea03d2542766133f75925200bfd0fb7f1eea7f121738294f7 rust/crates/dev-tools/tests/argparse_scan.rs | sha256sum --check -
         printf '%s  %s\n' 823178de2e6b3587e039aa9ea9267a0cfb99e7c355fd6dabbdb2790b4bfd84a3 rust/crates/dev-tools/tests/ci_disk_bootstrap.rs | sha256sum --check -
         printf '%s  %s\n' d8034f578df45c9c68b889eb83c7fb6ec85c3e1cd6d109a36d6e5ecebde189f6 rust/crates/dev-tools/tests/ci_disk_bootstrap/prepared_audit.rs | sha256sum --check -
-        printf '%s  %s\n' e99044ba8f0a218e741df5aadc2c92b6fc7bd2158bc30c2464edd807b1848143 rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
+        printf '%s  %s\n' e57fb9c9ede91d8e5bd6c742d4ac842a3929bda961ef897e3289af80c2114dbe rust/crates/dev-tools/tests/ci_workflow_policy.rs | sha256sum --check -
         printf '%s  %s\n' 9e621eff405a28331789a89ef00b6bb66449a6a6a73fe3b0cabce920777d5e6e rust/crates/dev-tools/tests/developer_auth.rs | sha256sum --check -
         printf '%s  %s\n' 4f75a8815b2f07ed28b3a4b40a870ec7a6e5e84373f12f27280b7d4a9e5df728 rust/crates/dev-tools/tests/developer_cli_original.rs | sha256sum --check -
         printf '%s  %s\n' 513c97916187d5ab5b7d6868faf2073bd89bb71807f549b7a00b2f3ce2a2adc9 rust/crates/dev-tools/tests/developer_cli_original/ssh_frozen.rs | sha256sum --check -
@@ -585,7 +633,7 @@ jobs:
         printf '%s  %s\n' a079f5880b7227f213d299925e10f95279b39b71cd37ecfdebc446840d4e857a rust/crates/dev-tools/tests/ui_emoji_ci.rs | sha256sum --check -
         printf '%s  %s\n' b522e2d415b1913e3e421f6213cfba482dd84564fb1e0fa86fbac64f5067313b rust/crates/dev-tools/tests/updated_check.rs | sha256sum --check -
         printf '%s  %s\n' a624d2cca9df602975d1a922f26c25debd03eba752fc1f6569c5b3300d8fdce5 rust/tools/tests/test_card_ci.py | sha256sum --check -
-        printf '%s  %s\n' d34e96b35547fbf06d67218fbb334d5a63169b78ade21bbe1a2c878385deb925 rust/tools/tests/test_plannerd_ci.py | sha256sum --check -
+        printf '%s  %s\n' 8a947b2221251d1dc48cda9b01beb74d5c05d403a11b5fd9748fb904c3d32f6d rust/tools/tests/test_plannerd_ci.py | sha256sum --check -
         printf '%s  %s\n' d8613d974fea2e0c11a04650242ad3ef2313b08517ec1687f8923e94138bc135 rust/tools/tests/test_xiaoge_ci.py | sha256sum --check -
         printf '%s  %s\n' 64e31d933062bc144dc79dce68b9c7828dca1ad21f6cd9b2ea553cfc5c869d08 rust/crates/dev-tools/tests/registration_utf7_ci.rs | sha256sum --check -
         printf '%s  %s\n' 1d6c6c57f313bc73f1a378649c1d4a0a3f0e3eba5b868b064ffb2976cd78b3ec tools/ci/prepare-lfs-source-535 | sha256sum --check -
@@ -640,19 +688,19 @@ jobs:
         printf '%s  %s\n' 18ebd11d7d87111116d813c50db1ffd75c130dbb35d0597aa6afdeacec51a0f3 tools/ci/tests/test_generated_assets_557.py | sha256sum --check -
         printf '%s  %s\n' 68b932bf23595e217d0b489e2f1267326a19ed4879523fc93f37ba5f28c3ae04 rust/crates/dev-tools/src/ui_application_lifecycle_recording.rs | sha256sum --check -
         printf '%s  %s\n' 4ffa6bc44d1cf2a9f41881541802b779eca279c228f12abaa3a705005b87a7c5 rust/crates/dev-tools/tests/ui_application_lifecycle_recording.rs | sha256sum --check -
-        printf '%s  %s\n' b60233dbcded60ae051e986b1bf76b9b3b73bf6670824952f6a89799ee95d397 .github/workflows/python-rust-523-ui-recording.yml | sha256sum --check -
-        printf '%s  %s\n' 10cb3d55ba9a655bd1239843c4d5ab6e414695d5fef91bf0fdb52cd39682381a tools/ci/ui_recording_559.sh | sha256sum --check -
+        printf '%s  %s\n' 8035a679aeccc80150a31800009dac7414f164275f324cdb7430772f823d5aab .github/workflows/python-rust-523-ui-recording.yml | sha256sum --check -
+        printf '%s  %s\n' a4af0a9c1e123a0ae77253aa49435ff28ae02bf41b21c6fec418ddbd8da4a645 tools/ci/ui_recording_559.sh | sha256sum --check -
         printf '%s  %s\n' 0d516594bf5dc43ee9c000b43b59fc45ccfada008808239ca0589767930040aa tools/ci/fixtures/ui-recording-559-baseline.patch | sha256sum --check -
         printf '%s  %s\n' 6c039216f2bb3f6bfacb56074d593b4d6a071103146f224f64b2e8869948501b .github/workflows/python-rust-523-hosted-arm.yml | sha256sum --check -
         printf '%s  %s\n' 9428142ebc797ccb4d36a1f02f7de3d5232afb42371f2943618004802bab6e9c .github/workflows/python-rust-523-native-arm.yml | sha256sum --check -
-        printf '%s  %s\n' fcc8624131ed6d37b36a1cba0f02ea7aff80aada51c3b57151284e29ca4bf3cc rust/crates/dev-tools/src/ui_application_logic_check.rs | sha256sum --check -
+        printf '%s  %s\n' 672942f302fa7538cbc57d20cb61ba146aeedc4e8a92397061891e933542b9e6 rust/crates/dev-tools/src/ui_application_logic_check.rs | sha256sum --check -
         printf '%s  %s\n' af8e2eb68039ee43d04963052d80d663d4c37f1357cebf1b2fccfada3357e6ae rust/crates/dev-tools/tests/ui_application_logic_check.rs | sha256sum --check -
         printf '%s  %s\n' 9ce26774424d9e0b245b16cefb07286318e9e20a4872c5b597ece3504ad16284 rust/crates/dev-tools/tests/ui_application_logic_check/source_binding.rs | sha256sum --check -
         printf '%s  %s\n' e0839f63f5cb67c3268037731d0b3c43a00535336ffba996453352a30ab68f28 rust/crates/dev-tools/tests/updated_daemon_retirement.rs | sha256sum --check -
         printf '%s  %s\n' 158c7c47aa055ec80ce850aeac885be2e81a96667d5c7d5dcd0553243e384c50 rust/tools/radarcan_runtime_capture.py | sha256sum --check -
         printf '%s  %s\n' fc22abe6c7612e10642dc7aa29581d94f7acf658b9ea0722f2f8cbf138dea33e rust/tools/radarcan_runtime_producer.py | sha256sum --check -
         printf '%s  %s\n' c3a998a09e133020458fc2808ff87c91bce80fe63e787a504309e24899fa609a rust/tools/tests/test_radarcan_ci.py | sha256sum --check -
-        printf '%s  %s\n' b141d3e5973b6b504c4b4c8486eed3b4ce3527e21dd859cd463fbf3bb702d537 tools/ci/native-arm | sha256sum --check -
+        printf '%s  %s\n' 530b08fa9a1e3bb82318f5c2e6efc6df1fa84e505193e4ec36d63a544b014fc9 tools/ci/native-arm | sha256sum --check -
         printf '%s  %s\n' 17dc700058e2199186807fd3e48f8d3fb3ca7fa6d2400229cf051e5942d22a01 .github/workflows/python-rust-523-native-arm-more.yml | sha256sum --check -
         printf '%s  %s\n' 985a73f3db467bd18ca3dc91c9def0acd1cb7c05829f7d72dcb0bb882234c88c rust/crates/dev-tools/src/driver_pipeline_dependency.rs | sha256sum --check -
         printf '%s  %s\n' 2e13d31e6ca5bbc1e5975d5bab3a4ae1c45f9f922e72f4a59c97b59a8d90eb66 rust/crates/dev-tools/src/driver_pipeline_dependency_attestation.json | sha256sum --check -
@@ -661,8 +709,14 @@ jobs:
         printf '%s  %s\n' 532281d6682b2d5a4ae8b8acf354b3a39d04eaf98cd49cc9a2c1432be30b8795 rust/crates/dev-tools/tests/fixtures/driver-pipeline-dependency/collector-reference-manifest.json | sha256sum --check -
         printf '%s  %s\n' 41d9b4d37e59d76e318fe8f0cecf5a3469d67814ce5e5f5a5e2c8ef0f9ec5f3d rust/crates/dev-tools/tests/developer_ssh_entry.rs | sha256sum --check -
         printf '%s  %s\n' c2562fa8c3b60108024c3f3ef0ddf4a35800d42b73eb44e1028003096974a0e6 rust/crates/dev-tools/tests/fixtures/developer-ssh-entry/exec_recorder.rs | sha256sum --check -
-        printf '%s  %s\n' 6bca2c2aecaafa366b4358089cb1c64ab45ad4bc9eeca12030e516e92dd20a04 tools/ci/developer_ssh_entry_523.sh | sha256sum --check -
+        printf '%s  %s\n' 5c9d356803c82f724d4ae3138555e7ce999fda3364e454c14aff28b045445687 tools/ci/developer_ssh_entry_523.sh | sha256sum --check -
         printf '%s  %s\n' 8c79e634c0b889a1a21a7445dbdbeee90c582d51b7f7c4d6ee82cac265e3a9f5 .github/workflows/rust-native-arm.yml | sha256sum --check -
+        printf '%s  %s\n' b54581a0b216e33df7f2454a835baaf374943f5c52114cb3623d45934b1f537a .github/workflows/python-rust-523-native-arm-final-two.yml | sha256sum --check -
+        printf '%s  %s\n' d96d04bba5c8ae34311a9f987ec1e711d7f646b8f5f6aabd7f040b92b04f4a52 .github/workflows/python-rust-523-native-arm-remaining.yml | sha256sum --check -
+        printf '%s  %s\n' 910d83f44909352ace57d1bf1c59f7e3da00a1878106448eee4a7fa712b2c8ae rust/crates/dev-tools/src/ui_application_lifecycle_reference.rs | sha256sum --check -
+        printf '%s  %s\n' cd6233cbe31283b47f3d8a4d6dac9c4a11b60739ec5fa54d25cd23630473c458 rust/crates/dev-tools/tests/ui_application_lifecycle_reference.rs | sha256sum --check -
+        printf '%s  %s\n' 9aa47cb3cc2403e24d13d4faf1ae0b9155d980a8b6696f72931432d321a60ce6 rust/crates/dev-tools/tests/ui_application_lifecycle_reference/source_binding.rs | sha256sum --check -
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa tools/ci/ssh_source_absence_523.sh | sha256sum --check -
         python - <<'MANIFEST'
         import hashlib,subprocess,tomllib
         from collections import Counter
@@ -732,7 +786,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='9b851b03193ced1673bfe00c9e8ccdc35204d9ab60c20b916a7bb89f4ee5560c', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='ef639c200f8afed595a42cd7ba2b33b7fa94f332d7b3a5a578e35af6203f86b7', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile
@@ -765,6 +819,32 @@ jobs:
           '추가 batch의 reclaim은 e719 원문 SHA, controls 두 파일은 지정 SHA, Bundle harness는 tempdir chmod0700 수정 SHA에만 묶는다. controls와 수정 후 Bundle은 pending이며 새 Bundle/모델 PASS를 주장하지 않는다.' \
           '과거 ARM ELF를 current binary로 재표기하지 않는다. 현재 driver cached-source10 또는 모델/기기 전체 수용 증거가 아니며 cached native 기본 disabled 정책과 guarded-add8은 불변이다.' \
           > "$CI_JOB_TEMP/proof/reused-scopes.txt"
+    - name: Verify exact SSH original deletion against retained source
+      id: ssh_original_deletion
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled()
+        && steps.toolchain.outcome == 'success' && steps.ssh_absence_admission.outcome == 'success') }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        ssh_helper="$DIAG_SOURCE/tools/ci/ssh_source_absence_523.sh"
+        [[ -f $ssh_helper && ! -L $ssh_helper ]]
+        ssh_helper_id=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")
+        exec {ssh_helper_fd}<"$ssh_helper"
+        ssh_helper_pid=$BASHPID
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
+        . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
+        test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        exec {ssh_helper_fd}<&-
+        base=97f7ad36dfa0919b4e5c216fb16f44ed29161663
+        # 기존 source-reuse 단계가 이미 fetch한 정확한 object만 읽는다. 새 fetch/restore는 없다.
+        git --no-optional-locks diff --no-renames --name-status "$base" HEAD -- tools/scripts/ssh.py > "$CI_JOB_TEMP/proof/ssh-original-deletion.diff"
+        printf 'D\ttools/scripts/ssh.py\n' | cmp - "$CI_JOB_TEMP/proof/ssh-original-deletion.diff"
+        git --no-optional-locks show "$base:tools/scripts/ssh.py" | sha256sum > "$CI_JOB_TEMP/proof/ssh-historical-original.sha256"
+        printf 'f4fb8dff60a0bab57643172093a6f437acb0d001929103f081d872280710eeff  -\n' | cmp - "$CI_JOB_TEMP/proof/ssh-historical-original.sha256"
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" historical-deletion
     - name: Admit unchanged a134 runtime-qualified auth and setup cohorts
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
@@ -854,14 +934,36 @@ jobs:
         find -P "$context" -printf '%P\t%y\t%D\t%i\t%m\t%U\t%G\t%n\t%s\t%T@\t%C@\n' | sort > "$CI_JOB_TEMP/proof/ssh-frozen-roster.before.tsv"
         printf 'DEVELOPER_SSH_FROZEN_DIR=%s\n' "$context" >> "$GITHUB_ENV"
     - name: Validate frozen SSH39 and setup21 with importer controls
+      id: ssh_frozen_checks
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       run: |
         set -euo pipefail
+        ssh_helper="$DIAG_SOURCE/tools/ci/ssh_source_absence_523.sh"
+        [[ -f $ssh_helper && ! -L $ssh_helper ]]
+        ssh_helper_id=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")
+        exec {ssh_helper_fd}<"$ssh_helper"
+        ssh_helper_pid=$BASHPID
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
+        . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
+        test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        exec {ssh_helper_fd}<&-
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" frozen-before
+        set +e
+        (
+        set -euo pipefail
         export no_proxy="$NO_PROXY"
         cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --test developer_cli_original -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/ssh-frozen-regression.log"
         test "$(grep -Ec '^test result: ok\. 10 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/ssh-frozen-regression.log")" -eq 1
+
+        )
+        action=$?
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" frozen-after
+        after=$?
+        (( action == 0 && after == 0 ))
     - name: Admit unchanged successful fb1228 thirteen-case parser comparison
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
@@ -918,6 +1020,7 @@ jobs:
         cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --lib developer_ssh::unicode_lower15:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/proof/ssh-unicode15-original.log"
         grep -F 'test developer_ssh::unicode_lower15::original_tests::all_scalar_mappings_and_contexts_match_cpython_312 ... ok' "$CI_JOB_TEMP/proof/ssh-unicode15-original.log"
     - name: Validate affected SSH behavior after Unicode15 normalization
+      id: ssh_native_regression
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
@@ -951,26 +1054,105 @@ jobs:
           test "$(grep -Fxc "test $case ... ok" "$log")" -eq 1
         done
     - name: Verify pinned SSH inputs after all attempted regressions
+      id: ssh_frozen_after
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DEVELOPER_SSH_FROZEN_DIR != '') }}
       run: |
+        set +e
+        (
+          set -euo pipefail
+        ssh_helper="$DIAG_SOURCE/tools/ci/ssh_source_absence_523.sh"
+        [[ -f $ssh_helper && ! -L $ssh_helper ]]
+        ssh_helper_id=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")
+        exec {ssh_helper_fd}<"$ssh_helper"
+        ssh_helper_pid=$BASHPID
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
+        . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
+        test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        exec {ssh_helper_fd}<&-
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" inputs-before
+        )
+        before=$?
+        (
         set -euo pipefail
         find "$DEVELOPER_SSH_FROZEN_DIR" -type f -print0 | sort -z | xargs -0 -r sha256sum > "$CI_JOB_TEMP/proof/ssh-frozen-inputs.after.sha256"
         find -P "$DEVELOPER_SSH_FROZEN_DIR" -printf '%P\t%y\t%D\t%i\t%m\t%U\t%G\t%n\t%s\t%T@\t%C@\n' | sort > "$CI_JOB_TEMP/proof/ssh-frozen-roster.after.tsv"
         cmp "$CI_JOB_TEMP/proof/ssh-frozen-inputs.before.sha256" "$CI_JOB_TEMP/proof/ssh-frozen-inputs.after.sha256"
         cmp "$CI_JOB_TEMP/proof/ssh-frozen-roster.before.tsv" "$CI_JOB_TEMP/proof/ssh-frozen-roster.after.tsv"
+
+        )
+        action=$?
+        (
+          set -euo pipefail
+        ssh_helper="$DIAG_SOURCE/tools/ci/ssh_source_absence_523.sh"
+        [[ -f $ssh_helper && ! -L $ssh_helper ]]
+        ssh_helper_id=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")
+        exec {ssh_helper_fd}<"$ssh_helper"
+        ssh_helper_pid=$BASHPID
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
+        . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
+        test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        exec {ssh_helper_fd}<&-
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" inputs-after
+        )
+        after=$?
+        (( before == 0 && action == 0 && after == 0 ))
     - name: Validate strict auth and SSH Clippy
+      id: ssh_strict
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (!cancelled() && steps.toolchain.outcome == 'success') }}
       run: |
         set -euo pipefail
+        ssh_helper="$DIAG_SOURCE/tools/ci/ssh_source_absence_523.sh"
+        [[ -f $ssh_helper && ! -L $ssh_helper ]]
+        ssh_helper_id=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")
+        exec {ssh_helper_fd}<"$ssh_helper"
+        ssh_helper_pid=$BASHPID
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
+        . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
+        test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        exec {ssh_helper_fd}<&-
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" clippy-before
+        set +e
+        (
+        set -euo pipefail
         cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --features developer-ssh-native --lib --bin developer-auth --bin developer-auth-json --bin developer-ssh --bin setup-ssh-keys --test developer_auth --test developer_cli_original --test developer_ssh --test developer_ssh_entry --test argparse_scan --test ci_disk_bootstrap -- -D warnings 2>&1 | tee "$CI_JOB_TEMP/proof/auth-clippy.log"
+
+        )
+        action=$?
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" clippy-after
+        after=$?
+        (( action == 0 && after == 0 ))
     - name: Seal Fast source and index after all maintained checks
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
       working-directory: ${{ env.DIAG_SOURCE }}
       run: |
+        set +e
+        (
+          set -euo pipefail
+        ssh_helper="$DIAG_SOURCE/tools/ci/ssh_source_absence_523.sh"
+        [[ -f $ssh_helper && ! -L $ssh_helper ]]
+        ssh_helper_id=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")
+        exec {ssh_helper_fd}<"$ssh_helper"
+        ssh_helper_pid=$BASHPID
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
+        . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
+        test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        exec {ssh_helper_fd}<&-
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" source-final-before
+        )
+        before=$?
+        (
         set -euo pipefail
         test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
         git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
@@ -996,13 +1178,99 @@ jobs:
           find "$CI_JOB_TEMP/venv" -type l -printf '%p\t%l\n' | sort > "$CI_JOB_TEMP/proof/oracle-venv-links.after.txt"
           cmp "$CI_JOB_TEMP/proof/oracle-venv-links.before.txt" "$CI_JOB_TEMP/proof/oracle-venv-links.after.txt"
         fi
+
+        )
+        action=$?
+        (
+          set -euo pipefail
+        ssh_helper="$DIAG_SOURCE/tools/ci/ssh_source_absence_523.sh"
+        [[ -f $ssh_helper && ! -L $ssh_helper ]]
+        ssh_helper_id=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")
+        exec {ssh_helper_fd}<"$ssh_helper"
+        ssh_helper_pid=$BASHPID
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
+        . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
+        test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        exec {ssh_helper_fd}<&-
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" source-final-after
+        )
+        after=$?
+        (( before == 0 && action == 0 && after == 0 ))
       id: source_final
     - name: Verify prepared Rust SDK after all attempted focused checks
       id: prepared_rust_final
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_PREPARED_RUST_ROOT != '') }}
       working-directory: ${{ env.DIAG_SOURCE }}
       shell: bash
-      run: '"$DIAG_SOURCE/rust/tools/prepare-readonly-ci-rust" after'
+      run: |
+        set +e
+        (
+          set -euo pipefail
+        "$DIAG_SOURCE/rust/tools/prepare-readonly-ci-rust" after)
+        sdk_status=$?
+        (
+          set -euo pipefail
+        ssh_helper="$DIAG_SOURCE/tools/ci/ssh_source_absence_523.sh"
+        [[ -f $ssh_helper && ! -L $ssh_helper ]]
+        ssh_helper_id=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")
+        exec {ssh_helper_fd}<"$ssh_helper"
+        ssh_helper_pid=$BASHPID
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
+        . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
+        test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        exec {ssh_helper_fd}<&-
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" sdk-final-after
+        )
+        absence_status=$?
+        (( sdk_status == 0 && absence_status == 0 ))
+
+    - name: Require complete SSH absence and current native qualification
+      id: ssh_absence_closure
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() &&
+        env.SSH_ABSENCE_ROOT != '') }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      env:
+        RESULT_0: ${{ steps.ssh_absence_admission.outcome }}
+        RESULT_1: ${{ steps.ssh_absence_controls.outcome }}
+        RESULT_2: ${{ steps.ssh_original_deletion.outcome }}
+        RESULT_3: ${{ steps.ssh_frozen_checks.outcome }}
+        RESULT_4: ${{ steps.ssh_native_regression.outcome }}
+        RESULT_5: ${{ steps.ssh_entry.outcome }}
+        RESULT_6: ${{ steps.ssh_frozen_after.outcome }}
+        RESULT_7: ${{ steps.ssh_strict.outcome }}
+        RESULT_8: ${{ steps.source_final.outcome }}
+        RESULT_9: ${{ steps.prepared_rust_final.outcome }}
+      run: |
+        set -euo pipefail
+        ssh_helper="$DIAG_SOURCE/tools/ci/ssh_source_absence_523.sh"
+        [[ -f $ssh_helper && ! -L $ssh_helper ]]
+        ssh_helper_id=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")
+        exec {ssh_helper_fd}<"$ssh_helper"
+        ssh_helper_pid=$BASHPID
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
+        . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
+        test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        exec {ssh_helper_fd}<&-
+        for result in "$RESULT_0" "$RESULT_1" "$RESULT_2" "$RESULT_3" "$RESULT_4" "$RESULT_5" "$RESULT_6" "$RESULT_7" "$RESULT_8" "$RESULT_9"; do test "$result" = success; done
+        jq -e --arg source "$GITHUB_SHA" '.schema==1 and .source_sha==$source and .phase=="entry4-checked" and
+         .command_exit==0 and .finalizer_exit==0 and .entry4_candidate==true and .source_phase=="absent" and
+         .removed_source=="tools/scripts/ssh.py" and .historical_source_sha256=="f4fb8dff60a0bab57643172093a6f437acb0d001929103f081d872280710eeff" and
+         .source_absence_admitted==true and .original_deleted==true and .original_executed==false and
+         .retirement_credit==0 and .real_ssh==false and .whole_python_absence==false' "$CI_JOB_TEMP/proof/developer-ssh-entry/driver/outcome.json"
+        ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" closure
+        ssh_absence_require_stages "$CI_JOB_TEMP/proof"
+        (umask 077; set -o noclobber
+         jq -n --arg source "$GITHUB_SHA" --arg root "$DIAG_SOURCE" --arg parents "$SSH_ABSENCE_PARENTS" \
+         '{schema:1,source_sha:$source,root:$root,parents:$parents,phase:"absent",removed_source:"tools/scripts/ssh.py",
+         controls:6,required_stages_verified:true,sampled_absence:true,whole_python_absence:false,retirement_credit:0}' \
+         > "$CI_JOB_TEMP/proof/ssh-absence-closure.json")
     - name: Retain Fast job ownership evidence
       id: fast_evidence
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
@@ -1015,7 +1283,7 @@ jobs:
         retention-days: 14
     - name: Clean only uploaded private Fast source
       id: fast_source_cleanup
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success') }}
+      if: '${{ (github.event_name != ''pull_request'' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.fast_evidence.outcome == ''success'' && steps.fast_evidence.outputs.artifact-id != '''' && steps.fast_evidence.outputs.artifact-digest != '''' && env.DIAG_SOURCE_OWNER != '''' && steps.source_final.outcome == ''success'' && steps.prepared_rust_final.outcome == ''success'' && steps.ssh_absence_closure.outcome == ''success'') }}'
       working-directory: ${{ github.workspace }}
       env:
         UPLOAD_ID: ${{ steps.fast_evidence.outputs.artifact-id }}
@@ -1036,6 +1304,19 @@ jobs:
         test "$DIAG_SOURCE" = "$p/source"
         test -d "$p/source" && test ! -L "$p/source"
         test "$(realpath -e -- "$p/source")" = "$p/source"
+        ssh_helper="$DIAG_SOURCE/tools/ci/ssh_source_absence_523.sh"
+        [[ -f $ssh_helper && ! -L $ssh_helper ]]
+        ssh_helper_id=$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")
+        exec {ssh_helper_fd}<"$ssh_helper"
+        ssh_helper_pid=$BASHPID
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
+        . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
+        test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
+        test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        exec {ssh_helper_fd}<&-
+        ssh_absence_inspect "$DIAG_SOURCE" "$GITHUB_SHA"
+        printf 'SSH_ABSENCE_CLEANUP source=%s result=absent sampled=true\n' "$GITHUB_SHA"
         rm -rf --one-file-system -- "$p"
     - name: Clean common owned Fast job temporary paths
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
