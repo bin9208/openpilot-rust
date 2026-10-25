@@ -767,3 +767,42 @@ final-seals pass/failures[]/all_owned_children_reaped true, finalizer_errors[]�
 전체SDK 불변성을 확인했다. 동적 module provider before/after2쌍 차이는 별도로 읽으며
 그 차이를 file 변조나 complete provider closure로 단정하지 않는다. 실제 BLAS/kernel 관측·
 역사 전체 provider closure·normal40/전체 runtime 수용·원본 기대값 재생성·retirement는 false/0이다.
+
+## f55 정확 소스의 집중 수용과 PR 후속 상태
+
+source `f55b3b6d34ca709b924c68d93a02061186fc27b9`의 다음 네 실행은 성공했고 부모가
+원문 ZIP의 CRC와 봉인·최종 단계까지 감사했다. 이 수용은 각 실행 범위에 한한다.
+
+| 실행 | 실제 증거와 범위 |
+|---|---|
+| [Fast40145793038](https://github.com/bin9208/openpilot-rust/actions/runs/40145793038) | 7leaf/aggregate 성공, leaf215~366초. 7ZIP2,557,680B/279CRC/불변42쌍. source index19433과 SDK165files/188roster/4program이 같고 final/upload/source·job cleanup 성공. cold323exec/172실패·cargo1/rustc37/Python0/rustup0. raw SHA `5d0558cf1454b397317bbc6237dec3d48cb32881f7dcec25ba2b56808319d859`. |
+| [Focus40145793112/job121026720320](https://github.com/bin9208/openpilot-rust/actions/runs/40145793112/job/121026720320) | target10의 고정SSH26/parser13/setup21와 importer 음성7, 기존 Unicode/SSH27/camera2/Clippy 및 불변15쌍 성공. artifact12580262358=31,703,880B/SHA `8b4e484889e27a26cfafe0f4fb8122ba3400a229c46983199e659160b71b1c8f`/95CRC. 현재 실제 SSH entry/원본부재·제거 credit은0. |
+| [setup40145793011/job121026720154](https://github.com/bin9208/openpilot-rust/actions/runs/40145793011/job/121026720154) | 원본부재·고정21/거부3/공개 missing-argument1(exit1)/부재 통제6, watch9와 Clippy 성공. held123 unique 전후 동일. Git 입력4행 차이는 moment 라벨뿐이다. artifact12581191841=10,514,292B/SHA `561801c384126f863c3305077d5ce46bd43a4b6406c8d1743ed5ddb1cd97f69e`/173CRC. source/index/SDK/upload/소유 정리 성공. sampling은 연속적 부재 보장이 아니며 직접 소유 group 회수와 전체 adopted-child closure를 구분한다. |
+| [collision40145793015/job121026720274](https://github.com/bin9208/openpilot-rust/actions/runs/40145793015/job/121026720274) | reference env 정렬 보정 후 current8 checker exit1/spawn0/foreign 불변,80batch1791files/72,410,679raw bytes/6796events·lines/root1/정확1회 coverage와 누락·중복 통제 성공. held210 unique 전후 동일, finalizer0/immutable true. artifact12581116962=38,870,012B/SHA `ce77c8d6058abb6342ab1f2b1bd2d0ee2532787684b1c2ac8378f32724721544`/8384CRC. |
+
+current8은 원문 manifest의8개이며 단순2×4조합이 아니다. Unix socket2개는 regular bytes
+대상이 아니며 metadata와 foreign 보존 증거를 사용한다. old27/runtime2/실제 caller/원본부재/
+닫힌 PID·cwd·FD·DSO 및 build closure는 여전히 미수용이다. #549 전체 종료·retirement credit은0이다.
+
+PR343을 force 없이 f55로 fast-forward 했다. base dev는
+`b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a`, 실제 merge는
+`d75103ba3114f90a1a2686d772e468065b600ea2`다. PR은 draft/open이며 dev/main에 병합하지 않았다.
+필수 검사는 새 merge별로 읽으며 과거 성공을 대입하지 않는다.
+
+- [PR Fast40146470979](https://github.com/bin9208/openpilot-rust/actions/runs/40146470979)는
+  routing의 cold raw166행 `2775  ???( <detached ...>`를 거부해 실패했다. native ZIP12580607643은
+  584,380B/SHA `20c5f2847a07e8755cf9422609bf6e1f79ceb461a9dbd3ed5ef058eef28cc934`/64CRC다.
+  debug21,780,398B에서2774 rustc -vV의 EVENT_CLONE과2775 startup/종료0를 확인했다.
+  syscall-info 실패 errno와 해당 stop의 syscall은 아직 미확정이다. tracer/collector0·reaped true와
+  `seccomp filter enabled` 관측은 unknown 해독 완전성의 대체 증거가 아니다. parser 거부를 유지하며 별도 결함 [#560](https://github.com/bin9208/openpilot-rust/issues/560)에서 추적한다.
+- [Integration40146471172](https://github.com/bin9208/openpilot-rust/actions/runs/40146471172)는
+  build의 source-final에서 같은 DBC2/font4 변경으로 실패했다. artifact12580983711은
+  5,520,134B/SHA `b27994b149fba438035f46246fb21a4a26f5d2abf257aa65fd566bf246b33335`/47CRC다.
+  실패 진단의 manifest exit0와6파일 원문 변경을 확인했다. #557의 외부 producer/실제 consumer
+  경로 후보를 준비했으나 새 빌드 수용은 아직 없다. 기대값·tracked 원문을 덮어쓰지 않는다.
+- PR docs40146471056은 성공했다. Rust40146470996은 이전 실행 뒤 대기 중이며 아직 수용하지 않는다.
+
+#553의 다음 prefix600+target1은 같은 VM/held plain ELF·환경에서 이력만 비교하는 진단 후보다.
+현재 oneframe의602 미재현 FAIL·기대값/normal40/tap16·기존 상한은 유지한다. #559 UI pending-close
+경쟁의 deterministic RED/GREEN 후보와 #554 Git index preload의 한 변수 관측도 기능 검증 전이다.
+baseline3580=293교체/3부분/3284대기와 전체 #523/#296 미완료 상태를 유지한다.

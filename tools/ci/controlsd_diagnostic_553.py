@@ -428,6 +428,11 @@ class Diagnostic:
         del old
         actual_input = loads(self.c.read(imported["native/input.json"], 128*MIB))["cases"]
         need(len(actual_input) == 40 and actual_input[3] == case, "602/frozen exact case3 input")
+        prefix = actual_input[:4]
+        need([(c["name"], len(c["frames"])) for c in prefix] == [
+            ("HONDA_CIVIC-pid", 200), ("TOYOTA_RAV4-torque", 200),
+            ("VOLKSWAGEN_ID4_MK1-angle", 200), ("HYUNDAI_PALISADE-torque", 200)],
+             "602 native prefix case/frame roster")
         del actual_input
         self.expected_original = loads(self.c.read(imported["reference/loop/source.json"], 128*MIB))[3]["rows"][0]["state"]
         self.expected_native = loads(self.c.read(imported["native/native-raw.json"], 32*MIB))[3]["rows"][0]["state"]
@@ -437,12 +442,25 @@ class Diagnostic:
         self.request = self.out / "case3-frame0-input.json"
         self.c.write_new(self.request, (json.dumps({"cases": [case]}, allow_nan=False)+"\n").encode())
         self.holds.add(self.request)
+        # 앞600프레임은 원문 native 입력 그대로다. 원본 prefix로 대체하지 않는다.
+        prefix[3] = {**prefix[3], "frames": prefix[3]["frames"][:1]}
+        need(prefix[3] == case and sum(len(c["frames"]) for c in prefix) == 601,
+             "602 native prefix600 plus exact target frame0")
+        self.prefix_request = self.out / "native-prefix600-target1-input.json"
+        self.c.write_new(self.prefix_request, (json.dumps({"cases": prefix}, allow_nan=False)+"\n").encode())
+        self.holds.add(self.prefix_request)
+        self.prefix_roster = [{"name": c["name"], "frames": len(c["frames"])} for c in prefix]
         self.save("input-admission.json", {"artifact": ARTIFACT, "run": ARTIFACT_RUN, "source": ACTUAL_SHA,
             "archive_sha256": ARTIFACT_SHA, "inner_archive_sha256": INNER_SHA, "selected_members_crc_checked": 6,
             "all_members_crc_checked": False, "source_case_index": 3, "source_case_frames": 200,
             "selected_frame_index": 0, "selected_cases": 1, "selected_frames": 1,
             "input_sha256": self.c.regular(self.request)["sha256"], "expected_original_state": self.expected_original,
-            "expected_602_native_state": self.expected_native, **FLAGS})
+            "expected_602_native_state": self.expected_native,
+            "prefix_input_source_member": "controls-normal40/native/input.json",
+            "prefix_input_source_sha256": RAW["native/input.json"][1],
+            "prefix_input_sha256": self.c.regular(self.prefix_request)["sha256"],
+            "prefix_cases": self.prefix_roster, "prefix_context_frames": 600,
+            "prefix_target_case_index": 3, "prefix_target_frame_index": 0, **FLAGS})
 
     def prepare_python(self):
         self.phase = "private-original-provider"
@@ -572,6 +590,9 @@ class Diagnostic:
         self.holds.add(config)
         self.save("held-before-runtime.json", self.holds.records())
         traces = {}
+        native_env = {**self.env, "PATH": "/nonexistent", "LD_LIBRARY_PATH": str(self.numerics),
+                      "CONTROLS_NUMERICS": str(self.numerics),
+                      "CONTROLS_ASSETS": str(self.root / "opendbc_repo/opendbc/car/torque_data")}
         for mode in ("original-plain", "original-tapped", "native-plain", "native-tapped"):
             self.phase = mode
             output = self.out / (mode+".json")
@@ -588,12 +609,9 @@ class Diagnostic:
                     self.holds.add(self.out / "original-tapped-layers.json")
                     self.holds.add(self.out / "original-tapped-ast.json")
             else:
-                env = {**self.env, "PATH": "/nonexistent", "LD_LIBRARY_PATH": str(self.numerics),
-                       "CONTROLS_NUMERICS": str(self.numerics),
-                       "CONTROLS_ASSETS": str(self.root / "opendbc_repo/opendbc/car/torque_data")}
                 with self.request.open("rb") as source:
                     self.command([tapped if mode.endswith("tapped") else plain, output], mode,
-                                 env=env, stdin=source, seconds=600)
+                                 env=native_env, stdin=source, seconds=600)
             self.holds.add(output)
             traces[mode] = loads(self.c.read(output, 16*MIB))
         original_same = bits(traces["original-plain"]) == bits(traces["original-tapped"])
@@ -615,6 +633,41 @@ class Diagnostic:
             "observation_valid": original_same and native_same,
             "reduced_replay_reproduced": original_reproduced and native_reproduced,
             "layer_comparison": comparison, **FLAGS}
+        # 별도 프로세스지만 같은 VM/held plain ELF/환경으로 이력 효과만 대조한다.
+        # prefix는 tap하지 않는다. 기존16호출/단일 Palisade topology 상한은 그대로다.
+        self.phase = "native-prefix-plain"
+        prefix_output = self.out / "native-prefix-plain.json"
+        plain_seal = self.holds.records()[str(plain)]
+        need(self.c.regular(plain) == {k: plain_seal[k] for k in ("identity", "sha256")},
+             "same held plain ELF before prefix replay")
+        with self.prefix_request.open("rb") as source:
+            self.command([plain, prefix_output], "native-prefix-plain", env=native_env, stdin=source, seconds=600)
+        need(self.c.regular(plain) == {k: plain_seal[k] for k in ("identity", "sha256")},
+             "same held plain ELF after prefix replay")
+        self.holds.add(prefix_output)
+        prefix_trace = loads(self.c.read(prefix_output, 16*MIB))
+        need(isinstance(prefix_trace, list) and len(prefix_trace) == 4
+             and all(isinstance(c, dict) and set(c) == {"name", "printed", "rows"}
+                     and isinstance(c["rows"], list) for c in prefix_trace)
+             and [{"name": c["name"], "frames": len(c["rows"])} for c in prefix_trace] == self.prefix_roster,
+             "native prefix replay exact four cases/601 rows")
+        one_state = traces["native-plain"][0]["rows"][0]["state"]
+        prefix_state = prefix_trace[3]["rows"][0]["state"]
+        prefix_comparison = {"schema": 1, "diagnostic_only": True, "current_source": self.source,
+            "actual_failure_source": ACTUAL_SHA, "cases": 4, "frames": 601,
+            "context_frames": 600, "target_case_index": 3, "target_frame_index": 0,
+            "same_vm": True, "same_held_plain_elf": {"path": str(plain), **plain_seal},
+            "same_native_environment": True, "prefix_tapped": False,
+            "prefix_input_sha256": self.c.regular(self.prefix_request)["sha256"],
+            "state_bit_encoding": "Float64 little-endian hex; all JSON types preserved",
+            "oneframe_state_bits": bits(one_state), "prefix_state_bits": bits(prefix_state),
+            "expected_602_state_bits": bits(self.expected_native), "frozen_state_bits": bits(self.expected_original),
+            "prefix_equals_oneframe_state_bits": bits(prefix_state) == bits(one_state),
+            "prefix_reproduces_602_state_bits": bits(prefix_state) == bits(self.expected_native),
+            "prefix_reproduces_frozen_state_bits": bits(prefix_state) == bits(self.expected_original), **FLAGS}
+        self.save("native-prefix-comparison.json", prefix_comparison)
+        self.holds.add(self.out / "native-prefix-comparison.json")
+        self.result["prefix_plain_comparison"] = prefix_comparison
         self.save("diagnostic.json", self.result)
         need(original_same and native_same, "observation changed output bits; diagnostic is invalid")
         need(original_reproduced and native_reproduced, "one-frame replay did not reproduce historical/602 boundaries")
