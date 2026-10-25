@@ -206,7 +206,7 @@ fn original_error_class(stderr: &[u8]) -> Option<&str> {
     (class.ends_with("Error") || class == "StopIteration").then_some(class)
 }
 #[test]
-fn maintained_callers_build_native_metadata_before_all_fourteen_uses() {
+fn maintained_callers_build_native_metadata_before_all_thirteen_bridge_uses() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let action = fs::read_to_string(root.join(".github/actions/native-json11/action.yml")).unwrap();
     assert!(action.contains("--features ci-receipt-metadata-native --bin stage-json11 --bin ci-receipt-metadata --target \"$native_host\""));
@@ -265,7 +265,9 @@ fn maintained_callers_build_native_metadata_before_all_fourteen_uses() {
             }
         }
     }
-    assert_eq!(uses, 14);
+    // The Rust logging controller owns its metadata; thirteen bridge consumers remain.
+    // The fourteen historical captures below stay unchanged as independent data.
+    assert_eq!(uses, 13);
 }
 #[test]
 fn qualified_original_traceback_class_is_recovered_without_an_optional_summary() {

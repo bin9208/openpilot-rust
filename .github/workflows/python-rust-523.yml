@@ -383,6 +383,7 @@ jobs:
             .github/workflows/rust.yml) ;;
             .github/workflows/tests.yaml) ;;
             rust/crates/dev-tools/tests/ci_rust_isolation.rs) ;;
+            rust/crates/dev-tools/tests/ci_receipt_metadata.rs) ;;
             tools/ci/diagnostic-296-contract.json) ;;
             tools/ci/local-arm) ;;
             tools/ci/local-routing-296-contract.json) ;;
@@ -663,6 +664,7 @@ jobs:
         printf '%s  %s\n' d48083da05ea0a9047e3e39d76fefc9726261d3f38d681eb299bd62210dcc127 .github/workflows/rust.yml | sha256sum --check -
         printf '%s  %s\n' 9215c2d98492683f7f3c87fe549339cb584588fe754a8589d661415d95244c97 .github/workflows/tests.yaml | sha256sum --check -
         printf '%s  %s\n' 2a88bb1b18185a14938e6a71881625112e7743c9cc4b28a210e52a4329c621a6 rust/crates/dev-tools/tests/ci_rust_isolation.rs | sha256sum --check -
+        printf '%s  %s\n' c72e4559be431905873798265782f5a028dcce41d4748dd6920b8b6e0933670b rust/crates/dev-tools/tests/ci_receipt_metadata.rs | sha256sum --check -
         printf '%s  %s\n' 6030e76ba176d3d50b9191b98adf081f123bb2208185380749d8139689bbef75 tools/ci/diagnostic-296-contract.json | sha256sum --check -
         printf '%s  %s\n' a286863a38d2d122bd97b7f648086c1763e3aa863fe36fe7101f2f7a6ae7ada0 tools/ci/local-arm | sha256sum --check -
         printf '%s  %s\n' cd5118da5812391fbe04ca7a2a0cd62b7a8eadd3547a823dcc0b0cfe921e87c0 tools/ci/local-routing-296-contract.json | sha256sum --check -

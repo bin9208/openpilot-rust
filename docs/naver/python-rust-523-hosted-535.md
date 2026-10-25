@@ -1168,3 +1168,10 @@ a1c와b240의 핵심9 source파일은 byte 동일하다. old missing10의 curren
 각 정확 source에 연결되지만 old17을 재실행해 동일 epoch의 current27/R4를 수용했다고 하지 않는다.
 원본2는 계속 보존·retirement credit0이며 #549/#523/#296 전체는 미완료다. 로컬 기능 실행0,
 세부 감사는 ignored logging-a1c-12593356573-audit.md/collision-b240-12593441022-audit.md에 있다.
+
+
+## PR bacda workspace 메타데이터 브리지 기대 개수 정정
+
+[40173790842/job121111148713](https://github.com/bin9208/openpilot-rust/actions/runs/40173790842/job/121111148713)의 실제 workspace 검사는 `ci_receipt_metadata` 6PASS/1FAIL/1ignored였으며, 현재 bridge 사용처13개를 과거14개로 기대한 단일 assertion에서 실패했다. 로깅 caller를 Rust `check-native-logging`으로 전환하면서 해당 caller의 `$CI_RECEIPT_METADATA` bridge1곳이 제거된 결과다. 나머지13개는 기존 native-json11 준비 후 소비·이전 interpreter snippet 부재 검사를 통과했다.
+
+기존 검사의 이름·현재 기대 개수13 및 설명만 정정한다. 과거14개 capture/manifest/원문 검사의 기대값은 유지하며, caller·metadata 생산기·runner·기존 기능 기준은 변경하지 않는다. 현재 소스의 기능 검증은 Actions 실행 전이며 로컬에서는 Rustfmt/소스·diff만 확인했다. 원본 제거/인벤토리 credit은0이다.
