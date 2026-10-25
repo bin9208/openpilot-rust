@@ -54,23 +54,36 @@ admit() {
   ((target_bytes <= 8 * 1024 * 1024 * 1024 && proof_bytes <= 1024 * 1024 * 1024))
 }
 run() {
-  local label=$1 seconds=$2 command_status; shift 2
+  local label=$1 seconds=$2 command_status side started_cs ended_cs; shift 2
   phase=$label
   admit "$label" 512
-  if [[ $label == lifecycle-runtime_directory_int ]]; then
-    printf '%s\0' "$@" > "$proof/paired-554/traced/command.argv0"
-    paired_active=traced
-    paired_snapshot traced before
-    seconds=$(paired_bound)
-    printf '%s\n' "$seconds" > "$proof/paired-554/traced/bound-seconds.txt"
+  if [[ $label == lifecycle-runtime_directory_int || $label == git-preload-false || $label == git-preload-true ]]; then
+    side=traced
+    if [[ $label != lifecycle-runtime_directory_int ]]; then side=git-${label#git-preload-}; fi
+    printf '%s\0' "$@" > "$proof/paired-554/$side/command.argv0"
+    paired_active=$side
+    paired_snapshot "$side" before
+    if [[ $side == traced ]]; then seconds=$(paired_bound); fi
+    printf '%s\n' "$seconds" > "$proof/paired-554/$side/bound-seconds.txt"
+    if [[ $side != traced ]]; then
+      started_cs=$(monotonic_cs)
+      printf '%s\n' "$started_cs" > "$proof/paired-554/$side/start-cs.txt"
+    fi
     # 함수 전체를 if로 호출하지 않는다. 자식의 실제 status를 admit보다 먼저 보존한다.
     set +e
     (set -e; ulimit -f 524288; /usr/bin/timeout --signal=TERM --kill-after=30s "${seconds}s" "$@") > "$proof/build/$label.stdout" 2> "$proof/build/$label.stderr"
     command_status=$?
     set -e
-    printf '%s\n' "$command_status" > "$proof/paired-554/traced/command.exit"
+    printf '%s\n' "$command_status" > "$proof/paired-554/$side/command.exit"
+    if [[ $side != traced ]]; then
+      ended_cs=$(monotonic_cs)
+      printf '%s\n' "$ended_cs" > "$proof/paired-554/$side/end-cs.txt"
+      ((ended_cs >= started_cs))
+      printf '{"start_cs":%s,"end_cs":%s,"elapsed_cs":%s,"resolution_seconds":0.01}\n' \
+        "$started_cs" "$ended_cs" "$((ended_cs - started_cs))" > "$proof/paired-554/$side/elapsed.json"
+    fi
     if ((command_status != 0)); then return "$command_status"; fi
-    paired_snapshot traced after
+    paired_snapshot "$side" after
     paired_active=
   else
     (ulimit -f 524288; /usr/bin/timeout --signal=TERM --kill-after=30s "${seconds}s" "$@") > "$proof/build/$label.stdout" 2> "$proof/build/$label.stderr"
@@ -614,6 +627,8 @@ paired_snapshot() (
   test "$(cat "$DIAG_SOURCE_OWNER/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
   if [[ $side == untraced ]]; then
     printf '%s\0' "${runtime[@]}" "${untraced_env[@]}" > "$destination.environment.argv0"
+  elif [[ $side == git-false || $side == git-true ]]; then
+    printf '%s\0' "${git_preload_runtime[@]}" > "$destination.environment.argv0"
   else
     test "$side" = traced
     printf '%s\0' "${runtime[@]}" "${lifecycle_env[@]}" > "$destination.environment.argv0"
@@ -667,6 +682,79 @@ printf '%s\0' "${runtime[@]}" "${untraced_env[@]}" > "$proof/paired-554/untraced
 printf '%s\0' "${runtime[@]}" "${lifecycle_env[@]}" > "$proof/paired-554/traced/environment.argv0"
 untraced_command=("${runtime[@]}" "${untraced_env[@]}" "$fixture" --ignored --exact retained::runtime_directory_int --test-threads=1 --color=never)
 printf '%s\0' "${untraced_command[@]}" > "$proof/paired-554/untraced/command.argv0"
+# #554 B: 실제 source의 Git만 false→true 각1회 관측한다. fixture의 false-schema는 바꾸지 않는다.
+mkdir -m 700 "$proof/paired-554/git-false" "$proof/paired-554/git-true" "$proof/git-preload-status-554"
+mkdir -m 700 "$proof/git-preload-status-554/qa"
+elf git-preload-git /usr/bin/git
+elf git-preload-strace /usr/bin/strace
+grep -F -- --argv0 "$proof/build/strace-help.stdout" > "$proof/git-preload-status-554/argv0-supported.txt"
+for setting in false true; do
+  # env_clear 뒤 실제 checker/Git의6+3키 및 QA context만 복제한다. OPTIONAL_LOCKS=0을 새로 넣지 않는다.
+  git_preload_runtime=(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" TMPDIR="$TMPDIR" LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=UTC
+    GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.preloadIndex GIT_CONFIG_VALUE_0="$setting"
+    NATIVE_LOGGING_QA_HOLD=runtime NATIVE_LOGGING_QA_RECORDS="$proof/git-preload-status-554/qa")
+  printf '%s\0' "${git_preload_runtime[@]}" > "$proof/paired-554/git-$setting/environment.argv0"
+  printf '%s\0' "${git_preload_runtime[@]:2}" | jq -Rs 'split("\u0000")[:-1]' > "$proof/paired-554/git-$setting/expected-environment.json"
+  run "git-preload-$setting" 10 "${git_preload_runtime[@]}" /usr/bin/strace --argv0=git --seccomp-bpf --kill-on-exit \
+    -ff -ttt -x -v -s 65536 -e trace=process,%file,%desc,%signal,%network,%memory,setsid,setpgid,prctl,unshare,setns \
+    -e raw=read,pread64 -o "$proof/trace/git-preload-$setting" /usr/bin/git status --porcelain --untracked-files=normal
+done
+phase=git-preload-channels
+for channel in stdout stderr; do
+  cmp "$proof/build/git-preload-false.$channel" "$proof/build/git-preload-true.$channel"
+  # stderr에는 tracer 진단도 모인다. nonempty이면 분리/정규화해 허용하지 않는다.
+  test ! -s "$proof/build/git-preload-false.$channel" && test ! -s "$proof/build/git-preload-true.$channel"
+done
+cmp "$proof/paired-554/git-false/command.exit" "$proof/paired-554/git-true/command.exit"
+for setting in false true; do
+  run "inspect-git-preload-$setting" 180 "${runtime[@]}" "$checker" inspect-trace-summary --directory "$proof/trace" \
+    --prefix "git-preload-$setting" --output "$proof/git-preload-status-554/$setting.summary.json"
+  phase=git-preload-$setting-bind
+  jq -e --arg root "$source" --arg source "$GITHUB_SHA" --arg setting "$setting" \
+    --slurpfile expected "$proof/paired-554/git-$setting/expected-environment.json" \
+    --slurpfile elapsed "$proof/paired-554/git-$setting/elapsed.json" '
+    if (.schema==2 and .raw_immutable==true and .requires_exit_status_zero==true and
+      .full_event_index==false and .lexically_checked_all_events==true and .event_count>0 and
+      .event_count<=1000000 and .physical_lines>=.event_count and .physical_lines<=2000000 and
+      ((.event_counts|to_entries|map(.value)|add)==.event_count) and .closed_pid==false and
+      .closed_cwd==false and .closed_fd==false and .closed_dso==false and .full_acceptance==false and
+      .retirement_credit==false) then . else error("Git trace summary scope differs") end |
+    [.events[] | select(.exec!=null)] as $attempts |
+    if ($attempts|length)==1 then . else error("Git exec attempt roster differs") end |
+    $attempts[0] as $call |
+    if ($call.operation=="execve" and $call.outcome=="exec_succeeded" and
+      $call.exec.program.bytes==("/usr/bin/git"|explode) and
+      ($call.exec.argv|map(.bytes|implode))==["git","status","--porcelain","--untracked-files=normal"] and
+      $call.exec.environment.complete==true and
+      ($call.exec.environment.entries|map(.bytes|implode)|sort)==($expected[0]|sort))
+      then . else error("Git actual argv/environment differs") end |
+    [.events[] | select(.pid==$call.pid and .kind=="terminal_exit")] as $terminal |
+    if ($terminal|length)==1 then . else error("Git normal terminal missing") end |
+    {schema:1,source_commit:$source,root:$root,preload_index:$setting,command_exit:0,
+     exec_pid:$call.pid,exec_timestamp:$call.source[0].timestamp,terminal_timestamp:$terminal[0].source[0].timestamp,
+     exec_to_terminal_seconds:(($terminal[0].source[0].timestamp|tonumber)-($call.source[0].timestamp|tonumber)),
+     collector_elapsed:$elapsed[0],raw_files:.raw_files,selected_raw_bytes:.selected_raw_bytes,
+     event_count:.event_count,physical_lines:.physical_lines,event_counts:.event_counts,
+     diagnostic_only:true,bpf_activation_proven:false,full_event_index:false,closed_pid:false,closed_cwd:false,
+     closed_fd:false,closed_dso:false,R4_acceptance:false,runtime_acceptance:false,retirement_credit:0}' \
+    "$proof/git-preload-status-554/$setting.summary.json" > "$proof/git-preload-status-554/$setting.observation.json"
+done
+phase=git-preload-pair-bind
+jq -s -e 'if (length==2 and .[0].preload_index=="false" and .[1].preload_index=="true" and
+    .[0].source_commit==.[1].source_commit and .[0].root==.[1].root) then
+    . as $pair | ((.[0].event_counts|keys)+(.[1].event_counts|keys)|unique) as $keys |
+    {schema:1,source_commit:.[0].source_commit,root:.[0].root,order:["false","true"],status_pairs:1,
+     status_channels_equal:true,observations:.,diagnostic_only:true,production_preload_changed:false,
+     true_minus_false:{collector_elapsed_cs:(.[1].collector_elapsed.elapsed_cs-.[0].collector_elapsed.elapsed_cs),
+       exec_to_terminal_seconds:(.[1].exec_to_terminal_seconds-.[0].exec_to_terminal_seconds),
+       event_count:(.[1].event_count-.[0].event_count),
+       event_counts:(reduce $keys[] as $key ({}; .[$key]=(($pair[1].event_counts[$key]//0)-($pair[0].event_counts[$key]//0))))},
+     performance_claim:false,root_cause_fixed:false,runtime_acceptance:false,R4_acceptance:false,retirement_credit:0}
+    else error("Git diagnostic pair differs") end' "$proof/git-preload-status-554/"{false,true}.observation.json \
+    > "$proof/git-preload-status-554/complete.json"
+verify_held
+hold "$proof/git-preload-status-554/complete.json"
+admit git-preload-observed 0
 # read/pread64는 FD/주소/길이/결과를 raw hex로 유지한다. 반복 해시의 대형 버퍼 사본만 펼치지 않는다.
 # 입력·packet 원문은 별도 context/실제 결과에서 봉인한다. exec/argv/path 및 mapping은 계속 해석 출력한다.
 # -x는 비ASCII 문자열의 byte escape를 유지한다. FD 번호·실제 path/metadata 인자는 그대로 두고

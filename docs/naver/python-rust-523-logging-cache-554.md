@@ -151,3 +151,58 @@ finalizer/upload/소유 cleanup, helper60분/job75분과 기존 caps는 불변�
 600초 실행 결과는 **Actions UNRUN**이다. 비계측 PASS만으로 traced gate/old27/R4/퇴역을
 수용하지 않는다. source timing/metadata 관측 자체가 cache/order/load에 영향을 줄 수 있다는 한계도
 보존하며 성공할 때까지 반복하지 않는다.
+
+## acc 관측 결과와 Git 단독 진단 B 후보
+
+부모가 감사한 actual SOURCE `acc716e47875f352f1521d0211f218499aa34603`,
+[run40155092406](https://github.com/bin9208/openpilot-rust/actions/runs/40155092406),
+artifact12583988597은 ZIP34,416,153B/SHA
+`ff9c8462f5a6692a111700c0f62b95e34434b861c826f3a5964616d6061022fb`, 3227CRC다.
+같은 fixture/checker/probe/context와 paired source/config/논리 roster/raw index bytes 및
+허용 env에서 evidence root만 달랐다. 비계측 전체 runtime_directory_int1개는 PASS이며
+backpressure0.428409899초/sent1000/drop4000, SIGINT130·producer 회수·foreign 보존까지 도달했다.
+계측 실행은 start_peer2.153766788/command0.190588072/finish0.105792563,
+total2.450147423초로 기존2초 기준에 FAIL했다. 바로 앞 Git status PID16843은
+exec→exit2.041946초/newfstatat24938회다. 한 고정 순서 쌍이라 load/cache/order까지 배제한
+원인 확정은 아니며 `.git` directory mtime/ctime는 달랐다. 원래 traced101·held_final0·
+paired_final0과 closed_trace/old27/R4/credit 미수용을 그대로 보존한다.
+
+승인된 B 후보는 source cache 준비 뒤, 기존 shared600초 시작 **전** Git status만 false→true
+각1회 관측한다. 현재 fixture의 false-schema와 native/원본 controller·test body·timer는 그대로다.
+Git은 기존 FD-held `/usr/bin/git`, cwd는 같은 private source이고 실제 argv bytes는
+`["git","status","--porcelain","--untracked-files=normal"]`다. strace의 실제 help에 기록된
+`--argv0=git`로 absolute provider와 argv0를 함께 보존한다.
+
+env-i에는 실제 fixture 자식의 PATH/HOME/TMPDIR/TZ/LANG/LC_ALL과 Git config3키,
+두 arm에서 같은 QA context만 넣는다. 바뀌는 값은 `GIT_CONFIG_VALUE_0`뿐이다.
+fixture가 전달하지 않는 outer `GIT_OPTIONAL_LOCKS=0`을 B에 새로 넣지 않는다.
+global/user/source config·fsmonitor·assume-unchanged·skip-worktree·dirty 판정·status 범위는
+변경하지 않는다. 기존 mini4/8상태/source-prime 검사도 그대로 남긴다.
+
+새 두 명령은 기존 run의 admission/512MiB file/timeout·kill-after wrapper를 사용하며
+Git의10초 관측 상한을 유지한다. 실제 exit를 먼저 기록하고 monotonic 시작·종료/elapsed를 남긴다.
+`paired_snapshot`을 재사용해 owner/root/source/config/entries·flags/네 입력 ELF·context 및
+held provider를 각 arm 전후 확인한다. 기존 elf 함수로 Git/strace와 loader·DSO도 hold한다.
+raw index는 시점마다 열린 FD의 안정된 bytes/hash/identity를 저장한다. logical roster 불변과
+raw cache metadata 불변을 혼동하지 않고, raw index를 복원하지 않는다.
+
+두 arm의 stdout/stderr/exit bytes가 같고 exit0/빈 출력이어야 한다. stderr에는 tracer 진단도
+모이므로 nonempty이면 원문 그대로 실패하며 정규화·오류 무시는 하지 않는다. 실행/봉인 실패는
+기존 EXIT의 failed-after snapshot·held final에 연결되고 첫 command exit가 sidecar에 남는다.
+원래 lifecycle 실패의 첫 중단 규칙과 source/SDK always-final·upload/cleanup 조건은 불변이다.
+
+raw prefix는 `git-preload-false`, `git-preload-true`이며 기존 full classes/-x/raw read/pread64/
+BPF 요청/EXITKILL을 유지한다. 기존 `inspect-trace-summary`가 모든 raw 줄·grammar·EOF·
+immutability를 검사한다. 성공 exec1개의 absolute Git/정확 argv/전체 env와 같은 PID의 normal
+terminal을 묶고 opcode/outcome counts·원문 timestamp·elapsed를 별도 진단 JSON에 기록한다.
+BPF 실제 활성·full PID/cwd/FD/DSO closure는 미입증이고 해당 flags는 false다.
+
+주요 새 자료는 `logging/paired-554/git-{false,true}/`의 argv/env/exit/timing/전후 snapshot,
+`logging/trace/git-preload-*` raw와 `logging/git-preload-status-554/`의 summary/observation/
+complete JSON이다. 기존 proof1GiB/build8GiB/source2GiB/reserve512MiB, helper60분/job75분 및
+lifecycle2초/공유600초/14selector/retained-once/기존15prefix는 늘리거나 줄이지 않는다.
+true가 두 번째라 cache/order 효과가 남으며, 단독 Git 비교는 full2초 lifecycle 대체가 아니다.
+true 채택·성능 개선·#554 해결·old27/R4/원본2 퇴역은 이 후보로 주장하지 않는다.
+
+로컬은 Bash 문법(heredoc 포함), WF YAML/Bash와 제한 diff만 확인한다. 새 B·lexer/binding·
+시간·회수·전체 gate 기능은 Actions **UNRUN**이다. stage/commit/push는 하지 않는다.
