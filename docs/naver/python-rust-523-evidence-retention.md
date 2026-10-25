@@ -1,9 +1,10 @@
 # #523 Nov5 driver object witness의90일 보존 설계
 
 작성: 2026-10-26. 검토 HEAD `7a928cefe22e3c81bcb941f6ed20eaa80eeabc59`.
-상태: **부모 승인 후 기존 capacity WF의 고정 보존 mode 구현 완료, 실행은 UNRUN**.
+상태: **source972468 보존 actual 성공·원문 byte 감사 완료. 후속 expiry 보정은 실제 API와의 불일치 발견**.
 수정은 `.github/workflows/python-rust-523-capacity.yml`과 이 문서뿐이다.
-consumer/공유 policy/ledger/pin 변경·GHA dispatch·업로드·commit/push는0이다.
+agent의 consumer/공유 policy/ledger/pin 변경·GHA dispatch·업로드·commit/push는0이다.
+부모가 실행한 기존 run의 실제 artifact/roundtrip/cleanup과 만료 시각 한계는 마지막 절에 기록한다.
 기존 #476/six-source credit pending을 유지한다. 이 보존 sidecar는 primary 기능 경로가 아니며
 모델 재실행·원본 capture·compiler replay·release/장치 게시를 수행하지 않는다.
 
@@ -278,7 +279,7 @@ workflow_dispatch/attempt1/같은 저장소와 source로 확인했고 API create
 등록 runner22 bin-actions는 online/busy이고, 같은 source의 자동 inventory
 run40241573554도 runner 배정을 기다렸다. 이 대기 상태를 기능 실패로 판정하지 않는다.
 후속 API에서 inventory run40241573554는 `2026-10-25T22:49:21Z`에 SUCCESS로 완료됐고,
-보존 run은 `22:49:20Z`부터 queued/job`121315471388`로 진행했다. 이 문서의 마지막 조회에서도
+보존 run은 `22:49:20Z`부터 queued/job`121315471388`로 진행했다. 당시 조회에서도
 해당 job은 runner_name 빈값/steps0/queued이며 artifact0이었다. 기본 inventory의 성공을
 아직 시작하지 않은 보존 mode의 성공으로 세지 않는다.
 
@@ -304,6 +305,124 @@ artifact별 실제 created_at을 사용하며, 기존 API의 현재 run ID/head/
 YAML/Bash 문법과 diff를 확인했고, 두 expiry 경계를 역투영하면 게시본 WF SHA로 돌아간다.
 이는 source 검사이며 새 expiry 조건의 기능 실행 결과는 아니다.
 
-이 수정은 현재 로컬 source에만 있다. 이미 dispatch된972468 run의 실행 source를 바꾸거나
+이 수정은 당시 로컬 source에만 있었고 부모가 이후 `39800e064e1e7bae7fd01adcb1952505f1db41f7`에 게시했다.
+이미 dispatch된972468 run의 실행 source를 바꾸거나
 취소·재실행하지 않았다. 새 dispatch/업로드·consumer pin 변경도0이다. 기존 run은 원래 source의
 actual 결과로 계속 구분해서 관측해야 하며, 새 expiry 보정의 actual 수용은 부모가 별도로 소유한다.
+
+## 기존 source972468의 actual 보존 감사 완료 — 2026-10-26
+
+기존 run40241602401/attempt1/source`972468fab5279a9897d2d2bda736938c89a81a9a`는
+`2026-10-25T22:59:57Z`에 completed/SUCCESS다. job121315471388은 실제 runner22/bin-actions/
+Default에서 `22:59:23Z`부터 실행됐고 setup 뒤 first guard·원본 인증·as-is upload·same `/zip`
+roundtrip·별도 proof upload·최종 두 receipt 인증/owned cleanup이 모두 SUCCESS다.
+기존 inventory 두 step과 inventory upload는 모두 skipped여서 cache/SDK/process census에
+진입하지 않았다. 새 자동화를 만들기 전에 완료를 확인했으므로 후속 자동화도 생성하지 않았다.
+
+### 실제 archive와 두 upload receipt
+
+| 역할 | artifact / bytes / SHA256 | created_at / expires_at |
+| --- | --- | --- |
+| 원문 as-is payload | `12617590637`, `driver476-object-witness-12393290469.zip`,20550808B / `a318335767594bfe8bcd08878f15e4f6a03bb0d8d13541d56f3b83243b19f461` | `2026-10-25T22:59:41Z` / `2027-01-23T22:44:30Z` |
+| 별도 provenance ZIP | `12618005602`, `driver476-witness-provenance-40241602401-1`,9261B / `f8d72c81b3bdb266e1e98b6d04fbfe242a9db62213c1e4a15ef727bfa337ff57` | `2026-10-25T22:59:50Z` / `2027-01-23T22:44:30Z` |
+
+두 API metadata 모두 expired=false, workflow_run40241602401/head972468 전체 SHA,
+repository_id=head_repository_id=1395501963 및 검토한 정확한 이름/길이/digest와 일치했다.
+실제 upload action 두 개 모두 검토 pin `cf430e030ddbb5b0abf93d22962f4752f3646cd9`를 사용했다.
+payload는 archive:false/90일, proof는 별도 archive/90일이며 overwrite=false다.
+
+이번 독립 감사는 API metadata의 크기/digest를 먼저 확인한 뒤 합32MiB 미만의 inert download로
+두 ZIP을 같은 `/actions/artifacts/<id>/zip` endpoint에서 다시 받았다. cache는 기존
+`.analysis/scratch/2026-10-25-523-completion/ci/{12617590637,12618005602}.zip`이다.
+payload20550808B/258멤버/37492774B expanded, proof9261B/10멤버/85039B expanded의 전체
+SHA·CRC·unique relative safe path/no-symlink·special-file 거부를 확인했다. ZIP은 풀거나 실행하지 않았다.
+새 payload 전체 bytes를 기존 cached origin12393290469 ZIP과 chunk별 대조해 byte 동일함을 확인했다.
+이 플랫폼/실제 run에서는 v7 as-is 업로드가 `/zip`에 추가 wrapper 없이 원문 ZIP을 반환함을 입증한다.
+
+provenance에는 원문 JSON/source metadata/CRC/roster를 그대로 담은10개 파일이 있다.
+
+| member | bytes | SHA256 |
+| --- | ---: | --- |
+| SOURCE_COMMIT | 41 | `09787d2b7fabb5991bfee84828d6f4efd35fe71e3009e0a52d31fb965b443a04` |
+| WORKFLOW_COMMIT | 41 | `dddc639f43883639775aec1cdf1837dfe347f53f19abe9f4924a95d2b1cdbc87` |
+| origin-artifact.json | 820 | `26e571196f2cb8ba1800186dbbcc60108951607b3d06a7b65b5214a4d796ce45` |
+| origin-binding.json | 710 | `08e0499957cb8b64c92b3c907f2257b26db834cf895fe2b1deb830be19b51c39` |
+| origin-crc.txt | 29647 | `3efa8758bd152cb380917f4870ac7332ca26553e38c3861f8f73c5fb79458117` |
+| origin-members.txt | 24581 | `6a3a8ee5ceaeb791f0aeba3578c924527704dae1f9fbe602023dc53e426c9ace` |
+| origin-run.json | 13985 | `e0d04b4368cef26fb8c29aacf7dcd032f2647fefdb3a9c7249df31fb553bb8fe` |
+| preservation-run.json | 13938 | `b1852247250a08be5b541fa983da0d8cc729a28f6b32ac6ee8d1f67f3c5ccbcc` |
+| preserved-artifact.json | 819 | `bb764ca3d2290ff00226b62bb0fe448b4c028327ef3eed93363b62fc4bad136f` |
+| roundtrip.json | 457 | `3ec36ce2a52e2a90ea93e8ac97386c7bb6e839df6f2b5bab02c0df4fb160901e` |
+
+JSON은 duplicate key를 거부하는 inert reader로 읽었다. origin-artifact/run은 원래
+12393290469/run39700512883/attempt1/head0e522 전체 SHA/같은 repo IDs·names/20550808B/
+원문 digest/expired=false 및 completed/success를 보존한다. SOURCE_COMMIT은a298 전체 SHA,
+WORKFLOW_COMMIT은0e522 전체 SHA의 원래41B member와 같다. origin-members258개는 새 payload의
+실제 전체 member roster와 같고 CRC log는 `No errors detected`다.
+
+origin-binding은 owner=`40241602401:1:inventory`, report identity=`64521:289460:1000:41c0`,
+실제 FS free before=33592328192B, admitted growth=67108864B를 기록한다.
+replay_executed=false/consumer_binding_changed=false이며 모델·원본·컴파일러 실행은 없다.
+roundtrip.json은 artifact12617590637/run40241602401/source972468,20550808B/원문SHA,
+status=ROUNDTRIP_VERIFIED, requested_retention_days=90, endpoint=/zip,
+unwrapped=false/original_bytes_equal=true와 expires_epoch1800744270을 기록한다.
+이 JSON을 새 expected 생성이나 full-model 수용 증거로 사용하지 않는다.
+
+### 실제 cleanup과 수용 범위
+
+job 원문 log는38040B/404행/SHA256
+`7d3ce3628b01c69e616f22e614da1cd260b6542805c721b69b8510d5f04e8915`다.
+원문 SHA OK·각 upload ID/digest·roundtrip SHA OK·최종 두 archive SHA OK를 확인했다.
+최종 step10은 `22:59:51Z`부터 `22:59:52Z`까지 SUCCESS이며 실제 stdout의
+PRESERVATION_VERIFIED receipt가 두 ID와 위 두 digest/source/run을 정확히 결합한다.
+이 receipt는 원래 source가 두 API receipt/owner/dev-inode/held SHA를 확인하고 해당 report
+`/home/actions/actions-runner/_work/_temp/python-rust-523-capacity.BByoAp` 하나를 정리한 뒤에만
+출력한다. 별도 remote FS census를 실행한 것이 아니며 그 이상 회수 범위를 주장하지 않는다.
+
+따라서 **원본 인증·20.55MB 원문 bytes·투명 as-is API roundtrip·두 receipt·owned cleanup**은
+이 실제 run/source 범위에서 수용할 수 있다. 새 primary consumer ID는 자동 적용하지 않았다.
+현 helper가 요구하는 원래 ID/run/head 인증은 그대로라, 향후 보존 archive 연결에는 별도 검토된
+transport binding이 필요하다. #476 원인 해결·fullsix credit·모델/ABI/기기 수용은 여전히 별개다.
+
+### 실제 expiry 관측으로 드러난 후속 source blocker
+
+run.created_at은22:44:29Z, 실제 payload created_at은22:59:41Z, proof는22:59:50Z다.
+**두 artifact의 expires_at은 모두2027-01-23T22:44:30Z로 run.created_at+90일+1초다.**
+따라서 queue가10분을 넘은 이번 실제 run에서도 첫 게시본의 run-anchor guard는 통과했다.
+이 metadata 관측은 앞선 잠재 거부 가정을 이 run에서 입증하지 않으며, 반대로 후속
+artifact-created guard와의 불일치를 드러낸다.
+
+| 자료 | created_at→expires_at 실제 초 | artifact 생성 후 정확한90일 하한보다 부족 |
+| --- | ---: | ---: |
+| payload | 7775089 | 911초(15분11초) |
+| proof | 7775080 | 920초(15분20초) |
+
+후속 source39800의 WF SHA`b7b83241...`는 이 실제 metadata를 받으면 두 새 하한 중 첫 payload
+검사부터 거부한다. 이것은 oldrun의 실패가 아니라 **새 guard와 이미 관측한 API 값의 source 불일치**다.
+API에90일 configured retention이 기록되고 upload 입력도90일인 사실과, 각 artifact 생성 후
+정확히90×86400초를 보장하는 주장은 구별한다. 실제 만료일은 위 표의 값을 그대로 사용한다.
+
+부모 리뷰용 최소 수정 후보는, 이번 실제 서비스가 반환한 run-anchor 보존 계약을 채택할 경우,
+두 expiry 검사에서 원래 `run.created_at+90일 ≤ expires_at ≤ run.created_at+90일+600초`를
+유지하면서 `run.created_at≤artifact.created_at`와 현재 run/head/repo/ID 결합을 추가하는 것이다.
+artifact 생성 자체를 run+10분 안에 묶는 조건은 두지 않는다. 이는 configured90일의 API 계약을
+관측과 맞추는 후보이며, 사용자가 artifact 생성 후 온전한90일을 별도 요구한다면 이 archive는
+그 하한을 충족하지 않는다. 그 경우 source 조건을 완화해 충족했다고 선언할 수 없다.
+
+이번 감사는 **WF를 추가 수정하거나 위 후보를 적용하지 않았다**. 부모가 게시한39800과
+old972468의 구분을 유지하며, 추가 dispatch/upload·재생성·consumer pin 변경·정책/ledger 수정은0이다.
+실제 run이 이미 끝나 있어 예정했던 heartbeat/재poll 자동화도 만들지 않았다.
+
+
+## 실제 API에 따른 부모의 expiry 기준 정정
+
+부모가 제안해 게시한39800의 artifact 생성 기준 하한은 잘못된 가정이었다. 실제 서비스는
+이번 실행에서 run.created_at을 기준으로90일 만료를 정했으며, 원본972 run의 보존·roundtrip·
+cleanup은 성공했다. 새 source는 **원래 run 기준90일 window**로 되돌리고
+`run.created_at <= artifact.created_at <= expires_at`과 현재 run/head/repo/ID 결합을 추가한다.
+artifact가 run+10분 안에 생성돼야 한다는 조건은 원래도 요구하지 않았고 새로 넣지 않는다.
+
+이 정정은 실제 configured90일 계약과 만료일 `2027-01-23T22:44:30Z`를 보존한다.
+각 artifact 생성 후 온전한90×86400초를 보장한다고 쓰지 않는다. 원문 ZIP bytes·90일 action
+입력·same-/zip SHA·두 upload receipt·owned cleanup은 원래 실제972 run의 증거로 유지한다.
+성공한 보존을 새 source로 반복 dispatch하거나 archive를 재업로드하지 않는다.

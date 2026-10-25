@@ -279,7 +279,7 @@ jobs:
         sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" update
 
         sudo apt-get -o "APT::Architectures=$(dpkg --print-architecture)" install -y --no-install-recommends capnproto
-        libcapnp-dev g++ pkg-config clang-18 libllvm18 qemu-user-static gcc-aarch64-linux-gnu libc6-arm64-cross
+        libcapnp-dev g++ pkg-config clang-18 libllvm18 qemu-user-static gcc-aarch64-linux-gnu libc6-arm64-cross libc6-dev-arm64-cross
         libstdc++6-arm64-cross
 
         python -m pip install numpy==2.5.3

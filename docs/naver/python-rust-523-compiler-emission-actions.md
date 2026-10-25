@@ -50,3 +50,19 @@ ARM provider staging·native10/COPY/mixed/order7은 모두 미도달이다. 후�
 바꾸지 않는다. private artifact12616099750은292540B/SHA256
 `ea18b599054d939c03b2041c06da481d3e15d61be4de86e0f38623142cff11bd`다.
 이 최초 raw log/Actions 증거를 보존하며 새 source actual 수용을 계속 확인한다.
+
+
+## 두 번째 source398의 ARM linker 개발 파일 누락
+
+[40242668812/job121317637421](https://github.com/bin9208/openpilot-rust/actions/runs/40242668812/job/121317637421)은
+source39800e064에서 LLVM 확인/SDK baseline 뒤 ARM cross-link가
+`cannot find Scrt1.o`, `cannot find crti.o`, `cannot find -ldl`로 exit101 종료됐다.
+`--no-install-recommends`에서 libc6-dev-arm64-cross가 추천 목록에만 남은 것이 실제 원인이다.
+APT 목록에 이 개발 패키지만 명시 추가하고 원래 provider/기한·SDK 봉인·strict 컴파일 조건을
+유지한다. native10/COPY/mixed/order7/Clippy는 이 실행에서도 미도달이다.
+
+privateartifact12617945264는327,587B/SHA256
+`dc18528dca3015120c6e98112944663afeaa189925943f4ab88b3d1bcc375b0d`,
+20 safe unique regular member/전체CRC, expanded2,556,115B다. source/index전후동일,
+SDK227파일/roster252 전후 byte 동일과 LLVM후hash가 성공했다. 비교artifact 미생성과
+cleanup skipped는 그대로 보존한다. 이 수정의 실제 linker/후속검사는 다음 source로 확인한다.

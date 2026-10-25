@@ -3195,7 +3195,7 @@ F07-ci-release-launch	rust/tools/tests/test_model_publish.py	pending
 F07-ci-release-launch	rust/tools/tests/test_offline_qcom_compiler.py	pending
 F07-ci-release-launch	rust/tools/tests/test_offline_qcom_constants.py	pending
 F07-ci-release-launch	rust/tools/tests/test_offline_qcom_devices.py	pending
-F07-ci-release-launch	rust/tools/tests/test_offline_qcom_launch.py	pending
+F07-ci-release-launch	rust/tools/tests/test_offline_qcom_launch.py	replaced-local
 F07-ci-release-launch	rust/tools/tests/test_offline_qcom_onnx.py	pending
 F07-ci-release-launch	rust/tools/tests/test_offline_qcom_pipeline.py	pending
 F07-ci-release-launch	rust/tools/tests/test_offline_qcom_publish.py	pending

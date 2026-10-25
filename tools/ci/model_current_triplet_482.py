@@ -1318,12 +1318,16 @@ class Controller:
              "C requires independent A complete fresh91")
         destination = self.build/'cached-context'
         need(not destination.exists() and not destination.is_symlink(), "fresh C namespace")
+        held_originals = self.holds.records()
+        original_seals = {path: {key: held_originals[str(path)][key] for key in ('identity', 'sha256')}
+                          for path in (guarded, issuer)}
+        helper_copy_bytes = sum(seal['identity'][5] for seal in original_seals.values())
         # Existing 8GiB build/512MiB proof/finish reserve and global deadline stay fixed.
         existing_outputs = self.m.unique_json(self.m.read(traffic/'outputs.json', 4*MIB))
         need(len(existing_outputs) == 12 and all(Path(name).name == name for name in existing_outputs), "C existing twelve B outputs")
         output_forecast = sum((traffic/'original'/name).stat().st_size for name in existing_outputs)
         need(output_forecast <= 64*MIB, "C existing output total64MiB")
-        forecast = ((traffic/'bundle/weights.bin').stat().st_size + output_forecast
+        forecast = ((traffic/'bundle/weights.bin').stat().st_size + output_forecast + helper_copy_bytes
                     + 4*sum(p['image']['bytes'] for p in data['programs']) + 64*MIB)
         need(forecast <= 256*MIB, "C additive growth forecast256MiB")
         self.budget(force=True, extra_build=forecast)
@@ -1334,9 +1338,53 @@ class Controller:
         need(not temporary.exists() and not temporary.is_symlink(), "fresh C temporary namespace")
         temporary.mkdir(mode=0o700)
         save(self.out/'cached-context-capacity.json', {'forecast_bytes': forecast, 'existing_output_bytes': output_forecast,
+            'helper_copy_bytes': helper_copy_bytes,
             'candidate_cap_bytes': 256*MIB, 'existing_build_registry_cap_bytes': 8*GIB,
             'existing_proof_cap_bytes': 512*MIB, 'remaining_seconds': self.deadline-time.monotonic(),
             'temporary': str(temporary), 'old_caps_or_deadline_extended': False})
+        helper_directory = destination/'helpers'
+        helper_directory.mkdir(mode=0o700)
+        info = helper_directory.lstat()
+        need(stat.S_ISDIR(info.st_mode) and stat.S_IMODE(info.st_mode) == 0o700
+             and info.st_uid == os.geteuid() and helper_directory.resolve(strict=True) == helper_directory,
+             "C private helper directory")
+        copied_helpers = []
+        def copy_held_helper(original):
+            before = original_seals[original]
+            need(original.resolve(strict=True) == original and self.m.regular(original, 128*MIB) == before,
+                 "C original helper held identity/SHA before copy")
+            need(64 <= before['identity'][5] <= 128*MIB and before['identity'][3] == os.geteuid()
+                 and before['identity'][2] & 0o111, "C source-selected owned executable")
+            target = helper_directory/original.name
+            # Pinned common copy_new streams to O_CREAT|O_EXCL|O_NOFOLLOW at mode0400.
+            # Only this newly created destination is then made executable.
+            self.m.copy_new(original, target, 128*MIB)
+            fd = os.open(target, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+            try:
+                info = os.fstat(fd)
+                need(stat.S_ISREG(info.st_mode) and info.st_uid == os.geteuid() and info.st_nlink == 1
+                     and info.st_size == before['identity'][5] and target.resolve(strict=True) == target
+                     and self.m.ident(info) == self.m.ident(target.lstat()), "C helper copy regular/owner/link/size")
+                os.fchmod(fd, 0o700)
+                after = os.fstat(fd)
+                need(stat.S_IMODE(after.st_mode) == 0o700 and after.st_nlink == 1
+                     and self.m.digest(fd) == before['sha256']
+                     and self.m.ident(after) == self.m.ident(os.fstat(fd)) == self.m.ident(target.lstat()),
+                     "C helper copy mode/SHA/identity")
+            finally:
+                os.close(fd)
+            source_after = self.m.regular(original, 128*MIB)
+            need(source_after == before, "C original helper held identity/SHA after copy")
+            self.holds.add(target, before['sha256'], elf=True)
+            copied_helpers.append({'source': str(original), 'source_before': before, 'source_after': source_after,
+                                   'copy': str(target), **self.m.regular(target, 128*MIB)})
+            return target
+        guarded, issuer = copy_held_helper(guarded), copy_held_helper(issuer)
+        self.holds.verify()  # Original Cargo aliases and both new nlink1 copies stay held.
+        copy_receipt = self.out/'cached-context-helper-copies.json'
+        save(copy_receipt, {'source': os.environ['GITHUB_SHA'], 'copied_bytes': helper_copy_bytes,
+                            'originals_unchanged': True, 'copies': copied_helpers})
+        self.holds.add(copy_receipt)
         def held_binding(path):
             row = spec_file(self.m, path, 128*MIB)
             info = path.stat()
@@ -1386,6 +1434,7 @@ class Controller:
         for path in (roster_path, isa_path, admission_path, issuer_path): self.holds.add(path)
         env = {**self.env, 'MODEL_CACHED_CODE_BINARY': str(issuer), 'MODEL_CACHED_CODE_SHA256': issuer_binding['sha256'],
             'MODEL_CACHED_CODE_REQUEST': str(issuer_path), 'MODEL_CACHED_CODE_REQUEST_SHA256': spec_file(self.m, issuer_path, 4*MIB)['sha256'],
+            'MODEL_LLVM_GUARDED_ADD_BINARY': str(guarded), 'MODEL_LLVM_GUARDED_ADD_SHA256': guarded_binding['sha256'],
             'TMPDIR': str(temporary)}
         self.command([python, '-I', '-B', helper, 'cached-context-export'], 'cached-context-export', 180, env=env)
         self.holds.verify()  # Never re-pin changed B original outputs as C goldens.

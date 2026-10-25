@@ -195,8 +195,172 @@ C native selector에만 `MODEL482_CACHED_REQUEST/SHA256`를 전달한다. 기존
 B의 strict assert를 먼저 유지하며 B 실패를 성공으로 바꾸지 않는다. ISA14/cached-code15
 count는 바꾸지 않고 새 ignored C1개만 추가한다.
 
+## actual972 감사 — B12 성공 / C issuer 성공 / C ELF hold 거부
+
+2026-10-26. source `972468fab5279a9897d2d2bda736938c89a81a9a`,
+[run40241573585/job121314300733](https://github.com/bin9208/openpilot-rust/actions/runs/40241573585/job/121314300733).
+자연 host는 AMD EPYC7763/logical4다. 발행 helper52b1…/기존 진단103f…/새 C module d9c1…와
+부모 #596 f696…의 SHA가 위 인계값과 일치했다. 처음 진행 중일 때 run/job 원문과 발행 source
+hash를 private scratch에 먼저 보존했고, 완료 뒤 실제 API `structuredContent.content` 전체
+로그와 최종 run/job JSON도 보존했다. source나 실행 중 job은 수정하지 않았다.
+
+### 실제 수용과 실패의 분리
+
+| 단계 | 실제 결과 |
+| --- | --- |
+| model build/libtest/strict Clippy | exit0; Clippy15.432906초 |
+| native cached-code15 |15 PASS/0fail/0ignored; command2.925238초 |
+| ISA14 |14 PASS/0fail/0ignored; command0.115630초 |
+| A original capture/readonly | complete91/calls176/compile events104; capture62.798138초, readonly6.508970초/exit0 |
+| A strict triplet/host | `strict_triplet_all=true`, `host_isa_all=true`, `isa_error=null`; AMD의 FP16/VBMI snapshot은 false |
+| B plain/tapped | original/native 양쪽 모두 exit0; original15.664588초/native2.624926초/original-tap3.661170초/native-tap11.644610초 |
+| B whole12 | `original_native_bytes_equal=true`, `plain_tapped_bytes_equal=true`, `mismatches=[]` |
+| C export/issuer | export18.758619초/exit0; native preflight/package/final seal 모두 exit0, generated-code=false/libraries-loaded=false |
+| C native |0.117669초/exit101; Rust line98의 held helper input에서 거부, model load/run 전 |
+| step14/15/16 | source/index, SDK, 독립 immutable/provider/children 모두 success |
+| final-seals/upload/cleanup | `pass=true`, `failures=[]`, `all_owned_children_reaped=true`; step18/19/20 success |
+
+step13의 최종 오류는 `additive cached-context diagnostic failed; existing A/B retained`다.
+step17은 그 후속 required-outcome 실패다. 이번 **B는 실제 PASS**였으므로
+`cached-context-failure.json`의 `b_failure_sticky=false`가 맞다. 기존 B의 assert를 통과한 뒤
+C 오류를 별도로 실패시켰으며, B 실패를 덮어 성공으로 바꾼 것이 아니다. 이전 Intel의
+frame1 세 signed-zero가 해결됐다고 일반화하지 않는다. 이번에는 자연 AMD에서 원본과
+native가 같은 전체12출력을 냈고, frozen PR1344/D1 또는 전체128frame을 비교한 run도 아니다.
+
+독립 inert raw 재비교로12개 original/native/original-tap 파일, 경로당5138816B가 모두 같음을
+확인했고 native-tap의12개 output SHA도 실제 native-plain bytes와 일치했다. C에서는
+`cached-context.json`이 없고 C actual output file도0개다. 따라서 **C2frame/12output 및 cached
+native ABI 수치 수용은 아직0**이다. 전체 모델/retirement 수용도0이다.
+
+### C 최초 원인: 정상 Cargo ELF nlink2를 자료용 Held가 거부
+
+`model482/cached-context-native.stderr`는 다음 원문을 기록한다.
+
+```text
+diagnostic_482_cached.rs:98:56
+called `Result::unwrap()` on an `Err` value: "input regular/owner/size/link"
+```
+
+line98은 `capture.issuer`, `capture.guarded`, exporter roster 순서의 첫
+`Held::open(input, 128*MIB, &job)`이다. C 전용 reader가 Cargo ELF에도 자료 파일의
+`nlink()==1` 조건을 적용했다. 실제 최초 issuer와 다음 guarded ELF는 다음과 같다.
+
+| 실제 input | bytes / UID / nlink | SHA256 |
+| --- | --- | --- |
+| `build/target/debug/offline-cached-code` |4573736 /1001 /2 | `d150420623396074b4ee983cfacc14538c4dc64fcd2dbb02069a3ce95056ed7d` |
+| `build/target/debug/offline-llvm-guarded-add` |1445664 /1001 /2 | `674d665f01ecdbc12c2e20542004e5728fdde85c0117cd074fd514e2a568bdc6` |
+
+mode는 두 파일 모두33261(regular executable)이며 before/after identity·SHA가 정확히 같다.
+issuer의 size는 C request와 일치하고128MiB 미만, UID도 이미 통과한 C request/Admission과
+같은1001이다. 따라서 이 복합 오류 중 실제 불일치는 **nlink2 대 reader의1**이다.
+permission/size/SHA/ISA/메모리·공간·deadline 또는 model output 오류로 분류하지 않는다.
+
+나중에 읽을 held libtest ELF는11053512B/nlink1이며, C candidate bundle input과 B traffic
+input의 기록된 nlink도 전부1이다. 현재 증거에서 필요한 수정은 helper ELF 두 개에 한정된다.
+첫 검사에서 멈췄으므로 다음 native model 수치 결과를 예측하지 않는다.
+
+### issuer의 독립91 인증은 어디까지 실제 완료됐는가
+
+preflight/package/seal status는 모두 exit0/generated-code=false/libraries-loaded=false다.
+Admission의 manifest SHA는 A의 실제 triplet-request 전체 SHA와, model SHA는 새 PKL receipt
+`b8d7bc413a4648536324f254432b7e60d1e8ef9cf497475dbe14a231cd93b21b`와 결합된다. PKL은 이번
+artifact에 없으므로 로컬에서 unpickle/재해시/실행했다고 쓰지 않는다.
+
+artifact의 독립 Admission, certificate, ISA receipt가 모두91개이며, 전체 index/kernel/original
+metadata/current binding이 A와 일치한다. C `.cached.bin`91개를 A의 대응 full image와 전체
+bytes/SHA로 재비교해 모두 같음을 확인했다. linked library/container의 SHA도 certificate와
+같다. C graph도 backend/version/library/cached descriptor 외 모든 B 필드가 같다.
+
+- certificate SHA256: `e28c28e8ee32891f4e3b75dd0c2b84937847537c9c094d807e9ce7a52bdc4ef7`
+- library SHA256: `3b0a7ebb7b469904301c57aba8ba32ce28e4012159000f4c78e877ed4e262269`
+- container SHA256: `15c0b6522d0ccdb0182dd6c200caaa449ffae66539859811d3aad21a73ffcd1a`
+
+실제 ISA union은 avx/avx2/bmi1/cmov/fma/multibyte-nop/sse4a다. #596의15개 회귀와 AMD의
+decoder/issuer snapshot 대응 및 이 host의 전체91 issuer는 성공했다. Intel FP16/VBMI positive
+issuer 실행을 이번 AMD run에서 관측했다고 소급하지 않는다.
+
+### 다음 최소 수정 제안 — 이번 audit에서는 미적용
+
+공통 `Held`의 nlink1이나 production Admission/ISA 정책을 완화하지 않는다. C controller만
+기존 source-selected Cargo ELF 두 개를 held SHA로 검증해 **새 C-private nlink1 실행 사본**을
+만들고, mode0700·size/SHA/owner/canonical identity를 확인한 뒤 그 사본을 hold하는 경로가
+가장 좁다. 원래 Cargo 경로·alias는 삭제/수정하지 않는다.
+
+사본을 만들 경우 `CurrentBinding`의 두 helper path/FD identity binding과 C request의
+issuer/guarded Input을 사본으로 함께 구성해야 한다. C worker에만 cached helper4env 및
+`MODEL_LLVM_GUARDED_ADD_BINARY/SHA256`를 사본으로 맞춰 전달해야 native CachedExport의
+binding hash도 일치한다. 기존 A/B 환경과 old B helper 경로는 그대로 둔다. 추가6019400B를
+forecast와 기존 C256MiB/build8GiB/proof512MiB 한도 안에 계산하면 된다. 이는 다음 source
+제안이며 이번에는 코드 수정·재실행하지 않았다.
+
+### artifact·원시 증거 봉인
+
+artifact12616924856은 API/download39828644B/SHA256
+`8e1dadf02382e036c66bc5910ac8a553914dc128a77b470e6719e1b8224a9676`다.50MiB download cap,
+API expected bytes/digest 확인 뒤1285개 safe unique canonical path/no symlink·special·encrypted
+entry와 전체 CRC, expanded114475027B를 검사했다. 파일시스템에 풀거나 native image를
+실행하지 않았다. retained 원문67295266B이며 기존 proof512MiB 안이다.
+
+주요 receipt SHA256:
+
+| 원문 | SHA256 |
+| --- | --- |
+| `comparison.json` | `c3404bd341f1115da21539424b1ea381ea91d8754b150f60440c1cd3e5543916` |
+| `triplet-readonly.json` | `8831e918c142dc785a2db0770badf596247b80606141c99484b2b990c012129e` |
+| `cached-context-failure.json` | `65693c75cb27b4e9386a323a8f719160df86f6a28580b50254c3db10969b056a` |
+| `cached-context-native.stderr` | `74ad0defdb23ddc1aa8b51be4522c9310fd4eb71b7de06cbef98746f1dc9eea5` |
+| `final-seals.json` | `59c4d6ac9864472bc2c328f6c0c5b70627375fdb6ef1b4af5ab1e0e803866fd0` |
+
+완료 job log의 실제 structuredContent.content UTF-8 원문106633B/SHA256은
+`2a6ced64a3b8433238b88cf1600ba5233b53da970e712836db263e97fc00715f`다. private
+`scratch/ci/model972-current-{initial,final}-{run,job}.json`, 초기 source seal capsule,
+`model972-current-job121314300733.log`, `12616924856.zip`에 보존했다. local functional/model/
+oracle/Cargo/build/test/Clippy, CI dispatch/cancel, production/expected/math 수정은 모두0이며,
+이번 tracked 변경은 이 감사 append뿐이다.
+
 
 부모 통합은 current WF/helper의 새 SHA를 동일하게 고정하고 PR1344는 BASE SHA literal과
 그 helper/WF pin만 갱신했다. 기존 PR1344 진단 알고리즘과19-source schema는 그대로다.
 새 C-only source path를 current WF push 대상에 추가했다. 실제 Actions 결과가 나오기 전
 #596/모델 수치·전체 기능 수용 및 Python source retirement credit은 계속0이다.
+
+## 972의 nlink 거부 최소 수정 후보 — C 전용, GHA UNRUN
+
+2026-10-26. 사용자가 허용한 범위대로 `Controller.cached_context` 안에서만 source-selected
+guarded/issuer 두 ELF의 private 실행 사본을 추가했다. native C module/공통 Held/production/
+원본 Cargo 경로는 수정하지 않았다. 위 actual972 실패와 미적용 제안은 그 시점 기록으로 보존한다.
+
+- C 시작의 기존 `holds.verify()` 뒤 original 두 ELF의 held identity/SHA를 별도로 잡는다.
+  복사 직전 `regular`가 그 held seal과 정확히 같아야 하고 canonical source, current UID,
+  executable 및64B..128MiB 크기를 확인한다.
+- 새 `cached-context/helpers` directory는 canonical/current UID/mode0700이어야 한다.
+  pinned 공통 `copy_new`는 source FD를 전후 identity/SHA 검증하며
+  `O_CREAT|O_EXCL|O_NOFOLLOW`로 새 inode에 stream-copy한다. 복사 중 destination은 mode0400이며
+  완료한 새 destination FD에만 `fchmod(0700)`을 적용한다. source의 mode/alias는 바꾸지 않는다.
+- destination을 `O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC`로 열어 regular/current UID/nlink1/원래 size,
+  canonical path와 FD/path identity를 확인한다. mode0700과 held SHA, hash 전후 FD/path identity를
+  재확인한 뒤 ELF로 hold한다. source도 복사 후 동일 held identity/SHA여야 한다.
+- 두 사본 생성 뒤 기존 original aliases와 사본 모두 `holds.verify()`를 다시 통과해야 한다.
+  `cached-context-helper-copies.json`에는 source before/after seal, copy seal, 실제 copied bytes를
+  기록하고 그 receipt도 hold한다. 이것은 다음 GHA의 실제 기록이며 로컬에서 복사를 실행하지 않았다.
+- C의 `CurrentBinding`, issuer request admission, native C의 issuer/guarded Input은 검증한 사본
+  path/identity로 구성한다. C exporter worker에만 cached4env와 guarded2env를 사본에 맞춰
+  전달한다. 기존 A/B의 `self.env`, 원래 helper 경로 및 source/ABI/수학·strict sticky gate는 그대로다.
+
+추가 bytes는 source-selected held 두 size의 실제 합을 `helper_copy_bytes`로 forecast에 더한다.
+actual972의4573736+1445664=6019400B를 대입하면 기존135249545B forecast는141268945B다.
+사본 생성 전 이 합을 포함해 C256MiB 및 projected build+registry8GiB, 실제 filesystem finish
+reserve를 다시 검사한다. 기존 actual C namespace256MiB/proof512MiB cap과 모든 timeout/
+deadline은 유지한다. 기존 copy 루틴 및 source 선택/DSO 검증은 그대로다.
+
+source-only 확인에서 **`Controller.cached_context`를 제외한 helper 전체 AST가 source972와
+정확히 같다.** 따라서 기존 A/B 환경·원본 collect/tap·B 비교·15/14 gate·finalizer·budget 함수는
+바뀌지 않았다. native C module d9c1…/기존 진단103f…/production cached_code f696…/공통 helper
+8a5d…의 전체 SHA도 이전과 같다. Python AST와 diff만 확인했으며 copy/model/issuer/oracle/
+Cargo/build/test/Clippy 및 CI dispatch/cancel은 로컬에서 실행하지 않았다.
+
+수정 helper는98038B/SHA256
+`379507cb2fc7b9d6c35c83f9851f9b541acad86a9d0085e8bb95cf71e03dfd24`다. 부모가 helper/WF/BASE
+pins와 publication을 통합한다. git stage/commit/push는 하지 않았다. native C의 실제12출력
+수용은 아직 미완료이며, 이후 native C 알고리즘 수정이 필요하면 먼저 실제 원인과 scope를
+보고한다. 이 변경으로 full128/full-model 또는 retirement 수용을 주장하지 않는다.

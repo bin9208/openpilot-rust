@@ -345,7 +345,7 @@ jobs:
         run_created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/preservation-run.json")" +%s)
         artifact_created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/preserved-artifact.json")" +%s)
         expires=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .expires_at "$report/provenance/preserved-artifact.json")" +%s)
-        ((run_created <= artifact_created && expires >= artifact_created + 90 * 86400 && expires <= artifact_created + 90 * 86400 + 600))
+        ((run_created <= artifact_created && artifact_created <= expires && expires >= run_created + 90 * 86400 && expires <= run_created + 90 * 86400 + 600))
         redirect=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
           --connect-timeout 10 --max-time 30 --header "Authorization: Bearer $GH_TOKEN" \
           --output /dev/null --write-out '%{http_code}\n%{redirect_url}' "$api/actions/artifacts/$WITNESS_ARTIFACT_ID/zip")
@@ -453,7 +453,7 @@ jobs:
           if [[ $role == payload ]]; then ((bytes == 20550808)); else ((bytes > 0 && bytes <= 1048576)); fi
           artifact_created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/roundtrip/$role-upload.json")" +%s)
           expires=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .expires_at "$report/roundtrip/$role-upload.json")" +%s)
-          ((run_created <= artifact_created && expires >= artifact_created + 90 * 86400 && expires <= artifact_created + 90 * 86400 + 600))
+          ((run_created <= artifact_created && artifact_created <= expires && expires >= run_created + 90 * 86400 && expires <= run_created + 90 * 86400 + 600))
         done
         payload=$report/payload/driver476-object-witness-12393290469.zip
         test -f "$payload" && test ! -L "$payload"
