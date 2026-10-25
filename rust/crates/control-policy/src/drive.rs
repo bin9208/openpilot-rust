@@ -40,6 +40,17 @@ pub const TIMES: [f64; 33] = [
     10.,
 ];
 
+/// Matches drive_helpers.py's signed deadzone, including its branch order.
+pub fn apply_deadzone(error: f64, deadzone: f64) -> f64 {
+    if error > deadzone {
+        error - deadzone
+    } else if error < -deadzone {
+        error + deadzone
+    } else {
+        0.
+    }
+}
+
 pub fn steer_ratio(live: f64, rate: f64, custom: f64, meb: bool) -> f64 {
     let live = maximum(live, 0.1);
     if meb {

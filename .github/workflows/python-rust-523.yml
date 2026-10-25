@@ -101,6 +101,10 @@ jobs:
         exec {ssh_helper_fd}<"$ssh_helper"
         ssh_helper_pid=$BASHPID
         test "$(stat -Lc '%d:%i:%f:%u:%g:%h:%s:%y:%z' "/proc/$ssh_helper_pid/fd/$ssh_helper_fd")" = "$ssh_helper_id"
+        printf '%s  %s\n' 7550f9299bf323106eb1fd6352c9ccf257d38aeca7b1ec2cf15dbf81dcf1bf66 rust/crates/control-policy/tests/drive.rs | sha256sum --check -
+        printf '%s  %s\n' 2411aa2d77de51fd2c1552f3955032e6a734301e4ed692330b4cd4e5e13463b4 rust/crates/control-policy/src/drive.rs | sha256sum --check -
+        printf '%s  %s\n' 15688511f6d947a65ce96be621c393d9c7a7f10006fe32b4723c72ed18db6ef1 rust/crates/model-runtime/tests/compiler_schedule.rs | sha256sum --check -
+        printf '%s  %s\n' dee3457caed0be633c8973c4e33abbd88056d1c8e8fcfb638fd6dfb35f39f8fd rust/crates/model-runtime/src/compiler_schedule.rs | sha256sum --check -
         printf '%s  %s\n' 33c8547d622f61758a364c8969ebcadc85b2c2825e4da00b777dddb9e50359fa "/proc/$ssh_helper_pid/fd/$ssh_helper_fd" | sha256sum --check --strict --quiet -
         . "/proc/$ssh_helper_pid/fd/$ssh_helper_fd"
         test "$(stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z' "$ssh_helper")" = "$ssh_helper_id"
@@ -357,6 +361,13 @@ jobs:
             rust/crates/model-runtime/src/cached_code.rs) ;;
             rust/crates/model-runtime/src/cached_isa.rs) ;;
             rust/crates/model-runtime/src/lib.rs) ;;
+            docs/naver/python-rust-523-drive-helpers.md) ;;
+            rust/crates/control-policy/tests/drive.rs) ;;
+            rust/crates/control-policy/src/drive.rs) ;;
+            rust/crates/model-runtime/src/compiler_schedule.rs) ;;
+            rust/crates/model-runtime/tests/compiler_schedule.rs) ;;
+            docs/naver/python-rust-523-compiler-progress.md) ;;
+            docs/naver/python-rust-523-planner-ci.md) ;;
             rust/crates/model-runtime/tests/historical_cached_image.rs) ;;
             rust/tools/prepare-changed-files-caller) ;;
             tools/carrot_route_vault/build_bundle.py) ;;
@@ -652,7 +663,7 @@ jobs:
         printf '%s  %s\n' 90125185dfc46c67f048fc7fbf46aa59ea7afd30887e547aeb7dbab5f3b0ed14 rust/crates/model-runtime/src/bin/offline-cached-code.rs | sha256sum --check -
         printf '%s  %s\n' 442530bd9bd4fcc6d6f7807deefd0fcfdcd06a0f6f0313d679a6438327b84210 rust/crates/model-runtime/src/cached_code.rs | sha256sum --check -
         printf '%s  %s\n' 167cfbe83193264a52c9076d6126c971f89f6aa319efa4b09724befd379ae2cf rust/crates/model-runtime/src/cached_isa.rs | sha256sum --check -
-        printf '%s  %s\n' 3e88a87de7afbe8319c75a130afc4e6942f60f66ed577fbcc5c7ee759be95031 rust/crates/model-runtime/src/lib.rs | sha256sum --check -
+        printf '%s  %s\n' fd85a78634e8b6fae922ae873bbd7f484041e1c963585de58c9f4a9fc8984ff0 rust/crates/model-runtime/src/lib.rs | sha256sum --check -
         printf '%s  %s\n' 0fb349a7eec29b9c3b5b123980c8eaca3ea1529a8a05d4629f084bc29905ab44 rust/crates/model-runtime/tests/historical_cached_image.rs | sha256sum --check -
         printf '%s  %s\n' 186e02bf0c24b22dd0bc1ee74f7e3cdd91a146ffd2639a98fe0ac2af5bf53b9a rust/tools/prepare-changed-files-caller | sha256sum --check -
         printf '%s  %s\n' 6f75ef40f6904dc9174ffa132de49c5095ae4f5d4b5765dea4f521607bdae32a tools/ci/changed_files_reuse_523.sh | sha256sum --check -
@@ -838,7 +849,7 @@ jobs:
         # 공유 lib 추가는 Linux/x86_64 + optional ISA feature로 제한한다.
         path='rust/crates/model-runtime/src/lib.rs'
         addition=b'#[cfg(all(\n    feature = "cached-program-isa",\n    target_arch = "x86_64",\n    target_os = "linux"\n))]\npub mod cached_isa;\n'
-        assert now(path)==before(path)+addition, 'Model lib changed outside the reviewed ISA module registration.'
+        assert now(path)==(before(path)+addition).replace(b'pub mod compiler_launch;\n', b'pub mod compiler_launch;\npub mod compiler_schedule;\n'), 'Model lib changed outside the reviewed ISA/schedule registrations.'
         # cached consumer 둘은 source roster 한 항 추가만 허용한다. 기존 driver 실행 증거로 삼지 않는다.
         for path in ['rust/crates/dev-tools/src/driver_daemon_current_catalog.rs','rust/crates/dev-tools/src/model_family_prepare/catalog.rs']:
             old=before(path)
@@ -1228,6 +1239,15 @@ jobs:
         ssh_absence_verify "$DIAG_SOURCE" "$GITHUB_SHA" clippy-after
         after=$?
         (( action == 0 && after == 0 ))
+    - name: Validate native compiler stage boundaries against original sources
+      id: compiler_schedule
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-control-policy --no-default-features --locked --test drive --test math
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-model-runtime --locked --test compiler_launch --test compiler_schedule
+        cargo test --manifest-path rust/Cargo.toml -p openpilot-model-runtime --locked --test compiler_schedule original_python_pipeline_boundaries_match_native -- --ignored --exact --nocapture
     - name: Seal Fast source and index after all maintained checks
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
       working-directory: ${{ env.DIAG_SOURCE }}

@@ -23,6 +23,7 @@ pub mod qcom_compiler;
 pub mod compiler_backend_cpu;
 pub mod compiler_launch;
 pub mod compiler_onnx;
+pub mod compiler_schedule;
 #[cfg(feature = "native-skip-miri")]
 pub mod export;
 
