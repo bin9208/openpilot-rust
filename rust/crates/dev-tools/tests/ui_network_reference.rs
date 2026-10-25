@@ -6,6 +6,8 @@ mod confirm_draw;
 #[allow(dead_code)]
 #[path = "support/ui_reference_draw.rs"]
 mod reference_draw;
+#[path = "ui_network_reference/source_binding.rs"]
+mod source_binding;
 use openpilot_dev_tools::{
     ui_forms_input::Canvas,
     ui_network_reference::{render, validate_source},

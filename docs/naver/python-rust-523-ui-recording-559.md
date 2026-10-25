@@ -343,3 +343,29 @@ CLI/원본 프로그램을 실행하지 않는다. 로컬 rustfmt·source projec
 새4·기존10/실제 Forms CLI·원본 비교와 source/SDK/provider 봉인은 **GHA UNRUN**이다.
 이 source 연결만으로 #575 해결·staged-font 기능·#557/#523/원본 퇴역 수용을 주장하지 않는다.
 WF/Focus/ledger 등록은 부모가 담당한다.
+
+### #585 Network validator에도 같은 #557 application 경계 연결
+
+source56f의 [PR Rust40191336989/UI121174299528](https://github.com/bin9208/openpilot-rust/actions/runs/40191336989/job/121174299528)
+원문에서 Forms14개는 PASS한 뒤 Network는6PASS/2FAIL했고,57source manifest의
+application old `d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00` pin이
+#557 current font source를 거부했다. 부모가 확인한 이 실제 실패와 source 연결을 기록하며
+새 artifact 다운로드나 original capture/expected 생성은 하지 않는다.
+
+Network public `validate_source`의 **정확 application.py path+old expected pin의 쌍**에만
+기존 `ui_application_logic_check::application_source_matches`를 연결했다. 다른 path/pin은 원래
+fullSHA 비교다. manifest SHA `4967ad887a8cee21ae050ceb592ab1b432cceb98861c9d2df55105a82d559c5e`와
+57pin·retired originals·font 부재·dependency lock·에러는 유지한다. 공통 matcher와 production
+application.py를 수정하거나 current wholeSHA를 production 허용 목록에 추가하지 않았다.
+
+기존 integration root에는 child module 등록2줄만 추가했다. 새 filesystem source 통제4개는
+current 양성, font3구간 각각 변조/같은길이 제거/중복/순서 변경, 비font FPS/stack/encoder 변조,
+같은 current bytes의 다른 path/expected pin·font fallback·dependency lock 거부를 검사한다.
+음성 전 양성과 원복 후 양성도 요구한다. Network에는 Forms의 Params provider 검사 자체가 없으므로
+그 검사를 새 production 조건으로 도입하지 않았다. current wholeSHA는 test 입력 출처 pin뿐이다.
+
+기존 root4/support4 총8개 test body와 original state/PNG/env·타 source bytes는 그대로다.
+새4개는 Python/graphics/CLI/원본을 실행하는 검사가 아니다. 로컬은 Rustfmt·source 역투영·diff만
+확인했고 새4/기존8·실제 Network CLI/원본 비교·source/SDK/provider 봉인은 **GHA UNRUN**이다.
+#585 해결·staged-font 기능·전체 UI/#523/원본 퇴역 credit은 주장하지 않는다.
+WF/Focus/ledger/Cargo 등록은 부모가 담당한다.

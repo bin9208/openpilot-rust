@@ -89,6 +89,16 @@ impl Canvas for Surface<'_> {
 }
 
 pub fn validate_source(root: &Path) -> Result<()> {
+    let source_matches = |name: &str, expected: &str, bytes: &[u8]| {
+        // #585: #557의 정확한 font 구간만 기존 application 역투영 경계로 검사한다.
+        if name == "openpilot/system/ui/lib/application.py"
+            && expected == "d17a3d0e8cb67c2bd37e4f48d61dc79e5ee7c7af984f0d9dc434301121a85b00"
+        {
+            crate::ui_application_logic_check::application_source_matches(bytes)
+        } else {
+            format!("{:x}", Sha256::digest(bytes)) == expected
+        }
+    };
     let manifest = include_str!("../tests/fixtures/ui-network/provenance.json");
     if format!("{:x}", Sha256::digest(manifest.as_bytes()))
         != "4967ad887a8cee21ae050ceb592ab1b432cceb98861c9d2df55105a82d559c5e"
@@ -113,9 +123,7 @@ pub fn validate_source(root: &Path) -> Result<()> {
             return Err("network original capture hash changed".into());
         }
         match fs::read(root.join(name)) {
-            Ok(bytes)
-                if Some(format!("{:x}", Sha256::digest(&bytes)).as_str()) != hash.as_str() =>
-            {
+            Ok(bytes) if !source_matches(name, hash.as_str().unwrap_or_default(), &bytes) => {
                 return Err(format!("{name} changed; independently recapture network").into());
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound && retired.is_some() => {}
