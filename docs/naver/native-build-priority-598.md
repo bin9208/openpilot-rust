@@ -105,3 +105,34 @@ x64/ARM Linux 두 host에서 모두 fixture3·strict Clippy·서식/locked metad
 회귀와, 컴파일 실패 후 이전 출력 binary가 실제로 계속42를 출력하는 검사를 준비했다.
 push/PR에 중복된 focused matrix는 이후 branch에서 한 번 실행하고 원래 PR workspace
 gate는 유지하는 조정이다. 이 후속의 새 실행 결과는 아직 없다.
+
+## 이어가기: 기반 반영과 자산·소스 연결 — 2026-10-26 KST
+
+PR #602 source `13d7ce113bf602b2be5b5abedb55c4debeb83a8c`의 최신 검사68개가 모두
+SUCCESS인 것을 확인하고 `dev`에 병합했다. 병합 SHA는
+`e445c9d19c3041bc79d8624589e2eb6ba7d061c6`이다. 별도 병합 후 집중 검사
+[40299610428](https://github.com/bin9208/openpilot-rust/actions/runs/40299610428),
+[fast40299610443](https://github.com/bin9208/openpilot-rust/actions/runs/40299610443),
+[docs40299610391](https://github.com/bin9208/openpilot-rust/actions/runs/40299610391)은
+SUCCESS다. 전체 Rust/통합 검사는 진행 중이며 아직 성공을 가정하지 않는다.
+
+후속 branch `codex/feat-600-native-input-cache`는 이 병합 SHA에서 분리했다.
+기존 다른 채팅 소유 worktree와 dirty dev-md는 수정하지 않았다.
+
+- HTTPS 자산을 SHA-256·정확 byte 수로 확인하는 내용별 캐시를 추가했다. 같은 입력은
+  hash 재검증 후 전송0, provider 하나 변경은 그 객체만 준비한다. 이전 객체는 보존한다.
+- per-object lock·임시 파일·fsync 후 원자적 발행과 작업별 공간 admission을 사용한다.
+  잘못된 hash/길이·변조된 hit·중단·동시 owner·symlink를 거부한다. 압축 해제나
+  설치·활성화는 수행하지 않는다.
+- 빌드 보고서 schema2에 실제 clean Git commit/tree·recipe·rustc/Cargo·native linker·
+  실행 파일 hash/길이·freshness·소요 시간을 묶는다. 미커밋 입력과 빌드 중 source
+  변경은 성공 보고서를 발행하지 않는다. compiler와 Cargo도 빌드 후 재검증한다.
+- 실제 toolchain 전체 표준 라이브러리/header/ABI receipt, 생성물과 전체 source graph,
+  완성된 runtime recipe·generation/activation은 여전히 후속이다. 작은 보고서가
+  기존 root source/AGNOS/ABI/package 검사를 대체하지 않는다.
+- 실제 Cargo 회귀5개와 자산 fixture5개를 x64/ARM Actions에 연결했다. 이 후속은
+  실행 결과를 확인하기 전까지 미검증이다. 로컬은 Rustfmt·TOML/YAML 구문·diff만 확인했다.
+
+개발자 실행 명령과 최종 사용자 기기 수용 절차는
+[검증 안내](native-build-test-guide-598.md)에 정리했다. #598/#599/#600/#601의
+미완료 조건은 유지하며 전체 장치 자체 빌드나1.1GB 다운로드 제거 완료로 계산하지 않는다.

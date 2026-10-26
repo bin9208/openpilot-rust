@@ -1,12 +1,13 @@
 name: Runtime source build foundation
 on:
   push:
-    branches: [codex/feat-598-device-native-build, dev, main]
+    branches: [codex/feat-598-device-native-build, 'codex/feat-600-*', dev, main]
     paths:
       - 'rust/crates/runtime-build/**'
       - 'rust/Cargo.toml'
       - 'rust/Cargo.lock'
       - '.github/workflows/runtime-source-build.yml'
+  workflow_dispatch:
 # Branch push checks the actual x64/ARM build driver once; the required PR Rust
 # workspace gate also includes this crate. Do not duplicate this focused matrix on PR.
 permissions:
@@ -46,7 +47,7 @@ jobs:
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
       - name: Check syntax formatting and the locked dependency graph
         run: |
-          rustfmt --edition 2021 --check rust/crates/runtime-build/src/lib.rs rust/crates/runtime-build/src/main.rs rust/crates/runtime-build/tests/cargo_reuse.rs
+          rustfmt --edition 2021 --check rust/crates/runtime-build/src/*.rs rust/crates/runtime-build/tests/*.rs
           cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 > "$RUNNER_TEMP/runtime-build-metadata.json"
       - name: Compile and exercise real offline build reuse
         run: |

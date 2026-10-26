@@ -29,3 +29,13 @@ tool `openpilot-runtime-build` builds selected targets with a prepared native Ru
 toolchain and offline Cargo dependencies. It is not connected to automatic installation
 or startup and does not yet provide a complete device source build.
 Track progress and acceptance in [#598](https://github.com/bin9208/openpilot-rust/issues/598).
+
+The developer command `openpilot-runtime-assets --plan JSON --cache DIRECTORY` verifies
+HTTPS assets by SHA-256 and byte count and stores them by content. Preparing the same
+assets again transfers zero HTTP body bytes; changing one provider fetches only that
+asset. `transferred_bytes` reports HTTP body bytes. This tool does not extract or install
+a runtime. The build driver requires a clean Git checkout and reports the actual commit,
+tree, recipe, compiler, linker and executable hashes. Complete toolchain/ABI sealing and
+automatic startup integration remain in development.
+The [verification guide](../../naver/native-build-test-guide-598.md) records expected
+results and the final device acceptance procedure in Korean.

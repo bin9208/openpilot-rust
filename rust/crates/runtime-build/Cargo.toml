@@ -19,3 +19,7 @@ tempfile = "3"
 [[bin]]
 name = "openpilot-runtime-build"
 path = "src/main.rs"
+
+[[bin]]
+name = "openpilot-runtime-assets"
+path = "src/assets_main.rs"

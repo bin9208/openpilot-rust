@@ -28,3 +28,12 @@ processor 열은 마지막으로 관찰된 메인 스레드의 코어이며, 프
 네이티브 Rust 1.94.0과 오프라인 Cargo 의존성으로 지정 대상을 빌드합니다.
 현재는 자동 설치·시작에 연결되지 않았으며 완성된 장치 자체 빌드 기능이 아닙니다.
 진행과 수용 조건은 [#598](https://github.com/bin9208/openpilot-rust/issues/598)에서 확인합니다.
+
+개발용 `openpilot-runtime-assets --plan JSON --cache DIRECTORY`는 계획에 명시된
+HTTPS 자산을 SHA-256·바이트 수로 확인해 내용별 캐시에 저장합니다. 같은 자산을
+다시 준비하면 HTTP 전송량은 0이며, provider 하나를 변경하면 그 자산만 받습니다.
+보고서의 `transferred_bytes`는 HTTP 본문 바이트 수입니다. 이 도구는 압축 해제나
+장치 설치를 수행하지 않습니다. 빌드 도구는 깨끗한 Git checkout을 요구하고 실제
+커밋·tree·recipe·compiler·linker·실행 파일 해시를 보고서에 남깁니다.
+전체 toolchain/ABI 봉인과 자동 시작 경로 연결은 아직 개발 중입니다.
+검사별 예상 결과와 최종 기기 수용 절차는 [검증 안내](../../naver/native-build-test-guide-598.md)를 참고하세요.

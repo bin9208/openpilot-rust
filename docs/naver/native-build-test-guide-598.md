@@ -1,0 +1,82 @@
+# 콤마 자체 빌드·다운로드 재사용 검증 안내 — #598
+
+기준일: 2026-10-26 KST. 상위 [#598](https://github.com/bin9208/openpilot-rust/issues/598),
+환경 [#599](https://github.com/bin9208/openpilot-rust/issues/599),
+캐시 [#600](https://github.com/bin9208/openpilot-rust/issues/600),
+전환분·성능·전달 [#601](https://github.com/bin9208/openpilot-rust/issues/601).
+
+## 현재 검증 범위
+
+빌드 기반 PR #602는 source `13d7ce113bf602b2be5b5abedb55c4debeb83a8c`의 전체68개
+검사 성공 후 `dev`의 `e445c9d19c3041bc79d8624589e2eb6ba7d061c6`으로 병합했다.
+[x64/ARM 집중 검사](https://github.com/bin9208/openpilot-rust/actions/runs/40274067028),
+[필수 PR Rust 검사](https://github.com/bin9208/openpilot-rust/actions/runs/40274071261),
+[필수 PR 통합 검사](https://github.com/bin9208/openpilot-rust/actions/runs/40274071270)는
+성공했다. 병합 후 검사는 별도로 확인한다.
+
+`openpilot-runtime-assets`는 대형 자산을 위한 내용별 캐시 준비 도구이며,
+`openpilot-runtime-build`는 준비된 offline Cargo 의존성으로 지정 binary를 빌드한다.
+전체 AGNOS recipe·toolchain 준비·ABI 봉인·세대 활성화·기존 startup/update 연결은
+아직 완료되지 않았다. 아래 CI fixture 결과를 장치 설치 가능 증거로 사용하지 않는다.
+
+## 개발 검증 실행 방법
+
+로컬에서는 `git diff --check`, scoped `rustfmt --check`, TOML/YAML 문법과 diff만
+확인한다. 기능·빌드는 GitHub Actions에서 실행한다. 작업 branch push는
+`Runtime source build foundation`의 x64/ARM matrix를 실행한다. 같은 변경의 성공한
+검사를 반복하지 않는다. 의도적으로 별도 재현이 필요할 때만 다음 명령을 쓴다.
+
+```sh
+gh workflow run runtime-source-build.yml --repo bin9208/openpilot-rust --ref BRANCH
+gh run list --repo bin9208/openpilot-rust --workflow runtime-source-build.yml --branch BRANCH
+gh run view RUN_ID --repo bin9208/openpilot-rust --log-failed
+```
+
+CI의 실제 명령은 다음과 같다. 실제 fixture는 격리된 임시 Git checkout과 작은 입력을
+사용하며 사용 중 runtime·기기·로그를 수정하지 않는다.
+
+```sh
+cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build -- --nocapture
+cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
+```
+
+| 검사 | 합격 결과 |
+| --- | --- |
+| 같은 model/provider/toolchain 준비 반복 | 두 번째 전송 호출0, `transferred_bytes=0`, 기존 내용 동일 |
+| provider 하나 변경 | 변경 provider만 전송, 기존 model/toolchain 전송0, 이전 provider 보존 |
+| 잘못된 hash/길이·변조된 캐시 | 실패, 잘못된 blob 미발행, 다른 자산 보존 |
+| 다운로드 중 실패·자원 부족·동시 owner | 실패, 기존 자산과 runtime 보존 |
+| symlink cache/blob·비 HTTPS 입력 | 외부 파일 수정 없이 실패 |
+| 문서만 수정한 새 source commit | Cargo `fresh=true`, 같은 binary hash, 보고서 source는 새 commit |
+| runtime source 수정 | 수정 대상 재빌드·출력 변경, 관련 없는 target은 fresh/같은 hash |
+| 미커밋 입력·빌드 중 source 변경 | 성공 보고서 발행 거부, 이전 성공 보고서 보존 |
+| 의도적 compile failure | 이전 binary가 계속 실행되어 원래 출력 유지 |
+
+자산의 보고 시간·저장 byte 수는 준비 작업의 수치다. HTTP `transferred_bytes`는 본문
+크기이며 TLS/header를 포함한 네트워크 전체 사용량이 아니다. host fixture 시간과
+메모리·디스크 값을 콤마의 전체 runtime 수치로 확대하지 않는다.
+
+## 최종 사용자 기기 수용 시험
+
+정확 소스의 전체 AGNOS build·seal·업데이트/복구 CI와 후보 준비 후 사용자가 수행한다.
+현재 부분 도구를 차량에 설치하는 명령은 제공하지 않는다. 최종 후보의 branch·SHA와
+실제 지원 명령은 준비된 후보의 기록으로 고정한다.
+
+1. 기기 종류, AGNOS 버전, 시작 branch/SHA, model/provider/toolchain ID, 남은 공간을
+   기록한다. 기존 정상 세대와 로그를 보존하고 주차 상태에서 시작한다.
+2. 해당 SHA의 프리빌트 runtime release가 없는 소스로 처음 빌드한다. 전송 byte 수,
+   빌드 대상·소요 시간·peak 메모리·디스크 증가량과 source/result manifest를 저장한다.
+3. 같은 소스로 반복하고 문서만 변경한 커밋으로 갱신한다. 대형 자산 전송0, 전체
+   runtime 재다운로드0, 빌드 대상 fresh, 결과 hash가 동일한지 확인한다.
+4. 작은 runtime 수정 후 갱신한다. 변경 대상과 필수 의존 대상만 재빌드했는지 확인한다.
+   provider 하나를 갱신할 때도 나머지 model/toolchain 전송0을 확인한다.
+5. 준비된 실패 주입 절차로 build 실패·취소·동시 실행·자원 부족·잘못된 자산·전원 중단을
+   확인한다. 검증되지 않은 세대로 전환되지 않고 기존 세대와 로그가 보존되어야 한다.
+6. 정상 업데이트 후 재부팅해 기본 화면·manager·모델·카메라·녹화를 확인한다. 기존
+   업로드 경로로 한 구간을 업로드해 결과 페이지와 실제 로그의 실행 SHA·모델·오류를
+   대조한다. 기기별 결과를 분리하고 주행 수용은 사용자가 기록한다.
+7. 같은 장치·모델·기능·입력·전원/냉각 조건으로 선정 성능 변경 전후를 비교한다.
+   CPU·메모리·지연·프레임 누락과 기능 회귀의 실제 측정값/한계를 남긴다.
+
+이슈 #598의 마지막 조건은 사용자의 실제 자체 빌드·정상 부팅·기록·업로드 수용이다.
+후보 준비나 CI 성공으로 대신 체크하지 않는다. 모든 조건과 근거가 기록될 때만 닫는다.
