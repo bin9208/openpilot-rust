@@ -61,6 +61,9 @@ impl Drop for Evidence {
                     eprintln!("fixture evidence {name}: {error}");
                 }
             }
+            if let Ok(tail) = supervision::output_tail(&entry.path().join("build.log")) {
+                let _ = fs::write(destination.join("build-tail.log"), tail);
+            }
         }
     }
 }
@@ -90,6 +93,37 @@ fn wait_file(path: &Path, process: &mut Child) {
         );
         thread::sleep(Duration::from_millis(20));
     }
+}
+
+#[test]
+fn worker_output_uses_an_owned_file_and_bounded_tail_without_following_links() {
+    use std::os::unix::fs::PermissionsExt;
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("build.log");
+    let mut command = Command::new("/bin/sh");
+    command.args([
+        "-c",
+        "head -c 2097152 /dev/zero; printf 'final compiler error\\n' >&2; exit 7",
+    ]);
+    let output = supervision::retain_output(&mut command, &path).unwrap();
+    assert_eq!(command.status().unwrap().code(), Some(7));
+    output.sync_all().unwrap();
+    assert!(fs::metadata(&path).unwrap().len() > 2 * 1024 * 1024);
+    assert_eq!(
+        fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    let tail = supervision::output_tail(&path).unwrap();
+    assert_eq!(tail.len() as u64, supervision::OUTPUT_TAIL_BYTES);
+    assert!(tail.ends_with(b"final compiler error\n"));
+    assert!(supervision::retain_output(&mut command, &path).is_err());
+    let normal = temp.path().join("normal.log");
+    fs::write(&normal, b"normal runtime retained").unwrap();
+    let redirected = temp.path().join("redirected.log");
+    std::os::unix::fs::symlink(&normal, &redirected).unwrap();
+    assert!(supervision::retain_output(&mut command, &redirected).is_err());
+    assert!(supervision::output_tail(&redirected).is_err());
+    assert_eq!(fs::read(normal).unwrap(), b"normal runtime retained");
 }
 
 #[test]
@@ -142,10 +176,14 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
                 .unwrap();
                 let mut command = child("worker", &root, &case);
                 command.env(memory_cgroup::ENV, &monitor.group.path);
+                let output =
+                    supervision::retain_output(&mut command, &root.join("build.log")).unwrap();
                 let result = supervision::run_observed(command, || monitor.observe());
                 let success = result.as_ref().is_ok_and(|s| s.success());
                 let record = monitor.finish(success, result.as_ref().err().map(|e| e.to_string()));
+                output.sync_all().unwrap();
                 assert_eq!(success && record.is_ok(), case == "normal", "{case}");
+                drop(monitor);
                 if !success || record.is_err() {
                     std::process::exit(1);
                 }
@@ -192,6 +230,17 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
                             thread::sleep(Duration::from_secs(1));
                         }
                     }
+                    "output-flood" => {
+                        use std::io::Write;
+                        let block = vec![b'x'; 1024 * 1024];
+                        for _ in 0..160 {
+                            std::io::stderr().write_all(&block).unwrap();
+                            thread::sleep(Duration::from_millis(5));
+                        }
+                        loop {
+                            thread::sleep(Duration::from_secs(1));
+                        }
+                    }
                     "normal" => {
                         let data = vec![0x5a_u8; 32 * 1024 * 1024];
                         std::hint::black_box(&data);
@@ -227,6 +276,7 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
         "frontend-kill",
         "launcher-kill",
         "request-owner-kill",
+        "output-flood",
     ] {
         let root = temp.path().join(case);
         fs::create_dir(&root).unwrap();
@@ -339,6 +389,14 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
             fs::read(temp.path().join("normal.log")).unwrap(),
             b"original runtime log"
         );
+        let output_tail = supervision::output_tail(&root.join("build.log")).unwrap();
+        assert!(output_tail.len() as u64 <= supervision::OUTPUT_TAIL_BYTES);
+        fs::write(root.join("build-tail.log"), &output_tail).unwrap();
+        if case == "output-flood" {
+            assert!(fs::metadata(root.join("build.log")).unwrap().len() > 64 * 1024 * 1024);
+            assert_eq!(output_tail.len() as u64, supervision::OUTPUT_TAIL_BYTES);
+            assert!(fs::metadata(root.join("fixture.log")).unwrap().len() < 128 * 1024);
+        }
         let journal = fs::read_to_string(root.join("resources.jsonl")).unwrap();
         let rows: Vec<serde_json::Value> = journal
             .split_inclusive('\n')

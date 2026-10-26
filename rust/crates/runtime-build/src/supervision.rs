@@ -8,7 +8,9 @@ use rustix::process::{
 };
 use signal_hook::iterator::{Handle, Signals};
 use std::{
-    os::unix::process::CommandExt,
+    fs::{File, OpenOptions},
+    io::{Read, Seek, SeekFrom},
+    os::unix::{fs::OpenOptionsExt, process::CommandExt},
     path::Path,
     process::{Child, Command, ExitStatus, Stdio},
     sync::{
@@ -27,6 +29,32 @@ const SIGNALS: [i32; 3] = [
     signal_hook::consts::SIGTERM,
     signal_hook::consts::SIGHUP,
 ];
+
+pub const OUTPUT_TAIL_BYTES: u64 = 64 * 1024;
+
+/// Keep compiler/build-script output off the updater's captured-output pipe.
+/// Both streams share one file description/offset in this owned attempt.
+pub fn retain_output(command: &mut Command, path: &Path) -> Result<File> {
+    let file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .custom_flags((rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK).bits() as i32)
+        .open(path)?;
+    command
+        .stdout(Stdio::from(file.try_clone()?))
+        .stderr(Stdio::from(file.try_clone()?));
+    Ok(file)
+}
+
+pub fn output_tail(path: &Path) -> Result<Vec<u8>> {
+    let mut file = crate::regular_file(path)?;
+    let length = file.metadata()?.len();
+    file.seek(SeekFrom::Start(length.saturating_sub(OUTPUT_TAIL_BYTES)))?;
+    let mut bytes = Vec::new();
+    file.take(OUTPUT_TAIL_BYTES).read_to_end(&mut bytes)?;
+    Ok(bytes)
+}
 
 struct ChildGroup {
     child: Child,

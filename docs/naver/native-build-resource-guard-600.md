@@ -30,6 +30,12 @@ sudo의 중간 monitor가 살아남더라도 updater 자체가 종료되면 중�
 frontend가 반복 확인한다. PID 재사용·zombie·조회 실패도 중단이며 최종 pending 게시 직전에도
 다시 확인한다. 단순히 sudo monitor의 생존만으로 요청을 계속하지 않는다.
 
+긴 compiler/build-script 출력은 worker의 `build.log`로 바로 보존한다. updater의 기존
+captured-output Vec에 전체 출력을 쌓으면 그 정상 프로세스는 worker의 memory cgroup 밖에서
+커질 수 있었다. frontend는 실패 때 최대64KiB tail과 경로만 전달하며 원문 파일을 유지한다.
+이 파일도 시도별 filesystem 증가량 감시 대상이다. 새 파일은0600/create-new/no-follow로
+열고 worker 종료·정리 후 sync한다. 기존 runtime/route 로그에는 쓰지 않는다.
+
 worker는 봉인된 candidate receipt만 남긴다. frontend는 worker 종료, 자원 최종 확인과
 하위 작업 정리를 마친 뒤 source/config/seal을 다시 확인해야 pending update를 게시한다.
 실패나 취소에서 기존 active generation, 정상 프로세스와 로그를 교체하지 않는다.
@@ -61,6 +67,9 @@ JSONL의 `state_scope`는 worker/resource 검사 범위다. 그 `success`만으�
 
 실제 메모리를 할당하는 정상/초과, 파일 증가, worker SIGKILL, frontend SIGKILL,
 frontend 부모 SIGKILL 및 중간 launcher가 살아 있는 상태의 요청 소유자 SIGKILL을 검사한다.
+추가 출력 flood는 실제 detached 하위 프로세스가 대량 stderr를 쓰게 한다. filesystem 한도에서
+중단되며 frontend 캡처는 작게 유지되고64KiB tail만 취하는지 확인한다. 큰 synthetic 원문은
+임시 디렉터리와 함께 정리하고 작은 tail/JSONL만 CI artifact로 남긴다.
 독립 process group의 하위 작업 종료와 이전 active/log의
 바이트 보존, 무관한 정상 프로세스 생존을 확인한다. 커널 peak/event와 시도별 JSONL을 보존한다.
 CI 준비·정리는 job owner/source/inode를 대조한 자기 cgroup만 대상으로 한다.

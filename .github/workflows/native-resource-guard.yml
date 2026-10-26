@@ -81,6 +81,38 @@ jobs:
           (job/'scope-config.json').write_text(json.dumps(config))
           PY
           sudo -n rust/target/debug/openpilot-native-build-scope --config "$CI_JOB_TEMP/scope-config.json" --verify | tee "$CI_JOB_TEMP/source-built-scope-verification.json"
+      - name: Retain an actual worker rejection separately from frontend output
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          job = Path(os.environ['CI_JOB_TEMP'])
+          config = json.loads((job/'scope-config.json').read_text())
+          params = Path(config['stores']['params'])/'d'
+          params.mkdir(parents=True)
+          (params/'IsOnroad').write_bytes(b'0')
+          # X64 cannot complete a genuine full AGNOS generation. This is a
+          # negative output-retention check, not a synthetic successful seal.
+          with (job/'native-worker-frontend.stdout').open('wb') as stdout, (job/'native-worker-frontend.stderr').open('wb') as stderr:
+              result = subprocess.run(['sudo','-n','rust/target/debug/openpilot-native-build-scope',
+                  '--config',str(job/'scope-config.json'),'--build','--root',os.environ['GITHUB_WORKSPACE']],
+                  stdout=stdout, stderr=stderr, check=False)
+          assert result.returncode != 0
+          attempts = list((Path(config['stores']['generations'])/'build-attempts').glob('attempt-*'))
+          assert len(attempts) == 1
+          attempt = attempts[0]
+          assert (attempt/'build.log').stat().st_size > 0
+          assert (job/'native-worker-frontend.stderr').stat().st_size < 128*1024
+          assert not (Path(config['stores']['generations'])/'pending.json').exists()
+          assert not (Path(config['stores']['generations'])/'active.json').exists()
+          rows = [json.loads(line) for line in (attempt/'resources.jsonl').read_text().splitlines()]
+          assert rows[-1]['state'] == 'failed'
+          (job/'native-worker-output-result.json').write_text(json.dumps(dict(
+              expected_worker_failure=True, full_generation_seal=False,
+              worker_log_bytes=(attempt/'build.log').stat().st_size,
+              frontend_output_bytes=(job/'native-worker-frontend.stderr').stat().st_size)))
+          PY
       - name: Prepare only this job kernel scope
         shell: bash
         run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 tools/ci/native_resource_scope.py prepare
@@ -103,6 +135,10 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/source-built-scope-verification.json
             ${{ env.CI_JOB_TEMP }}/native-resource-tests.log
             ${{ env.CI_JOB_TEMP }}/native-resource-evidence/**
+            ${{ env.CI_JOB_TEMP }}/native-worker-frontend.*
+            ${{ env.CI_JOB_TEMP }}/native-worker-output-result.json
+            ${{ env.CI_JOB_TEMP }}/generations/build-attempts/**/build.log
+            ${{ env.CI_JOB_TEMP }}/generations/build-attempts/**/resources.jsonl
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}

@@ -78,6 +78,9 @@ fn run() -> Result<()> {
             let mut command = Command::new(std::env::current_exe()?);
             let (mut monitor, attempt) = resources::attempt(&config, &config_path, &root)?;
             eprintln!("native build resource evidence: {}", attempt.display());
+            let output_path = attempt.join("build.log");
+            let output = supervision::retain_output(&mut command, &output_path)?;
+            eprintln!("native build worker output: {}", output_path.display());
             command
                 .env(memory_cgroup::ENV, &monitor.group.path)
                 .env(resources::ATTEMPT, &attempt)
@@ -101,9 +104,14 @@ fn run() -> Result<()> {
                 _ => None,
             };
             let recorded = monitor.finish(success, reason);
+            output.sync_all()?;
             let status = result?;
             recorded?;
             if !status.success() {
+                eprintln!(
+                    "{}",
+                    String::from_utf8_lossy(&supervision::output_tail(&output_path)?)
+                );
                 return Err(format!("native build worker exited: {status}").into());
             }
             let id = resources::candidate(&config, &config_path, &root, &attempt)?;
