@@ -73,6 +73,10 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos-assets-reused.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/commands.log
             ${{ env.CI_JOB_TEMP }}/native-agnos/cargo-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-driver-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-driver-*.stdout
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
