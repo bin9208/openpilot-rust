@@ -5,6 +5,12 @@ name: Python Rust 523 native ARM planner and WebRTC candidates
     - codex/feat-523-python-rust
     paths:
     - .github/workflows/python-rust-523-native-arm-more.yml
+    - rust/crates/dev-tools/src/planner_ci_controller.rs
+    - rust/crates/dev-tools/src/planner_ci_controller/**
+    - rust/crates/dev-tools/tests/planner_ci_policy/**
+    - tools/ci/planner_native_controller_523.sh
+    - tools/ci/stage_planner_ipc_original_523.sh
+    - rust/tools/planner_ipc_peer.cc
     - tools/ci/native-arm
     - rust/crates/plannerd/**
     - rust/crates/webrtc*/**

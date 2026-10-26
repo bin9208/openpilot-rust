@@ -1662,3 +1662,7 @@ source `6c5d5a9be691d18ca850af6ef9b42e47b668d767`의 HOST40255341871/job12135587
 genuine40255341791/job121355876060은 library2/caller14·ignored2/COPY1/genuine mixed1/order7을 실제 통과했고, graph·weights64B·SOURCE/BINARY·대표 IR·후보 Python hash 독과 최초 오류/미래 compiler0도 유지했다. 마지막 strict Clippy의 large_enum_variant로 전체 FAIL이며 실제 model40255341774 역시 같은 Clippy에서 ISA/cached/A/B/C/D 전 중단됐다. model의 registry baseline 미설정으로 최종 봉인 FAIL/cleanup skipped도 구분한다. 전체 모델·strict gate 완료로 세지 않는다.
 
 연결에서 놓친 helper pin을 actual `cf510c5…`로 맞추고 assertion은 보존했다. StreamReply의 Final.plan만 Box로 바꿔 두 줄로 enum 크기를 줄였고 Serde Box의 직접 위임과 나머지 bytes 불변을 확인했다. Focus의 90일 음성 assert는 rustfmt 줄바꿈만 수정했다. model-family40255341914의 최초 501107B>500000B 실패는 전체 flow YAML에서 따옴표 밖 쉼표 뒤 공백3505개만 제거해497602B로 낮췄다. 44job/scalar/run/anchor의 해석값은 완전히 같으며 새 main SHA는 `fbd6959a79e7df0cb91e9c321dc8b3aa53a0dc7607b5bd9e1da4eda2e6f27604`다. 상한·lint·negative 조건·수치 기준은 낮추지 않았다. 이 최소 교정의 exact-source GHA는 후속 확인하며 baseline300/3/3277·추가169 원장은 유지한다.
+
+### native ARM·현재 모델 push 검사 누락 경로 보완
+
+source57e1761c5의 hotfix는 발행했고 해당8개 push 검사가 시작됐다. ARMmore와 current-model의 push filter가 새 planner controller/helper·compiler_schedule/writer module을 빠뜨려 두 검사가 시작되지 않았음을 확인했다. ARM 수동 dispatch 요청은422/no workflow_dispatch로 거절되어 run이 생성되지 않았다. 새 수동 trigger나 우회 실행을 추가하지 않고 관련 source path만 기존 push filter에 넣었다. job/권한/모드·source guard·기한·명령은 완전히 같다. 이는 두 affected 검사를 새 source에서 실제 실행하기 위한 경로 보완이며 기존 원본 비교·ARM 및 최종 필수 PR 검사를 대체하지 않는다.

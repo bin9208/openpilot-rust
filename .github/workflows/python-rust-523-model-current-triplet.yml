@@ -5,6 +5,8 @@ name: Python Rust 523 current model triplet and worker-cell diagnostic
     - codex/feat-523-python-rust
     paths:
     - .github/workflows/python-rust-523-model-current-triplet.yml
+    - rust/crates/model-runtime/src/compiler_schedule/**
+    - rust/crates/model-runtime/src/cpu/diagnostic_482_writer.rs
     - tools/ci/model_current_triplet_482.py
     - rust/crates/model-runtime/src/cpu/diagnostic_482_tests.rs
     - rust/crates/model-runtime/src/cpu/diagnostic_482_cached.rs
