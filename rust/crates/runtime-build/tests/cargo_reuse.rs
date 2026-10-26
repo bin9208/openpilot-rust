@@ -3,7 +3,7 @@ use openpilot_runtime_build::{build, digest_file, Recipe};
 use std::{collections::BTreeMap, fs, path::PathBuf, process::Command};
 
 struct Fixture {
-    temp: tempfile::TempDir,
+    _temp: tempfile::TempDir,
     root: PathBuf,
     cache: PathBuf,
     toolchain: PathBuf,
@@ -65,7 +65,7 @@ impl Fixture {
         };
         let cache = temp.path().join("cache");
         Self {
-            temp,
+            _temp: temp,
             root,
             cache,
             toolchain,
@@ -138,9 +138,9 @@ fn provider_tampering_is_rejected_and_changed_provider_partitions_the_build_cach
 #[test]
 fn compile_failure_preserves_previous_runtime_and_concurrent_cache_owner_is_rejected() {
     let fixture = Fixture::new();
-    let previous = fixture.temp.path().join("active-runtime");
-    fs::write(&previous, b"previous known good generation").unwrap();
     let first = fixture.run();
+    let previous = &first.artifacts[0].executable;
+    let previous_digest = digest_file(previous).unwrap();
     let lock = fs::OpenOptions::new()
         .write(true)
         .open(first.target_directory.parent().unwrap().join("build.lock"))
@@ -166,8 +166,53 @@ fn compile_failure_preserves_previous_runtime_and_concurrent_cache_owner_is_reje
         &fixture.recipe
     )
     .is_err());
-    assert_eq!(
-        fs::read(previous).unwrap(),
-        b"previous known good generation"
-    );
+    assert_eq!(digest_file(previous).unwrap(), previous_digest);
+    let result = Command::new(previous).output().unwrap();
+    assert!(result.status.success());
+    assert_eq!(result.stdout, b"42\n");
+}
+
+#[test]
+fn changing_one_workspace_target_keeps_the_unrelated_target_fresh() {
+    let mut fixture = Fixture::new();
+    fs::write(fixture.root.join("rust/Cargo.toml"), "[package]\nname='runtime-fixture'\nversion='0.1.0'\nedition='2021'\n[workspace]\nmembers=['unrelated']\nresolver='2'\n").unwrap();
+    fs::create_dir_all(fixture.root.join("rust/unrelated/src")).unwrap();
+    fs::write(
+        fixture.root.join("rust/unrelated/Cargo.toml"),
+        "[package]\nname='runtime-unrelated'\nversion='0.1.0'\nedition='2021'\n",
+    )
+    .unwrap();
+    fs::write(
+        fixture.root.join("rust/unrelated/src/main.rs"),
+        "fn main() { println!(\"unchanged\"); }\n",
+    )
+    .unwrap();
+    let mut lock = fs::read_to_string(fixture.root.join("rust/Cargo.lock")).unwrap();
+    lock.push_str("\n[[package]]\nname = \"runtime-unrelated\"\nversion = \"0.1.0\"\n");
+    fs::write(fixture.root.join("rust/Cargo.lock"), lock).unwrap();
+    fixture.recipe.packages.push("runtime-unrelated".into());
+    fixture.recipe.binaries.push("runtime-unrelated".into());
+    let first = fixture.run();
+    assert_eq!(first.artifacts.len(), 2);
+    let unrelated = first
+        .artifacts
+        .iter()
+        .find(|a| a.executable.file_name().unwrap() == "runtime-unrelated")
+        .unwrap();
+    let before = digest_file(&unrelated.executable).unwrap();
+    fs::write(
+        fixture.root.join("rust/src/main.rs"),
+        "fn main() { println!(\"changed\"); }\n",
+    )
+    .unwrap();
+    let changed = fixture.run();
+    assert_eq!(changed.cache_key, first.cache_key);
+    let unrelated = changed
+        .artifacts
+        .iter()
+        .find(|a| a.executable.file_name().unwrap() == "runtime-unrelated")
+        .unwrap();
+    assert!(unrelated.fresh);
+    assert_eq!(digest_file(&unrelated.executable).unwrap(), before);
+    assert!(changed.artifacts.iter().any(|a| !a.fresh));
 }

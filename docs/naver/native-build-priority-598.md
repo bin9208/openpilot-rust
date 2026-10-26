@@ -94,3 +94,14 @@ provider 변조 거부/갱신 후 cache 분리, 동시 owner 거부와 컴파일
 후속 CI에는 native ARM Linux host의 동일 fixture·Clippy와 작업별3GiB 예상 증가량
 admission을 추가했다. x64/ARM 어느 결과도 comma 장치/AGNOS 검증으로 표현하지 않는다.
 후속 소스는 새 실제 결과를 확인하기 전까지 미검증이다.
+
+source `d7fb4a54a072f49809bcfc7e7091db7ff32f13f7`의
+[branch40273655126](https://github.com/bin9208/openpilot-rust/actions/runs/40273655126)와
+[PR40273660041](https://github.com/bin9208/openpilot-rust/actions/runs/40273660041)는
+x64/ARM Linux 두 host에서 모두 fixture3·strict Clippy·서식/locked metadata를
+통과했다. 실제 linker 입력 보완까지 이 범위로 수용하며 AGNOS 검증으로 확대하지 않는다.
+
+후속 working tree에는 관련 없는 target의 Cargo freshness를 확인하는 실제2-package
+회귀와, 컴파일 실패 후 이전 출력 binary가 실제로 계속42를 출력하는 검사를 준비했다.
+push/PR에 중복된 focused matrix는 이후 branch에서 한 번 실행하고 원래 PR workspace
+gate는 유지하는 조정이다. 이 후속의 새 실행 결과는 아직 없다.

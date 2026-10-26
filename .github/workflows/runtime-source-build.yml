@@ -7,13 +7,8 @@ on:
       - 'rust/Cargo.toml'
       - 'rust/Cargo.lock'
       - '.github/workflows/runtime-source-build.yml'
-  pull_request:
-    branches: [dev, main]
-    paths:
-      - 'rust/crates/runtime-build/**'
-      - 'rust/Cargo.toml'
-      - 'rust/Cargo.lock'
-      - '.github/workflows/runtime-source-build.yml'
+# Branch push checks the actual x64/ARM build driver once; the required PR Rust
+# workspace gate also includes this crate. Do not duplicate this focused matrix on PR.
 permissions:
   contents: read
 jobs:
