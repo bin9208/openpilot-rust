@@ -176,15 +176,45 @@ impl Recipe {
     }
 }
 
+// Opt-in diagnostics stay on stderr and do not change saved report identities.
+struct PhaseTimer<'a> {
+    enabled: bool,
+    marked: Instant,
+    binaries: &'a [String],
+}
+
+impl PhaseTimer<'_> {
+    fn mark(&mut self, phase: &str) {
+        if self.enabled {
+            eprintln!(
+                "native-build-phase {}",
+                serde_json::json!({
+                    "schema":1,"phase":phase,"binaries":self.binaries,
+                    "elapsed_ms":self.marked.elapsed().as_millis()
+                })
+            );
+            self.marked = Instant::now();
+        }
+    }
+}
+
 /// Build only. The caller must seal, validate and activate the complete runtime separately.
 /// No runtime release is downloaded, and no existing runtime or Cargo cache is removed.
 pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Result<Report> {
     let started = Instant::now();
+    let mut timing = PhaseTimer {
+        enabled: std::env::var_os("OPENPILOT_NATIVE_BUILD_TIMINGS").as_deref()
+            == Some(std::ffi::OsStr::new("1")),
+        marked: started,
+        binaries: &recipe.binaries,
+    };
     recipe.validate()?;
     let root = root.canonicalize()?;
     let source = source::inspect(&root)?;
+    timing.mark("source_before");
     let toolchain = toolchain.canonicalize()?;
     recipe.verify_inputs(&root)?;
+    timing.mark("inputs_before");
     let rustc = toolchain.join("rustc");
     let cargo = toolchain.join("cargo");
     // The actual native compiler and Cargo are inputs, rather than unverified PATH aliases.
@@ -215,6 +245,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
     {
         return Err("runtime build needs a native Rust 1.94.0 toolchain for its target".into());
     }
+    timing.mark("tools_before");
     // Selection is Cargo's job: package/bin choices do not change the native ABI
     // or compiler inputs. Share dependency artifacts between serial build groups
     // rather than storing a complete target tree for each selected binary set.
@@ -313,6 +344,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         command.args(["--features", &recipe.features.join(",")]);
     }
     command.stdout(Stdio::piped()).stderr(Stdio::inherit());
+    timing.mark("cache_and_command");
     let mut child = command.spawn()?;
     let result = (|| -> Result<Vec<Artifact>> {
         let output = child.stdout.take().ok_or("Cargo stdout missing")?;
@@ -348,10 +380,13 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         )
         .into());
     }
+    timing.mark("cargo");
     recipe.verify_inputs(&root)?;
+    timing.mark("inputs_after");
     if source::inspect(&root)? != source {
         return Err("runtime build source changed during compilation".into());
     }
+    timing.mark("source_after");
     if digest_file(&rustc)? != compiler_digest || digest_file(&cargo)? != cargo_digest {
         return Err("Rust compiler or Cargo changed during build".into());
     }
@@ -360,6 +395,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
             "native C/C++ compiler, linker or helper selection changed during build".into(),
         );
     }
+    timing.mark("tools_after");
     for artifact in &mut artifacts {
         if !artifact.executable.canonicalize()?.starts_with(&target) {
             return Err("Cargo executable escapes the build target directory".into());
@@ -367,6 +403,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         artifact.bytes = regular_file(&artifact.executable)?.metadata()?.len();
         artifact.sha256 = digest_file(&artifact.executable)?;
     }
+    timing.mark("outputs");
     let report = Report {
         schema: 3,
         cache_key: key,
@@ -390,5 +427,6 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
     saved.as_file_mut().write_all(b"\n")?;
     saved.as_file_mut().sync_all()?;
     saved.persist(directory.join("last-successful-build.json"))?;
+    timing.mark("report_persisted");
     Ok(report)
 }
