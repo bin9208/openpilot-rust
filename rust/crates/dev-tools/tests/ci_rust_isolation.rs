@@ -2077,7 +2077,7 @@ fn planner_ipc_canonical_steps() -> Vec<Value> {
         "printf '%s  %s\\n' 43e1eb7b2b5e27521f8f7ce4e4a36c35376515b4be944c6bd390a348978810b6 ",
         "\"$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh\" | sha256sum --check --strict -\n",
         "/usr/bin/bash \"$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh\"\n",
-        "printf '%s  %s\\n' 258943202a9a19f64e8fd5e1188156206c7d2e5a998690a1a0540ab1a718d84e ",
+        "printf '%s  %s\\n' 2b10c879782740c5662580febc84faac1806661f85d8512cb74691cbd9c74f48 ",
         "\"$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh\" | sha256sum --check --strict -\n",
         "/usr/bin/bash \"$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh\"\n"
     );
@@ -2127,7 +2127,7 @@ fn planner_ipc_canonical_contract(job: &Value) -> Result<(), String> {
     let expected = planner_ipc_canonical_steps();
     let positions = [compile + 1, memory + 1];
     let digests = [
-        "fe84f729948e7eee6d22c31e78a306e4ab2a51becf3b0a5a242d331cefaa9713",
+        "6aaaf3e17ffe0af137a03ccadaf64da920568a9b77fa997b9cd49a2f0ca0ebce",
         "b637025349f5ad452b2ed62eff46480b2e0c3983d38502bb89ce715d41c7629a",
     ];
     for ((position, wanted), digest) in positions.into_iter().zip(&expected).zip(digests) {
@@ -2197,7 +2197,7 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
                 "{:x}",
                 Sha256::digest(read(".github/workflows/rust.yml").as_bytes())
             ),
-            "dbdc618a18f4b77fefbb7340ce441f35b1e0afacdb82e39f1964d1641ad160be"
+            "f6286ab88351066d3dbba626f86e509aa37e4d8bed2746fa4961f329abb43cb9"
         );
         let host = parse(&read(
             ".github/workflows/python-rust-523-planner-caller.yml",
@@ -2221,7 +2221,7 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
                 "name":"Require reviewed maintained Planner source", "if":TRUSTED_SOURCE,
                 "shell":"bash", "working-directory":"${{ env.CI296_SOURCE }}", "env":{"CI296_HOST_CONTROL":"1"},
                 "run":concat!("set -euo pipefail\nprintf '%s  %s\\n' ",
-                    "dbdc618a18f4b77fefbb7340ce441f35b1e0afacdb82e39f1964d1641ad160be ",
+                    "f6286ab88351066d3dbba626f86e509aa37e4d8bed2746fa4961f329abb43cb9 ",
                     ".github/workflows/rust.yml | sha256sum --check --strict -\n")
             })
         );

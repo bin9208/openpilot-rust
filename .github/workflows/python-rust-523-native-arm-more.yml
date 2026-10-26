@@ -241,7 +241,7 @@ jobs:
         set -euo pipefail
         printf '%s  %s\n' 43e1eb7b2b5e27521f8f7ce4e4a36c35376515b4be944c6bd390a348978810b6 "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh" | sha256sum --check --strict -
         /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh"
-        printf '%s  %s\n' 258943202a9a19f64e8fd5e1188156206c7d2e5a998690a1a0540ab1a718d84e "$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh" | sha256sum --check --strict -
+        printf '%s  %s\n' 2b10c879782740c5662580febc84faac1806661f85d8512cb74691cbd9c74f48 "$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh" | sha256sum --check --strict -
         /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh"
     - name: Compare exact policies, main loops, real IPC and lifecycle
       run: |

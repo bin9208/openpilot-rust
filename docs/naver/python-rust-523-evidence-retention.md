@@ -1013,3 +1013,26 @@ fixture 실제 root는 `rust/crates/dev-tools/tests/fixtures/`다. 위 audit byt
 
 로컬은 inert data/SHA 감사, Bash syntax, JQ13개 compile-only(식 평가0), 신규 diff 공백 검사뿐이다.
 새 stager·원본/모델/프로젝트 기능 실행·GHA dispatch/rerun·stage/commit은0이다.
+
+### 발행 전 빈 directory 운송 결함 수정 — 2026-10-26
+
+부모가 실제 functional ZIP 두 개 모두 directory entry가0임을 발견했다. metadata-only 재확인에서
+원래26 manifest는 inputs26/Params30을 요구하며, input이 없는16 run의 빈 directory는 파일5891개
+선택 추출만으로 생기지 않는 것을 확인했다. 실제 원본 자료의 결함이나 native roster 검사 문제가
+아니라 이전 stager2589432의 directory 복원 누락이다. 아직 새 stager 실제 GHA는 없었다.
+
+`stage_planner_lifecycle_original_523.sh`만 수정했다. 기존 SHA 인증을 통과한 각 manifest의
+run index/epoch/source·rust mode/ASCII case name에서 case path를 검증하고, Params label은
+prelaunch 또는 recover의 prelaunch/recovery-before/recovery-after만 허용한다. 이 metadata에서
+inputs26+Params30의 정확56개 subdirectory와 root1+case26+subdirectory56의 전체83개 roster를
+만든다. 파일 추출 후 누락된 항목만 `mkdir -m 700`으로 만들며 wildcard/mkdir-p/새 raw 생성은 없다.
+기존 directory도 canonical/owned UID/mode700/nosymlink를 요구하고 전체83개 exact roster를 대조한다.
+
+selected 파일5891/capture 파일5791와 각 bytes/SHA, source841 audit2 bytes, 기존128MiB cap,
+300초 deadline, core의 directory roster 검사는 그대로다. 추가 directory도 기존 최종 du 합산에
+포함한다. 기존 IPC stager·다른 source/fixture/WF는 수정하지 않았다.
+
+새 최종 stager는19577B/SHA256
+`2b10c879782740c5662580febc84faac1806661f85d8512cb74691cbd9c74f48`다.
+부모는 앞선2589432 pin을 이 값으로 동기화해야 한다. Bash syntax/JQ15개 compile-only·diff 검사는
+PASS이며 식 평가·stager/프로젝트 기능·CRC 반복·원격 Actions·stage/commit 실행은0이다.

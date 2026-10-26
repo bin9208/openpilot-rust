@@ -1,5 +1,11 @@
 # #523 Planner IPC 독립 출력 대조와 부분 전환 후속 설계
 
+최신 후보의 실행경계 보완: native lifecycle은 source 모드13개에서 prepared Python으로
+`plannerd_daemon_source.py`를 실제 실행한다. 새 `lifecycle.rs:530` 호출을 추가 원장의
+pending으로 등록하여 현재 추가170개는33교체/133대기/1기존native/2비실행/1제거다.
+아래 source841 시점의169개·33/132 기록과 구분한다. 비교 driver 세 파일의 전환 후보와
+원본 daemon 자체의 제거는 서로 다른 완료 조건이며 기준3580의 새 수용 credit은 아직0이다.
+
 2026-10-26. 부모 지시에 따라 후속 퇴역 설계는 이 새 문서에서만 관리한다.
 기존 planner-ipc-reader-next.md는 부모와 실제 qualification 감사 통합용이며 이번 작업에서 수정하지 않았다.
 앞서 그 문서에 기록했던 계획을 원문 그대로 복사했다. 기존 문서의 앞선 append 정리는 부모 담당이다.

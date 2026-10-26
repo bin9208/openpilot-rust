@@ -33,6 +33,12 @@ production registry의 library2/caller14/COPY/mixed/order7·strict Clippy·후�
 등록 러너에서 jobs1/debug0·작업별 용량 admission으로 제한한다. 큰 모델·ARM 검증은 분리한다.
 전체 #523 전환·필수 PR/통합·정확 소스 전달·필요한 실기 수용은 계속 미완료다.
 
+후속 native lifecycle 후보도 source 모드13개에서 원래 Python daemon을 실행한다.
+`planner_ipc_native/lifecycle.rs`의 이 새 interpreter 호출을 추가 원장에 별도 pending으로
+등록했다. 따라서 현재 후보의 추가 경계는 **170개: 33교체/133대기/1기존native/2비실행/1제거**다.
+위169개 수치는 source841 수용 시점의 기록이며, 세 비교 도구의 전환을 전체 Python 부재로
+계산하지 않는다. 기준3580의 새 파일 수용은 교체 후 실제 CI 전까지 그대로 보류한다.
+
 ## 실행 기준
 
 사용자의 전체 완료 지시에 따라 기존 #296의 승인된 전체 전환 설계와

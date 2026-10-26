@@ -245,6 +245,7 @@ printf '%s  %s\n' "$index_sha" "$proof/index.json" | /usr/bin/sha256sum --check 
     [($base+.path),.bytes,.sha256]|@tsv' "$proof/index.json" > "$proof/manifests.tsv"
 )
 test "$(/usr/bin/wc -l < "$proof/manifests.tsv")" = 26
+printf '%s\n' "$capture_root" > "$proof/capture-directories.txt"
 index=0
 while IFS=$'\t' read -r member bytes digest extra; do
   [[ -z $extra && $bytes =~ ^[1-9][0-9]{0,6}$ && $digest =~ ^[0-9a-f]{64}$ ]] && ((bytes<=1048576))
@@ -256,6 +257,21 @@ while IFS=$'\t' read -r member bytes digest extra; do
   )
   test "$(/usr/bin/stat -c %s -- "$file")" = "$bytes"
   printf '%s  %s\n' "$digest" "$file" | /usr/bin/sha256sum --check --strict -
+  case_path=${member#"$capture_root/"}
+  case_path=${case_path%/manifest.json}
+  [[ $member == "$capture_root/$case_path/manifest.json" ]]
+  /usr/bin/jq -e --arg path "$case_path" --argjson index "$index" '
+    .path==$path and .run_index==$index and .epoch==0 and
+    (.mode=="source" or .mode=="rust") and
+    (.case|type=="string" and test("^[A-Za-z0-9_-]+$")) and
+    .path==((("0"+($index|tostring))[-2:])+"-"+.case+"-"+.mode) and
+    (.params|type)=="object" and
+    (.params|keys)==(if .phase=="recover" then ["prelaunch","recovery-after","recovery-before"]
+                    else ["prelaunch"] end)
+  ' "$file" > /dev/null
+  printf '%s\n' "$capture_root/$case_path" >> "$proof/capture-directories.txt"
+  /usr/bin/jq -r --arg base "$capture_root/$case_path/" \
+    '$base+"inputs", (.params|keys[]|$base+"params-"+.)' "$file" >> "$proof/capture-subdirectories.txt"
   printf '%s\t%s\t%s\n' "$member" "$bytes" "$digest" >> "$proof/members.tsv"
   (
     ulimit -f 8192
@@ -265,6 +281,9 @@ while IFS=$'\t' read -r member bytes digest extra; do
   )
   index=$((index+1))
 done < "$proof/manifests.tsv"
+test "$(/usr/bin/wc -l < "$proof/capture-subdirectories.txt")" = 56
+/usr/bin/cat "$proof/capture-subdirectories.txt" >> "$proof/capture-directories.txt"
+/usr/bin/awk 'seen[$0]++ {exit 1} END {if(NR!=83)exit 1}' "$proof/capture-directories.txt"
 /usr/bin/awk -F '\t' -v base="$capture_root/" -v bytes="$selected_bytes" '
   NF!=3 || length($1)>512 || $1!~/^[A-Za-z0-9._\/-]+$/ || $1~/^\// || $1~/\/\// ||
     $2!~/^[0-9]+$/ || $2>1048576 || length($3)!=64 || $3!~/^[0-9a-f]+$/ || seen[$1]++ {exit 1}
@@ -281,12 +300,29 @@ test "${#members[@]}" = 5891
   ulimit -f 1024
   bounded 120 /usr/bin/unzip -q -n "$archive" "${members[@]}" -d "$root/functional"
 )
+# artifact ZIP에는 directory entry가 없다. 인증된 manifest의 빈 inputs까지 정확히 복원한다.
+phase=selected-directories
+verify_owner
+owned_dir "$root/functional/$capture_root"
+while IFS= read -r relative; do
+  directory=$root/functional/$relative
+  owned_dir "${directory%/*}"
+  if [[ ! -e $directory && ! -L $directory ]]; then
+    /usr/bin/mkdir -m 700 -- "$directory"
+  fi
+  owned_dir "$directory"
+done < "$proof/capture-subdirectories.txt"
 phase=final-pins
 verify_owner
 bad=$(bounded 30 /usr/bin/find "$root/functional" -xdev \
   \( ! -uid "$uid" -o \( -type d ! -perm 0700 \) -o \( -type f \( ! -perm 0600 -o ! -links 1 \) \) \
      -o \( ! -type f ! -type d \) \) -print -quit)
 test -z "$bad"
+bounded 30 /usr/bin/find "$root/functional/$capture_root" -xdev -type d -printf '%p\n' > "$proof/capture-extracted-directories.txt"
+/usr/bin/awk -v base="$root/functional/" 'NR==FNR {wanted[base $0]=1;next}
+  !($0 in wanted) || seen[$0]++ {exit 1}
+  END {for(name in wanted)if(seen[name]!=1)exit 1}' \
+  "$proof/capture-directories.txt" "$proof/capture-extracted-directories.txt"
 bounded 30 /usr/bin/find "$root/functional" -xdev -type f -printf '%P\t%s\n' > "$proof/extracted.tsv"
 /usr/bin/awk -F '\t' 'NR==FNR {wanted[$1]=$2;next}
   NF!=2 || !($1 in wanted) || $2!=wanted[$1] || seen[$1]++ {exit 1}
