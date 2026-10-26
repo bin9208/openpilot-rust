@@ -1457,6 +1457,120 @@ D writer pin은 위의 `bed89b27...` 그대로다. 로컬은 AST·rustfmt/check�
 했으며 Cargo/test/Clippy/LLVM/compiler/model/oracle 실행0이다. 이 연결의 실제3/3, A cache 부재,
 provider/finalizer 후봉인과 B 전체12 exact는 다음 coherent source의 GHA에서 확인해야 한다.
 
+## 2026-10-26 d666 actual 감사 — receipt 경로 오류와 #476 수치 실패 분리
+
+대상 source는 `d6667936845ba90b2b897c1b75f9af173131e5c1`이다. helper/catalog와 관련11개
+소스·WF를 이 Git blob에 묶어 대조했다. 이후 다른 WIP를 actual 근거로 사용하지 않았다.
+
+### current-model: 수치 비교 전 receipt 작성 실패
+
+[run40264806443/job121384756130](https://github.com/bin9208/openpilot-rust/actions/runs/40264806443/job/121384756130)은
+step13과 required step17에서 실패했다. 실제 최초 예외는 source1374의 catalog 입력 receipt
+작성 중 `spec_file(self.m, python, 512*MIB)`에서 발생했다.
+
+`RuntimeError: bounded regular file: /tmp/openpilot-ci.SFXKfS/venv/bin/python`
+
+venv의 Python alias는 이미 정상 admission된 symlink다. `holds-after.json`은 그 alias가
+`/opt/hostedtoolcache/Python/3.12.15/x64/bin/python3.12`로 resolve되고 실제 provider SHA가
+`53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e`임을 보존한다.
+새 receipt 코드만 이 alias를 `lstat` regular-file 경계에 직접 넘긴 통합 오류다. Python 자체의
+admission 실패, cache 오염, cap 초과나 원본/native 수치 실패로 분류하지 않는다.
+
+| 실제 완료 단계 | 결과 |
+| --- | --- |
+| current-bins / libtest / catalog no-run | PASS; catalog no-run1.193초 |
+| strict Clippy --lib --tests | PASS; command16.766초 |
+| catalog/publisher DSO provider-dso-9/10 | 둘 다 PASS |
+| cached ISA unit | 14 passed/0 failed; filtered66 |
+| cached_code unit | 15 passed/0 failed; filtered65 |
+| catalog exact3 | **0회**; first inputs JSON 작성 전에 예외 |
+| A whole91 / B12 / C12 / D2 | **미진입** |
+| source/SDK/Python/child 후봉인 | PASS; failures=[]/all_owned_children_reaped=true |
+| artifact upload / source·job cleanup | step18–20 모두 PASS |
+
+`final-seals.phase`에는 직전 성공 command의 `cached-code-controls`가 남아 있다. 이 문자열만
+보고 해당15개 unit이 실패했다고 판단하면 안 된다. `commands.json`의43개 command는 전부
+exit0/회수 성공이며, stack trace가 다음 command 전 receipt 작성에서 난 첫 오류를 명시한다.
+`catalog-policy-0.stdout`, `triplet-request.json`, `comparison.json`, C/D receipt는 없다.
+A collect 전이므로 이 run의 자연 CPU 모델·LLVM natural target/context receipt도 생성되지 않았다.
+runner 이름은 `GitHub Actions 1000029894`일 뿐 Intel/AMD나 whole91 ISA 수용으로 추정하지 않는다.
+
+source-before/after digest는 둘 다
+`db8476bfd7314c1d50eb38fe1fb4e641499044443a9cc01c1c1424c39b7d9cf9`다. artifact의
+source/SDK/Python/Python-base baseline도 각각 after와 독립 대조해 동일함을 확인했다.
+별도 registry seal과 모든 held provider/alias 검사는 실제 final-seals.pass=true로 완료됐다.
+
+artifact12625154282는7,483,487B, SHA256
+`fdc7bd036bc797a11e5bbd78d93bcec8f58a85c7152a68348e6c159bf98b9e5f`다. API expected
+bytes/digest/source를 먼저 확인하고 ZIP을1회만 받았다. 285개 safe unique/nosymlink·암호화 없음,
+총36,986,179B·CRC285/285를 확인했다. raw model blanket dump나 원본 실행은 하지 않았다.
+완료 log105,308B의 SHA는 `b4c2d03f73109b00bb0a3b577162fc8a4613ce988662df3a72c24ba6117fd2bc`다.
+
+### 부모 승인 후 최소 source 수정 — 아직 GHA 미실행
+
+부모가 실제 원인 보고 후6파일 범위의 단순 integration fix를 승인했다. helper의 위 한 식만
+`spec_file(self.m, python.resolve(strict=True), 512*MIB)`로 바꿨다. 실행용 Python alias,
+MODEL_BRIDGE_PYTHON·기존 alias/FD/SHA 최종 hold와 paired helper 검증은 그대로다. `regular`
+검사 자체·source/SDK·cache 부재·기한/cap·CPU/ISA·수치 비교는 완화하지 않았다. 새 실행 edge0,
+catalog no-run1+exact3와 DSO2 및 기존 모델/D 실행 수도 변하지 않는다.
+
+수정 후 helper SHA256은
+`ddf48345a1d358b80ce7296ffd42293e3992b7194808e476750914aea593f19d`다. 다른5개 source는
+d666 blob과 동일하다. 부모 통합 때 current WF admission/post helper2곳과 focused helper1곳의
+기존 literal이 이 SHA를 사용해야 한다. catalog pin은 `cc765f59...` 그대로다. 로컬 AST와
+diff check, d666 대비 정확히 한 식 변경인 것만 확인했다. 로컬 model/compiler/Cargo/test/Clippy,
+CI dispatch/rerun/cancel·stage/commit/push0이며, 이 수정으로 actual catalog3/B12 PASS를 주장하지 않는다.
+
+### 새 model-family: old84와 같은 #476의 큰 driver 수치 차이
+
+[run40264806375/job121384755741](https://github.com/bin9208/openpilot-rust/actions/runs/40264806375/job/121384755741)은
+step19의 `same_elf_replays_all_three_native_clis_in_both_absent_roots`에서 실패했다. 실제 첫 오류는
+`model_family_retirement_support.rs:253`가 child의 exit1 stderr를 전달한 것이다.
+
+`driverStateV2.driverStateV2.leftDriverData.faceOrientation[0]: original driver float changed`
+
+| 항목 | 실제 값 |
+| --- | --- |
+| expected | -0.08113645017147064 |
+| observed | -0.08065624535083771 |
+| 기존 tolerance | 0.000001 |
+| absolute_difference | 0.00048020482063293457 |
+
+이는 부모가 정정한 old84 수치와 동일하다. signed-zero bit 차이나 #482의3 lane으로 축소하지
+않으며 새 raw-flags 정책이 #476을 고쳤다고 주장하지 않는다. exact-bits assert라는 이전
+분류도 적용하지 않는다. step14 grouped compile/regression/Clippy, step15–18 prerequisite/
+helper binding/catalog export/USB staging은 PASS였다. step20–27의 raw sidecar, 최종 provider/
+source guard, 업로드와 cleanup도 전부 PASS다. 전체60 retirement 수용은 실패 상태다.
+
+이 분류에는 완료 log219,054B만1회 받아 사용했다. SHA는
+`2e394483884c583bbb4ceaa8589af68a75cc0fa709aa6cc9c57b8f7a106d4125`다. old84 log/ZIP를
+재다운로드하지 않았다. 새 family ZIP도 받지 않았다. 주 data artifact162,738,726B는 이번
+100MiB archive admission 범위 밖이며 최초 수치 실패 분류에는 필요하지 않다. 새로운 driver
+수학/기준/expected나 추가 관측 hook은 변경하지 않았다.
+
+### genuine compiler: 같은 d666 source의 별도 성공 범위
+
+[run40264806390/job121384755486](https://github.com/bin9208/openpilot-rust/actions/runs/40264806390/job/121384755486)은
+SUCCESS다. library metadata2, caller14/ignored2, actual COPY1, genuine mixed1+order7,
+strict Clippy가 모두 exit0이다. comparison의 Python kernel hash/binary SHA poison과 첫 IR 대표
+대조는 true이며 원본 native 호출0이다. 원본 prefix SHA
+`bc1b7b572c8dd2f84f3ea0ca38b1744e4c7120155c33f3dabb633eabaf7f0144`를 유지한다. artifact에서
+original/candidate program IR123B의 전체 bytes 동일성과 order7의 lowering/compiler counts
+동일·실패 시 destination 부재를 별도로 재검사했다. 이 성공은 model current B12나 family60의
+성공 증거로 대체하지 않는다.
+
+주 artifact12626256266은18,011B, SHA256
+`6e23d063a68a9146bdd565ece03d65fa4a12a33260c28281b42c25d8b98a594d`다. expected bytes/
+digest/source를 admission한 뒤1회 다운로드했고 safe unique/nosymlink26개, 총43,223B,
+CRC26/26을 확인했다. main artifact 외 private-workspace ZIP은 받지 않았다. 실제 step20은 source
+index/hash와 전체 SDK file SHA/identity roster before/after 및 LLVM pin을 비교해 PASS했고,
+step21–23 upload/cleanup도 성공했다. 완료 log191,046B의 SHA는
+`83dad81f1bd06c9a6ee1c4b425cf90a3a8f368e60c77aaf3271053f00c6e8971`이다.
+
+compact 독립 감사는 private `ci/model-d666-actual-audit.json`, `ci/model-family-d666-actual-audit.json`,
+`ci/genuine-d666-actual-audit.json` 및 각 ZIP admission JSON에 남겼다. 이 기록 외 공유 WF/Focus/
+ledger/pins/registry는 수정하지 않았다. 전체 모델/full128·historical half·기기 수용 및 퇴역 credit0을 유지한다.
+
 
 ### 부모의 최종 소스 등록 — 실행 전
 

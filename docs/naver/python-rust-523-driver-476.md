@@ -959,3 +959,24 @@ full_six_source_acceptance=false/retirement_credit0이다.
 
 이번 작업은 본 문서 append와 원문/Range audit뿐이다. retention 문서는 추가 편집하지 않았다.
 source/CI·stage/commit/push·재dispatch/cancel/rerun·로컬 프로젝트/Cargo/원본/모델 실행은0이다.
+
+
+## source84 실제 retirement 재관측 — 2026-10-26
+
+[source84/model-family40259520880/job121368642349](https://github.com/bin9208/openpilot-rust/actions/runs/40259520880/job/121368642349)은
+step14의 cold control과 준비 단계를 통과한 뒤 step19에서 실패했다. 정확 source는
+`84b04f167f699ecd70ab5d26089f36f3c44fa67b`다. native driver 비교 CLI가
+`driverStateV2.driverStateV2.leftDriverData.faceOrientation[0]`의 expected
+`-0.08113645017147064`, observed `-0.08065624535083771`, difference
+`0.00048020482063293457`를 보고했다. 기존 tolerance `0.000001`를 넘었고
+`same_elf_replays_all_three_native_clis_in_both_absent_roots`는 CLI exit1을 그대로 실패로
+전파했다. 전체60을 완료한 결과가 아니며 #597의 stderr 초과나 #482의 signed-zero와 구분한다.
+
+API에서 step20~27의 bounded sidecar/guard/업로드/source/index 봉인·cleanup 성공을 확인했다.
+실패 원문 로그는 scratch `ci/model-family84-failed.log`에 한 번 보존했다. 이번 분류에서
+artifact ZIP 재다운로드·CRC 반복·로컬 기능 실행은0이며 그 원시 후봉인을 새로 감사한 것은 아니다.
+[이슈 기록](https://github.com/bin9208/openpilot-rust/issues/476#issuecomment-6407722215)을 남겼다.
+
+원래 LLVM flags를 보존하는 source `d6667936845ba90b2b897c1b75f9af173131e5c1`의
+[후속 model-family40264806375](https://github.com/bin9208/openpilot-rust/actions/runs/40264806375)는
+진행 중이다. 이 별도 수정만으로 #476 해결·관련6파일 퇴역·전체 모델 수용을 미리 인정하지 않는다.

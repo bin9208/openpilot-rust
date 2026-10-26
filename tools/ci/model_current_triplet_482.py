@@ -1371,7 +1371,7 @@ class Controller:
             save(self.out / f"catalog-policy-inputs-{index}.json",
                  {"schema": 1, "source": os.environ["GITHUB_SHA"], "run": policy_runs[-1],
                   "catalog": spec_file(self.m, catalog, 512*MIB), "publisher": spec_file(self.m, publisher, 512*MIB),
-                  "python": spec_file(self.m, python, 512*MIB), "guarded": spec_file(self.m, guarded, 512*MIB)})
+                  "python": spec_file(self.m, python.resolve(strict=True), 512*MIB), "guarded": spec_file(self.m, guarded, 512*MIB)})
             self.test(catalog, selector, label, 180, env=env)
             need(self.build_identity(policy_root) == policy_identity and self.build_identity(private) == private_identity,
                  "catalog private root identity changed")
