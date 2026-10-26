@@ -236,7 +236,7 @@ jobs:
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
-    - name: Stage the fixed independently audited original Planner IPC
+    - name: Stage the fixed independently audited original Planner IPC and lifecycle
       id: planner_ipc_stage
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       timeout-minutes: 10
@@ -249,6 +249,8 @@ jobs:
         set -euo pipefail
         printf '%s  %s\n' 43e1eb7b2b5e27521f8f7ce4e4a36c35376515b4be944c6bd390a348978810b6 "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh" | sha256sum --check --strict -
         /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh"
+        printf '%s  %s\n' 258943202a9a19f64e8fd5e1188156206c7d2e5a998690a1a0540ab1a718d84e "$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh" | sha256sum --check --strict -
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh"
     - name: Compare exact policies, main loops, real IPC and lifecycle
       run: "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" runtime\n"
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -260,7 +262,7 @@ jobs:
       run: "python rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --sanitize --python \"$(command -v python)\" --acados \"$PLANNER_GENERATOR\" --wheel \"$RUNNER_TEMP\"/planner-wheel/*.whl --output \"$RUNNER_TEMP/planner-sanitized\"\n/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" memory\n"
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
-    - name: Qualify full native Planner IPC lib and strict Clippy
+    - name: Qualify full native Planner IPC and lifecycle with strict Clippy
       id: planner_ipc_qualify
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       timeout-minutes: 15

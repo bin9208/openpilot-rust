@@ -1,0 +1,913 @@
+{
+  "artifact": {
+    "archive": "12623646303.zip",
+    "bytes": 48144861,
+    "extracted": "functional",
+    "id": 12623646303,
+    "sha256": "5288aea003bdf02852307217587617aadcba90f017a1f1b581fec70deae4db81"
+  },
+  "cases": {
+    "bytes": 5425,
+    "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/cases.json",
+    "sha256": "d14a75be885b14e337887377e6e38aff29d2fd450672ee848ba3f222bbe304a4"
+  },
+  "host_architecture": "aarch64",
+  "index": {
+    "bytes": 14127,
+    "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle-original-inputs/index.json",
+    "sha256": "f1d02d1c17623dc527db57ff4c5fde2279ef05d16018ed0999c9c860d6d495dc"
+  },
+  "kind": "audited-original-planner-lifecycle-inputs",
+  "origin_job": "planner-runtime",
+  "origin_run_attempt": "1",
+  "origin_run_id": "40258459472",
+  "receipt": {
+    "bytes": 348,
+    "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/receipt.json",
+    "sha256": "c9d29355699c89c57ed93bde72e520888856fd1169d8b8f57521b992ec5279bd"
+  },
+  "runs": [
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 119,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/wait-missing-sigint/source/receipt.json",
+        "sha256": "bbf5769a8762e128d899d9b5d7bcd824df6ab35cdefc3e0f8ee3b7029445ea09"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 115,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/wait-missing-sigint/rust/receipt.json",
+        "sha256": "d6b1fe00bc11b5d550eaae26b006303fd4c68c77a83a9a5746d88757e84fbead"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 120,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/wait-missing-sigterm/source/receipt.json",
+        "sha256": "5cf35441d8174b452f511f8249c4ae87956abb593e17368a5533bd2215de8d84"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 116,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/wait-missing-sigterm/rust/receipt.json",
+        "sha256": "5b1c7cc1c20bf2f401b1119db4078c167aaa8b83232ac3ea8cda71e2935f04c9"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 121,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/wait-directory-sigint/source/receipt.json",
+        "sha256": "4864ee4f15baf978ab0303b20a091606a7237975049eb7e046059b1f95675168"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 117,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/wait-directory-sigint/rust/receipt.json",
+        "sha256": "06ec012bb7a969ca9a2c58e38d0f33a18a47e8d508845e5ab63b5b0fb0293a48"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 122,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/wait-directory-sigterm/source/receipt.json",
+        "sha256": "99e938073530efa23ae0e4b979ce97a8736fe3ea63ddcf15d84f8ef6a0558b0b"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 118,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/wait-directory-sigterm/rust/receipt.json",
+        "sha256": "458f0535ee63c11f7a18b5f5325e62d6f8761eb4374a1ed332aa84fd11591b7d"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 117,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/wait-empty-sigint/source/receipt.json",
+        "sha256": "fc33630085c5fb420cfe7047064884c1389feb826347c3eb1753180e8cf2129d"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 113,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/wait-empty-sigint/rust/receipt.json",
+        "sha256": "31cf34c713369b51dd766125eaa327c251785f8a83d459eda10136cc2e0a26aa"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 118,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/wait-empty-sigterm/source/receipt.json",
+        "sha256": "a1c4f75d0a8016a06c27f96329d1153b350dc78a97fd68ce393143aed17faf68"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 114,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/wait-empty-sigterm/rust/receipt.json",
+        "sha256": "cd77ecef7664d27fc2d0d64204751e72689439e7a758e48445d3303ae191d4c0"
+      }
+    },
+    {
+      "publications": [
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/source/publication-0-0-longitudinalPlan.bin",
+            "sha256": "de8e38a435557ca446199afdf5cc050345b1c76e0acdc622cb9e546e153ead89"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/source/publication-0-1-lateralPlan.bin",
+            "sha256": "196d23800cb288cc72c97aea7f839cf28f5ed69c5590542d523deb7042d1c39b"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/source/publication-0-2-driverAssistance.bin",
+            "sha256": "0f0271ae1df9c400163722c7d5eb751428fd32acc9754abfee40f362beed4792"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/source/publication-1-3-longitudinalPlan.bin",
+            "sha256": "74e2e1854dafa41bd8b0fabcffb142534afddf7219519b98913039dce0d3b593"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/source/publication-1-4-lateralPlan.bin",
+            "sha256": "e13c68a7b73a9bb61c78e5ddd096bc4dfc20c548efad4576f397a7ddbc4bed78"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/source/publication-1-5-driverAssistance.bin",
+            "sha256": "09591fca939ca7d121dbee449dc16af45cb901d4fad77f8ef3732744e100ec4b"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/source/publication-2-6-longitudinalPlan.bin",
+            "sha256": "4d65ca2ceb670a547b75c327c1eca64238c8a04eca5574727071b7b1c9046dcf"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/source/publication-2-7-lateralPlan.bin",
+            "sha256": "e1a473f0f6d7d4ef187e610a39974617ede153754dd1b3404be7864dab83fec1"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/source/publication-2-8-driverAssistance.bin",
+            "sha256": "11911c91e27287ce72fc54b36988029a6e3937a450ee0bc556f78233ac8d7e6f"
+          },
+          "service": "driverAssistance"
+        }
+      ],
+      "receipt": {
+        "bytes": 337,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/source/receipt.json",
+        "sha256": "b928b0b39cbbbb538218da8d5b220c251ce21b5fe52aaa816b17f2a138d3be4a"
+      }
+    },
+    {
+      "publications": [
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/rust/publication-0-0-longitudinalPlan.bin",
+            "sha256": "cd07f007b7d712e1474577299bed0f7f7629ddc375fdbedf62f7a3b1d411a74e"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/rust/publication-0-1-lateralPlan.bin",
+            "sha256": "cfa4f8b3b3af29ddba13ed47ff9968635eef0474a2e593602b58e2c4996670ce"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/rust/publication-0-2-driverAssistance.bin",
+            "sha256": "feda56d00e9aab466e60a70c1c4052c3df0135e13ef7a0381a1b09f84a00b82b"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/rust/publication-1-3-longitudinalPlan.bin",
+            "sha256": "e7bed1b531a24cf5ffdf3880b24ad2304c335d865192b147c36b5009b873c8f1"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/rust/publication-1-4-lateralPlan.bin",
+            "sha256": "650abfdb0156ee7b18d1dd625c309606b58a0f6eff03e72554e4a9319e1a91e5"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/rust/publication-1-5-driverAssistance.bin",
+            "sha256": "6d1372c7aebf1621c23f74c32f2c9296fc7a6d38fed7972e50a6835d56ad3851"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/rust/publication-2-6-longitudinalPlan.bin",
+            "sha256": "26d7d8bb4b89613f125507cdd4bad2e5541ba2692e9eb9591d79727b23f79ed4"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/rust/publication-2-7-lateralPlan.bin",
+            "sha256": "1447c19d75b3ed9fa13d9481fa41dfd4663f17f2e49bd4132e1690681aa81f93"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/rust/publication-2-8-driverAssistance.bin",
+            "sha256": "c2b0c3bb25c1cf0b0e4b32e2acdd00887d80c5727a36653c4dd81124e08abe41"
+          },
+          "service": "driverAssistance"
+        }
+      ],
+      "receipt": {
+        "bytes": 333,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigint/rust/receipt.json",
+        "sha256": "2eef22f1a4335d6daba49d871460e02b4aa10bcbe861ff5bc6e5341fe70346e6"
+      }
+    },
+    {
+      "publications": [
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/source/publication-0-0-longitudinalPlan.bin",
+            "sha256": "dbb1a19b9d97e8464325eef3dad354881b80f0680cae45a60f96acc6737b88d9"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/source/publication-0-1-lateralPlan.bin",
+            "sha256": "884d601b1d378c8a1192f003f48578e403e729d9e704f092967c7fafe4012529"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/source/publication-0-2-driverAssistance.bin",
+            "sha256": "ea9f669ab1cce502f48a3a78cba4aeb1fc6d25721b5ab2b90d1d2707ca875e8f"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/source/publication-1-3-longitudinalPlan.bin",
+            "sha256": "8d97878910ffa3c70e060c74955b07a3efce8abac23e3557e515563be51b649c"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/source/publication-1-4-lateralPlan.bin",
+            "sha256": "50bf46d41243fd699fcdb159c67fefe34e2b385ace33286f6da6941f5d382a4d"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/source/publication-1-5-driverAssistance.bin",
+            "sha256": "d76f9aa0e46e795428ff5d2b24dedae8ca24d9e1fe2345fbf67dc89a2476bc78"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/source/publication-2-6-longitudinalPlan.bin",
+            "sha256": "addb84804c8ba1dba73ef18c7bbf32301d932a4d2a11a55c2d09f5bb9bfc401a"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/source/publication-2-7-lateralPlan.bin",
+            "sha256": "bfb955273bf93f5e0ced1e0468d9f86ad255385ef9862b578f9b6341845814ba"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/source/publication-2-8-driverAssistance.bin",
+            "sha256": "898db374045aa5073b8bf1ef9637199acadd1e9e8df8b55756b50b55815d6b85"
+          },
+          "service": "driverAssistance"
+        }
+      ],
+      "receipt": {
+        "bytes": 340,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/source/receipt.json",
+        "sha256": "c704e5b220e0edafeee3d5b5272f4730925a9533d21a9138fca699fd2054c380"
+      }
+    },
+    {
+      "publications": [
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/rust/publication-0-0-longitudinalPlan.bin",
+            "sha256": "2d2ab286c4344795d302be341d73c95705dcbaa82f7ae2b5795e1ed1af394514"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/rust/publication-0-1-lateralPlan.bin",
+            "sha256": "e7a52007d85c9826b07836aaa619f72940837081e08b4745e6d765a316a3e1c9"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/rust/publication-0-2-driverAssistance.bin",
+            "sha256": "47981c2c27ba832222e29f3ccdad2b3a83db8931a6245df2241bcbb71c9e3651"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/rust/publication-1-3-longitudinalPlan.bin",
+            "sha256": "0622cabe230358bd879cd42a92465dd4116429a063db33e74fdfa0ae22a7bb95"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/rust/publication-1-4-lateralPlan.bin",
+            "sha256": "5085b2dea841e2e78e465b2286d66072383e01e32a0f9f3de1ce4a49e83e4a7d"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/rust/publication-1-5-driverAssistance.bin",
+            "sha256": "14f77e28797b03ebad889c332d37c73d9cff6be34c859e9db83a98dc65abce62"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/rust/publication-2-6-longitudinalPlan.bin",
+            "sha256": "491308467512d4f987e3cc439ec37decc6868bd347127b2a21c69271cb644b9d"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/rust/publication-2-7-lateralPlan.bin",
+            "sha256": "f2d73a3aca5589576ef4f8618134cdc9d2166cbe3ac7908df45177b0d8889086"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/rust/publication-2-8-driverAssistance.bin",
+            "sha256": "e15ccb26f094e0325aa040ded6e8249669be71afe91bcd8697505b8507efa8ce"
+          },
+          "service": "driverAssistance"
+        }
+      ],
+      "receipt": {
+        "bytes": 338,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/ready-sigterm/rust/receipt.json",
+        "sha256": "0866120fb8b05dd0eb535ccccaaa119533e7f0fcf6b3b2ecb6f13fe370e1f09f"
+      }
+    },
+    {
+      "publications": [
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/source/publication-0-0-longitudinalPlan.bin",
+            "sha256": "103e60681005f09bc93e3404582e672aee4d2edfd2290d8425bf65133c6c917d"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/source/publication-0-1-lateralPlan.bin",
+            "sha256": "350bd7f4b3de9a21c4dceb3fd8790b20ed8481c52549c2a79388856a4e8b2840"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/source/publication-0-2-driverAssistance.bin",
+            "sha256": "a86c5797bbb39094b817c4e889e5f0be59e066bfc35d488a66071432a61e6729"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/source/publication-1-3-longitudinalPlan.bin",
+            "sha256": "e2e6e308555d35d867209e09d8c8ba854a3fd572e42832a68fd8d740ba4f6c87"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/source/publication-1-4-lateralPlan.bin",
+            "sha256": "a69b887564eaa9fd15d6246fe1ec3188de659e43f206a727dfd83c7b17d8099c"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/source/publication-1-5-driverAssistance.bin",
+            "sha256": "f6d757574af190b04a17382c2d745e6b67753f79272c31bd71eba35126bbea27"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/source/publication-2-6-longitudinalPlan.bin",
+            "sha256": "b06f272335f55388c20b5826e4deb729d034d6cc4932e61864cbd796680bd6ad"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/source/publication-2-7-lateralPlan.bin",
+            "sha256": "d1becc9a76cd33f2172ea1f24f81515d5e9d783ddce9a32717d7584637f97a3f"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/source/publication-2-8-driverAssistance.bin",
+            "sha256": "323874adca1f78d7f4af2abd3322076a0b2c7c29051002db38c101319e77ad27"
+          },
+          "service": "driverAssistance"
+        }
+      ],
+      "receipt": {
+        "bytes": 344,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/source/receipt.json",
+        "sha256": "ebe07a706bebf22ed41e549976ebda262dad7c903376a0ce0c2d303e1698addb"
+      }
+    },
+    {
+      "publications": [
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/rust/publication-0-0-longitudinalPlan.bin",
+            "sha256": "6992cabb50b0729b85c94ba015692a7981792a7dbfe4c314be00604b0171ab85"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/rust/publication-0-1-lateralPlan.bin",
+            "sha256": "142b4348a77f655bf246057314a626fa306a6e9ec56f27f69b99688e558a7c0d"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/rust/publication-0-2-driverAssistance.bin",
+            "sha256": "d584ea87533b107e2e125ed378e40ef175d3b359ab2b7c98ca84d043f2c1edda"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/rust/publication-1-3-longitudinalPlan.bin",
+            "sha256": "492a7024d89b56c07b85b7083cf88b1b32af0b3e18f4de100d3bdf49331a4396"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/rust/publication-1-4-lateralPlan.bin",
+            "sha256": "ab8efd56bc286d6c8cd15dd5b9841d81b2f273330dc6ae9fec6f0a6f069f70c6"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/rust/publication-1-5-driverAssistance.bin",
+            "sha256": "d09867e61572dbcb9d1fd920e6074f1f77599b449bb34e87f9f29f4838b9b7cb"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/rust/publication-2-6-longitudinalPlan.bin",
+            "sha256": "31f5212137f93716b930bebcddf0fc8edfad24a795e0d95e56259ab599419833"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/rust/publication-2-7-lateralPlan.bin",
+            "sha256": "133c8addaf71ce7b0566b6ebbd669272bf1200bd0d7d8c3ccf806798d2b057db"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/rust/publication-2-8-driverAssistance.bin",
+            "sha256": "6311f37837877702a9c40cc432042e959c82ebabb12ec1aa2f74af7f0252002f"
+          },
+          "service": "driverAssistance"
+        }
+      ],
+      "receipt": {
+        "bytes": 342,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/recover-directory/rust/receipt.json",
+        "sha256": "3f77f66cea24d081f25db4e9b859dc78d2d7a1d05201f96106e2dbcf57a94c7f"
+      }
+    },
+    {
+      "publications": [
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/source/publication-0-0-longitudinalPlan.bin",
+            "sha256": "0a1d6f60c890fdd8b17a0afa31ccfdb4a79621d51974fc1f5c354c09eaa3a2d8"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/source/publication-0-1-lateralPlan.bin",
+            "sha256": "90983b4cb8763daa967c70c902c8f8c20720343a53b1a8edf51db27350648e8f"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/source/publication-0-2-driverAssistance.bin",
+            "sha256": "cfe941d2199ef4694d1e9ffdaf1d68068c8a14c4d645e738e7b0568641f12352"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/source/publication-1-3-longitudinalPlan.bin",
+            "sha256": "81841ac5a9187058ffe3289b7de116a193a1194549762a4e44b7f96f72972fdc"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/source/publication-1-4-lateralPlan.bin",
+            "sha256": "7c897424e1fa36208558cc4ced1fce9b20787a387405bb2ed53f722491635e80"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/source/publication-1-5-driverAssistance.bin",
+            "sha256": "130946820a795ae5a356199c7129b649fc4890068a6c1aa09ed8d69a09f0a78f"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/source/publication-2-6-longitudinalPlan.bin",
+            "sha256": "e76431a617c29a4af31ee1f6bbb0ffb0dc0e45c21a49061f3084d3c48d428ae1"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/source/publication-2-7-lateralPlan.bin",
+            "sha256": "96e43c862728a9d8c7b6069df54e4ecf1ec90aada14415057a84eedea1fc3fb1"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/source/publication-2-8-driverAssistance.bin",
+            "sha256": "1a3632e255466f8c1b8cebd58fc705b8ab8f66f128aece8e6365bbb46da06d01"
+          },
+          "service": "driverAssistance"
+        }
+      ],
+      "receipt": {
+        "bytes": 347,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/source/receipt.json",
+        "sha256": "fa78bd5f560cd61259561011ca22985f6f8f515fe059be7726c5ff598ad486a8"
+      }
+    },
+    {
+      "publications": [
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/rust/publication-0-0-longitudinalPlan.bin",
+            "sha256": "43c811f4a8414374d5c21e6792ebfbb7c0e95ca4da5c236bfd7b8ae91b64508a"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/rust/publication-0-1-lateralPlan.bin",
+            "sha256": "a7783e08ce709db7271877769956b3eed28641d1f8df51c7b74f44ea8ee732ad"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 0,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/rust/publication-0-2-driverAssistance.bin",
+            "sha256": "676084bfbde7b2967e06bcbf8406203aa4c262608589a347282cf4f271a5a599"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/rust/publication-1-3-longitudinalPlan.bin",
+            "sha256": "f2f81b6373e8f30631d96ec1a2ba2308ca8c3be6eefd862c6dfe0bf3615bbfe8"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/rust/publication-1-4-lateralPlan.bin",
+            "sha256": "04cd6e2caae5b949e1b92529546d647fa5e8748c3c68adb947e0346e2024028a"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 1,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/rust/publication-1-5-driverAssistance.bin",
+            "sha256": "6f81e9191d5f24730a89215c0608b97b7b7adcbdf7cca4c09f98c2bc133147b7"
+          },
+          "service": "driverAssistance"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 488,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/rust/publication-2-6-longitudinalPlan.bin",
+            "sha256": "7959feae18f1e865bbd89193286d6accef57c32726e2c64f35b9847872e7b41c"
+          },
+          "service": "longitudinalPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 1136,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/rust/publication-2-7-lateralPlan.bin",
+            "sha256": "cbfb70004b0e116a2b0b6c09a4fd1dcfaa7a9c975ed6998b2543cbd9c3d5051e"
+          },
+          "service": "lateralPlan"
+        },
+        {
+          "frame": 2,
+          "raw": {
+            "bytes": 48,
+            "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/rust/publication-2-8-driverAssistance.bin",
+            "sha256": "35b29199e2e422b26054179a36eac7236895cadae3396e194a6a9e7816e5962d"
+          },
+          "service": "driverAssistance"
+        }
+      ],
+      "receipt": {
+        "bytes": 345,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/settings-directories/rust/receipt.json",
+        "sha256": "fd4d3768a2a310b340acdd59754c8007a7d82e45923825a12977d5b314e64db9"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 113,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/fatal-integer/source/receipt.json",
+        "sha256": "94f85326323b5ac1ebad70bfff8aa8b4a326ba814925292157a6fd8e0e18a62f"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 109,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/fatal-integer/rust/receipt.json",
+        "sha256": "fbc38a49ee27568b2bf54b67932ed644a437d61ce1ef0c16135f19ecf49b625b"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 133,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/fatal-float/source/receipt.json",
+        "sha256": "356d19730a9644c4a63a9b66796c98d364b70121fd4c1a8bd4fbcd22cbcfe35e"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 129,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/fatal-float/rust/receipt.json",
+        "sha256": "a35b39d331aab9d6576ba2f00f8ecc08b79078f44ca9fcaf6821fff038491abe"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 117,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/malformed-CarParams/source/receipt.json",
+        "sha256": "2ffb46a9939e67d8a5207ab7387840afc10d92cb2497f5b561e47e88df80e678"
+      }
+    },
+    {
+      "publications": [],
+      "receipt": {
+        "bytes": 115,
+        "path": "tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle/malformed-CarParams/rust/receipt.json",
+        "sha256": "fd397c678d2ee245a6ac166b8ae994ea4f0625d622ba5e9ad637b97c94d385db"
+      }
+    }
+  ],
+  "schema_version": 1,
+  "source_commit": "841ee8a4e1357e7a0db4193cf7944e23c31ee0fb",
+  "source_sha256": {
+    "opendbc_repo/opendbc/car/car.capnp": "6a4d28799933e7728a0a3d4d5a4d47c64fb11e9a6d75e3d4494d2344aefebfda",
+    "openpilot/cereal/custom.capnp": "102d0aeb45effe3d15abb02a8d930834f8355f9817bf6e135a98435d9a832693",
+    "openpilot/cereal/log.capnp": "fdecc98871c0ebc11417a558a600de6ff96cc51c2ce620122d39b2cee55f1620",
+    "openpilot/cereal/messaging/__init__.py": "1938c80c71dba0855700015bc03371786a711c67bfe3a0c5e073ed790d5e10a9",
+    "openpilot/cereal/services.py": "a0745e2ef00036f0eef08b453a4798b4281549ea9ac6dc91c8b348ef76131edb",
+    "openpilot/common/params_keys.h": "b8422e8ad2cd74ec3c5750c3e919f6546519d84fabb5f6ec868b5372713b4d7f",
+    "openpilot/selfdrive/controls/plannerd.py": "078ff71e62494da26313909438e472dc005df8d52bd8cff75997f93130889685",
+    "openpilot/selfdrive/modeld/constants.py": "5d597d287df626d08b234a17db05e884302fead646ff4e7f0153079547c8010c",
+    "rust/tools/check_plannerd_lifecycle.py": "15aa1ace3b50f7b40a90532784f0236d723d185d86e2e924c90566373fc6f485",
+    "rust/tools/plannerd_daemon_source.py": "4c5ac6ca4d01dfbf748975e8005bbb03502c906f69e63f4cd2353fcd21f9a15f",
+    "rust/tools/plannerd_ipc.py": "f800915a946ff2a39b50eb576bdd4edc4631c6740f09e6e65b61cec3c5d684c5",
+    "rust/tools/plannerd_lifecycle_peer.py": "9e0ebcca984cce636e309d16f42c5c86c8adf7ffd511480e182d0602d0d3582f",
+    "rust/tools/plannerd_owner_fixtures.py": "03b22ad4d2d0fb87270338e0f485a9936f7c4c8f48613bb9a44887add19da98c",
+    "rust/tools/plannerd_owner_loader.py": "b261a024c3634a49fa92a48a72b461258a2e0dfa4e7478fe2934597a899961cb"
+  }
+}

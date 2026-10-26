@@ -140,6 +140,22 @@ fn empty_runtime_root_reaches_first_native_leaf_and_preserves_status42() {
     assert_eq!(result.code, 42, "{result:?}");
     fixture.first42_was_recorded();
     assert_eq!(fs::read_dir(&fixture.root).unwrap().count(), 0);
+    // lifecycle 세 원문은 실제 native 수용/부모 삭제 승인 전까지 존재를 허용한다.
+    let pending = Fixture::new();
+    for relative in [
+        "rust/tools/check_plannerd_lifecycle.py",
+        "rust/tools/plannerd_lifecycle_peer.py",
+        "rust/tools/plannerd_ipc.py",
+    ] {
+        fs::write(
+            pending.marker(relative),
+            b"inert original: must never execute\n",
+        )
+        .unwrap();
+    }
+    let result = pending.run(false, "none", &pending.root.join("unused"), &pending.target);
+    assert_eq!(result.code, 42, "{result:?}");
+    pending.first42_was_recorded();
 }
 
 #[test]

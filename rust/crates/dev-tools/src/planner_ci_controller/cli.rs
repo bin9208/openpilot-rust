@@ -24,6 +24,148 @@ const IPC_HELP: &str = concat!(
     "(all options required once; absolute UTF-8 paths; positive decimal budgets)"
 );
 
+#[cfg(feature = "planner-ipc-native")]
+const LIFECYCLE_HELP: &str = concat!(
+    "check-plannerd-ci lifecycle --root PATH --python PATH --binary PATH --artifact PATH ",
+    "--binding PATH --source-native PATH --original-ipc-binding PATH --corpus PATH --corpus-audit PATH ",
+    "--output PATH --timeout-seconds N --growth-mib MIB (all options required once)"
+);
+
+#[cfg(feature = "planner-ipc-native")]
+pub(super) fn parse_lifecycle_arguments(
+    mut arguments: impl Iterator<Item = OsString>,
+) -> Result<super::planner_ipc_native::lifecycle::Options> {
+    let allowed = [
+        "--root",
+        "--python",
+        "--binary",
+        "--artifact",
+        "--binding",
+        "--source-native",
+        "--original-ipc-binding",
+        "--corpus",
+        "--corpus-audit",
+        "--output",
+        "--timeout-seconds",
+        "--growth-mib",
+    ];
+    let mut values = BTreeMap::<String, OsString>::new();
+    while let Some(key) = arguments.next() {
+        let name = key.to_str().ok_or(LIFECYCLE_HELP)?;
+        if !allowed.contains(&name) {
+            return Err(format!("unknown lifecycle option {name}").into());
+        }
+        let value = arguments
+            .next()
+            .ok_or_else(|| format!("missing value for {name}"))?;
+        if values.insert(name.into(), value).is_some() {
+            return Err(format!("duplicate lifecycle option {name}").into());
+        }
+    }
+    let take = |name: &str, values: &mut BTreeMap<String, OsString>| -> Result<String> {
+        values
+            .remove(name)
+            .ok_or_else(|| format!("missing lifecycle {name}"))?
+            .into_string()
+            .map_err(|_| format!("lifecycle {name} requires UTF-8").into())
+    };
+    let path = |name: &str, values: &mut BTreeMap<String, OsString>| -> Result<PathBuf> {
+        let value = take(name, values)?;
+        if value.is_empty() || value.contains('\0') || !Path::new(&value).is_absolute() {
+            return Err(format!("lifecycle {name} requires an absolute UTF-8 path").into());
+        }
+        Ok(value.into())
+    };
+    let positive = |name: &str, values: &mut BTreeMap<String, OsString>| -> Result<u64> {
+        let value = take(name, values)?;
+        if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+            return Err(format!("lifecycle {name} requires positive decimal").into());
+        }
+        let number = value.parse::<u64>()?;
+        if number == 0 {
+            return Err(format!("lifecycle {name} must be positive").into());
+        }
+        Ok(number)
+    };
+    let timeout = Duration::from_secs(positive("--timeout-seconds", &mut values)?);
+    if std::time::Instant::now().checked_add(timeout).is_none() {
+        return Err("lifecycle deadline range".into());
+    }
+    let growth_bytes = positive("--growth-mib", &mut values)?
+        .checked_mul(1024 * 1024)
+        .ok_or("lifecycle growth overflow")?;
+    let options = super::planner_ipc_native::lifecycle::Options {
+        root: path("--root", &mut values)?,
+        python: path("--python", &mut values)?,
+        binary: path("--binary", &mut values)?,
+        artifact: path("--artifact", &mut values)?,
+        binding: path("--binding", &mut values)?,
+        source_native: path("--source-native", &mut values)?,
+        original_ipc_binding: path("--original-ipc-binding", &mut values)?,
+        corpus: path("--corpus", &mut values)?,
+        corpus_audit: path("--corpus-audit", &mut values)?,
+        output: path("--output", &mut values)?,
+        timeout,
+        growth_bytes,
+    };
+    if !values.is_empty() {
+        return Err("unused lifecycle options".into());
+    }
+    Ok(options)
+}
+
+fn prepared_native_lifecycle(
+    inputs: &Inputs,
+    output: &Path,
+    ipc: &plan::NativeIpcInputs,
+    growth_bytes: u64,
+) -> Result<plan::NativeLifecycleInputs> {
+    #[cfg(not(feature = "planner-ipc-native"))]
+    {
+        let _ = (inputs, output, ipc, growth_bytes);
+        Err("runtime lifecycle requires the planner-ipc-native feature".into())
+    }
+    #[cfg(feature = "planner-ipc-native")]
+    {
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+        let job = PathBuf::from(std::env::var("CI_JOB_TEMP")?);
+        let corpus = job.join("planner-lifecycle-original");
+        let audit = corpus.join("audit.json");
+        if output != job.join("planner-comparison")
+            || inputs.root != PathBuf::from(std::env::var("CI296_SOURCE")?)
+            || PathBuf::from(std::env::var("PLANNER_LIFECYCLE_CORPUS")?) != corpus
+            || PathBuf::from(std::env::var("PLANNER_LIFECYCLE_CORPUS_AUDIT")?) != audit
+            || growth_bytes < 128 * 1024 * 1024
+            || !growth_bytes.is_multiple_of(1024 * 1024)
+        {
+            return Err("prepared runtime lifecycle paths or operation growth differ".into());
+        }
+        let directory = fs::symlink_metadata(&corpus)?;
+        let metadata = fs::symlink_metadata(&audit)?;
+        let uid = rustix::process::getuid().as_raw();
+        if corpus.canonicalize()? != corpus
+            || !directory.is_dir()
+            || directory.uid() != uid
+            || directory.permissions().mode() & 0o777 != 0o700
+            || audit.canonicalize()? != audit
+            || !metadata.is_file()
+            || metadata.uid() != uid
+            || metadata.permissions().mode() & 0o777 != 0o600
+            || metadata.len() > 1024 * 1024
+        {
+            return Err(
+                "prepared runtime lifecycle requires canonical owned700/600 corpus/audit".into(),
+            );
+        }
+        Ok(plan::NativeLifecycleInputs {
+            original_ipc_binding: ipc.original_ipc_binding.clone(),
+            corpus,
+            corpus_audit: audit,
+            growth_mib: growth_bytes / (1024 * 1024),
+        })
+    }
+}
+
 fn require_retired_controller_absent(root: &Path) -> Result<()> {
     for relative in [
         "rust/tools/check_plannerd_ci.py",
@@ -383,6 +525,29 @@ pub fn cli() -> Result<()> {
             return Ok(());
         }
     }
+    if arguments.peek().is_some_and(|arg| arg == "lifecycle") {
+        arguments.next();
+        #[cfg(not(feature = "planner-ipc-native"))]
+        return Err("lifecycle requires the planner-ipc-native feature".into());
+        #[cfg(feature = "planner-ipc-native")]
+        {
+            if arguments
+                .peek()
+                .is_some_and(|arg| arg == "--help" || arg == "-h")
+            {
+                arguments.next();
+                if arguments.next().is_some() {
+                    return Err(LIFECYCLE_HELP.into());
+                }
+                println!("{LIFECYCLE_HELP}");
+                return Ok(());
+            }
+            let options = parse_lifecycle_arguments(arguments)?;
+            let receipt = super::planner_ipc_native::lifecycle::run(&options)?;
+            println!("{receipt}");
+            return Ok(());
+        }
+    }
     let memory = arguments.peek().is_some_and(|arg| arg == "memory");
     if memory {
         arguments.next();
@@ -446,6 +611,7 @@ pub fn cli() -> Result<()> {
         binding: absolute(take("--binding")?)?,
         scheduler: std::env::current_exe()?,
         native_ipc: None,
+        native_lifecycle: None,
     };
     let output = absolute(take("--output")?)?;
     let timeout = take("--timeout-seconds")?
@@ -473,12 +639,26 @@ pub fn cli() -> Result<()> {
         // 전체 growth12 검증과 기존 부재 guard는 첫 leaf 전에 수행한다.
         let steps = plan::runtime_plan(&inputs, &growth, Duration::from_secs(timeout))?;
         require_retired_controller_absent(&inputs.root)?;
+        let mut prepared_ipc = None;
         let prepared = steps.into_iter().map(|step| {
             let check = if matches!(&step, plan::PlannedCheck::NativeIpc { .. }) {
                 // ABI42 등 앞선 실패 뒤에는 이 준비·feature/profile 검사에 도달하지 않는다.
                 let mut ipc_inputs = inputs.clone();
-                ipc_inputs.native_ipc = Some(prepared_native_ipc(&inputs, &output)?);
+                let context = prepared_native_ipc(&inputs, &output)?;
+                prepared_ipc = Some(context.clone());
+                ipc_inputs.native_ipc = Some(context);
                 step.complete(&ipc_inputs)?
+            } else if let plan::PlannedCheck::NativeLifecycle { growth_bytes, .. } = &step {
+                let mut lifecycle_inputs = inputs.clone();
+                lifecycle_inputs.native_lifecycle = Some(prepared_native_lifecycle(
+                    &inputs,
+                    &output,
+                    prepared_ipc
+                        .as_ref()
+                        .ok_or("native lifecycle requires the preceding prepared IPC")?,
+                    *growth_bytes,
+                )?);
+                step.complete(&lifecycle_inputs)?
             } else {
                 step.complete(&inputs)?
             };

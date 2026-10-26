@@ -2076,19 +2076,22 @@ fn planner_ipc_canonical_steps() -> Vec<Value> {
         "set -euo pipefail\n",
         "printf '%s  %s\\n' 43e1eb7b2b5e27521f8f7ce4e4a36c35376515b4be944c6bd390a348978810b6 ",
         "\"$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh\" | sha256sum --check --strict -\n",
-        "/usr/bin/bash \"$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh\"\n"
+        "/usr/bin/bash \"$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh\"\n",
+        "printf '%s  %s\\n' 258943202a9a19f64e8fd5e1188156206c7d2e5a998690a1a0540ab1a718d84e ",
+        "\"$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh\" | sha256sum --check --strict -\n",
+        "/usr/bin/bash \"$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh\"\n"
     );
     let qualify =
         "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" ipc-check\n";
     vec![
         serde_json::json!({
-            "name":"Stage the fixed independently audited original Planner IPC", "id":"planner_ipc_stage",
+            "name":"Stage the fixed independently audited original Planner IPC and lifecycle", "id":"planner_ipc_stage",
             "if":TRUSTED_SOURCE,
             "timeout-minutes":"10", "working-directory":"${{ env.CI296_SOURCE }}", "shell":"bash",
             "env":{"CI296_HOST_CONTROL":"1", "GITHUB_TOKEN":"${{ secrets.GITHUB_TOKEN }}"}, "run":stage
         }),
         serde_json::json!({
-            "name":"Qualify full native Planner IPC lib and strict Clippy", "id":"planner_ipc_qualify",
+            "name":"Qualify full native Planner IPC and lifecycle with strict Clippy", "id":"planner_ipc_qualify",
             "if":TRUSTED_SOURCE, "timeout-minutes":"15", "working-directory":"${{ env.CI296_SOURCE }}",
             "shell":"openpilot-local-shell {0}", "run":qualify
         }),
@@ -2124,7 +2127,7 @@ fn planner_ipc_canonical_contract(job: &Value) -> Result<(), String> {
     let expected = planner_ipc_canonical_steps();
     let positions = [compile + 1, memory + 1];
     let digests = [
-        "2f353db9d6d0b2d0b7784cf66e2b5f4e2985d868b34ac474c93fa77bb2172bef",
+        "fe84f729948e7eee6d22c31e78a306e4ab2a51becf3b0a5a242d331cefaa9713",
         "b637025349f5ad452b2ed62eff46480b2e0c3983d38502bb89ce715d41c7629a",
     ];
     for ((position, wanted), digest) in positions.into_iter().zip(&expected).zip(digests) {
@@ -2194,7 +2197,7 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
                 "{:x}",
                 Sha256::digest(read(".github/workflows/rust.yml").as_bytes())
             ),
-            "fbd6959a79e7df0cb91e9c321dc8b3aa53a0dc7607b5bd9e1da4eda2e6f27604"
+            "dbdc618a18f4b77fefbb7340ce441f35b1e0afacdb82e39f1964d1641ad160be"
         );
         let host = parse(&read(
             ".github/workflows/python-rust-523-planner-caller.yml",
@@ -2218,7 +2221,7 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
                 "name":"Require reviewed maintained Planner source", "if":TRUSTED_SOURCE,
                 "shell":"bash", "working-directory":"${{ env.CI296_SOURCE }}", "env":{"CI296_HOST_CONTROL":"1"},
                 "run":concat!("set -euo pipefail\nprintf '%s  %s\\n' ",
-                    "fbd6959a79e7df0cb91e9c321dc8b3aa53a0dc7607b5bd9e1da4eda2e6f27604 ",
+                    "dbdc618a18f4b77fefbb7340ce441f35b1e0afacdb82e39f1964d1641ad160be ",
                     ".github/workflows/rust.yml | sha256sum --check --strict -\n")
             })
         );

@@ -154,8 +154,7 @@ if [[ $mode == runtime ]]; then
   sha256sum -- "$controller" > "$proof/controller.sha256"
   printf '%s:%s\n' "$GITHUB_SHA" "$host" > "$proof/controller-source.txt"
   printf '%s\n' "$controller_features" > "$proof/controller-profile.txt"
-  # 같은 원래 lifecycle26 run에서만 입력을 보존한다. 별도 oracle/worker는 없다.
-  export PLANNER_LIFECYCLE_CAPTURE_DIR="$job/planner-comparison/lifecycle-original-inputs"
+  # lifecycle은 독립 보존 입력을 재사용한다. 준비 검사는 해당12번째 leaf에서 수행한다.
   "$controller" --root "$source_dir" --python "$planner_python" --bin-dir "$source_dir/rust/target/debug" \
     --artifact "$job/planner-artifact" --source-native "$job/planner-source" --binding "${PLANNER_PARAMS_BINDING:?}" \
     --output "$job/planner-comparison" --timeout-seconds "$seconds" "${growth_args[@]}"
@@ -173,9 +172,11 @@ elif [[ $mode == memory ]]; then
 elif [[ $mode == ipc-check ]]; then
   admit ipc-qualification "$source_dir" 2048
   failed=0
-  for check in observed clippy; do
+  for check in observed lifecycle clippy; do
     if [[ $check == observed ]]; then
       args=(test --lib planner_ci_controller::planner_ipc_native::observed_tests:: -- --test-threads=1 --nocapture)
+    elif [[ $check == lifecycle ]]; then
+      args=(test --lib planner_ci_controller::planner_ipc_native::lifecycle_tests:: -- --test-threads=1 --nocapture)
     else
       args=(clippy --lib --bin check-plannerd-ci -- -D warnings)
     fi
@@ -192,5 +193,6 @@ elif [[ $mode == ipc-check ]]; then
     [[ $status == 0 ]] || failed=1
   done
   grep -Eq '^test result: ok\. 4 passed; 0 failed; 0 ignored;' "$proof/ipc-observed.stdout" || failed=1
+  grep -Eq '^test result: ok\. 8 passed; 0 failed; 0 ignored;' "$proof/ipc-lifecycle.stdout" || failed=1
   [[ $failed == 0 ]]
 fi

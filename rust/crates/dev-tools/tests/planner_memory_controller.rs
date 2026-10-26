@@ -23,6 +23,7 @@ fn inputs(directory: &Path) -> Inputs {
         binding: directory.join("params.so"),
         scheduler: env!("CARGO_BIN_EXE_check-plannerd-ci").into(),
         native_ipc: None,
+        native_lifecycle: None,
     }
 }
 

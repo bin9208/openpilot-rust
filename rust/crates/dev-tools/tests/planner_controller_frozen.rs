@@ -1,7 +1,7 @@
 //! source73의 독립 원본 관측을 데이터로만 소비한다. Python 실행/import는 없다.
 use openpilot_dev_tools::{
     planner_ci_controller::{
-        plan::{self, Inputs, NativeIpcInputs},
+        plan::{self, Inputs, NativeIpcInputs, NativeLifecycleInputs},
         run_checks, scheduler, Check, CheckFailure,
     },
     qa_process::{CommandSpec, NativeRunner},
@@ -310,6 +310,12 @@ fn compare_plan(fixture: &Fixture, memory: bool, count: usize) {
             growth_mib: 512,
             peer_build_growth_mib: 128,
         }),
+        native_lifecycle: (!memory).then(|| NativeLifecycleInputs {
+            original_ipc_binding: base.join("original/ipc_pyx.fixture.so"),
+            corpus: base.join("lifecycle-corpus"),
+            corpus_audit: base.join("lifecycle-corpus/audit.json"),
+            growth_mib: 256,
+        }),
     };
     let output = base.join("output");
     let mappings = [
@@ -388,6 +394,7 @@ fn compare_plan(fixture: &Fixture, memory: bool, count: usize) {
         .collect::<Vec<_>>();
     assert_eq!(actual.len(), expected.len());
     let mut ipc_cutovers = 0;
+    let mut lifecycle_cutovers = 0;
     for (index, (actual, expected)) in actual.iter().zip(&expected).enumerate() {
         if !memory && index == 10 {
             // source73 원문 IPC argv도 전부 확인한다. 새 native argv로 원문을 덮어쓰지 않는다.
@@ -461,12 +468,75 @@ fn compare_plan(fixture: &Fixture, memory: bool, count: usize) {
                 }
             );
             ipc_cutovers += 1;
+        } else if !memory && index == 11 {
+            // source73 원래 lifecycle argv/순서를 먼저 확인한다. 동결 원문을 새 expected로 덮어쓰지 않는다.
+            assert_eq!(expected.name, "lifecycle");
+            assert_eq!(
+                expected.argv,
+                [
+                    inputs.python.clone(),
+                    "-u".into(),
+                    "-P".into(),
+                    inputs.root.join("rust/tools/check_plannerd_lifecycle.py"),
+                    "--source-native".into(),
+                    inputs.source.clone(),
+                    "--artifact".into(),
+                    inputs.artifact.clone(),
+                    "--python".into(),
+                    inputs.python.clone(),
+                    "--binding".into(),
+                    inputs.binding.clone(),
+                    "--binary".into(),
+                    inputs.binaries.join("openpilot-plannerd"),
+                    "--output".into(),
+                    output.join("lifecycle")
+                ]
+                .map(|path| path.to_str().unwrap().to_owned())
+            );
+            assert_eq!(
+                actual,
+                &Leaf {
+                    name: "lifecycle".into(),
+                    argv: [
+                        inputs.scheduler.clone(),
+                        "lifecycle".into(),
+                        "--root".into(),
+                        inputs.root.clone(),
+                        "--python".into(),
+                        inputs.python.clone(),
+                        "--binary".into(),
+                        inputs.binaries.join("openpilot-plannerd"),
+                        "--artifact".into(),
+                        inputs.artifact.clone(),
+                        "--binding".into(),
+                        inputs.binding.clone(),
+                        "--source-native".into(),
+                        inputs.source.clone(),
+                        "--original-ipc-binding".into(),
+                        base.join("original/ipc_pyx.fixture.so"),
+                        "--corpus".into(),
+                        base.join("lifecycle-corpus"),
+                        "--corpus-audit".into(),
+                        base.join("lifecycle-corpus/audit.json"),
+                        "--timeout-seconds".into(),
+                        "5".into(),
+                        "--growth-mib".into(),
+                        "256".into(),
+                        "--output".into(),
+                        output.join("lifecycle")
+                    ]
+                    .map(|path| path.to_str().unwrap().to_owned())
+                    .into()
+                }
+            );
+            lifecycle_cutovers += 1;
         } else {
-            // runtime 나머지 11개와 memory3는 순서와 전체 argv를 원문 그대로 대조한다.
+            // runtime 나머지10개와 memory3는 순서와 전체 argv를 원문 그대로 대조한다.
             assert_eq!(actual, expected, "frozen leaf at index {index}");
         }
     }
     assert_eq!(ipc_cutovers, usize::from(!memory));
+    assert_eq!(lifecycle_cutovers, usize::from(!memory));
 }
 
 #[test]

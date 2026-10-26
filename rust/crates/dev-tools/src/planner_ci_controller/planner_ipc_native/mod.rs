@@ -23,6 +23,10 @@ use std::{
 pub mod corpus;
 pub mod decode;
 pub mod frame_loop;
+pub(super) mod lifecycle;
+mod lifecycle_corpus;
+#[cfg(test)]
+mod lifecycle_tests;
 #[cfg(test)]
 mod observed_tests;
 pub mod outputs;

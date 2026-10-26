@@ -43,6 +43,14 @@ pub struct NativeIpcInputs {
 }
 
 #[derive(Clone, Debug)]
+pub struct NativeLifecycleInputs {
+    pub original_ipc_binding: PathBuf,
+    pub corpus: PathBuf,
+    pub corpus_audit: PathBuf,
+    pub growth_mib: u64,
+}
+
+#[derive(Clone, Debug)]
 pub struct Inputs {
     pub root: PathBuf,
     pub python: PathBuf,
@@ -52,6 +60,7 @@ pub struct Inputs {
     pub binding: PathBuf,
     pub scheduler: PathBuf,
     pub native_ipc: Option<NativeIpcInputs>,
+    pub native_lifecycle: Option<NativeLifecycleInputs>,
 }
 
 fn text(path: &Path) -> Result<String> {
@@ -67,6 +76,10 @@ pub(crate) enum PlannedCheck {
         growth_bytes: u64,
         timeout: Duration,
     },
+    NativeLifecycle {
+        growth_bytes: u64,
+        timeout: Duration,
+    },
 }
 
 impl PlannedCheck {
@@ -77,6 +90,10 @@ impl PlannedCheck {
                 growth_bytes,
                 timeout,
             } => native_ipc_check(inputs, growth_bytes, timeout),
+            Self::NativeLifecycle {
+                growth_bytes,
+                timeout,
+            } => native_lifecycle_check(inputs, growth_bytes, timeout),
         }
     }
 }
@@ -139,15 +156,6 @@ fn selected_checks(
         "--binary".into(),
         text(&examples.join("plannerd_runtime_trace"))?,
     ]);
-    let mut daemon = owner.clone();
-    daemon.extend([
-        "--python".into(),
-        text(&inputs.python)?,
-        "--binding".into(),
-        text(&inputs.binding)?,
-        "--binary".into(),
-        text(&inputs.binaries.join("openpilot-plannerd"))?,
-    ]);
     let mut checks = Vec::new();
     let mut add =
         |name: &str, script: &str, arguments: Vec<String>, output_option: &str| -> Result<()> {
@@ -156,6 +164,13 @@ fn selected_checks(
             };
             if name == "ipc" {
                 checks.push(PlannedCheck::NativeIpc {
+                    growth_bytes: *growth_bytes,
+                    timeout,
+                });
+                return Ok(());
+            }
+            if name == "lifecycle" {
+                checks.push(PlannedCheck::NativeLifecycle {
                     growth_bytes: *growth_bytes,
                     timeout,
                 });
@@ -232,13 +247,62 @@ fn selected_checks(
         add(name, "plannerd_runtime_source.py", arguments, "--output")?;
     }
     add("ipc", "", Vec::new(), "--output")?;
-    add(
-        "lifecycle",
-        "check_plannerd_lifecycle.py",
-        daemon,
-        "--output",
-    )?;
+    add("lifecycle", "", Vec::new(), "--output")?;
     Ok(checks)
+}
+
+fn native_lifecycle_check(inputs: &Inputs, growth_bytes: u64, timeout: Duration) -> Result<Check> {
+    let lifecycle = inputs
+        .native_lifecycle
+        .as_ref()
+        .ok_or("prepared native lifecycle context is required")?;
+    if [
+        &lifecycle.original_ipc_binding,
+        &lifecycle.corpus,
+        &lifecycle.corpus_audit,
+    ]
+    .iter()
+    .any(|path| !path.is_absolute())
+        || lifecycle.growth_mib == 0
+        || lifecycle.growth_mib.checked_mul(1024 * 1024).is_none()
+        || timeout.is_zero()
+        || timeout.subsec_nanos() != 0
+    {
+        return Err("invalid prepared native lifecycle paths or budgets".into());
+    }
+    let argv = vec![
+        text(&inputs.scheduler)?,
+        "lifecycle".into(),
+        "--root".into(),
+        text(&inputs.root)?,
+        "--python".into(),
+        text(&inputs.python)?,
+        "--binary".into(),
+        text(&inputs.binaries.join("openpilot-plannerd"))?,
+        "--artifact".into(),
+        text(&inputs.artifact)?,
+        "--binding".into(),
+        text(&inputs.binding)?,
+        "--source-native".into(),
+        text(&inputs.source)?,
+        "--original-ipc-binding".into(),
+        text(&lifecycle.original_ipc_binding)?,
+        "--corpus".into(),
+        text(&lifecycle.corpus)?,
+        "--corpus-audit".into(),
+        text(&lifecycle.corpus_audit)?,
+        "--timeout-seconds".into(),
+        timeout.as_secs().to_string(),
+        "--growth-mib".into(),
+        lifecycle.growth_mib.to_string(),
+    ];
+    Ok(Check {
+        name: "lifecycle".into(),
+        command: CommandSpec::new(argv, timeout),
+        output_option: "--output".into(),
+        growth_bytes,
+        scheduler_calls: None,
+    })
 }
 
 fn native_ipc_check(inputs: &Inputs, growth_bytes: u64, timeout: Duration) -> Result<Check> {

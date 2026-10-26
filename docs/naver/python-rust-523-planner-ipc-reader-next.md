@@ -818,3 +818,208 @@ API 만료는 각각 `2026-11-09T01:44:54Z`, `2026-11-09T01:49:41Z`다.
 이 source에서 계속 미수용이다. expected/tolerance/guard를 바꾸거나 CI를 재실행·취소하지 않았다.
 로컬 작업은 API·완료 log·Git6c blob·ZIP/JSON의 inert 검증과 이 기록 append뿐이며,
 Cargo/기능/모델/원본 실행, 공유 source7파일 편집, stage/commit/push 및 artifact 업로드는0이다.
+
+
+## 2026-10-26 HOST57·ARM69 actual 후속: functional count7/기대6
+
+앞선 helper SHA pin 교정 뒤의 첫 오류를 각 발행 source에 고정해서 확인했다.
+
+- [HOST57 run40256938654/job121360705093](https://github.com/bin9208/openpilot-rust/actions/runs/40256938654/job/121360705093):
+  source `57e1761c5cac9ddee282550d8c079083e6fa9a5a`, 완료 FAILURE,
+  step17 `Compile and check the complete native planner`.
+- [ARM69 run40257284064/Planner job121361745718](https://github.com/bin9208/openpilot-rust/actions/runs/40257284064/job/121361745718):
+  source `69d5489463e22a9ef4245cc941a5788f795a8b99`, `2026-10-26T02:09:20Z` 완료 FAILURE,
+  step15의 같은 이름 명령. 같은 run의 WebRTC job 성공을 Planner 수용으로 합치지 않는다.
+
+두 경우 helper SHA assertion은 통과했고, 최초 실패는
+`rust/crates/dev-tools/tests/planner_ci_policy/contract.rs:353:9`의
+`planner-runtime: functional step count`다. observed `left: 7`, expected `right: 6`이다.
+`FAMILIES`의 planner 항목 line11이 여전히6인 두 audited Git blob의 원문과 일치한다.
+57·69의 contract blob identity도 같다. 이후 WIP의 count 교정을 이 두 actual run에
+역투영하지 않았다.
+
+source57 canonical main/native는 contract line352의 full functional-step 동등 비교를
+통과한 뒤 line353에서 실패했다. `functional_steps`의 shell/action 필터에 해당하는
+정확한7개는 다음과 같다. 전체 job step 수나 raw data member 수와 혼동하지 않는다.
+
+1. Reserve capacity and install original planner dependencies
+2. Build current native dependency stager
+3. Build pinned solvers and unchanged original bindings
+4. Compile and check the complete native planner
+5. Compare exact policies, main loops, real IPC and lifecycle
+6. Check generated C with ASan, UBSan and allocator leak detection
+7. Qualify full native Planner IPC lib and strict Clippy
+
+마지막 Qualify는 mandatory functional step이고, 고정 IPC stager의 `shell: bash` 단계는
+이7개 필터에 포함되지 않는다. 부모는 전체 목록 동등성과 마지막 mandatory Qualify를
+검토한 뒤 `FAMILIES` planner count6→7 한 숫자만 교정했다고 알렸다.
+이번 감사자는 그 수정·source pin·guard·WF·expected를 추가 편집하지 않았다.
+
+| 실제 실행 경계 | HOST57 | ARM69 |
+| --- | --- | --- |
+| 선택된 dev-tools test build | 완료 | 완료 |
+| native_build_closure | 7 PASS / 0 ignored | 7 PASS / 0 ignored |
+| planner_ci_controller | 14 PASS / 0 ignored | 14 PASS / 0 ignored |
+| planner_ci_policy | 1 PASS / 20 FAIL | 1 PASS / 20 FAIL |
+| cargo 결과 | exit101 | exit101 |
+| IPC stager | step18 skipped | step16 skipped |
+| Runtime12 / direct real IPC / capture·lifecycle | step19 skipped | step17 skipped |
+| generated solver ASan3 | step20 skipped | 미실행; ARM 비대상 조건도 있음 |
+| native IPC4/feature Clippy | step21 skipped | step19 skipped |
+
+20개 실패는 동일 count 선행 assertion에 묶인 결과이며 서로 다른 runtime 결함20개가 아니다.
+정책 검사 뒤의 frozen5/retirement6 및 complete plannerd test/build/Clippy로도 진행하지 않았다.
+기존 source6c native-units의 별도14/5/6/15+client15 PASS 기록은 그대로 보존하지만,
+이를57·69 actual Runtime12 성공으로 바꾸지 않는다. real IPC/capture, original/current484 비교,
+runtime160 및 해당 current ELF/provider/SDK 전후 수용은 계속 미도달·미수용이다.
+
+별도 완료 raw log를 기존6c 파일에 덮어쓰지 않고 캐시했다.
+cache root는 `.analysis/scratch/2026-10-25-523-completion/ci/`다.
+
+- HOST57 `planner-host57-121360705093.log`: 212,335B / 2,464행 /
+  SHA256 `f4aa207116781ead97f49e3a3333d88e4765ea5a801e134bdceb978d5e0b72f0`.
+  첫 panic은 cache line1815, actual/expected는1817/1818이다.
+- ARM69 `planner-arm69-121361745718.log`: 196,822B / 2,289행 /
+  SHA256 `4cc4f2e59dcaf7fd874abbe27bdb3dea7d41770b791bf720b9aa0a34aa6ead67`.
+  첫 panic은 cache line1670, actual/expected는1672/1673이다.
+
+이 후속에서는 artifact ZIP을 추가 다운로드하지 않았다. 완료 log/API/Git57·69 blob을
+inert로 확인하고 본 section만 append했다. 소스 추가 수정, 기능/Cargo/모델/원본 실행,
+GHA dispatch·재실행·취소, stage/commit/push는0이다.
+
+
+## 2026-10-26 source841 actual: direct IPC 1회·native4·전후 봉인 수용
+
+감사 source는 `841ee8a4e1357e7a0db4193cf7944e23c31ee0fb`로 고정했다.
+이후 `84b04f167`의 #597 진단 변경이나 작업 중 lifecycle reader를 이 증거에 역투영하지 않았다.
+
+- [HOST run40258459503/job121365332760](https://github.com/bin9208/openpilot-rust/actions/runs/40258459503/job/121365332760):
+  `2026-10-26T02:27:46Z` 완료 SUCCESS, 실제 GitHub-hosted Linux X64 runner `GitHub Actions 1000029870`.
+- [ARMmore run40258459472/Planner job121365332586](https://github.com/bin9208/openpilot-rust/actions/runs/40258459472/job/121365332586):
+  `2026-10-26T02:28:18Z` 완료 SUCCESS, 실제 GitHub-hosted Linux ARM64 runner `GitHub Actions 1000029862`.
+
+### API·ZIP 인증과 공동 캐시 인계
+
+네 artifact 모두 API repo/head repository ID `1395501963`, 해당 run/attempt1/source841,
+`expired=false` 및 API digest/정확 bytes를 결합한 뒤 한 번씩만 다운로드했다.
+API 만료는 `2027-01-24T02:18:33Z`다.
+
+| 역할 | artifact ID | ZIP bytes | whole SHA256 | members / expanded bytes |
+| --- | --- | --- | --- | --- |
+| HOST functional | 12623801541 | 58,488,480 | `cb4b4b562fa5b143c32cb3b88d8e0c8879e2fc7066646a957cd01747b841bd3b` | 41,687 / 174,338,679 |
+| HOST private | 12624056023 | 2,217,291 | `0ca520bbecfdc7ea35b09b914d042ee7ad6006efe6b33f7d9c9fbb59871bee5f` | 85 / 11,878,869 |
+| ARM functional | 12623646303 | 48,144,861 | `5288aea003bdf02852307217587617aadcba90f017a1f1b581fec70deae4db81` | 37,084 / 145,301,622 |
+| ARM private | 12623531667 | 1,891,965 | `9228ad7acd660cf47a5e63498aa401fe6aba3cb21b9a5550cfcabb6778f69056` | 74 / 10,519,278 |
+
+네 ZIP whole SHA/전체 CRC PASS다. 유일 member명, 절대경로·`..`·역슬래시·colon 없음,
+regular/directory mode만 허용, 전체 expanded≤1GiB/member≤128MiB를 inert로 확인했다.
+추출하거나 member 코드를 실행하지 않았다. 최초 inert inventory 상한10,000은 실제 functional
+member41,687/37,084에서 중단했고, 인증된 inventory 크기에 맞춰50,000으로 조정했다.
+이미 끝난 HOST private CRC와 과거47/0283/aa79 CRC는 반복하지 않았다. gate 기준 변경은 없다.
+
+다운로드 admission160MiB에 대해 시작 가용 공간74,167,422,976B를 확인했다.
+ZIP 합110,742,597B + inventory40MiB + log4MiB + margin8MiB =165,268,549B로
+167,772,160B 이내다. 실제 네 member inventory 합은23,816,621B다.
+캐시는 `.analysis/scratch/2026-10-25-523-completion/ci/<ID>.zip`,
+각 `<ID>-members.json`에 member별 bytes/SHA/CRC가 있다.
+`planner841-artifact-handoff.json`에 네 absolute cache path/ready/whole_crc_pass를 인계했다.
+Hypatia의 capture/lifecycle 상세 감사도 이 동일 캐시를 사용하며 중복 다운로드하지 않는다.
+
+### 실제 Runtime12·원본 출력·scheduler160
+
+두 `commands.json`의 순서는 `abi,policy,radar,gap,owner,main,fault,volkswagen,
+stock-longitudinal,radar-off,ipc,lifecycle`이고 정확12개 모두 rc0다.
+index10 IPC는 current `check-plannerd-ci` ELF를 직접 실행한 1개이며,
+argv36개는 ELF+`ipc`+17쌍이다. `--scheduler`도 그 ELF이고,
+`--output $job/planner-comparison/ipc`, `--evidence $job/planner-comparison/ipc-scheduler.tsv`다.
+추가 standalone `ipc-native` 실행이나 detached `ipc-owned` proof는 없다.
+
+IPC source-0→source-1→rust-0→rust-1은 순차 실행이다. 각121 publication은
+longitudinalPlan41/lateralPlan40/driverAssistance40이고 valid40/39/39,
+liveTracks35/modelV2 6 trigger, overlay34, timing40, daemon rc-15다.
+per-case 실제 첫 sent~마지막 live_done 범위는 HOST
+467.184226450~469.215452248, 469.972370890~472.002912038,
+472.768554291~474.798829210, 475.560111722~477.591178431이며,
+ARM 1006.026433162~1008.052787625, 1008.726757535~1010.753374545,
+1011.820893859~1013.845845358, 1014.908089333~1016.933571850이다.
+4개 병렬 실행으로 해석하지 않는다.
+
+기존 독립 old raw484를 실제 native decoder가 읽고 current121×4와 비교한
+`original-output-comparison.json`의 네 differences는 모두 비었다.
+current raw484는 이번 functional ZIP에 존재하며 service/valid/data projection도 네 case가 같다.
+source841 decoder는 수치를 `f64.to_bits()`로 비교하고 tolerance를 넓히지 않는다.
+같은 arch의 네 current projection SHA는 HOST
+`178b927066445554ca98514f58c66fd88f7445077cdb8fe2ca04872bee727858`, ARM
+`536b6e53d11cbbe38ce9cf558562a3f775a02be8c662bb743d114bc23631996d`다.
+서로 다른 arch의 SHA 동등성은 주장하지 않는다.
+old raw 자체는 새 ZIP에 재업로드되지 않았고 이 감사에서 old ZIP을 다시 열거나 실행하지 않았다.
+실제 GHA decoder484/네 비교 성공과 Git841에 결합된 outputs audit를 확인한 범위다.
+HOST outputs audit SHA `525333b68bda155b622a2e315880bcf378b7425833760ea40a259545f7703b21`,
+ARM `a28890f6f79eb24f0018d62ec21dae5d8c2228d6b7da0f62ce33ffab48e80c80`이다.
+
+160행 TSV는 각40 timing에 결합되고 네 열 모두 finite다. source841 frame loop의 첫행
+(started,started-.05,started-.05,started) 및 이후 이전 sent/model_done와 현재 target을
+대조했다. HOST9,209B/SHA `570d2eda39c2be55def62bc901507530a472b8409a1d7d7d388c94b0dc8af70b`,
+ARM10,096B/SHA `6d59334014df3aef49508629ebb1e6825cf62c9f73be8a7bc30b0b42b5dbd6bf`다.
+source841의 기존 Python lifecycle leaf rc0도 Runtime12에 포함되지만 capture/lifecycle의
+독립 상세 판정은 Hypatia 소유 감사로 구분한다.
+
+### native 관측4·Clippy·동일 ELF·SDK·ASan
+
+HOST/ARM 모두 `ipc-observed.status=0`, `ipc-clippy.status=0`, `ipc-check-outcome` exit0다.
+관측 selector4는 각각4 PASS/0 FAIL/0 ignored(83 filtered)이고 HOST0.84s/ARM0.69s다.
+선택된 이름은 `capture_auth_rejects_unpinned_swapped_incomplete_and_reappeared_data`,
+`missing_independent_model_input_corpus_is_rejected_without_generating_inputs`,
+`source425_original_cpp_packets_match_original_python_policy_fields`,
+`writer_schema_selects_each_mode_epoch_without_reusing_or_generating_packets`다.
+실제 동일 feature/target의 `--lib --bin check-plannerd-ci -- -D warnings` Clippy도 완료했다.
+main compile의 native-build7/controller14/policy21/frozen5/retirement6 및 complete
+plannerd test/build/Clippy도 완료 log에서 통과했다.
+
+controller SHA는 HOST `3e97d60bd99d3ed5ec9ee4e64ae0e3a8d93463d8a9ffcc9402b29d75ba6d8f5e`,
+ARM `a05311c49fae7f4834e7e327b0eaca9f5e4d01d288954afc8b14ebf57cc52c03`다.
+profile은 `ci-receipt-metadata-native,planner-ipc-native`이고 HOST runtime/memory/ipc-check,
+ARM runtime/ipc-check의 동일 ELF 후검사가 모두 성공했다. controller ELF bytes는 artifact에
+없으므로 이 감사가 그 ELF를 로컬에서 다시 해시했다고 주장하지 않는다.
+C++ peer의6 source/5 header provenance는 Git841 blob과 결합했고 current peer/daemon/solver
+member SHA 및 compiler identity도 검증했다.
+
+SDK 범위는 실제 job-private Rust1.94 toolchain 전체다. HOST
+`/tmp/openpilot-ci.afCEBf/rustup-home/toolchains/1.94.0-x86_64-unknown-linux-gnu`의159 file/
+181 NUL roster record, ARM `/tmp/openpilot-ci.s6xgRN/rustup-home/toolchains/1.94.0-aarch64-unknown-linux-gnu`의
+158 file/180 roster다. 모든 mode에서 before/after hash manifest와 stable roster가 같다.
+HOST hashmanifest SHA `0d66de672d0aa73b071902adbb7541dc42bc900853111ad164661a31d767f347`,
+ARM `9a7e9ff998e7fdd52d9b34a447bc479216e6709210fb82c57d8ee9dd45a033a7`다.
+이는 별도 NativeUnits global SDK나 host의 모든 DSO 봉인을 뜻하지 않는다.
+
+HOST ASan3는 abi/owner/fault 모두 rc0/PASS다. 실제 scope는 generated solver C 계측과
+allocator leak/ownership 검사이고 Rust 및 pinned external solver library는 비계측이다.
+ARM sanitizer는 조건상 skipped이며 ARM ASan 성공을 주장하지 않는다.
+
+### working index·old test 부재·source 후봉인·cleanup
+
+양쪽 source-before/after normalized digest는
+`cb33a6713891cae78c3786d9897d7e4e4c82d280b574c29483721f779f3cc834`로 같다.
+index-before/after는 Git DIRC가 아닌 `git ls-files -z` path 목록이고,
+각19,623 entry/1,179,244B/SHA
+`f095c5a1cb9602624d160da4997cbbce5a003f7dda2fc3c8fed01a4376e929e4`로 같다.
+Git841 tree 및 양쪽 전후 path 목록 모두
+`rust/tools/tests/test_plannerd_native_scheduler.py`가 없다.
+source841 IPC의 작업 시작/종료 `symlink_metadata` 부재 guard와 실제 IPC rc0도
+working filesystem의 전후 old-test 부재를 결합한다. 전체 Python 부재 주장은 아니다.
+
+양쪽 실제 Actions의 `Seal private source and index after maintained checks`,
+`Retain private job ownership and source evidence`,
+`Clean only uploaded owned source alias and target`,
+`Clean common owned temporary paths after uploaded source` 네 단계가 모두 SUCCESS다.
+후봉인·업로드·소유 cleanup은 skipped나 예상 상태가 아니다.
+원시 검증 요약은 cache `planner841-native-audit.json`, `planner841-source-cleanup-audit.json`이다.
+완료 log SHA는 HOST `60914eaea41da230f9356235321ec3f98d3b778e601f8355cccfcfeba3e059ab`,
+ARM `56b6f54ff024784da930e0778b475f09bf4c76c5db774b5d9b5fe1eed5bbb482`다.
+
+부모는 이 actual 근거로 old scheduler test 파일1개만 pending→`replaced-local`로 수용했다.
+extra33/132이며 baseline300/3/3277은 그대로다. 그 외 파일·전체 Python 퇴역·실기·성능 credit은0이다.
+원시 original-output proof의 `full_runtime_acceptance:false`, `retirement_credit:0`도 그대로 보존한다.
+이 기록은 그 proof 값을 바꾸지 않고 부모의 별도 파일1개 수용만 명시한다.
+로컬 작업은 Git841 source/API/완료 log/기존 ZIP member의 inert 감사와 이 append뿐이다.
+추가 재다운로드·old CRC 반복·원본/모델/Cargo/기능 실행·source 수정·stage/commit/push/CI 조작은0이다.

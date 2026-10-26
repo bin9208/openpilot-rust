@@ -363,3 +363,13 @@ model-family caller의 push paths에 해당 `ci_workflow_policy.rs` 경로 한 �
 로컬은 변경 구간의 Rust2021 구문·rustfmt와 diff만 확인했다. 기능/Cargo/CI 실행 및 stage/commit은0이다.
 부모가 후속 독립 diagnostic commit으로 Fast와 영향 model-family 준비 gate의 실제 case를 확인할 예정이며,
 **새 case 문맥의 실제 GHA 결과는 UNRUN, #597은 미해결**이다.
+
+### source84 보완 후 첫 실제 결과
+
+source `84b04f167f699ecd70ab5d26089f36f3c44fa67b`의
+[Fast40259520905](https://github.com/bin9208/openpilot-rust/actions/runs/40259520905)는 SUCCESS다.
+원문 로그에서 cold control, workflow policy42/42, ciisolation89/89 PASS를 확인했다.
+[model-family40259520880](https://github.com/bin9208/openpilot-rust/actions/runs/40259520880)의
+준비 gate step14도 PASS했고 전체 job은 이후 비교를 진행 중이다. named-case 실패는 재현되지
+않았으므로 #597 원인 해결이나 전체 model-family 수용으로 바꾸지 않는다. 앞 절의 UNRUN은
+발행 전 상태이며 이 결과로 첫 실행 여부만 갱신한다. cap·기한·harness·shared QA는 그대로다.

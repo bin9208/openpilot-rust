@@ -2,6 +2,37 @@
 
 작성: 2026-10-24 KST. 상위 이슈: https://github.com/bin9208/openpilot-rust/issues/523
 
+## 최신 수용 체크포인트 — 2026-10-26 source841
+
+source `841ee8a4e1357e7a0db4193cf7944e23c31ee0fb`의
+[HOST40258459503](https://github.com/bin9208/openpilot-rust/actions/runs/40258459503)와
+[ARM40258459472](https://github.com/bin9208/openpilot-rust/actions/runs/40258459472)는 SUCCESS다.
+canonical runtime12 안의 IPC를 같은 controller ELF로 한 번 실행했다. 각 host에서 원래484개
+packet의 full-schema decode와 현재121×4 비교가 차이0이고 scheduler160을 확인했다.
+HOST generated-C ASan/UBSan/allocator3, source/index와 실제 SDK 전체 파일·roster 전후 봉인,
+업로드·cleanup을 함께 수용했다. Rust와 외부 solver 전체를 sanitizer로 계측한 결과는 아니다.
+
+삭제한 `rust/tools/tests/test_plannerd_native_scheduler.py`의 추가 실행경계1개만
+`replaced-local`로 반영했다. 원래13 의미와 collector 경계는 source6c의 native15·고정233B 및
+삭제 후 위 actual 실행·재등장 거부 검증으로 닫았다. 기준3580은 **300교체/3부분/3277대기**,
+추가169는 **33교체/132대기/1기존native/2비실행/1제거**다.
+
+같은 원래 lifecycle26회에서 양쪽 각각 입력234개·Params스냅샷30개·출력72개와 source14의
+독립 기록을 확보했다. 이 자료를 소비할 Rust lifecycle 후보와 세 Python 파일 제거는 후속
+실제 실행·부재 검증 전까지 credit0이다. 새 원본 실행이나 후보에서 기대값을 만들지 않는다.
+
+[genuine40256938672](https://github.com/bin9208/openpilot-rust/actions/runs/40256938672)는
+production registry의 library2/caller14/COPY/mixed/order7·strict Clippy·후봉인이 모두 PASS다.
+[current-model40257284043](https://github.com/bin9208/openpilot-rust/actions/runs/40257284043)은
+기존3개 signed-zero 불일치로 FAIL을 유지한다. 동일 원본 compiler context의 rename-only D는
+12출력 exact, guarded D만 같은 차이를 재현했다. 원래 LLVM flags를 보존하는 fresh 경로 수정과
+전체 실제 수용은 진행 중이다. standalone strict zero/sNaN 의미와 비교 허용치는 유지한다.
+
+#597의 source84b04f167 보완은 실패 case 문맥만 추가했다. 간헐적 stderr 초과 원인의 해결은
+계속 미완료다. 기존 dev-md 세션·checkout은 변경하지 않았고, 작은 native 검사는4코어/4GiB/80GB
+등록 러너에서 jobs1/debug0·작업별 용량 admission으로 제한한다. 큰 모델·ARM 검증은 분리한다.
+전체 #523 전환·필수 PR/통합·정확 소스 전달·필요한 실기 수용은 계속 미완료다.
+
 ## 실행 기준
 
 사용자의 전체 완료 지시에 따라 기존 #296의 승인된 전체 전환 설계와

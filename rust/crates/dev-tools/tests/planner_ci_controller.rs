@@ -1,6 +1,8 @@
 use openpilot_dev_tools::{
     planner_ci_controller::{
-        plan::{self, Inputs, NativeIpcInputs, CHECK_NAMES, MEMORY_CHECK_NAMES},
+        plan::{
+            self, Inputs, NativeIpcInputs, NativeLifecycleInputs, CHECK_NAMES, MEMORY_CHECK_NAMES,
+        },
         run_checks, scheduler, Check, CheckFailure,
     },
     qa_process::{CaptureError, CommandSpec, NativeRunner, Runner},
@@ -355,6 +357,89 @@ fn registered_controller_returns_the_first_real_child_status_without_running_lat
     assert!(!output.join("policy.log").exists());
     assert!(!output.join("result.json").exists());
     ipc_point_of_use_preserves_prefix_and_upfront_growth();
+    lifecycle_cli_contract();
+}
+
+fn lifecycle_cli_contract() {
+    let temporary = tempfile::tempdir().unwrap();
+    let base = temporary.path();
+    let mut argv: Vec<String> = vec![
+        env!("CARGO_BIN_EXE_check-plannerd-ci").into(),
+        "lifecycle".into(),
+    ];
+    for (flag, path) in [
+        ("--root", base.join("root")),
+        ("--python", base.join("python")),
+        ("--binary", base.join("daemon")),
+        ("--artifact", base.join("artifact")),
+        ("--binding", base.join("binding")),
+        ("--source-native", base.join("source")),
+        ("--original-ipc-binding", base.join("cpp")),
+        ("--corpus", base.join("corpus")),
+        ("--corpus-audit", base.join("audit.json")),
+        ("--output", base.join("output")),
+    ] {
+        argv.extend([flag.into(), path.to_str().unwrap().into()]);
+    }
+    argv.extend([
+        "--timeout-seconds".into(),
+        "2700".into(),
+        "--growth-mib".into(),
+        "256".into(),
+    ]);
+    for (kind, needle) in [
+        ("unknown", "unknown lifecycle option"),
+        ("duplicate", "duplicate lifecycle option"),
+        ("relative", "absolute UTF-8 path"),
+        ("zero", "must be positive"),
+        ("decimal", "positive decimal"),
+        ("overflow", "lifecycle growth overflow"),
+        ("missing", "missing lifecycle --binding"),
+    ] {
+        let mut invalid = argv.clone();
+        match kind {
+            "unknown" => invalid.extend(["--unknown".into(), "x".into()]),
+            "duplicate" => invalid.extend(["--root".into(), base.to_str().unwrap().into()]),
+            "missing" => {
+                let i = invalid.iter().position(|v| v == "--binding").unwrap();
+                invalid.drain(i..=i + 1);
+            }
+            _ => {
+                let flag = if kind == "relative" {
+                    "--root"
+                } else {
+                    "--growth-mib"
+                };
+                let i = invalid.iter().position(|v| v == flag).unwrap() + 1;
+                invalid[i] = match kind {
+                    "relative" => "relative",
+                    "zero" => "0",
+                    "decimal" => "1.5",
+                    _ => "18446744073709551615",
+                }
+                .into();
+            }
+        }
+        let observed = NativeRunner
+            .run(&CommandSpec::new(invalid, Duration::from_secs(10)))
+            .unwrap();
+        assert_eq!(observed.code, 1, "{kind}: {observed:?}");
+        let expected = if cfg!(feature = "planner-ipc-native") {
+            needle
+        } else {
+            "lifecycle requires the planner-ipc-native feature"
+        };
+        assert!(
+            String::from_utf8_lossy(&observed.stderr).contains(expected),
+            "{kind}: {observed:?}"
+        );
+        assert!(!base.join("output").exists());
+    }
+    let missing = NativeRunner
+        .run(&CommandSpec::new(argv, Duration::from_secs(10)))
+        .unwrap();
+    assert_eq!(missing.code, 1);
+    assert!(!base.join("output").exists());
 }
 
 fn ipc_point_of_use_preserves_prefix_and_upfront_growth() {
@@ -409,23 +494,26 @@ fn ipc_point_of_use_preserves_prefix_and_upfront_growth() {
         assert!(!output.join(name).exists());
     }
 
-    // IPC context는 늦추지만 전체 growth12 exact 검증은 첫 prefix 실행 전이다.
-    let invalid_output = temp.path().join("missing-growth");
-    let output_index = command
-        .argv
-        .iter()
-        .position(|arg| arg == "--output")
-        .unwrap()
-        + 1;
-    command.argv[output_index] = invalid_output.to_str().unwrap().into();
-    let ipc_growth = command.argv.iter().position(|arg| arg == "ipc=0").unwrap();
-    command.argv.drain(ipc_growth - 1..=ipc_growth);
-    let result = NativeRunner.run(&command).unwrap();
-    assert_eq!(result.code, 1);
-    assert!(String::from_utf8_lossy(&result.stderr)
-        .contains("growth admission must name every selected Planner operation exactly once"));
-    assert!(!invalid_output.exists());
-    assert_eq!(fs::read(&calls).unwrap(), b"leaf".repeat(10));
+    // IPC/lifecycle 준비는 늦추지만 전체 growth12 exact 검증은 첫 prefix 실행 전이다.
+    for omitted in ["ipc=0", "lifecycle=0"] {
+        let mut invalid = command.clone();
+        let invalid_output = temp.path().join(format!("missing-growth-{omitted}"));
+        let output_index = invalid
+            .argv
+            .iter()
+            .position(|arg| arg == "--output")
+            .unwrap()
+            + 1;
+        invalid.argv[output_index] = invalid_output.to_str().unwrap().into();
+        let index = invalid.argv.iter().position(|arg| arg == omitted).unwrap();
+        invalid.argv.drain(index - 1..=index);
+        let result = NativeRunner.run(&invalid).unwrap();
+        assert_eq!(result.code, 1);
+        assert!(String::from_utf8_lossy(&result.stderr)
+            .contains("growth admission must name every selected Planner operation exactly once"));
+        assert!(!invalid_output.exists());
+        assert_eq!(fs::read(&calls).unwrap(), b"leaf".repeat(10));
+    }
 }
 
 #[test]
@@ -514,6 +602,12 @@ fn inputs(temp: &Path, python: PathBuf) -> Inputs {
             growth_mib: 512,
             peer_build_growth_mib: 128,
         }),
+        native_lifecycle: Some(NativeLifecycleInputs {
+            original_ipc_binding: temp.join("ipc_pyx.fixture.so"),
+            corpus: temp.join("lifecycle-corpus"),
+            corpus_audit: temp.join("lifecycle-corpus/audit.json"),
+            growth_mib: 256,
+        }),
     }
 }
 fn growth() -> BTreeMap<String, u64> {
@@ -590,6 +684,40 @@ fn twelve_actual_leaf_commands_require_complete_operation_growth_and_scheduler_b
     );
     assert_eq!(ipc.cwd.as_deref(), Some(inputs.root.as_path()));
     assert!(ipc.merge_output);
+    let lifecycle = checks[11].invocation(&output, &inputs.root).unwrap();
+    let lifecycle_context = inputs.native_lifecycle.as_ref().unwrap();
+    assert_eq!(
+        lifecycle.effective_argv(),
+        [
+            inputs.scheduler.clone(),
+            "lifecycle".into(),
+            "--root".into(),
+            inputs.root.clone(),
+            "--python".into(),
+            inputs.python.clone(),
+            "--binary".into(),
+            inputs.binaries.join("openpilot-plannerd"),
+            "--artifact".into(),
+            inputs.artifact.clone(),
+            "--binding".into(),
+            inputs.binding.clone(),
+            "--source-native".into(),
+            inputs.source.clone(),
+            "--original-ipc-binding".into(),
+            lifecycle_context.original_ipc_binding.clone(),
+            "--corpus".into(),
+            lifecycle_context.corpus.clone(),
+            "--corpus-audit".into(),
+            lifecycle_context.corpus_audit.clone(),
+            "--timeout-seconds".into(),
+            "5".into(),
+            "--growth-mib".into(),
+            "256".into(),
+            "--output".into(),
+            output.join("lifecycle")
+        ]
+        .map(PathBuf::into_os_string)
+    );
     for (index, check) in checks.iter().enumerate() {
         assert_eq!(check.command.timeout, Duration::from_secs(5));
         assert_eq!(check.growth_bytes, 0);
@@ -621,12 +749,25 @@ fn twelve_actual_leaf_commands_require_complete_operation_growth_and_scheduler_b
             "{invalid}"
         );
     }
+    for invalid in ["lifecycle-absent", "lifecycle-path", "lifecycle-growth"] {
+        let mut bad = inputs.clone();
+        match invalid {
+            "lifecycle-absent" => bad.native_lifecycle = None,
+            "lifecycle-path" => bad.native_lifecycle.as_mut().unwrap().corpus = "relative".into(),
+            _ => bad.native_lifecycle.as_mut().unwrap().growth_mib = 0,
+        }
+        assert!(
+            plan::runtime_checks(&bad, &growth(), Duration::from_secs(5)).is_err(),
+            "{invalid}"
+        );
+    }
 }
 
 #[test]
 fn memory_plan_requires_only_abi_owner_fault_and_preserves_sanitized_wrapper_paths() {
     let temp = tempfile::tempdir().unwrap();
     let mut inputs = inputs(temp.path(), "/reference/python".into());
+    inputs.native_lifecycle = None;
     inputs.binaries = temp.path().join("wrappers");
     inputs.native_ipc = None;
     let memory_growth = MEMORY_CHECK_NAMES

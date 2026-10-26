@@ -701,3 +701,202 @@ child KILL/wait5초를 거치며, 이미 있던 case 오류는 cleanup/capture �
 검토했다. 프로젝트/원본/기능/테스트·CI·download·stage·commit·Cargo/WF/helper/plan/CLI/다른 fixture 수정은0이다.
 최종 source SHA256은 peer `9e0ebcca984cce636e309d16f42c5c86c8adf7ffd511480e182d0602d0d3582f`,
 checker `15aa1ace3b50f7b40a90532784f0236d723d185d86e2e924c90566373fc6f485`다.
+
+## native lifecycle core 등록 전 WIP — 2026-10-26
+
+producer source `6c5d5a9be691d18ca850af6ef9b42e47b668d767`의 schema1을 읽고 승인된 새 private
+Rust3파일만 작성했다. HOST40255341871/ARM40255341883 actual은 Bacon/Hypatia 감사 소유이며 이 담당은
+재실행·재다운로드하지 않았다. **실제 input/외부 artifact ID·SHA·audit pin은 아직 받지 않았다.**
+따라서 reader의 `QUALIFIED_AUDITS`는 의도적으로 빈 목록이다. production open은 파일 읽기/output 생성/
+peer·daemon spawn 전에 반드시 not-qualified로 실패한다. 0으로 채운 SHA나 임시 ID의 양성 수용은 없다.
+
+변경 파일은 기존 `planner_ci_controller/planner_ipc_native/` 아래 다음3개다.
+
+- `lifecycle.rs`: 같은 CLI에 연결할 callable `run(&Options)`와26run driver. 이전 성공한 같은 owned runtime의
+  IPC peer/provenance를 재사용하며 새 compiler/Python relay/inner NativeRunner/session/group을 만들지 않는다.
+- `lifecycle_corpus.rs`: source6c index/run/Params/receipt typed reader, 업로드 뒤 외부 audit의 인증 경계,
+  bounded NOFOLLOW/regular/FD·path identity/hash/재등장 및 capture tree/du 검증.
+- `lifecycle_tests.rs`: 등록 뒤 CI에서 확인할8개 private lib 회귀. 현재 등록·실행은0이다.
+
+공유 mod/CLI/plan/helper/Cargo/CPP와 Python3파일·기존 test/fixture/expected는 수정하지 않았다.
+부모 등록 시 같은 `planner-ipc-native` feature 아래에서 다음 선언을 추가하는 형태다. 여기서는 추가하지 않았다.
+
+```rust
+pub(super) mod lifecycle;
+mod lifecycle_corpus;
+#[cfg(test)]
+mod lifecycle_tests;
+```
+
+새 selector는 `planner_ci_controller::planner_ipc_native::lifecycle_tests::`의 **8개**다.
+기존 native15/observed lib4 selector 수는 그대로다. 이 소스는 아직 타입 검사/Clippy도 하지 않았다.
+CLI가 실제 run을 소비하도록 등록할 때 함께 compile하며 unused 경계를 allow 속성으로 숨기지 않는다.
+
+### driver의 원본 경계와 이전 peer 재사용
+
+case table은 원래13개이며 각 case에서 source→rust 순서다. wait missing/dir/empty, sigint/sigterm,
+ready 두 signal, CP directory recovery,4 setting directory, invalid integer/float와 malformed CP를 보존한다.
+source wait의 두 signal은 -2/Rust0, ready SIGINT -2/0, ready/recover/settings TERM -15/-15,
+숫자 source abort -6/Rust typed1 및 malformed 양쪽1을 raw status로 기록한다.
+
+원래 case 단위 Runtime/timeout/상태 실패는 `ok=false` 결과와 개별 receipt/cases.json을 남기며 다음 case를
+수집하고 최종 FAIL이 된다. setup/admission/출처 변조는 fail-closed한다. cleanup 오류는 최초 case 오류를
+덮어쓰지 않고 별도 진단에 남긴다. 최종 PASS는 corpus/현재 peer·실행물의 postflight 검증 뒤에만 기록한다.
+기존 receipt의 scope/exit_boundary와 case/publications/returncode/expected_returncode/error 필드를 유지하고
+새 proof는 `native-lifecycle-provenance.json`으로 분리했다. credit은0이다.
+
+waiting/readers는 각각15초/10ms poll, waiting 후120ms 생존 재확인, 정상 frame은 세 서비스 집합/3초/1ms
+drain과50ms sleep을 유지한다. fatal-float는9개 input 송신 후 구독/drain/sleep 없이 반환한다.
+signal 뒤 wait5초, fatal wait15초, 오류 후 KILL/wait5초와 reap/proc 부재를 검사한다.
+직접 child 소유는 기존 ChildOwner이며 드문 미회수 경로에는 기존 Drop의3초 safety cleanup도 남는다.
+peer finish/Drop도 기존3초 경계를 재사용한다. 기존 Drop safety까지 합쳐 무조건 전체5초라고 과장하지 않는다.
+
+input은 case/mode별 관측 bytes를 그대로 stage/send하며 native fixture/expected/새 serialization을 만들지 않는다.
+prelaunch의 absent/dir/file 상태를 복구하고 recovery는 원본처럼 CP directory만 rmdir/write한다.
+다른 Params의 historical 값 동일성이나 valid/data 동등성 조건은 추가하지 않는다.
+현재 output은 decoder로 full-schema parse 후 service/frame 집합을 검사한다. 정상4case×2mode의 현재72개는
+후속 actual에서 확인할 수량이며 구현의 기존 허용 interleaving/valid/data 판정을 축소하지 않았다.
+
+현재 controller/source/host/job/owner, runtime commands의 앞11 성공과 IPC argv 역할, scheduler160,
+원래484 대조 성공을 확인한 뒤 정해진 `ipc/planner-ipc-cpp-peer`만 재사용한다. 같은 ELF의 source6/header5,
+C++17 원래 argv, compiler·services header·original binding builder/binding SHA와 peer ELF SHA를 보유/재검증한다.
+Python은 기존 job venv 실행명을 유지하고 실제 target identity를 별도로 보유한다. peer 선택을 외부 임의
+실행 경로나 자기신고 hash에 맡기지 않는다. HOST2700/ARM5400 및 기존 lifecycle128MiB admission을 낮추지 않고,
+상위 operation256MiB 예산의 caller 연결을 유지한다.
+
+모든 내부 child는 outer NativeRunner worker PGID를 상속한다. 이 worker는 PID=PGID인 기존 소유 경계여야 한다.
+이전 IPC worker와 새 lifecycle worker가 같은 PID/PGID라고 가정하지 않는다. outer controller SIGKILL 때
+새 lifecycle worker PGID가 기존 registry/live-scan에 포함되는지는 부모 helper/qualification에서 확인해야 한다.
+전체 descendant reap이나 그 SIGKILL actual 성공을 아직 주장하지 않는다.
+
+### Hypatia의 실제 audit 수령 뒤 필요한 데이터 고정
+
+external metadata는 producer index와 별도의 `audited-original-planner-lifecycle-inputs` schema1이다.
+필요한 값은 실제 source6c/host/run/attempt/job/source14 SHA, functional artifact의 실제 id/bytes/SHA/
+보존 archive와 안전 extraction root, 원래 index/cases/receipt descriptor(path/bytes/SHA),26개 case receipt와
+raw output72개의 frame/service/descriptor다. native가 expected 값을 만들 필요는 없다. output의 frame/service는
+원래 publication 파일명과 원래 case receipt의 publications 순서에 결합한다.
+
+reader는 이 audit의 정확 HOST/ARM SHA를 compiled allowlist로 받은 뒤에만 전체 archive hash와 schema1
+index/manifest26, input234, Params30, 원래 receipt/status/exit26과 raw72의 full-schema parse를 수용한다.
+capture 전체64MiB/62000 member, 개별1MiB/일반 Param64KiB/snapshot4MiB 경계와 원문 identity를 유지한다.
+Params는 최종 param_names가 이전 snapshot의 관측 union이라는 writer 의미를 유지한다. prelaunch와 recovery
+각 snapshot의 key가 처음부터 모두 동일하다고 가정하지 않는다. 원래 snapshot bytes를 이후에 고치지 않는다.
+
+현재 `Options`는 root/python/binary/artifact/binding/source_native/original_ipc_binding/corpus/corpus_audit/output의
+10개 경로와 timeout/growth_bytes다. 기존 IPC17 옵션은 바꾸지 않았다. 이전 설계의 caller SHA flag보다
+compiled audit pin을 선택했으므로 lifecycle API에는 별도 user-supplied audit SHA나 peer/compiler flag가 없다.
+CLI/plan의 실제 flag 명명과 stager allowlist/필수 gate 등록은 부모 후속 범위다.
+
+### 새 GHA gate와 아직 없는 증거
+
+준비한8개 회귀는 원래13case의26 raw exit/234 send-order 구조, 미인증 corpus의 child 전 거부,
+unknown/incomplete state schema, empty/absent/dir 구분, path/size/SHA/재등장/symlink 음성,
+실제 daemon spawn helper의 PGID 상속/raw exit42, C++ stdio EOF·잘못된 ACK의 실패 전파/최초 오류 보존,
+기존 case receipt 필드의 보존이다. security fixture의 empty/abc 및 fake peer는 독립 원본 packet이나
+모델 expected로 세지 않는다. 이8개가 실제 corpus 양성이나 full lifecycle actual을 대신하지 않는다.
+
+부모가 module/CLI를 등록한 뒤 같은 feature/SDK에서 다음 selector의 정확8개와 기존 strict Clippy를 확인한다.
+
+```text
+cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools \
+  --features ci-receipt-metadata-native,planner-ipc-native --target <host> --lib \
+  planner_ci_controller::planner_ipc_native::lifecycle_tests:: -- --test-threads=1 --nocapture
+```
+
+실제 양성은 audit pin을 받은 corpus로 HOST/ARM의 source/native26회·현재72 output·기존13case PASS,
+전후 source/SDK/ELF와 cleanup이다. 새 음성은 cohort/host/artifact/index/manifest/receipt/raw/Params 변조·부재·
+재등장과 이전 IPC의 실패/다른 peer·controller·binding, EOF/early exit/deadline 실패다.
+새 owned-kill은 wait/readers/frame/fatal wait 중 cancel/timeout/outer SIGKILL의 worker/peer/daemon 비생존과
+직접 wait/live-scan scope다. **현재 unit은 PGID 상속만 준비했고 실제 outer SIGKILL을 입증하지 않았다.**
+
+실제 plan 전환은 index11의 lazy 준비로 한정해야 한다. 앞선 leaf42가 먼저 실패하면 corpus 준비에 도달하지
+않아야 하며 memory3/다른11 argv·순서·예산은 보호한다. Python3파일 삭제/부재 guard/원장 credit은 실제
+native 양성과 caller closure 수용 후 부모 승인 범위다. 지금 등록·삭제·추가 credit은0이다.
+로컬은 새3파일의 Rustfmt2021 구문/서식·source/diff만 확인했다. 기능/원본/Cargo/build/test/Clippy/CI/
+download/stage/commit은0이며 새 raw/expected data를 Git에 넣지 않았다.
+
+## 승인된 native lifecycle 연결 후보 — 2026-10-26
+
+위 등록 전/empty-pin 상태는 구현 당시의 역사 기록이다. 부모의 후속 승인으로 lifecycle3파일과
+mod/CLI/plan/direct Planner 회귀를 연결했다. helper/WF/Focus/원장/fixture와 Python3파일은 수정하지 않았다.
+새 source의 Cargo/기능/Clippy/Actions 검증은 아직0이며 이전841 actual SUCCESS를 새 source 수용으로 세지 않는다.
+
+stale `PRODUCER=6c`는 제거했다. 신뢰 기준은 Hypatia가 actual841에서 만든 아래 audit JSON **원문 bytes**다.
+audit의 source_commit은40자리 hex이며 index provenance/GITHUB_SHA와 일치해야 한다. 현재 두 audit의 origin은
+`841ee8a4e1357e7a0db4193cf7944e23c31ee0fb`다. 다른 source를 추정하거나 native가 expected를 생성하지 않는다.
+
+| host | 실제 functional artifact | audit bytes / SHA256 |
+| --- | --- | --- |
+| x86_64 |12623801541 |36135 / `9ae47494dcf2e201fa1c48a70e6acd934e08fefc008001bd0c95c9ba502eb88e` |
+| aarch64 |12623646303 |36136 / `23bace6376cc1d87a1857bc8f69b64d6f0ddf5c526e1f69a133502620bd81f80` |
+
+근거는 cached `ci/planner-lifecycle841-{x86_64,aarch64}-{audit,semantic}.json`의 inert read/hash다.
+중복 download/CRC/native decoder/원본 실행은 하지 않았다. Hypatia의 최종 감사·fixture/stager는 부모 측 소유다.
+audit.json은 canonical JSON으로 재출력하지 말고 같은 bytes로 복사해야 한다.
+
+부모 stager의 인터페이스는 다음 두 env다. 새 inline WF 명령/새 helper를 이 담당이 추가하지 않았다.
+
+```bash
+PLANNER_LIFECYCLE_CORPUS="$CI_JOB_TEMP/planner-lifecycle-original"
+PLANNER_LIFECYCLE_CORPUS_AUDIT="$CI_JOB_TEMP/planner-lifecycle-original/audit.json"
+```
+
+root는 canonical owned700, audit는 canonical owned regular600/1MiB 이하다. bundle에는 원래 audit의
+`artifact.archive` basename(각 실제 ID.zip)과 `artifact.extracted=functional` layout을 유지한다.
+source data234/Params30/output72와 index/cases/receipt는 원래 ZIP member 경로·bytes·SHA를 그대로 쓴다.
+metadata 파일명이나 archive layout을 바꾸면 고정 audit와 맞지 않으므로 reader가 거부한다.
+
+CLI는 같은 `check-plannerd-ci lifecycle`의 strict12 옵션이다. feature 부재는 명시 거부하며
+missing/duplicate/unknown/상대경로/비UTF8/0/비정수/overflow를 검사한다. Python venv 경로 철자를 보존한다.
+
+```text
+--root --python --binary --artifact --binding --source-native --original-ipc-binding
+--corpus --corpus-audit --output --timeout-seconds --growth-mib
+```
+
+별도 audit SHA/compiler/peer/scheduler flag는 없다. audit SHA는 위 승인 목록, peer는 직전 같은 owned runtime의
+성공한 IPC 산출물에 결합한다. 기존 IPC17/default/memory/schedule 경로의 flag 계약은 바꾸지 않았다.
+
+plan은 lifecycle index11만 `NativeLifecycle` lazy variant로 바꿨다. 전체 growth12 검증은 첫 leaf 전에 끝나고,
+ABI42/앞선 leaf 실패 뒤에는 lifecycle env·원문 데이터·feature 준비에 도달하지 않는다.
+IPC의 prepared binding context를 보관했다가 lifecycle에서 이어받는다. 그때 commands.json은 성공한 앞11행이며
+lifecycle 행은 child 반환 뒤 기록되므로 core의11행 전제와 맞다. 이를 새 outer catch나 실행 순서 변경으로
+우회하지 않았다. Check.invocation이 --output을 한 번 붙이고 lifecycle.scheduler_calls=None을 유지한다.
+
+원문 0283/6c/841 확인 결과, checker main에는 run 전체 outer catch가 없다. PubMaster/Params/Popen은 peer.run의
+try 앞에 있고 post-spawn work만 AssertionError/RuntimeError/TimeoutError/TimeoutExpired를 잡는다.
+native의 early peer.start/stage/spawn Err는 기존처럼 전체 중단한다. 잡힌 phase 실패는 case receipt와
+cases.json을 남기고26 수집을 계속하며 최종 FAIL이 된다. preflight/corpus 인증 실패는 child 전 fail-closed다.
+
+원래 HOST2700/ARM5400, lifecycle operation256MiB/default128MiB free admission, jobs1/CPU 정책은 그대로다.
+corpus64MiB/62000 member/raw1MiB/일반 Param64KiB/snapshot4MiB를 유지한다. archive는 승인 audit에 고정된
+실제58,488,480B/48,144,861B만 수용하며6GiB는 기존 streaming read의 상한일 뿐 추가 admission 예산이 아니다.
+capture를 새로 만들거나 입력 header/값을 고치지 않는다. CPP peer는 재컴파일하지 않으며 source6/header5/
+compiler/binding/SHA·현재controller·owner·scheduler160/원래484 대조에 결합해 전후 확인한다.
+
+daemon26회는 source Python13 + Rust13 그대로다. Python controller 한 process를 native leaf로 바꾸고,
+현재 core의 C++ transport peer는 case/mode당1회, 합계26회 시작한다. 새 Python worker/relay/모델/추가 원본 run은0이며
+총 OS child 수 증가0이라고 주장하지 않는다. 내부 child는 outer NativeRunner worker PGID를 그대로 상속한다.
+outer SIGKILL의 새 worker PGID/live-scan 실제 수용은 여전히 부모 후속 gate다.
+
+변경 파일은 다음11개이며 일괄 stage/commit은 부모가 한다. mod가 새3파일을 참조하므로 부분 stage를 피한다.
+
+- `planner_ci_controller/planner_ipc_native/{lifecycle.rs,lifecycle_corpus.rs,lifecycle_tests.rs,mod.rs}`
+- `planner_ci_controller/{cli.rs,plan.rs}`
+- `tests/{planner_ci_controller.rs,planner_controller_frozen.rs,planner_controller_retirement.rs,planner_memory_controller.rs}`
+- 이 LC 문서 append
+
+기존 source73 runtime-plan JSON/메모리·finite/IEEE/233B/parser goldens는 불변이다. frozen 비교는 원래12번째
+Python argv를 먼저 확인한 뒤 native argv 전환을 명시한다. 기존 IPC 전환과 새 lifecycle 전환을 각각1개로
+분리해 검증하고 나머지10 argv/순서는 그대로 대조한다. memory3는 lifecycle context 없이 그대로다.
+
+selector 수는 **controller14/frozen5/retirement6/memory15/lifecycle8/observed4**, native client15 불변이다.
+새 lifecycle8 안에 feature-on strict parser의 양성 구조/음성 인자와 기존 startup/EOF/raw42/PGID 검사를 포함한다.
+controller14 안에서는 feature-off 명시 거부/strict CLI와 growth 누락(IPC 또는 lifecycle)이 첫 prefix 전에 거부됨을
+검사한다. 새 testcase 수를 임의로 늘리지 않았다. 원래 Python3는 현 qualification까지 존재를 허용하며,
+실제 native 수용/부모 삭제 승인 전 mandatory absence guard나 삭제·credit은 추가하지 않았다.
+
+부모 helper의 새 lifecycle8 + 기존 observed4 + strict Clippy 연결과 stager/WF source pins는 부모 소유다.
+이번 로컬 검토는 새3파일 및 수정 함수의 Rustfmt2021 parse/서식, source/diff/selector-count/audit-byte hash뿐이다.
+타입·기능·Cargo/build/test/Clippy/CI·원본·download·stage·commit/push는0이다.

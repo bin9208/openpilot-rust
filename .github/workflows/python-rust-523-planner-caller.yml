@@ -10,6 +10,8 @@ name: Python Rust 523 exact native Planner caller
     - rust/crates/dev-tools/tests/planner_ci_policy/**
     - tools/ci/planner_native_controller_523.sh
     - tools/ci/stage_planner_ipc_original_523.sh
+    - tools/ci/stage_planner_lifecycle_original_523.sh
+    - rust/crates/dev-tools/tests/fixtures/planner-lifecycle-original-audit/**
     - rust/tools/planner_ipc_peer.cc
   workflow_dispatch: null
 permissions:
@@ -205,7 +207,7 @@ jobs:
         CI296_HOST_CONTROL: '1'
       run: 'set -euo pipefail
 
-        printf ''%s  %s\n'' fbd6959a79e7df0cb91e9c321dc8b3aa53a0dc7607b5bd9e1da4eda2e6f27604 .github/workflows/rust.yml
+        printf ''%s  %s\n'' dbdc618a18f4b77fefbb7340ce441f35b1e0afacdb82e39f1964d1641ad160be .github/workflows/rust.yml
         | sha256sum --check --strict -
 
         '
@@ -349,7 +351,7 @@ jobs:
         }}
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
-    - name: Stage the fixed independently audited original Planner IPC
+    - name: Stage the fixed independently audited original Planner IPC and lifecycle
       id: planner_ipc_stage
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       timeout-minutes: 10
@@ -362,6 +364,8 @@ jobs:
         set -euo pipefail
         printf '%s  %s\n' 43e1eb7b2b5e27521f8f7ce4e4a36c35376515b4be944c6bd390a348978810b6 "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh" | sha256sum --check --strict -
         /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh"
+        printf '%s  %s\n' 258943202a9a19f64e8fd5e1188156206c7d2e5a998690a1a0540ab1a718d84e "$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh" | sha256sum --check --strict -
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh"
     - name: Compare exact policies, main loops, real IPC and lifecycle
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/planner_native_controller_523.sh" runtime
@@ -379,7 +383,7 @@ jobs:
         '
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
-    - name: Qualify full native Planner IPC lib and strict Clippy
+    - name: Qualify full native Planner IPC and lifecycle with strict Clippy
       id: planner_ipc_qualify
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       timeout-minutes: 15

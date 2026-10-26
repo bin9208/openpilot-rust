@@ -875,3 +875,141 @@ head_branch는 codex/feat-523-python-rust, expired=false다. 두 run.created_at�
 `23518855b09586f18710dfe7206f1a4549558f222bc4a82aec84dc70f7dc53d8`, ARM201598B/SHA
 `e55148ab4641a7b61644e94b118ccf89da6107ffd2138d7e683f2297ba59e18c`다.
 stager/collector actual 수용·새 원본 관측·nativeLife closure·퇴역 credit는 모두0으로 유지한다.
+
+## HOST57/ARM69 consumer 미도달 확인 — 2026-10-26
+
+HOST source`57e1761c5cac9ddee282550d8c079083e6fa9a5a`의
+[run40256938654/job121360705093](https://github.com/bin9208/openpilot-rust/actions/runs/40256938654/job/121360705093)은
+step17 compile/check 실패이며 stager18/runtime19/qualification21은 skipped다.
+이 job 최초 오류 상세는 Bacon 담당으로 두고 이 감사에서는 중복 조사하지 않았다.
+
+ARM source`69d5489463e22a9ef4245cc941a5788f795a8b99`의
+[run40257284064/job121361745718](https://github.com/bin9208/openpilot-rust/actions/runs/40257284064/job/121361745718)은
+hosted ARM64에서02:04:33–02:09:20Z 실행 후 step15 compile/check 실패다.
+build-closure7/controller14 PASS 뒤 policy21은1 passed/20 failed다. 실제 최초 공통 오류는
+`planner_ci_policy/contract.rs:353`의 planner-runtime functional count(actual7/expected6)다.
+같은 source의 canonical HOST/ARM YAML을 정적으로 읽으면 원래6개에 native IPC qualification이
+추가되어 functional step7개가 정확히 일치한다. 최소 제안은 FAMILIES의 planner-runtime count6만7로
+동기화하며 기존 전체 step object 동일성·SDK/order·negative 검사를 유지하는 것이다. 수정하지 않았다.
+
+ARM stager16/runtime17/qualification19는 모두 skipped다. collector2/stager/helper의 bytes는
+git57=git69임을 확인했지만 이 동일성을 actual 실행 증거로 사용하지 않는다. source6c/57/69의
+capture 데이터·성공·nativeLife 외부 audit manifest를 채우지 않으며 새 credit도0이다.
+
+ARM의 upload/source-index 사후 seal/owned source cleanup/common temp cleanup은 SUCCESS다.
+아래 실패 carrier2는 API/upload log identity가 일치하고 expired=false다. repository/head ID는
+1395501963, head source는 위69 전체 SHA다. run-created2026-10-26T02:04:28Z에서
+expires2027-01-24T02:04:28Z까지 정확90일이다.
+
+| 역할 | artifact ID / name | bytes / API·upload SHA256 |
+| --- | --- | --- |
+| ARM functional | `12623480113` / `rust-planner-hosted-arm64-evidence` |3860473 / `1d6a185137904362cce55ea6dbae83804a4cebd48aa81bc275e6c0a9f7318a42` |
+| ARM private | `12622638687` / `private-rust-planner-runtime-0-40257284064-1` |292739 / `880ce37016717251c9b8f37ffe9321cc6f3c3a202230236f6dfc59df9678ddb8` |
+
+ARM job 원문 log196822B/SHA
+`4cc4f2e59dcaf7fd874abbe27bdb3dea7d41770b791bf720b9aa0a34aa6ead67`를 읽었다.
+artifact ZIP 다운로드·CRC 반복0, source/CI 수정·rerun0이며 Bacon의 유일 downloader 역할을 유지한다.
+
+## source841 lifecycle actual 감사와 독립 stager 준비 — 2026-10-26
+
+source `841ee8a4e1357e7a0db4193cf7944e23c31ee0fb`/push/attempt1의
+[HOST40258459503/job121365332760](https://github.com/bin9208/openpilot-rust/actions/runs/40258459503/job/121365332760)과
+[ARM40258459472/job121365332586](https://github.com/bin9208/openpilot-rust/actions/runs/40258459472/job/121365332586)은
+전체 SUCCESS다. HOST는02:18:37–02:27:46Z, ARM은02:18:38–02:28:18Z의 hosted native 실행이다.
+stager→runtime/lifecycle→IPC qualification은 모두 실제 PASS다. sanitizer는 원래 조건대로
+HOST에서 PASS/ARM에서 skipped이며 ARM sanitizer 성공으로 확대하지 않는다.
+6c/57/69의 collector 미도달 자료를 채우거나 재분류하지 않는다.
+
+### 실제 archive4와 원문 관측
+
+Bacon의 `ci/planner841-artifact-handoff.json` ready/whole_crc_pass=true를 재사용했다.
+네 ZIP의 유일 다운로드·전체 SHA/CRC/안전성 감사는 Bacon이며 이 감사자는 전체 CRC를 반복하지 않았다.
+아래 digest는 API/upload/handoff와 일치한다. 공통 repository/head ID1395501963,
+head branch codex/feat-523-python-rust, source841, expired=false다.
+두 run-created2026-10-26T02:18:33Z에서 expires2027-01-24T02:18:33Z까지 정확90일이다.
+
+| 역할 | ID / 정확한 name | ZIP bytes / SHA256 | Bacon member/expanded |
+| --- | --- | --- | --- |
+| HOST functional |12623801541 / rust-planner-local-x64-evidence |58488480 / `cb4b4b562fa5b143c32cb3b88d8e0c8879e2fc7066646a957cd01747b841bd3b` |41687 /174338679 |
+| HOST private |12624056023 / private-rust-planner-runtime-0-40258459503-1 |2217291 / `0ca520bbecfdc7ea35b09b914d042ee7ad6006efe6b33f7d9c9fbb59871bee5f` |85 /11878869 |
+| ARM functional |12623646303 / rust-planner-hosted-arm64-evidence |48144861 / `5288aea003bdf02852307217587617aadcba90f017a1f1b581fec70deae4db81` |37084 /145301622 |
+| ARM private |12623531667 / private-rust-planner-runtime-0-40258459472-1 |1891965 / `9228ad7acd660cf47a5e63498aa401fe6aba3cb21b9a5550cfcabb6778f69056` |74 /10519278 |
+
+각 functional에서 index→run manifest→raw의 exact bytes/SHA와 완전 파일 roster를 inert하게
+대조했다. 양쪽 모두 **26 run/input234/Params30/output72/source14/capture 파일5791**이며
+capture tree에 빠지거나 추가된 파일이 없다. capture ZIP member는 regular0600이다.
+source14 SHA는 git841 blob과 전부 일치하고 receipt/cases/각 run receipt도 manifest에 결합된다.
+
+13 case의 source/rust 순서와 종료 상태는 원래대로다. wait-missing/dir/empty의 prelaunch 상태,
+recover-directory의 prelaunch 및 recovery-before dir→recovery-after nonempty file,
+settings-directories4, fatal 숫자 literal `invalid`, malformed CP `x`를 모두 확인했다.
+정상4case×2mode×3frame의 output72는 원래 frame/service/순서와 receipt에 맞는다.
+source wait/SIGINT=-2·Rust0, ready/recover SIGTERM=-15, 숫자 오류 source=-6·Rust1,
+malformed 양쪽1을 명시적으로 유지한다. valid/data 값에 새 합격 조건을 붙이지 않았다.
+
+input234는 frame/service별 원문 SHA와9개 송신 순서에 결합된다. 실제 producer/PubMaster source
+SHA를 통해 기존 `to_bytes()` 한 번의 bytes를 저장하고 같은 bytes를 send하는 경로를 확인했다.
+추가 original/model/worker 호출은 없고 기존 lifecycle26 안의 관측이다. 12개 controller command가
+모두0이며 lifecycle leaf는 한 번이다. 원본 packet을 native 계산으로 다시 생성하거나 보완하지 않았다.
+
+| 실제 기록 | HOST | ARM |
+| --- | --- | --- |
+| capture index bytes/SHA |14119 / `280539324781d356a4f5e03bd19582128e1a8c22090b65a80156f7074e592f23` |14127 / `f1d02d1c17623dc527db57ff4c5fde2279ef05d16018ed0999c9c860d6d495dc` |
+| index 전 payload/apparent/allocated |2109325 /2695053 /26189824 |2109368 /2695096 /26189824 |
+| index 포함 capture payload |2123444 |2123495 |
+| 선택5891 파일 payload 합계 |2174197 |2174248 |
+| collector free admission bytes |86247878656 |110156296192 |
+
+collector는 기존128MiB+capture64MiB를 입장시켰고 위 사용량은64MiB 이하다.
+COMPLETE index 생성 후 다시 실제 member identity/hash/du를 검사하는 producer 경로가 성공했다.
+표의 du는 index 전 기록이며 전체 실행 peak/RSS 실측으로 확대하지 않는다.
+
+HOST root는 `tmp/openpilot-ci.afCEBf/planner-comparison/lifecycle-original-inputs`,
+ARM root는 `tmp/openpilot-ci.s6xgRN/planner-comparison/lifecycle-original-inputs`다.
+각 root의 `index.json` 및 sibling `lifecycle/{receipt,cases}.json`, run receipt26/원문 output72의
+실제 path/bytes/SHA만 외부 audit에 넣었다. audit는 strict `lifecycle_corpus.rs::Audit` 필드에 맞고
+artifact.archive는 각각 `12623801541.zip`/`12623646303.zip`, extracted는 `functional`이다.
+이는 새 stager bundle의 명시적 배치이며 과거 원본 경로를 바꾼 metadata가 아니다.
+
+private의 source/index before/after가 byte 동일하다. SDK manifest159개(HOST)/158개(ARM)의
+runtime/IPC qualification 전후 SHA·roster·stable roster가 일치하며 HOST memory도 같다.
+capture의 SDK proof hashes가 private 실제 member와 일치한다. 보존된 실제 binary/solver2/manifest도
+index identity7의 해당 hash와 맞는다. 보존하지 않은 Python/Params/msgq 바이너리 bytes 자체의
+재감사를 주장하지 않고 producer 전후 pin 자료를 유지한다. 모든 owned cleanup step은 SUCCESS다.
+
+기존 IPC fixed transport도 실제 수용했다. 원래 aa79 ID/run/source와0283 보존 carrier/proof는
+분리되어 있고 원래 capture API snapshot과 현재 carrier API, in_progress/null 보존 snapshot과
+live success를 각각 유지한다. source841 transport-authentication은 roundtrip/bytes_equal=true다.
+원래 IPC 입장128MiB 안에서 HOST allocated80478208/apparent69672575B,
+ARM68882432/58074125B를 기록했다. 새 LC를 그 root에 합치거나 cap을 늘리지 않는다.
+
+### 부모 승인된 새 data-only stager
+
+새 `tools/ci/stage_planner_lifecycle_original_523.sh`는
+`$CI_JOB_TEMP/planner-lifecycle-original`과 `$CI_JOB_TEMP/proof/planner-lifecycle-stage`만 만든다.
+독립128MiB 입장/allocated·apparent 합산, 원래10분 stage 안의300초 deadline,
+fixed841 run/source/ID/name/ZIP bytes/SHA/실제 SUCCESS/run-anchor90일을 요구한다.
+원래 IPC stager/그128MiB cap과 WF/helper/기능 step7은 수정하지 않았다.
+
+API Authorization과 token 없는 blob download를 분리하며 redirect 후 token env도 제거한다.
+payload 요청 없이 actual API Location header만 읽어 확인한
+`productionresultssa5.blob.core.windows.net`/`productionresultssa10.blob.core.windows.net`만 허용하고
+userinfo/port/fragment는 거부한다. ZIP whole SHA/CRC·전체 canonical unique nonsymlink roster를
+확인한 뒤 index/run manifest의 인증된 hash 사슬로 exact5891 allowlist만 추출한다.
+uid700/600·single-link·file count/size·각 SHA·source/owner 전후·실제 du를 확인한 뒤에만
+`PLANNER_LIFECYCLE_CORPUS`와 `PLANNER_LIFECYCLE_CORPUS_AUDIT` 두 env를 export한다.
+바이너리/SDK를 추출하거나 Python/원본/프로젝트 CLI를 실행하지 않는다.
+
+| 부모/Ohm 고정 대상 | bytes | 최종 SHA256 |
+| --- | --- | --- |
+| tools/ci/stage_planner_lifecycle_original_523.sh |17552 |`258943202a9a19f64e8fd5e1188156206c7d2e5a998690a1a0540ab1a718d84e` |
+| tests/fixtures/planner-lifecycle-original-audit/x86_64.json |36135 |`9ae47494dcf2e201fa1c48a70e6acd934e08fefc008001bd0c95c9ba502eb88e` |
+| tests/fixtures/planner-lifecycle-original-audit/aarch64.json |36136 |`23bace6376cc1d87a1857bc8f69b64d6f0ddf5c526e1f69a133502620bd81f80` |
+
+fixture 실제 root는 `rust/crates/dev-tools/tests/fixtures/`다. 위 audit bytes를 그대로 복사했으며
+새 expected/native 계산값은 없다. Ohm은 reader의 stale producer6c를841로 바꾸고 이 두 pin을
+결합해야 한다. 부모는 기존 stage step에서 oldIPC 다음 새 stager를 호출하고 timeout10분/step7을
+유지한다. 새 stager 및 native lifecycle integration 실제 성공은 아직 없으며 퇴역 credit0이다.
+
+로컬은 inert data/SHA 감사, Bash syntax, JQ13개 compile-only(식 평가0), 신규 diff 공백 검사뿐이다.
+새 stager·원본/모델/프로젝트 기능 실행·GHA dispatch/rerun·stage/commit은0이다.
