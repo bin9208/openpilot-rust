@@ -5,6 +5,9 @@ on:
     paths:
       - 'tools/ci/probe_native_agnos.py'
       - 'tools/ci/fixtures/native-agnos-assets-599.json'
+      - 'rust/native-rust-toolchain.json'
+      - 'rust/crates/runtime-build/src/toolchain.rs'
+      - 'rust/crates/runtime-build/src/inputs_main.rs'
       - '.github/workflows/runtime-native-environment.yml'
   workflow_dispatch:
 permissions:
@@ -61,6 +64,37 @@ jobs:
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-agnos-assets
           key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
+      - uses: actions/cache/restore@v4
+        id: rust-components-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-rust-assets
+          key: native-rust-194-aarch64-aaa177def36e01d539bee6bde95295230b9ce378f81057845db8d0ebe97898ee-v1
+      - name: Prepare authenticated native Rust components and verify zero-transfer reuse
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bin openpilot-runtime-inputs
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          "$native_target/debug/openpilot-runtime-inputs" --prepare-rust --plan rust/native-rust-toolchain.json \
+            --cache "$RUNNER_TEMP/native-rust-assets" --store "$RUNNER_TEMP/native-rust-toolchains" > "$RUNNER_TEMP/native-rust-first.json"
+          "$native_target/debug/openpilot-runtime-inputs" --prepare-rust --plan rust/native-rust-toolchain.json \
+            --cache "$RUNNER_TEMP/native-rust-assets" --store "$RUNNER_TEMP/native-rust-toolchains" > "$RUNNER_TEMP/native-rust-reused.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['CI_JOB_TEMP'])
+          first = json.loads((root/'native-rust-first.json').read_text())
+          repeated = json.loads((root/'native-rust-reused.json').read_text())
+          assert first['copied_bytes'] > 0 and repeated['copied_bytes'] == 0
+          assert first['root'] == repeated['root'] and first['tree_sha256'] == repeated['tree_sha256']
+          assert not first['compiler_executed'] and not first['runtime_activated']
+          assert all(row['transferred_bytes'] in (0,row['bytes']) for row in first['assets'].values())
+          assert all(row['transferred_bytes'] == row['stored_bytes'] == 0 for row in repeated['assets'].values())
+          print('Authenticated ARM toolchain files prepared; repeated HTTP body and copied bytes both zero; compiler execution remains the following AGNOS step.')
+          PY
+      - uses: actions/cache/save@v4
+        if: steps.rust-components-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-rust-assets
+          key: native-rust-194-aarch64-aaa177def36e01d539bee6bde95295230b9ce378f81057845db8d0ebe97898ee-v1
       - name: Execute Rust and C++ standard ABI probes inside the original AGNOS filesystem
         run: python3 tools/ci/probe_native_agnos.py
       - uses: actions/upload-artifact@v6
@@ -71,9 +105,14 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos-environment-599.json
             ${{ env.CI_JOB_TEMP }}/native-agnos-assets-first.json
             ${{ env.CI_JOB_TEMP }}/native-agnos-assets-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-rust-first.json
+            ${{ env.CI_JOB_TEMP }}/native-rust-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/receipt.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/commands.log
             ${{ env.CI_JOB_TEMP }}/native-agnos/cargo-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-driver-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-driver-*.stdout

@@ -87,6 +87,8 @@ jobs:
         run: |
           cargo run --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-build --bin openpilot-runtime-plan -- \
             --root "$GITHUB_WORKSPACE" --cargo "$(rustup which cargo)" --check > "$RUNNER_TEMP/native-runtime-catalog.json"
+      - name: Compile the runtime consumer configuration without archive preparation dependencies
+        run: cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --all-targets -- -D warnings
       - name: Verify the real HTTPS CLI and zero-transfer reuse of a pinned public input
         run: |
           cargo run --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-build --bin openpilot-runtime-assets -- \

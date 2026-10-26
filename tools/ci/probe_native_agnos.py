@@ -58,7 +58,7 @@ def download(url, path, sha, log):
   path.chmod(0o700)
 
 
-def native_driver_probe(guest_command, work, source_mount, evidence, log):
+def native_driver_probe(guest_command, work, source_mount, evidence, log, guest_work):
   """Build the real repository driver, then exercise it on owned source only."""
   room(work, 2 * 1024**3)
 
@@ -144,6 +144,67 @@ def native_driver_probe(guest_command, work, source_mount, evidence, log):
       repeated_and_docs_only_all_fresh=True, one_binary_change_unrelated_fresh=True,
       actual_guest_execution=True, full_generation_seal=False, device_execution=False)
 
+  # Run the separately authenticated compiler/Cargo/std prefix inside AGNOS.
+  # Host archive preparation and ELF admission alone cannot establish this.
+  host_receipt = json.loads((work.parent / 'native-rust-first.json').read_text())
+  host_store = work.parent / 'native-rust-toolchains'
+  guest_store = Path(guest_work) / 'pinned-rust'
+  pinned_root = guest_store / Path(host_receipt['root']).relative_to(host_store)
+  pinned_receipt = guest_store / Path(host_receipt['tree_receipt']).relative_to(host_store)
+  pinned = work / 'driver-pinned-rust-recipe.json'
+  configuration = json.loads(recipe.read_text())
+  configuration['inputs'] = {str(pinned_receipt): host_receipt['tree_sha256']}
+  configuration['input_trees'] = {str(pinned_root): str(pinned_receipt)}
+  pinned.write_text(json.dumps(configuration) + '\n')
+  argv = [driver, '--root', fixture, '--recipe', pinned, '--cache', work / 'driver-cache',
+          '--toolchain', pinned_root / 'bin']
+  pinned_reports = []
+  for phase in ('initial', 'reused'):
+    result = json.loads(execute(argv, f'runtime-driver-pinned-rust-{phase}.json'))
+    artifacts = {Path(row['executable']).name: row for row in result['artifacts']}
+    assert artifacts.keys() == {'first', 'second'}
+    assert all(row['fresh'] == (phase == 'reused') for row in artifacts.values())
+    assert result['rustc_sha256'] == initial['rustc_sha256']
+    assert result['cargo_sha256'] == initial['cargo_sha256']
+    for name, row in artifacts.items():
+      actual = execute([row['executable']], f'runtime-driver-pinned-rust-{phase}-{name}.stdout')
+      assert actual == f'native AGNOS Rust std {name} {43 if name == "first" else 42}\n'
+    pinned_reports.append(result)
+  assert pinned_reports[0]['cache_key'] == pinned_reports[1]['cache_key']
+  before = {Path(row['executable']).name: row['sha256'] for row in pinned_reports[0]['artifacts']}
+  assert before == {Path(row['executable']).name: row['sha256'] for row in pinned_reports[1]['artifacts']}
+  host_std = next((Path(host_receipt['root']) / 'lib/rustlib/aarch64-unknown-linux-gnu/lib').glob('libstd-*.rlib'))
+  original_mode = host_std.stat().st_mode & 0o7777
+  with host_std.open('rb') as stream:
+    original_byte = stream.read(1)
+  assert original_byte
+
+  def mutate(value):
+    host_std.chmod(0o644)
+    try:
+      with host_std.open('r+b') as stream:
+        stream.write(value)
+        stream.flush()
+        os.fsync(stream.fileno())
+    finally:
+      host_std.chmod(original_mode)
+
+  mutate(bytes([original_byte[0] ^ 1]))
+  try:
+    rejected = run(guest_command(argv), log, required=False, stdout_path=work / 'runtime-driver-pinned-rust-tamper.stdout')
+    evidence['commands'].append(rejected)
+    assert rejected['exit_code'] != 0, 'modified standard library was accepted'
+    for row in pinned_reports[-1]['artifacts']:
+      name = Path(row['executable']).name
+      actual = execute([row['executable']], f'runtime-driver-pinned-rust-preserved-{name}.stdout')
+      assert actual == f'native AGNOS Rust std {name} {43 if name == "first" else 42}\n'
+  finally:
+    mutate(original_byte)
+  evidence['pinned_native_rust_cases'] = dict(cases=3, repeated_compiler_artifacts_fresh=True,
+      standard_library_same_size_tamper_rejected=True, previous_executables_preserved=True,
+      compiler_and_cargo_match_original_distribution=True, tree_sha256=host_receipt['tree_sha256'],
+      actual_guest_execution=True, full_runtime_build=False, device_execution=False)
+
 
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
@@ -209,8 +270,10 @@ def main():
     (work / 'probe.gitconfig').write_text('[safe]\n'
         f'\tdirectory = {source_mount}\n\tdirectory = {guest_work}/driver-fixture\n'
         '[core]\n\thooksPath = /dev/null\n[commit]\n\tgpgSign = false\n')
+    (work / 'pinned-rust').mkdir()
     guest = [proot, '-0', '-r', rootfs, '-q', qemu, '-b', '/proc', '-b', '/dev', '-b', '/etc/resolv.conf',
-             '-b', '/etc/hosts', '-b', f'{work}:{guest_work}', '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
+             '-b', '/etc/hosts', '-b', f'{work}:{guest_work}', '-b', f'{owned / "native-rust-toolchains"}:{guest_work}/pinned-rust',
+             '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
              f'GIT_CONFIG_GLOBAL={guest_work}/probe.gitconfig', 'GIT_OPTIONAL_LOCKS=0',
@@ -250,7 +313,7 @@ def main():
       evidence['commands'].append(run(guest_command([work / 'target/debug' / name]), log))
     evidence['binaries'] = before
     evidence['toolchain_files'] = {str(path.relative_to(work)): digest(path) for path in (work / 'rustup/toolchains').glob('*/bin/*') if path.is_file()}
-    native_driver_probe(guest_command, work, source_mount, evidence, log)
+    native_driver_probe(guest_command, work, source_mount, evidence, log, guest_work)
     evidence['success'] = True
   except BaseException as error:
     evidence.update(success=False, failure=str(error))

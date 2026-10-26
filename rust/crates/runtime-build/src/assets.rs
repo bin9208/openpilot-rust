@@ -92,7 +92,7 @@ impl Plan {
         Ok(plan)
     }
 
-    fn validate(&self) -> Result<()> {
+    pub(crate) fn validate(&self) -> Result<()> {
         if self.schema != 1 || self.assets.is_empty() || self.assets.len() > 1024 {
             return Err("invalid build input plan".into());
         }

@@ -19,6 +19,8 @@ pub mod selection;
 mod source;
 pub mod source_store;
 pub mod supervision;
+#[cfg(feature = "prepare-rust")]
+pub mod toolchain;
 pub use source::Source;
 
 use serde::{Deserialize, Serialize};

@@ -9,6 +9,10 @@ publish = false
 [lints]
 workspace = true
 
+[features]
+default = ["prepare-rust"]
+prepare-rust = ["dep:tar", "dep:xz2"]
+
 [dependencies]
 openpilot-runtime-installer = { path = "../runtime-installer" }
 rustix = { version = "1", features = ["fs", "process"] }
@@ -17,6 +21,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
 tempfile = "3"
+tar = { version = "0.4", default-features = false, optional = true }
+xz2 = { version = "0.1.7", optional = true }
 
 [dev-dependencies]
 rustix = { version = "1", features = ["stdio"] }

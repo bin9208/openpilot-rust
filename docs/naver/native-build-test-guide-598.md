@@ -21,6 +21,10 @@
 
 ## 개발 검증 실행 방법
 
+Rust compiler/Cargo/std 내용별 준비·전송0/복사0·stdlib 변조 검증은
+[고정 native Rust 준비 안내](native-rust-toolchain-599.md)를 따른다. compiler 실행과
+전체 runtime 수용은 별도 단계이며 새 source의 Actions 성공을 먼저 확인한다.
+
 로컬에서는 `git diff --check`, scoped `rustfmt --check`, TOML/YAML 문법과 diff만
 확인한다. 기능·빌드는 GitHub Actions에서 실행한다. 작업 branch push는
 `Runtime source build foundation`의 x64/ARM matrix를 실행한다. 같은 변경의 성공한

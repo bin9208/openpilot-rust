@@ -81,3 +81,7 @@ Python 모델 준비 환경을 고정하고, 트랙별 전체 runtime roster·pr
 전체89개/11그룹의 기존 runtime 목록과 새 자체 빌드·봉인 도구10개를 추적 파일로
 옮기고, 실제 Cargo metadata 대조 및 입력별 recipe 생성기를 추가했다. 구현/검증 범위와
 사용 명령은 [전체 native runtime 계획](native-runtime-plan-599.md)에 기록한다.
+
+Rust compiler/Cargo/std 원본 세 자산은 별도 내용별 준비기로 전체 tree provenance까지
+연결한다. 현재 새 Actions 결과 대기이며 구현·pin·실행 구분은
+[native Rust 도구체인 준비](native-rust-toolchain-599.md)에 기록한다.

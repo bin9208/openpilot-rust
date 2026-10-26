@@ -1,3 +1,5 @@
+#[cfg(feature = "prepare-rust")]
+use openpilot_runtime_build::toolchain;
 use openpilot_runtime_build::{inputs::Tree, Result};
 use std::{fs::File, io::Write, path::PathBuf};
 
@@ -5,10 +7,12 @@ fn run() -> Result<()> {
     let mut args = std::env::args_os().skip(1);
     let mut root = None;
     let mut output = None;
+    let (mut plan, mut cache, mut store) = (None, None, None);
+    let mut prepare_rust = false;
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--help" | "-h") => {
-                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\nCapture actual unpacked input files, modes and contained file links. The caller must bind this receipt to independently verified source or asset provenance before reuse.");
+                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\nCapture unpacked inputs, or assemble a content-verified native Rust distribution without executing installers. Generic capture requires independently verified provenance. Rust preparation authenticates archives on every reuse; it does not compile or activate a runtime.");
                 return Ok(());
             }
             Some("--root") if root.is_none() => {
@@ -17,8 +21,40 @@ fn run() -> Result<()> {
             Some("--output") if output.is_none() => {
                 output = Some(PathBuf::from(args.next().ok_or("missing receipt path")?))
             }
+            Some("--prepare-rust") if !prepare_rust => prepare_rust = true,
+            Some("--plan") if plan.is_none() => {
+                plan = Some(PathBuf::from(args.next().ok_or("missing Rust plan")?))
+            }
+            Some("--cache") if cache.is_none() => {
+                cache = Some(PathBuf::from(args.next().ok_or("missing asset cache")?))
+            }
+            Some("--store") if store.is_none() => {
+                store = Some(PathBuf::from(args.next().ok_or("missing toolchain store")?))
+            }
             _ => return Err("unknown or duplicate input receipt argument".into()),
         }
+    }
+    if prepare_rust {
+        if root.is_some() || output.is_some() {
+            return Err("Rust preparation does not accept generic capture paths".into());
+        }
+        #[cfg(feature = "prepare-rust")]
+        {
+            let plan = toolchain::Plan::read(&plan.ok_or("--plan is required")?)?;
+            let prepared = toolchain::prepare(
+                &plan,
+                &cache.ok_or("--cache is required")?,
+                &store.ok_or("--store is required")?,
+                &openpilot_runtime_build::assets::Curl,
+            )?;
+            println!("{}", serde_json::to_string_pretty(&prepared)?);
+            return Ok(());
+        }
+        #[cfg(not(feature = "prepare-rust"))]
+        return Err("this build does not include the prepare-rust Cargo feature".into());
+    }
+    if plan.is_some() || cache.is_some() || store.is_some() {
+        return Err("Rust preparation paths require --prepare-rust".into());
     }
     let root = root.ok_or("--root is required")?;
     let output = output.ok_or("--output is required")?;
