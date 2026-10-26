@@ -79,6 +79,7 @@ pub(crate) fn inspect(recipe: &Recipe, toolchain: &Path) -> Result<Tools> {
                 .arg(format!("-print-prog-name={name}"))
                 .env_clear()
                 .envs(&recipe.environment)
+                .envs(&tools.environment)
                 .env("PATH", &path)
                 .output()?;
             if !output.status.success() {

@@ -195,6 +195,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         .arg("-vV")
         .env_clear()
         .envs(&recipe.environment)
+        .envs(&native.environment)
         .env(
             "PATH",
             std::env::join_paths([
