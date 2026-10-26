@@ -183,6 +183,11 @@ receipt CLI3 회귀와 strict Clippy, 실제 HTTPS 최초403바이트/재사용0
   `bin-actions`는 타관리자의 현재 사용 불가 runner이며 GitHub 기본 runner를 쓰라고
   명시한 결정이 있다. 이전 all-local 변경을 현재 검증 경로로 무조건 반영하지 않고
   최신 지시와 각 트랙을 확인한다. 타관리 runner에 새 작업·정리를 보내지 않는다.
+- 위 runner 판단은 당시 기록이다. 2026-10-26 이 채팅에 다시 제공된 사용자 지침이
+  이를 대체한다. 이후 모든 새 Actions job은 등록된 `bin-actions`
+  (`self-hosted`, `Linux`, `X64`, `dev-md-local`)에서만 실행하며 hosted fallback은 없다.
+  기존 실행 중 검사와 다른 세션의 소스·CI·cache는 보존한다. ARM은 별도 QEMU/PRoot
+  userspace로 원래 pin/명령을 유지하고 실제 기기/물리 ARM 수용과 구분한다.
 - 원래 정상 배포 source b555의11개 build group과 feature/env 기록은 이전 #296
   checkout의 `.analysis/scratch/2026-10-14-agnos296/build-target-groups-b55552db.sh`
   및 `target-build-b55552db.json`에 있다. 실제 native recipe를 정할 원문 증거이며,

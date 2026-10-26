@@ -1,0 +1,78 @@
+name: Genuine AGNOS native compiler feasibility
+on:
+  push:
+    branches: ['codex/feat-599-*', 'codex/feat-600-*']
+    paths:
+      - 'tools/ci/probe_native_agnos.py'
+      - 'tools/ci/fixtures/native-agnos-assets-599.json'
+      - '.github/workflows/runtime-native-environment.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-agnos-environment-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  compiler:
+    name: Native compiler in pinned AGNOS ARM userspace
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 90
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Admit this host tool and extract operation
+        run: |
+          test "$RUNNER_NAME" = bin-actions
+          test "$RUNNER_ENVIRONMENT" = self-hosted
+          python3 - <<'PY'
+          import os, shutil
+          growth = 4 * 1024**3
+          for path in (os.environ['RUNNER_TEMP'], os.environ['GITHUB_WORKSPACE']):
+              free = shutil.disk_usage(path).free
+              print(f'path={path} available_bytes={free} expected_host_tool_growth_bytes={growth}')
+              if free < growth:
+                  raise SystemExit('insufficient capacity for this operation; other data retained')
+          PY
+          sudo apt-get -o APT::Architectures=amd64 update
+          sudo apt-get -o APT::Architectures=amd64 install -y qemu-user-static android-sdk-libsparse-utils e2fsprogs xz-utils
+          rustup toolchain install 1.94.0 --profile minimal
+      - uses: actions/cache/restore@v4
+        id: image-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-agnos-assets
+          key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
+      - name: Prepare the exact genuine image through the content cache and prove zero-transfer repeat
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bin openpilot-runtime-assets
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          "$native_target/debug/openpilot-runtime-assets" --plan tools/ci/fixtures/native-agnos-assets-599.json --cache "$RUNNER_TEMP/native-agnos-assets" > "$RUNNER_TEMP/native-agnos-assets-first.json"
+          "$native_target/debug/openpilot-runtime-assets" --plan tools/ci/fixtures/native-agnos-assets-599.json --cache "$RUNNER_TEMP/native-agnos-assets" > "$RUNNER_TEMP/native-agnos-assets-reused.json"
+      - uses: actions/cache/save@v4
+        if: steps.image-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-agnos-assets
+          key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
+      - name: Execute Rust and C++ standard ABI probes inside the original AGNOS filesystem
+        run: python3 tools/ci/probe_native_agnos.py
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: native-agnos-environment-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/native-agnos-environment-599.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos-assets-first.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos-assets-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/commands.log
+            ${{ env.CI_JOB_TEMP }}/native-agnos/cargo-*.jsonl
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
