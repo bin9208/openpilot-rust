@@ -9,7 +9,7 @@ use rustix::process::{
 use signal_hook::iterator::{Handle, Signals};
 use std::{
     fs::{File, OpenOptions},
-    io::{Read, Seek, SeekFrom},
+    io::{Read, Seek, SeekFrom, Write},
     os::unix::{fs::OpenOptionsExt, process::CommandExt},
     path::Path,
     process::{Child, Command, ExitStatus, Stdio},
@@ -234,12 +234,24 @@ pub struct WorkerGuard {
 
 fn terminate_own_group(group: Pid, reason: &str) -> ! {
     if group == Pid::INIT || getpid() != group || getpgrp() != group {
-        eprintln!("native build supervision refused an unowned process group");
+        let _ = writeln!(
+            std::io::stderr().lock(),
+            "native build supervision refused an unowned process group"
+        );
         std::process::exit(1);
     }
-    eprintln!("native build stopped: {reason}; previous generation and logs retained");
-    if let Err(error) = crate::memory_cgroup::stop_worker_children() {
-        eprintln!("native build private memory group cleanup: {error}");
+    // Cleanup must not depend on a writable log/pipe. eprintln! can panic on
+    // ENOSPC/EPIPE and otherwise leave detached children alive after parent death.
+    let cleanup = crate::memory_cgroup::stop_worker_children();
+    let _ = writeln!(
+        std::io::stderr().lock(),
+        "native build stopped: {reason}; previous generation and logs retained"
+    );
+    if let Err(error) = cleanup {
+        let _ = writeln!(
+            std::io::stderr().lock(),
+            "native build private memory group cleanup: {error}"
+        );
     }
     let _ = kill_process_group(group, Signal::KILL);
     std::process::exit(1);

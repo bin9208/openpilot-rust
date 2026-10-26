@@ -192,6 +192,13 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
                 let _guard = WorkerGuard::start(&root.join("params")).unwrap();
                 memory_cgroup::enter(&policy.memory_cgroup_parent, policy.maximum_memory_bytes)
                     .unwrap();
+                if case == "unwritable-stderr-frontkill" {
+                    let full = fs::OpenOptions::new()
+                        .write(true)
+                        .open("/dev/full")
+                        .unwrap();
+                    rustix::stdio::dup2_stderr(&full).unwrap();
+                }
                 fs::write(
                     root.join("worker.ready"),
                     format!("{}\n", std::process::id()),
@@ -277,6 +284,7 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
         "launcher-kill",
         "request-owner-kill",
         "output-flood",
+        "unwritable-stderr-frontkill",
     ] {
         let root = temp.path().join(case);
         fs::create_dir(&root).unwrap();
@@ -343,7 +351,9 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
             .parse()
             .unwrap();
         match case {
-            "frontend-kill" | "launcher-kill" => frontend.0.kill().unwrap(),
+            "frontend-kill" | "launcher-kill" | "unwritable-stderr-frontkill" => {
+                frontend.0.kill().unwrap()
+            }
             "request-owner-kill" => {
                 let owner = request_owner.as_mut().unwrap();
                 owner.0.kill().unwrap();
@@ -404,7 +414,7 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
             .map(|line| serde_json::from_str(line).unwrap())
             .collect();
         assert!(!rows.is_empty());
-        if case != "frontend-kill" {
+        if !matches!(case, "frontend-kill" | "unwritable-stderr-frontkill") {
             let last = rows.last().unwrap();
             assert_eq!(
                 last["state"],

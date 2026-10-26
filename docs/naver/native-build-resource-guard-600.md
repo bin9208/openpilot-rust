@@ -70,6 +70,9 @@ frontend 부모 SIGKILL 및 중간 launcher가 살아 있는 상태의 요청 �
 추가 출력 flood는 실제 detached 하위 프로세스가 대량 stderr를 쓰게 한다. filesystem 한도에서
 중단되며 frontend 캡처는 작게 유지되고64KiB tail만 취하는지 확인한다. 큰 synthetic 원문은
 임시 디렉터리와 함께 정리하고 작은 tail/JSONL만 CI artifact로 남긴다.
+출력 불능도 별도로 검사한다. worker stderr를 `/dev/full`로 바꾸고 frontend를 SIGKILL해도
+detached 하위 작업이 종료되어야 한다. 종료 경로는 cgroup 정리를 먼저 수행하고 진단 출력은
+오류를 무시한다. 로그 쓰기의 ENOSPC/EPIPE가 panic을 일으켜 정리를 건너뛰게 하지 않는다.
 독립 process group의 하위 작업 종료와 이전 active/log의
 바이트 보존, 무관한 정상 프로세스 생존을 확인한다. 커널 peak/event와 시도별 JSONL을 보존한다.
 CI 준비·정리는 job owner/source/inode를 대조한 자기 cgroup만 대상으로 한다.
