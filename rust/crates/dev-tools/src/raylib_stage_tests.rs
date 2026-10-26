@@ -7,6 +7,13 @@ use std::{
     os::unix::fs::{symlink, MetadataExt},
 };
 
+fn fixture_space(_: &Path, growth: u64) -> Result<disk_space::Space> {
+    disk_space::Space::new(GROWTH, growth)
+}
+fn stage_with(options: &Options, pin: &Pin, runner: &mut impl Runner) -> Result<PathBuf> {
+    super::stage_with_space(options, pin, runner, &mut fixture_space)
+}
+
 fn fixture(root: &Path) -> (Options, Pin) {
     let wheel = root.join("fixture.whl");
     write_wheel(&wheel, &[]);
@@ -480,4 +487,40 @@ fn existing_directory_entry_count_is_bounded_before_indexing() {
     );
     assert_eq!(snapshot(&options.output), before);
     clean(temp.path());
+}
+
+#[test]
+fn insufficient_or_unreadable_space_at_entry_or_link_preserves_existing_generation() {
+    for fail_at in [1, 2] {
+        for unreadable in [false, true] {
+            let temp = tempfile::tempdir().unwrap();
+            let (mut options, pin) = fixture(temp.path());
+            stage_with(&options, &pin, &mut Compiler::default()).unwrap();
+            let before = snapshot(&options.output);
+            let inode = options.output.metadata().unwrap().ino();
+            options.shared = true;
+            let mut calls = 0;
+            let mut inspect = |_: &Path, growth| {
+                calls += 1;
+                assert_eq!(growth, GROWTH);
+                if calls == fail_at && unreadable {
+                    return Err("injected space observation failure".into());
+                }
+                disk_space::Space::new(if calls == fail_at { GROWTH - 1 } else { GROWTH }, growth)
+            };
+            let mut runner = Compiler::default();
+            let error =
+                super::stage_with_space(&options, &pin, &mut runner, &mut inspect).unwrap_err();
+            assert!(error.to_string().contains(if unreadable {
+                "observation failure"
+            } else {
+                "insufficient disk"
+            }));
+            assert_eq!(calls, fail_at);
+            assert!(runner.commands.is_empty());
+            assert_eq!(snapshot(&options.output), before);
+            assert_eq!(options.output.metadata().unwrap().ino(), inode);
+            clean(temp.path());
+        }
+    }
 }

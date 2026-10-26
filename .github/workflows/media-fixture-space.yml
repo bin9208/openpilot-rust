@@ -1,0 +1,76 @@
+name: Media fixture space isolation
+on:
+  push:
+    branches: ['codex/fix-604-*']
+    paths:
+      - 'rust/crates/dev-tools/**'
+      - 'rust/crates/disk-space/**'
+      - 'rust/ci/runtime/package.py'
+      - 'rust/ci/runtime/test_package_policy.py'
+      - '.github/workflows/media-fixture-space.yml'
+permissions:
+  contents: read
+concurrency:
+  group: media-fixture-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  fixtures:
+    name: Synthetic provider capacity and preservation
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 20
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - name: Require the registered runner and admit only this operation
+        run: |
+          test "$RUNNER_ENVIRONMENT" = self-hosted
+          test "$RUNNER_NAME" = bin-actions
+          python3 - <<'PY'
+          import json, os, platform, shutil, subprocess
+          from pathlib import Path
+          growth = 4 * 1024**3
+          checks = []
+          for path in (os.environ['RUNNER_TEMP'], os.environ['GITHUB_WORKSPACE']):
+              free = shutil.disk_usage(path).free
+              checks.append(dict(path=path, available_bytes=free, estimated_growth_bytes=growth))
+              if free < growth:
+                  raise SystemExit('insufficient space for this bounded validation; other data retained')
+          evidence = dict(runner_name=os.environ['RUNNER_NAME'], runner_environment=os.environ['RUNNER_ENVIRONMENT'],
+                          architecture=platform.machine(), source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+                          space=checks, scope='X64 synthetic provider fixtures; no ARM or device execution')
+          Path(os.environ['RUNNER_TEMP'], 'media-fixture-source.json').write_text(json.dumps(evidence,indent=2)+'\n')
+          print(json.dumps(evidence))
+          PY
+      - uses: ./.github/actions/rust-path
+      - name: Prepare pinned Rust components
+        run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt --component clippy
+      - name: Check formatting and exact delivery exceptions
+        run: |
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/raylib_stage.rs rust/crates/dev-tools/src/raylib_stage_tests.rs rust/crates/dev-tools/src/media_validation/*.rs
+          python3 rust/ci/runtime/test_package_policy.py
+      - name: Run actual provider fixtures and strict library/test Clippy
+        run: |
+          set -o pipefail
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/target"
+          /usr/bin/time -v -o "$RUNNER_TEMP/media-fixture-resources.txt" cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib -- --nocapture 2>&1 | tee "$RUNNER_TEMP/media-fixture-tests.log"
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --tests -- -D warnings
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: media-fixture-space-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/media-fixture-source.json
+            ${{ env.CI_JOB_TEMP }}/media-fixture-resources.txt
+            ${{ env.CI_JOB_TEMP }}/media-fixture-tests.log
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with:
+          cleanup: 'true'

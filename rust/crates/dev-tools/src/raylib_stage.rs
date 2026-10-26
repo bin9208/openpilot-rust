@@ -508,10 +508,18 @@ pub fn stage(options: &Options) -> Result<PathBuf> {
     stage_with(options, &pin_for(&options.arch)?, &mut NativeRunner)
 }
 fn stage_with(options: &Options, pin: &Pin, runner: &mut impl Runner) -> Result<PathBuf> {
+    stage_with_space(options, pin, runner, &mut disk_space::inspect)
+}
+fn stage_with_space(
+    options: &Options,
+    pin: &Pin,
+    runner: &mut impl Runner,
+    inspect: &mut impl FnMut(&Path, u64) -> Result<disk_space::Space>,
+) -> Result<PathBuf> {
     check(options.arch == pin.arch, "raylib architecture/pin differs")?;
     let output = std::env::current_dir()?.join(&options.output);
     let parent = output.parent().ok_or("raylib output parent missing")?;
-    disk_space::inspect(parent, GROWTH)?.require()?;
+    inspect(parent, GROWTH)?.require()?;
     fs::create_dir_all(parent)?;
     let lock = fs::OpenOptions::new()
         .create(true)
@@ -551,7 +559,7 @@ fn stage_with(options: &Options, pin: &Pin, runner: &mut impl Runner) -> Result<
         fs::write(path, raw)?;
     }
     if options.shared {
-        disk_space::inspect(parent, GROWTH)?.require()?;
+        inspect(parent, GROWTH)?.require()?;
         fs::write(generation.join("plugin_contract.cc"), CONTRACT_SOURCE)?;
         let command = compiler_command(options, pin, &generation)?;
         successful(runner, &command)?;

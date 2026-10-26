@@ -20,6 +20,25 @@ exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast
 
 
 class SourcePolicyTests(unittest.TestCase):
+    def test_media_fixture_space_exceptions_are_exact_reviewed_paths(self):
+        allowed = namespace["source_path_allowed"]
+        for path in (
+            "rust/crates/dev-tools/src/raylib_stage.rs",
+            "rust/crates/dev-tools/src/raylib_stage_tests.rs",
+            "rust/crates/dev-tools/src/media_validation/mod.rs",
+            "rust/crates/dev-tools/src/media_validation/graphics.rs",
+            "rust/crates/dev-tools/src/media_validation/ffmpeg.rs",
+            "rust/crates/dev-tools/src/media_validation/sdl.rs",
+            "rust/crates/dev-tools/src/media_validation/tests.rs",
+            ".github/workflows/media-fixture-space.yml",
+            "docs/naver/dev-md-media-fixture-604.md",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(allowed(path))
+                self.assertFalse(allowed(path + ".extra"))
+                self.assertFalse(allowed(path + "/child"))
+        self.assertFalse(allowed("rust/crates/dev-tools/src/media_validation/unreviewed.rs"))
+
     def test_growth_only_build_consumers_are_exact_paths(self):
         allowed = namespace["source_path_allowed"]
         for path in (

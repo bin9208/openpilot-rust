@@ -11,7 +11,14 @@ pub struct GraphicsOptions {
     pub output: PathBuf,
 }
 pub fn graphics(options: &GraphicsOptions, runner: &mut impl Runner) -> Result<Value> {
-    crate::package::disk_guard(&options.output, 1024 * 1024 * 1024)?;
+    graphics_with_space(options, runner, &mut crate::disk_space::inspect)
+}
+pub(super) fn graphics_with_space(
+    options: &GraphicsOptions,
+    runner: &mut impl Runner,
+    inspect: &mut impl FnMut(&Path, u64) -> Result<crate::disk_space::Space>,
+) -> Result<Value> {
+    inspect(&options.output, 1024 * 1024 * 1024)?.require()?;
     fs::create_dir_all(&options.output)?;
     let probe = options.output.join("library-probe.elf");
     let command = build_probe(
@@ -20,6 +27,7 @@ pub fn graphics(options: &GraphicsOptions, runner: &mut impl Runner) -> Result<V
         &probe,
         &[],
         runner,
+        inspect,
     )?;
     let source = options.source_root.join("rust/crates/startup-ui/native");
     let raylib = fs::read_to_string(source.join("raylib_loader.cc"))?;

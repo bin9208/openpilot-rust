@@ -95,6 +95,17 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         # #521: private space-observation seam; public FFmpeg build still uses
         # the actual filesystem and unchanged source/configuration/growth.
         'rust/crates/dev-tools/src/ffmpeg_build.rs',
+        # #604: observe capacity privately in synthetic fixtures; public entry
+        # points retain real filesystem admission and the same 1 GiB growth.
+        'rust/crates/dev-tools/src/raylib_stage.rs',
+        'rust/crates/dev-tools/src/raylib_stage_tests.rs',
+        'rust/crates/dev-tools/src/media_validation/mod.rs',
+        'rust/crates/dev-tools/src/media_validation/graphics.rs',
+        'rust/crates/dev-tools/src/media_validation/ffmpeg.rs',
+        'rust/crates/dev-tools/src/media_validation/sdl.rs',
+        'rust/crates/dev-tools/src/media_validation/tests.rs',
+        '.github/workflows/media-fixture-space.yml',
+        'docs/naver/dev-md-media-fixture-604.md',
         'rust/crates/dev-tools/src/package.rs',
         'rust/crates/dev-tools/tests/disk_space.rs',
         'rust/crates/model-runtime/src/export.rs',
