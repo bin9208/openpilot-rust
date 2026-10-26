@@ -20,6 +20,7 @@ use std::{
 };
 
 const PARENT: &str = "OPENPILOT_NATIVE_BUILD_PARENT";
+const SCOPE_PARENT: &str = "OPENPILOT_NATIVE_SCOPE_PARENT";
 const SIGNALS: [i32; 3] = [
     signal_hook::consts::SIGINT,
     signal_hook::consts::SIGTERM,
@@ -30,6 +31,37 @@ struct ChildGroup {
     child: Child,
     group: Pid,
     reaped: bool,
+}
+
+struct FrontendParent {
+    previous: Option<Signal>,
+}
+
+impl FrontendParent {
+    fn watch() -> Result<Self> {
+        let parent = getppid().ok_or("native build frontend parent missing")?;
+        if let Some(expected) = std::env::var_os(SCOPE_PARENT) {
+            if expected.to_str().and_then(|s| s.parse::<i32>().ok())
+                != Some(parent.as_raw_nonzero().get())
+            {
+                return Err("native scope parent died before frontend initialization".into());
+            }
+        }
+        let guard = Self {
+            previous: parent_process_death_signal()?,
+        };
+        set_parent_process_death_signal(Some(Signal::TERM))?;
+        if getppid() != Some(parent) {
+            return Err("native build frontend parent died during initialization".into());
+        }
+        Ok(guard)
+    }
+}
+
+impl Drop for FrontendParent {
+    fn drop(&mut self) {
+        let _ = set_parent_process_death_signal(self.previous);
+    }
 }
 
 impl Drop for ChildGroup {
@@ -45,11 +77,24 @@ impl Drop for ChildGroup {
 
 /// Use only in a dedicated frontend process. command must enter WorkerGuard
 /// before creating build children. stdout/stderr remain the worker's originals.
-pub fn run(mut command: Command) -> Result<ExitStatus> {
+pub fn run(command: Command) -> Result<ExitStatus> {
+    run_observed(command, || Ok(()))
+}
+
+pub fn run_observed(
+    mut command: Command,
+    mut observe: impl FnMut() -> Result<()>,
+) -> Result<ExitStatus> {
     if getpid() == Pid::INIT {
         return Err("native build frontend cannot be PID 1".into());
     }
     let mut signals = Signals::new(SIGNALS)?;
+    // Includes cancellation of a sudo/scope launcher. Install the signal
+    // consumer before requesting parent-death delivery and spawning the worker.
+    let _parent = FrontendParent::watch()?;
+    if signals.pending().next().is_some() {
+        return Err("native build cancelled before worker startup".into());
+    }
     let child = command
         .process_group(0)
         .env(PARENT, getpid().as_raw_nonzero().get().to_string())
@@ -67,8 +112,9 @@ pub fn run(mut command: Command) -> Result<ExitStatus> {
     };
     loop {
         if signals.pending().next().is_some() {
-            let _ = kill_process_group(child.group, Signal::KILL);
+            return Err("native build cancelled or frontend parent died".into());
         }
+        observe()?;
         let exited = match rustix::process::waitid(
             rustix::process::WaitId::Pid(child.group),
             rustix::process::WaitIdOptions::EXITED
@@ -104,6 +150,9 @@ fn terminate_own_group(group: Pid, reason: &str) -> ! {
         std::process::exit(1);
     }
     eprintln!("native build stopped: {reason}; previous generation and logs retained");
+    if let Err(error) = crate::memory_cgroup::stop_worker_children() {
+        eprintln!("native build private memory group cleanup: {error}");
+    }
     let _ = kill_process_group(group, Signal::KILL);
     std::process::exit(1);
 }

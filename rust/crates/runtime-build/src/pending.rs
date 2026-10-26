@@ -118,6 +118,19 @@ mod tests {
             toolchain: root.join("toolchain"),
             build_plan: root.join("plan.json"),
             layout: root.join("layout.json"),
+            resources: crate::resources::Policy {
+                schema: 1,
+                memory_cgroup_parent: root.join("memory-cgroup"),
+                maximum_memory_bytes: 1024 * 1024,
+                minimum_available_memory_bytes: 1024 * 1024,
+                filesystems: std::collections::BTreeMap::from([(
+                    root.to_owned(),
+                    crate::resources::DiskBudget {
+                        maximum_growth_bytes: 1024 * 1024,
+                        minimum_free_bytes: 1024 * 1024,
+                    },
+                )]),
+            },
         };
         fs::create_dir(&config.stores.generations).unwrap();
         fs::create_dir_all(config.stores.params.join("d")).unwrap();

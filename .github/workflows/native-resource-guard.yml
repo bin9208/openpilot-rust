@@ -1,0 +1,108 @@
+name: Native build kernel resource guard
+on:
+  push:
+    branches: ['codex/feat-600-native-resource-*']
+    paths:
+      - 'rust/crates/runtime-build/**'
+      - 'rust/crates/updated/src/native.rs'
+      - 'tools/ci/native_resource_scope.py'
+      - '.github/workflows/native-resource-guard.yml'
+permissions:
+  contents: read
+concurrency:
+  group: native-resource-guard-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  actual-kernel:
+    name: Real memory limit and cancellation (X64 host kernel)
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 25
+    env:
+      LOCAL_CI_ARCH: x86_64
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      # Only this explicit context crosses sudo for job ownership and tool paths.
+      SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,PATH,CARGO_HOME,RUSTUP_HOME,RUSTUP_TOOLCHAIN
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false}
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Admit this bounded test build
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          growth = 2 * 1024**3
+          for path in (os.environ['CI_JOB_TEMP'], os.environ['GITHUB_WORKSPACE']):
+              free = shutil.disk_usage(path).free
+              print(f'path={path} available_bytes={free} expected_build_and_fixture_growth_bytes={growth}')
+              if free < growth:
+                  raise SystemExit('insufficient space for this operation; other data retained')
+          PY
+          rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
+      - name: Compile actual tools and mandatory real-controller test
+        shell: bash
+        run: |
+          rustfmt --edition 2021 --check rust/crates/runtime-build/src/*.rs rust/crates/runtime-build/tests/*.rs
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bins
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --test resources --no-run --message-format=json > "$CI_JOB_TEMP/resource-test-build.jsonl"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          job = Path(os.environ['CI_JOB_TEMP'])
+          outputs = [row['executable'] for line in (job/'resource-test-build.jsonl').read_text().splitlines()
+                     if (row := json.loads(line)).get('reason') == 'compiler-artifact'
+                     and row.get('target', {}).get('name') == 'resources' and row.get('executable')]
+          assert len(outputs) == 1
+          (job/'resource-test-executable').write_text(outputs[0])
+          PY
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
+      - name: Verify the actual root scope helper drops to its original caller
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          job = Path(os.environ['CI_JOB_TEMP'])
+          base = Path('/sys/fs/cgroup')
+          if not (base/'cgroup.controllers').exists(): base /= 'memory'
+          # These fixture values are not a production comma 3X resource policy.
+          config = dict(schema=1, stores={name:str(job/name) for name in ('sources','objects','generations','params')},
+                        cache=str(job/'cache'), toolchain=str(job/'toolchain'),
+                        build_plan=str(job/'plan.json'), layout=str(job/'layout.json'),
+                        resources=dict(schema=1, memory_cgroup_parent=str(base/f'openpilot-native-build-{os.getuid()}'),
+                            maximum_memory_bytes=256*1024**2, minimum_available_memory_bytes=32*1024**2,
+                            filesystems={str(job):dict(maximum_growth_bytes=64*1024**2, minimum_free_bytes=32*1024**2)}))
+          (job/'scope-config.json').write_text(json.dumps(config))
+          PY
+          sudo -n rust/target/debug/openpilot-native-build-scope --config "$CI_JOB_TEMP/scope-config.json" --verify | tee "$CI_JOB_TEMP/source-built-scope-verification.json"
+      - name: Prepare only this job kernel scope
+        shell: bash
+        run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 tools/ci/native_resource_scope.py prepare
+      - name: Run mandatory real memory, filesystem-growth and process-death cases
+        shell: bash
+        run: |
+          set -o pipefail
+          executable=$(cat "$CI_JOB_TEMP/resource-test-executable")
+          sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 tools/ci/native_resource_scope.py enter -- "$executable" --ignored --exact real_memory_and_filesystem_limits_preserve_normal_execution --nocapture 2>&1 | tee "$CI_JOB_TEMP/native-resource-tests.log"
+      - name: Stop and remove only the job-owned kernel scope
+        if: always()
+        shell: bash
+        run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 tools/ci/native_resource_scope.py cleanup
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: native-resource-guard-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/resource-scope-evidence.json
+            ${{ env.CI_JOB_TEMP }}/source-built-scope-verification.json
+            ${{ env.CI_JOB_TEMP }}/native-resource-tests.log
+            ${{ env.CI_JOB_TEMP }}/native-resource-evidence/**
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

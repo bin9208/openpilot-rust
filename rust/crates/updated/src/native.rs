@@ -97,8 +97,10 @@ impl Context {
         let selected = selection::resolve(&self.config.stores).map_err(error)?;
         let binary = selected
             .source_root
-            .join("rust/bin/openpilot-runtime-native");
+            .join("rust/bin/openpilot-native-build-scope");
         let args = [
+            "sudo".into(),
+            "-n".into(),
             binary.to_string_lossy().into_owned(),
             "--config".into(),
             self.path.to_string_lossy().into_owned(),

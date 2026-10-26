@@ -8,9 +8,11 @@
 pub mod assets;
 pub mod generation;
 pub mod inputs;
+pub mod memory_cgroup;
 pub mod objects;
 pub mod pending;
 pub mod prepare;
+pub mod resources;
 pub mod selection;
 mod source;
 pub mod source_store;

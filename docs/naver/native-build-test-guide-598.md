@@ -1,6 +1,6 @@
 # 콤마 자체 빌드·다운로드 재사용 검증 안내 — #598
 
-기준일: 2026-10-26 KST. 상위 [#598](https://github.com/bin9208/openpilot-rust/issues/598),
+기준일: 2026-10-27 KST. 상위 [#598](https://github.com/bin9208/openpilot-rust/issues/598),
 환경 [#599](https://github.com/bin9208/openpilot-rust/issues/599),
 캐시 [#600](https://github.com/bin9208/openpilot-rust/issues/600),
 전환분·성능·전달 [#601](https://github.com/bin9208/openpilot-rust/issues/601).
@@ -56,6 +56,24 @@ cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build
 | 빌드 frontend에 TERM 또는 KILL·worker KILL·IsOnroad 전환 | 실제 Cargo/build script/손자 프로세스만 종료, 정상 runtime 표식·로그 보존, workspace lock 반환 |
 | 부팅 대기 기록의 부분 쓰기·다른 config·미검증 후보·동시 실행 | 기존 active pointer·대기 기록·로그 보존, 미검증 세대 활성화 거부 |
 | updater용 Git checkout | 실행 소스와 다른 경로·자체 `.git` directory, source store의 object만 공유, dirty checkout 자동 reset 금지 |
+| 실제 kernel memory 한도·파일 증가·frontend 부모 종료 | 한도 초과 또는 취소에서 detached 하위 작업 종료, 정상 프로세스·active/log 보존, 실패 기록 유지 |
+
+자원 제한의 별도 집중 검사는 `native-resource-guard.yml`이다. 해당 작업 branch의 push로
+실행하며 결과는 다음처럼 읽는다. 실제 root scope 권한 하강, 실제 메모리 할당/파일 증가,
+worker/frontend/부모 강제 종료를 CI에서 검사한다. 준비·정리는 자기 job의 cgroup만
+다룬다. production scope 준비는 자기 UID의 고정 경로만 허용하며 공유 controller는
+변경하지 않는다. [자원 경계와 측정 한계](native-build-resource-guard-600.md)를 함께 확인한다.
+
+```sh
+gh run list --repo bin9208/openpilot-rust --workflow native-resource-guard.yml --branch BRANCH
+gh run view RUN_ID --repo bin9208/openpilot-rust --log-failed
+gh run download RUN_ID --repo bin9208/openpilot-rust --dir EVIDENCE_DIRECTORY
+```
+
+artifact의 `native-resource-tests.log`와 시도별 `resources.jsonl`을 함께 읽는다.
+kernel memory peak, 한도 event와 실패/성공 상태를 확인하고 최종 행 누락은 성공으로
+판정하지 않는다. 디스크 값은 filesystem 가용 공간 감소의 관측값이며 hard quota가 아니다.
+이 검사는 X64 host kernel의 격리 근거다. comma 3X kernel 검증은 아래 실기 수용에 남아 있다.
 
 자산의 보고 시간·저장 byte 수는 준비 작업의 수치다. HTTP `transferred_bytes`는 본문
 크기이며 TLS/header를 포함한 네트워크 전체 사용량이 아니다. host fixture 시간과

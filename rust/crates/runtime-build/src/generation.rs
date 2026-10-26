@@ -31,6 +31,7 @@ fn require_tools<'a>(names: impl IntoIterator<Item = &'a str>) -> Result<()> {
             "seal-runtime-package",
             "runtime-elf-audit",
             "openpilot-runtime-native",
+            "openpilot-native-build-scope",
         ])
     {
         if !names.contains(name) {
@@ -61,11 +62,13 @@ pub struct Config {
     pub toolchain: PathBuf,
     pub build_plan: PathBuf,
     pub layout: PathBuf,
+    pub resources: crate::resources::Policy,
 }
 
 impl Config {
     pub fn read(path: &Path) -> Result<Self> {
         let config: Self = read(path)?;
+        config.resources.validate()?;
         if config.schema != 1
             || [
                 &config.stores.sources,
