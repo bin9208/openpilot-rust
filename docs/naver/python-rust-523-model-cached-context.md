@@ -1700,3 +1700,21 @@ selector·수치 허용치·원본 compiler context·standalone strict zero/sNaN
 보존한다. 그 tiny fixture 실행과 full-model A/B/C 및 D compiler2를 구분한다. 부모의
 로컬 확인은 indexed SHA·YAML/변경 Bash/독립·embedded Python 구문·Rustfmt·diff뿐이다.
 **이 정책 수정의 모델 수치 및 새 lifecycle 통합 actual은 아직 UNRUN이며 퇴역 credit0이다.**
+
+
+## 기존 frozen1344 replay의 source pin 재연결 — 실행 전
+
+source495의 current-case 성공 뒤에도 #482는 원래 frozen1344/float99와 PR343 검증을
+별도로 요구한다. 기존 replay helper는 BASE SHA가 오래되어 새 코드 실행 전에 거부된다.
+BASE·workflow helper·사후 BASE 검사 세 literal만 현재 `ddf48345…3f19d` base로 동기화한다.
+새 helper SHA는 `e8271fec4397769a705513c4aad1164ff418a505c74d7b68f478a2dced1c240e`,
+workflow SHA는 `9d0b19f465f4c0fad63271c95b470ecafeca1b72b1506a25a8dbba9adbb8aa82`다.
+
+기존 SOURCE91 fresh compile/전체 triplet·ISA, current catalog, D1의12frame/33publication,
+D2의 prepare 두 번→첫 policy 한 번/6출력/2576word/half99 검사를 그대로 사용한다.
+subclass의 기존 run 경로이므로 current-model의 catalog3/C/D를 추가 실행하지 않는다.
+새 E/F·전체60 진단·CPU 강제·허용치/기대값 변경·old BINARY fallback은 없다.
+proof512MiB·14일 보존과 실패 업로드·독립 후봉인/cleanup 조건도 유지한다.
+
+이 변경은 원래939a/EPYC7763의 고정 기준과 새 자연 host를 구분해 수용한다. 전체128 및
+historical half5 수용을 뜻하지 않는다. 실제 replay는 발행 후 확인하며 현재 UNRUN이다.
