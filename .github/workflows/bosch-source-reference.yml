@@ -16,6 +16,7 @@ concurrency:
 jobs:
   same-source:
     name: Original full-state bits (${{ matrix.arch }})
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 90
     strategy:
@@ -61,7 +62,7 @@ jobs:
         run: |
           rustup toolchain install 1.94.0 --profile minimal --component rustfmt --component clippy
           sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update
-          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq3-dev
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq3-dev time
       - name: Compare the candidate with the hash-verified original in this environment
         run: |
           set -o pipefail
