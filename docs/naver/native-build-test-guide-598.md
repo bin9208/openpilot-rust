@@ -50,11 +50,20 @@ cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build
 | 문서만 수정한 새 source commit | Cargo `fresh=true`, 같은 binary hash, 보고서 source는 새 commit |
 | runtime source 수정 | 수정 대상 재빌드·출력 변경, 관련 없는 target은 fresh/같은 hash |
 | 미커밋 입력·빌드 중 source 변경 | 성공 보고서 발행 거부, 이전 성공 보고서 보존 |
+| 압축 해제된 provider/도구체인 tree 변경 | 같은 크기의 파일 교체·권한 변경·파일 추가/누락·link 변경을 거부 |
+| 변조 후 receipt만 재생성 | pinned receipt SHA가 다르므로 거부; 검증된 새 입력/receipt를 고정해야 별도 cache에서 빌드 |
 | 의도적 compile failure | 이전 binary가 계속 실행되어 원래 출력 유지 |
 
 자산의 보고 시간·저장 byte 수는 준비 작업의 수치다. HTTP `transferred_bytes`는 본문
 크기이며 TLS/header를 포함한 네트워크 전체 사용량이 아니다. host fixture 시간과
 메모리·디스크 값을 콤마의 전체 runtime 수치로 확대하지 않는다.
+
+실제 압축 해제 입력을 recipe에 연결할 때는 `openpilot-runtime-inputs`로 tree 목록을
+생성하고 `inputs`에서 receipt SHA를 고정한 다음 `input_trees`에 연결한다. 출력은
+입력 tree 밖에 저장한다. 이 도구는 원본 자산의 출처를 스스로 증명하지 않는다.
+새 receipt를 신뢰할 근거는 고정된 source 또는 hash 검증한 자산과 그 준비 과정이다.
+`verified_input_trees`가 비어 있는 보고서는 전체 toolchain/provider를 검증했다는
+증거가 아니다. AGNOS 시스템 라이브러리·ABI closure는 별도 대상 검사를 유지한다.
 
 ## 최종 사용자 기기 수용 시험
 

@@ -36,4 +36,11 @@ HTTPS 자산을 SHA-256·바이트 수로 확인해 내용별 캐시에 저장�
 장치 설치를 수행하지 않습니다. 빌드 도구는 깨끗한 Git checkout을 요구하고 실제
 커밋·tree·recipe·compiler·linker·실행 파일 해시를 보고서에 남깁니다.
 전체 toolchain/ABI 봉인과 자동 시작 경로 연결은 아직 개발 중입니다.
+
+압축을 푼 toolchain/provider는 `openpilot-runtime-inputs --root INPUT_TREE
+--output RECEIPT_JSON`으로 실제 파일 hash·크기·권한·내부 파일 symlink 목록을
+기록할 수 있습니다. 이 기록을 독립적으로 확인한 자산 출처에 연결한 뒤, recipe의
+`inputs`에 receipt SHA-256을 고정하고 `input_trees`에 tree 경로와 receipt 경로를
+지정합니다. 빌드 전후 실제 tree의 변조·추가·누락을 거부합니다. receipt를 새로 만든
+사실만으로 입력을 신뢰하지 않으며, 기록이 없는 tree는 검증된 것으로 계산하지 않습니다.
 검사별 예상 결과와 최종 기기 수용 절차는 [검증 안내](../../naver/native-build-test-guide-598.md)를 참고하세요.

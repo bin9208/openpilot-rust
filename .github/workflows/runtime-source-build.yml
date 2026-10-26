@@ -1,7 +1,7 @@
 name: Runtime source build foundation
 on:
   push:
-    branches: [codex/feat-598-device-native-build, 'codex/feat-600-*', dev, main]
+    branches: ['codex/feat-598-*', 'codex/feat-599-*', 'codex/feat-600-*', dev, main]
     paths:
       - 'rust/crates/runtime-build/**'
       - 'rust/Cargo.toml'

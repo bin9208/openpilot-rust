@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 pub mod assets;
+pub mod inputs;
 mod source;
 pub use source::Source;
 
@@ -32,6 +33,9 @@ pub struct Recipe {
     pub features: Vec<String>,
     /// Files outside Cargo's tracked source graph, including provider receipts/headers.
     pub inputs: BTreeMap<PathBuf, String>,
+    /// Unpacked tree -> receipt file. Each receipt must also be SHA-bound in inputs.
+    #[serde(default)]
+    pub input_trees: BTreeMap<PathBuf, PathBuf>,
     /// Required build environment, included verbatim in the cache identity.
     pub environment: BTreeMap<String, String>,
     pub expected_growth_bytes: u64,
@@ -48,6 +52,7 @@ pub struct Report {
     pub rustc_sha256: String,
     pub cargo_sha256: String,
     pub native_tools: BTreeMap<PathBuf, String>,
+    pub verified_input_trees: BTreeMap<PathBuf, String>,
     pub elapsed_ms: u128,
 }
 
@@ -130,6 +135,13 @@ impl Recipe {
                 return Err(format!("unsupported build environment key: {key}").into());
             }
         }
+        if self
+            .input_trees
+            .values()
+            .any(|receipt| !self.inputs.contains_key(receipt))
+        {
+            return Err("each unpacked input receipt must have a pinned SHA-256 in inputs".into());
+        }
         Ok(())
     }
 
@@ -143,6 +155,9 @@ impl Recipe {
             {
                 return Err(format!("build input identity mismatch: {}", path.display()).into());
             }
+        }
+        for (tree, receipt) in &self.input_trees {
+            inputs::Tree::read(&root.join(receipt))?.verify(&root.join(tree))?;
         }
         Ok(())
     }
@@ -359,6 +374,11 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         rustc_sha256: compiler_digest,
         cargo_sha256: cargo_digest,
         native_tools,
+        verified_input_trees: recipe
+            .input_trees
+            .iter()
+            .map(|(tree, receipt)| (tree.clone(), recipe.inputs[receipt].clone()))
+            .collect(),
         elapsed_ms: started.elapsed().as_millis(),
     };
     let mut saved = tempfile::NamedTempFile::new_in(&directory)?;

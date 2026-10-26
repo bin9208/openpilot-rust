@@ -56,6 +56,7 @@ impl Fixture {
             packages: vec!["runtime-fixture".into()],
             binaries: vec!["runtime-fixture".into()],
             features: vec![],
+            input_trees: BTreeMap::new(),
             inputs: BTreeMap::from([(
                 PathBuf::from("provider.receipt"),
                 digest_file(&root.join("provider.receipt")).unwrap(),
@@ -292,4 +293,71 @@ fn dirty_source_and_source_mutation_during_build_cannot_publish_a_success_report
     .unwrap_err();
     assert!(error.to_string().contains("source"));
     assert_eq!(fs::read(report).unwrap(), before);
+}
+
+#[test]
+fn external_provider_tree_mutation_requires_a_new_pinned_receipt_and_cache() {
+    use openpilot_runtime_build::inputs::Tree;
+    let mut fixture = Fixture::new();
+    let provider = fixture.cache.parent().unwrap().join("provider");
+    fs::create_dir(&provider).unwrap();
+    fs::write(provider.join("header.h"), b"version one").unwrap();
+    let receipt = fixture.root.join("provider-tree.json");
+    fs::write(
+        &receipt,
+        serde_json::to_vec(&Tree::capture(&provider).unwrap()).unwrap(),
+    )
+    .unwrap();
+    fixture
+        .recipe
+        .input_trees
+        .insert(provider.clone(), receipt.clone());
+    fixture
+        .recipe
+        .inputs
+        .insert(receipt.clone(), digest_file(&receipt).unwrap());
+    commit(&fixture.root);
+    let first = fixture.run();
+    assert_eq!(
+        first.verified_input_trees[&provider],
+        digest_file(&receipt).unwrap()
+    );
+    fs::write(provider.join("header.h"), b"version two").unwrap();
+    assert!(build(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &fixture.recipe
+    )
+    .is_err());
+    fs::write(
+        &receipt,
+        serde_json::to_vec(&Tree::capture(&provider).unwrap()).unwrap(),
+    )
+    .unwrap();
+    commit(&fixture.root);
+    // Regenerating a receipt alone does not make it trusted: its pinned digest is still old.
+    assert!(build(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &fixture.recipe
+    )
+    .is_err());
+    fixture
+        .recipe
+        .inputs
+        .insert(receipt.clone(), digest_file(&receipt).unwrap());
+    let changed = fixture.run();
+    assert_ne!(changed.cache_key, first.cache_key);
+    assert!(!changed.artifacts[0].fresh);
+    assert!(first.artifacts[0].executable.is_file());
+    fixture.recipe.inputs.remove(&receipt);
+    assert!(build(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &fixture.recipe
+    )
+    .is_err());
 }

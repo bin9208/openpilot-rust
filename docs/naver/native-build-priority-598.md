@@ -136,3 +136,21 @@ SUCCESS다. 전체 Rust/통합 검사는 진행 중이며 아직 성공을 가�
 개발자 실행 명령과 최종 사용자 기기 수용 절차는
 [검증 안내](native-build-test-guide-598.md)에 정리했다. #598/#599/#600/#601의
 미완료 조건은 유지하며 전체 장치 자체 빌드나1.1GB 다운로드 제거 완료로 계산하지 않는다.
+
+## 압축 해제 입력 검증 후속 — #599
+
+자산 캐시 후속 PR #603의 source `b42e5eaeec5a13bf83f24ccd31ab5e3364eb2d47`은
+[40301461308](https://github.com/bin9208/openpilot-rust/actions/runs/40301461308)의
+x64/ARM 집중 검사에서 모두 SUCCESS다. 실제 HTTPS CLI가 고정 공개 입력403바이트를
+처음 수신하고 재준비에서0바이트인 것도 확인했다. 이것은 큰 실제 model 전송의
+실측값이 아니며 전체 필수 PR 검사는 별도로 남아 있다.
+
+이 source에서 `codex/feat-599-verified-input-trees`를 분리해 압축 해제된 toolchain,
+provider header/library와 생성 입력의 전체 tree receipt를 추가했다. 파일 hash/크기/
+권한, 내부 파일 symlink와 directory/member 목록을 빌드 전후 재검증한다. receipt는
+기존 `inputs`의 pinned SHA로 묶어야 하므로 변조한 tree의 receipt만 다시 생성해도
+자동으로 신뢰하지 않는다. 기존 자동 source/AGNOS/ABI 검사는 제거하지 않는다.
+
+이 후속은 Actions 실행 전까지 미검증이다. source receipt·provider 별 검증과
+전체 AGNOS recipe에 실제 입력을 연결하는 단계는 구분한다. 빈 `verified_input_trees`를
+전체 도구체인/표준 라이브러리/AGNOS 시스템 검증의 증거로 쓰지 않는다.
