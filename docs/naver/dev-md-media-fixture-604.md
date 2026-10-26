@@ -40,3 +40,21 @@ QEMU/PRoot 별도 ARM user space에서 유지하고 실제 ARM CPU·AGNOS·기�
 최종 사용자 자체 빌드·정상 부팅·녹화·업로드 절차는 native-build 트랙의
 `docs/naver/native-build-test-guide-598.md`에 유지한다. 이 수정은 dev-md 성능 트랙이며
 dev/main에 runtime을 섞지 않는다. 모델 준비 Python과 기존 native library를 유지한다.
+
+## 첫 실제 집중 수용
+
+source `dfe09f66238dbecb74c43aa9ee177c36c4ae40a3`의
+[40304295923](https://github.com/bin9208/openpilot-rust/actions/runs/40304295923)은 SUCCESS다.
+Jobs API에서 runner_id22·runner_name `bin-actions`·정확 head를 확인했다. 실제 X64
+dev-tools lib66개, 정확 배포 경로16개, strict lib/tests Clippy·서식이 모두 통과했다.
+기존12개 실패와 새 부족 공간·관측 실패 경계를 포함하며 ARM/device 실행은 하지 않았다.
+
+이 실행의 admission 가용량은58,667,327,488바이트, 예상 증가량은4,294,967,296바이트였다.
+GNU time으로 기록한 compile+lib 회귀의 경과 시간은73.21초, 최대 RSS는501,864KiB다.
+이는 해당 host 명령의 GNU time 관측값이며 병렬 전체 프로세스의 합산 peak나 콤마
+빌드 수치로 확대하지 않는다. 집중 artifact는4,954바이트이며 기존 소유 임시 output만
+업로드 후 정리했다. 다른 source/cache/로그나 진행 중 검증은 제거·취소하지 않았다.
+
+이 검증된 변경을 기존 성능 PR #494의 후속으로 연결해 필수 전체 source·원본 기능·
+memory·ARM 검증과 exact-source AGNOS 전달을 이어간다. #604/#601/#598의 전체 조건은
+이 집중 성공만으로 충족되지 않는다. 별도 이슈 브랜치와 기존 성능 branch는 보존한다.
