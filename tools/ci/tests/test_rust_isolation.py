@@ -158,7 +158,11 @@ class RustIsolationTests(unittest.TestCase):
                          'check_usbgpu_asm.py', 'check_usbgpu_status.py'):
             self.assertIn(required, commands)
         self.assertEqual(data['jobs']['fast']['name'], 'rust checks')
-        self.assertEqual(len(data['jobs']['fast']['steps']), 1)
+        aggregate = data['jobs']['fast']['steps']
+        self.assertEqual(len(aggregate), 2)
+        self.assertEqual(aggregate[0]['name'], 'Require the registered execution environment')
+        self.assertEqual(aggregate[0]['run'], 'test "$RUNNER_ENVIRONMENT" = self-hosted\ntest "$RUNNER_NAME" = bin-actions\n')
+        self.assertEqual(aggregate[1]['name'], 'Require runtime validation')
 
     def test_hardware_runtime_requires_source_and_native_boundaries(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
