@@ -445,6 +445,19 @@ def native_system_sdk_probe(guest_command, work, rootfs, evidence, log, guest_wo
       same_size_header_tamper_rejected=True,previous_executables_preserved=True,
       factory_namespace_restored=True,scope='declared compiler namespaces only',
       complete_compiler_search_closure_proven=False,full_runtime_build=False,device_execution=False)
+  # The full-generation boundary additionally rejects omitted/reduced profiles.
+  # These owned fixtures exercise the real 99-bin/13-group roster, not a full
+  # runtime build or a replacement for the genuine live namespace checks above.
+  output=work/'native-generation-sdk-tests.txt'
+  evidence['commands'].append(run(guest_command(['cargo','test','--locked','--manifest-path',
+      f'{source_mount}/rust/Cargo.toml','-p','openpilot-runtime-build','--lib',
+      'system_sdk::generation_input_tests','--target-dir',work/'project-target',
+      '--','--nocapture','--test-threads=1']),log,stdout_path=output))
+  assert '4 passed; 0 failed;' in output.read_text()
+  evidence['native_generation_sdk_requirements']=dict(cases=4,roster_binaries=99,roster_groups=13,
+      all_groups_same_live_sdk_required=True,reduced_or_other_factory_profile_rejected=True,
+      ordinary_tree_substitution_rejected=True,boot_metadata_independent_of_removed_input_cache=True,
+      fixture_profile_validation_only=True,full_generation_built=False,device_execution=False)
 
 
 def native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work):

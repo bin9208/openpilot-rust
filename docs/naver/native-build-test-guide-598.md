@@ -21,6 +21,10 @@
 
 ## 개발 검증 실행 방법
 
+전체 generation의 모든13그룹에 같은 실제 `/` SDK를 필수로 묶고, 그 세대 소스의
+전체 SDK profile과 일치하는지 확인하는 회귀는 [SDK 검사 안내](native-system-sdk-599.md)를
+따른다. profile 회귀와 실제 SDK namespace 검사, 전체 runtime 빌드/실기 수용을 구분한다.
+
 FFmpeg6.1.1의 header/provider를 실제 Rust 인코더가 소비하는 단일 prefix와 원본5개
 codec case의 정확 packet 비교는 [provider 검사 안내](native-provider-components-599.md)의
 단일 prefix 절차를 따른다. 변경 SHA의 foundation 및 genuine 결과가 성공하기 전에는

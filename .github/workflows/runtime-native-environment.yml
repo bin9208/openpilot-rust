@@ -395,6 +395,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/receipt.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/commands.log
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-generation-sdk-tests.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-*.txt

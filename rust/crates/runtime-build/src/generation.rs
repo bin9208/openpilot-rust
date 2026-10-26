@@ -119,6 +119,7 @@ impl Config {
         let workspace =
             source.workspace(&self.stores.sources, layout.expected_source_growth_bytes)?;
         crate::catalog::verify_source_plan(&workspace.root, &plan)?;
+        crate::system_sdk::generation_profiles(&workspace.root, &plan)?;
         let prepared = crate::prepare::from_retained(
             &workspace.root,
             &self.cache,
@@ -578,6 +579,9 @@ impl Sealed {
         }
         self.prepared.verify(&stores.sources, &stores.objects)?;
         crate::catalog::verify_source_plan(&self.prepared.source.root, &self.prepared.plan)?;
+        // Prepared::verify checks each group's recorded input-tree identities.
+        // Do not reopen compiler SDK caches during boot/fallback selection.
+        crate::system_sdk::generation_receipts(&self.prepared.plan)?;
         require_tools(self.prepared.binaries.keys().map(String::as_str))?;
         if self.runtime.source != self.prepared.source.source
             || self.runtime.root == self.prepared.source.root
@@ -770,6 +774,7 @@ pub fn seal(
     let agnos_identity = agnos_identity()?;
     prepared.verify(&stores.sources, &stores.objects)?;
     crate::catalog::verify_source_plan(&prepared.source.root, &prepared.plan)?;
+    crate::system_sdk::generation_profiles(&prepared.source.root, &prepared.plan)?;
     require_tools(prepared.binaries.keys().map(String::as_str))?;
     let pins = layout.verify(&prepared)?;
     let metadata = metadata(request_root, &prepared)?;
@@ -1015,6 +1020,7 @@ pub fn seal(
     };
     sealed.prepared.verify(&stores.sources, &stores.objects)?;
     sealed.layout.verify(&sealed.prepared)?;
+    crate::system_sdk::generation_profiles(&sealed.prepared.source.root, &sealed.prepared.plan)?;
     sealed.verify(stores)?;
     if source::inspect(request_root)? != sealed.runtime.source {
         return Err("requested source changed during sealing; previous generation retained".into());

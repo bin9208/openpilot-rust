@@ -38,6 +38,31 @@ seal 경계에도 같은 파일 pin이 전달된다. SDK receipt로 Rust prefix�
 
 ## 검사 방법
 
+### 전체 native generation의 필수 입력 — 구현 추가, Actions 검증 대기
+
+일반 build driver의 작은 격리 fixture와 전체 runtime 전달 경계는 구분한다.
+전체99개/13그룹의 generation은 모든 그룹이 실제 `/` SDK와 SHA-pinned receipt를
+선언해야 한다. 그룹별 SDK identity가 다르거나 한 그룹이라도 SDK를 누락하면 거부한다.
+단순히 어떤 SDK receipt를 선언했을 때만 검사하는 선택 사항으로 남겨 두지 않는다.
+
+전체 compiler 실행 전과 seal 전후에 receipt를 한 번 읽은 동일 byte에서 hash/parse하고,
+보존한 **그 세대 소스**의 `rust/native-system-sdk.json`과 factory SHA·AGNOS·전체 root
+profile이 같음을 확인한다. 자체 pin을 새로 만들어도 축소 profile·다른 image·일반 Tree를
+대체 입력으로 사용할 수 없다. 실제 `/`의 내용 검사는 기존 driver의 빌드 전후 및
+seal Pins의 검사를 유지한다. profile 검사만으로 live SDK 또는 전체 search closure를
+확인했다고 표현하지 않는다.
+
+boot/fallback에서는 Prepared의 그룹별 기록과 필수 SDK identity를 확인한다. compiler
+입력 cache의 receipt를 다시 열지 않아 cache 정리로 정상 runtime의 선택이 깨지지 않는다.
+실제 runtime/시스템 ELF·ABI·파일 검사는 기존대로 유지한다. 아직 전달 전인 native
+prototype 중 SDK가 누락된 기록은 완전한 generation으로 수용하지 않는다.
+
+foundation X64/ARM과 genuine AGNOS의 새4개 회귀는 실제99개 roster를 사용한다.
+각13그룹의 누락, SHA 누락·그룹 간 불일치·unpacked root, 재pin 후의 축소 profile/다른
+factory SHA, 다른 receipt 종류, 입력 cache 삭제 뒤 boot metadata 검사를 확인한다.
+회귀의 owned image/receipt는 작은 fixture이며 진짜 factory SDK 또는99개 빌드가 아니다.
+genuine의 실제 SDK·same-size 변조·복구 검사는 그대로 앞에서 별도 실행한다.
+
 로컬에서는 구문·rustfmt·diff/읽기만 수행한다. 아래 기능 검사는 등록된
 `bin-actions`의 Actions에서 실행한다.
 

@@ -13,8 +13,81 @@ use std::{
 };
 
 pub const KIND: &str = "agnos-system-sdk";
+pub const PLAN_PATH: &str = "rust/native-system-sdk.json";
 const MAX_ENTRIES: usize = 100_000;
 const MAX_BYTES: u64 = 16 * 1024 * 1024 * 1024;
+
+/// Full generations require one SDK identity in every compiler/linker group.
+/// This metadata-only check also works after build-input caches are removed.
+pub(crate) fn generation_receipts(
+    plan: &crate::prepare::Plan,
+) -> Result<BTreeMap<PathBuf, String>> {
+    if plan.groups.is_empty() {
+        return Err("native generation has no SDK-bound build groups".into());
+    }
+    let mut receipts = BTreeMap::new();
+    let mut identity = None;
+    for (group, recipe) in &plan.groups {
+        let receipt = recipe
+            .input_trees
+            .iter()
+            .find(|(root, _)| root.as_os_str() == std::ffi::OsStr::new("/"))
+            .map(|(_, receipt)| receipt)
+            .ok_or_else(|| {
+                format!("native generation group {group} is missing the live / system SDK input")
+            })?;
+        let digest = recipe
+            .inputs
+            .get(receipt)
+            .filter(|digest| hex(digest))
+            .ok_or("native generation system SDK receipt is not SHA-pinned")?;
+        if !receipt.is_absolute()
+            || receipt
+                .components()
+                .any(|c| matches!(c, Component::CurDir | Component::ParentDir))
+        {
+            return Err(
+                "native generation system SDK receipt requires an absolute contained path".into(),
+            );
+        }
+        if identity.is_some_and(|previous| previous != digest) {
+            return Err("native generation groups must bind the same system SDK identity".into());
+        }
+        identity = Some(digest);
+        receipts.insert(receipt.clone(), digest.clone());
+    }
+    Ok(receipts)
+}
+
+/// Check the typed receipt against the retained source's complete SDK profile.
+/// The actual driver and sealing Pins still verify that snapshot against `/`;
+/// accepting the profile here alone does not certify the image or live system.
+pub(crate) fn generation_profiles(source: &Path, plan: &crate::prepare::Plan) -> Result<()> {
+    let receipts = generation_receipts(plan)?;
+    let expected = Plan::read(&source.join(PLAN_PATH))?;
+    for (path, pinned) in receipts {
+        const LIMIT: u64 = 16 * 1024 * 1024;
+        let file = regular_file(&path)?;
+        if file.metadata()?.len() > LIMIT {
+            return Err("native generation SDK receipt exceeds 16 MiB".into());
+        }
+        let mut bytes = Vec::new();
+        file.take(LIMIT + 1).read_to_end(&mut bytes)?;
+        if bytes.len() as u64 > LIMIT || format!("{:x}", Sha256::digest(&bytes)) != pinned {
+            return Err(
+                "native generation SDK receipt differs from its independent SHA pin".into(),
+            );
+        }
+        // Hash and parse the same bytes. Ordinary Tree receipts cannot stand in
+        // for the logical factory namespace with its absolute/directory links.
+        let snapshot: Snapshot = serde_json::from_slice(&bytes)?;
+        snapshot.validate()?;
+        if snapshot.plan != expected {
+            return Err("native generation SDK profile differs from its own source profile".into());
+        }
+    }
+    Ok(())
+}
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -370,5 +443,181 @@ impl Snapshot {
             .into());
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod generation_input_tests {
+    use super::*;
+    use crate::{catalog::Catalog, prepare, Recipe};
+
+    fn full_plan(receipt: &Path, sha256: &str) -> prepare::Plan {
+        let catalog: Catalog =
+            serde_json::from_str(include_str!("../../../native-runtime-catalog.json")).unwrap();
+        let plan = prepare::Plan {
+            schema: 1,
+            groups: catalog
+                .groups
+                .iter()
+                .map(|(name, group)| {
+                    (
+                        name.clone(),
+                        Recipe {
+                            schema: 1,
+                            target: catalog.target.clone(),
+                            packages: group.packages.clone(),
+                            binaries: group.binaries.clone(),
+                            features: group.features.clone(),
+                            inputs: BTreeMap::from([(receipt.to_owned(), sha256.into())]),
+                            input_trees: BTreeMap::from([(PathBuf::from("/"), receipt.to_owned())]),
+                            environment: BTreeMap::from([(
+                                "OPENPILOT_NATIVE_INCREMENTAL".into(),
+                                "1".into(),
+                            )]),
+                            expected_growth_bytes: 0,
+                        },
+                    )
+                })
+                .collect(),
+            expected_source_growth_bytes: 0,
+            remaining_object_growth_bytes: 0,
+            runtime_inputs: prepare::RuntimeInputs::default(),
+        };
+        catalog.verify_plan(&plan).unwrap();
+        plan
+    }
+
+    // Owned data tests profile binding, not a genuine factory SDK or live `/`.
+    fn fixture() -> (tempfile::TempDir, PathBuf, PathBuf, Snapshot, prepare::Plan) {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("source");
+        let image = temp.path().join("image");
+        fs::create_dir_all(source.join("rust")).unwrap();
+        fs::create_dir_all(image.join("usr/include")).unwrap();
+        fs::create_dir_all(image.join("usr/lib/aarch64-linux-gnu")).unwrap();
+        fs::write(image.join("VERSION"), b"19.8-carrot-bt1\n").unwrap();
+        fs::write(
+            image.join("usr/include/native-generation-fixture.h"),
+            b"fixture header",
+        )
+        .unwrap();
+        let profile = Plan {
+            schema: 1,
+            agnos_version: "19.8-carrot-bt1".into(),
+            factory_image_sha256: "1".repeat(64),
+            roots: BTreeMap::from([
+                ("usr/include".into(), true),
+                ("usr/lib/aarch64-linux-gnu".into(), true),
+            ]),
+        };
+        fs::write(
+            source.join(PLAN_PATH),
+            serde_json::to_vec_pretty(&profile).unwrap(),
+        )
+        .unwrap();
+        let snapshot = Snapshot::capture(&image, &profile).unwrap();
+        let receipt = temp.path().join("sdk.json");
+        fs::write(&receipt, serde_json::to_vec_pretty(&snapshot).unwrap()).unwrap();
+        let plan = full_plan(&receipt, &crate::digest_file(&receipt).unwrap());
+        (temp, source, receipt, snapshot, plan)
+    }
+
+    fn repin(plan: &mut prepare::Plan, receipt: &Path) {
+        let sha = crate::digest_file(receipt).unwrap();
+        for recipe in plan.groups.values_mut() {
+            recipe.inputs.insert(receipt.to_owned(), sha.clone());
+        }
+    }
+
+    #[test]
+    fn full_roster_requires_the_live_sdk_in_every_group() {
+        let (_temp, _source, receipt, _snapshot, plan) = fixture();
+        assert_eq!(plan.groups.len(), 13);
+        assert_eq!(
+            plan.groups
+                .values()
+                .map(|r| r.binaries.len())
+                .sum::<usize>(),
+            99
+        );
+        assert_eq!(generation_receipts(&plan).unwrap().len(), 1);
+        for group in plan.groups.keys() {
+            let mut missing = plan.clone();
+            missing.groups.get_mut(group).unwrap().input_trees.clear();
+            assert!(generation_receipts(&missing)
+                .unwrap_err()
+                .to_string()
+                .contains(group));
+        }
+        let mut unpinned = plan.clone();
+        unpinned.groups.get_mut("00").unwrap().inputs.clear();
+        assert!(generation_receipts(&unpinned).is_err());
+        let mut unpacked = plan.clone();
+        let recipe = unpacked.groups.get_mut("00").unwrap();
+        recipe.input_trees = BTreeMap::from([(PathBuf::from("/unpacked-sdk"), receipt.clone())]);
+        assert!(generation_receipts(&unpacked).is_err());
+        let mut mixed = plan.clone();
+        mixed
+            .groups
+            .get_mut("01")
+            .unwrap()
+            .inputs
+            .insert(receipt, "2".repeat(64));
+        assert!(generation_receipts(&mixed)
+            .unwrap_err()
+            .to_string()
+            .contains("same system SDK"));
+    }
+
+    #[test]
+    fn typed_profile_must_match_the_retained_source_even_after_repinning() {
+        let (_temp, source, receipt, snapshot, mut plan) = fixture();
+        generation_profiles(&source, &plan).unwrap();
+        let mut reduced: serde_json::Value = serde_json::to_value(&snapshot).unwrap();
+        reduced["plan"]["roots"]
+            .as_object_mut()
+            .unwrap()
+            .remove("usr/lib/aarch64-linux-gnu");
+        fs::write(&receipt, serde_json::to_vec(&reduced).unwrap()).unwrap();
+        assert!(generation_profiles(&source, &plan)
+            .unwrap_err()
+            .to_string()
+            .contains("SHA pin"));
+        repin(&mut plan, &receipt);
+        assert!(generation_profiles(&source, &plan)
+            .unwrap_err()
+            .to_string()
+            .contains("own source profile"));
+        let mut wrong_image: serde_json::Value = serde_json::to_value(&snapshot).unwrap();
+        wrong_image["plan"]["factory_image_sha256"] = "2".repeat(64).into();
+        fs::write(&receipt, serde_json::to_vec(&wrong_image).unwrap()).unwrap();
+        repin(&mut plan, &receipt);
+        assert!(generation_profiles(&source, &plan)
+            .unwrap_err()
+            .to_string()
+            .contains("own source profile"));
+    }
+
+    #[test]
+    fn ordinary_tree_or_another_namespace_kind_cannot_replace_the_sdk() {
+        let (_temp, source, receipt, snapshot, mut plan) = fixture();
+        fs::write(&receipt, br#"{"schema":1,"entries":{}}"#).unwrap();
+        repin(&mut plan, &receipt);
+        assert!(generation_profiles(&source, &plan).is_err());
+        let mut wrong: serde_json::Value = serde_json::to_value(&snapshot).unwrap();
+        wrong["kind"] = "unrelated".into();
+        fs::write(&receipt, serde_json::to_vec(&wrong).unwrap()).unwrap();
+        repin(&mut plan, &receipt);
+        assert!(generation_profiles(&source, &plan).is_err());
+    }
+
+    #[test]
+    fn boot_metadata_validation_does_not_reopen_removed_input_caches() {
+        let (_temp, source, receipt, _snapshot, plan) = fixture();
+        generation_profiles(&source, &plan).unwrap();
+        let expected = generation_receipts(&plan).unwrap();
+        fs::remove_file(receipt).unwrap();
+        assert!(generation_profiles(&source, &plan).is_err());
+        assert_eq!(generation_receipts(&plan).unwrap(), expected);
     }
 }
