@@ -1,0 +1,93 @@
+name: Bosch source environment diagnosis
+on:
+  push:
+    branches: ['codex/fix-607-*']
+    paths:
+      - 'rust/crates/radarcan/**'
+      - 'rust/tools/bosch_acceleration_reference.py'
+      - 'rust/upstream/bosch-acceleration-source-607.json'
+      - 'rust/Cargo.lock'
+      - '.github/workflows/bosch-source-reference.yml'
+permissions:
+  contents: read
+concurrency:
+  group: bosch-source-reference-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  same-source:
+    name: Original full-state bits (${{ matrix.arch }})
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+    env:
+      LOCAL_CI_ARCH: ${{ matrix.arch }}
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+      - uses: ./.github/actions/local-arm
+      - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+        with:
+          python-version: '3.12.14'
+      - name: Admit only this test build
+        run: |
+          test "$RUNNER_NAME" = bin-actions
+          test "$RUNNER_ENVIRONMENT" = self-hosted
+          python3 - <<'PY'
+          import os, shutil
+          growth = 4 * 1024**3
+          for path in (os.environ['RUNNER_TEMP'], os.environ['GITHUB_WORKSPACE']):
+              free = shutil.disk_usage(path).free
+              print(f'path={path} available_bytes={free} expected_growth_bytes={growth}')
+              if free < growth:
+                  raise SystemExit('not enough space for this operation; other data retained')
+          PY
+      - name: Prepare the same pinned Rust and native test prerequisites
+        run: |
+          rustup toolchain install 1.94.0 --profile minimal --component rustfmt --component clippy
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq3-dev
+      - name: Compare the candidate with the hash-verified original in this environment
+        run: |
+          set -o pipefail
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/target"
+          rustfmt --edition 2021 --check rust/crates/radarcan/tests/bosch_acceleration.rs
+          /usr/bin/time -v -o "$RUNNER_TEMP/bosch-source-resources.txt" cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration same_environment_original_source_full_filter_states_match_bits -- --exact --nocapture 2>&1 | tee "$RUNNER_TEMP/bosch-source-comparison.log"
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration -- -D warnings
+      - name: Retain the historical frozen-reference result independently
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/target"
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration physical_pid_acceleration_full_filter_states_held_invalid_reset_and_cap_match_source -- --exact --nocapture 2>&1 | tee "$RUNNER_TEMP/bosch-historical-comparison.log"
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: bosch-source-reference-${{ matrix.arch }}-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/bosch-source-environment-607.json
+            ${{ env.CI_JOB_TEMP }}/bosch-source-resources.txt
+            ${{ env.CI_JOB_TEMP }}/bosch-source-comparison.log
+            ${{ env.CI_JOB_TEMP }}/bosch-historical-comparison.log
+            ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

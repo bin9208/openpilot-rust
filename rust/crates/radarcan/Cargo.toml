@@ -35,3 +35,4 @@ unsafe_code = "deny"
 
 [dev-dependencies]
 zstd = "0.13"
+tempfile = "3"

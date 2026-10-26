@@ -27,18 +27,10 @@ fn compare(a: &Value, b: &Value, path: &str) {
         _ => assert_eq!(a, b, "{path}"),
     }
 }
-#[test]
-fn physical_pid_acceleration_full_filter_states_held_invalid_reset_and_cap_match_source() {
-    let decoder = zstd::stream::read::Decoder::new(
-        include_bytes!("fixtures/bosch-acceleration-final.jsonl.zst").as_slice(),
-    )
-    .unwrap();
-    let rows = serde_json::Deserializer::from_reader(std::io::BufReader::new(decoder))
-        .into_iter::<Value>();
+fn check(rows: impl Iterator<Item = Value>) {
     let mut estimator = Estimator::new();
     let mut count = 0;
     for (i, row) in rows.enumerate() {
-        let row = row.unwrap();
         match row["op"].as_str().unwrap() {
             "new" => estimator = Estimator::new(),
             "reset" => estimator.reset(row["reason"].as_str().unwrap()),
@@ -85,4 +77,53 @@ fn physical_pid_acceleration_full_filter_states_held_invalid_reset_and_cap_match
         );
     }
     assert_eq!(count, 2544);
+}
+
+#[test]
+fn physical_pid_acceleration_full_filter_states_held_invalid_reset_and_cap_match_source() {
+    let decoder = zstd::stream::read::Decoder::new(
+        include_bytes!("fixtures/bosch-acceleration-final.jsonl.zst").as_slice(),
+    )
+    .unwrap();
+    check(
+        serde_json::Deserializer::from_reader(std::io::BufReader::new(decoder))
+            .into_iter::<Value>()
+            .map(Result::unwrap),
+    );
+}
+
+#[test]
+fn same_environment_original_source_full_filter_states_match_bits() {
+    let temp = tempfile::tempdir().unwrap();
+    let inputs = temp.path().join("original-inputs.jsonl");
+    let reference = temp.path().join("original-results.jsonl");
+    let evidence = std::env::var_os("RUNNER_TEMP")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| temp.path().to_owned())
+        .join("bosch-source-environment-607.json");
+    let mut decoder = zstd::stream::read::Decoder::new(
+        include_bytes!("fixtures/bosch-acceleration-final.jsonl.zst").as_slice(),
+    )
+    .unwrap();
+    std::io::copy(&mut decoder, &mut std::fs::File::create(&inputs).unwrap()).unwrap();
+    let oracle = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/bosch_acceleration_reference.py");
+    let status = std::process::Command::new("python3")
+        .arg(oracle)
+        .arg(inputs)
+        .arg(&reference)
+        .arg(evidence)
+        .status()
+        .unwrap();
+    assert!(
+        status.success(),
+        "hash-verified original source oracle failed"
+    );
+    check(
+        serde_json::Deserializer::from_reader(std::io::BufReader::new(
+            std::fs::File::open(reference).unwrap(),
+        ))
+        .into_iter::<Value>()
+        .map(Result::unwrap),
+    );
 }
