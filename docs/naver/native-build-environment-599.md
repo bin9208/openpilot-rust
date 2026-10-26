@@ -85,3 +85,26 @@ Python 모델 준비 환경을 고정하고, 트랙별 전체 runtime roster·pr
 Rust compiler/Cargo/std 원본 세 자산은 별도 내용별 준비기로 전체 tree provenance까지
 연결한다. 현재 새 Actions 결과 대기이며 구현·pin·실행 구분은
 [native Rust 도구체인 준비](native-rust-toolchain-599.md)에 기록한다.
+
+## 실제 genuine AGNOS 결과 — source d25, 부분 성공/fixture 실패
+
+source `d25e15a47416ed7ec70e89529cd50f4d4b8c4599`의
+[Actions40373849432 / job121751454335](https://github.com/bin9208/openpilot-rust/actions/runs/40373849432/job/121751454335)는
+FAILURE다. artifact12682520399(527608 bytes)의 원문을 확인했다.
+
+- 원본 압축1010655092 bytes와 sparse/raw hash를 검증하고, 반복 이미지 body 전송0을
+  확인했다. host X64/kernel7.0.2-6-pve, guest AArch64, QEMU/PRoot 실행이다.
+- stock 이미지의 gcc/g++/Clang/CMake/pkg-config/Python 실행, C++ 표준 라이브러리
+  프로그램과 Rust std 프로그램2개 빌드·실행을 통과했다. Cargo initial은둘다fresh=false,
+  반복은둘다fresh=true/동일 hash다. `capnp --version`은exit127이며 실제 SDK 준비 항목이다.
+- 실제 프로젝트 build driver를 그 이미지에서 native Rust1.94로 빌드했다(713초).
+  AArch64 ELF SHA는 `e27052b348a97e286f387eb0e835deee96f76c3d7f10cf107d3048a761b121f4`다.
+- 이어진 실제 driver4case의 첫 실행은 `manifest path rust/Cargo.toml does not exist`로
+  실패했다. owned fixture의 Cargo.toml을 Git root에 둔 harness 배치 오류다. source-build
+  driver의 원래 `rust/Cargo.toml` 계약에 맞게 fixture를 `rust/` 아래로 수정한다. 성공한
+  runtime 보고서는 없고4case 통과로 사용하지 않는다.
+
+probe 경과991.21초/최종 free-space 차이4604772352 bytes/단일 child 최대RSS549788KiB는
+해당 QEMU user-space probe 범위다. aggregate peak나 실제 장치·전체 runtime 성능으로
+확대하지 않는다. 이미지/compiler pin·원래 명령·4case 요구는 유지하고 새 정확 source에서
+재검증한다. 물리 ARM/AGNOS kernel/기기 설치는 수행하지 않았다.

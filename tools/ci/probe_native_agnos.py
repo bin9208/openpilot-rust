@@ -90,9 +90,9 @@ def native_driver_probe(guest_command, work, source_mount, evidence, log, guest_
       full_runtime_build=False)
   toolchain = str(Path(cargo).parent)
   fixture = work / 'driver-fixture'
-  shutil.copytree(work / 'fixture/src', fixture / 'src')
+  shutil.copytree(work / 'fixture/src', fixture / 'rust/src')
   for name in ('Cargo.toml', 'Cargo.lock'):
-    shutil.copyfile(work / 'fixture' / name, fixture / name)
+    shutil.copyfile(work / 'fixture' / name, fixture / 'rust' / name)
   git = ['git', '-c', 'user.name=Owned AGNOS driver fixture', '-c', 'user.email=agnos-driver@example.invalid', '-C', fixture]
   execute([*git, 'init'])
 
@@ -129,7 +129,7 @@ def native_driver_probe(guest_command, work, source_mount, evidence, log, guest_
   docs, doc_bins = build('docs-only')
   assert docs['source']['commit'] != initial['source']['commit'] and docs['cache_key'] == initial['cache_key']
   assert all(row['fresh'] and row['sha256'] == first[name]['sha256'] for name, row in doc_bins.items())
-  first_source = fixture / 'src/bin/first.rs'
+  first_source = fixture / 'rust/src/bin/first.rs'
   first_source.write_text('fn main(){println!("native AGNOS Rust std first 43");}\n')
   commit()
   small, changed = build('one-binary-change')
