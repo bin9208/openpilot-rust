@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "reserve_bytes": 1048576,
+  "assets": {
+    "pinned-public-input": {
+      "url": "https://raw.githubusercontent.com/bin9208/openpilot-rust/13d7ce113bf602b2be5b5abedb55c4debeb83a8c/rust/crates/runtime-build/Cargo.toml",
+      "sha256": "bade385bb2891e0d34d9f9d7081c57a9487328ba56e98f495506b92b811be6cc",
+      "bytes": 403
+    }
+  }
+}
