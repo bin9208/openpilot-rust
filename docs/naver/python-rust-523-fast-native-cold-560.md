@@ -326,3 +326,40 @@ parent-link=false·옛seccomp/nommu 미측정과 retirement credit0은 유지한
 따라서 #530의 prepared SDK/cold/routing 결함 범위는 수용 가능하다. #560은 새로운 Fast
 관측 경계 수용과 원래 Ubuntu race 원인·정확 PR 통합 조건을 구분해 계속 추적한다.
 PR343의 전체 통합·모델·recovery·기기 수용과 전체 #523 완료를 뜻하지 않는다.
+
+
+## #597 간헐적 authored control 실패와 case 문맥 보완 — 2026-10-26
+
+[#597](https://github.com/bin9208/openpilot-rust/issues/597)은 실제 provider 또는 모델 수치
+비교와 구분하는 authored lifecycle control의 미해결 결함이다. 원문 로그 대조 결과는 다음과 같다.
+
+- source `6c5d5a9be691d18ca850af6ef9b42e47b668d767`의
+  [model-family40255341914/job121355876682](https://github.com/bin9208/openpilot-rust/actions/runs/40255341914/job/121355876682)
+  로그1424행에서 `cold_bootstrap_stderr_collection_is_owned_bounded_and_preserves_failure_evidence`는
+  PASS였다. 해당 job 전체는 당시 별도 workflow 크기 검사에서 실패했다.
+- source `57e1761c5cac9ddee282550d8c079083e6fa9a5a`의
+  [model-family40256938653/job121360705072](https://github.com/bin9208/openpilot-rust/actions/runs/40256938653/job/121360705072)
+  로그1405~1406행에서 `ci_workflow_policy.rs:1045`의 `run_shell(...).unwrap()`이
+  `native command stderr exceeds 16777216 captured bytes`로 실패했다. 정책 결과는
+  41 PASS/1 FAIL이며, step22 업로드 실패는 앞선 중단으로 기대 파일이 없는 후속 실패다.
+- 같은 source57의
+  [Fast40256938652/job121360705476](https://github.com/bin9208/openpilot-rust/actions/runs/40256938652/job/121360705476)
+  로그1196행에서는 같은 테스트가 PASS했고, workflow policy42/42와 ciisolation89/89도
+  PASS했다. Fast 전체 worker와 aggregate도 API에서 SUCCESS를 확인했다.
+
+6c/57 사이 해당 harness 본문과 cold launcher/helper 및 shared QA 소스는 byte 동일하다.
+세 실행의 runner `2.338.0`, Ubuntu image `20261012.334.1`도 같았다. 따라서 특정 이미지 변경이나
+Bash/kernel/부하를 원인으로 단정하지 않는다. 실패한13개 case 중 어느 case인지와 실제 stderr
+생성 경로는 아직 미확정이다. `CaptureError::Limit`에는 원시 stderr가 보존되지 않는다.
+
+이번 수정은 테스트의 해당 호출 한 곳에서만 오류에
+`cold-control case={case}: {error}` 문맥을 붙인다. `run_shell`의 `env -i` 및 NativeRunner,
+16MiB cap·5초 capture 기한·13개 case·harness 본문·명령·소유/회수·실패 sticky 조건은 그대로다.
+production/shared QA/launcher는 수정하지 않았고, 추가 snapshot·로그 reader도 넣지 않았다.
+이 보완은 다음 실패의 case 식별만 제공하며 stderr 원문 복원이나 #597 원인 해결을 뜻하지 않는다.
+model-family caller의 push paths에 해당 `ci_workflow_policy.rs` 경로 한 개를 추가해 이 준비 gate
+변경도 기존 Actions 실행으로 검증한다. job·명령·runner·기한은 바꾸지 않았다.
+
+로컬은 변경 구간의 Rust2021 구문·rustfmt와 diff만 확인했다. 기능/Cargo/CI 실행 및 stage/commit은0이다.
+부모가 후속 독립 diagnostic commit으로 Fast와 영향 model-family 준비 gate의 실제 case를 확인할 예정이며,
+**새 case 문맥의 실제 GHA 결과는 UNRUN, #597은 미해결**이다.

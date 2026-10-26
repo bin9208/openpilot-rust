@@ -1042,7 +1042,8 @@ printf 'postconditions-verified\n' > "$out/collector-control-complete"
 exit "$result"
 "#
         );
-        let status = run_shell(&harness, &environment).unwrap();
+        let status = run_shell(&harness, &environment)
+            .unwrap_or_else(|error| panic!("cold-control case={case}: {error}"));
         assert_eq!(status.code(), Some(expected), "{case}");
         assert_eq!(
             fs::read_to_string(proof.path().join("collector-control-complete")).unwrap(),

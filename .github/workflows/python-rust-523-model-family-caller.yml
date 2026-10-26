@@ -5,6 +5,7 @@ name: Python Rust 523 exact native model-family caller
       - codex/feat-523-python-rust
     paths:
       - .github/workflows/python-rust-523-model-family-caller.yml
+      - rust/crates/dev-tools/tests/ci_workflow_policy.rs
   workflow_dispatch: {}
 permissions:
   contents: read
