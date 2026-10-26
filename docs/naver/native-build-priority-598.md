@@ -72,3 +72,25 @@ fixture의 host 결과를 AGNOS 자체 빌드나 장치 성능으로 표현하�
   수용을 구분한다. 이 문서나 이슈 생성만으로 #598/#599/#600/#601을 종료하지 않는다.
 
 4~8주는 초기 계획 예산이며 장치 native 빌드 실측 전 확정 일정이 아니다.
+
+## 첫 실제 Actions 결과와 독립 리뷰
+
+source `10d57ed8c9c37246e2caf5986925439f3d68cc05`의
+[40273209126](https://github.com/bin9208/openpilot-rust/actions/runs/40273209126)은
+실제 offline Cargo 회귀3개와 strict all-target Clippy·서식·locked metadata 검사를
+모두 통과했다. 문서 변경 후 Cargo fresh/동일 binary hash, 코드 변경 후 실제43 출력,
+provider 변조 거부/갱신 후 cache 분리, 동시 owner 거부와 컴파일 실패 보존을 확인했다.
+이는 Linux x64 fixture의 성공이며 AGNOS나 전체 runtime 자체 빌드가 아니다.
+
+[PR602](https://github.com/bin9208/openpilot-rust/pull/602)는 dev 대상 draft다.
+필수 전체 검사와 기존 전환분 반영, 장치 자체 빌드/다운로드 제거는 아직 미완료다.
+
+독립 GPT-6.1 Sol 리뷰는 시스템 linker가 바뀌어도 Cargo freshness가 이전 결과를
+재사용할 수 있음을 지적했다. 후속은 실제 cc/ld/collect2 경로·hash를 cache 입력과
+후검증에 연결하고 Cargo의 linker 선택을 확인한 경로로 고정한다. build 환경의
+임의 linker override는 허용하지 않는다. 필요한 외부 provider/전체 toolchain receipt는
+여전히 #599에서 준비해야 하며, 이 작은 도구의 자동 hash가 전체 ABI 봉인을 대신하지 않는다.
+
+후속 CI에는 native ARM Linux host의 동일 fixture·Clippy와 작업별3GiB 예상 증가량
+admission을 추가했다. x64/ARM 어느 결과도 comma 장치/AGNOS 검증으로 표현하지 않는다.
+후속 소스는 새 실제 결과를 확인하기 전까지 미검증이다.

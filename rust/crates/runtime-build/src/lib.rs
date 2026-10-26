@@ -111,6 +111,7 @@ impl Recipe {
                     .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'_')
                 || matches!(key.as_str(), "PATH" | "HOME" | "RUSTC" | "RUSTDOC")
                 || key.starts_with("CARGO_")
+                || (key == "RUSTFLAGS" && value.contains("linker"))
                 || value.contains('\0')
             {
                 return Err(format!("unsupported build environment key: {key}").into());
@@ -134,6 +135,36 @@ impl Recipe {
     }
 }
 
+fn native_linker() -> Result<(PathBuf, BTreeMap<PathBuf, String>)> {
+    let driver = Path::new("/usr/bin/cc").canonicalize()?;
+    let mut tools = BTreeMap::from([(driver.clone(), digest_file(&driver)?)]);
+    // Cargo does not invalidate freshness when a linker executable changes in place.
+    for name in ["ld", "collect2"] {
+        let output = Command::new(&driver)
+            .arg(format!("-print-prog-name={name}"))
+            .env_clear()
+            .env("PATH", "/usr/bin:/bin")
+            .output()?;
+        if !output.status.success() {
+            return Err("cannot identify native linker tools".into());
+        }
+        let value = String::from_utf8(output.stdout)?;
+        let path = PathBuf::from(value.trim());
+        let path = if path.is_absolute() {
+            path
+        } else {
+            Path::new("/usr/bin").join(path)
+        };
+        // Clang need not have collect2; GCC reports its actual libexec path.
+        if name == "collect2" && !path.exists() {
+            continue;
+        }
+        let path = path.canonicalize()?;
+        tools.insert(path.clone(), digest_file(&path)?);
+    }
+    Ok((driver, tools))
+}
+
 /// Build only. The caller must seal, validate and activate the complete runtime separately.
 /// No runtime release is downloaded, and no existing runtime or Cargo cache is removed.
 pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Result<Report> {
@@ -146,6 +177,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
     // The actual native compiler and Cargo are inputs, rather than unverified PATH aliases.
     let compiler_digest = digest_file(&rustc)?;
     let cargo_digest = digest_file(&cargo)?;
+    let (linker, native_tools) = native_linker()?;
     let version = Command::new(&rustc).arg("-vV").output()?;
     if !version.status.success()
         || !String::from_utf8_lossy(&version.stdout)
@@ -160,8 +192,13 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
     // Resource estimates may change between attempts without changing compilation inputs.
     let mut cache_recipe = recipe.clone();
     cache_recipe.expected_growth_bytes = 0;
-    let identity =
-        serde_json::to_vec(&(cache_recipe, compiler_digest, cargo_digest, version.stdout))?;
+    let identity = serde_json::to_vec(&(
+        cache_recipe,
+        compiler_digest,
+        cargo_digest,
+        version.stdout,
+        &native_tools,
+    ))?;
     let key = format!("{:x}", Sha256::digest(&identity));
     fs::create_dir_all(cache)?;
     let cache = cache.canonicalize()?;
@@ -190,6 +227,17 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
     let cargo_home = cache.join("cargo-home");
     fs::create_dir_all(&cargo_home)?;
     let mut command = Command::new(&cargo);
+    let linker_key = format!(
+        "CARGO_TARGET_{}_LINKER",
+        recipe.target.to_ascii_uppercase().replace('-', "_")
+    );
+    let mut flags: Vec<&str> = recipe
+        .environment
+        .get("RUSTFLAGS")
+        .map(|v| v.split_whitespace().collect())
+        .unwrap_or_default();
+    let linker_flag = format!("linker={}", linker.display());
+    flags.extend(["-C", &linker_flag]);
     command
         .current_dir(&root)
         .env_clear()
@@ -209,6 +257,8 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         .env("RUSTC", &rustc)
         .env("RUSTDOC", toolchain.join("rustdoc"))
         .envs(&recipe.environment)
+        .env(linker_key, &linker)
+        .env("CARGO_ENCODED_RUSTFLAGS", flags.join("\u{1f}"))
         .args([
             "build",
             "--manifest-path",
@@ -264,6 +314,11 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         .into());
     }
     recipe.verify_inputs(&root)?;
+    for (path, expected) in native_tools {
+        if digest_file(&path)? != expected {
+            return Err("native linker tools changed during build".into());
+        }
+    }
     let report = Report {
         schema: 1,
         cache_key: key,

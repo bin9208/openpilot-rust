@@ -18,17 +18,35 @@ permissions:
   contents: read
 jobs:
   offline-cargo-reuse:
-    name: Actual offline Cargo reuse and failure handling
-    runs-on: ubuntu-24.04
+    name: Actual offline Cargo reuse (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
     timeout-minutes: 15
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Inspect resources for this bounded toolchain and crate build
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          # Operation estimate: pinned minimal toolchain/components plus this small crate/fixtures.
+          growth = 3 * 1024**3
+          for path in (os.environ['RUNNER_TEMP'], os.environ['GITHUB_WORKSPACE']):
+              free = shutil.disk_usage(path).free
+              print(f'path={path} free_bytes={free} estimated_growth_bytes={growth}')
+              if free < growth:
+                  raise SystemExit('insufficient space for this operation; no cache or user data removed')
+          PY
       - name: Install the pinned Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
       - name: Check syntax formatting and the locked dependency graph
@@ -44,7 +62,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: runtime-source-build-${{ github.sha }}
+          name: runtime-source-build-${{ matrix.runner }}-${{ github.sha }}
           path: |
             ${{ runner.temp }}/runtime-build-metadata.json
             ${{ runner.temp }}/runtime-build-tests.log
