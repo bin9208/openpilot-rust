@@ -95,6 +95,15 @@ impl Config {
         agnos_identity()?;
         let layout: Layout = read(&self.layout)?;
         let plan = crate::prepare::Plan::read(&self.build_plan)?;
+        if plan.groups.values().any(|recipe| {
+            recipe
+                .environment
+                .get("OPENPILOT_NATIVE_INCREMENTAL")
+                .map(String::as_str)
+                != Some("1")
+        }) {
+            return Err("native build plan must explicitly bind incremental source-stamp mode in every group".into());
+        }
         require_tools(
             plan.groups
                 .values()

@@ -1,6 +1,12 @@
 use std::{error::Error, path::PathBuf, process::Command};
 
 fn main() -> Result<(), Box<dyn Error>> {
+    println!("cargo:rerun-if-env-changed=OPENPILOT_NATIVE_INCREMENTAL");
+    let incremental = match std::env::var("OPENPILOT_NATIVE_INCREMENTAL").as_deref() {
+        Err(std::env::VarError::NotPresent) => false,
+        Ok("1") => true,
+        _ => return Err("OPENPILOT_NATIVE_INCREMENTAL must be absent or exactly 1".into()),
+    };
     let root = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR")?).join("../../..");
     println!(
         "cargo:rerun-if-changed={}",
@@ -27,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Some(_) => "dirty",
         None => "unknown",
     };
-    if root.join(".git").exists() {
+    if !incremental && root.join(".git").exists() {
         let reference = Command::new("git")
             .args(["symbolic-ref", "--quiet", "HEAD"])
             .current_dir(&root)
@@ -52,9 +58,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     println!("cargo:rustc-env=LOGGERD_SOURCE_COMMIT={commit}");
     println!("cargo:rustc-env=LOGGERD_SOURCE_TREE={tree}");
+    println!(
+        "cargo:rustc-env=LOGGERD_SOURCE_STAMP_MODE={}",
+        if incremental {
+            "compiled-native-incremental"
+        } else {
+            "exact-source"
+        }
+    );
     println!("cargo:rerun-if-changed=src");
     println!("cargo:rerun-if-changed=build.rs");
-    if let Some(files) = git(&["ls-files", "-z"]) {
+    println!("cargo:rerun-if-changed=Cargo.toml");
+    if let Some(files) = (!incremental).then(|| git(&["ls-files", "-z"])).flatten() {
         for file in files.split('\0').filter(|file| !file.is_empty()) {
             println!("cargo:rerun-if-changed={}", root.join(file).display());
         }
