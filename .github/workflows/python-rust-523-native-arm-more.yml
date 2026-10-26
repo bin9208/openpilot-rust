@@ -220,12 +220,21 @@ jobs:
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       working-directory: ${{ env.CI296_SOURCE }}
       shell: openpilot-local-shell {0}
-    - name: Compare exact policies, main loops, real IPC and lifecycle
+    - name: Stage the fixed independently audited original Planner IPC
+      id: planner_ipc_stage
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      timeout-minutes: 10
+      working-directory: ${{ env.CI296_SOURCE }}
+      shell: bash
       env:
-        PLANNER_IPC_CAPTURE_DIR: ${{ env.CI_JOB_TEMP }}/proof/planner-ipc-original-inputs
-        PLANNER_IPC_GROWTH_MIB: '512'
+        CI296_HOST_CONTROL: '1'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$CI_JOB_TEMP" --growth-mib 512
+        set -euo pipefail
+        printf '%s  %s\n' 43e1eb7b2b5e27521f8f7ce4e4a36c35376515b4be944c6bd390a348978810b6 "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh" | sha256sum --check --strict -
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh"
+    - name: Compare exact policies, main loops, real IPC and lifecycle
+      run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/planner_native_controller_523.sh" runtime
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       working-directory: ${{ env.CI296_SOURCE }}
@@ -244,31 +253,11 @@ jobs:
       shell: openpilot-local-shell {0}
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/planner_native_controller_523.sh" ipc-check
-    - name: Stage the fixed independently audited original Planner IPC
-      id: planner_ipc_stage
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.planner_ipc_qualify.outcome == 'success') }}
-      timeout-minutes: 10
-      working-directory: ${{ env.CI296_SOURCE }}
-      shell: bash
-      env:
-        CI296_HOST_CONTROL: '1'
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        set -euo pipefail
-        printf '%s  %s\n' 578ec6f73765ca4293174eeb7eb2a5df99a9af6ff726f262c7aa3f17f65c97bf "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh" | sha256sum --check --strict -
-        /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh"
-    - name: Compare all four source and Rust native Planner IPC runs
-      id: planner_ipc_native
-      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.planner_ipc_qualify.outcome == 'success' && steps.planner_ipc_stage.outcome == 'success') }}
-      timeout-minutes: 25
-      working-directory: ${{ env.CI296_SOURCE }}
-      shell: openpilot-local-shell {0}
-      run: |
-        /usr/bin/bash "$CI296_SOURCE/tools/ci/planner_native_controller_523.sh" ipc
     - uses: actions/upload-artifact@v6
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         && (always()) }}
       with:
+        retention-days: 90
         name: rust-planner-${{ matrix.runner }}-evidence
         path: |
           ${{ env.CI_JOB_TEMP }}/planner-comparison/
@@ -320,7 +309,7 @@ jobs:
       with:
         name: private-rust-${{ github.job }}-${{ strategy.job-index }}-${{ github.run_id }}-${{ github.run_attempt }}
         path: ${{ env.CI_JOB_TEMP }}/proof
-        retention-days: 14
+        retention-days: 90
         if-no-files-found: error
     - name: Clean only uploaded owned source alias and target
       id: ci296_source_cleanup

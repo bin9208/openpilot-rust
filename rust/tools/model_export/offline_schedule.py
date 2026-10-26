@@ -135,7 +135,7 @@ class _NativeExportStream:
                 if size > self._limit - 4:
                     raise ExportError("native export-stream input exceeds bound")
                 items.append({"key": id(buffer), "data": bytes(data).hex()})
-            self.request({"op": "begin", "version": 1,
+            self.request({"op": "begin", "version": 2,
                           "initialized": items})
             return self
         except BaseException as error:
@@ -239,14 +239,17 @@ class _NativeExportStream:
             def nonfinite(value):
                 raise ValueError("nonfinite stream number: " + value)
             reply = json.loads(self._read_exact(length, deadline), object_pairs_hook=unique, parse_constant=nonfinite)
-            expected = {"kind", "session", "sequence", "complete"} | ({"plan"} if final else set())
+            kernel = command["op"] == "kernel_commit"
+            expected = {"kind", "session", "sequence", "complete"} | ({"plan"} if final else {"index"} if kernel else set())
             if (type(reply) is not dict or set(reply) != expected or reply["session"] != self.session
                     or type(reply["sequence"]) is not int or reply["sequence"] != self.sequence
-                    or reply["kind"] != ("final" if final else "checkpoint") or reply["complete"] is not final):
+                    or reply["kind"] != ("final" if final else "kernel" if kernel else "checkpoint") or reply["complete"] is not final):
                 raise ExportError("native export-stream response contract differs")
+            if kernel and (type(reply["index"]) is not int or not 0 <= reply["index"] < 65536):
+                raise ExportError("invalid native kernel index")
             self.sequence += 1
             self.finished = final
-            return reply.get("plan")
+            return reply["index"] if kernel else reply.get("plan")
         except BaseException as error:
             self.failed = True
             if isinstance(error, (OSError, ValueError, struct.error)):
@@ -271,6 +274,14 @@ class _NativeExportStream:
     def finish(self, request):
         return self.request({"op": "finish", "emitted_by_source": request["emitted_by_source"],
                              "stages": request["stages"], "retained_calls": request["retained_calls"]}, final=True)
+
+    def kernel(self, program, name, arguments):
+        # Metadata encoding only. Rust owns the signature and representative.
+        encoded = [[{"kind": "image", **{field: str(getattr(argument, field))
+                                          for field in ("width", "height", "pitch", "element_bytes")}}
+                    if isinstance(argument, ImageArgument) else {"kind": "buffer"} for argument in group] for group in arguments]
+        return self.request({"op": "kernel_commit", "key": id(program), "name": name,
+                             "arguments": encoded})
 
     def _abort(self):
         if self.process is not None and self.process.returncode is None:
@@ -353,7 +364,9 @@ def _decode_native_plan(native: dict, request: dict) -> dict:
             return number
         raise ExportError("invalid native export dimension")
 
-    fields(native, ("version", "allocations", "views", "event_views", "weights", "weights_sha256", "launches", "entrypoints"))
+    registry_mode = "program_keys" in request
+    fields(native, ("version", "allocations", "views", "event_views", "weights", "weights_sha256", "launches", "entrypoints")
+           + (("registry",) if registry_mode else ()))
     if type(native["version"]) is not int or native["version"] not in (1, 2):
         raise ExportError("invalid native graph version")
     if (native["version"] == 1) != (not request["stages"]):
@@ -420,6 +433,36 @@ def _decode_native_plan(native: dict, request: dict) -> dict:
         if start > end:
             raise ExportError("invalid native stage range")
         entries.append(Entrypoint(value["name"], start, end))
+    if registry_mode:
+        registry = fields(native["registry"], ("kernels", "launch_kernels"))
+        kernels = array(registry["kernels"], 65536)
+        handles = set(request["program_keys"])  # Actual held handles only, never signature interning.
+        for value in kernels:
+            fields(value, ("program_key", "name", "binary_sha256", "binary_bytes", "arguments"))
+            if natural(value["program_key"], 2**64 - 1) not in handles or type(value["name"]) is not str:
+                raise ExportError("invalid native kernel representative")
+            if type(value["binary_sha256"]) is not str or re.fullmatch(r"[0-9a-f]{64}", value["binary_sha256"]) is None:
+                raise ExportError("invalid native kernel digest")
+            natural(value["binary_bytes"], 256 * 1024 * 1024)
+            for group in array(value["arguments"], 65536):
+                for argument in array(group, 65536):
+                    if type(argument) is not dict:
+                        raise ExportError("invalid native kernel argument")
+                    if argument.get("kind") == "buffer":
+                        fields(argument, ("kind",))
+                    elif argument.get("kind") == "image":
+                        fields(argument, ("kind", "width", "height", "pitch", "element_bytes"))
+                        if any(type(argument[name]) is not int or not -(2**127) <= argument[name] < 2**127
+                               for name in ("width", "height", "pitch", "element_bytes")):
+                            raise ExportError("invalid native image metadata")
+                    else:
+                        raise ExportError("invalid native kernel argument kind")
+        indices = array(registry["launch_kernels"], len(launches))
+        if len(indices) != len(launches):
+            raise ExportError("native registry launch count differs")
+        for index, supplied in zip(indices, request["launches"], strict=True):
+            if natural(index, len(kernels) - 1) != supplied["program"]:
+                raise ExportError("native registry commit index differs")
     return native | {"weights": weights, "allocations": tuple(allocations), "views": tuple(views),
                      "event_views": tuple(event_views), "launches": tuple(launches), "entrypoints": tuple(entries)}
 
@@ -469,13 +512,8 @@ def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination
                 read(buffer)
             write(buffer)
         result_bindings = tuple(Binding(name, view(descriptor(tensor.uop))) for name, tensor in model.bindings.outputs.items())
-        kernels: list[Kernel] = []
         calls: list[tuple[int, tuple[int, ...]] | CopyCall] = []
-        binaries: list[bytes] = []
-        sources: list[str] = []
-        programs: list[UOp] = []
         emitted_by_source = [0]
-        kernel_ids: dict[Kernel, int] = {}
         renderer = OfflineRenderer(compiler)
         for original, call in zip(retained_calls, linear.src, strict=True):
             if (call.op is not Ops.CALL or original.op is not Ops.CALL
@@ -510,26 +548,30 @@ def emit_schedule(schedule: Emission, compiler: OfflineQcomCompiler, destination
                 read(buffers[index])
             for index in info.outs:
                 write(buffers[index])
-            kernel = Kernel(info.function_name, hashlib.sha256(binary).hexdigest(), len(binary), arguments)
-            if kernel not in kernel_ids:
-                kernel_ids[kernel] = len(kernels)
-                kernels.append(kernel)
-                programs.append(program)
-                binaries.append(binary)
-                sources.append(source)
-            launches.append({"program": kernel_ids[kernel], "global": [_number(value) for value in info.global_size],
+            kernel = stream.kernel(program, info.function_name, arguments)
+            launches.append({"program": kernel, "global": [_number(value) for value in info.global_size],
                              "local": None if info.local_size is None else [_number(value) for value in info.local_size]})
-            calls.append((kernel_ids[kernel], tuple(view(buffers[index]) for index in info.globals)))
+            calls.append((kernel, tuple(view(buffers[index]) for index in info.globals)))
             emitted_by_source.append(len(calls))
         for tensor in outputs:
             read(descriptor(tensor.uop))
         request = {
-            "version": 2, "events": events,
+            "version": 2, "events": events, "program_keys": list(stream.programs),
             "launches": launches, "emitted_by_source": emitted_by_source,
             "retained_calls": [id(call) for call in retained_calls],
             "stages": [{"name": name, "calls": [id(call) for call in stage]} for name, stage in schedule.stages],
         }
         native = _decode_native_plan(stream.finish(request), request)
+    # Rust chose the first representative. Python only bridges held UOp handles
+    # and reconstructs serialization DTOs; it does not hash or intern kernels.
+    programs = tuple(stream.programs[value["program_key"]] for value in native["registry"]["kernels"])
+    kernels = tuple(Kernel(value["name"], value["binary_sha256"], value["binary_bytes"],
+                           tuple(tuple(BufferArgument() if argument["kind"] == "buffer" else
+                                       ImageArgument(argument["width"], argument["height"], argument["pitch"], argument["element_bytes"])
+                                       for argument in group) for group in value["arguments"]))
+                    for value in native["registry"]["kernels"])
+    sources = tuple(program.src[3].arg for program in programs)
+    binaries = tuple(program.src[4].arg for program in programs)
     event_views = native["event_views"]
     native_calls = []
     launch_iter = iter(native["launches"])

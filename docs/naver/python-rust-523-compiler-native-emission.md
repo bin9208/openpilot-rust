@@ -245,3 +245,132 @@ Cargo/build/test/Clippy/project CLI/Python module import·원본 함수·model/c
 대표 모델 wire fit 및 QCOM 전체 수용은 별도 pending이다. offline_buffers.py의 descriptor,
 공통 buffers.py와 CPU/live QCOM/AMD/constant/독립 original 소비자는 남아 있다.
 파일 전체 퇴역 credit는0이며 이 source patch만으로 algorithm equivalence를 완료 처리하지 않는다.
+
+## 2026-10-26 production kernel registry Rust 이관 — 새 source, GHA 미실행
+
+부모가 승인한 다음 slice는 `offline_schedule.py`, `compiler_schedule/export.rs`,
+`compiler_export_caller.rs` 세 파일이다. 기존 native stream의 명시적인 **Begin version2**에
+`kernel_commit`/`kernel` reply/final `registry`를 추가했다. 새 CLI flag·helper·Cargo/lib 등록·
+workflow는 만들지 않았다. 내부 stream version과 graph version은 별개이며 graph는 계속1/2다.
+
+Python의 실제 binary SHA256·binary 길이·Kernel signature hash/dedup·index 할당·첫 대표
+선택 코드를 삭제했다. Rust는 보유한 실제 Program binary에서 SHA/길이를 계산하고
+`(name, binary_sha256, binary_bytes, 중첩 arguments)`로 interning한다. SOURCE와 PROGRAM
+key는 signature에 넣지 않는다. stable registry Vec는 첫 commit의 `program_key`를 보관하고,
+반복 call마다 index를 반환한다. Python은 강하게 보유한 UOp handle에 이 key를 연결하고
+반환 metadata로 dataclass DTO를 복원한다. Python에서 signature를 재계산하지 않는다.
+기존 `launch`의 `len(binary)`는 전송량 admission용으로 남으며 registry 길이 계산이 아니다.
+
+commit 위치는 원래 Kernel 생성 위치다. genuine lowering/compile → info/aux·SOURCE/BINARY
+검증 → native launch 검증 → 실제 input read/output write → kernel commit → global view/call
+순서를 유지했다. Program 등록이나 launch에서 signature를 미리 확정하지 않는다. 누락·중복·
+다른 key commit, commit 전 다음 launch, v1에서의 commit, unknown version은 거부하며
+native 실패는 latch된다. original compiler/`compile_cached`/ASSERT_COMPILE 경로는 그대로다.
+
+ImageArgument의 width/height/pitch/element_bytes는 원본 `ImageDType.shape: tuple[int, ...]`,
+pitch와 itemsize가 생산하는 **정수 metadata 계약 범위**다. wire에서 10진 문자열로 전달해
+Rust i128로 읽고, final graph에는 정수로 쓴다. Serde1.0.229의 internally tagged content가
+i128을 직접 보관하지 못하는 제약을 피한다. runtime image allocator의 u32 admission을
+앞당겨 적용하지 않는다. 임의 Python 정수 전체나 인위적인 float/bool image metadata까지
+동등하다고 주장하지 않는다.
+
+### 보존한 경계와 metadata 예산 보정
+
+export-plan v1/v2의 `prepare` 본문은 final `registry: None` 추가 외에 바이트가 같다.
+None은 serialization에서 생략되므로 기존 raw plan과 stream v1의 schema를 보존한다.
+v1은 새 metadata 예산을 차감하지 않는다. Python의 기존 transport/deadline/EOF/reap/held
+launch 함수와 planner/constant/lowering 진입·최종 call 복원·destination writer를 보존했다.
+final은 기존 CLI의 stdin EOF 이후에만 나오며 Python은 stdout/stderr EOF·빈 stderr·exit0·
+reap 확인을 마친 뒤 destination을 만든다. native 실패 시 Python fallback은 없다.
+
+256MiB 누적 input/output wire cap, 동일 frame cap `1_048_576 + 2*65536 + 2`,
+event1,048,576·Program/launch65,536·storage1GiB·packed weights128MiB·기존 deadline은
+그대로다. 새 commit은 기존 frame/byte quota를 소비하므로 최대치들을 동시에 채우는 별도
+여유를 추가하지 않았다. 기존 per-frame timeout과 부모 job deadline도 늘리지 않았다.
+
+부모 review에서 `serialized signature 길이 * 2`가 실제 Argument enum payload를 작게
+계상한다는 결함을 지적했고, 그 계산은 최종 source에서 제거했다. 작은 Buffer variant도
+Image의 i128 네 필드를 담는 enum slot 전체를 점유한다. 최종 계상은 다음 payload를
+checked product/sum으로 계산해 **wire budget과 별도로 기존 retained256MiB ledger에 합산**한다.
+
+- 두 signature의 String capacity, arguments Vec capacity, 각 중첩 Vec의 capacity와
+  `size_of::<Argument>()` payload. clone의 실제 heap capacity가 예상보다 크면 추가 차감한다.
+- map entry와 registered entry의 최소 payload 및 registry/map container header.
+- registry Vec와 launch-index Vec의 실제 추가 capacity. 기존 Vec의 amortized growth를 유지하고
+  spare capacity가 있어도 최소 한 slot을 보수적으로 계상한다. 매 launch index도 차감한다.
+
+곱셈·덧셈 overflow, metadata 합계 초과 또는 기존 held bytes와의 합계 초과는 거부한다.
+allocator/BTreeMap node overhead·일시적인 decode/clone 할당을 포함한 전체 RSS 보장은 아니다.
+실제 peak RSS/대표 모델 wire fit은 부모 GHA에서 확인해야 한다.
+
+### 검사 구성과 독립 기대값
+
+기존 normal native10 본문은 바이트 그대로 유지했다. 새 caller 검사4개를 추가해 target의
+기대치는 **14 passed / 2 ignored**다.
+
+| 새 normal selector | 검사 |
+| --- | --- |
+| `registry_v2_excludes_source_and_key_and_keeps_first_program_and_repeated_calls` | 다른 key90→2·다른 SOURCE·동일 signature의 첫 key90 유지, 같은 key 재호출과 launch3개 보존, 독립 b"abc" SHA/길이, raw plan/v1 stream registry 부재 |
+| `registry_v2_distinguishes_every_argument_field_name_binary_and_nested_position` | name/binary, image 네 필드, buffer/image kind, outer/inner 순서·group 크기·빈 group의 총12개 구별 사례 |
+| `registry_v2_rejects_cross_version_missing_duplicate_wrong_commit_and_read_failure` | v1/unknown version·누락/중복/다른 key·선행 launch/read 실패와 latch, caller SHA/길이/SOURCE 주입 및 불완전/unknown argument 거부 |
+| `actual_registry_stream_cli_preserves_kernel_reply_and_final_eof_gate` | 기존 실제 CLI에서 kernel reply/index, commit 누락과 trailing input 거부, final 완료 신호 보존 |
+
+private arithmetic helper를 검사하는 **기존 library target unit2개**도 추가했다. 새 test target이나
+외부 public API는 없다. 필터는 `compiler_schedule::export::tests::`다.
+
+- `registry_metadata_budget_rejects_product_sum_overflow_and_cap_without_allocation`:
+  초대형 할당 없이 곱/합 overflow, cap exact/over, zero product, 기존 held+metadata 초과.
+- `registry_metadata_counts_buffer_enum_capacity_and_both_owned_signatures`:
+  작은 실제 Vec/String의 spare capacity, Buffer enum slot, 두 signature/entry payload가
+  짧은 JSON 길이와 구분되어 계상되는 회귀.
+
+기존 ignored COPY selector는 final registry schema/held key/count 오류 네 가지를 더 거부하고
+destination 부재를 확인한다. 별도 새 helper는 없다. genuine mixed selector는 기존 pinned
+original-first graph JSON/weights/kernel SOURCE+BINARY 비교를 유지하고 원본 PROGRAM의
+LINEAR IR key와 후보가 받은 첫 commit의 실제 UOp 객체를 확인한다. 원본/후보 IR key·handle
+기록 두 개만 기존 record1MiB/총8MiB 봉인 안에 추가했다.
+
+genuine 원본 pass가 끝난 뒤 후보에서 `Kernel.__hash__`를 독으로 바꾸고, 현재 emitter의
+binary SHA 호출도 거부한다. weight integrity SHA는 유지한다. 독이 실제로 활성화됐는지
+negative control 후 후보를 실행한다. seven-order 사례는 원본을 먼저 실행하며 후보에서만
+Kernel hash 독을 적용한다. 기존 compiler/lowering 횟수 `[0,0,1,1,0,0,0]`, 오류 범주,
+실패 destination 부재·future compiler 호출0을 그대로 검사한다.
+
+독립 원문 prefix SHA는 계속
+`bc1b7b572c8dd2f84f3ea0ca38b1744e4c7120155c33f3dabb633eabaf7f0144`다.
+expected를 candidate로 생성하거나 이전 관측값을 바꾸지 않았다. 현재 추가 검사는 모두
+**GHA 미실행**이며 기존 sourceef172의 성공을 새 registry 수용으로 확대하지 않는다.
+
+### 부모 통합과 로컬 검증
+
+부모가 바꿀 기존 count literal은 두 곳이다. 해당 workflow는 본 patch에서 수정하지 않았다.
+
+- `.github/workflows/python-rust-523-native-units.yml`의 `compiler-export-units.log`:
+  `10 passed; 0 failed; 2 ignored;` → `14 passed; 0 failed; 2 ignored;`.
+- `.github/workflows/python-rust-523-compiler-emission.yml`의 `native-v1-v2.stdout`: 같은 변경.
+
+새 library unit2는 기존 package/library target에서 아래 filter로 실행해야 한다.
+기존 caller native14/COPY1/genuine mixed1·Clippy selector와 canonical Python/provider/source·
+SDK 전후 proof 및 최종 봉인은 유지한다. source pin은 부모가 기존 등록에 반영한다.
+
+```bash
+cargo test --manifest-path rust/Cargo.toml --locked --no-default-features \
+  --features native-skip-miri -p openpilot-model-runtime --lib \
+  compiler_schedule::export::tests:: -- --nocapture
+```
+
+| 수정 source | SHA256 |
+| --- | --- |
+| `rust/tools/model_export/offline_schedule.py` | `b4d51d33569eaf28e734b90c540e572d8e72abf88389e4217065a9fb0fdfe7f0` |
+| `rust/crates/model-runtime/src/compiler_schedule/export.rs` | `0a1372cb24410f91fc22d3224ca62b9704c79a7bcd7f369b20f61da603438037` |
+| `rust/crates/model-runtime/tests/compiler_export_caller.rs` | `275357ea69c62d471ae117847aa43abcc79a20a2319f06391249cf54beff74b4` |
+
+로컬 실행은 Rust1.94 rustfmt/check, production/embedded Python AST parse, YAML inert parse,
+diff/check 및 불변 구간 대조뿐이다. Rust 타입 검사·Cargo/build/test/Clippy/project CLI/
+compiler/model/oracle 실행·GHA dispatch·stage/commit/push는0회다. Python binary hash/dedup
+삭제, 기존 normal10·raw prepare·writer·cap/source pin 보존을 소스에서 확인했다.
+
+새 source의 타입·Clippy·기능 수용은 부모 Actions가 담당한다. Python lowering/metadata
+생산/writer와 genuine compiler/compile_cached 제어는 아직 남는다. Model D의 원본 compiler2
+execution edge도 별도 pending이다. 이번 registry 이관은 전체 CPU/QCOM 모델 수용이나
+Model D 원인 해결, Python 파일 퇴역 credit가 아니다.

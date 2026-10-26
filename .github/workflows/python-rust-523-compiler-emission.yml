@@ -197,7 +197,7 @@ jobs:
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
       working-directory: ${{ env.CI296_SOURCE }}
-      run: 'printf ''%s  %s\n'' b51def7342359305c818f15ec59e9002d6b7c1ee73752dc08e91442444cfface .github/workflows/rust.yml
+      run: 'printf ''%s  %s\n'' 52a82eb24ea1894bd210f5e4af57881d9d4aa96de8f08e64f46b086b79c30c89 .github/workflows/rust.yml
         | sha256sum --check -
 
         '
@@ -371,22 +371,7 @@ jobs:
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
       working-directory: ${{ env.CI296_SOURCE }}/rust
-      run: "set -euo pipefail\nproof=\"$CI_JOB_TEMP/proof/compiler-emission-checks\"\nmkdir -m 700 \"$proof\"\n\
-        failed=0\nrun_once() {\n  local label=$1;shift\n  \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path\
-        \ \"$GITHUB_WORKSPACE\" --growth-mib 2048\n  rc=0\n  /usr/bin/timeout --signal=TERM --kill-after=15s 12m\
-        \ \"$@\" > \"$proof/$label.stdout\" 2> \"$proof/$label.stderr\" || rc=$?\n  printf '%s=%s\\n' \"$label\"\
-        \ \"$rc\" >> \"$proof/exit-codes.txt\"\n  tail -n 40 \"$proof/$label.stdout\" \"$proof/$label.stderr\"\n\
-        \  test \"$rc\" = 0 || failed=1\n}\nargs=(test --manifest-path Cargo.toml --locked --no-default-features\
-        \ --features native-skip-miri -p openpilot-model-runtime --test compiler_export_caller)\nrun_once native-v1-v2\
-        \ cargo +1.94.0 \"${args[@]}\"\ngrep -F 'test result: ok. 10 passed; 0 failed; 2 ignored;' \"$proof/native-v1-v2.stdout\"\
-        \ || failed=1\nrun_once actual-copy cargo +1.94.0 \"${args[@]}\" maintained_python_export_calls_native_plan_without_fallback\
-        \ -- --ignored --exact --nocapture\ngrep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' \"$proof/actual-copy.stdout\"\
-        \ || failed=1\nrun_once actual-mixed cargo +1.94.0 \"${args[@]}\" maintained_python_mixed_emission_matches_original_bookkeeping\
-        \ -- --ignored --exact --nocapture\ngrep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' \"$proof/actual-mixed.stdout\"\
-        \ || failed=1\nrun_once strict-clippy cargo +1.94.0 clippy --manifest-path Cargo.toml --locked --no-default-features\
-        \ --features native-skip-miri -p openpilot-model-runtime --lib --bin offline-qcom-compile --test compiler_export_caller\
-        \ -- -D warnings\nsha256sum --check --strict \"$CI_JOB_TEMP/proof/stage-oracle-python.sha256\" || failed=1\n\
-        test \"$failed\" = 0\n"
+      run: "set -euo pipefail\nproof=\"$CI_JOB_TEMP/proof/compiler-emission-checks\"\nmkdir -m 700 \"$proof\"\nfailed=0\nrun_once() {\n  local label=$1;shift\n  \"$GITHUB_WORKSPACE/rust/tools/check-disk-space\" --path \"$GITHUB_WORKSPACE\" --growth-mib 2048\n  rc=0\n  /usr/bin/timeout --signal=TERM --kill-after=15s 12m \"$@\" > \"$proof/$label.stdout\" 2> \"$proof/$label.stderr\" || rc=$?\n  printf '%s=%s\\n' \"$label\" \"$rc\" >> \"$proof/exit-codes.txt\"\n  tail -n 40 \"$proof/$label.stdout\" \"$proof/$label.stderr\"\n  test \"$rc\" = 0 || failed=1\n}\nrun_once registry-budget cargo +1.94.0 test --manifest-path Cargo.toml --locked --no-default-features --features native-skip-miri -p openpilot-model-runtime --lib compiler_schedule::export::tests:: -- --test-threads=1\ngrep -F 'test result: ok. 2 passed; 0 failed; 0 ignored;' \"$proof/registry-budget.stdout\" || failed=1\nargs=(test --manifest-path Cargo.toml --locked --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_export_caller)\nrun_once native-v1-v2 cargo +1.94.0 \"${args[@]}\"\ngrep -F 'test result: ok. 14 passed; 0 failed; 2 ignored;' \"$proof/native-v1-v2.stdout\" || failed=1\nrun_once actual-copy cargo +1.94.0 \"${args[@]}\" maintained_python_export_calls_native_plan_without_fallback -- --ignored --exact --nocapture\ngrep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' \"$proof/actual-copy.stdout\" || failed=1\nrun_once actual-mixed cargo +1.94.0 \"${args[@]}\" maintained_python_mixed_emission_matches_original_bookkeeping -- --ignored --exact --nocapture\ngrep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' \"$proof/actual-mixed.stdout\" || failed=1\nrun_once strict-clippy cargo +1.94.0 clippy --manifest-path Cargo.toml --locked --no-default-features --features native-skip-miri -p openpilot-model-runtime --lib --bin offline-qcom-compile --test compiler_export_caller -- -D warnings\nsha256sum --check --strict \"$CI_JOB_TEMP/proof/stage-oracle-python.sha256\" || failed=1\ntest \"$failed\" = 0\n"
       id: compiler_comparison
       timeout-minutes: 35
     - uses: actions/upload-artifact@v6

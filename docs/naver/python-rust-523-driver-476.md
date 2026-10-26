@@ -860,3 +860,102 @@ helper AST·두 WF YAML/Bash/embedded Python 구문과 diff만 확인했고 실�
 현재 old pin은 의도적으로 fail-closed다. 새 execution edge/WF/job·전역 source roster 등록,
 최종 pins/ledger·검증·stage/commit/push는 부모 소유다. 기존 helper 변경의 driver 진단 push trigger는
 유지됐으며 이번 작업에서 모델 CI를 추가 dispatch하지 않았다. #476 repair/fullsix/파일 credit는0이다.
+
+## sourceec43598 full retained actual phase 감사 — 2026-10-26
+
+[run40248425959/job121334855336](https://github.com/bin9208/openpilot-rust/actions/runs/40248425959/job/121334855336)은
+attempt1/source`ec43598c9900eae3e3d7ee28428659aba6f7e63c`에서 completed/FAILURE다.
+job은00:15:06–00:26:12Z, qualify step12는00:15:47–00:26:01Z에 실행됐다.
+최초 원문 오류는00:25:51Z의 다음 guard이며 compile/ISA/수치 회귀와 구별한다.
+
+```text
+RuntimeError: fresh driver did not reproduce a failure; no cached execution
+```
+
+**분류는 fresh4 성공 뒤 실패 미재현에 따른 의도된 early abort**다. fresh process exit0을
+진단 전체 성공으로 바꾸지 않는 기존 분기가 정확히 실행됐다. 이 실행을 위해 수정하거나
+unsupported ISA를 우회하고 CPU를 강제하거나 재dispatch할 근거는 없다.
+
+### 최소 원문 수령 범위
+
+| 자료 | 실제 값/감사 범위 |
+| --- | --- |
+| validation artifact | `12619703560` / `driver-retained-476-40248425959-1` |
+| API ZIP size/digest | 42,169,395B / `0b1a76b0203d44132a3fa5f2f6b5cd0cdf79971c065f9978ca4821197aeb8404` |
+| central directory | 297 safe unique regular/no-encryption entries, 선언 expanded86,914,035B |
+| 필요한 Range cache | 보존 block3,306,547B / 선택 member30개 길이·CRC·SHA 확인 |
+| job 원문 log | 144,676B / SHA `f3d2513cc9f91371bde059f5fdf3de360b766cc0aaa37e0bc1f37767711e59fd` |
+
+전체 ZIP은 내려받지 않았으며 위 digest는 API 값이다. 전체 ZIP SHA/전체 CRC를 로컬 검증했다고
+주장하지 않는다. EOCD/central directory와 outcome/status/unit/fresh report/source/SDK 등 필요한
+member만 inert Range로 읽었다. 캐시와 선택 member별 CRC/SHA manifest는
+`.analysis/scratch/2026-10-25-523-completion/ci/12619703560.ranges/`에 있다.
+원래 carrier payload/proof ZIP은 로컬 재다운로드0이며 ZIP/source/모델 코드를 실행하지 않았다.
+
+### 실제 unit4와 fresh4
+
+`four-prestate-units.stdout`은 기존 native unit4의4 passed/0 failed/0 ignored를 기록한다.
+command 목록의73개가 모두 exit0이며 build/runtime/tools/consumers/selector/peer/fixture/
+fresh-catalog/fresh-driver까지 성공했다. 마지막 fresh-driver command도 exit0이다.
+
+| fresh report directory | 실제 raw_predictions | frames / compared_fields | 결과 |
+| --- | --- | --- | --- |
+| 1344-raw-0 | false | 1 / 47 | 성공 |
+| 1344-raw-1 | true | 4 / 188 | 성공 |
+| 1928-raw-0 | false | 1 / 47 | 성공 |
+| 1928-raw-1 | true | 4 / 188 | 성공 |
+
+각 report는 model_loaded_before_first_frame=true, raw_comparison=exact bytes,
+parsed_float_tolerance=1e-6, logging pass/collector_exit0/error_messages0이다.
+해상도는1344×760 및1928×1208이고 device_validation=false다. root report는 checkout/current
+catalog sourceec와 원래 observation source`2ecf3f6813f601ea52e7a61ccf75219952daefa0`,
+manifest`532281d6682b2d5a4ae8b8acf354b3a39d04eaf98cd49cc9a2c1432be30b8795`,
+source_policy=retired-driver를 구별해 보존한다. 이를 새 source의 일반 수치 수용이나 추가
+파일 부재/퇴역 credit로 확대하지 않는다.
+
+### early abort와 단계별 미도달
+
+`fresh-status.json`은 exit0/sourceec/full_six_source_acceptance=false다. outcome은
+phase=fresh-driver/fresh_gate_exit0/fresh_exit_observed=true/fresh_failure_observed=false,
+fresh_failure_sticky=true이며 error는 위 정확한 guard로 끝난다.
+
+- fresh-postmortem과 object-run/auth/proof/download command는0회다. 따라서 **full retained
+  경로에서는 새 공통 transport 함수 자체가 미도달**이다. 별도 transport-only actual PASS와
+  구별하며 그 성공을 이 실행에 복사하지 않는다.
+- retained-collection/build-retained-admission/whole44-native-admission/cached-catalog/
+  cached-driver/original-prestate는 모두0회다. 44+warp1 collection·strict ISA·실제 native prestate·
+  original actual receipt는 전부 미도달이다. ISA 지원/미지원이나 prestate 일치/불일치를 판정하지 않는다.
+- candidate_prepared=false/selector_invocations0/runtime_prestate_available=false,
+  candidate_numeric_observed=false/candidate_numeric_accepted=false다.
+- artifact roster에도 driver476-frozen·native-api-binding·original-prestate·retained request
+  member가 없다. 독립 immutable verifier의 fresh0 분기가 실제 해당 directory 부재와 downstream
+  명령0을 확인한 뒤 SUCCESS했다. 누락을 성공 skip으로 바꾼 것이 아니다.
+
+### 후속 봉인·회수와 수용 한계
+
+source/index 후봉인, prepared SDK 후봉인, 독립 immutable verifier, upload, source/job-temp
+cleanup step은 모두 SUCCESS다. index-before/after1,178,723B는 byte 동일하고 sourceec의
+historical Git tree19,615개 entry와 일치한다. source digest 파일도 동일하다.
+prepared Rust file manifest32,244B/165파일, roster37,509B/188행 및 program manifest의
+전후 bytes가 같다. SDK와 함께 source의FD/stat/hash snapshot19,616행,
+catalog389행/fixture172행/peer3행의 before/after 원문도 선택 Range에서 byte 동일함을 확인했다.
+
+outcome의 required baseline7개와 registry를 추가한 registered baseline8개가 정확하다.
+8개 모두에 대한 GHA final_seals_passed=true/finalizer_failures=[]이며,
+all_owned_children_reaped=true다. child journal1,398행과 outcome history도 동일하다.
+1,325개의 descendant 관측과 controller의73개 직접 reap 기록을 구별한다. Cargo 등이 자체
+reap한 모든 grandchild를 controller의 직접 reap으로 다시 세거나 전체 PID/DSO closure를
+새로 입증했다고 주장하지 않는다.
+
+fresh compiler-target의 before/after, guarded-add 전후, catalog-publisher 전후는 동일하다.
+실제 LLVM target은 자연 `znver3`, provider SHA는 기존
+`5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`이며
+stored_jit_executed=false다. 이번 작업에서 CPU/provider/ISA/threshold를 변경하지 않았다.
+
+따라서 이 실행은 **새 source의 기존 unit4/fresh4 성공과 failure-only guard·안전한 후봉인/
+cleanup 유지**를 증명한다. 원래 #476 실패 context의 재현·해결, retained44+warp1 실행,
+ABI/ISA/prestate 수용, fullsix/파일 퇴역 수용은 아니다. outcome은 계속
+full_six_source_acceptance=false/retirement_credit0이다.
+
+이번 작업은 본 문서 append와 원문/Range audit뿐이다. retention 문서는 추가 편집하지 않았다.
+source/CI·stage/commit/push·재dispatch/cancel/rerun·로컬 프로젝트/Cargo/원본/모델 실행은0이다.

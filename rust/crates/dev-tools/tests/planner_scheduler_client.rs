@@ -47,15 +47,28 @@ fn client(directory: &Path, mode: &str) -> SchedulerClient {
 
 #[test]
 fn independent_python_oracle_bytes_remain_pinned_without_execution() {
-    let raw = include_str!("../../../tools/plannerd_ipc.py");
+    // aa79 rust/tools/plannerd_ipc.py:26..30.
+    // 원래 module SHA256 a4aec1991a6751af60f5616698e75e0861b0a1f8b1c478e5382889681598c8dc.
+    // 원래 def부터 2칸 return target/trailing newline까지233B만 동결했다.
+    let raw = include_str!("fixtures/planner-scheduler-original/next_model_target.source.txt");
+    assert_eq!(raw.len(), 233);
     let start = raw.find("def next_model_target(").unwrap();
     let tail = &raw[start..];
     let end = tail.find("\n  return target\n").unwrap() + "\n  return target\n".len();
     let function = &tail[..end];
+    assert_eq!(function, raw);
     assert_eq!(
         format!("{:x}", Sha256::digest(function.as_bytes())),
         "a04e889c725715395baae751a5b3526c0c686b0075d67ab95b95fb94bd987be1"
     );
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(3)
+        .unwrap();
+    assert!(matches!(
+        fs::symlink_metadata(root.join("rust/tools/tests/test_plannerd_native_scheduler.py")),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound
+    ));
 }
 
 struct Frames {

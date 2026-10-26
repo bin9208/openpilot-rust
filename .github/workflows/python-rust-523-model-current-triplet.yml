@@ -266,7 +266,7 @@ jobs:
         r=json.loads(raw)
         assert type(r['schema']) is int and r['schema']==1 and r['source']==os.environ['GITHUB_SHA'] and r['pass'] is True
         assert r['input_origin']=='authored-metadata-controls' and r['compiler_started'] is False and r['actual_race_recovered'] is False
-        assert r['helper_sha256']=='379507cb2fc7b9d6c35c83f9851f9b541acad86a9d0085e8bb95cf71e03dfd24'
+        assert r['helper_sha256']=='de8c8946d13e0e555f542f0939a32474efa655d8bd5a16dfc19ad240fa16cfc2'
         assert hashlib.sha256((Path(os.environ['DIAG_SOURCE'])/'tools/ci/model_current_triplet_482.py').read_bytes()).hexdigest()==r['helper_sha256']
         positive=['actual-du-allocated-apparent-sparse-hardlink-symlink','strict-child-ENOENT']
         negative=['target-root','outside-target','permission','currently-present','non-ENOENT','third-incomplete','deadline','allocated-cap','apparent-cap','group-cap','root-missing','root-replaced']

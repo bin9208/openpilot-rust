@@ -859,3 +859,235 @@ cpu::diagnostic_482_tests::writer_pair::fresh_writer_pair_reuses_admitted_origin
 전체 SHA가 작업 시작 시점과 같음을 확인했다. Cargo/type-check/build/test/Clippy/compiler/model/
 oracle 및 GHA dispatch/cancel/stage/commit/push는 모두0이다. 새 D의 compile/Clippy/실행·수치
 결과는 **GHA UNRUN**이며 빈 결과나 source 검토를 실제 성공으로 대체하지 않는다.
+
+## actual0283 — AMD에서 typed/15/14/A/B/C/D 완료, WF16의 이전 helper pin으로 FAIL
+
+2026-10-26. source `0283e6345fc8c8e60cd3537424f1c2df383d9088`,
+[run40250301884/job121340512193](https://github.com/bin9208/openpilot-rust/actions/runs/40250301884/job/121340512193).
+job은00:46:40 UTC에 완료됐다. 완료 전에는 상태 metadata만 확인했고 running log/artifact는
+받지 않았다. 완료 뒤 원시 log `structuredContent.content`와 artifact를 각각 한 번 받았다.
+
+**모델 collect13은 성공이다. 이번 B에는 sticky를 발생시킬 mismatch가 없고 C/D도 성공했다.**
+전체 FAIL의 최초 원인은 별도 WF16의 오래된 helper SHA literal이다. 내부 final-seals는
+pass=true/failures=[]이므로 모델 수치·D API/type·SDK 변조 실패로 원인을 바꾸지 않는다.
+
+### 실제 host와 단계별 결과
+
+runner는 `GitHub Actions 1000029787`, CPU는 AMD EPYC7763/logical4/x86_64다. 자연 LLVM target은
+`znver3`이며 std host snapshot에는 AVX/AVX2/FMA 등이 있고 AVX512는 없다. ISA를 강제하지 않았다.
+
+| 범위 | 실제 결과 |
+| --- | --- |
+| current-bins | exit0/16.970171초; typed Cargo terminal build-finished/success=true, error diagnostic0 |
+| current-libtest | exit0/6.267234초; 새 D를 포함한 test ELF typed build 성공. `--no-run`이므로 전체 test 실행으로 세지 않음 |
+| current-clippy | exit0/15.778943초; terminal success=true/error diagnostic0 |
+| cached-code15 / ISA14 | 각각15 passed/14 passed, failed0; commands2.930671초/0.117025초 |
+| A fresh collect / readonly | exit0/63.717938초 및6.526973초; complete91/calls176/strict_triplet_all=true/host_isa_all=true |
+| B original/native plain 및 tapped | 네 command exit0; plain↔tap 동일, original↔native 전체12출력 동일, mismatches=[] |
+| C | exporter exit0/18.794240초, native exit0/15.657555초; 기존 original12와 모두 동일 |
+| D compile | exit0/2.047835초; 원본 Python compiler 실제2회, compile_cached0/원본 모델 실행0 |
+| D inert selector | 1 passed/failed0, command25.225775초; whole-image/ISA/package 검사 완료 |
+| D link 두 개 | 각각 exit0/0.116999초 및0.115936초 |
+| D native selector | 1 passed/failed0, command47.164490초; 두 후보의 original12 비교 완료 |
+| source/index·SDK | 외부 steps14/15 모두 success |
+| 독립 후봉인/회수 | 내부 final-seals pass=true/failures=[]/error=null, subreaper=true/live=[] |
+| WF16 / required17 | failure; 아래 helper pin 불일치가 최초 원인 |
+| upload / cleanup | step18 success; fail-closed로19/20 cleanup은 skipped |
+
+0283의 `cached_isa.rs`는 `pub struct IsaProof`와 `pub use ... IsaProof`를 모두 가진다.
+실제 typed compile/Clippy 및 D 두 selector도 통과했으므로 이 타입에 대한 API 수정 근거는 없다.
+15/14 stdout은 각각63/64 filtered out이고 D selector는77 filtered out이다. 새 ignored2개를
+포함한 실제 등록이 확인되지만 filtered test를 실행 PASS 수에 더하지 않는다.
+
+### D의 실제 동일 context와 서로 같은 object/image
+
+두 compiler 입력은 여전히 rename-only SHA`9781b747d6d436694b7d248a2b29b2fd95ddd78009405674e303a9fa405f6952`,
+guarded SHA`ffc2206baa1f05f49a5c9d07b68de71da1a1437485da87d8e4a75d0692a31b52`로 다르다.
+`compiler-receipt.json`의 각 compile 전후 config는 서로 같고 **이번 A의 실제 writer chain config와도
+정확히 같다.** provider는 `/usr/lib/llvm-18/lib/libLLVM.so.1`, SHA
+`5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`,
+triple=`x86_64-none-unknown-elf`, CPU=`znver3`, passes=`default<O2>`다. 실제 LoopUnrolling/
+LoopVectorization/SLPVectorization/VerifyEach setter는 모두1, constructor는 codegen2/relocation2/
+code-model0이다. target features886B의 SHA는
+`6f19f7ff208d429cf27d8e758c295a33bb84253507f368cdfd2896df2f5b69e1`다.
+
+실제 LLVM context94233412818416/TM94233416175536/PBO94233413981872가 두 후보에서 같다.
+최종 D와 compiler receipt 모두 original_model_executions=0/original_compiler_invocations=2다.
+기존 original_executions/new_original_executions의0은 원본 **모델** 실행0이라는 의미로 유지됐다.
+이 추가 원본 compiler edge는 이번 AMD 실행에서 실제 관측됐으며 부모가 별도 원장에 반영한다.
+
+| 두 후보 공통 결과 | 실제 size/SHA256 |
+| --- | --- |
+| emitted object |21104B / `757b66b27ddbc1f7a90772ced2c722bb6796cdddd58c88c60d4ab3a100dcd762` |
+| complete image |19248B, text19042B/instructions3252 / `bd5c40e153a7ef23d17142a5cc660c21be5126d9f5c67f3736f42313410d13a8` |
+| packaged container |SHA `17aa3514c1295ca2191780d2f38e1297fae28344a49b9e2f0ecc4d406fa2be44` |
+| linked DSO |29568B / `c8d9bbc0cb31931438e491b87f7a17abce8b6a33aaebd5e7c87a690efa1825a1` |
+
+object 두 파일은 서로 다른 inode9438263/9438265, DSO도9438272/9438273이며 nlink1이다.
+직접 bytes를 읽어 두 object와 image의 동일성을 확인했다. image는 이번 A original writer image와도
+같다. 두 receipt의 writer_address는 같지만 library를 순서대로 load/drop하는 source와 구별해
+기록한다. 주소가 같다는 사실을 한 후보 누락이나 다른 compiler 결과로 재해석하지 않는다.
+새 image의 실제 ISA requirements는 avx/avx2/cmov/fma/multibyte-nop뿐이다.
+
+### raw12와 원래90개 인증·후봉인의 독립 재대조
+
+각 원본 출력 경로당12파일/5138816B를 읽어 B original plain == original tapped == native == C ==
+D rename-only == D guarded를 byte exact로 대조했다. 각 receipt의 size/SHA/equal도 같다.
+`model-1.bin` SHA는 `bbebf82fb3e5c20efd6011d5c538b005464e4f9a7eaccc1f2cd1338f44f2732f`이고,
+indices100/101/1349의 실제 word는 모두 LE`00000000`(+0)다. B의 target_context_reproduced=false,
+original_native_bytes_equal=true, mismatches=[]를 그대로 기록한다. Intel ef의 원본-0/native+0
+세 lane 조건을 이번 AMD에서 재현했다고 주장하지 않는다.
+
+A91개 SOURCE/object/image의 size/SHA, 독립 Admission 및 C certificate의 original metadata,
+C cached image bytes와 container/library SHA를 다시 대조했다. 새 D는 같은 C에서 원래90개를
+고정하고 call175만 교체했으며 production_admission_changed=false/candidate_original_certificate_claim=false다.
+두 C helper 사본의 retained bytes/SHA와 UID1001/mode0700/nlink1, 원래 Cargo helper의 before/after
+전체 identity/SHA 및 마지막 holds-after도 같다. children live=[]/모든 소유 자식 회수를 확인했다.
+
+D forecast는44650244B, 기존 C namespace79837906B이며 aggregate cap256MiB/전체 D deadline180초를
+늘리지 않았다. retained C+D files30235543B와 봉인된 미업로드 weights60410137B를 합하면
+90645680B다. 기존 proof512MiB/build+registry8GiB 경계도 유지됐고 해당 자원 실패는 없다.
+
+### 최초 실패: 부모 소유 WF의 단일 stale helper SHA
+
+완료 log의 Python traceback은 `<stdin>:20`이다. published YAML을 parse하여 step16의 heredoc
+line20이 다음 검사임을 확인했다.
+
+```python
+assert r['helper_sha256']=='379507cb2fc7b9d6c35c83f9851f9b541acad86a9d0085e8bb95cf71e03dfd24'
+```
+
+실제 `build-metadata-controls.json`의 helper SHA와0283 Git blob SHA는 모두
+`de8c8946d13e0e555f542f0939a32474efa655d8bd5a16dfc19ad240fa16cfc2`다. metadata controls 자체는
+positive2/negative12/pass=true다. line20 앞의 final seal/child 회수/regular UID/mode/link/schema
+검사는 통과했고 이 pin에서 멈췄다. 뒤의 검사를 실행 성공으로 추정하지 않는다. step17도
+SEALS_OUTCOME=failure 때문에 실패했다. 이번에는 B sticky가 전체 FAIL의 원인이 아니다.
+
+최소 수정 후보는 부모 소유 `.github/workflows/python-rust-523-model-current-triplet.yml`의 해당
+literal을 실제 발행 helper SHA로 동기화하는 것이다. 현재 worktree의 같은 parsed step에도
+379507…가 남아 있음을 읽기로 확인했다. pin/assertion/후봉인을 삭제하거나 성공 처리할 이유가 없다.
+WF와 source/math는 수정하지 않았다. AMD에서 두 후보가 같은 사실은 그대로 보존하고, 필요하면
+기존 D를 자연 지원 Intel 문맥에서 qualification하는 판단은 부모에게 남긴다. 추가 tap/산술 수정이나
+CPU forcing·동일 실패 재dispatch는 제안·실행하지 않았다.
+
+### 보존 증거와 수용 범위
+
+artifact12620264731은 API/download46033247B/SHA256
+`90a86e948a01117a7e1afca3ce0b90e1db02ea33a7b54a3014ff8c82ef29fa14`다.60MiB 상한과 실제
+가용 공간을 확인하고1411개 safe unique canonical/no-symlink·special·encrypted entry, 전체 CRC,
+expanded136702288B를 검사했다. filesystem 추출·원본/compiler/model/ELF 실행은 하지 않았다.
+
+| 실제 receipt | SHA256 |
+| --- | --- |
+| comparison.json | `c3404bd341f1115da21539424b1ea381ea91d8754b150f60440c1cd3e5543916` |
+| cached-context.json | `16ba5c7c5eaa778906d288451e121abccf5f71d55897ea26315cdc564a551a75` |
+| writer-pair-preflight.json | `c56a92e2c11ef8ee912f028219524b24b8a11b4a14adb29c32ce4b2f192fda1c` |
+| writer-pair/compiler-receipt.json | `aebc3f9300e9218585fbb5b9afda6674923f27da4642b606281e91ed41163160` |
+| writer-pair.json | `1c68020af088cf82df3b711261a95185bf5972d30f91c57340184ccb3c090a52` |
+| build-metadata-controls.json | `3493325c3cec54e47409279aa10e46877172b4d6621a21eed52b149b71cd61ec` |
+| final-seals.json | `54bbcb2e8809ef21daad0410904dabdeb3f1efe469a14dd61923ca076418b6b1` |
+
+exact structuredContent.content log90877B/SHA256은
+`c9733b1cf7601695b22ddabb87fcffbbd546506fffbaadd9d2a8eda484725cd9`다. private scratch/ci에
+`model0283-current-final-{run,job,artifacts}.json`, `model0283-current-job121340512193.log`,
+`model0283-actual-audit.json`, `12620264731.zip`으로 보존했다. actual audit JSON3415B/SHA는
+`ba198fc09ce23ac49727c49ffafc8485e4d04efcc3f6f05b9c5865b6b3b09a0d`다.
+
+이 append만 tracked 변경했다. local은 inert metadata/원문/raw 비교와 문서 diff 확인뿐이며,
+Cargo/build/test/Clippy/LLVM/compiler/model/oracle 실행 및 CI dispatch/cancel은0이다. 새 source의
+typed/Clippy/15/14/A/B/C/D **AMD 실제 성공 범위**는 확인했지만, 전체 job PASS·Intel 숫자 실패
+해결·B2frame 밖 full128·과거 half·전체 모델·retirement 수용으로 확대하지 않는다.
+
+## 다음 F02 독립 후보 — offline kernel registry의 production Python 계산 제거 제안
+
+2026-10-26, 읽기 기준 HEAD `ad1e35cf6813dd352f700907489f2edc31e1482e`.
+0283 actual 감사는 완료됐고 stale WF pin 교정은 부모 소유다. 이 절은 모델 D 원인 해결이나
+Intel 강제 재현이 아닌 **별도 F02 구현1개 제안**이다. 현재 문서 외 source는 수정하지 않았다.
+
+우선 [compiler-emission actual 기록](python-rust-523-compiler-emission-actions.md),
+[native emitter 구현 기록](python-rust-523-compiler-native-emission.md),
+[앞선 소비자 경계 설계](python-rust-523-compiler-next-closure.md)와 실제 source를 읽었다.
+기존 sourceef172/run40245597111/attempt2/job121329475106의 문서화된 수용 범위는 native10/
+COPY1/genuine mixed1/order7/strict Clippy와 source·SDK 후봉인·회수다. original-first graph
+calls3/kernels1/native launches2, weights64B 및 오류별 lowering/compiler 횟수
+`[0,0,1,1,0,0,0]`가 수용됐다. 이 역사 artifact를 새로 받거나 실행하지 않았으며, 해당 기록을
+전체 model export/원본 compiler 제거 수용으로 확대하지 않는다.
+
+### 선택한 실제 잔여 계산과 소비자
+
+`build_offline_model_pipelines.py → offline_publish.publish/emit → offline_pipeline.export_pipeline`
+재수출 → `offline_schedule.export_pipeline → emit_schedule`가 production 경로다.
+`export_model`도 같은 emitter를 쓴다. 현재 `emit_schedule`513–522행은 Python에서 binary SHA/
+길이와 `Kernel(name, hash, bytes, arguments)` signature를 만들고, `kernel_ids` 사전으로 index와
+첫 대표 PROGRAM/source/binary를 결정한다. 이 계산을 **기존 native stream의 kernel registry**로
+옮기고 Python의 해당 hash/dedup/index 결정을 삭제하는 한 slice를 권한다. 별도 helper/process/
+collector나 새 compiler를 추가하지 않는다.
+
+`OfflineQcomCompiler`는 `Compiler(None)`을 사용하므로 이 offline 경로의 `compile_cached`는
+disk-cache get/put을 하지 않는다. 다만 tinygrad `codegen.do_compile → compile_cached`의
+`ASSERT_COMPILE` 거부가 `.compile`과 subprocess 진입보다 먼저다. 이를 cache 포팅 명목으로
+child 안으로 옮기면 원래 호출/오류 순서가 바뀐다. 이 slice는 그 guard, 원래 compile process,
+render/to_program/lowering, provider와 timeout/error mapping을 그대로 둔다. 모델 D의 원본
+Python compiler2회를 이 제안으로 제거했다고 등록하지 않는다.
+
+실제 반환 소비자도 유지해야 한다. `OfflineCompilation.programs`는 Python interpreter 수치
+검사에서 원래 emitted IR을 읽고, `offline_publish.emit`은 graph/descriptor digest를 이용한다.
+따라서 native는 index뿐 아니라 **첫 대표의 실제 program key**를 반환하고, Python은 이미
+강하게 보유한 PROGRAM에서 원래 handle/source/binary를 선택하는 bridge만 담당한다. live
+`qcom.py::export_qcom`와 공용 Kernel dataclass는 별도 소비자가 있으므로 삭제 대상이 아니다.
+
+### 정확한 순서·key와 기존 stream의 재사용
+
+현재 순서는 descriptor → genuine to_program/compile → info/aux/device 및 source/binary 검사 →
+native launch → ins read → outs write → **Kernel signature/dedup** → globals view/call이다.
+새 registry commit은 바로 이 굵은 위치에서 ACK받아야 한다. 초기 Program 등록이나 Launch로
+dedup을 앞당기지 않는다. raw arguments를 취득하는 기존 Python 위치도 보존해 aux 오류를
+뒤로 미루지 않는다. 모든 read/launch/compile 오류는 미래 compiler 및 destination 생성보다
+앞서 거부되어야 한다.
+
+key는 원래 `(function_name, SHA256(binary), len(binary), arguments)`와 같아야 한다.
+**SOURCE와 PROGRAM 객체 identity는 signature에 추가하지 않는다.** 서로 다른 PROGRAM/key나
+SOURCE여도 같은 signature면 첫 대표를 유지하고, 같은 PROGRAM의 반복 call은 제거하지 않는다.
+signature의 name/binary/argument 종류·width/height/pitch/element_bytes 중 하나가 다르면 별도
+kernel이다. native가 actual Program binary에서 SHA/length를 만들며 caller가 supplied hash를
+expected로 넘기지 않는다.
+
+기존 `--export-stream`에 명시적인 새 wire version과 kernel-commit/reply를 추가하는 방법이 좁다.
+기존 v1 stream과 `--export-plan` v1/v2는 그대로 유지한다. `compiler_schedule/export.rs`의
+Program SOURCE/binary 보관을 재사용하고 final에 kernel table/첫 program-key 순서를 반환한다.
+Python은 wire shape/reference/count만 검증하고 Kernel/hash/dedup의 expected를 재계산하지 않는다.
+기존 Manifest DTO와 파일 writer는 반환 native 순서를 소비한다. EOF/빈 stderr/exit0/reap 이후
+destination 생성이라는 순서는 그대로이며 native child가 먼저 파일을 쓰게 바꾸지 않는다.
+
+같은 process·owner/sequence/latch/EOF·256MiB 입출력/retained cap·기존 총 frame cap을 유지한다.
+새 commit frame과 registry metadata도 기존 예산을 소비하며 cap을 늘리지 않는다. unique registry는
+launch 한도65536 안에서 제한한다. metadata memory accounting과 실제 작은 mixed의 wire fit도
+검증해야 한다. 전체 모델/128MiB weights의 wire fit과 상위 CLI의 실제 자원 admission은 별도 미수용이다.
+
+### 구현 전 제안 write scope와 수용 조건
+
+제안하는 source 범위는 다음3개뿐이며 **아직 편집하지 않았다**.
+
+- `rust/tools/model_export/offline_schedule.py`: 기존 Python kernel_ids/hash/index 계산 제거,
+  native registry 소비와 엄격 decoder/PROGRAM handle bridge.
+- `rust/crates/model-runtime/src/compiler_schedule/export.rs`: ordered kernel registry/명시적 새
+  stream 계약. provider compile·수학과 runtime QCOM graph API는 건드리지 않음.
+- `rust/crates/model-runtime/tests/compiler_export_caller.rs`: 기존 target 안의 직접 core/CLI 경계와
+  기존 genuine mixed 검사를 확장. 새 진단 helper/새 standalone WF는 만들지 않음.
+
+수용은 native signature의 첫 대표/같은 key·서로 다른 key/다른 SOURCE·동일 signature/변경된
+각 signature field/반복 call 보존, unknown key·누락/중복 commit·failed latch·cap·EOF와 구버전
+원문 보존을 포함해야 한다. 기존 SHA 고정 원본 prefix를 original-first로 실행해 graph JSON bytes,
+weights, 파일명·순서와 source/binary 전체 bytes, 대표 PROGRAM IR handle을 비교한다. 기존
+order7의 오류 우선순위·compile/lowering 횟수와 destination 부재도 같아야 한다. candidate에서
+Python Kernel hash를 poison해도 실제 export가 성공하도록 검사하면 남은 Python dedup 소비를
+찾을 수 있다. expected를 candidate registry에서 만들지 않는다.
+
+변경 source에 대한 기존 native10/COPY/mixed/order7와 strict Clippy·source/SDK/회수 gate를
+부모가 다음 coherent source에 연결한다. 이미 성공한 불변 source를 다시 dispatch하지 않는다.
+소비자 비교 통과 뒤 인정할 것은 **production offline kernel registry 계산의 Rust 전환**이다.
+파일 전체 삭제 credit은0이며 `offline_compiler.py`/generic compile_cached, UOp lowering,
+metadata 취득과 최종 Python writer는 계속 pending이다. 현재 제안 자체의 기능 수용도0이다.
+
+이 절 작성 중 로컬 compiler/oracle/model/Cargo/test/Clippy 실행·CI dispatch/cancel은0이다.
+부모의 구현 범위 확정 전에는 위 source나 공유 CLI/lib/Cargo/WF/pin/원장을 수정하지 않는다.

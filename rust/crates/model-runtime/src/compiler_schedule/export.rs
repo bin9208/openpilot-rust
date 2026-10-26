@@ -10,7 +10,10 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    mem::size_of,
+};
 
 pub const MAX_MESSAGE: usize = 256 * 1024 * 1024;
 
@@ -149,6 +152,94 @@ pub struct LaunchResult {
     global: Vec<Number>,
     local: Vec<Number>,
 }
+
+// ImageDType supplies integer metadata. Keep its signed width here rather than
+// imposing the runtime image allocator's narrower admission during emission.
+// Decimal wire strings also avoid Serde's internally tagged i128 buffer limit.
+fn metadata_integer<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<i128, D::Error> {
+    String::deserialize(deserializer)?
+        .parse()
+        .map_err(serde::de::Error::custom)
+}
+
+#[derive(Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+enum Argument {
+    Buffer {},
+    Image {
+        #[serde(deserialize_with = "metadata_integer")]
+        width: i128,
+        #[serde(deserialize_with = "metadata_integer")]
+        height: i128,
+        #[serde(deserialize_with = "metadata_integer")]
+        pitch: i128,
+        #[serde(deserialize_with = "metadata_integer")]
+        element_bytes: i128,
+    },
+}
+
+#[derive(Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+struct KernelSignature {
+    name: String,
+    binary_sha256: String,
+    binary_bytes: usize,
+    arguments: Vec<Vec<Argument>>,
+}
+
+#[derive(Serialize)]
+struct RegisteredKernel {
+    program_key: u64,
+    #[serde(flatten)]
+    signature: KernelSignature,
+}
+
+#[derive(Default, Serialize)]
+struct Registry {
+    kernels: Vec<RegisteredKernel>,
+    launch_kernels: Vec<usize>,
+}
+
+// Owned metadata payload, separate from serialized transport bytes. Allocator
+// and BTreeMap node overhead are not an RSS bound. Every product/sum is checked
+// before it is added to the existing session retained-byte admission.
+fn metadata_bytes(parts: impl IntoIterator<Item = (usize, usize)>) -> Result<usize, String> {
+    parts.into_iter().try_fold(0usize, |total, (count, size)| {
+        count
+            .checked_mul(size)
+            .and_then(|bytes| total.checked_add(bytes))
+            .filter(|bytes| *bytes <= MAX_MESSAGE)
+            .ok_or_else(|| "export stream metadata payload exceeds bound".into())
+    })
+}
+
+fn signature_heap_bytes(signature: &KernelSignature) -> Result<usize, String> {
+    metadata_bytes(
+        [
+            (signature.name.capacity(), 1),
+            (signature.binary_sha256.capacity(), 1),
+            (signature.arguments.capacity(), size_of::<Vec<Argument>>()),
+        ]
+        .into_iter()
+        .chain(
+            signature
+                .arguments
+                .iter()
+                .map(|group| (group.capacity(), size_of::<Argument>())),
+        ),
+    )
+}
+
+// Charge one element even if spare capacity already exists. Preserve Vec's
+// amortized growth and charge every additional reported capacity slot.
+fn reserve_metadata<T>(values: &mut Vec<T>) -> Result<usize, String> {
+    let previous = values.capacity();
+    values.try_reserve(1).map_err(|e| e.to_string())?;
+    metadata_bytes([(
+        values.capacity().saturating_sub(previous).max(1),
+        size_of::<T>(),
+    )])
+}
+
 #[derive(Serialize)]
 pub struct Plan {
     version: u32,
@@ -159,6 +250,8 @@ pub struct Plan {
     weights_sha256: String,
     launches: Vec<LaunchResult>,
     entrypoints: Vec<Entrypoint>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    registry: Option<Registry>,
 }
 fn bytes(value: &str) -> Result<Vec<u8>, String> {
     if value.len() > MAX_MESSAGE || !value.len().is_multiple_of(2) {
@@ -348,6 +441,7 @@ pub fn prepare(request: Request) -> Result<Plan, String> {
         weights_sha256: format!("{:x}", Sha256::digest(&packed)),
         launches,
         entrypoints: entries.entrypoints,
+        registry: None,
     })
 }
 
@@ -381,6 +475,11 @@ enum StreamCommand {
         global: Vec<Number>,
         local: Option<Vec<Number>>,
     },
+    KernelCommit {
+        key: u64,
+        name: String,
+        arguments: Vec<Vec<Argument>>,
+    },
     Finish {
         emitted_by_source: Vec<usize>,
         stages: Vec<RawStage>,
@@ -395,6 +494,12 @@ pub enum StreamReply {
         session: String,
         sequence: u64,
         complete: bool,
+    },
+    Kernel {
+        session: String,
+        sequence: u64,
+        complete: bool,
+        index: usize,
     },
     Final {
         session: String,
@@ -412,6 +517,7 @@ impl StreamReply {
 #[derive(Default)]
 pub struct StreamSession {
     session: Option<String>,
+    version: u32,
     sequence: u64,
     failed: bool,
     finished: bool,
@@ -423,6 +529,9 @@ pub struct StreamSession {
     event_views: Vec<usize>,
     programs: BTreeMap<u64, (String, Vec<u8>)>,
     launches: Vec<LaunchResult>,
+    pending_kernel: Option<u64>,
+    kernel_ids: BTreeMap<KernelSignature, usize>,
+    registry: Registry,
 }
 
 impl StreamSession {
@@ -469,7 +578,8 @@ impl StreamSession {
                 version,
                 initialized,
             } => {
-                if self.session.is_some() || version != 1 || initialized.len() > 65536 {
+                if self.session.is_some() || !matches!(version, 1 | 2) || initialized.len() > 65536
+                {
                     return Err("invalid export stream begin".into());
                 }
                 for item in initialized {
@@ -478,6 +588,13 @@ impl StreamSession {
                     // Length/base admission remains lazy, at the actual read.
                     self.initialized.insert(item.key, data);
                 }
+                if version == 2 {
+                    self.retain(metadata_bytes([
+                        (1, size_of::<Registry>()),
+                        (1, size_of::<BTreeMap<KernelSignature, usize>>()),
+                    ])?)?;
+                }
+                self.version = version;
                 self.session = Some(frame.session.clone());
             }
             StreamCommand::Event { event } => {
@@ -518,6 +635,9 @@ impl StreamSession {
                 self.programs.insert(key, (program.source, binary));
             }
             StreamCommand::Launch { key, global, local } => {
+                if self.pending_kernel.is_some() {
+                    return Err("export stream launch requires preceding kernel commit".into());
+                }
                 if self.launches.len() >= 65536 {
                     return Err("export stream launch bound".into());
                 }
@@ -527,6 +647,66 @@ impl StreamSession {
                     .ok_or("unknown export stream program")?;
                 self.launches
                     .push(resolve_launch(&global, local.as_deref(), source, binary)?);
+                if self.version == 2 {
+                    self.pending_kernel = Some(key);
+                }
+            }
+            StreamCommand::KernelCommit {
+                key,
+                name,
+                arguments,
+            } => {
+                if self.version != 2 || self.pending_kernel != Some(key) {
+                    return Err("export stream kernel commit differs from pending launch".into());
+                }
+                // Only the actual post-launch/read/write checkpoint interns a
+                // signature. SOURCE and PROGRAM identity are not signature fields.
+                let (_, binary) = self
+                    .programs
+                    .get(&key)
+                    .ok_or("unknown export stream program")?;
+                let signature = KernelSignature {
+                    name,
+                    binary_sha256: format!("{:x}", Sha256::digest(binary)),
+                    binary_bytes: binary.len(),
+                    arguments,
+                };
+                let index = if let Some(index) = self.kernel_ids.get(&signature) {
+                    *index
+                } else {
+                    // Both signature heaps, map entry payload and registry Vec
+                    // slots share the old cap. Buffer variants occupy the full
+                    // Argument enum, irrespective of their short JSON spelling.
+                    let heap = signature_heap_bytes(&signature)?;
+                    self.retain(metadata_bytes([
+                        (2, heap),
+                        (1, size_of::<(KernelSignature, usize)>()),
+                        (1, size_of::<RegisteredKernel>()),
+                    ])?)?;
+                    let map_signature = signature.clone();
+                    self.retain(signature_heap_bytes(&map_signature)?.saturating_sub(heap))?;
+                    let slots = reserve_metadata(&mut self.registry.kernels)?;
+                    self.retain(slots.saturating_sub(size_of::<RegisteredKernel>()))?;
+                    let index = self.registry.kernels.len();
+                    self.kernel_ids.insert(map_signature, index);
+                    self.registry.kernels.push(RegisteredKernel {
+                        program_key: key,
+                        signature,
+                    });
+                    index
+                };
+                self.retain(size_of::<usize>())?;
+                let slots = reserve_metadata(&mut self.registry.launch_kernels)?;
+                self.retain(slots.saturating_sub(size_of::<usize>()))?;
+                self.registry.launch_kernels.push(index);
+                self.pending_kernel = None;
+                self.sequence += 1;
+                return Ok(StreamReply::Kernel {
+                    session: frame.session,
+                    sequence: frame.sequence,
+                    complete: false,
+                    index,
+                });
             }
             StreamCommand::Finish {
                 emitted_by_source,
@@ -537,6 +717,12 @@ impl StreamSession {
                 let (allocations, packed) = self.table.weights();
                 if packed.len() > MAX_MESSAGE / 2 {
                     return Err("export-plan weights exceed wire bound".into());
+                }
+                if self.version == 2
+                    && (self.pending_kernel.is_some()
+                        || self.registry.launch_kernels.len() != self.launches.len())
+                {
+                    return Err("export stream final requires every kernel commit".into());
                 }
                 if stages.len() > 65536
                     || retained_calls.len() > 65536
@@ -577,6 +763,7 @@ impl StreamSession {
                     weights_sha256: format!("{:x}", Sha256::digest(&packed)),
                     launches: std::mem::take(&mut self.launches),
                     entrypoints: entries.entrypoints,
+                    registry: (self.version == 2).then(|| std::mem::take(&mut self.registry)),
                 };
                 self.finished = true;
                 self.sequence += 1;
@@ -594,5 +781,55 @@ impl StreamSession {
             sequence: frame.sequence,
             complete: false,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn registry_metadata_budget_rejects_product_sum_overflow_and_cap_without_allocation() {
+        assert_eq!(metadata_bytes([(MAX_MESSAGE, 1)]).unwrap(), MAX_MESSAGE);
+        assert_eq!(metadata_bytes([(0, usize::MAX)]).unwrap(), 0);
+        for parts in [
+            [(usize::MAX, 2), (0, 0)],
+            [(1, MAX_MESSAGE), (1, 1)],
+            [(1, 1), (usize::MAX, 1)],
+            [(MAX_MESSAGE / 2 + 1, 2), (0, 0)],
+        ] {
+            assert!(metadata_bytes(parts).unwrap_err().contains("exceeds bound"));
+        }
+        let mut session = StreamSession::default();
+        session.retain(MAX_MESSAGE - 8).unwrap();
+        assert!(session.retain(metadata_bytes([(2, 8)]).unwrap()).is_err());
+    }
+
+    #[test]
+    fn registry_metadata_counts_buffer_enum_capacity_and_both_owned_signatures() {
+        let mut group = Vec::with_capacity(8);
+        group.extend([Argument::Buffer {}]);
+        let mut arguments = Vec::with_capacity(4);
+        arguments.extend([group]);
+        let mut name = String::with_capacity(128);
+        name.push('k');
+        let signature = KernelSignature {
+            name,
+            binary_sha256: String::with_capacity(64),
+            binary_bytes: 0,
+            arguments,
+        };
+        let heap = signature_heap_bytes(&signature).unwrap();
+        assert!(heap >= 128 + 64 + 4 * size_of::<Vec<Argument>>() + 8 * size_of::<Argument>());
+        assert!(size_of::<Argument>() >= size_of::<[i128; 4]>());
+        let owned = metadata_bytes([
+            (2, heap),
+            (1, size_of::<(KernelSignature, usize)>()),
+            (1, size_of::<RegisteredKernel>()),
+        ])
+        .unwrap();
+        assert!(owned > 2 * serde_json::to_vec(&signature).unwrap().len());
+        let mut values: Vec<RegisteredKernel> = Vec::new();
+        assert!(reserve_metadata(&mut values).unwrap() >= size_of::<RegisteredKernel>());
     }
 }

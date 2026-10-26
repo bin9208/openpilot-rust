@@ -1,7 +1,7 @@
 //! source73의 독립 원본 관측을 데이터로만 소비한다. Python 실행/import는 없다.
 use openpilot_dev_tools::{
     planner_ci_controller::{
-        plan::{self, Inputs},
+        plan::{self, Inputs, NativeIpcInputs},
         run_checks, scheduler, Check, CheckFailure,
     },
     qa_process::{CommandSpec, NativeRunner},
@@ -300,6 +300,16 @@ fn compare_plan(fixture: &Fixture, memory: bool, count: usize) {
         source: base.join("source"),
         binding: base.join("params.so"),
         scheduler: base.join("native-scheduler"),
+        native_ipc: (!memory).then(|| NativeIpcInputs {
+            original_ipc_binding: base.join("original/ipc_pyx.fixture.so"),
+            compiler: base.join("compiler"),
+            corpus: base.join("corpus"),
+            corpus_audit: base.join("corpus/audit.json"),
+            corpus_audit_sha256: "b".repeat(64),
+            timeout: Duration::from_secs(3),
+            growth_mib: 512,
+            peer_build_growth_mib: 128,
+        }),
     };
     let output = base.join("output");
     let mappings = [
@@ -376,7 +386,87 @@ fn compare_plan(fixture: &Fixture, memory: bool, count: usize) {
                 .collect(),
         })
         .collect::<Vec<_>>();
-    assert_eq!(actual, expected);
+    assert_eq!(actual.len(), expected.len());
+    let mut ipc_cutovers = 0;
+    for (index, (actual, expected)) in actual.iter().zip(&expected).enumerate() {
+        if !memory && index == 10 {
+            // source73 원문 IPC argv도 전부 확인한다. 새 native argv로 원문을 덮어쓰지 않는다.
+            assert_eq!(expected.name, "ipc");
+            assert_eq!(
+                expected.argv,
+                [
+                    inputs.python.clone(),
+                    "-u".into(),
+                    "-P".into(),
+                    inputs.root.join("rust/tools/plannerd_ipc.py"),
+                    "--source-native".into(),
+                    inputs.source.clone(),
+                    "--artifact".into(),
+                    inputs.artifact.clone(),
+                    "--python".into(),
+                    inputs.python.clone(),
+                    "--binding".into(),
+                    inputs.binding.clone(),
+                    "--binary".into(),
+                    inputs.binaries.join("openpilot-plannerd"),
+                    "--output".into(),
+                    output.join("ipc"),
+                ]
+                .map(|path| path.to_str().unwrap().to_owned())
+            );
+            assert_eq!(
+                actual,
+                &Leaf {
+                    name: "ipc".into(),
+                    argv: [
+                        inputs.scheduler.clone(),
+                        "ipc".into(),
+                        "--root".into(),
+                        inputs.root.clone(),
+                        "--python".into(),
+                        inputs.python.clone(),
+                        "--binary".into(),
+                        inputs.binaries.join("openpilot-plannerd"),
+                        "--artifact".into(),
+                        inputs.artifact.clone(),
+                        "--binding".into(),
+                        inputs.binding.clone(),
+                        "--source-native".into(),
+                        inputs.source.clone(),
+                        "--original-ipc-binding".into(),
+                        base.join("original/ipc_pyx.fixture.so"),
+                        "--scheduler".into(),
+                        inputs.scheduler.clone(),
+                        "--compiler".into(),
+                        base.join("compiler"),
+                        "--corpus".into(),
+                        base.join("corpus"),
+                        "--corpus-audit".into(),
+                        base.join("corpus/audit.json"),
+                        "--corpus-audit-sha256".into(),
+                        "b".repeat(64).into(),
+                        "--timeout-seconds".into(),
+                        "3".into(),
+                        "--growth-mib".into(),
+                        "512".into(),
+                        "--peer-build-growth-mib".into(),
+                        "128".into(),
+                        "--output".into(),
+                        output.join("ipc"),
+                        "--evidence".into(),
+                        output.join("ipc-scheduler.tsv"),
+                    ]
+                    .map(|path| path.to_str().unwrap().to_owned())
+                    .into(),
+                }
+            );
+            ipc_cutovers += 1;
+        } else {
+            // runtime 나머지 11개와 memory3는 순서와 전체 argv를 원문 그대로 대조한다.
+            assert_eq!(actual, expected, "frozen leaf at index {index}");
+        }
+    }
+    assert_eq!(ipc_cutovers, usize::from(!memory));
 }
 
 #[test]

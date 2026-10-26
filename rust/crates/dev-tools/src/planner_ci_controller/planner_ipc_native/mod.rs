@@ -560,8 +560,30 @@ fn run_case(
     Ok((records, summary))
 }
 
-/// 실제 callable driver다. 부모 CLI/plan 연결과 독립 입력 capture 전에는 등록/수용하지 않는다.
+fn require_retired_scheduler_test_absent(root: &Path) -> Result<()> {
+    let relative = "rust/tools/tests/test_plannerd_native_scheduler.py";
+    match fs::symlink_metadata(root.join(relative)) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => {
+            Err(format!("cannot verify retired scheduler test {relative}: {error}").into())
+        }
+        Ok(_) => Err(format!("retired scheduler test reappeared: {relative}").into()),
+    }
+}
+
+fn finish_scheduler_retirement(root: &Path, work: Result<Value>) -> Result<Value> {
+    require_retired_scheduler_test_absent(root)?;
+    work
+}
+
+/// 실제 native IPC 진입. 퇴역한 Python scheduler test의 재등장을 전후 거부한다.
 pub fn run(options: &Options) -> Result<Value> {
+    require_retired_scheduler_test_absent(&options.root)?;
+    let work = run_with_original_outputs(options);
+    finish_scheduler_retirement(&options.root, work)
+}
+
+fn run_with_original_outputs(options: &Options) -> Result<Value> {
     let capture = Capture::open(
         &options.corpus,
         &options.corpus_audit,

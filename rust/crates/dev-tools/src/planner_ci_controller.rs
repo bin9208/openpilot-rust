@@ -41,6 +41,10 @@ impl Check {
         let mut argv = command.effective_argv();
         argv.push(self.output_option.clone().into());
         argv.push(output.join(&self.name).into_os_string());
+        if self.name == "ipc" && self.scheduler_calls.is_some() {
+            argv.push("--evidence".into());
+            argv.push(output.join("ipc-scheduler.tsv").into_os_string());
+        }
         command.os_argv = Some(argv);
         command.cwd = Some(root.to_owned());
         command.merge_output = true;
@@ -88,12 +92,23 @@ pub fn run_checks(
     root: &Path,
     runner: &mut dyn Runner,
 ) -> Result<Vec<CommandRecord>> {
+    run_prepared_checks(checks.iter().cloned().map(Ok), output, root, runner)
+}
+
+/// IPC 준비도 해당 순서에 도달했을 때만 수행한다. slice API와 같은 로그·실패 경로다.
+pub(crate) fn run_prepared_checks(
+    checks: impl IntoIterator<Item = Result<Check>>,
+    output: &Path,
+    root: &Path,
+    runner: &mut dyn Runner,
+) -> Result<Vec<CommandRecord>> {
     if let Some(parent) = output.parent() {
         fs::create_dir_all(parent)?;
     }
     fs::create_dir(output)?;
     let mut records = Vec::new();
     for check in checks {
+        let check = check?;
         let mut command = check.invocation(output, root)?;
         let scheduler_evidence = output.join(format!("{}-scheduler.tsv", check.name));
         if check.scheduler_calls.is_some() {

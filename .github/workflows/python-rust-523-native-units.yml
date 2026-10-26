@@ -373,7 +373,7 @@ jobs:
           compiler-export)
         run_once compiler-export-units "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_export_caller
-        grep -F 'test result: ok. 10 passed; 0 failed; 2 ignored;' "$CI_JOB_TEMP/proof/compiler-export-units.log" || failed=1
+        grep -F 'test result: ok. 14 passed; 0 failed; 2 ignored;' "$CI_JOB_TEMP/proof/compiler-export-units.log" || failed=1
         run_once maintained-compiler-export "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features --features native-skip-miri -p openpilot-model-runtime --test compiler_export_caller \
           maintained_python_export_calls_native_plan_without_fallback -- --ignored --exact --nocapture
@@ -396,14 +396,6 @@ jobs:
         run_once planner-controller-retirement "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-dev-tools --test planner_controller_retirement
         grep -F 'test result: ok. 6 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-controller-retirement.log" || failed=1
-        run_once planner-scheduler-adapter /usr/bin/env \
-          PLANNER_NATIVE_SCHEDULER_TEST_BIN="$CARGO_TARGET_DIR/debug/check-plannerd-ci" \
-          PLANNER_SCHEDULER_PARSE_CAPTURE_DIR="$CI_JOB_TEMP/proof/planner-scheduler-original-parse" \
-          /usr/bin/python3 -I -B -m unittest discover -s rust/tools/tests -p test_plannerd_native_scheduler.py -v
-        grep -E '^Ran 14 tests in ' "$CI_JOB_TEMP/proof/planner-scheduler-adapter.log" || failed=1
-        grep -Fx 'OK' "$CI_JOB_TEMP/proof/planner-scheduler-adapter.log" || failed=1
-        grep -E '^test_real_native_binary_receives_all_160_calls_with_matching_targets .* \.\.\. ok$' \
-          "$CI_JOB_TEMP/proof/planner-scheduler-adapter.log" || failed=1
         run_once planner-controller-frozen "$sdk/bin/cargo" test --manifest-path rust/Cargo.toml --locked \
           --no-default-features -p openpilot-dev-tools --test planner_controller_frozen -- --nocapture
         grep -F 'test result: ok. 5 passed; 0 failed; 0 ignored;' "$CI_JOB_TEMP/proof/planner-controller-frozen.log" || failed=1
@@ -564,4 +556,4 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crate: "${{ fromJSON(github.event_name == 'push' && '[\"model\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\",\"planner-client\"]' || inputs.crate == 'planner-client' && '[\"planner-client\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"
+        crate: "${{ fromJSON(github.event_name == 'push' && '[\"planner\",\"planner-client\"]' || inputs.crate == 'all' && '[\"control\",\"model\",\"tools\",\"buffers\",\"planner\",\"compiler-export\",\"planner-client\"]' || inputs.crate == 'planner-client' && '[\"planner-client\"]' || inputs.crate == 'compiler-export' && '[\"compiler-export\"]' || inputs.crate == 'control' && '[\"control\"]' || inputs.crate == 'model' && '[\"model\"]' || inputs.crate == 'buffers' && '[\"buffers\"]' || inputs.crate == 'planner' && '[\"planner\"]' || '[\"tools\"]') }}"

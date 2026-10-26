@@ -1751,7 +1751,10 @@ pub const NATIVE_ARM_BINDINGS: &[(&str, &str)] = &[
 pub fn validate_native_arm_reuse(main: &Value, native: &Value) -> Result<(), String> {
     require(
         main["jobs"]["native-arm"]
-            == serde_json::json!({"uses":"./.github/workflows/rust-native-arm.yml"}),
+            == serde_json::json!({
+                "uses":"./.github/workflows/rust-native-arm.yml",
+                "permissions":{"contents":"read","actions":"read"}
+            }),
         "native ARM requires its unconditional same-source caller",
     )?;
     require(
@@ -1813,6 +1816,19 @@ pub fn validate_native_arm_reuse(main: &Value, native: &Value) -> Result<(), Str
             && jobs.contains_key("native-arm-checks"),
         "native ARM required leaf roster changed",
     )?;
+    // reusable callee는 caller가 준 read 범위 안에서만 권한을 유지/축소할 수 있다.
+    for (name, job) in jobs {
+        let permissions = job.get("permissions").unwrap_or(&native["permissions"]);
+        require(
+            permissions.as_object().is_some_and(|grants| {
+                grants.iter().all(|(scope, grant)| {
+                    main["jobs"]["native-arm"]["permissions"][scope] == "read"
+                        && matches!(grant.as_str(), Some("read" | "none"))
+                })
+            }),
+            format!("native ARM callee permissions exceed caller: {name}"),
+        )?;
+    }
     validate_local_routing(native)?;
     for (name, timeout, stages) in [
         (
@@ -2021,7 +2037,10 @@ pub fn validate_rust_gate(workflow: &Value) -> Result<(), String> {
     absent(&jobs["dbc-darwin"], &["if", "continue-on-error"])?;
     require(
         jobs.get("native-arm")
-            == Some(&serde_json::json!({"uses":"./.github/workflows/rust-native-arm.yml"})),
+            == Some(&serde_json::json!({
+                "uses":"./.github/workflows/rust-native-arm.yml",
+                "permissions":{"contents":"read","actions":"read"}
+            })),
         "required native ARM job must keep its unconditional same-source caller",
     )?;
     let gate = &workflow["jobs"]["fast"];

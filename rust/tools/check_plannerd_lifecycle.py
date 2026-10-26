@@ -7,8 +7,9 @@ import json
 from pathlib import Path
 import shutil
 import signal
+import sys
 
-from plannerd_lifecycle_peer import Case, run
+from plannerd_lifecycle_peer import Case, LifecycleCapture, run
 
 
 def main() -> None:
@@ -29,10 +30,14 @@ def main() -> None:
             Case("recover-directory", "recover", car_params="directory"),
             Case("settings-directories", "ready", directories=("EnableRadarTracks", "UseLaneLineSpeed", "LatMpcPathCost", "LongActuatorDelay")),
             Case("fatal-integer", "integer"), Case("fatal-float", "float"), Case("malformed-CarParams", "malformed")]
+  capture = LifecycleCapture.from_environment(args, cases)
   results = []
   for case in cases:
     for mode in ["source", "rust"]:
-      result = run(args, case, mode)
+      if capture is None:
+        result = run(args, case, mode)
+      else:
+        result = run(args, case, mode, capture)
       results.append(result)
       (args.output / "cases.json").write_text(json.dumps(results, indent=2) + "\n")
       print(case.name, mode, result["ok"], flush=True)
@@ -40,6 +45,13 @@ def main() -> None:
     "binary_sha256": hashlib.sha256(args.binary.read_bytes()).hexdigest(),
     "scope": "real source/native lifecycle; native clean SIGINT matches the original manager launcher",
     "exit_boundary": "raw source KeyboardInterrupt=-2; invalid numeric source abort vs typed Rust exit1 remains explicit"}
+  if capture is not None:
+    try:
+      capture.finish(results, receipt)
+    except RuntimeError as error:
+      if receipt["status"] == "PASS":
+        raise
+      print(str(error), file=sys.stderr, flush=True)
   (args.output / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
   print(json.dumps(receipt))
   assert receipt["status"] == "PASS", "planner lifecycle mismatches; see individual receipts"

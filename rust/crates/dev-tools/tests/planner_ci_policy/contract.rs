@@ -144,7 +144,10 @@ pub fn assert_contract(main: &Value, native: &Value) {
     assert_eq!(native["env"]["RUSTUP_TOOLCHAIN"], "1.94.0");
     assert_eq!(
         jobs["native-arm"],
-        json!({"uses":"./.github/workflows/rust-native-arm.yml"})
+        json!({
+            "uses":"./.github/workflows/rust-native-arm.yml",
+            "permissions":{"contents":"read","actions":"read"}
+        })
     );
     let fast = &jobs["fast"];
     for name in ["planner-runtime", "planner-memory", "native-arm"] {

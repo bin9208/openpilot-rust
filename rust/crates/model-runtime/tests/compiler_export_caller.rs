@@ -555,6 +555,303 @@ fn actual_stream_cli_requires_exact_owner_frames_and_eof_before_final() {
     }
 }
 
+fn registry_program(key: u64, source: &str, binary: &str) -> Value {
+    json!({"op":"program","key":key,"program":{"source":source,"binary":binary}})
+}
+
+fn registry_launch(key: u64) -> Value {
+    json!({"op":"launch","key":key,"global":[{"type":"integer","value":"64"}],
+           "local":[{"type":"integer","value":"1"}]})
+}
+
+fn registry_commit(key: u64, name: &str, mut arguments: Value) -> Value {
+    for group in arguments.as_array_mut().unwrap() {
+        for argument in group.as_array_mut().unwrap() {
+            if argument["kind"] == "image" {
+                for field in ["width", "height", "pitch", "element_bytes"] {
+                    argument[field] = json!(argument[field].to_string());
+                }
+            }
+        }
+    }
+    json!({"op":"kernel_commit","key":key,"name":name,"arguments":arguments})
+}
+
+fn registry_arguments() -> Value {
+    json!([[{"kind":"image","width":4,"height":3,"pitch":32,"element_bytes":2}],
+           [{"kind":"buffer"}]])
+}
+
+fn registry_finish(count: usize) -> Value {
+    json!({"op":"finish","stages":[],"retained_calls":(0..count).collect::<Vec<_>>(),
+           "emitted_by_source":(0..=count).collect::<Vec<_>>()})
+}
+
+#[test]
+fn registry_v2_excludes_source_and_key_and_keeps_first_program_and_repeated_calls() {
+    use openpilot_model_runtime::compiler_schedule::export::StreamSession;
+    let mut session = StreamSession::default();
+    let commands = [
+        json!({"op":"begin","version":2,"initialized":[]}),
+        registry_program(90, "first source", "616263"),
+        registry_launch(90),
+        registry_commit(90, "kernel", registry_arguments()),
+        registry_program(2, "different SOURCE, same signature", "616263"),
+        registry_launch(2),
+        registry_commit(2, "kernel", registry_arguments()),
+        registry_launch(90),
+        registry_commit(90, "kernel", registry_arguments()),
+        registry_finish(3),
+    ];
+    let replies = commands
+        .into_iter()
+        .enumerate()
+        .map(|(sequence, command)| stream_step(&mut session, sequence as u64, command).unwrap())
+        .collect::<Vec<_>>();
+    for sequence in [3, 6, 8] {
+        assert_eq!(replies[sequence]["kind"], "kernel");
+        assert_eq!(replies[sequence]["complete"], false);
+        assert_eq!(replies[sequence]["index"], 0);
+    }
+    let final_plan = &replies[9]["plan"];
+    // Independent original Kernel dataclass signature for b"abc". Neither a
+    // candidate hash nor program-key sorting supplies the expected registry.
+    assert_eq!(
+        final_plan["registry"],
+        json!({"kernels":[{
+        "program_key":90,"name":"kernel","binary_bytes":3,
+        "binary_sha256":"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        "arguments":registry_arguments()}],"launch_kernels":[0,0,0]})
+    );
+    assert_eq!(final_plan["launches"].as_array().unwrap().len(), 3);
+    assert_eq!(final_plan["version"], 1);
+    assert!(plan(request()).unwrap().get("registry").is_none());
+    let mut legacy = StreamSession::default();
+    stream_step(
+        &mut legacy,
+        0,
+        json!({"op":"begin","version":1,"initialized":[]}),
+    )
+    .unwrap();
+    assert!(
+        stream_step(&mut legacy, 1, registry_finish(0)).unwrap()["plan"]
+            .get("registry")
+            .is_none()
+    );
+}
+
+#[test]
+fn registry_v2_distinguishes_every_argument_field_name_binary_and_nested_position() {
+    use openpilot_model_runtime::compiler_schedule::export::StreamSession;
+    let mut variants = vec![
+        ("kernel", "616263", registry_arguments()),
+        ("renamed", "616263", registry_arguments()),
+        ("kernel", "00", registry_arguments()),
+    ];
+    for field in ["width", "height", "pitch", "element_bytes"] {
+        let mut arguments = registry_arguments();
+        arguments[0][0][field] = json!(arguments[0][0][field].as_i64().unwrap() + 1);
+        variants.push(("kernel", "616263", arguments));
+    }
+    variants.push((
+        "kernel",
+        "616263",
+        json!([[{"kind":"buffer"}],[{"kind":"buffer"}]]),
+    ));
+    let mut swapped = registry_arguments().as_array().unwrap().clone();
+    swapped.swap(0, 1);
+    variants.push(("kernel", "616263", json!(swapped)));
+    let mut grouped = registry_arguments();
+    grouped[0]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"kind":"buffer"}));
+    let mut inner_swapped = grouped.clone();
+    inner_swapped[0].as_array_mut().unwrap().swap(0, 1);
+    variants.push(("kernel", "616263", grouped));
+    variants.push(("kernel", "616263", inner_swapped));
+    let mut empty_group = registry_arguments();
+    empty_group.as_array_mut().unwrap().push(json!([]));
+    variants.push(("kernel", "616263", empty_group));
+    let mut session = StreamSession::default();
+    stream_step(
+        &mut session,
+        0,
+        json!({"op":"begin","version":2,"initialized":[]}),
+    )
+    .unwrap();
+    let mut sequence = 1;
+    for (index, (name, binary, arguments)) in variants.iter().enumerate() {
+        for command in [
+            registry_program(index as u64, "same SOURCE", binary),
+            registry_launch(index as u64),
+            registry_commit(index as u64, name, arguments.clone()),
+        ] {
+            let reply = stream_step(&mut session, sequence, command).unwrap();
+            if reply["kind"] == "kernel" {
+                assert_eq!(reply["index"], index);
+            }
+            sequence += 1;
+        }
+    }
+    let result = stream_step(&mut session, sequence, registry_finish(variants.len())).unwrap();
+    let kernels = result["plan"]["registry"]["kernels"].as_array().unwrap();
+    assert_eq!(kernels.len(), 12);
+    assert_eq!(kernels[2]["binary_bytes"], 1);
+    assert_eq!(
+        kernels[2]["binary_sha256"],
+        "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+    );
+    for (index, (name, _, arguments)) in variants.iter().enumerate() {
+        assert_eq!(kernels[index]["program_key"], index);
+        assert_eq!(kernels[index]["name"], *name);
+        assert_eq!(kernels[index]["arguments"], *arguments);
+    }
+}
+
+#[test]
+fn registry_v2_rejects_cross_version_missing_duplicate_wrong_commit_and_read_failure() {
+    use openpilot_model_runtime::compiler_schedule::export::StreamSession;
+    for fault in [
+        "v1",
+        "no-launch",
+        "wrong-key",
+        "missing",
+        "duplicate",
+        "next-launch",
+        "read",
+    ] {
+        let mut session = StreamSession::default();
+        let mut sequence = 0;
+        let mut commands = vec![
+            json!({"op":"begin","version":if fault == "v1" {1} else {2},"initialized":[]}),
+            registry_program(90, "source", "616263"),
+        ];
+        if fault != "no-launch" {
+            commands.push(registry_launch(90));
+        }
+        if fault == "duplicate" {
+            commands.push(registry_commit(90, "kernel", registry_arguments()));
+        }
+        for command in commands {
+            stream_step(&mut session, sequence, command).unwrap();
+            sequence += 1;
+        }
+        let command = match fault {
+            "missing" => registry_finish(1),
+            "next-launch" => registry_launch(90),
+            "read" => json!({"op":"event","event":{"op":"read","buffer":storage(10,0,8)}}),
+            "wrong-key" => registry_commit(2, "kernel", registry_arguments()),
+            _ => registry_commit(90, "kernel", registry_arguments()),
+        };
+        let failure = stream_step(&mut session, sequence, command).unwrap_err();
+        assert!(
+            failure.contains(if fault == "read" {
+                "initialized"
+            } else {
+                "commit"
+            }),
+            "{fault}: {failure}"
+        );
+        assert!(stream_step(&mut session, sequence, registry_finish(1))
+            .unwrap_err()
+            .contains("failed or finished"));
+    }
+    // New wire schemas remain closed; a caller cannot supply its own hash/len.
+    for field in ["binary_sha256", "binary_bytes", "source"] {
+        let mut commit = registry_commit(1, "kernel", registry_arguments());
+        commit[field] = json!("candidate-authored");
+        assert!(serde_json::from_value::<
+            openpilot_model_runtime::compiler_schedule::export::StreamFrame,
+        >(stream_frame(0, commit))
+        .is_err());
+    }
+    for argument in [
+        json!({"kind":"buffer","extra":0}),
+        json!({"kind":"unknown"}),
+        json!({"kind":"image","width":"4","height":"3","pitch":"32"}),
+        json!({"kind":"image","width":true,"height":"3","pitch":"32","element_bytes":"2"}),
+        json!({"kind":"image","width":"4","height":"3","pitch":"32","element_bytes":"2","extra":0}),
+    ] {
+        let commit = json!({"op":"kernel_commit","key":1,"name":"kernel","arguments":[[argument]]});
+        assert!(serde_json::from_value::<
+            openpilot_model_runtime::compiler_schedule::export::StreamFrame,
+        >(stream_frame(0, commit))
+        .is_err());
+    }
+    for version in [0, 3] {
+        assert!(stream_step(
+            &mut StreamSession::default(),
+            0,
+            json!({"op":"begin","version":version,"initialized":[]})
+        )
+        .is_err());
+    }
+}
+
+#[test]
+fn actual_registry_stream_cli_preserves_kernel_reply_and_final_eof_gate() {
+    use std::{
+        io::Write,
+        process::{Command, Stdio},
+    };
+    for fault in ["none", "missing-commit", "trailing"] {
+        let mut commands = vec![
+            json!({"op":"begin","version":2,"initialized":[]}),
+            registry_program(90, "source", "616263"),
+            registry_launch(90),
+        ];
+        if fault != "missing-commit" {
+            commands.push(registry_commit(90, "kernel", registry_arguments()));
+        }
+        commands.push(registry_finish(1));
+        let mut wire = Vec::new();
+        for (sequence, command) in commands.into_iter().enumerate() {
+            let raw = serde_json::to_vec(&stream_frame(sequence as u64, command)).unwrap();
+            wire.extend_from_slice(&(raw.len() as u32).to_be_bytes());
+            wire.extend_from_slice(&raw);
+        }
+        if fault == "trailing" {
+            wire.push(b'x');
+        }
+        let mut child = Command::new(env!("CARGO_BIN_EXE_offline-qcom-compile"))
+            .args(["--library", "/unused-registry-provider", "--export-stream"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let _ = child.stdin.take().unwrap().write_all(&wire);
+        let result = child.wait_with_output().unwrap();
+        assert_eq!(
+            result.status.success(),
+            fault == "none",
+            "{fault}: {}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        let mut bytes = result.stdout.as_slice();
+        let mut replies = Vec::<Value>::new();
+        while !bytes.is_empty() {
+            assert!(bytes.len() >= 4);
+            let length = u32::from_be_bytes(bytes[..4].try_into().unwrap()) as usize;
+            assert!(bytes.len() >= 4 + length);
+            replies.push(serde_json::from_slice(&bytes[4..4 + length]).unwrap());
+            bytes = &bytes[4 + length..];
+        }
+        if fault == "none" {
+            assert!(result.stderr.is_empty());
+            assert_eq!(replies[3]["kind"], "kernel");
+            assert_eq!(replies[3]["index"], 0);
+            assert_eq!(
+                replies.last().unwrap()["plan"]["registry"]["launch_kernels"],
+                json!([0])
+            );
+        } else {
+            assert!(replies.iter().all(|reply| reply["complete"] == false));
+        }
+    }
+}
+
 // The actual maintained Python emitter invokes the actual existing CLI. No
 // model/compiler/provider/GPU is executed: a genuine COPY UOp needs no kernel.
 const CALLER: &str = r#"
@@ -629,13 +926,21 @@ for dimension in ({'type':'float','value':True}, {'type':'unknown','value':1}):
     else:
         raise AssertionError('invalid typed dimension accepted')
 # Fault injection is rejection-only, never an oracle/positive expected result.
-for fault in ('unknown', 'boolean-index', 'weights', 'launch-count', 'stage-name'):
+for fault in ('unknown', 'boolean-index', 'weights', 'launch-count', 'stage-name',
+              'registry-missing', 'registry-field', 'registry-handle', 'registry-count'):
     invalid = copy.deepcopy(observed['raw'])
     if fault == 'unknown': invalid['unexpected'] = True
     elif fault == 'boolean-index': invalid['event_views'][0] = True
     elif fault == 'weights': invalid['weights'] = 'gg'
     elif fault == 'launch-count': invalid['launches'] = [{}]
-    else: invalid['entrypoints'][0]['name'] = 'wrong'
+    elif fault == 'stage-name': invalid['entrypoints'][0]['name'] = 'wrong'
+    elif fault == 'registry-missing': del invalid['registry']
+    elif fault == 'registry-field': invalid['registry']['unexpected'] = True
+    elif fault == 'registry-handle':
+        invalid['registry']['kernels'] = [{'program_key':1,'name':'unheld',
+            'binary_sha256':'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            'binary_bytes':0,'arguments':[]}]
+    else: invalid['registry']['launch_kernels'] = [0]
     def invalid_finish(self, request):
         actual_finish(self, request)
         return invalid
@@ -816,6 +1121,8 @@ record('original-input.json', json.dumps({'initializer_hex':data.hex(), 'stage_e
 for index, program in enumerate(programs):
     record(f'original-kernel-{index}.cl', program.src[3].arg.encode())
     record(f'original-kernel-{index}.bin', program.src[4].arg)
+record('original-program-ir.json', json.dumps([{'index':index,'program_id':id(program),
+    'ir_key':program.src[2].key.hex()} for index,program in enumerate(programs)]).encode())
 original_table_init = offline_buffers.OfflineBufferTable.__init__
 original_base_init = buffers.BufferTable.__init__
 original_version = schema.entrypoint_version
@@ -824,8 +1131,31 @@ def no_python_table(*args, **kwargs):
 offline_buffers.OfflineBufferTable.__init__ = no_python_table
 buffers.BufferTable.__init__ = no_python_table
 schema.entrypoint_version = no_python_table
+original_kernel_hash = current.Kernel.__hash__
+current.Kernel.__hash__ = no_python_table
+# Only the weight integrity reader may still use Python SHA. Binary signature
+# hashing must be performed by the native registry, after the original pass.
+original_hashlib = current.hashlib
+def no_python_binary_hash(raw):
+    assert all(raw != program.src[4].arg for program in programs), 'Python binary signature hash'
+    return original_hashlib.sha256(raw)
+current.hashlib = types.SimpleNamespace(sha256=no_python_binary_hash)
+for probe in (lambda:hash(expected.kernels[0]), lambda:current.hashlib.sha256(programs[0].src[4].arg)):
+    try:
+        probe()
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError('Python registry poison did not arm')
 assert not hasattr(current, 'launch_dimensions')
 native = current._NativeExportStream.finish
+native_kernel = current._NativeExportStream.kernel
+commits = []
+def observe_kernel(self, program, name, arguments):
+    index = native_kernel(self, program, name, arguments)
+    commits.append((index,program))
+    return index
+current._NativeExportStream.kernel = observe_kernel
 def observe_native(self, request):
     assert request['version'] == 2 and 'stage_ends' not in request
     assert request['retained_calls'] == [id(call) for call in linear.src]
@@ -849,7 +1179,14 @@ assert len(result.programs) == len(programs) and len(result.manifest.calls) == l
 for index, program in enumerate(programs):
     assert (out/f'candidate/kernel-{index}.cl').read_bytes() == program.src[3].arg.encode()
     assert (out/f'candidate/kernel-{index}.bin').read_bytes() == program.src[4].arg
+    assert result.programs[index].src[2].key == program.src[2].key
+    assert result.programs[index] is next(actual for kernel,actual in commits if kernel == index)
+record('candidate-program-ir.json', json.dumps([{'index':index,'program_id':id(program),
+    'ir_key':program.src[2].key.hex()} for index,program in enumerate(result.programs)]).encode())
 current._NativeExportStream.finish = native
+current._NativeExportStream.kernel = native_kernel
+current.Kernel.__hash__ = original_kernel_hash
+current.hashlib = original_hashlib
 current.plan_linear = planner
 # Independent negative-order observations use the same pinned original prefix.
 # Clear only the test cache and count BOTH lowering entry and genuine provider calls.
@@ -894,6 +1231,7 @@ for name, model_case, linear_case, stage_case, end_case, bad_launch, error_kind,
         offline_buffers.OfflineBufferTable.__init__ = no_python_table if candidate else original_table_init
         buffers.BufferTable.__init__ = no_python_table if candidate else original_base_init
         schema.entrypoint_version = no_python_table if candidate else original_version
+        current.Kernel.__hash__ = no_python_table if candidate else original_kernel_hash
         counts = {'lowering':0,'compiler':0}
         def measured_compile(source):
             counts['compiler'] += 1
@@ -933,6 +1271,7 @@ for name, model_case, linear_case, stage_case, end_case, bad_launch, error_kind,
         observations.append({'candidate':candidate,'error':failure,'counts':dict(counts),'destination_exists':destination.exists()})
     orders.append({'case':name,'original_then_candidate':observations,'expected_from_original':True})
 current.to_program, compiler.compile = real_program, real_compile
+current.Kernel.__hash__ = original_kernel_hash
 record('error-order.json', json.dumps(orders,indent=2).encode())
 for path, digest in pins.items():
     assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, str(path)
@@ -943,6 +1282,7 @@ record('comparison.json', json.dumps({'passed':True,'independent_python_prefix':
     'github_sha':os.environ['GITHUB_SHA'],'reference_sha256':pins[reference], 'source_pins':{str(path):digest for path,digest in pins.items()},
     'witness_identities_before_and_after':witnesses,
     'calls':len(linear.src),'kernels':len(programs),'memory_planner_rewrite_required':True,
+    'python_kernel_hash_poisoned':True,'python_binary_sha_poisoned':True,'first_program_ir_compared':True,
     'ordered_failure_and_lazy_cases':len(orders),'future_compiler_after_failure':False,
     'whole_model_accepted':False,'retirement_credit':0}, indent=2).encode())
 print('MAINTAINED_OFFLINE_MIXED_ORIGINAL_BOOKKEEPING_PASS')

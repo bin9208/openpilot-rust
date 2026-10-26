@@ -641,3 +641,184 @@ full retained run40248425959/job121334855336은 이번에 phase API만 한 번 �
 step12가 in_progress이며 first_failed는 없었다. 그 원본 log/artifact·fresh/retained 분기는
 감사하지 않았다. genuine ef attempt2는 부모가 이미 감사한 결과로 유지하며 재다운로드/감사0이다.
 이번 작업에서 source/CI 수정·stage/commit/push·dispatch/cancel/rerun·프로젝트/원본/모델 실행은0이다.
+
+## Planner IPC capture2 보존 actual 감사와 stager 연결 제안 — 2026-10-26
+
+[capacity run40250326019/job121342010745](https://github.com/bin9208/openpilot-rust/actions/runs/40250326019/job/121342010745)은
+workflow_dispatch/attempt1/source`0283e6345fc8c8e60cd3537424f1c2df383d9088`에서 SUCCESS다.
+실제 runner22/bin-actions/self-hosted/Linux/X64/Default에서00:44:20–00:44:56Z 실행했다.
+mode는 preserve-planner-ipc-witnesses이며 inventory census/upload와 driver476 보존 단계는
+모두 skipped다. Planner auth→HOST/ARM as-is upload→same-/zip readback→별도 proof upload→
+세 receipt 인증/owned cleanup은 모두 SUCCESS다.
+실행 capacity WF 파일의 SHA256은
+`f16d6c1d2fd87177a1177c006b63f7bdd439c781154c995d8b6c1d837af3916c`다.
+
+### 실제 fixed transport metadata
+
+공통 repository는 bin9208/openpilot-rust, repository_id/head_repository_id는1395501963,
+head_branch는 codex/feat-523-python-rust다. 새 capture2와 proof의 run/source는 위 preservation
+run40250326019/source0283 전체 SHA이며 attempt1이다.
+
+| 역할 | 새 API artifact / 정확한 name | bytes / SHA256 |
+| --- | --- | --- |
+| HOST private capture | `12620219669` / `planner-ipc-aa79-host-capture-12615278417.zip` | 1,241,625 / `3df5894ffe4a0ba003a670dee9978981d57656644dc16f83fb3da953db823a8d` |
+| ARM private capture | `12620435668` / `planner-ipc-aa79-arm-capture-12615287431.zip` | 1,239,760 / `efa5a289799a4e1fbcd63cc8baae5f3379df20240f6c48ecad6dc68b15c5682b` |
+| 공통 provenance proof | `12621030512` / `planner-ipc-witness-provenance-40250326019-1` | 57,919 / `97d499b95cee38a7472b8dc9009aeb9f1ba8513f2767b2d2a1827ebcf3213bfa` |
+
+새3개 모두 actual API에서 expired=false이고 만료는 **2027-01-24T00:38:20Z**다.
+preservation run.created_at은2026-10-26T00:38:18Z로, expires-run.created_at은7,776,002초
+(90일+2초)다. HOST/ARM/proof artifact.created_at은 각각00:44:36Z/00:44:41Z/00:44:50Z다.
+created_at 순서와 run-anchor90일 window는 모두 맞으며 artifact 생성 후 온전한90일을
+보장한다는 의미가 아니다.
+
+functional receipt2개는 **아래 원래 API를 그대로 유지**한다. proof 안 metadata와 별도 현재
+GET API의 ID/name/bytes/digest/expired=false/run/head/repository/만료가 일치한다.
+
+| 역할 | 기존 artifact / run / 정확한 name | bytes / SHA256 |
+| --- | --- | --- |
+| HOST functional | `12615802090` / `40237263524` / `rust-planner-local-x64-evidence` | 55,187,534 / `c583db165f1b5c0226dc25d2a25fb1cbba7a1fad0e282d25506f327f151cf828` |
+| ARM functional | `12614614983` / `40237263421` / `rust-planner-hosted-arm64-evidence` | 44,843,072 / `2726bee5baa231c56c1856cea7bc0096b549bd6bb600cd262e04836551311798` |
+
+두 functional의 원래 run.created_at은2026-10-25T21:49:09Z, 만료는
+**2027-01-23T21:49:10Z**로7,776,001초(90일+1초)다. 그 raw ZIP은 GHA/로컬 모두 이번 보존을
+위해 다시 다운로드하거나 재업로드하지 않았다. 따라서 현재 전체 input/output cohort의
+소비 가능 기간은 functional 쪽 만료가 먼저이며 새 private capture 만료까지 연장된 것이 아니다.
+
+### 원본 bytes·CRC·원문 metadata와 cleanup
+
+기존 HOST private12615278417/run40237263524 및 ARM private12615287431/run40237263421의
+source는 `aa79c7cd21a4b9bbb6bfb4c68ded9e857511f1cf`, attempt1이다. 두 원본 run snapshot은
+completed/success이고 origin API의 ID/name/length/digest/source/repository가 고정 plan과 같다.
+원문 origins.psv는661B/SHA
+`29b13c7e8da80fe11ccdbd151d5f86ca90c20f0f6f1fe303f861bc843a012742`로 변경되지 않았다.
+
+이번 로컬 다운로드는 **새 capture2/proof와 두 job log뿐**이다. 원본4 ZIP은 재다운로드0,
+CRC 반복0이다. 새 capture bytes/SHA를 확인하고 각각 cached 원본 private ZIP과 전체 byte
+동일함을 확인했다. capture CRC는 로컬에서 다시 실행하지 않았다. GHA의 원문 CRC 로그에는
+HOST2378/ARM2371 member의 testing 행과 No errors detected가 있고, member roster는 새 ZIP의
+central-directory 이름 순서와 정확히 일치한다. 기존 전체 안전/CRC 감사의 권위는 동일 bytes로 유지된다.
+
+새 proof만 별도로 full SHA/CRC/19 safe unique regular/no-encryption member를 감사했다.
+expanded는725,259B이며 origin4 API, 원래 run2, preservation-run, plan/admission,
+capture별 CRC/member list/held identity/new API/roundtrip JSON을 포함한다.
+preservation-run.json은 **in_progress/null인 완료 전 snapshot**이며 사후 success로 수정하지 않는다.
+현재 run의 completed/success는 실제 API에서 별도로 확인했다.
+
+HOST/ARM roundtrip은 각 새ID·원래ID·역할·source0283/run40250326019·정확 bytes/SHA와
+status=ROUNDTRIP_VERIFIED, endpoint=/zip, unwrapped=false, original_bytes_equal=true,
+requested_retention_days90을 정확히 기록한다. 별도 wrapper나 source/audit record 재생성이 없다.
+
+admission은 owner40250326019:1:inventory/report identity64521:289586:1000:41c0,
+available33,586,786,304B/growth67,108,864B를 기록한다. 모델/원본 replay 및 consumer binding 변경은
+false, functional metadata_only2/raw_downloads0/raw_uploads0, memory_admission=false다.
+HOST/ARM payload는 uid1000/regular0600/정확 size와 inode·mtime·ctime identity를 갖는다.
+메모리 peak나 전체 disk peak를 계측한 자료로 확대하지 않는다.
+
+job 원문 log는47,163B/SHA
+`80179e87209f10e09f30c687605c25012cabe1063b6b1b581bf94420562209bf`다.
+마지막 step16은00:44:50–00:44:51Z SUCCESS이며 세 서로 다른 API upload receipt와 held
+payload/readback SHA를 확인했다. owner·dev/inode·권한이 결합된
+`/home/actions/actions-runner/_work/_temp/python-rust-523-capacity.F2NWRn`만 회수한 **뒤** 실제
+PLANNER_CAPTURE_PRESERVATION_VERIFIED receipt를 출력했다. 그 receipt는 새2ID/proofID/위 proof SHA,
+원문동일=true/functional metadata_only2/raw다운·업로드0/consumer_binding_changed=false다.
+다른 FS/cache 정리를 주장하지 않는다.
+
+### 부모 승인 전 최소 stager 패치 제안 (아직 source 수정0)
+
+대상은 기존 `tools/ci/stage_planner_ipc_original_523.sh`의 인증/운송 구간이다.
+origin audit2/source9/original sourceaa79/run/id/bytes/SHA와 NativeCapture reader는 그대로 둔다.
+audit의 capture ID를 새ID로 바꾸거나 audit/outputs metadata를 다시 생성하지 않는다.
+
+1. 기존 origin-run-auth의 **live API** 조회와 completed/success/sourceaa79/attempt1/repository
+   검사는 유지한다. functional receipt2도 원래 API를 direct 사용하고 expired=false와 원래
+   run-anchor90일을 확인한다. 새 preservation anchor로 functional의 기한을 계산하지 않는다.
+2. 고정 preservation run40250326019/source0283/attempt1/WF/ref/repository를 live 인증하고,
+   proof12621030512의 exact name/57,919B/SHA/expired=false/90일을 인증한다.
+   기존 HTTPS302→별도 token 없는 HTTPS GET 경계를 재사용해 fixed proof ZIP만 받는다.
+3. proof 전체 SHA/CRC와 정확한19 member를 확인한 뒤 알려진 metadata만 bounded unzip-p로
+   owned proof 경로에 읽는다. 원본 capture identity는 해당 host/arm-capture-api.json을 불변
+   audit/plan의 원래 ID/run/source/length/SHA/name에 대조한다. proof의 원본 artifact가 보존 시점에
+   유효했음을 확인하되 **old private artifact 현재 API의 expired=false에 영구 의존하지 않는다**.
+   그 API 실패를 무조건 허용하는 fallback이나 origin-run live 검사를 생략하는 방식은 아니다.
+4. capture role만 새 fixedID/name/run/source0283/repository/bytes/SHA/현재 생존·run-anchor90일을
+   검사하고 proof의 preserved-api/roundtrip과 결합한다. proof snapshot의 in_progress/null은
+   그대로 두며 완료 판정은 live preservation API로만 한다. `root/capture.zip`에는 여전히 원문과
+   같은 bytes를 받는다. receipt role의 API/download 경로는 변경하지 않는다.
+5. 기존 URL/token 분리, owned path/CRC, capture2349 파일·expansion, functional allowlist489
+   (summary1+case4+raw484), 최종 member pins·identity·128MiB cap을 모두 유지한다.
+   추가 proof/작은 API JSON도 같은 cap 안에 합산한다. 기존 phase/status/export 계약은 유지하고
+   운송 provenance는 별도 proof 파일에 추가한다. 새 Python/helper/원본 실행·임의 ID/자동 fallback은 없다.
+
+새 transport 소비자 source/GHA 검증과 실제 stager source SHA는 아직 없다. Locke가 진행 중인
+WF stageHASH 동기화와 충돌하지 않도록, 구현 승인 뒤 마지막 stager SHA는 부모가 전달한다.
+보존 actual PASS를 소비자 연결·모델/IPC 기능 또는 Python 퇴역 credit로 자동 승격하지 않는다.
+
+### ad1e same-helper transport 추가 API/log 확인
+
+[run40250641545/job121341555065](https://github.com/bin9208/openpilot-rust/actions/runs/40250641545/job/121341555065)은
+source`ad1e35cf6813dd352f700907489f2edc31e1482e`/attempt1에서 SUCCESS다. API의 인증·source/index/
+FD verifier·upload·두 cleanup step이 모두 SUCCESS이며 원문 log는56,224B/SHA
+`3d320cb5b9e529c77da3a2bd3cc1ab8019c94e84436c59b4801734984c514f7a`다.
+helper pin89c481 전체 SHA와 실제 source check OK, AUTH_OUTCOME=success를 확인했다.
+이는 API/log 범위 확인이며 artifact나 carrier를 새로 다운로드해 재감사하지 않았다.
+
+이번 작업은 본 문서 append와 inert API/새자료 감사뿐이다. 원본4 ZIP 재다운로드/CRC 반복,
+기능/모델/원본 실행·CI 재실행·source/stager/WF/이슈 수정·stage/commit/push는0이다.
+
+## Planner IPC stager fixed90d transport 연결 구현 — 2026-10-26
+
+부모가 위 최소 제안1–4를 승인하여 `tools/ci/stage_planner_ipc_original_523.sh` 한 파일에
+구현했다. 최종 stager SHA256은
+`43e1eb7b2b5e27521f8f7ce4e4a36c35376515b4be944c6bd390a348978810b6`다.
+새 Python/CLI/helper/테스트 파일, WF/profile/env/권한 변경은 없다.
+
+고정 preservation run40250326019/source0283/attempt1/정확 capacity WF·branch·repository/head
+identity·created_at을 live API에서 인증하고 completed/success를 요구한다. proof12621030512와
+HOST12620219669/ARM12620435668의 ID/name/bytes/SHA/URL/head·repository identity를 literal에
+결합했다. 새 transport의 실제 만료2027-01-24T00:38:20Z와 run-created90일 window/현재 생존을
+동시에 요구한다. 입력 ID/URL 변경이나 fallback, 기한 연장은 없다.
+
+proof ZIP의 고정 전체 SHA/CRC, 정확19개 canonical unique 이름, regular0600/unx 및
+expanded725259B를 검사한다. 전체를 풀지 않고 admission/preservation-run/해당 origin-run/
+해당 old capture API/new capture API/roundtrip/functional API의 **JSON7개만** 각각64KiB로
+제한해 create_new0600/canonical/단일 link 경로로 읽는다. 고정 proof의 원래 capture metadata를
+immutable audit의 original ID/run/source/bytes/SHA/name에 대조하며, 보존 시점에 원본이
+유효했는지를 따로 검사한다. **old private artifact의 현재 API 조회는 하지 않는다.**
+
+original run live API 인증 블록은 byte 그대로다. 원문 `capture-api.json`은 과거 metadata로
+유지하고 현재 운송 API를 `capture-transport-api.json`에 분리한다. 완료 전
+preservation-run snapshot의 in_progress/null도 그대로 인증하며 현재 run 완료 상태로
+덮어쓰지 않는다. admission의 replay=false/consumer_binding_changed=false/functional raw0과
+roundtrip의 old/new ID·역할·bytes/SHA/source/run/90일·/zip·unwrapped=false·bytes_equal=true를
+모두 AND로 요구한다. 저장한 API identity는 새 live API와 대조한다.
+
+functional HOST12615802090/ARM12614614983은 원래 ID/source/run으로 direct API/download한다.
+기존 필드를 모두 보존하면서 proof snapshot과 exact identity를 대조하고, 원래 run-anchor90일과
+실제 만료2027-01-23T21:49:10Z를 확인한다. 따라서 functional 쪽의 더 이른 소비 기한은 유지된다.
+URL Authorization→302와 token 없는 HTTPS download 분리는 기존 코드 경계 그대로 재사용한다.
+원래120s/110s/64MiB download 및 CRC 제한도 유지한다.
+
+private2349 추출, functional allowlist489(summary1+case4+raw484), source9/audit2/output2,
+기존 최종 pins/source/owner, allocated/apparent du128MiB, status/export 블록은 보존했다.
+추가 proof와 JSON도 같은128MiB 입장·실제 du 합산에 포함한다. proof ZIP/선택 JSON의 hash를
+최종 export 전 다시 확인한다. 별도 transport-authentication receipt는 운송 검증만 기록하며
+native_revalidation_required=true/full_ipc_acceptance=false를 유지한다.
+
+로컬 검증은 bash -n, JQ32개 program compile-only(미호출 함수 안에 식을 정의하여 policy 평가0),
+소스 byte 역투영과 diff --check뿐이다. 기존 original-run 인증/private 추출·489 allowlist/
+최종 pins·du·status·export의 byte 동일성을 확인했다(새 최종 proof 검사와 cap 주석 제외).
+실제 stager/네트워크/프로젝트/원본 기능 실행, CI dispatch/rerun, stage/commit은0이다.
+이 새 소비자 구현의 실제 GHA 성공 및 추가 기능·퇴역 credit는 아직 없다.
+
+부모/Locke가 위 최종 SHA로 동기화할 소비자는 다음과 같다. 이 작업에서 해당 파일은 수정하지 않았다.
+
+| 소유자 확인 대상 | stager pin 소비 위치 |
+| --- | --- |
+| 외부 WF2 | `.github/workflows/python-rust-523-planner-caller.yml`, `.github/workflows/python-rust-523-native-arm-more.yml`의 planner-runtime/planner_ipc_stage |
+| canonical WF2 | `.github/workflows/rust.yml`, `.github/workflows/rust-native-arm.yml`의 같은 planner-runtime/planner_ipc_stage |
+| canonical source contract | `rust/crates/dev-tools/tests/ci_rust_isolation.rs::planner_ipc_canonical_steps`의 literal SHA |
+| focused source guard | `.github/workflows/python-rust-523.yml`의 focused/ssh_absence_admission stager SHA |
+
+교체 전 literal은 `578ec6f73765ca4293174eeb7eb2a5df99a9af6ff726f262c7aa3f17f65c97bf`다.
+부모의 다음 exact-source GHA에서 HOST/ARM 각각의 live origin+preservation API, proof19/JSON7,
+운송/functional CRC, allowlist489/native 재검증, source·held·disk·owned cleanup을 확인해야 한다.

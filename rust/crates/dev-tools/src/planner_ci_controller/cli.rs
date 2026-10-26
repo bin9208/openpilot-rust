@@ -1,7 +1,7 @@
 use super::{
     memory,
     plan::{self, Inputs},
-    run_checks, scheduler,
+    run_checks, run_prepared_checks, scheduler,
 };
 use crate::{qa_process::NativeRunner, seal::Result};
 use std::{
@@ -43,6 +43,205 @@ fn require_retired_controller_absent(root: &Path) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(not(feature = "planner-ipc-native"))]
+fn prepared_native_ipc(_: &Inputs, _: &Path) -> Result<plan::NativeIpcInputs> {
+    Err("runtime IPC requires the planner-ipc-native feature".into())
+}
+
+#[cfg(feature = "planner-ipc-native")]
+fn prepared_native_ipc(inputs: &Inputs, output: &Path) -> Result<plan::NativeIpcInputs> {
+    use sha2::{Digest, Sha256};
+    use std::io::Read;
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    let value = |key: &str| -> Result<String> {
+        std::env::var(key).map_err(|_| format!("prepared runtime IPC requires {key}").into())
+    };
+    let (host, runner_arch, audit_sha, seconds) = match std::env::consts::ARCH {
+        "x86_64" => (
+            "x86_64-unknown-linux-gnu",
+            "X64",
+            "384bcef1bafc962019557d7b89ef5dac4c85ee2d1683906c1942458b04118e54",
+            600,
+        ),
+        "aarch64" => (
+            "aarch64-unknown-linux-gnu",
+            "ARM64",
+            "7dd3abad75e472a7241d16143b155dd3ad6e8bb826359bd0afedca1360689efc",
+            1200,
+        ),
+        _ => return Err("runtime IPC requires a qualified native Linux host".into()),
+    };
+    for (key, expected) in [
+        ("PLANNER_NATIVE_IPC_PROFILE", "planner-ipc-native-v1"),
+        ("GITHUB_ACTIONS", "true"),
+        ("GITHUB_REPOSITORY", "bin9208/openpilot-rust"),
+        ("GITHUB_JOB", "planner-runtime"),
+        ("RUNNER_OS", "Linux"),
+        ("RUNNER_ARCH", runner_arch),
+        ("NATIVE_TOOLS_HOST", host),
+    ] {
+        if value(key)? != expected {
+            return Err(format!("prepared runtime IPC {key} differs").into());
+        }
+    }
+    if std::env::consts::OS != "linux" {
+        return Err("runtime IPC requires Linux process-group ownership".into());
+    }
+    if runner_arch == "ARM64" {
+        for (key, expected) in [
+            ("CI296_NATIVE_ARM", "1"),
+            ("RUNNER_ENVIRONMENT", "github-hosted"),
+            ("OPENPILOT_CI_EXECUTION_MODE", "native-host"),
+            ("OPENPILOT_CI_HOST_ARCH", "aarch64"),
+            ("OPENPILOT_CI_TARGET_ARCH", "aarch64"),
+        ] {
+            if value(key)? != expected {
+                return Err(format!("native ARM IPC {key} differs").into());
+            }
+        }
+    }
+    let job = PathBuf::from(value("CI_JOB_TEMP")?);
+    let name = job.file_name().and_then(|name| name.to_str()).unwrap_or("");
+    if job.parent() != Some(Path::new("/tmp"))
+        || !name.starts_with("openpilot-ci.")
+        || name.len() != "openpilot-ci.".len() + 6
+        || !name["openpilot-ci.".len()..]
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric())
+    {
+        return Err("prepared runtime IPC requires the owned job root".into());
+    }
+    let uid = rustix::process::geteuid().as_raw();
+    let owned_dir = |path: &Path| -> Result<()> {
+        let metadata = fs::symlink_metadata(path)?;
+        if !metadata.is_dir()
+            || metadata.uid() != uid
+            || metadata.permissions().mode() & 0o777 != 0o700
+            || path.canonicalize()? != path
+        {
+            return Err(
+                "prepared runtime IPC requires canonical owned mode-700 directories".into(),
+            );
+        }
+        Ok(())
+    };
+    let read = |path: &Path| -> Result<Vec<u8>> {
+        let metadata = fs::symlink_metadata(path)?;
+        if !metadata.is_file()
+            || metadata.uid() != uid
+            || metadata.len() > 1024 * 1024
+            || path.canonicalize()? != path
+        {
+            return Err("prepared runtime IPC requires bounded owned regular metadata".into());
+        }
+        let mut bytes = Vec::new();
+        fs::File::open(path)?
+            .take(1024 * 1024 + 1)
+            .read_to_end(&mut bytes)?;
+        if bytes.len() > 1024 * 1024 {
+            return Err("prepared runtime IPC metadata exceeded 1 MiB".into());
+        }
+        Ok(bytes)
+    };
+    owned_dir(&job)?;
+    let owner = format!(
+        "{}:{}:planner-runtime",
+        value("GITHUB_RUN_ID")?,
+        value("GITHUB_RUN_ATTEMPT")?
+    );
+    if String::from_utf8(read(&job.join("owner"))?)?.trim_end() != owner {
+        return Err("prepared runtime IPC job owner differs".into());
+    }
+    let source = value("GITHUB_SHA")?;
+    if source.len() != 40 || !source.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err("prepared runtime IPC requires the current source SHA".into());
+    }
+    for (key, expected) in [
+        ("CI296_SOURCE", &inputs.root),
+        ("GITHUB_WORKSPACE", &inputs.root),
+        ("RUNNER_TEMP", &job),
+        ("PLANNER_PARAMS_BINDING", &inputs.binding),
+    ] {
+        if Path::new(&value(key)?) != expected {
+            return Err(format!("prepared runtime IPC {key} path differs").into());
+        }
+    }
+    if std::env::current_dir()? != inputs.root
+        || inputs.python != job.join("venv/bin/python")
+        || inputs.binaries != inputs.root.join("rust/target/debug")
+        || inputs.artifact != job.join("planner-artifact")
+        || inputs.source != job.join("planner-source")
+        || output != job.join("planner-comparison")
+    {
+        return Err("prepared runtime IPC caller paths differ".into());
+    }
+    let corpus = job.join("planner-ipc-original");
+    let audit = corpus.join("audit.json");
+    if Path::new(&value("PLANNER_NATIVE_IPC_CORPUS")?) != corpus
+        || Path::new(&value("PLANNER_NATIVE_IPC_AUDIT")?) != audit
+        || value("PLANNER_NATIVE_IPC_AUDIT_SHA256")? != audit_sha
+    {
+        return Err("prepared runtime IPC stager paths or independent audit SHA differ".into());
+    }
+    owned_dir(&corpus)?;
+    if format!("{:x}", Sha256::digest(read(&audit)?)) != audit_sha
+        || read(&corpus.join("owner"))? != owner.as_bytes()
+    {
+        return Err("prepared runtime IPC corpus owner or audit differs".into());
+    }
+    let stage = job.join("proof/planner-ipc-stage");
+    owned_dir(&stage)?;
+    let status: serde_json::Value = serde_json::from_slice(&read(&stage.join("status.json"))?)?;
+    if status["status"] != "STAGED_FOR_NATIVE_REVALIDATION"
+        || status["owner"] != owner
+        || status["source_commit"] != source
+        || status["architecture"] != std::env::consts::ARCH
+        || status["audit_sha256"] != audit_sha
+        || status["root"].as_str() != corpus.to_str()
+        || status["original_execution"] != false
+        || status["native_revalidation_required"] != true
+    {
+        return Err("prepared runtime IPC stager source/owner receipt differs".into());
+    }
+    let proof = job.join("proof/planner-native-controller-523");
+    owned_dir(&proof)?;
+    if read(&proof.join("controller-source.txt"))? != format!("{source}:{host}\n").as_bytes()
+        || read(&proof.join("controller-profile.txt"))?
+            != b"ci-receipt-metadata-native,planner-ipc-native\n"
+        || read(&proof.join("controller.sha256"))?
+            != format!(
+                "{}  {}\n",
+                crate::seal::digest(&inputs.scheduler)?,
+                inputs.scheduler.display()
+            )
+            .as_bytes()
+    {
+        return Err("prepared runtime IPC must reuse the initial qualified controller ELF".into());
+    }
+    let compiler =
+        std::env::split_paths(&std::env::var_os("PATH").ok_or("IPC compiler PATH required")?)
+            .map(|path| path.join("g++"))
+            .find(|path| {
+                fs::metadata(path).is_ok_and(|metadata| {
+                    metadata.is_file() && metadata.permissions().mode() & 0o111 != 0
+                })
+            })
+            .ok_or("prepared runtime IPC requires the original g++ provider")?
+            .canonicalize()?;
+    Ok(plan::NativeIpcInputs {
+        original_ipc_binding: super::planner_ipc_native::original_ipc_binding(
+            &job.join("planner-original/ipc/msgq"),
+        )?,
+        compiler,
+        corpus,
+        corpus_audit: audit,
+        corpus_audit_sha256: audit_sha.into(),
+        timeout: Duration::from_secs(seconds),
+        growth_mib: 512,
+        peer_build_growth_mib: 128,
+    })
 }
 
 pub fn cli() -> Result<()> {
@@ -246,6 +445,7 @@ pub fn cli() -> Result<()> {
         source: absolute(take("--source-native")?)?,
         binding: absolute(take("--binding")?)?,
         scheduler: std::env::current_exe()?,
+        native_ipc: None,
     };
     let output = absolute(take("--output")?)?;
     let timeout = take("--timeout-seconds")?
@@ -265,15 +465,28 @@ pub fn cli() -> Result<()> {
         println!("{receipt}");
         return Ok(());
     }
-    let checks = if memory {
-        plan::memory_checks(&inputs, &growth, Duration::from_secs(timeout))?
+    let mut checks = Vec::new();
+    let checked = if memory {
+        checks = plan::memory_checks(&inputs, &growth, Duration::from_secs(timeout))?;
+        run_checks(&checks, &output, &inputs.root, &mut runner)
     } else {
-        plan::runtime_checks(&inputs, &growth, Duration::from_secs(timeout))?
-    };
-    if !memory {
+        // 전체 growth12 검증과 기존 부재 guard는 첫 leaf 전에 수행한다.
+        let steps = plan::runtime_plan(&inputs, &growth, Duration::from_secs(timeout))?;
         require_retired_controller_absent(&inputs.root)?;
-    }
-    let checked = run_checks(&checks, &output, &inputs.root, &mut runner);
+        let prepared = steps.into_iter().map(|step| {
+            let check = if matches!(&step, plan::PlannedCheck::NativeIpc { .. }) {
+                // ABI42 등 앞선 실패 뒤에는 이 준비·feature/profile 검사에 도달하지 않는다.
+                let mut ipc_inputs = inputs.clone();
+                ipc_inputs.native_ipc = Some(prepared_native_ipc(&inputs, &output)?);
+                step.complete(&ipc_inputs)?
+            } else {
+                step.complete(&inputs)?
+            };
+            checks.push(check.clone());
+            Ok(check)
+        });
+        run_prepared_checks(prepared, &output, &inputs.root, &mut runner)
+    };
     // 첫 leaf 실패 뒤에도 복원 여부를 확인한다. commands.json의 실제 실패 행은 보존한다.
     if !memory {
         require_retired_controller_absent(&inputs.root)?;

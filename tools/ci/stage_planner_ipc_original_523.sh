@@ -22,15 +22,29 @@ case "$arch:${RUNNER_ARCH:-}" in
     outputs_sha=525333b68bda155b622a2e315880bcf378b7425833760ea40a259545f7703b21
     receipt_name=rust-planner-local-x64-evidence
     capture_expanded=2022221
+    transport_role=host
+    transport_capture=12620219669
+    transport_name=planner-ipc-aa79-host-capture-12615278417.zip
+    transport_bytes=1241625
+    transport_sha=3df5894ffe4a0ba003a670dee9978981d57656644dc16f83fb3da953db823a8d
     ;;
   aarch64:ARM64)
     audit_sha=7dd3abad75e472a7241d16143b155dd3ad6e8bb826359bd0afedca1360689efc
     outputs_sha=a28890f6f79eb24f0018d62ec21dae5d8c2228d6b7da0f62ce33ffab48e80c80
     receipt_name=rust-planner-hosted-arm64-evidence
     capture_expanded=2022235
+    transport_role=arm
+    transport_capture=12620435668
+    transport_name=planner-ipc-aa79-arm-capture-12615287431.zip
+    transport_bytes=1239760
+    transport_sha=efa5a289799a4e1fbcd63cc8baae5f3379df20240f6c48ecad6dc68b15c5682b
     ;;
   *) echo 'Actual native Linux X64 or ARM64 runner is required' >&2; exit 1 ;;
 esac
+preservation_run=40250326019
+preservation_source=0283e6345fc8c8e60cd3537424f1c2df383d9088
+preservation_proof=12621030512
+preservation_proof_sha=97d499b95cee38a7472b8dc9009aeb9f1ba8513f2767b2d2a1827ebcf3213bfa
 job=${CI_JOB_TEMP:?}
 [[ $job == /tmp/openpilot-ci.?????? && ${job%/*} == /tmp ]]
 owner=$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB
@@ -200,33 +214,34 @@ get_json() (
     --output "/dev/fd/$fd" --write-out '%{http_code}' "$api/$1")
   test "$status" = 200
 )
-phase=origin-run-auth
-get_json "actions/runs/$origin_run" "$proof/origin-run.json"
-/usr/bin/jq -e --arg run "$origin_run" --arg source "$origin_source" '
-  (.id | tostring) == $run and .run_attempt == 1 and .head_sha == $source and
-  .status == "completed" and .conclusion == "success" and
-  .repository.full_name == "bin9208/openpilot-rust" and .repository.id == 1395501963 and
-  .head_repository.full_name == "bin9208/openpilot-rust" and .head_repository.id == 1395501963
-' "$proof/origin-run.json" > /dev/null
-for role in capture receipt; do
-  phase=$role-api-auth
-  verify_owner
-  artifact=$(/usr/bin/jq -er ".artifacts.$role.id" "$root/audit.json")
-  bytes=$(/usr/bin/jq -er ".artifacts.$role.bytes" "$root/audit.json")
-  digest=$(/usr/bin/jq -er ".artifacts.$role.sha256" "$root/audit.json")
-  [[ $artifact =~ ^[1-9][0-9]{0,18}$ && $bytes =~ ^[1-9][0-9]{0,8}$ && $digest =~ ^[0-9a-f]{64}$ ]]
-  ((bytes <= 64 * 1024 * 1024))
-  get_json "actions/artifacts/$artifact" "$proof/$role-api.json"
-  name=$receipt_name
-  if [[ $role == capture ]]; then name=private-rust-planner-runtime-0-$origin_run-1; fi
-  /usr/bin/jq -e --arg id "$artifact" --arg name "$name" --argjson bytes "$bytes" \
-    --arg digest "sha256:$digest" --arg run "$origin_run" --arg source "$origin_source" '
-    (.id | tostring) == $id and .name == $name and .size_in_bytes == $bytes and
-    .digest == $digest and .expired == false and (.workflow_run.id | tostring) == $run and
+artifact_identity() {
+  /usr/bin/jq -e --arg id "$2" --arg name "$3" --argjson bytes "$4" \
+    --arg digest "sha256:$5" --arg run "$6" --arg source "$7" --arg api "$api" '
+    .id == ($id | tonumber) and .name == $name and .size_in_bytes == $bytes and
+    .digest == $digest and .expired == false and .workflow_run.id == ($run | tonumber) and
     .workflow_run.head_sha == $source and .workflow_run.repository_id == 1395501963 and
-    .workflow_run.head_repository_id == 1395501963
-  ' "$proof/$role-api.json" > /dev/null
-  phase=$role-download
+    .workflow_run.head_repository_id == 1395501963 and
+    .workflow_run.head_branch == "codex/feat-523-python-rust" and
+    .url == ($api + "/actions/artifacts/" + $id) and
+    .archive_download_url == ($api + "/actions/artifacts/" + $id + "/zip")
+  ' "$1" > /dev/null
+}
+retention90() {
+  /usr/bin/jq -e --slurpfile run "$2" --arg expires "$3" '
+    def epoch:
+      if type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
+      then fromdateiso8601 else error("invalid UTC timestamp") end;
+    ($run[0].created_at | epoch) as $anchor |
+    (.created_at | epoch) as $created | (.expires_at | epoch) as $end |
+    .expires_at == $expires and $anchor <= $created and $created <= $end and
+    $anchor + 90*86400 <= $end and $end <= $anchor + 90*86400 + 600 and now < $end
+  ' "$1" > /dev/null
+}
+# proof와 payload 모두 기존 token/redirect 분리·시간·크기·CRC 경계를 사용한다.
+download_archive() {
+  local artifact=$1 bytes=$2 digest=$3 file=$4 label=$5 redirect url
+  phase=$label-download
+  verify_owner
   redirect=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
     --connect-timeout 10 --max-time 30 --header "Authorization: Bearer $token" \
     --output /dev/null --write-out '%{http_code}\n%{redirect_url}' "$api/actions/artifacts/$artifact/zip")
@@ -235,23 +250,170 @@ for role in capture receipt; do
   [[ $url != *$'\n'* && $url != *$'\r'* ]]
   (
     ulimit -f 65536
-    test ! -e "$root/$role.zip" && test ! -L "$root/$role.zip"
-    exec {fd}>"$root/$role.zip"
+    test ! -e "$file" && test ! -L "$file"
+    exec {fd}>"$file"
     /usr/bin/timeout --signal=TERM --kill-after=5s 120s \
       /usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
       --connect-timeout 10 --max-time 110 --max-filesize "$bytes" "$url" |
       /usr/bin/head -c "$((bytes + 1))" >&"$fd"
   )
-  test -f "$root/$role.zip" && test ! -L "$root/$role.zip"
-  test "$(/usr/bin/stat -c '%u:%a:%s' -- "$root/$role.zip")" = "$uid:600:$bytes"
-  printf '%s  %s\n' "$digest" "$root/$role.zip" | /usr/bin/sha256sum --check --strict -
-  phase=$role-crc
+  test -f "$file" && test ! -L "$file"
+  test "$(/usr/bin/realpath -e -- "$file")" = "$file"
+  test "$(/usr/bin/stat -c '%u:%a:%s:%h' -- "$file")" = "$uid:600:$bytes:1"
+  printf '%s  %s\n' "$digest" "$file" | /usr/bin/sha256sum --check --strict -
+  phase=$label-crc
   (
     ulimit -f 16384
     /usr/bin/timeout --signal=TERM --kill-after=5s 120s \
-      /usr/bin/unzip -t "$root/$role.zip" > "$proof/$role-crc.txt"
+      /usr/bin/unzip -t "$file" > "$proof/$label-crc.txt"
   )
+}
+phase=origin-run-auth
+get_json "actions/runs/$origin_run" "$proof/origin-run.json"
+/usr/bin/jq -e --arg run "$origin_run" --arg source "$origin_source" '
+  (.id | tostring) == $run and .run_attempt == 1 and .head_sha == $source and
+  .status == "completed" and .conclusion == "success" and
+  .repository.full_name == "bin9208/openpilot-rust" and .repository.id == 1395501963 and
+  .head_repository.full_name == "bin9208/openpilot-rust" and .head_repository.id == 1395501963
+' "$proof/origin-run.json" > /dev/null
+phase=preservation-api-auth
+get_json "actions/runs/$preservation_run" "$proof/preservation-live-run.json"
+/usr/bin/jq -e --arg source "$preservation_source" '
+  .id == 40250326019 and .run_attempt == 1 and .head_sha == $source and
+  .status == "completed" and .conclusion == "success" and .event == "workflow_dispatch" and
+  .path == ".github/workflows/python-rust-523-capacity.yml" and
+  .head_branch == "codex/feat-523-python-rust" and .created_at == "2026-10-26T00:38:18Z" and
+  .repository.full_name == "bin9208/openpilot-rust" and .repository.id == 1395501963 and
+  .head_repository.full_name == "bin9208/openpilot-rust" and .head_repository.id == 1395501963
+' "$proof/preservation-live-run.json" > /dev/null
+get_json "actions/artifacts/$preservation_proof" "$proof/preservation-proof-api.json"
+artifact_identity "$proof/preservation-proof-api.json" "$preservation_proof" \
+  planner-ipc-witness-provenance-40250326019-1 57919 "$preservation_proof_sha" \
+  "$preservation_run" "$preservation_source"
+retention90 "$proof/preservation-proof-api.json" "$proof/preservation-live-run.json" 2027-01-24T00:38:20Z
+download_archive "$preservation_proof" 57919 "$preservation_proof_sha" "$root/preservation-proof.zip" preservation-proof
+phase=preservation-proof-members
+# 고정 SHA로 감사한19개 canonical regular member만 허용한다. 필요한 JSON7개만 읽는다.
+proof_members=(admission.json arm-capture-api.json arm-capture-crc.txt arm-capture-members.txt
+  arm-capture-preserved-api.json arm-capture-roundtrip.json arm-capture.identity arm-functional-api.json
+  host-capture-api.json host-capture-crc.txt host-capture-members.txt host-capture-preserved-api.json
+  host-capture-roundtrip.json host-capture.identity host-functional-api.json
+  origin-run-40237263421.json origin-run-40237263524.json origins.psv preservation-run.json)
+printf '%s\n' "${proof_members[@]}" > "$proof/preservation-expected-members.txt"
+(
+  ulimit -f 64
+  /usr/bin/timeout --signal=TERM --kill-after=5s 30s /usr/bin/unzip -Z -1 \
+    "$root/preservation-proof.zip" > "$proof/preservation-members.txt"
+  /usr/bin/timeout --signal=TERM --kill-after=5s 30s /usr/bin/unzip -Z -l \
+    "$root/preservation-proof.zip" > "$proof/preservation-modes.txt"
+)
+/usr/bin/awk 'NR==FNR {wanted[$0]=1; next}
+  !($0 in wanted) || ++seen[$0]!=1 {exit 1}
+  END {for (name in wanted) if (seen[name]!=1) exit 1}' \
+  "$proof/preservation-expected-members.txt" "$proof/preservation-members.txt"
+/usr/bin/awk '$1=="-rw-------" && $3=="unx" && NF==10 {n++;bytes+=$4}
+  END {if(n!=19 || bytes!=725259) exit 1}' "$proof/preservation-modes.txt"
+selected_members=(admission.json preservation-run.json "origin-run-$origin_run.json"
+  "$transport_role-capture-api.json" "$transport_role-capture-preserved-api.json"
+  "$transport_role-capture-roundtrip.json" "$transport_role-functional-api.json")
+for member in "${selected_members[@]}"; do
+  file=$proof/preserved-$member
+  # capture-api.json은 원래 metadata로 남기며 새 운송 source로 덮어쓰지 않는다.
+  if [[ $member == "$transport_role-capture-api.json" ]]; then file=$proof/capture-api.json; fi
+  (
+    ulimit -f 64
+    test ! -e "$file" && test ! -L "$file"
+    exec {fd}>"$file"
+    /usr/bin/timeout --signal=TERM --kill-after=5s 30s \
+      /usr/bin/unzip -p "$root/preservation-proof.zip" "$member" | /usr/bin/head -c 65537 >&"$fd"
+  )
+  test -f "$file" && test ! -L "$file"
+  test "$(/usr/bin/realpath -e -- "$file")" = "$file"
+  test "$(/usr/bin/stat -c '%u:%a:%h' -- "$file")" = "$uid:600:1"
+  (( $(/usr/bin/stat -c %s -- "$file") > 0 && $(/usr/bin/stat -c %s -- "$file") <= 65536 ))
+  /usr/bin/sha256sum -- "$file" >> "$proof/preservation-selected.sha256"
 done
+phase=preservation-lifecycle
+/usr/bin/jq -e --slurpfile live "$proof/preservation-live-run.json" '
+  def identity: [.id,.run_attempt,.head_sha,.event,.path,.head_branch,.created_at,
+    .repository.id,.repository.full_name,.head_repository.id,.head_repository.full_name];
+  identity == ($live[0] | identity) and .status == "in_progress" and .conclusion == null
+' "$proof/preserved-preservation-run.json" > /dev/null
+/usr/bin/jq -e --slurpfile live "$proof/origin-run.json" '
+  def identity: [.id,.run_attempt,.head_sha,.event,.path,.head_branch,.created_at,
+    .repository.id,.repository.full_name,.head_repository.id,.head_repository.full_name];
+  identity == ($live[0] | identity) and .status == "completed" and .conclusion == "success"
+' "$proof/preserved-origin-run-$origin_run.json" > /dev/null
+/usr/bin/jq -e --arg source "$preservation_source" '
+  .status == "AUTHENTICATED_CAPTURE_ONLY" and .source_commit == $source and
+  .owner == "40250326019:1:inventory" and .admitted_growth_bytes == 67108864 and
+  .payloads == 2 and .functional_metadata_only == 2 and .functional_raw_downloads == 0 and
+  .functional_raw_uploads == 0 and .replay_executed == false and
+  .consumer_binding_changed == false and .memory_admission == false
+' "$proof/preserved-admission.json" > /dev/null
+# 원래 ID/run/source/bytes/SHA는 immutable audit와 대조한다. old artifact live 조회는 없다.
+original_capture=$(/usr/bin/jq -er .artifacts.capture.id "$root/audit.json")
+test "$(/usr/bin/jq -er .artifacts.capture.bytes "$root/audit.json")" = "$transport_bytes"
+test "$(/usr/bin/jq -er .artifacts.capture.sha256 "$root/audit.json")" = "$transport_sha"
+artifact_identity "$proof/capture-api.json" "$original_capture" \
+  "private-rust-planner-runtime-0-$origin_run-1" "$transport_bytes" "$transport_sha" "$origin_run" "$origin_source"
+/usr/bin/jq -e --slurpfile origin "$proof/origin-run.json" \
+  --slurpfile preserved "$proof/preservation-live-run.json" '
+  ($origin[0].created_at | fromdateiso8601) <= (.created_at | fromdateiso8601) and
+  (.created_at | fromdateiso8601) <= ($preserved[0].created_at | fromdateiso8601) and
+  ($preserved[0].created_at | fromdateiso8601) < (.expires_at | fromdateiso8601)
+' "$proof/capture-api.json" > /dev/null
+/usr/bin/jq -e --arg role "$transport_role-capture" --arg original "$original_capture" \
+  --arg artifact "$transport_capture" --arg sha "$transport_sha" --argjson bytes "$transport_bytes" \
+  --arg source "$preservation_source" --arg run "$preservation_run" '
+  .status == "ROUNDTRIP_VERIFIED" and .role == $role and .original_artifact_id == $original and
+  .artifact_id == $artifact and .sha256 == $sha and .bytes == $bytes and
+  .source_commit == $source and .run_id == $run and .requested_retention_days == 90 and
+  .endpoint == "/zip" and .unwrapped == false and .original_bytes_equal == true
+' "$proof/preserved-$transport_role-capture-roundtrip.json" > /dev/null
+for role in capture receipt; do
+  phase=$role-api-auth
+  verify_owner
+  artifact=$(/usr/bin/jq -er ".artifacts.$role.id" "$root/audit.json")
+  bytes=$(/usr/bin/jq -er ".artifacts.$role.bytes" "$root/audit.json")
+  digest=$(/usr/bin/jq -er ".artifacts.$role.sha256" "$root/audit.json")
+  [[ $artifact =~ ^[1-9][0-9]{0,18}$ && $bytes =~ ^[1-9][0-9]{0,8}$ && $digest =~ ^[0-9a-f]{64}$ ]]
+  ((bytes <= 64 * 1024 * 1024))
+  metadata=$proof/$role-api.json
+  api_run=$origin_run
+  api_source=$origin_source
+  anchor=$proof/origin-run.json
+  expires=2027-01-23T21:49:10Z
+  name=$receipt_name
+  saved=$proof/preserved-$transport_role-functional-api.json
+  if [[ $role == capture ]]; then
+    artifact=$transport_capture
+    metadata=$proof/capture-transport-api.json
+    api_run=$preservation_run
+    api_source=$preservation_source
+    anchor=$proof/preservation-live-run.json
+    expires=2027-01-24T00:38:20Z
+    name=$transport_name
+    saved=$proof/preserved-$transport_role-capture-preserved-api.json
+  fi
+  get_json "actions/artifacts/$artifact" "$metadata"
+  artifact_identity "$metadata" "$artifact" "$name" "$bytes" "$digest" "$api_run" "$api_source"
+  retention90 "$metadata" "$anchor" "$expires"
+  /usr/bin/jq -e --slurpfile saved "$saved" '
+    def identity: [.id,.name,.size_in_bytes,.digest,.expired,.workflow_run,.url,
+      .archive_download_url,.created_at,.expires_at];
+    identity == ($saved[0] | identity)
+  ' "$metadata" > /dev/null
+  download_archive "$artifact" "$bytes" "$digest" "$root/$role.zip" "$role"
+done
+/usr/bin/jq -n --arg origin "$original_capture" --arg capture "$transport_capture" \
+  --arg run "$preservation_run" --arg source "$preservation_source" --arg proof "$preservation_proof" \
+  --arg sha "$preservation_proof_sha" '{status:"PRESERVED_TRANSPORT_AUTHENTICATED",
+    original_capture_artifact_id:$origin, transport_capture_artifact_id:$capture,
+    preservation_run_id:$run, preservation_source:$source, proof_artifact_id:$proof,
+    proof_sha256:$sha, original_bytes_equal:true, roundtrip_verified:true,
+    original_execution:false, native_revalidation_required:true, full_ipc_acceptance:false
+  }' > "$proof/transport-authentication.json"
 phase=private-extraction
 verify_owner
 # 외부 pin→감사 JSON→exact ZIP SHA가 기존 safe unique path/regular-file/CRC 감사를 결합한다.
@@ -289,6 +451,9 @@ test "$(/usr/bin/find "$root/receipt" -xdev -type f -printf '.\n' | /usr/bin/wc 
 actual_expanded=$(/usr/bin/find "$root/capture" -xdev -type f -printf '%s\n' | /usr/bin/awk '{n+=$1} END {print n}')
 test "$actual_expanded" = "$capture_expanded"
 phase=final-pins
+test "$(/usr/bin/stat -c '%u:%a:%s:%h' -- "$root/preservation-proof.zip")" = "$uid:600:57919:1"
+printf '%s  %s\n' "$preservation_proof_sha" "$root/preservation-proof.zip" | /usr/bin/sha256sum --check --strict -
+/usr/bin/sha256sum --check --strict "$proof/preservation-selected.sha256"
 for role in capture receipt; do
   digest=$(/usr/bin/jq -er ".artifacts.$role.sha256" "$root/audit.json")
   bytes=$(/usr/bin/jq -er ".artifacts.$role.bytes" "$root/audit.json")
@@ -323,7 +488,7 @@ test "$(/usr/bin/stat -c '%d:%i:%u:%f:%s:%Y:%Z' -- "$fixture")" = "$fixture_iden
 printf '%s  %s\n' "$audit_sha" "$fixture" "$audit_sha" "$root/audit.json" | /usr/bin/sha256sum --check --strict -
 test "$(/usr/bin/stat -c '%d:%i:%u:%f:%s:%y:%z' -- "$outputs_fixture")" = "$outputs_identity"
 printf '%s  %s\n' "$outputs_sha" "$outputs_fixture" "$outputs_sha" "$proof/outputs-audit.json" | /usr/bin/sha256sum --check --strict -
-# archive 두 개, 기존 inputs, 추가 outputs 및 proof까지 원래128MiB 범위 안에 둔다.
+# archive 두 개와 transport proof, 기존 inputs/outputs까지 원래128MiB 범위 안에 둔다.
 for measure in allocated apparent; do
   options=(-sx --block-size=1)
   if [[ $measure == apparent ]]; then options+=(--apparent-size); fi

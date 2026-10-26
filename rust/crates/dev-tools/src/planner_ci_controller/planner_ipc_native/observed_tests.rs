@@ -464,4 +464,43 @@ fn capture_auth_rejects_unpinned_swapped_incomplete_and_reappeared_data() {
             "original output {kind} mutation/reappearance"
         );
     }
+
+    let root = tempfile::tempdir().unwrap();
+    super::require_retired_scheduler_test_absent(root.path()).unwrap();
+    let error = super::finish_scheduler_retirement(root.path(), Err("original work exit42".into()))
+        .unwrap_err();
+    assert_eq!(error.to_string(), "original work exit42");
+    assert_eq!(
+        super::finish_scheduler_retirement(root.path(), Ok(serde_json::json!(42))).unwrap(),
+        serde_json::json!(42)
+    );
+    for kind in ["file", "symlink", "dangling-symlink", "directory"] {
+        let root = tempfile::tempdir().unwrap();
+        let retired = root
+            .path()
+            .join("rust/tools/tests/test_plannerd_native_scheduler.py");
+        fs::create_dir_all(retired.parent().unwrap()).unwrap();
+        super::require_retired_scheduler_test_absent(root.path()).unwrap();
+        match kind {
+            "file" => fs::write(&retired, b"reappeared scheduler test").unwrap(),
+            "directory" => fs::create_dir(&retired).unwrap(),
+            "symlink" => {
+                let target = root.path().join("original-source");
+                fs::write(&target, b"reappeared scheduler test").unwrap();
+                symlink(&target, &retired).unwrap();
+            }
+            "dangling-symlink" => symlink(root.path().join("absent"), &retired).unwrap(),
+            _ => unreachable!(),
+        }
+        assert!(super::require_retired_scheduler_test_absent(root.path()).is_err());
+        for work in [Ok(serde_json::json!(0)), Err("original work exit42".into())] {
+            assert!(
+                super::finish_scheduler_retirement(root.path(), work)
+                    .unwrap_err()
+                    .to_string()
+                    .contains("retired scheduler test reappeared"),
+                "{kind}"
+            );
+        }
+    }
 }

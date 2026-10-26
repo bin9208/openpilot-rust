@@ -101,3 +101,65 @@ stage/commit/push는0이다. 기존 native26과 성공한 다른 검사를 재�
 부모 통합에서 새 workflow는 #523 브랜치의 자기 파일/helper 변경에 한정한 push와
 workflow_dispatch를 모두 허용한다. source/repository/ref 및 hosted 조건은 같다.
 이 첫 실행은 push로 배정하며, 실제 결과를 관측하기 전 수용 credit은0이다.
+
+## source0283 실제 성공·원본 감사와 #513 네 조건 판정
+
+2026-10-26 source `0283e6345fc8c8e60cd3537424f1c2df383d9088`의
+[run40250301939/job121340512293](https://github.com/bin9208/openpilot-rust/actions/runs/40250301939/job/121340512293)
+attempt1 원본 artifact와 job log를 읽기 전용 감사했다. job과 모든 step은 success이며,
+실제 runner는 GitHub Actions1000029788/github-hosted/Linux/X64다. 앞 절의 UNRUN은 후보
+작성 당시 기록이고, 이번 실행으로 아래 두 genuine 호출과 고정 native 근거 admission을 수용했다.
+
+원본 artifact는 [github-images-513-40250301939-1](https://github.com/bin9208/openpilot-rust/actions/runs/40250301939/artifacts/12620525221),
+ID `12620525221`, ZIP370,804B다. 50개 unique/safe member의 전체 CRC가 정상이고,
+expanded2,661,935B다. ZIP SHA256은 API·업로드 로그와 다음 값으로 일치한다.
+
+```text
+276f4494716db01d0afcb482e9a66c249d0d85ee478690538692a20ab3d4fd24
+```
+
+| #513 상세 acceptance | 판정과 실제 증거 |
+| --- | --- |
+| private image/fake transport로 기존 wrong-branch prefix 재현 | PASS. pre-fix 원문 genuine1은 bucket GET200→image GET404→PUT201 뒤 `commits/commenter-513/pulls` GET404에서 원래 Exception을 발생시켰다. 정확한 traceback·stderr와4개 raw request를 보존했다 |
+| 유지되는 구현의 branch/commenter 교정 및 overwrite 결정 | PASS. corrected 원문 genuine1은 같은 업로드 뒤 `commits/requested-branch-513/pulls` GET200→`issues/513/comments` POST201을 남겼다. commenter와 branch는 서로 다르며 overwrite=false를 유지한다 |
+| Actions offline transcript와 upload/error 순서 검증 | PASS. 두 실행의 처음3개 raw request가 동일하고 PUT의 base64는 실제 private PNG68B와 byte 동일하다. PNG1×1의 signature·chunk CRC도 정상이다. corrected stderr는0B이고9개 요청 모두 fake/빈 headers다. 비교 단계의 실제 network/process 시도는0이다. 기존 native26/영향 image5의 실제 수용은 아래와 같이 재사용했다 |
+| 고정 원본과의 의도적 차이·licensing/provenance·다른 동작 보존 | PASS. immutable commit/blob/SHA와 업로드 원문이 일치한다. 모듈 AST 차이는 인자 교환 한 곳뿐이며 raw POST/기존 odd-row HTML을 보존한다. native 구현/test는 실제 합격 source와 byte 동일하고 source/index 전후 봉인도 동일하다. 원본 licensing/provenance 변경·삭제는 없다 |
+
+원래 native 근거는 source `9e7a3b39ebaa2d215e2cadbae0618cc8720f3649`의
+[40080413343/job120832600964](https://github.com/bin9208/openpilot-rust/actions/runs/40080413343/job/120832600964)이다.
+API의 run/job/artifact12554902305 결합, raw log의 실제 GithubUtils26 PASS/영향 image5 PASS,
+현재 native 구현·test와 내려받은 불변 source의 byte 동일성을 대조했다. **둘러싼 과거 job의
+failure는 그대로 보존**하며 전체 job success로 올리지 않는다. 새 Cargo/test/Clippy 실행이나
+과거 archive 재다운로드는 없다. native raw log SHA256은
+`1d6a428e332bec1d5fc61cd798972f7d7bede1c75fd342ef01e1e302e63599f2`다.
+
+관측 함수는 token 없는 별도 환경과 fake requests에서만 실행됐다. 인증 GET은 원문·기존
+근거 준비 단계에 한정되며, 실제 GitHub POST/PUT/PATCH나 계정·댓글 작업은 하지 않았다.
+`comparison.json`은 genuine_calls pre_fix1/corrected1, raw_upload_prefix_equal=true,
+overwrite_default=false, network_attempts=[], native_executed=false, passed=true다.
+해당 JSON SHA256은 `d2877b0ef39dca90390342572691bae195e47be7a5ec539c3cac2d3d1ea822dc`다.
+
+source/index와 Python 실행 파일의 SHA·stat는 전후 동일하다. source tar seal은
+`af0351ce6737531abaa749bc2b67e19a6d70a14d53e0b5751816698fd3b3d24f`이며,
+Python3.12.3의 `/usr/bin/python3.12` digest는
+`e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f`다.
+준비·비교 status는 모두0이다. proof-growth 관측은 allocated2,805,760B/apparent2,661,721B로
+32MiB cap 이내이고, 최종 ZIP의 전체 expanded bytes도 그 cap 이내다. 전체 시스템/Python
+stdlib 봉인이나 다른 실행의 peak 보장으로 확대하지 않는다.
+
+이번 업로드 ID/digest 확인 뒤 source cleanup과 common cleanup(step11/12)이 실제 success다.
+원본 log에서 고정 private prefix·uid/dev/inode·owner marker 검사, source 회수와 기존
+job-temp 회수 호출을 확인했다. cleanup의 CI_JOB_TEMP/CI_RUNNER_TEMP도 실제 값으로 존재한다.
+ZIP은 회수 전 증거이며, 삭제 후 경로를 별도 probe로 다시 관측했다고 주장하지 않는다.
+
+따라서 **#513의 명시된 네 조건은 모두 충족하며 좁은 이슈 종결이 가능하다.** 과거 계획의
+original5/image-only18이나 전체 PR를 새 gate로 추가하지 않는다. 이슈 close는 부모가 수행한다.
+#510–#512의 PR500/dev 통합·post-merge 조건, #523 전체 전환·원본 퇴역·기기 수용은 별도다.
+새 임시 probe의 retirement credit도0이다.
+
+원본 ZIP·job log와 한국어 판정 JSON은 private
+`.analysis/scratch/2026-10-25-523-completion/ci/`의 `12620525221.zip`,
+`github-images0283-121340512293.log`, `github-images0283-audit.json`에 보존했다.
+job log SHA256은 `2163759a1b058a190b78af156c829e927573350df86169bcd3987c5766fe868b`다.
+이 문서 추가를 위해 새 다운로드·기능/CI 실행은 하지 않았다. production source/WF·이슈 상태
+수정 및 stage/commit/push는0이다.

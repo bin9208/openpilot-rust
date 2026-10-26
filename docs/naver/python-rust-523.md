@@ -1620,3 +1620,37 @@ source47fb에 추가한 planner-ipc-native Cargo feature가 frozen manifest의 �
 앞서 source47fb Fast 및 HOST/ARM 기능 성공, sourceef genuine 경계 성공과 sourceec의
 transport-only 실제 성공은 유지한다. 이 두 새 admission 수정의 실제 통과는 다음 source에서
 확인하며 queued/running 결과를 성공으로 쓰지 않는다. 로컬 기능 재실행은0이다.
+
+### #513 실제 네 조건 수용·좁은 종결
+
+source0283의 [40250301939/job121340512293](https://github.com/bin9208/openpilot-rust/actions/runs/40250301939/job/121340512293)에서 pre-fix wrong-branch404와 corrected requested-branch→POST201, upload3 raw prefix/오류 순서/overwrite=false/실제 네트워크0, 불변 native26·영향5 log prefix, 원본 provenance와 source/index/Python 전후 봉인/cleanup을 확인했다. artifact12620525221은50 safe/unique/CRC 정상, SHA256 `276f4494716db01d0afcb482e9a66c249d0d85ee478690538692a20ab3d4fd24`이며 allocated2,805,760B는32MiB 안이다. [수용 기록](https://github.com/bin9208/openpilot-rust/issues/513#issuecomment-6405812886)을 남겨 #513만 종결했다. #523의 주 담당 열린 이슈는70개, 기존 종료 이력은115개다. baseline300/3/3277과 추가169개 원장은 유지한다. 이 결함 종결을 Python 파일 퇴역이나 전체 PR/전달·기기 수용으로 세지 않는다.
+
+sourcead1e의 [Fast40250641473](https://github.com/bin9208/openpilot-rust/actions/runs/40250641473)와 [driver transport40250641545](https://github.com/bin9208/openpilot-rust/actions/runs/40250641545)는 성공했다. 기존 오류 문구 및 frozen Cargo feature의 정확한 허용 변환을 회복했고 검사 범위는 유지했다. Focus 결과, Planner 원본 출력 reader와 모델 D의 실제 감사, canonical IPC 호출 교체는 각각 후속 확인한다.
+
+### ad1e Focus 회복과0283 모델 D 실제 결과
+
+sourcead1e의 [Focus40250641409/job121342404966](https://github.com/bin9208/openpilot-rust/actions/runs/40250641409/job/121342404966)도 성공했다. 앞선 admission 실패 두 곳은 기존 검사의 정확한 문구·Cargo feature 허용 변환으로 회복했다.
+
+source0283의 [현재 모델40250301884](https://github.com/bin9208/openpilot-rust/actions/runs/40250301884)는 AMD에서 native15/ISA14/strict Clippy/A/B/C/D의 실행 범위가 성공했고, 원본 plain/tap/native/C/D rename-only/D guarded의12개·5,138,816B가 모두 byte exact다. D는 원본 모델0/원본 Python compiler2를 실제 사용했으며 두 fresh object/image도 동일하다. Intel sourceef에서 확인한 원본-0/native+0의 세 lane은 이번 AMD에서 재현되지 않았다. 전체 job은 최종 후검사의 stale helper SHA `379507cb…` 때문에 실패했다. 발행 helper `de8c8946…`와 일치하도록 assertion 한 곳만 교정했으며 후검사·숫자 기준은 유지한다. 새 exact-source 결과는 후속 확인한다. #482/전체 모델 수용·baseline 실적은 바꾸지 않는다. 실제 ZIP12620264731·1411CRC/SHA와 상세 범위는 `python-rust-523-model-cached-context.md`에 남긴다.
+
+### Planner 단일 native IPC 호출·부분 Python 제거 후속 후보
+
+0283 HOST [40250301867/job121340512349](https://github.com/bin9208/openpilot-rust/actions/runs/40250301867/job/121340512349)와 ARM [40250301909/job121340512538](https://github.com/bin9208/openpilot-rust/actions/runs/40250301909/job/121340512538)의 실제 old484 decode/121×4 비교는 값·float64 bits 차이0, native160/lib4/Clippy/source·SDK/직접 group 회수까지 수용했다. 이를 바탕으로 canonical/HOST/ARMmore/reusable caller를 stage→runtime12(안에서 native IPC1회)→HOST ASan3→ipc-check4/Clippy로 맞췄다. 별도 native IPC 실행과 원래 capture overlay를 제거했으며 main의 다른42 job과 reusable 다른8/WebRTC는 불변이다. 재사용 caller의 contents/actions read 권한 전파만 필요한 exact map으로 추가했다. 현재 main SHA는 `52a82eb24ea1894bd210f5e4af57881d9d4aa96de8f08e64f46b086b79c30c89`다.
+
+IPC는 NativeRunner가 같은 controller ELF를 직접 child로 실행한다. typed/lazy 준비로 앞선 ABI42와 late absence 검사를 보존하며 공유 QA·IPC17 parser·retirement6/source73 원문·다른11 argv·memory3는 바꾸지 않았다. 기존14/5/6/15 selector와 lib4를 유지하고 owned group timeout/cancel 검사를 확장했다. helper는 runtime/memory/ipc-check만 남겼고 원래 lifecycle 관측 export를 포함한 SHA는 `cf510c5bb65b5fdd5bcad2356f988e026d64f8ad7d52c6117e49efcf082f1612`다. 새 호출·회수의 실제 수용은 GHA에서 확인해야 한다.
+
+원래 private capture2는 [보존40250326019/job121342010745](https://github.com/bin9208/openpilot-rust/actions/runs/40250326019/job/121342010745)에서 byte identity/90일/roundtrip/cleanup을 수용했다. 새 HOST12620219669·ARM12620435668과 proof12621030512를 인증하도록 stager를 연결했다. immutable origin audit/source9/old ID·SHA는 보존했고 이미90일인 functional2는 기존 direct API를 유지했다. stager SHA `43e1eb7b2b5e27521f8f7ce4e4a36c35376515b4be944c6bd390a348978810b6`, 기존128MiB/allowlist489/URL token 분리도 유지했다. 새 소비자 실행은 아직 후보이며 `python-rust-523-evidence-retention.md`에 경계를 기록한다.
+
+`plannerd_ipc.py`는 lifecycle에서 사용하는 OUTPUTS/policy/peers_ready 원문만 남기고 collector/client/run/main을 제거한 부분 전환 후보다. Python scheduler test14 파일을 삭제하고 native15는 독립233B 원문 fixture를 읽는다. 삭제 경로는 native IPC의 전후 거부와 file/directory/live·dangling symlink 통제, Focus working/index 전후 부재로 보호한다. 삭제 후 실제 HOST/ARM 및 native 단위 수용 전까지 baseline300/3/3277과 추가169 원장을 그대로 유지하며 전체 module 퇴역 credit은0이다.
+
+### F02 production kernel registry Rust 전환 후보
+
+`offline_schedule.py`의 binary SHA/길이·signature dedup·index·첫 PROGRAM 대표 결정을 기존 native stream v2로 옮겼다. Python은 실제 강하게 보유한 handle 연결과 DTO 직렬화만 남기며 원래 compile→launch→ins read→outs write→registry→globals view 순서, SOURCE를 key에 넣지 않는 계약과 반복 call을 보존한다. 구버전 stream v1/export-plan v1·v2와 기존 EOF/회수/destination 생성 순서는 유지한다. metadata의 두 signature/Vec·String capacity·enum slot·등록 payload를 기존 retained256MiB에 보수적으로 합산하며 전체 RSS 보장을 주장하지 않는다. 원본 Python compiler/ASSERT_COMPILE/lowering은 계속 pending이다.
+
+기존 native10에 registry4를 추가한14/ignored2, library budget2, 기존 COPY1·genuine mixed1/order7·strict Clippy를 실제 Actions에서 확인한다. 원본-first graph/weights/SOURCE/BINARY·대표 IR, 후보 Python Kernel hash/binary SHA poison, 최초 오류와 미래 compiler0·실패 destination 부재를 검증하며 원본 prefix SHA와 frozen expected는 바꾸지 않았다. hosted compiler job에서14+2와 genuine provider를 검증하므로 local native-units의 이번 push는 변경된 Planner/controller-client 두 lane만 실행한다. manual all7과 최종 필수 PR 검사는 유지한다. 아직 새 source의 실제 수용이나 baseline credit은 없다. 자세한 경계는 `python-rust-523-compiler-native-emission.md`에 남긴다.
+
+### 원래 lifecycle26 run 안의 후속 독립 입력 관측
+
+다음 native lifecycle 전환에 필요한 실제 송신234개와 launch 전 Params 상태가 기존 archive에 없음을 확인했다. 이번에 이미 필요한 HOST/ARM의 원래26 run 안에서만 optional collector로 이를 기록한다. 송신은 원래 to_bytes1회로 만든 동일 raw를 사용하고13 case×source/rust·Params30 snapshot을 완결해야 한다. 옵션 off의 원래 함수 의미, 기존 service/frame·종료값·기한·child 회수와 output72 계약은 유지하며 새 valid/data 비교를 추가하지 않았다. 추가 oracle/worker/process는0이다.
+
+helper가 정확한 `planner-comparison/lifecycle-original-inputs` sibling을 export하고, canonical/HOST/ARMmore/reusable의 functional/private 업로드 두 개 모두90일로 고정했다. 작업별 기존128MiB와 capture64MiB admission, owned700/file600·exclusive/NOFOLLOW·source14/binding/SDK proof·전후 identity와 hard roster 검증을 적용한다. 이 두 Python 도구는 원래 baseline pending이며 새로운 퇴역 실적이나 별도 실행경계 수 증가는 없다. 실제 수집 성공과 새로운 native caller/회수·F02 수용은 모두 이번 source의 Actions 결과로 확인해야 한다.

@@ -1,4 +1,4 @@
-//! 기존 12개 실제 비교 leaf와 PASS provenance. Python은 현재 원본 비교 leaf에만 명시한다.
+//! 기존 12개 실제 비교 leaf와 PASS provenance. IPC는 같은 ELF의 직접 child다.
 use super::{write_json, Check};
 use crate::{
     qa_process::{CommandSpec, Runner},
@@ -31,6 +31,18 @@ pub const CHECK_NAMES: [&str; 12] = [
 pub const MEMORY_CHECK_NAMES: [&str; 3] = ["abi", "owner", "fault"];
 
 #[derive(Clone, Debug)]
+pub struct NativeIpcInputs {
+    pub original_ipc_binding: PathBuf,
+    pub compiler: PathBuf,
+    pub corpus: PathBuf,
+    pub corpus_audit: PathBuf,
+    pub corpus_audit_sha256: String,
+    pub timeout: Duration,
+    pub growth_mib: u64,
+    pub peer_build_growth_mib: u64,
+}
+
+#[derive(Clone, Debug)]
 pub struct Inputs {
     pub root: PathBuf,
     pub python: PathBuf,
@@ -39,6 +51,7 @@ pub struct Inputs {
     pub source: PathBuf,
     pub binding: PathBuf,
     pub scheduler: PathBuf,
+    pub native_ipc: Option<NativeIpcInputs>,
 }
 
 fn text(path: &Path) -> Result<String> {
@@ -47,12 +60,44 @@ fn text(path: &Path) -> Result<String> {
         .ok_or_else(|| "Planner paths must be UTF-8".into())
 }
 
+/// 미해결 IPC는 argv가 아니다. 실행 iterator가 이 단계에 도달한 뒤에만 완성한다.
+pub(crate) enum PlannedCheck {
+    Complete(Box<Check>),
+    NativeIpc {
+        growth_bytes: u64,
+        timeout: Duration,
+    },
+}
+
+impl PlannedCheck {
+    pub(crate) fn complete(self, inputs: &Inputs) -> Result<Check> {
+        match self {
+            Self::Complete(check) => Ok(*check),
+            Self::NativeIpc {
+                growth_bytes,
+                timeout,
+            } => native_ipc_check(inputs, growth_bytes, timeout),
+        }
+    }
+}
+
+pub(crate) fn runtime_plan(
+    inputs: &Inputs,
+    growth: &BTreeMap<String, u64>,
+    timeout: Duration,
+) -> Result<Vec<PlannedCheck>> {
+    selected_checks(inputs, growth, timeout, &CHECK_NAMES)
+}
+
 pub fn runtime_checks(
     inputs: &Inputs,
     growth: &BTreeMap<String, u64>,
     timeout: Duration,
 ) -> Result<Vec<Check>> {
-    selected_checks(inputs, growth, timeout, &CHECK_NAMES)
+    runtime_plan(inputs, growth, timeout)?
+        .into_iter()
+        .map(|step| step.complete(inputs))
+        .collect()
 }
 
 pub fn memory_checks(
@@ -60,7 +105,10 @@ pub fn memory_checks(
     growth: &BTreeMap<String, u64>,
     timeout: Duration,
 ) -> Result<Vec<Check>> {
-    selected_checks(inputs, growth, timeout, &MEMORY_CHECK_NAMES)
+    selected_checks(inputs, growth, timeout, &MEMORY_CHECK_NAMES)?
+        .into_iter()
+        .map(|step| step.complete(inputs))
+        .collect()
 }
 
 fn selected_checks(
@@ -68,7 +116,7 @@ fn selected_checks(
     growth: &BTreeMap<String, u64>,
     timeout: Duration,
     names: &[&str],
-) -> Result<Vec<Check>> {
+) -> Result<Vec<PlannedCheck>> {
     if growth.len() != names.len() || names.iter().any(|name| !growth.contains_key(*name)) {
         return Err(format!(
             "growth admission must name every selected Planner operation exactly once: {}",
@@ -106,6 +154,13 @@ fn selected_checks(
             let Some(growth_bytes) = growth.get(name) else {
                 return Ok(());
             };
+            if name == "ipc" {
+                checks.push(PlannedCheck::NativeIpc {
+                    growth_bytes: *growth_bytes,
+                    timeout,
+                });
+                return Ok(());
+            }
             let mut argv = vec![
                 text(&inputs.python)?,
                 "-u".into(),
@@ -113,19 +168,14 @@ fn selected_checks(
                 text(&inputs.root.join("rust/tools").join(script))?,
             ];
             argv.extend(arguments);
-            let mut command = CommandSpec::new(argv, timeout);
-            if name == "ipc" {
-                command
-                    .env
-                    .insert("PLANNER_NATIVE_SCHEDULER".into(), text(&inputs.scheduler)?);
-            }
-            checks.push(Check {
+            let command = CommandSpec::new(argv, timeout);
+            checks.push(PlannedCheck::Complete(Box::new(Check {
                 name: name.into(),
                 command,
                 output_option: output_option.into(),
                 growth_bytes: *growth_bytes,
-                scheduler_calls: (name == "ipc").then_some(4 * 40),
-            });
+                scheduler_calls: None,
+            })));
             Ok(())
         };
     add(
@@ -181,7 +231,7 @@ fn selected_checks(
         arguments.extend(extra.into_iter().map(str::to_owned));
         add(name, "plannerd_runtime_source.py", arguments, "--output")?;
     }
-    add("ipc", "plannerd_ipc.py", daemon.clone(), "--output")?;
+    add("ipc", "", Vec::new(), "--output")?;
     add(
         "lifecycle",
         "check_plannerd_lifecycle.py",
@@ -189,6 +239,79 @@ fn selected_checks(
         "--output",
     )?;
     Ok(checks)
+}
+
+fn native_ipc_check(inputs: &Inputs, growth_bytes: u64, timeout: Duration) -> Result<Check> {
+    let ipc = inputs
+        .native_ipc
+        .as_ref()
+        .ok_or("prepared native IPC context is required")?;
+    if [
+        &ipc.original_ipc_binding,
+        &ipc.compiler,
+        &ipc.corpus,
+        &ipc.corpus_audit,
+    ]
+    .into_iter()
+    .any(|path| !path.is_absolute())
+        || ipc.timeout.as_secs() == 0
+        || ipc.timeout.subsec_nanos() != 0
+        || ipc.timeout > timeout
+        || ipc.growth_mib == 0
+        || ipc.peer_build_growth_mib == 0
+        || ipc.corpus_audit_sha256.len() != 64
+        || !ipc
+            .corpus_audit_sha256
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err("invalid prepared native IPC paths, SHA or budgets".into());
+    }
+    let argv = vec![
+        text(&inputs.scheduler)?,
+        "ipc".into(),
+        "--root".into(),
+        text(&inputs.root)?,
+        "--python".into(),
+        text(&inputs.python)?,
+        "--binary".into(),
+        text(&inputs.binaries.join("openpilot-plannerd"))?,
+        "--artifact".into(),
+        text(&inputs.artifact)?,
+        "--binding".into(),
+        text(&inputs.binding)?,
+        "--source-native".into(),
+        text(&inputs.source)?,
+        "--original-ipc-binding".into(),
+        text(&ipc.original_ipc_binding)?,
+        "--scheduler".into(),
+        text(&inputs.scheduler)?,
+        "--compiler".into(),
+        text(&ipc.compiler)?,
+        "--corpus".into(),
+        text(&ipc.corpus)?,
+        "--corpus-audit".into(),
+        text(&ipc.corpus_audit)?,
+        "--corpus-audit-sha256".into(),
+        ipc.corpus_audit_sha256.clone(),
+        "--timeout-seconds".into(),
+        ipc.timeout.as_secs().to_string(),
+        "--growth-mib".into(),
+        ipc.growth_mib.to_string(),
+        "--peer-build-growth-mib".into(),
+        ipc.peer_build_growth_mib.to_string(),
+    ];
+    let mut command = CommandSpec::new(argv, timeout);
+    command
+        .env
+        .insert("PLANNER_NATIVE_SCHEDULER".into(), text(&inputs.scheduler)?);
+    Ok(Check {
+        name: "ipc".into(),
+        command,
+        output_option: "--output".into(),
+        growth_bytes,
+        scheduler_calls: Some(4 * 40),
+    })
 }
 
 fn digest(path: &Path) -> Result<String> {
