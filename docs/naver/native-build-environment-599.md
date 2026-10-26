@@ -108,3 +108,7 @@ probe 경과991.21초/최종 free-space 차이4604772352 bytes/단일 child 최�
 해당 QEMU user-space probe 범위다. aggregate peak나 실제 장치·전체 runtime 성능으로
 확대하지 않는다. 이미지/compiler pin·원래 명령·4case 요구는 유지하고 새 정확 source에서
 재검증한다. 물리 ARM/AGNOS kernel/기기 설치는 수행하지 않았다.
+
+기본 PATH에서 빠진 capnp는 같은 Noble1.0.1-4의 고정 ARM C/C++ package와 명시한
+compiler 경로로 준비한다. [SDK 입력·실제 전체 schema 검증 계획](native-capnp-sdk-599.md)에
+원본 pin, 그룹별 입력/보조 도구 검사와 원본 Python wire 비교, 현재 CI-only 범위를 기록했다.

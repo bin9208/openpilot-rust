@@ -206,6 +206,54 @@ def native_driver_probe(guest_command, work, source_mount, evidence, log, guest_
       actual_guest_execution=True, full_runtime_build=False, device_execution=False)
 
 
+def native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_work):
+  """Use the admitted native C++ SDK against the actual complete schemas."""
+  owned = work.parent
+  sdk = owned / 'native-capnp'
+  guest_sdk = Path(guest_work) / 'capnp-sdk'
+  rust = json.loads((owned / 'native-rust-first.json').read_text())
+  rust_root = Path(guest_work) / 'pinned-rust' / Path(rust['root']).relative_to(owned / 'native-rust-toolchains')
+  schema_compiler = guest_sdk / 'usr/bin/capnp'
+  libraries = guest_sdk / 'usr/lib/aarch64-linux-gnu'
+  receipt = owned / 'native-capnp-tree.json'
+  receipt_sha = digest(receipt)
+  inputs = Path((owned / 'native-capnp-inputs-cli.txt').read_text().strip())
+  cargo = [rust_root / 'bin/cargo', 'build', '--locked', '--manifest-path', f'{source_mount}/rust/Cargo.toml',
+           '-p', 'openpilot-cereal', '--example', 'native_roundtrip', '--target-dir', work/'project-target',
+           '--message-format=json']
+  environment = ['/usr/bin/env', f'OPENPILOT_CAPNP={schema_compiler}', f'LD_LIBRARY_PATH={libraries}',
+                 f'RUSTC={rust_root}/bin/rustc']
+  evidence['commands'].append(run(guest_command([*environment, schema_compiler, '--version']), log,
+                                  stdout_path=work/'native-cereal-capnp-version.txt'))
+  assert (work/'native-cereal-capnp-version.txt').read_text().strip() == "Cap'n Proto version 1.0.1"
+  room(work, 2*1024**3)
+  for phase in ('initial', 'reused'):
+    command = [*environment, *cargo, *(['--offline'] if phase == 'reused' else [])]
+    output = work/f'native-cereal-{phase}.jsonl'
+    evidence['commands'].append(run(guest_command(command),log,stdout_path=output))
+    rows = [json.loads(line) for line in output.read_text().splitlines()]
+    example = [row for row in rows if row.get('reason') == 'compiler-artifact'
+               and row.get('executable') and row['target']['name'] == 'native_roundtrip']
+    assert len(example) == 1 and example[0]['fresh'] == (phase == 'reused')
+    executable = work/'project-target/debug/examples/native_roundtrip'
+    with executable.open('rb') as stream:
+      header = stream.read(64)
+    assert len(header) == 64 and header[:7] == b'\x7fELF\x02\x01\x01' and int.from_bytes(header[18:20],'little') == 183
+    evidence['commands'].append(run(guest_command([example[0]['executable']]),log,
+                                    stdout_path=work/f'native-cereal-{phase}-wire.txt'))
+    assert (work/f'native-cereal-{phase}-wire.txt').read_bytes() == (owned/'native-cereal-original-wire.txt').read_bytes()
+    if phase == 'initial':
+      initial_hash = digest(executable)
+    else:
+      assert digest(executable) == initial_hash
+  evidence['commands'].append(run([inputs,'--root',sdk,'--output',work/'native-cereal-sdk-after.json'],log))
+  assert digest(work/'native-cereal-sdk-after.json') == receipt_sha
+  evidence['native_cereal_sdk'] = dict(source_commit=evidence['source_commit'],example_sha256=initial_hash,
+      capnp_version='1.0.1',capnp_sha256=digest(sdk/'usr/bin/capnp'),sdk_tree_sha256=receipt_sha,
+      original_python_full_schema_cases=2,exact_wire_bytes_match=True,repeated_artifact_fresh=True,
+      sdk_unchanged=True,actual_guest_execution=True,full_runtime_build=False,device_execution=False)
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -271,8 +319,10 @@ def main():
         f'\tdirectory = {source_mount}\n\tdirectory = {guest_work}/driver-fixture\n'
         '[core]\n\thooksPath = /dev/null\n[commit]\n\tgpgSign = false\n')
     (work / 'pinned-rust').mkdir()
+    (work / 'capnp-sdk').mkdir()
     guest = [proot, '-0', '-r', rootfs, '-q', qemu, '-b', '/proc', '-b', '/dev', '-b', '/etc/resolv.conf',
              '-b', '/etc/hosts', '-b', f'{work}:{guest_work}', '-b', f'{owned / "native-rust-toolchains"}:{guest_work}/pinned-rust',
+             '-b', f'{owned / "native-capnp"}:{guest_work}/capnp-sdk',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
@@ -314,6 +364,12 @@ def main():
     evidence['binaries'] = before
     evidence['toolchain_files'] = {str(path.relative_to(work)): digest(path) for path in (work / 'rustup/toolchains').glob('*/bin/*') if path.is_file()}
     native_driver_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    source_after = work/'native-project-final-source.txt'
+    status_after = work/'native-project-final-status.txt'
+    evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))
+    evidence['commands'].append(run(guest_command(['git','-C',source_mount,'status','--porcelain','--untracked-files=all']),log,stdout_path=status_after))
+    assert source_after.read_text().strip() == sha and not status_after.read_text().strip()
     evidence['success'] = True
   except BaseException as error:
     evidence.update(success=False, failure=str(error))

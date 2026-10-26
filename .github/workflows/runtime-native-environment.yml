@@ -8,6 +8,10 @@ on:
       - 'rust/native-rust-toolchain.json'
       - 'rust/crates/runtime-build/src/toolchain.rs'
       - 'rust/crates/runtime-build/src/inputs_main.rs'
+      - 'rust/crates/cereal/**'
+      - 'rust/native-capnp-assets.json'
+      - 'tools/ci/prepare_native_capnp.py'
+      - 'tools/ci/native_cereal_reference.py'
       - '.github/workflows/runtime-native-environment.yml'
   workflow_dispatch:
 permissions:
@@ -95,6 +99,37 @@ jobs:
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-rust-assets
           key: native-rust-194-aarch64-aaa177def36e01d539bee6bde95295230b9ce378f81057845db8d0ebe97898ee-v1
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - uses: actions/cache/restore@v4
+        id: capnp-packages-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-capnp-assets
+          key: native-capnp-101-4-arm64-9d693ded6a718a142063ccf0bb3250fa4e15b846980362ec6c38cff2a711a81c-v1
+      - name: Prepare only pinned SDK packages and the original full-schema reference
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          free = shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          growth = 512 * 1024**2
+          print(f'available_bytes={free} expected_reference_and_sdk_growth_bytes={growth}')
+          if free < growth:
+              raise SystemExit('insufficient capacity for reference and SDK inputs; other data retained')
+          PY
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          printf '%s\n' "$native_target/debug/openpilot-runtime-inputs" > "$RUNNER_TEMP/native-capnp-inputs-cli.txt"
+          "$native_target/debug/openpilot-runtime-assets" --plan rust/native-capnp-assets.json --cache "$RUNNER_TEMP/native-capnp-assets" > "$RUNNER_TEMP/native-capnp-assets-first.json"
+          "$native_target/debug/openpilot-runtime-assets" --plan rust/native-capnp-assets.json --cache "$RUNNER_TEMP/native-capnp-assets" > "$RUNNER_TEMP/native-capnp-assets-reused.json"
+          python3 tools/ci/prepare_native_capnp.py
+          "$native_target/debug/openpilot-runtime-inputs" --root "$RUNNER_TEMP/native-capnp" --output "$RUNNER_TEMP/native-capnp-tree.json"
+          python -m pip install pycapnp==2.1.0
+          PYTHONPATH="$GITHUB_WORKSPACE" python3 tools/ci/native_cereal_reference.py
+      - uses: actions/cache/save@v4
+        if: steps.capnp-packages-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-capnp-assets
+          key: native-capnp-101-4-arm64-9d693ded6a718a142063ccf0bb3250fa4e15b846980362ec6c38cff2a711a81c-v1
       - name: Execute Rust and C++ standard ABI probes inside the original AGNOS filesystem
         run: python3 tools/ci/probe_native_agnos.py
       - uses: actions/upload-artifact@v6
@@ -107,6 +142,12 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos-assets-reused.json
             ${{ env.CI_JOB_TEMP }}/native-rust-first.json
             ${{ env.CI_JOB_TEMP }}/native-rust-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-capnp-assets-first.json
+            ${{ env.CI_JOB_TEMP }}/native-capnp-assets-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-capnp-preparation.json
+            ${{ env.CI_JOB_TEMP }}/native-capnp-tree.json
+            ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.json
+            ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.txt
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/receipt.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/commands.log
@@ -116,6 +157,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-driver-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-driver-*.stdout
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-cereal-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-cereal-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-cereal-*.txt
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}

@@ -47,6 +47,16 @@ pub(crate) fn inspect(recipe: &Recipe, toolchain: &Path) -> Result<Tools> {
         environment: BTreeMap::new(),
     };
     tools.executables.insert(linker, String::new());
+    if let Some(value) = recipe.environment.get("OPENPILOT_CAPNP") {
+        if !Path::new(value).is_absolute() || value.contains(['\n', '\r']) {
+            return Err("native schema compiler requires an absolute executable path".into());
+        }
+        let path = resolve(value, toolchain)?;
+        tools
+            .executables
+            .insert(path.canonicalize()?, String::new());
+        tools.environment.insert("OPENPILOT_CAPNP".into(), path);
+    }
     for (key, fallback) in [
         ("CC", "gcc"),
         ("CXX", "g++"),

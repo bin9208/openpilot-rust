@@ -25,6 +25,10 @@ Rust compiler/Cargo/std 내용별 준비·전송0/복사0·stdlib 변조 검증�
 [고정 native Rust 준비 안내](native-rust-toolchain-599.md)를 따른다. compiler 실행과
 전체 runtime 수용은 별도 단계이며 새 source의 Actions 성공을 먼저 확인한다.
 
+capnp SDK의 입력 pin·그룹별 도구 검사와 전체 원본 schema/wire 비교는
+[SDK 안내](native-capnp-sdk-599.md)에 있다. 이 SDK 준비·예제는 CI 개발 검증이며,
+장치 설치 가능한 전체 후보의 준비 완료를 뜻하지 않는다.
+
 로컬에서는 `git diff --check`, scoped `rustfmt --check`, TOML/YAML 문법과 diff만
 확인한다. 기능·빌드는 GitHub Actions에서 실행한다. 작업 branch push는
 `Runtime source build foundation`의 x64/ARM matrix를 실행한다. 같은 변경의 성공한

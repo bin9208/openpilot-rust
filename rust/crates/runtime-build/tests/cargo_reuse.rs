@@ -331,6 +331,22 @@ fn prepared_groups_reuse_docs_and_rebuild_only_the_changed_binary_while_retainin
     commit(&fixture.root);
     let mut other = fixture.recipe.clone();
     other.binaries = vec!["other-fixture".into()];
+    // An auxiliary schema tool belongs only to the group that consumes it.
+    // This owned executable tests identity bookkeeping; genuine capnp is
+    // exercised separately against the complete schemas in AGNOS.
+    let schema_tool = fixture._temp.path().join("owned-schema-tool");
+    fs::write(&schema_tool, "#!/bin/sh\nprintf 'owned schema tool\\n'\n").unwrap();
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&schema_tool, fs::Permissions::from_mode(0o555)).unwrap();
+    }
+    other.environment.insert(
+        "OPENPILOT_CAPNP".into(),
+        schema_tool.to_str().unwrap().into(),
+    );
+    other
+        .inputs
+        .insert(schema_tool.clone(), digest_file(&schema_tool).unwrap());
     let mut plan = Plan {
         schema: 1,
         groups: BTreeMap::from([
@@ -371,6 +387,14 @@ fn prepared_groups_reuse_docs_and_rebuild_only_the_changed_binary_while_retainin
     let first = run(&plan);
     assert_eq!(first.binaries.len(), 2);
     assert!(first.stored_output_bytes > 0);
+    assert!(!first.reports["main"]
+        .native_tools
+        .contains_key(&schema_tool));
+    assert_eq!(
+        first.reports["other"].native_tools[&schema_tool],
+        digest_file(&schema_tool).unwrap()
+    );
+    first.verify(&source_store, &object_store).unwrap();
     let mut unbound = first.clone();
     unbound
         .plan
@@ -383,6 +407,20 @@ fn prepared_groups_reuse_docs_and_rebuild_only_the_changed_binary_while_retainin
     let mut mixed = first.clone();
     mixed.reports.get_mut("other").unwrap().cargo_sha256 = "0".repeat(64);
     assert!(mixed.verify(&source_store, &object_store).is_err());
+    let shared_tool = first.reports["main"]
+        .native_tools
+        .keys()
+        .next()
+        .unwrap()
+        .clone();
+    let mut conflicting = first.clone();
+    conflicting
+        .reports
+        .get_mut("other")
+        .unwrap()
+        .native_tools
+        .insert(shared_tool, "0".repeat(64));
+    assert!(conflicting.verify(&source_store, &object_store).is_err());
     // A model/data update is independently pinned, not a compiler input for
     // these binaries. Changing it must not rebuild unrelated executable code.
     let model = fixture._temp.path().join("runtime-model");

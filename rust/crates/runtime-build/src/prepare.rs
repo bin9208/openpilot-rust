@@ -144,6 +144,7 @@ impl Prepared {
             .next()
             .ok_or("prepared build has no groups")?;
         let mut binaries = BTreeSet::new();
+        let mut native_tools = BTreeMap::new();
         for (group, report) in &self.reports {
             let recipe = &self.plan.groups[group];
             let expected_recipe = format!("{:x}", Sha256::digest(serde_json::to_vec(recipe)?));
@@ -154,9 +155,19 @@ impl Prepared {
                 || report.rustc_sha256 != first.rustc_sha256
                 || report.cargo_sha256 != first.cargo_sha256
                 || report.toolchain_directory != first.toolchain_directory
-                || report.native_tools != first.native_tools
+                || report.native_tools.is_empty()
             {
                 return Err("mixed or incomplete source, recipe or native tool reports".into());
+            }
+            // Groups can consume different auxiliary tools. Shared executable
+            // paths must still retain one content identity across all groups.
+            for (path, sha256) in &report.native_tools {
+                if native_tools
+                    .insert(path, sha256)
+                    .is_some_and(|previous| previous != sha256)
+                {
+                    return Err("native tool changed between prepared build groups".into());
+                }
             }
             let actual: BTreeSet<_> = report
                 .artifacts
