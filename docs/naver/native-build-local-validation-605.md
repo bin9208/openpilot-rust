@@ -51,3 +51,23 @@ X64와 별도 ARM guest에서 기존 실제 Cargo 재사용 회귀, native 공�
 [bin-actions40304295923](https://github.com/bin9208/openpilot-rust/actions/runs/40304295923)에서
 library66·정확 경로16·Clippy를 통과했고 PR #494에 후속 `02006e0f2`를 연결했다.
 이 별도 dev-md 상태를 common dev source의 기능 성공으로 대신 사용하지 않는다.
+
+## 최초 실제 실행과 에뮬레이션 시간 제한 보완
+
+source `b865767054f3415e7d5402060c7c8be6c88fc3e1`의
+[40308571039](https://github.com/bin9208/openpilot-rust/actions/runs/40308571039)는
+X64 전체 leaf가 성공했다. 실제 runner 이름은 양쪽 모두 `bin-actions`다.
+ARM QEMU도 원래 offline Cargo 회귀4개와 strict Clippy, 명령·경로 보존 정책4개,
+disk-space library4개와 CLI5개를 통과했다. 이후 dev-tools 공간 회귀의 새 의존성을
+컴파일하던 중45분 제한으로 종료됐다. API의 job conclusion은 `cancelled`이며 annotation은
+`The job has exceeded the maximum execution time of 45m0s`다. ARM 전체 성공으로
+기록하지 않는다. 원래 Cargo 회귀는10:53:47~11:03:19 UTC에 성공한 별도 step이다.
+
+집중 ARM 예산을90분으로 늘리고 기존 ARM 원본 검증 job은 에뮬레이션에 맞게180분,
+더 큰 Xiaoge job은240분 상한을 적용한다. matrix의 X64 상한과 원래 명령·feature·pin·
+의존 관계는 유지한다. 원래 ARM 비교를 생략하거나 hosted fallback을 도입하지 않는다.
+정책 회귀도 ARM 예산과 원래 X64 상한 유지 여부를 검사한다. 소유 임시 출력·ARM proof
+artifact와 정리는 취소 때도 성공했으며 다른 job/cache를 삭제하거나 중단하지 않았다.
+
+dev 대상 정상 검토 PR은 [#606](https://github.com/bin9208/openpilot-rust/pull/606)이다.
+최종 source의 빠른·집중·필수 PR/병합후 결과는 별도로 확인해야 한다.
