@@ -98,6 +98,15 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     continue
                 with self.subTest(path=relative, job=name):
                     job = current['jobs'][name]
+                    timeout = job['timeout-minutes']
+                    if runner == 'ubuntu-24.04-arm':
+                        self.assertGreaterEqual(int(timeout), 90)
+                    else:
+                        prefix = "${{ matrix.runner == 'ubuntu-24.04-arm' && "
+                        suffix = ' || ' + before['timeout-minutes'] + ' }}'
+                        self.assertTrue(timeout.startswith(prefix))
+                        self.assertTrue(timeout.endswith(suffix), 'X64 time budget changed')
+                        self.assertGreaterEqual(int(timeout[len(prefix):-len(suffix)]), 90)
                     self.assertEqual(job['defaults']['run']['shell'], 'openpilot-local-shell {0}')
                     self.assertIn('LOCAL_CI_ARCH', job['env'])
                     steps = job['steps']
