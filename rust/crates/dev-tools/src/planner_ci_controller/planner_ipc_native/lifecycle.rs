@@ -122,7 +122,7 @@ impl RuntimePeer {
             || options.output != runtime.join("lifecycle")
             || options.corpus != job.join("planner-lifecycle-original")
             || options.corpus_audit != job.join("planner-lifecycle-original/audit.json")
-            || options.root != PathBuf::from(std::env::var("CI296_SOURCE")?)
+            || options.root.as_path() != Path::new(&std::env::var("CI296_SOURCE")?)
         {
             return Err("lifecycle requires the same isolated owned runtime worker/job".into());
         }

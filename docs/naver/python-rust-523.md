@@ -1711,3 +1711,23 @@ source57e1761c5의 hotfix는 발행했고 해당8개 push 검사가 시작됐다
 source57 model-family40256938653의 다음 첫 실패는 현재 변경하지 않은 cold bootstrap lifecycle control의 stderr16MiB 초과다. 원래13 control 중 어느 case인지 오류에 남지 않아 원인/실패 증거 수집 방식을 조사하며 상한이나5초 capture 기한을 늘리지 않는다. 해당 결과를 모델 기능 불일치로 해석하지 않고 미도달 모델 검증도 수용하지 않는다.
 
 독립된 기존 cold control의 간헐적 stderr16MiB 초과는 [#597](https://github.com/bin9208/openpilot-rust/issues/597)로 분리했다. #594의 좁은 측정 수용을 되돌리거나 이 실패를 모델 수치 결함으로 합치지 않는다. #523의 주 담당 열린 이슈는 새 조사1개를 더해71개, 기존 종료 이력115개다.
+
+
+## source495 모델 수용과 d666 Planner 잔여 경고 — 2026-10-26
+
+[source495/current-model40266155898](https://github.com/bin9208/openpilot-rust/actions/runs/40266155898)은
+자연 AMD EPYC9V45/vCPU4에서 성공했다. catalog3·Clippy·ISA14/cached15·A91과
+B12 raw 총5,138,816B byte-exact, C12 및 D rename-only12 exact를 원문으로 감사했다.
+D guarded만 기존3개의 signed-zero 차이를 유지한다. 전체128·원래 frozen1344 사례·
+#476·PR343 전체 수용으로 확대하지 않는다.
+
+d666 HOST40264806409/ARM40264806393의 실제 lifecycle26과 새8검사는 양쪽 PASS이며
+feature Clippy의 `cmp_owned`4건만 실패했다. 경로 guard 네 곳을 borrowed `Path` 비교로
+교정하고 경고 기준·순서·값 검사를 유지한다. 이 후속 소스의 실제 Clippy 수용 전에는
+lifecycle3파일의 baseline credit을 계속 보류한다. 로컬 native Planner40265028545의
+14/5/6/15 기본 feature 검사 성공은 위 feature 검사와 구분한다.
+
+#513이 실제 네 조건을 충족한 뒤 사용한 임시 probe/WF 두 경계를 제거했다. 영구
+native26/영향5와 corrected Python 소스는 byte 불변이며 수용 문서와 캐시 원문을 보존한다.
+이는 제거2개이고 Rust 교체·baseline credit0이다. 현재 추가170개는
+**33교체/131대기/1기존native/2비실행/3제거**, baseline3580은 **300/3/3277**이다.

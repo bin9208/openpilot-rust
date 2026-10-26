@@ -1023,3 +1023,148 @@ extra33/132이며 baseline300/3/3277은 그대로다. 그 외 파일·전체 Pyt
 이 기록은 그 proof 값을 바꾸지 않고 부모의 별도 파일1개 수용만 명시한다.
 로컬 작업은 Git841 source/API/완료 log/기존 ZIP member의 inert 감사와 이 append뿐이다.
 추가 재다운로드·old CRC 반복·원본/모델/Cargo/기능 실행·source 수정·stage/commit/push/CI 조작은0이다.
+
+
+## 2026-10-26 source d666 actual: native lifecycle 실행 PASS, feature Clippy4 FAIL
+
+고정 source `d6667936845ba90b2b897c1b75f9af173131e5c1`의 완료 job만 감사했다.
+후속 WIP 수정은 이 결과에 역투영하지 않았다.
+
+- [HOST run40264806409/job121384755739](https://github.com/bin9208/openpilot-rust/actions/runs/40264806409/job/121384755739):
+  `2026-10-26T03:45:08Z` 완료 FAILURE, 실제 GitHub-hosted X64 runner `GitHub Actions 1000029887`.
+- [ARMmore run40264806393/Planner job121384755710](https://github.com/bin9208/openpilot-rust/actions/runs/40264806393/job/121384755710):
+  `2026-10-26T03:45:53Z` 완료 FAILURE, 실제 GitHub-hosted ARM64 runner `GitHub Actions 1000029901`.
+- [planner NativeUnits dispatch40265028545/job121385445341](https://github.com/bin9208/openpilot-rust/actions/runs/40265028545/job/121385445341):
+  부모가 `crate=planner`로 한 번 dispatch한 동일 d666 source이며 `03:45:23Z` 완료 SUCCESS,
+  실제 runner `bin-actions`. 감사자가 dispatch하거나 client15를 재실행하지 않았다.
+
+### 최초 실패와 선행 성공의 구분
+
+초기 compile/check, 고정 IPC/lifecycle stager, Runtime12는 양쪽 모두 성공했다.
+HOST ASan3도 성공했다. 최초 실패는 HOST step21/ARM step19
+`Qualify full native Planner IPC and lifecycle with strict Clippy`의 strict Clippy다.
+두 arch 모두 `clippy::cmp_owned` 정확4건이며 `-D warnings`로 cargo exit101,
+helper `ipc-check` exit1, 최종 job FAILURE다.
+
+첫 오류는 source d666 `rust/crates/dev-tools/src/planner_ci_controller/cli.rs:135:31`이다.
+나머지는 같은 파일 line136:16, line137:16 및
+`rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/lifecycle.rs:125:32`다.
+환경변수 값을 비교하기 위해 `PathBuf::from(std::env::var(...)?)`를 만드는 네 표현식이다.
+최소 수정 후보는 환경변수 String을 보관하고 `Path::new(&value)` 같은 borrowed path로
+비교해 경로 동등성·오류 전파를 유지하는 것이다. `allow` 추가나 기준 완화는 필요 없다.
+이 감사자는 소스를 수정하지 않았다.
+
+그 앞의 실제 관측4는 HOST0.86s/ARM0.68s, lifecycle unit8은 양쪽0.11s로 각각
+0 failed/0 ignored PASS다. private status는 `ipc-observed=0`, `ipc-lifecycle=0`,
+`ipc-clippy=101`이고 helper outcome은1이다. 관측4/8 성공을 전체 qualification green으로 바꾸지 않는다.
+NativeUnits는 no-default-feature controller14/retirement6/frozen5/memory15와 해당 strict Clippy를
+통과했다. empty runtime root의 실제 abi42 및 leaf 중 file/symlink restoration 검사도 통과했다.
+이 별도 기본 feature Clippy 성공은 실패한 `planner-ipc-native` feature Clippy를 대체하지 않는다.
+client15는 기존 source6c 결과 재사용이며 d666에서 새로 실행됐다고 기록하지 않는다.
+로컬 runner는 `CARGO_BUILD_JOBS=1`, 계획 메모리2GiB admission을 사용했다.
+실제 peak 메모리나 장기 runner 안정성을 새로 입증한 결과는 아니다.
+
+### 빈 디렉터리 수정의 실제 적용과 독립 원본 결합
+
+발행 blob의 LC stager SHA는
+`2b10c879782740c5662580febc84faac1806661f85d8512cb74691cbd9c74f48`,
+helper SHA는 `ef9a4fab36c177c28c76eb0ad9607641ce777448643dc3cec2620cda6a2b3f7d`다.
+기존 감사의 빈 디렉터리 누락은 실제 stager 연결 경계였으며 앞선 reader source 검토에서 놓쳤다.
+원본841 ZIP에는 directory entry가0개이고 파일만 추출하면 capture tree에67개 directory가 생겨,
+native의83개 요구에서 빈 inputs16개가 모자란다.
+
+새 양쪽 private proof에서 인증된 index→manifest26 원문 SHA/bytes를 기존841 audit와 대조했다.
+`members.tsv`의5,891개 descriptor 모두 기존841 member inventory의 bytes/SHA와 같다.
+capture 내부 파일5,791개, 입력234, Params snapshot30, 원본 publication72는 그대로다.
+`capture-directories.txt`와 실제 `capture-extracted-directories.txt`는 각각 unique83개로 정확히 같다.
+구성은 root1+run26+inputs26+Params30이며 subdirectory 목록56개도 inputs26/Params30과 같다.
+추출 뒤 native `seal_capture_tree`를 약화하지 않고 manifest에서 빈 inputs까지 복원한 실제 결과다.
+원본 ZIP을 다시 다운로드하거나 로컬 CRC/원본 실행으로 재생성하지 않았다.
+
+origin은 HOST841 run40258459503/artifact12623801541,
+ARM841 run40258459472/artifact12623646303다. 원본 audit SHA는 각각
+`9ae47494dcf2e201fa1c48a70e6acd934e08fefc008001bd0c95c9ba502eb88e`,
+`23bace6376cc1d87a1857bc8f69b64d6f0ddf5c526e1f69a133502620bd81f80`다.
+source14/원본 SDK proof5/26개 producer argv·환경 경로는 그 인증된 원문에 계속 결합한다.
+stager proof는 `original_execution:false`, `full_lifecycle_acceptance:false` 그대로이고,
+그 준비 단계만으로 기능 수용을 선언하지 않는다.
+actual stage allocated/apparent 합은 HOST103,321,600/78,592,886B,
+ARM91,525,120/66,795,040B로 기존128MiB operation cap 이내다.
+source64MiB/기타 시간·member cap을 바꾸지 않았다.
+
+### 실제 runtime 결과·동일 ELF·SDK·후봉인
+
+양쪽 `commands.json`은 기존 순서12개 전부 rc0다. IPC는 index10에서 current ELF의
+`ipc` argv36개(17쌍)로 정확1회, lifecycle은 index11에서 같은 ELF의
+`lifecycle` argv26개(12쌍)로 정확1회 실행했다. wrapper·detached group이나 추가 standalone IPC는 없다.
+현재 lifecycle13×source/rust의26개 case 모두 PASS이며 raw returncode/expected_returncode는
+고정841 manifest의26개 결과와 일치한다. raw source wait/SIGINT=-2 대 native0,
+ready SIGTERM=-15, 숫자 오류 source=-6 대 native1, malformed CP=1 경계를 보존했다.
+현재 publication72개도 artifact에 존재한다. lifecycle은 기존 원본처럼 publication service/frame·
+종료 경계를 검사하며 이72개 전부에 별도 수치 동등 기준을 새로 입증했다고 확대하지 않는다.
+
+lifecycle provenance의 controller는 선행 IPC의 current ELF와 같고,
+peer SHA는 선행 IPC provenance 및 실제 업로드된 C++ peer member SHA와 같다.
+HOST controller `fbc72c2003defa60f8d012e0245293372d77850d28f439fc97358aa4468054b5`,
+ARM `9617691370a2ff86fd2eb80d2dff098ef00efdd35af8cddcb69547666f13d0b8`다.
+peer는 HOST `eb4a806852d4238209e4529e9202d693023b566d53b95c84c26bfd4c177b55c4`,
+ARM `8b8b18ed49f0d830b0a5cab9ebdfdd7ee876e79861168916e4eee7da1b562e5e`다.
+current daemon member SHA도 lifecycle receipt와 일치한다.
+controller ELF는 업로드 대상이 아니므로 artifact에서 그 bytes를 재해시했다고 주장하지 않는다.
+
+기존 IPC는 old484 native decode/current484, 원본121 대 현재121 네 comparison differences0,
+current 네 service/valid/data projection의 f64 bits 동등을 유지했다.
+각121 publication·timing40·liveTracks35/modelV2 6·overlay34·daemon rc-15이며 네 run은 순차다.
+실제 scheduler160행과 각 frame target도 대조했다. HOST9,292B/SHA
+`8a0002b268e46207f524085902efaa532ef927d5853510a6cec5b45d644b3ba1`,
+ARM9,723B/SHA `74aa1b9cfb564427a27635873e043c903e407a529ee89583a4d7f3992e4bbd4c`다.
+841→d666 Git blob 비교에서 IPC input/output audit4개, decoder/outputs/frame_loop,
+공통 controller loop와 `qa_process.rs`는 바이트 동일하다. 기대값·float 기준·공유 QA 변경은 없다.
+원시 output proof의 `full_runtime_acceptance:false`, `retirement_credit:0`도 유지했다.
+
+HOST runtime/memory/ipc-check와 ARM runtime/ipc-check에서 controller after SHA check는 모두 OK다.
+실제 job-private Rust1.94 전체 SDK159 file/181 roster(HOST),158 file/180 roster(ARM)의
+before/after hash와 stable roster가 같고, Clippy 실패 뒤에도 ipc-check after seal이 존재한다.
+HOST sdk.before SHA `b36b4efee844998cf49278f5d561576e7d24e790b8dff4fa3fbb13c660c64db8`,
+ARM `c0276946af40c70eeb42604f36c2dac4eb596b37be0b37acd9cb7842617c933f`다.
+모든 host DSO/venv 또는 NativeUnits의 별도 global SDK 전체를 이 결과로 합쳐 주장하지 않는다.
+HOST ASan3는 abi/owner/fault PASS이며 generated solver C/allocator 검사 범위다.
+ARM ASan은 기존 조건대로 skipped다.
+
+전후 index는 양쪽19,626개 NUL path이며 SHA
+`3b0ee101962b54fd514a6b0c1ed1a6c101fc80bd402c697ee832e2816e0dcb5b`로 같다.
+old scheduler test 및 두 retired lifecycle producer 경로가 tracked roster에 없다.
+전후 normalized source SHA는 `0810b968d1f87682dada63ec15ed1bdc62cc35ede50f18829ce05e8f97312061`로 같다.
+양쪽 source/index 후봉인·functional/private upload·소유 source alias/target cleanup·공통 temp cleanup은
+실제 SUCCESS다. feature Clippy 실패를 이유로 이를 skipped 또는 미실행으로 기록하지 않는다.
+반대로 전체 source 무관 Python 부재·기기 수용·추가 retirement credit도 주장하지 않는다.
+
+### 새 증거 캐시와 인계
+
+네 artifact의 API id/run/repo1395501963/head d666/정확 size/digest/expired=false를 개별 확인했다.
+모두 만료 `2027-01-24T03:35:17Z`다. 단일 downloader로 각각 한 번 받아 whole SHA·CRC 및
+unique/canonical 상대 member 경로·regular/directory 종류를 검증했다.
+이번 파일에만 전체 CRC를 한 번 수행했으며 과거841/47/0283 ZIP CRC는 반복하지 않았다.
+
+| 역할 | ID | ZIP bytes | whole SHA256 | members / expanded bytes |
+| --- | --- | --- | --- | --- |
+| HOST functional | 12626262186 | 56,283,078 | `f81391ad653f6fad3b1c0a9056ec4f79d6c60fb11fdf250c3855080797f2be0b` | 36,157 / 172,455,512 |
+| HOST private | 12626152401 | 4,760,830 | `a80561b2c942a51617ef812f3e695987c1d0440c034ccd22fd9ea8afcce6c318` | 132 / 29,777,140 |
+| ARM functional | 12626620427 | 45,939,843 | `00d3d42ec2345caa6cf4c679c7be9b00c1e287441a444cfec2e545ffb5be09a5` | 31,554 / 143,417,715 |
+| ARM private | 12625364607 | 4,114,511 | `e6508a9c40938881ddfcc549310e2968294bb920624cea06bb630264fed2c127` | 121 / 26,963,270 |
+
+admission160MiB에 대해 실제 가용73,991,708,672B를 확인했다. payload111,098,262B+
+inventory40MiB+log4MiB+margin8MiB=165,624,214B로167,772,160B 이내다.
+member≤50,000, 전체 expanded≤1GiB/member≤128MiB의 inert audit cap도 지켰다.
+캐시는 `.analysis/scratch/2026-10-25-523-completion/ci/<ID>.zip` 및
+`<ID>-members.json`이다. `plannerd666-artifact-handoff.json`의 네 ready/whole_crc_pass가 모두 true다.
+부모/Hypatia에게 이 동일 캐시를 인계했으며 재다운로드는 필요 없다.
+상세 원시 감사 요약은 `plannerd666-native-audit.json`이다.
+
+완료 log SHA는 HOST `a89a720cb5ec94a3ed86fc217c53ded6b7234436f8f0e30b229ab777821181ee`,
+ARM `4be65c580cfab68341523604e5e78b5885c240bd7fc5b3308d221780b1acf169`,
+NativeUnits `dde32208d2dbb7e51052a063edddd331b0a32859d2879dbef915c5be4871fe61`이다.
+실행 중 log 반복 다운로드, 부모 담당 model-family 로그 중복 조회, 원본 재실행,
+새 CI dispatch/cancel/자동화, 로컬 Cargo/기능/모델 실행, 소스 수정·stage/commit/push는0이다.
+현재 전체 gate의 남은 blocker는 양쪽 동일 feature Clippy4다. Runtime/83개 roster 성공을 보존하되
+이를 성공 승격하거나 새 retirement credit으로 확장하지 않는다.

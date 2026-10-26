@@ -112,13 +112,17 @@ jobs:
             echo "Retired Planner lifecycle Python path remains in the tracked index: $retired" >&2; exit 1
           fi
         done
-        printf '%s  %s\n' af3e3f474a3d8c6e652211789554a9a2b0baa9e7e0285414b17975373bcd79be .github/workflows/python-rust-523-github-images.yml | sha256sum --check -
+        for diagnostic_path in tools/ci/github_images_513.py .github/workflows/python-rust-523-github-images.yml; do
+          test ! -e "$diagnostic_path" && test ! -L "$diagnostic_path"
+          if git ls-files --error-unmatch -- "$diagnostic_path" > /dev/null 2>&1; then
+            echo "Retired GitHub image diagnostic remains tracked: $diagnostic_path" >&2; exit 1
+          fi
+        done
         printf '%s  %s\n' 69ee502f0873fae56e2cab79e47c60fee5220032e37747dcb58f1a7fcaf5df4f rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/outputs.rs | sha256sum --check -
         printf '%s  %s\n' a28890f6f79eb24f0018d62ec21dae5d8c2228d6b7da0f62ce33ffab48e80c80 rust/crates/dev-tools/tests/fixtures/planner-ipc-original-outputs/aarch64.json | sha256sum --check -
         printf '%s  %s\n' 525333b68bda155b622a2e315880bcf378b7425833760ea40a259545f7703b21 rust/crates/dev-tools/tests/fixtures/planner-ipc-original-outputs/x86_64.json | sha256sum --check -
         printf '%s  %s\n' a04e889c725715395baae751a5b3526c0c686b0075d67ab95b95fb94bd987be1 rust/crates/dev-tools/tests/fixtures/planner-scheduler-original/next_model_target.source.txt | sha256sum --check -
         printf '%s  %s\n' bed89b27feee9b0a05f7a8ba34a9d696bf3639af52374d63c55d697091f293ce rust/crates/model-runtime/src/cpu/diagnostic_482_writer.rs | sha256sum --check -
-        printf '%s  %s\n' fa24c25663c6a21cd0b50a0160adc94ed9a9bf42ba242261448dc6a84c202f6c tools/ci/github_images_513.py | sha256sum --check -
         printf '%s  %s\n' ef8b9313c9f49ddff45502b7eac50ec0bba483e114b82865de6a82ccf6384eb5 .github/workflows/python-rust-523-driver-transport.yml | sha256sum --check -
         printf '%s  %s\n' e051a50ba2b93fcc01c47367f508fefa411bdaf001e67e85a84f723c70e2b8bd rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/corpus.rs | sha256sum --check -
         printf '%s  %s\n' 4f1583be3a7118fc53bd929a93ae985f5884050938a10f36006832b5332e4dbd rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/decode.rs | sha256sum --check -
@@ -136,7 +140,7 @@ jobs:
         printf '%s  %s\n' 384bcef1bafc962019557d7b89ef5dac4c85ee2d1683906c1942458b04118e54 rust/crates/dev-tools/tests/fixtures/planner-ipc-original-audit/x86_64.json | sha256sum --check -
         printf '%s  %s\n' bf626c2d2d157a5c824d7eb180cc3e0d79b55a79088d036f51d00f5c7e8257c5 rust/tools/planner_ipc_peer.cc | sha256sum --check -
         printf '%s  %s\n' 43e1eb7b2b5e27521f8f7ce4e4a36c35376515b4be944c6bd390a348978810b6 tools/ci/stage_planner_ipc_original_523.sh | sha256sum --check -
-        printf '%s  %s\n' c91fa3b3a9f08b2ad45bd10c1a0ac4087d3c150eb4e1d51f0f803f691c3f3554 rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/lifecycle.rs | sha256sum --check -
+        printf '%s  %s\n' d2c937f1bab5404028410b66021c1ab09e607a1b3f6db8b90be872cdadc2a51a rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/lifecycle.rs | sha256sum --check -
         printf '%s  %s\n' 7692a7c33e00356f4640f3c3eed55a6c182080a9d86859a0679005a5afb82e54 rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/lifecycle_corpus.rs | sha256sum --check -
         printf '%s  %s\n' ba345a102e719fc9e27995f52fe27e5fc62d9f3b9d36410837e5cdd0fad34338 rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/lifecycle_tests.rs | sha256sum --check -
         printf '%s  %s\n' 2b10c879782740c5662580febc84faac1806661f85d8512cb74691cbd9c74f48 tools/ci/stage_planner_lifecycle_original_523.sh | sha256sum --check -
@@ -207,7 +211,7 @@ jobs:
         printf '%s  %s\n' c46bebd0403689a24580e5365506dd0c0339ca7fc2ba4e205b21144b8cf7827a .github/workflows/python-rust-523-logger-caller.yml | sha256sum --check -
         printf '%s  %s\n' 8b7a7d3d15f40fd7a59361e605de77a1e122b630f003ca8d9eaa3dae356770f7 .github/workflows/python-rust-523-carrot-sdk.yml | sha256sum --check -
         printf '%s  %s\n' d814db64ad66864dc799948c2c04d41eb0195da328c46ddb2a40a5f1fa48214f rust/crates/dev-tools/src/planner_ci_controller.rs | sha256sum --check -
-        printf '%s  %s\n' d2922892fc946145bc9708fba9cd1a5f172560af8b334377fdf00345f0620a68 rust/crates/dev-tools/src/planner_ci_controller/cli.rs | sha256sum --check -
+        printf '%s  %s\n' 934eccdbb889b14bbf6496a1db84a11fff1104767db9aa4a8f12f15f87a03597 rust/crates/dev-tools/src/planner_ci_controller/cli.rs | sha256sum --check -
         printf '%s  %s\n' 26dc67add2763ef658bdb8cb2d83b859989acebec5477e5fb68512337e10a706 rust/crates/dev-tools/src/planner_ci_controller/plan.rs | sha256sum --check -
         printf '%s  %s\n' a35ad7f6c4eab2348ef3ceae318e8bd37980e251e84e59d5d17480e7b9d55f0a rust/crates/dev-tools/src/planner_ci_controller/scheduler.rs | sha256sum --check -
         printf '%s  %s\n' 32d2b777eec4ff960ea70195aa0d7b6ac553aee8621658462033ddcf933985d9 rust/crates/dev-tools/src/bin/check_plannerd_ci.rs | sha256sum --check -
@@ -431,7 +435,6 @@ jobs:
             rust/crates/dev-tools/tests/fixtures/planner-lifecycle-original-audit/aarch64.json) ;;
             .github/workflows/python-rust-523-driver-transport.yml) ;;
             docs/naver/python-rust-523-planner-ipc-retirement-next.md) ;;
-            .github/workflows/python-rust-523-github-images.yml) ;;
             docs/naver/python-rust-523-github-images-513.md) ;;
             docs/naver/python-rust-523-planner-ipc-preservation.md) ;;
             rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/outputs.rs) ;;
@@ -439,7 +442,6 @@ jobs:
             rust/crates/dev-tools/tests/fixtures/planner-ipc-original-outputs/x86_64.json) ;;
             rust/crates/dev-tools/tests/fixtures/planner-scheduler-original/next_model_target.source.txt) ;;
             rust/crates/model-runtime/src/cpu/diagnostic_482_writer.rs) ;;
-            tools/ci/github_images_513.py) ;;
             .github/workflows/python-rust-523-compiler-emission.yml) ;;
             docs/naver/python-rust-523-compiler-emission-actions.md) ;;
             docs/naver/python-rust-523-compiler-native-emission.md) ;;
@@ -1192,7 +1194,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='2cc9d393e3428fd34e10a6beb52870eb028f39e545512296ece8f65e1c412814', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='b6d134aedbda67ac77d1c04f82d03a5cc920a2b1bdc7310dfa8aeb8c590e8129', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile
@@ -1569,6 +1571,12 @@ jobs:
           test ! -e "$retired" && test ! -L "$retired"
           if git ls-files --error-unmatch -- "$retired" > /dev/null 2>&1; then
             echo "Retired Planner lifecycle Python path remains in the tracked index: $retired" >&2; exit 1
+          fi
+        done
+        for diagnostic_path in tools/ci/github_images_513.py .github/workflows/python-rust-523-github-images.yml; do
+          test ! -e "$diagnostic_path" && test ! -L "$diagnostic_path"
+          if git ls-files --error-unmatch -- "$diagnostic_path" > /dev/null 2>&1; then
+            echo "Retired GitHub image diagnostic remains tracked: $diagnostic_path" >&2; exit 1
           fi
         done
         git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"

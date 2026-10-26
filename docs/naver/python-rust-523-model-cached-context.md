@@ -1571,6 +1571,122 @@ compact 독립 감사는 private `ci/model-d666-actual-audit.json`, `ci/model-fa
 `ci/genuine-d666-actual-audit.json` 및 각 ZIP admission JSON에 남겼다. 이 기록 외 공유 WF/Focus/
 ledger/pins/registry는 수정하지 않았다. 전체 모델/full128·historical half·기기 수용 및 퇴역 credit0을 유지한다.
 
+## 2026-10-26 source495 actual — catalog3와 B12 원문 bytes 수용
+
+source `495860d144770603c1d5a1df0f4d0a7ffc26a83f`의
+[run40266155898/job121388936320](https://github.com/bin9208/openpilot-rust/actions/runs/40266155898/job/121388936320)은
+SUCCESS다. helper SHA는 `ddf48345a1d358b80ce7296ffd42293e3992b7194808e476750914aea593f19d`이며,
+다른5개 모델 source는 d666 blob과 바이트 동일함을 먼저 확인했다. 이 감사 중 모델 source는
+수정하지 않았다. d666 genuine PASS는 재사용했고 해당 로그/ZIP를 다시 받거나 실행하지 않았다.
+
+### 완료 artifact의 독립 admission
+
+artifact12626760941은45,685,277B, SHA256
+`5b0ecec82f6f86667bd818de66c1d5011ba07d3485e2c8c58ef005e813cf43ad`다. API의 expected bytes,
+digest, run/source/expired 상태와100MiB download/512MiB uncompressed admission을 확인한 뒤
+1회 다운로드했다. safe unique/nosymlink·암호화 없음1410개, 총136,643,272B, CRC1410/1410을
+통과했다. `retained-index.json`의960개 파일88,911,692B도 길이와 SHA를 모두 직접 대조했다.
+model PKL/full weights를 받아 실행하거나 raw model 데이터를 blanket dump하지 않았다.
+
+완료 log105,284B도1회만 받았다. SHA256은
+`9d067368809a57111a85ff5dcddd37d13ea628fc57daa23373c7b58c93fdefe0`이다. 실행 중 로그는 받지
+않았다. compact 감사·raw output별 전체 SHA는 private `ci/model495-actual-audit.json`, source
+결합은 `ci/model495-source-cohort.json`, ZIP admission은 `ci/12626760941-495-zip-admission.json`에 있다.
+
+### catalog3·선행 gate·cache 격리
+
+| 실제 command | 결과 / controller elapsed |
+| --- | --- |
+| catalog no-run | PASS /0.954초 |
+| strict Clippy --lib --tests | PASS /11.402초 |
+| ISA unit14 | 14/0/0 /0.112초 |
+| cached issuer unit15 | 15/0/0 /1.651초 |
+| catalog-policy-0 기존 bridge selector | exact1/0/0 /32.162초 |
+| catalog-policy-1 기존 publish/reuse selector | exact1/0/0 /1.785초 |
+| catalog-policy-2 기존 combined caller selector | exact1/0/0 /2.209초 |
+
+catalog target normal4/ignored3 중 이번에는 기존 ignored3만 각각1회 실행했다. metadata normal4가
+실행됐다고 합산하지 않는다. 서로 다른 target/catalog-policy/{0,1,2}의 cache.db/xdg/tmp/proof를
+받았고, `catalog-policy.json`의 selectors_passed=3/a_cache_absent=true를 확인했다. 실제 A collect도
+cache absent guard를 통과했다. third receipt는 absent model root 전에 bad publisher를 거부했고,
+negative CLI exit1·tiny emission1·source-policy receipt1·strict helper executions0을 기록한다.
+
+입력 receipt의 Python은 canonical provider
+`/opt/hostedtoolcache/Python/3.12.15/x64/bin/python3.12`, SHA `53dab24b...`로 일관되게 기록됐다.
+실행 alias와 기존 hold는 유지됐으며 d666의 receipt 경로 오류가 이번 실제에서 해소됐다.
+first native peer1개도 retained 경로와 SHA가 `holds-after.json`에 남아 있다. 삭제된 provider를
+허용하거나 maps/최종 hold를 skip한 성공이 아니다. 기존4 test command+2 DSO 검사만 추가됐고
+새 Python callsite·full model 실행·D compiler 횟수 추가는0이다.
+
+### 자연 AMD host와 현재 compiler context
+
+`hosted-cpu.json`의 실제 host는 **AMD EPYC 9V45 96-Core Processor**, AuthenticAMD,
+family26/model2, x86_64, vCPU4다. original compile chain과 D 두 후보 before/after가 모두 동일한
+자연 context를 기록한다. CPU명을 강제한 실행은 아니다. 원문 `CPULLVMCompiler(['x86_64','native'])`는
+기존 `LLVMGetHostCPUName/Features`를 사용하며 이번 LLVM receipt의 CPU 값은 `generic`이다.
+
+- target `x86_64-none-unknown-elf`, passes `default<O2>`, LLVM18 provider SHA
+  `5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`.
+- 전체 자연 feature-string886B의 SHA는
+  `5c6ca0d75d5d499353a630a8750daa1450a2310954f1da9a267ee6bd7532c3cb`다.
+- LoopUnrolling/LoopVectorization/SLPVectorization/VerifyEach는 기존4개 모두1이다.
+- D constructor options는 code_model0/codegen_level2/relocation_mode2이며 두 compile이 같은
+  context/target-machine/pass-options 주소를 사용했다. 이 값이나 CPU/ISA를 변경하지 않았다.
+
+A receipt는 strict_triplet_all=true/host_isa_all=true/complete_roster91이며 call176개를 검증했다.
+current host feature에는 AVX512F/BW/DQ/VL/VBMI가 포함된다. 허용되지 않는 extension이나 없는
+host feature를 일반 허용한 근거로 쓰지 않는다.
+
+### B 전체12 raw exact와 D guarded 반례
+
+B는2frame×6output **12개 총5,138,816B**에서 original/plain-native/original-tapped 파일의 전체
+bytes가 동일하다. 원본 output을 변환하거나 zero 부호를 지우지 않고 ZIP의 raw bytes를 직접
+비교했다. native tap의12개 output SHA도 이 raw SHA와 모두 일치한다. original/native의 기존
+plain↔tap whole-output 동일성과 worker event4개씩도 그대로 PASS다.
+
+B bundle의 source-policy91개는 모두 original-flags/rename-only/helper_executed=false다.
+각 `kernel-N.txt`와 `.compiled.ll`의 차이가 정확히 단일 함수명 `@op_impl_N` rename뿐인지
+직접 확인했다. source/compiled/object SHA와 policy receipt SHA도 각각 binding과 대조했다.
+기대 output·허용오차·zero 후처리·원본 arithmetic AST를 바꾼 성공이 아니다.
+
+C도 이미 관측한 B original12개와 raw bytes가 모두 같다. 기존 D의90개 original image 고정과
+writer92/call175 한 곳 교체를 유지한 두 후보 결과는 다음과 같다.
+
+| D 후보 | existing original12와 직접 비교 | writer text bytes |
+| --- | --- | --- |
+| rename-only | 12/12 exact |14166 |
+| guarded | 다른11개 exact, model-1.bin의3byte만 다름 |14380 |
+
+guarded의 차이는 byte403/407/5399, f32 index100/101/1349뿐이다. original/B/rename-only는 모두
+little-endian `00000080`(-0), D guarded만 `00000000`(+0)다. 따라서 단순히 원본도 +0인 host에서
+우연히 통과한 범위가 아니다. 같은 자연 AMD context에서 기존 strict rewrite의 차이는 D에
+그대로 남고, 실제 parity caller의 B는 원본 -0를 보존했다. standalone strict canonicalizer의
+zero/sNaN 규칙을 변경하거나 guarded 결과를 새 expected로 쓰지 않았다.
+
+D의 원본 compiler2회/model0회·compile_cached0·new taps0, 두 selector와 기본 cached-disabled를
+유지한다. guarded의 진단 mismatch는 B 실패를 승격시키지 않으며 B의 실제12 exact가 필수인
+최종 gate가 통과했다. 두 helper copy의 총6,037,936B, mode0700/UID1001/nlink1과 SHA를 확인했다.
+각 original Cargo ELF는 nlink2를 유지하고 before/after identity·SHA가 같으며 originals_unchanged=true다.
+
+### 후봉인과 수용 한계
+
+실제 command61개는 전부 exit0·all_owned_children_reaped=true다. final-seals는
+pass=true/failures=[]/error=null이며 phase=writer-pair-native다. source index/whole source digest,
+준비 SDK file/program/identity roster before/after를 artifact에서 독립 대조해 모두 같았다.
+source/SDK/Python/Python-base baseline4개도 after와 동일하다. 최종 provider/registry/held alias
+guard와 업로드·source/job cleanup(step14–20)은 모두 PASS다.
+
+현재 source의 catalog3·fresh91 admission·B2frame12raw exact·C12·D 두 후보 분리는 실제 수용된
+범위다. full128·모델 전체/runtime·historical half/sNaN5·oldPR1344/frozen·기기 수용·퇴역 credit는
+여전히0이다. source495의 model 성공으로 d666 family의 #476 driver float 불일치를 닫지 않는다.
+genuine d666 PASS는 그대로 재사용하며 이 감사에서 추가 CI dispatch/rerun/cancel·로컬 model/
+compiler/Cargo/test/Clippy 실행은0이다. 변경은 이 문서 append뿐이다.
+
+d666 CPU 기록도 정정한다. 앞선 감사에서 A/compiler context가 미생성인 것은 맞지만,
+`hosted-cpu.json` 자체는 ZIP에 이미 있었다. 같은 cached ZIP의 해당 metadata만 재확인한 결과
+host는 AMD EPYC 7763 64-Core Processor/vCPU4였다. 이전의 CPU 모델 자료도 없다는 서술은
+이 항목으로 정정한다. d666의 A/B 미진입 및 수치 수용0은 변하지 않으며 재다운로드는 하지 않았다.
+
 
 ### 부모의 최종 소스 등록 — 실행 전
 

@@ -132,9 +132,9 @@ fn prepared_native_lifecycle(
         let corpus = job.join("planner-lifecycle-original");
         let audit = corpus.join("audit.json");
         if output != job.join("planner-comparison")
-            || inputs.root != PathBuf::from(std::env::var("CI296_SOURCE")?)
-            || PathBuf::from(std::env::var("PLANNER_LIFECYCLE_CORPUS")?) != corpus
-            || PathBuf::from(std::env::var("PLANNER_LIFECYCLE_CORPUS_AUDIT")?) != audit
+            || inputs.root.as_path() != Path::new(&std::env::var("CI296_SOURCE")?)
+            || Path::new(&std::env::var("PLANNER_LIFECYCLE_CORPUS")?) != corpus.as_path()
+            || Path::new(&std::env::var("PLANNER_LIFECYCLE_CORPUS_AUDIT")?) != audit.as_path()
             || growth_bytes < 128 * 1024 * 1024
             || !growth_bytes.is_multiple_of(1024 * 1024)
         {

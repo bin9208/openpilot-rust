@@ -163,3 +163,50 @@ original5/image-only18이나 전체 PR를 새 gate로 추가하지 않는다. �
 job log SHA256은 `2163759a1b058a190b78af156c829e927573350df86169bcd3987c5766fe868b`다.
 이 문서 추가를 위해 새 다운로드·기능/CI 실행은 하지 않았다. production source/WF·이슈 상태
 수정 및 stage/commit/push는0이다.
+
+## #513 수용 완료 뒤 임시 진단 두 경계 퇴역 — 2026-10-26
+
+사용자 승인으로 `tools/ci/github_images_513.py`와
+`.github/workflows/python-rust-523-github-images.yml`만 삭제했다. 앞 절의 실행 방법은
+source0283 당시의 역사 기록이다. #513의 네 조건은 source
+`0283e6345fc8c8e60cd3537424f1c2df383d9088`의 실제 두 genuine 호출과
+[40250301939/job121340512293](https://github.com/bin9208/openpilot-rust/actions/runs/40250301939/job/121340512293),
+artifact `12620525221`의 50-member 증거 및 기존 native26/영향5 수용으로 충족됐다.
+임시 관측을 영구 기능으로 다시 포팅하거나 같은 성공 검사를 반복하지 않는다.
+
+영구 기능과 회귀는 그대로 남겼다. `github-utils-native` feature, lib module과
+`github_utils` Cargo test 등록, corrected Python 원본은 수정하지 않았다. 현재 구현과
+26개 native test 함수는 수용 당시 bytes와 같으며 다음 SHA256으로 재사용 근거를 고정한다.
+
+| 보존 파일 | SHA256 |
+| --- | --- |
+| `rust/crates/dev-tools/src/github_utils.rs` | `6010fb32078700cdb054303b8b5bdcbbc9c70eaf74487c6325940ec8bd6db37c` |
+| `rust/crates/dev-tools/tests/github_utils.rs` | `80e0c07885d517cccca0a1c103bad4deded532c921df972be535da22c1a9e492` |
+| `openpilot/tools/lib/github_utils.py` | `f642a6652ab7238fc2b613ca2f7722b2a4756ef0363169210564d42290aeb063` |
+
+보존한 영향5개 테스트 이름은 다음과 같다.
+
+```text
+images_513_upload_prefix_requested_branch_odd_rows_and_default_post
+images_513_missing_private_file_stops_before_pr_lookup
+images_513_pr_lookup_failures_retain_complete_upload_prefix
+images_513_put_and_comment_failures_keep_existing_effect_order
+images_513_empty_commenter_or_branch_keep_false_overwrite_default
+```
+
+기존 private 캐시 `.analysis/scratch/2026-10-25-523-completion/ci/12620525221.zip`은
+Git 밖의 현재 필요한 원본 증거로 보존했다. 크기는370,804B, SHA256은
+`276f4494716db01d0afcb482e9a66c249d0d85ee478690538692a20ab3d4fd24`로 동일하다.
+이 기록에서는 크기/SHA만 확인했고 ZIP CRC 재감사·재다운로드는 하지 않았다.
+기존 원격 업로드의 retention 설정은14일이며 WF 삭제가 이를 연장하지 않는다.
+따라서 원격 artifact의 계속된 다운로드 가능성을 가정하지 않고 이 캐시와 immutable
+source0283·원본 job log·위 수용 기록을 함께 유지한다.
+
+Focus의 pin2개·변경 허용 항목 및 전후 working/index absence guard는 부모가 정리한다.
+원장도 기존 두 행을 지우지 않고 `removed`로 갱신하는 것이 부모 범위다. 집계 예정은
+추가170개=`33 replaced / 131 pending / 1 existing / 2 text / 3 removed`이며,
+**baseline credit0·Rust 교체 승격0**이다. 영구 GithubUtils나 #523 전체 전환 완료로 세지 않는다.
+
+이번 수정은 두 파일 삭제와 이 문서 append뿐이다. source/diff·해시와 등록 보존만 확인했으며
+기능/Cargo/CI 실행·현재 job 조작·새 자동화·stage/commit/push는0이다. 부모의 Focus/원장
+후속 등록과 새 소스의 실제 CI 수용은 이 기록에서 완료로 주장하지 않는다.
