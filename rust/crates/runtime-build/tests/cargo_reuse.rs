@@ -112,6 +112,128 @@ fn commit(root: &std::path::Path) {
 }
 
 #[test]
+fn serial_package_groups_reuse_their_real_shared_dependency() {
+    let mut fixture = Fixture::new();
+    fs::create_dir_all(fixture.root.join("rust/shared/src")).unwrap();
+    fs::create_dir_all(fixture.root.join("rust/other/src")).unwrap();
+    fs::write(fixture.root.join("rust/Cargo.toml"),
+        "[package]\nname='runtime-fixture'\nversion='0.1.0'\nedition='2021'\n[workspace]\nmembers=['shared','other']\n[dependencies]\nruntime-shared={path='shared'}\n").unwrap();
+    fs::write(fixture.root.join("rust/other/Cargo.toml"),
+        "[package]\nname='runtime-other'\nversion='0.1.0'\nedition='2021'\n[dependencies]\nruntime-shared={path='../shared'}\n").unwrap();
+    fs::write(
+        fixture.root.join("rust/shared/Cargo.toml"),
+        "[package]\nname='runtime-shared'\nversion='0.1.0'\nedition='2021'\n",
+    )
+    .unwrap();
+    let shared = fixture.root.join("rust/shared/src/lib.rs");
+    fs::write(&shared, "pub fn value() -> u32 { 42 }\n").unwrap();
+    fs::write(
+        fixture.root.join("rust/src/main.rs"),
+        "fn main() { println!(\"main {}\", runtime_shared::value()); }\n",
+    )
+    .unwrap();
+    fs::write(
+        fixture.root.join("rust/other/src/main.rs"),
+        "fn main() { println!(\"other {}\", runtime_shared::value()); }\n",
+    )
+    .unwrap();
+    fs::write(
+        fixture.root.join("rust/shared/build.rs"),
+        r#"
+use std::{fs::OpenOptions, io::Write};
+fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=src/lib.rs");
+    let mut trace = OpenOptions::new().create(true).append(true)
+        .open(std::env::var_os("SHARED_BUILD_TRACE").unwrap()).unwrap();
+    writeln!(trace, "compiled").unwrap();
+}
+"#,
+    )
+    .unwrap();
+    assert!(Command::new(fixture.toolchain.join("cargo"))
+        .args(["generate-lockfile", "--offline", "--manifest-path"])
+        .arg(fixture.root.join("rust/Cargo.toml"))
+        .status()
+        .unwrap()
+        .success());
+    commit(&fixture.root);
+    let trace = fixture._temp.path().join("shared-build-trace");
+    fixture.recipe.environment.insert(
+        "SHARED_BUILD_TRACE".into(),
+        trace.to_string_lossy().into_owned(),
+    );
+    let mut other = fixture.recipe.clone();
+    other.packages = vec!["runtime-other".into()];
+    other.binaries = vec!["runtime-other".into()];
+    let first = fixture.run();
+    let libraries: Vec<_> = fs::read_dir(
+        first
+            .target_directory
+            .join(&fixture.recipe.target)
+            .join("release/deps"),
+    )
+    .unwrap()
+    .map(|entry| entry.unwrap().path())
+    .filter(|path| {
+        path.file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with("libruntime_shared-")
+            && path
+                .extension()
+                .is_some_and(|extension| extension == "rlib")
+    })
+    .collect();
+    assert_eq!(libraries.len(), 1);
+    let library = &libraries[0];
+    let library_before = (
+        fs::metadata(library).unwrap().modified().unwrap(),
+        digest_file(library).unwrap(),
+    );
+    let second = build(&fixture.root, &fixture.cache, &fixture.toolchain, &other).unwrap();
+    assert_eq!(first.cache_key, second.cache_key);
+    assert_eq!(first.target_directory, second.target_directory);
+    assert_ne!(first.recipe_sha256, second.recipe_sha256);
+    assert_eq!(fs::read_to_string(&trace).unwrap(), "compiled\n");
+    assert_eq!(
+        library_before,
+        (
+            fs::metadata(library).unwrap().modified().unwrap(),
+            digest_file(library).unwrap()
+        )
+    );
+    assert!(!first.artifacts[0].fresh && !second.artifacts[0].fresh);
+    assert!(fixture.run().artifacts[0].fresh);
+    assert!(
+        build(&fixture.root, &fixture.cache, &fixture.toolchain, &other)
+            .unwrap()
+            .artifacts[0]
+            .fresh
+    );
+    // A real shared source change must still rebuild both consumers, once for
+    // the dependency, with actual changed executable results.
+    fs::write(&shared, "pub fn value() -> u32 { 43 }\n").unwrap();
+    commit(&fixture.root);
+    let changed_main = fixture.run();
+    let changed_other = build(&fixture.root, &fixture.cache, &fixture.toolchain, &other).unwrap();
+    assert_eq!(fs::read_to_string(&trace).unwrap(), "compiled\ncompiled\n");
+    for (before, after, expected) in [
+        (&first, &changed_main, "main 43\n"),
+        (&second, &changed_other, "other 43\n"),
+    ] {
+        assert!(!after.artifacts[0].fresh);
+        assert_ne!(before.artifacts[0].sha256, after.artifacts[0].sha256);
+        let output = Command::new(&after.artifacts[0].executable)
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(output.stdout, expected.as_bytes());
+    }
+    println!("serial_groups=2 shared_build_script_initial_runs=1 shared_library_hash_and_mtime_retained=true changed_shared_build_script_runs=1 actual_consumers_rebuilt=true");
+}
+
+#[test]
 fn prepared_groups_reuse_docs_and_rebuild_only_the_changed_binary_while_retaining_previous_execution(
 ) {
     use openpilot_runtime_build::prepare::{self, Plan};

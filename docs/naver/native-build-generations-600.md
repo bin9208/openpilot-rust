@@ -29,6 +29,19 @@ A로 표시하는 것이 최종 연결의 기준이다. 로그와 사용자가 �
 
 ## 증분 빌드 경로
 
+2026-10-27 cache 입력 경계를 추가 검토했다. package/bin 선택 자체를 cache key에 넣으면
+같은 compiler/provider/feature/environment의 직렬 그룹도 각각 target tree를 만들어
+공통 의존성을 중복 보관한다. v2 cache key는 이 선택과 작업별 증가량 예측만 제외한다.
+도구체인·실제 linker 도구 hash·target·feature·환경·고정 input/tree는 그대로 포함한다.
+전체 recipe SHA는 package/bin 선택까지 별도로 묶어 원래 build/generation 검증을 유지한다.
+이전 cache 디렉터리는 삭제하거나 새 결과로 표시하지 않는다.
+
+Actions의 실제 offline Cargo fixture는 공통 Rust library를 쓰는 두 package를 따로
+빌드한다. 두 그룹이 같은 target을 쓰고 공통 library의 hash/수정 시각과 build script의
+한 번 실행을 유지하는지 확인한다. 공통 소스 변경 뒤에는 두 소비자의 실제 출력이 바뀌고
+둘 다 재빌드되어야 한다. provider/feature 변경의 cache 분리는 기존 회귀로 유지한다.
+전체 runtime/기기의 디스크 절감량이나 시간 개선은 이 코드 변경만으로 추정하지 않는다.
+
 Cargo driver는 계속 고정된 빌드 checkout 경로와 내용 기반 target cache를 사용한다.
 매 commit의 새 source worktree에서 직접 빌드해 절대 source 경로 변경으로 전체 crate가
 다시 빌드되는 경로를 만들지 않는다. 보존한 source와 build report의 실제 source identity가

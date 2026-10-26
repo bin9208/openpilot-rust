@@ -231,10 +231,16 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
     {
         return Err("runtime build needs a native Rust 1.94.0 toolchain for its target".into());
     }
-    // Resource estimates may change between attempts without changing compilation inputs.
+    // Selection is Cargo's job: package/bin choices do not change the native ABI
+    // or compiler inputs. Share dependency artifacts between serial build groups
+    // rather than storing a complete target tree for each selected binary set.
+    // Cargo retains its package/source/feature fingerprints inside this cache.
     let mut cache_recipe = recipe.clone();
     cache_recipe.expected_growth_bytes = 0;
+    cache_recipe.packages.clear();
+    cache_recipe.binaries.clear();
     let identity = serde_json::to_vec(&(
+        "openpilot-native-cargo-cache-v2",
         cache_recipe,
         &compiler_digest,
         &cargo_digest,
