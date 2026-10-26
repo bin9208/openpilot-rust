@@ -232,6 +232,7 @@ fn main() {
         .open(std::env::var_os("SHARED_BUILD_TRACE").unwrap()).unwrap();
     writeln!(trace, "compiled").unwrap();
 }
+
 "#,
     )
     .unwrap();
@@ -776,4 +777,85 @@ fn external_provider_tree_mutation_requires_a_new_pinned_receipt_and_cache() {
         &fixture.recipe
     )
     .is_err());
+}
+
+#[test]
+fn explicit_schema_compiler_changes_rebuild_actual_generated_input_and_reject_a_stale_pin() {
+    use std::os::unix::fs::PermissionsExt;
+    let mut fixture = Fixture::new();
+    let compiler = fixture._temp.path().join("owned-capnp-input-tool");
+    let install = |value| {
+        fs::write(&compiler, format!("#!/bin/sh\nprintf '{value}\\n'\n")).unwrap();
+        fs::set_permissions(&compiler, fs::Permissions::from_mode(0o555)).unwrap();
+    };
+    install(42);
+    fixture
+        .recipe
+        .environment
+        .insert("OPENPILOT_CAPNP".into(), compiler.to_str().unwrap().into());
+    fixture
+        .recipe
+        .inputs
+        .insert(compiler.clone(), digest_file(&compiler).unwrap());
+    fs::write(fixture.root.join("rust/build.rs"), r#"
+fn main() {
+    let tool = std::env::var("OPENPILOT_CAPNP").unwrap();
+    let output = std::process::Command::new(&tool).output().unwrap();
+    assert!(output.status.success());
+    println!("cargo:rerun-if-env-changed=OPENPILOT_CAPNP");
+    println!("cargo:rerun-if-changed={tool}");
+    println!("cargo:rustc-env=OWNED_GENERATED_VALUE={}", String::from_utf8(output.stdout).unwrap().trim());
+}
+"#).unwrap();
+    fs::write(
+        fixture.root.join("rust/src/main.rs"),
+        "fn main(){println!(\"{}\",env!(\"OWNED_GENERATED_VALUE\"));}\n",
+    )
+    .unwrap();
+    commit(&fixture.root);
+    let first = fixture.run();
+    assert_eq!(
+        first.native_tools[&compiler],
+        digest_file(&compiler).unwrap()
+    );
+    assert_eq!(
+        Command::new(&first.artifacts[0].executable)
+            .output()
+            .unwrap()
+            .stdout,
+        b"42\n"
+    );
+    assert!(fixture.run().artifacts[0].fresh);
+    // The helper is changed at the same path, size and original source commit.
+    fs::set_permissions(&compiler, fs::Permissions::from_mode(0o755)).unwrap();
+    install(43);
+    assert!(build(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &fixture.recipe
+    )
+    .is_err());
+    fixture
+        .recipe
+        .inputs
+        .insert(compiler.clone(), digest_file(&compiler).unwrap());
+    let changed = fixture.run();
+    assert_eq!(changed.source, first.source);
+    assert_ne!(changed.cache_key, first.cache_key);
+    assert!(!changed.artifacts[0].fresh);
+    assert_eq!(
+        Command::new(&changed.artifacts[0].executable)
+            .output()
+            .unwrap()
+            .stdout,
+        b"43\n"
+    );
+    assert_eq!(
+        Command::new(&first.artifacts[0].executable)
+            .output()
+            .unwrap()
+            .stdout,
+        b"42\n"
+    );
 }

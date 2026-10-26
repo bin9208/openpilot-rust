@@ -39,6 +39,10 @@ Cargo/toolchain/recipe/출력 일치를 계속 요구하면서 그룹별 도구 
 여러 그룹의 **동일 실행 파일 경로에 서로 다른 hash**가 기록되면 거부한다. 최종 Layout의
 각 실제 도구가 pinned file/tree에 포함되는 검사와 전체 ABI 검사는 그대로 유지한다.
 실제 Cargo 회귀에는 한 그룹만 소유 보조 도구를 사용하는 경우와 상충 hash 거부를 추가했다.
+추가 회귀는 소유 tool이 만든 실제 build-script 입력42→43을 확인한다. 같은 경로/크기의
+tool을 바꾸고 기존 pin을 유지하면 실패해야 하며, 새 pin을 고정한 뒤에만 새 cache에서
+실제43을 빌드한다. 이전 binary는42를 유지해야 한다. 이 소유 script는 genuine capnp의
+대역으로 원본 수치/프로토콜 동등성을 주장하는 데 사용하지 않는다.
 
 ## Actions의 SDK·원본 wire 검증
 
