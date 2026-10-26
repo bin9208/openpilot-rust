@@ -10,11 +10,13 @@ publish = false
 workspace = true
 
 [features]
-default = ["prepare-rust", "prepare-capnp"]
+default = ["prepare-rust", "prepare-capnp", "prepare-cargo"]
 prepare-rust = ["dep:tar", "dep:xz2"]
 prepare-capnp = ["dep:tar", "dep:zstd"]
+prepare-cargo = ["dep:tar", "dep:flate2", "dep:toml"]
 
 [dependencies]
+flate2 = { version = "1", default-features = false, features = ["rust_backend"], optional = true }
 openpilot-runtime-installer = { path = "../runtime-installer" }
 rustix = { version = "1", features = ["fs", "process"] }
 signal-hook = "0.3"
@@ -25,6 +27,7 @@ tempfile = "3"
 tar = { version = "0.4", default-features = false, optional = true }
 xz2 = { version = "0.1.7", optional = true }
 zstd = { version = "0.13", optional = true }
+toml = { version = "0.8", optional = true }
 
 [dev-dependencies]
 rustix = { version = "1", features = ["stdio"] }

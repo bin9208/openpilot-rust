@@ -114,3 +114,8 @@ compiler 경로로 준비한다. [SDK 입력·실제 전체 schema 검증 계획
 원본 pin, 그룹별 입력/보조 도구 검사와 원본 Python wire 비교를 기록했다. 프로젝트의
 `--prepare-capnp`는 같은 원본을 직접 검증/준비하고 독립 dpkg-deb tree와 비교한다.
 실제 ARM 준비기의 반복 재사용도 Actions에 포함하며 기본 시작/bootstrap 연결은 남는다.
+
+[고정 Cargo registry 입력](native-cargo-inputs-599.md)은 기존 offline driver에 필요한
+현재 lock의 원본458개를 내용별로 준비하고 pinned directory source로 연결한다.
+실제 Cargo fixture와 AGNOS seed 검증은 새 정확 source에서 검증하며 초기 helper/
+전체 OS SDK closure·provider/Python 모델·전체 runtime 수용을 대체하지 않는다.

@@ -218,6 +218,19 @@ def native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_
            '-p','openpilot-runtime-build','--bin','openpilot-runtime-inputs',
            '--target-dir',work/'project-target','--message-format=json'],'native-cereal-inputs-build.jsonl')
   preparer = work/'project-target/debug/openpilot-runtime-inputs'
+  registry_prepare = [preparer,'--prepare-cargo','--plan',f'{source_mount}/rust/native-cargo-inputs.json',
+                      '--lock',f'{source_mount}/rust/Cargo.lock','--cache',Path(guest_work)/'cargo-assets',
+                      '--store',Path(guest_work)/'cargo-sources']
+  registry = json.loads(execute(registry_prepare,'native-cereal-cargo-inputs-reuse.json').read_text())
+  registry_repeat = json.loads(execute(registry_prepare,'native-cereal-cargo-inputs-repeated.json').read_text())
+  host_registry = json.loads((owned/'native-cargo-first.json').read_text())
+  assert registry['packages'] == registry_repeat['packages'] == host_registry['packages'] == 458
+  assert registry['tree_sha256'] == registry_repeat['tree_sha256'] == host_registry['tree_sha256']
+  assert all(report['copied_bytes'] == report['linked_bytes'] == 0 for report in (registry,registry_repeat))
+  assert all(row['transferred_bytes'] == row['stored_bytes'] == 0 for report in (registry,registry_repeat) for row in report['assets'].values())
+  evidence['native_cargo_inputs'] = dict(packages=458,tree_sha256=registry['tree_sha256'],
+      actual_arm_preparer_sha256=digest(preparer),mode='verify and reuse the host-prepared seed in AGNOS user space',
+      archive_body_bytes=0,copied_bytes=0,linked_bytes=0,compiler_executed_by_preparer=False,device_execution=False)
   prepare = [preparer,'--prepare-capnp','--plan',f'{source_mount}/rust/native-capnp-assets.json',
              '--cache',Path(guest_work)/'capnp-assets','--store',work/'native-capnp-prefixes']
   first = json.loads(execute(prepare,'native-cereal-preparation-initial.json').read_text())
@@ -339,10 +352,22 @@ def main():
         '[core]\n\thooksPath = /dev/null\n[commit]\n\tgpgSign = false\n')
     (work / 'pinned-rust').mkdir()
     (work / 'capnp-sdk').mkdir()
+    (work / 'cargo-assets').mkdir()
+    (work / 'cargo-sources').mkdir()
+    cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
+    cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
+    (work/'cargo').mkdir()
+    (work/'cargo/config.toml').write_text('[source.crates-io]\nreplace-with="openpilot-native"\n'
+        '[source.openpilot-native]\ndirectory='+json.dumps(str(cargo_vendor))+'\n[net]\noffline=true\n')
+    evidence['cargo_source_mode'] = dict(directory=str(cargo_vendor),tree_sha256=cargo_inputs['tree_sha256'],
+        cargo_config_sha256=digest(work/'cargo/config.toml'),net_offline=True,
+        source='locked authenticated directory source; original commands and Rustup/toolchain pins retained')
     guest = [proot, '-0', '-r', rootfs, '-q', qemu, '-b', '/proc', '-b', '/dev', '-b', '/etc/resolv.conf',
              '-b', '/etc/hosts', '-b', f'{work}:{guest_work}', '-b', f'{owned / "native-rust-toolchains"}:{guest_work}/pinned-rust',
              '-b', f'{owned / "native-capnp"}:{guest_work}/capnp-sdk',
              '-b', f'{owned / "native-capnp-assets"}:{guest_work}/capnp-assets',
+             '-b', f'{owned / "native-cargo-assets"}:{guest_work}/cargo-assets',
+             '-b', f'{owned / "native-cargo-sources"}:{guest_work}/cargo-sources',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',

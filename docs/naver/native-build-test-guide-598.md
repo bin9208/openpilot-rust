@@ -32,6 +32,11 @@ capnp SDK의 입력 pin·그룹별 도구 검사와 전체 원본 schema/wire �
 검사에서는 독립 dpkg-deb의 vendor tree 전체 일치와 실제 source-built ARM 준비기의
 초기/반복 전송0·반복 복사0·같은 tree SHA를 확인한 뒤 원본 wire 비교를 수행한다.
 
+외부 Cargo crate의 원본 고정·내용별 준비와 driver의 directory-source 연결은
+[Cargo 입력 안내](native-cargo-inputs-599.md)를 따른다. empty Cargo home의 실제 빌드,
+반복/docs-only freshness와 source·lock 변조 거부를 Actions에서 확인한다.
+genuine의 ARM 준비 검사는 host에서 만든 seed의 검증/재사용이며 새 기기 준비 실측이 아니다.
+
 로컬에서는 `git diff --check`, scoped `rustfmt --check`, TOML/YAML 문법과 diff만
 확인한다. 기능·빌드는 GitHub Actions에서 실행한다. 작업 branch push는
 `Runtime source build foundation`의 x64/ARM matrix를 실행한다. 같은 변경의 성공한

@@ -9,6 +9,7 @@ on:
       - 'rust/Cargo.toml'
       - 'rust/Cargo.lock'
       - 'rust/native-runtime-catalog.json'
+      - 'rust/native-cargo-inputs.json'
       - '.github/workflows/runtime-source-build.yml'
       - '.github/actions/**'
       - 'tools/ci/local-arm'

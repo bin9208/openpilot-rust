@@ -5,11 +5,17 @@
 //! Explicit external inputs and toolchain identities partition incompatible caches.
 #![forbid(unsafe_code)]
 
-#[cfg(any(feature = "prepare-rust", feature = "prepare-capnp"))]
+#[cfg(any(
+    feature = "prepare-rust",
+    feature = "prepare-capnp",
+    feature = "prepare-cargo"
+))]
 mod archive_tree;
 pub mod assets;
 #[cfg(feature = "prepare-capnp")]
 pub mod capnp;
+#[cfg(feature = "prepare-cargo")]
+pub mod cargo_inputs;
 pub mod catalog;
 pub mod generation;
 pub mod inputs;
@@ -179,6 +185,34 @@ impl Recipe {
         for (tree, receipt) in &self.input_trees {
             inputs::Tree::read(&root.join(receipt))?.verify(&root.join(tree))?;
         }
+        if let Some(value) = self.environment.get("OPENPILOT_CARGO_VENDOR") {
+            let vendor = Path::new(value);
+            if !vendor.is_absolute()
+                || vendor.file_name() != Some(std::ffi::OsStr::new("vendor"))
+                || !fs::symlink_metadata(vendor)?.is_dir()
+                || vendor.canonicalize()? != vendor
+            {
+                return Err("Cargo vendor source must be its canonical prepared directory".into());
+            }
+            let prefix = vendor.parent().ok_or("missing Cargo vendor prefix")?;
+            if !self.input_trees.keys().any(|p| root.join(p) == prefix) {
+                return Err(
+                    "Cargo vendor prefix requires its complete SHA-pinned input tree".into(),
+                );
+            }
+            let metadata = regular_file(&prefix.join("provenance/native-cargo.json"))?;
+            if metadata.metadata()?.len() > 4 * 1024 * 1024 {
+                return Err("Cargo input provenance exceeds 4 MiB".into());
+            }
+            let metadata: serde_json::Value =
+                serde_json::from_reader(metadata.take(4 * 1024 * 1024 + 1))?;
+            if metadata["schema"] != 1
+                || metadata["format"] != "openpilot-native-cargo-v1"
+                || metadata["cargo_lock_sha256"] != digest_file(&root.join("rust/Cargo.lock"))?
+            {
+                return Err("prepared Cargo sources differ from the current lock file".into());
+            }
+        }
         Ok(())
     }
 }
@@ -329,18 +363,31 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         .envs(&recipe.environment)
         .envs(&native.environment)
         .env(linker_key, &native.linker)
-        .env("CARGO_ENCODED_RUSTFLAGS", flags.join("\u{1f}"))
-        .args([
-            "build",
-            "--manifest-path",
-            "rust/Cargo.toml",
-            "--locked",
-            "--offline",
-            "--release",
-            "--message-format=json-render-diagnostics",
-            "--target",
-            &recipe.target,
+        .env("CARGO_ENCODED_RUSTFLAGS", flags.join("\u{1f}"));
+    if let Some(vendor) = recipe.environment.get("OPENPILOT_CARGO_VENDOR") {
+        command.args([
+            "--config",
+            "source.crates-io.replace-with=\"openpilot-native\"",
         ]);
+        command.args([
+            "--config",
+            &format!(
+                "source.openpilot-native.directory={}",
+                serde_json::to_string(vendor)?
+            ),
+        ]);
+    }
+    command.args([
+        "build",
+        "--manifest-path",
+        "rust/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--release",
+        "--message-format=json-render-diagnostics",
+        "--target",
+        &recipe.target,
+    ]);
     for package in &recipe.packages {
         command.args(["--package", package]);
     }

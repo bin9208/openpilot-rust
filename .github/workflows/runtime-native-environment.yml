@@ -9,6 +9,9 @@ on:
       - 'rust/crates/runtime-build/src/toolchain.rs'
       - 'rust/crates/runtime-build/src/archive_tree.rs'
       - 'rust/crates/runtime-build/src/capnp.rs'
+      - 'rust/crates/runtime-build/src/cargo_inputs.rs'
+      - 'rust/native-cargo-inputs.json'
+      - 'rust/Cargo.lock'
       - 'rust/crates/runtime-build/src/inputs_main.rs'
       - 'rust/crates/cereal/**'
       - 'rust/native-capnp-assets.json'
@@ -153,6 +156,39 @@ jobs:
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-capnp-assets
           key: native-capnp-101-4-arm64-9d693ded6a718a142063ccf0bb3250fa4e15b846980362ec6c38cff2a711a81c-v1
+      - uses: actions/cache/restore@v4
+        id: cargo-archives-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-cargo-assets
+          key: native-cargo-crates-${{ hashFiles('rust/Cargo.lock') }}-v1
+          restore-keys: native-cargo-crates-
+      - name: Prepare the complete locked registry sources and prove zero-transfer repeat
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          "$native_target/debug/openpilot-runtime-inputs" --prepare-cargo --plan rust/native-cargo-inputs.json --lock rust/Cargo.lock \
+            --cache "$RUNNER_TEMP/native-cargo-assets" --store "$RUNNER_TEMP/native-cargo-sources" > "$RUNNER_TEMP/native-cargo-first.json"
+          "$native_target/debug/openpilot-runtime-inputs" --prepare-cargo --plan rust/native-cargo-inputs.json --lock rust/Cargo.lock \
+            --cache "$RUNNER_TEMP/native-cargo-assets" --store "$RUNNER_TEMP/native-cargo-sources" > "$RUNNER_TEMP/native-cargo-reused.json"
+          python3 - <<'PYCODE'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['CI_JOB_TEMP'])
+          first = json.loads((root/'native-cargo-first.json').read_text())
+          repeat = json.loads((root/'native-cargo-reused.json').read_text())
+          assert first['packages'] == repeat['packages'] == 458
+          assert first['root'] == repeat['root'] and first['tree_sha256'] == repeat['tree_sha256']
+          assert first['copied_bytes'] > 0 and first['linked_bytes'] > 0
+          assert repeat['copied_bytes'] == repeat['linked_bytes'] == 0
+          assert not first['compiler_executed'] and not first['runtime_activated']
+          assert all(row['transferred_bytes'] in (0,row['bytes']) for row in first['assets'].values())
+          assert all(row['transferred_bytes'] == row['stored_bytes'] == 0 for row in repeat['assets'].values())
+          print('Locked Cargo registry sources authenticated; repeated archive body, copied bytes and linked bytes all zero. Cache-service traffic is separate.')
+          PYCODE
+      - uses: actions/cache/save@v4
+        if: steps.cargo-archives-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-cargo-assets
+          key: native-cargo-crates-${{ hashFiles('rust/Cargo.lock') }}-v1
       - name: Execute Rust and C++ standard ABI probes inside the original AGNOS filesystem
         run: python3 tools/ci/probe_native_agnos.py
       - uses: actions/upload-artifact@v6
@@ -172,6 +208,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-capnp-dpkg-tree.json
             ${{ env.CI_JOB_TEMP }}/native-capnp-first.json
             ${{ env.CI_JOB_TEMP }}/native-capnp-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-cargo-first.json
+            ${{ env.CI_JOB_TEMP }}/native-cargo-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-cargo-sources/sets/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.json
             ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.txt
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/tree.json

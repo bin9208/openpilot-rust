@@ -859,3 +859,155 @@ fn main() {
         b"42\n"
     );
 }
+
+#[cfg(feature = "prepare-cargo")]
+#[test]
+fn prepared_registry_sources_build_offline_with_an_empty_cargo_home_and_reject_stale_pins() {
+    use openpilot_runtime_build::{
+        assets::{Asset, Download},
+        cargo_inputs::{self, Package, Plan},
+        Result,
+    };
+    use sha2::{Digest, Sha256};
+    struct Fetch(Vec<u8>);
+    impl Download for Fetch {
+        fn fetch(&self, _: &Asset, path: &std::path::Path) -> Result<u64> {
+            fs::write(path, &self.0)?;
+            Ok(self.0.len() as u64)
+        }
+    }
+    let mut fixture = Fixture::new();
+    let temp = tempfile::tempdir().unwrap();
+    let mut archive = tar::Builder::new(flate2::write::GzEncoder::new(
+        Vec::new(),
+        flate2::Compression::fast(),
+    ));
+    let manifest = "[package]\nname='owned-depot-dep'\nversion='0.1.0'\nedition='2021'\n";
+    let code = "pub fn answer()->u8{42}\n";
+    for (path, bytes) in [
+        ("Cargo.toml", manifest.as_bytes()),
+        ("src/lib.rs", code.as_bytes()),
+    ] {
+        let mut header = tar::Header::new_gnu();
+        header.set_size(bytes.len() as u64);
+        header.set_mode(0o644);
+        archive
+            .append_data(&mut header, format!("owned-depot-dep-0.1.0/{path}"), bytes)
+            .unwrap();
+    }
+    let archive = archive.into_inner().unwrap().finish().unwrap();
+    let sha = format!("{:x}", Sha256::digest(&archive));
+    fs::write(fixture.root.join("rust/Cargo.toml"), "[package]\nname='runtime-fixture'\nversion='0.1.0'\nedition='2021'\n[dependencies]\nowned-depot-dep='=0.1.0'\n").unwrap();
+    let lock = format!("version = 4\n\n[[package]]\nname='runtime-fixture'\nversion='0.1.0'\ndependencies=['owned-depot-dep']\n\n[[package]]\nname='owned-depot-dep'\nversion='0.1.0'\nsource='registry+https://github.com/rust-lang/crates.io-index'\nchecksum='{sha}'\n");
+    let lock_path = fixture.root.join("rust/Cargo.lock");
+    fs::write(&lock_path, lock).unwrap();
+    fs::write(
+        fixture.root.join("rust/src/main.rs"),
+        "fn main(){println!(\"{}\",owned_depot_dep::answer());}\n",
+    )
+    .unwrap();
+    commit(&fixture.root);
+    let plan = Plan {
+        schema: 1,
+        cargo_lock_sha256: digest_file(&lock_path).unwrap(),
+        reserve_bytes: 1024 * 1024,
+        packages: vec![Package {
+            name: "owned-depot-dep".into(),
+            version: "0.1.0".into(),
+            asset: Asset {
+                url: "https://owned.invalid/dependency.crate".into(),
+                sha256: sha,
+                bytes: archive.len() as u64,
+            },
+            unpacked_bytes: (manifest.len() + code.len()) as u64,
+            members: 2,
+        }],
+    };
+    let inputs = cargo_inputs::prepare(
+        &plan,
+        &lock_path,
+        &temp.path().join("assets"),
+        &temp.path().join("depot"),
+        &Fetch(archive),
+    )
+    .unwrap();
+    fixture.recipe.environment.insert(
+        "OPENPILOT_CARGO_VENDOR".into(),
+        inputs.vendor.to_str().unwrap().into(),
+    );
+    // The source directory alone is insufficient: its complete independently
+    // pinned parent tree and the exact Cargo.lock provenance are mandatory.
+    assert!(build(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &fixture.recipe
+    )
+    .is_err());
+    fixture
+        .recipe
+        .inputs
+        .insert(inputs.tree_receipt.clone(), inputs.tree_sha256.clone());
+    fixture
+        .recipe
+        .input_trees
+        .insert(inputs.root.clone(), inputs.tree_receipt.clone());
+    assert!(!fixture.cache.join("cargo-home/registry").exists());
+    let first = fixture.run();
+    assert!(!first.artifacts[0].fresh);
+    assert_eq!(
+        Command::new(&first.artifacts[0].executable)
+            .output()
+            .unwrap()
+            .stdout,
+        b"42\n"
+    );
+    let repeated = fixture.run();
+    assert!(repeated.artifacts[0].fresh);
+    assert_eq!(repeated.artifacts[0].sha256, first.artifacts[0].sha256);
+    fs::write(
+        fixture.root.join("README.md"),
+        "Owned dependency docs-only change\n",
+    )
+    .unwrap();
+    commit(&fixture.root);
+    let docs = fixture.run();
+    assert!(docs.artifacts[0].fresh);
+    assert_eq!(docs.artifacts[0].sha256, first.artifacts[0].sha256);
+    let locked = fs::read(&lock_path).unwrap();
+    let mut changed_lock = locked.clone();
+    changed_lock.extend_from_slice(b"\n# Owned lock identity change\n");
+    fs::write(&lock_path, changed_lock).unwrap();
+    commit(&fixture.root);
+    assert!(build(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &fixture.recipe
+    )
+    .unwrap_err()
+    .to_string()
+    .contains("current lock file"));
+    fs::write(&lock_path, locked).unwrap();
+    commit(&fixture.root);
+    // Same-size source damage is refused before Cargo can reuse its old target.
+    let source = inputs.vendor.join("owned-depot-dep-0.1.0/src/lib.rs");
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(&source, fs::Permissions::from_mode(0o644)).unwrap();
+    fs::write(&source, code.replace("42", "43")).unwrap();
+    fs::set_permissions(&source, fs::Permissions::from_mode(0o444)).unwrap();
+    assert!(build(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &fixture.recipe
+    )
+    .is_err());
+    assert_eq!(
+        Command::new(&first.artifacts[0].executable)
+            .output()
+            .unwrap()
+            .stdout,
+        b"42\n"
+    );
+}

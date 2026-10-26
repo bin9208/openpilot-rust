@@ -3543,6 +3543,7 @@ dependencies = [
 name = "openpilot-runtime-build"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "openpilot-runtime-installer",
  "rustix",
  "serde",
@@ -3551,6 +3552,7 @@ dependencies = [
  "signal-hook",
  "tar",
  "tempfile",
+ "toml",
  "xz2",
  "zstd",
 ]

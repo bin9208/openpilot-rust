@@ -8,11 +8,12 @@ fn run() -> Result<()> {
     let mut root = None;
     let mut output = None;
     let (mut plan, mut cache, mut store) = (None, None, None);
-    let (mut prepare_rust, mut prepare_capnp) = (false, false);
+    let (mut prepare_rust, mut prepare_capnp, mut prepare_cargo) = (false, false, false);
+    let mut lock = None;
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--help" | "-h") => {
-                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-capnp --plan PINNED_CAPNP_ASSETS_JSON --cache ASSET_CACHE --store SDK_STORE\nCapture unpacked inputs, or assemble authenticated native inputs without executing installers. Generic capture requires independently verified provenance. Archive preparation authenticates vendor bytes on every reuse; it does not compile or activate a runtime.");
+                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-capnp --plan PINNED_CAPNP_ASSETS_JSON --cache ASSET_CACHE --store SDK_STORE\n       openpilot-runtime-inputs --prepare-cargo --plan PINNED_CRATES_JSON --lock CARGO_LOCK --cache ASSET_CACHE --store SOURCES_STORE\nCapture unpacked inputs, or assemble authenticated native inputs without executing installers. Generic capture requires independently verified provenance. Archive preparation authenticates vendor bytes on every reuse; it does not compile or activate a runtime.");
                 return Ok(());
             }
             Some("--root") if root.is_none() => {
@@ -23,6 +24,10 @@ fn run() -> Result<()> {
             }
             Some("--prepare-rust") if !prepare_rust => prepare_rust = true,
             Some("--prepare-capnp") if !prepare_capnp => prepare_capnp = true,
+            Some("--prepare-cargo") if !prepare_cargo => prepare_cargo = true,
+            Some("--lock") if lock.is_none() => {
+                lock = Some(PathBuf::from(args.next().ok_or("missing Cargo lock path")?))
+            }
             Some("--plan") if plan.is_none() => {
                 plan = Some(PathBuf::from(
                     args.next().ok_or("missing preparation plan")?,
@@ -37,8 +42,33 @@ fn run() -> Result<()> {
             _ => return Err("unknown or duplicate input receipt argument".into()),
         }
     }
-    if prepare_rust && prepare_capnp {
+    if u8::from(prepare_rust) + u8::from(prepare_capnp) + u8::from(prepare_cargo) > 1 {
         return Err("choose exactly one native preparation mode".into());
+    }
+    if !prepare_cargo && lock.is_some() {
+        return Err("--lock requires --prepare-cargo".into());
+    }
+    if prepare_cargo {
+        if root.is_some() || output.is_some() {
+            return Err("Cargo preparation does not accept generic capture paths".into());
+        }
+        #[cfg(feature = "prepare-cargo")]
+        {
+            let plan = openpilot_runtime_build::cargo_inputs::Plan::read(
+                &plan.ok_or("--plan is required")?,
+            )?;
+            let prepared = openpilot_runtime_build::cargo_inputs::prepare(
+                &plan,
+                &lock.ok_or("--lock is required")?,
+                &cache.ok_or("--cache is required")?,
+                &store.ok_or("--store is required")?,
+                &openpilot_runtime_build::assets::Curl,
+            )?;
+            println!("{}", serde_json::to_string_pretty(&prepared)?);
+            return Ok(());
+        }
+        #[cfg(not(feature = "prepare-cargo"))]
+        return Err("this build does not include the prepare-cargo Cargo feature".into());
     }
     if prepare_capnp {
         if root.is_some() || output.is_some() {
@@ -80,7 +110,7 @@ fn run() -> Result<()> {
         return Err("this build does not include the prepare-rust Cargo feature".into());
     }
     if plan.is_some() || cache.is_some() || store.is_some() {
-        return Err("preparation paths require --prepare-rust or --prepare-capnp".into());
+        return Err("preparation paths require a native preparation mode".into());
     }
     let root = root.ok_or("--root is required")?;
     let output = output.ok_or("--output is required")?;
