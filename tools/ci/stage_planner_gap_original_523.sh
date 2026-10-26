@@ -55,7 +55,15 @@ owned_dir() {
 regular() {
   test -f "$1" && test ! -L "$1"
   test "$(/usr/bin/realpath -e -- "$1")" = "$1"
-  test "$(/usr/bin/stat -c '%u:%a:%h' -- "$1")" = "$uid:600:1"
+  local observed
+  observed=$(/usr/bin/stat -c '%u:%a:%h' -- "$1")
+  if [[ $1 == "$job/owner" ]]; then
+    # 고정 job-temp action은 기본 umask를 사용한다. 부모700과 쓰기 금지는 계속 요구한다.
+    printf 'Planner Gap common owner uid:mode:links=%s\n' "$observed"
+    [[ $observed == "$uid:600:1" || $observed == "$uid:644:1" ]]
+  else
+    test "$observed" = "$uid:600:1"
+  fi
 }
 stamp() { /usr/bin/stat -c '%d:%i:%u:%f:%h:%s:%y:%z' -- "$1"; }
 owned_dir "$job"; owned_dir "$job/proof"

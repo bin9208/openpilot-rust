@@ -1306,6 +1306,27 @@ ignored1개는 기본 실행 성공으로 세지 않는다. 기존 native14/froz
 Gap Python 파일은 삭제 후보지만 기준 inventory의 status는 pending이며 새 credit은0이다.
 전체 #523·PR343/통합·정확 소스 전달·필요한 실기 수용은 계속 미완료다.
 
+### source023의 자료 준비 실패와 공통 owner 계약 보정
+
+source `0231537a24297300dc3f5e2b3766d03266bc2336`의
+[HOST40271144773/job121404017151](https://github.com/bin9208/openpilot-rust/actions/runs/40271144773/job/121404017151)은
+compile/check 성공 뒤 stage18에서 FAIL했다. 새 Gap stager의 SHA 검사는 성공했으나 약11ms 뒤
+첫 audit SHA 출력 전 exit1이었다. Gap857/runtime/qualification은 미도달이며 수치 실패가 아니다.
+작은 [NativeUnits40271143590](https://github.com/bin9208/openpilot-rust/actions/runs/40271143590)는
+같은 소스에서 SUCCESS다. 이 결과를 새 Gap 기능의 성공으로 확대하지 않는다.
+
+고정 `job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2`는 공통 owner를 `printf`로
+만들고 umask/chmod를 지정하지 않는다. 기존 LC stager는 UID·길이·내용을 검사하고 Gap core도
+group/other 쓰기가 없는644를 허용하지만, 새 Bash 준비만 공통 marker에 정확600을 요구했다.
+이는 producer/consumer 계약 불일치다. 당시 실제 owner mode는 로그에 없어644를 직접 관측한
+것으로 기록하지 않는다. 원래 파일을 chmod하지 않고 **고정 `$job/owner` 한 경로만600/644**를
+허용한다. canonical·UID·single-link·부모700·내용·전후 identity/SHA를 유지하고 새 raw/archive/
+proof는 계속 정확600을 요구한다. 다음 CI에는 내용 없이 uid:mode:links만 기록해 원인을 확인한다.
+
+marker 보정 stager SHA는 `2ec98dd35010d737fdacd815f7c70d16266b8536b4ce93ad409280995ea5a259`다.
+Gap core/CLI/plan/9개 unit/추가 plannerd3개·기대값·기한·성장량과 기존 IPC/LC stager는 불변이다.
+이 보정은 발행 후 실제 검증이 필요하며 Gap baseline credit0·303/3/3274를 유지한다.
+
 
 ### source3b baseline LC3 완료 기준과 working/index 부재 근거 보강
 
