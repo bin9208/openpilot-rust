@@ -1,0 +1,1218 @@
+{
+  "schema": 1,
+  "source_commit": "e445c9d19c3041bc79d8624589e2eb6ba7d061c6",
+  "workflows": {
+    ".github/workflows/fast-checks.yml": {
+      "on": {
+        "push": {
+          "branches": [
+            "**"
+          ]
+        },
+        "pull_request": {
+          "branches": [
+            "dev",
+            "main"
+          ]
+        },
+        "workflow_dispatch": ""
+      },
+      "jobs": {
+        "fast": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "5fc1a55cfa3dcfb01cb0cea18fd929fa412d2d1031c5db21603d5cd6786f2cd0",
+            "0866c7be99e5c56aeab5095b33664ffacb1d9f8759702c8fed54e50a438590e5",
+            "9aaea3970d6c73ac50c6711e17a4705ea917577fd1822460058c13cd99e26d11",
+            "2eef928fb9c5c7b305c71e44040e6880627c14de798fee693a9fc30c4dfc7ad7",
+            "0086a0c0d2ce799b3fb85dcd93edc7698e5975aa6aad2469e482f376f2b2e352",
+            "cf91a5848c16239254f474a744cf3cbeb5051dc4794d531e6f1f732d2d9471f2"
+          ]
+        }
+      }
+    },
+    ".github/workflows/integration.yml": {
+      "on": {
+        "pull_request": {
+          "branches": [
+            "dev",
+            "main"
+          ]
+        },
+        "push": {
+          "branches": [
+            "dev",
+            "main"
+          ]
+        },
+        "workflow_dispatch": ""
+      },
+      "jobs": {
+        "build": {
+          "needs": null,
+          "matrix": null,
+          "scripts": []
+        },
+        "navigation": {
+          "needs": null,
+          "matrix": null,
+          "scripts": []
+        },
+        "apk": {
+          "needs": null,
+          "matrix": null,
+          "scripts": []
+        },
+        "jetlink": {
+          "needs": null,
+          "matrix": null,
+          "scripts": []
+        },
+        "gate": {
+          "needs": [
+            "build",
+            "navigation",
+            "apk",
+            "jetlink"
+          ],
+          "matrix": null,
+          "scripts": [
+            "6e0100c16096e38c7f219693d4338365738b3edafc2e97c07a826760761b6b01"
+          ]
+        }
+      }
+    },
+    ".github/workflows/jetlink.yml": {
+      "on": {
+        "workflow_call": "",
+        "workflow_dispatch": ""
+      },
+      "jobs": {
+        "model": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "726753bb392d339f352c2845d4167bdd65a253fa9e382b8b3bab08094d37bdbd",
+            "281c3e89a5cbd6a381d6aac035b41085af56cc285d8b9441021fe285905011d4"
+          ]
+        },
+        "android-core": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "0679550c42e20759fdcc1296b1a192271d690a1da9d9892c788922aab3b641bc",
+            "0932e06dc0ad8cf3656b5611cdc703da8b3ec9cd223dcd02b8ba94abf0ae4d9b"
+          ]
+        }
+      }
+    },
+    ".github/workflows/naver-apk-tools.yml": {
+      "on": {
+        "push": {
+          "branches": [
+            "codex/naver-*"
+          ],
+          "paths": [
+            "tools/naver_map_patch/**",
+            ".github/workflows/naver-apk-tools.yml"
+          ]
+        },
+        "pull_request": {
+          "branches": [
+            "codex/naver-support-20260924"
+          ]
+        },
+        "workflow_dispatch": "",
+        "workflow_call": ""
+      },
+      "jobs": {
+        "host-toolkit": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "bc22bb910688697e51a59b28468788a19bf783e33e48417d609e7c2840834dd0",
+            "8b966c1df88b93dac7ac35103ce1a13319b2d0f87f335d84e28902586312c4a0",
+            "0b1d8bb781759c659c2dcc309facab566731743b9e31090d64ee74da6fd3d941"
+          ]
+        },
+        "payload": {
+          "needs": null,
+          "matrix": {
+            "arguments": [
+              "-PpayloadMode=diagnostic",
+              "-PpayloadMode=diagnostic -PfieldAcceptance=true",
+              "-PpayloadMode=production"
+            ]
+          },
+          "scripts": [
+            "bc22bb910688697e51a59b28468788a19bf783e33e48417d609e7c2840834dd0",
+            "99dba5fbd8008ca4e27c20466bb6e4c2bc6ef9518b3941fdeaeca2cfad192432"
+          ]
+        }
+      }
+    },
+    ".github/workflows/naver-ci.yml": {
+      "on": {
+        "push": {
+          "branches": [
+            "codex/naver-support-20260924",
+            "codex/naver-*"
+          ],
+          "paths": [
+            ".github/workflows/naver-*.yml",
+            "tools/naver_ci/**",
+            "tools/naver_map_patch/**",
+            "openpilot/selfdrive/carrot/**",
+            "openpilot/selfdrive/ui/**",
+            "openpilot/cereal/**",
+            "docs/naver/**"
+          ]
+        },
+        "pull_request": {
+          "branches": [
+            "codex/naver-support-20260924"
+          ]
+        },
+        "workflow_dispatch": "",
+        "workflow_call": ""
+      },
+      "jobs": {
+        "navigation-ui": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "7ab70910dd55435e43ac4e39c7299a231a0ca033807c958d8faf007da7da3bf2",
+            "12d883ba115b9af3fd8fed6ff17a58fb3bba1c11cf85d46dce9ce555e049d378",
+            "8b966c1df88b93dac7ac35103ce1a13319b2d0f87f335d84e28902586312c4a0",
+            "3d145097626058bfd2c5dcf34d2dc2dfe42659868b81b29ec07b7f42dd5208d0"
+          ]
+        },
+        "phone-mapping-contract": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "83d18693aa41d6a6526224bad23e5cb4eac4aee500ad2dd8cd959da38783347b",
+            "5c3caab3f92a61154faf55d6bca8feb8d2307245d48ad344f3792b27dfed598a"
+          ]
+        },
+        "runtime-controller": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "41a952ca129ea7d3e5a11ab85abd6fc81177a51a7257f63bb5d86f17676bb392",
+            "204034b354134a928f6262dc8d2d03d7385da89d0fa9326682e88719897f3e09"
+          ]
+        },
+        "wire-schema": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "ca362972db9c1c878175bab346924e95fb1f8f30b0404f75421c8958e0c2dfbf",
+            "e9a32b6aa1a5a3f8d48761566fa47f99c90222ef6b261f61c30ebd1e1a1601e2",
+            "716de24fd2b94f058dd647c3e21aa8d4bc75f03c171b6eef2721f7513a6c6607",
+            "b358cef84fe724a83f235738d8855160717a7eb38f6f264c90097db32aece6d3"
+          ]
+        },
+        "naver-input": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "8b966c1df88b93dac7ac35103ce1a13319b2d0f87f335d84e28902586312c4a0",
+            "16d926143eab3fb470ca3df1bf82101bc6fcd3d11fb9d3a5ed94077a4adf0ada"
+          ]
+        },
+        "infrastructure": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "9aef3259b3a43b29ca9b77e338b875461e23fff08fb1daa0d664c42714e2092e",
+            "43d2b3a21d664d026109068045d63a9fdb15366c9590049229c084e4740c57a8",
+            "23bf30703b476049c80a3d7a4e514cc965e1c5eb6a726325db712766af0b888a"
+          ]
+        }
+      }
+    },
+    ".github/workflows/naver-upstream-sync.yml": {
+      "on": {
+        "schedule": [
+          {
+            "cron": "17 */6 * * *"
+          }
+        ],
+        "workflow_dispatch": ""
+      },
+      "jobs": {
+        "sync": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "74859f52b222d4330b9209885bd80784f8102f5357a295415aef126df84953ae"
+          ]
+        }
+      }
+    },
+    ".github/workflows/runtime-source-build.yml": {
+      "on": {
+        "push": {
+          "branches": [
+            "codex/feat-598-device-native-build",
+            "dev",
+            "main"
+          ],
+          "paths": [
+            "rust/crates/runtime-build/**",
+            "rust/Cargo.toml",
+            "rust/Cargo.lock",
+            ".github/workflows/runtime-source-build.yml"
+          ]
+        }
+      },
+      "jobs": {
+        "offline-cargo-reuse": {
+          "needs": null,
+          "matrix": {
+            "runner": [
+              "ubuntu-24.04",
+              "ubuntu-24.04-arm"
+            ]
+          },
+          "scripts": [
+            "5326b4c0df0f02e84e346fe7cc95c97866b789ac87d35d04e7ff3bcf974871cd",
+            "780386d0e29df310ef3deb43ae4c0a08201439aa7893459666b133313bbb9ed8",
+            "5450a2743c2b2ddcfef1770944cdfabde5142de48f920b76d91a3ed26710d736",
+            "13bd1888a95b3cb1b6380513c2c5b1f0a42472001756f943219929bd12b45967"
+          ]
+        }
+      }
+    },
+    ".github/workflows/rust.yml": {
+      "on": {
+        "push": {
+          "branches": [
+            "dev",
+            "main"
+          ]
+        },
+        "pull_request": {
+          "branches": [
+            "dev",
+            "main"
+          ]
+        },
+        "workflow_dispatch": ""
+      },
+      "jobs": {
+        "fast": {
+          "needs": [
+            "workspace",
+            "model-memory",
+            "model-pipelines",
+            "logger-runtime",
+            "support-runtime",
+            "telemetry-runtime",
+            "startup-runtime",
+            "hardware-runtime",
+            "platform-runtime",
+            "startup-services",
+            "sensor-audio",
+            "gnss-runtime",
+            "estimation-runtime",
+            "ui-connectivity",
+            "athena-runtime",
+            "controls-runtime",
+            "web-upload-timeouts",
+            "joystickd-runtime",
+            "planner-runtime",
+            "planner-memory",
+            "card-runtime",
+            "radar-runtime",
+            "radar-arm",
+            "radar-memory",
+            "navd-runtime",
+            "radard-runtime",
+            "carrot-navi-runtime",
+            "carrot-navi-arm",
+            "selfdrive-runtime",
+            "panda-runtime",
+            "camera-runtime",
+            "encoder-runtime",
+            "xiaoge-runtime",
+            "xiaoge-memory",
+            "ui-runtime",
+            "carrot-man-runtime",
+            "webrtc-runtime",
+            "webcam-runtime"
+          ],
+          "matrix": null,
+          "scripts": [
+            "9cbadeadd88137039f94b0d7064f3cb0590e6b6ca70e3ec8d37ea457862384af"
+          ]
+        },
+        "webcam-runtime": {
+          "needs": null,
+          "matrix": {
+            "runner": [
+              "ubuntu-24.04",
+              "ubuntu-24.04-arm"
+            ]
+          },
+          "scripts": [
+            "710336d0e0113f1ceb8e334afd9939a9f45afdd915b9d684b585139239aba15f",
+            "345caa033029680549e8acb2a8125ab314263c754e433c3166bd36e96de78fb9",
+            "40f347a3b7cbfa4834394f0c17784719b983894e632d2ba58b8e18d02d594bdc",
+            "e861c5b0c05f440bd68a1486d77a6efa43e28d8776f6ccd90018a6c2eed26f13"
+          ]
+        },
+        "planner-runtime": {
+          "needs": null,
+          "matrix": {
+            "runner": [
+              "ubuntu-24.04",
+              "ubuntu-24.04-arm"
+            ]
+          },
+          "scripts": [
+            "5f0453e58263f405bac319b506d6c4300cf72a0ef722047b1f1d2a2fd84e7401",
+            "9292882918c129ae70ec64044a0935d6610526c9f947b070d611aad4d8941cc7",
+            "7cac222ee2c83b3595c1aeaf0fbb2f84bb7f11028d9fd07af08e3d46934bf4ed",
+            "f390554fcf6c88a33e4df5c725bd030282a8a23d0ffdd625c45a36c4bd723803",
+            "d409ec5d719c12b953ea4703b8c86d6076ff0259c28070517f84368f39bda311"
+          ]
+        },
+        "planner-memory": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "a755d0a10612b12bc9f720cf70efa1ada47992074ed2a6d27fd601ec47590390",
+            "da74f7dc7e9c4e773aaf24a37ff1afe0e23be24ad9e714239e238f89e55e25fb"
+          ]
+        },
+        "joystickd-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "7b32ebf51dbe83e23b527a7b19c433ca9a72db5c8262016968a2616b45d18c5e",
+            "cb1e5bcaacc5e85a0c4a1b5c530466e255db7c8ecf1f25f654571d79fbf6792f",
+            "639355b2eec685d6816e3ccf1738e1e1c5f77892917d67db346c61381dde057d",
+            "f7004b645c6e4971eef365063f5a9380c3b3475ef80bd625c0827048e7e67b27"
+          ]
+        },
+        "carrot-man-runtime": {
+          "needs": null,
+          "matrix": {
+            "include": [
+              {
+                "arch": "x86_64",
+                "runner": "ubuntu-24.04"
+              },
+              {
+                "arch": "aarch64",
+                "runner": "ubuntu-24.04-arm"
+              }
+            ]
+          },
+          "scripts": [
+            "fcc172ae8d17fb66cf4c894986191b432032c253bf02ef53e3d07bf99f531c30",
+            "eb2140fcf5013e2dfe7f97c59080b845bdd28615338e65a12f1268ee84b4aa52",
+            "57fdaf310eba26762332962996b7d9198577d5dcbb3b5aacd2953fd1c872226a",
+            "70686f83a939822f1b2da3f4083b09812329016c9d7176c9bb26c9bb8600b83f",
+            "f5db91c6477f79655141575124f871a3a79f671aa63d65683d3d6bbde11e5272"
+          ]
+        },
+        "webrtc-runtime": {
+          "needs": null,
+          "matrix": {
+            "runner": [
+              "ubuntu-24.04",
+              "ubuntu-24.04-arm"
+            ]
+          },
+          "scripts": [
+            "1b725e51cdf1269950a21f5cc602dba9bee3c2ce17189e3f85a47d31752e184f",
+            "ab350fafa50aadd8bcc0ada952a8e12ff207f0e0a5975e4a12e77db237a588d2",
+            "8a6ded36e6332945861639c8f0cc2346aa4ef32966329e946531ca92771416cd",
+            "102ec0bfbda515db075e961547bbcd578b10f3d33afa83a6ad4b5aae510ec30e"
+          ]
+        },
+        "workspace": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "1ddf1311749a5b59341f96b0c3dde422444e1e0e49169874a9a813d1cd994a36",
+            "81ad41e503aaf1aadd859e01ec0e6581fa122f7cb2bd022445f6da9610a95324",
+            "444619e5855a8609c72d7dbe6e964cf9f306915aefcb5e34884dd01d02ffe2b2",
+            "02e9f2b046d3d40556ed8eea7b40561ebcd3c2b14928f1b9fb3998032c88f377",
+            "930c5fd4138b3288f04e7af12cce8b60cc41736dae22321e224cb16119113fb1",
+            "2d009b4c2fff7c140a0e853344ad59d7dd2bd2a362627a962da72a2e39704a8f",
+            "d86e3044557aca533a34e088f5f1cf3eba80b8689fdfabe410c8c8a7cd2e6503",
+            "345deb76ae88b133b29fadede62056ca9f0c830813e4f0a7918d09cddf109079",
+            "1ce9c5b5bcbbceb94c73330a09189b3206de50ccedbbc6d77ce5487c13ae9601",
+            "acd6fc2401d0d1fb484977ae5f192b3ab31c7f04b97742afa583cbdbce8d3a02",
+            "33304b54e6476adbb54d6a43f4a774ba3c5690a151758a10f82865e7e476087a",
+            "57a4f52b73849be7f7075fd3a2ca8a4421b6e64e2f896b10ef47c24a7332e390",
+            "dda0033e20e02fdbcbc4d0c70da087149befb7680676f82b6b849912b005a280",
+            "51aaf2b0211759982c638fe067ab9db2c798e5fdef92749b6d1ef84c706b7e0a",
+            "186dcbb822f3ef0e54011624f9431ddc54b7c769b4ff80338ed7c8371910a513",
+            "cd746e927615ba4302bc91e14504e1dfff497383673b349b35401bdd26a372e2",
+            "f5b2bc857f877653b5736ac14b571c7fc259fdcd0500fe4409e97fe36beb47a1",
+            "4d2140967e18e185951cdb2405a93c30b6094a33623487647936bbbe15d87616",
+            "02eeaabd78299b3314356286bec5771a082ad4bada91268c20115325aa025a0b",
+            "d7520695a442a686922720da73e687af624c4e144c2344525add5c438a91e3c0",
+            "7631e53bdafcde46c50cb85749a8f23853f88923da3321d3da70846555546aa4",
+            "96245c5eb1e1e311025b6c70338e8614d3df903c11feedee0dccb843f0570e2b",
+            "f52991dbe7b911dcd0ea4e5ecba8d511f0a48ae1c8ea56f09b47768284c0d103",
+            "ea9f9aacea96d341a22503c50b4fbff34af73d27b8204a2067552480f47e88d2",
+            "3a51c0bc1b0f7fbad230ba8c776a0f00cfc4d12651ba89ffcf22b7e95817ca73",
+            "20b3be32222016e7d982f0b7887b3f5040031b8280d50736910d08dbed030818",
+            "0d845c0d9d311ff0488bff0e1ed638d400d3a3f2eaaa17742fe9388a85a18c68",
+            "ab6d41c80ed8fe1af0227e25eb3c2270206b08b3dde427710fe8217b112e95de",
+            "e667cd68b6b901285b8d245fe4e2efddbb230d245886643023951893ed0dba56",
+            "77fae08609ed2d19c1eefb03d115049a2a0026a332f735ec877eb23297071c38",
+            "cc79e82d9c78fa0441aa096818279cbcf59ddd304490f9b6cb16962bd654b3a5",
+            "d6935908a09c46531fcd5ab7cab6648591467de61746fa954f9c23bf75e602a2",
+            "2ff0ec4a69508bfac66840401c11198619b4bdce81cadfa3c69a6958431ea6f9",
+            "c965e704319e4d441023601973cdc8bf607657f8e83d4632d11ed1848e856bdc",
+            "34261e8d674322e5dfb9da3b9c95873bb157eda516c8a9f9bf5ad27422c9330e",
+            "7f8251351798c024076586a79af27da032fe7dfb64beecd839858fbb79b7fdf2",
+            "50d03d9b742fa0128117f86d62a0ebb048c6ea3f26f486181e5769e43b4d3c7d",
+            "3ef6f79651282283668307486a28121023aa995ddb06c5ef553d6de702158d04",
+            "67eb9b897511c134e1eb1b8c3c184fd8a95b9c55a2f9824655a10d839dfcf942",
+            "7da59f782a435955202e3e5f8837b16536054af3ae0dcb532fd2c5f009713950",
+            "a06c50854627359f300a4f858e926c736114ffd6cf262315c2d446ba69b4dad0",
+            "b44484151f3b1eaabb76d6f40d8f4b2247a357d29957f013e392f3f46efab6f0",
+            "1b0ce42fdf270b6ce1dfc4eeada8a86c6ded6822524b824845185a24adf2a2d0",
+            "4e820b4fe4d68ccd8e7f651edfa0e422efb238268b43a34101c2b7977c0c47ca",
+            "6838304678c8b4f98d0eb547ce46539f09ec8d689daaba06c05c0e5c24bb4d7b",
+            "fa1fdc7f1f2c087fa6090e8b8cce71eeda8c46edc028cdc995d483e326b649dc"
+          ]
+        },
+        "xiaoge-runtime": {
+          "needs": null,
+          "matrix": {
+            "runner": [
+              "ubuntu-24.04",
+              "ubuntu-24.04-arm"
+            ]
+          },
+          "scripts": [
+            "8e78feeef107f4d7d96c778131e15e5ef52326ffe05e7ded05d4b89716ba8864",
+            "594eafea9dbd4afffee156c754f71d6d8bea8599d0a7ec7b4e0c2cbdc65b81fe",
+            "b3809da9dacab918cfc1b723edfcaf80eafb78efe24ff7757d9807f50859c66d",
+            "2a63dfcb67484afdbc181e5cbd00ad7d4f1d0d36241e2f71ed97a61627902ead",
+            "fd046a71e722d67475fa0f1a9a88a770edf5752ae1414c0f469581af874872e7"
+          ]
+        },
+        "xiaoge-memory": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "c3007fd843332ca9255f1d45af6fe41ae435031e8109e6b7ea4e47701feb1ac3",
+            "0c4a0ad4ff4aaa58cb425eb79b6d4d73c2421d9c874352bcd512dd0a4729b52f",
+            "a04c7afc0847812da7fc688ae575f1fd9deaf766401ca0fd9c4bd0f3c5142034",
+            "d339727a3521cc454244c7027f40bd6969ec452998e39a9015db4d1a953ea604"
+          ]
+        },
+        "encoder-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "17a81989e605974a97e6777d1cdfea916301e04d88cb77b50a3e05de90102ffd",
+            "d59a269f1dbcd197523d73f03e58f8b2aacc33d13520fc1de69c3d717e15732a",
+            "c7b249ae82c955166d4b66d19c4f291e48cfe29d6ec15d34ac991b6b4bf1359b",
+            "d8a38675c5bd16f9ba3aa374664c53dcb609b7680690d292685c2c76fc9ecead",
+            "c0a8bc662f7bbce8b82ec9e7a399796f1254cccd7219855ed01221e259d64299",
+            "7e55b476894f2f5263d3a251690179b0d08057aad5e0226d9e7a6743ab05538b",
+            "35df9dc40fec41de01dc117120f7093289b21941e808eeb6a3f67ad161f67024"
+          ]
+        },
+        "camera-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "fd7b3e5e47b7f6c75855fff15d320e9c7e07be290042ea7192d9d474cc5b054a",
+            "3afa523c054ac948d263dfbd3010d8c167a1b1053936596c028ac33dbca8a88f",
+            "32dc7f333f85b3061ffe53fe67c683ad4eba698fde8dc9bdaa9f4f9a18aaaede",
+            "8739e18014fef9c548fa68f6027a819982325b1724f8e301f6ebfc3d3a7201a1",
+            "cf4df7602b486ed01c9275aa0c715ed1a4282658080196a4e7ea738eabd918a2",
+            "5512c38ef31774a33e64d279e90c7b8f536d857b18b12058a688ae8b4e9b59a4",
+            "e3ab2d1307d3975b7311cf23a8c0f0a071fa29db770aa2d893be5dc85373008e"
+          ]
+        },
+        "panda-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "ca31e8f223bdc5a8539f642cbea5012c49e70d8897bb9ef6e74c2e0794249501",
+            "f1a1c907048c6d619f4b797f569703fcea3e3171fe706e057667f2fef077f7e6",
+            "131f1f4efff188cdbeb5c4f5e217eff353aacc2cf6a003dac05f9841373878df",
+            "2eb9b273980635ee5d13b8f992989ab051c598bf69e61c8c5771f1301a5eec60",
+            "e9ebbadc37269de6aee6b38854317f4b392aa1d32bfe61befce558f75d7791bb",
+            "bb6bed22dd874ab1d30e865c77c11a3a6b0025f5de15a09bd02f70d848f2fb93",
+            "3dff7a93b9f8e90a9bfbc6f2bae5161af461eae672d573bea08b7cb31d391bf5"
+          ]
+        },
+        "selfdrive-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "5305e8c6c8058b96366a6fc045cb8b44331576121c68aa17d40f2657cae36de1",
+            "3d6e35f6b6703fed894976a8ced0164b2810fbd9f2bc9e2012e5af9bce84f0b3",
+            "7a826f84819ce6dca937d3412dab324297c4f8601f729c86b09f786a38b7e049",
+            "8626939dff7ab9ccb9dda3dbeb5e8f3bed03450e8ed34b9fa2cefb5d8a500c88",
+            "951d0f48ac6153a9229450c79b240df50dc70d942f6eac39508916fedf1b1f37",
+            "f497495e6ed4fe9e156df47c6543480cf442f6705fff198b070c28e8ba73bea0",
+            "85f473eba9f98f65aa3800c7418c4cd9673da46a164278ec35b6cbcb58d31155",
+            "4328de82aaebdcce1cb9f17d74a6594f874bbc4a3e07e28c9e509cb6658719d0",
+            "ab932eb5ef3dac315a32b02930bc9bc344fa93f12a93fb168b614ba757b3c374"
+          ]
+        },
+        "card-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "f75e48a987f76c2ec22f3bc8f8c77b207a9b9817c9213a4fc69344d26c8e4c34",
+            "3d6e35f6b6703fed894976a8ced0164b2810fbd9f2bc9e2012e5af9bce84f0b3",
+            "910300bef154ef59f88eab9a8bc6e04bfd3cb9d749fde0426c60d5f2240f95d1",
+            "8626939dff7ab9ccb9dda3dbeb5e8f3bed03450e8ed34b9fa2cefb5d8a500c88",
+            "b2bd79a0a05cfc97c17279b20399eeac4eb967998fd788cb45bf3c71ef1a2ace",
+            "504a037905cd802f380e308430fab60e03f81ce4c9b4980952c8ac633cf2a835",
+            "c57bcad28dd847689fb19749f843243eb7fe2ece06840b81e7a9352967b62f6b",
+            "0fcf168ba7e9c7ad195c6fb3832d5df7d3bf704920384a60d7c060e78868279d",
+            "46f0586cf5a748145d41bcffd7263f681d6a8350b1fb20e0655ec7a2d4fff2bd",
+            "c24515201d812a112455a0e611e2a3e11f9782d2b38ea3f13f7ff19334389b72",
+            "e55fdb787cb32344da2b75fc415890317ed1440ab8a7d1aa719427e86bcebaa5",
+            "431d419e2fd255e3fb918645a98898d36e10b0d96017c15e1a01d868d17afb1d"
+          ]
+        },
+        "radar-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "cab102d7e718b41f602f679be62c7161e8cc08600d4b737ca718852128b4ca3e",
+            "0994542e905ce55bab5a1e48460bfbe1a05c468be3f78f579530ca431ea85bbf",
+            "1dba7837485ce3e071be3a520691b648057d78261153c43eb38b9cd77222dc10",
+            "9cacbcb9c37d2026b33fda90dca9e24a808098cd610f99b3c8c706477ca1cf6b",
+            "254f457162d172def59164b8d993df9f448898f444d6191eb7ef53b852b12ca8",
+            "c1f41bf4b3f715f061e32d56bc86b313fb6265039b923cc3f7779530bd9ea8d4",
+            "12285738100b78fe94a9f64ce851bd9166c9b99704ea212e9bf7533c4dcb27a2"
+          ]
+        },
+        "radar-arm": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "cab102d7e718b41f602f679be62c7161e8cc08600d4b737ca718852128b4ca3e",
+            "380b0231e2ac8fe6acebc01d2a4ba2dc21f066731d5defa336fb6f18dfd87709",
+            "769849a4c214487851a79e0b08b4d7288e4581dcbc3ccc8f199bfb8feb2d255f",
+            "1850d8b23c68f70a62dba2d73bf4bac4e757ee910d7e80f8f5026ee216515600",
+            "610645eed6df3172500fccbd34f45c09408b4280e87b4074436aa81f29ba7381",
+            "9bbc76c02d70033c0ba593c848503be89d8a6fefa8cf73b5a07741266c22028d",
+            "a5ef5296b9dc2f58297b35442c3f132be8269cc0c1cca5bea107b21b1a1c378e"
+          ]
+        },
+        "radar-memory": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "ebf125b1ac9a460546a5dbee3c6417a308c31fc35079406279d929ee5f795439",
+            "93986f7a1ebdf996cd7e782ae92589839c4608613a1be48820c5198cd7bedec9"
+          ]
+        },
+        "navd-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "03604908fc4cc295a6d02e38fa2b25abcdf4e0d7caf04406cbae1e42f2d021cf",
+            "388441dc262a64793f769d3782c94c87c4f4b9597c7c71797cd3414a085deaa5",
+            "99fb04df804689aae6e29a97a5057684d3678ebc4020a4bf746ee8163ac51fe3",
+            "8e1af92093c4ea4f28989ea6c5e15f20b3af5030e762861ea23fa85390c53eee",
+            "084e765143c0a1ddae11e38bd9d9e4eafbae16f124225b7198b561ddbae667cb",
+            "3ca559de016e9dd93145aaa8387183cf87f06197d416b81acace129735f0f220"
+          ]
+        },
+        "radard-runtime": {
+          "needs": null,
+          "matrix": {
+            "include": [
+              {
+                "runner": "ubuntu-24.04",
+                "machine": "x86_64"
+              },
+              {
+                "runner": "ubuntu-24.04-arm",
+                "machine": "aarch64"
+              }
+            ]
+          },
+          "scripts": [
+            "df6c58a97ebba2e4b2ed6faee3535fd6a98fe4d3de7a704cd79bc93c4e6cdf97",
+            "655300bf762138391b8e3ddf9342cb7604c68d043e43d0419fe290a78b3a23fe",
+            "b85c3a2bf2a3a837a95dd5b18f75930edeb1a4e2559ddcc3f496fd5ee776c1ba",
+            "3d85c13f82b0d8cf244e01e9c04f4b50895009ca08c4e6a7dfb0b2b2a0cd147a",
+            "f5640e8578014af96b848c8de67d1f841fae2bb33fc7f0d1585d73d5bba1db37",
+            "c294f19a83fc692dea93c36a5aec470818798af0fc127979491579ffa659c5fa",
+            "80795b0109c175ba7eb4c2034dce6a7885c413f0db1eabe5ccc55e4d2708d1b2",
+            "2e62a61bdb94cb4a7cfe648e319a2c5f22a4e29d31f60699c14d98882c1f4a71",
+            "ccfd282f3f5b59e1530a651f769532ad2c5199ccfb5f88cfe501f379d55c9a41"
+          ]
+        },
+        "carrot-navi-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "dab08ffb585414ccd560644c2bff24530b737378fbdd22c782aea82a1544a81f",
+            "d3484d556ac0329191b5693e46b7ea5255e30bd6a3ece2d5a3c0ee30bf66f636",
+            "c5c304a763c439622cbab442cf76cda2ae56f9ca5f7d19e45df3b690f3f75250",
+            "d21e9873ca5ca12dece1ecb03e1abc726518cbac223bdac97384f2b328b279b8",
+            "7183c00d5d489d110089fdc0835db549291533fc827871cd61008516157a1b01",
+            "08b22e901eaf372f2f03886708cb754aa20267024862a52c45f3eac779e4040a",
+            "3d740c2bed5239d43e79dacf9a3afe4568cf9a3bf373e5769cf69b85d09805e6",
+            "3258dcba94d872b8e96825ee9a9eecb748e066b8efe8aa471e5d3f5f4c1fd626",
+            "39ba9469009c9f06407e4d544c98be1aab639f972121af09e4f097cb54f56542"
+          ]
+        },
+        "carrot-navi-arm": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "cd8fef51447d6fd558e80f14180e834a72215d0f5be8a178594b7d9debb915e0",
+            "6db8ba25a87d10c03f53aede4775036df2b77d072381953845c40fbf7051be51"
+          ]
+        },
+        "support-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "be371b4ba682e94097ee76d8f02fc4909453682c215e2fdd387fb2cdcf741aa5",
+            "76a60ff2cad2995f5f70371d74916d9a957cb04cb19bfabef1ba24ee543c04b6",
+            "c9a82166ae3463553b3bab736c408d832898a448dcf2a7f2b5b29102ca6a5c58",
+            "fb6f96a2033b6c5c749d73ae5a8cf888f097b8b245cdbe59d52bee87df4d56d6",
+            "9d4c10e28d9860d8074e3b9b2d9ae1d48ff9c0692911a5222322784d908650c2",
+            "f695e96f9b64a756a99a154c152428bcc19a4f32776b3290153dedae725cc5de",
+            "296e320cfea18944bad928587628f944a45da09d804bb8bc1231a0035e9b6f2e",
+            "6ac8c0a763fc67c4fce337cea4d8af0363c93ae1159b5ce376e1fc6024cd284e",
+            "2a76b2f6b8d4a388de4fa3312f408a6343ea0df30d0ba32f23e16939f2f82d4d",
+            "76b015dcf41f03399ae15720f557372514b725fd4c6e500c24a8a8cfc8ec4919",
+            "5529c6ef7ff5623805d445729149a9d381250956c770387b847c73367e7f814b",
+            "8c503514bbe524b5b75551022b5b7d606bf8abed42776deac3965266d1d27245",
+            "1af2b75f732aa97844e881cca9a152d21ae832fb933510bfe817489e442029e4",
+            "2a037fc3754b61c8be17a7bd3625e41d00781c6857f9437e825e0c1cbd25d824",
+            "c002262bb7f2f241c7b78f06a457fceb069fef106862a8a15dfb50cc28f91b64",
+            "7cc39a12328fbf34811d6e71b5794932671226f0605220b14a57a254692d72c2",
+            "7b4380fee9cd9b1d8e7364efe91d2f45982b7b89393d1dbf304aca03b82d42fa"
+          ]
+        },
+        "telemetry-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "be371b4ba682e94097ee76d8f02fc4909453682c215e2fdd387fb2cdcf741aa5",
+            "4088f24cea23e011d5a6ebe4183a09be1770865699c0aeac9662dddeac657cde",
+            "68d24a5a7023143df65307d3403e591bd089718a046b4b5a02032e4507034518",
+            "5ea7688635bfe222c7720763fb8b7c899100f22ffdd3160389f629b65ab782cf",
+            "3418b59a8e6b599a87f4a4d46bb2aea95e950721177153f770737cb5509f3f8a",
+            "b846e1d86ad3f904fbe953dfffaa6b51b38eb0d3f57acb5b678e29b9175548c3",
+            "959bdcc98252ca0b85b1ec6735e6c9c94e1e14fcfaa4bb8e05e7f55159fe4ed9",
+            "3b95ed3b2e4756d92c8da430ed1a9ce11a45f106c725c9fa3fe41d8996a8e7b1",
+            "704dd3d104eca3382993f2d301f2fef2a8afbff190689439a892b2dfcfe26ea4",
+            "8989550ab4c3063365ecbc705c7db69e0fa90b940cd4ca654de3bd7c61302037",
+            "94f0835e199dbc9adbd30e4affb1d1ff7141f254a571b4e297f5085859197f56",
+            "ef2575bafec778887183e8d594c6b104dfabfde73a2ca1f4c65057db27ef088b",
+            "2fd9907a5c154f240044c7c97bb1baf16cc3bf7b891b727dada0d6bfc2897a59",
+            "f77dfa150ce08e04525afea575bc4382aeb6119405191734998a4478c7d292ba",
+            "9bebd59784cde7cc5879057da71dbc9da7171965061f3b519564dfcf1b2f04f5"
+          ]
+        },
+        "startup-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "be371b4ba682e94097ee76d8f02fc4909453682c215e2fdd387fb2cdcf741aa5",
+            "41f5cfd800d4cd11b90edf62e2fdffbc5c8bbf6027f416101d1eb2040fca1350",
+            "894e422b90cbd97aa3579ac4039bb49bfe631b264055241a8b724350a77e323e",
+            "2f5d249d0159a5fb5d574815c48c2a9e66fca0b11d23b78f7083df97a6437e83",
+            "bf5477b4ae2e9c5be01fb30ff2b16add72cde6cb71cd273471cf5a2abc098b44",
+            "20c107441e0dbde433c9d2efe28add0b11ac0db9d201700e3d321fc16cf548b9",
+            "dfe484de406075ffab9ef631226f3c212380e8a31b2b4f1ed994fead3592a3b9",
+            "a243e203e753c06290ead538dda540bde3d0857858f24677db3032ab78e7ddbb",
+            "774b9e5357b34604a33f32acfa6f327c28c30d64313cbd5da52550dfcf12f7c1",
+            "0e77f89255e5b0ec47bc0e02d6f341c6bf34c2bc3cd1527a3e2e12f3f974db8f",
+            "e21340c419210b29cce741353a7adcbb6b5cc4adf9a0c73586e9784cddde8a1b",
+            "dd82b36c8c49ff732da14eacef1b93bd8c210697740bce793977495ed9164e7d",
+            "1b04537db1b2bde7c4d23baa63ae8222052485e1fd997119804abb3271c36495",
+            "7da6edc3a97c3fe80df991bcf58ae91ebc0e5ea45d336beb397ba3d1b7b2d311",
+            "6f52a8f1e0e2c24f1d01bd7ebb32d1e542860269b3d550468f1885254c4e289a"
+          ]
+        },
+        "startup-services": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "40da14e04a990a1bb75b808fb73f7be13746f6bfde8b982a3adb2415ef2877f3",
+            "ffb077d67355609c4407c04b08d255aea2d18f61c4b7bfb2c617f4a76aec47b8",
+            "e164df7129b9451cc4902aa82a6610e2a60889c334b18750db84aed4387c1d9b",
+            "706eb0a617fbdab042857572c4b5308fc231cffa9b9c3d5b2a99fabd3196b4de",
+            "3ab0946948375227f4a231422e1ac489538d2b0f6d34936d22bb41a9cd23c7c8",
+            "d94b0eb29b984e81182c99108a07a1768b11a246f482cd266f63d1bcdae44239",
+            "16f7f3d21383903644012f358f6ea84e37813acd116d5e9355f48843c97f6149",
+            "6bbb94f57006390fccc4d5b8d73c7f181ee58b4e8542aa45994e7c8b3872842e",
+            "7c61add5135e3bdc9afa7b6e11ed7f232c152e37cc5c157331d4fd3c483479fb",
+            "5c4e20cde5411b40e81218626c993c6d52981841a8f02621174ea75365f7712f",
+            "d4b9ea2170038f238f12d5ad791a934485d94b6deb0251c86cb3b029463bc82c",
+            "2ab039cb8e6a000f6885c02dae3195374f0e8c12a2c25a37a54b9dda0e4eabe7",
+            "8caf5afff3e5caedf1e39648026c74d7d2fa8ad0d392a16ec83e45e1bb80499a"
+          ]
+        },
+        "sensor-audio": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "8bce2205d557003cc5ad57ec09403a8275d1bd08394e413d7d40e71659d6be52",
+            "0f2afa621a222d8c9f91d11575ac35ee925995035d6747f85439422941142814",
+            "d4fabbe4d00754c3a1a420348fbaf13c9fc8c1f397537d88ec329584d04a3858",
+            "05232dcf226fba297df24912b04588d724831dc64adfca9c81d1732f9aca9dd1",
+            "ae68e0a68f97ce89a9da8d738773ee23f830ce294f69158e2bac04785b6506fb",
+            "c8a8242a507b86dd8d74a8524e7e0912d848b8764ebef8e3845cc1abaa896684",
+            "0b1b2a49bfd2947a50e7b2e6d22bd5f7071e37960f0d70ee3eaa0d46860acfbb",
+            "ed0a26450b9780bd12ba27de8405511d2a8e3c6af875aec3f805bd7365ebef7d",
+            "8fcb6780f0191b996a50548c9817344011150e8c113499d005229ab9a98c64c6",
+            "e53af5ce9f80e4a3f63e64840010e50711670499c8d029e2274e857167a291ed",
+            "49af37fadfc59978e7fb9aa2d248db52e06be49ca1d512bb0d90b0a2cbf98558"
+          ]
+        },
+        "gnss-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "0f2afa621a222d8c9f91d11575ac35ee925995035d6747f85439422941142814",
+            "364a7cce3a4d49b1cd2ac3765a2aee395db5a164d9b35a290fb901c4d42818a8",
+            "ebd9ec445cb6baa571d7a5d4caae26f38a1a46c29828536b1923e8a363ab82b7",
+            "dcc71dfb0270b50b6bfcad82044fae98c55747cba3cd84b85173100398e7c088",
+            "df13f62affb18ec11f55a7e2cae3039e316267294e6680d8817617e7b8168821",
+            "7c7fb294532c05576a1e4b26981ee65c79a3b51db7fc6d59c4330aea5183e6d4",
+            "d62152841e03b83f707198488aee7cf9fc21a5bc75ca8e43ad2dde5287542412"
+          ]
+        },
+        "controls-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "54c4be127802ce51405a2ae139431e287850232271561b4580daf147e3ee7e3a",
+            "260997287be3fa74ac4e809793ac04838801225bd242c42e8f096bb3c36bea43",
+            "3d62abc81fcd5e2e0e5682e3b225b12e81fc54baccb1b371c2f060023f4afea1",
+            "7c9f131eefbd99e3f7d13109a074ce8086e489ee38349e23e1f44ae6d3d644d5",
+            "78f3e491a389d95f73c992b9bd1a28953063ffd4b76085a4506a2c658d26feb4",
+            "65733a976ea0ada5db70d0319b248a9560693980a1f83841b6cc8e061fec24d0",
+            "66be17c9cc7e73f4476249a33ad6d1507fbc861d331137b4926191fe54ab56d7"
+          ]
+        },
+        "estimation-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "54c4be127802ce51405a2ae139431e287850232271561b4580daf147e3ee7e3a",
+            "293939893c8a4d156c0a7428dc28b349ebb6366fce33be2bacd3b471182570dc",
+            "1bd6520feabc1824bd9f9032404c3d9924de4c0c0e329b8ba491bc3866477fd8",
+            "345deb76ae88b133b29fadede62056ca9f0c830813e4f0a7918d09cddf109079",
+            "7f84d81c0128cc9145907309b97221a0fba2ef13f9d414a37f6b7504d49bee7a",
+            "94eb134acfa0e0ebdf2ceff4bbd09536ff3fb1decd7b615d99cccb82486497e9",
+            "8800ae2c4540e5d1ca3b0c9736279530f6ff2c04339c34faf7e84ea5e4237293",
+            "1b4fe75a45051ede5c895f6348352b944b5f831a143025889dd95dd0379e68bd",
+            "edab57f92a60bceeec5407b05fc9145e0439725a384a2f1c82c848e94a507ce7"
+          ]
+        },
+        "ui-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "6ddeac785364b6fc928de1986f98283d7fda6ba6bc8b1212d973c6e2c4e96ca4",
+            "823148401217d5991cc8c66385d57e7f0e6f142368fbe87f4d0345c16d700e48",
+            "27557600a412ca610a55f1d0f8b6da166ad0d58946528d32f6c5cebe2e9b9459",
+            "6e6c4460769bff9fa3136994a206fc4a8138ddbad4eb3055778bc7303491a82d",
+            "f85400da4761a5aef395f1b23c8915dd86b0b39b4bad97f550082c1340edb59f",
+            "cf4453149dec4532357ceca16d4b446d3ab3055b72b4b06c2a45d67bfe4d3523",
+            "5e0d329bc81600bed358501d3b5cd83d2374b3ce8fca47e2b254e6024c8bb47d",
+            "e6c701ad97283fcea6f6d218539a365c62f83feeba1f7c84ccd391a227cfaec3"
+          ]
+        },
+        "ui-connectivity": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "b68e97a73382e2a652fbd48a71e1c3cc96ede43f4bbaa48543f93e86b5c37751",
+            "d3d87d27d395c65502511dd21c606d12e61ff4db2a020dc11e2dc54718858753",
+            "e381da235cf622c5582fa6e6d09d2a1ec1e6c579dcf3e0cfc9da430b42212a70",
+            "a013207d300d397b044dd3a76f4d1e5da6068958d96e5bd9f7d4b9de98a2d385",
+            "06dde275d978875f054443e379b6ad031c47868f6f74906f25658d5e63b1a526",
+            "470f54f3aa39b86366658b95dad2255a312dd16f68c29646526ee6806c9ad125",
+            "da0f6afdf0f386b17ee4c797ab69ef651a43c5d485168a5e02a45b38094f9732",
+            "3a04f2a2ef0f386722ab8746a5c9d6b6b40eeaf6a4af07f8433b739a735ab315"
+          ]
+        },
+        "platform-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "0f2afa621a222d8c9f91d11575ac35ee925995035d6747f85439422941142814",
+            "0be0eb895af10e2ae604a6ff85bbd8d400a2185efdd9e6206c34fd9f8613af5d",
+            "860896bac3842f80cdfa6b56a8cbb123dbe6c78a995223672a376b66093bcc05",
+            "e9353fda4fc48ff1791127117e23d5a25bc1d45ad569f5a5bd5c625993790af2",
+            "10b70ec00b9f3082ca7db16cec3504a3831698dd5b8b3eab82914477ff4c753f",
+            "2b8bbb9389dd1d1f34d8f17b9b435f5bbbc0b41d70584ad07a9961eac3046b91",
+            "0f7d4f46396977799af54a79cbaa2377f0eb8a2455caf35c210fc912be25261d",
+            "76231c41cbc1428558a380bd9ff0695cffb4c6e699352e13399fe44acca4f30d",
+            "b18cf9e1b54fb712889f82d46d106f8d40020dc648cb0d97188a112d89ad8d89"
+          ]
+        },
+        "hardware-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "0f2afa621a222d8c9f91d11575ac35ee925995035d6747f85439422941142814",
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "2837882c5c7acd2fe32fc8e8880b0e71f859c6981ee9a9053b2a1484b75ca9f3",
+            "0be0eb895af10e2ae604a6ff85bbd8d400a2185efdd9e6206c34fd9f8613af5d",
+            "0abc5b4ab2bc64721c50d85333117a6cdb5b3513f617631e78bea31e6e00df2e",
+            "13def52c221e4801738f2c59c73530639483a50d1b05f43dcde27779d58e193a",
+            "11cf2ac904364c45cf7ab3347e892437391785a1a460758165e464b798af7524",
+            "66becf8061840cb5f04fc919094ecfa2120b5b9319ca4cda71ea2e2de0438634",
+            "334d9103acc52c01202f57a5d9e6ea07f3f040138a804d46cbec07dcb27edc44"
+          ]
+        },
+        "logger-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "aa808fd75d69032f85efc4b7ba3c2196b3d0b2e4c2ca0800dced1d9f6b865ac3",
+            "1ddf1311749a5b59341f96b0c3dde422444e1e0e49169874a9a813d1cd994a36",
+            "a86edec2fa619119c4cd2522edf37b30b8d446047cbe24842c252f65ea6e19c8",
+            "50d258e3ade0fe3a2b5b7f87d51f235bc54cc0cc195db7b53e18fc4fbf4d1086",
+            "e266ed81073d9bc009e7a4a5fd4b2c7b9a8d7156b649a9569216629dcf08f896",
+            "0bc4806cc39745e0e271a4fbcb4411737ea043a17e1294a91f0f99e562ebe970",
+            "c34f3e9758f522dc5f5fe455bf011cc7a3d64d5c901db5376dd1f188cd45b10e",
+            "0507d61646064b8df635427109b44053a0ed35c3ba9fa166246d7121873ffde8",
+            "f113ee0faabb28785f36ceedb4daf0b6ec7406639995f5a75cc88213fc5bd2a9",
+            "e85ac7afeb66084312e9a1777490c5661e8a278745dbc8ee6e0b4104e863f06d",
+            "c3119a37b14bbd2e51f7c5aa80995e5032b3ad8e30717146ac6c1cbf734871cd",
+            "e7bcfc2bd613b73f1d3171dac4aa83338ce065c5507ca696ed1eea5e00da2ef5",
+            "6179b1b7b5e5faba034227c0d48fac64bcf07c59ae3a64914cadfcd99973108d",
+            "eab1c0ac3612bf12a84e5c8e446a8cf82ff98831cdecd6fe3b2c69d76431916c",
+            "62b71b63b8f22a8f619113bdaeae4bb6a47b798d852a91a2e6c13939e2ece1cb",
+            "4e1d8c0c44806b6e593429b780de3434fed2ca6e92a07202d2fad4d5e5803a97",
+            "77cb8b01ae0090824b407b9325ff0016368299179321d40c3f8b230ca3616d1c"
+          ]
+        },
+        "model-pipelines": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "53eecb542f734235fb115b7984979898e0769aaf545296629dcac7d9d65e2050",
+            "01b5260c6aa5e561b1d7acb99a4669262a93ccd1d4941508d073b7623cc7896f",
+            "a2c674a71eccc34bfc6b23b84fa57c4504479bbe3239a6fd59d6a124f326a39a",
+            "ba37ad8a643e8c5fc52def608c58db2b0f09ac336d5e7da273d30e80d7466ebd",
+            "2b5d0ed0d4707f5cc561dcaa1d56fbee2a92eef3a8eb921936a99fd03e389f59",
+            "882d5c9f03773a39e6a6f7719c7eb5dd39ce50078c7044b4e1d37cc6e4d32c98",
+            "5697b59b1ea724a1174b64239bc8e54130159c1eebe72a19a24cfac818c9610d",
+            "ac1d82875e2253709e636205f69dadc3199e4384b4aedb5e379f19c0c741fddd",
+            "f5b2bc857f877653b5736ac14b571c7fc259fdcd0500fe4409e97fe36beb47a1",
+            "dc6ebe8d1e353e7531a2428ec97033064847b0f85152512c9c1883264a2594e1",
+            "66e4b050e2b17716871cfef4edc34fa7e27527bf871508e181532bcda1836edb",
+            "eee9f6f100387f44c68f70a4e92755d4d1f4ae1f2c2a1b4f615a3ad6b945b673",
+            "8d77d852eabc2881418799304623ba8faf8ff72ee161cf22ec467d39ccba038d",
+            "f3f58c784a021bb83cfb7a669613cab26233d802f6f930ebda89fff8e5a45d39",
+            "5d54e31816c9112efb9fa0e7cae8f9f4dd023b9d062ac1ea26a5648a65ea19e8",
+            "060dede7f4138a4822e7b8b19d8f64016de34d9da4b3162dac939a8bdf2b1f31",
+            "2f64ac3ee834f211a5837e43625f1e2776ea6c3f4852c6ee9f3a10d475cf928b",
+            "b2d062aae5001a766cbb87652e82b1e4f5b749162d7d8595d84562d867947e7b"
+          ]
+        },
+        "model-memory": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "db8eaa926effa732a5c223ceae7a5fdc7fdb0f7133f994ca511038885b3fdfb9",
+            "a86edec2fa619119c4cd2522edf37b30b8d446047cbe24842c252f65ea6e19c8",
+            "95cf3e0d1f020813355790d046096e364cfce518dea090f8f42654ddb9ab9b4d",
+            "f365b4b8ccda9463b41ed9a2f0e53d4b60b11f32dc37e89d9d7a53669fd7383e",
+            "f365b4b8ccda9463b41ed9a2f0e53d4b60b11f32dc37e89d9d7a53669fd7383e",
+            "95cf3e0d1f020813355790d046096e364cfce518dea090f8f42654ddb9ab9b4d",
+            "8f6747f83b94c4fdb7be96d432dc589698cc92661b66a91f07da3dd334579f3a",
+            "16daf206900495b32dabd4f9840f2c94b1f0154d84adf07b470a1fff9e1af754",
+            "6ae1c2cd7720516944b916a374551ac2c74d5e138ac1689e0c5ad1f0d15d6dcb",
+            "c0827295dcaf954fb94f3225348052ee98fec3e89e622ce9255f48046204a2e2",
+            "ea6222f69c44284fc6c49d127972206102ed9c133301d846e38ac23b2d815009",
+            "573e7cb8d077e852cf6d0cb5ce37aa9022eefef64d3fb33ae5f7a2dd5921fa8d"
+          ]
+        },
+        "arm64": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "6b8644f0a7b986e4ca1afe3bfef7aaf185a14c864813664a8bbeef5ad9fe851d",
+            "aa1fb8b9bf98ce61c38676019bed8b97f026913067b85eda419250f4a4ca6b14",
+            "b823f660c850aa92320d11d250115fb42efc867c58545a424e0e67e90bb82cef",
+            "345deb76ae88b133b29fadede62056ca9f0c830813e4f0a7918d09cddf109079",
+            "f8cb1dacbdc73c9c1252b2a4469eaefce6bfeae1474715d21e94fbaa27582315",
+            "98db778043b616628f11f5cbafd60a25765640845f7c0e8b91fb80223979036b",
+            "6047a112b6382b864bb68795ad3d36b1bf52642557382df3a5c8f41bb663d989",
+            "843e4caeb89cb0b46a05c76a49084a24a8c04d89c20f654453ce66b53d749b76",
+            "b3ec9cb76d6b707539921071fc898a52aca08879bf9e3ca294ca4d8ee9d69d98",
+            "aa269a6907b8d4012a613aee3d59766366ea5dbc13c0977dc759952fb60c08eb",
+            "5321e461e715811a5c85dd9fe16e2ea775b01a38a581611855ccf07496aed528",
+            "2af8786c71869195876832925178ce83f6213ef4f2ac3ee67caa0b8c1db6db1f",
+            "15fc617271d692ee01969361bf9f5d442cb6b9d765edd22c23acd50a11cd5940",
+            "df4b5a50000966ab7b132fa81a6f6749bf33e1bc754975a4f4b8900e05e7f0e2",
+            "da3cac64918283d32bb03c2e5c03293776cbae18889a2c48727fb833a9f958f1",
+            "7585b6490410cfadc024574d303f1950ada277c8db2578292b98f5b1588964b1"
+          ]
+        },
+        "athena-runtime": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "9021cf0e19834eb1132c439eb46f572793255bdcd1d4140759c62315ded02f4a",
+            "5419b4b47967ffefb36e21e457c2376a7d958db0b0aabc60954c258bf27ac7a7",
+            "75915b061ec51edd5897c9d3ba8a398e2994fd37deab54db0cf0f9835075c5af",
+            "735c18b892b389a2526c8e5bfdb26813857aa9545a1db9b4a0770b21e6a3a352",
+            "5d7bf88c97d22baf64f6de8d15815a5601d60f49fb42ae160f47101c467a56c9",
+            "7223d130c9dd44ff2beeb45c439ab302733c2a60d8e062f5d94c543822700032"
+          ]
+        },
+        "web-upload-timeouts": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "6c9b7a2e28f59eca078942817ccc0b6dd7b72dfbcca638800f6ca960ae4765b2",
+            "45d267fc91198b6f7badc3a0e31f371484c2fc9a56a823ab4c385dd99e7c9e02",
+            "00979dffc18b8951b8ee32507e64dc30d7c8c993352e90366e8855772f0700ed",
+            "aa597342112670a10ac40db944fd28bfda4a8086aa919b322d9f498e4ffd3a22",
+            "dba7c3567e5ee5edd0f285650e128f5d288586b1ed206fe575cfd362eb59412d",
+            "974bf0f5bdf007f6971efa04071d8bec8635713f38b60b85861176fb9ddc1dcc"
+          ]
+        }
+      }
+    },
+    ".github/workflows/sync.yml": {
+      "on": {
+        "workflow_dispatch": {
+          "inputs": {
+            "source_repository": {
+              "description": "Upstream repository (owner/repository)",
+              "required": "true",
+              "type": "string"
+            },
+            "target_branch": {
+              "description": "Branch to synchronize (must also exist in the source repository)",
+              "required": "true",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "jobs": {
+        "sync": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "2c52f0d2b6cc56a486418adeb1f0044f8eeb2e58efba20becc06ef7a1fcb9dac",
+            "bfe921c7e3394052a1243d80aa51c2042d6ffaa0bbeece81f9af5730e5f517eb"
+          ]
+        }
+      }
+    },
+    ".github/workflows/carrot-route-vault-publish.yaml": {
+      "on": {
+        "push": {
+          "branches": [
+            "carrot-wip"
+          ],
+          "paths": [
+            "tools/carrot_route_vault/**",
+            "openpilot/selfdrive/carrot/radar_motion/**",
+            "openpilot/selfdrive/carrot/cluster/**",
+            "openpilot/selfdrive/carrot/radar/tools/radar_validation_replay.py",
+            "openpilot/selfdrive/carrot/radar/tools/radar_web_export.py",
+            "openpilot/selfdrive/carrot/radar/tools/radar_group3_replay.py",
+            "openpilot/common/filter_simple.py",
+            "openpilot/selfdrive/carrot/radar/lateral.py",
+            "openpilot/selfdrive/controls/lib/cutin_*.py",
+            "openpilot/cereal/**",
+            "opendbc_repo/opendbc/**",
+            ".github/workflows/carrot-route-vault-publish.yaml"
+          ]
+        },
+        "workflow_dispatch": ""
+      },
+      "jobs": {
+        "publish": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "f8f4e02a1dd9107635d284c495eec6317143854692df7847d542d1f570366b82",
+            "2a40959e7245a3075be7223e3b6e39f151655ed2d157849681abd1c017ecd1e4",
+            "d99b2a11c2e49d925798865fcbd59a852efe08fdefc18d15ee11a76dfc238137",
+            "ac3a4420f7b88b835f782bd9b7d2c6f8d2b0e8809546d3745fdc271be28099d0"
+          ]
+        }
+      }
+    },
+    ".github/workflows/tests.yaml": {
+      "on": {
+        "push": {
+          "branches": [
+            "carrot-wip"
+          ]
+        },
+        "workflow_dispatch": "",
+        "workflow_call": {
+          "inputs": {
+            "run_number": {
+              "default": "1",
+              "required": "true",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "jobs": {
+        "git_update": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "3e0fb23b368093a3f7b6b3b674d93cedbb5459b176ff63f2a4b6a7932b22eddd",
+            "f62d42b2cdfb0eb79297d247f077c2c0d0e488d9597efa5b9fd66560d708c991"
+          ]
+        },
+        "build_release": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "ef011c9cad3888898fc089880c08085b7907700ec3dcf917b397604498d18efb",
+            "73056488c1655553ffb876f6f7d123e9bc4ef54e970150582570a42bfc672b91",
+            "ab9e30a763079079238c8a8f60b5ea607a88a37701fc86542a9a8acfc525afc2",
+            "79c33a83a5ff2afdc91739815e49d401fb01329be0d9231c0c97c8afadb00d95",
+            "e086ca58b35533da53a9a1149dfb17618aa99948a89d11793b8f486b29bb93a8",
+            "9efbbbcca30a7b4dc8bd3c80600bf39d062cde9c1e7b7a434c89262b55f3f65b"
+          ]
+        },
+        "model_web": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d020b5082b819c10e2b771ca4f349a11fef258fad92879215bbbd45f81706a26"
+          ]
+        }
+      }
+    },
+    ".github/workflows/user-docs.yaml": {
+      "on": {
+        "pull_request": {
+          "types": [
+            "opened",
+            "synchronize",
+            "reopened",
+            "edited"
+          ]
+        },
+        "push": {
+          "branches": [
+            "carrot-wip",
+            "dev",
+            "main"
+          ]
+        },
+        "workflow_dispatch": ""
+      },
+      "jobs": {
+        "check_user_docs": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
+            "c0fd05619012b4d44baed190c31b3e3d0e009c321e90dd291ee2fe3925aa4810",
+            "3bbc06f41f073b3d7a581ef430f47c650185079ede4ee1f078e0514f28212320"
+          ]
+        }
+      }
+    },
+    ".github/workflows/wiki-settings-check.yaml": {
+      "on": {
+        "pull_request": {
+          "branches": [
+            "carrot-wip"
+          ],
+          "paths": [
+            "openpilot/selfdrive/carrot_settings.json",
+            "tools/docs/wiki_settings/**",
+            "docs/user/ko/**",
+            "docs/user/en/**",
+            "docs/user/docs_map.json",
+            ".github/workflows/wiki-settings-check.yaml"
+          ]
+        },
+        "workflow_dispatch": ""
+      },
+      "jobs": {
+        "check": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "50e332db19d70034a3dc7179efc96f039ba86d371179b577fa074709f2fc5841",
+            "5d8661a01b4f7e4868ee100fa772d8109772028d0f2faf4823c0a92c4212b4a0",
+            "d0a08c64470d2d1310dd17bb3db5603c4162d485489da1fdd685a079b9ea0740"
+          ]
+        }
+      }
+    },
+    ".github/workflows/wiki-settings-publish.yaml": {
+      "on": {
+        "push": {
+          "branches": [
+            "carrot-wip"
+          ],
+          "paths": [
+            "openpilot/selfdrive/carrot_settings.json",
+            "tools/docs/wiki_settings/**",
+            ".github/workflows/wiki-settings-publish.yaml"
+          ]
+        },
+        "gollum": "",
+        "workflow_dispatch": ""
+      },
+      "jobs": {
+        "synchronize": {
+          "needs": null,
+          "matrix": null,
+          "scripts": [
+            "8e3154d47de9a435b7b3ce37b9c24603b73d7e3ece75b78dd28b40cc63a870a5",
+            "f41c382d7c478e2cdf53704acfc05f2734505181a1c4c20179de1b9fbe1929cb",
+            "5b2c2313d152aa95dcc3acbf3a0f3e62867b64c7f74f0b701e438063e3d54116",
+            "ebc22a2db099a5a622dad509c11c23f6fce535fe8bda5eaddbb421de79b615c7",
+            "baed9b7e8bcc295007eb4523696692205394ef995556e1803eaa57bfa60a08da",
+            "e9215d8c264101d0205f9c9ad31d33eb3e433be9f317f531d0740b3cbda59f78",
+            "05c9152c321a5d96ab55ff6d49fd57f7f94d0768eb0023469f764e87d63827d4"
+          ]
+        }
+      }
+    }
+  },
+  "intentional_script_changes": [
+    "remove hosted-image system-tool cleanup",
+    "remove fixed 25/35 GiB reserve while preserving 2 GiB documentation growth"
+  ]
+}

@@ -1,0 +1,15 @@
+name: Local x64 or emulated ARM shell
+description: Keep Actions on bin-actions and execute ARM commands in a separate pinned ARM user space.
+inputs:
+  cleanup:
+    description: Finish execution evidence before owned job-temp cleanup
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - if: inputs.cleanup != 'true'
+      shell: bash
+      run: '"$GITHUB_ACTION_PATH/../../../tools/ci/local-arm" prepare'
+    - if: inputs.cleanup == 'true'
+      shell: bash
+      run: '"$GITHUB_ACTION_PATH/../../../tools/ci/local-arm" finish'

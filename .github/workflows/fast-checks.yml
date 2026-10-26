@@ -13,13 +13,16 @@ concurrency:
 jobs:
   fast:
     name: fast checks
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -49,3 +52,6 @@ jobs:
         with: {distribution: temurin, java-version: '17'}
       - name: Android Jetlink core regressions
         run: bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

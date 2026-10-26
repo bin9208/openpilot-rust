@@ -1,0 +1,73 @@
+name: Isolate validation output
+description: Give each job fresh shell/tool output and remove only its owned directory.
+inputs:
+  cleanup:
+    description: Remove this job's output after artifact and cache uploads
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - if: inputs.cleanup != 'true'
+      shell: bash
+      run: |
+        [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == self-hosted && ${RUNNER_NAME:-} == bin-actions ]] || {
+          echo 'Registered bin-actions runner required' >&2
+          exit 1
+        }
+        # Unix-domain socket addresses are bounded; keep the tool/tempfile base
+        # shorter than the persistent runner's checkout/temp directory.
+        owned=$(mktemp -d /tmp/openpilot-ci.XXXXXX)
+        printf '%s:%s:%s' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_JOB" > "$owned/owner"
+        # Keep original rust/target argv while giving X64 each job its own target.
+        # ARM has a separate PRoot bind and target managed by local-arm.
+        if [[ ${LOCAL_CI_ARCH:-x86_64} != aarch64 && -f "$GITHUB_WORKSPACE/rust/Cargo.toml" ]]; then
+          target_view="$GITHUB_WORKSPACE/rust/target"
+          if [[ -e $target_view || -L $target_view ]]; then
+            echo 'Refusing to replace an existing Cargo target view' >&2
+            exit 1
+          fi
+          mkdir "$owned/cargo-target"
+          ln -s "$owned/cargo-target" "$target_view"
+          printf '%s' "$target_view" > "$owned/target-view"
+        fi
+        # Actions retain their normal runner temp. Bash-run tools use this job's
+        # output; explicit subprocess fixture overrides must remain untouched.
+        {
+          if [ -n "${BASH_ENV:-}" ] && [ -f "$BASH_ENV" ]; then
+            printf 'source %q\n' "$BASH_ENV"
+          fi
+          printf 'if [[ ${RUNNER_TEMP:-} == %q ]]; then\n' "$RUNNER_TEMP"
+          printf '  export RUNNER_TEMP=%q TMPDIR=%q\n' "$owned" "$owned"
+          printf 'fi\n'
+        } > "$owned/shell-env"
+        printf 'CI_RUNNER_TEMP=%s\nCI_JOB_TEMP=%s\nBASH_ENV=%s/shell-env\n' "$RUNNER_TEMP" "$owned" "$owned" >> "$GITHUB_ENV"
+    - if: inputs.cleanup == 'true'
+      shell: bash
+      run: |
+        if [[ -z ${CI_JOB_TEMP:-} || -z ${CI_RUNNER_TEMP:-} ]]; then exit 0; fi
+        case "$CI_JOB_TEMP" in
+          /tmp/openpilot-ci.*) ;;
+          *) echo 'Refusing unrelated temporary directory' >&2; exit 1 ;;
+        esac
+        if [[ ${CI_JOB_TEMP%/*} != /tmp ]]; then
+          echo 'Refusing nested temporary directory' >&2; exit 1
+        fi
+        if [[ -L $CI_JOB_TEMP ]]; then echo 'Refusing symlinked job output' >&2; exit 1; fi
+        if [[ ! -f $CI_JOB_TEMP/owner || -L $CI_JOB_TEMP/owner ||
+              $(cat "$CI_JOB_TEMP/owner") != "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]]; then
+          echo 'Refusing output owned by another job' >&2; exit 1
+        fi
+        if [[ -f $CI_JOB_TEMP/target-view && ! -L $CI_JOB_TEMP/target-view ]]; then
+          target_view=$(cat "$CI_JOB_TEMP/target-view")
+          if [[ $target_view != "$GITHUB_WORKSPACE/rust/target" ||
+                ! -L $target_view || $(readlink -- "$target_view") != "$CI_JOB_TEMP/cargo-target" ]]; then
+            echo 'Refusing a Cargo target view not owned by this job' >&2
+            exit 1
+          fi
+          rm -- "$target_view"
+        fi
+        # Network-namespace comparisons run as root and may leave root-owned
+        # output. Escalate only after the same bounded ownership checks above.
+        if ! rm -rf --one-file-system -- "$CI_JOB_TEMP"; then
+          sudo -n rm -rf --one-file-system -- "$CI_JOB_TEMP"
+        fi
