@@ -119,6 +119,7 @@ impl Config {
         )?;
         let workspace =
             source.workspace(&self.stores.sources, layout.expected_source_growth_bytes)?;
+        crate::catalog::verify_source_plan(&workspace.root, &plan)?;
         let prepared = crate::prepare::from_retained(
             &workspace.root,
             &self.cache,
@@ -572,6 +573,7 @@ impl Sealed {
             return Err("invalid source-built runtime identity".into());
         }
         self.prepared.verify(&stores.sources, &stores.objects)?;
+        crate::catalog::verify_source_plan(&self.prepared.source.root, &self.prepared.plan)?;
         require_tools(self.prepared.binaries.keys().map(String::as_str))?;
         if self.runtime.source != self.prepared.source.source
             || self.runtime.root == self.prepared.source.root
@@ -763,6 +765,7 @@ pub fn seal(
     offroad(&stores.params)?;
     let agnos_identity = agnos_identity()?;
     prepared.verify(&stores.sources, &stores.objects)?;
+    crate::catalog::verify_source_plan(&prepared.source.root, &prepared.plan)?;
     require_tools(prepared.binaries.keys().map(String::as_str))?;
     let pins = layout.verify(&prepared)?;
     let metadata = metadata(request_root, &prepared)?;

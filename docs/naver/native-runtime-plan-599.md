@@ -58,6 +58,12 @@ Cargo/bindings가 검증 중 변경되면 발행하지 않는다. 생성한 `bui
 native generation Config의 `build_plan`에 연결한다. layout/resources/전체 SDK/provider
 준비 및 세대 build/seal/activation은 여전히 별도 필수 검사다.
 
+full generation의 빌드 전·봉인·재검증은 보존한 **그 세대 소스의 catalog**와 package/
+feature/binary/그룹 목록을 대조한다. installer의 작은 bootstrap 최소 목록만 만족한
+부분 runtime은 full generation으로 발행하거나 선택할 수 없다. 기존 legacy release
+installer의 계약은 바꾸지 않는다. catalog를 준비하는 경로를 제외한 부팅 검증에는
+Cargo나 compiler를 실행하지 않는다.
+
 ## 검증과 남은 범위
 
 - Actions의 원래 foundation x64/ARM QEMU 검사에 실제 catalog CLI와 전체 workspace

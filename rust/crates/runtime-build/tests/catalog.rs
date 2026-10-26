@@ -403,6 +403,23 @@ fn actual_full_plan_assembly_binds_its_receipt_and_never_replaces_an_existing_ou
     let plan =
         openpilot_runtime_build::prepare::Plan::read(&output.join("build-plan.json")).unwrap();
     assert_eq!(plan.groups.len(), 13);
+    catalog.verify_plan(&plan).unwrap();
+    let mut partial = plan.clone();
+    partial.groups.remove("00");
+    assert!(catalog.verify_plan(&partial).is_err());
+    let mut partial = plan.clone();
+    // loggerd is not part of the installer's small bootstrap minimum, but it
+    // is required by this source's full runtime and may not be silently omitted.
+    partial
+        .groups
+        .get_mut("07")
+        .unwrap()
+        .binaries
+        .retain(|name| name != "openpilot-loggerd");
+    assert!(catalog.verify_plan(&partial).is_err());
+    let mut wrong = plan.clone();
+    wrong.groups.get_mut("01").unwrap().features.clear();
+    assert!(catalog.verify_plan(&wrong).is_err());
     assert!(plan
         .groups
         .values()

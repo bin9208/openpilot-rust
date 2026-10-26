@@ -150,6 +150,43 @@ impl Catalog {
         }
     }
 
+    /// Full generations must retain the complete roster from their own source,
+    /// even if the installer bootstrap minimum alone would otherwise be met.
+    pub fn verify_plan(&self, plan: &prepare::Plan) -> Result<()> {
+        self.recipes().validate()?;
+        plan.validate()?;
+        crate::generation::require_tools(
+            self.groups
+                .values()
+                .flat_map(|g| g.binaries.iter().map(String::as_str)),
+        )?;
+        if self.target != "aarch64-unknown-linux-gnu" || plan.groups.keys().ne(self.groups.keys()) {
+            return Err(
+                "native generation plan must cover its source catalog's complete group roster"
+                    .into(),
+            );
+        }
+        for (name, group) in &self.groups {
+            let recipe = &plan.groups[name];
+            if recipe.target != self.target
+                || recipe.packages != group.packages
+                || recipe.features != group.features
+                || recipe.binaries != group.binaries
+                || recipe
+                    .environment
+                    .get("OPENPILOT_NATIVE_INCREMENTAL")
+                    .map(String::as_str)
+                    != Some("1")
+            {
+                return Err(format!(
+                    "native generation plan differs from its source catalog: {name}"
+                )
+                .into());
+            }
+        }
+        Ok(())
+    }
+
     /// Check names against the actual workspace metadata, including package
     /// ownership and local feature aliases required by selected binaries.
     pub fn verify(&self, metadata: &Value) -> Result<()> {
@@ -387,6 +424,10 @@ pub fn assemble(root: &Path, cargo: &Path, bindings_path: &Path) -> Result<(prep
     bytes.push(b'\n');
     audit.plan_sha256 = Some(format!("{:x}", Sha256::digest(&bytes)));
     Ok((plan, audit))
+}
+
+pub(crate) fn verify_source_plan(root: &Path, plan: &prepare::Plan) -> Result<()> {
+    read::<Catalog>(&root.join(PATH))?.verify_plan(plan)
 }
 
 pub fn publish(output: &Path, plan: &prepare::Plan, audit: &Audit) -> Result<()> {
