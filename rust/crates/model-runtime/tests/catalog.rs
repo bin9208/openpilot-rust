@@ -180,6 +180,62 @@ assert receipt['output_source_sha256']==sha(body.encode())
 assert kernel.evidence.binding['object_sha256']==sha(kernel.object_code)
 assert kernel.evidence.binding['original_source_sha256']==sha(source.encode())
 assert kernel.evidence.binding['helper']['sha256']==digest
+# Parity is explicit and does not invoke the strict rewriter. All zero-arm and
+# operand orders retain the exact original flags; cached auxiliaries use their
+# separate symbol namespace with the same policy. These objects are not executed.
+import model_export.native as native_source
+actual_rewrite=native_source._guarded_add
+def no_rewrite(*args):raise AssertionError('parity invoked strict math rewrite')
+native_source._guarded_add=no_rewrite
+actual_compile=compiler.compile_to_obj
+compiled_sources=[]
+def observed_compile(body):
+ compiled_sources.append(body)
+ return actual_compile(body)
+compiler.compile_to_obj=observed_compile
+for fresh in (False,True):
+ for zero_true,left in ((False,False),(False,True),(True,False),(True,True)):
+  arms='float 0.0, float %y' if zero_true else 'float %y, float 0.0'
+  operands='%s, %x' if left else '%x, %s'
+  text=source.replace('select i1 %c, float 0.0, float %y','select i1 %c, '+arms).replace('fadd nsz contract float %s, %x','fadd nsz arcp contract afn float '+operands)
+  operation=SimpleNamespace(arg=op.arg,src=[None,None,None,SimpleNamespace(arg=text)])
+  result=compile_kernel(operation,7,compiler,fresh_in_cached=fresh,preserve_original_flags=True)
+  expected=text.replace('@fixture(', '@op_fresh_impl_7(' if fresh else '@op_impl_7(')
+  assert compiled_sources[-1]==result.evidence.compiled_source==expected
+  assert result.source==text and result.evidence.binding['source_policy']=='preserve-original-flags'
+  policy=json.loads(result.evidence.rewrite_receipt)
+  assert policy==dict(version=1,policy='preserve-original-flags',symbol_rename_only=True,
+   math_rewrite_applied=False,helper_executed=False,original_source_sha256=sha(text.encode()),
+   renamed_source_sha256=sha(expected.encode()),compiled_source_sha256=sha(expected.encode()),
+   original_source_bytes=len(text.encode()),compiled_source_bytes=len(expected.encode()))
+  assert 'rewrite_count' not in policy and 'rewrite_receipt_sha256' not in result.evidence.binding
+  assert result.evidence.binding['source_policy_receipt_sha256']==sha(result.evidence.rewrite_receipt)
+  assert result.evidence.binding['object_sha256']==sha(result.object_code)
+# An original namespace collision only matters when strict rewriting generates
+# that namespace. The parity source remains valid and byte-preserved.
+collision=source.replace(' %s =',' %diagnostic_guarded_sum_0 = fadd float %x, %y\n %s =')
+collision_op=SimpleNamespace(arg=op.arg,src=[None,None,None,SimpleNamespace(arg=collision)])
+assert compile_kernel(collision_op,7,compiler,preserve_original_flags=True).evidence.compiled_source==collision.replace('@fixture(','@op_impl_7(')
+assert len(compiled_sources)==9
+oversize=SimpleNamespace(arg=op.arg,src=[None,None,None,SimpleNamespace(arg=source+' '*(16*1024*1024))])
+try:compile_kernel(oversize,7,compiler,preserve_original_flags=True)
+except ExportError:pass
+else:raise AssertionError('parity skipped the original source cap')
+assert len(compiled_sources)==9
+# Post-compilation helper identity still guards the bypass path.
+with tempfile.TemporaryDirectory() as td:
+ held=Path(td)/'held';held.write_bytes(Path(helper).read_bytes());held.chmod(0o700)
+ os.environ['MODEL_LLVM_GUARDED_ADD_BINARY']=str(held)
+ def mutation(body):
+  result=observed_compile(body);held.chmod(0o500);return result
+ compiler.compile_to_obj=mutation
+ try:compile_kernel(op,7,compiler,preserve_original_flags=True)
+ except ExportError:pass
+ else:raise AssertionError('parity ignored held helper mutation after compile')
+assert len(compiled_sources)==10
+compiler.compile_to_obj=actual_compile
+native_source._guarded_add=actual_rewrite
+os.environ['MODEL_LLVM_GUARDED_ADD_BINARY']=helper
 # Genuine helper failures must terminate export; no original-source compilation.
 for bad in [source.replace(' %s =', ' %diagnostic_guarded_sum_0 = fadd float %x, %y\n %s ='), source+' '* (16*1024*1024)]:
  invalid=SimpleNamespace(arg=op.arg,src=[None,None,None,SimpleNamespace(arg=bad)])
@@ -205,12 +261,19 @@ for configuration in [
  try:compile_kernel(op,7,compiler)
  except ExportError:pass
  else:raise AssertionError('invalid helper configuration silently accepted')
+ if configuration.get('MODEL_LLVM_GUARDED_ADD_BINARY')!=str(Path('/bin/false').resolve()):
+  try:compile_kernel(op,7,compiler,preserve_original_flags=True)
+  except ExportError:pass
+  else:raise AssertionError('parity skipped helper path/hash admission')
 with tempfile.TemporaryDirectory() as td:
  fake=Path(td)/'script';fake.write_bytes(b'#!/bin/sh\nexit 0\n');fake.chmod(0o700)
  os.environ.update(MODEL_LLVM_GUARDED_ADD_BINARY=str(fake),MODEL_LLVM_GUARDED_ADD_SHA256=sha(fake.read_bytes()))
  try:compile_kernel(op,7,compiler)
  except ExportError:pass
  else:raise AssertionError('interpreter helper silently accepted')
+ try:compile_kernel(op,7,compiler,preserve_original_flags=True)
+ except ExportError:pass
+ else:raise AssertionError('parity skipped native ELF admission')
 # A real native peer leaves a descendant in its process group. Every bridge
 # exit must kill that descendant while retaining the leader until cleanup.
 peer_source=r'''
@@ -237,7 +300,9 @@ int main(int argc, char **argv) {
 }
 '''
 with tempfile.TemporaryDirectory() as td:
- peer=Path(td)/'peer'
+ # Keep this bounded executable under the job TMPDIR until final provider seals.
+ # Receipt/pid temporaries still use td and all descendant assertions stay strict.
+ peer=Path(tempfile.mkdtemp(prefix='catalog-peer-'))/'peer'
  subprocess.run(['clang','-x','c','-','-o',str(peer)],input=peer_source.encode(),check=True,timeout=30)
  renamed=source.replace('@fixture(', '@op_impl_7(').encode()
  unchanged=dict(status='unchanged',original_source_sha256=sha(renamed),output_source_sha256=sha(renamed),input_bytes=len(renamed),output_bytes=len(renamed),rewrite_count=0,rewrites=[])
@@ -264,6 +329,7 @@ from tinygrad import Tensor,TinyJit
 import numpy as np
 from model_export import Bindings,export_cpu
 from model_export.capture import capture_cpu
+import model_export.capture as capture_source
 # Match the established exporter host-COPY fixture: NPY directly wraps ndarray
 # storage; Python-list construction would require unsupported NPY _copyin.
 x=Tensor(np.arange(64,dtype=np.float32),device='NPY').realize()
@@ -272,6 +338,15 @@ jit=TinyJit(lambda value:(value.to('CPU')*2+1).realize())
 jit(x);y=jit(x)
 np.testing.assert_array_equal(y.numpy(),np.arange(64,dtype=np.float32)*2+1)
 bindings=Bindings({'x':x},{'y':y})
+actual_kernel=capture_source.compile_kernel
+capture_policies=[]
+def observed_kernel(*args,**kwargs):
+ assert kwargs.get('preserve_original_flags') is True
+ result=actual_kernel(*args,**kwargs)
+ capture_policies.append(result.evidence.binding['source_policy'])
+ return result
+capture_source.compile_kernel=observed_kernel
+native_source._guarded_add=no_rewrite
 captured=capture_cpu(jit,bindings)
 assert len(captured.compilation)==len(captured.sources)
 assert any(source.startswith('copy:') for source in captured.sources)
@@ -285,15 +360,22 @@ with tempfile.TemporaryDirectory() as td:
   else:
    record=index['kernels'][str(i)]
    assert record['compiled_source_sha256']==sha((bundle/f'kernel-{i}.compiled.ll').read_bytes())
-   assert record['rewrite_receipt_sha256']==sha((bundle/f'kernel-{i}.guarded-add.json').read_bytes())
+   policy=bundle/f'kernel-{i}.source-policy.json'
+   assert record['source_policy']=='preserve-original-flags'
+   assert record['source_policy_receipt_sha256']==sha(policy.read_bytes())
+   assert json.loads(policy.read_bytes())['helper_executed'] is False
+   assert not (bundle/f'kernel-{i}.guarded-add.json').exists()
    assert record['object_sha256']==sha((bundle/f'kernel-{i}.o').read_bytes())
+assert capture_policies and set(capture_policies)=={'preserve-original-flags'}
+capture_source.compile_kernel=actual_kernel
+native_source._guarded_add=actual_rewrite
 for key in ['MODEL_LLVM_GUARDED_ADD_BINARY','MODEL_LLVM_GUARDED_ADD_SHA256']:os.environ.pop(key,None)
 assert guarded_add_binding()=={'enabled':False}
 assert compile_kernel(op,7,compiler).evidence is None
 with tempfile.TemporaryDirectory() as td:
  disabled=Path(td)/'disabled';export_cpu(jit,bindings,disabled)
  assert not (disabled/'compilation-evidence.json').exists()
- assert not list(disabled.glob('*.compiled.ll')) and not list(disabled.glob('*.guarded-add.json'))
+ assert not list(disabled.glob('*.compiled.ll')) and not list(disabled.glob('*.guarded-add.json')) and not list(disabled.glob('*.source-policy.json'))
  assert set(json.loads((disabled/'graph.json').read_bytes()))=={'version','backend','arch','weights_sha256','library_sha256','allocations','views','inputs','outputs','kernels','calls'}
  for i,source in enumerate(captured.sources):assert (disabled/f'kernel-{i}.txt').read_bytes()==source.encode()
 "#;
@@ -377,11 +459,12 @@ with tempfile.TemporaryDirectory() as td:
  publish(on,(spec,),'cpu')
  current=(on/'current.json').read_bytes();generation=json.loads(current)['generation']
  records=list((on/generation).rglob('compilation-evidence.json'))
- receipts=[r for p in records for r in p.parent.glob('*.guarded-add.json')]
- assert records and receipts and all(json.loads(r.read_bytes())['rewrite_count']==0 for r in receipts)
+ receipts=[r for p in records for r in p.parent.glob('*.source-policy.json')]
+ assert records and receipts and all(json.loads(r.read_bytes())['policy']=='preserve-original-flags' and json.loads(r.read_bytes())['helper_executed'] is False for r in receipts)
+ assert not list((on/generation).rglob('*.guarded-add.json'))
  enabled(False);publish(off,(spec,),'cpu')
- assert (off/'current.json').read_bytes()==current,'zero-rewrite helper unexpectedly changed generation identity'
- assert not list(off.rglob('*.guarded-add.json'))
+ assert (off/'current.json').read_bytes()==current,'bound-helper parity unexpectedly changed generation identity'
+ assert not list(off.rglob('*.guarded-add.json')) and not list(off.rglob('*.source-policy.json'))
  rejected(on)  # enabled generation has old evidence absent from new output.
  publish(off,(spec,),'cpu')  # exact disabled generation remains reusable.
  enabled(True);rejected(off)
@@ -481,7 +564,7 @@ negative=subprocess.run([sys.executable,'-P','rust/tools/build_model_pipelines.p
 (proof/'negative.stdout').write_bytes(negative.stdout);(proof/'negative.stderr').write_bytes(negative.stderr)
 assert negative.returncode!=0 and b'catalog publisher admission failed' in negative.stderr
 assert not (proof/'rejected-catalog').exists()
-# Exactly one new tiny real emission, preserving the guarded LLVM path. Never
+# Exactly one new tiny real emission, preserving original LLVM arithmetic. Never
 # substitute emit/provider/finalizer implementations or execute generated kernels.
 import numpy as np
 from tinygrad import Tensor,TinyJit
@@ -508,8 +591,9 @@ catalog=proof/'catalog';publisher.publish(catalog,[spec],'cpu')
 assert len(calls)==1
 pointer=json.loads((catalog/'current.json').read_bytes());generation=catalog/pointer['generation']
 assert hashlib.sha256((generation/'index.json').read_bytes()).hexdigest()==pointer['generation']
-receipts=list(generation.rglob('*.guarded-add.json'))
-assert receipts and all(json.loads(p.read_bytes())['rewrite_count']==0 for p in receipts)
+receipts=list(generation.rglob('*.source-policy.json'))
+assert receipts and all(json.loads(p.read_bytes())['policy']=='preserve-original-flags' and json.loads(p.read_bytes())['helper_executed'] is False for p in receipts)
+assert not list(generation.rglob('*.guarded-add.json'))
 assert list(generation.rglob('compilation-evidence.json'))
 assert list(generation.rglob('*.o')) and list(generation.rglob('kernels.so'))
 files={str(p.relative_to(catalog)):seal(p) for p in catalog.rglob('*') if p.is_file()}
@@ -517,7 +601,8 @@ assert not any(p.name.startswith('.build-') for p in catalog.iterdir())
 assert before=={key:seal(os.environ[key]) for key in before}
 assert guard==guarded_add_binding() and binding==publisher.catalog_publisher_binding() and target==llvm_target()
 save('complete.json',{'negative_cli_returncode':negative.returncode,'negative_before_model_read':True,
- 'real_tiny_emissions':1,'native_calls':calls,'guarded_receipts':len(receipts),'guarded_rewrite_count':0,
+ 'real_tiny_emissions':1,'native_calls':calls,'guarded_receipts':0,'guarded_rewrite_count':0,
+ 'source_policy_receipts':len(receipts),'guarded_helper_executions':0,
  'generation':pointer['generation'],'files':files,'issuers_after':before,'target_after':target,
  'cached_binding':False,'full_model_numeric_acceptance':False,'retirement_credit':0})
 print('combined caller policy: one tiny emission and one CLI binding rejection')

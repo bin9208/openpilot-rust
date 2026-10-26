@@ -451,3 +451,65 @@ caller14/ignored2·library2 및 모든 기존 selector/count는 그대로다. �
 export.rs SHA만 새 coherent source에 반영한다. 로컬은 rustfmt check·정확 두 줄 diff와 Serde
 원문 대조뿐이며 Cargo/type/build/test/Clippy/compiler/model/oracle/CI 실행·stage/commit/push0이다.
 이 실제 기능 성공을 strict Clippy까지 완료된 F02 전체 수용이나 전체 모델 수용으로 올리지 않는다.
+
+## 2026-10-26 source57 최종 genuine PASS와 source69 cohort
+
+[source57e1761/run40256938672/job121360705285](https://github.com/bin9208/openpilot-rust/actions/runs/40256938672/job/121360705285)은
+completed **SUCCESS**다. 위 Git6c의 실패 이력은 보존하며, Box 수정 이후의 이 결과를 따로 기록한다.
+library registry-budget2, caller14/ignored2, COPY1, genuine mixed1/order7, strict Clippy의
+`exit-codes.txt` 값이 모두0이다. mixed는88.01초, Clippy는7.61초다. `-D warnings`를 유지하고
+기존 selector/count·원본 expected를 수정하지 않은 실제 결과다.
+
+F02 source SHA는 Python `b4d51d33569eaf28e734b90c540e572d8e72abf88389e4217065a9fb0fdfe7f0`,
+export.rs `e080c12280b8806f56ede77b297634d69ac9c0071dc1651ed22afc556e499f52`,
+caller `275357ea69c62d471ae117847aa43abcc79a20a2319f06391249cf54beff74b4`다.
+Git57은 Git6c에서 승인된 Final Box 두 줄을 포함한다. `Box<T>`의 Serde 직접 위임 원문과
+기존 v1/v2 deterministic CLI·stream/EOF·형식·원본 비교 검사 PASS를 함께 확인했다.
+서로 다른 run의 session/PROGRAM handle 가변값을 포함한 frame 전체를 동일 bytes라고 주장하지 않는다.
+
+새 ZIP 두 개를 API expected bytes/SHA admission 후 각각1회 받고 safe unique/nosymlink/전체 CRC를
+확인했다. 과거 artifact는 다시 다운로드하지 않았다.
+
+| artifact | ZIP bytes / members / expanded | ZIP SHA256 |
+| --- | --- | --- |
+| 12622657937 functional | 17,995 / 26 / 43,216B | `9039b91a14bdcfd3d33405ca8e648e54f28c12c545238afc358463dded4c32e8` |
+| 12622309014 private source/SDK proof | 338,191 / 34 / 2,581,595B | `150f480e6264e014baec1ddb042d009602aa24d89ebc55dfb33216378df764bc` |
+
+functional 원문에서 prefix SHA `bc1b7b572c8dd2f84f3ea0ca38b1744e4c7120155c33f3dabb633eabaf7f0144`,
+Kernel/binarySHA poison 및 활성화 음성 control, 첫 PROGRAM IR 대표, 원본3call/1kernel과 반복
+native index `[0,0]`를 확인했다. raw 원본 graph2156B SHA
+`a6ef4f632e3f405effe4c0bac11ad9abcd48dc018e0766c19eccbb4aefc788d1`,
+weights64B `58dda328598e2f7fe472621bfc54935aaa354d1a6ebcaf9562cd743fd575eb19`,
+SOURCE396B `4b68cdcb9c9f02dda5eb7ef71300444f3b0d050d4850d5d60f702a6a98c687f9`,
+BINARY2240B `b2f550a3a3d46e3b3832494b46499427439fc5c5d18b4e09d400184c48912bd4`다.
+원본/candidate IR record는123B·SHA
+`f57d7d8c126159f932db88a8887cfbc7334133c75e418a866ab5f6a7ba55fdc3`로 동일하고,
+LINEAR IR key `7110338e63766b5a4e7ea51a0ecdaf9ab75324cff0c76136e511aeb261dd27f1` 및
+native 첫 program_key와 결합된다. allocations/views/entrypoints·signature·weights hex·geometry를
+원본 raw와 candidate Plan 사이에서 독립 대조했다. 전체 candidate graph/SOURCE/BINARY 동일성은
+Git57 실제 test assertion PASS이며 candidate 파일 자체가 별도로 ZIP에 있는 것은 아니다.
+
+order7 원문은 original-first 순서와 lowering/compiler 각각 `[0,0,1,1,0,0,0]`를 유지한다.
+앞5 실패는 양쪽 destination 부재, launch-before-read 우선순위를 유지하고 뒤2 lazy 양성은
+성공한다. canonical Python은3.12.15이며 proof가 functional/private ZIP 사이에서 동일하다.
+
+이번에는 private raw proof도 독립 대조했다. source hash·index, SDK full-file SHA manifest와
+stat/type/link roster의 before/after가 각각 동일하다. index19,623개가 Git57 tree 경로와 같고,
+SDK file227개·roster252개를 포함한다. private/functional ZIP의 모든 검사 stdout/stderr·exit 원문,
+원본 prefix와 Python proof도 서로 같다. Rust1.94.0/host x86_64와 LLVM provider 후검증을 확인했다.
+API step20 source/SDK/LLVM after와 step22 source/alias/target cleanup, step23 공통 temp cleanup은
+실제 success다. 후봉인 원문을 재대조하지 않았던 앞선 Git6c 감사와 구분한다.
+
+source57e1761→`69d5489463e22a9ef4245cc941a5788f795a8b99` Git diff는 workflow3·기록2개뿐이다.
+`rust`, `tools`, `tinygrad_repo` tree OID가 각각 같으며 F02 source3/CLI, model helper/D writer의
+blob·SHA도 동일하다. genuine WF 전체 blob은 같고 current model WF의 jobs는 동일하며 push paths에
+`compiler_schedule/**`, `diagnostic_482_writer.rs` 두 개만 추가됐다. 따라서 위 기능 결과는
+동일 기능 소스 cohort의 증거이며, source69의 전체 source seal 자체를 source57의 seal로 대체하지 않는다.
+
+bounded production offline registry slice의 위 기능·strict Clippy·후봉인 gate는 실제 PASS다.
+Python compiler/compile_cached/lowering/metadata 취득/writer 제거, 전체 모델·device 수용과
+파일 퇴역 credit는 별도다. current model source57 run0과 source69 신규 run의 상태는 다음
+model 문서에 구분 기록했다. private scratch 기록은 `ci/f02-57-genuine-audit.json`,
+`ci/f02-57-private-seals-audit.json`, `ci/f02-57-69-source-cohort.json`이다.
+본 감사의 source 기능 편집·로컬 Cargo/build/test/compiler/model/oracle·CI dispatch/rerun/cancel·
+stage/commit/push는0회다.

@@ -113,7 +113,8 @@ def capture_cpu(jit: TinyJit, bindings: Bindings, *, cached: CachedModel | None 
                 native = NativeKernel(signature, source, b"", wrapper)
                 cached_programs.append(CachedProgram(original_index, index, image))
             else:
-                native = compile_kernel(operation, index, renderer.compiler, fresh_in_cached=cached is not None)
+                native = compile_kernel(operation, index, renderer.compiler, fresh_in_cached=cached is not None,
+                                        preserve_original_flags=True)
             kernels.append(native.signature)
             sources.append(native.source)
             objects.append(native.object_code)

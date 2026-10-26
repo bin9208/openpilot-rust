@@ -525,7 +525,7 @@ def writer_pair_compile(root, job, m):
         source = Path(seal['path'])
         need(source.is_relative_to(job/'build/model482') and spec_file(m, source, 16*MIB) == seal, 'D held compiler input')
         inputs[name] = m.read(source, 16*MIB)
-    need(set(inputs) == {'original', 'guarded', 'rewrite', 'config'} and sha(inputs['original']) == STORE_SOURCE,
+    need(set(inputs) == {'original', 'parity', 'policy', 'config'} and sha(inputs['original']) == STORE_SOURCE,
          'D exact writer inputs')
     worker_environment(root)
     from tinygrad.runtime.autogen import llvm
@@ -554,7 +554,7 @@ def writer_pair_compile(root, job, m):
     llvm.LLVMCreateTargetMachine = observe_machine
     Compiler.compile_cached = reject_cached
     try:
-        from model_export.native import _guarded_add_helper, _guarded_add
+        from model_export.native import _guarded_add_helper, _guarded_add, _canonical
         compiler = CPULLVMCompiler(['x86_64', 'native'])
         expected = m.unique_json(inputs['config'])
         actual = config(compiler, root, m, pass_options)
@@ -566,10 +566,18 @@ def writer_pair_compile(root, job, m):
         match = re.match(r'define void @([A-Za-z0-9_]+)\(', text)
         need(match and text.count('@'+match[1]+'(') == 1, 'D original writer declaration')
         renamed = text.replace('@'+match[1]+'(', '@op_impl_92(')
+        renamed_bytes = renamed.encode()
+        need(inputs['parity'] == renamed_bytes and inputs['policy'] == _canonical({
+            'version': 1, 'policy': 'preserve-original-flags', 'symbol_rename_only': True,
+            'math_rewrite_applied': False, 'helper_executed': False,
+            'original_source_sha256': sha(inputs['original']), 'renamed_source_sha256': sha(renamed_bytes),
+            'compiled_source_sha256': sha(renamed_bytes), 'original_source_bytes': len(inputs['original']),
+            'compiled_source_bytes': len(renamed_bytes)}), 'D B parity source/policy differs from authenticated A')
         with _guarded_add_helper() as helper:
             need(helper is not None, 'D requires the existing held guarded helper')
             guarded, rewrite = _guarded_add(renamed, helper[0])
-        need(guarded.encode() == inputs['guarded'] and rewrite == inputs['rewrite'], 'D current B guard bytes differ')
+        need(len(rewrite) <= 4*MIB, 'D strict rewrite receipt4MiB')
+        write(destination/'guarded-add.json', rewrite)
         variants = {}
         context = {'llvm_context': pointer(compiler.context), 'target_machine': pointer(compiler.target_machine),
                    'pass_builder_options': pointer(compiler.pbo), 'constructor_options': options}
@@ -587,7 +595,8 @@ def writer_pair_compile(root, job, m):
         save(destination/'compiler-receipt.json', {'schema': 1, 'source': os.environ['GITHUB_SHA'],
             'original_source_sha256': STORE_SOURCE, 'variants': variants, 'fresh_compiles': 2,
             'compile_cached_calls': len(cache_calls), 'original_executions': 0,
-            'original_model_executions': 0, 'original_compiler_invocations': 2, 'taps': 0})
+            'original_model_executions': 0, 'original_compiler_invocations': 2, 'taps': 0,
+            'guarded_rewrite': spec_file(m, destination/'guarded-add.json', 4*MIB)})
         for seal in request['files'].values():
             need(spec_file(m, Path(seal['path']), 16*MIB) == seal, 'D compiler input changed')
         imports_after = import_seal(m, root, job)
@@ -1292,11 +1301,14 @@ class Controller:
         cached_issuer = self.select(raw, "offline-cached-code", "bin", "rust/crates/model-runtime/src/bin/offline-cached-code.rs", False)
         raw = self.command([cargo, "test", *common_args, "--lib", "--no-run"], "current-libtest", 900)
         test = self.select(raw, "openpilot_model_runtime", "lib", "rust/crates/model-runtime/src/lib.rs", True)
+        raw = self.command([cargo, "test", *common_args, "--test", "catalog", "--no-run"], "current-catalog-test", 900)
+        catalog = self.select(raw, "catalog", "test", "rust/crates/model-runtime/tests/catalog.rs", True)
+        publisher = self.select(raw, "publish-model-catalog", "bin", "rust/crates/model-runtime/src/bin/publish-model-catalog.rs", False)
         self.command([cargo, "clippy", *common_args, "--lib", "--tests", "--", "-D", "warnings"],
                      "current-clippy", 900)
         registry=self.job/'cargo-home/registry'
         self.baselines['registry']=(registry,None,self.m.snapshot(registry,self.m.walk(registry)))
-        for i,path in enumerate((binary,guarded,test,Path(os.environ['ORIGINAL_PYTHON']),Path(sys.executable),Path(os.environ['LLVM_PATH']),self.sdk/'bin/rustc',self.sdk/'bin/cargo',cached_issuer)):
+        for i,path in enumerate((binary,guarded,test,Path(os.environ['ORIGINAL_PYTHON']),Path(sys.executable),Path(os.environ['LLVM_PATH']),self.sdk/'bin/rustc',self.sdk/'bin/cargo',cached_issuer,catalog,publisher)):
             self.dso(path,f'provider-dso-{i}')
         for i,path in enumerate(sorted((self.job/'venv').rglob('*.so*'))):
             need(path.is_file() and not path.is_symlink(),'extension provider must be regular')
@@ -1326,6 +1338,52 @@ class Controller:
         self.env["MODEL_LLVM_GUARDED_ADD_SHA256"] = self.m.regular(guarded)["sha256"]
         helper = self.root / "tools/ci/model_current_triplet_482.py"
         python = Path(os.environ["ORIGINAL_PYTHON"])
+        # TemporaryDirectory cleanup stays inside the already admitted mutable
+        # target children; A's model482/original-cache.db is never inherited.
+        policy_root = self.target / "catalog-policy"
+        need(not policy_root.exists() and not policy_root.is_symlink(), "fresh catalog policy root")
+        policy_root.mkdir(mode=0o700)
+        policy_identity = self.build_identity(policy_root)
+        policy_runs = []
+        for index, selector in enumerate(("guarded_add_bridge_retains_original_and_compiled_source_evidence",
+                                          "guarded_add_publish_reuse_requires_exact_evidence_roster",
+                                          "native_publisher_with_guarded_emitter_preserves_binding_policy")):
+            self.budget(force=True, extra_build=64*MIB)
+            private = policy_root / str(index)
+            private.mkdir(mode=0o700)
+            private_identity = self.build_identity(private)
+            cache, temporary, proof = private / "xdg", private / "tmp", private / "proof"
+            cache.mkdir(mode=0o700)
+            temporary.mkdir(mode=0o700)
+            database = private / "cache.db"
+            need(not database.exists() and not database.is_symlink()
+                 and not proof.exists() and not proof.is_symlink(), "catalog cache/proof must start absent")
+            need(not Path(self.env["CACHEDB"]).exists() and not Path(self.env["CACHEDB"]).is_symlink(),
+                 "catalog must not create A original cache")
+            env = {**self.env, "MODEL_BRIDGE_PYTHON": str(python), "CACHEDB": str(database),
+                   "XDG_CACHE_HOME": str(cache), "TMPDIR": str(temporary), "MODEL_PUBLISHER_POLICY_PROOF": str(proof)}
+            if index == 2:
+                env.update(MODEL_CATALOG_PUBLISH_BINARY=str(publisher),
+                           MODEL_CATALOG_PUBLISH_SHA256=self.m.regular(publisher)["sha256"])
+            label = f"catalog-policy-{index}"
+            policy_runs.append({"selector": selector, "label": label, "cachedb": str(database),
+                                "xdg_cache_home": str(cache), "tmpdir": str(temporary), "proof": str(proof)})
+            save(self.out / f"catalog-policy-inputs-{index}.json",
+                 {"schema": 1, "source": os.environ["GITHUB_SHA"], "run": policy_runs[-1],
+                  "catalog": spec_file(self.m, catalog, 512*MIB), "publisher": spec_file(self.m, publisher, 512*MIB),
+                  "python": spec_file(self.m, python, 512*MIB), "guarded": spec_file(self.m, guarded, 512*MIB)})
+            self.test(catalog, selector, label, 180, env=env)
+            need(self.build_identity(policy_root) == policy_identity and self.build_identity(private) == private_identity,
+                 "catalog private root identity changed")
+            need(not Path(self.env["CACHEDB"]).exists() and not Path(self.env["CACHEDB"]).is_symlink(),
+                 "catalog polluted A original cache")
+            self.holds.verify()
+            if index == 2:
+                receipt = proof / "complete.json"
+                self.m.copy_new(receipt, self.out / "catalog-policy-publisher.json", 4*MIB)
+        save(self.out / "catalog-policy.json", {"schema": 1, "source": os.environ["GITHUB_SHA"],
+             "runs": policy_runs, "selectors_passed": 3, "a_cache_absent": True,
+             "full_model_executions_added": 0, "d_compiler_invocations_added": 0})
         self.command([python, "-I", "-B", helper, "collect"], "fresh-original", 900)
         request = self.build / "triplet-request.json"
         self.holds.add(request)
@@ -1610,8 +1668,8 @@ class Controller:
         need(chain['source'] == selected['source'] and chain['object'] == selected['object'], 'D actual A config chain')
         config_path = destination/'original-config.json'
         save(config_path, chain['config'])
-        files = {'original': selected['source'], 'guarded': spec_file(self.m, traffic/'bundle/kernel-92.compiled.ll'),
-                 'rewrite': spec_file(self.m, traffic/'bundle/kernel-92.guarded-add.json'), 'config': spec_file(self.m, config_path)}
+        files = {'original': selected['source'], 'parity': spec_file(self.m, traffic/'bundle/kernel-92.compiled.ll'),
+                 'policy': spec_file(self.m, traffic/'bundle/kernel-92.source-policy.json'), 'config': spec_file(self.m, config_path)}
         compile_path = destination/'compile-request.json'
         save(compile_path, {'schema': 1, 'source': os.environ['GITHUB_SHA'], 'files': files})
         for path in (config_path, compile_path): self.holds.add(path)

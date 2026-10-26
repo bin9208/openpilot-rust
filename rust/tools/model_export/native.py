@@ -29,11 +29,14 @@ class NativeKernel:
     evidence: CompilationEvidence | None = None
 
 
-def compile_kernel(operation: UOp, index: int, compiler: ClangCompiler | CPULLVMCompiler, *, fresh_in_cached: bool = False) -> NativeKernel:
+def compile_kernel(operation: UOp, index: int, compiler: ClangCompiler | CPULLVMCompiler, *, fresh_in_cached: bool = False,
+                   preserve_original_flags: bool = False) -> NativeKernel:
     info = operation.arg
     source = operation.src[3].arg
     if not isinstance(source, str):
         raise ExportError("compiled program has no source")
+    if type(preserve_original_flags) is not bool:
+        raise ExportError("native source policy must be explicit boolean metadata")
     symbol = f"op_fresh_impl_{index}" if fresh_in_cached else f"op_impl_{index}"
     original = f"void {info.function_name}(" if isinstance(compiler, ClangCompiler) else f"@{info.function_name}("
     renamed = f"void {symbol}(" if isinstance(compiler, ClangCompiler) else f"@{symbol}("
@@ -51,11 +54,29 @@ def compile_kernel(operation: UOp, index: int, compiler: ClangCompiler | CPULLVM
             if not isinstance(compiler, CPULLVMCompiler):
                 raise ExportError("guarded add requires CPU:LLVM")
             renamed_sha = hashlib.sha256(body.encode()).hexdigest()
-            body, receipt = _guarded_add(body, helper[0])
-            evidence = CompilationEvidence(body, receipt, {
-                "helper": helper[1], "original_source_sha256": hashlib.sha256(source.encode()).hexdigest(),
-                "renamed_source_sha256": renamed_sha, "rewrite_receipt_sha256": hashlib.sha256(receipt).hexdigest(),
-            })
+            if preserve_original_flags:
+                # Parity callers preserve the original arithmetic IR. The held
+                # helper is still authenticated before/after actual compilation.
+                if len(body.encode()) > _SOURCE_LIMIT:
+                    raise ExportError("guarded add source exceeds bound")
+                receipt = _canonical({
+                    "version": 1, "policy": "preserve-original-flags", "symbol_rename_only": True,
+                    "math_rewrite_applied": False, "helper_executed": False,
+                    "original_source_sha256": hashlib.sha256(source.encode()).hexdigest(),
+                    "renamed_source_sha256": renamed_sha, "compiled_source_sha256": renamed_sha,
+                    "original_source_bytes": len(source.encode()), "compiled_source_bytes": len(body.encode()),
+                })
+                evidence = CompilationEvidence(body, receipt, {
+                    "helper": helper[1], "original_source_sha256": hashlib.sha256(source.encode()).hexdigest(),
+                    "renamed_source_sha256": renamed_sha, "source_policy": "preserve-original-flags",
+                    "source_policy_receipt_sha256": hashlib.sha256(receipt).hexdigest(),
+                })
+            else:
+                body, receipt = _guarded_add(body, helper[0])
+                evidence = CompilationEvidence(body, receipt, {
+                    "helper": helper[1], "original_source_sha256": hashlib.sha256(source.encode()).hexdigest(),
+                    "renamed_source_sha256": renamed_sha, "rewrite_receipt_sha256": hashlib.sha256(receipt).hexdigest(),
+                })
         object_code = compiler.compile_to_obj(body)
     if evidence is not None:
         evidence.binding["object_sha256"] = hashlib.sha256(object_code).hexdigest()

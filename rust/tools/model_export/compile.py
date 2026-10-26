@@ -38,7 +38,13 @@ def export_cpu(jit: TinyJit, bindings: Bindings, destination: Path, *, entrypoin
                 continue
             compiled = item.compiled_source.encode("utf-8")
             (destination / f"kernel-{index}.compiled.ll").write_bytes(compiled)
-            (destination / f"kernel-{index}.guarded-add.json").write_bytes(item.rewrite_receipt)
+            policy = item.binding.get("source_policy")
+            if policy == "preserve-original-flags":
+                (destination / f"kernel-{index}.source-policy.json").write_bytes(item.rewrite_receipt)
+            elif policy is None:
+                (destination / f"kernel-{index}.guarded-add.json").write_bytes(item.rewrite_receipt)
+            else:
+                raise ValueError("unknown compiled source policy")
             evidence[str(index)] = item.binding | {"compiled_source_sha256":hashlib.sha256(compiled).hexdigest()}
         if evidence:
             (destination / "compilation-evidence.json").write_text(json.dumps({"version":1, "kernels":evidence}, sort_keys=True, indent=2) + "\n")

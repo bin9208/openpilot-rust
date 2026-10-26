@@ -313,20 +313,42 @@ fn load() -> Context {
     assert_eq!(canonical.receipt.rewrite_count, 4);
     let b_source = &baseline.files["bundle/kernel-92.compiled.ll"];
     assert_eq!(
-        canonical.source.as_bytes(),
+        renamed.as_bytes(),
         hold(b_source, 16 * MIB, &job, &mut guards, true).as_slice()
     );
-    let b_rewrite = hold(
-        &baseline.files["bundle/kernel-92.guarded-add.json"],
+    let b_policy = &baseline.files["bundle/kernel-92.source-policy.json"];
+    let policy = hold(b_policy, 4 * MIB, &job, &mut guards, true);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&policy).unwrap(),
+        json!({"version":1,"policy":"preserve-original-flags","symbol_rename_only":true,
+            "math_rewrite_applied":false,"helper_executed":false,
+            "original_source_sha256":selected.source.sha256,
+            "renamed_source_sha256":sha(renamed.as_bytes()),
+            "compiled_source_sha256":sha(renamed.as_bytes()),
+            "original_source_bytes":original.len(),"compiled_source_bytes":renamed.len()})
+    );
+    let bytes = hold(
+        &baseline.files["bundle/compilation-evidence.json"],
         4 * MIB,
         &job,
         &mut guards,
         true,
     );
+    let evidence: Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(evidence["version"], 1);
+    let binding = &evidence["kernels"][selected.kernel.to_string()];
+    assert_eq!(binding["source_policy"], "preserve-original-flags");
+    assert_eq!(binding["source_policy_receipt_sha256"], b_policy.sha256);
+    assert_eq!(binding["original_source_sha256"], selected.source.sha256);
+    assert_eq!(binding["renamed_source_sha256"], b_source.sha256);
+    assert_eq!(binding["compiled_source_sha256"], b_source.sha256);
     assert_eq!(
-        serde_json::to_value(&canonical.receipt).unwrap(),
-        serde_json::from_slice::<Value>(&b_rewrite).unwrap()
+        binding["object_sha256"],
+        baseline.files["bundle/kernel-92.o"].sha256
     );
+    assert_eq!(binding["helper"]["enabled"], true);
+    assert_eq!(binding["helper"]["sha256"], admission.current.helper_sha256);
+    assert!(binding.get("rewrite_receipt_sha256").is_none());
     assert_eq!(
         d.compile_request.path,
         directory.join("compile-request.json")
@@ -340,8 +362,12 @@ fn load() -> Context {
         selected.source.sha256
     );
     assert_eq!(
-        compile_request["files"]["guarded"]["sha256"],
+        compile_request["files"]["parity"]["sha256"],
         b_source.sha256
+    );
+    assert_eq!(
+        compile_request["files"]["policy"]["sha256"],
+        b_policy.sha256
     );
     let bytes = hold(&request.events, 16 * MIB, &job, &mut guards, true);
     let events: Value = serde_json::from_slice(&bytes).unwrap();
@@ -374,6 +400,14 @@ fn load() -> Context {
     for key in ["compile_cached_calls", "original_executions", "taps"] {
         assert_eq!(compiler[key], 0);
     }
+    let strict_receipt: Input =
+        serde_json::from_value(compiler["guarded_rewrite"].clone()).unwrap();
+    assert_eq!(strict_receipt.path, directory.join("guarded-add.json"));
+    let bytes = hold(&strict_receipt, 4 * MIB, &directory, &mut guards, true);
+    assert_eq!(
+        serde_json::to_value(&canonical.receipt).unwrap(),
+        serde_json::from_slice::<Value>(&bytes).unwrap()
+    );
     let mut candidates = BTreeMap::new();
     for (name, variant) in &d.variants {
         assert_eq!(variant.source.path, directory.join(format!("{name}.ll")));

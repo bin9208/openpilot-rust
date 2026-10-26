@@ -1141,3 +1141,332 @@ Final `Box<Plan>`화 두 줄이다. wire/content/selector/count와 strict lint�
 GHA는 아직 실행하지 않았으며, 그 뒤의 자연 host A/B/C/D 결과는 pending이다.
 독립 감사는 private scratch `ci/model6c-actual-audit.json`에 남겼다. 이 기록은 numeric 실패 해결,
 새 D12 수용, full128/역사 모델 수용 또는 모델 승격의 근거가 아니다.
+
+## 2026-10-26 source57/69 cohort와 자동 current model 재진입
+
+source `57e1761c5cac9ddee282550d8c079083e6fa9a5a`의 genuine compiler
+[run40256938672/job121360705285](https://github.com/bin9208/openpilot-rust/actions/runs/40256938672/job/121360705285)은
+최종 SUCCESS다. Box 수정 뒤 library2·caller14/ignored2·COPY1·mixed/order7·strict Clippy와
+source/SDK 후봉인·cleanup이 실제 통과했다. 기능/원문/두 ZIP 감사는 compiler-native-emission
+문서의 source57 절에 남겼다. 이를 current model의 cached-ISA feature Clippy 또는 A/B/C/D 수치
+결과로 확대하지 않는다.
+
+source57의 current model API 조회는 total_count0이다. Git57 WF는 push만 허용하고
+workflow_dispatch가 없으며 `compiler_schedule/export.rs`를 paths에 포함하지 않았다.
+부모가 보고한 manual422를 로컬에서 재현하거나 dispatch하지 않았다. 해당 source의 current
+model actual 결과는0이며, 앞선 source6c의 중단 결과나 source0283의 성공으로 대신하지 않는다.
+
+부모의 source `69d5489463e22a9ef4245cc941a5788f795a8b99`는 current model paths에
+`rust/crates/model-runtime/src/compiler_schedule/**`와
+`rust/crates/model-runtime/src/cpu/diagnostic_482_writer.rs` 두 개를 추가했다.
+Git57↔69의 모든 차이는 workflow3·기록2개로 한정되고 `rust`/`tools`/`tinygrad_repo` tree OID는
+각각 같다. genuine WF 전체 blob과 current model jobs도 같다. F02 source3·CLI·현재 helper
+`de8c8946d13e0e555f542f0939a32474efa655d8bd5a16dfc19ad240fa16cfc2`·D writer
+`51047852eb0c81fa1d804764f6a28198190775d796c86fc28d542ea2c195c9a7`의 blob/SHA를 대조했다.
+따라서 source57의 genuine 수용과 source69의 앞으로 실행할 모델을 동일 기능 source cohort로
+연결할 수 있다. source seal과 실제 CPU/provider/config·A/B/C/D 결과는 run별로 유지한다.
+
+API에서 source69의 새 push
+[run40257284043/job121361745784](https://github.com/bin9208/openpilot-rust/actions/runs/40257284043/job/121361745784)이
+생성됐음을 확인했다. 감사 시점 step1~12 success, step13 in_progress, 후봉인·required·cleanup은
+pending이다. 실행 중 log/artifact는 다운로드하지 않았다. 아직 cached15/ISA14/A91/B/C12/D pair의
+성공·실패나 자연 CPU/LLVM context를 판정하지 않는다. 새 관측·tap·수학/expected 변경·모델 승격0이며
+CI 재실행·dispatch/cancel 및 로컬 model/compiler/oracle 실행도0이다.
+
+## 2026-10-26 source69 actual 완료 — Intel에서 writer92 guarded 차이 재현
+
+[source69d5489/run40257284043/job121361745784](https://github.com/bin9208/openpilot-rust/actions/runs/40257284043/job/121361745784)은
+completed FAILURE다. 판정은 해당 Git69 blob에 결합하며 부모의 후속 policy 기대 count 수정 WIP와
+분리했다. step13 최초 오류는 helper1411의
+`strict original/native byte mismatch retained; diagnostic is not numerical acceptance`다.
+C/D가 완료된 뒤에도 B mismatch를 sticky로 유지한 결과다. 모든 child command는 exit0이며
+이번 실패는 앞선 source6c의 Clippy 중단이나 후봉인 실패가 아니다.
+
+| actual 범위 | 결과 |
+| --- | --- |
+| current binary/libtest compile, cached-ISA feature strict Clippy | PASS |
+| ISA unit14 / cached-code unit15 | PASS / PASS |
+| A fresh complete roster91 / calls176 | source/object/image·ABI·host ISA admission PASS |
+| B original/native plain↔tap, 각 two-frame output12 | tap 영향 없음. original/native는 model-1.bin의 3 zero sign 불일치 |
+| C strict explicit cached original BINARY91 | 기존 B original output12 전체 exact |
+| D rename-only writer92 + retained original90 | 기존 original output12 전체 exact |
+| D guarded writer92 + retained original90 | model-1.bin 불일치, output12 전체가 B native와 같음 |
+| source/SDK/independent after, child recovery, cleanup | step14/15/16/19/20 success |
+| complete numerical-required | step17 failure, B strict 기준 유지 |
+
+### 자연 host와 실제 compiler context
+
+host는 GenuineIntel / `INTEL(R) XEON(R) PLATINUM 8573C` / vCPU4다. 원본의 실제 LLVM18
+provider `/usr/lib/llvm-18/lib/libLLVM.so.1` SHA는
+`5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`다.
+원본 A compile-event90과 D 양쪽 before/after config를 raw JSON에서 대조해 동일함을 확인했다.
+
+- CPU `sapphirerapids`, triple `x86_64-none-unknown-elf`, passes `default<O2>`.
+- LoopUnrolling/LoopVectorization/SLPVectorization/VerifyEach가 모두1.
+- constructor codegen_level2, relocation_mode2, code_model0.
+- 원본 compiler_cpu.py6679B SHA
+  `db106591197315ecf28f0e15de99d2841c9892e6e58290213c62c598e7014139`가 Git69와 같다.
+  helper558의 `CPULLVMCompiler(['x86_64','native'])`와 원본 compiler_cpu.py99~100의
+  LLVM host CPU/features 조회 경로를 읽어 확인했다. 임의 CPU forcing을 추가하지 않았다.
+
+D 두 compile은 같은 worker의 LLVM context/target-machine/pass-options identity를 사용했다.
+원본 모델 추가 실행0·원본 compiler 실제 호출2·compile_cached0·새 tap0을 compiler receipt와
+최종 D receipt에서 각각 확인했다. A/B의 기존 원본 실행까지0이라는 의미는 아니다.
+
+### B/C/D raw 독립 대조
+
+새 artifact12623466484는45,351,509B, SHA256
+`9c4c58a54721d0e8ac0425c38caa2e074adc881ceae6f765ac3c6dd7edc1a65e`다.
+API expected bytes/digest와 저장 growth admission 뒤1회 다운로드했다. 1,387 safe unique/
+nosymlink member·expanded135,298,652B·모든 CRC PASS다. 과거 archive는 다시 받지 않았다.
+로컬은 JSON/IR/ELF section metadata·raw bytes의 inert read만 했으며 실행하지 않았다.
+
+선택된91개의 SOURCE/object/BINARY 각각을 ZIP raw 길이/SHA와 대조했다. C12·D 두 후보12·
+B original/plain/tapped/native raw를 이름별 전체 bytes와 receipt SHA에 결합했다. 원본 tap과 C,
+D rename-only는 원본12와 모두 같고, D guarded12는 B native12와 모두 같다.
+
+B 유일한 차이는 `model-1.bin`10,304B의 byte offset `[403,407,5399]`, f32 index
+`[100,101,1349]`다. 세 값 모두 원본 `00000080`(-0), native/guarded `00000000`(+0)다.
+다른11개 출력과 model-1의 다른 bytes는 같다.
+
+| raw model-1 결과 | SHA256 |
+| --- | --- |
+| original/plain/tapped, C, D rename-only | `7fe2075ebcc4048be72666c5fc101238df672d438dfb849507251293d4c43242` |
+| B native, D guarded | `bbebf82fb3e5c20efd6011d5c538b005464e4f9a7eaccc1f2cd1338f44f2732f` |
+
+D의 교체 call은175, selected roster index90/kernel92다. 원본 SOURCE166,049B SHA는
+`e223a2c36c6bde7cf676bb92fd2529858a723f9ecfa91c811b2b941756a9bea0`다. 원본 함수명
+`r_322_2_4_256_32`를 `op_impl_92`로 바꾼 것만 D rename-only SOURCE와 다름을 전체 문자열로
+확인했다. 동일 원본 compiler context에서 아래 실제 object/image를 얻었다.
+
+| writer | SOURCE SHA256 | object SHA256 | image SHA256 |
+| --- | --- | --- | --- |
+| rename-only | `9781b747d6d436694b7d248a2b29b2fd95ddd78009405674e303a9fa405f6952` | `bf56a30c37f0128497b626329df7239dd7a1c4b5dd9ec728d501f2c11deebea1` | `324697e4d28a400da3c521fea2f9140eea04d50f19e6771a96549f4b8a5a6767` |
+| guarded | `ffc2206baa1f05f49a5c9d07b68de71da1a1437485da87d8e4a75d0692a31b52` | `a8fbf958e61e4424822a54512cd618e629308479ea16c05b3bd38896d47441da` | `fcec802c0d092d54ceab436f6cd095152cdce1ddf6f8e0ebf0cf2e7a00902b09` |
+
+원본 A image도 rename-only image SHA와 같다. ELF64 section header만 읽어 object의 `.text`를
+독립 추출했고 원본 A와 rename-only는14,244B·SHA
+`d378323b17a16fb771353d05773eee890c44898f22b048450b22634233e0f7c9`로 동일하다.
+guarded는14,260B·SHA `4f2bf877082d043f87752fa33d2edb1c41ebca26c262745b7b943786a5c7ba42`다.
+기존 ISA receipt의 instruction count는 각각2410/2411이며 양쪽 모두 같은 실제 host 요구를 통과했다.
+로컬 disassembler/LLVM/compiler 실행은0이다.
+
+### 좁혀진 원인과 다음 검토 범위
+
+두 D IR의 전체 차이는 네 군데다. source line4231/4302/4374/4446 부근의
+`fadd nsz arcp contract afn a, (select cond, +0, b)`를 guarded가
+nonzero `fadd arcp contract afn a,b`, zero `fadd a,+0`, 후속 select로 펼친다.
+현재 artifact의 정확한 IR delta이며 수학이나 expected를 새로 계산한 결과가 아니다.
+
+C 성공만으로 ABI 일반화를 하지 않는다. 이번에는 다른90 PROGRAM 고정·동일 원본 compiler
+context의 D pair가 rename-only exact / guarded=B mismatch를 재현했다. 따라서 이 two-frame의
+strict byte parity 차이는 writer92의 해당 guarded rewrite로 좁혀진다. 원본/fresh context라는
+이름만 바꾸거나 CPU/provider/issuer admission 기준을 조정해서 해결할 근거는 없다.
+
+다음 최소 source 검토 후보는 `guarded_add.rs`의 이 `nsz` zero-arm canonicalization 계약이다.
+원래 select/fadd의 부호 선택과 기존 보호 목적을 함께 보존하는 구체안을 먼저 검토해야 한다.
+현재 자료는 세 output index가 네 rewrite 중 어느 SSA/lane·기계 instruction에 대응하는지까지
+확정하지 않는다. 새 tap·추가 original 실행·재dispatch 없이 보존된 두 IR/object부터 검토할 수 있다.
+이번 감사에서 production/math/expected/threshold/CPU/ISA 소스 변경은0이다.
+
+### 후봉인과 수용 한계
+
+raw source/SDK/Python/Python-base before/after snapshot 및 source/index·prepared SDK manifests/
+roster/rejection 쌍이 동일하다. held 검증 실패가 없고 C helper copy 원본 불변도 확인했다.
+registry의 before는 helper 메모리 baseline에서 after와 대조됐으며 final `pass=true`, failures=[],
+all_owned_children_reaped=true, children.live=[]다. source/SDK required step16 success이므로
+이전 stale helper pin assertion도 이번에는 실제 통과했다. B mismatch가 있어도 후봉인·cleanup이
+성공한 사실과 최종 numerical gate failure를 분리한다.
+
+독립 대조 결과는 private scratch `ci/model69-actual-audit.json`에 보존했다. 같은 source cohort의
+F02 Clippy 수정은 cached-ISA feature에서도 PASS다. D compiler2의 Python 실행 edge는 별도
+pending이며 production cached default-disabled·strict admission·B sticky를 유지한다.
+full128·역사 half/sNaN5·oldPR1344/frozen context·전체 모델·기기 수용 및 퇴역 credit는0이다.
+로컬 model/oracle/compiler/Cargo/test/Clippy 실행·GHA dispatch/rerun/cancel·stage/commit/push0이다.
+
+## 2026-10-26 #482 original-parity caller policy repair — GHA 미실행
+
+부모가 승인한6개 source만 수정했다. source69 D에서 확인한 writer92 guarded 차이를 근거로,
+native fresh capture의 호출 정책을 원본 flags 보존으로 분리한다. standalone canonicalizer의
+엄격한 zero/sNaN 의미를 바꾸거나 특정 kernel/hash/CPU를 예외 처리하지 않는다.
+
+### 실제 호출 정책과 증거
+
+`native.py::compile_kernel(..., preserve_original_flags=False)`의 기본값은 기존 strict 경로다.
+`capture.py::capture_cpu`의 실제 fresh compile 호출만 `True`를 명시한다. 일반 fresh와 cached
+모델의 fresh 보조 kernel 모두 같은 호출을 지나며, 기존 `fresh_in_cached` symbol namespace도
+보존한다. 새 사용자 CLI·환경변수 toggle은 없다. `True`이면 기존 단일 함수명 rename 뒤의
+SOURCE를 fast-math flags/select/fadd 변경 없이 실제 `compile_to_obj`에 전달한다.
+
+기존 paired helper가 설정돼 있으면 parity에서도 helper ELF/FD/SHA/identity를 compile 전후
+검증하고 동일16MiB source admission을 적용한다. `_guarded_add` subprocess는 실행하지 않는다.
+기본 False는 기존 helper 실행/receipt/failure/cleanup 경로를 그대로 사용한다. 두 helper env가
+모두 없는 legacy 경로의 rename-only/no-compilation-evidence 동작도 보존했다. 실제 #482 경로는
+admitted helper가 설정돼 있으므로 아래 parity 증거가 반드시 생성되고 D에서도 검증된다.
+
+`compile.py::export_cpu`는 실제 compiler 입력을 기존 `.compiled.ll`에 남긴다. parity는 별도
+`kernel-N.source-policy.json`을 쓰며 binding의 `source_policy=preserve-original-flags`,
+`source_policy_receipt_sha256`로 묶는다. receipt는 원본/rename/compiled SHA와 길이,
+symbol_rename_only=true, math_rewrite_applied=false, helper_executed=false를 기록한다.
+canonicalizer를 실행하지 않은 것을 `unchanged/rewrite_count=0` strict receipt로 위장하지 않는다.
+strict 경로의 `.guarded-add.json`과 기존 receipt 형식은 유지하며 unknown policy는 거부한다.
+기존 `CompilationEvidence` DTO와 compilation-evidence index version1을 유지하고 per-kernel
+binding으로 정책을 구분한다. graph/ABI/cached certificate 형식은 바꾸지 않았다.
+
+### 기존 D 두 후보 유지
+
+`Controller.writer_pair`의 compile request는 인증된 A original·B parity `.compiled.ll`·B
+source-policy receipt·A compiler config를 전달한다. `writer_pair_compile`은 B 입력이 정확한
+A 함수명 rename과 canonical parity receipt인지 먼저 결합해 확인한다. 같은 기존 held strict
+helper에서 guarded 후보를 생성하고, 그 실제 receipt를 D namespace의 `guarded-add.json`으로
+보존한다. D compiler receipt는 이 파일의 path/bytes/SHA를 추가로 봉인한다.
+
+Rust `diagnostic_482_writer.rs::load`는 B가 rename-only인지, original/compiled/object/helper SHA와
+policy receipt가 맞는지 확인한다. D guarded SOURCE/receipt는 A에서 계산한 기존 strict canonicalizer
+결과와 대조한다. 따라서 예전의 'D guarded가 B guarded와 같아야 함' 의존을 제거하면서
+strict 후보의 원문 검증을 유지한다. A 원본91 Admission·C baseline·다른90 PROGRAM·call175
+교체 경계·같은 자연 compiler context 검사는 그대로다. 새 E/F stage나 tap은 없다.
+
+### 회귀 검사·실행 edge와 수용 gate
+
+기존 `catalog` target은 **normal4 / ignored3**, selector 이름도 그대로다. hosted bridge 안에
+아래 사례를 추가하거나 실제 새 정책의 증거 파일 이름에 맞춰 검증을 연결했다.
+
+- 두 zero-arm·두 operand-order의 네 조합을 일반/fresh-cached namespace에서 검사한다.
+  compiler에 전달된 SOURCE·남은 flags·policy/hash를 원본 rename과 대조한다.
+- `_guarded_add`를 poison해 parity가 strict rewrite를 호출하지 못하게 한다. 원본에 이미 있는
+  diagnostic namespace도 parity에서는 보존한다. strict 기본 경로의 collision 거부는 유지한다.
+- parity source cap, paired helper SHA/path·native ELF admission, compile 후 helper identity 변조
+  거부를 검사한다. 기존 strict helper 오류/descendant/timeout/overrun 검사는 유지한다.
+- 실제 TinyJit capture/export의 모든 fresh 호출에서 True 전달·COPY/evidence 정렬·source-policy
+  파일/실제 object hash를 확인한다. helper 없는 legacy output roster도 유지한다.
+- publisher의 전체 immutable file roster/reuse 거부를 유지하고 source-policy 증거를 확인한다.
+  combined caller proof는 guarded_receipts=0, source_policy_receipts>0,
+  guarded_helper_executions=0을 실제 새 정책으로 기록한다.
+
+**새 process entrypoint/실행 edge는0개**다. production parity는 기존 kernel당 strict-helper
+subprocess를 생략하며 compiler 호출은 그대로다. D의 Python worker·strict helper1회·원본
+compiler2회/model0·compile_cached0·native prepare/execute 두 selector·linker 호출 수는 그대로다.
+새 D 파일은 strict receipt 하나이며 기존4MiB receipt admission·C+D256MiB 실제 합산과 forecast,
+180초 D/global deadline·artifact512MiB retention에 포함된다. cap/deadline은 늘리지 않았다.
+
+hosted bridge의 기존 Python process 안에서 추가되는 LLVM `compile_to_obj` 호출은10회다.
+그 중8회는 네 조합×두 namespace,1회는 원본 namespace 보존,1회는 compile 후 helper 변조
+거부다. 생성 object는 실행하지 않는다. 추가 original model 실행이나 추가 test process/helper
+subprocess는 없다. 이10회도 로컬 실행0이며 부모 GHA에서만 수행한다.
+
+standalone `guarded_add.rs`, CLI, 일반13·CLI4·256행 strict zero/sNaN 검사와 `cached_code.rs`
+issuer/Admission은 바이트 그대로다. A/B/C orchestration·B 전체12 exact 비교·plain/tap parity·
+sticky failure·후봉인·회수/caps/deadline 함수 AST도 보존했다. 다음 actual에서 Clippy·ISA14·
+cached15·A91·B12 exact·C12·기존 D 두 후보 완결과 source/SDK/child gate를 확인해야 한다.
+어떤 B 차이도 계속 실패하며 D strict 후보의 차이는 숨기거나 B 수용으로 대체하지 않는다.
+source69 D의 writer 단일 교체 성공을 이번 전체 fresh91 parity 성공으로 미리 올리지 않는다.
+
+### 부모 통합용 source와 로컬 확인
+
+| 변경 파일 | SHA256 |
+| --- | --- |
+| `rust/tools/model_export/native.py` | `f83f5541a832a316c6b2ceb1b10578cfd9da99632f24ec593aea0728497d2a6c` |
+| `rust/tools/model_export/capture.py` | `a44a5a0d911b9f7dded1dbdfb4eeb454baf53cce6738ae9cd2e0e88212b1fece` |
+| `rust/tools/model_export/compile.py` | `1aba5d607faff99fc19fe7230c5d36ce87ce584cc14814b18d6908ae1f938237` |
+| `tools/ci/model_current_triplet_482.py` | `81d2e8ee3ad1a4d905d014da17425c5446d0377ef5bbdf9c3cbafe0928b3776d` |
+| `rust/crates/model-runtime/src/cpu/diagnostic_482_writer.rs` | `bed89b27feee9b0a05f7a8ba34a9d696bf3639af52374d63c55d697091f293ce` |
+| `rust/crates/model-runtime/tests/catalog.rs` | `c6f45c288e8144da8889ee7cfbf793afbebce205893917f123c4f66d7b83d3dc` |
+
+부모가 갱신할 기존 literal은 current-triplet WF의 MODEL482_HELPER_SHA256과 post helper assertion,
+그리고 python-rust-523.yml의 helper/D writer/catalog source pin이다. catalogue count/selector 및
+standalone strict count 변경은 없다. exporter source-roster는 기존 전체 source 봉인을 계속 사용한다.
+Focus/ledger/pins/WF/Cargo/lib/외부 registry는 수정하지 않았다.
+
+로컬은 production4 Python·embedded3 script AST, Rust1.94 rustfmt/check, diff/check와 불변
+함수·strict source/test/issuer bytes 대조뿐이다. Cargo/type/build/test/Clippy/LLVM/compiler/model/
+oracle·CI dispatch/rerun/cancel·stage/commit/push0이다. source 구현 완료와 actual 수용을 구분하며
+전체 모델/full128·historical half/sNaN5·oldPR1344/frozen·기기 수용 및 퇴역 credit는 여전히0이다.
+
+## 2026-10-26 catalog 정책 회귀의 current branch 실행 연결 — GHA 미실행
+
+정적 선택 경로를 확인한 결과 새 정책 회귀가 들어간 `catalog` ignored3은 `rust.yml`의
+model-pipelines step20에서 ELF를 만들고 step22/26에서 실행하도록 연결돼 있었다. 그러나 그
+workflow는 dev/main push·PR·manual 경로이며, 이번 작업 branch의 current helper는 lib ELF의
+ISA14/cached15만 실행했다. `Clippy --tests`는 타입검사일 뿐 이3개의 실제 실행 증거가 아니다.
+native-units의 수동 `run_once` 목록에도 catalog가 없었다. 부모가 이 gap을 확인하고 기존
+controller를 통한 catalog no-run1회와 기존 exact selector3회의 추가를 승인했다.
+
+### 선택·cache·증거 경계
+
+`Controller.run`에 `cargo test ... --test catalog --no-run --message-format=json`을 추가한다.
+`common_args`의 현재 SDK/locked/no-default-features/cached-program-isa를 그대로 쓰며 기존
+`select`가 Cargo package/source/features/profile과 유일한 executable을 검사한다. 같은 JSONL에서
+`catalog` kind=test/profile.test=true와 실제 `publish-model-catalog` bin/profile.test=false를
+고른다. 두 ELF는 기존 hold/DSO 검사에 추가하며 third selector에는 이 publisher path/SHA를
+명시한다. helper를 추측한 경로나 과거 ELF로 대체하지 않는다.
+
+각 selector는 `$CI_JOB_TEMP/build/target/catalog-policy/{0,1,2}`의 서로 다른0700 private root,
+빈 `xdg`·`tmp`, 처음에 없는 `cache.db`·`proof`를 받는다. command별 env copy에만 `CACHEDB`,
+`XDG_CACHE_HOME`, `TMPDIR`, `MODEL_BRIDGE_PYTHON`, `MODEL_PUBLISHER_POLICY_PROOF`를 넣는다.
+controller의 `self.env.CACHEDB=$CI_JOB_TEMP/build/model482/original-cache.db`는 바꾸지 않는다.
+각 selector 전후에 그 A cache가 absent/!symlink인지 검사하므로 catalog가 A worker의 fresh-cache
+조건을 오염시키면 즉시 실패한다. 임시 파일 삭제는 이미 허용된 mutable target child 안에서만
+발생하며 build scanner의 예외 범위·3회·root identity·cap·기한을 확장하지 않는다.
+
+first selector의 기존 C peer는 executable maps에 표본 관측될 수 있다. 종전에는 그 peer 자체도
+`TemporaryDirectory` 종료 시 삭제돼 원래 경로까지 끝에 확인하는 `Holds.verify`와 충돌했다.
+테스트의 peer 배치 한 줄만 `TMPDIR/catalog-peer-*/peer`의 retained directory로 옮겼다.
+실제 C 원문/clang 호출/5개 success·failure 모드/descendant 검사는 그대로이며 pid·receipt
+임시는 기존대로 삭제한다. 이 작은 ELF는 job 정리까지 남아 기존 FD/path/SHA 최종 hold를
+통과해야 한다. maps/command/공통 Holds/최종 후봉인에 삭제 허용이나 skip을 넣지 않았다.
+
+command stdout/stderr와 Cargo JSONL은 기존32MiB 로그 경계로 보존한다. selector별
+`catalog-policy-inputs-N.json`은 source·cache/proof 경로와 catalog/publisher/Python/guarded
+실제 path·길이·SHA를 기록한다. selector3/3을 확인한 뒤 `catalog-policy.json`을 쓰며 third의
+실제 `complete.json`은4MiB 이내로 `catalog-policy-publisher.json`에 복사한다. 이 파일도 기존
+proof512MiB budget에 들어간다. selector마다64MiB 추가 growth를 기존8GiB build/registry cap
+안에서 admission하고, 기존 no-run900초·selector180초·global40분 및 finalizer reserve를 따른다.
+
+### 추가 실행 수와 변하지 않는 gate
+
+추가 test 최상위 command는 정확히4개다.
+
+1. `current-catalog-test`: catalog no-run1회.
+2. `catalog-policy-0`: `guarded_add_bridge_retains_original_and_compiled_source_evidence` exact1/0/0.
+3. `catalog-policy-1`: `guarded_add_publish_reuse_requires_exact_evidence_roster` exact1/0/0.
+4. `catalog-policy-2`: `native_publisher_with_guarded_emitter_preserves_binding_policy` exact1/0/0.
+
+별도로 새 두 ELF의 기존 DSO closure 검사를 위해 `provider-dso-9/10` 두 command가 추가된다.
+위4개에 이2개의 provider 검사까지 합하면 controller command 증가는6개다. 새 Python callsite는
+0개이며, 이미 있던 catalog의 Python3 callsite를 branch에서 각각1회 활성화한다. 그 안의 기존
+clang native-peer compile, strict helper/오류 통제, linker·publisher·negative CLI도 함께 수행한다.
+상단 caller-policy 구현 기록의 process-edge0은 이 branch 실행 연결 전 source 변경만의 범위다.
+
+실행 대상은 원본 driving model이 아닌 기존64원소 COPY/산술 toy와 두16원소 publisher toy다.
+publish/reuse 검사는 기존 반복 횟수 그대로이며 third의 tiny emission은 기존1회다. first의 신규
+원본 flags object compile10회도 위에서 기록한 그대로다. full model/original model 실행 추가0,
+A91·B output12 exact·C12·D compiler2/model0·ISA14·cached15·standalone strict13/CLI4/256은
+유지한다. catalog는 normal4/ignored3, D는2 selector로 count·이름 변화가 없다. E/F 단계,
+새 CLI/env policy toggle, Rust NativeRunner bridge나 CI framework를 추가하지 않았다.
+
+최종 source pin은 다음 두 파일에서 갱신된다. 나머지4 source SHA는 바로 위 표 그대로다.
+
+| 파일 | bytes / SHA256 |
+| --- | --- |
+| `tools/ci/model_current_triplet_482.py` |116096 / `dafe96d44bb819480427ecb30c7f726a910a0650648ff9abfdaa974ea85afda4` |
+| `rust/crates/model-runtime/tests/catalog.rs` |33133 / `cc765f59a2150cae27db0c63c561a9ae19f54813c2ff9602060ae9a3fed7d37b` |
+
+부모의 WF helper2곳+focused helper1곳과 catalog1곳 pin이 이 최종 SHA를 사용해야 한다.
+D writer pin은 위의 `bed89b27...` 그대로다. 로컬은 AST·rustfmt/check·diff/check·불변 source 대조만
+했으며 Cargo/test/Clippy/LLVM/compiler/model/oracle 실행0이다. 이 연결의 실제3/3, A cache 부재,
+provider/finalizer 후봉인과 B 전체12 exact는 다음 coherent source의 GHA에서 확인해야 한다.
+
+
+### 부모의 최종 소스 등록 — 실행 전
+
+변경한 exporter 원문 `capture.py`·`compile.py`·`native.py` 세 경로를 Focus의 명시 변경 목록과
+SHA 검사에 추가하여 고정 source367개로 등록했다. current-model workflow의 helper admission과
+후봉인 literal 두 곳을 모두 `dafe96d44bb819480427ecb30c7f726a910a0650648ff9abfdaa974ea85afda4`로
+동기화했다. model-family caller는 해당 exporter 변경에도 기존 전체 job을 실행한다. 비교
+selector·수치 허용치·원본 compiler context·standalone strict zero/sNaN 경계는 유지한다.
+
+새 catalog 세 selector는 별도 cache/proof를 사용해 A의 `original-cache.db` 부재 조건을
+보존한다. 그 tiny fixture 실행과 full-model A/B/C 및 D compiler2를 구분한다. 부모의
+로컬 확인은 indexed SHA·YAML/변경 Bash/독립·embedded Python 구문·Rustfmt·diff뿐이다.
+**이 정책 수정의 모델 수치 및 새 lifecycle 통합 actual은 아직 UNRUN이며 퇴역 credit0이다.**
