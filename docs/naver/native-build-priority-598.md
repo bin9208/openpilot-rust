@@ -154,3 +154,41 @@ provider header/library와 생성 입력의 전체 tree receipt를 추가했다.
 이 후속은 Actions 실행 전까지 미검증이다. source receipt·provider 별 검증과
 전체 AGNOS recipe에 실제 입력을 연결하는 단계는 구분한다. 빈 `verified_input_trees`를
 전체 도구체인/표준 라이브러리/AGNOS 시스템 검증의 증거로 쓰지 않는다.
+
+### 후속 검증 및 이어가기 상태
+
+입력 tree source `98e0b13ead50e21c86a4c8bf1d86a407e0ecab83`의
+[40302186437](https://github.com/bin9208/openpilot-rust/actions/runs/40302186437)은
+x64/ARM 모두 SUCCESS다. 각 host에서 자산5·실제 offline Cargo6·입력 tree/실제
+receipt CLI3 회귀와 strict Clippy, 실제 HTTPS 최초403바이트/재사용0바이트를 확인했다.
+이는 전체 AGNOS runtime 자체 빌드·세대 전환·실기 수용의 성공이 아니다.
+
+- PR #603 head `b42e5eaeec5a13bf83f24ccd31ab5e3364eb2d47`은 필수 전체 검사를
+  기다린다. 이 PR의 변경은 더 수정하지 않고 최신 source의 실패/성공을 확인한다.
+  모두 통과한 뒤 정상 병합하고 별도 병합 후 검사도 확인한다.
+- 입력 tree branch는 PR #603의 후속이다. 집중 검사는 수용했으며 #603 반영 후
+  최신 dev 기준의 PR 및 필수 검사로 이어간다. 전체 이슈는 닫지 않는다.
+- runtime 작업 checkout은 `/home/fma1/.codex/worktrees/runtime-native-598/openpilot-rust`,
+  branch는 `codex/feat-599-verified-input-trees`다.
+- 기존 성능 PR #494 source `72ba387abaf54f9116409402c141faa5bb1ca54a`의
+  workspace log를 직접 읽었다. FFmpeg fixture 보완은 통과했고 dev-tools lib는
+  52 passed/12 failed다. media4개/raylib8개가 실제 filesystem 공간에 의존했다.
+  단순 빌드 전 admission 실패로 표현하지 않는다. 새 실행 이슈
+  [#604](https://github.com/bin9208/openpilot-rust/issues/604)를 #601 아래에 연결했다.
+- #604용 checkout은 `/home/fma1/.codex/worktrees/runtime-performance-601/openpilot-rust`,
+  branch는 `codex/fix-604-media-fixture-space`다. 원래 성능 head에서 분리했고 현재
+  읽기 감사만 수행했다. 기존 owner의 checkout과 원격 PR #494는 아직 변경하지 않았다.
+- 성능 checkout의 AGENTS에는 2026-10-23 all-local 지침이 있지만 이후
+  [#535](https://github.com/bin9208/openpilot-rust/issues/535)에 사용자가 2026-10-25
+  `bin-actions`는 타관리자의 현재 사용 불가 runner이며 GitHub 기본 runner를 쓰라고
+  명시한 결정이 있다. 이전 all-local 변경을 현재 검증 경로로 무조건 반영하지 않고
+  최신 지시와 각 트랙을 확인한다. 타관리 runner에 새 작업·정리를 보내지 않는다.
+- 원래 정상 배포 source b555의11개 build group과 feature/env 기록은 이전 #296
+  checkout의 `.analysis/scratch/2026-10-14-agnos296/build-target-groups-b55552db.sh`
+  및 `target-build-b55552db.json`에 있다. 실제 native recipe를 정할 원문 증거이며,
+  cross SDK 경로나 과거 build 결과를 comma native 환경으로 위장해 사용하지 않는다.
+
+다음 구현은 실제 native toolchain/헤더/provider/Python 모델 준비와 runtime roster,
+완전한 source/result 검증 후 generation 전환 및 기존 startup/update 연결이다.
+기기 설치·시험은 아직 하지 않았다. 사용자 장치 종류 질문은 답변 대기이며,
+구현/CI는 장치 종류 답변 없이도 진행할 수 있다. 사용자의 수용을 대신 체크하지 않는다.
