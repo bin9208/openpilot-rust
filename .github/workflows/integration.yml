@@ -8,8 +8,9 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: integration-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: integration-${{ github.event_name }}-${{ github.ref }}-preserve-v1
+  queue: max
+  cancel-in-progress: false
 jobs:
   build:
     uses: ./.github/workflows/tests.yaml

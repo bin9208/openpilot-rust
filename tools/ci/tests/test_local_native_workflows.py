@@ -40,6 +40,16 @@ def condition(original):
 
 
 class LocalNativeWorkflowTests(unittest.TestCase):
+    def test_validation_concurrency_preserves_pending_and_running_evidence(self):
+        for name in ('fast-checks.yml', 'integration.yml', 'rust.yml', 'tests.yaml',
+                     'naver-ci.yml', 'naver-apk-tools.yml', 'wiki-settings-check.yaml',
+                     'native-apt-scope.yml', 'carrot-peer-readiness.yml'):
+            with self.subTest(workflow=name):
+                policy = load(ROOT / '.github/workflows' / name)['concurrency']
+                self.assertEqual(policy['queue'], 'max')
+                self.assertEqual(policy['cancel-in-progress'], 'false')
+                self.assertTrue(policy['group'].endswith('-preserve-v1'))
+
     def test_every_execution_job_requires_the_registered_local_labels(self):
         for path in sorted((ROOT / '.github/workflows').glob('*')):
             if path.suffix not in ('.yml', '.yaml'):

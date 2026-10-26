@@ -10,7 +10,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: native-apt-scope-${{ github.ref }}
+  group: native-apt-scope-${{ github.ref }}-preserve-v1
+  queue: max
   cancel-in-progress: false
 jobs:
   actual-apt:

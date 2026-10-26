@@ -37,6 +37,32 @@ Rust 경로 및 고정 QEMU/PRoot ARM 실행 helper를 재사용하며 실시간
 
 ## 검증과 제한
 
+### PR #606의 준비 대기·APT·기존 CI 보존 보완
+
+기준 `bfffa2d30d1e8037cc3f7eb80b5a2b5264c8070c`의 필수 Rust 실행
+[40315420260](https://github.com/bin9208/openpilot-rust/actions/runs/40315420260)에는
+CarrotMan ARM 준비 대기와 webcam X64 APT 실패가 확인되었다. 기존 실행은 보존한다.
+후속 source에 #609의 실제 peer 준비 대기와 #610의 job 범위 native APT를 함께 반영한다.
+원래 기능 deadline·입력 pin·ARM 명령과 명시적인 cross APT 인자는 그대로 유지한다.
+#609의 별도 ARM 성공은 source `18e174c2788af1eb3d8de3e20826a3d84160cb43`의 근거이며,
+합친 새 source의 전체 PR 검사 성공으로 대신 쓰지 않는다. #610의 집중 실행도 별도다.
+
+후속 커밋이 기존 실행을 중단시키지 않도록 validation workflow9개의 branch별 group을
+`-preserve-v1` 접미사의 새 이름 공간으로 옮기고 `queue: max`, `cancel-in-progress: false`를
+적용한다. 기존의 중도 취소 group과 충돌하지 않아 전환 시점의 기존 대기도 보존한다. 재사용되는
+integration 하위 tests/naver/APK와 문서 설정 검사도 포함한다. publish/sync는 변경하거나
+활성화하지 않는다. concurrency가 없는 다른 workflow는 기본 실행을 유지한다.
+
+[GitHub의 공식 concurrency 규칙](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)에
+따르면 취소 false만으로는 기본 pending 한 개의 교체를 막지 못한다. `queue: max`는 같은
+group에 최대100개 pending run을 보존하며, 그 한도 뒤의 새 run은 취소된다. job 수가 아니라
+workflow run 대기 한도다. 검사 실행 순서/runner는 이 큐와 기존 job needs에 따라 유지된다.
+기존 실행을 수동 취소하거나 검사 결과를 다른 SHA의 성공으로 바꾸지 않는다.
+
+정책 회귀는 이9개 queue/취소 설정과 기존66개 job·needs·matrix·명령 보존을 함께 확인한다.
+로컬은 YAML/Python/Bash 구문·diff/읽기만 확인한다. PR 갱신 후 기존 run의 상태를 다시 읽어
+보존 여부를 확인하고, 정확 새 SHA의 필수 검사와 별도 병합 후 검사를 기다린다.
+
 로컬은 YAML/Python/Bash/Rust 구문·서식·diff/읽기 감사만 수행한다. 집중 workflow는
 X64와 별도 ARM guest에서 기존 실제 Cargo 재사용 회귀, native 공간 guard 및 bootstrap,
 실행 경로/원래 명령 보존 정책을 검사한다. ARM은 emulated execution이며 AGNOS나 물리

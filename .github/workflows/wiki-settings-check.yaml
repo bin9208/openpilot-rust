@@ -17,8 +17,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: wiki-settings-check-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: wiki-settings-check-${{ github.event.pull_request.number || github.ref }}-preserve-v1
+  queue: max
+  cancel-in-progress: false
 
 jobs:
   check:
