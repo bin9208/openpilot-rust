@@ -10,6 +10,7 @@ publish = false
 workspace = true
 
 [dependencies]
+openpilot-runtime-installer = { path = "../runtime-installer" }
 rustix = { version = "1", features = ["fs"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -35,3 +36,7 @@ path = "src/source_main.rs"
 [[bin]]
 name = "openpilot-runtime-prepare"
 path = "src/prepare_main.rs"
+
+[[bin]]
+name = "openpilot-runtime-native"
+path = "src/native_main.rs"

@@ -69,3 +69,44 @@ recipe SHA와 binary roster를 원문 plan에 다시 대조하고 혼합 compile
 
 검증 대기 상태다. 정확 SHA와 Actions 결과는 실행 뒤 이 기록 및 #600에 추가한다.
 실기 자체 빌드·정상 부팅·녹화·기존 업로드 수용은 완전한 후보 준비 뒤 사용자가 수행한다.
+
+## source-build 세대 구성과 선택 연결 (검증 대기)
+
+`openpilot-runtime-native --config CONFIG_JSON --build --root REQUEST_CHECKOUT`는
+고정된 store 소유 `build-workspace`에서 기존 그룹 driver를 실행하고 실행용 source root를
+별도로 만든다. 처음 설치한 checkout과 updater overlay의 절대 경로가 달라져도 Cargo 입력
+경로는 고정한다. 작업 중인 workspace는 별도 잠금을 유지하고, dirty/외부 workspace는
+reset하거나 덮어쓰지 않는다. 실행용 root는 같은 commit 재시도 때도 새로 만들어 이전
+정상 세대에 파일을 쓰지 않는다.
+
+컴파일 입력은 그룹 recipe에 유지한다. 모델·실행 데이터처럼 해당 binary 컴파일에 영향을
+주지 않는 내용은 plan의 `runtime_inputs`와 별도 검증 결과에 기록한다. 이를 변경해도
+무관한 Cargo cache key가 바뀌지 않는 실제 CLI 회귀를 추가했다. 컴파일에 영향을 주는
+헤더·정적 provider·생성 입력은 여전히 관련 recipe에 고정해야 한다. Report schema3은
+실제 compiler bin 디렉터리도 남기며 전체 toolchain receipt root와 대조한다.
+
+세대 구성은 기존 manager inventory sealer와 `runtime-elf-audit`를 같은 소스에서 빌드한
+실행 파일로 호출한다. 기존 installer의 source/경로/크기/SHA/AArch64 ELF 검사를 공개
+API로 재사용하고 release archive 항목은 만들지 않는다. 각 ELF와 외부 AGNOS library,
+soname의 실제 선택 경로와 hash를 묶으며 보고서가 모든 runtime ELF를 다루어야 한다.
+large tree는 봉인 경계의 시작/끝에서 각각 한 번 확인하고 그룹·library마다 다시 읽지 않는다.
+actual `/AGNOS`·`/VERSION`과 offroad 상태가 없으면 해당 native 작업을 거부한다.
+
+실제 Git blob을 읽어 `lane.onnx`/`v_asm_model.onnx`가 LFS 포인터임을 확인했다.
+source asset 해제는 그 커밋의 OID/크기와 정확히 일치하는 내용만 허용한다. 같은 길이의
+다른 모델이나 receipt 재작성, 일반 소스 변경은 허용하지 않는다. 기존 sealer에는 검증한
+source root·LFS 목록을 전달하는 명시적 입력만 추가했고 기본 release 경로는 유지했다.
+build.json은 원래 요청 source의 branch/origin/commit/date를 보존하고 descriptor로 hash를
+묶는다. 다른 SHA로 실행한 결과를 새 요청 SHA의 결과로 표시하지 않는다.
+
+완전히 검증한 descriptor만 게시하고, `--activate ID`는 offroad 재확인 뒤 active JSON을
+원자적으로 전환한다. 이전 정상 후보를 최대2개 함께 기록하며 `--resolve`는 실제 source와
+출력이 검증되는 후보만 반환한다. 오류·잠금·잘못된 상태는 pointer와 로그를 보존한다.
+
+**아직 배포 후보가 아니다.** 실제 pinned AGNOS toolchain/header/provider 준비와 전체
+그룹 recipe, native-generation protocol을 지원하는 launcher/updater, 자동 bootstrap 연결,
+전체 AGNOS 회귀·실제 자원 계측·사용자 기기 수용이 남는다. 현재 launcher/updater protocol이
+완성되지 않은 소스는 후보 게시 전에 실패하도록 gate를 두었다. CLI의 launch handoff도
+명시적 protocol 인자를 사용해 기존 launcher가 이를 지원하지 않으면 실패한다. protocol
+gate를 제거하거나 임의 성공으로 바꿔 진행하지 않는다. 로컬 구문·서식·diff만 확인했고 새
+회귀·공유 manifest 검사·source-aware sealer 컴파일은 bin-actions의 Actions에서 실행한다.

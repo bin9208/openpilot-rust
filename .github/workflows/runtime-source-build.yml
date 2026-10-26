@@ -103,6 +103,11 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-disk-space
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test disk_space
           python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/ci/tests -q tools/ci/tests/test_native_disk_guard.py
+      - name: Verify shared source-build manifest checks and compile the source-aware sealer
+        run: |
+          rustfmt --edition 2021 --check rust/crates/runtime-installer/src/lib.rs rust/crates/runtime-installer/src/identity.rs rust/crates/runtime-installer/tests/cli.rs rust/crates/dev-tools/src/bin/seal_runtime_package.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-installer --test cli source_build_reuses_original_manifest_checks_without_a_release_descriptor
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin seal-runtime-package
       - name: Preserve actual build evidence
         if: always()
         uses: actions/upload-artifact@v6

@@ -17,6 +17,37 @@ pub struct Plan {
     pub groups: BTreeMap<String, Recipe>,
     pub expected_source_growth_bytes: u64,
     pub remaining_object_growth_bytes: u64,
+    /// Runtime models/data/companions which do not affect a compiler invocation.
+    /// Their content is verified without changing unrelated Cargo cache keys.
+    #[serde(default)]
+    pub runtime_inputs: RuntimeInputs,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RuntimeInputs {
+    pub files: BTreeMap<std::path::PathBuf, String>,
+    pub trees: BTreeMap<std::path::PathBuf, std::path::PathBuf>,
+}
+
+impl RuntimeInputs {
+    fn verify(&self, root: &Path) -> Result<BTreeMap<std::path::PathBuf, String>> {
+        for (path, expected) in &self.files {
+            if crate::digest_file(&root.join(path))? != *expected {
+                return Err("runtime staging input digest mismatch".into());
+            }
+        }
+        let mut verified = BTreeMap::new();
+        for (tree, receipt) in &self.trees {
+            let digest = self
+                .files
+                .get(receipt)
+                .ok_or("runtime staging tree receipt is unpinned")?;
+            crate::inputs::Tree::read(&root.join(receipt))?.verify(&root.join(tree))?;
+            verified.insert(tree.clone(), digest.clone());
+        }
+        Ok(verified)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -29,6 +60,7 @@ pub struct Prepared {
     pub binaries: BTreeMap<String, objects::Object>,
     pub stored_output_bytes: u64,
     pub elapsed_ms: u128,
+    pub verified_runtime_trees: BTreeMap<std::path::PathBuf, String>,
 }
 
 impl Plan {
@@ -86,6 +118,23 @@ impl Prepared {
             return Err("invalid prepared native build".into());
         }
         self.source.verify(source_store)?;
+        let expected_runtime: BTreeMap<_, _> = self
+            .plan
+            .runtime_inputs
+            .trees
+            .iter()
+            .map(|(tree, receipt)| {
+                self.plan
+                    .runtime_inputs
+                    .files
+                    .get(receipt)
+                    .map(|sha| (tree.clone(), sha.clone()))
+                    .ok_or("runtime staging receipt is unpinned")
+            })
+            .collect::<std::result::Result<_, _>>()?;
+        if self.verified_runtime_trees != expected_runtime {
+            return Err("runtime staging proof differs from the recorded inputs".into());
+        }
         if self.reports.keys().ne(self.plan.groups.keys()) {
             return Err("prepared build groups do not match the recorded plan".into());
         }
@@ -98,12 +147,13 @@ impl Prepared {
         for (group, report) in &self.reports {
             let recipe = &self.plan.groups[group];
             let expected_recipe = format!("{:x}", Sha256::digest(serde_json::to_vec(recipe)?));
-            if report.schema != 2
+            if report.schema != 3
                 || report.source != self.source.source
                 || report.artifacts.is_empty()
                 || report.recipe_sha256 != expected_recipe
                 || report.rustc_sha256 != first.rustc_sha256
                 || report.cargo_sha256 != first.cargo_sha256
+                || report.toolchain_directory != first.toolchain_directory
                 || report.native_tools != first.native_tools
             {
                 return Err("mixed or incomplete source, recipe or native tool reports".into());
@@ -154,7 +204,36 @@ pub fn run(
     let started = Instant::now();
     plan.validate()?;
     let source = source_store::retain(root, source_store, plan.expected_source_growth_bytes)?;
+    let mut prepared = from_retained(
+        root,
+        cache,
+        toolchain,
+        source_store,
+        object_store,
+        plan,
+        source,
+    )?;
+    prepared.elapsed_ms = started.elapsed().as_millis();
+    Ok(prepared)
+}
+
+pub(crate) fn from_retained(
+    root: &Path,
+    cache: &Path,
+    toolchain: &Path,
+    source_store: &Path,
+    object_store: &Path,
+    plan: &Plan,
+    source: source_store::Snapshot,
+) -> Result<Prepared> {
+    let started = Instant::now();
+    plan.validate()?;
+    source.verify(source_store)?;
+    if crate::source::inspect(&root.canonicalize()?)? != source.source {
+        return Err("build workspace differs from retained source".into());
+    }
     let mut reports = BTreeMap::new();
+    let verified_runtime_trees = plan.runtime_inputs.verify(root)?;
     let mut binaries = BTreeMap::new();
     let mut stored_output_bytes = 0_u64;
     for (group, recipe) in &plan.groups {
@@ -201,7 +280,11 @@ pub fn run(
         binaries,
         stored_output_bytes,
         elapsed_ms: started.elapsed().as_millis(),
+        verified_runtime_trees: plan.runtime_inputs.verify(root)?,
     };
+    if prepared.verified_runtime_trees != verified_runtime_trees {
+        return Err("runtime staging inputs changed during compilation".into());
+    }
     prepared.verify(source_store, object_store)?;
     Ok(prepared)
 }

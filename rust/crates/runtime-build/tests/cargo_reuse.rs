@@ -133,6 +133,7 @@ fn prepared_groups_reuse_docs_and_rebuild_only_the_changed_binary_while_retainin
         ]),
         expected_source_growth_bytes: 8 * 1024 * 1024,
         remaining_object_growth_bytes: 0,
+        runtime_inputs: Default::default(),
     };
     let source_store = fixture._temp.path().join("sources");
     let object_store = fixture._temp.path().join("objects");
@@ -176,6 +177,59 @@ fn prepared_groups_reuse_docs_and_rebuild_only_the_changed_binary_while_retainin
     let mut mixed = first.clone();
     mixed.reports.get_mut("other").unwrap().cargo_sha256 = "0".repeat(64);
     assert!(mixed.verify(&source_store, &object_store).is_err());
+    // A model/data update is independently pinned, not a compiler input for
+    // these binaries. Changing it must not rebuild unrelated executable code.
+    let model = fixture._temp.path().join("runtime-model");
+    fs::create_dir(&model).unwrap();
+    fs::write(model.join("model.onnx"), b"runtime model A").unwrap();
+    let receipt = fixture._temp.path().join("runtime-model.json");
+    fs::write(
+        &receipt,
+        serde_json::to_vec(&openpilot_runtime_build::inputs::Tree::capture(&model).unwrap())
+            .unwrap(),
+    )
+    .unwrap();
+    plan.runtime_inputs
+        .trees
+        .insert(model.clone(), receipt.clone());
+    plan.runtime_inputs
+        .files
+        .insert(receipt.clone(), digest_file(&receipt).unwrap());
+    let model_a = run(&plan);
+    assert_eq!(model_a.stored_output_bytes, 0);
+    fs::write(model.join("model.onnx"), b"runtime model B").unwrap();
+    assert!(prepare::run(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &source_store,
+        &object_store,
+        &plan
+    )
+    .is_err());
+    fs::write(
+        &receipt,
+        serde_json::to_vec(&openpilot_runtime_build::inputs::Tree::capture(&model).unwrap())
+            .unwrap(),
+    )
+    .unwrap();
+    plan.runtime_inputs
+        .files
+        .insert(receipt.clone(), digest_file(&receipt).unwrap());
+    let model_b = run(&plan);
+    assert_eq!(model_b.binaries, model_a.binaries);
+    assert_eq!(model_b.stored_output_bytes, 0);
+    assert_ne!(
+        model_b.verified_runtime_trees,
+        model_a.verified_runtime_trees
+    );
+    for group in ["main", "other"] {
+        assert_eq!(
+            model_b.reports[group].cache_key,
+            model_a.reports[group].cache_key
+        );
+        assert!(model_b.reports[group].artifacts.iter().all(|a| a.fresh));
+    }
     let previous = fixture._temp.path().join("running-previous");
     first.binaries["runtime-fixture"]
         .materialize(&object_store, &previous)

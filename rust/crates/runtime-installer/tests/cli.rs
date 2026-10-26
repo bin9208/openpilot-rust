@@ -42,6 +42,44 @@ enum Package {
     DuplicateManifest,
 }
 
+#[test]
+fn source_build_reuses_original_manifest_checks_without_a_release_descriptor() {
+    let fixture = Fixture::new();
+    fixture.archive();
+    let result = fixture.install();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let root = fixture
+        .root()
+        .join("rust/.runtime-active")
+        .canonicalize()
+        .unwrap();
+    fs::remove_file(root.join(".runtime-release.json")).unwrap();
+    let manifest = openpilot_runtime_installer::verify_source_build(&root, &fixture.sha).unwrap();
+    assert_eq!(manifest.source_commit, fixture.sha);
+    assert!(openpilot_runtime_installer::verify_source_build(&root, &"0".repeat(40)).is_err());
+    let binary = root.join("rust/bin/openpilot-manager");
+    let mut bytes = fs::read(&binary).unwrap();
+    bytes[18] = 62;
+    fs::write(&binary, &bytes).unwrap();
+    let mut manifest = manifest;
+    manifest
+        .files
+        .iter_mut()
+        .find(|f| f.path == Path::new("rust/bin/openpilot-manager"))
+        .unwrap()
+        .sha256 = format!("{:x}", Sha256::digest(&bytes));
+    fs::write(
+        root.join("rust/runtime-manifest.json"),
+        serde_json::to_vec(&manifest).unwrap(),
+    )
+    .unwrap();
+    assert!(openpilot_runtime_installer::verify_source_build(&root, &fixture.sha).is_err());
+}
+
 struct Fixture {
     dir: TempDir,
     sha: String,

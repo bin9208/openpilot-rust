@@ -24,6 +24,11 @@ pub struct Snapshot {
     pub modules: BTreeMap<PathBuf, Source>,
 }
 
+pub(crate) struct Workspace {
+    pub root: PathBuf,
+    _lock: File,
+}
+
 fn directory(path: &Path) -> Result<()> {
     match fs::create_dir(path) {
         Ok(()) => (),
@@ -138,6 +143,11 @@ fn checkout(
         input.as_os_str(),
         OsStr::new(&reference),
     ])?;
+    add_worktree(store, destination, module, sha)
+}
+
+fn add_worktree(store: &Path, destination: &Path, module: &Path, sha: &str) -> Result<()> {
+    let repository = repository(store, module);
     git([
         OsStr::new("--git-dir"),
         repository.as_os_str(),
@@ -155,11 +165,28 @@ fn checkout(
 impl Snapshot {
     /// Revalidate before use, including the independent Git ownership and modules.
     pub fn verify(&self, store: &Path) -> Result<()> {
+        self.verify_with_metadata(store, None)
+    }
+
+    pub(crate) fn verify_with_metadata(
+        &self,
+        store: &Path,
+        metadata_sha256: Option<&str>,
+    ) -> Result<()> {
+        self.verify_runtime(store, metadata_sha256, &BTreeMap::new())
+    }
+
+    pub(crate) fn verify_runtime(
+        &self,
+        store: &Path,
+        metadata_sha256: Option<&str>,
+        assets: &BTreeMap<PathBuf, String>,
+    ) -> Result<()> {
         let store = store.canonicalize()?;
         if self.schema != 1
             || self.root.parent() != Some(store.join("checkouts").as_path())
             || self.root.canonicalize()? != self.root
-            || source::inspect(&self.root)? != self.source
+            || source::inspect_runtime(&self.root, metadata_sha256, assets)? != self.source
             || modules(&self.root)? != self.modules
         {
             return Err("retained source receipt does not match its checkout".into());
@@ -181,6 +208,111 @@ impl Snapshot {
         }
         Ok(())
     }
+
+    /// Each execution candidate gets its own root, including rebuilds of the
+    /// same commit. Staging must never write into an already running checkout.
+    pub(crate) fn fork(&self, store: &Path, expected_growth_bytes: u64) -> Result<Self> {
+        self.verify(store)?;
+        let store = store.canonicalize()?;
+        let _lock = lock(&store)?;
+        admit(&store, expected_growth_bytes)?;
+        let root = tempfile::Builder::new()
+            .prefix("runtime-")
+            .tempdir_in(store.join("checkouts"))?
+            .keep();
+        add_worktree(&store, &root, Path::new(""), &self.source.commit)?;
+        for (module, identity) in &self.modules {
+            add_worktree(&store, &root.join(module), module, &identity.commit)?;
+        }
+        let snapshot = Self {
+            root,
+            ..self.clone()
+        };
+        snapshot.verify(&store)?;
+        Ok(snapshot)
+    }
+
+    /// A fixed, store-owned build path keeps Cargo fingerprints stable when the
+    /// requested checkout comes from initial setup, an overlay, or a new commit.
+    /// It is never the preserved execution root and is locked through sealing.
+    pub(crate) fn workspace(&self, store: &Path, expected_growth_bytes: u64) -> Result<Workspace> {
+        self.verify(store)?;
+        if !self.modules.is_empty() {
+            return Err(
+                "native mutable build workspace requires this repository's flattened source layout"
+                    .into(),
+            );
+        }
+        let store = store.canonicalize()?;
+        let file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .custom_flags(
+                (rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK).bits() as i32,
+            )
+            .open(store.join("workspace.lock"))?;
+        if !file.metadata()?.is_file() {
+            return Err("native workspace lock is not regular".into());
+        }
+        rustix::fs::flock(&file, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
+        let _source_lock = lock(&store)?;
+        let root = store.join("build-workspace");
+        if fs::symlink_metadata(&root).is_ok() {
+            directory(&root)?;
+            let common = git([
+                OsStr::new("-C"),
+                root.as_os_str(),
+                OsStr::new("rev-parse"),
+                OsStr::new("--path-format=absolute"),
+                OsStr::new("--git-common-dir"),
+            ])?;
+            if Path::new(common.trim_end()).canonicalize()? != repository(&store, Path::new("")) {
+                return Err("refusing foreign native build workspace".into());
+            }
+            source::inspect(&root)?;
+            git([
+                OsStr::new("-C"),
+                root.as_os_str(),
+                OsStr::new("checkout"),
+                OsStr::new("--detach"),
+                OsStr::new(&self.source.commit),
+            ])?;
+        } else {
+            admit(&store, expected_growth_bytes)?;
+            add_worktree(&store, &root, Path::new(""), &self.source.commit)?;
+        }
+        if source::inspect(&root)? != self.source {
+            return Err("native build workspace source mismatch".into());
+        }
+        Ok(Workspace { root, _lock: file })
+    }
+}
+
+fn lock(store: &Path) -> Result<File> {
+    let lock = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .custom_flags((rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK).bits() as i32)
+        .open(store.join("source.lock"))?;
+    if !lock.metadata()?.is_file() {
+        return Err("source store lock must be a regular file".into());
+    }
+    rustix::fs::flock(&lock, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
+    Ok(lock)
+}
+
+fn admit(store: &Path, expected_growth_bytes: u64) -> Result<()> {
+    let space = rustix::fs::statvfs(store)?;
+    let available = space
+        .f_bavail
+        .checked_mul(space.f_frsize)
+        .ok_or("source space overflow")?;
+    if expected_growth_bytes == 0 || available < expected_growth_bytes {
+        return Err("insufficient space for this source import; previous sources preserved".into());
+    }
+    Ok(())
 }
 
 /// Import local committed objects and materialize a stable source root. Network
@@ -195,16 +327,7 @@ pub fn retain(input: &Path, store: &Path, expected_growth_bytes: u64) -> Result<
     if store.starts_with(&input) || input.starts_with(&store) {
         return Err("retained source store and mutable checkout must be independent".into());
     }
-    let lock = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .custom_flags((rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK).bits() as i32)
-        .open(store.join("source.lock"))?;
-    if !lock.metadata()?.is_file() {
-        return Err("source store lock must be a regular file".into());
-    }
-    rustix::fs::flock(&lock, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
+    let _lock = lock(&store)?;
     for name in ["repositories", "checkouts", "receipts"] {
         directory(&store.join(name))?;
     }
@@ -223,14 +346,7 @@ pub fn retain(input: &Path, store: &Path, expected_growth_bytes: u64) -> Result<
         retained.verify(&store)?;
         return Ok(retained);
     }
-    let space = rustix::fs::statvfs(&store)?;
-    let available = space
-        .f_bavail
-        .checked_mul(space.f_frsize)
-        .ok_or("source space overflow")?;
-    if expected_growth_bytes == 0 || available < expected_growth_bytes {
-        return Err("insufficient space for this source import; previous sources preserved".into());
-    }
+    admit(&store, expected_growth_bytes)?;
     // Keep this exact path: renaming a Git worktree would invalidate its gitdir.
     // Interrupted, unreceipted attempts are never selected or removed here.
     let root = tempfile::Builder::new()
@@ -265,4 +381,138 @@ pub fn retain(input: &Path, store: &Path, expected_growth_bytes: u64) -> Result<
     temporary.persist_noclobber(receipt)?;
     File::open(parent)?.sync_all()?;
     Ok(snapshot)
+}
+
+#[cfg(test)]
+mod native_tests {
+    use super::*;
+    use sha2::{Digest, Sha256};
+
+    fn git(root: &Path, args: &[&str]) {
+        let result = Command::new("/usr/bin/git")
+            .args([
+                "-c",
+                "user.name=Native source fixture",
+                "-c",
+                "user.email=fixture@example.invalid",
+                "-c",
+                "commit.gpgsign=false",
+                "-c",
+                "core.hooksPath=/dev/null",
+            ])
+            .arg("-C")
+            .arg(root)
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            result.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+    }
+
+    fn source(parent: &Path) -> PathBuf {
+        let root = parent.join("request");
+        fs::create_dir(&root).unwrap();
+        git(&root, &["init", "--quiet"]);
+        fs::write(root.join("tracked.rs"), b"source A").unwrap();
+        git(&root, &["add", "."]);
+        git(&root, &["commit", "--quiet", "-m", "source A"]);
+        root
+    }
+
+    #[test]
+    fn fixed_workspace_reuses_its_path_and_cannot_mutate_preserved_sources_or_reset_dirty_input() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = source(temp.path());
+        let store = temp.path().join("store");
+        let a = retain(&root, &store, 8 * 1024 * 1024).unwrap();
+        let workspace = a.workspace(&store, 8 * 1024 * 1024).unwrap();
+        let path = workspace.root.clone();
+        assert!(a.workspace(&store, 8 * 1024 * 1024).is_err());
+        drop(workspace);
+        let running = a.fork(&store, 8 * 1024 * 1024).unwrap();
+        fs::write(root.join("tracked.rs"), b"source B").unwrap();
+        git(&root, &["add", "."]);
+        git(&root, &["commit", "--quiet", "-m", "source B"]);
+        let b = retain(&root, &store, 8 * 1024 * 1024).unwrap();
+        let workspace = b.workspace(&store, 8 * 1024 * 1024).unwrap();
+        assert_eq!(workspace.root, path);
+        assert_eq!(fs::read(path.join("tracked.rs")).unwrap(), b"source B");
+        assert_eq!(
+            fs::read(running.root.join("tracked.rs")).unwrap(),
+            b"source A"
+        );
+        fs::write(path.join("tracked.rs"), b"uncommitted workspace input").unwrap();
+        drop(workspace);
+        assert!(a.workspace(&store, 8 * 1024 * 1024).is_err());
+        assert_eq!(
+            fs::read(path.join("tracked.rs")).unwrap(),
+            b"uncommitted workspace input"
+        );
+        a.verify(&store).unwrap();
+        b.verify(&store).unwrap();
+        running.verify(&store).unwrap();
+    }
+
+    #[test]
+    fn runtime_accepts_only_exact_committed_lfs_objects_and_bound_metadata() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = source(temp.path());
+        let asset = PathBuf::from("openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx");
+        fs::create_dir_all(root.join(asset.parent().unwrap())).unwrap();
+        let bytes = b"synthetic ONNX object";
+        let sha = format!("{:x}", Sha256::digest(bytes));
+        fs::write(
+            root.join(&asset),
+            format!(
+                "version https://git-lfs.github.com/spec/v1\noid sha256:{sha}\nsize {}\n",
+                bytes.len()
+            ),
+        )
+        .unwrap();
+        git(&root, &["add", "."]);
+        git(&root, &["commit", "--quiet", "-m", "LFS model identity"]);
+        let store = temp.path().join("store");
+        let base = retain(&root, &store, 8 * 1024 * 1024).unwrap();
+        let runtime = base.fork(&store, 8 * 1024 * 1024).unwrap();
+        fs::write(runtime.root.join(&asset), bytes).unwrap();
+        let assets = BTreeMap::from([(asset.clone(), sha)]);
+        assert!(runtime.verify(&store).is_err());
+        runtime.verify_runtime(&store, None, &assets).unwrap();
+        let input = crate::generation::SourceForSeal {
+            schema: 1,
+            source: runtime.clone(),
+            source_store: store.clone(),
+            assets: assets.clone(),
+        };
+        let path = temp.path().join("source-for-seal.json");
+        fs::write(&path, serde_json::to_vec(&input).unwrap()).unwrap();
+        crate::generation::SourceForSeal::read_and_verify(&path, &runtime.root).unwrap();
+        fs::write(runtime.root.join("build.json"), b"source A metadata").unwrap();
+        let metadata = crate::digest_file(&runtime.root.join("build.json")).unwrap();
+        runtime
+            .verify_runtime(&store, Some(&metadata), &assets)
+            .unwrap();
+        fs::write(runtime.root.join("build.json"), b"source B metadata").unwrap();
+        assert!(runtime
+            .verify_runtime(&store, Some(&metadata), &assets)
+            .is_err());
+        fs::remove_file(runtime.root.join("build.json")).unwrap();
+        fs::write(runtime.root.join(&asset), b"different ONNX value").unwrap();
+        let forged = BTreeMap::from([(
+            asset.clone(),
+            crate::digest_file(&runtime.root.join(&asset)).unwrap(),
+        )]);
+        assert!(runtime.verify_runtime(&store, None, &forged).is_err());
+        fs::write(runtime.root.join(&asset), bytes).unwrap();
+        fs::write(
+            runtime.root.join("tracked.rs"),
+            b"unrelated source mutation",
+        )
+        .unwrap();
+        assert!(runtime.verify_runtime(&store, None, &assets).is_err());
+        base.verify(&store).unwrap();
+    }
 }

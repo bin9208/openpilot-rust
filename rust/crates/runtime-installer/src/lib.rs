@@ -4,13 +4,57 @@ mod identity;
 pub mod transaction;
 mod transport;
 
-use identity::{Descriptor, Manifest, MAX_JSON_BYTES};
+pub use identity::{Artifact, Manifest};
+use identity::{Descriptor, MAX_JSON_BYTES};
 use std::{
     fs::{self, File, OpenOptions},
     path::{Path, PathBuf},
     process::Command,
 };
 pub use transport::{CurlDownload, Download};
+
+/// Share the existing path/manifest/ELF checks with locally built generations.
+/// A source build has no release archive and must not invent an archive identity.
+pub fn verify_source_build(root: &Path, source_commit: &str) -> Result<Manifest> {
+    if !fs::symlink_metadata(root.join("rust/runtime-manifest.json"))?.is_file() {
+        return Err(invalid("source-build manifest must be a regular file"));
+    }
+    let manifest: Manifest = identity::read_json(&root.join("rust/runtime-manifest.json"))?;
+    manifest.validate(source_commit)?;
+    identity::verify_files(root, &manifest)?;
+    let mut source_bytes = 0_u64;
+    for artifact in manifest
+        .files
+        .iter()
+        .filter(|f| identity::source_asset(&f.path))
+    {
+        source_bytes = source_bytes
+            .checked_add(fs::metadata(root.join(&artifact.path))?.len())
+            .ok_or_else(|| invalid("source-build asset size overflow"))?;
+    }
+    if source_bytes > 128 * 1024 * 1024 {
+        return Err(invalid(
+            "source-build assets exceed the original activation limit",
+        ));
+    }
+    Ok(manifest)
+}
+
+pub fn source_asset_allowed(path: &Path) -> bool {
+    identity::source_asset(path)
+}
+
+pub fn artifact_path_allowed(path: &Path) -> bool {
+    identity::allowed_artifact(path)
+}
+
+pub fn verify_native_elf(path: &Path, executable: bool) -> Result<()> {
+    identity::verify_elf(path, executable)
+}
+
+pub fn required_runtime_executables() -> &'static [&'static str] {
+    &identity::REQUIRED
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

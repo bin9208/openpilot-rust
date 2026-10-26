@@ -6,9 +6,11 @@
 #![forbid(unsafe_code)]
 
 pub mod assets;
+pub mod generation;
 pub mod inputs;
 pub mod objects;
 pub mod prepare;
+pub mod selection;
 mod source;
 pub mod source_store;
 pub use source::Source;
@@ -55,6 +57,7 @@ pub struct Report {
     pub recipe_sha256: String,
     pub rustc_sha256: String,
     pub cargo_sha256: String,
+    pub toolchain_directory: PathBuf,
     pub native_tools: BTreeMap<PathBuf, String>,
     pub verified_input_trees: BTreeMap<PathBuf, String>,
     pub elapsed_ms: u128,
@@ -370,7 +373,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         artifact.sha256 = digest_file(&artifact.executable)?;
     }
     let report = Report {
-        schema: 2,
+        schema: 3,
         cache_key: key,
         target_directory: target,
         artifacts,
@@ -378,6 +381,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         recipe_sha256: format!("{:x}", Sha256::digest(serde_json::to_vec(recipe)?)),
         rustc_sha256: compiler_digest,
         cargo_sha256: cargo_digest,
+        toolchain_directory: toolchain,
         native_tools,
         verified_input_trees: recipe
             .input_trees
