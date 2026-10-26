@@ -102,3 +102,22 @@ fn released_header_cli_rejects_mixed_or_changed_profile_before_preparing_inputs(
         assert!(!cache.exists() && !store.exists());
     }
 }
+
+#[test]
+fn provider_component_cli_requires_independent_descriptor_pin_before_cache_creation() {
+    let temp = tempfile::tempdir().unwrap();
+    let result = Command::new(env!("CARGO_BIN_EXE_build-runtime-ffmpeg"))
+        .arg("--prepare-released-provider")
+        .arg("--cache")
+        .arg(temp.path().join("cache"))
+        .arg("--store")
+        .arg(temp.path().join("store"))
+        .arg("--descriptor")
+        .arg(temp.path().join("not-trusted.json"))
+        .env("PATH", "")
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("independent --descriptor-sha256"));
+    assert!(!temp.path().join("cache").exists() && !temp.path().join("store").exists());
+}

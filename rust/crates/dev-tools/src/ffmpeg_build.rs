@@ -497,6 +497,16 @@ fn verify_headers(source: &Path, work: &Path, prefix: &Path) -> Result<BTreeMap<
 pub fn cli(runtime: bool) -> Result<()> {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
     if runtime
+        && arguments.iter().any(|arg| {
+            matches!(
+                arg.as_str(),
+                "--export-released-provider" | "--prepare-released-provider"
+            )
+        })
+    {
+        return crate::native_provider::cli(&arguments);
+    }
+    if runtime
         && arguments
             .iter()
             .any(|arg| arg == "--prepare-released-headers")

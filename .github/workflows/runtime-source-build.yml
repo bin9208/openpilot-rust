@@ -6,6 +6,8 @@ on:
       - 'rust/crates/runtime-build/**'
       - 'rust/crates/dev-tools/src/native_codec_inputs.rs'
       - 'rust/crates/dev-tools/src/native_ffmpeg_headers.rs'
+      - 'rust/crates/dev-tools/src/native_provider.rs'
+      - 'rust/native-ffmpeg-provider.json'
       - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
       - 'rust/crates/dev-tools/tests/ffmpeg_build.rs'
       - 'rust/native-ffmpeg-headers.json'
@@ -155,6 +157,10 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test ffmpeg_build
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_ffmpeg_headers::tests -- --nocapture
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --bin build-runtime-ffmpeg -- -D warnings
+      - name: Verify component-only provider export and independently pinned consumption
+        run: |
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/native_provider.rs rust/crates/dev-tools/src/ffmpeg_build.rs rust/crates/dev-tools/tests/ffmpeg_build.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_provider::tests -- --nocapture
       - uses: actions/cache/restore@v4
         id: ffmpeg-headers-cache
         with:

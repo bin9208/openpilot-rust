@@ -571,6 +571,74 @@ int native_header_identity(){return LIBAVUTIL_VERSION_INT;}
       libraries_linked=False,provider_execution_tested=False,full_runtime_build=False,device_execution=False)
 
 
+def native_provider_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Consume only the small foreign component; old project binaries are absent."""
+  room(work,128*1024**2)
+  def execute(argv,name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  exported=json.loads((work.parent/'native-provider-export.json').read_text())
+  host=json.loads((work.parent/'native-provider-consumer-initial.json').read_text())
+  helper=work/'project-target/debug/build-runtime-ffmpeg'
+  command=[helper,'--prepare-released-provider','--plan',f'{source_mount}/rust/native-ffmpeg-provider.json',
+      '--descriptor',Path(guest_work)/'provider-export/provider.json','--descriptor-sha256',exported['descriptor_sha256'],
+      '--cache',Path(guest_work)/'provider-assets','--store',work/'native-provider-prefixes']
+  first=json.loads(execute(command,'native-provider-initial.json').read_text())
+  repeated=json.loads(execute(command,'native-provider-reused.json').read_text())
+  assert first['tree_sha256']==repeated['tree_sha256']==host['tree_sha256']==exported['tree_sha256']
+  assert first['provider_source_commit']==repeated['provider_source_commit']==exported['provider_source_commit']
+  assert first['copied_bytes']>0 and repeated['copied_bytes']==0
+  assert all(row['offline_seed_bytes']==row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0 for row in (first,repeated))
+  assert all(not row['origin_archive_downloaded'] and not row['compiler_executed'] and not row['runtime_activated'] for row in (first,repeated))
+  prefix=Path(first['root'])
+  headers=Path(json.loads((work/'native-ffmpeg611-headers-initial.json').read_text())['root'])
+  source=work/'native-provider-abi.cc'
+  source.write_text('''extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/avutil.h>
+#include <libavdevice/avdevice.h>
+#include <libavfilter/avfilter.h>
+#include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
+#include <libpostproc/postprocess.h>
+}
+#include <cstdio>
+int main(){
+  if(avcodec_version()!=LIBAVCODEC_VERSION_INT || avformat_version()!=LIBAVFORMAT_VERSION_INT ||
+     avutil_version()!=LIBAVUTIL_VERSION_INT || avdevice_version()!=LIBAVDEVICE_VERSION_INT ||
+     avfilter_version()!=LIBAVFILTER_VERSION_INT || swscale_version()!=LIBSWSCALE_VERSION_INT ||
+     swresample_version()!=LIBSWRESAMPLE_VERSION_INT || postproc_version()!=LIBPOSTPROC_VERSION_INT) return 19;
+  std::puts("native released FFmpeg 6.1.1 ABI matched");
+}
+''')
+  program=work/'native-provider-abi'
+  execute(['g++','-std=c++17','-I',headers/'include',source,'-L',prefix/'lib',
+      f'-Wl,-rpath-link,{prefix}/lib','-lavdevice','-lavfilter','-lavformat','-lavcodec','-lpostproc',
+      '-lswresample','-lswscale','-lavutil','-o',program],'native-provider-abi-build.txt')
+  execute(['cargo','build','--locked','--manifest-path',f'{source_mount}/rust/Cargo.toml','-p','openpilot-dev-tools',
+      '--bin','runtime-elf-audit','--target-dir',work/'project-target','--message-format=json'],'native-provider-auditor-build.jsonl')
+  audit=work/'native-provider-abi-audit.json'
+  execute([work/'project-target/debug/runtime-elf-audit','--root',program,'--root',prefix/'bin/ffmpeg',
+      '--root',prefix/'bin/ffprobe','--library',prefix/'lib','--library','/usr/lib/aarch64-linux-gnu',
+      '--library','/lib/aarch64-linux-gnu','--output',audit],'native-provider-audit-summary.json')
+  assert json.loads(audit.read_text())['compatible']
+  environment=['/usr/bin/env',f'LD_LIBRARY_PATH={prefix}/lib']
+  assert execute([*environment,program],'native-provider-abi-run.txt').read_text()=='native released FFmpeg 6.1.1 ABI matched\n'
+  for name in ('ffmpeg','ffprobe'):
+    version=execute([*environment,prefix/'bin'/name,'-version'],f'native-provider-{name}-version.txt').read_text()
+    assert version.startswith(f'{name} version 6.1.1')
+  after=json.loads(execute(command,'native-provider-after-execution.json').read_text())
+  assert after['tree_sha256']==first['tree_sha256'] and after['copied_bytes']==after['asset']['transferred_bytes']==0
+  evidence['native_released_provider']=dict(provider_source_commit=first['provider_source_commit'],
+      tree_sha256=first['tree_sha256'],component_sha256=first['asset']['sha256'],component_bytes=first['asset']['bytes'],
+      descriptor_sha256=exported['descriptor_sha256'],actual_arm_consumer=True,origin_archive_downloaded_by_consumer=False,
+      header_and_shared_library_versions_matched=8,strict_elf_audit_compatible=True,foreign_cli_programs_executed=2,
+      abi_program_sha256=digest(program),abi_source_sha256=digest(source),independent_host_tree_matches=True,
+      offline_component_seed=True,published_release=False,public_component_download_tested=False,
+      project_binaries_reused=False,complete_codec_regression=False,full_runtime_build=False,device_execution=False)
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -650,6 +718,8 @@ def main():
     (work / 'rust-assets').mkdir()
     (work / 'codec-assets').mkdir()
     (work / 'ffmpeg-source').mkdir()
+    (work / 'provider-assets').mkdir()
+    (work / 'provider-export').mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
     (work/'cargo').mkdir()
@@ -667,6 +737,8 @@ def main():
              '-b', f'{owned / "native-rust-assets"}:{guest_work}/rust-assets',
              '-b', f'{owned / "native-codec-assets"}:{guest_work}/codec-assets',
              '-b', f'{owned / "native-ffmpeg-source"}:{guest_work}/ffmpeg-source',
+             '-b', f'{owned / "native-provider-components"}:{guest_work}/provider-assets',
+             '-b', f'{owned / "native-provider-export"}:{guest_work}/provider-export',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
@@ -713,6 +785,7 @@ def main():
     native_system_sdk_probe(guest_command, work, rootfs, evidence, log, guest_work)
     native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_ffmpeg_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_provider_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))

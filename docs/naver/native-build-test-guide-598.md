@@ -125,6 +125,10 @@ AGNOS의 두 C/C++ API 실행을 확인한다. 전체 encoder/FFmpeg closure와 
 따로 확인한다.140개 원래 header의 초기/반복·위조/누락 거부와 실제 ARM module object를
 검사하며, 별도7.1 codec wheel이나 host header로 대체하지 않는다.
 
+[Shared provider component 검사](native-provider-components-599.md)는 원래 foreign provider만
+생산·소비하며 전체 runtime/source 재표기를 거부한다. 독립 descriptor pin·왕복/반복0과
+실제 ARM의 header/shared ABI·엄격한 ELF·foreign CLI 실행을 확인한다. 공개 발행/HTTPS는 별도다.
+
 2026-10-26 추가한 generation 시작/업데이트 연결은 아직 Actions 검증 전이다.
 `--stage-update`는 source-built 후보를 봉인하고 기존 active ID와 config hash에 묶어
 `pending.json`을 발행한다. launcher가 boot lock을 잡은 뒤에만 다시 검증·선택하고,

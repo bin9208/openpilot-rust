@@ -14,6 +14,8 @@ on:
       - 'rust/crates/runtime-build/src/inputs.rs'
       - 'rust/crates/dev-tools/src/native_codec_inputs.rs'
       - 'rust/crates/dev-tools/src/native_ffmpeg_headers.rs'
+      - 'rust/crates/dev-tools/src/native_provider.rs'
+      - 'rust/native-ffmpeg-provider.json'
       - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
       - 'rust/native-ffmpeg-headers.json'
       - 'rust/crates/dev-tools/src/encoder_stage.rs'
@@ -265,6 +267,59 @@ jobs:
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-ffmpeg-source
           key: native-ffmpeg-source-8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968-v1
+      - uses: actions/cache/restore@v4
+        id: provider-origin-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-provider-origin
+          key: native-provider-origin-9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291-v1
+      - name: Export only original foreign provider members and verify independent component reuse
+        run: |
+          python3 - <<'PY'
+          import json, os, shutil
+          from pathlib import Path
+          plan=json.loads(Path('rust/native-ffmpeg-provider.json').read_text())
+          growth=plan['source_archive']['bytes']+4*sum(row['bytes'] for row in plan['members'].values())+10*1024**2
+          free=shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          print(f'available_bytes={free} expected_origin_component_prefix_export_growth_bytes={growth}')
+          if free<growth:
+              raise SystemExit('insufficient capacity for provider origin/export; other data retained')
+          PY
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg -- \
+            --export-released-provider --plan rust/native-ffmpeg-provider.json --cache "$RUNNER_TEMP/native-provider-origin" \
+            --store "$RUNNER_TEMP/native-provider-origins" --output "$RUNNER_TEMP/native-provider-export" > "$RUNNER_TEMP/native-provider-export.json"
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          printf '%s\n' "$native_target/debug/build-runtime-ffmpeg" > "$RUNNER_TEMP/native-provider-preparer.txt"
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          exported=json.loads((root/'native-provider-export.json').read_text())
+          assert not exported['published_release'] and not exported['provider_executed']
+          helper=(root/'native-provider-preparer.txt').read_text().strip()
+          command=[helper,'--prepare-released-provider','--plan','rust/native-ffmpeg-provider.json',
+              '--descriptor',exported['descriptor'],'--descriptor-sha256',exported['descriptor_sha256'],
+              '--cache',str(root/'native-provider-components'),'--store',str(root/'native-provider-consumed'),
+              '--offline-archive',exported['archive']]
+          results=[]
+          for phase in ('initial','reused'):
+              with (root/f'native-provider-consumer-{phase}.json').open('w') as output:
+                  subprocess.run(command,stdout=output,check=True)
+              row=json.loads((root/f'native-provider-consumer-{phase}.json').read_text())
+              assert row['tree_sha256']==exported['tree_sha256']
+              assert row['provider_source_commit']==exported['provider_source_commit']
+              assert row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+              assert not row['origin_archive_downloaded'] and not row['compiler_executed'] and not row['runtime_activated']
+              assert (row['copied_bytes']>0)==(phase=='initial')
+              assert (row['offline_seed_bytes']>0)==(phase=='initial')
+              results.append(row)
+          assert results[0]['root']==results[1]['root']
+          print('Original foreign-only component candidate exported and independently consumed; not published, and not yet executed on ARM.')
+          PY
+      - uses: actions/cache/save@v4
+        if: steps.provider-origin-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-provider-origin
+          key: native-provider-origin-9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291-v1
       - name: Execute Rust and C++ standard ABI probes inside the original AGNOS filesystem
         run: python3 tools/ci/probe_native_agnos.py
       - uses: actions/upload-artifact@v6
@@ -292,6 +347,11 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers-first.json
             ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers-reused.json
             ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-provider-export.json
+            ${{ env.CI_JOB_TEMP }}/native-provider-export/*
+            ${{ env.CI_JOB_TEMP }}/native-provider-consumer-*.json
+            ${{ env.CI_JOB_TEMP }}/native-provider-origins/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-provider-consumed/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-cargo-sources/sets/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.json
             ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.txt
@@ -318,6 +378,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-ffmpeg611-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-ffmpeg611-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-ffmpeg611-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-provider-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-provider-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-provider-*.txt
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}

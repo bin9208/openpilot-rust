@@ -138,3 +138,8 @@ libswscale/전체 header·OpenCV 등 나머지 provider closure와 최종 notice
 override를 확인해 원래140개 header/24개 library 대응을 고정했다.7.1 wheel을 전체 runtime
 입력으로 추정하지 않는다. 원본138개와 기존 생성2개를 내용별로 준비하고 실제 ARM
 header object를 검사한다. 기존 shared library의 준비/링크/실행 완료를 의미하지 않는다.
+
+[기존 shared provider component](native-provider-components-599.md)는 FFmpeg6.1.1/vpx9의
+고정36개 foreign member만 별도 후보로 내보낸다. 소비자는 독립 descriptor SHA로 작은
+component만 준비하며 원래 전체 runtime을 받거나 old project binary를 재사용하지 않는다.
+실제 ARM ABI/ELF/CLI 검증과 공개 발행·독립 Git pin은 정확 source 결과로 확인해야 한다.
