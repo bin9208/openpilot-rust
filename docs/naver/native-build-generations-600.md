@@ -40,7 +40,9 @@ Cargo driver는 계속 고정된 빌드 checkout 경로와 내용 기반 target 
 이 순서를 실제로 연결한다. 그룹별 기존 Cargo driver를 직렬 실행하고, 서로 다른 target이나
 중복 binary 소유를 거부하며, 실제 결과 roster·SHA·크기와 immutable object를 대조한다.
 최종 준비 보고서에는 보존 source, 그룹별 toolchain/feature/input/result 보고서, binary별
-object와 실제 추가 복사 바이트, 전체 경과 시간이 남는다. compiler/헤더/provider 입력은
+object와 실제 추가 복사 바이트, 전체 경과 시간 및 원문 plan이 남는다. 검증 시 각 그룹의
+recipe SHA와 binary roster를 원문 plan에 다시 대조하고 혼합 compiler/Cargo/linker 보고서를
+거부한다. compiler/헤더/provider 입력은
 각 recipe의 검증 정책을 그대로 적용한다. 이를 AGNOS 전체 설치 가능한 seal로 간주하지 않는다.
 
 ## 검사 계획과 현재 상태

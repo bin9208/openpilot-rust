@@ -164,6 +164,18 @@ fn prepared_groups_reuse_docs_and_rebuild_only_the_changed_binary_while_retainin
     let first = run(&plan);
     assert_eq!(first.binaries.len(), 2);
     assert!(first.stored_output_bytes > 0);
+    let mut unbound = first.clone();
+    unbound
+        .plan
+        .groups
+        .get_mut("main")
+        .unwrap()
+        .features
+        .push("invented-feature".into());
+    assert!(unbound.verify(&source_store, &object_store).is_err());
+    let mut mixed = first.clone();
+    mixed.reports.get_mut("other").unwrap().cargo_sha256 = "0".repeat(64);
+    assert!(mixed.verify(&source_store, &object_store).is_err());
     let previous = fixture._temp.path().join("running-previous");
     first.binaries["runtime-fixture"]
         .materialize(&object_store, &previous)

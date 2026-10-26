@@ -2,6 +2,7 @@
 //! A prepared build is engineering evidence; it is not a sealed/active runtime.
 use crate::{build, objects, regular_file, source_store, Recipe, Report, Result};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::Read,
@@ -9,7 +10,7 @@ use std::{
     time::Instant,
 };
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Plan {
     pub schema: u32,
@@ -18,10 +19,11 @@ pub struct Plan {
     pub remaining_object_growth_bytes: u64,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Prepared {
     pub schema: u32,
+    pub plan: Plan,
     pub source: source_store::Snapshot,
     pub reports: BTreeMap<String, Report>,
     pub binaries: BTreeMap<String, objects::Object>,
@@ -79,17 +81,41 @@ impl Prepared {
     /// Verify saved evidence after mutable build outputs or source are removed.
     /// AGNOS ABI/provider/generated completeness is a separate sealing gate.
     pub fn verify(&self, source_store: &Path, object_store: &Path) -> Result<()> {
+        self.plan.validate()?;
         if self.schema != 1 || self.reports.is_empty() || self.reports.len() > 128 {
             return Err("invalid prepared native build".into());
         }
         self.source.verify(source_store)?;
+        if self.reports.keys().ne(self.plan.groups.keys()) {
+            return Err("prepared build groups do not match the recorded plan".into());
+        }
+        let first = self
+            .reports
+            .values()
+            .next()
+            .ok_or("prepared build has no groups")?;
         let mut binaries = BTreeSet::new();
-        for report in self.reports.values() {
+        for (group, report) in &self.reports {
+            let recipe = &self.plan.groups[group];
+            let expected_recipe = format!("{:x}", Sha256::digest(serde_json::to_vec(recipe)?));
             if report.schema != 2
                 || report.source != self.source.source
                 || report.artifacts.is_empty()
+                || report.recipe_sha256 != expected_recipe
+                || report.rustc_sha256 != first.rustc_sha256
+                || report.cargo_sha256 != first.cargo_sha256
+                || report.native_tools != first.native_tools
             {
-                return Err("mixed or incomplete native build source reports".into());
+                return Err("mixed or incomplete source, recipe or native tool reports".into());
+            }
+            let actual: BTreeSet<_> = report
+                .artifacts
+                .iter()
+                .map(|a| name(&a.executable))
+                .collect::<Result<_>>()?;
+            let expected: BTreeSet<_> = recipe.binaries.iter().map(String::as_str).collect();
+            if actual != expected || actual.len() != report.artifacts.len() {
+                return Err("prepared build report differs from its planned binary roster".into());
             }
             for artifact in &report.artifacts {
                 let name = name(&artifact.executable)?;
@@ -169,6 +195,7 @@ pub fn run(
     }
     let prepared = Prepared {
         schema: 1,
+        plan: plan.clone(),
         source,
         reports,
         binaries,
