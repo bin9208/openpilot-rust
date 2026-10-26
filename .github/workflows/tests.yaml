@@ -23,9 +23,12 @@ env:
 jobs:
   git_update:
     name: Git update lifecycle
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -37,14 +40,20 @@ jobs:
           python -m pytest -c /dev/null --rootdir=. --confcutdir=openpilot/selfdrive/carrot/server/tests openpilot/selfdrive/carrot/server/tests/test_auto_update.py openpilot/selfdrive/carrot/server/tests/test_git_config.py
           python -m pytest -c /dev/null --rootdir=. --confcutdir=openpilot/system/tests openpilot/system/tests/test_launch_order.py
           python -m pytest -c /dev/null --rootdir=. --confcutdir=openpilot/system/updated/tests openpilot/system/updated/tests/test_process.py
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
 
   build_release:
     name: build release
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: true
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - run: ./tools/op.sh setup
       - name: Build openpilot
         run: scons
@@ -82,13 +91,22 @@ jobs:
             opendbc_repo/opendbc/car/volkswagen/tests/test_carstate_buttons.py \
             openpilot/selfdrive/controls/tests/test_desire_helper.py \
             openpilot/system/tests/test_c3_agnos_manifest.py
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
 
   model_web:
     name: Model and Bluetooth web controls
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
       - run: node --test openpilot/selfdrive/carrot/web/tests/bluetooth_mapping.test.mjs openpilot/selfdrive/carrot/web/tests/egpu_model.test.mjs openpilot/selfdrive/carrot/web/tests/viewport_keyboard.test.mjs openpilot/selfdrive/carrot/web/tests/settings_parent_navigation.test.mjs
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

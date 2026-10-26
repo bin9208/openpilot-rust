@@ -23,11 +23,15 @@ jobs:
     uses: ./.github/workflows/jetlink.yml
   gate:
     name: integration gate
-    if: ${{ always() }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}
     needs: [build, navigation, apk, jetlink]
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 2
     steps:
+      - name: Require the registered execution environment
+        run: |
+          test "$RUNNER_ENVIRONMENT" = self-hosted
+          test "$RUNNER_NAME" = bin-actions
       - name: Require every integration suite to succeed
         env:
           BUILD: ${{ needs.build.result }}

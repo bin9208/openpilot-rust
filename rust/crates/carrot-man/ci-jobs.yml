@@ -1,6 +1,7 @@
 carrot-man-runtime:
   name: rust CarrotMan owner (${{ matrix.arch }})
-  runs-on: ${{ matrix.runner }}
+  if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+  runs-on: [self-hosted, Linux, X64, dev-md-local]
   timeout-minutes: 25
   strategy:
     fail-fast: false
@@ -9,19 +10,27 @@ carrot-man-runtime:
         - { arch: x86_64, runner: ubuntu-24.04 }
         - { arch: aarch64, runner: ubuntu-24.04-arm }
   env:
+    LOCAL_CI_ARCH: ${{ matrix.arch }}
     CARGO_INCREMENTAL: '0'
     CARGO_BUILD_JOBS: '2'
     CARGO_PROFILE_DEV_DEBUG: '0'
     CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
     PYTHONPATH: ${{ github.workspace }}
+  defaults:
+    run:
+      shell: openpilot-local-shell {0}
   steps:
     - uses: actions/checkout@v7
+    - uses: ./.github/actions/job-temp
+    - uses: ./.github/actions/rust-path
+      if: env.LOCAL_CI_ARCH != 'aarch64'
+    - uses: ./.github/actions/local-arm
     - uses: actions/setup-python@v6
+      if: env.LOCAL_CI_ARCH != 'aarch64'
       with:
         python-version: '3.12'
     - name: Reserve runner capacity and install pinned dependencies
       run: |
-        sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
         sudo apt-get update && sudo apt-get install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev
         "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -62,7 +71,18 @@ carrot-man-runtime:
       with:
         name: carrot-man-owner-${{ matrix.arch }}-evidence
         path: |
-          ${{ runner.temp }}/carrot-man-policy/**
-          ${{ runner.temp }}/carrot-man-owned/**
-          ${{ runner.temp }}/carrot-man-geos/**
-          rust/target/debug/openpilot-carrot-man
+          ${{ env.CI_JOB_TEMP }}/carrot-man-policy/**
+          ${{ env.CI_JOB_TEMP }}/carrot-man-owned/**
+          ${{ env.CI_JOB_TEMP }}/carrot-man-geos/**
+          ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-carrot-man
+    - uses: ./.github/actions/local-arm
+      if: always()
+      with: {cleanup: 'true'}
+    - uses: actions/upload-artifact@v6
+      if: always() && env.LOCAL_CI_ARCH == 'aarch64'
+      with:
+        name: local-arm-carrot-man-template-${{ github.sha }}
+        path: ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+    - uses: ./.github/actions/job-temp
+      if: always()
+      with: {cleanup: 'true'}

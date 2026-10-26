@@ -23,7 +23,8 @@ concurrency:
 jobs:
   check:
     name: read-only catalog and Wiki diff
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     steps:
       - name: Check out candidate code
         uses: actions/checkout@v6
@@ -31,7 +32,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -68,6 +70,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: wiki-settings-report-${{ github.event.pull_request.number || github.run_number }}
-          path: ${{ runner.temp }}/wiki-settings-report
+          path: ${{ env.CI_JOB_TEMP }}/wiki-settings-report
           if-no-files-found: error
           retention-days: 14
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

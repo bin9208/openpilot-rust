@@ -10,14 +10,16 @@ concurrency:
   cancel-in-progress: false
 jobs:
   sync:
-    if: github.repository == 'bin9208/openpilot'
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.repository == 'bin9208/openpilot') }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
         with:
           lfs: false
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -25,3 +27,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python tools/naver_ci/sync_upstream.py
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

@@ -27,8 +27,10 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertEqual(spec['jobs']['build']['with']['run_number'], '1')
     gate = spec['jobs']['gate']
     self.assertEqual(set(gate['needs']), {'build', 'navigation', 'apk', 'jetlink'})
-    self.assertEqual(gate['if'], '${{ always() }}')
-    step = gate['steps'][0]
+    self.assertEqual(gate['if'], "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}")
+    self.assertEqual(len(gate['steps']), 2)
+    self.assertEqual(gate['steps'][0]['run'], 'test "$RUNNER_ENVIRONMENT" = self-hosted\ntest "$RUNNER_NAME" = bin-actions\n')
+    step = gate['steps'][1]
     for name in ('BUILD', 'NAVIGATION', 'APK', 'JETLINK'):
       self.assertIn(f'test "${name}" = success', step['run'])
     for job in ('build', 'navigation', 'apk', 'jetlink'):
