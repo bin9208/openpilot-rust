@@ -112,6 +112,90 @@ fn commit(root: &std::path::Path) {
 }
 
 #[test]
+fn changed_cxx_tool_rebuilds_its_real_generated_input_without_relabelling_previous_output() {
+    use std::os::unix::fs::PermissionsExt;
+    let mut fixture = Fixture::new();
+    let wrapper = fixture._temp.path().join("native-cxx");
+    let compiler = fixture._temp.path().join("driver-body");
+    // Driver aliases such as clang++ dispatch by argv[0]. Hash their actual
+    // target while preserving the invocation spelling, including symlinks.
+    std::os::unix::fs::symlink("driver-body", &wrapper).unwrap();
+    let install = |value| {
+        fs::write(&compiler, format!("#!/bin/sh\ntest \"${{0##*/}}\" = native-cxx || exit 42\nexec /usr/bin/g++ \"$@\" -DNATIVE_VALUE={value}\n")).unwrap();
+        fs::set_permissions(&compiler, fs::Permissions::from_mode(0o700)).unwrap();
+    };
+    install(42);
+    fixture
+        .recipe
+        .environment
+        .insert("CXX".into(), wrapper.to_string_lossy().into_owned());
+    fs::write(
+        fixture.root.join("rust/provider.cc"),
+        "#include <iostream>\nint main(){ std::cout << NATIVE_VALUE << std::endl; }\n",
+    )
+    .unwrap();
+    fs::write(fixture.root.join("rust/build.rs"), r#"
+use std::{env, path::PathBuf, process::Command};
+fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=provider.cc");
+    println!("cargo:rerun-if-env-changed=CXX");
+    let provider = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("provider");
+    assert!(Command::new(env::var_os("CXX").unwrap()).args(["-std=c++17", "provider.cc", "-o"])
+        .arg(&provider).status().unwrap().success());
+    let output = Command::new(provider).output().unwrap();
+    assert!(output.status.success());
+    println!("cargo:rustc-env=NATIVE_PROVIDER_VALUE={}", String::from_utf8(output.stdout).unwrap().trim());
+}
+"#).unwrap();
+    fs::write(
+        fixture.root.join("rust/src/main.rs"),
+        "fn main(){ println!(\"{}\", env!(\"NATIVE_PROVIDER_VALUE\")); }\n",
+    )
+    .unwrap();
+    commit(&fixture.root);
+    let first = fixture.run();
+    assert_eq!(
+        first.native_tools[&compiler],
+        digest_file(&compiler).unwrap()
+    );
+    assert_eq!(
+        Command::new(&first.artifacts[0].executable)
+            .output()
+            .unwrap()
+            .stdout,
+        b"42\n"
+    );
+    assert!(fixture.run().artifacts[0].fresh);
+    // Same path, recipe, source and gcc version; the actual C++ tool changed.
+    install(43);
+    let changed = fixture.run();
+    assert_eq!(changed.source, first.source);
+    assert_eq!(changed.recipe_sha256, first.recipe_sha256);
+    assert_ne!(changed.cache_key, first.cache_key);
+    assert_ne!(
+        changed.native_tools[&compiler],
+        first.native_tools[&compiler]
+    );
+    assert!(!changed.artifacts[0].fresh);
+    assert_ne!(changed.artifacts[0].sha256, first.artifacts[0].sha256);
+    assert_eq!(
+        Command::new(&changed.artifacts[0].executable)
+            .output()
+            .unwrap()
+            .stdout,
+        b"43\n"
+    );
+    assert_eq!(
+        Command::new(&first.artifacts[0].executable)
+            .output()
+            .unwrap()
+            .stdout,
+        b"42\n"
+    );
+}
+
+#[test]
 fn serial_package_groups_reuse_their_real_shared_dependency() {
     let mut fixture = Fixture::new();
     fs::create_dir_all(fixture.root.join("rust/shared/src")).unwrap();

@@ -9,6 +9,7 @@ pub mod assets;
 pub mod generation;
 pub mod inputs;
 pub mod memory_cgroup;
+mod native_tools;
 pub mod objects;
 pub mod pending;
 pub mod prepare;
@@ -175,36 +176,6 @@ impl Recipe {
     }
 }
 
-fn native_linker() -> Result<(PathBuf, BTreeMap<PathBuf, String>)> {
-    let driver = Path::new("/usr/bin/cc").canonicalize()?;
-    let mut tools = BTreeMap::from([(driver.clone(), digest_file(&driver)?)]);
-    // Cargo does not invalidate freshness when a linker executable changes in place.
-    for name in ["ld", "collect2"] {
-        let output = Command::new(&driver)
-            .arg(format!("-print-prog-name={name}"))
-            .env_clear()
-            .env("PATH", "/usr/bin:/bin")
-            .output()?;
-        if !output.status.success() {
-            return Err("cannot identify native linker tools".into());
-        }
-        let value = String::from_utf8(output.stdout)?;
-        let path = PathBuf::from(value.trim());
-        let path = if path.is_absolute() {
-            path
-        } else {
-            Path::new("/usr/bin").join(path)
-        };
-        // Clang need not have collect2; GCC reports its actual libexec path.
-        if name == "collect2" && !path.exists() {
-            continue;
-        }
-        let path = path.canonicalize()?;
-        tools.insert(path.clone(), digest_file(&path)?);
-    }
-    Ok((driver, tools))
-}
-
 /// Build only. The caller must seal, validate and activate the complete runtime separately.
 /// No runtime release is downloaded, and no existing runtime or Cargo cache is removed.
 pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Result<Report> {
@@ -219,8 +190,20 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
     // The actual native compiler and Cargo are inputs, rather than unverified PATH aliases.
     let compiler_digest = digest_file(&rustc)?;
     let cargo_digest = digest_file(&cargo)?;
-    let (linker, native_tools) = native_linker()?;
-    let version = Command::new(&rustc).arg("-vV").output()?;
+    let native = native_tools::inspect(recipe, &toolchain)?;
+    let version = Command::new(&rustc)
+        .arg("-vV")
+        .env_clear()
+        .envs(&recipe.environment)
+        .env(
+            "PATH",
+            std::env::join_paths([
+                toolchain.as_path(),
+                Path::new("/usr/bin"),
+                Path::new("/bin"),
+            ])?,
+        )
+        .output()?;
     if !version.status.success()
         || !String::from_utf8_lossy(&version.stdout)
             .lines()
@@ -245,7 +228,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         &compiler_digest,
         &cargo_digest,
         version.stdout,
-        &native_tools,
+        &native.executables,
     ))?;
     let key = format!("{:x}", Sha256::digest(&identity));
     fs::create_dir_all(cache)?;
@@ -284,7 +267,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         .get("RUSTFLAGS")
         .map(|v| v.split_whitespace().collect())
         .unwrap_or_default();
-    let linker_flag = format!("linker={}", linker.display());
+    let linker_flag = format!("linker={}", native.linker.display());
     flags.extend(["-C", &linker_flag]);
     command
         .current_dir(&root)
@@ -305,7 +288,8 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         .env("RUSTC", &rustc)
         .env("RUSTDOC", toolchain.join("rustdoc"))
         .envs(&recipe.environment)
-        .env(linker_key, &linker)
+        .envs(&native.environment)
+        .env(linker_key, &native.linker)
         .env("CARGO_ENCODED_RUSTFLAGS", flags.join("\u{1f}"))
         .args([
             "build",
@@ -370,10 +354,10 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
     if digest_file(&rustc)? != compiler_digest || digest_file(&cargo)? != cargo_digest {
         return Err("Rust compiler or Cargo changed during build".into());
     }
-    for (path, expected) in &native_tools {
-        if digest_file(path)? != *expected {
-            return Err("native linker tools changed during build".into());
-        }
+    if native_tools::inspect(recipe, &toolchain)? != native {
+        return Err(
+            "native C/C++ compiler, linker or helper selection changed during build".into(),
+        );
     }
     for artifact in &mut artifacts {
         if !artifact.executable.canonicalize()?.starts_with(&target) {
@@ -392,7 +376,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         rustc_sha256: compiler_digest,
         cargo_sha256: cargo_digest,
         toolchain_directory: toolchain,
-        native_tools,
+        native_tools: native.executables,
         verified_input_trees: recipe
             .input_trees
             .iter()

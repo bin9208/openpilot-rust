@@ -42,6 +42,26 @@ Actions의 실제 offline Cargo fixture는 공통 Rust library를 쓰는 두 pac
 둘 다 재빌드되어야 한다. provider/feature 변경의 cache 분리는 기존 회귀로 유지한다.
 전체 runtime/기기의 디스크 절감량이나 시간 개선은 이 코드 변경만으로 추정하지 않는다.
 
+## C/C++ 실행 도구 입력 (추가 검증 대기)
+
+기존 보고서는 기본 `/usr/bin/cc`와 ld/collect2만 기록했다. CXX가 같은 경로에서 바뀌거나
+compiler helper의 선택이 달라지는 경우도 Cargo freshness를 무조건 믿으면 안 된다.
+추가 inventory는 실제 native CC/CXX/AR/RANLIB와 driver가 보고하는 ld/collect2/as/cc1/cc1plus를
+hash에 포함한다. native host/target의 `HOST_*` 우선순위에 맞춰 실제 선택을 Cargo 환경에도
+명시한다. compiler 옵션은 CFLAGS/CXXFLAGS로 분리하며 compiler 설정은 한 실행 파일이다.
+`clang++` 같은 별칭은 호출 이름을 보존하고 실제 target 파일을 hash한다. set-id 도구를
+거부하며 종료 때 선택과 hash를 다시 확인한다. Rust 버전 조회도 같은 명시적 환경으로 수행한다.
+
+전체 generation 검증은 이 도구 파일들을 기존 pinned 입력에서 실제로 찾을 수 있어야 한다.
+이 inventory는 전체 헤더·compiler resource/library·provider/generated 입력 receipt와
+runtime ABI closure를 대신하지 않는다. 실제 AGNOS recipe에서 그 전체 입력을 준비하는
+작업은 아직 남아 있다. 기본 도구 inventory 추가를 전체 native 환경 완료로 표시하지 않는다.
+
+추가 Actions 회귀는 실제 g++를 호출하는 별칭 도구로 C++ 프로그램을 컴파일·실행하고
+그 결과를 Rust generated 입력으로 사용한다. 같은 source/recipe/실행 경로에서 도구 내용만
+42에서43을 생성하도록 바꾸면 cache와 실제 Rust 실행 결과가 바뀌어야 한다. 이전 결과는
+42를 계속 출력해야 한다. 별칭의 호출 이름을 잃으면 그 도구는 실패하도록 구성했다.
+
 Cargo driver는 계속 고정된 빌드 checkout 경로와 내용 기반 target cache를 사용한다.
 매 commit의 새 source worktree에서 직접 빌드해 절대 source 경로 변경으로 전체 crate가
 다시 빌드되는 경로를 만들지 않는다. 보존한 source와 build report의 실제 source identity가
