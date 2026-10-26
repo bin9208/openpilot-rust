@@ -78,3 +78,6 @@ impl CarrotPlanner {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod gap_retirement_tests;

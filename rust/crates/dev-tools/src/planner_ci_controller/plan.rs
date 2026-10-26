@@ -51,6 +51,13 @@ pub struct NativeLifecycleInputs {
 }
 
 #[derive(Clone, Debug)]
+pub struct NativeGapInputs {
+    pub corpus: PathBuf,
+    pub corpus_audit: PathBuf,
+    pub growth_mib: u64,
+}
+
+#[derive(Clone, Debug)]
 pub struct Inputs {
     pub root: PathBuf,
     pub python: PathBuf,
@@ -61,6 +68,7 @@ pub struct Inputs {
     pub scheduler: PathBuf,
     pub native_ipc: Option<NativeIpcInputs>,
     pub native_lifecycle: Option<NativeLifecycleInputs>,
+    pub native_gap: Option<NativeGapInputs>,
 }
 
 fn text(path: &Path) -> Result<String> {
@@ -80,6 +88,10 @@ pub(crate) enum PlannedCheck {
         growth_bytes: u64,
         timeout: Duration,
     },
+    NativeGap {
+        growth_bytes: u64,
+        timeout: Duration,
+    },
 }
 
 impl PlannedCheck {
@@ -94,6 +106,10 @@ impl PlannedCheck {
                 growth_bytes,
                 timeout,
             } => native_lifecycle_check(inputs, growth_bytes, timeout),
+            Self::NativeGap {
+                growth_bytes,
+                timeout,
+            } => native_gap_check(inputs, growth_bytes, timeout),
         }
     }
 }
@@ -169,6 +185,13 @@ fn selected_checks(
                 });
                 return Ok(());
             }
+            if name == "gap" {
+                checks.push(PlannedCheck::NativeGap {
+                    growth_bytes: *growth_bytes,
+                    timeout,
+                });
+                return Ok(());
+            }
             if name == "lifecycle" {
                 checks.push(PlannedCheck::NativeLifecycle {
                     growth_bytes: *growth_bytes,
@@ -215,20 +238,16 @@ fn selected_checks(
         ],
         "--evidence",
     )?;
-    for (name, script, trace) in [
-        ("radar", "plannerd_radar_source.py", "radar"),
-        ("gap", "plannerd_gap_source.py", "gap"),
-    ] {
-        add(
-            name,
-            script,
-            vec![
-                "--binary".into(),
-                text(&examples.join(format!("plannerd_{trace}_trace")))?,
-            ],
-            "--output",
-        )?;
-    }
+    add(
+        "radar",
+        "plannerd_radar_source.py",
+        vec![
+            "--binary".into(),
+            text(&examples.join("plannerd_radar_trace"))?,
+        ],
+        "--output",
+    )?;
+    add("gap", "", Vec::new(), "--output")?;
     let mut owner_trace = owner;
     owner_trace.extend([
         "--binary".into(),
@@ -249,6 +268,45 @@ fn selected_checks(
     add("ipc", "", Vec::new(), "--output")?;
     add("lifecycle", "", Vec::new(), "--output")?;
     Ok(checks)
+}
+
+fn native_gap_check(inputs: &Inputs, growth_bytes: u64, timeout: Duration) -> Result<Check> {
+    let gap = inputs
+        .native_gap
+        .as_ref()
+        .ok_or("prepared native gap context is required")?;
+    if !gap.corpus.is_absolute()
+        || !gap.corpus_audit.is_absolute()
+        || gap.growth_mib == 0
+        || gap.growth_mib.checked_mul(1024 * 1024).is_none()
+        || timeout.is_zero()
+        || timeout.subsec_nanos() != 0
+    {
+        return Err("invalid prepared native gap paths or budgets".into());
+    }
+    let argv = vec![
+        text(&inputs.scheduler)?,
+        "gap".into(),
+        "--root".into(),
+        text(&inputs.root)?,
+        "--binary".into(),
+        text(&inputs.binaries.join("examples/plannerd_gap_trace"))?,
+        "--corpus".into(),
+        text(&gap.corpus)?,
+        "--corpus-audit".into(),
+        text(&gap.corpus_audit)?,
+        "--timeout-seconds".into(),
+        timeout.as_secs().to_string(),
+        "--growth-mib".into(),
+        gap.growth_mib.to_string(),
+    ];
+    Ok(Check {
+        name: "gap".into(),
+        command: CommandSpec::new(argv, timeout),
+        output_option: "--output".into(),
+        growth_bytes,
+        scheduler_calls: None,
+    })
 }
 
 fn native_lifecycle_check(inputs: &Inputs, growth_bytes: u64, timeout: Duration) -> Result<Check> {

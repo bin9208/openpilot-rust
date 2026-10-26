@@ -1168,3 +1168,179 @@ NativeUnits `dde32208d2dbb7e51052a063edddd331b0a32859d2879dbef915c5be4871fe61`�
 새 CI dispatch/cancel/자동화, 로컬 Cargo/기능/모델 실행, 소스 수정·stage/commit/push는0이다.
 현재 전체 gate의 남은 blocker는 양쪽 동일 feature Clippy4다. Runtime/83개 roster 성공을 보존하되
 이를 성공 승격하거나 새 retirement credit으로 확장하지 않는다.
+
+
+## 2026-10-26 source3b399 actual: lifecycle26·관측4/8·strict Clippy 양쪽 SUCCESS
+
+고정 source `3b399b9380e04b6501af733dc386be86cc8bab9a`로 감사 대상을 전환했다.
+d666의 양성 기능 증거와 feature Clippy4 FAIL 원문은 위 기록에 보존한다.
+3b의 관련 production diff는 `cli.rs`3개와 `lifecycle.rs`1개의 비교용 PathBuf를 borrowed
+Path 비교로 바꾼4표현식뿐이다. LC stager
+`2b10c879782740c5662580febc84faac1806661f85d8512cb74691cbd9c74f48`, helper
+`ef9a4fab36c177c28c76eb0ad9607641ce777448643dc3cec2620cda6a2b3f7d`는 그대로다.
+기대값·원본 종료 경계·수치·시간·자원 cap을 바꾸지 않았다.
+
+- [HOST run40268857665/job121397103121](https://github.com/bin9208/openpilot-rust/actions/runs/40268857665/job/121397103121):
+  `2026-10-26T04:33:15Z` 실제 완료 SUCCESS, GitHub-hosted X64 runner `GitHub Actions 1000029915`.
+- [ARMmore run40268857667/Planner job121397103228](https://github.com/bin9208/openpilot-rust/actions/runs/40268857667/job/121397103228):
+  `2026-10-26T04:34:26Z` 실제 완료 SUCCESS, GitHub-hosted ARM64 runner `GitHub Actions 1000029916`.
+
+두 job의 실패 단계는0이다. 완료한 job log만 각1회 받았으며 실행 중 log는 받지 않았다.
+API repo/head source 및 private `SOURCE_COMMIT`을 동일3b SHA에 결합했다.
+다른 모델/진단 job을 이 LC 수용에 합치지 않았고 새 NativeUnits/client dispatch도 하지 않았다.
+
+### 실제 실행과 qualification
+
+양쪽 commands.json은 기존 순서12개 모두 rc0다. index10 IPC는 current controller ELF의
+`ipc` argv36개, index11 lifecycle은 같은 ELF의 `lifecycle` argv26개로 각각 정확1회다.
+새 wrapper/standalone IPC 실행은 없다. lifecycle13×source/rust의26개 실제 case가 모두 PASS다.
+26개 raw `returncode`와 `expected_returncode`를 private proof에 보존된 인증 manifest26의
+고정841 결과와 각각 비교해 일치함을 확인했다. source wait/SIGINT=-2와 native0,
+SIGTERM=-15, 숫자 오류 source=-6 대 native1 및 malformed CP=1을 유지했다.
+현재 publication72개가 functional artifact에 존재한다. lifecycle의 기존 service/frame·종료 검사와
+별도로72개 payload 전체의 새 수치 동등성을 주장하지 않는다.
+
+양쪽 private proof에서 `ipc-observed.status`, `ipc-lifecycle.status`, `ipc-clippy.status` 모두0이다.
+관측4는 HOST0.83s/ARM0.70s, lifecycle unit8은 양쪽0.11s이며 각0 failed/0 ignored다.
+strict feature Clippy stderr는 HOST55.77s/ARM56.60s에 `Finished dev profile`로 끝났고
+error diagnostic이 없다. 실제 동일 feature/target의 `--lib --bin check-plannerd-ci -- -D warnings`
+검사다. helper `ipc-check-outcome`도 exit0이며 API qualification 단계가 양쪽 SUCCESS다.
+d666의 no-default-feature NativeUnits14/6/5/15 PASS와 구분되는 새 feature qualification 결과다.
+
+LC stager proof는 계속 source841의 독립 원본을 소비한다. HOST audit SHA
+`9ae47494dcf2e201fa1c48a70e6acd934e08fefc008001bd0c95c9ba502eb88e`,
+ARM `23bace6376cc1d87a1857bc8f69b64d6f0ddf5c526e1f69a133502620bd81f80`가
+Git3b의 고정 audit bytes와 일치한다. 원본 index·manifest26 bytes/SHA도 일치한다.
+source14/원본 SDK proof5, selected file5,891/capture file5,791,
+input234/Params snapshot30/원본 publication72는 그대로다.
+실제 directory roster83개가 root1/run26/inputs26/Params30으로 정확히 같아 빈 inputs16개 복원이
+새 실행에서도 유지됨을 확인했다. 원본을 실행해 새 입력이나 기대값을 만들지 않았다.
+
+native lifecycle provenance의 controller 경로는 선행 IPC와 같고 peer SHA는 선행 IPC provenance와
+현재 업로드된 C++ peer bytes에 결합된다. current daemon member SHA도 lifecycle receipt와 같다.
+HOST runtime/memory/ipc-check, ARM runtime/ipc-check의 current controller SHA after check가 모두 OK다.
+controller 자체는 upload 대상이 아니므로 artifact에서 그 ELF bytes를 다시 해시했다고 표현하지 않는다.
+새 범위에서는 기존 d666 IPC 벡터의 상세 감사를 반복하지 않았으며, 이번 수용은 lifecycle/runtime
+명령 및 관측4/8·feature Clippy·동일 ELF·전후 봉인에 집중했다.
+
+### source·SDK·cleanup
+
+실제 job-private Rust1.94 SDK 전체의 HOST159 file/181 NUL roster,
+ARM158 file/180 roster가 before와 runtime/ipc-check after 및 stable roster 사이에서 같다.
+HOST는 memory after도 같다. sdk.before manifest SHA는 HOST
+`415a15435d2af8c757841cda40a6309a8c8db473f81c4c81fe7f3e1cd7068c54`, ARM
+`b21411957449f309653262204d18fa75810e19fafdc1870f0ea645ee51b2437c`다.
+이 범위는 해당 private Rust SDK이며 host 전체 DSO/venv 또는 별도 NativeUnits global SDK를 뜻하지 않는다.
+
+양쪽 index-before/after는 동일19,624개 NUL path이고 SHA
+`01b5341b4899772c077cb83c08e01723ffc69f328b37818fddc742ffdd5c2759`다.
+old scheduler test 경로도 없다. normalized source-before/after SHA는
+`2327833cbbe553bcbc000393fc5983debd5dca44a8706243cfde2df6458ff40a`로 같다.
+양쪽 `Seal private source and index after maintained checks`,
+`Retain private job ownership and source evidence`,
+`Clean only uploaded owned source alias and target`,
+`Clean common owned temporary paths after uploaded source`가 모두 실제 SUCCESS다.
+qualification 이후의 봉인·업로드·cleanup까지 끝난 결과이며 예상/skipped 상태가 아니다.
+HOST ASan abi/owner/fault3도 PASS이고 scope는 generated solver C 계측/allocator 검사다.
+ARM ASan은 기존 조건에 따라 skipped다.
+
+### 새4 ZIP 단일 다운로드와 인계
+
+각 artifact의 개별 API id/run/source/repo1395501963/정확 size/digest/expired=false를 다운로드 전에
+확인했다. 만료는 모두 `2027-01-24T04:23:51Z`다. 네 ZIP을 각각1회 받아 whole SHA·전체 CRC를
+검증했고 unique 상대 경로/regular·directory 종류/member cap도 통과했다.
+과거841/d666/47/0283 ZIP을 다시 다운로드하거나 whole CRC를 반복하지 않았다.
+
+| 역할 | ID | ZIP bytes | whole SHA256 | members / expanded bytes |
+| --- | --- | --- | --- | --- |
+| HOST functional | 12627753389 | 56,283,221 | `e8ac8354ae9548f66c134447d39117f7f21d9bd074a9400fa7e74ad09b54f217` | 36,157 / 172,453,565 |
+| HOST private | 12627524292 | 4,760,263 | `07c3756c71fdd66325dc50b49156b355db7b142079644a99bed64013a409fc83` | 132 / 29,774,916 |
+| ARM functional | 12627778531 | 45,939,964 | `a7d262d7b80e5d360c69267bbe0bab8c3d2a318d88dae0d12c6ae706b58392a0` | 31,554 / 143,415,981 |
+| ARM private | 12627564448 | 4,114,334 | `e904eb69f9b83a29c572fcb4d8d58f2b846f5199e8e6d4a6b1e60fafef46187f` | 121 / 26,961,047 |
+
+다운로드 admission160MiB에 대해 가용73,804,505,088B를 확인했다.
+payload111,097,782B+inventory40MiB+log4MiB+margin8MiB=165,623,734B로
+167,772,160B 이내다. 기존 inert member≤50,000/전체 expanded≤1GiB/member≤128MiB도 유지했다.
+캐시는 `.analysis/scratch/2026-10-25-523-completion/ci/<ID>.zip` 및 `<ID>-members.json`이다.
+`planner3b399-artifact-handoff.json`의 네 `ready`/`whole_crc_pass`가 모두 true이고
+absolute cache path/정확 bytes/SHA를 부모/Hypatia에게 인계했다. 중복 다운로드는 필요 없다.
+원시 감사 요약은 `planner3b399-native-audit.json`이다.
+완료 log SHA는 HOST `03c168496657788adc9c6e3e6e2659d6059cb59f3929627a5503fd7d968888e2`,
+ARM `df7d949d961cd208d69a9c154a20bc14428830c5dad966e153e31442b1b12b4f`다.
+
+이번 실제 LC/native gate는 양쪽 green으로 확인했다. 원시 provenance의 `retirement_credit:0`은
+그대로 보존했고 3개 파일 credit/전체 Python 퇴역 판단은 부모 소유로 남겼다.
+이 감사자는 해당 credit·ledger·source·pin을 수정하지 않았다. 로컬 작업은 Git3b source/API/완료 log/
+캐시 ZIP metadata·JSON의 inert 감사와 본 append뿐이다. Cargo/기능/모델/원본 실행,
+CI dispatch/rerun/cancel/자동화, source 수정·stage/commit/push는0이다.
+
+## 다음 Gap 전환 후보 — 실행 전
+
+부모는 위3b의 삭제 후 수용을 기준 inventory/families에 반영했다. 기준3580은
+303교체/3부분/3274대기이며 lifecycle 비교 도구3개만 새 인정이다.
+추가170개는 #513 임시 진단2개 제거를 반영해33교체/131대기/1기존native/2비실행/3제거다.
+
+`plannerd_gap_source.py`127행을 같은 controller ELF의 `gap` leaf로 옮긴 후속 후보를 작성했다.
+기존 원본841 functional ZIP에서 input3,293,789B/expected265,691B/receipt131B만 별도
+16MiB root로 읽는다. 원래 archive의 재다운로드·재실행·기대값 재생성은 없다.
+기존 IPC/LC stager·128MiB cap·5891 file/83 directory 계약은 바꾸지 않는다.
+Gap의857동작(update829/credit28), owner18, positive187/credit9 및 모든 F64 bit/정수/키/길이를
+엄격 비교하고, 차이는 전부 세되 처음50개만 기록한다. 허용치나 새 timing mask는 없다.
+
+기존12개 중 index3에서만 Gap corpus를 준비한다. 전체 growth12 검증과 ABI/policy/radar의
+원래 첫 실패는 그보다 앞이다. Gap은 원래128MiB·HOST2700/ARM5400초·같은 owned process group을
+사용하며 공유 QA는 `planner-ipc-native` cfg 노출1개만 추가한다. 실행·회수 본문은 불변이다.
+퇴역6경로의 file/directory/live·dangling symlink 재등장과 실패 후 복구를 전후 거부한다.
+memory의 ABI/owner/fault3개는 이 runtime guard와 분리한 기존 동작을 보존한다.
+
+원본 테스트15 method 중 core13의857개 기록에서 관측되지 않은 내부 history reset과
+실제 adapter/TF 두 method는 plannerd의 직접 테스트3개로 보완했다. 실제 update의 nonempty
+history가 legacy 입력에서 비워지고 direction0으로 돌아오는지, selected pair가 비면
+비선택 lead를 targets에 넣지 않는지, 원래4×100회의 공통 following time1.3이 유지되는지 검사한다.
+dev-tools의 새 일반9개는 metadata/실행 실패·timeout·비교 경계를 검증한다. 실제 archive를 요구하는
+ignored1개는 기본 실행 성공으로 세지 않는다. 기존 native14/frozen5/retirement6/memory15는 유지한다.
+
+동결 원문 runtime-plan.json을 고치지 않고 index3의 원래 Python argv와 새 native argv를 따로
+검사한다. 원본 fixture/audit2·소스 pin을 제외한 캡처 원형은 Git 밖에 유지한다.
+이 후보의 컴파일·기능·857대조·새3/9·Clippy·전후 봉인·cleanup은 아직 UNRUN이다.
+Gap Python 파일은 삭제 후보지만 기준 inventory의 status는 pending이며 새 credit은0이다.
+전체 #523·PR343/통합·정확 소스 전달·필요한 실기 수용은 계속 미완료다.
+
+
+### source3b baseline LC3 완료 기준과 working/index 부재 근거 보강
+
+부모가 다음 Gap 구현 commit과 분리할 수 있도록 이 기록은 source
+`3b399b9380e04b6501af733dc386be86cc8bab9a`에만 고정한다. 위 네 ZIP audit/인계는 완료 상태이며
+다시 다운로드하거나 whole CRC를 반복하지 않았다. 소스·WF·ledger·pin 수정은 없다.
+
+대상 baseline3개는 다음 경로다. 삭제는8f/d666부터 반영됐고 양쪽3b 실제 CI는 삭제된 상태를 수용했다.
+
+- `rust/tools/check_plannerd_lifecycle.py`
+- `rust/tools/plannerd_lifecycle_peer.py`
+- `rust/tools/plannerd_ipc.py`
+
+세 경로는 Git3b tree와 HOST/ARM의 전후 index19,624개 목록 모두에 없다.
+working-tree 부재는 index 부재와 별개로 같은 source의
+[Focus run40268857673/job121397102875](https://github.com/bin9208/openpilot-rust/actions/runs/40268857673/job/121397102875)에 결합했다.
+실제 완료 SUCCESS이며 step6 `Admit exact focused source HEAD and tracked index`, step25
+`Seal Fast source and index after all maintained checks`가 모두 SUCCESS다.
+Git3b `.github/workflows/python-rust-523.yml:109`와`:1570`의 두 단계 본문은 세 경로 각각에
+`test ! -e && test ! -L`를 실행하고 `git ls-files --error-unmatch` 성공도 거부한다.
+따라서 이 working-tree 전후 부재 증거는 Focus checkout의 실제 guard이고,
+HOST/ARM private 증거는 그 각각의 source/index 전후 봉인이다. 두 범위를 혼동하지 않는다.
+Focus API metadata만 읽었고 부모 소유 Focus raw log/ZIP을 추가 다운로드하지 않았다.
+근거 JSON은 cache `planner3b399-absence-audit.json`이다.
+
+현재 실행 소비자를 Git3b source에서 확인했을 때 세 경로의 Python import/실행 caller는 없다.
+남은 이름 참조는 frozen provenance/source pin·독립 원본 기록·원문 보존 fixture·부재 guard다.
+원래 runtime12의 IPC/lifecycle은 current ELF 직접 child로 각각1회 실행됐고,
+독립 원본 source14/input234/Params30/output72·원본 raw 종료 기준 및 sameELF/SDK 봉인을 유지했다.
+새 lifecycle26/관측4/lifecycle8/feature strict Clippy와 최종 source/SDK/cleanup이 양쪽 모두 PASS다.
+이 근거로 baseline3개를 `pending`→`replaced-local`로 분류할 파일별 완료 기준은 충족했다고 권고한다.
+부모가 적용하면 baseline `303/3/3274`이며 이 감사자는 inventory/families/ledger의 count를 변경하지 않았다.
+
+이는 전체 Python 실행 경계의 완료가 아니다. 새 native lifecycle source mode13개는 여전히
+prepared Python의 `plannerd_daemon_source.py`를 original oracle로 실행한다.
+source3b execution-edges의 `actual_native_lifecycle_original_python_oracle_dispatch`는 계속 pending이다.
+원시 native provenance의 `retirement_credit:0`도 그대로이며 이 추가 interpreter 경계와 grand 이슈는
+열어 둔다. 새 변경이나 실행을 끼워 넣지 않고 이 source3b actual 문서만 별도 stage 가능한 상태다.

@@ -191,3 +191,6 @@ impl Tracker {
         self.check_path(input, lead, base)
     }
 }
+
+#[cfg(test)]
+mod gap_retirement_tests;

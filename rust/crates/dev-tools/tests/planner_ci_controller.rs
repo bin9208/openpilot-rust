@@ -1,7 +1,8 @@
 use openpilot_dev_tools::{
     planner_ci_controller::{
         plan::{
-            self, Inputs, NativeIpcInputs, NativeLifecycleInputs, CHECK_NAMES, MEMORY_CHECK_NAMES,
+            self, Inputs, NativeGapInputs, NativeIpcInputs, NativeLifecycleInputs, CHECK_NAMES,
+            MEMORY_CHECK_NAMES,
         },
         run_checks, scheduler, Check, CheckFailure,
     },
@@ -358,6 +359,7 @@ fn registered_controller_returns_the_first_real_child_status_without_running_lat
     assert!(!output.join("result.json").exists());
     ipc_point_of_use_preserves_prefix_and_upfront_growth();
     lifecycle_cli_contract();
+    gap_cli_contract();
 }
 
 fn lifecycle_cli_contract() {
@@ -442,6 +444,76 @@ fn lifecycle_cli_contract() {
     assert!(!base.join("output").exists());
 }
 
+fn gap_cli_contract() {
+    let temporary = tempfile::tempdir().unwrap();
+    let base = temporary.path();
+    let mut argv: Vec<String> = vec![env!("CARGO_BIN_EXE_check-plannerd-ci").into(), "gap".into()];
+    for (flag, path) in [
+        ("--root", base.join("root")),
+        ("--binary", base.join("bin/examples/plannerd_gap_trace")),
+        ("--corpus", base.join("gap-corpus")),
+        ("--corpus-audit", base.join("gap-corpus/audit.json")),
+        ("--output", base.join("output")),
+    ] {
+        argv.extend([flag.into(), path.to_str().unwrap().into()]);
+    }
+    argv.extend([
+        "--timeout-seconds".into(),
+        "2700".into(),
+        "--growth-mib".into(),
+        "128".into(),
+    ]);
+    for (kind, needle) in [
+        ("unknown", "unknown gap option"),
+        ("duplicate", "duplicate gap option"),
+        ("missing", "missing gap --corpus-audit"),
+        ("relative", "absolute UTF-8 path"),
+        ("zero-timeout", "must be positive"),
+        ("zero-growth", "must be positive"),
+        ("decimal", "positive decimal"),
+        ("overflow", "gap growth overflow"),
+    ] {
+        let mut invalid = argv.clone();
+        match kind {
+            "unknown" => invalid.extend(["--unknown".into(), "x".into()]),
+            "duplicate" => invalid.extend(["--root".into(), base.to_str().unwrap().into()]),
+            "missing" => {
+                let i = invalid.iter().position(|v| v == "--corpus-audit").unwrap();
+                invalid.drain(i..=i + 1);
+            }
+            _ => {
+                let flag = match kind {
+                    "relative" => "--corpus",
+                    "zero-timeout" => "--timeout-seconds",
+                    _ => "--growth-mib",
+                };
+                let i = invalid.iter().position(|v| v == flag).unwrap() + 1;
+                invalid[i] = match kind {
+                    "relative" => "relative",
+                    "zero-timeout" | "zero-growth" => "0",
+                    "decimal" => "1.5",
+                    _ => "18446744073709551615",
+                }
+                .into();
+            }
+        }
+        let observed = NativeRunner
+            .run(&CommandSpec::new(invalid, Duration::from_secs(10)))
+            .unwrap();
+        assert_eq!(observed.code, 1, "{kind}: {observed:?}");
+        let expected = if cfg!(feature = "planner-ipc-native") {
+            needle
+        } else {
+            "gap requires the planner-ipc-native feature"
+        };
+        assert!(
+            String::from_utf8_lossy(&observed.stderr).contains(expected),
+            "{kind}: {observed:?}"
+        );
+        assert!(!base.join("output").exists());
+    }
+}
+
 fn ipc_point_of_use_preserves_prefix_and_upfront_growth() {
     let temp = tempfile::tempdir().unwrap();
     let python = temp.path().join("prefix-leaf");
@@ -471,12 +543,13 @@ fn ipc_point_of_use_preserves_prefix_and_upfront_growth() {
     }
     let mut command = CommandSpec::new(argv, Duration::from_secs(10));
     command.env_remove.push("PLANNER_NATIVE_IPC_PROFILE".into());
+    command.env_remove.push("CI_JOB_TEMP".into());
     let result = NativeRunner.run(&command).unwrap();
     assert_eq!(result.code, 1, "{result:?}");
     let error = if cfg!(feature = "planner-ipc-native") {
-        "prepared runtime IPC requires PLANNER_NATIVE_IPC_PROFILE"
+        "prepared runtime gap requires CI_JOB_TEMP"
     } else {
-        "runtime IPC requires the planner-ipc-native feature"
+        "runtime gap requires the planner-ipc-native feature"
     };
     assert!(
         String::from_utf8_lossy(&result.stderr).contains(error),
@@ -484,18 +557,19 @@ fn ipc_point_of_use_preserves_prefix_and_upfront_growth() {
     );
     let rows: Value =
         serde_json::from_slice(&fs::read(output.join("commands.json")).unwrap()).unwrap();
-    assert_eq!(rows.as_array().unwrap().len(), 10);
-    for (row, name) in rows.as_array().unwrap().iter().zip(&CHECK_NAMES[..10]) {
+    assert_eq!(rows.as_array().unwrap().len(), 3);
+    for (row, name) in rows.as_array().unwrap().iter().zip(&CHECK_NAMES[..3]) {
         assert_eq!(row["name"].as_str(), Some(*name));
         assert_eq!(row["returncode"], 0);
     }
-    assert_eq!(fs::read(&calls).unwrap(), b"leaf".repeat(10));
-    for name in ["ipc.log", "lifecycle.log", "result.json"] {
-        assert!(!output.join(name).exists());
+    assert_eq!(fs::read(&calls).unwrap(), b"leaf".repeat(3));
+    for name in &CHECK_NAMES[3..] {
+        assert!(!output.join(format!("{name}.log")).exists());
     }
+    assert!(!output.join("result.json").exists());
 
-    // IPC/lifecycle 준비는 늦추지만 전체 growth12 exact 검증은 첫 prefix 실행 전이다.
-    for omitted in ["ipc=0", "lifecycle=0"] {
+    // Gap/IPC/lifecycle 준비는 늦추지만 전체 growth12 exact 검증은 첫 prefix 실행 전이다.
+    for omitted in ["gap=0", "ipc=0", "lifecycle=0"] {
         let mut invalid = command.clone();
         let invalid_output = temp.path().join(format!("missing-growth-{omitted}"));
         let output_index = invalid
@@ -512,7 +586,7 @@ fn ipc_point_of_use_preserves_prefix_and_upfront_growth() {
         assert!(String::from_utf8_lossy(&result.stderr)
             .contains("growth admission must name every selected Planner operation exactly once"));
         assert!(!invalid_output.exists());
-        assert_eq!(fs::read(&calls).unwrap(), b"leaf".repeat(10));
+        assert_eq!(fs::read(&calls).unwrap(), b"leaf".repeat(3));
     }
 }
 
@@ -608,6 +682,11 @@ fn inputs(temp: &Path, python: PathBuf) -> Inputs {
             corpus_audit: temp.join("lifecycle-corpus/audit.json"),
             growth_mib: 256,
         }),
+        native_gap: Some(NativeGapInputs {
+            corpus: temp.join("gap-corpus"),
+            corpus_audit: temp.join("gap-corpus/audit.json"),
+            growth_mib: 128,
+        }),
     }
 }
 fn growth() -> BTreeMap<String, u64> {
@@ -631,6 +710,32 @@ fn twelve_actual_leaf_commands_require_complete_operation_growth_and_scheduler_b
     );
     assert_eq!(checks[10].scheduler_calls, Some(160));
     let output = temp.path().join("planner-comparison");
+    let gap = checks[3].invocation(&output, &inputs.root).unwrap();
+    let gap_context = inputs.native_gap.as_ref().unwrap();
+    assert_eq!(
+        gap.effective_argv(),
+        [
+            inputs.scheduler.clone(),
+            "gap".into(),
+            "--root".into(),
+            inputs.root.clone(),
+            "--binary".into(),
+            inputs.binaries.join("examples/plannerd_gap_trace"),
+            "--corpus".into(),
+            gap_context.corpus.clone(),
+            "--corpus-audit".into(),
+            gap_context.corpus_audit.clone(),
+            "--timeout-seconds".into(),
+            "5".into(),
+            "--growth-mib".into(),
+            "128".into(),
+            "--output".into(),
+            output.join("gap"),
+        ]
+        .map(PathBuf::into_os_string)
+    );
+    assert_eq!(gap.cwd.as_deref(), Some(inputs.root.as_path()));
+    assert!(gap.merge_output);
     let ipc = checks[10].invocation(&output, &inputs.root).unwrap();
     let context = inputs.native_ipc.as_ref().unwrap();
     assert_eq!(
@@ -761,6 +866,24 @@ fn twelve_actual_leaf_commands_require_complete_operation_growth_and_scheduler_b
             "{invalid}"
         );
     }
+    for invalid in ["absent", "corpus", "audit", "zero", "overflow"] {
+        let mut bad = inputs.clone();
+        if invalid == "absent" {
+            bad.native_gap = None;
+        } else {
+            let context = bad.native_gap.as_mut().unwrap();
+            match invalid {
+                "corpus" => context.corpus = "relative".into(),
+                "audit" => context.corpus_audit = "relative".into(),
+                "zero" => context.growth_mib = 0,
+                _ => context.growth_mib = u64::MAX,
+            }
+        }
+        assert!(
+            plan::runtime_checks(&bad, &growth(), Duration::from_secs(5)).is_err(),
+            "gap {invalid}"
+        );
+    }
 }
 
 #[test]
@@ -768,6 +891,7 @@ fn memory_plan_requires_only_abi_owner_fault_and_preserves_sanitized_wrapper_pat
     let temp = tempfile::tempdir().unwrap();
     let mut inputs = inputs(temp.path(), "/reference/python".into());
     inputs.native_lifecycle = None;
+    inputs.native_gap = None;
     inputs.binaries = temp.path().join("wrappers");
     inputs.native_ipc = None;
     let memory_growth = MEMORY_CHECK_NAMES

@@ -2079,7 +2079,10 @@ fn planner_ipc_canonical_steps() -> Vec<Value> {
         "/usr/bin/bash \"$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh\"\n",
         "printf '%s  %s\\n' 2b10c879782740c5662580febc84faac1806661f85d8512cb74691cbd9c74f48 ",
         "\"$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh\" | sha256sum --check --strict -\n",
-        "/usr/bin/bash \"$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh\"\n"
+        "/usr/bin/bash \"$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh\"\n",
+        "printf '%s  %s\\n' d01aa604ea115d44a530990a94f6f1d3c2f31cb1f8742600568f842ef933f702 ",
+        "\"$CI296_SOURCE/tools/ci/stage_planner_gap_original_523.sh\" | sha256sum --check --strict -\n",
+        "/usr/bin/bash \"$CI296_SOURCE/tools/ci/stage_planner_gap_original_523.sh\"\n"
     );
     let qualify =
         "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" ipc-check\n";
@@ -2127,7 +2130,7 @@ fn planner_ipc_canonical_contract(job: &Value) -> Result<(), String> {
     let expected = planner_ipc_canonical_steps();
     let positions = [compile + 1, memory + 1];
     let digests = [
-        "6aaaf3e17ffe0af137a03ccadaf64da920568a9b77fa997b9cd49a2f0ca0ebce",
+        "03557d7b378b96dd7a39c13a0f45f0a6d608d191cf3057ee782247bd1f03aa39",
         "b637025349f5ad452b2ed62eff46480b2e0c3983d38502bb89ce715d41c7629a",
     ];
     for ((position, wanted), digest) in positions.into_iter().zip(&expected).zip(digests) {
@@ -2197,7 +2200,7 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
                 "{:x}",
                 Sha256::digest(read(".github/workflows/rust.yml").as_bytes())
             ),
-            "f6286ab88351066d3dbba626f86e509aa37e4d8bed2746fa4961f329abb43cb9"
+            "25837efd4abccda023a4b51ca78f5c30d900464694a2cdc0b4610ba0cebe3853"
         );
         let host = parse(&read(
             ".github/workflows/python-rust-523-planner-caller.yml",
@@ -2221,7 +2224,7 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
                 "name":"Require reviewed maintained Planner source", "if":TRUSTED_SOURCE,
                 "shell":"bash", "working-directory":"${{ env.CI296_SOURCE }}", "env":{"CI296_HOST_CONTROL":"1"},
                 "run":concat!("set -euo pipefail\nprintf '%s  %s\\n' ",
-                    "f6286ab88351066d3dbba626f86e509aa37e4d8bed2746fa4961f329abb43cb9 ",
+                    "25837efd4abccda023a4b51ca78f5c30d900464694a2cdc0b4610ba0cebe3853 ",
                     ".github/workflows/rust.yml | sha256sum --check --strict -\n")
             })
         );

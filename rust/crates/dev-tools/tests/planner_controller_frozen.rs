@@ -1,7 +1,7 @@
 //! source73의 독립 원본 관측을 데이터로만 소비한다. Python 실행/import는 없다.
 use openpilot_dev_tools::{
     planner_ci_controller::{
-        plan::{self, Inputs, NativeIpcInputs, NativeLifecycleInputs},
+        plan::{self, Inputs, NativeGapInputs, NativeIpcInputs, NativeLifecycleInputs},
         run_checks, scheduler, Check, CheckFailure,
     },
     qa_process::{CommandSpec, NativeRunner},
@@ -316,6 +316,11 @@ fn compare_plan(fixture: &Fixture, memory: bool, count: usize) {
             corpus_audit: base.join("lifecycle-corpus/audit.json"),
             growth_mib: 256,
         }),
+        native_gap: (!memory).then(|| NativeGapInputs {
+            corpus: base.join("gap-corpus"),
+            corpus_audit: base.join("gap-corpus/audit.json"),
+            growth_mib: 128,
+        }),
     };
     let output = base.join("output");
     let mappings = [
@@ -393,10 +398,55 @@ fn compare_plan(fixture: &Fixture, memory: bool, count: usize) {
         })
         .collect::<Vec<_>>();
     assert_eq!(actual.len(), expected.len());
+    let mut gap_cutovers = 0;
     let mut ipc_cutovers = 0;
     let mut lifecycle_cutovers = 0;
     for (index, (actual, expected)) in actual.iter().zip(&expected).enumerate() {
-        if !memory && index == 10 {
+        if !memory && index == 3 {
+            // source73의 원래 Python Gap argv를 먼저 대조하고 native 전환을 별도로 확인한다.
+            assert_eq!(expected.name, "gap");
+            assert_eq!(
+                expected.argv,
+                [
+                    inputs.python.clone(),
+                    "-u".into(),
+                    "-P".into(),
+                    inputs.root.join("rust/tools/plannerd_gap_source.py"),
+                    "--binary".into(),
+                    inputs.binaries.join("examples/plannerd_gap_trace"),
+                    "--output".into(),
+                    output.join("gap"),
+                ]
+                .map(|path| path.to_str().unwrap().to_owned())
+            );
+            assert_eq!(
+                actual,
+                &Leaf {
+                    name: "gap".into(),
+                    argv: [
+                        inputs.scheduler.clone(),
+                        "gap".into(),
+                        "--root".into(),
+                        inputs.root.clone(),
+                        "--binary".into(),
+                        inputs.binaries.join("examples/plannerd_gap_trace"),
+                        "--corpus".into(),
+                        base.join("gap-corpus"),
+                        "--corpus-audit".into(),
+                        base.join("gap-corpus/audit.json"),
+                        "--timeout-seconds".into(),
+                        "5".into(),
+                        "--growth-mib".into(),
+                        "128".into(),
+                        "--output".into(),
+                        output.join("gap"),
+                    ]
+                    .map(|path| path.to_str().unwrap().to_owned())
+                    .into(),
+                }
+            );
+            gap_cutovers += 1;
+        } else if !memory && index == 10 {
             // source73 원문 IPC argv도 전부 확인한다. 새 native argv로 원문을 덮어쓰지 않는다.
             assert_eq!(expected.name, "ipc");
             assert_eq!(
@@ -531,10 +581,11 @@ fn compare_plan(fixture: &Fixture, memory: bool, count: usize) {
             );
             lifecycle_cutovers += 1;
         } else {
-            // runtime 나머지10개와 memory3는 순서와 전체 argv를 원문 그대로 대조한다.
+            // runtime 나머지9개와 memory3는 순서와 전체 argv를 원문 그대로 대조한다.
             assert_eq!(actual, expected, "frozen leaf at index {index}");
         }
     }
+    assert_eq!(gap_cutovers, usize::from(!memory));
     assert_eq!(ipc_cutovers, usize::from(!memory));
     assert_eq!(lifecycle_cutovers, usize::from(!memory));
 }

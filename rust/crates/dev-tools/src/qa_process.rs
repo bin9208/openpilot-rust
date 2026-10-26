@@ -434,7 +434,8 @@ impl NativeRunner {
         feature = "version-tools-native",
         feature = "soundd-daemon-native",
         feature = "bridge-tools-native",
-        feature = "uploader-logging-native"
+        feature = "uploader-logging-native",
+        feature = "planner-ipc-native"
     ))]
     pub(crate) fn run_in_current_group(&mut self, spec: &CommandSpec) -> Result<Captured> {
         self.run_with_file(spec, None, false)

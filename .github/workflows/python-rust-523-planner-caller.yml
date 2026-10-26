@@ -12,6 +12,8 @@ name: Python Rust 523 exact native Planner caller
     - tools/ci/stage_planner_ipc_original_523.sh
     - tools/ci/stage_planner_lifecycle_original_523.sh
     - rust/crates/dev-tools/tests/fixtures/planner-lifecycle-original-audit/**
+    - tools/ci/stage_planner_gap_original_523.sh
+    - rust/crates/dev-tools/tests/fixtures/planner-gap-original-audit/**
     - rust/tools/planner_ipc_peer.cc
   workflow_dispatch: null
 permissions:
@@ -207,7 +209,7 @@ jobs:
         CI296_HOST_CONTROL: '1'
       run: 'set -euo pipefail
 
-        printf ''%s  %s\n'' f6286ab88351066d3dbba626f86e509aa37e4d8bed2746fa4961f329abb43cb9 .github/workflows/rust.yml
+        printf ''%s  %s\n'' 25837efd4abccda023a4b51ca78f5c30d900464694a2cdc0b4610ba0cebe3853 .github/workflows/rust.yml
         | sha256sum --check --strict -
 
         '
@@ -366,6 +368,8 @@ jobs:
         /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh"
         printf '%s  %s\n' 2b10c879782740c5662580febc84faac1806661f85d8512cb74691cbd9c74f48 "$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh" | sha256sum --check --strict -
         /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh"
+        printf '%s  %s\n' d01aa604ea115d44a530990a94f6f1d3c2f31cb1f8742600568f842ef933f702 "$CI296_SOURCE/tools/ci/stage_planner_gap_original_523.sh" | sha256sum --check --strict -
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_gap_original_523.sh"
     - name: Compare exact policies, main loops, real IPC and lifecycle
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/planner_native_controller_523.sh" runtime

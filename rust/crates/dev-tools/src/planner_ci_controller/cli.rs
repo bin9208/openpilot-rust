@@ -32,6 +32,135 @@ const LIFECYCLE_HELP: &str = concat!(
 );
 
 #[cfg(feature = "planner-ipc-native")]
+const GAP_HELP: &str = concat!(
+    "check-plannerd-ci gap --root PATH --binary PATH --corpus PATH --corpus-audit PATH ",
+    "--output PATH --timeout-seconds N --growth-mib MIB (all options required once)"
+);
+
+#[cfg(feature = "planner-ipc-native")]
+fn parse_gap_arguments(
+    mut arguments: impl Iterator<Item = OsString>,
+) -> Result<super::gap::Options> {
+    let allowed = [
+        "--root",
+        "--binary",
+        "--corpus",
+        "--corpus-audit",
+        "--output",
+        "--timeout-seconds",
+        "--growth-mib",
+    ];
+    let mut values = BTreeMap::<String, OsString>::new();
+    while let Some(key) = arguments.next() {
+        let name = key.to_str().ok_or(GAP_HELP)?;
+        if !allowed.contains(&name) {
+            return Err(format!("unknown gap option {name}").into());
+        }
+        let value = arguments
+            .next()
+            .ok_or_else(|| format!("missing value for {name}"))?;
+        if values.insert(name.into(), value).is_some() {
+            return Err(format!("duplicate gap option {name}").into());
+        }
+    }
+    let take = |name: &str, values: &mut BTreeMap<String, OsString>| -> Result<String> {
+        values
+            .remove(name)
+            .ok_or_else(|| format!("missing gap {name}"))?
+            .into_string()
+            .map_err(|_| format!("gap {name} requires UTF-8").into())
+    };
+    let path = |name: &str, values: &mut BTreeMap<String, OsString>| -> Result<PathBuf> {
+        let value = take(name, values)?;
+        if value.is_empty() || value.contains('\0') || !Path::new(&value).is_absolute() {
+            return Err(format!("gap {name} requires an absolute UTF-8 path").into());
+        }
+        Ok(value.into())
+    };
+    let positive = |name: &str, values: &mut BTreeMap<String, OsString>| -> Result<u64> {
+        let value = take(name, values)?;
+        if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+            return Err(format!("gap {name} requires positive decimal").into());
+        }
+        let number = value.parse::<u64>()?;
+        if number == 0 {
+            return Err(format!("gap {name} must be positive").into());
+        }
+        Ok(number)
+    };
+    let timeout = Duration::from_secs(positive("--timeout-seconds", &mut values)?);
+    if std::time::Instant::now().checked_add(timeout).is_none() {
+        return Err("gap deadline range".into());
+    }
+    let growth_bytes = positive("--growth-mib", &mut values)?
+        .checked_mul(1024 * 1024)
+        .ok_or("gap growth overflow")?;
+    let options = super::gap::Options {
+        root: path("--root", &mut values)?,
+        binary: path("--binary", &mut values)?,
+        corpus: path("--corpus", &mut values)?,
+        audit: path("--corpus-audit", &mut values)?,
+        output: path("--output", &mut values)?,
+        timeout,
+        growth_bytes,
+    };
+    if !values.is_empty() {
+        return Err("unused gap options".into());
+    }
+    Ok(options)
+}
+
+fn prepared_native_gap(
+    inputs: &Inputs,
+    output: &Path,
+    growth_bytes: u64,
+) -> Result<plan::NativeGapInputs> {
+    #[cfg(not(feature = "planner-ipc-native"))]
+    {
+        let _ = (inputs, output, growth_bytes);
+        Err("runtime gap requires the planner-ipc-native feature".into())
+    }
+    #[cfg(feature = "planner-ipc-native")]
+    {
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+        let job = PathBuf::from(
+            std::env::var("CI_JOB_TEMP")
+                .map_err(|_| "prepared runtime gap requires CI_JOB_TEMP")?,
+        );
+        let corpus = job.join("planner-gap-original");
+        let audit = corpus.join("audit.json");
+        if output != job.join("planner-comparison")
+            || inputs.root.as_path() != Path::new(&std::env::var("CI296_SOURCE")?)
+            || Path::new(&std::env::var("PLANNER_GAP_CORPUS")?) != corpus.as_path()
+            || Path::new(&std::env::var("PLANNER_GAP_CORPUS_AUDIT")?) != audit.as_path()
+            || growth_bytes != 128 * 1024 * 1024
+        {
+            return Err("prepared runtime gap paths or operation growth differ".into());
+        }
+        let directory = fs::symlink_metadata(&corpus)?;
+        let metadata = fs::symlink_metadata(&audit)?;
+        let uid = rustix::process::getuid().as_raw();
+        if corpus.canonicalize()? != corpus
+            || !directory.is_dir()
+            || directory.uid() != uid
+            || directory.permissions().mode() & 0o777 != 0o700
+            || audit.canonicalize()? != audit
+            || !metadata.is_file()
+            || metadata.uid() != uid
+            || metadata.permissions().mode() & 0o777 != 0o600
+            || metadata.len() > 65536
+        {
+            return Err("prepared runtime gap requires canonical owned700/600 corpus/audit".into());
+        }
+        Ok(plan::NativeGapInputs {
+            corpus,
+            corpus_audit: audit,
+            growth_mib: growth_bytes / (1024 * 1024),
+        })
+    }
+}
+
+#[cfg(feature = "planner-ipc-native")]
 pub(super) fn parse_lifecycle_arguments(
     mut arguments: impl Iterator<Item = OsString>,
 ) -> Result<super::planner_ipc_native::lifecycle::Options> {
@@ -170,6 +299,10 @@ fn require_retired_controller_absent(root: &Path) -> Result<()> {
     for relative in [
         "rust/tools/check_plannerd_ci.py",
         "rust/tools/tests/test_plannerd_ci.py",
+        "rust/tools/check_plannerd_lifecycle.py",
+        "rust/tools/plannerd_lifecycle_peer.py",
+        "rust/tools/plannerd_ipc.py",
+        "rust/tools/plannerd_gap_source.py",
     ] {
         match fs::symlink_metadata(root.join(relative)) {
             Err(error) if error.kind() == ErrorKind::NotFound => {}
@@ -548,6 +681,28 @@ pub fn cli() -> Result<()> {
             return Ok(());
         }
     }
+    if arguments.peek().is_some_and(|arg| arg == "gap") {
+        arguments.next();
+        #[cfg(not(feature = "planner-ipc-native"))]
+        return Err("gap requires the planner-ipc-native feature".into());
+        #[cfg(feature = "planner-ipc-native")]
+        {
+            if arguments
+                .peek()
+                .is_some_and(|arg| arg == "--help" || arg == "-h")
+            {
+                arguments.next();
+                if arguments.next().is_some() {
+                    return Err(GAP_HELP.into());
+                }
+                println!("{GAP_HELP}");
+                return Ok(());
+            }
+            let receipt = super::gap::run(&parse_gap_arguments(arguments)?)?;
+            println!("{}", serde_json::to_string(&receipt)?);
+            return Ok(());
+        }
+    }
     let memory = arguments.peek().is_some_and(|arg| arg == "memory");
     if memory {
         arguments.next();
@@ -612,6 +767,7 @@ pub fn cli() -> Result<()> {
         scheduler: std::env::current_exe()?,
         native_ipc: None,
         native_lifecycle: None,
+        native_gap: None,
     };
     let output = absolute(take("--output")?)?;
     let timeout = take("--timeout-seconds")?
@@ -641,7 +797,12 @@ pub fn cli() -> Result<()> {
         require_retired_controller_absent(&inputs.root)?;
         let mut prepared_ipc = None;
         let prepared = steps.into_iter().map(|step| {
-            let check = if matches!(&step, plan::PlannedCheck::NativeIpc { .. }) {
+            let check = if let plan::PlannedCheck::NativeGap { growth_bytes, .. } = &step {
+                // 앞선 ABI/policy/radar 실패 뒤에는 corpus 준비를 실행하지 않는다.
+                let mut gap_inputs = inputs.clone();
+                gap_inputs.native_gap = Some(prepared_native_gap(&inputs, &output, *growth_bytes)?);
+                step.complete(&gap_inputs)?
+            } else if matches!(&step, plan::PlannedCheck::NativeIpc { .. }) {
                 // ABI42 등 앞선 실패 뒤에는 이 준비·feature/profile 검사에 도달하지 않는다.
                 let mut ipc_inputs = inputs.clone();
                 let context = prepared_native_ipc(&inputs, &output)?;

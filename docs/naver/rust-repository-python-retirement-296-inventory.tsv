@@ -2038,7 +2038,7 @@ rust/tools/check_paramsd_startup.py	8ccf349660d5d42e466e4db7fb4f5e6d1b626de0	pen
 rust/tools/check_pigeon.py	e880f785c5b6297c30e2312ecb47b3cd7afaafa6	pending	-
 rust/tools/check_pipeline_reference.py	87f9213cd8df6e7db7f47ae50575cb0ebb990533	pending	-
 rust/tools/check_plannerd_ci.py	9a110182c9816356197bed74248423b20952ae6b	replaced-local	rust/crates/dev-tools/src/planner_ci_controller.rs; check-plannerd-ci runtime; source7a82 host12/ARM12 및 source100 native/Clippy 수용
-rust/tools/check_plannerd_lifecycle.py	3ffbbf628701c81dd1a3a752225f0527906893c0	pending	-
+rust/tools/check_plannerd_lifecycle.py	3ffbbf628701c81dd1a3a752225f0527906893c0	replaced-local	rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/lifecycle.rs; lifecycle_corpus.rs; lifecycle_tests.rs; source3b399b938 삭제 후 HOST40268857665/ARM40268857667 runtime12·native lifecycle26·관측4/새8·strict Clippy·원본841/SDK/source-index 봉인·cleanup 수용; docs/naver/python-rust-523-evidence-retention.md
 rust/tools/check_plannerd_native_memory.py	18bdcc408cd747e4f3b9c11a846371054b5134bf	replaced-local	rust/crates/dev-tools/src/planner_ci_controller/memory.rs; memory --asan-library; source7a82 ASan3 및 source100 memory15/Clippy 수용
 rust/tools/check_policy_reference.py	9590b9d553c064623ffd6a8a728ef118b8a6483e	pending	-
 rust/tools/check_process_supervision.py	1b623e48e6d583b3df4a1d3421d0947c4a42b948	pending	-
@@ -2453,8 +2453,8 @@ rust/tools/plannerd_acados_source.py	28ea515411e35cd86f9aeab7820403ac5d67c4c9	pe
 rust/tools/plannerd_daemon_source.py	cca636dafdcd11f83061b4beed15f8c220b93c73	pending	-
 rust/tools/plannerd_gap_source.py	f449f9d27e2b1e9043b817762ec2056abd8ad982	pending	-
 rust/tools/plannerd_generate_source.py	0d26326817fc689c0e4aa09d96a6ee46513c5857	pending	-
-rust/tools/plannerd_ipc.py	70f83a645698f6e97b76305b9bba2bdbfbb660cc	pending	-
-rust/tools/plannerd_lifecycle_peer.py	a8ed87e200d092b71dda5a2fdab84d7e0c19a59a	pending	-
+rust/tools/plannerd_ipc.py	70f83a645698f6e97b76305b9bba2bdbfbb660cc	replaced-local	rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/lifecycle.rs; lifecycle_corpus.rs; lifecycle_tests.rs; source3b399b938 삭제 후 HOST40268857665/ARM40268857667 runtime12·native lifecycle26·관측4/새8·strict Clippy·원본841/SDK/source-index 봉인·cleanup 수용; docs/naver/python-rust-523-evidence-retention.md
+rust/tools/plannerd_lifecycle_peer.py	a8ed87e200d092b71dda5a2fdab84d7e0c19a59a	replaced-local	rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/lifecycle.rs; lifecycle_corpus.rs; lifecycle_tests.rs; source3b399b938 삭제 후 HOST40268857665/ARM40268857667 runtime12·native lifecycle26·관측4/새8·strict Clippy·원본841/SDK/source-index 봉인·cleanup 수용; docs/naver/python-rust-523-evidence-retention.md
 rust/tools/plannerd_owner_fixtures.py	d19c76e9b49b409fb0de0bb66c3a81a312936fd2	pending	-
 rust/tools/plannerd_owner_loader.py	9064359a1dd72c0cf5c1610200787aa69b841c41	pending	-
 rust/tools/plannerd_owner_snapshot.py	47820be1ec995d4232a84c602bd2359225fd350d	pending	-

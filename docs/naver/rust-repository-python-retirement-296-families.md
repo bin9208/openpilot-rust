@@ -1,5 +1,17 @@
 # Remaining functional closures for #296
 
+## 2026-10-26 현재 수용 집계
+
+source `3b399b9380e04b6501af733dc386be86cc8bab9a`의
+[HOST40268857665](https://github.com/bin9208/openpilot-rust/actions/runs/40268857665)와
+[ARM40268857667](https://github.com/bin9208/openpilot-rust/actions/runs/40268857667)에서
+runtime12·native lifecycle26·관측4/새8·strict Clippy 및 원본841/SDK/source-index 봉인·cleanup을
+수용했다. 삭제한 비교 도구3개만 추가해 기준3580은 **303교체/3부분/3274대기**다.
+routing3306은 **29교체/3부분/3274대기**이며 모든 기능군에 남은 작업이 있다.
+추가170개 실행경계는 **33교체/131대기/1기존native/2비실행/3제거**다.
+source 모드의 Python daemon 경계와 새 Gap 후보는 pending이며 전체 전환 완료가 아니다.
+독립 원본과 실제 양쪽 검증은 [감사 기록](python-rust-523-evidence-retention.md)에 연결했다.
+
 The user's 2026-10-22 direction keeps strict vehicle/control/safety checks and
 batches general development tools by functionality. Reuse successful evidence
 unless relevant source, dependency, feature union, provider, environment or

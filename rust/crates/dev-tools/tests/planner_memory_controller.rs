@@ -24,6 +24,7 @@ fn inputs(directory: &Path) -> Inputs {
         scheduler: env!("CARGO_BIN_EXE_check-plannerd-ci").into(),
         native_ipc: None,
         native_lifecycle: None,
+        native_gap: None,
     }
 }
 

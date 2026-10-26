@@ -2,7 +2,32 @@
 
 작성: 2026-10-24 KST. 상위 이슈: https://github.com/bin9208/openpilot-rust/issues/523
 
-## 최신 수용 체크포인트 — 2026-10-26 source841
+## 최신 수용 체크포인트 — 2026-10-26 source3b399
+
+source `3b399b9380e04b6501af733dc386be86cc8bab9a`의
+[HOST40268857665/job121397103121](https://github.com/bin9208/openpilot-rust/actions/runs/40268857665/job/121397103121)와
+[ARM40268857667/job121397103228](https://github.com/bin9208/openpilot-rust/actions/runs/40268857667/job/121397103228)는
+runtime12·native lifecycle26·관측4/새8·strict Clippy와 source/index·실제 SDK 전후 봉인,
+업로드·cleanup까지 SUCCESS다. 원본841의 raw 입력234·Params30·출력72와 인증된83개 directory
+roster를 소비했다. 감사한4 ZIP은 각1회만 받고 후속 감사는 같은 캐시를 재사용했다.
+세 비교 도구 `plannerd_ipc.py`, `check_plannerd_lifecycle.py`, `plannerd_lifecycle_peer.py`의
+작업 트리·index 부재를 확인해 기준3580을 **303교체/3부분/3274대기**로 갱신한다.
+source 모드의 원래 Python daemon13회는 여전히 별도 pending 경계다.
+
+#513 종료 후 임시 Python 진단2개를 제거했으므로 추가170개는
+**33교체/131대기/1기존native/2비실행/3제거**다. 이 임시 진단 삭제는 Rust 교체 실적이 아니다.
+source495860d144의 [current-model40266155898](https://github.com/bin9208/openpilot-rust/actions/runs/40266155898)는
+원래 LLVM flags를 보존한 fresh 경로에서12출력/5,138,816B가 byte-exact였다.
+#482의 기존 frozen1344 재현은 source36b9fef61에서 별도로 진행하며 아직 전체 해결이 아니다.
+#476의 실제 driver 출력 차이와 #597의 간헐적 실패 원인은 계속 열려 있다.
+
+다음 Gap Rust 후보는 원본857개와 추가 실제 회귀3개를 사용한다. 새 후보의 실행·삭제 후
+수용은 아직 UNRUN이므로 `plannerd_gap_source.py`의 baseline credit은 추가하지 않는다.
+전체 #523·필수 PR343/통합·정확 소스 전달·필요한 실기 수용은 계속 미완료다.
+상세 근거는 [lifecycle 감사](python-rust-523-evidence-retention.md)와
+[실제 실행 기록](python-rust-523-planner-ipc-reader-next.md)에 남겼다.
+
+## 이전 수용 체크포인트 — 2026-10-26 source841
 
 source `841ee8a4e1357e7a0db4193cf7944e23c31ee0fb`의
 [HOST40258459503](https://github.com/bin9208/openpilot-rust/actions/runs/40258459503)와

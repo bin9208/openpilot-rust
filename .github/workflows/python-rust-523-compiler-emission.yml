@@ -197,7 +197,7 @@ jobs:
       if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         }}
       working-directory: ${{ env.CI296_SOURCE }}
-      run: 'printf ''%s  %s\n'' f6286ab88351066d3dbba626f86e509aa37e4d8bed2746fa4961f329abb43cb9 .github/workflows/rust.yml
+      run: 'printf ''%s  %s\n'' 25837efd4abccda023a4b51ca78f5c30d900464694a2cdc0b4610ba0cebe3853 .github/workflows/rust.yml
         | sha256sum --check -
 
         '

@@ -172,11 +172,13 @@ elif [[ $mode == memory ]]; then
 elif [[ $mode == ipc-check ]]; then
   admit ipc-qualification "$source_dir" 2048
   failed=0
-  for check in observed lifecycle clippy; do
+  for check in observed lifecycle gap clippy; do
     if [[ $check == observed ]]; then
       args=(test --lib planner_ci_controller::planner_ipc_native::observed_tests:: -- --test-threads=1 --nocapture)
     elif [[ $check == lifecycle ]]; then
       args=(test --lib planner_ci_controller::planner_ipc_native::lifecycle_tests:: -- --test-threads=1 --nocapture)
+    elif [[ $check == gap ]]; then
+      args=(test --lib planner_ci_controller::gap::gap_tests:: -- --test-threads=1 --nocapture)
     else
       args=(clippy --lib --bin check-plannerd-ci -- -D warnings)
     fi
@@ -194,5 +196,6 @@ elif [[ $mode == ipc-check ]]; then
   done
   grep -Eq '^test result: ok\. 4 passed; 0 failed; 0 ignored;' "$proof/ipc-observed.stdout" || failed=1
   grep -Eq '^test result: ok\. 8 passed; 0 failed; 0 ignored;' "$proof/ipc-lifecycle.stdout" || failed=1
+  grep -Eq '^test result: ok\. 9 passed; 0 failed; 1 ignored;' "$proof/ipc-gap.stdout" || failed=1
   [[ $failed == 0 ]]
 fi

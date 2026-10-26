@@ -1036,3 +1036,232 @@ selected 파일5891/capture 파일5791와 각 bytes/SHA, source841 audit2 bytes,
 `2b10c879782740c5662580febc84faac1806661f85d8512cb74691cbd9c74f48`다.
 부모는 앞선2589432 pin을 이 값으로 동기화해야 한다. Bash syntax/JQ15개 compile-only·diff 검사는
 PASS이며 식 평가·stager/프로젝트 기능·CRC 반복·원격 Actions·stage/commit 실행은0이다.
+
+## sourced666 새 LC stager·native lifecycle actual 감사 — 2026-10-26
+
+source `d6667936845ba90b2b897c1b75f9af173131e5c1`/attempt1의
+[HOST40264806409/job121384755739](https://github.com/bin9208/openpilot-rust/actions/runs/40264806409/job/121384755739)과
+[ARM40264806393/job121384755710](https://github.com/bin9208/openpilot-rust/actions/runs/40264806393/job/121384755710)은
+**stage/runtime PASS, 후속 Clippy FAIL**이다. HOST stage18/runtime19/sanitizer20은 SUCCESS,
+ARM stage16/runtime17은 SUCCESS이고 sanitizer18은 원래 조건대로 skipped다.
+HOST qualification21/ARM19 안 IPC observed4와 lifecycle8은 모두 PASS지만 Clippy는 실패했다.
+전체 job을 SUCCESS로 기록하거나 baseline pending300/3/3277을 수용으로 바꾸지 않는다.
+
+최초 Clippy 원인은 `cmp_owned`4건이다. `planner_ci_controller/cli.rs:135–137`의
+CI296_SOURCE/PLANNER_LIFECYCLE_CORPUS/PLANNER_LIFECYCLE_CORPUS_AUDIT 비교와
+`planner_ipc_native/lifecycle.rs:125`의 CI296_SOURCE 비교에서 임시 PathBuf를 만든다.
+최소 제안은 원래 경로 동일성 검사를 보존하며 비교용 owned 할당을 없애는 것이다.
+코드 수정이나 CI rerun은 이 감사에서 수행하지 않았다.
+
+### Bacon의 actual4 ZIP과 보존 identity
+
+`ci/plannerd666-artifact-handoff.json`의 네 ready/whole_crc_pass=true를 재사용했다.
+Bacon이 유일 downloader/whole SHA·CRC 담당이며 이 감사자는 필요한 member의 데이터/SHA만 읽었다.
+전체 ZIP 다운로드/CRC 반복은0이다. 아래 API/upload/handoff digest가 일치한다.
+네 artifact 모두 head source는 d666, repository/head ID1395501963,
+head branch codex/feat-523-python-rust, expired=false다. run-created2026-10-26T03:35:17Z에서
+expires2027-01-24T03:35:17Z까지 정확90일이다.
+
+| 역할 | ID / 정확한 name | ZIP bytes / SHA256 |
+| --- | --- | --- |
+| HOST functional |12626262186 / rust-planner-local-x64-evidence |56283078 / `f81391ad653f6fad3b1c0a9056ec4f79d6c60fb11fdf250c3855080797f2be0b` |
+| HOST private |12626152401 / private-rust-planner-runtime-0-40264806409-1 |4760830 / `a80561b2c942a51617ef812f3e695987c1d0440c034ccd22fd9ea8afcce6c318` |
+| ARM functional |12626620427 / rust-planner-hosted-arm64-evidence |45939843 / `00d3d42ec2345caa6cf4c679c7be9b00c1e287441a444cfec2e545ffb5be09a5` |
+| ARM private |12625364607 / private-rust-planner-runtime-0-40264806393-1 |4114511 / `e6508a9c40938881ddfcc549310e2968294bb920624cea06bb630264fed2c127` |
+
+### 83 directory 복원과 원본234 입력의 실제 소비
+
+새 stager2b10의 private proof에서 authenticated index/manifest26와 selected5891 전체의
+path/bytes/SHA 사슬을 외부 audit2와 대조했다. capture5791+기존 receipt28/output72의 선택5891은
+그대로이며 HOST2174197B/ARM2174248B다. directory 기대 목록83과 실제 extracted 목록83이 정확히
+일치하고 inputs26/Params30의 subdirectory56도 유일하다. 따라서 파일이 없던16 inputs directory도
+복원되어 native `seal_capture_tree`를 실제 통과했다. stager failure marker는 없다.
+
+old841 index/source14와 audit pin HOST9ae47494…/ARM23bace63…는 바뀌지 않았다.
+새 native lifecycle의 각 `inputs/<n>-<service>.bin` **234개/235040B**를 old manifest의 원문
+bytes/SHA와 모두 대조했다. 재생된 입력의 raw digest가 전부 동일하고, native 계산으로 채운
+expected나 수정한 header/packet은 없다.
+
+| actual LC operation | HOST | ARM |
+| --- | --- | --- |
+| 독립 stage allocated/apparent |103321600 /78592886 |91525120 /66795040 |
+| native case/입력/출력 |26 /234 /72 |26 /234 /72 |
+| native output raw 합계 |40128B |40128B |
+| lifecycle receipt348B SHA |`8e1ae86802ec9e8c8192923a3c6b6175256a8861b7e21d8236a4250a226e80c4` |`c56726aa94e33c4a612e8fa7f5451100a5b87e18751748942f8f9205b4cb8673` |
+
+새 stage는 독립128MiB 이내이며 원래 IPC stage도 HOST80478208/69672575B,
+ARM68882432/58074125B로 원래128MiB 이내다. 두 operation을 합쳐 원래 cap을 늘린 것이 아니다.
+
+native cases26은 원래 case/source→rust 순서와 raw returncode/expected_returncode를 유지하고 모두
+ok=true다. 각 run receipt와 cases가 일치하며 cases JSON SHA는 양쪽 모두 원본841과 같은
+`d14a75be885b14e337887377e6e38aff29d2fd450672ee848ba3f222bbe304a4`다.
+원래 정상4case×source/rust의 frame3/service3에 output72가 결합된다. valid/data에 새 수용 조건을
+붙이지 않았으며 원본 전체 numeric/wire 동등성이나 차량 수용으로 확대하지 않는다.
+
+직접 daemon wait와 /proc 부재 검사 및 peer.finish를 통과한 case만 성공하는 sourced666 경로를
+원문 receipt26/성공 로그에 결합했다. cleanup-errors/postflight-error marker는 없다.
+이는 직접 daemon/peer 회수 범위이며 전역 adoption/all descendants reap 증거를 주장하지 않는다.
+전체 runtime command12는 모두0이고 lifecycle leaf는 한 번이다.
+
+### current ELF·SDK·source 후봉인
+
+native lifecycle provenance의 controller path가 같은 runtime의 controller.sha256 대상과 일치한다.
+HOST controller SHA는 `fbc72c2003defa60f8d012e0245293372d77850d28f439fc97358aa4468054b5`,
+ARM은 `9617691370a2ff86fd2eb80d2dff098ef00efdd35af8cddcb69547666f13d0b8`다.
+preceding IPC의 재사용 C++ peer SHA와 실제 보존 ELF bytes도 lifecycle provenance에 일치한다.
+native plannerd binary SHA는 전체 runtime 결과와 lifecycle receipt가 동일하다.
+
+SDK manifest159개(HOST)/158개(ARM)의 before와 runtime/ipc-check after SHA·roster·stable이
+동일하며 HOST memory after도 같다. Clippy 실패 뒤에도 SDK 후봉인 비교는 유지됐다.
+private source-before/after와 index-before/after는 byte 동일하고, 두 job의 source seal과
+uploaded owned source/alias/target·common temp cleanup도 SUCCESS다.
+
+inert 감사 요약은 private scratch `ci/planner-lifecycle-d666-actual-audit.json`에3065B/SHA
+`4fa2d63fb10bccf3e5c91dfb017e649221c3c28e3343aea80cf34de1eee60516`로 남겼다.
+이번 감사에서 source/CI/기능 변경·로컬 프로젝트 실행·dispatch/rerun·stage/commit은0이다.
+170의 새 original daemon edge 및 baseline 등록/수용은 부모 소유다. 후속 qualification이 실패한
+현재 전체 상태와 retirement_credit0/pending을 보존한다.
+
+## Gap 원문3개 actual audit와 local-reuse stager — 2026-10-26
+
+부모 승인에 따라 source841의 기존 HOST functional12623801541/ARM12623646303 캐시만 읽었다.
+새 archive 다운로드/API transport·whole CRC 반복·원본 재실행은 없다. 양쪽 세 member의 실제
+bytes/SHA는 동일하고 member 경로 prefix만 각각 `tmp/openpilot-ci.afCEBf`/`tmp/openpilot-ci.s6xgRN`다.
+member suffix는 `/planner-comparison/gap/{input,expected,receipt}.json`이다.
+
+| 역할 | 실제 bytes | SHA256 |
+| --- | --- | --- |
+| input.json |3293789 |`61ac965124d01f02a0eab1aee353de7148d87648c00e8f5f017bab9f91c2903e` |
+| expected.json |265691 |`81109deaf892524fc3a4563e1f50efdeeeeafd71c42568a97c119024129cb657` |
+| receipt.json |131 |`a587ce69d39c9c0cea41750234aeb7970477239258d6848a2c151a6559a7f48c` |
+
+원래 `rust/tools/plannerd_gap_source.py`는 git841에서4582B/SHA
+`b047d9fcf33e42795e4b3bae13fa8f7fde17a39bbd189c15d30f4aecc27f46ba`다.
+receipt 원문은 actions857/owners18/positive_plans187/positive_credit9/mismatches0/
+first_mismatches=[]다. 여기의 positive_credit는 원래 알고리즘 통계이며 Python 퇴역 credit가 아니다.
+원본 JSON이나 source를 실행하거나 native expected를 새로 계산하지 않았다.
+
+audit2를 먼저 부모/Ohm에게 전달했다. schema1/kind=audited-original-planner-gap-inputs,
+source_commit841/host/origin run·attempt·job/source_sha256을 둔다. artifact는
+role=lifecycle-functional 및 path/id/bytes/SHA이고 path는 `12623801541.zip` 또는
+`12623646303.zip` 단일 파일명이다. input/expected/receipt는 새 root의 고정 local path,
+원래 ZIP member, bytes/SHA를 각각 분리한다. receipt_contract는 위 실제 원문 값이다.
+생성 중인 Ohm `gap.rs`의 strict Audit/Artifact/RawFile 필드와 정확히 일치함을 source-only로 확인했다.
+raw3개는 Git에 넣지 않았다.
+
+새 `tools/ci/stage_planner_gap_original_523.sh`는 같은 job의
+`$CI_JOB_TEMP/planner-lifecycle-original/126*.zip`만 읽는다. LC status의 current source/owner/host,
+고정 original841/run/audit pin·선택5891/5791/234/30/72와 failure marker 부재를 요구한다.
+LC audit의 artifact ID/bytes/SHA/path도 별도로 대조한다. 새 네트워크/API/fallback은 없다.
+같은 step의 GITHUB_ENV는 아직 적용되지 않으므로 LC export env 변수에 의존하지 않고
+고정 sibling의 실제 status/owner를 직접 인증한다.
+
+LC archive는 canonical owned regular0600/single-link 및 exact bytes/SHA를 확인하고 읽기 FD로
+고정한다. path/held FD의 dev/inode/mode/uid/link/size/mtime/ctime와 전체 SHA를 전후 재검사한다.
+LC whole CRC/path 감사는 같은 immutable archive hash와 성공 status에 결합해 재사용한다.
+선택3개의 원래 member 존재/유일성, unzip-p CRC·실제 크기/SHA는 따로 확인한다.
+복사나 전체 archive 추출 없이 새 root에 input.json/expected.json/receipt.json만 쓴다.
+
+새 root는 `$CI_JOB_TEMP/planner-gap-original`이며 **audit.json까지 정확4개 regular600 파일**만
+허용한다. proof는 `$CI_JOB_TEMP/proof/planner-gap-stage`이고 root/proof는 owned canonical700이다.
+input만4MiB file limit, expected/receipt는 원래1MiB limit이다. 기존 LC stager의1MiB 정책은 수정하지
+않았다. 새 Gap operation에16MiB를 따로 입장시키고 root+proof의 allocated/apparent du를 합산한다.
+archive58/48MiB는 이미 존재하는 LC 파일로 명시하며 새 증가량으로 복제하지 않는다.
+선택 raw 합계는3559611B이고120초 deadline을 둔다.
+
+모든 source/owner/LC held metadata·archive·payload 검증 뒤에만
+PLANNER_GAP_CORPUS/PLANNER_GAP_CORPUS_AUDIT 두 env를 export한다. 부모 호출은 기존 stage에서
+LC 다음 `/usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_gap_original_523.sh"`이며 별도 env 입력이 없다.
+Gap root의 audit2와 archive sibling path 계약을 Ohm core가 소비한다. CLI/plan/WF/helper/공유 QA
+연결과 cfg는 부모/Ohm 소유로 수정하지 않았다.
+
+| 새 고정 대상 | bytes | 최종 SHA256 |
+| --- | --- | --- |
+| tools/ci/stage_planner_gap_original_523.sh |14306 |`d01aa604ea115d44a530990a94f6f1d3c2f31cb1f8742600568f842ef933f702` |
+| planner-gap-original-audit/x86_64.json |1462 |`1d56f0148c2da0e65be6a4ef47a3f8461691656daf59bc35f12ff76d4c28728c` |
+| planner-gap-original-audit/aarch64.json |1463 |`72c7716cd954dd6160a5c3d49ebbc21ff4fede5660513aad50e9733b46bf7709` |
+
+fixture root는 `rust/crates/dev-tools/tests/fixtures/`다. 기존 LC stager2b10/audit9ae4·23ba와
+원문/expected/CLI/feature/공유 source는 불변이다. 로컬은 cached inert data/SHA·소스 검토,
+Bash syntax/JQ11 compile-only(식 평가0)·diff 공백 확인만 했다.
+새 Gap stager/기능/원본·Python 실행·remote Actions·stage/commit은0이다. 실제 Gap 소비자 성공과
+퇴역 credit는 아직 없으며 d666 LC의 후속 Clippy 실패 상태도 그대로 유지한다.
+
+## source3b399 HOST/ARM native lifecycle 최종 qualification 감사 — 2026-10-26
+
+정확 source `3b399b9380e04b6501af733dc386be86cc8bab9a`의
+[HOST40268857665/job121397103121](https://github.com/bin9208/openpilot-rust/actions/runs/40268857665/job/121397103121)와
+[ARM40268857667/job121397103228](https://github.com/bin9208/openpilot-rust/actions/runs/40268857667/job/121397103228)는
+attempt1 전체 SUCCESS다. d666의 runtime 성공/Clippy 실패 기록을 덮어쓰지 않고, 이번 exact-source
+qualification으로 별도 연결한다. 두 job 모두 IPC observed4/lifecycle8과 strict Clippy를 통과했다.
+HOST sanitizer는 SUCCESS이며 ARM sanitizer는 기존 HOST-only 조건에 따라 skipped다.
+stage/runtime/qualification/upload/source seal/private upload/cleanup은 모두 SUCCESS다.
+
+Bacon의 `ci/planner3b399-artifact-handoff.json`에서 네 ZIP ready/whole CRC PASS를 인계받아
+필요한 member의 실제 bytes/JSON/SHA만 읽었다. 이번 감사의 ZIP 다운로드와 whole CRC 반복은0이다.
+API repository/head repository ID1395501963, branch `codex/feat-523-python-rust`, full source3b,
+expired=false를 확인했다. run-created `2026-10-26T04:23:51Z`에서 expiry
+`2027-01-24T04:23:51Z`까지 정확90일이다.
+
+| 역할 | artifact ID | 실제 ZIP bytes | SHA256 |
+| --- | --- | --- | --- |
+| HOST functional `rust-planner-local-x64-evidence` |12627753389 |56283221 |`e8ac8354ae9548f66c134447d39117f7f21d9bd074a9400fa7e74ad09b54f217` |
+| HOST private `private-rust-planner-runtime-0-40268857665-1` |12627524292 |4760263 |`07c3756c71fdd66325dc50b49156b355db7b142079644a99bed64013a409fc83` |
+| ARM functional `rust-planner-hosted-arm64-evidence` |12627778531 |45939964 |`a7d262d7b80e5d360c69267bbe0bab8c3d2a318d88dae0d12c6ae706b58392a0` |
+| ARM private `private-rust-planner-runtime-0-40268857667-1` |12627564448 |4114334 |`e904eb69f9b83a29c572fcb4d8d58f2b846f5199e8e6d4a6b1e60fafef46187f` |
+
+### fixed transport와 실제 native26 연결
+
+LC stager는 기존 `2b10c879782740c5662580febc84faac1806661f85d8512cb74691cbd9c74f48`,
+helper는 `ef9a4fab36c177c28c76eb0ad9607641ce777448643dc3cec2620cda6a2b3f7d`로 d666과 동일하다.
+LC corpus source도 d666과 동일하며 수정된 Path 비교는 같은 root/corpus/audit guard와 순서를 유지한다.
+LC status의 current source/run:attempt:job/host/audit pin을 실제3b에 결합했고 failure marker는 없다.
+원본841 source14 및 index/manifest26의 선택5891/각 bytes/SHA와 실제 선택 TSV/해시목록이 같다.
+선택 roster는 capture5791+case receipt26+global receipt/cases2+출력72다.
+HOST 선택2174197B, ARM2174248B이며 원본 source841의 provenance를 current3b로 바꾸지 않았다.
+
+directory roster는 양쪽 모두 정확83개(root1+case26+inputs26+Params30)다.
+빈 inputs16개를 포함한 인증된56 subdir 재구성이 확인됐고 임의 directory는 없다.
+별도128MiB operation의 실제 allocated/apparent는 HOST103321600/78592886B,
+ARM91525120/66795040B로 양쪽 모두 한도 이하다. 기존 IPC128MiB는 변경하지 않았다.
+
+native lifecycle26은 모두 성공했다. 원문 input234개/235040B가 원본841의 각 raw bytes/SHA와
+일치하고, normal4 case×mode2의 출력72개/40128B가 원래 frame0..2/service3 조합과 일치한다.
+현재 cases 원문 SHA는 양쪽 모두
+`d14a75be885b14e337887377e6e38aff29d2fd450672ee848ba3f222bbe304a4`로 기존841과 같다.
+case별 receipt와 aggregate의 연결, 기대 returncode, cleanup/postflight 오류 marker 부재를 확인했다.
+runtime command12는 모두0이며 lifecycle leaf는 한 번이다. 직접 daemon wait와 /proc 부재 및
+peer.finish를 요구하는 성공 경로가 유지된다. 이 증거를 전역 adoption/all-descendant 회수로 확대하지 않는다.
+
+### current ELF·SDK·source 및 삭제3개 수용 범위
+
+LC provenance controller path/해시가 같은 runtime controller.sha256 및 실제 lifecycle argv0에
+일치한다. preceding IPC의 C++ peer ELF도 같은 실제 해시에 결합된다.
+
+| 대상 | HOST SHA256 | ARM SHA256 |
+| --- | --- | --- |
+| controller |`258eb4a8e3d6200ddf23fe5db1f1781b6c5b4d09cd016bfa2b97d91ad924a883` |`12cabbd5a002784541b56727bfd5123d7c8263c3ef6c4a3c69ffe4f4bf6f5445` |
+| IPC peer |`c202f0aced47df9f850337c708226573ef022b0e52a2659378fef616ad79f9a8` |`4c5b0d51a6ed312554039593f09ba7ca46e78fdd2f60c083de092370a96c324e` |
+| plannerd binary |`813f2cd35091bb386b021ed1660aae1b81bb4a07fc8d48ed6e4f9aff5526929b` |`c74fba7b74bb9b92f740fdcc9a85540f9b317a0c8e547a8a4f84d20b624b14c8` |
+
+SDK159(HOST)/158(ARM)의 before/runtime/ipc-check after manifest·roster·stable이 동일하고
+HOST memory after도 같다. private source/index before·after는 byte 동일하다.
+양쪽 cleanup step도 실제 SUCCESS다. 현재 git3b와 두 job의 index-before/index-after 모두에서
+다음 세 경로가 부재함을 확인했다.
+
+- `rust/tools/plannerd_ipc.py`
+- `rust/tools/check_plannerd_lifecycle.py`
+- `rust/tools/plannerd_lifecycle_peer.py`
+
+원본841의 독립 자료와 current3b의 strict 소비자·native26·regression8·Clippy·후봉인·cleanup이
+연결돼 위 세 파일의 수용 근거가 충족됐다. 실제 inventory/families/원장 credit 등록은 부모 소유다.
+원문 receipt와 감사 요약의 retirement_credit0는 그대로 두며 새 값으로 덮어쓰지 않는다.
+이 결론은 전체 #523/F01/PR 또는 차량 수용을 의미하지 않는다. 남아 있는 gap 원본은 별도다.
+
+inert 감사 요약 `ci/planner-lifecycle-3b399-actual-audit.json`은3157B/SHA
+`2ae8161e862eac63ab695bc9cfa94f9f41e614a01b50a03310a8becafc3d9a89`이며
+두 platform 모두 FULL_QUALIFIED_PASS다. 로컬 기능/원본/프로젝트 실행·CI 조작·stage/commit은0이다.
+
+Gap stager와 audit2는 위 READY 상태를 유지한다. 이번 최종 재확인에서 Bash syntax와 세 파일
+bytes/SHA가 위 d01aa/1d56/72c7 값 그대로였다. 앞선 JQ11 compile-only/JSON 구문 검토 결과를
+재사용하며 Gap 기능 실행이나 CI 성공을 주장하지 않는다. LC stager/source 수정은0이다.

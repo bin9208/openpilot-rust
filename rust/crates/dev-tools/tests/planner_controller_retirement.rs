@@ -1,4 +1,4 @@
-//! 옛 controller 두 경로의 runtime 부재 계약. 모든 leaf 대역은 native shell이며 Python을 실행하지 않는다.
+//! 퇴역한 Planner 도구6개의 runtime 부재 계약. leaf 대역은 native shell이다.
 use openpilot_dev_tools::{
     planner_ci_controller::plan::{CHECK_NAMES, MEMORY_CHECK_NAMES},
     qa_process::{Captured, CommandSpec, NativeRunner, Runner},
@@ -11,9 +11,13 @@ use std::{
     time::Duration,
 };
 
-const RETIRED: [&str; 2] = [
+const RETIRED: [&str; 6] = [
     "rust/tools/check_plannerd_ci.py",
     "rust/tools/tests/test_plannerd_ci.py",
+    "rust/tools/check_plannerd_lifecycle.py",
+    "rust/tools/plannerd_lifecycle_peer.py",
+    "rust/tools/plannerd_ipc.py",
+    "rust/tools/plannerd_gap_source.py",
 ];
 
 const LEAF: &str = r#"#!/bin/sh
@@ -140,22 +144,6 @@ fn empty_runtime_root_reaches_first_native_leaf_and_preserves_status42() {
     assert_eq!(result.code, 42, "{result:?}");
     fixture.first42_was_recorded();
     assert_eq!(fs::read_dir(&fixture.root).unwrap().count(), 0);
-    // lifecycle 세 원문은 실제 native 수용/부모 삭제 승인 전까지 존재를 허용한다.
-    let pending = Fixture::new();
-    for relative in [
-        "rust/tools/check_plannerd_lifecycle.py",
-        "rust/tools/plannerd_lifecycle_peer.py",
-        "rust/tools/plannerd_ipc.py",
-    ] {
-        fs::write(
-            pending.marker(relative),
-            b"inert original: must never execute\n",
-        )
-        .unwrap();
-    }
-    let result = pending.run(false, "none", &pending.root.join("unused"), &pending.target);
-    assert_eq!(result.code, 42, "{result:?}");
-    pending.first42_was_recorded();
 }
 
 #[test]

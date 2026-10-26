@@ -549,7 +549,7 @@ F01-vehicle-safety	rust/tools/check_pandad_supervisor_signals.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_usb.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_usb_policy.py	pending
 F01-vehicle-safety	rust/tools/check_pandad_usb_raw.py	pending
-F01-vehicle-safety	rust/tools/check_plannerd_lifecycle.py	pending
+F01-vehicle-safety	rust/tools/check_plannerd_lifecycle.py	replaced-local
 F01-vehicle-safety	rust/tools/check_plannerd_native_memory.py	replaced-local
 F01-vehicle-safety	rust/tools/check_radarcan_constructors.py	pending
 F01-vehicle-safety	rust/tools/check_radarcan_policy.py	pending
@@ -583,8 +583,8 @@ F01-vehicle-safety	rust/tools/plannerd_acados_source.py	pending
 F01-vehicle-safety	rust/tools/plannerd_daemon_source.py	pending
 F01-vehicle-safety	rust/tools/plannerd_gap_source.py	pending
 F01-vehicle-safety	rust/tools/plannerd_generate_source.py	pending
-F01-vehicle-safety	rust/tools/plannerd_ipc.py	pending
-F01-vehicle-safety	rust/tools/plannerd_lifecycle_peer.py	pending
+F01-vehicle-safety	rust/tools/plannerd_ipc.py	replaced-local
+F01-vehicle-safety	rust/tools/plannerd_lifecycle_peer.py	replaced-local
 F01-vehicle-safety	rust/tools/plannerd_owner_fixtures.py	pending
 F01-vehicle-safety	rust/tools/plannerd_owner_loader.py	pending
 F01-vehicle-safety	rust/tools/plannerd_owner_snapshot.py	pending

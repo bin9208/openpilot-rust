@@ -1,0 +1,45 @@
+{
+  "artifact": {
+    "bytes": 58488480,
+    "id": 12623801541,
+    "path": "12623801541.zip",
+    "role": "lifecycle-functional",
+    "sha256": "cb4b4b562fa5b143c32cb3b88d8e0c8879e2fc7066646a957cd01747b841bd3b"
+  },
+  "expected": {
+    "bytes": 265691,
+    "member": "tmp/openpilot-ci.afCEBf/planner-comparison/gap/expected.json",
+    "path": "expected.json",
+    "sha256": "81109deaf892524fc3a4563e1f50efdeeeeafd71c42568a97c119024129cb657"
+  },
+  "host_architecture": "x86_64",
+  "input": {
+    "bytes": 3293789,
+    "member": "tmp/openpilot-ci.afCEBf/planner-comparison/gap/input.json",
+    "path": "input.json",
+    "sha256": "61ac965124d01f02a0eab1aee353de7148d87648c00e8f5f017bab9f91c2903e"
+  },
+  "kind": "audited-original-planner-gap-inputs",
+  "origin_job": "planner-runtime",
+  "origin_run_attempt": "1",
+  "origin_run_id": "40258459503",
+  "receipt": {
+    "bytes": 131,
+    "member": "tmp/openpilot-ci.afCEBf/planner-comparison/gap/receipt.json",
+    "path": "receipt.json",
+    "sha256": "a587ce69d39c9c0cea41750234aeb7970477239258d6848a2c151a6559a7f48c"
+  },
+  "receipt_contract": {
+    "actions": 857,
+    "first_mismatches": [],
+    "mismatches": 0,
+    "owners": 18,
+    "positive_credit": 9,
+    "positive_plans": 187
+  },
+  "schema_version": 1,
+  "source_commit": "841ee8a4e1357e7a0db4193cf7944e23c31ee0fb",
+  "source_sha256": {
+    "rust/tools/plannerd_gap_source.py": "b047d9fcf33e42795e4b3bae13fa8f7fde17a39bbd189c15d30f4aecc27f46ba"
+  }
+}

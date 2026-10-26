@@ -12,6 +12,8 @@ name: Python Rust 523 native ARM planner and WebRTC candidates
     - tools/ci/stage_planner_ipc_original_523.sh
     - tools/ci/stage_planner_lifecycle_original_523.sh
     - rust/crates/dev-tools/tests/fixtures/planner-lifecycle-original-audit/**
+    - tools/ci/stage_planner_gap_original_523.sh
+    - rust/crates/dev-tools/tests/fixtures/planner-gap-original-audit/**
     - rust/tools/planner_ipc_peer.cc
     - tools/ci/native-arm
     - rust/crates/plannerd/**
@@ -243,6 +245,8 @@ jobs:
         /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh"
         printf '%s  %s\n' 2b10c879782740c5662580febc84faac1806661f85d8512cb74691cbd9c74f48 "$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh" | sha256sum --check --strict -
         /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_lifecycle_original_523.sh"
+        printf '%s  %s\n' d01aa604ea115d44a530990a94f6f1d3c2f31cb1f8742600568f842ef933f702 "$CI296_SOURCE/tools/ci/stage_planner_gap_original_523.sh" | sha256sum --check --strict -
+        /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_gap_original_523.sh"
     - name: Compare exact policies, main loops, real IPC and lifecycle
       run: |
         /usr/bin/bash "$CI296_SOURCE/tools/ci/planner_native_controller_523.sh" runtime

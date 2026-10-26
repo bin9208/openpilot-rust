@@ -7,6 +7,8 @@ use serde::Serialize;
 use std::{fmt, fs, io::Write, path::Path};
 
 mod cli;
+#[cfg(feature = "planner-ipc-native")]
+mod gap;
 pub mod memory;
 pub mod plan;
 #[cfg(feature = "planner-ipc-native")]
