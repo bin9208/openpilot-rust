@@ -24,6 +24,15 @@ pub struct Snapshot {
     pub modules: BTreeMap<PathBuf, Source>,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct UpdateCheckout {
+    schema: u32,
+    source: Source,
+    branch: String,
+    root: PathBuf,
+}
+
 pub(crate) struct Workspace {
     pub root: PathBuf,
     _lock: File,
@@ -163,6 +172,93 @@ fn add_worktree(store: &Path, destination: &Path, module: &Path, sha: &str) -> R
 }
 
 impl Snapshot {
+    /// OverlayFS needs a complete .git directory inside its lower tree. A
+    /// retained Git worktree has an external gitdir and must never be that tree.
+    /// This small shared clone borrows only the store-owned immutable objects.
+    pub fn update_checkout(
+        &self,
+        store: &Path,
+        branch: &str,
+        expected_growth_bytes: u64,
+    ) -> Result<PathBuf> {
+        self.verify(store)?;
+        if !self.modules.is_empty() {
+            return Err("native updater requires this repository's flattened source layout".into());
+        }
+        git(["check-ref-format", "--branch", branch])?;
+        let store = store.canonicalize()?;
+        let _lock = lock(&store)?;
+        let parent = store.join("update-checkouts");
+        directory(&parent)?;
+        let key = format!(
+            "{:x}",
+            Sha256::digest(format!("{}:{branch}", self.source.commit).as_bytes())
+        );
+        let receipt = store.join("receipts").join(format!("update-{key}.json"));
+        let checkout = if fs::symlink_metadata(&receipt).is_ok() {
+            let input = regular_file(&receipt)?;
+            if input.metadata()?.len() > 1024 * 1024 {
+                return Err("update checkout receipt is excessive".into());
+            }
+            serde_json::from_reader::<_, UpdateCheckout>(input)?
+        } else {
+            admit(&store, expected_growth_bytes)?;
+            let root = tempfile::Builder::new()
+                .prefix("update-")
+                .tempdir_in(&parent)?
+                .keep();
+            let repo = repository(&store, Path::new(""));
+            git([
+                OsStr::new("clone"),
+                OsStr::new("--shared"),
+                OsStr::new("--no-checkout"),
+                OsStr::new("--template="),
+                repo.as_os_str(),
+                root.as_os_str(),
+            ])?;
+            git([
+                OsStr::new("-C"),
+                root.as_os_str(),
+                OsStr::new("remote"),
+                OsStr::new("set-url"),
+                OsStr::new("origin"),
+                OsStr::new("https://github.com/bin9208/openpilot-rust.git"),
+            ])?;
+            git([
+                OsStr::new("-C"),
+                root.as_os_str(),
+                OsStr::new("checkout"),
+                OsStr::new("-B"),
+                OsStr::new(branch),
+                OsStr::new(&self.source.commit),
+            ])?;
+            fs::create_dir_all(root.join(".git/info"))?;
+            fs::write(
+                root.join(".git/info/exclude"),
+                b"/.overlay_init\n/.overlay_consistent\n",
+            )?;
+            let checkout = UpdateCheckout {
+                schema: 1,
+                source: self.source.clone(),
+                branch: branch.into(),
+                root,
+            };
+            verify_update_checkout(&checkout, self, &store)?;
+            let mut temporary = tempfile::NamedTempFile::new_in(store.join("receipts"))?;
+            serde_json::to_writer_pretty(&mut temporary, &checkout)?;
+            temporary.write_all(b"\n")?;
+            temporary.as_file().sync_all()?;
+            temporary.persist_noclobber(&receipt)?;
+            File::open(store.join("receipts"))?.sync_all()?;
+            checkout
+        };
+        if checkout.branch != branch {
+            return Err("native update checkout branch differs from its receipt".into());
+        }
+        verify_update_checkout(&checkout, self, &store)?;
+        Ok(checkout.root)
+    }
+
     /// Revalidate before use, including the independent Git ownership and modules.
     pub fn verify(&self, store: &Path) -> Result<()> {
         self.verify_with_metadata(store, None)
@@ -287,6 +383,56 @@ impl Snapshot {
         }
         Ok(Workspace { root, _lock: file })
     }
+}
+
+fn verify_update_checkout(
+    checkout: &UpdateCheckout,
+    snapshot: &Snapshot,
+    store: &Path,
+) -> Result<()> {
+    let root = &checkout.root;
+    if checkout.schema != 1
+        || checkout.source != snapshot.source
+        || root.parent() != Some(store.join("update-checkouts").as_path())
+        || root.canonicalize()? != *root
+        || !fs::symlink_metadata(root.join(".git"))?.is_dir()
+        || source::inspect(root)? != snapshot.source
+    {
+        return Err("native update checkout is redirected, dirty or has a different source".into());
+    }
+    let common = git([
+        OsStr::new("-C"),
+        root.as_os_str(),
+        OsStr::new("rev-parse"),
+        OsStr::new("--path-format=absolute"),
+        OsStr::new("--git-common-dir"),
+    ])?;
+    let branch = git([
+        OsStr::new("-C"),
+        root.as_os_str(),
+        OsStr::new("rev-parse"),
+        OsStr::new("--abbrev-ref"),
+        OsStr::new("HEAD"),
+    ])?;
+    let origin = git([
+        OsStr::new("-C"),
+        root.as_os_str(),
+        OsStr::new("remote"),
+        OsStr::new("get-url"),
+        OsStr::new("origin"),
+    ])?;
+    let objects = repository(store, Path::new("")).join("objects");
+    if Path::new(common.trim_end()).canonicalize()? != root.join(".git")
+        || branch.trim_end() != checkout.branch
+        || origin.trim_end() != "https://github.com/bin9208/openpilot-rust.git"
+        || fs::read_to_string(root.join(".git/objects/info/alternates"))?.trim_end()
+            != objects
+                .to_str()
+                .ok_or("invalid shared source object path")?
+    {
+        return Err("native update checkout Git ownership or origin mismatch".into());
+    }
+    Ok(())
 }
 
 fn lock(store: &Path) -> Result<File> {
@@ -420,6 +566,46 @@ mod native_tests {
         git(&root, &["add", "."]);
         git(&root, &["commit", "--quiet", "-m", "source A"]);
         root
+    }
+
+    #[test]
+    fn updater_owns_a_complete_git_directory_and_never_resets_dirty_or_previous_source() {
+        let temp = tempfile::tempdir().unwrap();
+        let input = source(temp.path());
+        let store = temp.path().join("store");
+        let retained = retain(&input, &store, 8 * 1024 * 1024).unwrap();
+        let root = retained
+            .update_checkout(&store, "codex/fixture", 8 * 1024 * 1024)
+            .unwrap();
+        assert!(root.join(".git").is_dir());
+        assert!(retained.root.join(".git").is_file());
+        fs::remove_dir_all(input).unwrap();
+        assert_eq!(
+            retained
+                .update_checkout(&store, "codex/fixture", 8 * 1024 * 1024)
+                .unwrap(),
+            root
+        );
+        fs::write(root.join(".overlay_init"), b"").unwrap();
+        assert_eq!(
+            retained
+                .update_checkout(&store, "codex/fixture", 8 * 1024 * 1024)
+                .unwrap(),
+            root
+        );
+        fs::write(root.join("tracked.rs"), b"foreign local edit").unwrap();
+        assert!(retained
+            .update_checkout(&store, "codex/fixture", 8 * 1024 * 1024)
+            .is_err());
+        assert_eq!(
+            fs::read(root.join("tracked.rs")).unwrap(),
+            b"foreign local edit"
+        );
+        retained.verify(&store).unwrap();
+        assert_eq!(
+            fs::read(retained.root.join("tracked.rs")).unwrap(),
+            b"source A"
+        );
     }
 
     #[test]

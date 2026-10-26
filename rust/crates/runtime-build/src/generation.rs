@@ -856,6 +856,8 @@ pub fn seal(
     let protocol = evidence.join("protocol.stdout");
     let status = tool(&runtime.root, "openpilot-launch", &protocol)?
         .arg("--verify-native-generation-protocol")
+        .arg("--root")
+        .arg(&runtime.root)
         .status()?;
     if !status.success()
         || read::<Value>(&protocol)?

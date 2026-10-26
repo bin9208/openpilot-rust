@@ -36,6 +36,16 @@ impl Default for LoopState {
 impl LoopState {
     pub fn cycle(&mut self, updater: &mut Updater<'_>, wake: &Wake) -> Result<Cycle, Error> {
         wake.clear_ready()?;
+        if let Some(native) = crate::native::context()? {
+            if native.ready()? {
+                updater.set_params(false, self.failed_count, None)?;
+                return Ok(Cycle {
+                    wait_seconds: 5400,
+                    warmup: false,
+                    failed_count: self.failed_count,
+                });
+            }
+        }
         let attempt = (|| -> Result<bool, Error> {
             updater.init_overlay()?;
             updater.set_params(false, self.failed_count, None)?;
@@ -212,11 +222,13 @@ pub fn run(updater: &mut Updater<'_>, wake: &Wake, cycles: Option<u64>) -> Resul
             .params
             .put_date("InstallDate", updater.context.now()?)?;
     }
-    common::set_consistent_flag(
-        updater.context.paths,
-        &updater.context.paths.finalized(),
-        false,
-    )?;
+    if crate::native::context()?.is_none() {
+        common::set_consistent_flag(
+            updater.context.paths,
+            &updater.context.paths.finalized(),
+            false,
+        )?;
+    }
     updater.params.put("UpdaterState", b"idle")?;
     let mut state = LoopState::default();
     let mut count = 0;

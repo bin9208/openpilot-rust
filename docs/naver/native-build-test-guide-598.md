@@ -53,6 +53,9 @@ cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build
 | 압축 해제된 provider/도구체인 tree 변경 | 같은 크기의 파일 교체·권한 변경·파일 추가/누락·link 변경을 거부 |
 | 변조 후 receipt만 재생성 | pinned receipt SHA가 다르므로 거부; 검증된 새 입력/receipt를 고정해야 별도 cache에서 빌드 |
 | 의도적 compile failure | 이전 binary가 계속 실행되어 원래 출력 유지 |
+| 빌드 frontend에 TERM 또는 KILL·worker KILL·IsOnroad 전환 | 실제 Cargo/build script/손자 프로세스만 종료, 정상 runtime 표식·로그 보존, workspace lock 반환 |
+| 부팅 대기 기록의 부분 쓰기·다른 config·미검증 후보·동시 실행 | 기존 active pointer·대기 기록·로그 보존, 미검증 세대 활성화 거부 |
+| updater용 Git checkout | 실행 소스와 다른 경로·자체 `.git` directory, source store의 object만 공유, dirty checkout 자동 reset 금지 |
 
 자산의 보고 시간·저장 byte 수는 준비 작업의 수치다. HTTP `transferred_bytes`는 본문
 크기이며 TLS/header를 포함한 네트워크 전체 사용량이 아니다. host fixture 시간과
@@ -64,6 +67,13 @@ cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build
 새 receipt를 신뢰할 근거는 고정된 source 또는 hash 검증한 자산과 그 준비 과정이다.
 `verified_input_trees`가 비어 있는 보고서는 전체 toolchain/provider를 검증했다는
 증거가 아니다. AGNOS 시스템 라이브러리·ABI closure는 별도 대상 검사를 유지한다.
+
+2026-10-26 추가한 generation 시작/업데이트 연결은 아직 Actions 검증 전이다.
+`--stage-update`는 source-built 후보를 봉인하고 기존 active ID와 config hash에 묶어
+`pending.json`을 발행한다. launcher가 boot lock을 잡은 뒤에만 다시 검증·선택하고,
+이전 세대 라이브러리가 섞이지 않도록 새 세대 loader 경로로 기존 lock handoff를 쓴다.
+protocol 응답은 이 기능의 지원 여부이며, 정상 manager 부팅·모델·기록·업로드가
+완료되었다는 시험 결과가 아니다. 최종 전체 AGNOS recipe와 아래 실기 수용은 남아 있다.
 
 ## 최종 사용자 기기 수용 시험
 

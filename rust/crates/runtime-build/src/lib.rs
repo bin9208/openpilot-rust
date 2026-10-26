@@ -9,6 +9,7 @@ pub mod assets;
 pub mod generation;
 pub mod inputs;
 pub mod objects;
+pub mod pending;
 pub mod prepare;
 pub mod selection;
 mod source;

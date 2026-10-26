@@ -104,9 +104,36 @@ build.json은 원래 요청 source의 branch/origin/commit/date를 보존하고 
 출력이 검증되는 후보만 반환한다. 오류·잠금·잘못된 상태는 pointer와 로그를 보존한다.
 
 **아직 배포 후보가 아니다.** 실제 pinned AGNOS toolchain/header/provider 준비와 전체
-그룹 recipe, native-generation protocol을 지원하는 launcher/updater, 자동 bootstrap 연결,
-전체 AGNOS 회귀·실제 자원 계측·사용자 기기 수용이 남는다. 현재 launcher/updater protocol이
-완성되지 않은 소스는 후보 게시 전에 실패하도록 gate를 두었다. CLI의 launch handoff도
-명시적 protocol 인자를 사용해 기존 launcher가 이를 지원하지 않으면 실패한다. protocol
-gate를 제거하거나 임의 성공으로 바꿔 진행하지 않는다. 로컬 구문·서식·diff만 확인했고 새
-회귀·공유 manifest 검사·source-aware sealer 컴파일은 bin-actions의 Actions에서 실행한다.
+그룹 recipe, 자동 bootstrap 연결, 전체 AGNOS 회귀·실제 자원 계측·사용자 기기 수용이
+남는다. 아래 launcher/updater 연결은 구현했으나 Actions 검증 전이다. protocol gate는
+유지하며 launcher가 같은 source-built updater의 protocol도 확인해야 통과한다. 이 응답을
+manager·모델·녹화·업로드의 성공 결과로 해석하지 않는다.
+
+## 빌드 중단과 다음 부팅의 업데이트 (검증 대기)
+
+`72bb0618a32893edf1e94f5d9ca43351829906fc`는 전용 frontend/worker process group,
+Linux parent-death signal, offroad 감시를 추가했다. frontend TERM/KILL, worker KILL,
+IsOnroad 전환, 정상 종료 후 실제 Cargo/build script/손자 프로세스가 남지 않고
+관련 없는 실행·이전 active 표식·로그·workspace 잠금이 보존되는 회귀를 Actions에 보냈다.
+[정확 SHA 집중 검사](https://github.com/bin9208/openpilot-rust/actions/runs/40329594561)는
+대기 중이며 아직 통과 근거가 없다.
+
+이어서 추가한 `--stage-update --root MERGED --previous ID`는 봉인된 후보의 descriptor,
+기존 active ID, config SHA를 `pending.json`에 묶는다. 빌드 중에는 active pointer를 바꾸지
+않는다. 다음 launcher가 기존 boot lock을 잡은 뒤 후보를 다시 검증·선택하고, 기존 lock
+handoff로 후보 launcher를 실행한다. pointer 변경 뒤 전원이 끊겨 journal 삭제가 안 된
+경우에도 같은 후보로 이어서 처리한다. 손상·다른 config·다른 active 상태·미검증 후보는
+journal과 이전 실행·로그를 보존한다.
+
+updater는 실행 root를 overlay lower로 쓰지 않는다. source store의 object만 공유하는
+자체 `.git` directory의 clone을 별도로 만들며, `.git`가 외부를 가리키는 retained worktree를
+overlay lower로 재사용하지 않는다. clone의 source/branch/origin/object 소유를 확인하고,
+dirty/foreign checkout을 자동 reset하지 않는다. generation별 staging도 분리한다. 후보
+시작 전에 선택된 세대의 loader library 경로를 고정해 이전 세대 provider를 물려받지 않는다.
+native 경로는 기존 release downloader를 호출하지 않으며 legacy 경로는 유지한다.
+update clone 준비 실패는 native updater를 중단하고 검증된 정상 runtime 시작을 유지한다.
+
+로컬은 구문·서식·diff와 TOML 경로 의존성의 읽기 감사만 수행했다. Actions는 실제
+source-built launcher/updater, 원래 전체 회귀·strict Clippy, protocol 응답/도구 누락 거부를
+X64와 별도 ARM QEMU/PRoot에서 검사한다. 전체 AGNOS에서 세대 A→B의 정상 시작·복구와
+실제 녹화·업로드 성공은 여전히 별도 증거가 필요하다.

@@ -60,6 +60,10 @@ fn state(stores: &Stores) -> Result<State> {
 pub fn activate(stores: &Stores, id: &str) -> Result<Selected> {
     generation::directory(&stores.generations)?;
     let _lock = generation::lock(&stores.generations)?;
+    activate_locked(stores, id)
+}
+
+pub(crate) fn activate_locked(stores: &Stores, id: &str) -> Result<Selected> {
     generation::offroad(&stores.params)?;
     let sealed = generation::load(stores, id)?;
     let mut candidates = vec![id.to_owned()];
@@ -114,6 +118,15 @@ pub fn resolve(stores: &Stores) -> Result<Selected> {
         }
     }
     Err("no recorded source-built generation passed complete verification; state and logs preserved".into())
+}
+
+/// Set before exec: the dynamic loader must never borrow an older generation's
+/// provider merely because that generation launched the update or bootstrap.
+pub fn library_path(stores: &Stores, id: &str) -> Result<std::ffi::OsString> {
+    let sealed = generation::load(stores, id)?;
+    let mut libraries = vec![sealed.runtime.root.join("rust/bin/lib")];
+    libraries.extend(sealed.layout.libraries);
+    Ok(std::env::join_paths(libraries)?)
 }
 
 #[cfg(test)]

@@ -130,10 +130,33 @@ fn ready(
 pub fn main() -> Result<(), Error> {
     let mut paths = Paths::default();
     let mut verification_only = false;
+    let mut protocol_only = false;
+    let (mut native_config, mut update_checkout, mut generation) = (None, None, None);
     let mut arguments = env::args_os().skip(1);
     while let Some(argument) = arguments.next() {
         match argument.to_str() {
             Some("--verify-package") => verification_only = true,
+            Some("--verify-native-generation-protocol") => protocol_only = true,
+            Some("--native-config") if native_config.is_none() => {
+                native_config = Some(std::path::PathBuf::from(arguments.next().ok_or_else(
+                    || Error::Configuration("missing native configuration".into()),
+                )?))
+            }
+            Some("--update-checkout") if update_checkout.is_none() => {
+                update_checkout =
+                    Some(std::path::PathBuf::from(arguments.next().ok_or_else(
+                        || Error::Configuration("missing requested checkout".into()),
+                    )?))
+            }
+            Some("--generation") if generation.is_none() => {
+                generation = Some(
+                    arguments
+                        .next()
+                        .ok_or_else(|| Error::Configuration("missing native generation".into()))?
+                        .into_string()
+                        .map_err(|_| Error::Configuration("invalid native generation".into()))?,
+                )
+            }
             Some("--paths") => {
                 let file = arguments
                     .next()
@@ -147,13 +170,31 @@ pub fn main() -> Result<(), Error> {
                     .into()
             }
             Some("--help" | "-h") => {
-                println!("usage: openpilot-launch [--root REPOSITORY] [--paths PATHS_JSON] [--verify-package]");
+                println!("usage: openpilot-launch [--root REPOSITORY] [--paths PATHS_JSON] [--verify-package] [--native-config CONFIG --update-checkout REQUESTED_CHECKOUT --generation ID]");
                 return Ok(());
             }
             _ => return Err(Error::Configuration("unexpected launcher argument".into())),
         }
     }
     paths.repository = paths.repository.canonicalize()?;
+    let native =
+        crate::native::Context::from_arguments(native_config, update_checkout, generation)?;
+    if protocol_only {
+        if native.is_some() || verification_only {
+            return Err(Error::Configuration(
+                "mixed protocol probe arguments".into(),
+            ));
+        }
+        return crate::native::protocol(&paths.repository);
+    }
+    if native.is_none() && env::var_os("OPENPILOT_NATIVE_CONFIG").is_some() {
+        return Err(Error::Configuration(
+            "native startup requires explicit generation arguments".into(),
+        ));
+    }
+    if let Some(native) = &native {
+        native.verify(&paths)?;
+    }
     if verification_only {
         return verify_package(&paths.repository);
     }
@@ -174,9 +215,17 @@ pub fn main() -> Result<(), Error> {
         }
         return Ok(());
     };
-    system::cleanup_lfs(&paths)?;
-    if overlay::activate(&paths.repository, &paths.data.join("safe_staging"))?
-        == overlay::Outcome::Activated
+    if let Some(native) = &native {
+        if native.boot(&paths, &lock, &stopped, &mut signals)? {
+            return Ok(());
+        }
+        native.environment();
+    } else {
+        system::cleanup_lfs(&paths)?;
+    }
+    if native.is_none()
+        && overlay::activate(&paths.repository, &paths.data.join("safe_staging"))?
+            == overlay::Outcome::Activated
     {
         let temporary = tempfile::NamedTempFile::new_in(&paths.temporary)?;
         serde_json::to_writer(temporary.as_file(), &paths)?;

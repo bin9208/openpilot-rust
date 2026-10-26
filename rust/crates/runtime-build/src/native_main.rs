@@ -1,20 +1,24 @@
-use openpilot_runtime_build::{generation::Config, selection, supervision, Result};
+use openpilot_runtime_build::{generation::Config, pending, selection, supervision, Result};
 use std::{os::unix::process::CommandExt, path::PathBuf, process::Command};
 
 fn run() -> Result<()> {
     let mut args = std::env::args_os().skip(1);
     let (mut mode, mut root, mut config, mut id) = (None, None, None, None);
+    let mut previous = None;
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--help" | "-h") => {
-                println!("Usage: openpilot-runtime-native --config CONFIG_JSON (--build --root CHECKOUT | --activate ID | --resolve | --launch --root CHECKOUT)\nBuild/seal a full native AGNOS runtime with source-built manager and ABI tools; activation requires verified offroad state. Launch resolves an actual preserved source generation and reports fallback explicitly. Requires prepared, pinned toolchain/dependencies/provider inputs. No exact-commit runtime release is fetched.");
+                println!("Usage: openpilot-runtime-native --config CONFIG_JSON (--build --root CHECKOUT | --stage-update --root CHECKOUT --previous ID | --activate ID | --resolve | --launch --root CHECKOUT)\nBuild/seal a full native AGNOS runtime with source-built manager and ABI tools. Stage-update preserves the active runtime until a locked native boot. Activation requires verified offroad state. Launch resolves an actual preserved source generation and reports fallback explicitly. Requires prepared, pinned toolchain/dependencies/provider inputs. No exact-commit runtime release is fetched.");
                 return Ok(());
             }
-            Some(value @ ("--build" | "--build-worker" | "--resolve" | "--launch"))
-                if mode.is_none() =>
-            {
-                mode = Some(value.to_owned())
-            }
+            Some(
+                value @ ("--build"
+                | "--build-worker"
+                | "--stage-update"
+                | "--stage-update-worker"
+                | "--resolve"
+                | "--launch"),
+            ) if mode.is_none() => mode = Some(value.to_owned()),
             Some("--activate") if mode.is_none() => {
                 mode = Some("--activate".to_owned());
                 id = Some(
@@ -30,37 +34,63 @@ fn run() -> Result<()> {
             Some("--config") if config.is_none() => {
                 config = Some(PathBuf::from(args.next().ok_or("missing configuration")?))
             }
+            Some("--previous") if previous.is_none() => {
+                previous = Some(
+                    args.next()
+                        .ok_or("missing previous generation")?
+                        .into_string()
+                        .map_err(|_| "invalid previous generation")?,
+                );
+            }
             _ => return Err("unknown, duplicate or mixed native runtime argument".into()),
         }
     }
     let config_path = config.ok_or("--config is required")?.canonicalize()?;
     let config = Config::read(&config_path)?;
-    match mode.as_deref().ok_or("native runtime mode is required")? {
-        "--build" => {
+    let mode = mode.as_deref().ok_or("native runtime mode is required")?;
+    let staging = matches!(mode, "--stage-update" | "--stage-update-worker");
+    if staging != previous.is_some() {
+        return Err("--previous is required only for staging an update".into());
+    }
+    match mode {
+        "--build" | "--stage-update" => {
+            if staging && pending::ready(&config_path)?.is_some() {
+                return Err("a verified native update is already pending".into());
+            }
             let root = root
                 .ok_or("--root is required for building")?
                 .canonicalize()?;
             let mut command = Command::new(std::env::current_exe()?);
             command
-                .arg("--build-worker")
+                .arg(if staging {
+                    "--stage-update-worker"
+                } else {
+                    "--build-worker"
+                })
                 .arg("--config")
                 .arg(&config_path)
                 .arg("--root")
                 .arg(root);
+            if let Some(previous) = previous {
+                command.arg("--previous").arg(previous);
+            }
             let status = supervision::run(command)?;
             if !status.success() {
                 return Err(format!("native build worker exited: {status}").into());
             }
         }
-        "--build-worker" => {
+        "--build-worker" | "--stage-update-worker" => {
             let _guard = supervision::WorkerGuard::start(&config.stores.params)?;
             let root = root
                 .ok_or("--root is required for building")?
                 .canonicalize()?;
             let id = config.build(&root)?;
+            if let Some(previous) = previous {
+                pending::stage(&config_path, &id, &previous)?;
+            }
             println!(
                 "{}",
-                serde_json::json!({"generation_id":id,"activated":false})
+                serde_json::json!({"generation_id":id,"activated":false,"staged_for_boot":staging})
             );
         }
         "--activate" if root.is_none() => {
@@ -90,6 +120,10 @@ fn run() -> Result<()> {
                 serde_json::json!({"requested_checkout":root,"selected":selected})
             );
             let error = Command::new(selected.source_root.join("rust/bin/openpilot-launch"))
+                .env(
+                    "LD_LIBRARY_PATH",
+                    selection::library_path(&config.stores, &selected.id)?,
+                )
                 .arg("--root")
                 .arg(&selected.source_root)
                 .arg("--native-config")

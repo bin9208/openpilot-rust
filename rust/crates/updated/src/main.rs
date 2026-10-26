@@ -12,7 +12,14 @@ use openpilot_updated::{
 };
 use std::{path::PathBuf, process::ExitCode, sync::Arc};
 fn run() -> Result<(), Error> {
-    let mut base = std::env::current_dir()?;
+    let mut base = if std::env::var_os("OPENPILOT_NATIVE_CONFIG").is_some() {
+        PathBuf::from(
+            std::env::var_os("OPENPILOT_UPDATE_CHECKOUT")
+                .ok_or(Error::Contract("native updater checkout is unavailable"))?,
+        )
+    } else {
+        std::env::current_dir()?
+    };
     let mut system_root = PathBuf::from("/");
     let mut launcher = std::env::current_exe()?.with_file_name("openpilot-process-child");
     let mut cycles = None;
@@ -62,6 +69,9 @@ fn run() -> Result<(), Error> {
         }
     }
     let paths = Paths::for_runtime(base, system_root);
+    if let Some(native) = openpilot_updated::native::context()? {
+        native.validate(&paths)?;
+    }
     let params = Params::open(&paths.system_root)?;
     let factory = Factory::for_runtime()?;
     let mut logger = factory.logger();
@@ -98,6 +108,11 @@ fn run() -> Result<(), Error> {
     runtime::run(&mut updater, &wake, cycles)
 }
 fn main() -> ExitCode {
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args.len() == 1 && args[0] == "--verify-native-generation-protocol" {
+        openpilot_updated::native::protocol();
+        return ExitCode::SUCCESS;
+    }
     match openpilot_managed_entry::runtime("openpilot.system.updated.updated", "updated", || {
         run().map_err(openpilot_managed_entry::StepError::raised)
     }) {

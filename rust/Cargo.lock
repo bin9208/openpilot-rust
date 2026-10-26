@@ -3579,6 +3579,7 @@ name = "openpilot-runtime-launcher"
 version = "0.1.0"
 dependencies = [
  "openpilot-process-supervision",
+ "openpilot-runtime-build",
  "openpilot-runtime-installer",
  "openpilot-runtime-version",
  "rustix",
@@ -3900,6 +3901,7 @@ dependencies = [
  "openpilot-params",
  "openpilot-params-typed",
  "openpilot-process-supervision",
+ "openpilot-runtime-build",
  "openpilot-runtime-core",
  "openpilot-runtime-version",
  "openpilot-timed",

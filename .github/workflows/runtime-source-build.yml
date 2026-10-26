@@ -4,6 +4,8 @@ on:
     branches: [codex/feat-598-device-native-build, 'codex/feat-598-*', 'codex/feat-599-*', 'codex/feat-600-*', 'codex/feat-605-*', dev, main]
     paths:
       - 'rust/crates/runtime-build/**'
+      - 'rust/crates/runtime-launcher/**'
+      - 'rust/crates/updated/**'
       - 'rust/Cargo.toml'
       - 'rust/Cargo.lock'
       - '.github/workflows/runtime-source-build.yml'
@@ -108,6 +110,29 @@ jobs:
           rustfmt --edition 2021 --check rust/crates/runtime-installer/src/lib.rs rust/crates/runtime-installer/src/identity.rs rust/crates/runtime-installer/tests/cli.rs rust/crates/dev-tools/src/bin/seal_runtime_package.rs
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-installer --test cli source_build_reuses_original_manifest_checks_without_a_release_descriptor
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin seal-runtime-package
+      - name: Admit and prepare native startup and updater regression prerequisites
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          growth = 4 * 1024**3
+          for path in (os.environ['RUNNER_TEMP'], os.environ['GITHUB_WORKSPACE']):
+              free = shutil.disk_usage(path).free
+              print(f'path={path} available_bytes={free} additional_startup_test_growth_bytes={growth}')
+              if free < growth:
+                  raise SystemExit('insufficient space for this startup/update test operation; other data retained')
+          PY
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq3-dev
+      - name: Verify the actual launcher and updater source-generation protocol and regressions
+        run: |
+          set -o pipefail
+          rustfmt --edition 2021 --check rust/crates/runtime-launcher/src/native.rs rust/crates/runtime-launcher/src/bootstrap.rs rust/crates/runtime-launcher/tests/native_protocol.rs rust/crates/updated/src/{lib,native,main,overlay,updater,runtime,report}.rs
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-updated --bin openpilot-updated
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          export NATIVE_PROTOCOL_UPDATED_BINARY="$native_target/debug/openpilot-updated"
+          test -x "$NATIVE_PROTOCOL_UPDATED_BINARY"
+          /usr/bin/time -v -o "$RUNNER_TEMP/native-startup-resources.txt" cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-launcher -p openpilot-updated -- --nocapture 2>&1 | tee "$RUNNER_TEMP/native-startup-tests.log"
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-launcher -p openpilot-updated --all-targets -- -D warnings
       - name: Preserve actual build evidence
         if: always()
         uses: actions/upload-artifact@v6
@@ -118,6 +143,8 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/runtime-build-tests.log
             ${{ env.CI_JOB_TEMP }}/runtime-https-first.json
             ${{ env.CI_JOB_TEMP }}/runtime-https-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-startup-resources.txt
+            ${{ env.CI_JOB_TEMP }}/native-startup-tests.log
       - uses: ./.github/actions/local-arm
         if: always()
         with: {cleanup: 'true'}
