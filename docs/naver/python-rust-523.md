@@ -18,7 +18,13 @@ source 모드의 원래 Python daemon13회는 여전히 별도 pending 경계다
 **33교체/131대기/1기존native/2비실행/3제거**다. 이 임시 진단 삭제는 Rust 교체 실적이 아니다.
 source495860d144의 [current-model40266155898](https://github.com/bin9208/openpilot-rust/actions/runs/40266155898)는
 원래 LLVM flags를 보존한 fresh 경로에서12출력/5,138,816B가 byte-exact였다.
-#482의 기존 frozen1344 재현은 source36b9fef61에서 별도로 진행하며 아직 전체 해결이 아니다.
+#482의 기존 frozen1344 재현은 source36b9fef61의
+[40270227599/job121401247650](https://github.com/bin9208/openpilot-rust/actions/runs/40270227599/job/121401247650)에서
+실제 통과했다. D1의12frame/33publication과 D2의6출력·2576word가 원래10304B expected 전체 SHA와
+같고 실제 half99 입력/output99의-0를 보존한다. 자연 host는 EPYC9V45이며 과거 EPYC7763의
+완전한 context 복원으로 확대하지 않는다. 원문/전체2192 CRC·1704 retained SHA·source/SDK
+봉인·회수/cleanup을 감사했고 [이슈에 기록](https://github.com/bin9208/openpilot-rust/issues/482#issuecomment-6408535898)했다.
+현재 PR343의 필수 전체 검증/통합 수용이 남아 #482는 계속 열린 상태다.
 #476의 실제 driver 출력 차이와 #597의 간헐적 실패 원인은 계속 열려 있다.
 
 다음 Gap Rust 후보는 원본857개와 추가 실제 회귀3개를 사용한다. 새 후보의 실행·삭제 후

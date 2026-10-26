@@ -1687,6 +1687,113 @@ d666 CPU 기록도 정정한다. 앞선 감사에서 A/compiler context가 미�
 host는 AMD EPYC 7763 64-Core Processor/vCPU4였다. 이전의 CPU 모델 자료도 없다는 서술은
 이 항목으로 정정한다. d666의 A/B 미진입 및 수치 수용0은 변하지 않으며 재다운로드는 하지 않았다.
 
+## 2026-10-26 Frozen36b actual — #482 원래1344 첫 raw 계약 수용 범위
+
+source `36b9fef61127e6175e3179efe7bee7f8729c97ca`의
+[run40270227599/job121401247650](https://github.com/bin9208/openpilot-rust/actions/runs/40270227599/job/121401247650)은
+SUCCESS다. replay helper `e8271fec4397769a705513c4aad1164ff418a505c74d7b68f478a2dced1c240e`,
+base `ddf48345a1d358b80ce7296ffd42293e3992b7194808e476750914aea593f19d`, WF
+`9d0b19f465f4c0fad63271c95b470ecafeca1b72b1506a25a8dbba9adbb8aa82`를 exact Git source와
+대조했다. 세 pin만 동기화한 기존 push-only replay이며 새 model/diagnostic stage는 없다.
+
+### 단일 ZIP와 raw 독립 감사
+
+artifact12628675929는80,788,416B, SHA256
+`c5f95b64c1859c09e7cd8b8df83c438f5cd2d588a186f582d14aa0638db9a5db`다. API expected
+bytes/digest/run/source/expired와100MiB download/512MiB uncompressed admission 뒤1회만 받았다.
+safe unique/nosymlink·암호화 없음2192개, 총171,570,186B와 CRC2192/2192를 확인했다.
+retained-index의1704개 파일127,225,117B도 길이·SHA를 전부 직접 재검사했다. parent는 이
+artifact를 중복 다운로드하지 않았다. 완료 log100,602B도1회만 받았고 SHA256은
+`21047e62a4ef7d5eb388091a439e3a79ffed9e5678bab06c279abf83bcf61576`다.
+
+### D1은 실제12/33 완료이며 수집용 test exit0만의 판정이 아니다
+
+`d1.json`은 strict_pass=true/strict_failure_sticky=false/error=null/differences=[]이며
+later_recursive_fields_qualified=true다. `retained/d1/report.json`도 실제 runs1/frames12/
+messages33/compared_fields21153을 기록한다. discrete는 exact, raw_comparison은 exact bytes이며
+기존 float tolerance1e-6/polynomial2e-5는 그대로다. 12개 trace 중 prepare-only1개를 제외한
+ModelV2 packet은11개다. D1 stage28개도 receipt-write-after까지18.14965366초 안에 완료했다.
+controller의 dual-first-packet command는18.563초/exit0/전원 회수다. 기존180초를 늘리지 않았다.
+
+첫 frame_id3의 ModelV2 packet19152B SHA256은
+`0fa266bf098e65f56bd99a007e766b325bcb0c2ad04a261251be5cf779e5d3fa`다. receipt의 packet
+길이/SHA를 실제 bytes와 대조했다. 추가로 프로젝트 parser/모델을 실행하지 않고 Cap'n Proto
+framing과 byte-list pointer를 inert 파싱해 segment1/word0이 packet byte8216의10304B payload를
+가리킴을 확인했다. 이 payload는 D2 native raw 및 frozen raw와 전체 bytes가 같다.
+
+### D2 prepare→prepare→첫 policy1: 전체6출력과 half99
+
+기존 sequence는 prepare2회 후 policy1회 그대로다. model/warped/img_q/big_img_q/feat_q/
+desire_q 총6출력 **2,569,408B**에서 original plain/original tapped/native raw가 전부 같다.
+native plain/tapped receipt의6개 길이·SHA도 이 실제 raw에 각각 일치한다. model10304B 전체
+2576개 float32 word의 frozen/current-original/current-native 차이는0이다.
+
+writer92/call175/arg1/view365/alloc16의 실제 half99 입력은 양쪽 모두 little-endian `0080`
+(half bits0x8000=-0)다. view offset9472/3152B, allocation 내 element byte9670, 실제 element
+주소=buffer 주소+198을 검증했다. 원본 dtype=dtypes.half이며 native는 untyped buffer에 held LLVM
+i16 저장 계약을 결합한다. operand_file=null인 실제 호출 버퍼를 읽은 기존 tap이며 새 할당이나
+다른 kernel 실행을 유도한 관측이 아니다.
+
+원본/native worker0의 output99는 모두 before/after `00000080`(-0)다. worker0/1의 기존2개
+callback과 whole-output plain↔tap 동일성도 유지한다. 실제 identity는 다음과 같다.
+
+| 근거 | SHA256 |
+| --- | --- |
+| original writer SOURCE | `e223a2c36c6bde7cf676bb92fd2529858a723f9ecfa91c811b2b941756a9bea0` |
+| A fresh original object | `ecac5435f64713ba6f2b310c9747f2299000f4754fd04bf11616d788da542828` |
+| A fresh original image | `b3558b20e727ce303d10a22a26d005b66ba5d7bcce45b8f84ae22ca0909f8043` |
+| native current library | `d4cc85a788b89542aa94c7ff30198189a2aba173703aa8eebb9fb2fca424a445` |
+
+native half receipt의 object/image 항목은 결합한 A original triplet이며 native object 자체와
+동일하다고 주장하지 않는다. 별도로 current1344 bundle의91개 source-policy·compiled.ll을
+검사해 원문에서 함수명만 rename했고 수학/flags는 보존했음을 확인했다. 각 policy/object SHA도
+binding과 일치한다. 입력/출력 zero masking이나 frozen expected 교체는 없다.
+
+### source939a 원래 실패와의 연결·자연 context
+
+[#482](https://github.com/bin9208/openpilot-rust/issues/482)의 원래 actual receipt source는
+`939a190a11fc991a4eaff958d514dc2fca5c07e2`, host EPYC7763이었다. 당시1344-dual 첫 frame3의
+raw10304B는 byte399/float99에서만 native+0/frozen-0로 달랐다. 이번 D1 packet payload/D2
+original/native/frozen 모두 원래 expected 전체 SHA
+`9afb2defff4ff29e5bf70e54db32d0d531d5e2b44507c8de652ee2c0dfcb67fe`와 일치한다. float99만
+골라 통과시킨 결과가 아니라 원래 raw 계약 전체의 회복이다.
+
+fixture provenance의 source `e25a14386582858dae25c6daca5ced3bfb4bacab`와 원래 실패 source939a는
+같은 식별자가 아니다. 기존 fixture/observation manifest SHA `afe1c795...`/`ed174bb4...`, PKL
+72,045,323B SHA `487ef869...`, calibration source SHA `b8ba3f01...` 및 선택한 실제 입력의
+원문 SHA를 그대로 유지한다. input-provenance는 expected_regenerated=false/
+new_capture_replaces_expected=false다. 새 캡처를 original golden으로 만든 것이 아니다.
+
+이번 실제 host는 **AMD EPYC 9V45 96-Core Processor/vCPU4**, LLVM18의 자연 CPU getter 값은
+`generic`, triple=x86_64-none-unknown-elf, passes=default<O2>다. 기존4개 pass option은 모두1,
+provider SHA는 `5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`다.
+91개 original compile chain은 같은 config를 기록하며 A whole91 triplet/hostISA와 기존 ISA14,
+model/retirement strict Clippy가 PASS다. CPU/ISA forcing은 없다.
+
+D2 original은 frozen PKL의 SOURCE91을 이 자연 host에서 fresh compile한 image를 실행한다.
+old BINARY는 identity 결합에만 쓰며 실행 fallback하지 않았다. 따라서 이 성공을 과거
+EPYC7763의 retained BINARY/완전한 historical compiler context 복원이라고 쓰지 않는다.
+
+### 독립 후봉인과 #482 남은 완료 조건
+
+commands56개는 전부 exit0/error·cleanup_error=null/all_owned_children_reaped=true다.
+final-seals는 pass=true/failures=[]/error=null, phase=native-tapped다. whole source/index와
+SDK file/program/identity roster 전후 bytes, source/SDK/Python/Python-base baseline4개를
+artifact에서 독립 대조해 모두 동일함을 확인했다. source digest는 전후 모두
+`5cceadc6756122d346f3aa2263e577b34b23f8be8218b3d0865b7545444bc91e`다. fixture/catalog 및
+held ELF/provider 후검증, 실제 upload와 source/job cleanup(step13–19)도 모두 PASS다.
+
+원래1344-dual 첫 raw regression과 현재 D1 12/33·D2 whole6·writer half/output 범위는 이번
+exact source에서 실제 통과했다. #482 본문이 요구한 **현재 PR343 소스의 재현·회귀·원본 비교와
+전체 필수 검증/통합 수용**은 이 focused run으로 대체하지 않는다. 원래 EPYC7763 context의
+동일 실행으로도 확대하지 않는다. full128/historical_half_snan5_resolved/historical_provider_proven/
+ssa_first_producer_observed/full_model_runtime_acceptance는 여전히 false, retirement_credit0이다.
+#482와 별도인 #476 driver float 실패도 이 결과로 닫지 않는다.
+
+private `ci/pr1344-36b-actual-audit.json`에 output별 전체 SHA, actual report, packet pointer 연결,
+half/worker identity, source/compiler config와 독립 후봉인 결과를 남겼다. 이 감사의 source 수정,
+원본/model/compiler/Cargo/test/Clippy 로컬 실행, CI dispatch/rerun/cancel 및 issue closure는0이다.
+
 
 ### 부모의 최종 소스 등록 — 실행 전
 
