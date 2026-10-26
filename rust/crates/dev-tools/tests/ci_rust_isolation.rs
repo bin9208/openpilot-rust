@@ -2076,7 +2076,7 @@ fn planner_ipc_overlay_steps() -> Vec<Value> {
         "/usr/bin/bash \"$CI296_SOURCE/tools/ci/planner_native_controller_523.sh\" ipc-check\n";
     let stage = concat!(
         "set -euo pipefail\n",
-        "printf '%s  %s\\n' 6ffd6376165474048e225241499a9284cc8e7dc227ab8cdbbb340ed45bd588bb ",
+        "printf '%s  %s\\n' 578ec6f73765ca4293174eeb7eb2a5df99a9af6ff726f262c7aa3f17f65c97bf ",
         "\"$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh\" | sha256sum --check --strict -\n",
         "/usr/bin/bash \"$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh\"\n"
     );
@@ -2125,7 +2125,7 @@ fn planner_ipc_projection(job: &Value) -> Result<Value, String> {
     let expected = planner_ipc_overlay_steps();
     let digests = [
         "b637025349f5ad452b2ed62eff46480b2e0c3983d38502bb89ce715d41c7629a",
-        "870ca340c07b0a490596cc6dfc8b046aa34fc608d74b748ee8c450157f35a2e7",
+        "c54405b6219ab029cbfeb7b443cf95f6e4c460151ab5190b5280929022c6459f",
         "b1a4149c8743b86f252e19f90202e7cb83b66cac4080d23117db223b64c32305",
     ];
     for (offset, (wanted, digest)) in expected.iter().zip(digests).enumerate() {

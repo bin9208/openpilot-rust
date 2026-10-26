@@ -326,7 +326,7 @@ oracle/Cargo/build/test/Clippy, CI dispatch/cancel, production/expected/math 수
 
 ## 972의 nlink 거부 최소 수정 후보 — C 전용, GHA UNRUN
 
-2026-10-26. 사용자가 허용한 범위대로 `Controller.cached_context` 안에서만 source-selected
+2026-10-26. 부모가 허용한 범위대로 `Controller.cached_context` 안에서만 source-selected
 guarded/issuer 두 ELF의 private 실행 사본을 추가했다. native C module/공통 Held/production/
 원본 Cargo 경로는 수정하지 않았다. 위 actual972 실패와 미적용 제안은 그 시점 기록으로 보존한다.
 
@@ -743,3 +743,119 @@ private inert 계산 근거는 `modelef172-first-difference-audit.json`4297B/SHA
 본 문서 append뿐이고 기존 기록은 유지했다. local model/oracle/compiler/LLVM/Cargo/build/test/
 Clippy 실행 및 GHA dispatch/cancel은0이다. B2frame 결과를 full128/과거 half/전체 모델 수용으로
 확대하지 않았다.
+
+## D writer92 두 후보 구현 — source-only 완료, GHA UNRUN
+
+2026-10-26. 부모가 #523 범위에서 승인한 대상은 helper, 새 `cpu/diagnostic_482_writer.rs`, 등록용 기존
+`cpu/diagnostic_482_tests.rs`와 본 문서뿐이다. production ABI/issuer/admission/guarded-add,
+공유 lib/Cargo/WF/Focus/pin은 수정하지 않았다. 아래는 **새 source의 설계·정적 검토 결과**다.
+actualef172의 C12 PASS를 새 D의 실행 성공으로 옮겨 적지 않는다.
+
+### 기존 private API로 가능한 경로와 원래90개 image의 고정
+
+새 test는 기존 C `native-request.json`과 독립 A request/readonly/Admission을 다시 읽는다.
+원본91개 SOURCE/object/image/ABI 및 전체 ISA를 재검증하고, production의 기존
+`cached_code::prepare`/`CpuModel::load_cached`를 그대로 호출한다. 잘못된 Admission의 거부와
+default `CpuModel::load`의 cached 거부도 유지한다. C certificate/current binding을 바꾸거나 새
+writer의 hash를 OriginalProgram/issuer metadata에 끼워 넣지 않는다.
+
+CPU의 기존 `Invocation.function`은 private이지만 같은 CPU test의 descendant에서 접근할 수 있다.
+이를 이용해 **strict C를 정상 load한 뒤에만** PROGRAM90/kernel92의 유일한 call175 함수 포인터를
+test 전용 adapter로 교체한다. 동일한 C bundle을 후보마다 새로 load해 weights/초기 상태를
+같게 시작하며 graph/입력/entrypoint/worker/scalar/view binding도 그대로다. 다른 호출 포인터는
+변경 전후 동일함을 검사하고 writer 포인터도 실행 뒤 복구한다. 따라서 다른90개 PROGRAM은
+원래 C의 인증된 image다. 앞선 제안의 B 나머지90개보다 이번 부모 지시의 **C 원본90개**를
+고정하는 쪽으로 구현했다.
+
+adapter는 이미 검증한10pointer+i32를 동일 ABI로 전달하며 Tensor/Buffer의 값을 관측하거나
+lazy allocation을 유도하는 tap이 아니다. TLS dispatch는 library보다 먼저 해제한다. 이 private
+교체를 C certificate가 새 writer까지 인증했다는 주장으로 사용하지 않는다. production 경로와
+새 public API는 없으며 receipt의 candidate_original_certificate_claim은 false다.
+
+### 두 fresh compile의 실제 context receipt
+
+새 내부 worker `writer-pair-compile`은 A의 고정 원문에서 함수명만 바꾼 `rename-only`와 현재 B와
+byte exact인 `guarded` 입력을 만든다. 기존 admitted C helper 사본을 사용하며, Rust에서도 기존
+`guarded_add::canonicalize` 결과/네 rewrite receipt를 B sidecar와 독립 대조한다. canonicalizer의
+구현·nsz 정책·zero 처리·수학은 그대로다.
+
+한 `CPULLVMCompiler(['x86_64','native'])` 인스턴스/context/TM/PBO로 두 입력을 직접 compile한다.
+두 compile 전후의 실제 TM triple/CPU/features, provider path/SHA, compiler source SHA,
+`default<O2>`, 네 실제 pass-option setter value를 기록하고 A의 실제 config와 같아야 한다.
+`LLVMCreateTargetMachine`의 실제 codegen/relocation/code-model 인자도 관측한다. pinned autogen의
+기존 Default/PIC/Default 값2/2/0을 검사하며 다른 값으로 호출을 고치거나 CPU를 강제하지 않는다.
+동일 context/TM/PBO identity도 두 후보에서 같아야 한다. `Compiler.compile_cached`는 worker 동안
+호출 즉시 거부하므로 성공 receipt의 cache0은 허용된 cache 재사용 경로가 아니다.
+
+여기서 원본 모델 실행0과 원본 compiler 실행0은 같은 뜻이 아니다. 새 worker는 원본 Python
+`CPULLVMCompiler.compile_to_obj`를 두 번 호출한다. `compiler-receipt.json`과 최종
+`writer-pair.json`은 `original_model_executions=0` / `original_compiler_invocations=2`를
+명시하고 native가 compiler receipt의 두 값을 검사한 뒤 최종 receipt로 전달한다. 기존
+`original_executions=0` / `new_original_executions=0`은 **추가 원본 모델 실행0**이라는 의미로만
+유지하며, 원본 compiler 호출까지0이라는 뜻으로 사용하지 않는다. 추가 원본 compiler2회는
+부모가 별도 등록할 **pending execution edge**다. 현재 GHA UNRUN이며 모델 실행0 표기로
+이 compiler 의존성이나 실제 호출을 은폐·완료 처리하지 않는다.
+
+### 실행 전 image/ISA/DSO 검사와 두 native 실행
+
+첫 private selector는 아직 생성 code를 실행하지 않는다. 두 object를 기존
+`cached_elf::reconstruct`로 독립 재구성하고 같은 strict `cached_isa::admit_all`로 전체 text를
+검사한다. 각 실제 필수 feature를 하나씩 뺀 host snapshot은 거부되어야 한다. image SHA,
+text bytes/instructions/required/실제 host feature도 기록한다. 기존 mechanical `cached_elf::package`로
+한 image만 넣은 container를 만들고, helper가 `clang -shared -nostdlib --no-undefined`로 link한다.
+
+둘째 selector는 DSO의 단일 `op_impl_92` 전체 bytes가 재구성 image와 같고64B 정렬인지 확인한다.
+dependency/init/fini/interpreter/TLS/RWX/textrel 경로를 거부하는 **private test-only** 검사를 거친다.
+PT_INTERP mutation도 dlopen 전 거부한다. 기존 cached ELF parser의 relocation/whole-image 검사도
+적용한다. held FD로만 load하고 실제 mapped symbol bytes를 다시 비교한 뒤 adapter에 연결한다.
+이 검사는 새 DSO의 실행 전 경계이며 production validation을 대체하거나 완화하지 않는다.
+
+후보마다 기존 prepare/policy2frame을 실행하여 **기존 B original12출력**과 전체 bytes를 비교한다.
+새 원본 모델 실행·golden·tap은0이다. 원본 compiler 호출은2회다. 후보별 raw12파일/실제 SHA/
+원본 SHA/equal/mismatch를 남기고
+controller가 raw를 다시 읽어 비교한다. 진단 완료와 두 후보의 all12_equal은 별개다. 어느 결과도
+수학 수용·B 승격·full128/역사 half/전체 모델 수용으로 간주하지 않는다.
+
+### 기존 gate·자원·회수 경계
+
+- A/B run 본문은 기존 C 진입 전까지 byte exact이고 `Controller.cached_context`의 AST도 동일하다.
+  기존 collect/plain/tapped/config/OriginalTap 및 공통 Held/finalizer/retention 메서드는 동일하다.
+- 기존 C12가 실제 성공한 경우에만 D에 진입한다. C 실패면 D skipped receipt를 남긴다.
+  D 실패는 별도 failure receipt에 보존한다. 그 뒤 원래 `need(not mismatches, ...)`가 그대로
+  실행되므로 B sticky는 D 성공/실패 뒤에도 전체 FAIL이다.
+- D는 C namespace 아래의 새0700 `writer-pair/`에만 쓴다. **C+D 합계256MiB**를 사전/중간/최종
+  검사한다. 별도256MiB를 더 부여하지 않는다. 기존 build+registry8GiB/proof512MiB와 finish
+  reserve/전역40분 deadline을 유지한다. D 전체에도180초 deadline을 두고 각 command가 남은
+  시간만 사용하게 했다. AS4GiB는 기존 모델 command와 같다.
+- 최초 D forecast는 `2*기존12출력 bytes + 4*원문 bytes + 8*원본 image bytes + 32MiB`다.
+  ef의 실제 size를 역투영하면44611796B이며 새 실행의 실측값은 아니다. object 생성 뒤 실제
+  두 size로 image/container/DSO/output 증가량을 다시 admission하고, 실행 전 output 예산도
+  재검사한다. 기존 C helper 두 사본·원래 Cargo hardlink·A/B 원문은 모두 계속 hold한다.
+- D files는 기존 C subtree retention에 포함되고 weights/PKL은 추가 업로드하지 않는다.
+  기존 source/SDK/provider 전후 봉인과 child 회수는 그대로 적용한다.
+
+### 부모 통합용 selector·파일과 로컬 검증
+
+기존 cached-code **15**와 ISA **14** unit selector/count는 바꾸지 않았다. 다음 ignored private
+selector **2개**를 추가했고 부모 private 파일에는 module 등록2행만 넣었다.
+
+```text
+cpu::diagnostic_482_tests::writer_pair::fresh_writer_pair_is_bound_without_execution
+cpu::diagnostic_482_tests::writer_pair::fresh_writer_pair_reuses_admitted_original90
+```
+
+| source | bytes / SHA256 |
+| --- | --- |
+| `tools/ci/model_current_triplet_482.py` |111582B / `de8c8946d13e0e555f542f0939a32474efa655d8bd5a16dfc19ad240fa16cfc2` |
+| `rust/crates/model-runtime/src/cpu/diagnostic_482_writer.rs` |30472B / `51047852eb0c81fa1d804764f6a28198190775d796c86fc28d542ea2c195c9a7` |
+| `rust/crates/model-runtime/src/cpu/diagnostic_482_tests.rs` |36066B / `03876312dc0aba59401585613182c567894aba300a3d7ef54efdf57b048564a5` |
+
+주요 새 원문은 `compiler-receipt.json`, `writer-pair-preflight.json`, `writer-pair.json`, 각 후보의
+`.ll/.o/.bin/.container.o/.so`와 `outputs/{rename-only,guarded}/`다. 실패/skip/capacity/import receipt도
+별도로 보존한다. 부모가 helper/source pin·path trigger·WF publication을 통합한다.
+
+로컬 검증은 Python `ast.parse`, Rust1.94 rustfmt의 구문/서식 확인, source AST/byte 비교와
+`git diff --check`뿐이다. 기존 C module/production cpu/cached_code/cached_isa/guarded_add의
+전체 SHA가 작업 시작 시점과 같음을 확인했다. Cargo/type-check/build/test/Clippy/compiler/model/
+oracle 및 GHA dispatch/cancel/stage/commit/push는 모두0이다. 새 D의 compile/Clippy/실행·수치
+결과는 **GHA UNRUN**이며 빈 결과나 source 검토를 실제 성공으로 대체하지 않는다.

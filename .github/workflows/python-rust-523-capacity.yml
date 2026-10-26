@@ -27,8 +27,23 @@ jobs:
         test "$RUNNER_NAME" = bin-actions
         test "$RUNNER_ENVIRONMENT" = self-hosted
         test "$RUNNER_ARCH" = X64
-        case "$CAPACITY_OPERATION" in inventory|preserve-driver476-witness) ;; *) exit 64 ;; esac
+        case "$CAPACITY_OPERATION" in inventory|preserve-driver476-witness|preserve-planner-ipc-witnesses) ;; *) exit 64 ;; esac
         if [[ $CAPACITY_OPERATION == preserve-driver476-witness ]]; then
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+          test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
+          test "$GITHUB_WORKFLOW_REF" = "bin9208/openpilot-rust/.github/workflows/python-rust-523-capacity.yml@$GITHUB_REF"
+          test "$RUNNER_OS" = Linux
+          test "$(uname -s)" = Linux
+          test "$(uname -m)" = x86_64
+          [[ $GITHUB_SHA =~ ^[0-9a-f]{40}$ && $GITHUB_JOB == inventory ]]
+          test ! -L "$RUNNER_TEMP"
+          test "$(/usr/bin/realpath -e -- "$RUNNER_TEMP")" = "$RUNNER_TEMP"
+          umask 077
+          set -C
+        fi
+        if [[ $CAPACITY_OPERATION == preserve-planner-ipc-witnesses ]]; then
           test "$GITHUB_ACTIONS" = true
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
           test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
@@ -48,6 +63,9 @@ jobs:
         printf 'CAPACITY_REPORT=%s\n' "$report" >> "$GITHUB_ENV"
         if [[ $CAPACITY_OPERATION == preserve-driver476-witness ]]; then
           printf 'CAPACITY_REPORT_IDENTITY=%s\n' "$(/usr/bin/stat -c '%d:%i:%u:%f' -- "$report")" >> "$GITHUB_ENV"
+        fi
+        if [[ $CAPACITY_OPERATION == preserve-planner-ipc-witnesses ]]; then
+          printf 'PLANNER_IPC_REPORT_IDENTITY=%s\n' "$(/usr/bin/stat -c '%d:%i:%u:%f' -- "$report")" >> "$GITHUB_ENV"
         fi
     - name: Inspect shared compiler caches and historical policy cache ownership
       if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (env.CAPACITY_OPERATION == 'inventory') }}
@@ -475,6 +493,352 @@ jobs:
         printf '%s\n' "$completion"
         printf '```json\n%s\n```\n' "$completion" >> "$GITHUB_STEP_SUMMARY"
         printf 'preservation_verified=true\n' >> "$GITHUB_OUTPUT"
+    - name: Authenticate Planner capture archives and existing functional retention
+      id: planner_witness_auth
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (env.CAPACITY_OPERATION == 'preserve-planner-ipc-witnesses') }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set +x
+        set +o posix
+        set -euo pipefail
+        set -C
+        umask 077
+        for tool in curl jq sha256sum unzip timeout stat realpath df date head wc id awk sort uniq; do test -x "/usr/bin/$tool"; done
+        report=$CAPACITY_REPORT
+        uid=$(/usr/bin/id -u)
+        [[ $report == "$RUNNER_TEMP"/python-rust-523-capacity.?????? ]]
+        test -d "$report" && test ! -L "$report"
+        test "$(/usr/bin/realpath -e -- "$report")" = "$report"
+        test "$(/usr/bin/stat -c '%d:%i:%u:%f' -- "$report")" = "$PLANNER_IPC_REPORT_IDENTITY"
+        test "$(/usr/bin/stat -c '%u:%a' -- "$report")" = "$uid:700"
+        test -f "$report/owner" && test ! -L "$report/owner"
+        test "$(/usr/bin/stat -c '%u:%a' -- "$report/owner")" = "$uid:600"
+        test "$(cat "$report/owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        available=$(/usr/bin/df -PB1 -- "$report" | /usr/bin/awk 'NR == 2 {print $4}')
+        [[ $available =~ ^[0-9]+$ ]] && ((available >= 64 * 1024 * 1024))
+        mkdir -m 700 "$report/payload" "$report/provenance" "$report/roundtrip"
+        # SHA가 감사한 고정 원문 목록이다. functional은 metadata-only이며 ZIP GET을 하지 않는다.
+        cat > "$report/provenance/origins.psv" <<'PLANNER_ORIGINS'
+        host-capture|capture|12615278417|40237263524|1241625|3df5894ffe4a0ba003a670dee9978981d57656644dc16f83fb3da953db823a8d|private-rust-planner-runtime-0-40237263524-1|2378
+        host-functional|metadata-only|12615802090|40237263524|55187534|c583db165f1b5c0226dc25d2a25fb1cbba7a1fad0e282d25506f327f151cf828|rust-planner-local-x64-evidence|0
+        arm-capture|capture|12615287431|40237263421|1239760|efa5a289799a4e1fbcd63cc8baae5f3379df20240f6c48ecad6dc68b15c5682b|private-rust-planner-runtime-0-40237263421-1|2371
+        arm-functional|metadata-only|12614614983|40237263421|44843072|2726bee5baa231c56c1856cea7bc0096b549bd6bb600cd262e04836551311798|rust-planner-hosted-arm64-evidence|0
+        PLANNER_ORIGINS
+        plan_sha=29b13c7e8da80fe11ccdbd151d5f86ca90c20f0f6f1fe303f861bc843a012742
+        printf '%s  %s\n' "$plan_sha" "$report/provenance/origins.psv" | /usr/bin/sha256sum --check --strict -
+        api=https://api.github.com/repos/bin9208/openpilot-rust
+        origin_source=aa79c7cd21a4b9bbb6bfb4c68ded9e857511f1cf
+        get_json() (
+          ulimit -f 1024
+          test ! -e "$2" && test ! -L "$2"
+          exec {fd}>"$2"
+          status=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+            --connect-timeout 10 --max-time 30 --max-filesize 1048576 \
+            --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' \
+            --output "/dev/fd/$fd" --write-out '%{http_code}' "$api/$1")
+          test "$status" = 200
+        )
+        get_json "actions/runs/$GITHUB_RUN_ID" "$report/provenance/preservation-run.json"
+        /usr/bin/jq -e --arg id "$GITHUB_RUN_ID" --arg attempt "$GITHUB_RUN_ATTEMPT" --arg source "$GITHUB_SHA" '
+          (.id|tostring)==$id and (.run_attempt|tostring)==$attempt and .head_sha==$source and
+          .event=="workflow_dispatch" and .head_branch=="codex/feat-523-python-rust" and
+          .path==".github/workflows/python-rust-523-capacity.yml" and
+          .repository.full_name=="bin9208/openpilot-rust" and .repository.id==1395501963 and
+          .head_repository.full_name=="bin9208/openpilot-rust" and .head_repository.id==1395501963
+        ' "$report/provenance/preservation-run.json" > /dev/null
+        for run in 40237263524 40237263421; do
+          get_json "actions/runs/$run" "$report/provenance/origin-run-$run.json"
+          /usr/bin/jq -e --arg run "$run" --arg source "$origin_source" '
+            (.id|tostring)==$run and .run_attempt==1 and .head_sha==$source and
+            .status=="completed" and .conclusion=="success" and
+            .repository.full_name=="bin9208/openpilot-rust" and .repository.id==1395501963 and
+            .head_repository.full_name=="bin9208/openpilot-rust" and .head_repository.id==1395501963
+          ' "$report/provenance/origin-run-$run.json" > /dev/null
+        done
+        while IFS='|' read -r role kind artifact run bytes digest name members; do
+          get_json "actions/artifacts/$artifact" "$report/provenance/$role-api.json"
+          /usr/bin/jq -e --arg id "$artifact" --arg name "$name" --argjson bytes "$bytes" \
+            --arg digest "sha256:$digest" --arg run "$run" --arg source "$origin_source" '
+            (.id|tostring)==$id and .name==$name and .size_in_bytes==$bytes and .digest==$digest and
+            .expired==false and (.workflow_run.id|tostring)==$run and .workflow_run.head_sha==$source and
+            .workflow_run.repository_id==1395501963 and .workflow_run.head_repository_id==1395501963
+          ' "$report/provenance/$role-api.json" > /dev/null
+          if [[ $kind == metadata-only ]]; then
+            # 이미90일 보존인 functional2개: metadata만 인증하고 raw download/upload는0이다.
+            run_created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/origin-run-$run.json")" +%s)
+            artifact_created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/$role-api.json")" +%s)
+            expires=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .expires_at "$report/provenance/$role-api.json")" +%s)
+            ((run_created <= artifact_created && expires >= run_created + 90 * 86400 && expires <= run_created + 90 * 86400 + 600))
+          else
+            test "$kind" = capture
+          fi
+        done < "$report/provenance/origins.psv"
+        # 네 API 인증이 모두 끝난 뒤 private capture2개만 내려받는다.
+        while IFS='|' read -r role kind artifact run bytes digest name members; do
+          [[ $kind == capture ]] || continue
+          redirect=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+            --connect-timeout 10 --max-time 30 --header "Authorization: Bearer $GH_TOKEN" \
+            --output /dev/null --write-out '%{http_code}\n%{redirect_url}' "$api/actions/artifacts/$artifact/zip")
+          [[ $redirect == $'302\nhttps://'* ]]
+          url=${redirect#*$'\n'}
+          [[ $url != *$'\n'* && $url != *$'\r'* ]]
+          payload=$report/payload/planner-ipc-aa79-$role-$artifact.zip
+          (
+            ulimit -f 2048
+            test ! -e "$payload" && test ! -L "$payload"
+            exec {fd}>"$payload"
+            /usr/bin/timeout --signal=TERM --kill-after=5s 120s \
+              /usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+              --connect-timeout 10 --max-time 110 --max-filesize "$bytes" "$url" |
+              /usr/bin/head -c "$((bytes+1))" >&"$fd"
+          )
+          test -f "$payload" && test ! -L "$payload"
+          test "$(/usr/bin/stat -c '%u:%a:%s' -- "$payload")" = "$uid:600:$bytes"
+          printf '%s  %s\n' "$digest" "$payload" | /usr/bin/sha256sum --check --strict -
+          (
+            ulimit -f 2048
+            /usr/bin/timeout --signal=TERM --kill-after=5s 30s /usr/bin/unzip -t "$payload" > "$report/provenance/$role-crc.txt"
+          )
+          (
+            ulimit -f 1024
+            /usr/bin/timeout --signal=TERM --kill-after=5s 30s /usr/bin/unzip -Z1 "$payload" > "$report/provenance/$role-members.txt"
+          )
+          test "$(/usr/bin/wc -l < "$report/provenance/$role-members.txt")" = "$members"
+          LC_ALL=C /usr/bin/awk '
+            $0=="" || /^\// || /\\/ {exit 1}
+            {n=split($0,a,"/"); if(a[n]=="")n--; for(i=1;i<=n;i++)if(a[i]=="" || a[i]=="." || a[i]=="..")exit 1}
+          ' "$report/provenance/$role-members.txt"
+          duplicates=$(LC_ALL=C /usr/bin/sort "$report/provenance/$role-members.txt" | /usr/bin/uniq -d)
+          test -z "$duplicates"
+          # exact SHA는 선행 unique-path/regular-file/no-symlink 원문 감사와 결합한다. 추출하지 않는다.
+          /usr/bin/stat -c '%d:%i:%u:%f:%s:%Y:%Z' -- "$payload" > "$report/provenance/$role.identity"
+        done < "$report/provenance/origins.psv"
+        /usr/bin/jq -n --arg source "$GITHUB_SHA" --arg owner "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" \
+          --arg identity "$PLANNER_IPC_REPORT_IDENTITY" --argjson available "$available" '{
+            status:"AUTHENTICATED_CAPTURE_ONLY", source_commit:$source, owner:$owner, report_identity:$identity,
+            available_bytes_before:$available, admitted_growth_bytes:67108864, payloads:2,
+            functional_metadata_only:2, functional_raw_downloads:0, functional_raw_uploads:0,
+            replay_executed:false, consumer_binding_changed:false, memory_admission:false
+          }' > "$report/provenance/admission.json"
+    - name: Preserve the original HOST Planner capture as-is
+      id: planner_host_capture
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (env.CAPACITY_OPERATION == 'preserve-planner-ipc-witnesses' && steps.planner_witness_auth.outcome == 'success') }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        path: ${{ env.CAPACITY_REPORT }}/payload/planner-ipc-aa79-host-capture-12615278417.zip
+        archive: false
+        retention-days: 90
+        if-no-files-found: error
+        overwrite: false
+    - name: Preserve the original ARM Planner capture as-is
+      id: planner_arm_capture
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (env.CAPACITY_OPERATION == 'preserve-planner-ipc-witnesses' && steps.planner_witness_auth.outcome == 'success') }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        path: ${{ env.CAPACITY_REPORT }}/payload/planner-ipc-aa79-arm-capture-12615287431.zip
+        archive: false
+        retention-days: 90
+        if-no-files-found: error
+        overwrite: false
+    - name: Verify both Planner capture uploads through the ZIP API
+      id: planner_witness_roundtrip
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (env.CAPACITY_OPERATION == 'preserve-planner-ipc-witnesses' && steps.planner_host_capture.outcome == 'success' && steps.planner_arm_capture.outcome == 'success') }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        HOST_CAPTURE_ID: ${{ steps.planner_host_capture.outputs.artifact-id }}
+        HOST_CAPTURE_DIGEST: ${{ steps.planner_host_capture.outputs.artifact-digest }}
+        ARM_CAPTURE_ID: ${{ steps.planner_arm_capture.outputs.artifact-id }}
+        ARM_CAPTURE_DIGEST: ${{ steps.planner_arm_capture.outputs.artifact-digest }}
+      run: |
+        set +x
+        set +o posix
+        set -euo pipefail
+        set -C
+        umask 077
+        report=$CAPACITY_REPORT
+        uid=$(/usr/bin/id -u)
+        [[ $report == "$RUNNER_TEMP"/python-rust-523-capacity.?????? ]]
+        test -d "$report" && test ! -L "$report"
+        test "$(/usr/bin/realpath -e -- "$report")" = "$report"
+        test "$(/usr/bin/stat -c '%d:%i:%u:%f' -- "$report")" = "$PLANNER_IPC_REPORT_IDENTITY"
+        test "$(/usr/bin/stat -c '%u:%a' -- "$report")" = "$uid:700"
+        test -f "$report/owner" && test ! -L "$report/owner"
+        test "$(/usr/bin/stat -c '%u:%a' -- "$report/owner")" = "$uid:600"
+        test "$(cat "$report/owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        for leaf in payload provenance roundtrip; do
+          test -d "$report/$leaf" && test ! -L "$report/$leaf"
+          test "$(/usr/bin/realpath -e -- "$report/$leaf")" = "$report/$leaf"
+          test "$(/usr/bin/stat -c '%u:%a' -- "$report/$leaf")" = "$uid:700"
+        done
+        plan_sha=29b13c7e8da80fe11ccdbd151d5f86ca90c20f0f6f1fe303f861bc843a012742
+        printf '%s  %s\n' "$plan_sha" "$report/provenance/origins.psv" | /usr/bin/sha256sum --check --strict -
+        [[ $HOST_CAPTURE_ID =~ ^[1-9][0-9]{0,18}$ && $ARM_CAPTURE_ID =~ ^[1-9][0-9]{0,18}$ && $HOST_CAPTURE_ID != "$ARM_CAPTURE_ID" ]]
+        api=https://api.github.com/repos/bin9208/openpilot-rust
+        run_created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/preservation-run.json")" +%s)
+        while IFS='|' read -r role kind original run bytes digest name members; do
+          [[ $kind == capture ]] || continue
+          if [[ $role == host-capture ]]; then artifact=$HOST_CAPTURE_ID; action_digest=$HOST_CAPTURE_DIGEST;
+          else test "$role" = arm-capture; artifact=$ARM_CAPTURE_ID; action_digest=$ARM_CAPTURE_DIGEST; fi
+          test "$action_digest" = "$digest"
+          payload=$report/payload/planner-ipc-aa79-$role-$original.zip
+          test -f "$payload" && test ! -L "$payload"
+          test "$(/usr/bin/stat -c '%d:%i:%u:%f:%s:%Y:%Z' -- "$payload")" = "$(cat "$report/provenance/$role.identity")"
+          printf '%s  %s\n' "$digest" "$payload" | /usr/bin/sha256sum --check --strict -
+          (
+            ulimit -f 1024
+            exec {fd}>"$report/provenance/$role-preserved-api.json"
+            status=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+              --connect-timeout 10 --max-time 30 --max-filesize 1048576 \
+              --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' \
+              --output "/dev/fd/$fd" --write-out '%{http_code}' "$api/actions/artifacts/$artifact")
+            test "$status" = 200
+          )
+          /usr/bin/jq -e --arg id "$artifact" --arg name "planner-ipc-aa79-$role-$original.zip" --argjson bytes "$bytes" \
+            --arg digest "sha256:$digest" --arg run "$GITHUB_RUN_ID" --arg source "$GITHUB_SHA" '
+            (.id|tostring)==$id and .name==$name and .size_in_bytes==$bytes and .digest==$digest and .expired==false and
+            (.workflow_run.id|tostring)==$run and .workflow_run.head_sha==$source and
+            .workflow_run.repository_id==1395501963 and .workflow_run.head_repository_id==1395501963
+          ' "$report/provenance/$role-preserved-api.json" > /dev/null
+          created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/$role-preserved-api.json")" +%s)
+          expires=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .expires_at "$report/provenance/$role-preserved-api.json")" +%s)
+          ((run_created <= created && expires >= run_created + 90 * 86400 && expires <= run_created + 90 * 86400 + 600))
+          redirect=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+            --connect-timeout 10 --max-time 30 --header "Authorization: Bearer $GH_TOKEN" \
+            --output /dev/null --write-out '%{http_code}\n%{redirect_url}' "$api/actions/artifacts/$artifact/zip")
+          [[ $redirect == $'302\nhttps://'* ]]
+          url=${redirect#*$'\n'}
+          [[ $url != *$'\n'* && $url != *$'\r'* ]]
+          (
+            ulimit -f 2048
+            exec {fd}>"$report/roundtrip/$role.zip"
+            /usr/bin/timeout --signal=TERM --kill-after=5s 120s \
+              /usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+              --connect-timeout 10 --max-time 110 --max-filesize "$bytes" "$url" |
+              /usr/bin/head -c "$((bytes+1))" >&"$fd"
+          )
+          test -f "$report/roundtrip/$role.zip" && test ! -L "$report/roundtrip/$role.zip"
+          test "$(/usr/bin/stat -c '%u:%a:%s' -- "$report/roundtrip/$role.zip")" = "$uid:600:$bytes"
+          printf '%s  %s\n' "$digest" "$report/roundtrip/$role.zip" | /usr/bin/sha256sum --check --strict -
+          /usr/bin/jq -n --arg role "$role" --arg original "$original" --arg id "$artifact" --arg digest "$digest" \
+            --argjson bytes "$bytes" --arg source "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" '{
+              status:"ROUNDTRIP_VERIFIED", role:$role, original_artifact_id:$original,
+              artifact_id:$id, sha256:$digest, bytes:$bytes, source_commit:$source, run_id:$run,
+              requested_retention_days:90, endpoint:"/zip", unwrapped:false, original_bytes_equal:true
+            }' > "$report/provenance/$role-roundtrip.json"
+        done < "$report/provenance/origins.psv"
+        printf 'roundtrip_verified=true\n' >> "$GITHUB_OUTPUT"
+    - name: Preserve Planner original and readback provenance separately
+      id: planner_witness_proof
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CAPACITY_OPERATION == 'preserve-planner-ipc-witnesses' && steps.planner_witness_auth.outcome == 'success') }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: planner-ipc-witness-provenance-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CAPACITY_REPORT }}/provenance
+        retention-days: 90
+        if-no-files-found: error
+        overwrite: false
+    - name: Authenticate Planner upload receipts and clean only the owned report
+      id: planner_witness_complete
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (env.CAPACITY_OPERATION == 'preserve-planner-ipc-witnesses' && steps.planner_witness_roundtrip.outcome == 'success' && steps.planner_witness_roundtrip.outputs.roundtrip_verified == 'true' && steps.planner_witness_proof.outcome == 'success') }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        HOST_CAPTURE_ID: ${{ steps.planner_host_capture.outputs.artifact-id }}
+        HOST_CAPTURE_DIGEST: ${{ steps.planner_host_capture.outputs.artifact-digest }}
+        ARM_CAPTURE_ID: ${{ steps.planner_arm_capture.outputs.artifact-id }}
+        ARM_CAPTURE_DIGEST: ${{ steps.planner_arm_capture.outputs.artifact-digest }}
+        PLANNER_PROOF_ID: ${{ steps.planner_witness_proof.outputs.artifact-id }}
+        PLANNER_PROOF_DIGEST: ${{ steps.planner_witness_proof.outputs.artifact-digest }}
+      run: |
+        set +x
+        set +o posix
+        set -euo pipefail
+        set -C
+        umask 077
+        report=$CAPACITY_REPORT
+        uid=$(/usr/bin/id -u)
+        [[ $report == "$RUNNER_TEMP"/python-rust-523-capacity.?????? ]]
+        test -d "$report" && test ! -L "$report"
+        test "$(/usr/bin/realpath -e -- "$report")" = "$report"
+        test "$(/usr/bin/stat -c '%d:%i:%u:%f' -- "$report")" = "$PLANNER_IPC_REPORT_IDENTITY"
+        test "$(/usr/bin/stat -c '%u:%a' -- "$report")" = "$uid:700"
+        test -f "$report/owner" && test ! -L "$report/owner"
+        test "$(/usr/bin/stat -c '%u:%a' -- "$report/owner")" = "$uid:600"
+        test "$(cat "$report/owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        for leaf in payload provenance roundtrip; do
+          test -d "$report/$leaf" && test ! -L "$report/$leaf"
+          test "$(/usr/bin/realpath -e -- "$report/$leaf")" = "$report/$leaf"
+          test "$(/usr/bin/stat -c '%u:%a' -- "$report/$leaf")" = "$uid:700"
+        done
+        [[ $HOST_CAPTURE_ID =~ ^[1-9][0-9]{0,18}$ && $ARM_CAPTURE_ID =~ ^[1-9][0-9]{0,18}$ && $PLANNER_PROOF_ID =~ ^[1-9][0-9]{0,18}$ ]]
+        [[ $HOST_CAPTURE_ID != "$ARM_CAPTURE_ID" && $PLANNER_PROOF_ID != "$HOST_CAPTURE_ID" && $PLANNER_PROOF_ID != "$ARM_CAPTURE_ID" && $PLANNER_PROOF_DIGEST =~ ^[0-9a-f]{64}$ ]]
+        plan_sha=29b13c7e8da80fe11ccdbd151d5f86ca90c20f0f6f1fe303f861bc843a012742
+        printf '%s  %s\n' "$plan_sha" "$report/provenance/origins.psv" | /usr/bin/sha256sum --check --strict -
+        api=https://api.github.com/repos/bin9208/openpilot-rust
+        run_created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/provenance/preservation-run.json")" +%s)
+        for role in host-capture arm-capture proof; do
+          if [[ $role == proof ]]; then
+            artifact=$PLANNER_PROOF_ID; digest=$PLANNER_PROOF_DIGEST
+            name=planner-ipc-witness-provenance-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT
+          else
+            row=$(/usr/bin/awk -F '|' -v role="$role" '$1==role {print}' "$report/provenance/origins.psv")
+            IFS='|' read -r label kind original run bytes digest original_name members <<< "$row"
+            if [[ $role == host-capture ]]; then artifact=$HOST_CAPTURE_ID; action_digest=$HOST_CAPTURE_DIGEST;
+            else artifact=$ARM_CAPTURE_ID; action_digest=$ARM_CAPTURE_DIGEST; fi
+            test "$action_digest" = "$digest"
+            name=planner-ipc-aa79-$role-$original.zip
+            /usr/bin/jq -e --arg id "$artifact" --arg source "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" --arg digest "$digest" \
+              --arg original "$original" --arg role "$role" --argjson bytes "$bytes" '
+              .status=="ROUNDTRIP_VERIFIED" and .artifact_id==$id and .source_commit==$source and
+              .run_id==$run and .sha256==$digest and .unwrapped==false and .original_bytes_equal==true and
+              .original_artifact_id==$original and .role==$role and .bytes==$bytes and
+              .requested_retention_days==90 and .endpoint=="/zip"
+            ' "$report/provenance/$role-roundtrip.json" > /dev/null
+            payload=$report/payload/$name
+            test -f "$payload" && test ! -L "$payload"
+            test "$(/usr/bin/stat -c '%d:%i:%u:%f:%s:%Y:%Z' -- "$payload")" = "$(cat "$report/provenance/$role.identity")"
+            test -f "$report/roundtrip/$role.zip" && test ! -L "$report/roundtrip/$role.zip"
+            test "$(/usr/bin/stat -c '%u:%a:%s' -- "$report/roundtrip/$role.zip")" = "$uid:600:$bytes"
+            printf '%s  %s\n' "$digest" "$payload" "$digest" "$report/roundtrip/$role.zip" | /usr/bin/sha256sum --check --strict -
+          fi
+          (
+            ulimit -f 1024
+            exec {fd}>"$report/roundtrip/$role-upload.json"
+            status=$(/usr/bin/curl --disable --silent --show-error --fail --proto '=https' \
+              --connect-timeout 10 --max-time 30 --max-filesize 1048576 \
+              --header "Authorization: Bearer $GH_TOKEN" --header 'Accept: application/vnd.github+json' \
+              --output "/dev/fd/$fd" --write-out '%{http_code}' "$api/actions/artifacts/$artifact")
+            test "$status" = 200
+          )
+          /usr/bin/jq -e --arg id "$artifact" --arg name "$name" --arg digest "sha256:$digest" --arg run "$GITHUB_RUN_ID" --arg source "$GITHUB_SHA" '
+            (.id|tostring)==$id and .name==$name and .digest==$digest and .expired==false and
+            (.workflow_run.id|tostring)==$run and .workflow_run.head_sha==$source and
+            .workflow_run.repository_id==1395501963 and .workflow_run.head_repository_id==1395501963
+          ' "$report/roundtrip/$role-upload.json" > /dev/null
+          actual=$(/usr/bin/jq -er .size_in_bytes "$report/roundtrip/$role-upload.json")
+          [[ $actual =~ ^[0-9]+$ ]]
+          if [[ $role == proof ]]; then ((actual > 0 && actual <= 16 * 1024 * 1024)); else test "$actual" = "$bytes"; fi
+          created=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .created_at "$report/roundtrip/$role-upload.json")" +%s)
+          expires=$(/usr/bin/date -u -d "$(/usr/bin/jq -er .expires_at "$report/roundtrip/$role-upload.json")" +%s)
+          ((run_created <= created && expires >= run_created + 90 * 86400 && expires <= run_created + 90 * 86400 + 600))
+        done
+        completion=$(/usr/bin/jq -n --arg source "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" \
+          --arg host "$HOST_CAPTURE_ID" --arg arm "$ARM_CAPTURE_ID" --arg proof "$PLANNER_PROOF_ID" --arg proof_digest "$PLANNER_PROOF_DIGEST" '{
+            status:"PLANNER_CAPTURE_PRESERVATION_VERIFIED", source_commit:$source, run_id:$run,
+            host_capture_artifact_id:$host, arm_capture_artifact_id:$arm, proof_artifact_id:$proof,
+            proof_sha256:$proof_digest, requested_retention_days:90, original_bytes_equal:true,
+            functional_metadata_only:2, functional_raw_downloads:0, functional_raw_uploads:0,
+            consumer_binding_changed:false
+          }')
+        test "$(/usr/bin/stat -c '%d:%i:%u:%f' -- "$report")" = "$PLANNER_IPC_REPORT_IDENTITY"
+        test "$(cat "$report/owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        rm -rf --one-file-system -- "$report"
+        printf '%s\n' "$completion"
+        printf '```json\n%s\n```\n' "$completion" >> "$GITHUB_STEP_SUMMARY"
+        printf 'preservation_verified=true\n' >> "$GITHUB_OUTPUT"
 'on':
   push:
     branches:
@@ -485,10 +849,11 @@ jobs:
   workflow_dispatch:
     inputs:
       operation:
-        description: 기존 용량 조사 또는 인증된 고정 driver476 증거 보존
+        description: 기존 용량 조사 또는 고정 driver476·Planner IPC 증거 보존
         type: choice
         required: true
         default: inventory
         options:
         - inventory
         - preserve-driver476-witness
+        - preserve-planner-ipc-witnesses

@@ -344,3 +344,18 @@ pending으로 등록했다. 추가 원장 **164 =32 replaced-local /128 pending 
 새 helper 전용 진입점과 workflow의 Python 의존성을 각각 pending으로 추가했다.
 추가 원장 **166 =32 replaced-local /130 pending /1 native-existing /2 non-executing-text /1 removed**다.
 기준3580의300/3/3277 및 routing3306의26/3/3277은 유지한다.
+
+
+## 2026-10-26 원본 출력·writer 고립·이미지 댓글 증거 후속 후보
+
+source47fb HOST/ARM의 실제 IPC121×4/native160·기존12/ASan3와 source/SDK/same-ELF 봉인을
+감사했다. 새 native reader는 원래 receipt4/raw484를 직접 인증·decode하고 같은 mode/epoch의
+현재 출력과 비교하도록 연결했다. 새 stager 추출과 actual Actions 수용은 대기다.
+sourceec43598의 driver transport-only 인증은 실제 성공했으며 원본 provenance·258CRC·held17/
+source/index·child6·업로드/소유 정리를 확인했다. 모델 수용이나 Python 퇴역은 아니다.
+
+별도 writer D는 원래90개 image를 고정하고 한 writer의 rename-only/guarded 두 후보를 비교하는
+진단이다. 원본 모델 실행0·새 tap0과 **원본 Python compiler2회**를 구분해 추가 pending 경계로
+등록했다. #513의 original fake-HTTP probe와 별도 CI 진입점도 각각 pending이다.
+현재 추가 원장은 **169 =32 replaced-local /133 pending /1 native-existing /2 non-executing-text
+/1 removed**이며 기준3580의300/3/3277은 유지한다. 새 결과를 미리 수용하지 않는다.

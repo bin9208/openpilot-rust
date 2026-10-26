@@ -25,10 +25,12 @@ pub mod decode;
 pub mod frame_loop;
 #[cfg(test)]
 mod observed_tests;
+pub mod outputs;
 mod peer;
 use corpus::{Capture, Corpus, RawFile};
 use decode::Record;
 use frame_loop::{drive40, FrameEvents};
+use outputs::OriginalOutputs;
 use peer::Peer;
 
 const OUTPUTS: [&str; 3] = ["longitudinalPlan", "lateralPlan", "driverAssistance"];
@@ -565,6 +567,7 @@ pub fn run(options: &Options) -> Result<Value> {
         &options.corpus_audit,
         &options.corpus_audit_sha256,
     )?;
+    let original_outputs = OriginalOutputs::open(&options.corpus, &capture)?;
     let identities = [
         options.binary.clone(),
         options.binding.clone(),
@@ -575,9 +578,10 @@ pub fn run(options: &Options) -> Result<Value> {
     .map(|path| Ok((text(path)?, digest(path)?)))
     .collect::<Result<BTreeMap<_, _>>>()?;
     capture.verify_schema(&options.root)?;
-    let work = run_authenticated(options, &capture, &identities);
+    let work = run_authenticated(options, &capture, &original_outputs, &identities);
     // 역사 원문과 현재 실행물의 별도 봉인을 성공/실패 어느 반환 전에도 재검사한다.
     capture.verify()?;
+    original_outputs.verify()?;
     capture.verify_schema(&options.root)?;
     for (path, expected) in &identities {
         if digest(Path::new(path))? != *expected {
@@ -590,6 +594,7 @@ pub fn run(options: &Options) -> Result<Value> {
 fn run_authenticated(
     options: &Options,
     capture: &Capture,
+    original_outputs: &OriginalOutputs,
     identities: &BTreeMap<String, String>,
 ) -> Result<Value> {
     if options.scheduler.canonicalize()? != std::env::current_exe()?.canonicalize()? {
@@ -647,6 +652,7 @@ fn run_authenticated(
     let deadline = Instant::now() + options.timeout;
     let (peer_binary, mut proof) = build_peer(options, deadline)?;
     proof["original_cpp_binding"] = json!({"path":options.original_ipc_binding,"sha256":digest(&options.original_ipc_binding)?});
+    proof["independent_original_outputs"] = original_outputs.provenance();
     proof["input_corpus"] = json!({
         "audit_sha256": capture.audit_sha256(),
         "external_audit": capture.audit(),
@@ -677,6 +683,7 @@ fn run_authenticated(
         }
     }
     let comparisons=results.iter().enumerate().skip(1).map(|(index,records)|json!({"run":index,"differences":decode::differences(&results[0],records)})).collect::<Vec<_>>();
+    let original_comparison = original_outputs.compare(&results)?;
     let receipt = json!({"identities":&identities,"runs":&summaries,"comparisons":&comparisons});
     for (name, expected) in proof["source_sha256"]
         .as_object()
@@ -704,8 +711,13 @@ fn run_authenticated(
         return Err("C++ peer changed during IPC run".into());
     }
     capture.verify()?;
+    original_outputs.verify()?;
     scheduler::verify_evidence(&options.evidence, 160)?;
     write_json(&options.output.join("receipt.json"), &receipt)?;
+    write_json(
+        &options.output.join("original-output-comparison.json"),
+        &original_comparison,
+    )?;
     if comparisons.iter().any(|row| {
         row["differences"]
             .as_array()
@@ -727,6 +739,9 @@ fn run_authenticated(
         if row["fast_overlays"].as_u64().unwrap_or(0) == 0 {
             return Err("missing trigger or overlay coverage".into());
         }
+    }
+    if original_comparison["passed"] != true {
+        return Err("Planner IPC differs from authenticated original 121x4 outputs".into());
     }
     Ok(receipt)
 }

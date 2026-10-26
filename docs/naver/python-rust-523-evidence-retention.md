@@ -544,3 +544,100 @@ AST, 기존 body/원본 상수/모델 구간 byte 대조와 diff뿐이다. 공�
 | `tools/ci/driver_retained_program_476.py` | `89c48139534f8f2566de73aee20a46403ae3b0be1b2f95674d88dad6d9f4f4fd` |
 | `.github/workflows/python-rust-523-driver-retained.yml` | `44540f73dd48989075043a8880d023fafc87ac3d9a8da4d322aecd5c60039e3c` |
 | `.github/workflows/python-rust-523-driver-transport.yml` | `21c5676f9fc2ac2f4822047b1ea4d3dd2fea1031753f799805db29d62a96d1bb` |
+
+## sourceec43598 transport-only actual 감사 완료 — 2026-10-26
+
+부모는 `ec43598c9900eae3e3d7ee28428659aba6f7e63c`에 helper/두 WF와 최종 helper pin을
+게시했다. 부모 인계상 Focus354·추가 edge166 등록도 완료됐다. 본 감사에서는 해당 원장이나
+source/CI를 수정하지 않고 이 절만 append했다.
+
+[run40248425907/job121334855271](https://github.com/bin9208/openpilot-rust/actions/runs/40248425907/job/121334855271)은
+attempt1/push/sourceec43598, 실제 GitHub-hosted ubuntu-24.04/X64 runner1000029782에서
+completed/SUCCESS다. job 시작00:15:05Z, 완료00:15:41Z이며 인증 step7은00:15:23–00:15:32Z에
+SUCCESS다. source/index after·독립 FD/child verifier·upload·source cleanup·job-temp cleanup도
+각각 SUCCESS다. 원문 model/SDK/Cargo를 실행하는 step은 없다.
+
+### 새 validation artifact와 원문 운송 분리
+
+| 항목 | 실제 값 |
+| --- | --- |
+| validation artifact | `12619771888` / `driver476-transport-only-40248425907-1` |
+| ZIP bytes / SHA256 | 2,480,516 / `901b2a218441ed53b9f805c23f26b8975dd99e15cea055cbce631b25a11cd55a` |
+| inert ZIP 감사 | 32 safe/unique/regular/no-encryption member, expanded14,864,886B, CRC 정상 |
+| job 원문 log | 56,239B / SHA `d5388aa5d3652c8896f0fb2a636d457f97f39cabffdcdb4c70d40cdbd2c7722a` |
+| 인증 receipt | 33,941B / SHA `2b5ba7ec22cdbaeedb29aed9094925e49d46175690c097f53a60fb4d262b54a0` |
+
+이번 로컬 다운로드는 위 **새 validation ZIP과 job log뿐**이다. 원래 carrier payload/proof
+두 ZIP은 다시 받지 않았다. 비교에 필요한 기존 cached proof의 origin/run/roundtrip JSON만
+inert하게 읽었다. cache는 `.analysis/scratch/2026-10-25-523-completion/ci/12619771888.zip`과
+`40248425907-job121334855271.log`다. ZIP을 풀거나 내부 source/프로그램을 실행하지 않았다.
+
+validation에는 원문 carrier/proof ZIP member가0개다. 두 download command의 stdout/stderr도
+모두0B로, archive가 command log를 통해 재업로드되지 않았다. 관측 metadata와 새 receipt,
+source/FD/children 증거만 있다.
+
+### 실제 API·원본 metadata·held bytes 결합
+
+원문 API JSON은 command stdout과 frozen metadata 파일 간 byte 동일하다. payload12617590637과
+proof12618005602 모두 같은 preservation run40241602401/source972468/repository IDs1395501963,
+각각20,550,808B/원문 SHA와9,261B/proof SHA, expired=false를 기록한다. 현재 run API는
+completed/success/attempt1이고, expires_at은 양쪽 모두 `2027-01-23T22:44:30Z`다.
+실제 run-anchor 보존 길이는 양쪽 모두7,776,001초(90일+1초)로 승인된 window에 든다.
+
+다음은 새 인증 receipt와 held FD record를 독립적으로 대조한 값이다.
+
+- payload:20,550,808B / `a318335767594bfe8bcd08878f15e4f6a03bb0d8d13541d56f3b83243b19f461`.
+- proof:9,261B / `f8d72c81b3bdb266e1e98b6d04fbfe242a9db62213c1e4a15ef727bfa337ff57`.
+- 두 파일 모두 regular/nlink1이며 새 인증 receipt 자체의 held SHA도 업로드 원문과 일치한다.
+- `whole_zip_verified=true`, `all258_CRC_verified=true`, `original_objects=90`,
+  `original_metadata_unchanged=true`다. 이 전체 원문 ZIP CRC 실행은 GHA에서 수행됐다.
+
+receipt의 origin_witness는 원래12393290469/run39700512883/workflow0e522/checkout a298/
+bytes/SHA/bundle 그대로다. origin_artifact/origin_run/preservation_roundtrip 값은 기존 cached
+고정 proof JSON과 정확히 같다. proof의 preservation-run은 여전히 in_progress/null 원문이며
+current completed/success를 덮어쓰지 않았다. 즉 원본41B source metadata와 역사 record를
+source972나 현재sourceec로 승격하지 않았다.
+
+### source·FD·children·자원·최종 outcome
+
+index-before/after1,178,723B는 byte 동일하고 historical sourceec tree19,615개 entry와 일치한다.
+source-before/after digest 파일도 동일하다. tracked-source FD/stat/hash snapshot은 root 포함
+19,616행/각6,216,608B이며 전후 **원문 bytes 동일**이다. critical source의 snapshot SHA는
+sourceec Git blob과 각각 일치한다.
+
+| source | 실제 SHA256 |
+| --- | --- |
+| helper | `89c48139534f8f2566de73aee20a46403ae3b0be1b2f95674d88dad6d9f4f4fd` |
+| common controller | `8a5da6caaf97dc00a0672e271130e0ce0ead8c055bee9883f7e503b9904b85a7` |
+| transport WF (부모 pin 결합 후) | `b25b607e92cd8fb0152e2fbc410bfbd72bdd0698d0feb07c89137ba7c252ea8d` |
+| driver WF (부모 pin 결합 후) | `bc93829f01f6f09adc841cd304955347b2d416465fcfc994b817dba235d114c9` |
+
+held FD record17개, `source_fd_seals_passed=true`, `all_owned_children_reaped=true`다.
+실제 command는 source-head, current preservation run API, payload/proof API, 두 `/zip`
+download의6개뿐이며 모두 exit0/빈 stderr다. child journal12행은6개 observed PID/start와
+6개 reaped PID/start가 정확히 짝을 이루고 returncode도 모두0이다. 모델/원본/컴파일러/
+Cargo/SDK 설치·실행 command는 없으며 SDK 전체 봉인이나 DSO 전체 closure를 주장하지 않는다.
+
+preflight는 source/job 동일 device66305에서 available91,728,310,272B를 확인하고 source2GiB+
+transport128MiB+reserve16MiB를 합산했다. source 사후 allocated1,194,967,040B는2GiB 이하다.
+transport 사후 기록은 allocated35,540,992B/apparent35,425,290B로128MiB cap 이하다.
+이는 기록 시점의 disk 자료이며 RSS나 실행 전체 peak 실측으로 확대하지 않는다.
+
+outcome은 `scope=transport-only-no-model-no-sdk`, `transport_only=true`,
+`transport_authenticated=true`, `error=null`, `finalizer_failures=[]`다.
+models/original/compiler/Cargo/reuploaded_archives는 모두0,
+full_six_source_acceptance=false/retirement_credit0을 유지한다. 독립 verifier는 실제
+AUTH_OUTCOME=success와 이 outcome/receipt held SHA를 확인한 뒤 SUCCESS다.
+
+upload ID/digest가 원문 log/API/다운로드 ZIP SHA와 일치하고, 뒤의 두 cleanup step이 성공했다.
+회수 대상은 확인한 `.ci296-source-40248425907-1.*` owner root와 `/tmp/openpilot-ci.HiK6hT`뿐이다.
+다른 host/cache를 재조사하거나 전체 FS의 부재를 별도 입증한 것은 아니다.
+
+따라서 **새 data-only transport의 실제 API/원문 bytes·provenance/CRC/source·FD·child/
+disk/upload/owned cleanup 경계는 sourceec에서 수용 가능**하다. 별도 driver full 진단의
+fresh-failure/44+warp1/ABI/ISA/수치 성공이나 #476 repair/fullsix/file credit는 아니다.
+
+full retained run40248425959/job121334855336은 이번에 phase API만 한 번 읽었다. 당시 qualify
+step12가 in_progress이며 first_failed는 없었다. 그 원본 log/artifact·fresh/retained 분기는
+감사하지 않았다. genuine ef attempt2는 부모가 이미 감사한 결과로 유지하며 재다운로드/감사0이다.
+이번 작업에서 source/CI 수정·stage/commit/push·dispatch/cancel/rerun·프로젝트/원본/모델 실행은0이다.

@@ -31,7 +31,7 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
       PYTHONDONTWRITEBYTECODE: '1'
-      MODEL482_HELPER_SHA256: 379507cb2fc7b9d6c35c83f9851f9b541acad86a9d0085e8bb95cf71e03dfd24
+      MODEL482_HELPER_SHA256: de8c8946d13e0e555f542f0939a32474efa655d8bd5a16dfc19ad240fa16cfc2
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
       shell: bash

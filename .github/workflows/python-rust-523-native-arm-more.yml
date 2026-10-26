@@ -255,7 +255,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         set -euo pipefail
-        printf '%s  %s\n' 6ffd6376165474048e225241499a9284cc8e7dc227ab8cdbbb340ed45bd588bb "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh" | sha256sum --check --strict -
+        printf '%s  %s\n' 578ec6f73765ca4293174eeb7eb2a5df99a9af6ff726f262c7aa3f17f65c97bf "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh" | sha256sum --check --strict -
         /usr/bin/bash "$CI296_SOURCE/tools/ci/stage_planner_ipc_original_523.sh"
     - name: Compare all four source and Rust native Planner IPC runs
       id: planner_ipc_native

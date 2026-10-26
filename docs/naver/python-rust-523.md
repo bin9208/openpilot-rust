@@ -1586,3 +1586,22 @@ original-prefix 원문·실행물·source/index·전체 host+ARM SDK 후봉인�
 helper의 기존11개 function/class body와 원래 RETAINED_OBJECTS/bridge bytes는 유지한다.
 새 운송 인증의 실제 성공·#476 수치 수용은 대기다. 이 Python 진입점2개를 숨기지 않고 추가 원장에
 pending으로 더해 현재 **166=32교체/130대기/1기존native/2비실행/1제거**다.
+
+
+## 2026-10-26 IPC 실제 감사와 다음 고립 비교
+
+source47fb의 HOST/ARM에서 native4/strict Clippy/stager/four-run과 기존12·HOST ASan3가
+실제 성공했고, 각121개 출력이 기존 aa79 source-0 baseline과 bit 동일함을 감사했다.
+새160행과 source/SDK/same-ELF/소유 그룹 정리도 확인했다. 새 original-output reader는
+과거4개 case receipt와 raw484도 native에서 직접 읽고 각 현재 run과 비교하도록 등록했다.
+새 stager의 추가 추출·새 reader의 실제 수용은 다음 Actions 대상이다.
+
+sourceec43598의 [driver transport-only40248425907/job121334855271](https://github.com/bin9208/openpilot-rust/actions/runs/40248425907/job/121334855271)은
+실제 PASS다. payload/proof API·원본 불변·258CRC·held17·source/index19616·명령6/child6·
+업로드/cleanup을 확인했다. 별도 모델·Cargo·SDK 실행 및 carrier 재업로드는0이다.
+
+다음 writer D는 같은 원본 compiler context의 두 fresh 입력만 바꾸며 원본90image·기존12출력·
+B sticky·default cached 거부를 유지한다. 원본 모델0과 원본 Python compiler2회를 명시적으로
+구분한다. #513도 pre-fix/current Python 각1회 fake HTTP 관측으로 남은 한 경계를 확인한다.
+이 임시 Python 경계3개를 추가해 현재 **169=32교체/133대기/1기존native/2비실행/1제거**다.
+기준300/3/3277·대단원 전체·필수 PR·전달/필요한 기기 수용은 아직 미완료다.

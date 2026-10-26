@@ -3,6 +3,8 @@
 mod cached_context;
 #[path = "diagnostic_482_pr1344.rs"]
 mod pr1344;
+#[path = "diagnostic_482_writer.rs"]
+mod writer_pair;
 use super::*;
 use crate::{cached_code, cached_isa};
 use serde::Deserialize;

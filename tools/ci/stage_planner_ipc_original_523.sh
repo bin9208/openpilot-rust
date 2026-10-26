@@ -10,7 +10,7 @@ umask 077
 [[ ${GITHUB_ACTIONS:-}:${GITHUB_REPOSITORY:-}:${RUNNER_OS:-} == true:bin9208/openpilot-rust:Linux ]]
 [[ ${GITHUB_SHA:-} =~ ^[0-9a-f]{40}$ && ${GITHUB_RUN_ID:-} =~ ^[1-9][0-9]*$ &&
    ${GITHUB_RUN_ATTEMPT:-} =~ ^[1-9][0-9]*$ && ${GITHUB_JOB:-} =~ ^[A-Za-z0-9_-]+$ ]]
-for tool in curl jq sha256sum unzip timeout stat realpath df head wc id find cat git uname awk; do
+for tool in curl jq sha256sum unzip timeout stat realpath df du head wc id find cat git uname awk; do
   test -x "/usr/bin/$tool"
 done
 token=${GITHUB_TOKEN:?GITHUB_TOKEN with actions:read is required}
@@ -19,11 +19,13 @@ arch=$(/usr/bin/uname -m)
 case "$arch:${RUNNER_ARCH:-}" in
   x86_64:X64)
     audit_sha=384bcef1bafc962019557d7b89ef5dac4c85ee2d1683906c1942458b04118e54
+    outputs_sha=525333b68bda155b622a2e315880bcf378b7425833760ea40a259545f7703b21
     receipt_name=rust-planner-local-x64-evidence
     capture_expanded=2022221
     ;;
   aarch64:ARM64)
     audit_sha=7dd3abad75e472a7241d16143b155dd3ad6e8bb826359bd0afedca1360689efc
+    outputs_sha=a28890f6f79eb24f0018d62ec21dae5d8c2228d6b7da0f62ce33ffab48e80c80
     receipt_name=rust-planner-hosted-arm64-evidence
     capture_expanded=2022235
     ;;
@@ -60,6 +62,13 @@ test "$(/usr/bin/realpath -e -- "$fixture")" = "$fixture"
 fixture_identity=$(/usr/bin/stat -c '%d:%i:%u:%f:%s:%Y:%Z' -- "$fixture")
 # 신뢰 시작점은 위 script literal이다. 현재 JSON의 계산값을 새 pin으로 사용하지 않는다.
 printf '%s  %s\n' "$audit_sha" "$fixture" | /usr/bin/sha256sum --check --strict -
+outputs_fixture=$source_dir/rust/crates/dev-tools/tests/fixtures/planner-ipc-original-outputs/$arch.json
+test -f "$outputs_fixture" && test ! -L "$outputs_fixture"
+test "$(/usr/bin/realpath -e -- "$outputs_fixture")" = "$outputs_fixture"
+outputs_bytes=$(/usr/bin/stat -c %s -- "$outputs_fixture")
+((outputs_bytes > 0 && outputs_bytes <= 1048576))
+outputs_identity=$(/usr/bin/stat -c '%d:%i:%u:%f:%s:%y:%z' -- "$outputs_fixture")
+printf '%s  %s\n' "$outputs_sha" "$outputs_fixture" | /usr/bin/sha256sum --check --strict -
 root=$job/planner-ipc-original
 proof=$job/proof/planner-ipc-stage
 test ! -e "$root" && test ! -L "$root"
@@ -128,6 +137,55 @@ printf '%s  %s\n' "$audit_sha" "$root/audit.json" | /usr/bin/sha256sum --check -
   .artifacts.receipt.archive == "receipt.zip" and .artifacts.receipt.extracted == "receipt" and
   .index.path == "planner-ipc-original-inputs/index.json"
 ' "$root/audit.json" > /dev/null
+phase=outputs-metadata
+(
+  ulimit -f 1024
+  /usr/bin/cat "$outputs_fixture" > "$proof/outputs-audit.json"
+)
+printf '%s  %s\n' "$outputs_sha" "$proof/outputs-audit.json" | /usr/bin/sha256sum --check --strict -
+# compile-in 원문과 같은 metadata만 사용한다. path는 고정 summary cohort에 결합한다.
+/usr/bin/jq -e --arg audit "$audit_sha" --argjson metadata_bytes "$outputs_bytes" \
+  --slurpfile input "$root/audit.json" '
+  def member:
+    type == "object" and (keys == ["bytes","path","sha256"]) and
+    (.bytes | type == "number") and .bytes > 0 and .bytes <= 1048576 and
+    ((.bytes | floor) == .bytes) and (.sha256 | type == "string") and
+    (.sha256 | length == 64 and test("^[0-9a-f]{64}$")) and (.path | type == "string") and
+    (.path | length > 0 and length <= 256) and
+    (.path | test("^[A-Za-z0-9._/-]+$")) and
+    all(.path | explode[]; . >= 33 and . <= 126) and
+    all(.path | split("/")[]; length > 0 and . != "." and . != "..");
+  $input[0] as $a |
+  ($a.receipt.path | rtrimstr("/receipt.json")) as $base |
+  (keys == ["input_audit_sha256","kind","receipt_artifact_id","runs","schema_version"]) and
+  .schema_version == 1 and .kind == "audited-original-planner-ipc-outputs" and
+  .input_audit_sha256 == $audit and .receipt_artifact_id == $a.artifacts.receipt.id and
+  ($a.receipt.path | test("^tmp/openpilot-ci\\.[A-Za-z0-9]{6}/planner-comparison/ipc/receipt\\.json$")) and
+  (.runs | type == "array" and length == 4) and
+  ([.runs[] | [.mode,.epoch]] == [["source",0],["source",1],["rust",0],["rust",1]]) and
+  all(.runs[];
+    ($base + "/" + .mode + "-" + (.epoch | tostring)) as $dir |
+    (keys == ["epoch","mode","publications","receipt"]) and
+    (.receipt | member) and .receipt.path == ($dir + "/receipt.json") and
+    (.publications | type == "array" and length == 121) and
+    all(.publications[]; member and
+      ((.path | split("/") | .[:-1] | join("/")) == $dir) and
+      (.path | split("/")[-1] | test("^[0-9]{4}-(longitudinalPlan|lateralPlan|driverAssistance)\\.bin$"))) and
+    ([.publications[].path | split("/")[-1] | split("-")[0] | tonumber] | sort) == [range(0;121)]) and
+  ([$a.receipt.path] + [.runs[] | (.receipt.path,.publications[].path)] | length == 489 and
+    (unique | length == 489)) and
+  ([$metadata_bytes,$a.receipt.bytes] + [.runs[] | (.receipt.bytes,.publications[].bytes)] | add) <= 8388608
+  ' "$proof/outputs-audit.json" > /dev/null
+(
+  ulimit -f 1024
+  /usr/bin/jq -r '.runs[] | (.receipt,.publications[]) | [.path,.bytes,.sha256] | @tsv' \
+    "$proof/outputs-audit.json" > "$proof/output-members.tsv"
+  /usr/bin/jq -r --slurpfile input "$root/audit.json" \
+    '$input[0].receipt.path, (.runs[] | (.receipt.path,.publications[].path))' \
+    "$proof/outputs-audit.json" > "$proof/receipt-members.txt"
+)
+test "$(/usr/bin/wc -l < "$proof/output-members.tsv")" -eq 488
+test "$(/usr/bin/wc -l < "$proof/receipt-members.txt")" -eq 489
 origin_run=$(/usr/bin/jq -er .origin_run_id "$root/audit.json")
 origin_source=$(/usr/bin/jq -er .source_commit "$root/audit.json")
 [[ $origin_run =~ ^[1-9][0-9]{0,18}$ ]]
@@ -199,18 +257,35 @@ verify_owner
 # 외부 pin→감사 JSON→exact ZIP SHA가 기존 safe unique path/regular-file/CRC 감사를 결합한다.
 # 일반 ZIP이나 전체 functional archive를 풀지 않는다. 생성한 private root만 사용한다.
 receipt_member=$(/usr/bin/jq -er .receipt.path "$root/audit.json")
-[[ $receipt_member == tmp/openpilot-ci.??????/planner-comparison/ipc/receipt.json ]]
+[[ $receipt_member =~ ^tmp/openpilot-ci\.[A-Za-z0-9]{6}/planner-comparison/ipc/receipt\.json$ ]]
 /usr/bin/timeout --signal=TERM --kill-after=5s 120s /usr/bin/unzip -q -n \
   "$root/capture.zip" 'planner-ipc-original-inputs/*' -d "$root/capture"
-/usr/bin/timeout --signal=TERM --kill-after=5s 30s /usr/bin/unzip -q -n \
-  "$root/receipt.zip" "$receipt_member" -d "$root/receipt"
+# ZIP 중앙 목록은 이미 정한 allowlist의 존재/중복만 검사한다. 경로를 추측하지 않는다.
+(
+  ulimit -f 16384
+  /usr/bin/timeout --signal=TERM --kill-after=5s 30s /usr/bin/unzip -Z -1 \
+    "$root/receipt.zip" > "$proof/receipt-zip-members.txt"
+)
+/usr/bin/awk 'NR==FNR {wanted[$0]=1; next} ($0 in wanted) {seen[$0]++}
+  END {for (name in wanted) if (seen[name] != 1) exit 1}' \
+  "$proof/receipt-members.txt" "$proof/receipt-zip-members.txt"
+mapfile -t receipt_members < "$proof/receipt-members.txt"
+test "${#receipt_members[@]}" -eq 489
+for member in "${receipt_members[@]}"; do
+  test ! -e "$root/receipt/$member" && test ! -L "$root/receipt/$member"
+done
+(
+  ulimit -f 1024
+  /usr/bin/timeout --signal=TERM --kill-after=5s 30s /usr/bin/unzip -q -n \
+    "$root/receipt.zip" "${receipt_members[@]}" -d "$root/receipt"
+)
 for dir in "$root/capture" "$root/receipt"; do owned_dir "$dir"; done
 bad=$(/usr/bin/find "$root/capture" "$root/receipt" -xdev \
   \( ! -uid "$uid" -o \( -type d ! -perm 0700 \) -o \( -type f ! -perm 0600 \) \
      -o \( ! -type f ! -type d \) \) -print -quit)
 test -z "$bad"
 test "$(/usr/bin/find "$root/capture" -xdev -type f -printf '.\n' | /usr/bin/wc -l)" = 2349
-test "$(/usr/bin/find "$root/receipt" -xdev -type f -printf '.\n' | /usr/bin/wc -l)" = 1
+test "$(/usr/bin/find "$root/receipt" -xdev -type f -printf '.\n' | /usr/bin/wc -l)" = 489
 actual_expanded=$(/usr/bin/find "$root/capture" -xdev -type f -printf '%s\n' | /usr/bin/awk '{n+=$1} END {print n}')
 test "$actual_expanded" = "$capture_expanded"
 phase=final-pins
@@ -233,16 +308,36 @@ for role in index receipt; do
   test "$(/usr/bin/stat -c '%u:%a:%s' -- "$file")" = "$uid:600:$bytes"
   printf '%s  %s\n' "$digest" "$file" | /usr/bin/sha256sum --check --strict -
 done
+while IFS=$'\t' read -r member bytes digest extra; do
+  [[ -z $extra && $bytes =~ ^[1-9][0-9]{0,6}$ && $digest =~ ^[0-9a-f]{64}$ ]] && ((bytes <= 1048576))
+  file=$root/receipt/$member
+  test -f "$file" && test ! -L "$file"
+  test "$(/usr/bin/realpath -e -- "$file")" = "$file"
+  test "$(/usr/bin/stat -c '%u:%a:%s:%h' -- "$file")" = "$uid:600:$bytes:1"
+  printf '%s  %s\n' "$digest" "$file" | /usr/bin/sha256sum --check --strict -
+done < "$proof/output-members.tsv"
 verify_owner
 test "$(/usr/bin/stat -c '%d:%i:%u:%f' -- "$source_dir")" = "$source_identity"
 test "$(/usr/bin/git --no-optional-locks -C "$source_dir" rev-parse HEAD)" = "$GITHUB_SHA"
 test "$(/usr/bin/stat -c '%d:%i:%u:%f:%s:%Y:%Z' -- "$fixture")" = "$fixture_identity"
 printf '%s  %s\n' "$audit_sha" "$fixture" "$audit_sha" "$root/audit.json" | /usr/bin/sha256sum --check --strict -
+test "$(/usr/bin/stat -c '%d:%i:%u:%f:%s:%y:%z' -- "$outputs_fixture")" = "$outputs_identity"
+printf '%s  %s\n' "$outputs_sha" "$outputs_fixture" "$outputs_sha" "$proof/outputs-audit.json" | /usr/bin/sha256sum --check --strict -
+# archive 두 개, 기존 inputs, 추가 outputs 및 proof까지 원래128MiB 범위 안에 둔다.
+for measure in allocated apparent; do
+  options=(-sx --block-size=1)
+  if [[ $measure == apparent ]]; then options+=(--apparent-size); fi
+  total=$(/usr/bin/timeout --signal=TERM --kill-after=5s 20s /usr/bin/du "${options[@]}" -- "$root" "$proof" |
+    /usr/bin/awk 'NF==2 && $1~/^[0-9]+$/ {n++;v+=$1} END {if(n!=2)exit 1;printf "%.0f\n",v}')
+  printf '%s\t%s\n' "$measure" "$total" >> "$proof/staging-growth.tsv"
+  ((total <= 128 * 1024 * 1024))
+done
 /usr/bin/jq -n --arg source "$GITHUB_SHA" --arg origin "$origin_source" --arg run "$origin_run" \
-  --arg owner "$owner" --arg arch "$arch" --arg audit "$audit_sha" --arg root "$root" '{
+  --arg owner "$owner" --arg arch "$arch" --arg audit "$audit_sha" --arg outputs "$outputs_sha" --arg root "$root" '{
     status:"STAGED_FOR_NATIVE_REVALIDATION", source_commit:$source, origin_source:$origin,
     origin_run:$run, owner:$owner, architecture:$arch, audit_sha256:$audit, root:$root,
-    capture_members:2349, receipt_members:1, original_execution:false,
+    capture_members:2349, receipt_members:489, output_case_receipts:4, output_publications:484,
+    outputs_audit_sha256:$outputs, original_execution:false,
     native_revalidation_required:true, full_ipc_acceptance:false
   }' > "$proof/status.json"
 phase=export

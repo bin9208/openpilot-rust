@@ -1,0 +1,2472 @@
+{
+  "schema_version": 1,
+  "kind": "audited-original-planner-ipc-outputs",
+  "input_audit_sha256": "7dd3abad75e472a7241d16143b155dd3ad6e8bb826359bd0afedca1360689efc",
+  "receipt_artifact_id": 12614614983,
+  "runs": [
+    {
+      "mode": "source",
+      "epoch": 0,
+      "receipt": {
+        "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/receipt.json",
+        "bytes": 452532,
+        "sha256": "5b6ad1ed9c7a273181ff14f6e9473560df39425a123bd0ffa1740d9270e6e0a6"
+      },
+      "publications": [
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0000-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "3056d8ac9c7d49ca10b7da585aaa0ad499266210883e106d5deb7a5879053392"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0001-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "9fbbae6f165c9162109fca866a29c40f5fc36821f7386d965ead3baaafa38928"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0002-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "12a67b9a7d03e069066f77a4470201a807c361d67b7c9ee5943f1f52f077c165"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0003-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "9548e7c014753ff54ad6ad756374dc61f19eb31bc7a1d3d21e598d5d1073b291"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0004-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "ee960446662bfa0f3f84f7e0fbd35875585f9b37a904c679afa0f74dc461dfa4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0005-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "37be748658b768a9756033dcaa148712663772c13c572cfbe1e0bb429cdde59a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0006-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "ebf44229586af5f906fa5215ed50b2c58aafd99b94ae8e440a788fdf159f52da"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0007-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "38674f4ebf6dec64a3ddb64fc0f4ec73ae51cc62812132231d1549ac220c4276"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0008-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "3eb29cc2149fd1a996579bdc2aec8614d9682311ad82be865dad525c001a9dfe"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0009-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "5931eb5d17855606dbdf39a0cd50a990eca4cfedaa6a857d7d8380cc165e5c72"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0010-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "64e6035bd7cba5e19225938ca1607fb524a7e06ba8aa943d39145f25b12f98b0"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0011-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "e5f23f5807bb4232a4a447e867114616f37db49290967c9e34ab4ad816961696"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0012-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "b4b42c8865898244302d1f6f90476780282c288a34ac34e018b6b0b2ecdc4352"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0013-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "83c509e221dbd7e2b852a61a4d22b7a1e738aa5d2c8fe438c0e47782eddde156"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0014-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "f45a91ae69b51d9e24f56cfafc4263b639276ca7e4def4386ae97e1ff774b21c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0015-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "9f1413c5e20738635e1bc12d404d416006d1b2a8a86522930ec00eecb7f06530"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0016-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "4816b1f97af81b35968e2402342b7ca1d3790e1cc7d458239e015ddfc5f4fee1"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0017-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "24fcacbed86e8fe1a0d05fcda4a74406073cdc8c139a2f70ab73215d0f5fe266"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0018-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "37a96dbe5e5cc3f1daa47d91b48aee0288bf10860045b6740cf8118aca1bd805"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0019-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "093e76d5293d41c5b63c630aabbf948b5f979d5a9381c26ef2fe657c2bd903b9"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0020-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "4b61cc4b5357fae144bccc6950beb1ae358a6045efea7608f91b6bbc552f23e1"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0021-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "de67fe8888a31a839551284995a7d57530b9a02011e915f257c2b9b213634dae"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0022-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "f4e066246344ff58b36323ada815f528d4aa449e5ff78842b2812bb3a6e2b451"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0023-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "3245b633b951b834bd85eb38c676019fea284bc62cc801c5b5d5146aab672650"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0024-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "429a4f61e7968f3b15149d7c3cc3f72db43963f9704209bf14ca894f9def1843"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0025-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "7f91ebad66da6409d2391b794a4b587c061008b2411690a901af669bc17dac98"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0026-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "85d2331efdc939cf105021966aa15e4833bcf6984a3fa31df0d2ac020782db3e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0027-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "d977ced80363d7a75ba3c49e4d50126f28d65685f62753291ad40f08362696f9"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0028-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "ad087eab77187232fd43fd4aa8ad3da5b90735df30536cda077d97ffe7bd1c63"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0029-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "7be951aa203552fe6e00e856bde3f13ea0ef4929f3c7a3c93541fb62e11efc9b"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0030-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "beafe254e973cd534a698563e5b45cee12fb0a6433cfd38a2876c8bc48acb9ea"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0031-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "102ba7dd7754eac7e221bb546cf41bf62e71e393a5bd3a10e1ca29e6a74a79d7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0032-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "70ac64cebc5d613c44273a54ad63ce8626caad75beeabcd5632f4036d2575184"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0033-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "08317c1fbec1e49cae1d304e35754b557d31f1d8396bd9c9538aff96b4e60b06"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0034-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "53bcebdb22553a7e7f34ec59173c6a56b280e317ab257f36df03578de29ef319"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0035-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "2e1ba874c5525fe5cbf9b6a79fa74d3b7092c2251555d9216e1808bd2f8d68c8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0036-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "6d00dd8ccc05413c04e1bc0a3c58ca9b58a408611faeea765a3d40af9e9d6c53"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0037-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "9c64fc9528df85fd7046dc258a28b0d1062f981b108183fe7af034e2f2499c02"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0038-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "48034d59309779e6d0dca140706e5cc71e15374ea00b8fe692a31953dd754fcb"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0039-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "665bd41fa22c6bc585efd5ddc7682b7fb031b6f7f77e7403ba5218728e326341"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0040-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "1bd3ab10e34fe1bb9a4752ec9ba22dd771f1c1356879b9ae79285f7aed204084"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0041-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "0b62aa95b89867e28dae0ea361422deece3f353957caaf3d3d5354294a861ba4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0042-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "aadc9ca107e5a1d66d08234935c4ec4b169a1dcc8511743d6092f935fde418ed"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0043-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "a14886ccf4dc7f1c3cc4e73240185d67aa57ce13ad9fedaa51465f6155a4a9a7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0044-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "006adb7a57fd6784aea9f2cca21e4e9708591d5c6998ada2e54213baa69389ad"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0045-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "81d7903f07939c6fba367d89b68168e9dcb32ea132352e8a04ec117c91da93e0"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0046-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "bffc0b51e6b26c707393a5f2324eb6866baa30e59e324462467936b2e43ba08e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0047-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "fb9f63ea2469a10bacfff41d838d0b74be1886910c4d4b52cb18145ffad590e4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0048-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "1bf96bda365f5e713b3d484a35708dce44063d0b7efaa06888da83fd29758201"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0049-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "da16abe5b329d8c3076415309675d1cf10aff92eb16f9c177f7b45f32709f919"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0050-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "390c4b67a469482e0cd32c063e258130129634a999351a40398359bb836aa7ee"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0051-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "9aeefcca2a4c919d9e0986c6bbb36fb6357ef4e57621d695395e7eac350b7928"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0052-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "63cf6017ed92b8a53974dfca06cf444cd4b449b872289ba3ef0d3aa8b675d664"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0053-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "7a031aeb4395255eb82daab53133155d6ac2e45e43e79eb91c60cda08d692de4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0054-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "194ef101b5ef4f5be53ce87318d9661add3ae1b2d1da76faa5942ce30c91f8c7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0055-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "a2b99071685482193a20fc45edb50bd853dd7e6b6f435b10fe8d1f26f896527a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0056-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "a883a948d5fb6f8f2f83c865c1ae2b918dc8864e23fea56bc762eecae765d87e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0057-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "9530d2e4a2d25bafe9889a11dab124175b65ab4b4efba6913832d4598ff2a8fe"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0058-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "4dd8ddb3d8497754f5e97116d7c41ff8b67005153f5cf90f217c9e96e4c30592"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0059-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "5055b66c61c96ec4334799d03ccef5c1b6463ed2620ea38c3f7fd8e20636f346"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0060-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "f9c7d6683780bb90b4562bc89dcf04d3bdf29055c863c593e6d19ed9296bd9c5"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0061-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "7920dcd42df3d385703230693ebcacca28dd1d682bb6c338dcb5da390ad38c52"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0062-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "ae5d3ffd747af99128fa29a1126c44ec99e25fd9ad914be6a3dc9449a2766aad"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0063-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "d5bb0e409456dcdc6f72d6a0d1a9a2cd53de83b41e594d5896ae4a71054ba354"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0064-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "49862d9c29a488fad2af4c0b2bcdc051d54e6f8f0fc3e165e1ef18b2141dd3fa"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0065-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "1d36d92926e12d49c63715542e152ac46c1780e9bfb8d9350d2b1449106add6c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0066-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "b92ea466e927d53dcf70fedf747a655911ac24ca8a1b4f0f6354d4865a5642ba"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0067-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "4eccf595fb16cb0c2d6d403252650309c2761597dcfcbad2959259f071e54844"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0068-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "9ac70e50b186bc1705009cab4b261397ceaab34a3210f224f5b4b05fa52653ac"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0069-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "b3bd3e03811baee6308832d59e5422c1bb25c8858584bde8599b072a1f9a60e8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0070-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "11aecb342e374923d822a2e6a1c3e63f061d901f911c8a0411a524d1d77c3284"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0071-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "0d04f79502b8cb6c3bf3217b6c0bd986df1fa0eec1eb4640e0ea2d600e3bcd9f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0072-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "9bf63171c48d22d971d3a1b8339da912a9b06a05e0fb830d7e8c7285f0d4f702"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0073-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "554276a8b4b79cde0b25b1fc1d4a7799cac9d69fa72fd65361339119d8277eaf"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0074-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "c7050b5e19272c1f980f2b7cc74a70307e79d986aeeb4cbc25ccbc2de37c1aa9"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0075-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "275dc593dacbe503cd35644135bc8d28f55b826fa27d68952522187c0951e672"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0076-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "7149de142b3351dad0f00b5b497a51d57f8deb395bcac623c635eff7b8bf67fc"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0077-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "85a7aea561a945ab3789ce4a8291981fb34edeb2fa1d75fa7a174441cd993c27"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0078-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "2961bdb52ce2c6fc37b7b30e325e060d1189dff5b4a156ca4924631c26add132"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0079-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "7eb37e1f267a7958a8b7743781ec469122b457382ed2d8e9e3bc116aed69f522"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0080-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "f78da6b5568cbff7e21b1c43a2dcf231d9750abb585b4c8de3b88069a9884ef6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0081-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "f3a5e0373c3a3e8e54c6cf27dd3192dd0bf9bef80ab7307a1ed6778d5d9ae997"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0082-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "d8dedd7345926811f44f965502802b75270854954dfc2e39b60d453f5955dbed"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0083-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "b797d2bfe2dbce2cded554df091a07790dd2f8942ba212d8e685c2f0c6cd6ad9"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0084-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "853d72ed3ae587ec5c22117fd0e9b1bfac358d269439a16222adf1a928b3eb57"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0085-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "c8deb814e06d84c01738294fecf989af692a5b4912502e6249383a114a852df4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0086-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "2beb00855c0ceb161b18da9930566678cb64b247fff04155194b2a6e70f1a245"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0087-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "e1468b2663099af1892adb08d91be3692949a0b72dde07afcfab27112d2f09ec"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0088-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "fcaee8aa610ef3da2549a03f438c7548a8a6f70cfaade32a0fd27d9a94ed40bc"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0089-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "6dae6d7a63b45c4fa0fe91e0bab77faae44e37a895bf458a5bb18502514a3aa2"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0090-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "84eeb0919d9b067696644efc5165a0fcd4be4f03e560dfa6e5907501c33b14ce"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0091-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "bdc49693e52dfba0d63a923271e2baf18cf39bc76ae56a39cf0568de2f928380"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0092-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "558a96bee9d68e09e84894472ccccbbf3c2e99580a1c95991e4e3882e187128b"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0093-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "ec51d647f4427505e0250152cf8a94b7b7fdb471d3ba0482d5b885b3a12f955e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0094-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "4b4b07106ec654947b799a37679afd02f43400fc0f5024ad81a8fddcebc0312f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0095-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "5323ad1225a91c312f383ea298a49bc511ac113dc6d4426b3a8bb0dfce5accea"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0096-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "e695d451d15fd2ac993ef17422b0785c0db53b1c0d5386e14970fa95ec663709"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0097-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "de5a55ca3df448a7408e2729d66977559d0934baae205b53a83868c60f966d46"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0098-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "5081669a503c65ede76c85c3510fe61bc1a599e937b424d5695bceeda3aa03cc"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0099-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "c686b9bd448eea7f07cad95d08862a284f2e9651e1bb5c0d78fda2708996d530"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0100-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "7bde3a5f01d5d26e07135c34093fa7c33e4e0847ff76e3da9ae699b0c725e1eb"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0101-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "c8099b2ceb289ab70a627a0c9ac677b9ce3bc7ac8649015f4d38261ced5d7b10"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0102-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "322929547983daab10bdeb18cce1e5aa57bf91896017b1ed00db7aa3dc7957ee"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0103-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "ea2480691264ba23b8b2fff9d21d21d36d240af0561c0111a38763553faf3554"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0104-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "5b67cf8404e603ac988c55d96de9e81b50d03798ff72a05461f94cbbf0e9a9ad"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0105-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "847f7b9f79ebaa17de76c23a88c146349ed6e06d7160ad4cdf0da3744d9479af"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0106-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "f54cd49659aafa2fe60e05911774eb0d570a67053a5ec01fc9ec19a3f88ba2e1"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0107-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "fa5c668478bdc24cf9e51461ff5b915ba8a339644015b1be38fbd86affc5b25a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0108-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "d47361e6dd95d0a097232db5a0bd2fd1c795ecfabb2a0a8d585e8a64aed906a7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0109-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "6ecbbb6ad85bf78f6f9ed203039c97644432d9501d452abacf4ca7a830169cdc"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0110-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "67c45d5cc3bd5500f83f1b945ffc0d107035f0be924d80a634972825407be858"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0111-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "87a363a67fbacb445b62c0c92a0e18664aa481cbf0438332b7f8d6732f89f100"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0112-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "cd2b39ce7c22f8274390368011aebcba743bb211290ef70325978dd58ea59866"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0113-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "a11ac83adc457231a0cf886884879291f1a69355e1017dd1433f3f7a7f12a493"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0114-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "73bc8d44eca0f8b693569004dfbe3e04154d73a23d7adea3e1bd57e72b7f3460"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0115-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "c457fe60ca71f26e3f9bc19ad9ebc05dc91277cbd8765c2c2b6d0502e5639b5d"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0116-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "dd56bc4209daf46cc077be4686d75f23f72b90824a1e81fd285201b1b7044fcc"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0117-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "b554bd20870a896b9a11e08b66af4b6582c5f03ce58f43174e895bb1947409c3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0118-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "73dae2e8c8cc5ecb8f58e1742a7acfb84fe3322e7160fcad0c0efbc2cbcd6d52"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0119-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "9e83de7cc3cb9b7299ac629c0df77a857c4ef9b406f91ca0c53ed4a45034482c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-0/0120-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "e9d7722669660f62302b4eda70cd94186effc9ef9f682ae9d0ae17dd552d06e7"
+        }
+      ]
+    },
+    {
+      "mode": "source",
+      "epoch": 1,
+      "receipt": {
+        "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/receipt.json",
+        "bytes": 452547,
+        "sha256": "3e99916f5adaacffd235744b3cfa9436e9cdc1066cf171da237ed3561f5d3548"
+      },
+      "publications": [
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0000-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "6ee534db23836f2960d2773896e4fd360564174610dcb4d600c7ce7817337aa4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0001-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "5abb2cd7478618b99b12cd634760e2210dc33e10c73e701d0ce0d9398bae73f8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0002-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "ec3af6a2def815aa4f304703312491bc410bd4e136adfa02eae7dcb12ad3acad"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0003-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "3843c23716d7a8bc6bc449569199c5045c9649c09cf4be2db0694581a4459b62"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0004-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "9cac4bd856857ca8f372444d8c2c63b86622dd07e56243c723c5beaf310a0eca"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0005-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "ac7996fc1fa22a2865b662315fab13128d7d05fcdca13a4e520187debba7fb97"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0006-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "c8ff5eab5a60232485b908f65bf0c61fd93a962631f0d7873afd5964140ba658"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0007-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "1988fd6b1d2dfb500cfdc17eb73a016df1292fd6e15f22a02d631811d7c458fc"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0008-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "5cf3e744f6ad9a104906c0c17d1b88487d259267e0a81aeaa01042677c812720"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0009-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "398a0e04df2aa811c345cc725d5969519450178ab7cd35df0db92f0cbf617091"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0010-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "854e5fd440191f7e33a6473867d0c38fc2f27c594edbd75768f19d6210fe7314"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0011-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "7c6924935b6deee73ff6059e742017c9d274c1147fdcf247ec29a77a736e2aad"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0012-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "0bbd0fd26ca6f997646caa3b5e0571d3dbf05082a7c502151ab11447ca71f00e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0013-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "2fc320d3837301dd59558da2ae52fe6aa954159fa455be6200c508e3a80d590b"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0014-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "2a3e2528b290a7f5bfdc487f02307dee515dc2edd6c29e71bda77d15f1b32ad3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0015-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "f158da2ff162b9dbe6a4362f119e39c44648a7c3fc9c82d85ba1d0272e63735f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0016-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "6cc6f5c4a3db30b2d6f62d3de949b631febc0f253c1b2e52fd923f91e36a5731"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0017-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "ae312e80cceb0445dd0aff827fcd18ae99ec64e95ce9a9933bf4b1b86de610e1"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0018-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "0919f6091a48c625d078e7de29ca450a9bc5f71fd941930908771024cd93fb15"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0019-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "8a5225d6738d428221e554ddf9f1eab5858307bafe90b199715acb4a271299e3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0020-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "cae9ab9e9141779b6605a24a3961ecadf17aff56fed29f84656b3b20ffa602c7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0021-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "a336d999ea80309a8f069d419510f2cd54d7f2edcb4554d8125b132da6e13e29"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0022-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "71543c5d9174f7fc2fa8ca61d47362a17eabba9c0e38526f43b6b99bf44da011"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0023-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "27da826e5728ff409227faa0b0d7f51aad09b072e5ae971b9cdfd3b3abd58fac"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0024-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "8c639fe8e6deb8f8e697c02c9bce0e5eb291f1d7e8ea9560d8328476ee0b1ca9"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0025-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "7d8bf30b043fa8c176abf72955f72acd485bccab3f25a0ffb15c51a8a6b526c2"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0026-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "7fb4de6a6efc5c3af26571a746dd5afddcb5e457423a16896beb5e1e5cac45b5"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0027-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "cc0aee6226927d024bdd568ce93fd36be7eed7c4bb6e39465624a9c5e1edd7fc"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0028-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "1ef0355cb1876ae1d48f4e9fc12f8044efbc009ff95d2c0abcc84e5beceb1911"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0029-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "10e2b1eea90bb91a83e0a674566b664b72675ae1b45699fc0e1ce0f45c835016"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0030-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "88365405ce4a182112ee1014630b7960b5ebe5172f8a5ed272aae235a763255b"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0031-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "ce60f8b0e9adfe24a967e258c7c5c00a27d5b1c43e3011176fa85b2fb77b57b2"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0032-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "b13158e56b8f35518fdb16f06e122b251fc87b294a1868972096fedd7c00c0f2"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0033-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "0e25d6b6cc283e813078d808b35c9a5261ee61e6275a41cfd09bc756bd3eed72"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0034-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "51a1e46029f6992df59045fe617fca33a54cb0323911c9b413b3f8c00b967ea2"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0035-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "36b44de5ce3329609155b0ff3d0e77b16b5c6da43ad212d3a3c2eafc4c984d1e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0036-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "af4f5b72d819ed6f75922dafa4d9e65bf88025a7026d79a387dfe16caeb7fec7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0037-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "aa600452ef946dbc35ce3e599b4e1e40e834af322523aa0ea0f1fa6fb8a57798"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0038-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "aa39e6a4ba4f56f54a4fed2d057b7246235b42bd3e9aa20a96a6dc41977985e6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0039-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "ac9d1a276f5f4027e8f153e0d3c8a2e54be6049047a66ded60be3a8096ff329a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0040-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "edfe2ddbd443eac38d0559d57d9834423141cfe4a5d273729f43a6abf1b311ff"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0041-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "90f38035a07d56b6e5bacc1072e86e203a76a6a40676a0bcfafcb53f555277c8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0042-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "10f224053723ebd9f6d21e6272ffbd10e7e7635edd456f14bcf0eee05d773ad6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0043-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "2f9c305b55752a663c985baf28675579adecb8c1b8f2c995074e261524b2b1b6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0044-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "0705dd5db53575a665ad68dd2f1a2ad01d34d277149805304d21b36eb0396301"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0045-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "873575e5c8e0a10befc9b4e8867cea659bc55372d12aa23322dce81ba220a66a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0046-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "d2dd22802c6f3bc7683f09e10346299b73986045c80c9b131e7e682d133b5b87"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0047-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "2abe5be62457c44e1f664120bf8285fcff605067b92fd0c1fc9ecdcac683dd86"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0048-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "e78aefc0df879f4dbf64afb273e57f631a107e5a94d2a074047ed502a06517cf"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0049-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "6e6b04ed7895cb3fdef2323e4482bc735f6d9042101386ef804a71b056638929"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0050-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "f1e04233cde41862eb8c0cf0158a5f552a830005c293fa4e6dbb4a5edf88a06a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0051-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "b046028b94441e37f0d31d745374f8b0ffc4bc925dd32e3033f6c71b4a4c3f4d"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0052-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "6892a3a928fcd3e3714235b5bb2898dfa60ef7ca440fbd5860ffb82c9552c9ed"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0053-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "908a1ee3236bb8ad9cbf59757018b86c00c6ac009f166410e81da29f1f7e583c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0054-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "ff3cd8af26309d5e60769331a23b924a3ba0cb53400a0e987323ba65f6b133f3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0055-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "8451d40e2854dd5f879e916545392b0f9609a89f9f37e8f76749fca68f9d2546"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0056-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "839b4bb27b18ed2d310de12de53d62e8dd4c02c5f0c596a09a934b8d0e6dea2e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0057-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "6396eed63237bba42c64b28e23f86f8ac18a550aab66414420c45ad2d3dd0f63"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0058-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "807e26533ed7dfdc7a08db40ef08c5603e2bc08ecbd4b7eb651d4671e6aeeb2e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0059-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "d3b82f0c021a9cf71b4f86bfc112270e5cd191de6284c8831943d531f93c5836"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0060-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "4bae5c8c9cbf4ea93078d8b919dd9aec4026fa33f9379c251d039688ecb3d498"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0061-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "c29f86e4169aa7b7759b2b00bca10925e7a583e2bbcdfa22abfaaa60e9b2c3c4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0062-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "a14bbdf624716e00ebdd533f153d438e0af1088ee8eb0d917a1f3c59426f9c40"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0063-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "c7ee99e20156d0b1ff1afde6db77381e0889a2d47925f77d8a27bb70cbaf78d8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0064-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "413b009333c7e16506198c422bda31ae1dfc3e14c93eb8d6d2ff4a0e6a850db8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0065-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "22be22c1e02acb35cdf09367b80a775b8bc76d947dd473f927f53f565539ac4c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0066-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "62a4db28de381960534495824f2e20014822ebb693664716e6f0d015c15ae5f9"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0067-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "386704869d4d7ff4079fd2165f2ef3935b354fdc46f125ec31ed897143f1d821"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0068-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "990dfbd32c6de5967b39133b503e6cd03bab252fedbc72f7872c6386eb9799cb"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0069-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "7e1eb9bbee29af3b8d45b07b679d3958a68b716118fcb676c6cee043794ab7c0"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0070-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "ec12b532103af8b534665358790200e8c9d59f042a3b41ab5c18449ecd21013d"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0071-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "60deabb6b7a82ca9162cdf600201c0348a134803e4b83f400c4764cf7bf26d30"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0072-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "7a647812c3e7853839e039c3494f75f43a5047f4a42323a2695ede8d844fbef4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0073-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "573394ba11b27d2b2dd06964f8ddd592a5ad083fb77b0ff3602eac1c29db73dc"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0074-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "18e6019c603fa33661c9488edb2b8bbaf6d489374fb6841790413d7822e15bed"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0075-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "b38b6513becb9ca3b8bb882ef1be28401c71e3aa99cc31be832a2cc3557c74e1"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0076-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "dd4ffbd1ac470d0adff9c5188797fba1972efa4e765fff5b12b594464d679d0f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0077-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "6d28e66f093a1a90f8c9268ad9fa656efd49244d55491ed3e43a8c834256828f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0078-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "dc5558228fa89eb81f7916fd862a4037be8e7699268a6b3a373843357878a28a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0079-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "4678feb5de398d726df20addc2b9e2bef721651617e60023cce1dc5dc0553d04"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0080-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "a9cbd16bafff5e2a7a3114fd0dac4d75f1b832463de71fc00252748dbbe4c922"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0081-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "e6fb81c56e7cd1a791e6801f33c98755bcda109768cb1a0bb01d43a4643820ce"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0082-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "77eb5df1281d11acc374f45fc836194ec78779d96f7e722f8b3869a15eb92534"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0083-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "c2621db4cffeb7f75d0e5bb05f8792b62a3d97be44d4dfb2db286dbfb495c9fa"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0084-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "97b87b6cca61a5e8baec76f841ada884ba5d9048c03cff5e98d57d5923823b61"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0085-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "f992dc9e4c83f36efc780ae9f21d4a1208d8bc695d3fbe30b44290dce86b980a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0086-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "33185081593af9fc3f5de419667832082941ad48cbd16a68b44230f07688d3d6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0087-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "a96dbde84953ec9cf43ddae52fbacb6113ed1ab99b1930b633253fb73a70421f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0088-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "010999f42f32948b88aa1471bb8054d97319591edd10e219fff5a3ffa7272ffe"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0089-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "6aafcec7496ebe60c3222a5a1b9c58e9ab2da76c13ea41643035c39d8315c718"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0090-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "a033f6acad53f65c21130381922632c5dd54b59e68444a7b71ab316a98c7a2c7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0091-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "166a49deb6e48dd106c6edc8cde807b541a5f20accb0451f375104acd1aee3a1"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0092-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "14c27d57022556063bc7075da94c6281956b33a449df5856571549b548bc536e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0093-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "6f592531965176dc0e0cf637501bea405dfc131e613e1c6a15460c3ff60cead6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0094-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "4f1c1b88f2a7931c8bee410feb820cec10af7b9fa7cbd8f8721e004036e6f321"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0095-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "899e03400b7c4e3caa48a16401fc81a7d17dde23ebfd066bf75ed7aab8c4f29b"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0096-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "596bf6715b90a453b23f852354f272cf5fffac73feca94ae585aad70675686b9"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0097-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "62757aee03bc32204e0512573f0b6c5fef27390cb4beb99944d87fabc4a7f490"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0098-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "720bee16adbb839e936cea7e3b8411d8dc4f8feaff92f62007186423da73290d"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0099-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "d597757c37886974f03b7fb3bca6992b4f5528037396bd140044f2c048cade12"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0100-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "d99d13bfeef0fda63deac394c3b2fce25239f9302ded4a55d098e4cfd3e6c235"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0101-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "2ba52a504aad3d2c3b3c074da671935ca5323e247df3a4990b50b04737524ea7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0102-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "9c7d2689f7e2e0ddd28cbe3d73ee4988aec33bf1409f6af37127fe9250150489"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0103-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "2e05fdce62cc1e0104d2b798fa361c103c72db9dbd15bfb2b149055dff87fb51"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0104-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "926f6a42df08288136facd085e429e3e4178adc8fcea0e7b376f54a04bc0a0d1"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0105-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "39a457c2d739aeb8e27f5d77991281e1143120c06b619c1c2ae6a735fd8b3bbe"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0106-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "558809b8bf1eaa8d5f38e67460648c6470c8f1f413acb592c5f01859bc1d6040"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0107-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "9b770c1565030580e0a134d9aa2e04f7fe90920eadc00c5c68afc8b8f481a50f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0108-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "2ef4eecbc980271fdc401a98cee13627f7a76cd42b616f05fcb066620ab62717"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0109-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "4f051025e9227b1921b669cfb3076df78e319d599ff06263caf45e27dea113a3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0110-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "0c2ed6937726284032e5889d7446c5ac1ba455f98907a111466a9808d6ff069c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0111-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "6f75cbeb6565717d840583d6f4eeb99ac52941dcb5c2abb36b74245632165ef5"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0112-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "07e5e24ea06b9cd5c90146cb3c307e90d236d9f656642e464447708124477d41"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0113-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "5c28744c361034f660accbef7361fa50c46e9ac25015448dbcdb0d07f0b83e80"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0114-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "04794bca847ddb80ddb46cb5b8571a42b4d0ba29678ef2a174a71364096d4d10"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0115-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "c08cc0e50c18efa4f2237ac09f91e45c4ea233b25ad6ff6d9c3f935445982966"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0116-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "0484a52c0248f196b4b98195f0194f3d14518743fefac16f92f469b6c74392e4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0117-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "5d5d6f08a70ed567226bc7e2cfb8ab818aae1ba29265457c374a5af559742435"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0118-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "166bc4302067f72356dafd555e8be466c2552da639916f291ac8f9aa58232b4e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0119-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "5506ccffcdbcd105cd78856a7918882fe3869b0c2710570b5589488315f1c9d3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/source-1/0120-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "edf176af224d7ab9ac834d48c65febb08be11a8f43dd760d2dddca66bcceeaf1"
+        }
+      ]
+    },
+    {
+      "mode": "rust",
+      "epoch": 0,
+      "receipt": {
+        "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/receipt.json",
+        "bytes": 452211,
+        "sha256": "f4c0c1edef6da27c0544e53e6078b42571e5ce5ad7cfb1a96747cad413407f69"
+      },
+      "publications": [
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0000-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "3e43b40167c28e1b11523baa0b4f405e0c6a7f04999e471b428673c3970eee1a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0001-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "8d5b3ea16e31b74edaf2bebdbdbb80b56102b2204ad9862e6bd7402dce7b6a93"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0002-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "2542828175e50027cb65dff912ce6c24b8e96b087056db866e7d839b3375e1d1"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0003-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "340a18105188df1dbd5ca2f051bae814af7ac1aea74b87916c858dd3ef015fcd"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0004-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "2abafcaf283738702b1e711f0292f16c628527867552186ffedd261829cfe5ae"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0005-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "a0c9df5c6e271e230f23a89520ee97e652c4586102f1718bc4af7286d408e48e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0006-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "45e8a05e716aa9f4f476bed74c074d684c575ece580d955eb93a62b9febdbb7c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0007-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "147ba40181484c0d2ecb46afa859493d84e8d60a678fa115377b666b2e36c971"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0008-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "11d78d2e5d4e4b633e96c2ebdfae4258636df905b69fbca5c61764b77dc7be29"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0009-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "dfd0f8ef53c17d97dbff82038edaf5695d87cacd8788b73d51828c6953694593"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0010-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "94f77e20b76eae5ead7292fceda9f7a7088460b85bb4475c4c121ee3e5ad2526"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0011-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "4a33ab33fd41aed204549c5f0b091e7d2546402fc3a262ed1206dda83632bac4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0012-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "fa5c8b6b7c6159286af669d8a4bab8e534980cea1e909e1645cb98a1b0c76b79"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0013-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "307395884ba2bfe42fd84db247b01f6d702e557a97131633f3dd2ca41c155da1"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0014-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "d85a3eea8dc1b174a79cf97321b3c42e7af9dfa8eb17495e5b4daecd16b2da8e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0015-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "728b9c902d8cae967629ae8333ccb1bb5ad412af531ff0e766ce2453218d4ee2"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0016-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "24f8eeaa7bdb419b918818aed487be58c096cd0bc1781c577fbbafd2bc0563c5"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0017-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "82521227d3533a023959acc2e40b9a770aeca42d94080a7684fd8584c646afa2"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0018-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "6669cc93ea91ee099715afdd24638681ef5614fd9b3b5fdef49c63383409d902"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0019-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "8c17470edcd0cad273e66b74393bd5669a39928eba096cf29944df2913a70a17"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0020-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "9e4f03be540689e7401cb8e80514f15fb74be44fe139b8533cf51f1ef3827ee9"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0021-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "5b62e81e45d0543e5b535b9287cd0ff699af03e07397464b808894aab4844dec"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0022-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "f887d460a01208dc1f0a33e56c5d5f6c18dc5feef94c5b587f3dbcc53681beb3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0023-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "b54b9752e0fac48b27e5228b449888df0be52d0d0f009b1978544dcbb9687091"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0024-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "d55212210a5d89d7c52b4e898e59e9d2051fe6cfb01ebf1da3932162037aef07"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0025-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "b01b124e8b0e6669f56bf736417360b027816efb5471879c1105b4e5b4020fb4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0026-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "5a871858facfe43fe1075dd1f3dfdab5ad159e3ae3594c49afcdab4d7d3fee22"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0027-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "75e6a868da6a442b30182e2d0e795a9ace35c018369bca0b01c69e18ee001919"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0028-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "7a29529813baf2007e82075a387760ceb79616adb68c19f3a4f10bfbb81c1d32"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0029-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "e4fd6024a0957d71e542582cb033deb4179b569c791e24d81dc346e168dc6fef"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0030-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "177dda682ff933b4b05939da14161a1f475487198a0389899e079e1c079f65a5"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0031-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "57fe2dfcae4b6905ea6346acd44390aac1f5743c377b09e5738d5176cf42c35d"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0032-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "2907b043c834f7d1f89b6ba5ae72d6880ccadc14df262b2b8dc2033d5f3c1716"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0033-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "ab18c0e70d86bfd820e3ded296b7d7628136ac7ecef03fa0fc59651a18d5e713"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0034-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "5ece9e940d5c446fee76035d9558262e993158cb15b80258a12c268b7885f48f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0035-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "4498acc0f5de300697f1bda1e93b29edd658e45b4920d8cdb017983d7c499c0f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0036-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "d6ef0b3102fe322ac770607c5c65176cf63ffa65b23bfeba74858259f793002b"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0037-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "5d6380bbb1a664ff6539f80fe0e41b9fed0e2767689ead43026645a0026b9bad"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0038-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "d82662e3220875d8d44bb9fbf34622ee6dcd3f9ae6bffc6e2dbbd5bb17d65ae8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0039-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "aa256f4ba64d7f073dfe68c534b3a83ad435a779b0d5e86f19c08bb90ca8b36a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0040-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "53fd3a3d05a180dc14b2ec9172597ea3a851ab093b9e0e2c466dcb664adbf8d3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0041-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "ad6e80dcf4447fb6cfe669ba9a794cf6a7818abb9b357e09da6ac688c7b6ad52"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0042-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "91682d60dcd4767b4d318f6d572a2a5ba4a3d9517279ae49f1b0df0807c9c5f4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0043-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "63a27003c2b79bc9aaff5da2e407d78da2ca46547c78a649bcc120ebdfa122a4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0044-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "6e0a1834bd03bb7bca8d19e43aac4d37db9982dd4e3f0de75069671d39bbec59"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0045-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "f3b2896d4fbccab510ecb274e63b2b29f43ca7936c348357a255be54e438a6d2"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0046-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "7d8c13f896941f693583ecdc31b49f4f57f0d9137150634abb88eec7caed9a38"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0047-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "a9dea30bb870df90c9f0ffefd4c734035fc998fe902b774cf732258151c90190"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0048-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "0c1cb531c1af414dac121451911c417f9b788bd74ab7dc3f5ec0755044e4f5ec"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0049-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "ffb755d3feee5d6bdf06568491e3758f51d3b31ee0056026ec22d6e177825cd7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0050-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "1d458a016aa5065071b0c6407587b62cc848a9264f00b9e73b22345dd2ca41e2"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0051-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "9f24723df72bf200d5a9e0ee827e42b654b0e2ac37a84947d7015af0352513e4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0052-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "92f1d7eaba12c04a8c1103132c2f9f65dc13527d23459b0057b8e8028dfd9d56"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0053-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "77f188fb1e780d5b95a8790278decad0aa4b466252aee27f82508f7afc373fde"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0054-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "33e621ae6a2394c1bc8314f78906779b82f06a7f4f50f2dd9c60b42855aaac5d"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0055-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "b9f4f75ada38564a920215dea999320e157849fdc548332ba50574b70e1017b8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0056-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "2fa90bbf393cb73edea5115f49ecaa9f43d1597f34f33bffcbb3180e60cd50b9"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0057-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "9bb1638b6fccbe7ee3f058193d8d8b3bf95a81f7bb597dfa37c57a94db4803e3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0058-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "882caf581fb72430b98f8dd9dcbc67cd33969bb92309b9710f38d6ff0c173147"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0059-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "589b747e3b30446ac3a4983830fbfcf2bd88c346ca9d951da74c6b483d00bea7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0060-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "0cab514a6b6956f15675634d21655f9472cf621e24c79f7e53f4e49d7b82a8fc"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0061-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "b12c301c8c27d332d941cc426c552aaaa5a220b039f7f8af00175a957dccc56f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0062-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "1624089789e1fb197f901f1d377fe4d05e139f478e2cb069a85ef5b0facfb7ba"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0063-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "a0aecaf67427ba1965319c0455d765c67af16f29d614ed54a7f6300f4fa6cb51"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0064-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "35e4be6350e0742d1f39f7d4ef2605db5089c6377e9488b563e08b4a1a594c60"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0065-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "d5c6940d57a7d02aa4f9f4911f2a3f30a1e374d716f0289050b145565824ac5e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0066-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "2a376c0a28bb4d76e65f157b3c00c0c4bbd7342b7df5ea5ddd471dfbda913ffb"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0067-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "3d6af67e64020b95bcb9fc49ac3701accd278c17e31f40b68c39e1cb7e9f201a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0068-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "370a8ef033ae86962554d42308da04dc9b0cba412c490f8d8bec771422ceff85"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0069-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "b9f36339bcc2c25a46bb55ac9106975a582e07dc313abc4f7960fa55acce17ee"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0070-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "7a03aa0aed41168e2a6d8b1e89b23765e720976741fc7265bcc6bdf066f9c6a5"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0071-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "1cb87939d759fb367297945db94f4827a56a3b191c635b5a3b859a53d793f06e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0072-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "1dbc0fe56752d51dba92d68978724720026ca6369e35046e37f5a812b40df9c6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0073-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "0527aa1341744b64e99fefce9355b41544285b3bcedfb21811f31397359b9b72"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0074-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "36b0d6a33ae14d8ca37e05bd828dd900f9f2742124c6b9951b211eb22e8425b0"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0075-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "86704289628ed1a111c38a728a0e3c16b254055a3f7dd5b5af3f1c442adb44b3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0076-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "9f2728e8855a2bc070f6985572b8e3b292f0849142d306e9d7f7492e19132aad"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0077-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "126104c464dfd46c3e3a1cbc96f5bc6c0364473dbd5fcbe55e1ec007a8cf22cd"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0078-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "8d2a70e9fa57b1622ea2349ec2498813d52baf07939fe7d78617f2d551a96455"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0079-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "3f86d5908ddccda431f42e8d22053b3166d874ca2bbb78034cd119cc91812b7a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0080-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "c9a85618e26478653909b5b558d523e0260ab2c5a29fc51d6db31071d1ba09a1"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0081-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "4ecee08ea27df400ab2be2e2608759f0e9507b898ea255c510a64aa84200e442"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0082-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "ed4734b03f009cdc0cd555b5dc7bdd21b9b4114d3899c14975f6d027d4bc1883"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0083-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "fb334a155640f566841c2a384c74bdc097a5df603883c5412ce0ecfc81714231"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0084-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "9cce8d4ffbc0e79b33b87e5e0e6dc46a3f16088cdde262ea4d6c956e7ccfa922"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0085-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "3aeb7c4eee5dfab218136be1d33af5b3cc0caf2f048bbb665eca5f1db7f40767"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0086-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "4a115f1b6c4528e8b7526e89ee8ca64e065fcbe8d579ca4f5aa98d16d4be2bd9"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0087-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "a4226b535071a79b8ccbbd10ee63caa1497fd651909f692ce7d4af69cb28b3f5"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0088-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "36f7d81b21b991d8022fe82ad746e22d4d6f5c0064531b5aa3b78c64f3abbc08"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0089-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "8b5d8044886b612c49e15860fcb8cabbb331ffeb20bf4f39b6f42627ee0983ae"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0090-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "767d2892cea97a213524aae1ddc6984066b779d5c98415b1996859113e756784"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0091-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "bebf9d10a7da64a7bd21e7990ce1b6682c9ee6a8e8c7c59dc8158033508ffb90"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0092-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "ad66af4dacdfd1c69fe7649b39a32c60eab8ddffe4a42e0f2e24fba27677ebf8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0093-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "4ad32ac26f5ea181ff5f15674413c63d73951f7e40647de287c06ac1fc0b4053"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0094-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "84a3f390db8ccec05793c7736134b951520e2a58bf5c93a8bdf1ddcb54a671d8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0095-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "5bece55df833699427e44fb1681c2e5cff17006c7ad27c0b1d7b1d4982fc977f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0096-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "dfca8e379e047190d23d833d6ef5cdd75c56ee3fcccfc95ad3f206c15bbf4c7d"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0097-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "9787d97f066f5f14c00391e56d3d93b65d69315b235eee5553da56327b87d615"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0098-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "48ffae290fdeb0dc821c8b08b2fcdfd168518b0a3579256219006325a1a5b2ee"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0099-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "0c87588a408f441326ed4662fa3ddd81c7db14c6efc4b900b666a4cfa027fca7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0100-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "e18444fb002b643f3245ac35d63433c4904d2c8c20f9eec67651e14f64709691"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0101-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "ffc2c8ff8c547ea9d45c850ad14305380a3fee2224f8b1fcb5daf82a0634a4a0"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0102-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "5c673675b5b4ab79f0e98ecf45f4b571499b30dd066e31299da447d1626a67c8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0103-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "41187e19a8baf5379b212a9b7116a30527bb8802054132c4a1312d3a895a5b0a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0104-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "472d59e032c03f1750d41d27c880236e1cbdad8c72085b9999c79cd800f9b314"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0105-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "f0767f11502c8ea05f1c6ec5ef8e98d80162461ed33e5b28e5746a3e3d63cab5"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0106-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "c016874d138cae1c1d0be3ae4ff7219518d7d1c6ddc02e182d5f2185bdaa493d"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0107-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "be0d4df2b7db3e3819d991fb658d2a22d9a2a8a70452b5ab3d7097437a23b892"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0108-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "bdd6027ecd20891f84f5d9bef93be5f0c342dc22b99a3604469f1398c14e5b16"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0109-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "c089858187f1afede119de7d3e343fa2b5bdfe6e0a00ba41049506fbad9005f3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0110-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "819b549183cf1e2d9c855aa6f4a4d8b65f22bc6dc9326192eb00581cb7bb41fb"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0111-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "f59349a88da0d3305ef8af43ca63222f00175ae0ff6fb38b47364060ac823c68"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0112-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "0c1b3d9225c4e5873dcad0273c9b303e2f04ec4bfa8eb5be350904ad01850a95"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0113-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "9b1d5cba6ae7001194e39429c5fff5714816ad2d636b4e1d45e66d8bb9f58440"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0114-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "61cf97ce731db5cd05647b4c0f440db4f0c588ecb5ec58a425fe5765f50d5b22"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0115-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "a211d994aadd855b1fe93659412c11a99bf3fd8cf85ba2e682115c65c9d52a39"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0116-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "a4e180b8689a49ba0e3ad7c6455ec1df4c2c25c5b586fa96927a9d71e37159bb"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0117-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "e722749720965b6957118400c2f10d4fb36391db01691379890ccdd977653d74"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0118-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "3548a941cf01364907e479b69169e84b86d655739b2369244b75f28fdf3739bd"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0119-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "380da34e16a448d53236eef025dbd33bb36f67dad819169092d6f0ae909a209c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-0/0120-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "974283fd39a201021803c26dc636a8b24acbdd8a95aa86d1f82b71860fe18b11"
+        }
+      ]
+    },
+    {
+      "mode": "rust",
+      "epoch": 1,
+      "receipt": {
+        "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/receipt.json",
+        "bytes": 452224,
+        "sha256": "6c42fac327029c5695e5857f080d7f4401f1f265894ca09918d2bf96167d4536"
+      },
+      "publications": [
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0000-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "cebe1a4839a7aae8aa3fbe3488aa75538d5178bd1e80e730e352ca903818f97c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0001-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "640d4151ee81cbf0f725283fd35ba55b9d6b50aebe4052a06d1619a984aa057c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0002-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "f7379cb1d1b2174375c041e626845b7f7b8d461c605446d1ebfe98afaccb2bfd"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0003-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "8db712f2997f1a19256cf4ff18b04972c22499e7189f3f8135cdd11c649365b2"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0004-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "3718c0fa7d7d47408eed80fba8a15bacf023a4b815d70662a675c54654fc9723"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0005-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "33d00b32ef462d42ac3ced588d07496e0c170a4550035515b720a53b293ef93d"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0006-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "3a4e9e79ab5dca712d1c3f8e637ab2ec6ce9b0a1107c36e2e960c91315493fb9"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0007-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "220e6345b13385e1d005f7e1b5c763e221a3a92185e68c9b53b06e2d1022e6ed"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0008-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "c45615a2072ea41fb487c0a52f27d0c4e6c43dc780ca658c492f40ce9f704d38"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0009-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "5a59bab8ab336e1ed2e20b5d55f95e7c73d8f1eefae353778828acfeefd523db"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0010-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "a900461d5719dd83767b070f0f35ed39b0dbd14077f4acf307dc91feb60646d7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0011-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "167501dfe7eb7fb2bc4224435e8e16d81eccb1af2db799c985b58bb66fbcbdd3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0012-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "062c240903397a9f96665c1f2450bd117224bb241bf3f8b7a2fe2f5482f5959b"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0013-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "b859a6e6975a4a8b0a81f3372bcb051f3a8292c7b433266645448cacd2f6b26d"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0014-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "2258981a8444164fdb6cd6a30f53d9ed0c33112c781387d6c05f7c386cd87d9b"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0015-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "f3accf0317deeeb75ee58adde1f654071b734278c68192e2512ff699e8fa6dc6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0016-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "74479673aa2be4186542e3433de154a2aeebf1eee61a05c8e28393abe0633bb6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0017-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "28dd585f7aa9850af7a9f62b2961edcb106760d1b758f32831ec319dc66543cc"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0018-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "7dcb013e529b62f14bfbf75e87d89b2f76d5e9e06b9ef855813354846deda039"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0019-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "e98e94e574fb413cb7b300130d2bbd5df09f51a6405d36640aec4f3c41028ad3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0020-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "04c613c420b26fd0a6ee7236bcc99b86de79f05f50d439071fd3951c79a8ae7e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0021-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "3a99e5a1d43d2666d73203d7d3529437a472e3068d9936026b94a453d3449099"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0022-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "452e809bb3e388fd7b9b42e2dc94683f9bc87e0b31e21981b6e151544a51d1fb"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0023-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "0ada11db431d2ab33a8e0b5353d68c9821983eea025822ee06d0dd28b9711416"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0024-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "9894804576d68c3e891f6afbc2cd17ee25f7a5d58051c72240556b1e4f8c65c0"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0025-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "eb4f50b4e82884fda076d930e9b62de9422cab82f66fa9ed72875167a3fcaa00"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0026-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "a4ba35228f3cfeb1b63c8bc6ad8516821a249e52c42ccd678df6c66596fac5c8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0027-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "ca57d692e22073868c4d2e0af21867420c9a08fc4ce3709346ed45c0299b6a0c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0028-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "c908d06604019cd4dd197c0bac403a0e8750a2627885c998dcfecadb34a658f6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0029-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "721a7c4ad6087a86ae27d0cdb0c865ea75ceab17f003ca917fb7fe78d351664e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0030-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "53f30c910ef9b2ea483b55fb0af60b195b4b36124bb9da052f60ce05156aa07f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0031-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "08c1c2bcacfbd2d2969ef36ea3039600c26ea06a2f861c1e1ad0498b7b05ba69"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0032-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "f9db158bd0ffb732615a4a06ac3e02f579d4f938cfef8cd8b6c67249355d543d"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0033-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "b8a9d243c31e12e8dd6dda69e22a0901d5069ee5c8c3bdf259d6cd54dfc46edb"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0034-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "ea9c5ca2ab72dcf62b94b1d695f262ec91e5b1751d55111f155dc7afd1759471"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0035-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "86d87c16bd9671b18b8a84ceed6a8425273afb4b83841b6e624ce3157d8c865e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0036-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "06d0e06702644cd410a29047c8b36fde1b9c825954ab1c505ed73034ab2ea53b"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0037-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "1145242faeafdf16269e05f80c37006db0a3421fec51e1ab4fbae8b83f29fd9e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0038-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "8818315ae49f3175e51a42bb142a8d818b616520d39bac72cbb25d39a9942344"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0039-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "6def1d63f837af09a7a287c003bd79d126a9e520eb5dea3ef0dee3d1bdd6354c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0040-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "c1f6e749a6926053122132f6decced0499eb77428d3d854a883d14ca6a69f460"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0041-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "90b8a7cc4f6d49fc96d46551cb00d489f6553c2a4622c3b91b3a9568dd6e36a6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0042-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "a9e8cff1599ffc9470c1db4290f4fa0cb4c579738faf59ac6e2cda972c2e976c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0043-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "e902003fc1523832c1db83a95f10dd07243d4eb54337806fdbf86b36e29ee0bb"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0044-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "781c59d53b60b28230d115707bf0edf649a635eb1d372b5b770998867a22b534"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0045-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "6021656820b40da3e936a50fc49ee20d3af721433f840166a5d16e0f5f6a033f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0046-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "5acbf22906f8be2e4b98c39b0ff56fb585bf651bde527d13e5bc8c5cc711d1be"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0047-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "74b3ffc422ed4d773ada2f80369e0918e1260b7d66281d919cf44229d159c0c3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0048-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "dc9a80d26ffa73aeb403b6a4d542c57caff541be2c88b7b5874b5f8fe78f63e1"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0049-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "6d64e72366fece65250d5bfc7946c809fdc71479a5c56fd72a1e20b53e12f032"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0050-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "8da3fa74c017db315be830f6cb799f090081f755e2c459e0d3784fc443e5b803"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0051-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "b6a0686c609ac2b9cac1dfa73a7024121fc154966c58414d36d130b9c40e30cc"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0052-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "5604aa607b86e7cad4aeb48f15d97eb4153196be44aeadb3aa182a738c1820b4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0053-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "fb9e481733a680e155e3568d02690183fd5959150298676afe541a036c3b14de"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0054-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "f8ae509628ceb3cc08312863fa367c3e045cd74bb6f590698568b4687f5542d1"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0055-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "4c8661417f49979b691886ca5f9105d395afef1d7bde09ec0b0716542760f94a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0056-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "efb07b609a2b98f5308051afdd2540f1a141e28fc77cd64af05c000688fb080c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0057-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "11263cc3a34e35393bb7d640b93d34364b2f4dbcc218ca25b5d2816bb45ced52"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0058-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "128641b3449100644548c4d73307667da5128d48ed9c0b10f08a8fe2555ca33e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0059-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "05dad22f264c637be2a9571cd356cb761a130796685bc7904b94bf25f11a160c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0060-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "158d226b35fe0c38b6a28dea38623bb5413b20b47e5b337e31423c3e6b54ff9b"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0061-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "d74249bd9a725340b90296e18724de096c43b696488e21c7ec6237b1a3e30308"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0062-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "52c34450a41bffdea4e17664b55659843556580f08cc3c82ed470f31f6df59c4"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0063-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "52a0dca8219a5672d2afae478f94cae7ec0c4689736f4f21a392876cfc29c8a5"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0064-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "9de1274f05af70cc8fc0fbac8398513b3ce1433b4c2f608edcfbabeeb8ad3a51"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0065-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "6f2460d1217b703f0fd637df52ffc9f1cba36aeabf50ec4fd8c7217b7585b4c7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0066-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "7a8c6c597fa8fc63fa22fd4bdb84f0d84a4db53949476dc3ee2b6ffa0839a8ad"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0067-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "7bde8f1ba3e10849754f9262f8b0077358250430c837882ffc1c21f8121e0eee"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0068-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "4ca09fd88e64133583365902e02f0ee99486988fc04ace85249ebd5be844bc77"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0069-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "18760d7442f25b3d15a351f9d2df67c76bdccdbeea490bb93e854eb9a1402f3e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0070-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "90166e5d2bad064638ce30d4316cba2afa76b8f0318a25b4f7dfb7a9a3ab20fa"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0071-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "927cbfd068eb71659ab98c6005d9815305c841e4f3e9f43dc27b718d8a4ed463"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0072-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "0bb9209a39ab624928ffa59cec0abb38ab70f1392ceecf8f74aea65214c66a58"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0073-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "ec16cb40e078a5378fb21d0d5add3263e09c4cf22dad4dd95e791ec7f0bce220"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0074-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "e94a74f75fcb8dfa14a881411a2e121326060c6cdfb09ed7622a88d547185b0a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0075-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "7fec0396f77a7ded023e79323d4c20c34b1452646b746e8b41cced1869499eec"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0076-lateralPlan.bin",
+          "bytes": 1160,
+          "sha256": "85e80aaa35047db8a59f2fdff705ed360569477bdd356c2f490c078ec985c908"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0077-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "fee9949a951e0663f86b3ae4f0331dbd32a7b8a368170d3f78fdf3bdd70c093a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0078-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "7fb46c2079804fae0a1c7395c3973ba9f88b2e3c3844864bc20d284c007043aa"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0079-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "4c518a901d8a7724d84ef48069e5efb031eeac0021cd3bd1144193c966ecf2c7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0080-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "c044135866f16f284ad26da0ac59d9859922dc3bb89db320077579bcbfd7fd2c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0081-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "42f13981d4253658dd1e29043dcc3c66666813cf64a5750056b30d10a2c6a916"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0082-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "f1d0996bd70309e2d7d0e0ce632db80da77082cca048ac538924dcf42f870824"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0083-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "3b2e93505a893e6a57923d22ab90867f07adb585467b2eaa2e8f34bffc4a9135"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0084-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "66660bb9d81f4ff5a4fa773c7ef2b55819dcf41bc132a9af5ba8a4f270f1a9a6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0085-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "35b5a5d3f993ae72a472483af7b12a4b32cd0ae409f5478d843f3585ee00e19f"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0086-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "329f96d7900c0e9f3b10968db7cfe94aa887f1a3cef8ed7871a348203e1ac388"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0087-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "0f733bbf67561a078f94de7de9c221b3065bfa99a559f0ecb9892091b8f5de10"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0088-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "c35a09f42bc822b3bd8d7bf9450e6e9e1e4ddc10f8f07e9f865a24ba78e5a962"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0089-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "8c257af432237224e0956a475e07a73fb911e8ff5ce994548a468b30fa8ab01a"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0090-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "6ac94a32d5f3fdc3946ba1773d58521c6d3c8a5d619e8b55f05de38d4fb7e0e7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0091-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "a0a10b7ed8297f4c35fbf99518d7fa987653a3dd0785ef8c938fe66d29028a9d"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0092-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "3776a568bca961fa740715db0a84ed89987261f51a06ec67292ff1cb3299c377"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0093-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "52f2eebda93a4ec11cc54ebd0405323746d5e15cf983c9ae9a82ba6458e36afd"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0094-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "faf73efefca1aa8e38f614ba8ffdec2b5dd514b003508ce3867852544a8abf7b"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0095-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "00917d2153b85887e5a5214e2841909ebfae58059ac40d0ca3d8b1099af9e569"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0096-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "77d990be2e6ba99624bbb0d71bfe37bc370cb3c689dc140ceadd128a9aed9111"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0097-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "6e4a1e726fac25cfa5ed32f4b401f0310444f3f9e42f775792a66819308af999"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0098-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "436882dfcdbca9cb27d852325225ac13c7aa13c191b54a0c14bb414917257ee2"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0099-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "76eb7b5e17ccb4b5474b8180f4ca9cd6dc93f68552ac2a7eb468ee7205c03ec3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0100-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "51dfadffd922e04d2e5530c22694408ecf4d790a48860ade9d8ab9d365da1bb8"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0101-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "573495627e13624a9d02455931b540adc08a5723b001f203b564f6e33ed06cb6"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0102-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "5639f84ba590d6954d614148d93bef4e493a8eb4d9d87f632f9b58fe374b0952"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0103-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "e71a031a7e0db52d6f5fe4680ec1c54a197c8e9879dc8dfd388b906e622eb877"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0104-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "52da4c7fc32ff77d6ddb795ee161b1e02bf1853191724d25b0de19b0783f5d01"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0105-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "770c28fbe804642e2a6de58b76a51d77fdf7999452e7e9c822a89bed637c7fd3"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0106-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "c8eb2510140955e27624b148a01f9d557dc0ce1db6ce344a9efd685f5c146e27"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0107-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "3cc33a139710999af1bb7d542ded6d82d070e0e2e240c18bc6e21fe967f90e88"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0108-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "b3598667af23818aff65f3dedff86eda360d6c0bc0339f90dd65237e986a4237"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0109-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "f604b79de216b90500b0ce43a99481caa365b89d7274a63c8eb6b25edcdbfa69"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0110-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "568b9ce46095736184dc190386cfcaecff4a5a8d4fb1001d305351b81eddeb68"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0111-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "dd8e1acc7fa9d28e1a64cb3cc842c4ffccf475f961d3d437a97a7d3411ff397c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0112-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "dfda8a3e6bfba16372beba4f7a448df3d11c8c5bd2bedb0099e7482054c05c89"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0113-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "8c440ae97ebe4baa2db5931759057fd94a09df2e390ca8bf1e9a1e23afe5462c"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0114-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "d61c414e2cdd2e5e49478f3e1c9ee632d1efb9319cd9e0d5df1a741e9657885e"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0115-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "3dffcbbd43fbf415c28bf38ad85246c6944c6be461dc621eb6fe1da2c0bef3ee"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0116-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "d3a3f8123d44999aa3f8b546eaece2146418f3866fe503f3ea1234b05a2ef9f7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0117-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "eed6fc876c8175eab1166ae17ee00272f2d29157b1cb981934e00f3243ff69b7"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0118-lateralPlan.bin",
+          "bytes": 1136,
+          "sha256": "6cedb04b7dfe5c2acce6587fcf6f67440968be674ccc96c9a94a9fc3732d75ef"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0119-driverAssistance.bin",
+          "bytes": 48,
+          "sha256": "2e03c8a22ffad8ab9604acf4d017f5e39031edcba346bf7c617aea2406172583"
+        },
+        {
+          "path": "tmp/openpilot-ci.hHf287/planner-comparison/ipc/rust-1/0120-longitudinalPlan.bin",
+          "bytes": 488,
+          "sha256": "c7a6fb91784f269d1b81079c761968809674a804bb0af1285ed9dc141d2feed6"
+        }
+      ]
+    }
+  ]
+}

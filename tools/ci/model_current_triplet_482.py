@@ -34,6 +34,8 @@ PREFIX = "cpu::diagnostic_482_tests::"
 READONLY = PREFIX + "fresh_program_roster_triplets_and_host_isa_are_bound_without_execution"
 TAPPED = PREFIX + "bound_road1928_two_frame_producer_capture"
 CACHED_CONTEXT = PREFIX + "cached_context::complete_fresh91_cached_context_matches_existing_original"
+WRITER_PREPARE = PREFIX + "writer_pair::fresh_writer_pair_is_bound_without_execution"
+WRITER_EXECUTE = PREFIX + "writer_pair::fresh_writer_pair_reuses_admitted_original90"
 CELLS = (100, 101, 1349)
 # source-locked NumPy2.5.3 wheel의 DT_NEEDED가 없는 두 CPython test extension만 해당한다.
 ZERO_NEEDED_NUMPY = {
@@ -509,6 +511,92 @@ def cached_context_export(root, job, m):
     after = import_seal(m, root, job)
     need(all(after.get(k) == v for k, v in before.items()), "C import bytes/identity changed")
     save(job / "proof/model482/cached-export-imports.json", after)
+
+
+def writer_pair_compile(root, job, m):
+    """D 전용 두 compiler 입력. PKL/model 실행과 compile_cached는 호출하지 않는다."""
+    destination = job/'build/model482/cached-context/writer-pair'
+    path = destination/'compile-request.json'
+    need(m.regular(path)['sha256'] == os.environ['MODEL482_WRITER_COMPILE_REQUEST_SHA256'], 'D compile request seal')
+    request = m.unique_json(m.read(path, 4*MIB))
+    need(request['schema'] == 1 and request['source'] == os.environ['GITHUB_SHA'], 'D source request')
+    inputs = {}
+    for name, seal in request['files'].items():
+        source = Path(seal['path'])
+        need(source.is_relative_to(job/'build/model482') and spec_file(m, source, 16*MIB) == seal, 'D held compiler input')
+        inputs[name] = m.read(source, 16*MIB)
+    need(set(inputs) == {'original', 'guarded', 'rewrite', 'config'} and sha(inputs['original']) == STORE_SOURCE,
+         'D exact writer inputs')
+    worker_environment(root)
+    from tinygrad.runtime.autogen import llvm
+    from tinygrad.runtime.support.compiler_cpu import CPULLVMCompiler
+    from tinygrad.device import Compiler
+    imports_before = import_seal(m, root, job)
+    names = ['LLVMPassBuilderOptionsSet'+name for name in ('LoopUnrolling','LoopVectorization','SLPVectorization','VerifyEach')]
+    setters, pass_options, machines = {name: getattr(llvm, name) for name in names}, {}, {}
+    create = llvm.LLVMCreateTargetMachine
+    cached, cache_calls = Compiler.compile_cached, []
+    def reject_cached(*_args, **_kwargs):
+        cache_calls.append(True)
+        raise RuntimeError('D fresh pair forbids compile_cached')
+    pointer = lambda value: ctypes.cast(value, ctypes.c_void_p).value
+    def observe_option(name, delegate):
+        def observed(pbo, value):
+            result = delegate(pbo, value)
+            pass_options.setdefault(pointer(pbo), {})[name] = int(value)
+            return result
+        return observed
+    def observe_machine(*args):
+        result = create(*args)
+        machines[pointer(result)] = dict(zip(('codegen_level','relocation_mode','code_model'), map(int, args[-3:])))
+        return result
+    for name, delegate in setters.items(): setattr(llvm, name, observe_option(name, delegate))
+    llvm.LLVMCreateTargetMachine = observe_machine
+    Compiler.compile_cached = reject_cached
+    try:
+        from model_export.native import _guarded_add_helper, _guarded_add
+        compiler = CPULLVMCompiler(['x86_64', 'native'])
+        expected = m.unique_json(inputs['config'])
+        actual = config(compiler, root, m, pass_options)
+        need(actual == expected, 'D actual natural compiler context differs from A')
+        options = machines[pointer(compiler.target_machine)]
+        need(list(options.values()) == [llvm.LLVMCodeGenLevelDefault, llvm.LLVMRelocPIC, llvm.LLVMCodeModelDefault],
+             'D observed target-machine constructor options')
+        text = inputs['original'].decode('utf-8')
+        match = re.match(r'define void @([A-Za-z0-9_]+)\(', text)
+        need(match and text.count('@'+match[1]+'(') == 1, 'D original writer declaration')
+        renamed = text.replace('@'+match[1]+'(', '@op_impl_92(')
+        with _guarded_add_helper() as helper:
+            need(helper is not None, 'D requires the existing held guarded helper')
+            guarded, rewrite = _guarded_add(renamed, helper[0])
+        need(guarded.encode() == inputs['guarded'] and rewrite == inputs['rewrite'], 'D current B guard bytes differ')
+        variants = {}
+        context = {'llvm_context': pointer(compiler.context), 'target_machine': pointer(compiler.target_machine),
+                   'pass_builder_options': pointer(compiler.pbo), 'constructor_options': options}
+        for name, source in (('rename-only', renamed), ('guarded', guarded)):
+            before = config(compiler, root, m, pass_options)
+            need(before == actual, 'D compiler context before fresh compile')
+            obj = compiler.compile_to_obj(source)
+            need(isinstance(obj, bytes) and 0 < len(obj) <= 16*MIB, 'D writer object16MiB')
+            after = config(compiler, root, m, pass_options)
+            need(after == before, 'D compiler context after fresh compile')
+            write(destination/(name+'.ll'), source.encode())
+            write(destination/(name+'.o'), obj)
+            variants[name] = {'source': spec_file(m, destination/(name+'.ll')), 'object': spec_file(m, destination/(name+'.o')),
+                              'before': before, 'after': after, 'context': context}
+        save(destination/'compiler-receipt.json', {'schema': 1, 'source': os.environ['GITHUB_SHA'],
+            'original_source_sha256': STORE_SOURCE, 'variants': variants, 'fresh_compiles': 2,
+            'compile_cached_calls': len(cache_calls), 'original_executions': 0,
+            'original_model_executions': 0, 'original_compiler_invocations': 2, 'taps': 0})
+        for seal in request['files'].values():
+            need(spec_file(m, Path(seal['path']), 16*MIB) == seal, 'D compiler input changed')
+        imports_after = import_seal(m, root, job)
+        need(all(imports_after.get(k) == v for k, v in imports_before.items()), 'D imported source/provider changed')
+        save(job/'proof/model482/writer-pair-imports.json', imports_after)
+    finally:
+        Compiler.compile_cached = cached
+        llvm.LLVMCreateTargetMachine = create
+        for name, delegate in setters.items(): setattr(llvm, name, delegate)
 
 
 class OriginalTap:
@@ -1026,6 +1114,10 @@ class Controller:
             self.prepare_build_target()
         self.budget(True)
         started, failure, process = time.monotonic(), None, None
+        operation_deadline = min(self.deadline, started + seconds)
+        if label.startswith('writer-pair-'):
+            operation_deadline = min(operation_deadline, self.writer_deadline)
+            need(started < operation_deadline, 'D aggregate deadline before process')
         def limits():
             resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
             resource.setrlimit(resource.RLIMIT_FSIZE, (512*MIB, 512*MIB))
@@ -1033,7 +1125,7 @@ class Controller:
                 resource.setrlimit(resource.RLIMIT_CPU, (60, 60))
                 resource.setrlimit(resource.RLIMIT_AS, (4*GIB, 4*GIB))
             elif label in ('fresh-original','original-plain','original-tapped','native-plain','native-tapped',
-                           'cached-context-export','cached-context-native'):
+                           'cached-context-export','cached-context-native') or label.startswith('writer-pair-'):
                 resource.setrlimit(resource.RLIMIT_AS, (4*GIB, 4*GIB))
         try:
             with (self.out / f"{label}.stdout").open("xb") as stdout, (self.out / f"{label}.stderr").open("xb") as stderr:
@@ -1044,7 +1136,7 @@ class Controller:
                     rows = self.children.scan()
                     self.maps(rows)
                     self.children.reap()
-                    need(time.monotonic() < min(self.deadline, started + seconds), f"command deadline: {label}")
+                    need(time.monotonic() < operation_deadline, f"command deadline: {label}")
                     need(stdout.tell() <= 32*MIB and stderr.tell() <= 32*MIB, "command log32MiB limit")
                     self.budget()
                     if process.returncode is not None:
@@ -1305,8 +1397,20 @@ class Controller:
             c_error = traceback.format_exc()
             save(self.out / "cached-context-failure.json", {"source": os.environ["GITHUB_SHA"],
                 "error": c_error, "b_failure_sticky": bool(mismatches), "numerical_acceptance": False})
+        d_error = None
+        if c_error is None:
+            try:
+                self.writer_pair(data, traffic, test, helper, python)
+            except Exception:
+                d_error = traceback.format_exc()
+                save(self.out/'writer-pair-failure.json', {'source': os.environ['GITHUB_SHA'], 'error': d_error,
+                    'b_failure_sticky': bool(mismatches), 'numerical_acceptance': False})
+        else:
+            save(self.out/'writer-pair-skipped.json', {'source': os.environ['GITHUB_SHA'], 'attempted': False,
+                'reason': 'D requires successful strict C12', 'b_failure_sticky': bool(mismatches)})
         need(not mismatches, "strict original/native byte mismatch retained; diagnostic is not numerical acceptance")
         need(c_error is None, "additive cached-context diagnostic failed; existing A/B retained")
+        need(d_error is None, "additive writer-pair diagnostic failed; existing A/B/C retained")
 
     def cached_context(self, data, request, readonly, traffic, guarded, issuer, test, helper, python):
         self.holds.verify()  # A/B identities must still match before deriving C expectations.
@@ -1474,6 +1578,99 @@ class Controller:
         need(sum(p.stat().st_size for p in self.m.walk(destination) if p.is_file()) <= 256*MIB,
              "C actual retained namespace256MiB cap")
 
+    def writer_pair(self, data, traffic, test, helper, python):
+        self.holds.verify()
+        parent = self.build/'cached-context'
+        destination = parent/'writer-pair'
+        need(not destination.exists() and not destination.is_symlink(), 'fresh D namespace')
+        baseline = self.m.unique_json(self.m.read(self.out/'cached-context.json', 4*MIB))
+        need(baseline['diagnostic_complete'] is True and baseline['existing_original_all12_equal'] is True
+             and baseline['source'] == os.environ['GITHUB_SHA'], 'D requires actual C12 success')
+        selected = [p for p in data['programs'] if p['original']['source_sha256'] == STORE_SOURCE]
+        need(len(selected) == 1 and selected[0]['kernel'] == 92, 'D exact writer92')
+        selected = selected[0]
+        outputs = self.m.unique_json(self.m.read(traffic/'outputs.json', 4*MIB))
+        output_bytes = sum((traffic/'original'/n).stat().st_size for n in outputs)
+        forecast = 2*output_bytes + 4*selected['source']['bytes'] + 8*selected['image']['bytes'] + 32*MIB
+        used = lambda: sum(p.stat().st_size for p in self.m.walk(parent) if p.is_file())
+        need(used() + forecast <= 256*MIB, 'C+D aggregate forecast256MiB')
+        self.budget(force=True, extra_build=forecast)
+        destination.mkdir(mode=0o700)
+        deadline = min(self.deadline, time.monotonic()+180)
+        self.writer_deadline = deadline
+        def remaining():
+            value = int(deadline-time.monotonic())
+            need(value > 0, 'D aggregate180s/global deadline')
+            return value
+        save(self.out/'writer-pair-capacity.json', {'forecast_bytes': forecast, 'existing_C_bytes': used(),
+            'aggregate_candidate_cap_bytes': 256*MIB, 'output_bytes_per_candidate': output_bytes,
+            'aggregate_deadline_seconds': 180, 'old_caps_or_deadline_extended': False})
+        events = self.m.unique_json(self.m.read(Path(data['events']['path']), 16*MIB))
+        chain = events['chains'][selected['compile_event']]
+        need(chain['source'] == selected['source'] and chain['object'] == selected['object'], 'D actual A config chain')
+        config_path = destination/'original-config.json'
+        save(config_path, chain['config'])
+        files = {'original': selected['source'], 'guarded': spec_file(self.m, traffic/'bundle/kernel-92.compiled.ll'),
+                 'rewrite': spec_file(self.m, traffic/'bundle/kernel-92.guarded-add.json'), 'config': spec_file(self.m, config_path)}
+        compile_path = destination/'compile-request.json'
+        save(compile_path, {'schema': 1, 'source': os.environ['GITHUB_SHA'], 'files': files})
+        for path in (config_path, compile_path): self.holds.add(path)
+        cpath = parent/'native-request.json'
+        c_request = self.m.unique_json(self.m.read(cpath, 4*MIB))
+        env = {**self.env, 'MODEL482_WRITER_COMPILE_REQUEST_SHA256': spec_file(self.m, compile_path)['sha256'],
+               'MODEL_LLVM_GUARDED_ADD_BINARY': c_request['guarded']['path'],
+               'MODEL_LLVM_GUARDED_ADD_SHA256': c_request['guarded']['sha256'],
+               'TMPDIR': str(self.target/'model482-cached-tmp')}
+        self.command([python, '-I', '-B', helper, 'writer-pair-compile'], 'writer-pair-compile', remaining(), env=env)
+        self.holds.verify()
+        compiler_receipt = destination/'compiler-receipt.json'
+        variants = {name: {'source': spec_file(self.m, destination/(name+'.ll')),
+                           'object': spec_file(self.m, destination/(name+'.o')), 'library': None}
+                    for name in ('rename-only', 'guarded')}
+        # 실제 object로 후속 image/container/DSO 증가량을 재산정하며 같은 cap을 유지한다.
+        transport_forecast = 4*sum(v['object']['bytes']+64*1024 for v in variants.values()) + 2*output_bytes + 4*MIB
+        need(used() + transport_forecast <= 256*MIB, 'C+D measured object transport/output forecast256MiB')
+        self.budget(force=True, extra_build=transport_forecast)
+        params = {'schema': 1, 'cached_request': spec_file(self.m, cpath), 'baseline_receipt': spec_file(self.m, self.out/'cached-context.json'),
+                  'diagnostic': spec_file(self.m, self.root/'rust/crates/model-runtime/src/cpu/diagnostic_482_writer.rs'),
+                  'compile_request': spec_file(self.m, compile_path), 'compiler_receipt': spec_file(self.m, compiler_receipt),
+                  'variants': variants}
+        def test_request(name):
+            self.holds.verify()
+            path = destination/(name+'-request.json')
+            save(path, params)
+            for p in self.m.walk(destination):
+                if p.is_file(): self.holds.add(p)
+            return {**self.env, 'MODEL482_WRITER_REQUEST': str(path),
+                    'MODEL482_WRITER_REQUEST_SHA256': spec_file(self.m, path)['sha256']}
+        prepare_env = test_request('prepare')
+        self.test(test, WRITER_PREPARE, 'writer-pair-prepare', remaining(), env=prepare_env)
+        for name in variants:
+            package, library = destination/(name+'.container.o'), destination/(name+'.so')
+            self.holds.add(package)
+            self.command([self.env['CC'], '-shared', '-nostdlib', '-Wl,--no-undefined', '-Wl,-z,noexecstack',
+                          package, '-o', library], 'writer-pair-link-'+name, remaining())
+            self.holds.add(library, elf=True)
+            variants[name]['library'] = spec_file(self.m, library)
+        need(used() + 2*output_bytes + 4*MIB <= 256*MIB, 'C+D actual plus output/request256MiB')
+        native_env = test_request('native')
+        self.test(test, WRITER_EXECUTE, 'writer-pair-native', remaining(), env=native_env)
+        self.holds.verify()
+        result = self.m.unique_json(self.m.read(self.out/'writer-pair.json', 4*MIB))
+        need(result['diagnostic_complete'] is True and result['retained_original_programs'] == 90
+             and set(result['variants']) == set(variants), 'D complete paired execution receipt')
+        for name, candidate in result['variants'].items():
+            need(set(candidate['outputs']) == set(outputs), 'D exact existing output12 roster')
+            for output, row in candidate['outputs'].items():
+                actual = self.m.read(destination/'outputs'/name/output, 64*MIB)
+                original = self.m.read(traffic/'original'/output, 64*MIB)
+                need(sha(actual) == row['actual_sha256'] and sha(original) == row['existing_original_sha256']
+                     and (actual == original) == row['equal'], 'D independently checked raw comparison')
+        for p in self.m.walk(destination):
+            if p.is_file(): self.holds.add(p)
+        need(used() <= 256*MIB, 'C+D aggregate actual256MiB')
+        remaining()
+
     def finish(self, error):
         failures = []
         try:
@@ -1561,9 +1758,10 @@ def main():
     root, job = trusted()
     m = common(root)
     if len(sys.argv) == 2:
-        need(sys.argv[1] in ("collect", "plain", "tapped", "cached-context-export"), "unknown worker mode")
+        need(sys.argv[1] in ("collect", "plain", "tapped", "cached-context-export", "writer-pair-compile"), "unknown worker mode")
         if sys.argv[1] == "collect": collect(root, job, m)
         elif sys.argv[1] == "cached-context-export": cached_context_export(root, job, m)
+        elif sys.argv[1] == "writer-pair-compile": writer_pair_compile(root, job, m)
         else: two_frames(root, job, m, sys.argv[1] == "tapped")
         return
     need(len(sys.argv) == 1 and sys.flags.isolated and sys.flags.no_site, "stdlib controller requires -I -B -S")

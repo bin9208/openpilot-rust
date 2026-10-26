@@ -1,0 +1,209 @@
+name: Python Rust 523 GitHub image routing evidence
+'on':
+  push:
+    branches: [codex/feat-523-python-rust]
+    paths:
+    - .github/workflows/python-rust-523-github-images.yml
+    - tools/ci/github_images_513.py
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: python-rust-523-github-images-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  github-images-513:
+    name: Genuine image helper before and after the argument correction
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+    - name: Deny fork source and require GitHub-hosted Linux X64
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
+        set -euo pipefail
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        case "$GITHUB_EVENT_NAME" in push|workflow_dispatch) ;; *) exit 1 ;; esac
+        test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
+        test "$GITHUB_WORKFLOW_REF" = "bin9208/openpilot-rust/.github/workflows/python-rust-523-github-images.yml@$GITHUB_REF"
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -s)" = Linux
+        test "$(uname -m)" = x86_64
+    - name: Common owned job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Admit small metadata growth and allocate private source before checkout
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        umask 077
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        mkdir "$job/proof" "$job/home" "$job/tmp"
+        printf '%s\n' "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$RUNNER_OS" "$RUNNER_ARCH" > "$job/proof/runner.txt"
+        # source2GiB + metadata/proof32MiB + finish reserve64MiB. No build/SDK estimate.
+        required=$((2*1024*1024*1024 + 96*1024*1024))
+        for path in "$workspace" "$job"; do
+          available=$(df --output=avail -B1 -- "$path" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {print $1}')
+          [[ $available =~ ^[0-9]+$ ]]
+          printf '%s\t%s\t%s\n' "$path" "$available" "$required" >> "$job/proof/admission.tsv"
+          ((available >= required))
+        done
+        source_owner=$(mktemp -d "$workspace/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.diag296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" \
+          "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' -- "$source_owner")" "DIAG_SOURCE=$source" \
+          "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" >> "$GITHUB_ENV"
+        printf 'owner=%s\nsource_owner=%s\nsource=%s\nsource_identity=%s\n' \
+          "$owner" "$source_owner" "$source" "$(stat -c '%d:%i' -- "$source_owner")" > "$job/proof/ownership.txt"
+    - uses: actions/checkout@v7
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      with:
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        fetch-depth: 1
+        persist-credentials: false
+        set-safe-directory: false
+        clean: false
+        lfs: false
+    - name: Seal current source index and Python provider before observation
+      id: source_before
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        proof=$CI_JOB_TEMP/proof
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$proof/SOURCE_COMMIT"
+        git ls-files -z > "$proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$proof/source-before.sha256"
+        allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
+        apparent=$(du -sx --apparent-size --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
+        printf '%s\t%s\n' "$allocated" "$apparent" > "$proof/source-growth.tsv"
+        ((allocated <= 2*1024*1024*1024 && apparent <= 2*1024*1024*1024))
+        python=$(readlink -e -- /usr/bin/python3)
+        sha256sum -- "$python" > "$proof/python-before.sha256"
+        stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z %n' -- "$python" > "$proof/python-before.stat"
+        /usr/bin/python3 --version > "$proof/python-version.txt"
+    - name: Fetch immutable original and reuse the admitted native prefix
+      id: preparation
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      timeout-minutes: 5
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        set -euo pipefail
+        umask 077
+        ulimit -c 0
+        ulimit -f 16384
+        printf '%s  %s\n' fa24c25663c6a21cd0b50a0160adc94ed9a9bf42ba242261448dc6a84c202f6c "$DIAG_SOURCE/tools/ci/github_images_513.py" | sha256sum --check --strict -
+        status=0
+        /usr/bin/python3 -I -B -S tools/ci/github_images_513.py prepare > "$CI_JOB_TEMP/proof/prepare.stdout" 2> "$CI_JOB_TEMP/proof/prepare.stderr" || status=$?
+        printf '%s\n' "$status" > "$CI_JOB_TEMP/proof/prepare.status"
+        cat "$CI_JOB_TEMP/proof/prepare.stdout" "$CI_JOB_TEMP/proof/prepare.stderr"
+        test "$status" -eq 0
+    - name: Observe the two genuine calls with tokenless fake HTTP only
+      id: comparison
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (steps.preparation.outcome == 'success') }}
+      timeout-minutes: 1
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        umask 077
+        ulimit -c 0
+        ulimit -f 16384
+        printf '%s  %s\n' fa24c25663c6a21cd0b50a0160adc94ed9a9bf42ba242261448dc6a84c202f6c "$DIAG_SOURCE/tools/ci/github_images_513.py" | sha256sum --check --strict -
+        status=0
+        /usr/bin/env -i PATH=/usr/bin:/bin HOME="$CI_JOB_TEMP/home" TMPDIR="$CI_JOB_TEMP/tmp" \
+          GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_JOB="$GITHUB_JOB" \
+          GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" GITHUB_REF="$GITHUB_REF" GITHUB_SHA="$GITHUB_SHA" \
+          GITHUB_RUN_ID="$GITHUB_RUN_ID" GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" \
+          RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" RUNNER_OS="$RUNNER_OS" RUNNER_ARCH="$RUNNER_ARCH" \
+          DIAG_SOURCE="$DIAG_SOURCE" CI_JOB_TEMP="$CI_JOB_TEMP" \
+          /usr/bin/python3 -I -B -S tools/ci/github_images_513.py compare \
+          > "$CI_JOB_TEMP/proof/compare.stdout" 2> "$CI_JOB_TEMP/proof/compare.stderr" || status=$?
+        printf '%s\n' "$status" > "$CI_JOB_TEMP/proof/compare.status"
+        cat "$CI_JOB_TEMP/proof/compare.stdout" "$CI_JOB_TEMP/proof/compare.stderr"
+        test "$status" -eq 0
+    - name: Seal current source index and Python after every attempted observation
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.source_before.outcome == 'success') }}
+      working-directory: ${{ env.DIAG_SOURCE }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        proof=$CI_JOB_TEMP/proof
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$proof/index-after.bin"
+        cmp "$proof/index-before.bin" "$proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$proof/source-after.sha256"
+        cmp "$proof/source-before.sha256" "$proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        python=$(readlink -e -- /usr/bin/python3)
+        sha256sum -- "$python" > "$proof/python-after.sha256"
+        stat -c '%d:%i:%f:%u:%g:%h:%s:%y:%z %n' -- "$python" > "$proof/python-after.stat"
+        cmp "$proof/python-before.sha256" "$proof/python-after.sha256"
+        cmp "$proof/python-before.stat" "$proof/python-after.stat"
+        allocated=$(du -sx --block-size=1 "$proof" | cut -f1)
+        apparent=$(du -sx --apparent-size --block-size=1 "$proof" | cut -f1)
+        printf '%s\t%s\n' "$allocated" "$apparent" > "$proof/proof-growth.tsv"
+        ((allocated <= 32*1024*1024 && apparent <= 32*1024*1024))
+        df -PB1 "$DIAG_SOURCE" "$CI_JOB_TEMP" > "$proof/disk-after.txt"
+    - name: Upload original bytes transcripts failure evidence and source seals
+      id: evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: github-images-513-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.CI_JOB_TEMP }}/proof
+        retention-days: 14
+        if-no-files-found: error
+    - name: Clean only the uploaded and sealed owned private source
+      id: source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.evidence.outcome == 'success' && steps.evidence.outputs.artifact-id != '' && steps.evidence.outputs.artifact-digest != '' && steps.source_final.outcome == 'success' && env.DIAG_SOURCE_OWNER != '') }}
+      working-directory: ${{ github.workspace }}
+      shell: bash
+      env:
+        UPLOAD_ID: ${{ steps.evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ && $UPLOAD_DIGEST =~ ^[0-9a-fA-F]{64}$ ]]
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$DIAG_ACTIONS_WORKSPACE/.diag296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e -- "$p")" = "$p"
+        test "$(stat -c %u -- "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' -- "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.diag296-owner" && test ! -L "$p/.diag296-owner"
+        test "$(cat "$p/.diag296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        test -d "$DIAG_SOURCE" && test ! -L "$DIAG_SOURCE"
+        test "$(realpath -e -- "$DIAG_SOURCE")" = "$DIAG_SOURCE"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned paths after uploaded source cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.evidence.outcome == 'success' && steps.evidence.outputs.artifact-id != '' && steps.evidence.outputs.artifact-digest != '' && steps.source_cleanup.outcome == 'success') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'
