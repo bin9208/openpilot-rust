@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """#476 Actions 전용 retained driver 후보. 임시 Python 실행 경계는 pending.
 
-이미 실패한 fresh gate의 status를 항상 반환한다. 후보 준비는 수용이 아니다.
+기본 진단은 이미 실패한 fresh gate의 status를 항상 반환한다. 후보 준비는 수용이 아니다.
 실제 loaded storage와 독립 original prestate/ABI를 비교하며 metadata로 대체하지 않는다.
+별도 --verify-retained-transport는 고정 운송 인증만 수행하며 모델/SDK를 실행하지 않는다.
 """
 from __future__ import annotations
 
@@ -49,6 +50,16 @@ RETAINED_OBJECTS = {
     "checkout_source": "a29832fd0d046253465621a05f02a91e9cfdb1d1",
     "sha256": "a318335767594bfe8bcd08878f15e4f6a03bb0d8d13541d56f3b83243b19f461",
     "bundle": "driver-catalog/catalog/1dc28498bdbd261b337f9872f30d68fa9361ab79ebef816737d38a42e897a191/driver-1344x760/",
+}
+
+# 운송 provenance는 원본의 workflow/checkout provenance를 대체하지 않는다.
+RETAINED_TRANSPORT = {
+    "artifact": 12617590637, "name": "driver476-object-witness-12393290469.zip",
+    "run": 40241602401, "attempt": 1,
+    "source": "972468fab5279a9897d2d2bda736938c89a81a9a",
+    "proof_artifact": 12618005602, "proof_name": "driver476-witness-provenance-40241602401-1",
+    "proof_bytes": 9261,
+    "proof_sha256": "f8d72c81b3bdb266e1e98b6d04fbfe242a9db62213c1e4a15ef727bfa337ff57",
 }
 
 # 기존 공개 Rust API만 연결하는 GHA 전용 비실행 leaf. Cargo/mod/WF 외 Rust 소스는
@@ -516,6 +527,159 @@ def common(root):
     module.__file__ = str(path)
     exec(compile(raw, str(path), "exec"), module.__dict__)
     return module
+
+
+def authenticate_retained_transport(m, command, tools, frozen, holds):
+    """고정 API 운송만 인증한다. 원본/모델/SDK/PROGRAM은 실행하지 않는다."""
+    import io
+    import zipfile
+    from datetime import datetime
+    from pathlib import PurePosixPath
+
+    origin, transport = RETAINED_OBJECTS, RETAINED_TRANSPORT
+    frozen = Path(frozen)
+    canonical(frozen.parent, directory=True)
+    frozen.mkdir(mode=0o700)
+    canonical(frozen, directory=True)
+    api = 'repos/bin9208/openpilot-rust/actions/'
+
+    def get(endpoint, label):
+        raw = command([tools['gh'], 'api', api+endpoint], label, 60)
+        need(len(raw) <= MIB, 'transport API metadata1MiB bound')
+        path = frozen/(label+'.json')
+        m.write_new(path, raw)
+        holds.add(path, digest(raw))
+        return m.unique_json(raw)
+
+    def epoch(value):
+        need(type(value) is str and re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', value), 'API UTC timestamp')
+        return datetime.fromisoformat(value.replace('Z', '+00:00')).timestamp()
+
+    def run_identity(row, source, run, attempt, event, workflow, branch):
+        numbers = (row['id'], row['run_attempt'], row['repository']['id'], row['head_repository']['id'])
+        need(all(type(n) is int for n in numbers)
+             and row['id'] == run and row['head_sha'] == source and row['run_attempt'] == attempt
+             and row['event'] == event and row['path'] == workflow and row['head_branch'] == branch
+             and row['repository']['full_name'] == row['head_repository']['full_name'] == 'bin9208/openpilot-rust'
+             and row['repository']['id'] == row['head_repository']['id'] == 1395501963, 'exact retained run identity')
+
+    runmeta = get('runs/'+str(transport['run']), 'object-run-auth')
+    run_identity(runmeta, transport['source'], transport['run'], transport['attempt'], 'workflow_dispatch',
+                 '.github/workflows/python-rust-523-capacity.yml', 'codex/feat-523-python-rust')
+    need(runmeta['status'] == 'completed' and runmeta['conclusion'] == 'success', 'completed successful preservation run')
+    run_created = epoch(runmeta['created_at'])
+
+    def artifact(row, identifier, name, size, sha):
+        link = row['workflow_run']
+        numbers = (row['id'], row['size_in_bytes'], link['id'], link['repository_id'], link['head_repository_id'])
+        need(all(type(n) is int for n in numbers)
+             and row['id'] == identifier and row['name'] == name and row['size_in_bytes'] == size
+             and row['digest'] == 'sha256:'+sha and row['expired'] is False
+             and link['id'] == transport['run'] and link['head_sha'] == transport['source']
+             and link['head_branch'] == 'codex/feat-523-python-rust'
+             and link['repository_id'] == link['head_repository_id'] == 1395501963, 'exact retained transport artifact')
+        created, expires = epoch(row['created_at']), epoch(row['expires_at'])
+        need(run_created <= created <= expires and run_created+90*86400 <= expires <= run_created+90*86400+600
+             and time.time() < expires, 'live configured90d run-anchor retention')
+
+    payload = get('artifacts/'+str(transport['artifact']), 'object-auth')
+    proofmeta = get('artifacts/'+str(transport['proof_artifact']), 'object-proof-auth')
+    artifact(payload, transport['artifact'], transport['name'], origin['bytes'], origin['sha256'])
+    artifact(proofmeta, transport['proof_artifact'], transport['proof_name'], transport['proof_bytes'], transport['proof_sha256'])
+
+    def download(identifier, name, size, sha, label):
+        path = frozen/name
+        # 별도 stdout 파일을 ZIP 복제본으로 남기거나 후속 proof upload에 섞지 않는다.
+        command([tools['bash'], '-c',
+                 'set -euo pipefail; umask 077; ulimit -f "$3"; set -o noclobber; exec "$1" api "$2" > "$4"',
+                 label, tools['gh'], api+'artifacts/'+str(identifier)+'/zip', str((size+1023)//1024), path], label, 120)
+        raw = m.read(path, size)
+        need(len(raw) == size and digest(raw) == sha, 'whole retained download bytes/SHA')
+        holds.add(path, sha)
+        return raw
+
+    proofraw = download(transport['proof_artifact'], 'transport-proof.zip', transport['proof_bytes'],
+                        transport['proof_sha256'], 'object-proof-download')
+    zraw = download(transport['artifact'], 'artifact.zip', origin['bytes'], origin['sha256'], 'object-download')
+
+    def roster(z, count, expanded):
+        infos = z.infolist()
+        need(len(infos) == count and len({i.filename for i in infos}) == count
+             and sum(i.file_size for i in infos) == expanded, 'exact retained ZIP roster/expanded bytes')
+        for info in infos:
+            name = PurePosixPath(info.filename)
+            need(not name.is_absolute() and str(name) == info.filename and '\\' not in info.filename
+                 and '..' not in name.parts and not info.is_dir() and not info.flag_bits & 1
+                 and stat.S_IFMT(info.external_attr >> 16) in (0, stat.S_IFREG), 'regular canonical inert ZIP member')
+        need(z.testzip() is None, 'complete retained ZIP CRC')
+        return [i.filename for i in infos]
+
+    with zipfile.ZipFile(io.BytesIO(proofraw)) as proof, zipfile.ZipFile(io.BytesIO(zraw)) as payload_zip:
+        proof_names = roster(proof, 10, 85039)
+        payload_names = roster(payload_zip, 258, 37492774)
+        need(set(proof_names) == {'SOURCE_COMMIT', 'WORKFLOW_COMMIT', 'origin-artifact.json', 'origin-binding.json',
+             'origin-crc.txt', 'origin-members.txt', 'origin-run.json', 'preservation-run.json',
+             'preserved-artifact.json', 'roundtrip.json'}, 'fixed preservation proof members')
+
+        def member(z, name, limit):
+            need(z.getinfo(name).file_size <= limit, 'bounded proof member')
+            return z.read(name)
+
+        for name, value in [('SOURCE_COMMIT', origin['checkout_source']), ('WORKFLOW_COMMIT', origin['workflow_source'])]:
+            expected = (value+'\n').encode()
+            need(member(proof, name, 41) == member(payload_zip, name, 41) == expected, 'unchanged original source metadata')
+        need(member(proof, 'origin-members.txt', 64*1024).decode().splitlines() == payload_names
+             and b'No errors detected' in member(proof, 'origin-crc.txt', 64*1024), 'authenticated original roster/CRC record')
+        objects = [n for n in payload_names if n.endswith('.o')]
+        need(len(objects) == 90, 'complete original90-object witness')
+        originmeta = m.unique_json(member(proof, 'origin-artifact.json', 64*1024))
+        originrun = m.unique_json(member(proof, 'origin-run.json', 64*1024))
+        binding = m.unique_json(member(proof, 'origin-binding.json', 64*1024))
+        roundtrip = m.unique_json(member(proof, 'roundtrip.json', 64*1024))
+        saved_run = m.unique_json(member(proof, 'preservation-run.json', 64*1024))
+        saved_payload = m.unique_json(member(proof, 'preserved-artifact.json', 64*1024))
+        run_identity(originrun, origin['workflow_source'], origin['run'], 1, 'push',
+                     '.github/workflows/model-driver-cpu-context-296-once.yml', 'codex/feat-296-native-tools-candidate')
+        need(originrun['status'] == 'completed' and originrun['conclusion'] == 'success', 'historical successful origin run')
+        link = originmeta['workflow_run']
+        need(originmeta['id'] == origin['artifact'] and originmeta['name'] == 'model-driver-cpu-context-296-0'
+             and originmeta['size_in_bytes'] == origin['bytes'] and originmeta['digest'] == 'sha256:'+origin['sha256']
+             and originmeta['expired'] is False and link['id'] == origin['run'] and link['head_sha'] == origin['workflow_source']
+             and link['repository_id'] == link['head_repository_id'] == 1395501963
+             and epoch(originmeta['created_at']) <= run_created < epoch(originmeta['expires_at']), 'origin alive when preserved')
+        origin_fields = {k: origin[k] for k in ('artifact', 'run', 'bytes', 'sha256', 'workflow_source', 'checkout_source')}
+        need(binding['schema'] == 'openpilot.driver476-witness-preservation.v1'
+             and binding['status'] == 'AUTHENTICATED_ORIGIN_ONLY' and binding['origin'] == origin_fields
+             and binding['preservation_source'] == transport['source'] and binding['owner'] == '40241602401:1:inventory'
+             and binding['replay_executed'] is False and binding['consumer_binding_changed'] is False, 'historical preservation binding')
+        run_identity(saved_run, transport['source'], transport['run'], transport['attempt'], 'workflow_dispatch',
+                     '.github/workflows/python-rust-523-capacity.yml', 'codex/feat-523-python-rust')
+        # 완료 전 snapshot 원문은 그대로 두고, 완료 판정은 위 live API에서만 한다.
+        need(saved_run['status'] == 'in_progress' and saved_run['conclusion'] is None, 'unchanged pre-completion run snapshot')
+        artifact(saved_payload, transport['artifact'], transport['name'], origin['bytes'], origin['sha256'])
+        need(roundtrip['schema'] == 'openpilot.driver476-witness-roundtrip.v1' and roundtrip['status'] == 'ROUNDTRIP_VERIFIED'
+             and roundtrip['artifact_id'] == str(transport['artifact']) and roundtrip['run_id'] == str(transport['run'])
+             and roundtrip['source_commit'] == transport['source'] and roundtrip['bytes'] == origin['bytes']
+             and roundtrip['sha256'] == origin['sha256'] and roundtrip['requested_retention_days'] == 90
+             and roundtrip['endpoint'] == '/zip' and roundtrip['unwrapped'] is False
+             and roundtrip['original_bytes_equal'] is True
+             and roundtrip['expires_epoch'] == epoch(saved_payload['expires_at']), 'exact historical API roundtrip')
+        old_receipt = m.unique_json(member(payload_zip, 'driver-catalog/current-catalog-receipt.json', 4*MIB))
+        need(old_receipt['source_commit'] == origin['checkout_source']
+             and old_receipt['models']['dmonitoring_model_tinygrad.pkl']['sha256'] == RETAINED_MODEL_SHA, 'historical checkout/model retained')
+
+    receipt = {'schema': 'openpilot.driver476-transport-authentication.v1', 'source_commit': os.environ['GITHUB_SHA'],
+        'transport_only': True,
+        'origin_artifact': originmeta, 'origin_run': originrun, 'origin_witness': origin,
+        'transport': {'binding': transport, 'artifact': payload, 'proof_artifact': proofmeta, 'run': runmeta},
+        'preservation_roundtrip': roundtrip, 'whole_zip_verified': True, 'all258_CRC_verified': True,
+        'original_objects': 90, 'original_metadata_unchanged': True, 'models_executed': 0,
+        'original_executed': 0, 'model_programs_executed': 0, 'compiler_invocations': 0,
+        'reuploaded_archives': 0, 'full_six_source_acceptance': False, 'retirement_credit': 0}
+    m.save(frozen/'transport-authentication.json', receipt)
+    holds.add(frozen/'transport-authentication.json')
+    holds.verify()
+    return receipt
 
 
 def ranges_before_writes(calls, views, allocations):
@@ -1184,6 +1348,152 @@ class Candidate:
         need(not failures, "independent finalizer failed")
 
 
+class TransportOnly:
+    """SDK 없는 전송 인증. 기존 pidfd command 회수만 재사용한다."""
+    command = Candidate.command
+
+    def __init__(self, root, job, m):
+        self.root, self.job, self.m = root, job, m
+        self.out = job/'driver476-transport'
+        self.out.mkdir(mode=0o700)
+        self.proof, self.evidence = self.out/'commands', self.out/'proof'
+        self.proof.mkdir(mode=0o700)
+        self.evidence.mkdir(mode=0o700)
+        self.holds, self.children = m.Holds(), m.Children(self.evidence/'children.jsonl')
+        self.commands, self.phase, self.before, self.paths = [], 'admission', None, None
+        self.env = os.environ.copy()
+        self.deadline = min(time.monotonic()+22*60,
+                            time.monotonic()+int(os.environ['DRIVER476_TRANSPORT_DEADLINE'])-time.time())
+
+    def budget(self):
+        need(time.monotonic() < self.deadline, 'transport shared22min deadline')
+        total = 0
+        for base in (self.out, self.job/'proof'):
+            for path in self.m.walk(base):
+                info = path.lstat()
+                need(stat.S_ISDIR(info.st_mode) or stat.S_ISREG(info.st_mode), 'transport output type')
+                total += max(info.st_size, info.st_blocks*512)
+        need(total <= 128*MIB, 'combined transport/proof128MiB cap')
+        fs = os.statvfs(self.job)
+        need(fs.f_bavail*fs.f_frsize >= 128*MIB-total+16*MIB, 'transport remaining growth/reserve')
+
+    def run(self):
+        self.budget()
+        index = self.job/'proof/index-before.bin'
+        self.holds.add(index)
+        names = self.m.read(index, 4*MIB).split(b'\0')
+        need(names[-1] == b'' and 1 < len(names) <= 65000
+             and len(set(names[:-1])) == len(names)-1, 'exact source index roster')
+        self.paths = [self.root]
+        for name in names[:-1]:
+            path = Path(os.fsdecode(name))
+            need(not path.is_absolute() and str(path) == os.fsdecode(name)
+                 and '..' not in path.parts, 'canonical relative tracked source')
+            self.paths.append(self.root/path)
+        for path in (self.root/'tools/ci/driver_retained_program_476.py', self.root/COMMON,
+                     self.job/'owner', self.root.parent/'.ci296-owner',
+                     self.job/'shell-env', self.job/'transport-shell-env'):
+            self.holds.add(path)
+        need(Path(os.environ['BASH_ENV']) == self.job/'transport-shell-env', 'owned transport shell environment')
+        python = canonical(Path(sys.executable).resolve(strict=True), provider=True)
+        self.holds.add(python, elf=True)
+        self.holds.add(Path(sys.executable), elf=True)
+        tools = {name: canonical(Path('/usr/bin')/name, provider=True) for name in ('gh', 'bash', 'git')}
+        for path in tools.values():
+            self.holds.add(path, elf=True)
+        self.before = self.m.snapshot(self.root, self.paths)
+        self.m.save(self.evidence/'source.before.json', self.before)
+        need(self.command([tools['git'], 'rev-parse', 'HEAD'], 'source-head', 10).decode().strip()
+             == os.environ['GITHUB_SHA'], 'actual transport source HEAD')
+        authenticate_retained_transport(self.m, self.command, tools, self.out/'frozen', self.holds)
+        self.budget()
+
+    def finish(self, error):
+        failures, reaped, verified = [], False, False
+        try:
+            self.children.stop()
+            need(not self.children.scan(), 'owned transport children remain')
+            reaped = True
+        except BaseException as e:
+            failures.append('reap: '+str(e))
+        try:
+            need(self.before is not None and self.paths is not None, 'source baseline required')
+            after = self.m.snapshot(self.root, self.paths)
+            self.m.save(self.evidence/'source.after.json', after)
+            need(after == self.before, 'transport source FD snapshot changed')
+            self.holds.verify()
+            verified = True
+        except BaseException as e:
+            failures.append('seal: '+str(e))
+        try:
+            # Finalizer has its separate90s allowance; growth cap remains identical.
+            old = self.deadline
+            self.deadline = time.monotonic()+90
+            self.budget()
+            self.deadline = old
+        except BaseException as e:
+            failures.append('budget: '+str(e))
+        self.m.save(self.evidence/'outcome.json', {'source': os.environ['GITHUB_SHA'],
+            'scope': 'transport-only-no-model-no-sdk', 'transport_only': True, 'phase': self.phase,
+            'transport_authenticated': error is None and not failures,
+            'source_fd_seals_passed': verified, 'all_owned_children_reaped': reaped,
+            'finalizer_failures': failures, 'error': error, 'commands': self.commands,
+            'held': self.holds.records(), 'models_executed': 0, 'original_executed': 0,
+            'compiler_invocations': 0, 'cargo_invocations': 0, 'reuploaded_archives': 0,
+            'full_six_source_acceptance': False, 'retirement_credit': 0})
+        self.holds.close()
+        os.close(self.children.journal)
+        need(not failures, 'transport independent finalizer failed')
+
+
+def transport_only_main():
+    probe, error, finalized = None, None, False
+    try:
+        need(sys.flags.isolated and sys.flags.no_site and sys.dont_write_bytecode, 'stdlib-only isolated Python required')
+        expected = {'GITHUB_ACTIONS': 'true', 'GITHUB_REPOSITORY': 'bin9208/openpilot-rust',
+            'GITHUB_REF': 'refs/heads/codex/feat-523-python-rust', 'GITHUB_JOB': 'transport',
+            'RUNNER_ENVIRONMENT': 'github-hosted', 'RUNNER_OS': 'Linux', 'RUNNER_ARCH': 'X64'}
+        need(all(os.environ.get(k) == v for k, v in expected.items()) and os.uname().machine == 'x86_64'
+             and os.environ.get('GITHUB_EVENT_NAME') in ('push', 'workflow_dispatch'), 'trusted transport Actions context')
+        need(os.environ['GITHUB_WORKFLOW_REF'] == 'bin9208/openpilot-rust/.github/workflows/python-rust-523-driver-transport.yml@'+os.environ['GITHUB_REF']
+             and re.fullmatch('[0-9a-f]{40}', os.environ['GITHUB_SHA']) and not os.environ.get('LD_PRELOAD'), 'exact transport workflow/source')
+        root, job = canonical(os.environ['CI296_SOURCE'], True), canonical(os.environ['CI_JOB_TEMP'], True)
+        need(root == Path.cwd() == Path(os.environ['GITHUB_WORKSPACE'])
+             and root == Path(os.environ['DIAG_SOURCE']) and root.name == 'source'
+             and root.parent == Path(os.environ['CI296_SOURCE_OWNER'])
+             and root.parent == Path(os.environ['DIAG_SOURCE_OWNER'])
+             and root.parent.parent == Path(os.environ['DIAG_ACTIONS_WORKSPACE'])
+             and re.fullmatch(r'\.ci296-source-'+re.escape(os.environ['GITHUB_RUN_ID'])+'-'
+                              +re.escape(os.environ['GITHUB_RUN_ATTEMPT'])+r'\.[A-Za-z0-9]{6}', root.parent.name)
+             and re.fullmatch(r'/tmp/openpilot-ci\.[A-Za-z0-9]{6}', str(job)), 'owned private transport paths')
+        owner = ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB'))
+        need(job.stat().st_mode & 0o077 == 0 and canonical(job/'owner').read_bytes() == owner.encode()
+             and canonical(root.parent/'.ci296-owner').read_bytes() == (owner+'\n').encode(), 'exact source/job owner bytes')
+        info = root.parent.stat()
+        need(f'{info.st_dev}:{info.st_ino}' == os.environ['CI296_SOURCE_IDENTITY']
+             == os.environ['DIAG_SOURCE_IDENTITY'], 'source owner inode')
+        os.umask(0o077)
+        for number in (signal.SIGINT, signal.SIGTERM, signal.SIGALRM):
+            signal.signal(number, interrupted)
+        probe = TransportOnly(root, job, common(root))
+        signal.setitimer(signal.ITIMER_REAL, max(0.001, probe.deadline-time.monotonic()))
+        probe.run()
+    except BaseException:
+        error = traceback.format_exc()
+        print(error, file=sys.stderr)
+    finally:
+        if probe is not None:
+            try:
+                signal.alarm(90)
+                probe.finish(error)
+                finalized = True
+            except BaseException:
+                print(traceback.format_exc(), file=sys.stderr)
+            finally:
+                signal.alarm(0)
+    return 0 if finalized and error is None else 1
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--request", required=True)
@@ -1239,7 +1549,10 @@ def main():
 
 
 if __name__ == "__main__":
-    if len(sys.argv)>1 and sys.argv[1] in ('--original-worker', '--collect-retained'):
+    if len(sys.argv)>1 and sys.argv[1] == '--verify-retained-transport':
+        need(len(sys.argv) == 2, 'transport-only entry takes no IDs or other arguments')
+        sys.exit(transport_only_main())
+    elif len(sys.argv)>1 and sys.argv[1] in ('--original-worker', '--collect-retained'):
         parser=argparse.ArgumentParser(allow_abbrev=False)
         parser.add_argument('--request',required=True)
         parser.add_argument('--request-sha256',required=True)

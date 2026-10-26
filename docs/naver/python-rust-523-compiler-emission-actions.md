@@ -90,3 +90,68 @@ functionalartifact12618236836은16,493B/SHA256
 SDK227파일/roster252 전후 byte 동일, 두 upload/source/common cleanup도 실제 성공했다.
 원본 SHA·historical bytes와 weights64B·Plan의 allocations/views/entrypoints를 직접 대조했다.
 whole_model_accepted=false/retirement_credit0을 유지하며 Python file 전체 퇴역으로 세지 않는다.
+
+
+## sourceef172 첫 시도: APT 인프라 timeout
+
+[run40245597111/job121326368969](https://github.com/bin9208/openpilot-rust/actions/runs/40245597111/job/121326368969)은
+source `ef17256300d8caf51d5b0a9b3a900fd2c9615d01`에서 host dependency 설치의12분 timeout으로
+실패했다. 마지막 관측은 Azure HTTP mirror의 `gcc-13-aarch64-linux-gnu`21.1MB 다운로드다.
+native10/COPY/mixed/order7/Clippy는 모두 미실행이며 비교 artifact는 없다. SDK 변수가 아직
+등록되지 않아 후검사도 실패했고 cleanup 두 단계는 skipped다. source/index 전후와 historical
+index19,596개는 같았다. 이 실패를 emitter 기능 실패나 수정 Clippy 성공으로 바꾸지 않는다.
+
+private artifact12619240040은292547B, SHA256
+`e9e0c8a1949c5717e87df40f230a27ab682de085f1b73b55be0c97bd9401844f`,
+13 safe unique regular entry/CRC 정상, expanded2359107B다. SDK/order 실행 증거는 없다.
+source602와 비교해 Python/core/test/WF는 byte 동일하며 CLI는 세`()→빈 arm`과 rustfmt 외
+차이가 없다. 새 CLI SHA는 `6e3e00ae77a3d275c3aa0e3a664a5baa2a0516d430bdb41911587daf88ce4ec6`다.
+source602의 기능 성공은 유지하되 수정 source의 Clippy 포함 최종 수용은 pending이다.
+
+인프라 실패에 한정해 같은 run의 실패 job만 attempt2로 재시도했다. 새 job은121329475106이며
+기능 결과를 미리 수용하지 않는다. 이미 성공한 source602 기능을 로컬에서 반복하지 않았다.
+
+
+## sourceef172 attempt2: 실제 native ordered emitter 경계 수용
+
+같은 source의 [run40245597111/attempt2/job121329475106](https://github.com/bin9208/openpilot-rust/actions/runs/40245597111/job/121329475106)이
+최종 SUCCESS다. APT/provider 준비 뒤 native v1/v2 일반10/ignored2, 실제 COPY1,
+genuine mixed1/order7 및 strict Clippy가 모두 exit0이다. mixed의47.68초는 테스트 실행 시간이며
+모델 성능값이 아니다. 실제 Python은3.12.15로 실행물 SHA
+`53dab24bf9e0e9c490088a53d71770b6f027b057678b313648e75f7fc87a675e`에 결합했다.
+앞선 attempt1의 APT 실패와 이 실제 성공을 구분한다.
+
+| 실제 artifact | bytes·SHA256 | 비실행 archive 감사 |
+| --- | --- | --- |
+| native compiler comparison12618734936 |16141B / `7cb79be1b73e37e070b9eac3307c18416b22f592df3552d9839efb833f17549d` |22 safe unique regular/CRC·expanded41324B |
+| private source/SDK/proof12618889731 |336677B / `27a195daaaee8a418fae2aad68da0c2586a5ebefb53f5daed0f16f76c7987f96` |32 safe unique regular/CRC·expanded2576927B |
+
+API source/run/attempt2 name·expected bytes/digest와 실제 ZIP을 대조했다. 경로 이탈·중복·
+symlink·special·암호화가 없고 전체 CRC가 정상이다. 추출·native/oracle/모델 실행은 하지 않았다.
+comparison의 passed=true/independent_python_prefix=true/original_native_calls0이며 원래
+16463B source SHA `bc1b7b572c8dd2f84f3ea0ca38b1744e4c7120155c33f3dabb633eabaf7f0144`를 확인했다.
+원본을 native Plan에서 복원하지 않았다.
+
+original-graph와 candidate-plan의 allocations3/views3/entrypoints4를 직접 대조해 같았다.
+원본 weights64B도 candidate의 hex bytes 및 양쪽 SHA
+`58dda328598e2f7fe472621bfc54935aaa354d1a6ebcaf9562cd743fd575eb19`와 일치했다.
+graph calls3/kernels1과 native launches2를 실제 확인했다. 원본-first7개 case의 lowering/compiler
+횟수는 양쪽 모두 `[0,0,1,1,0,0,0]`, 앞의 실패5개는 destination 부재다. unused/write-covered의
+원래 prefix는 파일을 쓰지 않고 실제 후보만 destination을 생성한다는 차이도 그대로다.
+future_compiler_after_failure=false/whole_model_accepted=false/retirement_credit0이다.
+
+실제 pinned A630 QCOM compiler SHA `fb7e6390cc25700d6935b2eef3acad85a43f247206bdf84cb4d37bd48a60b093`,
+AArch64 frontend SHA `a8f1654e93f2bcaf4a5fa17edd601aadf2f9d7dda50a0a975a24e4a7d4096cc1`,
+loader/DT_NEEDED closure·qemu SHA가 provenance에 결합됐고 GPU execution은 false다.
+원래 ARM cross startup 객체를 포함한 준비도 성공했다. 이 증거는 실제 source→compile/export
+경계이며 GPU/기기 실행이나 전체 모델의 자원 적합성 수용이 아니다.
+
+index19596개와 source SHA, complete host+ARM SDK의227파일/252-roster가 전후 byte 동일하다.
+단일 exact-source job API에서 비교 artifact upload, source/index 후봉인, private evidence upload,
+owned source/alias/target 정리 및 common temp 정리가 모두 SUCCESS임을 확인했다.
+comparison.json SHA는 `00cfaf07d864c9ee54eeafffd0b189e34a5e308152b15b08fdffea4aba6adde0`,
+error-order.json은 `39e67c7a598032604008f03ee2be99952026c57c6668eacc1041b993ce52a153`다.
+
+현재 Python caller는 Tensor/UOp lowering·constant preparation·memory planner/render/metadata/
+최종 writer를 계속 담당한다. 이번 수용은 native ordered allocation/launch/stage 경계에 한정하고
+production Python 파일 삭제나 전체 F02 credit을 추가하지 않는다. 기준3580의300/3/3277은 유지한다.

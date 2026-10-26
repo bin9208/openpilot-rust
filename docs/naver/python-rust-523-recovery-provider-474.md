@@ -591,3 +591,93 @@ helper/preparer/shared pin/strict parser·policy/trace raw/26통제 정의는 �
 부모는 새 WF SHA256 `6f960f102735612b05a0c0c9b12c25b877207c864157a9f5fe109c70a34caeda`를
 공유 pin/Focus/원장에 통합한 뒤 실제 GHA를 담당한다. 이 작업의 프로젝트 CLI/테스트/빌드 실행,
 GHA dispatch/cancel/rerun, stage/commit/push는0이다. 원래 LISTEN 문제의 전역 해결을 주장하지 않는다.
+
+## source39800의 새 strict Clippy와 untraced exact1 실제 수용
+
+2026-10-26 사용자 요청으로 source `39800e064e1e7bae7fd01adcb1952505f1db41f7`의
+[run40242668854/job121317637641](https://github.com/bin9208/openpilot-rust/actions/runs/40242668854/job/121317637641)을
+읽기 전용 감사했다. attempt1의 job과 모든 step은 success다. 실제 runner는
+GitHub Actions1000029702/github-hosted/Linux/X64, Ubuntu24 image20261023.334.3이다.
+앞 절에서 UNRUN으로 남긴 **해당 crate strict Clippy와 별도 untraced PTY exact1**을
+이번 실행에서 확인했다. 기존 성공 검사를 다시 실행한 것이 아니다.
+
+원본 artifact는 `recovery-native-lanes-40242668854-1`, ID `12617771936`이다.
+기존 캐시에 이 ZIP이 없음을 확인한 뒤 한 번 받아
+`.analysis/scratch/2026-10-25-523-completion/ci/12617771936.zip`에 보관했다.
+ZIP90,236,393B, unique/safe/CRC 정상14,121 members, expanded315,006,892B다.
+파일을 추출·실행·정규화하지 않고 ZIP member bytes를 직접 읽었다.
+
+| 원본 증거 | SHA256 |
+| --- | --- |
+| artifact ZIP; API와 업로드 로그의 digest도 동일 | `0ec85c4a1c9dae14e05dd661b7365f319608a1c9d043f84dc42360bb9958a407` |
+| 원본 job log `recovery39800-121317637641.log` | `82a453f51b4b3a7002146b7aa1c3569ac4929fc2e6042906aadbe5586fa88c53` |
+| `proof/recovery-build/pty-clippy.stderr` | `b012cfee09e851440703b069cbc559749c00f3fa8956e4abb3b112fb6bc54971` |
+| `proof/recovery-pty-untraced/unit.stdout` | `82d8155acc16e1eba8e1316f9f233a3667d980e553f5a8df706069a4748462de` |
+| `proof/recovery-pty-untraced/command.nul` | `29b63aa5497a81149f91cb8b97a6739f24d714ccc8c496aefd0b148d53c4f77d` |
+| 실제 선정 CWP lib test ELF의 봉인 digest | `0dd282b1d54aa88fec9aedf85b8a2104e2429b1e73bed64e1285ee77c28f54d9` |
+
+새 Clippy는 다음 명령을 원래 build/select step에서 **선정7개 봉인 전에 한 번** 실행했다.
+
+```text
+cargo clippy --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --tests --locked -- -D warnings
+```
+
+`pty-clippy.status`는 `0\n`, stdout은0B, stderr는6,263B다. 해당 source 경로의
+`openpilot-carrot-recovery`와 `openpilot-process-supervision` 검사 및
+`Finished dev profile ... in 27.64s`가 실제 stderr에 있다. job log955–959행의 호출,
+1822–1864행의 결과도 이 파일과 일치한다. 이전 dev-tools Clippy 성공을 대신 사용하지 않았다.
+
+untraced exact 실행은 full untraced8 바로 앞 별도 step에서 수행했다.
+Cargo JSON의 executable 있는 lib-test artifact가 정확히1개이며,
+`rust/target/debug/deps/openpilot_carrot_recovery-2d57e74648eaed0f`다.
+`command.nul`의 실제 argv는 `/usr/bin/timeout --signal=TERM --kill-after=15s 30s`
+다음에 held inode `/proc/34779/fd/10`, `--exact`, 기존 selector
+`terminal::pty::tests::exited_leader_remains_reserved_until_owned_descendant_cleanup`,
+`--test-threads=1 --nocapture`다. strace를 통하지 않았다.
+
+```text
+PTY474_SLEEP_READY pid=34790 pgid=34789 start=48283 state=S syscall=230 dev=2049 ino=1951
+```
+
+unit stdout에는 위 행1개와 `1 passed; 0 failed; 0 ignored; ... 23 filtered out`,
+0.01s 결과가 있다. JSON은 leader34789의 Z/exit23 예약,
+`leader_reaped=true`/`descendant_after=null`을 남겼다. 원래 test에는 unrelated child가
+여전히 살아 있다는 assertion과 해당 child의 kill/wait도 그대로 포함된다.
+unit status0, stderr0B이며 finalizer는 `original_exit=0`, `finalizer_exit=0`,
+`tracer_used=false`다. zero-selected test나 marker 단독 성공이 아니다.
+job log1955–1961행에서도 동일한 실제 출력이 확인된다.
+
+held-before/after는 byte 동일하고 path-after도 같은 dev2049/inode9474239/size14,633,112/
+type·uid·gid·nlink·mtime·ctime/SHA를 가진다. 이 SHA는 선정7개 manifest와 Cargo JSON의
+실행 경로, provider traced PTY의 held-before/after, full trace native auditor의 CWP
+program before/after seal에 모두 결합된다. untraced 선택 실행 전후의 선정7개 check도
+각각 정확7행 OK다. CWP ELF 자체의 bytes가 이 ZIP에 별도로 담겼다는 주장은 하지 않는다.
+
+같은 선정 ELF의 private-provider PTY도 exact1 PASS다. 별도 stdout에는
+pid37708/pgid37704/start74064/S/syscall230의 준비 행, Z/exit23 예약,
+leader_reaped=true/descendant_after=null, 0.02s가 있다. PTY command/direct wait는0/0이고,
+prepare/controls/pty/trace/after의 status는 모두 original_exit0/finalizer_exit0/
+owned_groups_nonlive=true다. PTY held32행과 trace held16행의 고유 행 집합도 전후 동일하다.
+
+기존 untraced8과 traced8은 각각 harness status0, native admission pass=true다.
+두 admission의 실제 실행물6개 digest가 동일하며, harness를 포함한 선정7개 stat와
+승인 hardlink 예외 밖 fixed-ctime도 전후 동일하다. native strict audit는 passed=true,
+5,033 attempts/Success2,393/명시 Errno2,640이며 program seal25쌍이 전후 동일하다.
+receipt가 가리키는 raw trace2,510개/2,910,402B/7,145행의 집합·길이·SHA도 대조했다.
+raw `???(`는0개다. direct-root receipt는 root38674/원래 harness,
+passed=true/trace_modified=false/extra_program_rule=false다. 파서를 로컬 재실행한 결과가 아니다.
+
+source/index, workflow SDK165파일·programs·전체 roster, provider SDK의
+after-build/after-cold/after-fast와 선정 cohort를 합쳐18쌍을 byte 대조했다.
+source tar seal은 전후 `2fdadce3061fb2389aa4e8c7bd254ee093e349fa0c8e1e6b2450feb923757ad7`이다.
+업로드 ID/digest가 위 ZIP과 일치한 뒤 source cleanup과 common job cleanup step도 실제
+success다. 소유 root/dev·inode/owner 검증 및 cleanup AND는 source39800의 원래 WF와
+job log에 근거한다. ZIP은 회수 전 증거이며 삭제 후 경로를 다시 관측한 자료는 아니다.
+
+이번 결과는 해당 hosted Linux X64에서 `/proc/<pid>/syscall`을 실제로 읽는 untraced/traced
+barrier와 해당 test module strict Clippy의 수용이다. 다른 architecture/보안 설정의 가시성,
+원래 PTRACE_LISTEN의 전역 해결, #474 전체 gate 또는 #560 broad cold trace 완료로
+확대하지 않는다. 추가 untraced1은 기존26통제나 full8 selector 수를 변경하지 않는다.
+이 감사는 기존 문서 끝 추가만 수행했다. 원본 ZIP/로그의 CRC·SHA·JSON·텍스트 및 source/diff
+점검 외 로컬 프로젝트 CLI/테스트/Cargo/strace 실행0, 기존 성공 checks 재실행0,
+GHA dispatch/cancel/rerun0, stage/commit/push0이다.

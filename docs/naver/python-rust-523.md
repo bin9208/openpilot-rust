@@ -1546,3 +1546,43 @@ source/index/index-stage·SDK file/program/roster6쌍 전후 byte 동일, SDK in
 **32교체/127대기/1기존native/2비실행/1제거**다. production ordered emitter의 실제 genuine
 검증은 별도 진행 중이며 이 테스트 파일1개 수용으로 전체 compiler/모델/Python 제거를
 완료 처리하지 않는다.
+
+
+## 2026-10-26 Planner native IPC 등록과 fresh/cached 모델 구분
+
+source `47fb84019a078f3d1c1de9c432cfe475f5b92be0`에 native IPC reader/CLI/feature/C++ peer와
+독립 aa79 HOST·ARM capture 감사 JSON을 등록했다. 기존 HOST12/ASan3/ARM12 뒤에 lib4개·
+strict Clippy·원본 공급·새 native source/rust×epoch0/1 비교를 추가했다.
+[HOST40246606213](https://github.com/bin9208/openpilot-rust/actions/runs/40246606213),
+[ARM40246606219](https://github.com/bin9208/openpilot-rust/actions/runs/40246606219)의 실제 새
+feature 수용은 아직 대기다. 원래 Python scheduler/collector/daemon/oracle은 유지한다.
+Rust driver의 source 비교용 Python daemon 실행도 새 추가경계1개로 pending에 등록했다.
+기준3580 **300교체/3부분/3277대기**, 추가164 **32교체/128대기/1기존native/2비실행/1제거**다.
+
+[ef172 current 모델40245597205/job121326369244](https://github.com/bin9208/openpilot-rust/actions/runs/40245597205/job/121326369244)은
+자연 Intel8573C에서 native15/ISA14/strict Clippy/A whole91과 명시 cached 경로C12가 성공했다.
+기존 원래 출력12개 총5138816B와 C가 byte exact며 두 C 전용 helper 사본의0700/nlink1,
+원본 불변·최종 봉인·자식 회수를 확인했다. 전체 job은 B fresh 경로의 세 signed-zero 차이로
+실패했다. [PR1344 같은 source40245597206](https://github.com/bin9208/openpilot-rust/actions/runs/40245597206/job/121326369441)도
+D1 sticky 외에 D2 model index99의 실제−0/+0 불일치가 있으므로 과거 sticky만으로 분류하지 않는다.
+새 expected·tolerance·CPU/ISA 강제·default cached 활성화 없이 원인을 좁힌다.
+전체 #482/모델·PR343·전달 및 필요한 기기 수용은 미완료다.
+
+source398의 [복구40242668854/job121317637641](https://github.com/bin9208/openpilot-rust/actions/runs/40242668854/job/121317637641)에서
+carrot-recovery strict Clippy와 untraced exact readiness1/동일ELF·heldFD·자식 정리가 실제 성공했다.
+source/SDK 후봉인과 소유 source cleanup도 확인했다. 이 증거로 #474 전체 gate나 #560 broad
+cold trace까지 완료 처리하지 않는다. 상세는 각 기능 기록에 남겼다.
+
+
+sourceef172의 genuine compiler 검증은 [attempt2/job121329475106](https://github.com/bin9208/openpilot-rust/actions/runs/40245597111/job/121329475106)에서
+전체 SUCCESS로 완료됐다. native10/COPY1/genuine mixed1/order7/strict Clippy가 모두 exit0이며,
+original-prefix 원문·실행물·source/index·전체 host+ARM SDK 후봉인과 업로드/소유 정리를 감사했다.
+이는 native ordered allocation/launch/stage 경계의 수용이고 production Python 파일 제거/F02 전체
+완료는 아니다. #596은 자연 host detector/production 어휘와 whole91/C12의 한정 조건을 충족해
+종료했지만 #482/#476·전체 #523/PR·전달·필요한 기기 수용은 남아 있다.
+
+
+원래 driver provenance를 유지하는90일 보존 carrier 인증과 별도 data-only 진입점도 등록했다.
+helper의 기존11개 function/class body와 원래 RETAINED_OBJECTS/bridge bytes는 유지한다.
+새 운송 인증의 실제 성공·#476 수치 수용은 대기다. 이 Python 진입점2개를 숨기지 않고 추가 원장에
+pending으로 더해 현재 **166=32교체/130대기/1기존native/2비실행/1제거**다.

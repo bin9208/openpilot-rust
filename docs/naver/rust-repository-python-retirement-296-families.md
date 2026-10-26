@@ -334,3 +334,13 @@ baseline은 **300 replaced-local /3 partially-replaced /3277 pending =3580**, ro
 새 Rust driver도 source 비교용 원래 Python daemon을 실행하므로 추가 실행 원장에 해당 경계1개를
 pending으로 등록했다. 추가 원장 **164 =32 replaced-local /128 pending /1 native-existing
 /2 non-executing-text /1 removed**이며 native transport 등록만으로 Python 실행 부재를 주장하지 않는다.
+
+
+## 2026-10-26 보존 driver witness의 별도 운송 인증 후보
+
+원래 source/run/object를 유지하며 이미90일 보존한 carrier와 proof를 인증하는 함수를 연결했다.
+별도 data-only Actions는 같은 함수를 호출하며 모델/SDK/Cargo/재업로드를 하지 않는다.
+실제 새 운송 인증은 아직 대기이며 #476 수치·fullsix 수용은 아니다.
+새 helper 전용 진입점과 workflow의 Python 의존성을 각각 pending으로 추가했다.
+추가 원장 **166 =32 replaced-local /130 pending /1 native-existing /2 non-executing-text /1 removed**다.
+기준3580의300/3/3277 및 routing3306의26/3/3277은 유지한다.

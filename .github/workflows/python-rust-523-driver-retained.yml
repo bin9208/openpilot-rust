@@ -27,7 +27,7 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TERM_COLOR: never
       PYTHONDONTWRITEBYTECODE: '1'
-      DRIVER476_HELPER_SHA256: 1b69287de0a8f5045da82f008788bf79dceac2587d9f79f2a5810212ef4ee1cf
+      DRIVER476_HELPER_SHA256: 89c48139534f8f2566de73aee20a46403ae3b0be1b2f95674d88dad6d9f4f4fd
       DRIVER476_SOURCE_ALLOWED: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/codex/feat-523-python-rust' }}
     steps:
     - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
@@ -416,17 +416,9 @@ jobs:
           # 고정 retired PKL의 원문 metadata와 #476의 보존 object를 별도로 인증한다.
           # archive/source pin은 기존 이슈/실제 artifact에서 확인한 literal이며 신규 입력은 없다.
           witness=h.RETAINED_OBJECTS
-          artifact=str(witness['artifact']); run=str(witness['run'])
-          meta=m.unique_json(command([tools['gh'],'api','repos/bin9208/openpilot-rust/actions/artifacts/'+artifact],'object-auth',60))
-          need(meta['id']==witness['artifact'] and not meta['expired'] and meta['size_in_bytes']==witness['bytes']
-            and meta['digest']=='sha256:'+witness['sha256'] and meta['workflow_run']['id']==witness['run']
-            and meta['workflow_run']['head_sha']==witness['workflow_source'],'authenticated object artifact')
-          runmeta=m.unique_json(command([tools['gh'],'api','repos/bin9208/openpilot-rust/actions/runs/'+run],'object-run-auth',60))
-          need(runmeta['status']=='completed' and runmeta['head_sha']==witness['workflow_source']
-            and runmeta['repository']['full_name']==runmeta['head_repository']['full_name']=='bin9208/openpilot-rust','object run/source authentication')
-          frozen.mkdir(mode=0o700)
-          command([tools['bash'],'-c','exec /usr/bin/gh api "$1" > "$2"','driver476-download',
-            'repos/bin9208/openpilot-rust/actions/artifacts/'+artifact+'/zip',frozen/'artifact.zip'],'object-download',120)
+          transport=h.authenticate_retained_transport(m,command,tools,frozen,c.holds)
+          # 이 두 기존 receipt 필드는 계속 원본 origin이다. 새 run/source는 별도 transport다.
+          meta=transport['origin_artifact']; runmeta=transport['origin_run']
           zraw=m.read(frozen/'artifact.zip',witness['bytes'])
           need(len(zraw)==witness['bytes'] and sha(zraw)==witness['sha256'],'whole witness ZIP bytes/SHA')
           c.holds.add(frozen/'artifact.zip',witness['sha256'])
@@ -543,6 +535,7 @@ jobs:
             'retained_preflight':pin(inputs/'native-api-binding.json')}
           m.save(qpath,request); args.request_sha256=pin(qpath)['sha256']
           m.save(job/'proof/frozen-authentication.json',{'artifact':meta,'run':runmeta,'witness':witness,'selected':selected,
+            'transport':transport,
             'whole_zip_verified':True,'all258_CRC_verified':True,'whole44_from_fixed_PKL':True,'original_warp_PROGRAMs':1,
             'current_request_sha256':request['cached_request']['sha256'],'expected_from_native_fresh':False,
             'original_compiler_history_proven':False,'full_six_source_acceptance':False})
@@ -661,6 +654,10 @@ jobs:
           ${{ env.CI_JOB_TEMP }}/driver476-original-request/native-api-binding.json
           ${{ env.CI_JOB_TEMP }}/driver476-original-request/warp-*
           ${{ env.CI_JOB_TEMP }}/driver476-frozen/retained-admission.rs
+          ${{ env.CI_JOB_TEMP }}/driver476-frozen/transport-authentication.json
+          ${{ env.CI_JOB_TEMP }}/driver476-frozen/object-auth.json
+          ${{ env.CI_JOB_TEMP }}/driver476-frozen/object-proof-auth.json
+          ${{ env.CI_JOB_TEMP }}/driver476-frozen/object-run-auth.json
           ${{ env.CI_JOB_TEMP }}/driver-retained476/preparation/cached-first-native/model-run
           ${{ env.CI_JOB_TEMP }}/driver-retained476/preparation/cached-first-native/driver-output
           ${{ env.CI_JOB_TEMP }}/driver476-fresh/driver-first-frame-diagnostic

@@ -452,3 +452,294 @@ entry와 전체 CRC, expanded35501461B를 검증했다. 실제 archive에는 A/B
 `model602-current-job121322096232.log`, `12618012224.zip`으로 보존했다. 이번 tracked 변경은
 이 audit append뿐이다. source/model/oracle/Cargo/build/test/Clippy 로컬 실행과 CI dispatch/
 cancel, stage/push는0이다.
+
+## actualef172 감사 — C12 실제 PASS, B strict 세 signed-zero로 전체 FAIL 유지
+
+2026-10-26. source `ef17256300d8caf51d5b0a9b3a900fd2c9615d01`,
+[run40245597205/job121326369244](https://github.com/bin9208/openpilot-rust/actions/runs/40245597205/job/121326369244).
+원시 job log의 `structuredContent.content`, 완료 job API와 artifact12618762234를 읽었다.
+실제 runner는 `GitHub Actions 1000029753`, CPU는 `INTEL(R) XEON(R) PLATINUM 8573C`,
+x86_64/logical4다. **C는 미검증 상태를 벗어나 실제 원본12출력과 모두 일치했다.**
+전체 FAIL은 C 완료 뒤에도 보존한 기존 B strict 비교의 세 signed-zero 차이다.
+
+### 15/14/A/B/C 실제 진입과 완료 범위
+
+| 범위 | 실제 결과 |
+| --- | --- |
+| current-bins / current-libtest | exit0; 각각13.271197초/4.859408초. 후자는 test ELF build이며 실행 수로 세지 않음 |
+| current-clippy | exit0/12.394071초; 이전602의 세 `unused_unit` 오류 재발 없음 |
+| cached-code native15 | 15 passed/0 failed, command exit0/1.844622초 |
+| ISA14 | 14 passed/0 failed, command exit0/0.110725초 |
+| A fresh collect / readonly | exit0/46.899505초 및3.925547초; complete91/calls176, strict_triplet_all=true/host_isa_all=true |
+| B original/native plain 및 tapped | 네 command 모두 exit0. 각 경로 plain↔tap 전체12출력 동일, original↔fresh-native strict 비교는 아래 세 zero 차이로 FAIL |
+| C 두 helper 사본 | 실제 생성·hold·사용 완료, copied_bytes6028312, originals_unchanged=true |
+| C exporter / DSO 확인 | exit0/11.876003초 및0.110849초; issuer preflight/package/seal 각각 exit0 |
+| C native selector | exit0/9.764772초; 1 passed/0 failed, `existing_original_all12_equal=true`, mismatches=[] |
+| 외부 source/index·SDK·독립 immutable gate | steps14/15/16 모두 success |
+| 전체 required gate | step17 failure; step13의 기존 B strict 오류 유지 |
+| upload / source cleanup / job temporary cleanup | steps18/19/20 모두 success |
+
+C selector는
+`cpu::diagnostic_482_tests::cached_context::complete_fresh91_cached_context_matches_existing_original`다.
+`cached-context.json`은 complete_roster91/frames2/diagnostic_complete=true,
+cached_issuer_invoked=true/cached_runtime_enabled=true다. 새 original 실행과 tap은 각각0이며,
+기존 B original12를 재사용했다. `cached-context-failure.json`은 없다.
+
+A의 OS-aware host snapshot에는 `avx512fp16`, `avx512vbmi`가 모두 있다. 이번91개 image의
+실제 decoder census는 AVX512_FP16을 요구하지만 AVX512_VBMI는 포함하지 않는다.
+따라서 native15/ISA14와 이번 FP16 포함91개 실제 수용을 기록하며, VBMI 명령을 요구하는
+전체 모델까지 이번 C에서 실행했다고 확대하지 않는다. A readonly 자체의
+generated_code_executed=false/numeric_acceptance=false도 유지한다.
+
+### A의 원본 자료 → 독립 admission → C 원본 image 연결을 별도 재검사
+
+artifact의91개 A `compile_event`별 SOURCE `.ll`, reconstruction object `.o`, image `.bin`을
+실행하지 않고 읽어 request의 size/SHA와 각각 대조했다.91개 모두 C certificate/독립 admission의
+original metadata와 정확히 같으며, index/kernel/pointers/scalars/global_slots/workers/core_id,
+image alignment/text bytes 연결도 같다. C `kernel-*.txt`의 source SHA와 `*.cached.bin`의 전체
+bytes는 대응 A 자료와 같다. C ISA proof와 독립 ISA 자료가 같고, A의91개 required features/
+instructions/text bytes와도 일치한다. 후보가 스스로 발급한 metadata만으로 원본임을 추정하지 않았다.
+
+원본 request SHA는
+`79de376fc35b75bfd0d5b46e2d8987f8980be458730d5134b374c7a099f72e98`,
+original PKL recorded SHA는
+`487ef8698775a593726c79ef0651940480f755f5ded57f672d0ee3a4bd8a624f`다.
+두 값 모두 독립 admission/certificate와 같다. PKL 원본 자체는 archive에 없으므로 로컬에서
+PKL bytes를 재검증·unpickle하지 않았다. C container/library의 실제 retained bytes SHA도
+certificate와 같다. C/B graph는 허용된 `version/backend/library_sha256/cached_code`만 제외하면
+정확히 같다. allocations334/views427/inputs9/outputs6/kernels93/calls176/entrypoints2와
+weights SHA가 유지된다. issuer 세 status의 generated_code_executed/libraries_loaded=false는
+그 issuer 단계의 속성이며, 뒤의 C native 실행까지 미실행이라는 뜻이 아니다.
+
+### 12개 raw 독립 대조와 B sticky의 정확한 잔여 실패
+
+C receipt만 믿지 않고 retained raw12개, 경로당 총5138816B를 직접 읽었다.
+**C cached 출력 == 기존 B original plain == 기존 original tapped**가12파일 모두 byte exact다.
+각 C size/SHA도 receipt와 같다. fresh-native raw SHA는 native tap의 output_sha256와 같으며,
+native/original 각각의 plain↔tap 전체 동일성 receipt도 true다.
+
+B original↔fresh-native 차이는 `model-1.bin`10304B 하나, 바이트 offsets403/407/5399뿐이다.
+이는 float32 indices100/101/1349이며 세 원본 word는 모두 LE `00000080`(-0), fresh-native는
+`00000000`(+0)다. 나머지11파일과 이 파일의 다른 bytes는 같다. C는 같은 세 word를 포함해
+원본 전체 bytes와 같다.
+
+| `model-1.bin` 경로 | 실제 SHA256 |
+| --- | --- |
+| B original / original tapped / C cached | `7fe2075ebcc4048be72666c5fc101238df672d438dfb849507251293d4c43242` |
+| B fresh native | `bbebf82fb3e5c20efd6011d5c538b005464e4f9a7eaccc1f2cd1338f44f2732f` |
+
+controller는 C 성공 뒤에도1308행에서
+`strict original/native byte mismatch retained; diagnostic is not numerical acceptance`로 실패한다.
+C의 b_failure_can_be_promoted=false/default_cached_disabled=true/full128_acceptance=false/
+full_model_runtime_acceptance=false/retirement_credit0도 그대로다. 이번 결과는 같은 host의 fresh91
+원본 BINARY를 명시적으로 admission한 native ABI 경로가 기존 original12를 재현한다는 증거다.
+fresh guarded 재컴파일 경로의 세 zero 차이는 해결하지 않았다.91개 image를 함께 재사용한
+관측이므로 특정 kernel·rewrite 한 곳의 원인까지 고립했다고 주장할 수 없다. C helper에 대한
+다음 수정 근거는 없으며, 남은 B 원인은 fresh compilation/image context 쪽으로 좁혀 별도 검토한다.
+old PR1344 frozen20/91의 생성 context, 과거 half5/sNaN, full128 및 전체 모델 수용과 구분한다.
+수학·expected·tolerance·CPU·ISA 강제나 default cached 활성화의 근거로 사용하지 않는다.
+
+### 두 사본 실제 사용·원본 불변성과 마지막 봉인
+
+이번 실제 경로는 `/tmp/openpilot-ci.ZELxY1/build/target/debug/`의 두 원래 Cargo ELF와
+`/tmp/openpilot-ci.ZELxY1/build/model482/cached-context/helpers/`의 두 C 사본이다.
+
+| helper | bytes | 동일 source/copy SHA256 | 원본 inode → 사본 inode |
+| --- | --- | --- | --- |
+| offline-llvm-guarded-add | 1449872 | `270b1cc2abe7e881682b2dd7e84ae7c93b7f33ffe072576a01d900164fd756d6` | 9443675 → 9445441 |
+| offline-cached-code | 4578440 | `9293fa09a64453993759fa97299d7f237aae6f5ef1026c006a8406a7647c7fcb` | 9443688 → 9445442 |
+
+두 source/copy 쌍은 device66305/UID1001이다. 두 source는 regular0755/nlink2이며 source_before,
+source_after와 holds-after의 전체 identity/SHA가 같다. 두 copy는 서로 다른 inode의
+regular0700/nlink1이며 retained ELF bytes size/SHA와 마지막 held identity/SHA가 모두 같다.
+원래 hardlink의 삭제·이동·변경 없이 이전972의 nlink 거부를 해소했다.
+
+C forecast140645101B에는 실제 두 ELF6028312B가 포함돼 있고 기존256MiB cap 아래다.
+기존 build+registry8GiB/proof512MiB cap과 deadline을 늘리지 않았다.
+`final-seals.json`은 pass=true/failures=[]/phase=cached-context-native,
+all_owned_children_reaped=true다. `children.json`도 subreaper=true/live=[]다. B의 수치 실패와
+immutable 후검사 성공을 각각 기록하며 source/SDK/copy 변조나 자원 초과로 원인을 바꾸지 않는다.
+
+### 증거 봉인과 변경 범위
+
+artifact12618762234는 API/download42345579B, SHA256
+`71209f8053826ef05fe0e2d2cb514649a73a65f52a884f2b5bcbcd63fbe69364`다.50MiB download cap과
+API expected bytes/digest를 확인했다.1283개 safe unique canonical entry/no symlink·special·encrypted,
+전체 CRC와 expanded124357921B를 검사했다. archive를 filesystem에 추출하거나 ELF를 실행하지 않았다.
+
+| 원문 receipt | SHA256 |
+| --- | --- |
+| triplet-readonly.json | `7fd4bfc9d6fdddd1b3554865eb9bdf165f122b2d48acd8c614cd52a7d57f8967` |
+| comparison.json | `991f0046bacc2d4e465d83e4590ac1d04748e6287cfa3ded2c2617c308074792` |
+| cached-context-helper-copies.json | `2cbd5a120c52472a78c21bd29985716780bc04dada49b6535a391953ded55135` |
+| cached-context.json | `14a51416524aa4a1c6345a2d3914eb1a3b307ce5664ab8c4c799b347703de511` |
+| bundle/cached-code.json | `8de26749588e498b3dc80d5ebd9981b718b1a0d48c0c48d8554f8d8e28cd436c` |
+| final-seals.json | `2048830bd67d58d8d2fc6e0897f85ac462b9a16027d32800e755d0d037fbf54b` |
+
+원시 job log106492B/SHA256은
+`eb3cd72472166bfcab90144bc555f67d9f04014526420a8857ed8dc3026b25e0`다. private scratch/ci의
+`modelef172-current-final-{run,job,artifacts}.json`, `modelef172-current-published-sources.json`,
+`modelef172-current-job121326369244.log`, `12618762234.zip`으로 보존했다.
+published commit에서 current helper98038B/SHA379507…가602와 byte exact임을 확인했다.
+기존 진단103f…/C module d9c1…/production #596 f696…/cached_isa a62a…도 위 source값 그대로다.
+즉 기존 A/B 본문·source closure·guard/math 변경 없이 세 lint 수정 뒤 C 사본과 실제12출력까지 도달했다.
+
+이번 tracked 변경은 이 문서 append뿐이다. 로컬은 Git 원문/JSON/ZIP/raw bytes의 inert 감사와
+diff 확인만 수행했다. source 수정·model/oracle/Cargo/build/test/Clippy 실행, CI dispatch/cancel,
+stage/commit/push는 모두0이다. 부모가 전체 수용 및 다음 qualification 범위를 결정한다.
+
+## actualef172 후속 — 같은 host의 compiler 입력 차이와 빠진 fresh-unrewritten 대조군
+
+2026-10-26. 같은 source/run/job/artifact12618762234를 재사용했다. **writer92의 native
+fresh-unrewritten object는 이 artifact에 없다.** A의 원문/object/image, B의 renamed+guarded
+IR/object/DSO와 C의 A image 재사용은 있지만, 함수명만 native symbol로 바꾸고 guard를 적용하지
+않은 별도 compiler invocation/object/output은 보존되지 않았다. 따라서 이번 읽기로 확정하는 것은
+실제 compiler 입력과 마지막 zero-arm 기계어의 차이이며, guard만 고립한 수치 인과관계나 ABI
+전체에 대한 판정은 아니다. production/default/수학/expected/nsz 정책 수정은 하지 않았다.
+
+### 실제 보존 원문과 없는 대조군
+
+| 역할/정확한 artifact 상대경로 | bytes / SHA256 / 상태 |
+| --- | --- |
+| A `retained/triplets/compile-90.ll`, B `retained/traffic/bundle/kernel-92.txt` | 둘 다166049B/`e223a2c36c6bde7cf676bb92fd2529858a723f9ecfa91c811b2b941756a9bea0`, byte exact |
+| native symbol로 rename한 중간 IR |166043B/`9781b747d6d436694b7d248a2b29b2fd95ddd78009405674e303a9fa405f6952`; receipt의 입력 hash이며, 원문 rename만으로 재대조 가능. 이 입력만 compile한 object는 없음 |
+| B `retained/traffic/bundle/kernel-92.compiled.ll` |166727B/`ffc2206baa1f05f49a5c9d07b68de71da1a1437485da87d8e4a75d0692a31b52` |
+| A `retained/triplets/compile-90.o` |15936B/`fbf737784835622e99706fc42357e9058bf9ce2bfbb648195453de9513d45ddd` |
+| B `retained/traffic/bundle/kernel-92.o` |15944B/`a8fbf958e61e4424822a54512cd618e629308479ea16c05b3bd38896d47441da` |
+| A `compile-90.bin`, C `retained/cached-context/bundle/kernel-92.cached.bin` | 둘 다14442B/`324697e4d28a400da3c521fea2f9140eea04d50f19e6771a96549f4b8a5a6767` |
+
+B compilation-evidence는 renamed SHA와 **guarded** compiled SHA/object SHA를 연결한다.
+renamed SHA만으로 fresh-unrewritten native object가 실제 compile됐다고 주장하지 않는다.
+기존 로컬 archive12616924856도 writer92는 같은 종류의 A/B/C 자료뿐이고,12618012224는 Clippy
+조기 실패로 writer 자료가 없다. 이 세 archive에서 별도 unrewritten/unguarded 후보와 `.bc`는
+찾지 못했다. 보존 `.ll`은 compiler 입력이며 최적화 후 IR/bitcode/pass-by-pass trace가 아니다.
+다른 archive 전체나 보존되지 않은 원래 runner filesystem까지 조사했다고 확대하지 않는다.
+
+### 첫 외부 출력 차이와 실제 tap의 경계
+
+이번 자료의 첫 다른 외부 출력은 zero-based frame1의 `model-1.bin`이다. serialized model
+packet 파일은 없고 두 frame의 prepare/policy sequence·입력5종·출력6종 raw가 있다. frame0의
+6출력은 모두 같고 frame1도 아래3word 외에는 같다. 따라서 packet 내부 필드나 최초 내부 SSA
+분기까지 관측한 것으로 표현하지 않는다.
+
+| frame1 output index | worker / local outer / global outer / lane | 기존 writer 진입 data0 LE | original 반환 / native 반환 LE | data1의 allocation16 내2B 시작 offset |
+| --- | --- | --- | --- | --- |
+|100 |0 /25 /25 /0 |`000030bb` |`00000080` / `00000000` |9672 |
+|101 |0 /25 /25 /1 |`00e004bc` |`00000080` / `00000000` |9674 |
+|1349 |1 /15 /337 /1 |`00a03c3b` |`00000080` / `00000000` |12170 |
+
+이 before 값은 원본/native에서 실제로 같지만 **출력 data0의 이전 저장값**이다. 다른 인자의
+입력값을 증명하지 않는다. request의 call175/PROGRAM90/kernel92는 data0=view9/allocation9/
+offset0/10304B, data1=view365/allocation16/offset9472/3152B다. 원문의 출력 index는
+`1288*worker + 4*local_outer + lane`, `%v182`는 `322*worker + local_outer < 394`다.
+위 세 index는 모두 이 조건이 참이다. lane0은 `%v2647 → %v3059`, lane1은
+`%v2648 → %v3130`을 거쳐 최종 vector store에 들어간다. data1의 해당 half load는 같은 index다.
+
+그러나 이번 tap은 세 **data1 half bytes/변환 후 SSA**를 기록하지 않았다. 과거 DD의 input99
+`0080` 관측을 이번100/101/1349의 실제 half 값으로 대입하지 않는다. view365의 producer는
+call147/kernel67이고 call148/kernel68의 arg3을 지나 call175의 arg1에 연결된다는 것은 정적
+provenance다. 이전 actor의 실제 출력이나 kernel92 진입의 모든 입력 동일성을 관측한 것은 아니다.
+
+### source-only 접점의 정확한 차이
+
+`model_export/native.py::compile_kernel`은 원문 함수명을
+`r_322_2_4_256_32 → op_impl_92`로 바꾸고, 명시적으로 admission된 helper에 넘긴 뒤
+`compiler.compile_to_obj(body)`를 호출한다. writer 원문 전체 diff에서 rename 외의 변경은
+결과 `%v3059/%v3130/%v3202/%v3274` 네 곳뿐이다. 원문4231행의 첫 lane 예는 다음과 같다.
+
+```llvm
+%v3058 = select i1 %v182, float 0.0, float %v3057
+%v3059 = fadd nsz arcp contract afn float %v2647, %v3058
+```
+
+guarded 입력은 다음 세 줄로 결과를 만든다. 다른 세 lane도 같은 형태다.
+
+```llvm
+%diagnostic_guarded_sum_0 = fadd arcp contract afn float %v2647, %v3057
+%diagnostic_guarded_sum_0.zero = fadd float %v2647, 0.0
+%v3059 = select i1 %v182, float %diagnostic_guarded_sum_0.zero, float %diagnostic_guarded_sum_0
+```
+
+두 IR의 인자 순서/타입/noalias/align32와 마지막 function attribute는 같다.
+attribute는 `{ alwaysinline nounwind "no-builtins" "no-trapping-math"="true" }`이며
+전역 no-signed-zeros/target-cpu/target-features attribute나 module target/source_filename header는 없다.
+명시적인 차이는 마지막 add의 `nsz` 제거와 flags 없는 +0 add arm이다. 이 접점을 바꾸지는 않았다.
+
+### 실제 LLVM context proof와 source로만 확인되는 부분
+
+| 항목 | A original 실제 기록 | B native의 현재 증거/한계 |
+| --- | --- | --- |
+| provider | `/usr/lib/llvm-18/lib/libLLVM.so.1`, SHA`5c3a63957e28c15cdf1503892074f032d29b72e36a9824a77dfa87e48a0dafb0`; package `1:18.1.3-1ubuntu1` | 같은 sealed provider 환경·autogen/compiler import와 sampled mapping. 별도 native TM getter receipt는 없음 |
+| triple/CPU/features | `x86_64-none-unknown-elf` / `sapphirerapids`; features886B/SHA`886a41ba2fb2cc50445f17d23f2b7da6af8a54aec1f13c05ddc6d720e36afffa` | 같은 자연 host, `Device.default.renderer.compiler` 사용. native invocation의 실제 getter 결과를 따로 봉인하지 않음 |
+| passes/options | `default<O2>`; LoopUnrolling/LoopVectorization/SLPVectorization/VerifyEach 모두 실제 setter value1 | 같은 `CPULLVMCompiler`/LLVMOPT1 source 경로. B의 실제 setter roster 별도 관측은 없음 |
+| codegen/relocation/model | pinned compiler source는 `LLVMCodeGenLevelDefault/LLVMRelocPIC/LLVMCodeModelDefault` 호출 | 같은 함수 원문. 이는 source 증거이며 별도 런타임 getter 관측과 구분 |
+| cache 및 reused context | 아래 실제104개 compile/cache/link journal과 선택91개 연결 | exporter는 `compile_cached`를 거치지 않고 `compile_to_obj` 직접 호출. 원래 B 실행은 A가 방금 만든 PKL의 BINARY 재사용 |
+
+A 선택91개 chain의 config는 모두 같고 writer의 compile_event는90이다. 전체 journal은 보조
+컴파일을 포함한104개 get/compile_enter/compile_link/put/compile_cached이며 cache hit는0이다.
+104개를 모델 PROGRAM 수로 세지 않는다. collector는 PKL 각 SOURCE+image를 해당 실제 chain의
+source/object/image와 연결하고 loaded address도 확인했다. 이번 B original이 과거 unknown cache나
+old PR1344 image를 재생했다는 증거는 없으며, A의 **이번 same-host fresh image를 재사용**한다.
+
+compiler source6679B/SHA`db106591197315ecf28f0e15de99d2841c9892e6e58290213c62c598e7014139`는
+A/B actual import receipt와 published Git blob에서 같다. `LLVMParseIRInContext → VerifyModule →
+LLVMRunPasses → EmitToMemoryBuffer`도 같은 Python/LLVM C API 원문이다. 이 모델 object를
+Rust test ELF 빌드의 LLVM21이나 test profile opt-level이 생성했다고 혼동하지 않는다.
+wrapper header는 stdint/string이고 link command는 `clang -shared -fPIC -O2 -ffreestanding
+-fno-math-errno ... -lm`이다. kernel92 object는 그 전에 이미 emit됐다. 별도 fast-math/LTO 옵션을
+발견하지 못했으며 아래 실제 object→DSO의 store-region 동일성도 확인했다.
+
+### 보존 object가 보여 주는 실제 zero-arm lowering
+
+GNU `/usr/bin/objdump -dr -Mintel --no-show-raw-insn`으로 anonymous memfd의 두 ELF object를
+정적으로 읽었다. compiler/LLVM 도구나 모델을 실행하지 않았다. `.text` 상대 offset은 다음과 같다.
+
+```text
+A original: 26de cmp [rsp+0x140],0x18a; 26f4 cmovl eax,r11d; 26f8 kmovd k1,eax
+            26fc vaddps xmm0,xmm2,xmm0
+            2700 vmovaps xmm0{k1},xmm2
+            2713 vmovaps [rax+rcx*4],xmm0
+B guarded: 26de cmp [rsp+0x140],0x18a; 26f4 cmovl eax,r11d; 26f8 kmovd k0,eax
+            26fc knotw k1,k0
+            2700 vmovaps xmm0{k1}{z},xmm0
+            2706 vaddps xmm0,xmm0,xmm2
+            2717 vmovaps [rax+rcx*4],xmm0
+```
+
+조건이 참이면 A는 입력xmm2를 마지막에 선택하고, B는 가산항을+0으로 만들어 실제 덧셈을 남긴다.
+B DSO의 `op_impl_92` symbol은0x73840/14260B이며 object 상대0x26de..0x271b의 bytes와 같다.
+따라서 이 차이는 sidecar뿐 아니라 로드 대상 DSO에도 남는다. 함수의 첫 byte 차이는0x348이지만,
+그 위치를 최초 수치 divergence나 원인 instruction으로 간주하지 않는다.
+
+[LLVM18.1.3 LangRef](https://github.com/llvm/llvm-project/blob/llvmorg-18.1.3/llvm/docs/LangRef.rst#L3242-L3264)는
+`nsz`에서 zero 부호를 중요하지 않게 최적화할 수 있다고 정한다.
+[동일 tag InstructionSimplify.cpp](https://github.com/llvm/llvm-project/blob/llvmorg-18.1.3/llvm/lib/Analysis/InstructionSimplify.cpp#L5179-L5183)는
++0 add를 입력으로 접는 조건에 noSignedZeros 또는 negative-zero 불가능성 증명을 둔다.
+[APFloat.cpp](https://github.com/llvm/llvm-project/blob/llvmorg-18.1.3/llvm/lib/Support/APFloat.cpp#L1873-L1878)의
+zero 합 규칙도 기본 round-to-nearest에서 반대 부호 zero의 합이 +0임을 설명한다. 이는 관측한 두
+lowering의 의미 차이에 부합한다. 해당 함수/특정 pass가 이번 변환을 실제 수행했다는 trace나
+현재 세 half 입력이 같았다는 증거로 확대하지 않는다. 원본 `nsz`를 strict raw 비교 면제로 삼지 않는다.
+
+### 결론의 제한과 필요한 최소 후속 후보
+
+전체91개의 B 원문 SHA는 A와 같지만, B canonicalizer는25개 kernel에서 총385곳을 rewrite했다.
+C는91개 image를 한꺼번에 원본 것으로 바꾼 경로이므로, 성공만으로 ABI 일반론이나 writer92
+한 곳의 인과관계를 고립하지 못한다. 이번에 확인한 source-only 차이를 근거로 guard 제거/nsz
+복구/zero 후처리/수학 patch를 적용하지 않는다. same-IR+same-config의 **fresh-unrewritten native
+대 guarded native 동시 대조**가 빠져 있으므로 그런 수정안을 확정할 수 없다.
+
+추후 부모가 원인 고립 진단을 허용한다면, 기존 A/B 과정의 같은 process/자연 LLVM provider·TM·
+pass-options에서 **동일하게 rename한 writer92 IR 하나**를 두 후보로 직접 fresh compile하는 범위가
+가장 좁다. 한 후보는 rename만, 다른 후보는 현재 helper의 네 rewrite를 그대로 사용한다. 양쪽
+실제 getter/setter context·SOURCE/object SHA를 기록하고 cache를 사용하지 않는다. 다른90개
+object와 graph/weights/입력/초기 상태는 동일하게 유지한 두 native 후보를 별도 namespace에 두어,
+기존2frame의 원본12출력과 비교하면 writer 접점만 분리할 수 있다. 새로운 original 실행/golden/
+tap/blanket SSA dump 또는 production 기본 경로 변경을 추가할 이유는 없다. 기존 B failure와
+15/14/A/후봉인·회수·cap/deadline은 유지해야 한다. 이는 **필요성 제안뿐이며 구현·dispatch하지 않았다**.
+현재 archive는 weights/PKL을 업로드하지 않으므로 이 제안을 artifact만으로 로컬 실행할 수도 없다.
+
+private inert 계산 근거는 `modelef172-first-difference-audit.json`4297B/SHA256
+`992fffc164bb2e78eea431da0264fac586aa1c03d51979e0e1bcacc4d2ffc31e`로 보존했다. tracked 쓰기는
+본 문서 append뿐이고 기존 기록은 유지했다. local model/oracle/compiler/LLVM/Cargo/build/test/
+Clippy 실행 및 GHA dispatch/cancel은0이다. B2frame 결과를 full128/과거 half/전체 모델 수용으로
+확대하지 않았다.

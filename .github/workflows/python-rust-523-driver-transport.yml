@@ -1,0 +1,223 @@
+name: Python Rust 523 driver witness transport only
+'on':
+  push:
+    branches: [codex/feat-523-python-rust]
+    paths:
+    - .github/workflows/python-rust-523-driver-transport.yml
+    - tools/ci/driver_retained_program_476.py
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: python-rust-523-driver-transport-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+jobs:
+  transport:
+    name: Authenticate fixed driver witness transport (no model or SDK)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      # 부모가 최종 helper source pin을 결합한다. 기존 pin은 fail-closed다.
+      DRIVER476_HELPER_SHA256: 89c48139534f8f2566de73aee20a46403ae3b0be1b2f95674d88dad6d9f4f4fd
+    steps:
+    - name: Deny fork source and require GitHub-hosted Ubuntu X64 runner
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      run: |
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork source denied for transport-only authentication' >&2; exit 1; }
+        set -euo pipefail
+        [[ $GITHUB_EVENT_NAME = push || $GITHUB_EVENT_NAME = workflow_dispatch ]]
+        test "$GITHUB_ACTIONS" = true
+        test "$GITHUB_REPOSITORY" = bin9208/openpilot-rust
+        test "$GITHUB_REF" = refs/heads/codex/feat-523-python-rust
+        test "$GITHUB_WORKFLOW_REF" = "bin9208/openpilot-rust/.github/workflows/python-rust-523-driver-transport.yml@$GITHUB_REF"
+        test "$RUNNER_ENVIRONMENT" = github-hosted
+        test "$RUNNER_OS" = Linux
+        test "$RUNNER_ARCH" = X64
+        test "$(uname -m)" = x86_64
+        printf 'DRIVER476_TRANSPORT_START=%s\n' "$EPOCHSECONDS" >> "$GITHUB_ENV"
+    - name: Common owned job temporary paths
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+    - name: Admit source and128MiB transport growth then allocate owned source
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -euo pipefail
+        workspace=$(realpath -e -- "$GITHUB_WORKSPACE")
+        job=$CI_JOB_TEMP
+        owner="$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$(cat "$job/owner")" = "$owner"
+        umask 077
+        mkdir "$job/proof" "$job/home" "$job/cache"
+        source_plan=$((2 * 1024 * 1024 * 1024))
+        transport_plan=$((128 * 1024 * 1024))
+        reserve=$((16 * 1024 * 1024))
+        source_dev=$(stat -c '%d' "$workspace")
+        job_dev=$(stat -c '%d' "$job")
+        source_free=$(df --output=avail -B1 "$workspace" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+        job_free=$(df --output=avail -B1 "$job" | awk 'NR==2 && NF==1 && $1~/^[0-9]+$/ {n++;v=$1} END {if(NR!=2||n!=1)exit 1;print v}')
+        if [[ $source_dev = "$job_dev" ]]; then
+          ((source_free >= source_plan + transport_plan + reserve))
+        else
+          ((source_free >= source_plan && job_free >= transport_plan + reserve))
+        fi
+        printf '{"source_device":%s,"job_device":%s,"source_free_bytes":%s,"job_free_bytes":%s,"source_growth_bytes":%s,"transport_proof_cap_bytes":%s,"reserve_bytes":%s}\n' "$source_dev" "$job_dev" "$source_free" "$job_free" "$source_plan" "$transport_plan" "$reserve" > "$job/proof/transport-admission.json"
+        source_owner=$(mktemp -d "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.XXXXXX")
+        printf '%s\n' "$owner" > "$source_owner/.ci296-owner"
+        mkdir "$source_owner/source"
+        source="$source_owner/source"
+        printf 'source %q\nif [[ ${GITHUB_WORKSPACE:-} == %q ]]; then\n  export GITHUB_WORKSPACE=%q\nfi\n' "$BASH_ENV" "$workspace" "$source" > "$job/transport-shell-env"
+        printf '%s\n' "DIAG_ACTIONS_WORKSPACE=$workspace" "DIAG_SOURCE_OWNER=$source_owner" "DIAG_SOURCE_IDENTITY=$(stat -c '%d:%i' "$source_owner")" "DIAG_SOURCE=$source" "DIAG_CHECKOUT_PATH=${source#"$workspace/"}" "CI296_SOURCE=$source" "CI296_SOURCE_OWNER=$source_owner" "CI296_SOURCE_IDENTITY=$(stat -c '%d:%i' "$source_owner")" "GH_CONFIG_DIR=$job/cache/gh" "XDG_CACHE_HOME=$job/cache" "BASH_ENV=$job/transport-shell-env" >> "$GITHUB_ENV"
+        printf 'owner=%s\njob=%s\nsource_owner=%s\nsource_identity=%s\nsource=%s\nworkflow_sha=%s\n' "$owner" "$job" "$source_owner" "$(stat -c '%d:%i' "$source_owner")" "$source" "$GITHUB_SHA" > "$job/proof/ownership.txt"
+        df -PB1 "$workspace" "$job" > "$job/proof/disk-before.txt"
+    - uses: actions/checkout@v7
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+        path: ${{ env.DIAG_CHECKOUT_PATH }}
+        set-safe-directory: false
+        clean: false
+        lfs: false
+    - name: Seal exact source HEAD and tracked index before transport
+      id: source_before
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$PWD" = "$DIAG_SOURCE"
+        test "$GITHUB_WORKSPACE" = "$DIAG_SOURCE"
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git diff --exit-code
+        git diff --cached --exit-code
+        printf '%s\n' "$GITHUB_SHA" > "$CI_JOB_TEMP/proof/SOURCE_COMMIT"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-before.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-before.sha256"
+        allocated=$(du -sx --block-size=1 "$DIAG_SOURCE_OWNER" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ ]]
+        ((allocated <= 2 * 1024 * 1024 * 1024))
+        printf '{"allocated_source_bytes":%s,"cap_bytes":2147483648}\n' "$allocated" > "$CI_JOB_TEMP/proof/source-growth-after-checkout.json"
+    - name: Authenticate fixed payload and proof with the same driver transport function only
+      id: transport_check
+      if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        printf '%s  %s\n' "$DRIVER476_HELPER_SHA256" tools/ci/driver_retained_program_476.py | sha256sum --check --strict -
+        export DRIVER476_TRANSPORT_DEADLINE=$((DRIVER476_TRANSPORT_START + 22 * 60))
+        ulimit -c 0
+        # Python 기록의 soft cap. 기존 공통 command의 별도 자식 제한 설정은 보존한다.
+        ulimit -S -f 131072
+        /usr/bin/python3 -I -B -S tools/ci/driver_retained_program_476.py --verify-retained-transport < /dev/null > "$CI_JOB_TEMP/proof/transport.stdout" 2> "$CI_JOB_TEMP/proof/transport.stderr"
+    - name: Seal source and index after all attempted transport contracts
+      id: source_final
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      run: |
+        set -euo pipefail
+        test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+        git ls-files -z > "$CI_JOB_TEMP/proof/index-after.bin"
+        tar --null --no-recursion --verbatim-files-from -T "$CI_JOB_TEMP/proof/index-before.bin" -cf - --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner | sha256sum > "$CI_JOB_TEMP/proof/source-after.sha256"
+        cmp "$CI_JOB_TEMP/proof/index-before.bin" "$CI_JOB_TEMP/proof/index-after.bin"
+        cmp "$CI_JOB_TEMP/proof/source-before.sha256" "$CI_JOB_TEMP/proof/source-after.sha256"
+        git diff --exit-code
+        git diff --cached --exit-code
+        allocated=$(du -sx --block-size=1 "$CI_JOB_TEMP" | cut -f1)
+        apparent=$(du -sx --block-size=1 --apparent-size "$CI_JOB_TEMP" | cut -f1)
+        [[ $allocated =~ ^[0-9]+$ && $apparent =~ ^[0-9]+$ ]]
+        ((allocated <= 128 * 1024 * 1024 && apparent <= 128 * 1024 * 1024))
+        printf '{"allocated_bytes":%s,"apparent_bytes":%s,"cap_bytes":134217728}\n' "$allocated" "$apparent" > "$CI_JOB_TEMP/proof/transport-growth-after.json"
+    - name: Independently require source FD seals and complete child recovery
+      id: transport_seals
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.DIAG_SOURCE != '') }}
+      shell: bash
+      working-directory: ${{ env.DIAG_SOURCE }}
+      env:
+        AUTH_OUTCOME: ${{ steps.transport_check.outcome }}
+      run: |
+        set -euo pipefail
+        /usr/bin/python3 -I -B -S - <<'CHECK'
+        import hashlib,json,os
+        from pathlib import Path
+        q=json.loads((Path(os.environ['CI_JOB_TEMP'])/'driver476-transport/proof/outcome.json').read_bytes())
+        assert q['source']==os.environ['GITHUB_SHA'] and q['scope']=='transport-only-no-model-no-sdk'
+        assert q['transport_only'] is True
+        assert q['source_fd_seals_passed'] is True and q['all_owned_children_reaped'] is True
+        assert q['finalizer_failures']==[]
+        assert q['full_six_source_acceptance'] is False and q['retirement_credit']==0
+        for field in ('models_executed','original_executed','compiler_invocations','cargo_invocations','reuploaded_archives'):
+          assert type(q[field]) is int and q[field]==0
+        assert type(q['transport_authenticated']) is bool
+        if os.environ['AUTH_OUTCOME']=='success':
+          assert q['transport_authenticated'] is True and q['error'] is None
+          path=Path(os.environ['CI_JOB_TEMP'])/'driver476-transport/frozen/transport-authentication.json'
+          raw=path.read_bytes()
+          assert len(raw)<=1024**2 and hashlib.sha256(raw).hexdigest()==q['held'][str(path)]['sha256']
+          receipt=json.loads(raw)
+          assert receipt['schema']=='openpilot.driver476-transport-authentication.v1'
+          assert receipt['source_commit']==q['source'] and receipt['transport_only'] is True
+          assert receipt['whole_zip_verified'] is True and receipt['all258_CRC_verified'] is True
+          assert receipt['original_metadata_unchanged'] is True and receipt['original_objects']==90
+          assert receipt['full_six_source_acceptance'] is False and receipt['retirement_credit']==0
+        else:
+          assert os.environ['AUTH_OUTCOME']=='failure'
+          assert q['transport_authenticated'] is False and type(q['error']) is str
+        CHECK
+    - name: Retain new transport authentication and immutable source evidence only
+      id: transport_evidence
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && env.CI_JOB_TEMP != '') }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: driver476-transport-only-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          ${{ env.CI_JOB_TEMP }}/proof
+          ${{ env.CI_JOB_TEMP }}/driver476-transport/proof
+          ${{ env.CI_JOB_TEMP }}/driver476-transport/commands
+          ${{ env.CI_JOB_TEMP }}/driver476-transport/frozen/transport-authentication.json
+          ${{ env.CI_JOB_TEMP }}/driver476-transport/frozen/object-auth.json
+          ${{ env.CI_JOB_TEMP }}/driver476-transport/frozen/object-proof-auth.json
+          ${{ env.CI_JOB_TEMP }}/driver476-transport/frozen/object-run-auth.json
+        retention-days: 14
+        if-no-files-found: error
+        include-hidden-files: true
+    - name: Clean only uploaded owned source after index FD and child seals
+      id: source_cleanup
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.transport_evidence.outcome == 'success' && steps.transport_evidence.outputs.artifact-id != '' && steps.transport_evidence.outputs.artifact-digest != '' && steps.source_final.outcome == 'success' && steps.transport_seals.outcome == 'success' && env.DIAG_SOURCE_OWNER != '') }}
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        UPLOAD_ID: ${{ steps.transport_evidence.outputs.artifact-id }}
+        UPLOAD_DIGEST: ${{ steps.transport_evidence.outputs.artifact-digest }}
+      run: |
+        set -euo pipefail
+        [[ $UPLOAD_ID =~ ^[0-9]+$ && $UPLOAD_DIGEST =~ ^[a-fA-F0-9]{64}$ ]]
+        workspace=$DIAG_ACTIONS_WORKSPACE
+        p=$DIAG_SOURCE_OWNER
+        case "$p" in "$workspace/.ci296-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}."??????) ;; *) exit 1 ;; esac
+        test -d "$p" && test ! -L "$p"
+        test "$(realpath -e "$p")" = "$p"
+        test "$(stat -c '%u' "$p")" = "$(id -u)"
+        test "$(stat -c '%d:%i' "$p")" = "$DIAG_SOURCE_IDENTITY"
+        test -f "$p/.ci296-owner" && test ! -L "$p/.ci296-owner"
+        test "$(cat "$p/.ci296-owner")" = "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB"
+        test "$DIAG_SOURCE" = "$p/source"
+        test -d "$p/source" && test ! -L "$p/source"
+        test "$(realpath -e "$p/source")" = "$p/source"
+        rm -rf --one-file-system -- "$p"
+    - name: Clean common owned transport paths after uploaded sealed source
+      if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always() && steps.transport_evidence.outcome == 'success' && steps.transport_evidence.outputs.artifact-id != '' && steps.transport_evidence.outputs.artifact-digest != '' && steps.source_cleanup.outcome == 'success') }}
+      uses: bin9208/openpilot-rust/.github/actions/job-temp@b2fc62472ce8183114d59dbeec4d1406df44e4c2
+      with:
+        cleanup: 'true'

@@ -426,3 +426,121 @@ artifact가 run+10분 안에 생성돼야 한다는 조건은 원래도 요구�
 각 artifact 생성 후 온전한90×86400초를 보장한다고 쓰지 않는다. 원문 ZIP bytes·90일 action
 입력·same-/zip SHA·두 upload receipt·owned cleanup은 원래 실제972 run의 증거로 유지한다.
 성공한 보존을 새 source로 반복 dispatch하거나 archive를 재업로드하지 않는다.
+
+## 승인된 consumer transport 연결과 data-only 진입점 구현 — 2026-10-26
+
+사용자 승인 뒤 기존 helper/driver WF와 새 전용 WF를 구현했다. 기준 HEAD는
+`47fb84019a078f3d1c1de9c432cfe475f5b92be0`이다. 상태는 **source 구현·구문/역투영 검토 완료,
+최종 helper pin 결합·execution-edge 등록·새 exact-source GHA는 부모 pending**이다.
+이번 작업에서 dispatch/재실행·stage/commit/push·원본/모델/Cargo 실행·archive 재업로드는0이다.
+
+### origin과 transport의 별도 고정
+
+`RETAINED_OBJECTS` 원문 bytes는 바꾸지 않았다. artifact12393290469/run39700512883,
+workflow source0e522와 checkout a298,20,550,808B/원문 SHA 및 bundle은 역사 origin이다.
+별도 `RETAINED_TRANSPORT`는 payload12617590637/run40241602401/attempt1/source972468,
+proof12618005602/9,261B/SHA
+`f8d72c81b3bdb266e1e98b6d04fbfe242a9db62213c1e4a15ef727bfa337ff57`만 허용한다.
+임의 ID·URL·path 입력, 최신 artifact 탐색, 원래 API로의 fallback은 없다.
+
+`authenticate_retained_transport` 한 함수를 두 경로가 공유한다. 현재 run API의 completed/
+success, source/attempt/event/workflow path/branch/repository IDs와 payload/proof 양쪽의 현재
+ID/name/size/digest/expired=false를 확인한다. configured90일은 실제 run-anchor window와 현재
+생존으로 검사한다. 현재 만료를 원래 artifact의14일 기한이나 artifact-created90일로 바꾸지 않는다.
+
+proof ZIP 전체 SHA를 먼저 확인한 뒤 정확한10 member/85,039B expanded/regular/unique/
+canonical/no-encryption/CRC를 요구한다. 원본 ZIP도 정확한258 member/37,492,774B expanded와
+전체 SHA/CRC를 검증한다. 원본90 object의 존재와 기존 receipt의 checkout/model SHA도 확인한다.
+90개 image와 object의 과거 독립 일치 증거는 위 실제 audit로 유지한다. data-only에서 native
+image 재구성·ISA/ABI admission·수치 비교를 새로 실행했다는 주장은 하지 않는다.
+
+proof의 `SOURCE_COMMIT=a298…`, `WORKFLOW_COMMIT=0e522…`는 payload의 원래41B member와
+byte 동일해야 한다. origin API/run/binding/roster/roundtrip을 원문 값과 대조하며 source972나
+현재 GITHUB_SHA로 덮어쓰지 않는다. **`preservation-run.json`은 실제 in_progress/null snapshot**을
+그대로 요구한다. 완료 판정은 현재 API의 completed/success에서 얻는다. 이 snapshot은 원본 보존
+run에서 최종 upload/cleanup 전에 만들어진 자료이며 완료 상태를 사후 기록한 원문이 아니다.
+
+새 인증 receipt의 현재 `source_commit`과 nested origin/transport는 구별한다. 원본 JSON을
+current source의 기록으로 다시 쓰지 않는다. raw snapshot의 권위는 고정 proof ZIP SHA다.
+current API JSON은 별도 owned 파일에 그대로 보존하고 FD로 전후 결합한다.
+
+### 기존 failure-only 경계 유지
+
+driver WF의 fresh-status 검사 **뒤**에만 공통 함수를 호출한다. fresh exit0은 기존과 같이
+다운로드 전 abort한다. fresh failure status의 sticky 반환, 원문9개 ELF, original collection44+
+warp1, 모델/ABI/ISA/수학·prestate·원본 실행 본문을 바꾸지 않았다.
+`frozen-authentication.json`의 기존 artifact/run/witness는 여전히 origin이며 새 `transport`만
+추가했다. 기존 helper의 두 worker를 포함한 모든 기존 top-level 함수와 Candidate class의
+전체 source body가 기준 HEAD와 byte 동일함을 AST 구간 대조로 확인했다.
+
+driver WF의 변경은 auth/download block, additive receipt, 작은 transport metadata upload뿐이다.
+나머지 step/job/조건과 fresh→postmortem→collection→native admission 본문은 source 역투영으로
+동일함을 확인했다. 기존 push trigger도 유지했으므로 helper를 publish하면 기존 driver 진단 WF의
+자동 실행 조건은 계속 성립한다. 이번 작업에서 그 모델 CI를 dispatch한 것은 아니다.
+
+### 전용 data-only Actions 계약
+
+새 `.github/workflows/python-rust-523-driver-transport.yml`의 job ID는 `transport`다.
+push는 검토 branch의 새 WF/helper path만, dispatch는 입력 없이 허용한다. 실제 GitHub-hosted
+Ubuntu24/X64/repository/ref/workflow-ref를 확인한다. 자유 ID나 모델 선택 인자는 없다.
+기존 job-temp pin과 private owned-source pattern을 사용하며 SDK 설치/venv/pip/APT/Cargo/
+모델 준비 단계는 없다. 전용 helper 진입점은 인자 없는 `--verify-retained-transport`다.
+
+source checkout은 기존2GiB admission과 사후 allocated cap을 쓴다. 별도 transport/command/
+proof 합계는 **128MiB**, reserve16MiB이며 같은 FS이면 checkout 증가량과 합산 admission한다.
+helper가 실행 중 apparent/allocated 양쪽을 보수적으로 합산하고 마지막 WF가 job 전체의 두
+크기도 검사한다. 이는 disk/file cap이며128MiB RSS 보장이 아니다. memory peak는 미측정이다.
+Python 기록에는128MiB soft file limit, 기존 공통 command에는 원래512MiB OS backstop과
+stdout/stderr 각32MiB 검사가 남는다. 실제 두 archive 다운로드는 각각 고정 길이의1024B 단위
+올림 file limit와 exact bytes/SHA를 별도로 요구하므로 과대 응답은 거부한다.
+
+job25분, job 시작부터 command deadline22분, 독립 finalizer90초를 둔다. metadata API3회는
+각60초, payload/proof 다운로드2회는 각120초이며 기존 pidfd/subreaper/descendant 회수 함수를
+재사용한다. 데이터 검증 성공은 nonzero command·EOF/시간초과·source/FD 변경·미회수 child를
+덮지 않는다. 원래 helper Candidate.command body도 변경하지 않았다.
+
+source HEAD/index/tar digest와 tracked-source stat/hash snapshot을 전후 비교한다. helper/common/
+Python alias·실제 ELF/gh/bash/git/index/owner/API metadata/payload/proof는 held FD로 결합한다.
+전체 tracked source는 각 read의 FD/stat/hash snapshot이며19,596개 FD를 동시에 잡고 있다고
+주장하지 않는다. SDK/stdlib/DSO 전체 closure를 새로 입증했다는 주장도 없다.
+
+`transport-authentication.json`과 data-only `outcome.json`은 transport_only=true, 실행 수0,
+full_six_source_acceptance=false/credit0을 기록한다. independent final step은 source/FD seals,
+child recovery, 실패 없는 finalizer와 실행 수0을 확인한다. 인증 자체가 실패하면 job은 실패하며,
+안전한 회수와 봉인만 완료됐다면 실패 증거 upload 후 owned cleanup은 가능하다.
+
+새 검증 artifact는14일 관측 자료다. 원문 payload와 proof ZIP은 **업로드하지 않는다**.
+API metadata·새 receipt/FD seals/command logs만 올리고 upload ID/digest·source/index/FD/child
+seals가 모두 있어야 source를 회수한다. 이어서 같은 owner-token의 job-temp를 회수한다.
+기존90일 archive를 다시 보존 실행하거나 재업로드하는 경로는 추가하지 않았다.
+
+최종 source review에서 독립 verifier의 성공 결합도 명시했다. helper step이 success이면
+outcome.transport_authenticated=true/error=null과 인증 receipt의 held SHA, 현재 source,
+transport-only/원문258 CRC/90 object/metadata 불변·credit0을 모두 요구한다. helper step이
+failure이면 인증=false와 오류 문자열을 요구한다. skipped/cancelled/unknown을 성공으로
+흡수하지 않는다. 합법적인 인증 실패의 안전한 seal/cleanup과 인증 성공 판정을 구별한다.
+
+### 부모 최종 결합과 검증
+
+두 WF의 `DRIVER476_HELPER_SHA256`은 부모 소유의 기존 literal
+`1b69287de0a8f5045da82f008788bf79dceac2587d9f79f2a5810212ef4ee1cf`를 그대로 남겼다.
+아래 최종 helper SHA로 **두 곳을 함께 교체하기 전에는 pin 검사에서 fail-closed**한다.
+새 Python execution edge1(`--verify-retained-transport`), 새 WF/job1, 새 SDK/ARM/alias0의 전역
+등록과 source pins/ledger는 부모가 통합한다. 새 WF의 독립 final verifier에는 stdlib-only inline
+Python1도 있으며 helper 실행과 별도로 source에 나타난다. 아직 실제 수용은0이다.
+
+부모 GHA는 공통 함수의 transport authentication, 현재 API와 고정 origin의 구분, 원본 member
+bytes, 실행 수0,128MiB growth, FD/source/index 전후, upload/owned cleanup을 확인해야 한다.
+잘못된 ID/head/digest/proof/origin/만료·truncated ZIP/unknown entry는 성공 skip 없이 거부해야 한다.
+data-only 성공은 기존 fresh-failure/44+warp1 실행을 대체하지 않으며, 그 경로가 fresh0으로
+abort했다면 retained diagnostic는 계속 미도달로 기록한다.
+
+이번 로컬 검토는 helper AST, 두 WF YAML, Bash run12+7개의 `bash -n`, embedded Python3+1의
+AST, 기존 body/원본 상수/모델 구간 byte 대조와 diff뿐이다. 공통 함수/API 다운로드/ZIP decoder/
+소스 봉인 본문·프로젝트 CLI·원본/모델·GHA는 실행하지 않았다.
+
+| 파일 | source SHA256 (부모 pin 결합 전) |
+| --- | --- |
+| `tools/ci/driver_retained_program_476.py` | `89c48139534f8f2566de73aee20a46403ae3b0be1b2f95674d88dad6d9f4f4fd` |
+| `.github/workflows/python-rust-523-driver-retained.yml` | `44540f73dd48989075043a8880d023fafc87ac3d9a8da4d322aecd5c60039e3c` |
+| `.github/workflows/python-rust-523-driver-transport.yml` | `21c5676f9fc2ac2f4822047b1ea4d3dd2fea1031753f799805db29d62a96d1bb` |

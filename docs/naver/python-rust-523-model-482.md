@@ -1048,3 +1048,95 @@ source0e521792e의 [40207816680/job121212441629](https://github.com/bin9208/open
 D1은28단계와 receipt까지 완료했으나2576개 중 index99에서 actual00000000/frozen80000000의 signed-zero 불일치가 남았다. strict_pass=false/strict_failure_sticky=true와 retirement_credit0을 유지한다. D2 original-plain은2.958초에 NPY copyin 미구현으로 실패했고 #591에서 최소 분기를 복구한다. final-seals의 pass=true는 source/SDK·자식 회수 검증이며 command 실패를 성공으로 바꾸지 않는다. run 전체와 모델 수치/full128/half·sNaN5/기기 수용은 미완료다.
 
 후속 source126fdbea3의 history40209583554/job121217758526은 ISA11와 cached-code15/strictClippy를 통과했으나 실제 host에 avx512bw가 없어 historical program0을 실행 전에 정확히 거부했다. 이 결과는 detector 회귀나 whole 모델 성공이 아니다. 비호환 host를 강제 통과시키거나 수치·CPU·기한 조건을 바꾸지 않는다.
+
+
+## ef172 PR1344 실제 실패의 읽기 전용 감사 — 2026-10-26
+
+source `ef17256300d8caf51d5b0a9b3a900fd2c9615d01`의
+[run40245597206/job121326369441](https://github.com/bin9208/openpilot-rust/actions/runs/40245597206/job/121326369441)은
+attempt1/push, `Whole frozen SOURCE triplets before current dual and first-policy comparison`이며
+completed/failure다. runner는 `GitHub Actions 1000029754`/github-hosted/Linux/X64,
+original Python은3.12.15다. James가 감사 중인 별도 current-model job121326369244와
+분리해 이 PR1344 job의 raw 로그·보존 artifact·기존 ee74 PR1344 raw만 읽었다.
+
+### archive와 raw 로그 인증
+
+artifact `12618507935`는 API의 source/크기/digest와 직접 일치했다.
+27,521,871B, SHA256 `474f1bef69eda7b639714edc456c50bb0131c22ace744cbe6b662144389fef56`다.
+2,077개 unique/safe member, symlink·특수파일·암호화 없음, 전체 CRC 정상이며
+비압축 합계118,879,498B다. ZIP은 실행하거나 전체 추출하지 않았다.
+다운로드 전 실제 가용74,723,008,512B를 확인했고 새 archive 증가량은27,521,871B다.
+
+GitHub job 로그의 디코딩된 UTF-8 원문은104,318B,
+SHA256 `2dadda61cf54f3de112792c0805328c0e10b4565d306d9de928a46717dc74e32`다.
+private scratch의 `ci/pr1344-ef172-job121326369441.log`와
+`ci/pr1344-ef172-readonly-audit.json`에 판정과 원문 위치를 남겼다.
+
+### 실제 실패 순서와 통과 범위
+
+- step12 `Authenticate whole original triplets before strict dual and same-instance first-policy replay`는
+  `23:44:28.9987462Z`에 `D1 strict frozen failure remains sticky after diagnostic D2`로 실패했다.
+  raw 로그703~718행과 final-seals의 traceback은 helper `compare()`의755행을 가리킨다.
+  comparison.json을 먼저 저장한 뒤 D1 strict를 검사하며, 그 다음756행의 current-output mismatch
+  검사는 앞선 오류 때문에 실행되지 않는다. 마지막 오류 문구만으로 current 양쪽이 같다고 판단할 수 없다.
+- step16 required 판정은 raw 로그909행의 outcome 전체 success 요구에서 실패했다.
+  `QUALIFY_OUTCOME=failure`, SOURCE/SDK/SEALS는 success다. `<stdin>`3행 AssertionError이므로
+  뒤의 comparison/D1 assertions까지 각각 실행되어 실패했다고 확대하지 않는다.
+- commands.json의56개 command는 모두 exit0, error/cleanup_error=null,
+  all_owned_children_reaped=true다. model/retirement 두 strict Clippy와 ISA14도 통과했다.
+  이는 diagnostic 수집 command의 성공이며 최종 수치 acceptance 성공이 아니다.
+- A readonly는 programs91/calls176, strict_triplet_all=true/host_isa_all=true,
+  triplet_error=null/isa_error=null이다. D1 stage28개와 receipt-write-after까지 완료했고
+  dual-first-packet command는10.452701179초에 exit0이었다. 180초 timeout·ISA/compile 실패는 아니다.
+- source-before/after와 index-before/after1,177,235B, whole SDK files/roster/programs/rejected
+  전후 bytes가 각각 같다. 독립 final-seals는 pass=true/failures=[]/all_owned_children_reaped=true다.
+  업로드와 두 cleanup step도 성공했지만 strict 실패를 성공으로 바꾸지 않는다.
+
+### 과거 sticky와 이번 current 양쪽 불일치의 구분
+
+| cohort | frozen index99 | current original index99 | current native index99 | current 전체 출력 비교 |
+| --- | --- | --- | --- | --- |
+| ee74 PR1344 run40232519230/job121287077126 | -0 | +0 | +0 | 6개 모두 동일 |
+| ef172 이번 PR1344 | -0 | -0 | +0 | model만 불일치, 나머지5개 동일 |
+
+표는 float32 부호 의미다. 이번 model10304B/2576word 전체를 직접 비교하면 유일한 차이는
+index99이며, little-endian bytes는 original/frozen `00000080`, native `00000000`다.
+현재 original 원문 전체가 frozen-model.bin과 같고 SHA256은
+`9afb2defff4ff29e5bf70e54db32d0d531d5e2b44507c8de652ee2c0dfcb67fe`다.
+현재 native 원문 SHA256은
+`069099e1d4d8081ed9de155494cd18dd00cf2d8be3e12cfe04be08d2e6857f87`다.
+나머지 big_img_q/img_q/desire_q/feat_q/warped 원문5개도 전체 bytes를 대조했다.
+original plain/tapped 별도 보존 bytes가 모두 같고, native plain/tapped 두 receipt의6개
+길이/SHA도 최종 보존 native raw와 모두 일치한다.
+
+D1 frame3의19152B packet은 receipt의 길이/SHA와 일치하며, native raw SHA도 D1 raw SHA와 같다.
+D1은 diagnostic_complete=true/strict_pass=false/strict_failure_sticky=true로 기존 실패를 보존했다.
+D2는 diagnostic_complete=true/plain_tapped_bytes_equal=true이지만
+**all_outputs_original_native_equal=false**와 model mismatch를 실제로 기록했다.
+따라서 이번 결과는 과거 sticky만 남고 current 양쪽은 같았던 결과와 다르다.
+이번 source의 current-original/current-native strict 불일치가 별도로 실제 관측됐으며,
+기존 index99 실패가 아직 열려 있다는 사실과 함께 기록한다. 새 불일치 관측만으로 특정 코드
+변경의 회귀 원인·CPU/provider 귀속을 확정하지 않는다.
+
+이전 ee74 artifact12613814043도 기존 캐시의27,446,372B/SHA256
+`ef2bbcee54a5827f98c697d0886c93f21047839626a9107e4c4cc92b0ef1a74f`를 확인한 뒤 읽었다.
+당시 current original/native model 전체 bytes는 둘 다 위 `069099e1…`이고 index99는 둘 다+0였다.
+이번 original/tapped와 native/tapped의 실제 writer half99 관측은 각각 `0080`/[0,128]로
+같다(kernel92/arg_slot1/worker0/writer-before). 이 두 바이트의 동일성은 writer 앞 관측이며
+SSA 최초 producer·연산 원인·historical provider를 입증한 것으로 확대하지 않는다.
+
+### receipt 식별과 수용 한계
+
+| ZIP member | SHA256 |
+| --- | --- |
+| model482/d1.json | `af19737ddc7b04535218dada3ee4ccedbd7437cb98d092ec353ba2be38904295` |
+| model482/comparison.json | `2d6851947bd4dbc08d30214cad864080d8470b44eefde651109fcca90681bd77` |
+| model482/triplet-readonly.json | `0339fbb39db64d3ca806f8ef1543b7347efda0fb8a8e88f1e228fe708fd3a42a` |
+| model482/final-seals.json | `10e8e480f34ce6c2bfb06e07370c9d35ad8ed9ef0fd2171724d89ba82d281078` |
+
+full128/full_model_runtime_acceptance/historical_half_snan5_resolved/historical_provider_proven/
+ssa_first_producer_observed/cached_issuer_invoked/cached_runtime_enabled는 모두false,
+retirement_credit0이다. D1 later_recursive_fields_qualified=false도 유지한다.
+이번 감사는 ZIP/JSON/raw bytes/기존 소스만 읽었고 새 expected·모델 계산·native 결과 생성은0이다.
+로컬 Cargo/build/test/Clippy/원본·모델·project CLI 실행, 새 CI/재실행/취소, SHA·CPU·허용오차·기한·
+WF/금지조건/실행범위 변경, stage/commit/push는0이다. 추적 문서 변경은 이 기존 기록의 append뿐이다.

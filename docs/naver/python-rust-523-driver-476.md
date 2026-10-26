@@ -827,3 +827,36 @@ retained 부분은 미도달이다. retained 실행 증거가 필요하다고 fr
 로컬은 helper AST, YAML,12개 run의 `bash -n`, embedded Python3개 AST, source/diff만 확인했다.
 프로젝트 CLI/Cargo/test/build/model/oracle/Clippy 실행0, GHA dispatch/재실행0이다.
 실제 source425의4unit/fresh 성공과 이 기록 수정 후의 **GHA UNRUN**을 분리한다.
+
+## 승인된 보존 transport 연결 WIP — 2026-10-26
+
+사용자 승인으로 helper/driver WF와 새 SDK 없는 data-only WF를 구현했다. 실제90일 보존
+payload12617590637·proof12618005602/run40241602401/source972468을 별도 transport로 고정했다.
+`RETAINED_OBJECTS`의 원본12393290469/run39700512883/head0e522/checkout a298/bytes/SHA/bundle은
+source bytes 그대로다. 새 보존 run/source를 원본 receipt에 덮어쓰지 않는다.
+자세한 field/기한/자원/부모 계약은 [보존 기록](python-rust-523-evidence-retention.md)의 마지막 절을 따른다.
+
+새 `authenticate_retained_transport`는 현재 transport/proof API와 exact bytes/SHA/CRC,
+고정 provenance의 원래 metadata를 확인한다. proof의 preservation-run snapshot은 실제
+in_progress/null 원문을 유지하고 현재 run API에서만 completed/success를 요구한다.
+driver WF는 기존 fresh failure gate 뒤에 이 함수를 호출하고 기존 frozen-authentication의
+origin 필드를 유지하면서 transport만 추가한다. fresh exit0의 다운로드 전 abort와 sticky 반환은
+그대로다. image90의 과거 독립 감사와 실제 선택44+warp1/원문9 ELF/ABI/ISA/수학은 변경하지 않았다.
+
+새 `python-rust-523-driver-transport.yml`의 `transport` job은 같은 함수를
+`--verify-retained-transport`로 호출하는 명시적 운송 전용 경로다. 모델/원본/Cargo/SDK/컴파일러
+실행0이며 원문 archive 재업로드0이다.128MiB는 transport·로그·proof의 disk cap으로,
+별도 source checkout2GiB와 RSS 미측정을 구분한다.25분 job/22분 command cutoff/90초 finalizer,
+source/index/FD 전후·pidfd 회수·upload 이후 owned cleanup을 연결했다. 새 검증 receipt만
+업로드하며 transport 성공을 fresh/retained 기능 수용으로 승격하지 않는다.
+
+기존 retained_collection_worker/original_worker를 포함한 모든 기존 top-level 함수와 Candidate
+본문은 기준47fb840과 byte 동일하다. 기존 WF의 auth/additive receipt/metadata upload 외
+step·fresh gate·collection/native admission 본문도 source-only 대조로 보존을 확인했다.
+helper AST·두 WF YAML/Bash/embedded Python 구문과 diff만 확인했고 실제 함수·GHA는 실행하지 않았다.
+
+**부모 pending:** 두 WF의 기존 helper pin을 최종
+`89c48139534f8f2566de73aee20a46403ae3b0be1b2f95674d88dad6d9f4f4fd`로 결합해야 실행 가능하다.
+현재 old pin은 의도적으로 fail-closed다. 새 execution edge/WF/job·전역 source roster 등록,
+최종 pins/ledger·검증·stage/commit/push는 부모 소유다. 기존 helper 변경의 driver 진단 push trigger는
+유지됐으며 이번 작업에서 모델 CI를 추가 dispatch하지 않았다. #476 repair/fullsix/파일 credit는0이다.
