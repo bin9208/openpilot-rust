@@ -31,7 +31,7 @@ pub struct RuntimeInputs {
 }
 
 impl RuntimeInputs {
-    fn verify(&self, root: &Path) -> Result<BTreeMap<std::path::PathBuf, String>> {
+    pub(crate) fn verify(&self, root: &Path) -> Result<BTreeMap<std::path::PathBuf, String>> {
         for (path, expected) in &self.files {
             if crate::digest_file(&root.join(path))? != *expected {
                 return Err("runtime staging input digest mismatch".into());
@@ -74,7 +74,7 @@ impl Plan {
         Ok(plan)
     }
 
-    fn validate(&self) -> Result<()> {
+    pub(crate) fn validate(&self) -> Result<()> {
         if self.schema != 1 || self.groups.is_empty() || self.groups.len() > 128 {
             return Err("invalid native build plan".into());
         }

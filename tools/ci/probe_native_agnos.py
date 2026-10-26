@@ -70,7 +70,7 @@ def native_driver_probe(guest_command, work, source_mount, evidence, log):
   actual_source = execute(['git', '-C', source_mount, 'rev-parse', 'HEAD'], 'native-project-source.txt').strip()
   assert actual_source == evidence['source_commit'], 'native project source differs from Actions SHA'
   execute(['cargo', 'build', '--locked', '--manifest-path', f'{source_mount}/rust/Cargo.toml',
-           '-p', 'openpilot-runtime-build', '--bin', 'openpilot-runtime-build',
+           '-p', 'openpilot-runtime-build', '--bin', 'openpilot-runtime-build', '--bin', 'openpilot-runtime-plan',
            '--target-dir', work / 'project-target', '--message-format=json'], 'native-project-build.jsonl')
   driver = work / 'project-target/debug/openpilot-runtime-build'
   with driver.open('rb') as executable:
@@ -79,6 +79,15 @@ def native_driver_probe(guest_command, work, source_mount, evidence, log):
   evidence['native_project_builder'] = dict(source_commit=actual_source, sha256=digest(driver),
                                           elf_architecture='AArch64', full_runtime_build=False)
   cargo = execute(['rustup', 'which', '--toolchain', '1.94.0', 'cargo'], 'native-project-cargo-path.txt').strip()
+  planner = work / 'project-target/debug/openpilot-runtime-plan'
+  catalog = json.loads(execute([planner, '--root', source_mount, '--cargo', cargo, '--check'],
+                               'native-project-catalog.json'))
+  assert catalog['source']['commit'] == actual_source
+  assert catalog['groups'] == 13 and catalog['binaries'] == 99
+  assert not catalog['compiled'] and not catalog['activated']
+  evidence['native_project_catalog'] = dict(source_commit=actual_source, planner_sha256=digest(planner),
+      catalog_sha256=catalog['catalog_sha256'], groups=catalog['groups'], binaries=catalog['binaries'],
+      full_runtime_build=False)
   toolchain = str(Path(cargo).parent)
   fixture = work / 'driver-fixture'
   shutil.copytree(work / 'fixture/src', fixture / 'src')

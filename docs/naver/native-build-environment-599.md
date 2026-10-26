@@ -77,3 +77,7 @@ headers/toolchain/도구와 기존
 Python 모델 준비 환경을 고정하고, 트랙별 전체 runtime roster·provider receipt·recipe에
 연결해야 한다. full AGNOS generation build/seal/start/update/recovery와 사용자 기기의 정상
 부팅·기록·기존 업로드 수용 전까지 #599와 #598을 닫지 않는다.
+
+전체89개/11그룹의 기존 runtime 목록과 새 자체 빌드·봉인 도구10개를 추적 파일로
+옮기고, 실제 Cargo metadata 대조 및 입력별 recipe 생성기를 추가했다. 구현/검증 범위와
+사용 명령은 [전체 native runtime 계획](native-runtime-plan-599.md)에 기록한다.

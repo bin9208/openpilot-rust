@@ -101,6 +101,11 @@ protocol 응답은 이 기능의 지원 여부이며, 정상 manager 부팅·모
 
 ## 최종 사용자 기기 수용 시험
 
+전체 build 목록·현재 Cargo 소스 대조와 입력별 recipe 생성 명령은
+[native runtime 계획 안내](native-runtime-plan-599.md)에 있다. 이 도구의
+`compiled=false`/`activated=false`는 실제 의미 그대로이며, plan 생성 성공을 전체
+runtime 빌드나 사용자 기기 시험 준비 완료로 판정하지 않는다.
+
 사용자가 선택한 최종 수용 장치는 **comma 3X**다. C3X의 실제 AGNOS 및 QCOM/eGPU 경로,
 모델·provider 구성을 기록하고 C4 또는 Ubuntu ARM 결과로 그 수용을 대신하지 않는다.
 

@@ -48,3 +48,7 @@ path = "src/native_main.rs"
 [[bin]]
 name = "openpilot-native-build-scope"
 path = "src/scope_main.rs"
+
+[[bin]]
+name = "openpilot-runtime-plan"
+path = "src/catalog_main.rs"

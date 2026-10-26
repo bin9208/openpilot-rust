@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 pub mod assets;
+pub mod catalog;
 pub mod generation;
 pub mod inputs;
 pub mod memory_cgroup;

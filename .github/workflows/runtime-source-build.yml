@@ -8,6 +8,7 @@ on:
       - 'rust/crates/updated/**'
       - 'rust/Cargo.toml'
       - 'rust/Cargo.lock'
+      - 'rust/native-runtime-catalog.json'
       - '.github/workflows/runtime-source-build.yml'
       - '.github/actions/**'
       - 'tools/ci/local-arm'
@@ -82,6 +83,10 @@ jobs:
           set -o pipefail
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build -- --nocapture 2>&1 | tee "$RUNNER_TEMP/runtime-build-tests.log"
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
+      - name: Audit the full runtime roster against the actual source workspace
+        run: |
+          cargo run --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-build --bin openpilot-runtime-plan -- \
+            --root "$GITHUB_WORKSPACE" --cargo "$(rustup which cargo)" --check > "$RUNNER_TEMP/native-runtime-catalog.json"
       - name: Verify the real HTTPS CLI and zero-transfer reuse of a pinned public input
         run: |
           cargo run --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-build --bin openpilot-runtime-assets -- \
@@ -140,6 +145,7 @@ jobs:
           name: runtime-source-build-${{ matrix.runner }}-${{ github.sha }}
           path: |
             ${{ env.CI_JOB_TEMP }}/runtime-build-metadata.json
+            ${{ env.CI_JOB_TEMP }}/native-runtime-catalog.json
             ${{ env.CI_JOB_TEMP }}/runtime-build-tests.log
             ${{ env.CI_JOB_TEMP }}/runtime-https-first.json
             ${{ env.CI_JOB_TEMP }}/runtime-https-reused.json

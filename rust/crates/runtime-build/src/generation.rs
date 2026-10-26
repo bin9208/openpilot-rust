@@ -22,7 +22,7 @@ use std::{
 const LIMIT: u64 = 4 * 1024 * 1024;
 const AGNOS: &str = "19.8-carrot-bt1";
 
-fn require_tools<'a>(names: impl IntoIterator<Item = &'a str>) -> Result<()> {
+pub(crate) fn require_tools<'a>(names: impl IntoIterator<Item = &'a str>) -> Result<()> {
     let names: BTreeSet<_> = names.into_iter().collect();
     for name in openpilot_runtime_installer::required_runtime_executables()
         .iter()
