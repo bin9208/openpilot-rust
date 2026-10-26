@@ -186,7 +186,7 @@ jobs:
         printf '%s  %s\n' 89c48139534f8f2566de73aee20a46403ae3b0be1b2f95674d88dad6d9f4f4fd tools/ci/driver_retained_program_476.py | sha256sum --check -
         printf '%s  %s\n' caa06cd8f48297baf619e335a6837c02686cdfb6cb338212ff11fe7deff4547e rust/crates/prepared-cold-audit/Cargo.toml | sha256sum --check -
         printf '%s  %s\n' a9a26ce4808ea839814c97a3eca81640df3ff7c31d19fa2133a14587c14a9893 rust/crates/prepared-cold-audit/src/lib.rs | sha256sum --check -
-        printf '%s  %s\n' 6a21e9dde31c349372171a920e6d8f42c840191793454937e5310d894c6308b6 .github/workflows/python-rust-523-planner-caller.yml | sha256sum --check -
+        printf '%s  %s\n' 6de6c8a094a8f458bfbd5f6182bad509a66dfc62d3d0d866fe36cd9354829b21 .github/workflows/python-rust-523-planner-caller.yml | sha256sum --check -
         test ! -e rust/tools/check_plannerd_native_memory.py && test ! -L rust/tools/check_plannerd_native_memory.py
         test ! -e rust/tools/tests/test_plannerd_native_memory_controller.py && test ! -L rust/tools/tests/test_plannerd_native_memory_controller.py
         printf '%s  %s\n' 1d5d0ab9d736e5cf24844a38ac6b35e9a02a0a279b7abb2d25e6fff82aff926a tools/ci/cold_tracer_launch_560.sh | sha256sum --check -
@@ -207,7 +207,7 @@ jobs:
         printf '%s  %s\n' 9429df49f408cda89f5b862fc0d51982668234cc18cb28ca0e83fd3d1a5bc7de rust/tools/model_export/buffers.py | sha256sum --check -
         printf '%s  %s\n' 9ab6c8c777b04d374750779fabfa75bb2b2af64fb6f8ce3ff8edd7a14138de4f rust/tools/model_export/offline_buffers.py | sha256sum --check -
         printf '%s  %s\n' 7dc0993039db5247aa0e71d7c122c46b393e30a8e02724f8367a3b26ec6f6e8c rust/crates/model-runtime/src/export.rs | sha256sum --check -
-        printf '%s  %s\n' a8503d3e74bf9fad4a09710205e41a2890ec717cd263052329fc598edaef6d3d rust/crates/dev-tools/tests/planner_ci_policy/contract.rs | sha256sum --check -
+        printf '%s  %s\n' 25fd54d658c47cbdc63fde7ff365f26bc9a76b14452c60720d73978ec487471a rust/crates/dev-tools/tests/planner_ci_policy/contract.rs | sha256sum --check -
         printf '%s  %s\n' 5f4939f535684236636096b6ac9c55d5f2798c0b187549e0eaf4febeaa5a42e5 rust/crates/dev-tools/tests/planner_ci_policy.rs | sha256sum --check -
         printf '%s  %s\n' 31b78885f433393d54b230c1106628088e586998248a4b614f4da496d42cc995 rust/crates/dev-tools/tests/uploader_lifecycle_check.rs | sha256sum --check -
         printf '%s  %s\n' 3e2fc981146f1e4bd70f1a0366045678957f4d57f145f08220e204fc10fd6f67 rust/crates/dev-tools/tests/release_files.rs | sha256sum --check -
@@ -1171,7 +1171,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='a1df1e69d385a4ed1307913428f1227778b03a8d6a29d04217d86d9615d70652', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='d916d96a2552fc39395fbc71c76fbe817b3f6efedc7d487c4d67ba4542dc203f', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile

@@ -8,7 +8,7 @@ pub const FAMILIES: [(&str, &str, usize, &str); 8] = [
     (
         "planner-runtime",
         "90",
-        6,
+        7,
         "Reserve capacity and install original planner dependencies",
     ),
     (

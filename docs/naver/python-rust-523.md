@@ -1666,3 +1666,11 @@ genuine40255341791/job121355876060은 library2/caller14·ignored2/COPY1/genuine 
 ### native ARM·현재 모델 push 검사 누락 경로 보완
 
 source57e1761c5의 hotfix는 발행했고 해당8개 push 검사가 시작됐다. ARMmore와 current-model의 push filter가 새 planner controller/helper·compiler_schedule/writer module을 빠뜨려 두 검사가 시작되지 않았음을 확인했다. ARM 수동 dispatch 요청은422/no workflow_dispatch로 거절되어 run이 생성되지 않았다. 새 수동 trigger나 우회 실행을 추가하지 않고 관련 source path만 기존 push filter에 넣었다. job/권한/모드·source guard·기한·명령은 완전히 같다. 이는 두 affected 검사를 새 source에서 실제 실행하기 위한 경로 보완이며 기존 원본 비교·ARM 및 최종 필수 PR 검사를 대체하지 않는다.
+
+### source57의 Planner 필수7단계 exact count 교정
+
+[HOST40256938654/job121360705093](https://github.com/bin9208/openpilot-rust/actions/runs/40256938654/job/121360705093)은 helper SHA 다음 guard에서 실제7/expected6으로 실패했다. 전체 functional-step 원문 동등 비교는 통과했으며 추가된 하나는 필수 native IPC4/Clippy qualification이다. FAMILIES의 Planner 수만6→7로 올렸고 exact 비교·기한·명령·나머지7family 값은 유지한다. 이 변경과 다음 실제 controller/helper 변경이 HOST에서도 빠지지 않게 기존 push source filter를 ARM과 같은 관련6경로로 보완했다. source57 genuine40256938672는 전체SUCCESS를 확인했으며 세부 source/SDK/Clippy 및 원본 증거 감사는 별도 진행한다.
+
+source57 model-family40256938653의 다음 첫 실패는 현재 변경하지 않은 cold bootstrap lifecycle control의 stderr16MiB 초과다. 원래13 control 중 어느 case인지 오류에 남지 않아 원인/실패 증거 수집 방식을 조사하며 상한이나5초 capture 기한을 늘리지 않는다. 해당 결과를 모델 기능 불일치로 해석하지 않고 미도달 모델 검증도 수용하지 않는다.
+
+독립된 기존 cold control의 간헐적 stderr16MiB 초과는 [#597](https://github.com/bin9208/openpilot-rust/issues/597)로 분리했다. #594의 좁은 측정 수용을 되돌리거나 이 실패를 모델 수치 결함으로 합치지 않는다. #523의 주 담당 열린 이슈는 새 조사1개를 더해71개, 기존 종료 이력115개다.
