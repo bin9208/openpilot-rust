@@ -75,6 +75,12 @@ kernel memory peak, 한도 event와 실패/성공 상태를 확인하고 최종 
 판정하지 않는다. 디스크 값은 filesystem 가용 공간 감소의 관측값이며 hard quota가 아니다.
 이 검사는 X64 host kernel의 격리 근거다. comma 3X kernel 검증은 아래 실기 수용에 남아 있다.
 
+native 빌드 worker의 원문 stdout/stderr는 시도별 `build.log`에 보존한다. updater로 전체
+출력을 전달해 그 프로세스의 메모리를 늘리지 않는다. 실패 메시지는 경로와 최대64KiB의
+원문 tail을 제공하므로 자세한 원인은 해당 파일과 `resources.jsonl`을 함께 확인한다.
+큰 synthetic 출력 flood의 CI artifact에는 제한된 tail만 포함하며, 그 검사를 정상 runtime
+부팅 성공으로 판정하지 않는다. 실제 배포 전 이 로그 경로와 자원 제한 검사도 통과해야 한다.
+
 자산의 보고 시간·저장 byte 수는 준비 작업의 수치다. HTTP `transferred_bytes`는 본문
 크기이며 TLS/header를 포함한 네트워크 전체 사용량이 아니다. host fixture 시간과
 메모리·디스크 값을 콤마의 전체 runtime 수치로 확대하지 않는다.

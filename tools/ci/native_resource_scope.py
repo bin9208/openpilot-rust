@@ -104,6 +104,7 @@ def enter(arguments):
     os.setuid(uid)
     os.environ['HOME'] = pwd.getpwuid(uid).pw_dir
     os.environ['NATIVE_TEST_CGROUP_PARENT'] = str(path)
+    os.environ['TMPDIR'] = str(job)
     evidence = job / 'native-resource-evidence'
     evidence.mkdir()
     os.environ['NATIVE_TEST_EVIDENCE_DIRECTORY'] = str(evidence)
