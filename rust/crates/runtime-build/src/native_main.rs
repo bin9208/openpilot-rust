@@ -1,4 +1,4 @@
-use openpilot_runtime_build::{generation::Config, selection, Result};
+use openpilot_runtime_build::{generation::Config, selection, supervision, Result};
 use std::{os::unix::process::CommandExt, path::PathBuf, process::Command};
 
 fn run() -> Result<()> {
@@ -10,7 +10,9 @@ fn run() -> Result<()> {
                 println!("Usage: openpilot-runtime-native --config CONFIG_JSON (--build --root CHECKOUT | --activate ID | --resolve | --launch --root CHECKOUT)\nBuild/seal a full native AGNOS runtime with source-built manager and ABI tools; activation requires verified offroad state. Launch resolves an actual preserved source generation and reports fallback explicitly. Requires prepared, pinned toolchain/dependencies/provider inputs. No exact-commit runtime release is fetched.");
                 return Ok(());
             }
-            Some(value @ ("--build" | "--resolve" | "--launch")) if mode.is_none() => {
+            Some(value @ ("--build" | "--build-worker" | "--resolve" | "--launch"))
+                if mode.is_none() =>
+            {
                 mode = Some(value.to_owned())
             }
             Some("--activate") if mode.is_none() => {
@@ -35,6 +37,23 @@ fn run() -> Result<()> {
     let config = Config::read(&config_path)?;
     match mode.as_deref().ok_or("native runtime mode is required")? {
         "--build" => {
+            let root = root
+                .ok_or("--root is required for building")?
+                .canonicalize()?;
+            let mut command = Command::new(std::env::current_exe()?);
+            command
+                .arg("--build-worker")
+                .arg("--config")
+                .arg(&config_path)
+                .arg("--root")
+                .arg(root);
+            let status = supervision::run(command)?;
+            if !status.success() {
+                return Err(format!("native build worker exited: {status}").into());
+            }
+        }
+        "--build-worker" => {
+            let _guard = supervision::WorkerGuard::start(&config.stores.params)?;
             let root = root
                 .ok_or("--root is required for building")?
                 .canonicalize()?;

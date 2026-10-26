@@ -13,6 +13,7 @@ pub mod prepare;
 pub mod selection;
 mod source;
 pub mod source_store;
+pub mod supervision;
 pub use source::Source;
 
 use serde::{Deserialize, Serialize};
