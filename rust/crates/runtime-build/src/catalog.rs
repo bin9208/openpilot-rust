@@ -225,7 +225,7 @@ impl Catalog {
                             .into_iter()
                             .flatten()
                             .filter(move |target| {
-                                target["name"].as_str() == Some(binary)
+                                target["name"].as_str() == Some(binary.as_str())
                                     && target["kind"]
                                         .as_array()
                                         .is_some_and(|k| k.iter().any(|v| v == "bin"))
@@ -392,11 +392,14 @@ pub fn assemble(root: &Path, cargo: &Path, bindings_path: &Path) -> Result<(prep
 pub fn publish(output: &Path, plan: &prepare::Plan, audit: &Audit) -> Result<()> {
     let mut plan_bytes = serde_json::to_vec_pretty(plan)?;
     plan_bytes.push(b'\n');
+    if plan_bytes.len() > 4 * 1024 * 1024 {
+        return Err("native plan exceeds the existing plan reader's 4 MiB limit".into());
+    }
+    let expected_plan = format!("{:x}", Sha256::digest(&plan_bytes));
     if audit.compiled
         || audit.activated
         || audit.bindings_sha256.is_none()
-        || audit.plan_sha256.as_deref()
-            != Some(format!("{:x}", Sha256::digest(&plan_bytes)).as_str())
+        || audit.plan_sha256.as_deref() != Some(expected_plan.as_str())
     {
         return Err("native plan publication requires the matching assembly audit".into());
     }
