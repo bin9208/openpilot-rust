@@ -8,6 +8,7 @@
 pub mod assets;
 pub mod inputs;
 pub mod objects;
+pub mod prepare;
 mod source;
 pub mod source_store;
 pub use source::Source;
@@ -43,7 +44,8 @@ pub struct Recipe {
     pub expected_growth_bytes: u64,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Report {
     pub schema: u32,
     pub cache_key: String,
@@ -58,7 +60,8 @@ pub struct Report {
     pub elapsed_ms: u128,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Artifact {
     pub executable: PathBuf,
     pub fresh: bool,

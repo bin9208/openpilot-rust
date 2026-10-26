@@ -31,3 +31,7 @@ path = "src/inputs_main.rs"
 [[bin]]
 name = "openpilot-runtime-source"
 path = "src/source_main.rs"
+
+[[bin]]
+name = "openpilot-runtime-prepare"
+path = "src/prepare_main.rs"

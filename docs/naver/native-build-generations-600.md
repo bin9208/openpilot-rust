@@ -35,6 +35,14 @@ Cargo driver는 계속 고정된 빌드 checkout 경로와 내용 기반 target 
 같은지 확인한 뒤 그 source root에 결과를 연결해야 한다. 서로 다른 SHA 결과를 같은 것으로
 표시하거나 기존 release descriptor에 가짜 archive를 작성하지 않는다.
 
+`openpilot-runtime-prepare --root CHECKOUT --plan PLAN_JSON --cache CARGO_CACHE
+--toolchain NATIVE_RUST_BIN --source-store SOURCE_STORE --object-store OBJECT_STORE`는
+이 순서를 실제로 연결한다. 그룹별 기존 Cargo driver를 직렬 실행하고, 서로 다른 target이나
+중복 binary 소유를 거부하며, 실제 결과 roster·SHA·크기와 immutable object를 대조한다.
+최종 준비 보고서에는 보존 source, 그룹별 toolchain/feature/input/result 보고서, binary별
+object와 실제 추가 복사 바이트, 전체 경과 시간이 남는다. compiler/헤더/provider 입력은
+각 recipe의 검증 정책을 그대로 적용한다. 이를 AGNOS 전체 설치 가능한 seal로 간주하지 않는다.
+
 ## 검사 계획과 현재 상태
 
 로컬은 Rust 구문·서식·diff만 확인한다. 기능·빌드는 모든 job이 등록된 `bin-actions`에서
@@ -52,6 +60,10 @@ Cargo driver는 계속 고정된 빌드 checkout 경로와 내용 기반 target 
 5. 변경 가능한 Cargo 출력을 덮어쓴 뒤에도 이전 candidate ELF가 실행되며 동일 출력의
    추가 복사는0바이트다. 기존 candidate 경로를 덮어쓰지 않는다.
 6. content object의 손상·symlink·특수 권한·공간/잠금 오류는 게시·연결 전에 실패한다.
+7. 실제 prepare CLI에서 독립 binary 두 개를 빌드한다. 문서만 변경하면 모든 Cargo 결과가
+   fresh이고 추가 출력 복사가0바이트다. 한 binary만 수정하면 다른 binary는 fresh를 유지하고
+   변경 출력 크기만 복사한다. mutable source와 Cargo cache를 제거해도 이전 준비본 검증 및
+   이전 ELF 실행 결과가 유지된다.
 
 검증 대기 상태다. 정확 SHA와 Actions 결과는 실행 뒤 이 기록 및 #600에 추가한다.
 실기 자체 빌드·정상 부팅·녹화·기존 업로드 수용은 완전한 후보 준비 뒤 사용자가 수행한다.

@@ -112,6 +112,112 @@ fn commit(root: &std::path::Path) {
 }
 
 #[test]
+fn prepared_groups_reuse_docs_and_rebuild_only_the_changed_binary_while_retaining_previous_execution(
+) {
+    use openpilot_runtime_build::prepare::{self, Plan};
+    let fixture = Fixture::new();
+    fs::create_dir_all(fixture.root.join("rust/src/bin")).unwrap();
+    fs::write(
+        fixture.root.join("rust/src/bin/other-fixture.rs"),
+        "fn main() { println!(\"other\"); }\n",
+    )
+    .unwrap();
+    commit(&fixture.root);
+    let mut other = fixture.recipe.clone();
+    other.binaries = vec!["other-fixture".into()];
+    let mut plan = Plan {
+        schema: 1,
+        groups: BTreeMap::from([
+            ("main".into(), fixture.recipe.clone()),
+            ("other".into(), other),
+        ]),
+        expected_source_growth_bytes: 8 * 1024 * 1024,
+        remaining_object_growth_bytes: 0,
+    };
+    let source_store = fixture._temp.path().join("sources");
+    let object_store = fixture._temp.path().join("objects");
+    let plan_path = fixture._temp.path().join("plan.json");
+    let run = |plan: &Plan| {
+        fs::write(&plan_path, serde_json::to_vec_pretty(plan).unwrap()).unwrap();
+        let result = Command::new(env!("CARGO_BIN_EXE_openpilot-runtime-prepare"))
+            .arg("--root")
+            .arg(&fixture.root)
+            .arg("--plan")
+            .arg(&plan_path)
+            .arg("--cache")
+            .arg(&fixture.cache)
+            .arg("--toolchain")
+            .arg(&fixture.toolchain)
+            .arg("--source-store")
+            .arg(&source_store)
+            .arg("--object-store")
+            .arg(&object_store)
+            .output()
+            .unwrap();
+        assert!(
+            result.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        serde_json::from_slice::<prepare::Prepared>(&result.stdout).unwrap()
+    };
+    let first = run(&plan);
+    assert_eq!(first.binaries.len(), 2);
+    assert!(first.stored_output_bytes > 0);
+    let previous = fixture._temp.path().join("running-previous");
+    first.binaries["runtime-fixture"]
+        .materialize(&object_store, &previous)
+        .unwrap();
+    fs::write(fixture.root.join("README.md"), "docs only").unwrap();
+    commit(&fixture.root);
+    let docs = run(&plan);
+    assert_eq!(docs.stored_output_bytes, 0);
+    assert!(docs
+        .reports
+        .values()
+        .all(|r| r.artifacts.iter().all(|a| a.fresh)));
+    assert_ne!(docs.source.source.commit, first.source.source.commit);
+    fs::write(
+        fixture.root.join("rust/src/main.rs"),
+        "fn main() { println!(\"43\"); }\n",
+    )
+    .unwrap();
+    commit(&fixture.root);
+    let changed = run(&plan);
+    assert!(!changed.reports["main"].artifacts[0].fresh);
+    assert!(changed.reports["other"].artifacts[0].fresh);
+    assert_ne!(
+        changed.binaries["runtime-fixture"],
+        first.binaries["runtime-fixture"]
+    );
+    assert_eq!(
+        changed.binaries["other-fixture"],
+        first.binaries["other-fixture"]
+    );
+    assert_eq!(
+        changed.stored_output_bytes,
+        changed.binaries["runtime-fixture"].bytes
+    );
+    // A rejected plan cannot replace either the running binary or its exact source.
+    plan.groups.get_mut("other").unwrap().binaries = vec!["runtime-fixture".into()];
+    assert!(prepare::run(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &source_store,
+        &object_store,
+        &plan
+    )
+    .is_err());
+    fs::remove_dir_all(&fixture.root).unwrap();
+    fs::remove_dir_all(&fixture.cache).unwrap();
+    first.verify(&source_store, &object_store).unwrap();
+    docs.verify(&source_store, &object_store).unwrap();
+    changed.verify(&source_store, &object_store).unwrap();
+    assert_eq!(Command::new(previous).output().unwrap().stdout, b"42\n");
+}
+
+#[test]
 fn docs_change_reuses_real_binary_and_source_change_rebuilds_it_without_network() {
     let fixture = Fixture::new();
     let first = fixture.run();
