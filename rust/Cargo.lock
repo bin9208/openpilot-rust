@@ -3552,6 +3552,7 @@ dependencies = [
  "tar",
  "tempfile",
  "xz2",
+ "zstd",
 ]
 
 [[package]]

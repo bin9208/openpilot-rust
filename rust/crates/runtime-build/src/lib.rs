@@ -5,7 +5,11 @@
 //! Explicit external inputs and toolchain identities partition incompatible caches.
 #![forbid(unsafe_code)]
 
+#[cfg(any(feature = "prepare-rust", feature = "prepare-capnp"))]
+mod archive_tree;
 pub mod assets;
+#[cfg(feature = "prepare-capnp")]
+pub mod capnp;
 pub mod catalog;
 pub mod generation;
 pub mod inputs;

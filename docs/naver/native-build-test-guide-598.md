@@ -28,6 +28,9 @@ Rust compiler/Cargo/std 내용별 준비·전송0/복사0·stdlib 변조 검증�
 capnp SDK의 입력 pin·그룹별 도구 검사와 전체 원본 schema/wire 비교는
 [SDK 안내](native-capnp-sdk-599.md)에 있다. 이 SDK 준비·예제는 CI 개발 검증이며,
 장치 설치 가능한 전체 후보의 준비 완료를 뜻하지 않는다.
+프로젝트의 `--prepare-capnp`는 같은 고정 .deb를 installer 실행 없이 준비한다.
+검사에서는 독립 dpkg-deb의 vendor tree 전체 일치와 실제 source-built ARM 준비기의
+초기/반복 전송0·반복 복사0·같은 tree SHA를 확인한 뒤 원본 wire 비교를 수행한다.
 
 로컬에서는 `git diff --check`, scoped `rustfmt --check`, TOML/YAML 문법과 diff만
 확인한다. 기능·빌드는 GitHub Actions에서 실행한다. 작업 branch push는

@@ -209,8 +209,26 @@ def native_driver_probe(guest_command, work, source_mount, evidence, log, guest_
 def native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_work):
   """Use the admitted native C++ SDK against the actual complete schemas."""
   owned = work.parent
-  sdk = owned / 'native-capnp'
-  guest_sdk = Path(guest_work) / 'capnp-sdk'
+  # Run the source-built ARM preparer itself, using the authenticated raw cache.
+  # The host-native tree remains an independent expected receipt.
+  def execute(argv, name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  execute(['cargo','build','--locked','--manifest-path',f'{source_mount}/rust/Cargo.toml',
+           '-p','openpilot-runtime-build','--bin','openpilot-runtime-inputs',
+           '--target-dir',work/'project-target','--message-format=json'],'native-cereal-inputs-build.jsonl')
+  preparer = work/'project-target/debug/openpilot-runtime-inputs'
+  prepare = [preparer,'--prepare-capnp','--plan',f'{source_mount}/rust/native-capnp-assets.json',
+             '--cache',Path(guest_work)/'capnp-assets','--store',work/'native-capnp-prefixes']
+  first = json.loads(execute(prepare,'native-cereal-preparation-initial.json').read_text())
+  repeat = json.loads(execute(prepare,'native-cereal-preparation-reused.json').read_text())
+  expected = json.loads((owned/'native-capnp-first.json').read_text())
+  assert first['root'] == repeat['root'] and first['tree_sha256'] == repeat['tree_sha256'] == expected['tree_sha256']
+  assert first['copied_bytes'] > 0 and repeat['copied_bytes'] == 0
+  assert not first['compiler_executed'] and not first['runtime_activated']
+  assert all(row['transferred_bytes'] == row['stored_bytes'] == 0 for report in (first,repeat) for row in report['assets'].values())
+  guest_sdk = Path(first['root'])
+  sdk = work / guest_sdk.relative_to(guest_work)
   rust = json.loads((owned / 'native-rust-first.json').read_text())
   rust_root = Path(guest_work) / 'pinned-rust' / Path(rust['root']).relative_to(owned / 'native-rust-toolchains')
   schema_compiler = guest_sdk / 'usr/bin/capnp'
@@ -250,6 +268,7 @@ def native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_
   assert digest(work/'native-cereal-sdk-after.json') == receipt_sha
   evidence['native_cereal_sdk'] = dict(source_commit=evidence['source_commit'],example_sha256=initial_hash,
       capnp_version='1.0.1',capnp_sha256=digest(sdk/'usr/bin/capnp'),sdk_tree_sha256=receipt_sha,
+      actual_arm_preparer_sha256=digest(preparer),native_preparation_zero_transfer_repeat=True,
       original_python_full_schema_cases=2,exact_wire_bytes_match=True,repeated_artifact_fresh=True,
       sdk_unchanged=True,actual_guest_execution=True,full_runtime_build=False,device_execution=False)
 
@@ -323,6 +342,7 @@ def main():
     guest = [proot, '-0', '-r', rootfs, '-q', qemu, '-b', '/proc', '-b', '/dev', '-b', '/etc/resolv.conf',
              '-b', '/etc/hosts', '-b', f'{work}:{guest_work}', '-b', f'{owned / "native-rust-toolchains"}:{guest_work}/pinned-rust',
              '-b', f'{owned / "native-capnp"}:{guest_work}/capnp-sdk',
+             '-b', f'{owned / "native-capnp-assets"}:{guest_work}/capnp-assets',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',

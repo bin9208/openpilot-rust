@@ -2,6 +2,7 @@
 //! Every reuse derives its expected tree from authenticated cached archives;
 //! a locally rewritten tree receipt cannot certify modified compiler files.
 use crate::{
+    archive_tree::{directory, file, hash, insert, json, links, normal, parents, sync_directories},
     assets, digest_file,
     inputs::{Entry, Tree},
     regular_file, Result,
@@ -13,7 +14,7 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Write},
     os::unix::fs::{OpenOptionsExt, PermissionsExt},
-    path::{Component as PathComponent, Path, PathBuf},
+    path::{Path, PathBuf},
     time::Instant,
 };
 
@@ -58,16 +59,6 @@ pub struct Prepared {
     pub elapsed_ms: u128,
     pub compiler_executed: bool,
     pub runtime_activated: bool,
-}
-
-fn hash(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
-}
-
-fn json<T: Serialize>(value: &T) -> Result<Vec<u8>> {
-    let mut bytes = serde_json::to_vec_pretty(value)?;
-    bytes.push(b'\n');
-    Ok(bytes)
 }
 
 impl Plan {
@@ -156,75 +147,6 @@ impl Plan {
             components,
         ))
     }
-}
-
-fn directory(path: &Path) -> Result<()> {
-    match fs::create_dir(path) {
-        Ok(()) => (),
-        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => (),
-        Err(e) => return Err(e.into()),
-    }
-    if !fs::symlink_metadata(path)?.is_dir() {
-        return Err("native toolchain store requires real directories".into());
-    }
-    Ok(())
-}
-
-fn normal(path: &Path) -> bool {
-    !path.as_os_str().is_empty()
-        && path
-            .components()
-            .all(|c| matches!(c, PathComponent::Normal(_)))
-}
-
-fn insert(entries: &mut BTreeMap<PathBuf, Entry>, path: PathBuf, entry: Entry) -> Result<()> {
-    if !normal(&path) {
-        return Err("unsafe native Rust member path".into());
-    }
-    let mut parent = path.parent();
-    while let Some(p) = parent.filter(|p| !p.as_os_str().is_empty()) {
-        if entries.get(p).is_some_and(|e| e != &Entry::Directory) {
-            return Err("native Rust member overlaps a non-directory".into());
-        }
-        entries.insert(p.to_owned(), Entry::Directory);
-        parent = p.parent();
-    }
-    if entries
-        .get(&path)
-        .is_some_and(|previous| previous != &entry)
-    {
-        return Err("conflicting native Rust distribution members".into());
-    }
-    entries.insert(path, entry);
-    if entries.len() > 100_000 {
-        return Err("native Rust member count exceeds the tree receipt limit".into());
-    }
-    Ok(())
-}
-
-fn parents(root: &Path, relative: &Path) -> Result<()> {
-    let mut current = root.to_owned();
-    for part in relative.parent().into_iter().flat_map(Path::components) {
-        if !matches!(part, PathComponent::Normal(_)) {
-            return Err("unsafe native Rust parent".into());
-        }
-        current.push(part);
-        directory(&current)?;
-    }
-    Ok(())
-}
-
-fn file(root: &Path, relative: &Path, bytes: &[u8], mode: u32) -> Result<()> {
-    parents(root, relative)?;
-    let mut output = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .custom_flags(rustix::fs::OFlags::NOFOLLOW.bits() as i32)
-        .open(root.join(relative))?;
-    output.write_all(bytes)?;
-    output.set_permissions(fs::Permissions::from_mode(mode))?;
-    output.sync_all()?;
-    Ok(())
 }
 
 fn index(
@@ -389,56 +311,6 @@ fn index(
         return Err("native Rust distribution license files are missing".into());
     }
     Ok(copied)
-}
-
-fn links(tree: &Tree, destination: Option<&Path>) -> Result<()> {
-    for (path, value) in &tree.entries {
-        let Entry::Symlink { target } = value else {
-            continue;
-        };
-        let mut pending = path.parent().unwrap_or(Path::new("")).join(target);
-        let mut visited = BTreeSet::new();
-        loop {
-            let mut resolved = PathBuf::new();
-            for part in pending.components() {
-                match part {
-                    PathComponent::Normal(name) => resolved.push(name),
-                    PathComponent::CurDir => (),
-                    PathComponent::ParentDir if resolved.pop() => (),
-                    _ => return Err("native Rust symlink escapes the toolchain".into()),
-                }
-            }
-            if !visited.insert(resolved.clone()) {
-                return Err("native Rust symlink cycle".into());
-            }
-            match tree.entries.get(&resolved) {
-                Some(Entry::File { .. }) => break,
-                Some(Entry::Symlink { target }) => {
-                    pending = resolved.parent().unwrap_or(Path::new("")).join(target)
-                }
-                _ => return Err("native Rust symlink must resolve to a contained file".into()),
-            }
-        }
-        if let Some(root) = destination {
-            parents(root, path)?;
-            std::os::unix::fs::symlink(target, root.join(path))?;
-        }
-    }
-    Ok(())
-}
-
-fn sync_directories(root: &Path) -> Result<()> {
-    let mut pending = vec![root.to_owned()];
-    while let Some(path) = pending.pop() {
-        for item in fs::read_dir(&path)? {
-            let item = item?;
-            if item.file_type()?.is_dir() {
-                pending.push(item.path());
-            }
-        }
-        File::open(path)?.sync_all()?;
-    }
-    Ok(())
 }
 
 /// Prepare files only. Compilation, native SDK closure and runtime activation

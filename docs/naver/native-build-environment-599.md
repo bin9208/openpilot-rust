@@ -111,4 +111,6 @@ probe 경과991.21초/최종 free-space 차이4604772352 bytes/단일 child 최�
 
 기본 PATH에서 빠진 capnp는 같은 Noble1.0.1-4의 고정 ARM C/C++ package와 명시한
 compiler 경로로 준비한다. [SDK 입력·실제 전체 schema 검증 계획](native-capnp-sdk-599.md)에
-원본 pin, 그룹별 입력/보조 도구 검사와 원본 Python wire 비교, 현재 CI-only 범위를 기록했다.
+원본 pin, 그룹별 입력/보조 도구 검사와 원본 Python wire 비교를 기록했다. 프로젝트의
+`--prepare-capnp`는 같은 원본을 직접 검증/준비하고 독립 dpkg-deb tree와 비교한다.
+실제 ARM 준비기의 반복 재사용도 Actions에 포함하며 기본 시작/bootstrap 연결은 남는다.
