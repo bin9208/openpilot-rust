@@ -1,0 +1,50 @@
+name: Runtime source build foundation
+on:
+  push:
+    branches: [codex/feat-598-device-native-build, dev, main]
+    paths:
+      - 'rust/crates/runtime-build/**'
+      - 'rust/Cargo.toml'
+      - 'rust/Cargo.lock'
+      - '.github/workflows/runtime-source-build.yml'
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'rust/crates/runtime-build/**'
+      - 'rust/Cargo.toml'
+      - 'rust/Cargo.lock'
+      - '.github/workflows/runtime-source-build.yml'
+permissions:
+  contents: read
+jobs:
+  offline-cargo-reuse:
+    name: Actual offline Cargo reuse and failure handling
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
+      - name: Check syntax formatting and the locked dependency graph
+        run: |
+          rustfmt --edition 2021 --check rust/crates/runtime-build/src/lib.rs rust/crates/runtime-build/src/main.rs rust/crates/runtime-build/tests/cargo_reuse.rs
+          cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 > "$RUNNER_TEMP/runtime-build-metadata.json"
+      - name: Compile and exercise real offline build reuse
+        run: |
+          set -o pipefail
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build -- --nocapture 2>&1 | tee "$RUNNER_TEMP/runtime-build-tests.log"
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
+      - name: Preserve actual build evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: runtime-source-build-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/runtime-build-metadata.json
+            ${{ runner.temp }}/runtime-build-tests.log

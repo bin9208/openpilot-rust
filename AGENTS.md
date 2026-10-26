@@ -1,5 +1,18 @@
 # Independent Rust port repository (2026-09-29)
 
+## 우선 실행 범위 — 2026-10-26, 대단원 #598
+
+- 성능 개선·콤마 자체 빌드·커밋별 전체 runtime 재다운로드 제거를 먼저 완료한다.
+  모델 준비는 기존 Python을 유지하고 기존 C/C++ 네이티브 라이브러리를 재사용한다.
+  비용이 크고 이득이 작은 추가 전환은 #598 완료 후 점진적으로 진행한다.
+- 기존 Rust 전환분은 보존하고 검증·의존성·대상 트랙을 확인해 정상 PR로 반영한다.
+  dev-md를 dev/main에 통합하지 않는다. #598/#599/#600/#601을 실행·완료 기준으로 삼는다.
+- 로컬은 문법·서식·diff와 읽기 감사만 수행한다. 기능·빌드·ARM/AGNOS 검증은
+  GitHub Actions에서 실행한다. 고정25/35GiB 기준 대신 작업별 실제 증가량을 검증한다.
+- 실제 기기 설치·부팅·녹화·업로드·주행 수용은 사용자가 수행한다. 기기 부재를
+  CI로 대체하지 않는다. 한국어 작업 기록과 정확 SHA/Actions 증거를 유지한다.
+- 모든 별도 sub-agent는 `gpt-6.1-sol`로 실행한다. 다른 세션의 소스·CI는 보존한다.
+
 - On 2026-10-14 the user selected Astra for the parent agent and explicitly
   required GPT-6.1 Sol for all separately launched sub-agents. Specify
   `gpt-6.1-sol` when delegating; hand off prior agents rather than silently

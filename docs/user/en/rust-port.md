@@ -20,3 +20,12 @@ This is a one-shot diagnostic, not a background service. It does not publish
 vehicle commands. Host tests and generic aarch64 builds do not validate AGNOS
 compatibility, CPU savings, temperature improvements, or safe vehicle operation.
 Do not deploy the generic CI build to a vehicle; target validation remains open.
+
+### Device source build preparation (#598)
+
+Model preparation retains its existing Python path while performance improvements and
+source builds without a complete runtime redownload take priority. The initial developer
+tool `openpilot-runtime-build` builds selected targets with a prepared native Rust 1.94.0
+toolchain and offline Cargo dependencies. It is not connected to automatic installation
+or startup and does not yet provide a complete device source build.
+Track progress and acceptance in [#598](https://github.com/bin9208/openpilot-rust/issues/598).

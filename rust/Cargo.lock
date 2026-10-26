@@ -3539,6 +3539,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "openpilot-runtime-build"
+version = "0.1.0"
+dependencies = [
+ "rustix",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+]
+
+[[package]]
 name = "openpilot-runtime-core"
 version = "0.1.0"
 dependencies = [
