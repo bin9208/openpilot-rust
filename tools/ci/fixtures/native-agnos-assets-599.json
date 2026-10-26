@@ -2,7 +2,7 @@
   "schema": 1,
   "reserve_bytes": 67108864,
   "assets": {
-    "agnos-system-19.8-carrot-bt1": {
+    "agnos-system-19-8-carrot-bt1": {
       "url": "https://github.com/ajouatom/agnos-builder/releases/download/agnos-19.8-carrot-bt1/system-375c5d22335770ac08750660bb5b29a3331c550d6a9875b35f36b88af792ea44.img.xz",
       "sha256": "077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4",
       "bytes": 1010655092
