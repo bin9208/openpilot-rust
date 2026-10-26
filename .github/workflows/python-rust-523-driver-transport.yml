@@ -29,7 +29,7 @@ jobs:
       env:
         SOURCE_ALLOWED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
       run: |
-        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork source denied for transport-only authentication' >&2; exit 1; }
+        test "${SOURCE_ALLOWED:-}" = true || { echo 'Fork PR source denied on persistent bin-actions' >&2; exit 1; }
         set -euo pipefail
         [[ $GITHUB_EVENT_NAME = push || $GITHUB_EVENT_NAME = workflow_dispatch ]]
         test "$GITHUB_ACTIONS" = true

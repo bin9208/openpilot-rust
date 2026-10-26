@@ -1605,3 +1605,18 @@ B sticky·default cached 거부를 유지한다. 원본 모델0과 원본 Python
 구분한다. #513도 pre-fix/current Python 각1회 fake HTTP 관측으로 남은 한 경계를 확인한다.
 이 임시 Python 경계3개를 추가해 현재 **169=32교체/133대기/1기존native/2비실행/1제거**다.
 기준300/3/3277·대단원 전체·필수 PR·전달/필요한 기기 수용은 아직 미완료다.
+
+
+## sourceec43598의 후속 CI admission 실패와 최소 수정
+
+[Fast40248425835/job121334855010](https://github.com/bin9208/openpilot-rust/actions/runs/40248425835/job/121334855010)은
+새 transport-only workflow의 fork 거부 오류문구가 기존 승인 prefix와 달라 policy2개가 실패했다.
+거부 조건·첫 명령 위치·ref/runner 검사는 유지하고 새 workflow의 문구만 기존 승인 양식에 맞췄다.
+[Focus40248425967/job121334855970](https://github.com/bin9208/openpilot-rust/actions/runs/40248425967/job/121334855970)은
+source47fb에 추가한 planner-ipc-native Cargo feature가 frozen manifest의 정확한 허용 변환에
+빠져 실패했다. 세 optional 항목의 정확한 배열과 원래 feature 부재를 검사해 한 항목만 제거한 뒤
+기존 manifest 전체 동등성 검사를 유지한다. 일반 Cargo 변경을 허용한 것이 아니다.
+
+앞서 source47fb Fast 및 HOST/ARM 기능 성공, sourceef genuine 경계 성공과 sourceec의
+transport-only 실제 성공은 유지한다. 이 두 새 admission 수정의 실제 통과는 다음 source에서
+확인하며 queued/running 결과를 성공으로 쓰지 않는다. 로컬 기능 재실행은0이다.

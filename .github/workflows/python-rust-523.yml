@@ -109,7 +109,7 @@ jobs:
         printf '%s  %s\n' a04e889c725715395baae751a5b3526c0c686b0075d67ab95b95fb94bd987be1 rust/crates/dev-tools/tests/fixtures/planner-scheduler-original/next_model_target.source.txt | sha256sum --check -
         printf '%s  %s\n' 51047852eb0c81fa1d804764f6a28198190775d796c86fc28d542ea2c195c9a7 rust/crates/model-runtime/src/cpu/diagnostic_482_writer.rs | sha256sum --check -
         printf '%s  %s\n' fa24c25663c6a21cd0b50a0160adc94ed9a9bf42ba242261448dc6a84c202f6c tools/ci/github_images_513.py | sha256sum --check -
-        printf '%s  %s\n' b25b607e92cd8fb0152e2fbc410bfbd72bdd0698d0feb07c89137ba7c252ea8d .github/workflows/python-rust-523-driver-transport.yml | sha256sum --check -
+        printf '%s  %s\n' ef8b9313c9f49ddff45502b7eac50ec0bba483e114b82865de6a82ccf6384eb5 .github/workflows/python-rust-523-driver-transport.yml | sha256sum --check -
         printf '%s  %s\n' e051a50ba2b93fcc01c47367f508fefa411bdaf001e67e85a84f723c70e2b8bd rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/corpus.rs | sha256sum --check -
         printf '%s  %s\n' 4f1583be3a7118fc53bd929a93ae985f5884050938a10f36006832b5332e4dbd rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/decode.rs | sha256sum --check -
         printf '%s  %s\n' e37bd4347ac03c6d7dd8bf5e18723855949a932917cee5c9a119da6503c6fd44 rust/crates/dev-tools/src/planner_ci_controller/planner_ipc_native/fixtures/source425/0003-lateralPlan.bin | sha256sum --check -
@@ -1106,7 +1106,9 @@ jobs:
         path='rust/crates/dev-tools/Cargo.toml'
         old=tomllib.loads(before(path).decode())
         new=tomllib.loads(now(path).decode())
-        # 기존 feature/dependency/bin/test는 검토한 SAN/CFI/SSH 등록 외에 의미가 같아야 한다.
+        # 기존 feature/dependency/bin/test는 검토한 SAN/CFI/SSH/Planner opt-in 등록 외에 의미가 같아야 한다.
+        assert 'planner-ipc-native' not in old['features']
+        assert new['features'].pop('planner-ipc-native')==['dep:capnp','dep:openpilot-cereal','serde_json/float_roundtrip'], 'Planner IPC opt-in feature changed.'
         for kind,entry in [
             ('test',{'name':'route_sanitizer_original','required-features':['route-sanitizer-native']}),
             ('bin',{'name':'check-plannerd-ci','path':'src/bin/check_plannerd_ci.rs'}),
@@ -1115,7 +1117,7 @@ jobs:
         ]:
             assert new[kind].count(entry)==1
             new[kind].remove(entry)
-        assert old==new, 'Only the reviewed SAN/CFI/SSH registrations may change.'
+        assert old==new, 'Only the reviewed SAN/CFI/SSH/Planner registrations may change.'
         # 공유 lib 추가는 Linux/x86_64 + optional ISA feature로 제한한다.
         path='rust/crates/model-runtime/src/lib.rs'
         addition=b'#[cfg(all(\n    feature = "cached-program-isa",\n    target_arch = "x86_64",\n    target_os = "linux"\n))]\npub mod cached_isa;\n'
@@ -1164,7 +1166,7 @@ jobs:
         assert raw.count(start)==raw.count(end)==1
         prefix,tail=raw.split(start)
         _,suffix=tail.split(end)
-        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='be8c0a87abce6b8bb9e8d0014a44dfe7e63738e55239c490723794e0d1af55f7', 'Focused workflow changed outside the reviewed reuse block.'
+        assert hashlib.sha256(prefix+end+suffix).hexdigest()=='24cecaa28d5ba371f5906f7f7c8a616eb60b7979445284825c440d67696b526c', 'Focused workflow changed outside the reviewed reuse block.'
         MANIFEST
         python - "$prior" <<'COHORTS'
         import hashlib,io,json,sys,zipfile
