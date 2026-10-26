@@ -374,3 +374,80 @@ compiler/model/oracle 실행·GHA dispatch·stage/commit/push는0회다. Python 
 생산/writer와 genuine compiler/compile_cached 제어는 아직 남는다. Model D의 원본 compiler2
 execution edge도 별도 pending이다. 이번 registry 이관은 전체 CPU/QCOM 모델 수용이나
 Model D 원인 해결, Python 파일 퇴역 credit가 아니다.
+
+## 2026-10-26 Git6c actual 감사와 StreamReply 최소 수정
+
+판정 source는 `6c5d5a9be691d18ca850af6ef9b42e47b668d767`의 Git blob이다. 이후 worktree
+상태를 이 actual 결과에 섞지 않았다.
+[run40255341791/job121355876060](https://github.com/bin9208/openpilot-rust/actions/runs/40255341791/job/121355876060)은
+completed FAILURE이며 최초 실패는 step18의 마지막 strict Clippy다.
+
+| 같은 run_once block의 actual label | 결과 |
+| --- | --- |
+| `registry-budget` | exit0, library2 PASS, 57 filtered out |
+| `native-v1-v2` | exit0, caller14 PASS / ignored2 |
+| `actual-copy` | exit0, exact ignored COPY1 PASS |
+| `actual-mixed` | exit0, exact ignored genuine mixed1 PASS, 61.12초 |
+| `strict-clippy` | exit101, `clippy::large_enum_variant` |
+
+Git6c WF의 명령을 읽어 새 library2가 기존 hosted `run_once` 안에서 실행됐음을 확인했다.
+모든 기능 검사는 Clippy보다 앞에서 실행됐다. source/SDK/LLVM 후봉인 step20과 evidence upload,
+owned source/alias/target cleanup step22·공통 temp cleanup step23은 실제 success다. 후봉인은
+API step outcome과 Git6c의 strict cmp/SHA 명령으로 확인했다. 별도 private artifact12622218319는
+metadata만 조회했고 ZIP은 다운로드하지 않았으므로 그 내부 raw before/after의 독립 재대조라고
+확대하지 않는다.
+
+functional artifact12621944150은18,529B, SHA256
+`29c4d86c506c51e6d28bdcb63b47eee5b5560228691841f1a1910d938e2805f7`다.
+API expected bytes/digest와 실제 ZIP을 대조했고, 1회 다운로드·26 safe unique/nosymlink member·
+expanded44,505B·모든 member CRC PASS다. 기존 archive는 다시 받지 않았다.
+
+원본 prefix16,463B SHA는 기존 `bc1b7b572c8dd2f84f3ea0ca38b1744e4c7120155c33f3dabb633eabaf7f0144`
+그대로다. canonical Python은3.12.15이며 raw executable proof와 comparison의 source pin이 같다.
+원본 QCOM compiler provider는 기존 `fb7e6390cc25700d6935b2eef3acad85a43f247206bdf84cb4d37bd48a60b093`,
+actual staged ARM frontend는 `779267f94344c55f6edb3d2ed8ed69afd6063a446e3d342fc53660c63fbae21d`다.
+기존 QEMU loader/DSO closure compatible이며 GPU 실행0이다.
+
+artifact에서 독립적으로 다음 데이터를 대조했다.
+
+- graph의 allocations/views/entrypoints·kernel signature가 candidate final Plan과 같다.
+  calls3 중 kernel2의 native index는 `[0,0]`, global `[1,1,1]`/local `[4,1,1]`이다.
+- weights64B raw가 candidate hex와 같고 SHA는
+  `58dda328598e2f7fe472621bfc54935aaa354d1a6ebcaf9562cd743fd575eb19`다.
+- original SOURCE396B SHA `4b68cdcb9c9f02dda5eb7ef71300444f3b0d050d4850d5d60f702a6a98c687f9`,
+  BINARY2240B SHA `b2f550a3a3d46e3b3832494b46499427439fc5c5d18b4e09d400184c48912bd4`다.
+  raw BINARY 길이/SHA가 원본 graph와 native registry의 값에 일치한다.
+- 원본/candidate IR record는 bytes123·SHA
+  `75022cbe658b7a6a55d2d55cc920f658a71663cc10092e0e57c32c002ff14285`로 동일하다.
+  실제 대표 handle140414031945104가 registry의 첫 `program_key`와 같고 LINEAR IR key는
+  `7110338e63766b5a4e7ea51a0ecdaf9ab75324cff0c76136e511aeb261dd27f1`이다.
+- order7은 original-first, lowering/compiler 각각 `[0,0,1,1,0,0,0]`이다. 앞5 오류의 destination은
+  양쪽 모두 없고 launch 오류가 read보다 먼저다. 뒤2 lazy 양성은 오류 없이 candidate destination을
+  만들었다. future compiler0, Kernel hash/binary SHA 독과 활성화 음성 control도 PASS다.
+
+전체 graph JSON bytes와 candidate SOURCE/BINARY bytes 동일성은 Git6c test의 실제 assertion PASS로
+확인했다. candidate 파일 자체는 ZIP에 별도 보존되지 않았으므로 그것을 다운로드 후 다시 비교했다고
+주장하지 않는다. 원본 graph2156B SHA는
+`a6ef4f632e3f405effe4c0bac11ad9abcd48dc018e0766c19eccbb4aefc788d1`이다.
+위 raw component/IR/receipt를 독립 대조한 기록은 private scratch의
+`ci/f02-6c-genuine-audit.json`에 남겼다. expected/golden 생성·교체는0이다.
+
+### 실제 Clippy defect와 승인된 두 줄 수정
+
+Git6c `export.rs:492`의 `StreamReply`가 전체264B, Final variant 최소257B,
+두 번째 Kernel variant41B라서 `-D warnings`의 `large_enum_variant`에 걸렸다. 새 registry가
+Plan 크기를 늘린 실제 source defect다. metadata unit/type 오류나 poison/order7 실패가 아니다.
+
+부모가 승인한 수정은 `export.rs`의 `Final.plan: Box<Plan>`과 생성자의
+`plan: Box::new(plan)` 두 곳뿐이다. Git6c blob에서 이 두 replacement 외 모든 bytes가 같음을
+확인했다. serde_core1.0.229 `ser/impls.rs:460,489`의 Box Serialize는
+`(**self).serialize(serializer)`에 직접 위임한다. 기존 enum/field tag·Plan Serialize를 바꾸지
+않으므로 v1/v2 JSON 내용·필드 순서·wire bytes 보존은 이 원문으로 확인했다. 실제 새 source
+serialization/Clippy 수용은 다음 부모 GHA가 필요하다. allow/lint 완화는 추가하지 않았다.
+
+수정 후 `export.rs` SHA256은
+`e080c12280b8806f56ede77b297634d69ac9c0071dc1651ed22afc556e499f52`다.
+caller14/ignored2·library2 및 모든 기존 selector/count는 그대로다. 부모는 기존 source pin의
+export.rs SHA만 새 coherent source에 반영한다. 로컬은 rustfmt check·정확 두 줄 diff와 Serde
+원문 대조뿐이며 Cargo/type/build/test/Clippy/compiler/model/oracle/CI 실행·stage/commit/push0이다.
+이 실제 기능 성공을 strict Clippy까지 완료된 F02 전체 수용이나 전체 모델 수용으로 올리지 않는다.

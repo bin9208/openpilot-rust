@@ -2194,7 +2194,7 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
                 "{:x}",
                 Sha256::digest(read(".github/workflows/rust.yml").as_bytes())
             ),
-            "52a82eb24ea1894bd210f5e4af57881d9d4aa96de8f08e64f46b086b79c30c89"
+            "fbd6959a79e7df0cb91e9c321dc8b3aa53a0dc7607b5bd9e1da4eda2e6f27604"
         );
         let host = parse(&read(
             ".github/workflows/python-rust-523-planner-caller.yml",
@@ -2218,7 +2218,7 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
                 "name":"Require reviewed maintained Planner source", "if":TRUSTED_SOURCE,
                 "shell":"bash", "working-directory":"${{ env.CI296_SOURCE }}", "env":{"CI296_HOST_CONTROL":"1"},
                 "run":concat!("set -euo pipefail\nprintf '%s  %s\\n' ",
-                    "52a82eb24ea1894bd210f5e4af57881d9d4aa96de8f08e64f46b086b79c30c89 ",
+                    "fbd6959a79e7df0cb91e9c321dc8b3aa53a0dc7607b5bd9e1da4eda2e6f27604 ",
                     ".github/workflows/rust.yml | sha256sum --check --strict -\n")
             })
         );
@@ -2300,7 +2300,10 @@ fn native_arm_reuse_preserves_all_candidate_steps_and_six_x64_rows() {
                     .find(|s| s["id"] == id)
                     .unwrap();
                 upload["with"]["retention-days"] = "14".into();
-                assert!(planner_ipc_canonical_contract(&bad).is_err(), "accepted {id}");
+                assert!(
+                    planner_ipc_canonical_contract(&bad).is_err(),
+                    "accepted {id}"
+                );
             }
             planner_ipc_canonical_contract(job).unwrap();
             job.clone()

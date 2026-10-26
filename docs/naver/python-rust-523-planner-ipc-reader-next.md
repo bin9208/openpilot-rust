@@ -657,3 +657,164 @@ private proof upload, source/alias/target/common owned temp cleanup step도 모�
 두 Python 파일 삭제·모든 실제 caller 부재·전체 Python 퇴역·원장 credit은 아직0이다.
 이번 감사의 로컬 동작은 source/원시 log/ZIP/JSON/TSV의 inert 읽기·hash/CRC뿐이고,
 기능/Cargo/원본·모델 실행, GHA dispatch·취소·재실행, source 편집·stage/commit/push는0이다.
+
+
+## 2026-10-26 source6c actual 감사: runtime 전 policy pin 차단과 별도 native units 수용
+
+대상 source는 `6c5d5a9be691d18ca850af6ef9b42e47b668d767`로 고정했다.
+API head/source, private `SOURCE_COMMIT`, 원시 완료 job log와 이 commit의 Git blob을
+결합했으며, 이후 작업 중인 파일을 이 결과의 소스로 사용하지 않았다.
+현재 section은 actual 기록 추가뿐이며 production/test/WF/pin/expected 변경은 하지 않았다.
+
+### 최초 실패와 실제 도달 범위
+
+[HOST run40255341871/job121355876469](https://github.com/bin9208/openpilot-rust/actions/runs/40255341871/job/121355876469)은
+step17 `Compile and check the complete native planner`에서 FAILURE/exit101이다.
+[ARMmore run40255341883/Planner job121355876763](https://github.com/bin9208/openpilot-rust/actions/runs/40255341883/job/121355876763)도
+step15의 동일 명령에서 FAILURE/exit101이다. 컴파일러 진단 실패가 아니라
+`rust/crates/dev-tools/tests/planner_ci_policy/contract.rs:137`의 공통 선행 SHA assertion이다.
+
+- 해당 source helper의 실제 whole SHA256은 `cf510c5bb65b5fdd5bcad2356f988e026d64f8ad7d52c6117e49efcf082f1612`다.
+- contract line139의 기대값은 이전 `df5eab6cbfecac8e0d5de52140fac9c8d3b006d1f5c2072db19bde77d238022c`다.
+- 양쪽 로그 observed/expected가 각각 이 값과 일치한다. policy21 중 20개가 이 공통 assertion에서
+  실패했고 Miri 로그 보호 1개만 PASS했다. 서로 다른 runtime 결함 20개로 해석하지 않는다.
+- 부모가 검토된 helper와 이 literal을 동기화하는 최소 수정의 소유자다. 이번 감사에서 수정하지 않았다.
+
+양쪽 모두 선택된 dev-tools test 실행물의 Rust test build가 `Finished test profile`에 도달했고,
+`native_build_closure` 7 PASS와 `planner_ci_controller` 14 PASS가 실제 실행됐다.
+그 다음 policy 실패 때문에 같은 cargo invocation의 frozen5/retirement6는 실행되지 않았다.
+뒤에 배치된 `openpilot-plannerd --all-targets` test, bins/examples build 및 plannerd Clippy도
+도달하지 않았다. step 이름만으로 complete Planner production build 성공을 주장하지 않는다.
+
+| 경계 | HOST6c | ARM6c |
+| --- | --- | --- |
+| pinned solver/original binding 준비 | 실제 SUCCESS | 실제 SUCCESS |
+| 선택된 dev-tools test build / native-build7 / controller14 | 실제 완료 / PASS / PASS | 실제 완료 / PASS / PASS |
+| planner policy21 | 1 PASS / 20 FAIL | 1 PASS / 20 FAIL |
+| 고정 IPC stager | step18 skipped | step16 skipped |
+| Runtime12의 direct native IPC 포함 비교 | step19 skipped | step17 skipped |
+| generated solver ASan3 | step20 skipped | 미실행; ARM 비대상 조건도 있음 |
+| native IPC4 및 해당 feature의 strict Clippy | step21 skipped | step19 skipped |
+| source/index 후봉인·private upload·source/alias/target/common-temp cleanup | 실제 SUCCESS | 실제 SUCCESS |
+
+따라서 이 source에서 runtime IPC를 1회 실행했다고 수용하지 않는다. actual old-output484
+조회/decoder 비교, current 121×4 publications, runtime scheduler160, current IPC ELF/peer/compiler
+identity 전후 및 runtime helper의 whole SDK before/after는 모두 **미도달**이다.
+functional ZIP 두 개에도 `planner-comparison/`, runtime IPC 결과 및 native-memory 결과 member가 없다.
+Hypatia 소유 sibling capture/lifecycle도 이 두 Planner job에서는 실행되지 않았다.
+
+### HOST/ARM 원문 ZIP 4개의 API·whole SHA·전체 CRC
+
+이번 감사자가 네 archive의 유일 downloader다. API의 repo_id/head_repository_id
+`1395501963`, origin run, head SHA, `expired=false`, exact bytes/digest를 확인한 뒤
+각 `/actions/artifacts/<ID>/zip`을 한 번씩만 받았다. payload를 실행하거나 추출하지 않았다.
+작업별 64MiB 가용 디스크 admission을 확인했고, exact-size 검사·kernel file-size 상한·120s
+전송 기한을 사용했다. 네 payload 합계는 9,139,508B이며 기존47/0283 ZIP을 다시 받거나
+원본을 재실행하지 않았다.
+
+| 역할 | API artifact ID | archive bytes | whole SHA256 | members / expanded bytes |
+| --- | --- | ---: | --- | ---: |
+| HOST functional | 12622606189 | 4,693,521 | `2d70c37b1fe245db545bf8723ba5738c745680b001f8b69e8da5cf471e43764a` | 319 / 15,068,725 |
+| HOST private | 12622491387 | 292,776 | `1bf3be114fbbce94c833480462efad6b8751a945cd6e4de8aa5878a75552ae71` | 12 / 2,362,946 |
+| ARM functional | 12622680819 | 3,860,472 | `a7b5e73cb6cc77c3d0ea69ff36f684190152bb00b57bd8daed7a483b16dc3c9f` | 322 / 13,108,926 |
+| ARM private | 12622651044 | 292,739 | `44814ff8cc7e53a4efc8e900512810c6324c5ab11322117064d99daccd73cf1c` | 12 / 2,362,789 |
+
+네 ZIP 모두 API whole SHA와 전체 member CRC가 PASS했다. 중복 member/절대경로/`..`/
+역슬래시/drive 표기 및 symlink·특수파일을 거부하고, directory와 regular member만 읽었다.
+archive당 member≤10,000 / expanded≤256MiB / member≤64MiB의 inert audit 상한도 통과했다.
+모든 member의 개별 SHA/CRC/bytes는 캐시의 `<ID>-members.json`에 있다.
+이 네 artifact는 API에서 모두 `2027-01-24T01:40:11Z` 만료다.
+
+공유 캐시 root는 `.analysis/scratch/2026-10-25-523-completion/ci/`다.
+Hypatia는 `<ID>.zip`과 `<ID>-members.json`을 데이터로 읽고 중복 다운로드하지 않는다.
+`planner6c-artifact-handoff.json`의 HOST/ARM 네 항목은 모두 `ready=true`,
+`whole_crc_pass=true`다. 최초 두 ID와 예정 경로를 먼저 공유하고, ARM API ID 발행 뒤 두 ID도
+다운로드 전에 공유했다. 별도 상대 agent 메시지 도구/식별자는 이 실행 환경에 노출되지 않아
+이 채팅과 공유 handoff 파일을 인계 지점으로 사용했다.
+
+HOST/ARM private proof는 다음 값으로 각각 전후 동일하다.
+
+- normalized source tar SHA: `b62516ebb83aaf4dbb4bc020adb510e9b166fcb306c4d34bb5ff96a52e67b27c`.
+- index: 1,179,244B / SHA `f095c5a1cb9602624d160da4997cbbce5a003f7dda2fc3c8fed01a4376e929e4`.
+- HOST owner `40255341871:1:planner-runtime`, actual runner `GitHub Actions 1000029818` / github-hosted Linux X64.
+- ARM owner `40255341883:1:planner-runtime`, actual runner `GitHub Actions 1000029828` / github-hosted Linux ARM64.
+
+이 private proof 12 members에는 runtime helper SDK manifest가 없다. source/index 봉인을
+whole runtime SDK 봉인으로 확대하지 않는다.
+
+### native-units의 두 별도 역할
+
+[run40255341784/planner job121355876323](https://github.com/bin9208/openpilot-rust/actions/runs/40255341784/job/121355876323)은
+`2026-10-26T01:45:04Z` 완료 SUCCESS,
+[planner-client job121355876655](https://github.com/bin9208/openpilot-rust/actions/runs/40255341784/job/121355876655)은
+`2026-10-26T01:49:52Z` 완료 SUCCESS다. 둘 다 API actual runner `bin-actions`,
+self-hosted Linux X64이며 source6c다. source6c WF와 proof의 `--no-default-features`,
+build jobs1, incremental0, dev/test debug0가 일치한다.
+
+| 실제 명령 역할 | 결과 |
+| --- | --- |
+| planner controller | 14 PASS / 0 ignored |
+| controller retirement | 6 PASS / 0 ignored |
+| controller frozen | 5 PASS / 0 ignored |
+| native memory wrapper unit | 15 PASS / 0 ignored |
+| 위 lib/bin/4 test target strict Clippy | rc0 |
+| scheduler client | 15 PASS / 0 ignored |
+| scheduler client lib/test strict Clippy | rc0 |
+
+`native-exit-codes.txt`의 planner 역할 5개와 client 역할 2개가 모두0이다.
+이 default-feature Clippy를 미실행인 `planner-ipc-native` native4/Clippy 대신 수용하지 않는다.
+retirement6의 empty-root 실제 ABI42와 leaf 실패 뒤 file·live/dangling symlink 복원 탐지가
+모두 PASS했다. 사전에 profile/context를 만들지 않아도 IPC 차례 전의 원래 42와 전후
+absence guard가 보호됐다는 실행 증거다. frozen5는 source73 JSON 데이터 비교이며
+Python 원본 재실행이 아니다.
+
+controller14의 `failed_comparison_is_recorded_and_stops_before_the_next_check`는 Git6c blob에서
+`ipc_timeout_and_controlled_cancel_keep_one_owned_group()`를 무조건 호출한다.
+실제 NativeRunner timeout(2s) 및 ready 뒤 controlled cancellation 검사가 PASS했다.
+이때 완전한 IPC17 옵션 형식의 process fixture는 leader와 `cpp-peer/daemon/scheduler/compiler`
+네 label의 **sleep 자손** PID·PGID·startticks를 기록한다. 같은 PGID, 직접 leader wait,
+자손의 부재/Z/X 또는 PID 재사용 구분과 later sentinel/result 미생성을 검사했다.
+실제 production C++ peer/compiler를 돌린 검사가 아니며, 전체 adopted child 전역 reap이나
+root process 자체의 강제 OS 종료까지 보장하지 않는다. 임시 PID receipt는 test 내부에서
+검사된 후 TempDir과 함께 정리되며 ZIP에 raw PID 5행이 별도로 남아 있지는 않다.
+
+client15의 actual driver frame-loop/session/40 requests, EOF/잘못된 응답/fail latch,
+spawn 실패의 fallback 거부, 공유2s deadline, TERM→KILL→wait·exceptional close, frozen ASCII
+parser/targets가 PASS했다. `real_native_binary_serves_four_sessions_160_independent_frozen_targets`
+또한 PASS했으나 이것은 scheduler stdio4 sessions/160 targets다. 미실행인 실제 Planner
+121×4 IPC publications와 runtime160 timing을 대신하는 증거가 아니다.
+
+두 역할의 resource/source/SDK before/after와 cleanup step도 모두 SUCCESS다.
+proof는 official Rust1.94 root
+`/home/actions/.rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu`의 294 file hashes와
+322 NUL roster records를 각각 before/after bytes 동일하게 보존한다.
+Rust는 `1.94.0 (4a4ef493e 2026-03-02)` / LLVM21.1.8이며 SDK installation0이다.
+해당 root 외 SDK/DSO 전체 봉인으로 확대하지 않는다.
+
+- SDK file manifest 56,647B / SHA `34ca36a4a7d3ec78878ae59c690755c9f3e513c816a05e5f2a71ab06f1b1191a`.
+- SDK program manifest 574B / SHA `02dc3249995ea4f61a85de89ebaff8c4f2e642f1a8567d76ffc3078472ac536a`.
+- SDK roster 63,514B / SHA `1216a3a311069910f96a8f3d4cc7167b9514cd9ce16e5035da6d9d3169bb3942`.
+- 두 역할 source/index 값은 위 HOST/ARM 값과 같고, staged-index는 2,160,394B /
+  SHA `0cd1d7005e8a7d52a0fd7d2ad8e597c9618a891d6dbaa329006946d4fd12195a`로 전후 같다.
+
+완료 job의 별도 작은 native proof 두 ZIP도 동일 cache에 한 번씩 받았다.
+planner artifact `12622471585`: 1,592,005B /
+SHA `a67e30c460382601f83968c8b4a507561eb2317dcf2bf79411b0a8ab47d89715`,
+42 members / 6,963,823B expanded.
+client artifact `12622850683`: 1,587,673B /
+SHA `c30c3f5e70a16ebe2aff57a61107246270748f5bbbcbc36ad7081b172facca6d`,
+36 members / 6,955,206B expanded. 양쪽 whole SHA/전체 CRC PASS다.
+API 만료는 각각 `2026-11-09T01:44:54Z`, `2026-11-09T01:49:41Z`다.
+
+완료 raw log 캐시와 whole SHA256은 다음과 같다.
+
+- HOST `planner-host6c-121355876469.log`: `23518855b09586f18710dfe7206f1a4549558f222bc4a82aec84dc70f7dc53d8`.
+- ARM `planner-arm6c-121355876763.log`: `e55148ab4641a7b61644e94b118ccf89da6107ffd2138d7e683f2297ba59e18c`.
+- planner `native-planner6c-121355876323.log`: `b09888898e6a8b5c07ce0cd8fb95dc77b9b001acc05b86e515c4e915da8bba34`.
+- client `native-planner-client6c-121355876655.log`: `d26560e8a42a31d1efa831e7f40e5a44c269a55025cbd6cef418d8f2a8842788`.
+
+이번 수용은 실제 실행된 default-feature unit/Clippy와 그 소유·봉인 범위다.
+실제 Runtime12, original/current484 출력 비교, runtime160, native IPC4/Clippy 및 ASan3는
+이 source에서 계속 미수용이다. expected/tolerance/guard를 바꾸거나 CI를 재실행·취소하지 않았다.
+로컬 작업은 API·완료 log·Git6c blob·ZIP/JSON의 inert 검증과 이 기록 append뿐이며,
+Cargo/기능/모델/원본 실행, 공유 source7파일 편집, stage/commit/push 및 artifact 업로드는0이다.

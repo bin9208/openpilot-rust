@@ -822,3 +822,56 @@ native_revalidation_required=true/full_ipc_acceptance=false를 유지한다.
 교체 전 literal은 `578ec6f73765ca4293174eeb7eb2a5df99a9af6ff726f262c7aa3f17f65c97bf`다.
 부모의 다음 exact-source GHA에서 HOST/ARM 각각의 live origin+preservation API, proof19/JSON7,
 운송/functional CRC, allowlist489/native 재검증, source·held·disk·owned cleanup을 확인해야 한다.
+
+## source6c HOST/ARM 최초 실패 감사 — 2026-10-26
+
+source `6c5d5a9be691d18ca850af6ef9b42e47b668d767`/attempt1의
+[HOST40255341871/job121355876469](https://github.com/bin9208/openpilot-rust/actions/runs/40255341871/job/121355876469)과
+[ARM40255341883/job121355876763](https://github.com/bin9208/openpilot-rust/actions/runs/40255341883/job/121355876763)은
+각각 hosted ubuntu-24.04/X64 및 ubuntu-24.04-arm/ARM64에서 **실패**했다.
+HOST job은01:40:15–01:43:51Z, ARM job은01:40:17–01:44:43Z다.
+ARMmore run 전체에는 별도 WebRTC job이 있으므로 해당 run 전체 상태와 Planner job 실패를 혼동하지 않는다.
+
+최초 실패는 HOST step17/ARM step15의 compile/check 안 `planner_ci_policy`다.
+그 앞 `native_build_closure`7/`planner_ci_controller`14는 양쪽 모두 PASS다.
+policy21은1 passed/20 failed이고 공통 실패 지점은
+`rust/crates/dev-tools/tests/planner_ci_policy/contract.rs:137`의 helper SHA literal이다.
+
+- source6c helper 실제 SHA:
+  `cf510c5bb65b5fdd5bcad2356f988e026d64f8ad7d52c6117e49efcf082f1612`
+- contract가 요구한 stale SHA:
+  `df5eab6cbfecac8e0d5de52140fac9c8d3b006d1f5c2072db19bde77d238022c`
+
+양쪽 원문 log의 left/right 및 git6c helper bytes의 SHA가 정확히 일치한다. 종료는101이다.
+최소 수정 제안은 부모/Locke가 위 contract literal을 최종 검토 helper bytes에 동기화하는 것이다.
+이 감사에서는 source/CI를 수정하거나 재실행하지 않았다.
+
+그 결과 HOST step18–21/ARM step16–19의 stager fixed transport 새 소비자·runtime
+비교/lifecycle collector·sanitizer·IPC qualification은 모두 **skipped**다.
+transport3 인증/collector26 run·input234·Params30·source14·초기 상태/회복·송신 bytes·출력72·
+64MiB/128+64MiB·추가 worker/valid-data 비교0·SDK 전후 봉인 성공으로 승격할 근거는 없다.
+이 source의 유효 lifecycle raw index/manifest SHA·size는 관측하지 못했으며 다음 nativeLife용
+HOST/ARM 외부 audit manifest2는 생성하지 않는다. 앞선 source의 자료를 이 capture로 대체하지 않는다.
+
+실패 뒤 functional/private upload2, source/index 사후 seal, 소유 source alias/target cleanup 및
+common job-temp cleanup은 두 job API에서 모두 SUCCESS다. source seal 명령은 index-before/after와
+source-before/after의 cmp를 실행했다. helper runtime 자체가 미도달하므로 그 SDK before/after
+봉인을 실행한 것으로 해석하지 않는다.
+
+아래는 현재 API와 원문 upload log가 일치하는 **실패 자료 carrier metadata**다.
+공통 head_sha는 source6c, repository_id/head_repository_id는1395501963,
+head_branch는 codex/feat-523-python-rust, expired=false다. 두 run.created_at은
+2026-10-26T01:40:11Z이고 네 artifact의 expires_at은2027-01-24T01:40:11Z로 정확 run-anchor90일이다.
+
+| 역할 | ID / 정확한 name | bytes / API·upload SHA256 |
+| --- | --- | --- |
+| HOST functional | `12622606189` / `rust-planner-local-x64-evidence` | 4693521 / `2d70c37b1fe245db545bf8723ba5738c745680b001f8b69e8da5cf471e43764a` |
+| HOST private | `12622491387` / `private-rust-planner-runtime-0-40255341871-1` | 292776 / `1bf3be114fbbce94c833480462efad6b8751a945cd6e4de8aa5878a75552ae71` |
+| ARM functional | `12622680819` / `rust-planner-hosted-arm64-evidence` | 3860472 / `a7b5e73cb6cc77c3d0ea69ff36f684190152bb00b57bd8daed7a483b16dc3c9f` |
+| ARM private | `12622651044` / `private-rust-planner-runtime-0-40255341883-1` | 292739 / `44814ff8cc7e53a4efc8e900512810c6324c5ab11322117064d99daccd73cf1c` |
+
+네 ZIP의 유일 downloader/전체 SHA·CRC 담당은 Bacon이다. 이 감사자는 다운로드/CRC 반복0이며
+위 digest는 로컬 ZIP 재계산 결과로 표시하지 않는다. 원문 job log만 읽었고 HOST212873B/SHA
+`23518855b09586f18710dfe7206f1a4549558f222bc4a82aec84dc70f7dc53d8`, ARM201598B/SHA
+`e55148ab4641a7b61644e94b118ccf89da6107ffd2138d7e683f2297ba59e18c`다.
+stager/collector actual 수용·새 원본 관측·nativeLife closure·퇴역 credit는 모두0으로 유지한다.

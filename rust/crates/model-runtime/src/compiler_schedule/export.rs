@@ -505,7 +505,7 @@ pub enum StreamReply {
         session: String,
         sequence: u64,
         complete: bool,
-        plan: Plan,
+        plan: Box<Plan>,
     },
 }
 impl StreamReply {
@@ -771,7 +771,7 @@ impl StreamSession {
                     session: frame.session,
                     sequence: frame.sequence,
                     complete: true,
-                    plan,
+                    plan: Box::new(plan),
                 });
             }
         }

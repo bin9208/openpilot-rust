@@ -1091,3 +1091,53 @@ metadata 취득과 최종 Python writer는 계속 pending이다. 현재 제안 �
 
 이 절 작성 중 로컬 compiler/oracle/model/Cargo/test/Clippy 실행·CI dispatch/cancel은0이다.
 부모의 구현 범위 확정 전에는 위 source나 공유 CLI/lib/Cargo/WF/pin/원장을 수정하지 않는다.
+
+## 2026-10-26 Git6c current actual — 공통 Clippy 전단계 실패
+
+새 판정은 `6c5d5a9be691d18ca850af6ef9b42e47b668d767` Git blob과
+[run40255341774/job121355876329](https://github.com/bin9208/openpilot-rust/actions/runs/40255341774/job/121355876329)에만
+귀속한다. completed FAILURE다. 과거 source0283의 AMD A/B/C/D exact 결과를 이번 run의 결과로
+재사용하지 않았다. 이번 자연 host는 AuthenticAMD / AMD EPYC7763 / vCPU4다. fresh original
+compiler가 시작되지 않아 실제 새 LLVM target/options 또는 model numeric context receipt는 없다.
+
+| 실제 도달 label | 결과 |
+| --- | --- |
+| `source-head`, `source-index` | exit0, source Git6c |
+| `current-bins` | exit0, model-run/guarded-add/cached issuer typed build |
+| `current-libtest` | exit0, library test ELF의 `--no-run` 컴파일 |
+| `current-clippy` | exit101, lib/lib-test 모두 `clippy::large_enum_variant` |
+| ISA14 / cached-code15 / A whole91 / B12 / C12 / D pair | **전부 미진입** |
+
+최초 diagnostic은 genuine compiler run과 같은 `compiler_schedule/export.rs:492`의
+StreamReply다. JSON stdout에 보존된 두 error의 code와 Git6c source span을 대조했다.
+Final variant257B, Kernel41B, enum264B이며 `-D warnings`가 이를 거부했다. model 출력·ISA
+admission 실패가 아니다. cached/default/guarded math/expected/tolerance/CPU 정책은 바꾸지 않는다.
+
+artifact12622631825는7,226,422B, SHA256
+`0a23161430f151f417f7d3711227f88131498b2eb671c136c79ffb629210f1a2`다.
+1회 다운로드 전 API 크기/digest·저장 growth를 admission했고 124 safe unique/nosymlink member,
+expanded35,457,153B와 모든 member CRC를 확인했다. 모델 raw 출력은 생성되지 않았으며
+새 original/model/compiler 실행이나 과거 archive 다운로드를 하지 않았다.
+
+baselines의 source·SDK·Python·Python-base 네 개는 각각 after JSON과 동일하다. source/index 및
+prepared SDK file/program/roster/rejection 원문 쌍도 동일하다. source roster19,623 entry 중
+F02 source3·현재 helper·D writer의 SHA를 Git6c blob과 결합해 확인했다. held 검증 실패는 없고
+owned children은 전부 회수됐다. `children.live=[]`, subreaper=true다. 반면 최종 봉인은
+`pass=false`, phase=`current-clippy`, failures=`["baseline unavailable: registry"]`다.
+
+이 registry baseline은 Git6c helper1297에서 Clippy 성공 뒤에만 설정하므로 최초 실패의 후속
+결과다. 이를 optional 처리하거나 gate를 건너뛰는 수정은 필요하지 않다. API source/SDK after
+step14/15는 success, independent-required step16과 complete-required step17은 failure,
+cleanup step19/20은 skipped다. 회수 성공과 cleanup success를 혼동하지 않는다.
+
+이전 stale post-helper literal은 Git6c WF에서 실제 helper SHA
+`de8c8946d13e0e555f542f0939a32474efa655d8bd5a16dfc19ad240fa16cfc2`로 교정돼 있다.
+helper 시작 전 SHA check는 실제 PASS다. metadata control2 positive/12 negative도 actual PASS이며
+동일 source/helper SHA를 보존한다. 다만 post step16은 앞선 `final-seals.pass` assertion에서
+실패했으므로 뒤의 helper literal assertion까지 실행됐다고 주장하지 않는다.
+
+최소 다음 수정은 부모 승인에 따라 별도 compiler-emission slice에서 적용한 StreamReply의
+Final `Box<Plan>`화 두 줄이다. wire/content/selector/count와 strict lint는 유지한다. 수정 source의
+GHA는 아직 실행하지 않았으며, 그 뒤의 자연 host A/B/C/D 결과는 pending이다.
+독립 감사는 private scratch `ci/model6c-actual-audit.json`에 남겼다. 이 기록은 numeric 실패 해결,
+새 D12 수용, full128/역사 모델 수용 또는 모델 승격의 근거가 아니다.

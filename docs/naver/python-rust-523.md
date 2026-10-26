@@ -1654,3 +1654,11 @@ IPC는 NativeRunner가 같은 controller ELF를 직접 child로 실행한다. ty
 다음 native lifecycle 전환에 필요한 실제 송신234개와 launch 전 Params 상태가 기존 archive에 없음을 확인했다. 이번에 이미 필요한 HOST/ARM의 원래26 run 안에서만 optional collector로 이를 기록한다. 송신은 원래 to_bytes1회로 만든 동일 raw를 사용하고13 case×source/rust·Params30 snapshot을 완결해야 한다. 옵션 off의 원래 함수 의미, 기존 service/frame·종료값·기한·child 회수와 output72 계약은 유지하며 새 valid/data 비교를 추가하지 않았다. 추가 oracle/worker/process는0이다.
 
 helper가 정확한 `planner-comparison/lifecycle-original-inputs` sibling을 export하고, canonical/HOST/ARMmore/reusable의 functional/private 업로드 두 개 모두90일로 고정했다. 작업별 기존128MiB와 capture64MiB admission, owned700/file600·exclusive/NOFOLLOW·source14/binding/SDK proof·전후 identity와 hard roster 검증을 적용한다. 이 두 Python 도구는 원래 baseline pending이며 새로운 퇴역 실적이나 별도 실행경계 수 증가는 없다. 실제 수집 성공과 새로운 native caller/회수·F02 수용은 모두 이번 source의 Actions 결과로 확인해야 한다.
+
+### source6c 실제 단위·원본 성공과 연결 실패의 최소 교정
+
+source `6c5d5a9be691d18ca850af6ef9b42e47b668d767`의 HOST40255341871/job121355876469와 ARM40255341883/job121355876763은 native-build7/controller14 뒤 Planner policy20이 stale helper SHA 때문에 실패했다. runtime12/native4/484 비교/runtime160/ASan3 및 새 lifecycle 입력은 미도달이다. 별도 native-units40255341784의 planner/client는14/5/6/15+client15와 해당 Clippy, 공식 SDK294file/322roster·source/index 전후 및 cleanup을 실제 통과했다. Source160 scheduler stdio fixture를 runtime IPC160으로 확대하지 않는다. 상세 raw·ZIP 결과는 `python-rust-523-planner-ipc-reader-next.md`에 남겼다.
+
+genuine40255341791/job121355876060은 library2/caller14·ignored2/COPY1/genuine mixed1/order7을 실제 통과했고, graph·weights64B·SOURCE/BINARY·대표 IR·후보 Python hash 독과 최초 오류/미래 compiler0도 유지했다. 마지막 strict Clippy의 large_enum_variant로 전체 FAIL이며 실제 model40255341774 역시 같은 Clippy에서 ISA/cached/A/B/C/D 전 중단됐다. model의 registry baseline 미설정으로 최종 봉인 FAIL/cleanup skipped도 구분한다. 전체 모델·strict gate 완료로 세지 않는다.
+
+연결에서 놓친 helper pin을 actual `cf510c5…`로 맞추고 assertion은 보존했다. StreamReply의 Final.plan만 Box로 바꿔 두 줄로 enum 크기를 줄였고 Serde Box의 직접 위임과 나머지 bytes 불변을 확인했다. Focus의 90일 음성 assert는 rustfmt 줄바꿈만 수정했다. model-family40255341914의 최초 501107B>500000B 실패는 전체 flow YAML에서 따옴표 밖 쉼표 뒤 공백3505개만 제거해497602B로 낮췄다. 44job/scalar/run/anchor의 해석값은 완전히 같으며 새 main SHA는 `fbd6959a79e7df0cb91e9c321dc8b3aa53a0dc7607b5bd9e1da4eda2e6f27604`다. 상한·lint·negative 조건·수치 기준은 낮추지 않았다. 이 최소 교정의 exact-source GHA는 후속 확인하며 baseline300/3/3277·추가169 원장은 유지한다.
