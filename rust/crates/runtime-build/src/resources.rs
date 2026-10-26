@@ -354,6 +354,7 @@ impl Monitor {
             .checked_mul(1024)
             .ok_or("frontend RSS overflow")?;
         let value = serde_json::json!({"schema":1,"state":state,"reason":reason,"elapsed_ms":self.started.elapsed().as_millis(),
+            "state_scope":"supervised worker/resource completion; final source/seal verification and pending publication are separate",
             "policy":self.policy,"memory_group":self.group.path,"memory":self.memory,"samples":self.samples,
             "minimum_available_system_memory_bytes":self.minimum_available_memory,"filesystems":self.disks,"context":self.context,
             "frontend_kernel_peak_rss_bytes":frontend_peak_rss,

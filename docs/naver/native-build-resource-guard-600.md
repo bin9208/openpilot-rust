@@ -39,6 +39,9 @@ worker는 봉인된 candidate receipt만 남긴다. frontend는 worker 종료, �
 각 `generations/build-attempts/attempt-*/resources.jsonl`은 초기 admission, 실행 중 상태,
 실패 또는 성공을 fsync해 남긴다. 강제 종료·전원 중단으로 최종 행이 없는 기록을 성공으로
 해석하지 않는다. candidate도 frontend의 최종 확인 없이 pending으로 선택되지 않는다.
+JSONL의 `state_scope`는 worker/resource 검사 범위다. 그 `success`만으로 이후 source/seal
+재검증·pending 게시 또는 장치 실행 성공을 판정하지 않는다. 최종 CLI 종료 상태와
+검증된 generation/pending descriptor를 함께 확인해야 한다.
 
 - 메모리는 worker 진입 뒤 하위 프로세스·file cache를 포함한 커널 cgroup charge의 최대값이다.
   v2 `memory.peak` 또는 v1 `memory.max_usage_in_bytes`가 필수다. frontend VmHWM은 별도로
