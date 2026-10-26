@@ -119,3 +119,7 @@ compiler 경로로 준비한다. [SDK 입력·실제 전체 schema 검증 계획
 현재 lock의 원본458개를 내용별로 준비하고 pinned directory source로 연결한다.
 실제 Cargo fixture와 AGNOS seed 검증은 새 정확 source에서 검증하며 초기 helper/
 전체 OS SDK closure·provider/Python 모델·전체 runtime 수용을 대체하지 않는다.
+
+[첫 준비 도구의 고정 seed](native-bootstrap-seed-599.md)는 현재 commit의 runtime release 없이
+입력 도구를 얻는 후보 추출/소비 경로다. 원래 source/빌드 입력·notice·실제 ABI를 묶고 새
+compiler 준비까지 genuine 검사에 포함한다. 공개 pin/초기 source build·기본 시작 연결은 남는다.

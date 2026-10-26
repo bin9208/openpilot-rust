@@ -17,6 +17,7 @@ on:
       - 'rust/native-capnp-assets.json'
       - 'tools/ci/prepare_native_capnp.py'
       - 'tools/ci/native_cereal_reference.py'
+      - 'tools/native/bootstrap_seed.py'
       - '.github/workflows/runtime-native-environment.yml'
   workflow_dispatch:
 permissions:
@@ -225,6 +226,10 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-cereal-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-cereal-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-cereal-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-bootstrap-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-bootstrap-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-bootstrap-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-seed-export/*
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}

@@ -286,6 +286,78 @@ def native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_
       sdk_unchanged=True,actual_guest_execution=True,full_runtime_build=False,device_execution=False)
 
 
+
+def native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work):
+  """Consume a separately pinned small seed, without a current runtime release."""
+  room(work, 2*1024**3)
+  script = f'{source_mount}/tools/native/bootstrap_seed.py'
+  def execute(argv, name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  binary = work/'project-target/debug/openpilot-runtime-inputs'
+  cargo = (work/'native-project-cargo-path.txt').read_text().strip()
+  vendor = json.loads((work/'native-cereal-cargo-inputs-reuse.json').read_text())['vendor']
+  pinned_rust = json.loads((work.parent/'native-rust-first.json').read_text())
+  guest_rust = Path(guest_work)/'pinned-rust'/Path(pinned_rust['root']).relative_to(work.parent/'native-rust-toolchains')
+  exported = json.loads(execute(['/usr/bin/python3',script,'export','--source',source_mount,
+      '--binary',binary,'--cargo',cargo,'--vendor',vendor,'--rust-licenses',guest_rust/'share/licenses/rust',
+      '--output',work/'bootstrap-seed-export'],
+      'native-bootstrap-export.json').read_text())
+  assert exported['source']['commit'] == evidence['source_commit'] and not exported['published_release']
+  cache = work/'bootstrap-seed-cache'
+  manifest = work/'bootstrap-seed-export/manifest.json'
+  prepare = ['/usr/bin/python3',script,'prepare','--manifest',manifest,
+      '--manifest-sha256',exported['descriptor_sha256'],'--cache',cache,
+      '--offline-assets',work/'bootstrap-seed-export','--verify-native']
+  prepared = []
+  for phase in ('initial','reused'):
+    result = json.loads(execute(prepare,f'native-bootstrap-{phase}.json').read_text())
+    assert result['seed_source'] == exported['source'] and result['native_abi_checked']
+    assert result['transferred_bytes'] == {'helper':0,'notices':0}
+    assert not result['seed_executed'] and not result['compiler_executed'] and not result['runtime_activated']
+    assert (result['stored_bytes'] > 0) == (phase == 'initial')
+    prepared.append(result)
+  assert prepared[0]['root'] == prepared[1]['root']
+  helper = Path(prepared[0]['helper'])
+  host_helper = work/helper.relative_to(guest_work)
+  assert digest(host_helper) == digest(binary)
+  rust = json.loads(execute([helper,'--prepare-rust','--plan',f'{source_mount}/rust/native-rust-toolchain.json',
+      '--cache',Path(guest_work)/'rust-assets','--store',work/'bootstrap-rust'],
+      'native-bootstrap-rust.json').read_text())
+  assert rust['copied_bytes'] > 0 and all(r['transferred_bytes'] == 0 for r in rust['assets'].values())
+  registry = json.loads(execute([helper,'--prepare-cargo','--plan',f'{source_mount}/rust/native-cargo-inputs.json',
+      '--lock',f'{source_mount}/rust/Cargo.lock','--cache',Path(guest_work)/'cargo-assets',
+      '--store',Path(guest_work)/'cargo-sources'],'native-bootstrap-cargo.json').read_text())
+  assert registry['copied_bytes'] == registry['linked_bytes'] == 0
+  assert registry['tree_sha256'] == json.loads((work.parent/'native-cargo-first.json').read_text())['tree_sha256']
+  assert all(r['transferred_bytes'] == 0 for r in registry['assets'].values())
+  toolchain = Path(rust['root'])/'bin'
+  command = ['/usr/bin/env',f'RUSTC={toolchain}/rustc',toolchain/'cargo','build','--locked','--offline',
+      '--manifest-path',work/'driver-fixture/rust/Cargo.toml','--target-dir',work/'bootstrap-compiler-check',
+      '--message-format=json']
+  initial = None
+  for phase in ('initial','reused'):
+    rows = execute(command,f'native-bootstrap-compiler-{phase}.jsonl')
+    artifacts = [r for r in map(json.loads,rows.read_text().splitlines()) if r.get('reason') == 'compiler-artifact' and r.get('executable')]
+    assert {r['target']['name'] for r in artifacts} == {'first','second'}
+    assert all(r['fresh'] == (phase == 'reused') for r in artifacts)
+    hashes = {}
+    for r in artifacts:
+      name = r['target']['name']
+      host_binary = work/Path(r['executable']).relative_to(guest_work)
+      hashes[name] = digest(host_binary)
+      output = execute([r['executable']],f'native-bootstrap-compiler-{phase}-{name}.txt').read_text()
+      assert output == f'native AGNOS Rust std {name} {43 if name == "first" else 42}\n'
+    if phase == 'initial': initial = hashes
+    else: assert hashes == initial
+  evidence['native_bootstrap_seed'] = dict(seed_source=exported['source'],seed_sha256=digest(binary),
+      descriptor_sha256=exported['descriptor_sha256'],native_default_abi_checked=True,
+      offline_artifact_input=True,public_release_download_tested=False,published_release=False,
+      seed_executed=True,compiler_executed=True,
+      new_native_rust_prefix=True,actual_std_programs=2,repeated_artifacts_fresh=True,
+      project_runtime_release_downloaded=False,full_runtime_build=False,device_execution=False)
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -354,6 +426,7 @@ def main():
     (work / 'capnp-sdk').mkdir()
     (work / 'cargo-assets').mkdir()
     (work / 'cargo-sources').mkdir()
+    (work / 'rust-assets').mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
     (work/'cargo').mkdir()
@@ -368,6 +441,7 @@ def main():
              '-b', f'{owned / "native-capnp-assets"}:{guest_work}/capnp-assets',
              '-b', f'{owned / "native-cargo-assets"}:{guest_work}/cargo-assets',
              '-b', f'{owned / "native-cargo-sources"}:{guest_work}/cargo-sources',
+             '-b', f'{owned / "native-rust-assets"}:{guest_work}/rust-assets',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
@@ -410,6 +484,7 @@ def main():
     evidence['toolchain_files'] = {str(path.relative_to(work)): digest(path) for path in (work / 'rustup/toolchains').glob('*/bin/*') if path.is_file()}
     native_driver_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))

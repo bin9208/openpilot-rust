@@ -37,6 +37,10 @@ capnp SDK의 입력 pin·그룹별 도구 검사와 전체 원본 schema/wire �
 반복/docs-only freshness와 source·lock 변조 거부를 Actions에서 확인한다.
 genuine의 ARM 준비 검사는 host에서 만든 seed의 검증/재사용이며 새 기기 준비 실측이 아니다.
 
+처음 Rust 입력 준비 도구를 얻는 순환은 [고정 bootstrap seed](native-bootstrap-seed-599.md)에
+정리했다. 후보 추출·독립 descriptor pin·실제 AGNOS ABI·새 Rust prefix의 compiler 검사를
+Actions에서 수행한다. 공개 seed/기본 시작과 전체 기기 수용은 아직 준비 완료가 아니다.
+
 로컬에서는 `git diff --check`, scoped `rustfmt --check`, TOML/YAML 문법과 diff만
 확인한다. 기능·빌드는 GitHub Actions에서 실행한다. 작업 branch push는
 `Runtime source build foundation`의 x64/ARM matrix를 실행한다. 같은 변경의 성공한
