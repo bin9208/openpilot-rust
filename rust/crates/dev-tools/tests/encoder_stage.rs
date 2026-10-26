@@ -265,3 +265,24 @@ fn cli_rejects_changed_lock_before_creating_staging() {
     assert!(String::from_utf8_lossy(&result.stderr).contains("locked source"));
     assert!(!output.exists());
 }
+
+#[test]
+fn content_cache_cli_rejects_changed_source_lock_before_preparing_inputs() {
+    let temp = tempfile::tempdir().unwrap();
+    fs::write(temp.path().join("uv.lock"), "package=[]").unwrap();
+    let cache = temp.path().join("assets");
+    let store = temp.path().join("prefixes");
+    let result = Command::new(env!("CARGO_BIN_EXE_stage-encoder-target"))
+        .arg("--prepare-wheels")
+        .arg("--root")
+        .arg(temp.path())
+        .arg("--cache")
+        .arg(&cache)
+        .arg("--store")
+        .arg(&store)
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("locked source"));
+    assert!(!cache.exists() && !store.exists());
+}

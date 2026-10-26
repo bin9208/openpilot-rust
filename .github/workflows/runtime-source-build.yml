@@ -4,6 +4,11 @@ on:
     branches: [codex/feat-598-device-native-build, 'codex/feat-598-*', 'codex/feat-599-*', 'codex/feat-600-*', 'codex/feat-605-*', dev, main]
     paths:
       - 'rust/crates/runtime-build/**'
+      - 'rust/crates/dev-tools/src/native_codec_inputs.rs'
+      - 'rust/crates/dev-tools/src/encoder_stage.rs'
+      - 'rust/crates/dev-tools/src/bin/stage_encoder_target.rs'
+      - 'rust/crates/dev-tools/tests/encoder_stage.rs'
+      - 'uv.lock'
       - 'rust/crates/runtime-launcher/**'
       - 'rust/crates/updated/**'
       - 'rust/Cargo.toml'
@@ -95,6 +100,51 @@ jobs:
             --root "$GITHUB_WORKSPACE" --cargo "$(rustup which cargo)" --check > "$RUNNER_TEMP/native-runtime-catalog.json"
       - name: Compile the runtime consumer configuration without archive preparation dependencies
         run: cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --all-targets -- -D warnings
+      - name: Verify unchanged codec wheel admission and independent component reuse
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          free=shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          growth=1024**3
+          print(f'available_bytes={free} expected_codec_tool_and_inputs_growth_bytes={growth}')
+          if free<growth:
+              raise SystemExit('insufficient capacity for this codec operation; other data retained')
+          PY
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/{native_codec_inputs,encoder_stage}.rs rust/crates/dev-tools/src/bin/stage_encoder_target.rs rust/crates/dev-tools/tests/encoder_stage.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test encoder_stage
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_codec_inputs::tests -- --nocapture
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --bin stage-encoder-target -- -D warnings
+      - uses: actions/cache/restore@v4
+        id: codec-wheels-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-codec-assets
+          key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
+      - name: Prepare the original ARM codec wheels without pip or compiler execution
+        run: |
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-encoder-target -- \
+            --prepare-wheels --root "$GITHUB_WORKSPACE" --cache "$RUNNER_TEMP/native-codec-assets" --store "$RUNNER_TEMP/native-codec-prefixes" > "$RUNNER_TEMP/native-codec-first.json"
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-encoder-target -- \
+            --prepare-wheels --root "$GITHUB_WORKSPACE" --cache "$RUNNER_TEMP/native-codec-assets" --store "$RUNNER_TEMP/native-codec-prefixes" > "$RUNNER_TEMP/native-codec-reused.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          first=json.loads((root/'native-codec-first.json').read_text())
+          repeat=json.loads((root/'native-codec-reused.json').read_text())
+          assert set(first)==set(repeat)=={'ffmpeg','libyuv'}
+          for name,row in first.items():
+            reused=repeat[name]
+            assert row['copied_bytes']>0 and reused['copied_bytes']==0
+            assert row['tree_sha256']==reused['tree_sha256'] and row['root']==reused['root']
+            assert reused['asset']['transferred_bytes']==reused['asset']['stored_bytes']==0
+            assert not row['compiler_executed'] and not row['runtime_activated']
+          print('Original codec wheels verified; repeat HTTP body, stored archive bytes and copied prefix bytes zero. This step does not execute ARM codecs.')
+          PY
+      - uses: actions/cache/save@v4
+        if: steps.codec-wheels-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-codec-assets
+          key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
       - name: Verify the real HTTPS CLI and zero-transfer reuse of a pinned public input
         run: |
           cargo run --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-build --bin openpilot-runtime-assets -- \
@@ -171,6 +221,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/runtime-build-metadata.json
             ${{ env.CI_JOB_TEMP }}/native-runtime-catalog.json
             ${{ env.CI_JOB_TEMP }}/runtime-build-tests.log
+            ${{ env.CI_JOB_TEMP }}/native-codec-first.json
+            ${{ env.CI_JOB_TEMP }}/native-codec-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-codec-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/runtime-https-first.json
             ${{ env.CI_JOB_TEMP }}/runtime-https-reused.json
             ${{ env.CI_JOB_TEMP }}/native-startup-resources.txt

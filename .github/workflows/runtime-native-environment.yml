@@ -12,6 +12,10 @@ on:
       - 'rust/crates/runtime-build/src/cargo_inputs.rs'
       - 'rust/crates/runtime-build/src/system_sdk.rs'
       - 'rust/crates/runtime-build/src/inputs.rs'
+      - 'rust/crates/dev-tools/src/native_codec_inputs.rs'
+      - 'rust/crates/dev-tools/src/encoder_stage.rs'
+      - 'rust/crates/dev-tools/src/bin/stage_encoder_target.rs'
+      - 'uv.lock'
       - 'rust/native-system-sdk.json'
       - 'rust/native-cargo-inputs.json'
       - 'rust/Cargo.lock'
@@ -193,6 +197,43 @@ jobs:
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-cargo-assets
           key: native-cargo-crates-${{ hashFiles('rust/Cargo.lock') }}-v1
+      - uses: actions/cache/restore@v4
+        id: codec-wheels-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-codec-assets
+          key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
+      - name: Prepare independently expected original codec wheel trees
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          free=shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          growth=1024**3
+          print(f'available_bytes={free} expected_codec_host_tool_and_inputs_growth_bytes={growth}')
+          if free<growth:
+              raise SystemExit('insufficient capacity for this codec operation; other data retained')
+          PY
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-encoder-target -- \
+            --prepare-wheels --root "$GITHUB_WORKSPACE" --cache "$RUNNER_TEMP/native-codec-assets" --store "$RUNNER_TEMP/native-codec-prefixes" > "$RUNNER_TEMP/native-codec-first.json"
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-encoder-target -- \
+            --prepare-wheels --root "$GITHUB_WORKSPACE" --cache "$RUNNER_TEMP/native-codec-assets" --store "$RUNNER_TEMP/native-codec-prefixes" > "$RUNNER_TEMP/native-codec-reused.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          first=json.loads((root/'native-codec-first.json').read_text())
+          repeat=json.loads((root/'native-codec-reused.json').read_text())
+          assert set(first)==set(repeat)=={'ffmpeg','libyuv'}
+          for name,row in first.items():
+              assert row['copied_bytes']>0 and repeat[name]['copied_bytes']==0
+              assert row['tree_sha256']==repeat[name]['tree_sha256']
+              assert repeat[name]['asset']['transferred_bytes']==repeat[name]['asset']['stored_bytes']==0
+              assert not row['compiler_executed'] and not row['runtime_activated']
+          PY
+      - uses: actions/cache/save@v4
+        if: steps.codec-wheels-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-codec-assets
+          key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
       - name: Execute Rust and C++ standard ABI probes inside the original AGNOS filesystem
         run: python3 tools/ci/probe_native_agnos.py
       - uses: actions/upload-artifact@v6
@@ -214,6 +255,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-capnp-reused.json
             ${{ env.CI_JOB_TEMP }}/native-cargo-first.json
             ${{ env.CI_JOB_TEMP }}/native-cargo-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-codec-first.json
+            ${{ env.CI_JOB_TEMP }}/native-codec-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-codec-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-cargo-sources/sets/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.json
             ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.txt
@@ -234,6 +278,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-bootstrap-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-seed-export/*
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-system-sdk*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-codec-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-codec-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-codec-*.txt
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}

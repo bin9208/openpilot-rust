@@ -73,7 +73,7 @@ fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
     f.write_all(b"\n")?;
     Ok(())
 }
-fn safe(name: &str) -> Result<()> {
+pub(crate) fn safe(name: &str) -> Result<()> {
     require(
         !name.is_empty()
             && !name.starts_with('/')
@@ -102,14 +102,12 @@ fn ancestor(path: &Path) -> Result<PathBuf> {
 fn space(path: &Path, growth: u64) -> Result<Value> {
     let stats = rustix::fs::statvfs(ancestor(path)?)?;
     let free = stats.f_bavail.saturating_mul(stats.f_frsize);
-    let required = 25 * 1024 * 1024 * 1024 + growth;
+    let required = growth;
     let value = json!({"free_bytes":free,"required_bytes":required,"growth_bytes":growth});
     println!("{value}");
     require(
         free >= required,
-        format!(
-            "require 25 GiB plus estimated growth; recover at least 35 GiB before retry: {value}"
-        ),
+        format!("insufficient capacity for this codec operation; existing data retained: {value}"),
     )?;
     Ok(value)
 }
@@ -151,8 +149,10 @@ pub struct FileRecord {
     pub sha256: String,
 }
 pub(crate) fn zip_directory_count(path: &Path, start: u64) -> Result<usize> {
-    let mut file = File::open(path)?;
-    let size = file.metadata()?.len();
+    zip_record_count(File::open(path)?, start)
+}
+pub(crate) fn zip_record_count(mut file: impl Read + Seek, start: u64) -> Result<usize> {
+    let size = file.seek(SeekFrom::End(0))?;
     file.seek(SeekFrom::Start(start))?;
     let mut count = 0;
     loop {
@@ -181,17 +181,16 @@ pub(crate) fn zip_directory_count(path: &Path, start: u64) -> Result<usize> {
     }
     Ok(count)
 }
-/// Validate every selected ZIP record before creating any output directory.
-pub fn extract_native(archive: &Path, package: &Package, output: &Path) -> Result<Vec<FileRecord>> {
-    require(
-        fs::metadata(archive)?.len() <= 128 * 1024 * 1024,
-        "oversized wheel archive",
-    )?;
-    let mut wheel = zip::ZipArchive::new(File::open(archive)?)?;
+/// The legacy staging path and content cache share the same member admission.
+pub(crate) fn wheel_entries<R: Read + Seek>(
+    wheel: &mut zip::ZipArchive<R>,
+    package: &Package,
+    directory_count: usize,
+) -> Result<Vec<(usize, String, u64)>> {
     // ZipArchive indexes by name and replaces duplicate central-directory names.
     // Count raw records too, so that this indexing cannot conceal duplicates.
     require(
-        zip_directory_count(archive, wheel.central_directory_start())? == wheel.len(),
+        directory_count == wheel.len(),
         "unsafe duplicate native archive member",
     )?;
     require(wheel.len() <= 100000, "oversized wheel member count")?;
@@ -212,7 +211,7 @@ pub fn extract_native(archive: &Path, package: &Package, output: &Path) -> Resul
         safe(&name)?;
         let mode = e.unix_mode().unwrap_or(0);
         require(
-            mode & 0o170000 != 0o120000 && (mode & 0o170000 == 0 || mode & 0o170000 == 0o100000),
+            mode & 0o6000 == 0 && (mode & 0o170000 == 0 || mode & 0o170000 == 0o100000),
             format!("unsafe native archive member: {}", e.name()?),
         )?;
         require(
@@ -241,6 +240,18 @@ pub fn extract_native(archive: &Path, package: &Package, output: &Path) -> Resul
             parent = p.parent();
         }
     }
+    Ok(selected)
+}
+/// Validate every selected ZIP record before creating any output directory.
+pub fn extract_native(archive: &Path, package: &Package, output: &Path) -> Result<Vec<FileRecord>> {
+    require(
+        fs::metadata(archive)?.len() <= 128 * 1024 * 1024,
+        "oversized wheel archive",
+    )?;
+    let mut wheel = zip::ZipArchive::new(File::open(archive)?)?;
+    let count = zip_directory_count(archive, wheel.central_directory_start())?;
+    let selected = wheel_entries(&mut wheel, package, count)?;
+    let total = selected.iter().map(|(_, _, size)| size).sum();
     space(output, total)?;
     require(
         fs::symlink_metadata(output).is_err_and(|e| e.kind() == io::ErrorKind::NotFound),

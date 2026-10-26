@@ -128,3 +128,8 @@ compiler 준비까지 genuine 검사에 포함한다. 공개 pin/초기 source b
 receipt를 만들고 실제 native `/`의 선언된 C/C++ 헤더·library 이름 공간을 빌드 전후 확인한다.
 일반 Tree의 링크 거부는 유지한다. 같은 크기 헤더 변조/이전 프로그램 보존과 실제 반복
 build 검증을 Actions에 추가했으며 전체99개 search closure·기능 성공은 아직 확정하지 않는다.
+
+[기존 codec 내용별 준비](native-codec-inputs-599.md)는 고정 FFmpeg/libyuv ARM wheel을
+새 runtime commit과 독립된 prefix로 준비한다. 기존 ZIP admission·lock/source pin을
+유지하며 반복 전송/복사0, receipt 위조 거부와 실제 ARM C/C++ API 실행을 검증한다.
+libswscale/전체 header·OpenCV 등 나머지 provider closure와 최종 notice는 별도로 남는다.

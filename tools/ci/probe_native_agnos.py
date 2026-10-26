@@ -446,6 +446,70 @@ def native_system_sdk_probe(guest_command, work, rootfs, evidence, log, guest_wo
       complete_compiler_search_closure_proven=False,full_runtime_build=False,device_execution=False)
 
 
+def native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work):
+  """Prepare the real pinned wheels on ARM, then link and execute their APIs."""
+  room(work,1024**3)
+  def execute(argv,name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  execute(['cargo','build','--locked','--manifest-path',f'{source_mount}/rust/Cargo.toml',
+      '-p','openpilot-dev-tools','--bin','stage-encoder-target','--target-dir',work/'project-target',
+      '--message-format=json'],'native-codec-tool-build.jsonl')
+  preparer=work/'project-target/debug/stage-encoder-target'
+  command=[preparer,'--prepare-wheels','--root',source_mount,'--cache',Path(guest_work)/'codec-assets',
+      '--store',work/'native-codec-prefixes']
+  first=json.loads(execute(command,'native-codec-initial.json').read_text())
+  repeat=json.loads(execute(command,'native-codec-reused.json').read_text())
+  host=json.loads((work.parent/'native-codec-first.json').read_text())
+  assert set(first)==set(repeat)==set(host)=={'ffmpeg','libyuv'}
+  for name,row in first.items():
+    assert row['tree_sha256']==repeat[name]['tree_sha256']==host[name]['tree_sha256']
+    assert row['copied_bytes']>0 and repeat[name]['copied_bytes']==0
+    assert all(r['asset']['transferred_bytes']==r['asset']['stored_bytes']==0 for r in (row,repeat[name]))
+    assert not row['compiler_executed'] and not row['runtime_activated']
+  programs={
+    'libyuv':('''#include <libyuv.h>
+#include <cstdio>
+int main() {
+  const unsigned char y[4]={235,235,235,235},u[1]={128},v[1]={128};
+  unsigned char argb[16]={0};
+  if(libyuv::I420ToARGB(y,2,u,1,v,1,argb,8,2,2)) return 11;
+  for(auto value:argb) if(value!=255) return 12;
+  std::puts("native libyuv white pixels matched");
+}
+''',['yuv'],'native libyuv white pixels matched\n'),
+    'ffmpeg':('''extern "C" {
+#include <libavutil/avutil.h>
+#include <libavutil/version.h>
+}
+#include <cstdio>
+static_assert(LIBAVUTIL_VERSION_MAJOR==59);
+int main() {
+  if(avutil_version()!=LIBAVUTIL_VERSION_INT) return 13;
+  std::puts("native FFmpeg avutil header/library ABI matched");
+}
+''',['avutil'],'native FFmpeg avutil header/library ABI matched\n'),
+  }
+  hashes={}
+  for name,(code,libraries,expected) in programs.items():
+    source=work/f'native-codec-{name}.cc'
+    source.write_text(code)
+    prefix=Path(first[name]['root'])
+    output=work/f'native-codec-{name}'
+    execute(['g++','-std=c++17','-I',prefix/'include',source,
+        *(prefix/'lib'/f'lib{library}.a' for library in libraries),'-pthread','-lm','-ldl','-o',output],
+        f'native-codec-{name}-build.txt')
+    assert execute([output],f'native-codec-{name}-run.txt').read_text()==expected
+    with output.open('rb') as stream: header=stream.read(64)
+    assert header[:6]==b'\x7fELF\x02\x01' and int.from_bytes(header[18:20],'little')==183
+    hashes[name]=dict(source_sha256=digest(source),elf_sha256=digest(output),
+        tree_sha256=first[name]['tree_sha256'],archive_sha256=first[name]['asset']['sha256'])
+  evidence['native_codec_wheels']=dict(preparer_sha256=digest(preparer),components=hashes,
+      actual_arm_preparer=True,repeated_body_bytes=0,repeated_copied_bytes=0,
+      independently_expected_host_tree_matches=True,actual_native_cpp_programs=2,
+      libswscale_built=False,complete_codec_regression=False,full_runtime_build=False,device_execution=False)
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -523,6 +587,7 @@ def main():
     (work / 'cargo-assets').mkdir()
     (work / 'cargo-sources').mkdir()
     (work / 'rust-assets').mkdir()
+    (work / 'codec-assets').mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
     (work/'cargo').mkdir()
@@ -538,6 +603,7 @@ def main():
              '-b', f'{owned / "native-cargo-assets"}:{guest_work}/cargo-assets',
              '-b', f'{owned / "native-cargo-sources"}:{guest_work}/cargo-sources',
              '-b', f'{owned / "native-rust-assets"}:{guest_work}/rust-assets',
+             '-b', f'{owned / "native-codec-assets"}:{guest_work}/codec-assets',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
@@ -582,6 +648,7 @@ def main():
     native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_system_sdk_probe(guest_command, work, rootfs, evidence, log, guest_work)
+    native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))
