@@ -72,3 +72,33 @@ fn cli_rejects_unpinned_archive_before_starting_external_tools() {
     assert!(result.stdout.is_empty());
     assert!(!root.join("invocation.json").exists());
 }
+
+#[test]
+fn released_header_cli_rejects_mixed_or_changed_profile_before_preparing_inputs() {
+    let temp = tempfile::tempdir().unwrap();
+    let cache = temp.path().join("cache");
+    let store = temp.path().join("prefixes");
+    let mut plan: serde_json::Value =
+        serde_json::from_str(include_str!("../../../native-ffmpeg-headers.json")).unwrap();
+    plan["target"] = "x86_64-unknown-linux-gnu".into();
+    let path = temp.path().join("changed.json");
+    fs::write(&path, serde_json::to_vec(&plan).unwrap()).unwrap();
+    for extra in [
+        vec!["--plan", path.to_str().unwrap()],
+        vec!["--cc", "must-not-execute"],
+    ] {
+        let result = Command::new(env!("CARGO_BIN_EXE_build-runtime-ffmpeg"))
+            .arg("--prepare-released-headers")
+            .arg("--cache")
+            .arg(&cache)
+            .arg("--store")
+            .arg(&store)
+            .args(extra)
+            .env("PATH", "")
+            .output()
+            .unwrap();
+        assert!(!result.status.success());
+        assert!(result.stdout.is_empty());
+        assert!(!cache.exists() && !store.exists());
+    }
+}

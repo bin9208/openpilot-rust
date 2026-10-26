@@ -510,6 +510,67 @@ int main() {
       libswscale_built=False,complete_codec_regression=False,full_runtime_build=False,device_execution=False)
 
 
+def native_ffmpeg_headers_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Verify the actual final-runtime header version, without substituting 7.1."""
+  room(work,128*1024**2)
+  def execute(argv,name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  execute(['cargo','build','--locked','--manifest-path',f'{source_mount}/rust/Cargo.toml',
+      '-p','openpilot-dev-tools','--bin','build-runtime-ffmpeg','--target-dir',work/'project-target',
+      '--message-format=json'],'native-ffmpeg611-tool-build.jsonl')
+  preparer=work/'project-target/debug/build-runtime-ffmpeg'
+  command=[preparer,'--prepare-released-headers','--plan',f'{source_mount}/rust/native-ffmpeg-headers.json',
+      '--cache',Path(guest_work)/'ffmpeg-source','--store',work/'native-ffmpeg611-headers']
+  first=json.loads(execute(command,'native-ffmpeg611-headers-initial.json').read_text())
+  repeated=json.loads(execute(command,'native-ffmpeg611-headers-reused.json').read_text())
+  host=json.loads((work.parent/'native-ffmpeg-headers-first.json').read_text())
+  assert first['public_headers']==repeated['public_headers']==host['public_headers']==140
+  assert first['tree_sha256']==repeated['tree_sha256']==host['tree_sha256']
+  assert first['root']==repeated['root'] and first['copied_bytes']>0 and repeated['copied_bytes']==0
+  assert all(r['asset']['transferred_bytes']==r['asset']['stored_bytes']==0 for r in (first,repeated))
+  assert not first['compiler_executed'] and not first['provider_libraries_prepared'] and not first['actual_target_execution']
+  source=work/'native-ffmpeg611-headers.cc'
+  source.write_text('''extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/avutil.h>
+#include <libavutil/avconfig.h>
+#include <libavdevice/avdevice.h>
+#include <libavfilter/avfilter.h>
+#include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
+#include <libpostproc/postprocess.h>
+}
+#if !defined(__aarch64__) || !defined(__AARCH64EL__) || AV_HAVE_BIGENDIAN != 0 || AV_HAVE_FAST_UNALIGNED != 1
+#error Actual_native_compiler_does_not_match_original_generated_headers
+#endif
+static_assert(sizeof(void*)==8);
+static_assert(LIBAVCODEC_VERSION_INT==AV_VERSION_INT(60,31,102));
+static_assert(LIBAVFORMAT_VERSION_INT==AV_VERSION_INT(60,16,100));
+static_assert(LIBAVUTIL_VERSION_INT==AV_VERSION_INT(58,29,100));
+static_assert(LIBAVDEVICE_VERSION_INT==AV_VERSION_INT(60,3,100));
+static_assert(LIBAVFILTER_VERSION_INT==AV_VERSION_INT(9,12,100));
+static_assert(LIBSWSCALE_VERSION_INT==AV_VERSION_INT(7,5,100));
+static_assert(LIBSWRESAMPLE_VERSION_INT==AV_VERSION_INT(4,12,100));
+static_assert(LIBPOSTPROC_VERSION_INT==AV_VERSION_INT(57,3,100));
+int native_header_identity(){return LIBAVUTIL_VERSION_INT;}
+''')
+  output=work/'native-ffmpeg611-headers.o'
+  execute(['g++','-std=c++17','-I',Path(first['root'])/'include','-c',source,'-o',output],
+      'native-ffmpeg611-header-compile.txt')
+  with output.open('rb') as stream: header=stream.read(64)
+  assert header[:6]==b'\x7fELF\x02\x01' and int.from_bytes(header[16:18],'little')==1 and int.from_bytes(header[18:20],'little')==183
+  after=json.loads(execute(command,'native-ffmpeg611-headers-after.json').read_text())
+  assert after['tree_sha256']==first['tree_sha256'] and after['copied_bytes']==after['asset']['transferred_bytes']==0
+  evidence['native_released_ffmpeg_headers']=dict(preparer_sha256=digest(preparer),public_headers=140,
+      tree_sha256=first['tree_sha256'],source_archive_sha256=first['asset']['sha256'],
+      actual_arm_preparer=True,independently_expected_host_tree_matches=True,
+      actual_native_header_object_sha256=digest(output),header_probe_source_sha256=digest(source),
+      repeated_body_bytes=0,repeated_copied_bytes=0,provider_version='6.1.1',
+      libraries_linked=False,provider_execution_tested=False,full_runtime_build=False,device_execution=False)
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -588,6 +649,7 @@ def main():
     (work / 'cargo-sources').mkdir()
     (work / 'rust-assets').mkdir()
     (work / 'codec-assets').mkdir()
+    (work / 'ffmpeg-source').mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
     (work/'cargo').mkdir()
@@ -604,6 +666,7 @@ def main():
              '-b', f'{owned / "native-cargo-sources"}:{guest_work}/cargo-sources',
              '-b', f'{owned / "native-rust-assets"}:{guest_work}/rust-assets',
              '-b', f'{owned / "native-codec-assets"}:{guest_work}/codec-assets',
+             '-b', f'{owned / "native-ffmpeg-source"}:{guest_work}/ffmpeg-source',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
@@ -649,6 +712,7 @@ def main():
     native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_system_sdk_probe(guest_command, work, rootfs, evidence, log, guest_work)
     native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_ffmpeg_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))

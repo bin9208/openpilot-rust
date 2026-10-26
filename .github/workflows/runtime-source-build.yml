@@ -5,6 +5,10 @@ on:
     paths:
       - 'rust/crates/runtime-build/**'
       - 'rust/crates/dev-tools/src/native_codec_inputs.rs'
+      - 'rust/crates/dev-tools/src/native_ffmpeg_headers.rs'
+      - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
+      - 'rust/crates/dev-tools/tests/ffmpeg_build.rs'
+      - 'rust/native-ffmpeg-headers.json'
       - 'rust/crates/dev-tools/src/encoder_stage.rs'
       - 'rust/crates/dev-tools/src/bin/stage_encoder_target.rs'
       - 'rust/crates/dev-tools/tests/encoder_stage.rs'
@@ -145,6 +149,40 @@ jobs:
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-codec-assets
           key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
+      - name: Verify released FFmpeg header reconstruction without changing existing profiles
+        run: |
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/{native_codec_inputs,native_ffmpeg_headers,ffmpeg_build}.rs rust/crates/dev-tools/tests/ffmpeg_build.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test ffmpeg_build
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_ffmpeg_headers::tests -- --nocapture
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --bin build-runtime-ffmpeg -- -D warnings
+      - uses: actions/cache/restore@v4
+        id: ffmpeg-headers-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-ffmpeg-source
+          key: native-ffmpeg-source-8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968-v1
+      - name: Prepare all original released headers and prove zero-transfer repeat
+        run: |
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg -- \
+            --prepare-released-headers --plan rust/native-ffmpeg-headers.json --cache "$RUNNER_TEMP/native-ffmpeg-source" --store "$RUNNER_TEMP/native-ffmpeg-headers" > "$RUNNER_TEMP/native-ffmpeg-headers-first.json"
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg -- \
+            --prepare-released-headers --plan rust/native-ffmpeg-headers.json --cache "$RUNNER_TEMP/native-ffmpeg-source" --store "$RUNNER_TEMP/native-ffmpeg-headers" > "$RUNNER_TEMP/native-ffmpeg-headers-reused.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          first=json.loads((root/'native-ffmpeg-headers-first.json').read_text())
+          repeat=json.loads((root/'native-ffmpeg-headers-reused.json').read_text())
+          assert first['public_headers']==repeat['public_headers']==140
+          assert first['root']==repeat['root'] and first['tree_sha256']==repeat['tree_sha256']
+          assert first['copied_bytes']>0 and repeat['copied_bytes']==0
+          assert repeat['asset']['transferred_bytes']==repeat['asset']['stored_bytes']==0
+          assert not first['compiler_executed'] and not first['provider_libraries_prepared'] and not first['actual_target_execution']
+          PY
+      - uses: actions/cache/save@v4
+        if: steps.ffmpeg-headers-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-ffmpeg-source
+          key: native-ffmpeg-source-8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968-v1
       - name: Verify the real HTTPS CLI and zero-transfer reuse of a pinned public input
         run: |
           cargo run --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-build --bin openpilot-runtime-assets -- \
@@ -224,6 +262,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-codec-first.json
             ${{ env.CI_JOB_TEMP }}/native-codec-reused.json
             ${{ env.CI_JOB_TEMP }}/native-codec-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers-first.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/runtime-https-first.json
             ${{ env.CI_JOB_TEMP }}/runtime-https-reused.json
             ${{ env.CI_JOB_TEMP }}/native-startup-resources.txt

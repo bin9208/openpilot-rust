@@ -13,6 +13,7 @@ pub mod user_docs;
 pub mod elf_audit;
 pub mod encoder_stage;
 pub mod native_codec_inputs;
+pub mod native_ffmpeg_headers;
 
 pub mod ffmpeg_build;
 pub mod qcom_compiler_stage;

@@ -33,15 +33,15 @@ pub struct Prepared {
     pub runtime_activated: bool,
 }
 
-fn hash(bytes: &[u8]) -> String {
+pub(crate) fn hash(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
-fn json(value: &impl Serialize) -> Result<Vec<u8>> {
+pub(crate) fn json(value: &impl Serialize) -> Result<Vec<u8>> {
     let mut bytes = serde_json::to_vec_pretty(value)?;
     bytes.push(b'\n');
     Ok(bytes)
 }
-fn directory(path: &Path) -> Result<()> {
+pub(crate) fn directory(path: &Path) -> Result<()> {
     match fs::create_dir(path) {
         Ok(()) => (),
         Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => (),
@@ -52,7 +52,7 @@ fn directory(path: &Path) -> Result<()> {
     }
     Ok(())
 }
-fn regular(path: &Path) -> Result<File> {
+pub(crate) fn regular(path: &Path) -> Result<File> {
     let file = OpenOptions::new()
         .read(true)
         .custom_flags((rustix::fs::OFlags::NOFOLLOW | rustix::fs::OFlags::NONBLOCK).bits() as i32)
@@ -62,7 +62,7 @@ fn regular(path: &Path) -> Result<File> {
     }
     Ok(file)
 }
-fn write(path: &Path, bytes: &[u8]) -> Result<()> {
+pub(crate) fn write(path: &Path, bytes: &[u8]) -> Result<()> {
     let mut file = OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -99,7 +99,11 @@ fn sync(root: &Path) -> Result<()> {
     }
     Ok(())
 }
-fn insert(entries: &mut BTreeMap<PathBuf, Entry>, path: PathBuf, entry: Entry) -> Result<()> {
+pub(crate) fn insert(
+    entries: &mut BTreeMap<PathBuf, Entry>,
+    path: PathBuf,
+    entry: Entry,
+) -> Result<()> {
     let mut parent = path.parent();
     while let Some(p) = parent.filter(|p| !p.as_os_str().is_empty()) {
         if entries.get(p).is_some_and(|e| e != &Entry::Directory) {
@@ -289,8 +293,40 @@ fn prepare_one(
     store: &Path,
     download: &impl assets::Download,
 ) -> Result<Prepared> {
-    let started = Instant::now();
     let identity = hash(&json(&("openpilot-native-codec-wheel-v1", package))?);
+    let plan = assets::Plan {
+        schema: 1,
+        reserve_bytes: 0,
+        assets: BTreeMap::from([(
+            package.name.clone(),
+            assets::Asset {
+                url: package.url(),
+                sha256: package.sha256.clone(),
+                bytes: package.size,
+            },
+        )]),
+    };
+    prepare_tree(
+        identity,
+        store,
+        || {
+            assets::prepare(cache, &plan, download)?
+                .remove(&package.name)
+                .ok_or_else(|| "missing native codec asset".into())
+        },
+        |archive, destination| expected(archive, package, destination),
+    )
+}
+
+/// Callers derive the expected tree from independently authenticated input bytes
+/// on every use. Stored receipts never become the authority for a cache hit.
+pub(crate) fn prepare_tree(
+    identity: String,
+    store: &Path,
+    asset: impl FnOnce() -> Result<assets::Receipt>,
+    expected: impl Fn(&Path, Option<&Path>) -> Result<Tree>,
+) -> Result<Prepared> {
+    let started = Instant::now();
     directory(store)?;
     let object = store.canonicalize()?.join(&identity);
     directory(&object)?;
@@ -304,23 +340,8 @@ fn prepare_one(
         return Err("native codec lock is not a regular file".into());
     }
     rustix::fs::flock(&lock, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
-    let plan = assets::Plan {
-        schema: 1,
-        reserve_bytes: 0,
-        assets: BTreeMap::from([(
-            package.name.clone(),
-            assets::Asset {
-                url: package.url(),
-                sha256: package.sha256.clone(),
-                bytes: package.size,
-            },
-        )]),
-    };
-    let mut assets = assets::prepare(cache, &plan, download)?;
-    let asset = assets
-        .remove(&package.name)
-        .ok_or("missing native codec asset")?;
-    let tree = expected(&asset.path, package, None)?;
+    let asset = asset()?;
+    let tree = expected(&asset.path, None)?;
     let tree_bytes = json(&tree)?;
     if tree_bytes.len() > 16 * 1024 * 1024 {
         return Err("native codec tree exceeds receipt limit".into());
@@ -376,7 +397,7 @@ fn prepare_one(
                 .prefix(".pending-codec-")
                 .tempdir_in(&object)?;
             directory(&temp.path().join("tree"))?;
-            if tree != expected(&asset.path, package, Some(&temp.path().join("tree")))? {
+            if tree != expected(&asset.path, Some(&temp.path().join("tree")))? {
                 return Err("native codec archive changed during preparation".into());
             }
             tree.verify(&temp.path().join("tree"))?;
@@ -395,7 +416,7 @@ fn prepare_one(
         }
         Err(e) => return Err(e.into()),
     };
-    if digest_file(&asset.path)? != package.sha256 {
+    if digest_file(&asset.path)? != asset.sha256 {
         return Err("native codec archive changed after preparation".into());
     }
     Ok(Prepared {

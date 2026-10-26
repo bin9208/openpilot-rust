@@ -133,3 +133,8 @@ build 검증을 Actions에 추가했으며 전체99개 search closure·기능 �
 새 runtime commit과 독립된 prefix로 준비한다. 기존 ZIP admission·lock/source pin을
 유지하며 반복 전송/복사0, receipt 위조 거부와 실제 ARM C/C++ API 실행을 검증한다.
 libswscale/전체 header·OpenCV 등 나머지 provider closure와 최종 notice는 별도로 남는다.
+
+[전체 runtime의 FFmpeg6.1.1 header](native-ffmpeg-headers-599.md)는 실제 b555 빌드의
+override를 확인해 원래140개 header/24개 library 대응을 고정했다.7.1 wheel을 전체 runtime
+입력으로 추정하지 않는다. 원본138개와 기존 생성2개를 내용별로 준비하고 실제 ARM
+header object를 검사한다. 기존 shared library의 준비/링크/실행 완료를 의미하지 않는다.

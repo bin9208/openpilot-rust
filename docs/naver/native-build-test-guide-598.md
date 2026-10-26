@@ -121,6 +121,10 @@ compiler root `/`를 연결한다. foundation 회귀7개와 genuine의 실제 bu
 내용별 준비 초기/반복, 한 provider 변경 시 무관 prefix 보존, 로컬 receipt 위조 거부와 실제
 AGNOS의 두 C/C++ API 실행을 확인한다. 전체 encoder/FFmpeg closure와 기기 수용은 별도다.
 
+전체 runtime의 실제 b555 기준은 [FFmpeg6.1.1 header 검사](native-ffmpeg-headers-599.md)에서
+따로 확인한다.140개 원래 header의 초기/반복·위조/누락 거부와 실제 ARM module object를
+검사하며, 별도7.1 codec wheel이나 host header로 대체하지 않는다.
+
 2026-10-26 추가한 generation 시작/업데이트 연결은 아직 Actions 검증 전이다.
 `--stage-update`는 source-built 후보를 봉인하고 기존 active ID와 config hash에 묶어
 `pending.json`을 발행한다. launcher가 boot lock을 잡은 뒤에만 다시 검증·선택하고,
