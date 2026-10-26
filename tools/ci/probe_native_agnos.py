@@ -79,8 +79,8 @@ def main():
   initial_disk = shutil.disk_usage(owned).free
   started = time.monotonic()
   try:
-    receipt = json.loads((owned / 'native-agnos-assets-first.json').read_text())['agnos-system-19.8-carrot-bt1']
-    repeated = json.loads((owned / 'native-agnos-assets-reused.json').read_text())['agnos-system-19.8-carrot-bt1']
+    receipt = json.loads((owned / 'native-agnos-assets-first.json').read_text())['agnos-system-19-8-carrot-bt1']
+    repeated = json.loads((owned / 'native-agnos-assets-reused.json').read_text())['agnos-system-19-8-carrot-bt1']
     image = Path(receipt['path'])
     assert digest(image) == evidence['image_compressed_sha256'] and image.stat().st_size == 1010655092
     assert repeated['transferred_bytes'] == repeated['stored_bytes'] == 0 and repeated['path'] == receipt['path']

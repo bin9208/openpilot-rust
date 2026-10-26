@@ -45,7 +45,15 @@ job 디렉터리를 제거한다.
 차이는 관찰된 filesystem 변화다. aggregate process-tree peak, 디스크 peak, 실제 장치
 전체 runtime 비용으로 보고하지 않는다. 전체 resource 계측은 여전히 완료 조건이다.
 
-이 probe는 Actions 검증 전이다. 결과를 읽어 누락된 native headers/toolchain/도구와 기존
+초기 source `a8ef20ef8a3e60ef4848288713f029cb2482a16d`의
+[40334144255](https://github.com/bin9208/openpilot-rust/actions/runs/40334144255)는 X64의
+runtime-build/installer 및 assets binary 컴파일에는 성공했지만 자산의 논리 이름에 `.`이
+포함되어 Plan 검증에서 실패했다. 압축 이미지 다운로드 및 AGNOS compiler 실행에는 아직
+도달하지 않았다. 자산 키만 허용된 `agnos-system-19-8-carrot-bt1`로 수정하며 원본 URL/
+버전/SHA/길이 pin은 그대로 유지했다. 새로운 정확 source의 Actions 결과를 확인해야 한다.
+
+최종 사용자 수용 장치는 **comma 3X**로 선택되었다. 결과를 읽어 누락된 native
+headers/toolchain/도구와 기존
 Python 모델 준비 환경을 고정하고, 트랙별 전체 runtime roster·provider receipt·recipe에
 연결해야 한다. full AGNOS generation build/seal/start/update/recovery와 사용자 기기의 정상
 부팅·기록·기존 업로드 수용 전까지 #599와 #598을 닫지 않는다.
