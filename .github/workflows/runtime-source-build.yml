@@ -10,6 +10,7 @@ on:
       - 'rust/Cargo.lock'
       - 'rust/native-runtime-catalog.json'
       - 'rust/native-cargo-inputs.json'
+      - 'rust/native-system-sdk.json'
       - 'tools/native/bootstrap_seed.py'
       - 'tools/ci/tests/test_native_bootstrap_seed.py'
       - '.github/workflows/runtime-source-build.yml'

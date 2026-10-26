@@ -358,6 +358,94 @@ def native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log
       project_runtime_release_downloaded=False,full_runtime_build=False,device_execution=False)
 
 
+def native_system_sdk_probe(guest_command, work, rootfs, evidence, log, guest_work):
+  """Bind the verified factory namespace to the actual native build driver."""
+  room(work, 64*1024**2)
+  receipt = work/'native-system-sdk.json'
+  expected = digest(receipt)
+  snapshot = json.loads(receipt.read_text())
+  assert snapshot['kind'] == 'agnos-system-sdk' and snapshot['plan']['factory_image_sha256'] == RAW_SHA
+  recipe = json.loads((work/'driver-recipe.json').read_text())
+  guest_receipt = str(Path(guest_work)/receipt.name)
+  recipe['inputs'] = {guest_receipt:expected}
+  recipe['input_trees'] = {'/':guest_receipt}
+  configuration = work/'driver-system-sdk-recipe.json'
+  configuration.write_text(json.dumps(recipe)+'\n')
+  driver = work/'project-target/debug/openpilot-runtime-build'
+  toolchain = str(Path((work/'native-project-cargo-path.txt').read_text().strip()).parent)
+  argv = [driver,'--root',work/'driver-fixture','--recipe',configuration,
+          '--cache',work/'driver-cache','--toolchain',toolchain]
+
+  def execute(command, name, required=True):
+    result = run(guest_command(command),log,required=required,stdout_path=work/name)
+    evidence['commands'].append(result)
+    return result
+
+  reports = []
+  for phase in ('initial','reused'):
+    name = f'runtime-driver-system-sdk-{phase}.json'
+    execute(argv,name)
+    report = json.loads((work/name).read_text())
+    assert report['verified_input_trees'] == {'/':expected}
+    artifacts = {Path(row['executable']).name:row for row in report['artifacts']}
+    assert artifacts.keys() == {'first','second'}
+    assert all(row['fresh'] == (phase == 'reused') for row in artifacts.values())
+    for binary,row in artifacts.items():
+      output = f'runtime-driver-system-sdk-{phase}-{binary}.stdout'
+      execute([row['executable']],output)
+      assert (work/output).read_text() == f'native AGNOS Rust std {binary} {43 if binary == "first" else 42}\n'
+    reports.append(report)
+  assert reports[0]['cache_key'] == reports[1]['cache_key']
+  identity = lambda report: {Path(row['executable']).name:row['sha256'] for row in report['artifacts']}
+  assert identity(reports[0]) == identity(reports[1])
+
+  # Job-private extracted image only. Keep size/mode unchanged and restore even
+  # on assertion failure. Neither the runner system nor any device is modified.
+  header = rootfs/'usr/include/stdio.h'
+  assert header.is_file() and not header.is_symlink()
+  original_hash, original_mode, original_size = digest(header), header.stat().st_mode & 0o7777, header.stat().st_size
+  with header.open('rb') as stream:
+    original_byte = stream.read(1)
+  assert original_byte
+  def mutate(value):
+    with header.open('r+b') as stream:
+      stream.write(value)
+      stream.flush()
+      os.fsync(stream.fileno())
+    assert header.stat().st_size == original_size and header.stat().st_mode & 0o7777 == original_mode
+  mutate(bytes([original_byte[0]^1]))
+  try:
+    offset = log.stat().st_size
+    rejected = execute(argv,'runtime-driver-system-sdk-tamper.stdout',False)
+    assert rejected['exit_code'] != 0, 'same-size modified native header was accepted'
+    with log.open('rb') as stream:
+      stream.seek(offset)
+      diagnostic = stream.read(65536).decode('utf-8',errors='replace')
+    (work/'runtime-driver-system-sdk-tamper-diagnostic.stdout').write_text(diagnostic)
+    assert 'system SDK differs from its independently pinned namespace receipt at usr/include/stdio.h' in diagnostic
+    for row in reports[-1]['artifacts']:
+      binary = Path(row['executable']).name
+      output = f'runtime-driver-system-sdk-preserved-{binary}.stdout'
+      execute([row['executable']],output)
+      assert (work/output).read_text() == f'native AGNOS Rust std {binary} {43 if binary == "first" else 42}\n'
+  finally:
+    mutate(original_byte)
+  assert digest(header) == original_hash
+  host_preparer = Path((work.parent/'native-capnp-inputs-cli.txt').read_text().strip())
+  profile = Path(os.environ['GITHUB_WORKSPACE'])/'rust/native-system-sdk.json'
+  recaptured = work/'native-system-sdk-after.json'
+  evidence['commands'].append(run([host_preparer,'--capture-system-sdk','--root',rootfs,
+      '--plan',profile,'--output',recaptured],log))
+  assert digest(recaptured) == expected, 'factory SDK namespace changed during guest execution'
+  evidence['native_system_sdk'] = dict(receipt_sha256=expected,profile_sha256=digest(profile),
+      factory_image_sha256=RAW_SHA,namespace_entries=len(snapshot['entries']),
+      pinned_files=sum(e['kind']=='file' for e in snapshot['entries'].values()),
+      initial_and_repeat_actual_native_driver=True,repeated_artifacts_fresh=True,
+      same_size_header_tamper_rejected=True,previous_executables_preserved=True,
+      factory_namespace_restored=True,scope='declared compiler namespaces only',
+      complete_compiler_search_closure_proven=False,full_runtime_build=False,device_execution=False)
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -406,6 +494,14 @@ def main():
     rootfs.mkdir()
     run(['debugfs', '-R', f'rdump / {rootfs}', raw], log)
     assert (rootfs / 'VERSION').read_text().strip() == '19.8-carrot-bt1'
+    sdk_profile = source/'rust/native-system-sdk.json'
+    assert json.loads(sdk_profile.read_text())['factory_image_sha256'] == RAW_SHA
+    host_preparer = Path((owned/'native-capnp-inputs-cli.txt').read_text().strip())
+    # Derive expected bytes from the authenticated image before any guest runs.
+    # Capturing the mutable live namespace would not establish factory origin.
+    evidence['commands'].append(run([host_preparer,'--capture-system-sdk','--root',rootfs,
+        '--plan',sdk_profile,'--output',work/'native-system-sdk.json'],log))
+    evidence['system_sdk_expected_receipt_sha256'] = digest(work/'native-system-sdk.json')
     raw.unlink()
     room(work, 3 * 1024**3)
     proot = work / 'proot'
@@ -485,6 +581,7 @@ def main():
     native_driver_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_system_sdk_probe(guest_command, work, rootfs, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))

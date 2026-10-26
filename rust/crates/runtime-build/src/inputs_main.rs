@@ -9,11 +9,12 @@ fn run() -> Result<()> {
     let mut output = None;
     let (mut plan, mut cache, mut store) = (None, None, None);
     let (mut prepare_rust, mut prepare_capnp, mut prepare_cargo) = (false, false, false);
+    let mut capture_system = false;
     let mut lock = None;
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--help" | "-h") => {
-                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-capnp --plan PINNED_CAPNP_ASSETS_JSON --cache ASSET_CACHE --store SDK_STORE\n       openpilot-runtime-inputs --prepare-cargo --plan PINNED_CRATES_JSON --lock CARGO_LOCK --cache ASSET_CACHE --store SOURCES_STORE\nCapture unpacked inputs, or assemble authenticated native inputs without executing installers. Generic capture requires independently verified provenance. Archive preparation authenticates vendor bytes on every reuse; it does not compile or activate a runtime.");
+                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --capture-system-sdk --root VERIFIED_IMAGE_ROOT --plan SDK_ROOTS_JSON --output SDK_RECEIPT\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-capnp --plan PINNED_CAPNP_ASSETS_JSON --cache ASSET_CACHE --store SDK_STORE\n       openpilot-runtime-inputs --prepare-cargo --plan PINNED_CRATES_JSON --lock CARGO_LOCK --cache ASSET_CACHE --store SOURCES_STORE\nCapture unpacked inputs, or assemble authenticated native inputs without executing installers. Generic and system capture require independently verified provenance. Archive preparation authenticates vendor bytes on every reuse; it does not compile or activate a runtime.");
                 return Ok(());
             }
             Some("--root") if root.is_none() => {
@@ -25,6 +26,7 @@ fn run() -> Result<()> {
             Some("--prepare-rust") if !prepare_rust => prepare_rust = true,
             Some("--prepare-capnp") if !prepare_capnp => prepare_capnp = true,
             Some("--prepare-cargo") if !prepare_cargo => prepare_cargo = true,
+            Some("--capture-system-sdk") if !capture_system => capture_system = true,
             Some("--lock") if lock.is_none() => {
                 lock = Some(PathBuf::from(args.next().ok_or("missing Cargo lock path")?))
             }
@@ -42,11 +44,56 @@ fn run() -> Result<()> {
             _ => return Err("unknown or duplicate input receipt argument".into()),
         }
     }
-    if u8::from(prepare_rust) + u8::from(prepare_capnp) + u8::from(prepare_cargo) > 1 {
+    if u8::from(prepare_rust)
+        + u8::from(prepare_capnp)
+        + u8::from(prepare_cargo)
+        + u8::from(capture_system)
+        > 1
+    {
         return Err("choose exactly one native preparation mode".into());
     }
     if !prepare_cargo && lock.is_some() {
         return Err("--lock requires --prepare-cargo".into());
+    }
+    if capture_system {
+        if cache.is_some() || store.is_some() {
+            return Err("system SDK capture does not install or prepare a cache".into());
+        }
+        let root = root.ok_or("--root is required")?.canonicalize()?;
+        let output = output.ok_or("--output is required")?;
+        let parent = output
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or(std::path::Path::new("."))
+            .canonicalize()?;
+        if parent.starts_with(&root) {
+            return Err(
+                "system SDK receipt must be outside the independently verified image root".into(),
+            );
+        }
+        let plan =
+            openpilot_runtime_build::system_sdk::Plan::read(&plan.ok_or("--plan is required")?)?;
+        let snapshot = openpilot_runtime_build::system_sdk::Snapshot::capture(&root, &plan)?;
+        let bytes = serde_json::to_vec_pretty(&snapshot)?;
+        if bytes.len() + 1 > 16 * 1024 * 1024 {
+            return Err("system SDK receipt exceeds 16 MiB".into());
+        }
+        let free = rustix::fs::statvfs(&parent)?;
+        if free
+            .f_bavail
+            .checked_mul(free.f_frsize)
+            .ok_or("SDK receipt space overflow")?
+            < bytes.len() as u64 + 1
+        {
+            return Err("insufficient capacity for this SDK receipt; prior inputs retained".into());
+        }
+        let mut temporary = tempfile::NamedTempFile::new_in(&parent)?;
+        temporary.write_all(&bytes)?;
+        temporary.write_all(b"\n")?;
+        temporary.as_file().sync_all()?;
+        temporary.persist_noclobber(&output)?;
+        File::open(parent)?.sync_all()?;
+        return Ok(());
     }
     if prepare_cargo {
         if root.is_some() || output.is_some() {

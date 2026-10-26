@@ -123,3 +123,8 @@ compiler 경로로 준비한다. [SDK 입력·실제 전체 schema 검증 계획
 [첫 준비 도구의 고정 seed](native-bootstrap-seed-599.md)는 현재 commit의 runtime release 없이
 입력 도구를 얻는 후보 추출/소비 경로다. 원래 source/빌드 입력·notice·실제 ABI를 묶고 새
 compiler 준비까지 genuine 검사에 포함한다. 공개 pin/초기 source build·기본 시작 연결은 남는다.
+
+[시스템 SDK 입력 검증](native-system-sdk-599.md)은 인증한 AGNOS 이미지에서 별도 expected
+receipt를 만들고 실제 native `/`의 선언된 C/C++ 헤더·library 이름 공간을 빌드 전후 확인한다.
+일반 Tree의 링크 거부는 유지한다. 같은 크기 헤더 변조/이전 프로그램 보존과 실제 반복
+build 검증을 Actions에 추가했으며 전체99개 search closure·기능 성공은 아직 확정하지 않는다.

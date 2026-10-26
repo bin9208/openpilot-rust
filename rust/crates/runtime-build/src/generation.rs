@@ -1,8 +1,7 @@
 //! Source-built runtime generations. Sealing and active selection are separate.
 //! The existing manager sealer and ELF audit remain mandatory, source-built tools.
 use crate::{
-    digest_file, inputs::Tree, objects, prepare::Prepared, regular_file, source,
-    source_store::Snapshot, Result,
+    digest_file, objects, prepare::Prepared, regular_file, source, source_store::Snapshot, Result,
 };
 use openpilot_runtime_installer::{
     artifact_path_allowed, source_asset_allowed, verify_source_build,
@@ -310,6 +309,7 @@ fn metadata(root: &Path, prepared: &Prepared) -> Result<Value> {
 
 struct Pins {
     files: BTreeMap<PathBuf, String>,
+    plain_trees: BTreeSet<PathBuf>,
 }
 
 fn absolute(prepared: &Prepared, path: &Path) -> PathBuf {
@@ -327,6 +327,7 @@ impl Pins {
     fn capture(prepared: &Prepared) -> Result<Self> {
         let mut files = BTreeMap::new();
         let mut trees = BTreeMap::new();
+        let mut plain_trees = BTreeSet::new();
         let runtime = &prepared.plan.runtime_inputs;
         let inputs = prepared
             .plan
@@ -376,23 +377,23 @@ impl Pins {
                     }
                     continue;
                 }
-                let receipt = Tree::read(&receipt)?;
+                let receipt = crate::inputs::Receipt::read(&receipt)?;
                 receipt.verify(&tree)?;
-                for (relative, entry) in receipt.entries {
-                    if let crate::inputs::Entry::File { sha256, .. } = entry {
-                        let path = tree.join(relative).canonicalize()?;
-                        if files
-                            .insert(path, sha256.clone())
-                            .is_some_and(|previous| previous != sha256)
-                        {
-                            return Err("conflicting native tree member identities".into());
-                        }
+                if matches!(&receipt, crate::inputs::Receipt::Tree(_)) {
+                    plain_trees.insert(tree.clone());
+                }
+                for (path, sha256) in receipt.files(&tree)? {
+                    if files
+                        .insert(path, sha256.clone())
+                        .is_some_and(|previous| previous != sha256)
+                    {
+                        return Err("conflicting native tree member identities".into());
                     }
                 }
                 trees.insert(tree, expected.clone());
             }
         }
-        Ok(Self { files })
+        Ok(Self { files, plain_trees })
     }
 
     fn contains(&self, path: &Path, sha256: &str) -> bool {
@@ -450,6 +451,9 @@ impl Layout {
                 let root = absolute(tree).canonicalize()?;
                 let receipt_path_absolute = absolute(receipt_path).canonicalize()?;
                 if root == toolchain || root == provider {
+                    if !pins.plain_trees.contains(&root) {
+                        return Err("a system SDK cannot replace an unpacked Rust toolchain or runtime provider tree".into());
+                    }
                     if report.verified_input_trees.get(tree) != recipe.inputs.get(receipt_path) {
                         return Err("native tree verification missing from build report".into());
                     }

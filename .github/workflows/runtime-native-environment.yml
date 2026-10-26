@@ -10,6 +10,9 @@ on:
       - 'rust/crates/runtime-build/src/archive_tree.rs'
       - 'rust/crates/runtime-build/src/capnp.rs'
       - 'rust/crates/runtime-build/src/cargo_inputs.rs'
+      - 'rust/crates/runtime-build/src/system_sdk.rs'
+      - 'rust/crates/runtime-build/src/inputs.rs'
+      - 'rust/native-system-sdk.json'
       - 'rust/native-cargo-inputs.json'
       - 'rust/Cargo.lock'
       - 'rust/crates/runtime-build/src/inputs_main.rs'
@@ -230,6 +233,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-bootstrap-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-bootstrap-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-seed-export/*
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-system-sdk*.json
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}

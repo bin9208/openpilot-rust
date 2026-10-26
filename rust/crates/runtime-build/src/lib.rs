@@ -29,6 +29,7 @@ pub mod selection;
 mod source;
 pub mod source_store;
 pub mod supervision;
+pub mod system_sdk;
 #[cfg(feature = "prepare-rust")]
 pub mod toolchain;
 pub use source::Source;
@@ -183,7 +184,7 @@ impl Recipe {
             }
         }
         for (tree, receipt) in &self.input_trees {
-            inputs::Tree::read(&root.join(receipt))?.verify(&root.join(tree))?;
+            inputs::Receipt::read(&root.join(receipt))?.verify(&root.join(tree))?;
         }
         if let Some(value) = self.environment.get("OPENPILOT_CARGO_VENDOR") {
             let vendor = Path::new(value);

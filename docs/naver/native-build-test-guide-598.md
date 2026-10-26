@@ -112,6 +112,11 @@ native 빌드 worker의 원문 stdout/stderr는 시도별 `build.log`에 보존�
 `verified_input_trees`가 비어 있는 보고서는 전체 toolchain/provider를 검증했다는
 증거가 아니다. AGNOS 시스템 라이브러리·ABI closure는 별도 대상 검사를 유지한다.
 
+[AGNOS 시스템 SDK 검사](native-system-sdk-599.md)는 image에서 만든 독립 pin과 실제
+compiler root `/`를 연결한다. foundation 회귀7개와 genuine의 실제 build 초기/반복,
+같은 크기 헤더 변조 거부·이전 실행 파일 보존·전체 선언 범위 복구 검사를 확인한다.
+이 새 검사의 성공은 정확 source Actions 결과에서 별도로 기록한다.
+
 2026-10-26 추가한 generation 시작/업데이트 연결은 아직 Actions 검증 전이다.
 `--stage-update`는 source-built 후보를 봉인하고 기존 active ID와 config hash에 묶어
 `pending.json`을 발행한다. launcher가 boot lock을 잡은 뒤에만 다시 검증·선택하고,
