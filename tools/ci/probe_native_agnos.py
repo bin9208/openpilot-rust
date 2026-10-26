@@ -58,6 +58,84 @@ def download(url, path, sha, log):
   path.chmod(0o700)
 
 
+def native_driver_probe(guest_command, work, source_mount, evidence, log):
+  """Build the real repository driver, then exercise it on owned source only."""
+  room(work, 2 * 1024**3)
+
+  def execute(argv, name=None):
+    output = work / name if name else None
+    evidence['commands'].append(run(guest_command(argv), log, stdout_path=output))
+    return output.read_text() if output else None
+
+  actual_source = execute(['git', '-C', source_mount, 'rev-parse', 'HEAD'], 'native-project-source.txt').strip()
+  assert actual_source == evidence['source_commit'], 'native project source differs from Actions SHA'
+  execute(['cargo', 'build', '--locked', '--manifest-path', f'{source_mount}/rust/Cargo.toml',
+           '-p', 'openpilot-runtime-build', '--bin', 'openpilot-runtime-build',
+           '--target-dir', work / 'project-target', '--message-format=json'], 'native-project-build.jsonl')
+  driver = work / 'project-target/debug/openpilot-runtime-build'
+  with driver.open('rb') as executable:
+    header = executable.read(64)
+  assert len(header) == 64 and header[:6] == b'\x7fELF\x02\x01' and int.from_bytes(header[18:20], 'little') == 183
+  evidence['native_project_builder'] = dict(source_commit=actual_source, sha256=digest(driver),
+                                          elf_architecture='AArch64', full_runtime_build=False)
+  cargo = execute(['rustup', 'which', '--toolchain', '1.94.0', 'cargo'], 'native-project-cargo-path.txt').strip()
+  toolchain = str(Path(cargo).parent)
+  fixture = work / 'driver-fixture'
+  shutil.copytree(work / 'fixture/src', fixture / 'src')
+  for name in ('Cargo.toml', 'Cargo.lock'):
+    shutil.copyfile(work / 'fixture' / name, fixture / name)
+  git = ['git', '-c', 'user.name=Owned AGNOS driver fixture', '-c', 'user.email=agnos-driver@example.invalid', '-C', fixture]
+  execute([*git, 'init'])
+
+  def commit():
+    execute([*git, 'add', '.'])
+    execute([*git, 'commit', '-m', 'Owned AGNOS native driver input'])
+
+  commit()
+  recipe = work / 'driver-recipe.json'
+  recipe.write_text(json.dumps(dict(schema=1, target='aarch64-unknown-linux-gnu',
+                                   packages=['agnos-native-compiler-probe'], binaries=['first', 'second'],
+                                   features=[], inputs={}, input_trees={},
+                                   environment={'OPENPILOT_NATIVE_INCREMENTAL': '1'},
+                                   expected_growth_bytes=32 * 1024**2)) + '\n')
+
+  def build(phase):
+    output = execute([driver, '--root', fixture, '--recipe', recipe, '--cache', work / 'driver-cache',
+                      '--toolchain', toolchain], f'runtime-driver-{phase}.json')
+    report = json.loads(output)
+    artifacts = {Path(row['executable']).name: row for row in report['artifacts']}
+    assert artifacts.keys() == {'first', 'second'} and report['native_tools']
+    for name, row in artifacts.items():
+      # Executable paths are guest paths and must execute there, not on the host.
+      execute([row['executable']], f'runtime-driver-{phase}-{name}.stdout')
+    return report, artifacts
+
+  initial, first = build('initial')
+  assert all(not row['fresh'] for row in first.values())
+  repeated, repeat = build('repeated')
+  assert repeated['source'] == initial['source'] and repeated['cache_key'] == initial['cache_key']
+  assert all(row['fresh'] and row['sha256'] == first[name]['sha256'] for name, row in repeat.items())
+  (fixture / 'README.md').write_text('Owned AGNOS docs-only change\n')
+  commit()
+  docs, doc_bins = build('docs-only')
+  assert docs['source']['commit'] != initial['source']['commit'] and docs['cache_key'] == initial['cache_key']
+  assert all(row['fresh'] and row['sha256'] == first[name]['sha256'] for name, row in doc_bins.items())
+  first_source = fixture / 'src/bin/first.rs'
+  first_source.write_text('fn main(){println!("native AGNOS Rust std first 43");}\n')
+  commit()
+  small, changed = build('one-binary-change')
+  assert small['cache_key'] == initial['cache_key'] and small['native_tools'] == initial['native_tools']
+  assert not changed['first']['fresh'] and changed['first']['sha256'] != first['first']['sha256']
+  assert changed['second']['fresh'] and changed['second']['sha256'] == first['second']['sha256']
+  assert (work / 'runtime-driver-one-binary-change-first.stdout').read_text() == 'native AGNOS Rust std first 43\n'
+  assert (work / 'runtime-driver-one-binary-change-second.stdout').read_text() == 'native AGNOS Rust std second 42\n'
+  assert execute(['git', '-C', source_mount, 'rev-parse', 'HEAD'], 'native-project-source-after.txt').strip() == actual_source
+  assert not execute(['git', '-C', source_mount, 'status', '--porcelain', '--untracked-files=all'], 'native-project-status-after.txt').strip()
+  evidence['native_project_driver_cases'] = dict(cases=4, source_project_unchanged=True,
+      repeated_and_docs_only_all_fresh=True, one_binary_change_unrelated_fresh=True,
+      actual_guest_execution=True, full_generation_seal=False, device_execution=False)
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -116,9 +194,17 @@ def main():
     evidence['qemu_sha256'] = digest(qemu)
     guest_work = '/openpilot-native-build-probe-599'
     (rootfs / guest_work.lstrip('/')).mkdir()
+    source_mount = '/openpilot-native-source-599'
+    (rootfs / source_mount.lstrip('/')).mkdir()
+    assert (source / '.git').is_dir() and not (source / '.git').is_symlink()
+    (work / 'probe.gitconfig').write_text('[safe]\n'
+        f'\tdirectory = {source_mount}\n\tdirectory = {guest_work}/driver-fixture\n'
+        '[core]\n\thooksPath = /dev/null\n[commit]\n\tgpgSign = false\n')
     guest = [proot, '-0', '-r', rootfs, '-q', qemu, '-b', '/proc', '-b', '/dev', '-b', '/etc/resolv.conf',
-             '-b', '/etc/hosts', '-b', f'{work}:{guest_work}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
+             '-b', '/etc/hosts', '-b', f'{work}:{guest_work}', '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
+             'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
+             f'GIT_CONFIG_GLOBAL={guest_work}/probe.gitconfig', 'GIT_OPTIONAL_LOCKS=0',
              f'PATH={guest_work}/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin']
     def guest_command(args):
       return [*guest, *(str(arg).replace(str(work), guest_work) for arg in args)]
@@ -155,6 +241,7 @@ def main():
       evidence['commands'].append(run(guest_command([work / 'target/debug' / name]), log))
     evidence['binaries'] = before
     evidence['toolchain_files'] = {str(path.relative_to(work)): digest(path) for path in (work / 'rustup/toolchains').glob('*/bin/*') if path.is_file()}
+    native_driver_probe(guest_command, work, source_mount, evidence, log)
     evidence['success'] = True
   except BaseException as error:
     evidence.update(success=False, failure=str(error))

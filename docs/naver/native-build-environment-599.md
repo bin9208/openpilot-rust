@@ -32,6 +32,26 @@ Rust binary 두 개와 C++ 표준 라이브러리 프로그램을 native build·
 artifact는 fresh=false, 같은 입력 반복은 fresh=true 및 같은 출력 hash여야 한다. 전체
 프로젝트 runtime, 모델 준비 의존성, 카메라/GPU/녹화/업로드를 이 작은 probe로 대체하지 않는다.
 
+## 실제 프로젝트 build driver 연결 (검증 대기)
+
+별도 #599 후속은 같은 고정 AGNOS 이미지 안에서 실제 Actions source SHA의
+`openpilot-runtime-build` crate와 CLI를 native Rust 1.94로 빌드한다. source는 별도 guest
+mount로 연결하고 Git SHA 및 최종 clean 상태를 대조한다. Cargo.lock을 유지하고 source를
+수정하지 않으며 target/Cargo cache/Git fixture는 자기 job temp에만 쓴다. compiler·헤더를
+host cross SDK로 바꾸거나 guest에 APT 패키지를 설치하지 않는다.
+
+만든 CLI가 AArch64 ELF인지 확인하고 실제 guest에서 실행한다. 별도 소유 Git fixture의
+두 작은 binary를 초기/반복/문서 변경/하나의 소스 변경으로 빌드한다. 반복과 문서 변경은
+모두 fresh/동일 hash여야 하며, 작은 변경은 실제 출력이43으로 바뀌고 무관한 binary는
+42/fresh/동일 hash를 유지해야 한다. 실제 native C/C++ compiler/helper hash와 source/
+recipe/toolchain/결과 보고서는 원문 JSON으로 보존한다. CLI 자체 source SHA/ELF hash는
+fixture source SHA와 구분한다.
+
+이것은 실제 프로젝트 build engine의 AGNOS user-space 검증이며 전체 runtime의
+provider/generated 입력·ABI 봉인·세대 전환이나 AGNOS kernel/기기 실행을 뜻하지 않는다.
+최종 전체 roster/recipe, Python 모델 준비와 기존 provider, 장치 자원 예산·정상 부팅·녹화·
+기존 업로드 수용은 계속 남아 있다. 정확 source의 새 Actions 결과를 확인해야 한다.
+
 ## 공간·증거와 남은 작업
 
 압축 입력 준비, sparse 해제, raw 변환, root 추출, toolchain 준비 전 각각 그 작업의 예상
