@@ -3,7 +3,7 @@
 use crate::{paths::Paths, process::Commands, Error};
 use openpilot_runtime_build::{
     generation::{self, Config},
-    pending, selection,
+    pending, selection, supervision,
 };
 use std::{env, fs::File, path::PathBuf};
 
@@ -109,6 +109,8 @@ impl Context {
             paths.merged().to_string_lossy().into_owned(),
             "--previous".into(),
             self.running.clone(),
+            "--request-owner".into(),
+            supervision::process_identity(std::process::id()).map_err(error)?,
         ];
         commands.run(&args, Some(&selected.source_root))?;
         if !self.ready()? {

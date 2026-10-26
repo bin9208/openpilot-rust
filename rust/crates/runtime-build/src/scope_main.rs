@@ -1,17 +1,18 @@
 //! Root prepares only a fixed per-user cgroup, then execs the same-source
 //! frontend as the sudo caller. No project source/compiler runs as root.
-use openpilot_runtime_build::{generation::Config, memory_cgroup, Result};
+use openpilot_runtime_build::{generation::Config, memory_cgroup, supervision, Result};
 use std::{os::unix::process::CommandExt, path::PathBuf, process::Command};
 
 fn run() -> Result<()> {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     if args.len() == 1 && args[0] == "--help" {
-        println!("openpilot-native-build-scope --config CONFIG (--build --root SOURCE | --stage-update --root SOURCE --previous ID | --verify)\nPrepare only the sudo caller's fixed memory scope, then run the same-source native frontend as that non-root user. No arbitrary root command is accepted.");
+        println!("openpilot-native-build-scope --config CONFIG (--build --root SOURCE | --stage-update --root SOURCE --previous ID --request-owner PID:START_TICKS | --verify)\nPrepare only the sudo caller's fixed memory scope, then run the same-source native frontend as that non-root user. No arbitrary root command is accepted.");
         return Ok(());
     }
     let mut config = None;
     let mut root = None;
     let mut previous = None;
+    let mut request_owner = None;
     let mut mode = None;
     let mut arguments = args.into_iter();
     while let Some(arg) = arguments.next() {
@@ -27,6 +28,9 @@ fn run() -> Result<()> {
             Some("--previous") if previous.is_none() => {
                 previous = Some(arguments.next().ok_or("missing previous generation")?)
             }
+            Some("--request-owner") if request_owner.is_none() => {
+                request_owner = Some(arguments.next().ok_or("missing request owner")?);
+            }
             Some(value @ ("--build" | "--stage-update" | "--verify")) if mode.is_none() => {
                 mode = Some(value.to_owned())
             }
@@ -34,7 +38,10 @@ fn run() -> Result<()> {
         }
     }
     let mode = mode.ok_or("native scope mode missing")?;
-    if (mode == "--stage-update") != previous.is_some() || (mode == "--verify") == root.is_some() {
+    if (mode == "--stage-update") != previous.is_some()
+        || (mode == "--stage-update") != request_owner.is_some()
+        || (mode == "--verify") == root.is_some()
+    {
         return Err("mixed native scope arguments".into());
     }
     let path = config
@@ -59,6 +66,7 @@ fn run() -> Result<()> {
         .env_remove("OPENPILOT_NATIVE_BUILD_MEMORY_GROUP")
         .env_remove("OPENPILOT_NATIVE_BUILD_PARENT")
         .env_remove("OPENPILOT_NATIVE_BUILD_ATTEMPT")
+        .env_remove(supervision::REQUEST_OWNER)
         // Build tools use the explicit cache, never sudo's root HOME/config.
         .env("HOME", &config.cache)
         .env(
@@ -77,6 +85,9 @@ fn run() -> Result<()> {
     }
     if let Some(previous) = previous {
         command.arg("--previous").arg(previous);
+    }
+    if let Some(owner) = request_owner {
+        command.env(supervision::REQUEST_OWNER, owner);
     }
     Err(command.exec().into())
 }

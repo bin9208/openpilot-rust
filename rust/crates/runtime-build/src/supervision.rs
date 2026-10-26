@@ -21,6 +21,7 @@ use std::{
 
 const PARENT: &str = "OPENPILOT_NATIVE_BUILD_PARENT";
 const SCOPE_PARENT: &str = "OPENPILOT_NATIVE_SCOPE_PARENT";
+pub const REQUEST_OWNER: &str = "OPENPILOT_NATIVE_REQUEST_OWNER";
 const SIGNALS: [i32; 3] = [
     signal_hook::consts::SIGINT,
     signal_hook::consts::SIGTERM,
@@ -35,6 +36,55 @@ struct ChildGroup {
 
 struct FrontendParent {
     previous: Option<Signal>,
+    request_owner: Option<String>,
+}
+
+/// Bind the caller to its Linux start time as well as PID. sudo may keep an
+/// intermediate monitor alive after the original updater has already died.
+pub fn process_identity(pid: u32) -> Result<String> {
+    if pid <= 1 {
+        return Err("invalid native build request owner".into());
+    }
+    let stat = std::fs::read_to_string(format!("/proc/{pid}/stat"))?;
+    let fields: Vec<_> = stat
+        .rsplit_once(") ")
+        .ok_or("invalid process stat")?
+        .1
+        .split_whitespace()
+        .collect();
+    if matches!(fields.first(), Some(&"Z" | &"X")) {
+        return Err("native build request owner has exited".into());
+    }
+    let start = fields
+        .get(19)
+        .ok_or("request owner start time missing")?
+        .parse::<u64>()?;
+    Ok(format!("{pid}:{start}"))
+}
+
+fn requested_owner() -> Result<Option<String>> {
+    match std::env::var(REQUEST_OWNER) {
+        Ok(identity) => Ok(Some(identity)),
+        Err(std::env::VarError::NotPresent) => Ok(None),
+        Err(error) => Err(error.into()),
+    }
+}
+
+fn verify_owner(identity: &str) -> Result<()> {
+    let (pid, _) = identity
+        .split_once(':')
+        .ok_or("invalid request owner identity")?;
+    if process_identity(pid.parse()?)? != identity {
+        return Err("native build request owner identity changed".into());
+    }
+    Ok(())
+}
+
+pub fn check_request_owner() -> Result<()> {
+    if let Some(identity) = requested_owner()? {
+        verify_owner(&identity)?;
+    }
+    Ok(())
 }
 
 impl FrontendParent {
@@ -49,12 +99,21 @@ impl FrontendParent {
         }
         let guard = Self {
             previous: parent_process_death_signal()?,
+            request_owner: requested_owner()?,
         };
+        guard.check_request()?;
         set_parent_process_death_signal(Some(Signal::TERM))?;
         if getppid() != Some(parent) {
             return Err("native build frontend parent died during initialization".into());
         }
         Ok(guard)
+    }
+
+    fn check_request(&self) -> Result<()> {
+        if let Some(identity) = &self.request_owner {
+            verify_owner(identity)?;
+        }
+        Ok(())
     }
 }
 
@@ -91,7 +150,7 @@ pub fn run_observed(
     let mut signals = Signals::new(SIGNALS)?;
     // Includes cancellation of a sudo/scope launcher. Install the signal
     // consumer before requesting parent-death delivery and spawning the worker.
-    let _parent = FrontendParent::watch()?;
+    let parent = FrontendParent::watch()?;
     if signals.pending().next().is_some() {
         return Err("native build cancelled before worker startup".into());
     }
@@ -111,6 +170,7 @@ pub fn run_observed(
         reaped: false,
     };
     loop {
+        parent.check_request()?;
         if signals.pending().next().is_some() {
             return Err("native build cancelled or frontend parent died".into());
         }

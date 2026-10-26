@@ -25,6 +25,10 @@ v1/v2의 hard RAM 한도, 계층 정책, swap 제한을 확인하고 없으면 �
 상위 프로세스 사망·취소·offroad 상태 변경은 worker 및 다른 process group/session을
 만든 하위 작업까지 정리한다. frontend의 부모인 scope/sudo 대기 프로세스가 죽는 경우도
 parent-death signal로 중단한다. cgroup 삭제·신호는 자기 시도에만 적용한다.
+sudo의 중간 monitor가 살아남더라도 updater 자체가 종료되면 중단해야 한다.
+따라서 updater의 PID와 `/proc/PID/stat` start ticks를 요청 소유권으로 고정하고
+frontend가 반복 확인한다. PID 재사용·zombie·조회 실패도 중단이며 최종 pending 게시 직전에도
+다시 확인한다. 단순히 sudo monitor의 생존만으로 요청을 계속하지 않는다.
 
 worker는 봉인된 candidate receipt만 남긴다. frontend는 worker 종료, 자원 최종 확인과
 하위 작업 정리를 마친 뒤 source/config/seal을 다시 확인해야 pending update를 게시한다.
@@ -53,7 +57,8 @@ worker는 봉인된 candidate receipt만 남긴다. frontend는 worker 종료, �
 일반 workspace 테스트는 별도로 가짜 controller 거부를 검사한다.
 
 실제 메모리를 할당하는 정상/초과, 파일 증가, worker SIGKILL, frontend SIGKILL,
-frontend 부모 SIGKILL을 검사한다. 독립 process group의 하위 작업 종료와 이전 active/log의
+frontend 부모 SIGKILL 및 중간 launcher가 살아 있는 상태의 요청 소유자 SIGKILL을 검사한다.
+독립 process group의 하위 작업 종료와 이전 active/log의
 바이트 보존, 무관한 정상 프로세스 생존을 확인한다. 커널 peak/event와 시도별 JSONL을 보존한다.
 CI 준비·정리는 job owner/source/inode를 대조한 자기 cgroup만 대상으로 한다.
 production의 자기 UID scope는 다음 빌드에 재사용하며 공유 controller와 다른 job을 변경하지 않는다.

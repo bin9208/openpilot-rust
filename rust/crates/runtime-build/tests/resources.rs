@@ -226,6 +226,7 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
         "worker-kill",
         "frontend-kill",
         "launcher-kill",
+        "request-owner-kill",
     ] {
         let root = temp.path().join(case);
         fs::create_dir(&root).unwrap();
@@ -250,8 +251,13 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
         )
         .unwrap();
         let log = fs::File::create(root.join("fixture.log")).unwrap();
+        let mut request_owner = if case == "request-owner-kill" {
+            Some(Owned(Command::new("sleep").arg("300").spawn().unwrap()))
+        } else {
+            None
+        };
         let mut command = child(
-            if case == "launcher-kill" {
+            if matches!(case, "launcher-kill" | "request-owner-kill") {
                 "launcher"
             } else {
                 "frontend"
@@ -259,6 +265,12 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
             &root,
             case,
         );
+        if let Some(owner) = &request_owner {
+            command.env(
+                supervision::REQUEST_OWNER,
+                supervision::process_identity(owner.0.id()).unwrap(),
+            );
+        }
         command
             .stdout(Stdio::from(log.try_clone().unwrap()))
             .stderr(Stdio::from(log));
@@ -282,6 +294,11 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
             .unwrap();
         match case {
             "frontend-kill" | "launcher-kill" => frontend.0.kill().unwrap(),
+            "request-owner-kill" => {
+                let owner = request_owner.as_mut().unwrap();
+                owner.0.kill().unwrap();
+                owner.0.wait().unwrap();
+            }
             "worker-kill" => rustix::process::kill_process(
                 rustix::process::Pid::from_raw(i32::try_from(worker).unwrap()).unwrap(),
                 rustix::process::Signal::KILL,

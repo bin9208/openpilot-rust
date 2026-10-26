@@ -107,6 +107,7 @@ fn run() -> Result<()> {
                 return Err(format!("native build worker exited: {status}").into());
             }
             let id = resources::candidate(&config, &config_path, &root, &attempt)?;
+            supervision::check_request_owner()?;
             if let Some(previous) = previous {
                 pending::stage(&config_path, &id, &previous)?;
             }
