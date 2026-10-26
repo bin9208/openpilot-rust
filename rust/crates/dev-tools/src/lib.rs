@@ -14,6 +14,7 @@ pub mod elf_audit;
 pub mod encoder_stage;
 pub mod native_codec_inputs;
 pub mod native_ffmpeg_headers;
+pub mod native_ffmpeg_prefix;
 pub mod native_provider;
 
 pub mod ffmpeg_build;

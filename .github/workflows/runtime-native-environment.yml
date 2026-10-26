@@ -14,6 +14,7 @@ on:
       - 'rust/crates/runtime-build/src/inputs.rs'
       - 'rust/crates/dev-tools/src/native_codec_inputs.rs'
       - 'rust/crates/dev-tools/src/native_ffmpeg_headers.rs'
+      - 'rust/crates/dev-tools/src/native_ffmpeg_prefix.rs'
       - 'rust/crates/dev-tools/src/native_provider.rs'
       - 'rust/native-ffmpeg-provider.json'
       - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
@@ -26,6 +27,10 @@ on:
       - 'rust/Cargo.lock'
       - 'rust/crates/runtime-build/src/inputs_main.rs'
       - 'rust/crates/cereal/**'
+      - 'rust/crates/encoderd/**'
+      - 'rust/crates/jpeg/**'
+      - 'rust/tools/check_encoder_codecs.py'
+      - 'rust/tools/encoder_oracle/**'
       - 'rust/native-capnp-assets.json'
       - 'tools/ci/prepare_native_capnp.py'
       - 'tools/ci/native_cereal_reference.py'
@@ -42,7 +47,9 @@ jobs:
     name: Native compiler in pinned AGNOS ARM userspace
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: [self-hosted, Linux, X64, dev-md-local]
-    timeout-minutes: 90
+    # #608 actual ARM release build alone took 6,386,611 ms. This job now also
+    # builds the real encoder; retain every command/pin and allow a bounded 6h.
+    timeout-minutes: 360
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
       CARGO_BUILD_JOBS: '2'
@@ -315,6 +322,34 @@ jobs:
           assert results[0]['root']==results[1]['root']
           print('Original foreign-only component candidate exported and independently consumed; not published, and not yet executed on ARM.')
           PY
+      - name: Compose independently expected headers and libraries into one immutable FFmpeg prefix
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          exported=json.loads((root/'native-provider-export.json').read_text())
+          helper=(root/'native-provider-preparer.txt').read_text().strip()
+          command=[helper,'--prepare-released-prefix','--header-plan','rust/native-ffmpeg-headers.json',
+              '--provider-plan','rust/native-ffmpeg-provider.json','--descriptor',exported['descriptor'],
+              '--descriptor-sha256',exported['descriptor_sha256'],'--header-cache',str(root/'native-ffmpeg-source'),
+              '--provider-cache',str(root/'native-provider-components'),'--store',str(root/'native-ffmpeg-prefixes')]
+          rows=[]
+          for phase in ('initial','reused'):
+              path=root/f'native-ffmpeg-prefix-{phase}.json'
+              with path.open('w') as output:
+                  subprocess.run(command,stdout=output,check=True)
+              row=json.loads(path.read_text())
+              assert not row['compiler_executed'] and not row['runtime_activated']
+              for part in ('headers','provider'):
+                  assert row[part]['asset']['transferred_bytes']==row[part]['asset']['stored_bytes']==0
+              rows.append(row)
+          assert rows[0]['tree_sha256']==rows[1]['tree_sha256'] and rows[0]['root']==rows[1]['root']
+          assert rows[0]['linked_bytes']>0
+          assert rows[1]['copied_bytes']==rows[1]['linked_bytes']==0
+          assert all(rows[1][part]['copied_bytes']==0 for part in ('headers','provider'))
+          print('One content-addressed FFmpeg input prefix; repeat archive transfer, prefix copy and hardlink bytes zero.')
+          PY
       - uses: actions/cache/save@v4
         if: steps.provider-origin-cache.outputs.cache-hit != 'true'
         with:
@@ -348,6 +383,8 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers-reused.json
             ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-provider-export.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-prefix-*.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-provider-export/*
             ${{ env.CI_JOB_TEMP }}/native-provider-consumer-*.json
             ${{ env.CI_JOB_TEMP }}/native-provider-origins/**/generation/tree.json
@@ -358,6 +395,13 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/receipt.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/commands.log
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-codec-reference/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-codec-reference/*.log
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-codec-reference/source-oracle.cc
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-ffmpeg-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/cargo-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.json

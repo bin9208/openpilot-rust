@@ -21,6 +21,12 @@
 
 ## 개발 검증 실행 방법
 
+FFmpeg6.1.1의 header/provider를 실제 Rust 인코더가 소비하는 단일 prefix와 원본5개
+codec case의 정확 packet 비교는 [provider 검사 안내](native-provider-components-599.md)의
+단일 prefix 절차를 따른다. 변경 SHA의 foundation 및 genuine 결과가 성공하기 전에는
+실행 성공으로 판단하지 않는다. QEMU/PRoot AGNOS user space 결과는 실제 comma 3X의
+설치·부팅·카메라/녹화·업로드 수용과 구분한다.
+
 Rust compiler/Cargo/std 내용별 준비·전송0/복사0·stdlib 변조 검증은
 [고정 native Rust 준비 안내](native-rust-toolchain-599.md)를 따른다. compiler 실행과
 전체 runtime 수용은 별도 단계이며 새 source의 Actions 성공을 먼저 확인한다.

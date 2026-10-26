@@ -33,6 +33,27 @@ pub struct Prepared {
     pub runtime_activated: bool,
 }
 
+#[derive(Debug, Default)]
+pub(crate) struct Materialized {
+    pub copied_bytes: u64,
+    pub linked_bytes: u64,
+}
+
+/// Publication metadata without inventing an HTTP asset for composed inputs.
+#[derive(Debug, Serialize)]
+pub struct Published {
+    pub schema: u32,
+    pub identity: String,
+    pub root: PathBuf,
+    pub tree_receipt: PathBuf,
+    pub tree_sha256: String,
+    pub copied_bytes: u64,
+    pub linked_bytes: u64,
+    pub elapsed_ms: u128,
+    pub compiler_executed: bool,
+    pub runtime_activated: bool,
+}
+
 pub(crate) fn hash(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
@@ -326,7 +347,72 @@ pub(crate) fn prepare_tree(
     asset: impl FnOnce() -> Result<assets::Receipt>,
     expected: impl Fn(&Path, Option<&Path>) -> Result<Tree>,
 ) -> Result<Prepared> {
+    let (published, asset) = publish_tree(
+        identity,
+        store,
+        asset,
+        |asset| expected(&asset.path, None),
+        |asset, root| {
+            let tree = expected(&asset.path, Some(root))?;
+            let copied_bytes = payload_bytes(&tree)?;
+            Ok((
+                tree,
+                Materialized {
+                    copied_bytes,
+                    linked_bytes: 0,
+                },
+            ))
+        },
+        |asset| {
+            if digest_file(&asset.path)? != asset.sha256 {
+                return Err("native codec archive changed after preparation".into());
+            }
+            Ok(())
+        },
+    )?;
+    Ok(Prepared {
+        schema: published.schema,
+        identity: published.identity,
+        root: published.root,
+        tree_receipt: published.tree_receipt,
+        tree_sha256: published.tree_sha256,
+        asset,
+        copied_bytes: published.copied_bytes,
+        elapsed_ms: published.elapsed_ms,
+        compiler_executed: false,
+        runtime_activated: false,
+    })
+}
+
+fn payload_bytes(tree: &Tree) -> Result<u64> {
+    tree.entries.values().try_fold(0u64, |total, entry| {
+        total
+            .checked_add(match entry {
+                Entry::File { bytes, .. } => *bytes,
+                _ => 0,
+            })
+            .ok_or_else(|| "native codec size overflow".into())
+    })
+}
+
+/// Share locking, capacity checks and atomic publication across archive inputs
+/// and verified compositions. Context retains the authenticated input proofs.
+pub(crate) fn publish_tree<C>(
+    identity: String,
+    store: &Path,
+    context: impl FnOnce() -> Result<C>,
+    expected: impl Fn(&C) -> Result<Tree>,
+    materialize: impl Fn(&C, &Path) -> Result<(Tree, Materialized)>,
+    verify: impl Fn(&C) -> Result<()>,
+) -> Result<(Published, C)> {
     let started = Instant::now();
+    if identity.len() != 64
+        || !identity
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    {
+        return Err("invalid native input publication identity".into());
+    }
     directory(store)?;
     let object = store.canonicalize()?.join(&identity);
     directory(&object)?;
@@ -340,8 +426,9 @@ pub(crate) fn prepare_tree(
         return Err("native codec lock is not a regular file".into());
     }
     rustix::fs::flock(&lock, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
-    let asset = asset()?;
-    let tree = expected(&asset.path, None)?;
+    let context = context()?;
+    verify(&context)?;
+    let tree = expected(&context)?;
     let tree_bytes = json(&tree)?;
     if tree_bytes.len() > 16 * 1024 * 1024 {
         return Err("native codec tree exceeds receipt limit".into());
@@ -349,7 +436,7 @@ pub(crate) fn prepare_tree(
     let tree_sha256 = hash(&tree_bytes);
     let record = json(&(1, &identity, &tree_sha256))?;
     let generation = object.join("generation");
-    let copied_bytes = match fs::symlink_metadata(&generation) {
+    let counts = match fs::symlink_metadata(&generation) {
         Ok(metadata) if metadata.is_dir() => {
             let names = fs::read_dir(&generation)?
                 .map(|e| e.map(|e| e.file_name()))
@@ -365,18 +452,11 @@ pub(crate) fn prepare_tree(
             verify_file(&generation.join("tree.json"), &tree_bytes)?;
             verify_file(&generation.join("receipt.json"), &record)?;
             tree.verify(&generation.join("tree"))?;
-            0
+            Materialized::default()
         }
         Ok(_) => return Err("native codec generation is not a real directory".into()),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            let payload = tree.entries.values().try_fold(0u64, |total, e| {
-                total
-                    .checked_add(match e {
-                        Entry::File { bytes, .. } => *bytes,
-                        _ => 0,
-                    })
-                    .ok_or("native codec size overflow")
-            })?;
+            let payload = payload_bytes(&tree)?;
             let growth = payload
                 .checked_add(tree.entries.len() as u64 * 4096)
                 .and_then(|n| n.checked_add(tree_bytes.len() as u64 + record.len() as u64 + 65536))
@@ -397,10 +477,12 @@ pub(crate) fn prepare_tree(
                 .prefix(".pending-codec-")
                 .tempdir_in(&object)?;
             directory(&temp.path().join("tree"))?;
-            if tree != expected(&asset.path, Some(&temp.path().join("tree")))? {
+            let (actual, counts) = materialize(&context, &temp.path().join("tree"))?;
+            if tree != actual {
                 return Err("native codec archive changed during preparation".into());
             }
             tree.verify(&temp.path().join("tree"))?;
+            verify(&context)?;
             write(&temp.path().join("tree.json"), &tree_bytes)?;
             write(&temp.path().join("receipt.json"), &record)?;
             sync(temp.path())?;
@@ -412,25 +494,26 @@ pub(crate) fn prepare_tree(
                 rustix::fs::RenameFlags::NOREPLACE,
             )?;
             File::open(&object)?.sync_all()?;
-            payload
+            counts
         }
         Err(e) => return Err(e.into()),
     };
-    if digest_file(&asset.path)? != asset.sha256 {
-        return Err("native codec archive changed after preparation".into());
-    }
-    Ok(Prepared {
-        schema: 1,
-        identity,
-        root: generation.join("tree"),
-        tree_receipt: generation.join("tree.json"),
-        tree_sha256,
-        asset,
-        copied_bytes,
-        elapsed_ms: started.elapsed().as_millis(),
-        compiler_executed: false,
-        runtime_activated: false,
-    })
+    verify(&context)?;
+    Ok((
+        Published {
+            schema: 1,
+            identity,
+            root: generation.join("tree"),
+            tree_receipt: generation.join("tree.json"),
+            tree_sha256,
+            copied_bytes: counts.copied_bytes,
+            linked_bytes: counts.linked_bytes,
+            elapsed_ms: started.elapsed().as_millis(),
+            compiler_executed: false,
+            runtime_activated: false,
+        },
+        context,
+    ))
 }
 
 fn read_lock(root: &Path) -> Result<toml::Value> {

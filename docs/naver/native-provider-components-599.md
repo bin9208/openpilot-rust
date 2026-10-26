@@ -56,6 +56,51 @@ group 배정은 전체 native coordinator에서 별도로 묶어야 한다.
 
 ## Actions 검사 방법
 
+### 실제 Rust 소비에 필요한 단일 prefix — 구현 추가, 기능 검증 대기
+
+`build-runtime-ffmpeg --prepare-released-prefix`는 위의 실제 header/provider 준비기를
+다시 호출한다. 두 기대 Tree의 내용 SHA를 확인하고 `include/`와 `lib/`가 함께 있는
+하나의 `FFMPEG_DIR`를 만든다. 임의 local receipt 두 개를 받는 별도 신뢰 우회 경로는 없다.
+양쪽 원본 provenance·notice·alias를 보존하고 같은 경로의 내용/mode/type이 다르면 거부한다.
+
+identity는 profile/target/AGNOS와 두 입력 Tree SHA에만 의존한다. 원래 provider source는
+그대로 남고 현재 runtime commit이나 입력 prefix의 절대 경로를 identity에 넣지 않는다.
+읽기 전용444/555 file은 같은 filesystem에서 hardlink한다. EXDEV일 때만 배타적·길이 제한
+복사를 사용한다. 별도 provenance 복사량과 file hardlink량을 구분하며, 반복 준비는
+양쪽 raw 전송/stored/copy 및 합성 prefix copy/link가 모두0이어야 한다.
+
+기존 archive 준비기와 공유하는 publication helper가 내용별 lock, 작업별 실제 payload와
+metadata의 예상 증가량, 임시 directory, fsync, rename-NOREPLACE, 기존 generation의 완전
+member 검사를 유지한다. 합성 입력에는 가짜 HTTP asset receipt를 만들지 않는다.
+초기/반복·경로 독립 identity·동일 notice 중복·alias·충돌·입력 변조·generation 추가 member의
+회귀를 foundation의 X64/ARM QEMU에서 실행한다. 로컬은 구문·서식·diff만 확인한다.
+
+```sh
+build-runtime-ffmpeg --prepare-released-prefix \
+  --header-plan rust/native-ffmpeg-headers.json --provider-plan rust/native-ffmpeg-provider.json \
+  --descriptor "$VERIFIED_DESCRIPTOR" --descriptor-sha256 "$INDEPENDENT_DESCRIPTOR_SHA256" \
+  --header-cache "$FFMPEG_SOURCE_CACHE" --provider-cache "$COMPONENT_CACHE" --store "$PREFIX_STORE"
+```
+
+genuine 검사에서는 독립 host/ARM prefix Tree가 일치해야 한다. 실제 `openpilot-encoderd`를
+현재 Git 소스와 원래 catalog의 native/visionipc-ion feature로 release 빌드한다. 기존
+`openpilot-runtime-build`에 Rust/Cargo vendor/capnp/libyuv/합성 prefix의 완전 Tree와
+AGNOS SDK의 독립 SHA를 전달한다. 같은 recipe의 반복 binary는 fresh/동일 hash여야 한다.
+이때 프로젝트 binary를 옛 runtime에서 가져오지 않는다.
+
+현재 소스의 `encoder_codec_trace`와 기존 원본 C++ method oracle도 같은 FFmpeg6.1.1/
+libyuv/JPEG로 빌드한다. 기존5개 lossless/H.264/JPEG case의 압축 packet bytes 및 metadata를
+정확 비교하며 허용 오차나 codec 설정은 바꾸지 않는다. 기존 host `--native` 명령도 유지한다.
+별도 prefix 선택은 `--ffmpeg-prefix`와 `--libyuv-prefix`를 함께 사용한다. command별
+timeout은 기존 host120초, QEMU600초이며 결과 receipt에 기록한다. runtime validity나
+실시간 deadline을 완화한 값이 아니다. 실제 binary/example/oracle은 엄격한 ELF 검사를 거친다.
+
+기존 #608 ARM release 초기 빌드6386611ms가90분보다 길었으므로, 원래 command/pin을
+유지한 genuine job에 실제 인코더 단계를 추가하며 상한을360분으로 늘렸다. 이 예산은
+실기 시간/성능이나 이번 job의 성공 근거가 아니다. `native-encoder-*.json/jsonl`과 codec
+`receipt.json`/원문 log에서 각 단계 결과를 확인한다. 별도 daemon 시작·99개 전체 runtime
+빌드·정상 부팅·녹화/업로드·물리 ARM·comma 3X 수용은 여전히 별도 미충족 항목이다.
+
 로컬은 구문·서식·diff/읽기만 수행한다. 아래는 개발용 형태이며 device 설치 명령이 아니다.
 cache/store/output의 부모는 미리 있어야 한다. 기존 output은 대체하지 않는다.
 

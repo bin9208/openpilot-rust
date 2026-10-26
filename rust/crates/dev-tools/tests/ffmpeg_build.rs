@@ -121,3 +121,19 @@ fn provider_component_cli_requires_independent_descriptor_pin_before_cache_creat
     assert!(String::from_utf8_lossy(&result.stderr).contains("independent --descriptor-sha256"));
     assert!(!temp.path().join("cache").exists() && !temp.path().join("store").exists());
 }
+
+#[test]
+fn composed_prefix_cli_requires_independent_provider_pin_before_mutation() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = temp.path().join("store");
+    let result = Command::new(env!("CARGO_BIN_EXE_build-runtime-ffmpeg"))
+        .args(["--prepare-released-prefix", "--descriptor", "missing.json"])
+        .arg("--store")
+        .arg(&store)
+        .env("PATH", "")
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("--descriptor-sha256 required"));
+    assert!(!store.exists());
+}

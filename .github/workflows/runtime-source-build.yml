@@ -6,6 +6,7 @@ on:
       - 'rust/crates/runtime-build/**'
       - 'rust/crates/dev-tools/src/native_codec_inputs.rs'
       - 'rust/crates/dev-tools/src/native_ffmpeg_headers.rs'
+      - 'rust/crates/dev-tools/src/native_ffmpeg_prefix.rs'
       - 'rust/crates/dev-tools/src/native_provider.rs'
       - 'rust/native-ffmpeg-provider.json'
       - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
@@ -161,6 +162,10 @@ jobs:
         run: |
           rustfmt --edition 2021 --check rust/crates/dev-tools/src/native_provider.rs rust/crates/dev-tools/src/ffmpeg_build.rs rust/crates/dev-tools/tests/ffmpeg_build.rs
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_provider::tests -- --nocapture
+      - name: Verify composed FFmpeg input identity, collisions and reuse
+        run: |
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/native_ffmpeg_prefix.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_ffmpeg_prefix::tests -- --nocapture
       - uses: actions/cache/restore@v4
         id: ffmpeg-headers-cache
         with:

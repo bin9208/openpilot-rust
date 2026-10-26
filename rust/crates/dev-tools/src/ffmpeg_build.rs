@@ -497,6 +497,13 @@ fn verify_headers(source: &Path, work: &Path, prefix: &Path) -> Result<BTreeMap<
 pub fn cli(runtime: bool) -> Result<()> {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
     if runtime
+        && arguments
+            .iter()
+            .any(|arg| arg == "--prepare-released-prefix")
+    {
+        return crate::native_ffmpeg_prefix::cli(&arguments);
+    }
+    if runtime
         && arguments.iter().any(|arg| {
             matches!(
                 arg.as_str(),

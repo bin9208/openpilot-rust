@@ -2,7 +2,8 @@
 """#599: execute a compiler feasibility probe in the genuine pinned AGNOS image.
 
 Actions only. This does not boot an AGNOS kernel, flash a device or build the full
-runtime. Its isolated toy binaries establish native toolchain/standard ABI facts.
+runtime. It checks native toolchain/ABI facts and the actual Rust encoder against
+the unchanged source codec methods in an emulated ARM user space.
 """
 import hashlib
 import json
@@ -639,6 +640,109 @@ int main(){
       project_binaries_reused=False,complete_codec_regression=False,full_runtime_build=False,device_execution=False)
 
 
+def native_encoder_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Build the actual runtime binary with the catalog features and pinned inputs."""
+  room(work,3*1024**3)
+  def execute(argv,name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  owned=work.parent
+  exported=json.loads((owned/'native-provider-export.json').read_text())
+  helper=work/'project-target/debug/build-runtime-ffmpeg'
+  command=[helper,'--prepare-released-prefix','--header-plan',f'{source_mount}/rust/native-ffmpeg-headers.json',
+      '--provider-plan',f'{source_mount}/rust/native-ffmpeg-provider.json',
+      '--descriptor',Path(guest_work)/'provider-export/provider.json','--descriptor-sha256',exported['descriptor_sha256'],
+      '--header-cache',Path(guest_work)/'ffmpeg-source','--provider-cache',Path(guest_work)/'provider-assets',
+      '--store',work/'native-ffmpeg-prefixes']
+  prefix=json.loads(execute(command,'native-encoder-prefix-initial.json').read_text())
+  host=json.loads((owned/'native-ffmpeg-prefix-initial.json').read_text())
+  assert prefix['tree_sha256']==host['tree_sha256'] and prefix['identity']==host['identity']
+  assert prefix['linked_bytes']>0 and not prefix['compiler_executed'] and not prefix['runtime_activated']
+  for part in ('headers','provider'):
+    assert prefix[part]['asset']['transferred_bytes']==prefix[part]['asset']['stored_bytes']==0
+  sdk=json.loads((work/'native-cereal-preparation-initial.json').read_text())
+  registry=json.loads((work/'native-cereal-cargo-inputs-reuse.json').read_text())
+  yuv=json.loads((work/'native-codec-initial.json').read_text())['libyuv']
+  rust=json.loads((owned/'native-rust-first.json').read_text())
+  rust_root=Path(guest_work)/'pinned-rust'/Path(rust['root']).relative_to(owned/'native-rust-toolchains')
+  rust_receipt=Path(guest_work)/'pinned-rust'/Path(rust['tree_receipt']).relative_to(owned/'native-rust-toolchains')
+  environment=dict(FFMPEG_DIR=prefix['root'],ENCODER_LIBYUV_LIB=str(Path(yuv['root'])/'lib'),
+      OPENPILOT_CAPNP=str(Path(sdk['root'])/'usr/bin/capnp'),OPENPILOT_CARGO_VENDOR=registry['vendor'],
+      LIBCLANG_PATH='/usr/lib/llvm-18/lib',
+      LD_LIBRARY_PATH=f"{prefix['root']}/lib:{sdk['root']}/usr/lib/aarch64-linux-gnu",
+      RUSTFLAGS=f"-C link-arg=-Wl,-rpath-link,{prefix['root']}/lib")
+  for name in ('CC','CXX','AR','RANLIB'):
+    path={'CC':'/usr/bin/gcc','CXX':'/usr/bin/g++','AR':'/usr/bin/ar','RANLIB':'/usr/bin/ranlib'}[name]
+    environment[name]=environment[f'HOST_{name}']=path
+  inputs={str(rust_receipt):rust['tree_sha256']}
+  trees={str(rust_root):str(rust_receipt)}
+  for row in (prefix,sdk,registry,yuv):
+    inputs[row['tree_receipt']]=row['tree_sha256']
+    trees[row['root']]=row['tree_receipt']
+  system_receipt=str(Path(guest_work)/'native-system-sdk.json')
+  inputs[system_receipt]=digest(work/'native-system-sdk.json')
+  trees['/']=system_receipt
+  features=['openpilot-encoderd/native','openpilot-encoderd/visionipc-ion','openpilot-msgq/visionipc-ion']
+  recipe=work/'native-encoder-recipe.json'
+  recipe.write_text(json.dumps(dict(schema=1,target='aarch64-unknown-linux-gnu',
+      packages=['openpilot-encoderd','openpilot-msgq'],binaries=['openpilot-encoderd'],features=features,
+      inputs=inputs,input_trees=trees,environment=environment,expected_growth_bytes=3*1024**3))+'\n')
+  driver=work/'project-target/debug/openpilot-runtime-build'
+  build=[driver,'--root',source_mount,'--recipe',recipe,'--cache',work/'native-encoder-cache',
+      '--toolchain',rust_root/'bin']
+  initial=json.loads(execute(build,'native-encoder-build-initial.json').read_text())
+  assert initial['source']['commit']==evidence['source_commit']
+  assert len(initial['artifacts'])==1 and not initial['artifacts'][0]['fresh']
+  binary=initial['artifacts'][0]
+  assert Path(binary['executable']).name=='openpilot-encoderd'
+  assert set(initial['verified_input_trees'])==set(trees)
+  linker=execute(['readlink','-f','/usr/bin/cc'],'native-encoder-linker.txt').read_text().strip()
+  example_environment={**environment,'RUSTC':str(rust_root/'bin/rustc'),
+      'CARGO_ENCODED_RUSTFLAGS':'\x1f'.join([*environment['RUSTFLAGS'].split(),'-C',f'linker={linker}']),
+      'CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER':linker}
+  env=['/usr/bin/env',*(f'{key}={value}' for key,value in example_environment.items())]
+  example_output=execute([*env,rust_root/'bin/cargo','build','--locked','--offline','--release',
+      '--manifest-path',f'{source_mount}/rust/Cargo.toml','--target','aarch64-unknown-linux-gnu',
+      '-p','openpilot-encoderd','-p','openpilot-msgq','--features',','.join(features),'--example','encoder_codec_trace',
+      '--target-dir',initial['target_directory'],'--message-format=json'], 'native-encoder-example-build.jsonl')
+  rows=[json.loads(line) for line in example_output.read_text().splitlines()]
+  examples=[row['executable'] for row in rows if row.get('reason')=='compiler-artifact'
+      and row.get('executable') and row['target']['name']=='encoder_codec_trace']
+  jpeg=[str(Path(row['out_dir'])/'jpeg') for row in rows if row.get('reason')=='build-script-executed'
+      and Path(row['out_dir']).parent.name.startswith('openpilot-jpeg-')]
+  assert len(examples)==len(jpeg)==1
+  execute([*env,'/usr/bin/python3',f'{source_mount}/rust/tools/check_encoder_codecs.py',
+      '--rust',examples[0],'--jpeg-build',jpeg[0],'--ffmpeg-prefix',prefix['root'],
+      '--libyuv-prefix',yuv['root'],'--scope','agnos-arm-userspace','--timeout','600',
+      '--output',work/'native-encoder-codec-reference'],'native-encoder-codec-result.json')
+  oracle=json.loads((work/'native-encoder-codec-reference/receipt.json').read_text())
+  assert oracle['status']=='PASS' and len(oracle['results'])==5
+  assert not oracle['physical_device_execution']
+  audit=work/'native-encoder-elf-audit.json'
+  execute([work/'project-target/debug/runtime-elf-audit','--root',binary['executable'],
+      '--root',examples[0],'--root',work/'native-encoder-codec-reference/source-oracle',
+      '--library',Path(prefix['root'])/'lib','--library','/usr/lib/aarch64-linux-gnu',
+      '--library','/lib/aarch64-linux-gnu','--output',audit],'native-encoder-audit-summary.json')
+  assert json.loads(audit.read_text())['compatible']
+  repeated=json.loads(execute(build,'native-encoder-build-reused.json').read_text())
+  assert repeated['source']==initial['source'] and repeated['cache_key']==initial['cache_key']
+  assert len(repeated['artifacts'])==1 and repeated['artifacts'][0]['fresh']
+  assert repeated['artifacts'][0]['sha256']==binary['sha256']
+  after=json.loads(execute(command,'native-encoder-prefix-reused.json').read_text())
+  assert after['tree_sha256']==prefix['tree_sha256'] and after['copied_bytes']==after['linked_bytes']==0
+  assert all(after[p]['copied_bytes']==after[p]['asset']['transferred_bytes']==after[p]['asset']['stored_bytes']==0
+      for p in ('headers','provider'))
+  evidence['native_rust_encoder']=dict(source_commit=initial['source']['commit'],
+      binary_sha256=binary['sha256'],features=features,recipe_sha256=initial['recipe_sha256'],
+      prefix_tree_sha256=prefix['tree_sha256'],independent_host_tree_matches=True,
+      exact_input_trees_verified=len(trees),repeated_runtime_binary_fresh=True,
+      original_source_codec_cases=5,packet_bytes_and_metadata_equal=True,
+      oracle_receipt_sha256=digest(work/'native-encoder-codec-reference/receipt.json'),
+      strict_elf_audit_compatible=True,actual_arm_native_compiler=True,
+      emulation='QEMU/PRoot ARM user space on x64 bin-actions',full_runtime_build=False,
+      runtime_activated=False,daemon_started=False,physical_device_execution=False)
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -786,6 +890,7 @@ def main():
     native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_ffmpeg_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_provider_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_encoder_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))
