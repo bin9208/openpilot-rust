@@ -1,8 +1,9 @@
 use crate::Result;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{path::Path, process::Command};
 
-#[derive(Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Source {
     pub commit: String,
     pub tree: String,

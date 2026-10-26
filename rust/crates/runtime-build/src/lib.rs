@@ -7,7 +7,9 @@
 
 pub mod assets;
 pub mod inputs;
+pub mod objects;
 mod source;
+pub mod source_store;
 pub use source::Source;
 
 use serde::{Deserialize, Serialize};

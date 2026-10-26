@@ -27,3 +27,7 @@ path = "src/assets_main.rs"
 [[bin]]
 name = "openpilot-runtime-inputs"
 path = "src/inputs_main.rs"
+
+[[bin]]
+name = "openpilot-runtime-source"
+path = "src/source_main.rs"
