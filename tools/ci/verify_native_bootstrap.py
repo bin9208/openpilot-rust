@@ -102,7 +102,9 @@ def main():
             filesystems={str(guest_work):dict(maximum_growth_bytes=growth, minimum_free_bytes=64*1024**2)}))
     configuration = work/'bootstrap-current-config.json'
     configuration.write_text(json.dumps(config)+'\n')
-    command = [helper, '--bootstrap-tools', '--config', configuration, '--root', fixture]
+    configuration_sha256 = digest(configuration)
+    command = [helper, '--bootstrap-tools', '--config', configuration,
+        '--configuration-sha256', configuration_sha256, '--root', fixture]
     reports = {}
     metrics = {}
     initial_hashes = None
@@ -122,6 +124,7 @@ def main():
             execute([*git, '-C', fixture, 'commit', '-m', 'Owned bootstrap executable behavior fixture'], 'small-commit.txt')
         output, _ = execute(command, phase+'.json')
         row = json.loads(output.read_text())
+        assert row['configuration_sha256'] == configuration_sha256 == digest(configuration)
         assert not row['runtime_activated'] and not row['runtime_started'] and not row['runtime_release_downloaded']
         assert row['seed_helper_sha256'] == manifest['assets']['helper']['sha256']
         assert len(row['build']['binaries']) == 12 and len(row['build']['reports']) == 1

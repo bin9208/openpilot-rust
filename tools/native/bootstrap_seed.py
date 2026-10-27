@@ -249,13 +249,15 @@ def current_tools(prepared, plan, configuration, source):
     raise ValueError('bootstrap caller must be the original non-root user')
   fields = Path('/proc/self/stat').read_text().rsplit(') ', 1)[1].split()
   owner = f'{os.getpid()}:{int(fields[19])}'
+  configuration = configuration.resolve(strict=True)
+  pin = digest(configuration)
   output = subprocess.check_output(['/usr/bin/sudo', '-n', prepared['helper'], '--bootstrap-tools-scope',
-      '--config', str(configuration.resolve(strict=True)), '--root', str(source.resolve(strict=True)),
+      '--config', str(configuration), '--configuration-sha256', pin, '--root', str(source.resolve(strict=True)),
       '--request-owner', owner], env=ENV)
   if len(output) > 4*1024**2:
     raise ValueError('bootstrap current-tools report exceeds 4 MiB')
   result = json.loads(output)
-  if result.get('schema') != 1 or result.get('seed_helper_sha256') != plan['assets']['helper']['sha256'] or result.get('runtime_activated') is not False or result.get('runtime_started') is not False or result.get('runtime_release_downloaded') is not False:
+  if result.get('schema') != 1 or result.get('configuration_sha256') != pin or result.get('seed_helper_sha256') != plan['assets']['helper']['sha256'] or result.get('runtime_activated') is not False or result.get('runtime_started') is not False or result.get('runtime_release_downloaded') is not False:
     raise ValueError('bootstrap result differs from its pinned seed or preparation-only protocol')
   return dict(seed=prepared, current_tools=result, seed_native_abi_checked=True, seed_executed_for_current_tools=True,
               runtime_activated=False, runtime_started=False)

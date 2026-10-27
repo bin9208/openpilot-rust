@@ -63,7 +63,21 @@ fn absolute(path: &Path) -> bool {
 
 impl Config {
     pub fn read(path: &Path) -> Result<Self> {
-        let config: Self = generation::read(path)?;
+        Ok(Self::read_pinned(path)?.0)
+    }
+
+    fn read_pinned(path: &Path) -> Result<(Self, String)> {
+        const LIMIT: u64 = 4 * 1024 * 1024;
+        let file = crate::regular_file(path)?;
+        if file.metadata()?.len() > LIMIT {
+            return Err("bootstrap configuration exceeds 4 MiB".into());
+        }
+        let mut bytes = Vec::new();
+        file.take(LIMIT + 1).read_to_end(&mut bytes)?;
+        if bytes.len() as u64 > LIMIT {
+            return Err("bootstrap configuration exceeds 4 MiB".into());
+        }
+        let config: Self = serde_json::from_slice(&bytes)?;
         config.resources.validate()?;
         let paths = [
             &config.cache,
@@ -91,7 +105,7 @@ impl Config {
                 "bootstrap needs separate absolute stores and an independent SDK SHA pin".into(),
             );
         }
-        Ok(config)
+        Ok((config, format!("{:x}", Sha256::digest(&bytes))))
     }
 
     fn verify_sdk(&self, root: &Path) -> Result<()> {
@@ -203,7 +217,12 @@ struct WorkerResult {
     prepared: Prepared,
 }
 
-fn worker(config: &Config, config_path: &Path, root: &Path) -> Result<()> {
+fn worker(
+    config: &Config,
+    config_path: &Path,
+    root: &Path,
+    configuration_sha256: &str,
+) -> Result<()> {
     let _guard = supervision::WorkerGuard::start(&config.stores.params)?;
     memory_cgroup::enter(
         &config.resources.memory_cgroup_parent,
@@ -256,11 +275,14 @@ fn worker(config: &Config, config_path: &Path, root: &Path) -> Result<()> {
         return Err("bootstrap source changed during tool preparation".into());
     }
     config.verify_sdk(root)?;
+    if crate::digest_file(config_path)? != configuration_sha256 {
+        return Err("bootstrap configuration changed during worker execution".into());
+    }
     generation::write(
         &attempt.join("worker-result.json"),
         &WorkerResult {
             schema: 1,
-            configuration_sha256: crate::digest_file(config_path)?,
+            configuration_sha256: configuration_sha256.into(),
             seed_helper_sha256: crate::digest_file(&std::env::current_exe()?)?,
             preparations: serde_json::json!({"rust":rust,"cargo":cargo}),
             prepared,
@@ -363,7 +385,12 @@ fn bundle(config: &Config, current: &WorkerResult) -> Result<(PathBuf, WorkerRes
     Ok((destination, origin))
 }
 
-fn frontend(config: &Config, config_path: &Path, root: &Path) -> Result<()> {
+fn frontend(
+    config: &Config,
+    config_path: &Path,
+    root: &Path,
+    configuration_sha256: &str,
+) -> Result<()> {
     memory_cgroup::verify_control(&config.resources.memory_cgroup_parent)?;
     if !rustix::process::getgroups()?.is_empty() {
         return Err("bootstrap frontend retained supplementary groups".into());
@@ -399,7 +426,7 @@ fn frontend(config: &Config, config_path: &Path, root: &Path) -> Result<()> {
             &temporary,
         ],
         &attempt.join("resources.jsonl"),
-        serde_json::json!({"phase":"native-bootstrap-tools","requested_source":before,
+        serde_json::json!({"phase":"native-bootstrap-tools","requested_source":before,"configuration_sha256":configuration_sha256,
             "frontend_uid":rustix::process::getuid().as_raw(),"supplementary_groups_cleared":true}),
     )?;
     let mut command = Command::new(std::env::current_exe()?);
@@ -412,6 +439,8 @@ fn frontend(config: &Config, config_path: &Path, root: &Path) -> Result<()> {
         .arg("--bootstrap-tools-worker")
         .arg("--config")
         .arg(config_path)
+        .arg("--configuration-sha256")
+        .arg(configuration_sha256)
         .arg("--root")
         .arg(root);
     let result = supervision::run_observed(command, || monitor.observe());
@@ -440,7 +469,8 @@ fn frontend(config: &Config, config_path: &Path, root: &Path) -> Result<()> {
     }
     let current: WorkerResult = generation::read(&attempt.join("worker-result.json"))?;
     if current.schema != 1
-        || current.configuration_sha256 != crate::digest_file(config_path)?
+        || current.configuration_sha256 != configuration_sha256
+        || crate::digest_file(config_path)? != configuration_sha256
         || current.seed_helper_sha256 != crate::digest_file(&std::env::current_exe()?)?
         || current.prepared.source.source != before
         || source::inspect(root)? != before
@@ -453,9 +483,12 @@ fn frontend(config: &Config, config_path: &Path, root: &Path) -> Result<()> {
     supervision::check_request_owner()?;
     generation::offroad(&config.stores.params)?;
     let (path, origin) = bundle(config, &current)?;
+    if crate::digest_file(config_path)? != configuration_sha256 {
+        return Err("bootstrap configuration changed during bundle publication".into());
+    }
     println!(
         "{}",
-        serde_json::json!({"schema":1,"tools":path,"resource_evidence":attempt,
+        serde_json::json!({"schema":1,"tools":path,"resource_evidence":attempt,"configuration_sha256":configuration_sha256,
         "requested_source":before,"bundle_original_verified_source":origin.prepared.source.source,
         "build":current.prepared,"preparations":current.preparations,"seed_helper_sha256":current.seed_helper_sha256,
         "runtime_activated":false,"runtime_started":false,"runtime_release_downloaded":false})
@@ -466,7 +499,7 @@ fn frontend(config: &Config, config_path: &Path, root: &Path) -> Result<()> {
 pub fn run(arguments: Vec<OsString>) -> Result<()> {
     let mut args = arguments.into_iter();
     let mode = args.next().ok_or("bootstrap mode missing")?;
-    let (mut config_path, mut root, mut owner) = (None, None, None);
+    let (mut config_path, mut root, mut owner, mut pin) = (None, None, None, None);
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--config") if config_path.is_none() => {
@@ -482,13 +515,27 @@ pub fn run(arguments: Vec<OsString>) -> Result<()> {
             Some("--request-owner") if owner.is_none() => {
                 owner = Some(args.next().ok_or("bootstrap request owner missing")?)
             }
+            Some("--configuration-sha256") if pin.is_none() => {
+                pin = Some(
+                    args.next()
+                        .ok_or("bootstrap configuration pin missing")?
+                        .into_string()
+                        .map_err(|_| "invalid bootstrap configuration pin")?,
+                );
+            }
             _ => return Err("unknown or duplicate bootstrap argument".into()),
         }
     }
     let config_path = config_path
         .ok_or("bootstrap --config is required")?
         .canonicalize()?;
-    let config = Config::read(&config_path)?;
+    let (config, configuration_sha256) = Config::read_pinned(&config_path)?;
+    if mode == "--bootstrap-tools-worker" && pin.is_none() {
+        return Err("bootstrap worker requires its frontend configuration pin".into());
+    }
+    if pin.is_some_and(|pin| pin != configuration_sha256) {
+        return Err("bootstrap configuration changed before the requested phase".into());
+    }
     let root = root.ok_or("bootstrap --root is required")?.canonicalize()?;
     match mode.to_str() {
         Some("--bootstrap-tools-scope") => {
@@ -513,13 +560,19 @@ pub fn run(arguments: Vec<OsString>) -> Result<()> {
                 .arg("--bootstrap-tools")
                 .arg("--config")
                 .arg(config_path)
+                .arg("--configuration-sha256")
+                .arg(&configuration_sha256)
                 .arg("--root")
                 .arg(root)
                 .exec();
             Err(error.into())
         }
-        Some("--bootstrap-tools") if owner.is_none() => frontend(&config, &config_path, &root),
-        Some("--bootstrap-tools-worker") if owner.is_none() => worker(&config, &config_path, &root),
+        Some("--bootstrap-tools") if owner.is_none() => {
+            frontend(&config, &config_path, &root, &configuration_sha256)
+        }
+        Some("--bootstrap-tools-worker") if owner.is_none() => {
+            worker(&config, &config_path, &root, &configuration_sha256)
+        }
         _ => Err("unknown or mixed bootstrap mode".into()),
     }
 }
@@ -584,7 +637,13 @@ mod tests {
         fs::write(temp.path().join("previous-log"), b"preserved log").unwrap();
         let path = temp.path().join("config.json");
         generation::write(&path, &config, false).unwrap();
-        assert!(frontend(&config, &path, temp.path()).is_err());
+        assert!(frontend(
+            &config,
+            &path,
+            temp.path(),
+            &crate::digest_file(&path).unwrap()
+        )
+        .is_err());
         assert!(!config.cache.exists());
         assert!(!config.stores.generations.exists());
         assert_eq!(
@@ -605,5 +664,30 @@ mod tests {
         let error = config.verify_sdk(temp.path()).unwrap_err().to_string();
         assert!(error.contains("independent pin"));
         assert!(!config.cache.exists());
+    }
+
+    #[test]
+    fn changed_configuration_is_rejected_before_entering_the_next_phase() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut config = fixture(temp.path());
+        let path = temp.path().join("config.json");
+        generation::write(&path, &config, false).unwrap();
+        let (_, pin) = Config::read_pinned(&path).unwrap();
+        config.expected_compile_growth_bytes += 1;
+        generation::write(&path, &config, true).unwrap();
+        let error = run(vec![
+            "--bootstrap-tools".into(),
+            "--config".into(),
+            path.into_os_string(),
+            "--configuration-sha256".into(),
+            pin.into(),
+            "--root".into(),
+            temp.path().as_os_str().to_owned(),
+        ])
+        .unwrap_err()
+        .to_string();
+        assert!(error.contains("configuration changed"));
+        assert!(!config.cache.exists());
+        assert!(!config.stores.generations.exists());
     }
 }

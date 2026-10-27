@@ -25,6 +25,8 @@ memory controller가 없거나 일반 디렉터리인 경우 격리 없는 fallb
 작업별 RAM/디스크 예산·여유, worker log와 kernel peak/관측 디스크 증가량을 기존
 `resources` 구현으로 기록한다. 작은 seed 자체 준비는 기존 크기 상한·streaming 경로다.
 worker의 일반 compiler 임시 파일은 cache 안의 별도 `tmp`를 사용해 같은 쓰기 예산에 넣는다.
+Config도 한 번 읽은 같은 byte로 parse/hash하고 Python→root gateway→frontend→worker에
+그 SHA를 전달한다. 도중 재작성·바꿔치기는 결과 검증과 bundle 발행 뒤에도 거부한다.
 
 현재12개 도구는 runtime-build의8개 CLI와 provider 준비용 FFmpeg/raylib/OpenCV CLI,
 ELF auditor다. 모델/외부 provider가 필요한 전체 runtime을 먼저 요구하지 않는다.
