@@ -32,6 +32,12 @@ on:
       - 'rust/native-raylib-provider.json'
       - 'rust/native-opencv-headers.json'
       - 'rust/native-opencv-provider.json'
+      - 'rust/native-numerics-provider.json'
+      - 'rust/native-geos-provider.json'
+      - 'rust/native-brotli-provider.json'
+      - 'rust/native-acados-provider.json'
+      - 'tools/ci/prepare_native_runtime_companions.py'
+      - 'tools/ci/fixtures/native-companion-probe.cc'
       - 'rust/crates/dev-tools/src/native_opencv_prefix.rs'
       - 'rust/crates/dev-tools/tests/native_opencv_prefix.rs'
       - 'tools/ci/prepare_native_opencv_prefix.py'
@@ -437,6 +443,11 @@ jobs:
             --provider-preparer "$native_target/debug/build-runtime-ffmpeg" \
             --prefix-preparer "$native_target/debug/build-runtime-opencv" \
             --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - name: Prepare independent numerical geometry compression and acados library components
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_runtime_companions.py \
+            --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
       - name: Compose independently expected headers and libraries into one immutable FFmpeg prefix
         run: |
           python3 - <<'PY'
@@ -521,12 +532,19 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-provider-consumer-*.json
             ${{ env.CI_JOB_TEMP }}/native-provider-origins/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-provider-consumed/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-companion-*.json
+            ${{ env.CI_JOB_TEMP }}/native-companion-exports/*/*
+            ${{ env.CI_JOB_TEMP }}/native-companion-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-cargo-sources/sets/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.json
             ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.txt
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/receipt.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/commands.log
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-probe.cc
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.jsonl

@@ -143,3 +143,8 @@ header object를 검사한다. 기존 shared library의 준비/링크/실행 완
 고정36개 foreign member만 별도 후보로 내보낸다. 소비자는 독립 descriptor SHA로 작은
 component만 준비하며 원래 전체 runtime을 받거나 old project binary를 재사용하지 않는다.
 실제 ARM ABI/ELF/CLI 검증과 공개 발행·독립 Git pin은 정확 source 결과로 확인해야 한다.
+
+[실행용 foreign library 준비](native-runtime-companions-599.md)는 numerics/GEOS/Brotli/
+acados core를 독립 component로 준비해 `runtime_inputs`에 연결한다. 기존 수치·기하·압축
+ABI/ELF와 재사용 검사는 새 Actions 검증 대기다. 프로젝트 생성 MPC solver와 전체 Layout은
+별도로 준비하며 과거 source의 생성 binary를 현재 결과로 재표기하지 않는다.

@@ -1,4 +1,5 @@
-//! Export only authenticated foreign FFmpeg/raylib/OpenCV from the old release.
+//! Export authenticated foreign libraries from the old release, never its Rust
+//! executables or project-generated MPC solvers.
 //! Consumers use an independently pinned small component, never the old runtime.
 use crate::{
     encoder_stage,
@@ -22,6 +23,10 @@ use std::{
 const INVENTORY: &str = "be0bb63d0d7f71ea38a3f17f923d2b02c0149cc541f785916aaa93f311dbc3f2";
 const RAYLIB_INVENTORY: &str = "4c19e76d8ce5072e60a2a244634f44b62f254b3f02facc08a3dd39637f486cfd";
 const OPENCV_INVENTORY: &str = "aba0eb2961db6b8d19b245bae8138a34f28e42b21eec008553ee95c1f270c15a";
+const NUMERICS_INVENTORY: &str = "37785e6f41354c9ebcb90e5e243aec4407301479cf7773de03617a3f6fc8e51e";
+const GEOS_INVENTORY: &str = "eccb36c611ece074d36496137bb9102adf2008e695ae0a7b155aec649e936d62";
+const BROTLI_INVENTORY: &str = "d0cb97c6bd110c5463dc0db8cf618b60c268964eceabf9efbb0679d96bcb527a";
+const ACADOS_INVENTORY: &str = "d8fd2904df5f9f3fdac870da7d644b446474cdc75979732e4a1db444b459eb22";
 const SOURCE: &str = "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31";
 const ORIGIN: &str = "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291";
 const MANIFEST: &str = "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee";
@@ -92,6 +97,10 @@ fn component_names(profile: &str) -> Result<(&'static str, &'static str)> {
         PROFILE => Ok(("ffmpeg611", "ffmpeg611-shared.tar.gz")),
         "raylib600-shared" => Ok(("raylib600", "raylib600-shared.tar.gz")),
         "opencv413-shared" => Ok(("opencv413", "opencv413-shared.tar.gz")),
+        "numpy253-openblas" => Ok(("numpy253", "numpy253-openblas.tar.gz")),
+        "geos313-shared" => Ok(("geos313", "geos313-shared.tar.gz")),
+        "brotli110-shared" => Ok(("brotli110", "brotli110-shared.tar.gz")),
+        "acados022-libraries" => Ok(("acados022", "acados022-libraries.tar.gz")),
         _ => Err("unknown fixed foreign provider profile".into()),
     }
 }
@@ -130,6 +139,10 @@ impl Plan {
             PROFILE => (36, INVENTORY),
             "raylib600-shared" => (38, RAYLIB_INVENTORY),
             "opencv413-shared" => (30, OPENCV_INVENTORY),
+            "numpy253-openblas" => (22, NUMERICS_INVENTORY),
+            "geos313-shared" => (8, GEOS_INVENTORY),
+            "brotli110-shared" => (7, BROTLI_INVENTORY),
+            "acados022-libraries" => (13, ACADOS_INVENTORY),
             _ => {
                 return Err(
                     "foreign provider plan differs from the fixed original release inventory"
@@ -790,6 +803,63 @@ pub fn cli(args: &[String]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn runtime_companions_have_independent_pins_and_exclude_project_generated_solvers() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let sha = "1".repeat(64);
+        for (name, profile, count, namespace) in [
+            ("numerics", "numpy253-openblas", 22, "numpy253"),
+            ("geos", "geos313-shared", 8, "geos313"),
+            ("brotli", "brotli110-shared", 7, "brotli110"),
+            ("acados", "acados022-libraries", 13, "acados022"),
+        ] {
+            let mut plan = Plan::read(&root.join(format!("native-{name}-provider.json"))).unwrap();
+            assert_eq!(plan.profile, profile);
+            assert_eq!(plan.members.len(), count);
+            assert!(plan.members.values().all(|member| {
+                let source = member.source.to_string_lossy();
+                !source.contains("openpilot-") && !source.contains("libacados_ocp_solver_")
+            }));
+            assert_eq!(component_url(profile, &sha).unwrap(), format!("https://github.com/bin9208/openpilot-rust/releases/download/native-provider-{namespace}-{sha}/{profile}.tar.gz"));
+            let old_members = serde_json::to_value(&plan.members).unwrap();
+            plan.profile = PROFILE.into();
+            assert!(plan.validate().is_err());
+            assert_eq!(serde_json::to_value(&plan.members).unwrap(), old_members);
+        }
+        let numerics = Plan::read(&root.join("native-numerics-provider.json")).unwrap();
+        assert!(numerics
+            .members
+            .keys()
+            .all(|path| path.starts_with("numerics") || path.starts_with("provenance")));
+        assert!(numerics
+            .members
+            .values()
+            .filter(|row| row.source.to_str().unwrap().contains("-numerics/"))
+            .all(|row| row.source.starts_with("rust/bin/card-numerics")));
+        let acados = Plan::read(&root.join("native-acados-provider.json")).unwrap();
+        assert_eq!(
+            acados
+                .members
+                .keys()
+                .filter(|path| path.extension().is_some_and(|ext| ext == "so")
+                    || path.to_string_lossy().ends_with(".so.3.1"))
+                .count(),
+            5
+        );
+        assert!(!acados
+            .members
+            .contains_key(Path::new("plannerd-acados/manifest.json")));
+        assert!(acados
+            .members
+            .contains_key(Path::new("provenance/original-acados-manifest.json")));
+        let geos = Plan::read(&root.join("native-geos-provider.json")).unwrap();
+        assert!(!geos
+            .members
+            .contains_key(Path::new("carrot-geos/environment.txt")));
+        assert!(geos
+            .members
+            .contains_key(Path::new("provenance/original-geos-environment.txt")));
+    }
     #[test]
     fn independent_profiles_keep_their_inventory_and_release_namespace() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");

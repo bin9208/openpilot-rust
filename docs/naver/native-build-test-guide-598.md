@@ -177,6 +177,10 @@ legacy source stamp 보존을 확인했다. X64와 전체99 runtime/AGNOS/실기
 Actions 절차를 따른다. 실제9개 입력 역할의 pin·13그룹 환경·반복 plan·발행 거부를
 검사한다. 실행 자산/모델·전체 build·기기 수용의 준비 완료 판정은 별도로 유지한다.
 
+[실행용 foreign library 검사](native-runtime-companions-599.md)는 네 component의 독립
+pin·반복 전송/복사0, 실제 ARM 수치·기하·압축 API와 ELF,13그룹 계획의 runtime Tree
+연결을 확인한다. acados 생성 solver 두 개는 별도 필수 준비/회귀가 남는다.
+
 전체 build 목록·현재 Cargo 소스 대조와 입력별 recipe 생성 명령은
 [native runtime 계획 안내](native-runtime-plan-599.md)에 있다. 이 도구의
 `compiled=false`/`activated=false`는 실제 의미 그대로이며, plan 생성 성공을 전체

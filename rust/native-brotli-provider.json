@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "profile": "brotli110-shared",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "source_archive": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/runtime-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31/openpilot-rust-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31-aarch64.tar.gz",
+    "sha256": "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291",
+    "bytes": 1155969168
+  },
+  "runtime_manifest_sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+  "members": {
+    "brotli/libbrotlicommon.so.1": {
+      "source": "rust/bin/brotli/libbrotlicommon.so.1",
+      "sha256": "016600f673a5d1a565cf98f608d8425033593ab78827eccc3384596f70386c8c",
+      "bytes": 198784,
+      "mode": 292,
+      "link": null
+    },
+    "brotli/libbrotlidec.so.1": {
+      "source": "rust/bin/brotli/libbrotlidec.so.1",
+      "sha256": "b7895f0fd4ad47408cb01fcb959ae6792804c15512526166f9bf48358714d0b5",
+      "bytes": 67688,
+      "mode": 292,
+      "link": null
+    },
+    "brotli/libbrotlienc.so.1": {
+      "source": "rust/bin/brotli/libbrotlienc.so.1",
+      "sha256": "0e39569ce7768abb8fb525cad5b098cb571d4e1b922d099b4fcfdca8e54ed0e9",
+      "bytes": 592328,
+      "mode": 292,
+      "link": null
+    },
+    "brotli/manifest.json": {
+      "source": "rust/bin/brotli/manifest.json",
+      "sha256": "2a5e31156c43d4b59b0238b5fe495f3f0400c506ecb812b2c93bf7d72aa23231",
+      "bytes": 393,
+      "mode": 292,
+      "link": null
+    },
+    "provenance/original-runtime-manifest.json": {
+      "source": "rust/runtime-manifest.json",
+      "sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+      "bytes": 241671,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/brotli/agnos-provenance.json": {
+      "source": "rust/bin/licenses/brotli/agnos-provenance.json",
+      "sha256": "3a31598295ed0ff6b00cc63d40a6cbf827a95740646d4cf43c7c6a58972bb645",
+      "bytes": 13584,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/brotli/copyright": {
+      "source": "rust/bin/licenses/brotli/copyright",
+      "sha256": "24a64e5bb83d0960d1835696a1e23c0896ad6055b0ca47c66ab0eb9a766324b1",
+      "bytes": 1354,
+      "mode": 292,
+      "link": null
+    }
+  }
+}

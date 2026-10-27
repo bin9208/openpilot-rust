@@ -49,8 +49,9 @@ HOST 변수를 명시한다. 필요한 capnp/FFmpeg/OpenCV의 loader/rpath-link 
 
 입력 목록 JSON 전체의 SHA를 모든 compiler recipe에 넣지 않는다. 예를 들어 raylib
 pin 변경은00/01/02에만 영향을 주며07/08/10의 compiler 입력은 그대로다. 모델·실행
-companion은 `runtime_inputs`에만 연결한다. 이 변경의 CI plan에는 아직 이 자산들이
-없으므로 `compiler_inputs_bound=true`가 전체 runtime 준비 완료를 뜻하지 않는다.
+companion은 `runtime_inputs`에만 연결한다. 후속 [foreign library 준비](native-runtime-companions-599.md)는
+네 개의 부분 runtime Tree를 CI plan에 연결한다. 모델/생성 MPC/나머지 실행 자산과 전체
+Layout은 아직 없으므로 `compiler_inputs_bound=true`가 전체 runtime 준비 완료를 뜻하지 않는다.
 
 기존 수동 `--bindings` 조합에도 수정이 있다. set 자체를 검사할 때 그 set의 환경을
 사용하도록 해 조합 시점에도 현재 Cargo.lock provenance를 검증한다. 다른 set의 Cargo

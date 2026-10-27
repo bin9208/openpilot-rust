@@ -1,6 +1,9 @@
 # 성능 개선·콤마 자체 빌드 우선 실행 — #598
 
 사용자 결정: 2026-10-26 KST.
+기존 C/C++ [실행 library4개 component](native-runtime-companions-599.md)의 내용별 준비와
+ARM API/ELF·`runtime_inputs` 연결 검사를 추가했다. 생성 MPC·전체 Layout/빌드는 별도이며
+이 새 경로는 Actions 검증 대기다.
 준비된 toolchain/vendor/SDK/provider9개 역할을 전체13그룹의 계획에 연결하는
 [native 입력 조합기](native-input-bindings-599.md)를 추가했다. 그룹별 캐시 분리와
 현재 vendor lock 검사, 실제 AGNOS plan 생성/반복 CI는 검증 대기다.

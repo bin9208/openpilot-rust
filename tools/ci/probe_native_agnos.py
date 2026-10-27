@@ -1135,6 +1135,100 @@ int main(int argc,char** argv){
       full_runtime_build=False,physical_device_execution=False)
 
 
+def native_runtime_companions_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Consume independent components, then execute actual foreign APIs on ARM."""
+  source=Path(os.environ['GITHUB_WORKSPACE'])
+  names=('numerics','geos','brotli','acados')
+  payload=sum(sum(row['bytes'] for row in json.loads((source/f'rust/native-{name}-provider.json').read_text())['members'].values()) for name in names)
+  room(work,payload+128*1024**2)
+  def execute(argv,name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  runtime_inputs=dict(files={},trees={})
+  roots={}
+  reports={}
+  libraries=[]
+  elf_roots=[]
+  commands=[]
+  for name in names:
+    host=json.loads((work.parent/f'native-companion-{name}-initial.json').read_text())
+    exported=json.loads((work.parent/f'native-companion-{name}-export.json').read_text())
+    command=[work/'project-target/debug/build-runtime-ffmpeg','--prepare-released-provider',
+        '--plan',f'{source_mount}/rust/native-{name}-provider.json',
+        '--descriptor',Path(guest_work)/'companion-exports'/name/'provider.json',
+        '--descriptor-sha256',exported['descriptor_sha256'],
+        '--cache',Path(guest_work)/'companion-components'/name,
+        '--store',work/'native-companion-prefixes'/name]
+    command_record=[]
+    for phase in ('initial','reused'):
+      row=json.loads(execute(command,f'native-companion-{name}-{phase}.json').read_text())
+      assert row['tree_sha256']==host['tree_sha256']==exported['tree_sha256']
+      assert row['offline_seed_bytes']==row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+      assert (row['copied_bytes']>0)==(phase=='initial')
+      assert not row['origin_archive_downloaded'] and not row['compiler_executed'] and not row['runtime_activated']
+      command_record.append(row)
+    assert command_record[0]['root']==command_record[1]['root']
+    row=command_record[0]
+    runtime_inputs['files'][row['tree_receipt']]=row['tree_sha256']
+    runtime_inputs['trees'][row['root']]=row['tree_receipt']
+    leaf={'numerics':'numerics','geos':'carrot-geos','brotli':'brotli','acados':'plannerd-acados'}[name]
+    roots[name]=Path(row['root'])/leaf
+    libraries.append(roots[name])
+    plan=json.loads((source/f'rust/native-{name}-provider.json').read_text())
+    for path,member in plan['members'].items():
+      if '.so' in Path(path).name and member['link'] is None:
+        elf_roots.append(Path(row['root'])/path)
+    reports[name]=dict(tree_sha256=row['tree_sha256'],descriptor_sha256=exported['descriptor_sha256'],
+        repeated_http_body_bytes=0,repeated_copied_bytes=0,consumer_origin_archive_downloaded=False)
+    commands.append((name,command,row))
+  configuration=work/'native-companion-runtime-inputs.json'
+  configuration.write_text(json.dumps(runtime_inputs,indent=2)+'\n')
+  fixture=work/'native-companion-probe.cc'
+  shutil.copyfile(source/'tools/ci/fixtures/native-companion-probe.cc',fixture)
+  binary=work/'native-companion-probe'
+  execute(['g++','-std=c++17','-O2','-Wall','-Wextra','-Werror',fixture,'-ldl','-o',binary],'native-companion-compile.txt')
+  header=binary.read_bytes()[:64]
+  assert header[:6]==b'\x7fELF\x02\x01' and int.from_bytes(header[18:20],'little')==183
+  loader=':'.join(map(str,[*libraries,'/usr/lib/aarch64-linux-gnu','/lib/aarch64-linux-gnu']))
+  maps_file=work/'native-companion-provider-maps.txt'
+  actual=json.loads(execute(['/usr/bin/env',f'LD_LIBRARY_PATH={loader}',binary,*(roots[name] for name in names),maps_file],'native-companion-api.json').read_text())
+  assert actual==dict(numerics_dot_matrix_svd=True,geos_interpolation=True,brotli_roundtrip=True,
+      acados_core_symbols=True,mpc_solver_tested=False)
+  assert maps_file.stat().st_size<8*1024**2
+  maps=maps_file.read_text()
+  assert 'libpython' not in maps
+  mapped_paths={row[5] for line in maps.splitlines() if len(row:=line.split(maxsplit=5))==6}
+  for name,files in {
+      'numerics':('libgfortran-e1b7dfc8-d8198c01.so.5.0.0','libscipy_openblas64_-f552eb69.so'),
+      'geos':('libgeos-9c5cb28e.so.3.13.1','libgeos_c-42bdf9a9.so.1.19.2'),
+      'brotli':('libbrotlicommon.so.1','libbrotlienc.so.1','libbrotlidec.so.1'),
+      'acados':('libacados.so',),
+  }.items():
+    for filename in files:
+      guest_path=roots[name]/filename
+      host_path=work/guest_path.relative_to(guest_work)
+      assert {str(guest_path),str(host_path.resolve())}&mapped_paths, f'wrong mapped component: {name}/{filename}'
+  audit=work/'native-companion-elf-audit.json'
+  command=[work/'project-target/debug/runtime-elf-audit','--root',binary]
+  for path in elf_roots: command += ['--root',path]
+  for path in [*libraries,'/usr/lib/aarch64-linux-gnu','/lib/aarch64-linux-gnu']: command += ['--library',path]
+  command += ['--output',audit]
+  execute(command,'native-companion-elf-summary.json')
+  assert json.loads(audit.read_text())['compatible']
+  for name,command,before in commands:
+    after=json.loads(execute(command,f'native-companion-{name}-after-api.json').read_text())
+    assert after['tree_sha256']==before['tree_sha256'] and after['copied_bytes']==after['asset']['transferred_bytes']==after['asset']['stored_bytes']==0
+  evidence['native_runtime_companions']=dict(components=reports,numerics_component_count=1,
+      intended_numerics_runtime_destinations=4,foreign_api_probe=actual,
+      probe_source_sha256=digest(fixture),probe_binary_sha256=digest(binary),strict_elf_audit_compatible=True,
+      actual_provider_maps_verified=True,python_library_mapped=False,
+      actual_arm_preparer=True,actual_arm_cpp_compile_and_execution=True,
+      runtime_inputs_trees=len(runtime_inputs['trees']),project_generated_mpc_solvers_reused=False,
+      full_mpc_regression=False,full_module_regression=False,runtime_assets_complete=False,
+      full_runtime_build=False,physical_device_execution=False,
+      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+
+
 def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Assemble the actual 99-target plan using all independently prepared inputs."""
   room(work,4*1024**2)
@@ -1156,7 +1250,7 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
       'raylib':pin(read('native-raylib-sdk-initial.json')),
       'opencv':pin(read('native-opencv-prefix-initial.json')),
       'eigen':pin(read('native-eigen-initial.json')['eigen']),
-  },runtime_inputs=dict(files={},trees={}))
+  },runtime_inputs=read('native-companion-runtime-inputs.json'))
   catalog=read('native-project-catalog.json')
   # Explicit conservative plan-only envelopes. This probe does not reserve or
   # consume these build budgets and is not a measured full-build resource trial.
@@ -1188,7 +1282,7 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
     assert audit['native_inputs_sha256']==digest(pins_path) and audit['budgets_sha256']==digest(budgets_path)
     assert audit['bindings_sha256']==digest(output/'bindings.json')
     assert audit['plan_sha256']==digest(output/'build-plan.json')
-    assert plan['runtime_inputs']==dict(files={},trees={})
+    assert plan['runtime_inputs']==pins['runtime_inputs'] and len(plan['runtime_inputs']['trees'])==4
     for name,requirements in catalog['compiler_inputs'].items():
       recipe=plan['groups'][name]
       for key,suffix in requirements.items():
@@ -1336,6 +1430,8 @@ def main():
              '-b', f'{owned / "native-ffmpeg-source"}:{guest_work}/ffmpeg-source',
              '-b', f'{owned / "native-provider-components"}:{guest_work}/provider-assets',
              '-b', f'{owned / "native-provider-export"}:{guest_work}/provider-export',
+             '-b', f'{owned / "native-companion-components"}:{guest_work}/companion-components',
+             '-b', f'{owned / "native-companion-exports"}:{guest_work}/companion-exports',
              '-b', f'{owned / "native-raylib-assets"}:{guest_work}/raylib-assets',
              '-b', f'{owned / "native-raylib-components"}:{guest_work}/raylib-components',
              '-b', f'{owned / "native-raylib-provider-export"}:{guest_work}/raylib-provider-export',
@@ -1394,6 +1490,7 @@ def main():
     native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_opencv_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_opencv_prefix_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_runtime_companions_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
