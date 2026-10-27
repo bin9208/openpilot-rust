@@ -116,3 +116,13 @@ foundation 및 전체 native build 결과를 별도로 기다린다. 이 수정�
 해결되었다고 기록하지 않는다. 객체 검증 오류를 크기/권한과 SHA로 나눠 기대값·실제값을
 남긴다. 허용 권한·digest·크기 판정은 그대로다. ARM 에뮬레이션의 영향 여부도 아직
 확정되지 않았으며 새 정확 source의 실제 결과로 원인을 확인해야 한다.
+
+[PRoot5.5.0의 fake-id 소스](https://github.com/proot-me/proot/blob/v5.5.0/src/extension/fake_id0/fake_id0.c)를
+읽어 보니 가짜 root 경로 접근은 readonly 파일을 임시 chmod한 뒤 원래 경로에서 복원한다.
+rename/unlink로 그 이름이 사라지면 mode가 남을 수 있으므로, foundation과 인증한 AGNOS
+namespace의 실제 빌드·준비·검증은 일반 사용자로 실행하도록 보완한다. Ubuntu 패키지
+bootstrap만 기존 가짜 root를 유지한다. AGNOS 쪽에는 기존 native 도구가 이미 들어 있다.
+고정 이미지·QEMU/PRoot·compiler pin과 원래 명령은 유지한다. guest의 실제 UID/identity를
+기록하고 root 실행을 거부한다. 실제 readonly444/555 rename·열린 fd·hardlink 한 이름
+삭제 뒤 나머지 객체의 mode/본문 보존을 먼저 확인한다. 기기 코드는 바꾸지 않는다.
+소스 감사에 따른 원인 후보 보완이며 원래 실패의 실제 속성과 새 실행 통과는 아직 미확인이다.

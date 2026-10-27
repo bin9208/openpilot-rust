@@ -2433,7 +2433,10 @@ def main():
     evidence['cargo_source_mode'] = dict(directory=str(cargo_vendor),tree_sha256=cargo_inputs['tree_sha256'],
         cargo_config_sha256=digest(work/'cargo/config.toml'),net_offline=True,
         source='locked authenticated directory source; original commands and Rustup/toolchain pins retained')
-    guest = [proot, '-0', '-r', rootfs, '-q', qemu, '-b', '/proc', '-b', '/dev', '-b', '/etc/resolv.conf',
+    # The authenticated factory namespace already contains its native tools.
+    # Build as the real unprivileged user: PRoot's fake-root DAC emulation
+    # temporarily chmods immutable paths and can retain that mode after rename.
+    guest = [proot, '-r', rootfs, '-q', qemu, '-b', '/proc', '-b', '/dev', '-b', '/etc/resolv.conf',
              '-b', '/etc/hosts', '-b', f'{work}:{guest_work}', '-b', f'{owned / "native-rust-toolchains"}:{guest_work}/pinned-rust',
              '-b', f'{owned / "native-capnp"}:{guest_work}/capnp-sdk',
              '-b', f'{owned / "native-capnp-assets"}:{guest_work}/capnp-assets',
@@ -2475,6 +2478,12 @@ def main():
       return [*guest, *(str(arg).replace(str(work), guest_work) for arg in args)]
     evidence['guest_architecture'] = subprocess.check_output(list(map(str, guest_command(['/bin/uname', '-m']))), text=True).strip()
     assert evidence['guest_architecture'] == 'aarch64', 'AGNOS guest is not executing ARM userspace'
+    guest_uid = int(subprocess.check_output(list(map(str, guest_command(['/usr/bin/id', '-u']))), text=True))
+    assert guest_uid == os.geteuid() != 0, 'native guest build must retain the real non-root identity'
+    evidence['guest_identity'] = dict(mode='unprivileged', uid=guest_uid, host_uid=os.geteuid(), fake_root=False)
+    evidence['commands'].append(run(guest_command(['/usr/bin/python3', '-B', '-m', 'unittest', 'discover',
+        '-s', f'{source_mount}/tools/ci/tests', '-p', 'test_readonly_publication.py', '-v']), log,
+        stdout_path=work/'native-readonly-publication.txt'))
     for argv in [['/bin/uname', '-m'], ['getconf', 'GNU_LIBC_VERSION'], ['cat', '/etc/os-release'],
                     ['gcc', '--version'], ['g++', '--version'], ['clang', '--version'], ['cmake', '--version'],
                     ['pkg-config', '--version'], ['capnp', '--version'], ['python3', '--version']]:

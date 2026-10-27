@@ -4,6 +4,7 @@ on:
     branches: ['codex/feat-599-*', 'codex/feat-600-*']
     paths:
       - 'tools/ci/probe_native_agnos.py'
+      - 'tools/ci/tests/test_readonly_publication.py'
       - 'tools/ci/verify_native_compiler_features.py'
       - 'tools/ci/fixtures/native-agnos-assets-599.json'
       - 'rust/native-rust-toolchain.json'
@@ -827,6 +828,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-bootstrap-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-bootstrap-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-bootstrap-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-readonly-publication.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-seed-export/*
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-system-sdk*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-codec-*.json

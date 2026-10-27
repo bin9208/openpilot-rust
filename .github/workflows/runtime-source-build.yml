@@ -109,6 +109,7 @@ on:
       - 'tools/ci/local-arm'
       - 'tools/ci/tests/test_local_native_workflows.py'
       - 'tools/ci/tests/test_cargo_target_view.py'
+      - 'tools/ci/tests/test_readonly_publication.py'
       - 'tools/ci/fixtures/local-native-workflows-605.json'
       - 'rust/crates/disk-space/**'
       - 'rust/tools/check-disk-space'
@@ -129,6 +130,7 @@ jobs:
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 90 || 15 }}
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
+      LOCAL_CI_GUEST_IDENTITY: unprivileged
       RUSTUP_TOOLCHAIN: '1.94.0'
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
@@ -170,6 +172,8 @@ jobs:
           python -m unittest discover -s tools/ci/tests -p 'test_local_native_workflows.py' -v
       - name: Verify target views preserve strict source cleanliness
         run: python3 -m unittest discover -s tools/ci/tests -p test_cargo_target_view.py -v
+      - name: Verify read-only publication permissions in the actual execution environment
+        run: python3 -m unittest discover -s tools/ci/tests -p test_readonly_publication.py -v
       - name: Check syntax formatting and the locked dependency graph
         run: |
           rustfmt --edition 2021 --check rust/crates/runtime-build/src/lib.rs rust/crates/runtime-build/src/main.rs rust/crates/runtime-build/tests/cargo_reuse.rs

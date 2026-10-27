@@ -40,6 +40,16 @@ def condition(original):
 
 
 class LocalNativeWorkflowTests(unittest.TestCase):
+    def test_source_build_uses_real_user_permissions_after_root_only_package_bootstrap(self):
+        job = load(ROOT/'.github/workflows/runtime-source-build.yml')['jobs']['offline-cargo-reuse']
+        self.assertEqual(job['env']['LOCAL_CI_GUEST_IDENTITY'], 'unprivileged')
+        self.assertTrue(any('test_readonly_publication.py' in step.get('run', '') for step in job['steps']))
+        transport = (ROOT/'tools/ci/local-arm').read_text()
+        self.assertIn('LOCAL_CI_GUEST_IDENTITY=root guest /bin/bash', transport)
+        self.assertIn("unprivileged) ;;", transport)
+        self.assertIn('guest_identity', transport)
+        self.assertIn('guest_uid', transport)
+
     def test_validation_concurrency_preserves_pending_and_running_evidence(self):
         for name in ('fast-checks.yml', 'integration.yml', 'rust.yml', 'tests.yaml',
                      'naver-ci.yml', 'naver-apk-tools.yml', 'wiki-settings-check.yaml',
