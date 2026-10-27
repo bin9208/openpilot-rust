@@ -303,41 +303,6 @@ fn unpack(plan: &Plan, archive: &Path, destination: Option<&Path>) -> Result<Tre
     Ok(tree)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parser_authenticates_its_own_stream_instead_of_trusting_an_earlier_cache_check() {
-        let temporary = tempfile::tempdir().unwrap();
-        let mut plan: Plan =
-            serde_json::from_str(include_str!("../../../native-python-toolchain.json")).unwrap();
-        let tar = tar::Builder::new(flate2::write::GzEncoder::new(
-            Vec::new(),
-            flate2::Compression::fast(),
-        ));
-        let bytes = tar.into_inner().unwrap().finish().unwrap();
-        let archive = temporary.path().join("owned-empty.tar.gz");
-        fs::write(&archive, &bytes).unwrap();
-        plan.asset.bytes = bytes.len() as u64;
-        plan.asset.sha256 = "0".repeat(64);
-        assert!(unpack(&plan, &archive, None)
-            .unwrap_err()
-            .to_string()
-            .contains("compressed stream differs"));
-        plan.asset.sha256 = hash(&bytes);
-        assert!(unpack(&plan, &archive, None)
-            .unwrap_err()
-            .to_string()
-            .contains("incomplete"));
-        plan.asset.bytes += 1;
-        assert!(unpack(&plan, &archive, None)
-            .unwrap_err()
-            .to_string()
-            .contains("compressed stream differs"));
-    }
-}
-
 pub fn prepare(
     plan: &Plan,
     cache: &Path,
@@ -478,4 +443,39 @@ pub fn prepare(
         interpreter_executed: false,
         runtime_activated: false,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parser_authenticates_its_own_stream_instead_of_trusting_an_earlier_cache_check() {
+        let temporary = tempfile::tempdir().unwrap();
+        let mut plan: Plan =
+            serde_json::from_str(include_str!("../../../native-python-toolchain.json")).unwrap();
+        let tar = tar::Builder::new(flate2::write::GzEncoder::new(
+            Vec::new(),
+            flate2::Compression::fast(),
+        ));
+        let bytes = tar.into_inner().unwrap().finish().unwrap();
+        let archive = temporary.path().join("owned-empty.tar.gz");
+        fs::write(&archive, &bytes).unwrap();
+        plan.asset.bytes = bytes.len() as u64;
+        plan.asset.sha256 = "0".repeat(64);
+        assert!(unpack(&plan, &archive, None)
+            .unwrap_err()
+            .to_string()
+            .contains("compressed stream differs"));
+        plan.asset.sha256 = hash(&bytes);
+        assert!(unpack(&plan, &archive, None)
+            .unwrap_err()
+            .to_string()
+            .contains("incomplete"));
+        plan.asset.bytes += 1;
+        assert!(unpack(&plan, &archive, None)
+            .unwrap_err()
+            .to_string()
+            .contains("compressed stream differs"));
+    }
 }
