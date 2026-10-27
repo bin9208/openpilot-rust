@@ -1,4 +1,4 @@
-//! Export only authenticated foreign FFmpeg/raylib providers from the old release.
+//! Export only authenticated foreign FFmpeg/raylib/OpenCV from the old release.
 //! Consumers use an independently pinned small component, never the old runtime.
 use crate::{
     encoder_stage,
@@ -21,6 +21,7 @@ use std::{
 
 const INVENTORY: &str = "be0bb63d0d7f71ea38a3f17f923d2b02c0149cc541f785916aaa93f311dbc3f2";
 const RAYLIB_INVENTORY: &str = "4c19e76d8ce5072e60a2a244634f44b62f254b3f02facc08a3dd39637f486cfd";
+const OPENCV_INVENTORY: &str = "aba0eb2961db6b8d19b245bae8138a34f28e42b21eec008553ee95c1f270c15a";
 const SOURCE: &str = "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31";
 const ORIGIN: &str = "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291";
 const MANIFEST: &str = "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee";
@@ -90,6 +91,7 @@ fn component_names(profile: &str) -> Result<(&'static str, &'static str)> {
     match profile {
         PROFILE => Ok(("ffmpeg611", "ffmpeg611-shared.tar.gz")),
         "raylib600-shared" => Ok(("raylib600", "raylib600-shared.tar.gz")),
+        "opencv413-shared" => Ok(("opencv413", "opencv413-shared.tar.gz")),
         _ => Err("unknown fixed foreign provider profile".into()),
     }
 }
@@ -127,6 +129,7 @@ impl Plan {
         let (member_count, inventory) = match self.profile.as_str() {
             PROFILE => (36, INVENTORY),
             "raylib600-shared" => (38, RAYLIB_INVENTORY),
+            "opencv413-shared" => (30, OPENCV_INVENTORY),
             _ => {
                 return Err(
                     "foreign provider plan differs from the fixed original release inventory"
@@ -799,6 +802,18 @@ mod tests {
         assert_eq!(component_url(PROFILE, &sha).unwrap(), format!("https://github.com/bin9208/openpilot-rust/releases/download/native-provider-ffmpeg611-{sha}/ffmpeg611-shared.tar.gz"));
         assert_eq!(component_url(&raylib.profile, &sha).unwrap(), format!("https://github.com/bin9208/openpilot-rust/releases/download/native-provider-raylib600-{sha}/raylib600-shared.tar.gz"));
         assert!(component_url("unknown", &sha).is_err());
+        let mut opencv = Plan::read(&root.join("native-opencv-provider.json")).unwrap();
+        assert_eq!(opencv.members.len(), 30);
+        assert!(opencv.members.keys().all(|p| p.starts_with("install/lib")
+            || p.starts_with("share/licenses/opencv")
+            || p == Path::new(MANIFEST_PATH)));
+        assert_eq!(
+            opencv.members.values().filter(|m| m.link.is_some()).count(),
+            10
+        );
+        assert_eq!(component_url(&opencv.profile,&sha).unwrap(),format!("https://github.com/bin9208/openpilot-rust/releases/download/native-provider-opencv413-{sha}/opencv413-shared.tar.gz"));
+        opencv.profile = "raylib600-shared".into();
+        assert!(opencv.validate().is_err());
         raylib.profile = PROFILE.into();
         assert!(raylib.validate().is_err());
         raylib.profile = "raylib600-shared".into();

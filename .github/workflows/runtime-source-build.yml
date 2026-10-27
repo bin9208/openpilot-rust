@@ -15,6 +15,10 @@ on:
       - 'rust/crates/dev-tools/tests/native_raylib.rs'
       - 'rust/native-raylib-provider.json'
       - 'rust/native-opencv-headers.json'
+      - 'rust/native-opencv-provider.json'
+      - 'rust/crates/dev-tools/src/native_opencv_prefix.rs'
+      - 'rust/crates/dev-tools/tests/native_opencv_prefix.rs'
+      - 'tools/ci/prepare_native_opencv_prefix.py'
       - 'rust/crates/dev-tools/src/native_opencv_headers.rs'
       - 'rust/crates/dev-tools/src/bin/build_runtime_opencv.rs'
       - 'rust/crates/dev-tools/tests/native_opencv_headers.rs'
@@ -209,6 +213,9 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_opencv_headers::tests -- --nocapture
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib opencv_build::tests -- --nocapture
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test native_opencv_headers
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/native_opencv_prefix.rs rust/crates/dev-tools/tests/native_opencv_prefix.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_opencv_prefix::tests -- --nocapture
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test native_opencv_prefix
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --bin build-runtime-opencv -- -D warnings
       - uses: actions/cache/restore@v4
         id: opencv-header-source-cache

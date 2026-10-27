@@ -23,6 +23,10 @@ on:
       - 'rust/crates/dev-tools/tests/native_raylib.rs'
       - 'rust/native-raylib-provider.json'
       - 'rust/native-opencv-headers.json'
+      - 'rust/native-opencv-provider.json'
+      - 'rust/crates/dev-tools/src/native_opencv_prefix.rs'
+      - 'rust/crates/dev-tools/tests/native_opencv_prefix.rs'
+      - 'tools/ci/prepare_native_opencv_prefix.py'
       - 'rust/crates/dev-tools/src/native_opencv_headers.rs'
       - 'rust/crates/dev-tools/src/bin/build_runtime_opencv.rs'
       - 'rust/crates/dev-tools/tests/native_opencv_headers.rs'
@@ -417,6 +421,13 @@ jobs:
           assert rows[0]['root']==rows[1]['root']
           print('Raylib-only component candidate consumed; origin reused without transfer; public publication and graphics execution pending.')
           PY
+      - name: Export the original OpenCV component and compose both compiler consumers' prefix
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_opencv_prefix.py \
+            --provider-preparer "$native_target/debug/build-runtime-ffmpeg" \
+            --prefix-preparer "$native_target/debug/build-runtime-opencv" \
+            --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
       - name: Compose independently expected headers and libraries into one immutable FFmpeg prefix
         run: |
           python3 - <<'PY'
@@ -474,6 +485,11 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-codec-first.json
             ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-*.json
             ${{ env.CI_JOB_TEMP }}/native-opencv-headers-*.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-provider-*.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-prefix-*.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-provider-export/*
+            ${{ env.CI_JOB_TEMP }}/native-opencv-provider-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-opencv-headers-tamper.*
             ${{ env.CI_JOB_TEMP }}/native-opencv-headers/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-tamper.*
@@ -506,6 +522,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.cc
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-bridge-cases/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-headers/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.txt

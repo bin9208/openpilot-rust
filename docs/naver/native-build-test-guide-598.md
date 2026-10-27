@@ -23,7 +23,9 @@
 
 기존 OpenCV4.13.0의168개 source header와 원래 생성 설정 헤더2개 준비, 반복 압축 해제
 생략/전송0/복사0과 ARM API object 검사는 [OpenCV 헤더 안내](native-opencv-headers-599.md)를
-따른다. shared provider와 전체 webcam/Xiaoge 회귀·실기 검증은 별도로 필요하다.
+따른다. 같은 shared library5개와 headers/alias185행을 구성하고 실제 ARM Rust bridge를
+검사하는 방법은 [OpenCV prefix 안내](native-opencv-prefix-599.md)를 따른다. 전체
+webcam/Xiaoge 원본·모델 회귀와 실기 검증은 별도로 필요하다.
 
 기존 UI raylib의 원래 헤더/static archive와 독립 shared provider 준비, 반복 전송/복사0,
 캐시 영수증 위조 거부 및 실제 ARM loader 컴파일/정적 ABI 검사는

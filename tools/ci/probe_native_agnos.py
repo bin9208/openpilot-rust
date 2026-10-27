@@ -976,6 +976,150 @@ cv::Mat native_header_api(const cv::Mat& image) {
       complete_consumer_regression=False,full_runtime_build=False,physical_device_execution=False)
 
 
+def native_opencv_prefix_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Use the real Rust bridge and original shared libraries in ARM userspace."""
+  room(work,1024**3)
+  def execute(argv,name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  owned=work.parent
+  host=json.loads((owned/'native-opencv-prefix-initial.json').read_text())
+  exported=json.loads((owned/'native-opencv-provider-export.json').read_text())
+  command=[work/'project-target/debug/build-runtime-opencv','--prepare-released-prefix',
+      '--header-plan',f'{source_mount}/rust/native-opencv-headers.json',
+      '--provider-plan',f'{source_mount}/rust/native-opencv-provider.json',
+      '--descriptor',Path(guest_work)/'opencv-provider-export/provider.json',
+      '--descriptor-sha256',exported['descriptor_sha256'],'--header-cache',Path(guest_work)/'opencv-source',
+      '--provider-cache',Path(guest_work)/'opencv-components','--store',work/'native-opencv-prefixes']
+  initial=json.loads(execute(command,'native-opencv-prefix-initial.json').read_text())
+  assert initial['tree_sha256']==host['tree_sha256'] and initial['identity']==host['identity']
+  assert initial['provider']['tree_sha256']==exported['tree_sha256']
+  assert initial['linked_bytes']>0 and not initial['compiler_executed'] and not initial['runtime_activated']
+  for part in ('headers','provider'):
+    assert initial[part]['asset']['transferred_bytes']==initial[part]['asset']['stored_bytes']==0
+  prefix=Path(initial['root'])
+  libraries=prefix/'install/lib'
+  ffmpeg=Path(json.loads((work/'native-encoder-prefix-initial.json').read_text())['root'])
+  capnp=Path(json.loads((work/'native-cereal-preparation-initial.json').read_text())['root'])
+  rust=json.loads((owned/'native-rust-first.json').read_text())
+  rust_root=Path(guest_work)/'pinned-rust'/Path(rust['root']).relative_to(owned/'native-rust-toolchains')
+  linker=execute(['readlink','-f','/usr/bin/cc'],'native-opencv-linker.txt').read_text().strip()
+  environment=dict(OPENPILOT_OPENCV_ROOT=str(prefix),OPENPILOT_WEBCAM_OPENCV_ROOT=str(prefix),
+      FFMPEG_DIR=str(ffmpeg),RUSTC=str(rust_root/'bin/rustc'),
+      LD_LIBRARY_PATH=f'{libraries}:{ffmpeg}/lib:{capnp}/usr/lib/aarch64-linux-gnu',
+      CARGO_ENCODED_RUSTFLAGS='\x1f'.join(['-C',f'linker={linker}','-C',f'link-arg=-Wl,-rpath-link,{libraries}',
+          '-C',f'link-arg=-Wl,-rpath-link,{ffmpeg}/lib']),
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=linker)
+  for key,value in dict(CC='/usr/bin/gcc',CXX='/usr/bin/g++',AR='/usr/bin/ar',RANLIB='/usr/bin/ranlib').items():
+    environment[key]=environment[f'HOST_{key}']=value
+  env=['/usr/bin/env',*(f'{key}={value}' for key,value in environment.items())]
+  build=[*env,rust_root/'bin/cargo','build','--release','--locked','--offline',
+      '--manifest-path',f'{source_mount}/rust/Cargo.toml','--target','aarch64-unknown-linux-gnu',
+      '-p','openpilot-opencv-runtime','--features','native-skip-miri','--example','opencv_trace',
+      '--target-dir',work/'native-opencv-target','--message-format=json']
+  messages=execute(build,'native-opencv-bridge-build.jsonl')
+  artifacts=[row for line in messages.read_text().splitlines() if (row:=json.loads(line)).get('reason')=='compiler-artifact'
+      and row.get('executable') and row['target']['name']=='opencv_trace']
+  assert len(artifacts)==1 and not artifacts[0]['fresh']
+  binary=artifacts[0]['executable']
+  local_binary=work/Path(binary).relative_to(guest_work)
+  initial_binary_sha256=digest(local_binary)
+  source=work/'native-opencv-provider-abi.cc'
+  source.write_text('''#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/dnn.hpp>
+#include <cstdio>
+#include <fstream>
+int main(int argc,char** argv){
+  if(argc!=2) return 10;
+  if(cv::getVersionString()!="4.13.0") return 11;
+  cv::Mat image(1,3,CV_8UC3);
+  image.at<cv::Vec3b>(0,0)=cv::Vec3b(255,0,0);
+  image.at<cv::Vec3b>(0,1)=cv::Vec3b(0,255,0);
+  image.at<cv::Vec3b>(0,2)=cv::Vec3b(0,0,255);
+  cv::Mat gray;
+  cv::cvtColor(image,gray,cv::COLOR_BGR2GRAY);
+  if(gray.at<unsigned char>(0,0)!=29 || gray.at<unsigned char>(0,1)!=150 || gray.at<unsigned char>(0,2)!=76) return 12;
+  std::vector<unsigned char> bmp;
+  if(!cv::imencode(".bmp",image,bmp)) return 13;
+  auto decoded=cv::imdecode(bmp,cv::IMREAD_UNCHANGED);
+  if(decoded.size()!=image.size() || decoded.type()!=image.type() || cv::norm(decoded,image,cv::NORM_INF)!=0) return 14;
+  cv::dnn::Net net;
+  cv::VideoCapture capture;
+  if(!net.empty() || capture.isOpened()) return 15;
+  std::ifstream maps("/proc/self/maps");
+  std::ofstream output(argv[1]);
+  output << maps.rdbuf();
+  if(!output) return 16;
+  std::puts("native OpenCV 4.13.0 ABI matched");
+}
+''')
+  program=work/'native-opencv-provider-abi'
+  execute(['g++','-std=c++17','-I',prefix/'install/include/opencv4',source,'-L',libraries,
+      f'-Wl,-rpath-link,{libraries}',f'-Wl,-rpath-link,{ffmpeg}/lib','-lopencv_videoio','-lopencv_imgcodecs',
+      '-lopencv_dnn','-lopencv_imgproc','-lopencv_core','-o',program],'native-opencv-provider-abi-build.txt')
+  audit=work/'native-opencv-elf-audit.json'
+  roots=[program,binary,*(libraries/f'libopencv_{name}.so.4.13.0' for name in ('core','imgproc','imgcodecs','videoio','dnn'))]
+  execute([work/'project-target/debug/runtime-elf-audit',*(arg for root in roots for arg in ('--root',root)),
+      '--library',libraries,'--library',ffmpeg/'lib','--library','/usr/lib/aarch64-linux-gnu',
+      '--library','/lib/aarch64-linux-gnu','--output',audit],'native-opencv-audit-summary.json')
+  assert json.loads(audit.read_text())['compatible']
+  provider_maps=work/'native-opencv-provider-maps.txt'
+  assert execute([*env,program,provider_maps],'native-opencv-provider-abi-run.txt').read_text()=='native OpenCV 4.13.0 ABI matched\n'
+  def verify_maps(maps,names):
+    assert 'libpython' not in maps and 'cv2.abi3.so' not in maps
+    paths={row[5] for line in maps.splitlines() if len(row:=line.split(maxsplit=5))==6}
+    for name in names:
+      path=libraries/f'libopencv_{name}.so.4.13.0'
+      local=work/path.relative_to(guest_work)
+      # PRoot's /proc content may expose either the guest path or host bind path.
+      assert {str(path),str(local.resolve())}&paths, f'unexpected mapped OpenCV provider: {name}'
+  verify_maps(provider_maps.read_text(),('core','imgproc','imgcodecs','videoio','dnn'))
+  cases=work/'native-opencv-bridge-cases'
+  cases.mkdir()
+  (cases/'bgr.bin').write_bytes(bytes([255,0,0,0,255,0,0,0,255]))
+  (cases/'gray.bin').write_bytes(bytes([17]))
+  def guest_path(path): return str(Path(guest_work)/path.relative_to(work))
+  requests=[('bgr-gray',dict(op='bgr_gray',input=guest_path(cases/'bgr.bin'),width=3,height=1),bytes([29,150,76]),(3,1)),
+      ('resize',dict(op='resize',input=guest_path(cases/'gray.bin'),width=1,height=1,format='gray',output_width=3,output_height=2),bytes([17])*6,(3,2)),
+      ('bounds',dict(op='bounds',points=[[1,2],[3,4],[-1,5]]),None,None)]
+  for name,request,expected,extent in requests:
+    path=cases/f'{name}-input.json'
+    path.write_text(json.dumps(request)+'\n')
+    output=cases/f'{name}-output.json'
+    execute([*env,binary,path,output],f'native-opencv-bridge-{name}-run.txt')
+    actual=json.loads(output.read_text())
+    if expected is None:
+      assert actual==dict(kind='bounds',x=-1,y=2,width=5,height=4)
+    else:
+      assert actual['kind']=='image' and (actual['width'],actual['height'])==extent
+      assert (work/Path(actual['file']).relative_to(guest_work)).read_bytes()==expected
+    maps=output.with_suffix('.maps.txt').read_text()
+    verify_maps(maps,('core','imgproc','dnn'))
+  repeated=execute(build,'native-opencv-bridge-build-reused.jsonl')
+  fresh=[row for line in repeated.read_text().splitlines() if (row:=json.loads(line)).get('reason')=='compiler-artifact'
+      and row.get('executable') and row['target']['name']=='opencv_trace']
+  assert len(fresh)==1 and fresh[0]['fresh'] and fresh[0]['executable']==binary
+  final=json.loads(execute(command,'native-opencv-prefix-reused.json').read_text())
+  assert final['tree_sha256']==initial['tree_sha256'] and final['copied_bytes']==final['linked_bytes']==0
+  for part in ('headers','provider'):
+    assert final[part]['copied_bytes']==final[part]['asset']['transferred_bytes']==final[part]['asset']['stored_bytes']==0
+  assert not final['headers']['source_archive_decompressed']
+  assert digest(local_binary)==initial_binary_sha256
+  evidence['native_opencv_prefix']=dict(tree_sha256=initial['tree_sha256'],provider_tree_sha256=exported['tree_sha256'],
+      descriptor_sha256=exported['descriptor_sha256'],component_sha256=initial['provider']['asset']['sha256'],
+      component_bytes=initial['provider']['asset']['bytes'],strict_elf_audit_compatible=True,
+      original_shared_libraries=5,actual_rust_bridge_compiled_and_executed=True,rust_primitive_cases=3,
+      rust_example_sha256=digest(local_binary),provider_abi_source_sha256=digest(source),provider_abi_binary_sha256=digest(program),
+      repeated_cargo_artifact_fresh=True,repeated_http_body_bytes=0,repeated_copied_bytes=0,repeated_linked_bytes=0,
+      repeated_source_decompression=False,python_shim_loaded=False,origin_archive_downloaded_by_consumer=False,
+      project_binaries_reused=False,offline_component_seed=True,published_release=False,
+      public_component_download_tested=False,real_model_regression=False,complete_webcam_xiaoge_regression=False,
+      full_runtime_build=False,physical_device_execution=False)
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -1057,7 +1201,7 @@ def main():
     (work / 'ffmpeg-source').mkdir()
     (work / 'provider-assets').mkdir()
     (work / 'provider-export').mkdir()
-    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source'):
+    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export'):
       (work/name).mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
@@ -1083,6 +1227,8 @@ def main():
              '-b', f'{owned / "native-raylib-components"}:{guest_work}/raylib-components',
              '-b', f'{owned / "native-raylib-provider-export"}:{guest_work}/raylib-provider-export',
              '-b', f'{owned / "native-opencv-source"}:{guest_work}/opencv-source',
+             '-b', f'{owned / "native-opencv-components"}:{guest_work}/opencv-components',
+             '-b', f'{owned / "native-opencv-provider-export"}:{guest_work}/opencv-provider-export',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
@@ -1134,6 +1280,7 @@ def main():
     native_eigen_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_opencv_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_opencv_prefix_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))

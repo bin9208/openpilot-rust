@@ -22,14 +22,14 @@ use std::{
 
 const PROVENANCE: &str = "provenance/native-ffmpeg-prefix.json";
 
-struct Part {
-    root: PathBuf,
-    receipt: PathBuf,
-    sha256: String,
-    tree: Tree,
+pub(crate) struct Part {
+    pub(crate) root: PathBuf,
+    pub(crate) receipt: PathBuf,
+    pub(crate) sha256: String,
+    pub(crate) tree: Tree,
 }
 impl Part {
-    fn read(prepared: &Prepared) -> Result<Self> {
+    pub(crate) fn read(prepared: &Prepared) -> Result<Self> {
         let part = Self {
             root: prepared.root.clone(),
             receipt: prepared.tree_receipt.clone(),
@@ -41,7 +41,7 @@ impl Part {
     }
     fn verify(&self) -> Result<()> {
         if hash(&json(&self.tree)?) != self.sha256 || digest_file(&self.receipt)? != self.sha256 {
-            return Err("FFmpeg prefix input receipt changed".into());
+            return Err("native prefix input receipt changed".into());
         }
         self.tree.verify(&self.root)
     }
@@ -51,7 +51,7 @@ struct Composition {
     parts: [Part; 2],
     tree: Tree,
     sources: BTreeMap<PathBuf, PathBuf>,
-    provenance: Vec<u8>,
+    metadata: BTreeMap<PathBuf, Vec<u8>>,
     identity: String,
 }
 impl Composition {
@@ -64,6 +64,18 @@ impl Composition {
             &parts[0].sha256,
             &parts[1].sha256,
         ))?;
+        let identity = hash(&provenance);
+        Self::with_metadata(
+            parts,
+            BTreeMap::from([(PROVENANCE.into(), provenance)]),
+            identity,
+        )
+    }
+    fn with_metadata(
+        parts: [Part; 2],
+        metadata: BTreeMap<PathBuf, Vec<u8>>,
+        identity: String,
+    ) -> Result<Self> {
         let mut tree = Tree {
             schema: 1,
             entries: BTreeMap::new(),
@@ -72,14 +84,14 @@ impl Composition {
         for part in &parts {
             part.verify()?;
             for (path, entry) in &part.tree.entries {
-                encoder_stage::safe(path.to_str().ok_or("non-UTF8 FFmpeg prefix path")?)?;
-                if path == Path::new(PROVENANCE) {
-                    return Err("FFmpeg input occupies composed provenance".into());
+                encoder_stage::safe(path.to_str().ok_or("non-UTF8 native prefix path")?)?;
+                if metadata.contains_key(path) {
+                    return Err("native input occupies generated prefix metadata".into());
                 }
                 if let Some(previous) = tree.entries.get(path) {
                     if previous != entry {
                         return Err(
-                            format!("conflicting FFmpeg prefix input: {}", path.display()).into(),
+                            format!("conflicting native prefix input: {}", path.display()).into(),
                         );
                     }
                     continue;
@@ -99,7 +111,7 @@ impl Composition {
                         }
                     }
                     Entry::File { .. } => {
-                        return Err("FFmpeg prefix input must be read-only".into())
+                        return Err("native prefix input must be read-only".into())
                     }
                     Entry::Symlink { target } => Entry::Symlink {
                         target: target.clone(),
@@ -108,21 +120,22 @@ impl Composition {
                 tree.entries.insert(path.clone(), entry);
             }
         }
-        crate::native_codec_inputs::insert(
-            &mut tree.entries,
-            PROVENANCE.into(),
-            Entry::File {
-                sha256: hash(&provenance),
-                bytes: provenance.len() as u64,
-                mode: 0o444,
-            },
-        )?;
-        let identity = hash(&provenance);
+        for (path, bytes) in &metadata {
+            crate::native_codec_inputs::insert(
+                &mut tree.entries,
+                path.clone(),
+                Entry::File {
+                    sha256: hash(bytes),
+                    bytes: bytes.len() as u64,
+                    mode: 0o444,
+                },
+            )?;
+        }
         Ok(Self {
             parts,
             tree,
             sources,
-            provenance,
+            metadata,
             identity,
         })
     }
@@ -142,15 +155,15 @@ impl Composition {
                 }
                 Entry::Symlink { target: link } => symlink(link, &target)?,
                 Entry::File { bytes, mode, .. } => {
-                    if path == Path::new(PROVENANCE) {
-                        write(&target, &self.provenance)?;
+                    if let Some(data) = self.metadata.get(path) {
+                        write(&target, data)?;
                         counts.copied_bytes += *bytes;
                         continue;
                     }
                     let source = self
                         .sources
                         .get(path)
-                        .ok_or("missing FFmpeg prefix source")?;
+                        .ok_or("missing native prefix source")?;
                     match fs::hard_link(source, &target) {
                         Ok(()) => {
                             counts.linked_bytes = counts
@@ -172,7 +185,7 @@ impl Composition {
                                 &mut output,
                             )? != *bytes
                             {
-                                return Err("FFmpeg prefix input size changed during copy".into());
+                                return Err("native prefix input size changed during copy".into());
                             }
                             output.set_permissions(fs::Permissions::from_mode(*mode))?;
                             output.sync_all()?;
@@ -192,6 +205,20 @@ impl Composition {
 
 fn compose(parts: [Part; 2], store: &Path) -> Result<Published> {
     let composition = Composition::new(parts)?;
+    publish(composition, store)
+}
+pub(crate) fn compose_with_metadata(
+    parts: [Part; 2],
+    store: &Path,
+    metadata: BTreeMap<PathBuf, Vec<u8>>,
+    identity: String,
+) -> Result<Published> {
+    publish(
+        Composition::with_metadata(parts, metadata, identity)?,
+        store,
+    )
+}
+fn publish(composition: Composition, store: &Path) -> Result<Published> {
     let identity = composition.identity.clone();
     let (published, _) = publish_tree(
         identity,

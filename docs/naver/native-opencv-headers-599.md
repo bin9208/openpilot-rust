@@ -80,6 +80,7 @@ log/API source·object hash를 확인한다. 자산 HTTP byte는 Actions cache r
 로컬에서는 구문·서식·diff/읽기만 수행했다. 원래 공개 archive의 SHA/길이를 bounded
 stream으로 읽어 확인했으며 파일 저장·압축 해제·새 준비기·compiler 실행은 하지 않았다.
 새 기능/compile 성공은 Actions 결과가 나와야 기록한다. 같은 기존 OpenCV shared
-provider의 독립 component와 전체 native binding/prefix 연결, 실제 consumer 회귀·ABI,
+provider의 [독립 component/prefix와 ARM bridge 검사](native-opencv-prefix-599.md)는 별도
+단계이며 해당 Actions 결과를 확인해야 한다. 실제 consumer의 전체 원본·모델 회귀와
 전체99개 generation 빌드/seal/default startup, 사용자 comma3X 자체 빌드·부팅·녹화·
 업로드·주행 수용은 아직 미완료다.
