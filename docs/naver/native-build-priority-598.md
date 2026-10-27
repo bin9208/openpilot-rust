@@ -1,6 +1,9 @@
 # 성능 개선·콤마 자체 빌드 우선 실행 — #598
 
 사용자 결정: 2026-10-26 KST.
+[SDL·TurboJPEG 입력](native-display-inputs-599.md)을 추가해 원래 공용 library53개 경로의
+준비 목록을 완성한다. 실제 Rust API/독립 C 비교와 ARM ELF 검사는 대기이며 전체 배치·
+모델·99개 native 빌드 완료를 뜻하지 않는다.
 [생성 MPC 입력 결속·재사용](native-mpc-source-bindings-599.md)을 추가했다. 원래4662개
 Git 생성 입력과 output hash를 고정하고 현재 source/실제 Rust solver ABI를 별도 검증한다.
 재생성·전체 Python 준비 환경/99개 native 빌드와 실기 수용은 계속 남으며 새 검사는 대기다.

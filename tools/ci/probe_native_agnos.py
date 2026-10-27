@@ -1229,6 +1229,150 @@ def native_runtime_companions_probe(guest_command,work,source_mount,evidence,log
       emulation='QEMU/PRoot ARM user space on x64 bin-actions')
 
 
+def native_display_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Consume the remaining root libraries and exercise their actual Rust APIs."""
+  room(work,2*1024**3)
+  def execute(argv,name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  source=Path(os.environ['GITHUB_WORKSPACE'])
+  inputs=json.loads((work/'native-companion-runtime-inputs.json').read_text())
+  roots={}
+  reports={}
+  commands={}
+  for name in ('sdl','turbojpeg'):
+    host=json.loads((work.parent/f'native-companion-{name}-initial.json').read_text())
+    exported=json.loads((work.parent/f'native-companion-{name}-export.json').read_text())
+    command=[work/'project-target/debug/build-runtime-ffmpeg','--prepare-released-provider',
+        '--plan',f'{source_mount}/rust/native-{name}-provider.json',
+        '--descriptor',Path(guest_work)/'companion-exports'/name/'provider.json',
+        '--descriptor-sha256',exported['descriptor_sha256'],
+        '--cache',Path(guest_work)/'companion-components'/name,
+        '--store',work/'native-display-prefixes'/name]
+    rows=[]
+    for phase in ('initial','reused'):
+      row=json.loads(execute(command,f'native-display-{name}-{phase}.json').read_text())
+      assert row['tree_sha256']==host['tree_sha256']==exported['tree_sha256']
+      assert row['offline_seed_bytes']==row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+      assert (row['copied_bytes']>0)==(phase=='initial')
+      assert not row['origin_archive_downloaded'] and not row['compiler_executed'] and not row['runtime_activated']
+      rows.append(row)
+    assert rows[0]['root']==rows[1]['root']
+    roots[name]=Path(rows[0]['root'])/'lib'
+    inputs['files'][rows[0]['tree_receipt']]=rows[0]['tree_sha256']
+    inputs['trees'][rows[0]['root']]=rows[0]['tree_receipt']
+    reports[name]=dict(tree_sha256=rows[0]['tree_sha256'],descriptor_sha256=exported['descriptor_sha256'],
+        repeated_http_body_bytes=0,repeated_copied_bytes=0,consumer_origin_archive_downloaded=False)
+    commands[name]=(command,rows[0])
+  assert len(inputs['files'])==len(inputs['trees'])==6
+  (work/'native-display-runtime-inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
+  rust=json.loads((work.parent/'native-rust-first.json').read_text())
+  rust_root=Path(guest_work)/'pinned-rust'/Path(rust['root']).relative_to(work.parent/'native-rust-toolchains')
+  linker=execute(['readlink','-f','/usr/bin/cc'],'native-display-linker.txt').read_text().strip()
+  loader=':'.join(map(str,[*roots.values(),'/usr/lib/aarch64-linux-gnu','/lib/aarch64-linux-gnu']))
+  environment=dict(RUSTC=str(rust_root/'bin/rustc'),LD_LIBRARY_PATH=loader,
+      CARGO_ENCODED_RUSTFLAGS='\x1f'.join(['-C',f'linker={linker}']),
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=linker,
+      SDL_VIDEODRIVER='dummy',SDL_AUDIODRIVER='dummy',SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS='1')
+  for key,value in dict(CC='/usr/bin/gcc',CXX='/usr/bin/g++',AR='/usr/bin/ar',RANLIB='/usr/bin/ranlib').items():
+    environment[key]=environment[f'HOST_{key}']=value
+  env=['/usr/bin/env',*(f'{key}={value}' for key,value in environment.items())]
+  build_base=[*env,rust_root/'bin/cargo','build','--release','--locked','--offline',
+      '--manifest-path',f'{source_mount}/rust/Cargo.toml','--target','aarch64-unknown-linux-gnu',
+      '--target-dir',work/'native-display-target','--message-format=json']
+  builds={}
+  binaries={}
+  binary_hashes={}
+  for name,package,example,feature in (
+      ('sdl','openpilot-sdl2','native_provider','fixture-inspection'),
+      ('turbojpeg','openpilot-jpeg','native_turbojpeg','native-skip-miri')):
+    command=[*build_base,'-p',package,'--features',feature,'--example',example]
+    def artifact(path):
+      rows=[row for line in path.read_text().splitlines() if (row:=json.loads(line)).get('reason')=='compiler-artifact'
+          and row.get('executable') and row['target']['name']==example]
+      assert len(rows)==1
+      return rows[0]
+    first=artifact(execute(command,f'native-display-{name}-build.jsonl'))
+    assert not first['fresh']
+    binary=Path(first['executable'])
+    local_binary=work/binary.relative_to(guest_work)
+    header=local_binary.read_bytes()[:64]
+    assert header[:6]==b'\x7fELF\x02\x01' and int.from_bytes(header[18:20],'little')==183
+    binaries[name]=binary
+    binary_hashes[name]=digest(local_binary)
+    builds[name]=(command,example)
+  execute([*env,binaries['sdl'],roots['sdl']/'libSDL2-2.0.so.0',
+      work/'native-display-sdl-maps.txt'],'native-display-sdl-api.txt')
+  fixture=source/'tools/ci/fixtures/native-display-probe.cc'
+  binary=work/'native-display-reference'
+  execute(['g++','-std=c++17','-O2','-Wall','-Wextra','-Werror',f'{source_mount}/tools/ci/fixtures/native-display-probe.cc',
+      '-ldl','-o',binary],'native-display-reference-build.txt')
+  cases=work/'native-display-cases'
+  cases.mkdir()
+  def verify_maps(path,expected):
+    maps=path.read_text()
+    assert len(maps)<8*1024**2 and 'libpython' not in maps
+    mapped={row[5] for line in maps.splitlines() if len(row:=line.split(maxsplit=5))==6}
+    for guest_path in expected:
+      host_path=work/guest_path.relative_to(guest_work)
+      assert {str(guest_path),str(host_path.resolve())}&mapped, f'wrong display provider mapping: {guest_path}'
+  verify_maps(work/'native-display-sdl-maps.txt',[roots['sdl']/'libSDL2-2-6e5c51a6.0.so.0.2800.4'])
+  matched=[]
+  for width,height,quality in ((1,1,1),(2,1,100),(63,35,82),(128,64,75)):
+    stem=cases/f'{width}x{height}-q{quality}'
+    pixels=stem.with_suffix('.rgba')
+    pixels.write_bytes(bytes(index%251 for index in range(width*height*4)))
+    reference=stem.with_suffix('.reference.jpg')
+    output=stem.with_suffix('.rust.jpg')
+    maps=stem.with_suffix('.reference.maps.txt')
+    actual=json.loads(execute([*env,binary,roots['sdl']/'libSDL2-2.0.so.0',roots['sdl']/'libSDL2_ttf-2.0.so.0',
+        roots['turbojpeg']/'libturbojpeg.so.0',pixels,reference,width,height,quality,maps],
+        f'native-display-reference-{width}x{height}-q{quality}.json').read_text())
+    assert actual==dict(sdl_version='2.28.4',ttf_version='2.20.1',ttf_init_cleanup=True,turbojpeg_encoded=True)
+    execute([*env,binaries['turbojpeg'],roots['turbojpeg']/'libturbojpeg.so.0',pixels,output,width,height,quality],
+        f'native-display-turbojpeg-{width}x{height}-q{quality}.txt')
+    assert reference.read_bytes()==output.read_bytes()
+    verify_maps(output.with_suffix('.maps.txt'),[roots['turbojpeg']/'libturbojpeg.so.0.4.0'])
+    expected=[roots['turbojpeg']/'libturbojpeg.so.0.4.0']
+    sdl_plan=json.loads((source/'rust/native-sdl-provider.json').read_text())
+    expected.extend(roots['sdl']/Path(path).name for path,row in sdl_plan['members'].items()
+        if path.startswith('lib/') and row['link'] is None)
+    verify_maps(maps,expected)
+    matched.append(dict(width=width,height=height,quality=quality,jpeg_sha256=digest(output)))
+  audit=work/'native-display-elf-audit.json'
+  audit_command=[work/'project-target/debug/runtime-elf-audit','--root',binary]
+  for native in binaries.values(): audit_command+=['--root',native]
+  for name in roots:
+    plan=json.loads((source/f'rust/native-{name}-provider.json').read_text())
+    for path,row in plan['members'].items():
+      if path.startswith('lib/') and row['link'] is None:
+        audit_command+=['--root',roots[name]/Path(path).name]
+  for path in (*roots.values(),'/usr/lib/aarch64-linux-gnu','/lib/aarch64-linux-gnu'):
+    audit_command+=['--library',path]
+  execute([*audit_command,'--output',audit],'native-display-elf-summary.json')
+  assert json.loads(audit.read_text())['compatible']
+  for name,(command,example) in builds.items():
+    data=execute(command,f'native-display-{name}-build-reused.jsonl')
+    rows=[row for line in data.read_text().splitlines() if (row:=json.loads(line)).get('reason')=='compiler-artifact'
+        and row.get('executable') and row['target']['name']==example]
+    assert len(rows)==1 and rows[0]['fresh'] and rows[0]['executable']==str(binaries[name])
+    assert digest(work/binaries[name].relative_to(guest_work))==binary_hashes[name]
+  for name,(command,before) in commands.items():
+    after=json.loads(execute(command,f'native-display-{name}-after-api.json').read_text())
+    assert after['tree_sha256']==before['tree_sha256'] and after['copied_bytes']==after['asset']['transferred_bytes']==after['asset']['stored_bytes']==0
+  evidence['native_display_inputs']=dict(components=reports,source_commit=evidence['source_commit'],
+      remaining_original_root_library_paths=11,foreign_original_root_library_paths_covered=53,
+      actual_rust_virtual_device_cycles=20,actual_rust_turbojpeg_library_cycles=80,
+      actual_rust_turbojpeg_compressor_cycles=160,exact_jpeg_cases=matched,
+      rust_example_sha256=binary_hashes,reference_source_sha256=digest(fixture),reference_binary_sha256=digest(binary),
+      sdl_version='2.28.4',ttf_version='2.20.1',ttf_init_cleanup=True,
+      strict_elf_audit_compatible=True,actual_provider_maps_verified=True,python_library_mapped=False,
+      repeated_cargo_artifacts_fresh=True,repeated_http_body_bytes=0,repeated_copied_bytes=0,
+      consumer_origin_archive_downloaded=False,font_glyph_rendering_tested=False,
+      hardware_graphics_tested=False,full_module_regression=False,full_runtime_build=False,
+      physical_device_execution=False,emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+
+
 def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Verify source-bound MPC inputs and the current Rust/native solver ABI."""
   room(work,2*1024**3)
@@ -1325,13 +1469,13 @@ def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_w
   assert after['copied_bytes']==after['asset']['transferred_bytes']==after['asset']['stored_bytes']==0
   # Runtime planning uses the complete bound provider; the earlier partial core
   # component/probe remains as independent evidence and is not mutated/deleted.
-  inputs=read('native-companion-runtime-inputs.json')
+  inputs=read('native-display-runtime-inputs.json')
   partial=read('native-companion-acados-initial.json')
   assert inputs['files'].pop(partial['tree_receipt'])==partial['tree_sha256']
   assert inputs['trees'].pop(partial['root'])==partial['tree_receipt']
   inputs['files'][rows[0]['tree_receipt']]=rows[0]['tree_sha256']
   inputs['trees'][rows[0]['root']]=rows[0]['tree_receipt']
-  assert len(inputs['files'])==len(inputs['trees'])==4
+  assert len(inputs['files'])==len(inputs['trees'])==6
   (work/'native-runtime-inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
   evidence['native_mpc_inputs']=dict(source_binding=rows[0]['source_binding'],
       tree_sha256=rows[0]['tree_sha256'],descriptor_sha256=exported['descriptor_sha256'],
@@ -1400,7 +1544,7 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
     assert audit['native_inputs_sha256']==digest(pins_path) and audit['budgets_sha256']==digest(budgets_path)
     assert audit['bindings_sha256']==digest(output/'bindings.json')
     assert audit['plan_sha256']==digest(output/'build-plan.json')
-    assert plan['runtime_inputs']==pins['runtime_inputs'] and len(plan['runtime_inputs']['trees'])==4
+    assert plan['runtime_inputs']==pins['runtime_inputs'] and len(plan['runtime_inputs']['trees'])==6
     for name,requirements in catalog['compiler_inputs'].items():
       recipe=plan['groups'][name]
       for key,suffix in requirements.items():
@@ -1611,6 +1755,7 @@ def main():
     native_opencv_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_opencv_prefix_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_runtime_companions_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_display_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'

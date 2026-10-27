@@ -4,6 +4,10 @@
 모델 준비 Python과 기존 C/C++ provider를 유지한다. 이 기록은 전체 runtime의 완성이나
 기기 설치 수용을 뜻하지 않는다.
 
+원래 공용 library의 남은 SDL/TTF/글꼴 처리·TurboJPEG 경로11개는
+[display 입력 안내](native-display-inputs-599.md)에서 별도 component로 준비하고 실제
+Rust API를 검증한다. 전체 runtime 배치·실행은 별도이며 새 검사는 대기다.
+
 생성 C MPC 입력이 같은 경우 기존 provider를 재사용하는 소스 계약, generation의 빌드/
 봉인/시작 검증과 실제 ARM Rust solver ABI 검사 방법은
 [생성 MPC 결속 안내](native-mpc-source-bindings-599.md)에 있다. 새 생성/Python 모델 준비

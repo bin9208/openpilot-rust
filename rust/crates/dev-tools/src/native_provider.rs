@@ -28,6 +28,9 @@ const NUMERICS_INVENTORY: &str = "37785e6f41354c9ebcb90e5e243aec4407301479cf7773
 const GEOS_INVENTORY: &str = "eccb36c611ece074d36496137bb9102adf2008e695ae0a7b155aec649e936d62";
 const BROTLI_INVENTORY: &str = "d0cb97c6bd110c5463dc0db8cf618b60c268964eceabf9efbb0679d96bcb527a";
 const ACADOS_INVENTORY: &str = "d8fd2904df5f9f3fdac870da7d644b446474cdc75979732e4a1db444b459eb22";
+const SDL_INVENTORY: &str = "bae47a4de03ac143d6c3cdcd0e719012b14b76989588b01c9d249b32b69e540f";
+const TURBOJPEG_INVENTORY: &str =
+    "4480e350f6f09164b20145db7e3206481394c53129f3772bc27c817e9a3a3f02";
 const MPC_INVENTORY: &str = "3b95696863cb8b97ad0fb733c7f430ab0d2216abd710ad02d48874b90117501d";
 const MPC_CONTRACT_SHA: &str = "6dd5b809d92e716f6654cfb218d7d6cbc0547b473e009c9e0578c04fc9930e41";
 const MPC_CONTRACT: &[u8] = include_bytes!("../../../native-mpc-source-contract.json");
@@ -122,6 +125,8 @@ fn component_names(profile: &str) -> Result<(&'static str, &'static str)> {
         "geos313-shared" => Ok(("geos313", "geos313-shared.tar.gz")),
         "brotli110-shared" => Ok(("brotli110", "brotli110-shared.tar.gz")),
         "acados022-libraries" => Ok(("acados022", "acados022-libraries.tar.gz")),
+        "sdl228-runtime" => Ok(("sdl228", "sdl228-runtime.tar.gz")),
+        "turbojpeg3141-runtime" => Ok(("turbojpeg3141", "turbojpeg3141-runtime.tar.gz")),
         "acados022-runtime" => Ok(("acados022-runtime", "acados022-runtime.tar.gz")),
         _ => Err("unknown fixed foreign provider profile".into()),
     }
@@ -214,6 +219,8 @@ impl Plan {
             "geos313-shared" => (8, GEOS_INVENTORY),
             "brotli110-shared" => (7, BROTLI_INVENTORY),
             "acados022-libraries" => (13, ACADOS_INVENTORY),
+            "sdl228-runtime" => (21, SDL_INVENTORY),
+            "turbojpeg3141-runtime" => (7, TURBOJPEG_INVENTORY),
             "acados022-runtime" => (15, MPC_INVENTORY),
             _ => {
                 return Err(
@@ -918,6 +925,51 @@ pub fn cli(args: &[String]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn display_providers_cover_the_remaining_root_libraries_with_original_aliases_and_notices() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut paths = BTreeSet::new();
+        for (name, profile, count, aliases, notice_count) in [
+            ("sdl", "sdl228-runtime", 21, 2, 11),
+            ("turbojpeg", "turbojpeg3141-runtime", 7, 1, 4),
+        ] {
+            let path = root.join(format!("native-{name}-provider.json"));
+            let plan = Plan::read(&path).unwrap();
+            assert_eq!(plan.profile, profile);
+            assert_eq!(plan.members.len(), count);
+            assert_eq!(
+                plan.members
+                    .values()
+                    .filter(|row| row.link.is_some())
+                    .count(),
+                aliases
+            );
+            assert_eq!(
+                plan.members
+                    .keys()
+                    .filter(|p| p.starts_with("share/licenses"))
+                    .count(),
+                notice_count
+            );
+            assert_eq!(plan.role(), "openpilot-foreign-provider");
+            assert!(plan.source_contract_sha256.is_none());
+            assert!(plan.source_binding().unwrap().is_none());
+            for row in plan.members.values() {
+                if row.source.starts_with("rust/bin/lib") {
+                    assert!(paths.insert(row.source.clone()));
+                } else {
+                    assert!(
+                        row.source.starts_with("rust/bin/licenses")
+                            || row.source == Path::new("rust/runtime-manifest.json")
+                    );
+                }
+            }
+            let mut wrong: Plan = serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
+            wrong.profile = "ffmpeg611-shared".into();
+            assert!(wrong.validate().is_err());
+        }
+        assert_eq!(paths.len(), 11);
+    }
     #[test]
     fn generated_mpc_cannot_use_the_unbound_foreign_provider_path() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");

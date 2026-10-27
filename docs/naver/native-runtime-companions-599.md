@@ -6,6 +6,9 @@
 기존 [독립 provider](native-provider-components-599.md)의 닫힌 inventory를 확장한다.
 모델 준비 Python과 기존 C/C++ 라이브러리를 유지하며 runtime 로직/수학을 바꾸지 않는다.
 
+기존4개에 추가한 SDL·TurboJPEG2개 component와 원래 공용 library53개 경로 합집합/
+실제 Rust API 검사는 [display 입력 안내](native-display-inputs-599.md)를 따른다.
+
 생성 MPC는 이 foreign profile에 넣지 않는다. 별도 source-bound profile의 생성 입력/
 output 계약과 실제 Rust solver ABI 검사 후속은
 [MPC 소스 결속](native-mpc-source-bindings-599.md)을 따른다. 새 후속의 Actions 결과는 대기다.
@@ -68,8 +71,9 @@ archive 경로/종류/size/mode/hash/alias, 실제 전체 Tree, cache lock·읽�
 이전 원본의 HTTP body/stored bytes0, consumer의 원본 archive 미다운로드와 반복 전송/
 복사0을 확인한다. 공개 release/독립 Git pin·공개 HTTPS 시험은 이 단계가 아니다.
 
-genuine AGNOS workflow는 host에서 만든 네 작은 component cache/export만 guest에
-연결한다. guest에1.1GB 원본 runtime은 연결하지 않는다. source-built ARM 준비기가 각
+genuine AGNOS workflow는 host의 작은 component cache/export를 guest에 연결한다.
+이 절의4개에 display2개 및 별도 source-bound MPC가 추가되며 guest에1.1GB 원본 runtime은
+연결하지 않는다. source-built ARM 준비기가 각
 component의 전체 Tree를 host 예상값과 비교하고 초기/반복/실제 API 호출 후 다시 검증한다.
 
 - foundation은 production profile의 고정 inventory/namespace·원본 source 유지·변조 거부와
@@ -82,7 +86,8 @@ component의 전체 Tree를 host 예상값과 비교하고 초기/반복/실제 
   version/strong-symbol closure를 확인한다. 실제 daemon·전체 MPC·module 회귀는 별도다.
   API 호출 때 `/proc/self/maps`도 저장해 실제 component 경로의 library가 매핑되고
   libpython이 섞이지 않았는지 확인한다. guest 경로와 PRoot host bind 경로를 구분한다.
-- 네 runtime Tree를 `native-companion-runtime-inputs.json`에 SHA-pin하고 기존13그룹
+- 이 절의 네 runtime Tree를 `native-companion-runtime-inputs.json`에 SHA-pin한다. 후속에서
+  display2개를 더하고 partial acados를 source-bound MPC로 대체한6개 Tree를 기존13그룹
   계획의 `runtime_inputs`에 연결한다. 이 입력은 compiler recipe/cache에 섞지 않는다.
   동일 입력의 plan/bindings/audit byte 반복 일치 검사도 유지한다.
 

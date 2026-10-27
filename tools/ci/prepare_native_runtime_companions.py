@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Actions-only export/reuse of four independently pinned foreign components."""
+"""Actions-only export/reuse of independently pinned foreign components."""
 import argparse
 import json
 import os
@@ -31,7 +31,7 @@ def main():
       subprocess.run(list(map(str, command)), stdout=output, check=True)
     return json.loads(path.read_text())
 
-  for name in ('numerics', 'geos', 'brotli', 'acados'):
+  for name in ('numerics', 'geos', 'brotli', 'acados', 'sdl', 'turbojpeg'):
     plan_path = source/f'rust/native-{name}-provider.json'
     plan = json.loads(plan_path.read_text())
     payload = sum(row['bytes'] for row in plan['members'].values())
@@ -67,11 +67,20 @@ def main():
         payload_bytes=payload, component_bytes=exported['component_bytes'],
         origin_repeated_http_body_bytes=0, consumer_origin_archive_downloaded=False,
         repeated_http_body_bytes=0, repeated_copied_bytes=0)
-  assert len(runtime_inputs['trees']) == 4 and len(runtime_inputs['files']) == 4
+  assert len(runtime_inputs['trees']) == 6 and len(runtime_inputs['files']) == 6
+  original = json.loads((Path(exported['origin']['root'])/'provenance/original-runtime-manifest.json').read_text())
+  expected_libraries = {row['path'] for row in original['files'] if row['path'].startswith('rust/bin/lib/')}
+  selected_libraries = set()
+  for name in ('ffmpeg', 'raylib', 'opencv', 'numerics', 'geos', 'brotli', 'acados', 'sdl', 'turbojpeg'):
+    profile = json.loads((source/f'rust/native-{name}-provider.json').read_text())
+    selected_libraries.update(row['source'] for row in profile['members'].values()
+                              if row['source'].startswith('rust/bin/lib/'))
+  assert selected_libraries == expected_libraries and len(expected_libraries) == 53
   (work/'native-companion-runtime-inputs.json').write_text(json.dumps(runtime_inputs, indent=2)+'\n')
   assert subprocess.check_output(['git', '-C', source, 'rev-parse', 'HEAD'], text=True).strip() == commit
   assert not subprocess.check_output(['git', '-C', source, 'status', '--porcelain', '--untracked-files=all'], text=True).strip()
   result = dict(schema=1, source_commit=commit, components=summaries,
+      original_root_library_paths_covered=53,
       numerics_component_count=1, intended_numerics_runtime_destinations=4,
       compiler_executed=False, provider_executed=False, project_binaries_reused=False,
       project_generated_mpc_solvers_reused=False, runtime_assets_complete=False,

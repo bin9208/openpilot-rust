@@ -36,6 +36,13 @@ on:
       - 'rust/native-geos-provider.json'
       - 'rust/native-brotli-provider.json'
       - 'rust/native-acados-provider.json'
+      - 'rust/native-sdl-provider.json'
+      - 'rust/native-turbojpeg-provider.json'
+      - 'tools/ci/fixtures/native-display-probe.cc'
+      - 'rust/crates/sdl2/examples/native_provider.rs'
+      - 'rust/crates/sdl2/Cargo.toml'
+      - 'rust/crates/jpeg/examples/native_turbojpeg.rs'
+      - 'rust/crates/jpeg/Cargo.toml'
       - 'rust/native-mpc-provider.json'
       - 'rust/native-mpc-source-contract.json'
       - 'rust/crates/runtime-build/src/mpc_inputs.rs'
@@ -567,6 +574,11 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-mpc-abi-cases/
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-mpc-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-runtime-inputs.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-cases/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.jsonl

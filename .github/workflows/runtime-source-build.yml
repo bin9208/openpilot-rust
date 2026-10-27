@@ -20,6 +20,13 @@ on:
       - 'rust/native-geos-provider.json'
       - 'rust/native-brotli-provider.json'
       - 'rust/native-acados-provider.json'
+      - 'rust/native-sdl-provider.json'
+      - 'rust/native-turbojpeg-provider.json'
+      - 'tools/ci/fixtures/native-display-probe.cc'
+      - 'rust/crates/sdl2/examples/native_provider.rs'
+      - 'rust/crates/sdl2/Cargo.toml'
+      - 'rust/crates/jpeg/examples/native_turbojpeg.rs'
+      - 'rust/crates/jpeg/Cargo.toml'
       - 'rust/native-mpc-provider.json'
       - 'rust/native-mpc-source-contract.json'
       - 'tools/ci/prepare_native_mpc_inputs.py'
@@ -254,6 +261,11 @@ jobs:
         run: |
           rustfmt --edition 2021 --check rust/crates/dev-tools/src/native_provider.rs rust/crates/dev-tools/src/ffmpeg_build.rs rust/crates/dev-tools/tests/ffmpeg_build.rs
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_provider::tests -- --nocapture
+      - name: Check the actual display provider examples
+        run: |
+          rustfmt --edition 2021 --check rust/crates/sdl2/examples/native_provider.rs rust/crates/jpeg/examples/native_turbojpeg.rs
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-sdl2 --features fixture-inspection --example native_provider -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-jpeg --features native-skip-miri --example native_turbojpeg -- -D warnings
       - name: Verify composed FFmpeg input identity, collisions and reuse
         run: |
           rustfmt --edition 2021 --check rust/crates/dev-tools/src/native_ffmpeg_prefix.rs

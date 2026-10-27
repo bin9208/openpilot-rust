@@ -21,6 +21,11 @@
 
 ## 개발 검증 실행 방법
 
+공용 library53개 경로 중 남은 SDL/TTF/글꼴 dependency/TurboJPEG11개, 원래 alias/notice,
+실제 Rust virtual device·정확 JPEG 비교와 ARM ELF 검사는
+[SDL·TurboJPEG 입력 안내](native-display-inputs-599.md)를 따른다. 전체 GUI/하드웨어/모델
+회귀와 정상 기기 동작은 별도로 확인하며 새 Actions 결과는 아직 대기다.
+
 생성 MPC 입력4662개와 원래 output/현재 source를 함께 묶어 기존 C/C++ solver를
 재사용하는 조건, 변경·누락 거부 및 실제 ARM Rust/direct C ABI12 solve 비교는
 [MPC 소스 결속 안내](native-mpc-source-bindings-599.md)를 따른다. 새 생성·전체 Python/
