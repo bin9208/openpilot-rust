@@ -116,3 +116,18 @@ X64 job `121793394426`은 assets5개와 실제 Cargo 재사용9개를 통과한 
 실제 helper의 준비·정리 스크립트도 소유 fixture에서 실행해 출력만 제거하고 소스 변경을
 보존하는지 검사한다. 기능 검사는 Actions에서 실행하며 새 SHA의 결과가 나올 때까지
 통과로 기록하지 않는다. 기존 실패 SHA와 실행 기록은 보존한다.
+
+같은 실행의 ARM job `121793394834`는 이후 library6개 통과·객체 import1개 실패로
+종료했다. 오류는 크기·권한·SHA를 구분하지 않았으므로 target ignore 문제와 같은
+원인으로 처리하지 않는다. native #599의 `3982002f129a31136f4e5f55f3057a07e612f8df`가
+기대/실제 속성 진단을 추가했다.
+
+[고정 PRoot5.5.0의 fake-id 구현](https://github.com/proot-me/proot/blob/v5.5.0/src/extension/fake_id0/fake_id0.c)은
+가짜 root의 경로 변환에서 읽기 전용 파일에 임시 쓰기 권한을 주고 원래 경로에서 복원한다.
+readonly 파일의 rename/unlink 뒤 원래 경로가 사라지는 경우 객체 권한이 달라질 수 있다는
+소스 감사 결과에 따라, foundation 빌드/검증은 같은 guest에서 일반 사용자로 실행한다.
+패키지 설치 bootstrap만 기존 가짜 root를 유지한다. 다른 job의 기본 identity는 보존한다.
+원래 ARM 명령·입력 pin·QEMU/PRoot·runner는 유지하고 guest UID/identity를 proof에 더한다.
+실제 readonly444/555 rename, 열린 fd의 mode, hardlink의 한 이름 삭제 후 나머지 객체의
+mode·본문 보존을 양쪽 실행 환경에서 필수 검사한다. 객체 검증 허용값은 바꾸지 않는다.
+이 원인 후보와 transport 수정의 기능적 확인은 새 정확 source의 Actions 결과 대기다.

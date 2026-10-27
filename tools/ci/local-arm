@@ -19,7 +19,13 @@ host_machine=$(uname -m)
 # Guest filesystem paths retain the real Actions workspace and command-file paths.
 # CARGO_TARGET_DIR is private to ARM in the guest; uploads use its real host path.
 guest() {
-  "$proot" -0 -r "$rootfs" -q "$qemu" \
+  local -a identity=()
+  case ${LOCAL_CI_GUEST_IDENTITY:-root} in
+    root) identity=(-0) ;;
+    unprivileged) ;;
+    *) fail 'Unknown ARM guest identity policy' ;;
+  esac
+  "$proot" "${identity[@]}" -r "$rootfs" -q "$qemu" \
     -b /dev -b /proc -b /sys -b /etc/resolv.conf -b /etc/hosts \
     -b "$source_dir" -b "$CI_RUNNER_TEMP" -b "$CI_JOB_TEMP" \
     -b "$arm_dir/target:$source_dir/rust/target" -w "$PWD" \
@@ -71,7 +77,7 @@ case ${1:-} in
       "$arm_dir/rustup-init" 15f6e4ce9f583b929c996c91562bad6d4454f3281de858b02cdfdef615fac433
     chmod u+x "$arm_dir/rustup-init"
     mkdir -p "$rootfs$source_dir/rust/target" "$rootfs$CI_RUNNER_TEMP" "$rootfs$CI_JOB_TEMP"
-    guest /bin/bash -euo pipefail -c '
+    LOCAL_CI_GUEST_IDENTITY=root guest /bin/bash -euo pipefail -c '
       export DEBIAN_FRONTEND=noninteractive
       test -r /var/lib/dpkg && test -w /var/lib/dpkg
       apt-get update
@@ -89,9 +95,20 @@ case ${1:-} in
     rm "$arm_dir/python.tar.gz" "$arm_dir/rustup-init"
     guest_machine=$(guest /bin/uname -m)
     [[ $guest_machine == aarch64 ]] || fail 'ARM guest did not execute'
+    guest_uid=$(guest /usr/bin/id -u)
+    if [[ ${LOCAL_CI_GUEST_IDENTITY:-root} == unprivileged && $guest_uid == 0 ]]; then
+      fail 'Unprivileged ARM validation must not run as real or emulated root'
+    fi
     [[ $GITHUB_SHA =~ ^[0-9a-f]{40}$ ]] || fail 'Exact source SHA required'
     printf '{"schema":1,"source_commit":"%s","runner_name":"%s","runner_environment":"%s","host_architecture":"%s","guest_architecture":"%s","execution_mode":"qemu-user","proot_sha256":"db185300a9daabbce86aca7632d8c7fdc4249f6f153171954013b70c5f491ec0","rootfs_sha256":"a91d5a93010193712d346d761372b7c9db6df093893161c64ca107f05914f2","python_sha256":"6163a77a3339ad4d3729f44065ef0ba51865b90cf92e5b247443cdb4bed5cbab","physical_arm_cpu":false}\n' \
       "$GITHUB_SHA" "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$host_machine" "$guest_machine" > "$arm_dir/execution.json"
+    python3 - "$arm_dir/execution.json" "${LOCAL_CI_GUEST_IDENTITY:-root}" "$guest_uid" <<'PY'
+import json, pathlib, sys
+path = pathlib.Path(sys.argv[1])
+data = json.loads(path.read_text())
+data.update(guest_identity=sys.argv[2], guest_uid=int(sys.argv[3]), package_bootstrap_identity='emulated-root')
+path.write_text(json.dumps(data, sort_keys=True)+'\n')
+PY
     "$qemu" --version > "$arm_dir/qemu-version.txt"
     cat "$arm_dir/execution.json"
     ;;
