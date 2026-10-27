@@ -286,3 +286,42 @@ fn content_cache_cli_rejects_changed_source_lock_before_preparing_inputs() {
     assert!(String::from_utf8_lossy(&result.stderr).contains("locked source"));
     assert!(!cache.exists() && !store.exists());
 }
+
+#[test]
+fn native_wheel_selection_rejects_unknown_duplicate_or_mixed_modes_before_mutation() {
+    let temp = tempfile::tempdir().unwrap();
+    let cache = temp.path().join("assets");
+    let store = temp.path().join("prefixes");
+    for (names, expected) in [
+        ("unknown", "unknown pinned native wheel"),
+        ("eigen,eigen", "duplicate selected native wheel"),
+        ("", "unknown pinned native wheel"),
+        ("eigen,libyuv,ffmpeg,extra", "select one or more distinct"),
+    ] {
+        let result = Command::new(env!("CARGO_BIN_EXE_stage-encoder-target"))
+            .args(["--prepare-wheels", "--packages", names])
+            .arg("--root")
+            .arg(temp.path().join("no-lock-read-expected"))
+            .arg("--cache")
+            .arg(&cache)
+            .arg("--store")
+            .arg(&store)
+            .env("PATH", "")
+            .output()
+            .unwrap();
+        assert!(!result.status.success(), "accepted {names:?}");
+        assert!(String::from_utf8_lossy(&result.stderr).contains(expected));
+        assert!(result.stdout.is_empty());
+        assert!(!cache.exists() && !store.exists());
+    }
+    let output = temp.path().join("legacy-output");
+    let result = Command::new(env!("CARGO_BIN_EXE_stage-encoder-target"))
+        .args(["--packages", "eigen", "--output"])
+        .arg(&output)
+        .env("PATH", "")
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("require --prepare-wheels"));
+    assert!(!output.exists());
+}

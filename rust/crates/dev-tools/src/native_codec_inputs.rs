@@ -1,4 +1,4 @@
-//! Content-addressed reuse of the existing pinned ARM codec wheels. No pip,
+//! Content-addressed reuse of existing pinned ARM native build wheels. No pip,
 //! compiler, installer, runtime activation or project binary is involved.
 use crate::{
     encoder_stage::{self, Package},
@@ -524,29 +524,85 @@ fn read_lock(root: &Path) -> Result<toml::Value> {
     Ok(std::io::read_to_string(file.take(8 * 1024 * 1024 + 1))?.parse()?)
 }
 
-pub fn prepare(
+fn prepare_packages(
     root: &Path,
     cache: &Path,
     store: &Path,
+    packages: &[Package],
     download: &impl assets::Download,
 ) -> Result<BTreeMap<String, Prepared>> {
     let lock = read_lock(root)?;
-    let packages = encoder_stage::packages();
-    for package in &packages {
+    for package in packages {
         encoder_stage::verify_lock(&lock, package)?;
     }
     let mut result = BTreeMap::new();
-    for package in &packages {
+    for package in packages {
         result.insert(
             package.name.clone(),
             prepare_one(package, cache, store, download)?,
         );
     }
     let lock = read_lock(root)?;
-    for package in &packages {
+    for package in packages {
         encoder_stage::verify_lock(&lock, package)?;
     }
     Ok(result)
+}
+
+pub fn prepare(
+    root: &Path,
+    cache: &Path,
+    store: &Path,
+    download: &impl assets::Download,
+) -> Result<BTreeMap<String, Prepared>> {
+    // Keep the original default pair and their identities unchanged.
+    prepare_packages(root, cache, store, &encoder_stage::packages(), download)
+}
+
+fn native_packages() -> Vec<Package> {
+    let mut packages = encoder_stage::packages().to_vec();
+    // Original uv.lock wrapper and immutable public release asset 470585660.
+    // Keep its linux_aarch64 tag; a locally rebuilt py3-none-any shim is not
+    // the independently pinned input, even though it contains copied headers.
+    packages.push(Package {
+        name: "eigen".into(),
+        version: "3.4.0".into(),
+        commit: "40e5d76de1b33a86c5181b63db6782d8f06da1da".into(),
+        sha256: "b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a".into(),
+        size: 2250657,
+    });
+    packages
+}
+
+fn select_packages(available: &[Package], names: &[String]) -> Result<Vec<Package>> {
+    if names.is_empty() || names.len() > available.len() {
+        return Err("select one or more distinct pinned native wheel names".into());
+    }
+    let mut seen = BTreeSet::new();
+    names
+        .iter()
+        .map(|name| {
+            if !seen.insert(name) {
+                return Err("duplicate selected native wheel".into());
+            }
+            available
+                .iter()
+                .find(|p| p.name == *name)
+                .cloned()
+                .ok_or_else(|| format!("unknown pinned native wheel: {name}").into())
+        })
+        .collect()
+}
+
+pub fn prepare_selected(
+    root: &Path,
+    cache: &Path,
+    store: &Path,
+    names: &[String],
+    download: &impl assets::Download,
+) -> Result<BTreeMap<String, Prepared>> {
+    let packages = select_packages(&native_packages(), names)?;
+    prepare_packages(root, cache, store, &packages, download)
 }
 
 #[cfg(test)]
@@ -618,6 +674,78 @@ mod tests {
     }
     fn paths(temp: &tempfile::TempDir) -> (PathBuf, PathBuf) {
         (temp.path().join("assets"), temp.path().join("prefixes"))
+    }
+
+    #[test]
+    fn selective_preparation_never_fetches_or_verifies_unselected_providers() {
+        let temp = tempfile::tempdir().unwrap();
+        let (cache, store) = paths(&temp);
+        let root = temp.path().join("source");
+        fs::create_dir(&root).unwrap();
+        let (ffmpeg, _) = wheel("ffmpeg", b"unused", None);
+        let (eigen, bytes) = wheel("eigen", b"selected header", None);
+        let lock = |selected_commit: &str, other_commit: &str| {
+            format!(
+            "[[package]]\nname='eigen'\nversion='1.0'\nsource={{git='https://example.invalid/fixture#{selected_commit}'}}\n[[package]]\nname='ffmpeg'\nversion='1.0'\nsource={{git='https://example.invalid/fixture#{other_commit}'}}\n"
+        )
+        };
+        fs::write(root.join("uv.lock"), lock(&eigen.commit, &ffmpeg.commit)).unwrap();
+        let download = Download {
+            // There are deliberately no bytes for the unselected provider.
+            bytes: BTreeMap::from([(eigen.sha256.clone(), bytes)]),
+            calls: RefCell::default(),
+        };
+        let selected = select_packages(&[ffmpeg, eigen.clone()], &["eigen".into()]).unwrap();
+        let first = prepare_packages(&root, &cache, &store, &selected, &download).unwrap();
+        assert_eq!(
+            first.keys().map(String::as_str).collect::<Vec<_>>(),
+            ["eigen"]
+        );
+        // An unrelated locked source update does not invalidate this input.
+        fs::write(root.join("uv.lock"), lock(&eigen.commit, &"2".repeat(40))).unwrap();
+        let repeated = prepare_packages(&root, &cache, &store, &selected, &download).unwrap();
+        let row = &repeated["eigen"];
+        assert_eq!(row.root, first["eigen"].root);
+        assert_eq!(row.tree_sha256, first["eigen"].tree_sha256);
+        assert_eq!(
+            (
+                row.copied_bytes,
+                row.asset.transferred_bytes,
+                row.asset.stored_bytes
+            ),
+            (0, 0, 0)
+        );
+        assert_eq!(download.calls.borrow().as_slice(), &[eigen.sha256]);
+        // Changing the selected wrapper remains an error, even with a warm cache.
+        fs::write(root.join("uv.lock"), lock(&"2".repeat(40), &"2".repeat(40))).unwrap();
+        assert!(prepare_packages(&root, &cache, &store, &selected, &download).is_err());
+        Tree::read(&row.tree_receipt)
+            .unwrap()
+            .verify(&row.root)
+            .unwrap();
+        assert_eq!(download.calls.borrow().len(), 1);
+    }
+
+    #[test]
+    fn selection_is_closed_and_eigen_retains_its_existing_source_and_native_tag() {
+        let available = native_packages();
+        for names in [
+            vec![],
+            vec!["unknown".into()],
+            vec!["eigen".into(), "eigen".into()],
+        ] {
+            assert!(select_packages(&available, &names).is_err());
+        }
+        let selected = select_packages(&available, &["eigen".into()]).unwrap();
+        let eigen = &selected[0];
+        assert_eq!(eigen.url(), "https://github.com/commaai/dependencies/releases/download/eigen/v3.4.0/eigen-3.4.0-py3-none-linux_aarch64.whl");
+        assert_eq!(
+            eigen.sha256,
+            "b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a"
+        );
+        assert_eq!(eigen.size, 2250657);
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        encoder_stage::verify_lock(&read_lock(&root).unwrap(), eigen).unwrap();
     }
 
     #[test]

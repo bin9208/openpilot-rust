@@ -21,6 +21,7 @@ on:
       - 'rust/native-ffmpeg-headers.json'
       - 'rust/crates/dev-tools/src/encoder_stage.rs'
       - 'rust/crates/dev-tools/src/bin/stage_encoder_target.rs'
+      - 'tools/ci/prepare_native_eigen.py'
       - 'uv.lock'
       - 'rust/native-system-sdk.json'
       - 'rust/native-cargo-inputs.json'
@@ -247,6 +248,21 @@ jobs:
           path: ${{ env.CI_JOB_TEMP }}/native-codec-assets
           key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
       - uses: actions/cache/restore@v4
+        id: eigen-headers-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-eigen-assets
+          key: native-eigen-340-arm-b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a-v1
+      - name: Prepare only the original Eigen headers and reuse libyuv without the other wheel
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_eigen.py --preparer "$native_target/debug/stage-encoder-target" \
+            --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: actions/cache/save@v4
+        if: steps.eigen-headers-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-eigen-assets
+          key: native-eigen-340-arm-b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a-v1
+      - uses: actions/cache/restore@v4
         id: ffmpeg-headers-cache
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-ffmpeg-source
@@ -377,6 +393,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-cargo-first.json
             ${{ env.CI_JOB_TEMP }}/native-cargo-reused.json
             ${{ env.CI_JOB_TEMP }}/native-codec-first.json
+            ${{ env.CI_JOB_TEMP }}/native-eigen-*.json
+            ${{ env.CI_JOB_TEMP }}/native-libyuv-only.json
+            ${{ env.CI_JOB_TEMP }}/native-eigen-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-codec-reused.json
             ${{ env.CI_JOB_TEMP }}/native-codec-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers-first.json
@@ -395,6 +414,10 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/receipt.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/commands.log
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-eigen-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-eigen-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-eigen-*.cc
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-eigen-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-generation-sdk-tests.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-*.jsonl

@@ -21,6 +21,10 @@
 
 ## 개발 검증 실행 방법
 
+기존 estimator Eigen3.4.0 입력을 원래 wheel에서 준비하고 필요한 wheel만 선택하는 방법과
+전송/복사0·실제 C++ helper 검사는 [Eigen 입력 안내](native-eigen-inputs-599.md)를 따른다.
+이 검사를 전체 locationd/paramsd 또는99개 runtime의 통과로 대신 쓰지 않는다.
+
 전체 generation의 모든13그룹에 같은 실제 `/` SDK를 필수로 묶고, 그 세대 소스의
 전체 SDK profile과 일치하는지 확인하는 회귀는 [SDK 검사 안내](native-system-sdk-599.md)를
 따른다. profile 회귀와 실제 SDK namespace 검사, 전체 runtime 빌드/실기 수용을 구분한다.

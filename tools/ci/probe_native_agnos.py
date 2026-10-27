@@ -756,6 +756,73 @@ def native_encoder_probe(guest_command,work,source_mount,evidence,log,guest_work
       runtime_activated=False,daemon_started=False,physical_device_execution=False)
 
 
+def native_eigen_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Consume the original header-only dependency, without a Python shim."""
+  host=json.loads((work.parent/'native-eigen-initial.json').read_text())['eigen']
+  room(work,host['copied_bytes']+16*1024**2)
+  def execute(argv,name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  preparer=work/'project-target/debug/stage-encoder-target'
+  command=[preparer,'--prepare-wheels','--packages','eigen','--root',source_mount,
+      '--cache',Path(guest_work)/'eigen-assets','--store',work/'native-eigen-prefixes']
+  reports=[]
+  for phase in ('initial','reused'):
+    report=json.loads(execute(command,f'native-eigen-{phase}.json').read_text())
+    assert set(report)=={'eigen'}
+    row=report['eigen']
+    assert row['tree_sha256']==host['tree_sha256'] and row['identity']==host['identity']
+    assert row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+    assert (row['copied_bytes']>0)==(phase=='initial')
+    assert not row['compiler_executed'] and not row['runtime_activated']
+    reports.append(row)
+  include=Path(reports[0]['root'])
+  source=work/'native-eigen-ldlt.cc'
+  source.write_text('''#include <eigen3/Eigen/Dense>
+#include <cstdio>
+#include <cstdlib>
+#if EIGEN_WORLD_VERSION != 3 || EIGEN_MAJOR_VERSION != 4 || EIGEN_MINOR_VERSION != 0
+#error Native_Eigen_version_differs_from_original_3_4_0
+#endif
+int main(int argc,char** argv){
+  if(argc!=5) return 22;
+  Eigen::Matrix2d matrix; matrix << std::strtod(argv[1],nullptr),0.0,0.0,std::strtod(argv[2],nullptr);
+  Eigen::Vector2d rhs; rhs << std::strtod(argv[3],nullptr),std::strtod(argv[4],nullptr);
+  const Eigen::Vector2d result=matrix.ldlt().solve(rhs);
+  if(result[0]!=3.0 || result[1]!=5.0 || (matrix*result-rhs).cwiseAbs().maxCoeff()!=0.0) return 21;
+  std::puts("native Eigen 3.4.0 LDLT matched");
+}
+''')
+  room(work,128*1024**2)
+  binary=work/'native-eigen-ldlt'
+  execute(['g++','-std=c++17','-O1','-I',include,source,'-o',binary],'native-eigen-ldlt-build.txt')
+  # Compile the actual existing helper consumed by both native Rust estimators.
+  # This is a header/API compile check, not their complete numerical regression.
+  helper_source=f'{source_mount}/rednose_repo/rednose/helpers/ekf_sym.cc'
+  helper=work/'native-eigen-ekf-sym.o'
+  execute(['g++','-std=c++17','-O0','-fPIC','-I',include,'-I',f'{source_mount}/rednose_repo',
+      '-I',f'{source_mount}/rednose_repo/rednose','-c',helper_source,'-o',helper],
+      'native-eigen-ekf-sym-build.txt')
+  with helper.open('rb') as stream: header=stream.read(64)
+  assert header[:6]==b'\x7fELF\x02\x01' and int.from_bytes(header[16:18],'little')==1 and int.from_bytes(header[18:20],'little')==183
+  audit=work/'native-eigen-elf-audit.json'
+  execute([work/'project-target/debug/runtime-elf-audit','--root',binary,
+      '--library','/usr/lib/aarch64-linux-gnu','--library','/lib/aarch64-linux-gnu','--output',audit],
+      'native-eigen-audit-summary.json')
+  assert json.loads(audit.read_text())['compatible']
+  assert execute([binary,'2','4','6','20'],'native-eigen-ldlt-run.txt').read_text()=='native Eigen 3.4.0 LDLT matched\n'
+  after=json.loads(execute(command,'native-eigen-after-execution.json').read_text())['eigen']
+  assert after['tree_sha256']==host['tree_sha256'] and after['copied_bytes']==after['asset']['transferred_bytes']==after['asset']['stored_bytes']==0
+  evidence['native_eigen_headers']=dict(wrapper_commit='40e5d76de1b33a86c5181b63db6782d8f06da1da',
+      archive_sha256=host['asset']['sha256'],archive_bytes=2250657,tree_sha256=host['tree_sha256'],
+      actual_arm_preparer=True,independent_host_tree_matches=True,repeated_body_bytes=0,repeated_copied_bytes=0,
+      existing_ekf_helper_source_sha256=digest(Path(os.environ['GITHUB_WORKSPACE'])/'rednose_repo/rednose/helpers/ekf_sym.cc'),
+      existing_ekf_helper_object_sha256=digest(helper),basic_ldlt_source_sha256=digest(source),
+      basic_ldlt_binary_sha256=digest(binary),strict_elf_audit_compatible=True,
+      actual_native_cpp_compile_and_execution=True,complete_estimator_regression=False,
+      full_runtime_build=False,physical_device_execution=False)
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -853,6 +920,7 @@ def main():
              '-b', f'{owned / "native-cargo-sources"}:{guest_work}/cargo-sources',
              '-b', f'{owned / "native-rust-assets"}:{guest_work}/rust-assets',
              '-b', f'{owned / "native-codec-assets"}:{guest_work}/codec-assets',
+             '-b', f'{owned / "native-eigen-assets"}:{guest_work}/eigen-assets',
              '-b', f'{owned / "native-ffmpeg-source"}:{guest_work}/ffmpeg-source',
              '-b', f'{owned / "native-provider-components"}:{guest_work}/provider-assets',
              '-b', f'{owned / "native-provider-export"}:{guest_work}/provider-export',
@@ -904,6 +972,7 @@ def main():
     native_ffmpeg_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_provider_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_encoder_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_eigen_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))

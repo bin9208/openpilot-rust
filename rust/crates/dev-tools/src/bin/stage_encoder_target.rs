@@ -20,14 +20,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     return Err("duplicate argument".into());
                 }
             }
-            "--cache" | "--store" => {
+            "--cache" | "--store" | "--packages" => {
                 let value = args.next().ok_or("missing argument value")?;
                 if values.insert(key.to_owned(), value).is_some() {
                     return Err("duplicate argument".into());
                 }
             }
             "--help" | "-h" => {
-                println!("Usage: stage-encoder-target --output NEW_DIRECTORY [--root ROOT] [--archive-directory DIRECTORY] [--swscale-archive FILE] [--cc CC --ar AR --ranlib RANLIB]\n       stage-encoder-target --prepare-wheels --cache ASSET_CACHE --store PREFIX_STORE [--root ROOT]\nPrepare only unchanged pinned ARM wheel inputs; this mode does not build libswscale or activate a runtime.");
+                println!("Usage: stage-encoder-target --output NEW_DIRECTORY [--root ROOT] [--archive-directory DIRECTORY] [--swscale-archive FILE] [--cc CC --ar AR --ranlib RANLIB]\n       stage-encoder-target --prepare-wheels --cache ASSET_CACHE --store PREFIX_STORE [--root ROOT] [--packages eigen,libyuv,ffmpeg]\nPrepare unchanged pinned ARM wheel inputs; default is the original ffmpeg/libyuv pair. Select only the required inputs with --packages. This mode does not run Python, build libswscale or activate a runtime.");
                 return Ok(());
             }
             _ => return Err(format!("unknown argument: {key}").into()),
@@ -36,7 +36,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if prepare_wheels {
         if values
             .keys()
-            .any(|key| !["--root", "--cache", "--store"].contains(&key.as_str()))
+            .any(|key| !["--root", "--cache", "--store", "--packages"].contains(&key.as_str()))
         {
             return Err(
                 "wheel preparation cannot be combined with legacy staging/build arguments".into(),
@@ -48,17 +48,36 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         );
         let cache = PathBuf::from(values.remove("--cache").ok_or("--cache required")?);
         let store = PathBuf::from(values.remove("--store").ok_or("--store required")?);
-        let report = openpilot_dev_tools::native_codec_inputs::prepare(
-            &root,
-            &cache,
-            &store,
-            &openpilot_runtime_build::assets::Curl,
-        )?;
+        let report = if let Some(names) = values.remove("--packages") {
+            let names = names
+                .into_string()
+                .map_err(|_| "non-UTF8 native wheel selection")?
+                .split(',')
+                .map(str::to_owned)
+                .collect::<Vec<_>>();
+            openpilot_dev_tools::native_codec_inputs::prepare_selected(
+                &root,
+                &cache,
+                &store,
+                &names,
+                &openpilot_runtime_build::assets::Curl,
+            )?
+        } else {
+            openpilot_dev_tools::native_codec_inputs::prepare(
+                &root,
+                &cache,
+                &store,
+                &openpilot_runtime_build::assets::Curl,
+            )?
+        };
         println!("{}", serde_json::to_string(&report)?);
         return Ok(());
     }
-    if values.contains_key("--cache") || values.contains_key("--store") {
-        return Err("--cache and --store require --prepare-wheels".into());
+    if ["--cache", "--store", "--packages"]
+        .iter()
+        .any(|key| values.contains_key(*key))
+    {
+        return Err("--cache, --store and --packages require --prepare-wheels".into());
     }
     let mut tools = Toolchain::default();
     for (key, target) in [
