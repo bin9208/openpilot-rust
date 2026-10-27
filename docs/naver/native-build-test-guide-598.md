@@ -218,6 +218,11 @@ protocol 응답은 이 기능의 지원 여부이며, 정상 manager 부팅·모
 
 ## 최종 사용자 기기 수용 시험
 
+설정/source 연결 거부는 foundation의 `runtime-build/tests/configuration.rs`, pending 회귀,
+launcher의 실제 handoff 회귀와 updater의 작업별 Context 회귀를 확인한다. 최초 설정의
+SHA·요청 commit/tree·candidate source가 이어져야 하며, 변경 거부 뒤 이전 선택·pending·
+log byte가 유지되어야 한다. 이 metadata/CLI 검사는 정상 업데이트·부팅 수용을 대체하지 않는다.
+
 그 이전의 첫 도구 재빌드 검증은 [bootstrap 경로](native-bootstrap-seed-599.md)를 따른다.
 foundation의 SDK pin/가짜 controller 거부, kernel workflow의 실제 권한 하강과 실패 로그,
 genuine workflow의 ARM12개 도구 initial/reused/docs/small 결과 및 private cgroup JSONL을

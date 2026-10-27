@@ -67,17 +67,7 @@ impl Config {
     }
 
     fn read_pinned(path: &Path) -> Result<(Self, String)> {
-        const LIMIT: u64 = 4 * 1024 * 1024;
-        let file = crate::regular_file(path)?;
-        if file.metadata()?.len() > LIMIT {
-            return Err("bootstrap configuration exceeds 4 MiB".into());
-        }
-        let mut bytes = Vec::new();
-        file.take(LIMIT + 1).read_to_end(&mut bytes)?;
-        if bytes.len() as u64 > LIMIT {
-            return Err("bootstrap configuration exceeds 4 MiB".into());
-        }
-        let config: Self = serde_json::from_slice(&bytes)?;
+        let (config, pin): (Self, String) = generation::read_pinned(path)?;
         config.resources.validate()?;
         let paths = [
             &config.cache,
@@ -105,7 +95,7 @@ impl Config {
                 "bootstrap needs separate absolute stores and an independent SDK SHA pin".into(),
             );
         }
-        Ok((config, format!("{:x}", Sha256::digest(&bytes))))
+        Ok((config, pin))
     }
 
     fn verify_sdk(&self, root: &Path) -> Result<()> {

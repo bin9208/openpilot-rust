@@ -1,7 +1,6 @@
 //! A verified update becomes active only at the next native boot boundary.
 //! The journal remains valid if power is lost after active.json is replaced.
 use crate::{
-    digest_file,
     generation::{self, Config},
     selection, Result,
 };
@@ -26,8 +25,14 @@ fn current(config: &Config, pending: &Pending) -> Result<selection::Selected> {
     Ok(current)
 }
 
-fn verify(config_path: &Path, config: &Config, pending: &Pending) -> Result<()> {
-    if pending.schema != 1 || pending.configuration_sha256 != digest_file(config_path)? {
+fn verify(
+    config_path: &Path,
+    config: &Config,
+    configuration_sha256: &str,
+    pending: &Pending,
+) -> Result<()> {
+    Config::verify_pin(config_path, configuration_sha256)?;
+    if pending.schema != 1 || pending.configuration_sha256 != configuration_sha256 {
         return Err("pending native update configuration changed".into());
     }
     current(config, pending)?;
@@ -35,24 +40,58 @@ fn verify(config_path: &Path, config: &Config, pending: &Pending) -> Result<()> 
     if sealed.runtime.source.commit != pending.source_commit {
         return Err("pending native update source mismatch".into());
     }
+    Config::verify_pin(config_path, configuration_sha256)?;
     Ok(())
 }
 
 pub fn ready(config_path: &Path) -> Result<Option<Pending>> {
-    let config = Config::read(config_path)?;
+    let (config, pin) = Config::read_pinned(config_path)?;
+    ready_with(config_path, &config, &pin)
+}
+
+pub fn ready_pinned(config_path: &Path, pin: &str) -> Result<Option<Pending>> {
+    let config = Config::read_expected(config_path, pin)?;
+    ready_with(config_path, &config, pin)
+}
+
+fn ready_with(config_path: &Path, config: &Config, pin: &str) -> Result<Option<Pending>> {
     let path = config.stores.generations.join("pending.json");
     match fs::symlink_metadata(&path) {
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            Config::verify_pin(config_path, pin)?;
+            return Ok(None);
+        }
         Err(e) => return Err(e.into()),
         Ok(_) => (),
     }
     let pending = generation::read(&path)?;
-    verify(config_path, &config, &pending)?;
+    verify(config_path, config, pin, &pending)?;
     Ok(Some(pending))
 }
 
 pub fn stage(config_path: &Path, candidate: &str, expected_previous: &str) -> Result<Pending> {
-    let config = Config::read(config_path)?;
+    let (config, pin) = Config::read_pinned(config_path)?;
+    stage_with(config_path, &config, &pin, candidate, expected_previous)
+}
+
+pub fn stage_pinned(
+    config_path: &Path,
+    pin: &str,
+    candidate: &str,
+    expected_previous: &str,
+) -> Result<Pending> {
+    let config = Config::read_expected(config_path, pin)?;
+    stage_with(config_path, &config, pin, candidate, expected_previous)
+}
+
+fn stage_with(
+    config_path: &Path,
+    config: &Config,
+    pin: &str,
+    candidate: &str,
+    expected_previous: &str,
+) -> Result<Pending> {
+    Config::verify_pin(config_path, pin)?;
     generation::directory(&config.stores.generations)?;
     let _lock = generation::lock(&config.stores.generations)?;
     generation::offroad(&config.stores.params)?;
@@ -62,7 +101,7 @@ pub fn stage(config_path: &Path, candidate: &str, expected_previous: &str) -> Re
     let sealed = generation::load(&config.stores, candidate)?;
     let pending = Pending {
         schema: 1,
-        configuration_sha256: digest_file(config_path)?,
+        configuration_sha256: pin.into(),
         expected_previous: expected_previous.into(),
         candidate: candidate.into(),
         source_commit: sealed.runtime.source.commit,
@@ -73,25 +112,47 @@ pub fn stage(config_path: &Path, candidate: &str, expected_previous: &str) -> Re
         if previous != pending {
             return Err("another native update is pending; existing candidate retained".into());
         }
-        verify(config_path, &config, &previous)?;
+        verify(config_path, config, pin, &previous)?;
     } else {
         generation::offroad(&config.stores.params)?;
+        Config::verify_pin(config_path, pin)?;
+        crate::supervision::check_request_owner()?;
         generation::write(&path, &pending, false)?;
     }
+    Config::verify_pin(config_path, pin)?;
     Ok(pending)
 }
 
 /// Called before any manager starts, while the launcher owns the boot lock.
 /// Repeating this after an interrupted activation completes the same journal.
 pub fn activate_at_boot(config_path: &Path) -> Result<Option<selection::Selected>> {
-    let config = Config::read(config_path)?;
+    let (config, pin) = Config::read_pinned(config_path)?;
+    activate_with(config_path, &config, &pin)
+}
+
+pub fn activate_at_boot_pinned(
+    config_path: &Path,
+    pin: &str,
+) -> Result<Option<selection::Selected>> {
+    let config = Config::read_expected(config_path, pin)?;
+    activate_with(config_path, &config, pin)
+}
+
+fn activate_with(
+    config_path: &Path,
+    config: &Config,
+    pin: &str,
+) -> Result<Option<selection::Selected>> {
+    Config::verify_pin(config_path, pin)?;
     generation::directory(&config.stores.generations)?;
     let _lock = generation::lock(&config.stores.generations)?;
-    let Some(pending) = ready(config_path)? else {
+    let Some(pending) = ready_with(config_path, config, pin)? else {
         return Ok(None);
     };
     generation::offroad(&config.stores.params)?;
+    Config::verify_pin(config_path, pin)?;
     let selected = selection::activate_locked(&config.stores, &pending.candidate)?;
+    Config::verify_pin(config_path, pin)?;
     fs::remove_file(config.stores.generations.join("pending.json"))?;
     fs::File::open(&config.stores.generations)?.sync_all()?;
     Ok(Some(selected))
@@ -100,7 +161,7 @@ pub fn activate_at_boot(config_path: &Path) -> Result<Option<selection::Selected
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::generation::Stores;
+    use crate::{digest_file, generation::Stores};
 
     #[test]
     fn absent_corrupt_changed_config_and_unverified_pending_updates_preserve_previous_bytes() {
@@ -146,6 +207,34 @@ mod tests {
         assert!(ready(&config_path).unwrap().is_none());
         assert!(activate_at_boot(&config_path).unwrap().is_none());
         let pending_path = config.stores.generations.join("pending.json");
+        let original_config = fs::read(&config_path).unwrap();
+        let (_, pin) = Config::read_pinned(&config_path).unwrap();
+        let mut changed = config.clone();
+        changed.cache = root.join("other-cache");
+        generation::write(&config_path, &changed, true).unwrap();
+        fs::write(&pending_path, b"owned previous pending bytes").unwrap();
+        for result in [
+            ready_pinned(&config_path, &pin).map(|_| ()),
+            stage_pinned(&config_path, &pin, &"b".repeat(64), &"a".repeat(64)).map(|_| ()),
+            activate_at_boot_pinned(&config_path, &pin).map(|_| ()),
+        ] {
+            assert!(result
+                .unwrap_err()
+                .to_string()
+                .contains("configuration changed"));
+            assert_eq!(fs::read(&active_path).unwrap(), active);
+            assert_eq!(
+                fs::read(&pending_path).unwrap(),
+                b"owned previous pending bytes"
+            );
+            assert_eq!(
+                fs::read(root.join("normal.log")).unwrap(),
+                b"normal previous runtime log"
+            );
+        }
+        assert!(!changed.cache.exists());
+        fs::write(&config_path, original_config).unwrap();
+        fs::remove_file(&pending_path).unwrap();
         for contents in [
             b"{partial power-loss journal".to_vec(),
             serde_json::to_vec(&Pending {

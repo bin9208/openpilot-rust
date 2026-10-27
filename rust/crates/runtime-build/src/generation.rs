@@ -66,7 +66,11 @@ pub struct Config {
 
 impl Config {
     pub fn read(path: &Path) -> Result<Self> {
-        let config: Self = read(path)?;
+        Ok(Self::read_pinned(path)?.0)
+    }
+
+    pub fn read_pinned(path: &Path) -> Result<(Self, String)> {
+        let (config, pin): (Self, String) = read_pinned(path)?;
         config.resources.validate()?;
         if config.schema != 1
             || [
@@ -88,7 +92,19 @@ impl Config {
         {
             return Err("native configuration requires absolute, contained path spellings".into());
         }
+        Ok((config, pin))
+    }
+
+    pub fn read_expected(path: &Path, expected: &str) -> Result<Self> {
+        let (config, actual) = Self::read_pinned(path)?;
+        if actual != expected {
+            return Err("native runtime configuration changed".into());
+        }
         Ok(config)
+    }
+
+    pub fn verify_pin(path: &Path, expected: &str) -> Result<()> {
+        Self::read_expected(path, expected).map(|_| ())
     }
 
     /// Full native build/seal entry. Activation remains a separate offroad step.
@@ -232,6 +248,24 @@ pub(crate) fn read<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
         return Err("native generation JSON exceeds 4 MiB".into());
     }
     Ok(serde_json::from_reader(file.take(LIMIT + 1))?)
+}
+
+/// Parse and identify the same bounded bytes. A later file read must not rename
+/// a configuration already used for scope setup, compilation or activation.
+pub(crate) fn read_pinned<T: serde::de::DeserializeOwned>(path: &Path) -> Result<(T, String)> {
+    let file = regular_file(path)?;
+    if file.metadata()?.len() > LIMIT {
+        return Err("native generation JSON exceeds 4 MiB".into());
+    }
+    let mut bytes = Vec::new();
+    file.take(LIMIT + 1).read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > LIMIT {
+        return Err("native generation JSON exceeds 4 MiB".into());
+    }
+    Ok((
+        serde_json::from_slice(&bytes)?,
+        format!("{:x}", Sha256::digest(&bytes)),
+    ))
 }
 
 pub(crate) fn write<T: Serialize>(path: &Path, value: &T, replace: bool) -> Result<()> {

@@ -22,6 +22,7 @@ pub struct Context {
     pub requested_checkout: PathBuf,
     pub generation: String,
     config: Config,
+    configuration_sha256: String,
 }
 
 impl Context {
@@ -30,6 +31,8 @@ impl Context {
         requested: Option<PathBuf>,
         generation: Option<String>,
     ) -> Result<Option<Self>, Error> {
+        let expected = std::env::var_os("OPENPILOT_NATIVE_LAUNCH_CONFIG_SHA256");
+        std::env::remove_var("OPENPILOT_NATIVE_LAUNCH_CONFIG_SHA256");
         match (config, requested, generation) {
             (None, None, None) => Ok(None),
             (Some(config), Some(requested_checkout), Some(generation)) => {
@@ -41,12 +44,20 @@ impl Context {
                     return Err(error("native requested checkout must be an absolute path"));
                 }
                 let config_path = config.canonicalize()?;
-                let config = Config::read(&config_path).map_err(error)?;
+                let (config, configuration_sha256) =
+                    Config::read_pinned(&config_path).map_err(error)?;
+                if expected
+                    .as_ref()
+                    .is_some_and(|pin| pin.to_str() != Some(configuration_sha256.as_str()))
+                {
+                    return Err(error("native launch configuration changed before handoff"));
+                }
                 Ok(Some(Self {
                     config_path,
                     requested_checkout,
                     generation,
                     config,
+                    configuration_sha256,
                 }))
             }
             _ => Err(error(
@@ -56,6 +67,7 @@ impl Context {
     }
 
     pub fn verify(&self, paths: &Paths) -> Result<(), Error> {
+        Config::verify_pin(&self.config_path, &self.configuration_sha256).map_err(error)?;
         let selected = selection::resolve(&self.config.stores).map_err(error)?;
         if selected.id != self.generation
             || selected.source_root != paths.repository
@@ -65,6 +77,7 @@ impl Context {
                 "native launch arguments differ from the actual selected source or Params root",
             ));
         }
+        Config::verify_pin(&self.config_path, &self.configuration_sha256).map_err(error)?;
         Ok(())
     }
 
@@ -77,9 +90,12 @@ impl Context {
         stopped: &AtomicBool,
         signals: &mut signal_hook::iterator::Signals,
     ) -> Result<bool, Error> {
-        if let Err(error) = pending::activate_at_boot(&self.config_path) {
+        if let Err(error) =
+            pending::activate_at_boot_pinned(&self.config_path, &self.configuration_sha256)
+        {
             eprintln!("native pending update retained without activation: {error}");
         }
+        Config::verify_pin(&self.config_path, &self.configuration_sha256).map_err(error)?;
         let selected = selection::resolve(&self.config.stores).map_err(error)?;
         if selected.id == self.generation {
             return Ok(false);
@@ -94,6 +110,10 @@ impl Context {
         serde_json::to_writer(temporary.as_file(), &next)?;
         let mut command = Command::new(next.repository.join("rust/bin/openpilot-launch"));
         command
+            .env(
+                "OPENPILOT_NATIVE_LAUNCH_CONFIG_SHA256",
+                &self.configuration_sha256,
+            )
             .env(
                 "LD_LIBRARY_PATH",
                 selection::library_path(&self.config.stores, &selected.id).map_err(error)?,
@@ -113,6 +133,7 @@ impl Context {
     }
 
     pub fn prepare_updater(&self) -> Result<(), Error> {
+        Config::verify_pin(&self.config_path, &self.configuration_sha256).map_err(error)?;
         let sealed = generation::load(&self.config.stores, &self.generation).map_err(error)?;
         let metadata: serde_json::Value =
             serde_json::from_reader(File::open(sealed.runtime.root.join("build.json"))?)?;
@@ -144,6 +165,7 @@ impl Context {
         std::env::set_var("UPDATER_STAGING_ROOT", &staging);
         std::env::set_var("UPDATER_LOCK_FILE", staging.join("updater.lock"));
         std::env::remove_var("OPENPILOT_NATIVE_UPDATE_ERROR");
+        Config::verify_pin(&self.config_path, &self.configuration_sha256).map_err(error)?;
         Ok(())
     }
 

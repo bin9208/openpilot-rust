@@ -388,7 +388,9 @@ pub fn publish_candidate(
     config_path: &Path,
     root: &Path,
     id: &str,
+    configuration_sha256: &str,
 ) -> Result<()> {
+    generation::Config::verify_pin(config_path, configuration_sha256)?;
     let attempt = PathBuf::from(std::env::var_os(ATTEMPT).ok_or("native build attempt missing")?);
     if attempt.canonicalize()? != attempt
         || attempt.parent() != Some(config.stores.generations.join("build-attempts").as_path())
@@ -403,7 +405,7 @@ pub fn publish_candidate(
         &attempt.join("candidate.json"),
         &Candidate {
             schema: 1,
-            configuration_sha256: crate::digest_file(config_path)?,
+            configuration_sha256: configuration_sha256.into(),
             generation_id: id.into(),
             source: crate::source::inspect(root)?,
         },
@@ -416,10 +418,14 @@ pub fn candidate(
     config_path: &Path,
     root: &Path,
     attempt: &Path,
+    configuration_sha256: &str,
+    requested_source: &crate::Source,
 ) -> Result<String> {
+    generation::Config::verify_pin(config_path, configuration_sha256)?;
     let result: Candidate = generation::read(&attempt.join("candidate.json"))?;
     if result.schema != 1
-        || result.configuration_sha256 != crate::digest_file(config_path)?
+        || result.configuration_sha256 != configuration_sha256
+        || result.source != *requested_source
         || result.source != crate::source::inspect(root)?
         || generation::load(&config.stores, &result.generation_id)?
             .runtime
@@ -431,6 +437,10 @@ pub fn candidate(
                 .into(),
         );
     }
+    generation::Config::verify_pin(config_path, configuration_sha256)?;
+    if crate::source::inspect(root)? != *requested_source {
+        return Err("native requested source changed during candidate verification".into());
+    }
     Ok(result.generation_id)
 }
 
@@ -440,7 +450,10 @@ pub fn attempt(
     config: &generation::Config,
     config_path: &Path,
     root: &Path,
-) -> Result<(Monitor, PathBuf)> {
+    configuration_sha256: &str,
+) -> Result<(Monitor, PathBuf, crate::Source)> {
+    generation::Config::verify_pin(config_path, configuration_sha256)?;
+    let requested_source = crate::source::inspect(root)?;
     generation::offroad(&config.stores.params)?;
     generation::directory(&config.stores.generations)?;
     let attempts = config.stores.generations.join("build-attempts");
@@ -461,7 +474,7 @@ pub fn attempt(
         &config.resources,
         &writes,
         &directory.join("resources.jsonl"),
-        serde_json::json!({"configuration_sha256":crate::digest_file(config_path)?,"requested_source":crate::source::inspect(root)?}),
+        serde_json::json!({"configuration_sha256":configuration_sha256,"requested_source":requested_source}),
     )?;
-    Ok((monitor, directory))
+    Ok((monitor, directory, requested_source))
 }

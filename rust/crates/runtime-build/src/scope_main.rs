@@ -6,7 +6,7 @@ use std::{os::unix::process::CommandExt, path::PathBuf, process::Command};
 fn run() -> Result<()> {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     if args.len() == 1 && args[0] == "--help" {
-        println!("openpilot-native-build-scope --config CONFIG (--build --root SOURCE | --stage-update --root SOURCE --previous ID --request-owner PID:START_TICKS | --verify)\nPrepare only the sudo caller's fixed memory scope, then run the same-source native frontend as that non-root user. No arbitrary root command is accepted.");
+        println!("openpilot-native-build-scope --config CONFIG [--configuration-sha256 SHA256] (--build --root SOURCE [--request-owner PID:START_TICKS] | --stage-update --root SOURCE --previous ID --request-owner PID:START_TICKS | --verify)\nPrepare only the sudo caller's fixed memory scope, then run the same-source native frontend as that non-root user. No arbitrary root command is accepted.");
         return Ok(());
     }
     let mut config = None;
@@ -14,6 +14,7 @@ fn run() -> Result<()> {
     let mut previous = None;
     let mut request_owner = None;
     let mut mode = None;
+    let mut pin = None;
     let mut arguments = args.into_iter();
     while let Some(arg) = arguments.next() {
         match arg.to_str() {
@@ -31,6 +32,15 @@ fn run() -> Result<()> {
             Some("--request-owner") if request_owner.is_none() => {
                 request_owner = Some(arguments.next().ok_or("missing request owner")?);
             }
+            Some("--configuration-sha256") if pin.is_none() => {
+                pin = Some(
+                    arguments
+                        .next()
+                        .ok_or("missing configuration pin")?
+                        .into_string()
+                        .map_err(|_| "invalid configuration pin")?,
+                );
+            }
             Some(value @ ("--build" | "--stage-update" | "--verify")) if mode.is_none() => {
                 mode = Some(value.to_owned())
             }
@@ -39,7 +49,8 @@ fn run() -> Result<()> {
     }
     let mode = mode.ok_or("native scope mode missing")?;
     if (mode == "--stage-update") != previous.is_some()
-        || (mode == "--stage-update") != request_owner.is_some()
+        || (mode == "--stage-update" && request_owner.is_none())
+        || (mode == "--verify" && request_owner.is_some())
         || (mode == "--verify") == root.is_some()
     {
         return Err("mixed native scope arguments".into());
@@ -47,7 +58,10 @@ fn run() -> Result<()> {
     let path = config
         .ok_or("native scope configuration missing")?
         .canonicalize()?;
-    let config = Config::read(&path)?;
+    let (config, configuration_sha256) = Config::read_pinned(&path)?;
+    if pin.is_some_and(|pin| pin != configuration_sha256) {
+        return Err("native scope configuration changed".into());
+    }
     let uid = std::env::var("SUDO_UID")?.parse::<u32>()?;
     let gid = std::env::var("SUDO_GID")?.parse::<u32>()?;
     let control = memory_cgroup::prepare_scope(&config.resources.memory_cgroup_parent, uid, gid)?;
@@ -75,6 +89,8 @@ fn run() -> Result<()> {
         )
         .arg("--config")
         .arg(path)
+        .arg("--configuration-sha256")
+        .arg(configuration_sha256)
         .arg(if mode == "--verify" {
             "--verify-build-scope"
         } else {

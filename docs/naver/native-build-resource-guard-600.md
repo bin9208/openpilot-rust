@@ -40,6 +40,31 @@ worker는 봉인된 candidate receipt만 남긴다. frontend는 worker 종료, �
 하위 작업 정리를 마친 뒤 source/config/seal을 다시 확인해야 pending update를 게시한다.
 실패나 취소에서 기존 active generation, 정상 프로세스와 로그를 교체하지 않는다.
 
+## 한 작업의 설정과 요청 소스 연결
+
+Config는4MiB 상한의 같은 byte를 한 번 읽어 parse/hash한다. root scope·frontend·worker는
+`--configuration-sha256`으로 최초 SHA를 전달한다. worker는 이 pin 없이 실행하지 않는다.
+완료 뒤 파일을 다시 읽은 SHA를 이전 설정의 이름으로 붙이지 않는다. cgroup/쓰기 예산은
+그 작업이 읽은 설정을 사용하며, 다음 작업은 새 Config를 읽을 수 있다.
+
+admission에서 얻은 clean Git commit/tree도 candidate의 실제 source·봉인된 source와
+대조한다. 작업 도중 다른 clean commit으로 checkout이 바뀌어도 그 결과를 최초 요청으로
+기록할 수 없다. worker 종료/자원 확인 후에도 Config와 요청 source를 다시 확인한다.
+pending 게시·조회·boot activation은 각 작업의 같은 Config snapshot/pin을 사용한다.
+pending 기록에 최초 SHA를 보존하고 게시 전 요청 소유자와 offroad 상태를 다시 확인한다.
+첫 `--build`도 `--request-owner PID:START_TICKS`를 받는다. 초기 전체 빌드 진입점을 연결할
+때 이 값을 전달해야 sudo monitor가 살아 있어도 원래 요청자 종료를 관측할 수 있다.
+
+launcher의 최초 handoff pin은 한 번 소비하는 환경 값으로 전달한다. updater는 작업별로
+새 Context를 만들고 해당 작업 안에서 pin을 유지한다. resource/config 변경을 세션 전체에
+고정해 이후의 정상 갱신을 막지 않는다. 기존 legacy 시작 경로와 runtime 선택은 그대로다.
+
+새 회귀는 실제 두 build CLI의 설정 변경 조기 거부, 실제 launcher handoff 거부,
+updater의 이전/다음 Context 구분, pending 조회/게시/activation의 변경 거부와 이전
+선택·대기 byte/log 보존을 확인한다. 별도 실제 Git fixture는 최초 요청 뒤 새 clean commit이
+생긴 경우를 거부한다. 이 단계의 functional/Clippy 및 ARM 결과는 Actions 확인 전이며
+metadata 거부 시험을 정상 장치 부팅 또는 전체 update 수용으로 표현하지 않는다.
+
 ## 측정 범위와 한계
 
 각 `generations/build-attempts/attempt-*/resources.jsonl`은 초기 admission, 실행 중 상태,
