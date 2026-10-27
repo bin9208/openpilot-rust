@@ -1,5 +1,9 @@
 # 실제 AGNOS의 native compiler 환경 — #599 (검증 대기)
 
+모델 준비용 [ARM Python 입력과 실행 검사](native-python-inputs-599.md)를 추가했다.
+공식 CPython3.12.16 archive를 내용별로 준비하고 실제 ARM interpreter/stdlib/ELF closure와
+반복 전송·복사0을 Actions에서 확인한다. 새 결과와 전체 모델 환경·생성물 cache는 아직 대기다.
+
 현재 source와 독립 Panda firmware의 입력871개·출력4개/원래 provenance를 결속하는
 [Panda 준비·검사 안내](native-panda-inputs-599.md)를 추가했다. 현재 source binding,
 공개 debug 서명·버전, 반복 전송/복사0을 Actions에서 검사하며 새 결과는 대기다.

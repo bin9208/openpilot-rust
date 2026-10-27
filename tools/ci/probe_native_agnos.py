@@ -669,6 +669,72 @@ int main(){
       project_binaries_reused=False,complete_codec_regression=False,full_runtime_build=False,device_execution=False)
 
 
+def native_python_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Run the pinned Python itself; model wheels/generation remain separate."""
+  plan=json.loads((Path(os.environ['GITHUB_WORKSPACE'])/'rust/native-python-toolchain.json').read_text())
+  room(work,256*1024**2+plan['reserve_bytes'])
+  host=json.loads((work.parent/'native-python-initial.json').read_text())
+  def execute(argv,name):
+    record=run(guest_command(argv),log,stdout_path=work/name)
+    evidence['commands'].append(record)
+    return record
+  command=[work/'project-target/debug/openpilot-runtime-inputs','--prepare-python',
+      '--plan',f'{source_mount}/rust/native-python-toolchain.json',
+      '--cache',Path(guest_work)/'python-assets','--store',work/'native-python-prefixes']
+  rows=[]
+  for phase in ('initial','reused'):
+    execute(command,f'native-python-{phase}.json')
+    row=json.loads((work/f'native-python-{phase}.json').read_text())
+    assert row['version']==plan['version'] and row['target']==plan['target']
+    assert row['tree_sha256']==host['tree_sha256'] and row['identity']==host['identity']
+    assert row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+    assert (row['copied_bytes']>0)==(phase=='initial')
+    if phase=='reused': assert row['expected_additional_bytes']==0
+    assert not row['installer_executed'] and not row['interpreter_executed'] and not row['runtime_activated']
+    rows.append(row)
+  assert rows[0]['root']==rows[1]['root']
+  execute(['/usr/bin/python3','--version'],'native-python-factory-version.txt')
+  prefix=Path(rows[0]['root'])
+  execute([rows[0]['python'],'-I','-B','-S',f'{source_mount}/tools/ci/fixtures/native-python-health.py',
+      '--prefix',prefix,'--output',work/'native-python-health.json'],'native-python-health.txt')
+  health=json.loads((work/'native-python-health.json').read_text())
+  assert health['version']==plan['version'] and health['architecture']=='aarch64'
+  assert health['isolated'] and not health['bytecode_written'] and not health['model_generated']
+  assert not health['gpu_executed'] and not health['physical_device_execution']
+  # Every ELF member, including extension modules not imported by the health
+  # fixture, must have a compatible closure against this prefix/factory SDK.
+  actual_prefix=work/prefix.relative_to(guest_work)
+  receipt=json.loads((work/Path(rows[0]['tree_receipt']).relative_to(guest_work)).read_text())
+  roots=[]
+  library_dirs={prefix/'lib',prefix/'lib/python3.12/lib-dynload'}
+  for path,entry in receipt['entries'].items():
+    if entry['kind']!='file': continue
+    with (actual_prefix/path).open('rb') as stream:
+      magic=stream.read(4)
+    if magic==b'\x7fELF':
+      roots.append(prefix/path)
+      library_dirs.add((prefix/path).parent)
+  assert prefix/'bin/python3.12' in roots
+  audit=work/'native-python-abi.json'
+  execute([work/'project-target/debug/runtime-elf-audit',*(arg for path in roots for arg in ('--root',path)),
+      *(arg for path in sorted(library_dirs) for arg in ('--library',path)),
+      '--library','/usr/lib/aarch64-linux-gnu','--library','/lib/aarch64-linux-gnu','--output',audit],
+      'native-python-abi-summary.json')
+  assert json.loads(audit.read_text())['compatible'] is True
+  execute(command,'native-python-after-health.json')
+  after=json.loads((work/'native-python-after-health.json').read_text())
+  assert after['tree_sha256']==rows[0]['tree_sha256']
+  assert after['copied_bytes']==after['asset']['transferred_bytes']==after['asset']['stored_bytes']==0
+  evidence['native_python']=dict(version=health['version'],target=plan['target'],
+      archive_sha256=plan['asset']['sha256'],tree_sha256=rows[0]['tree_sha256'],
+      actual_arm_preparer=True,actual_arm_interpreter_executed=True,host_expected_tree_matches=True,
+      strict_all_elf_closure_compatible=True,elf_members=len(roots),
+      stdlib_checks=health['standard_library_checks'],prefix_unchanged_after_execution=True,
+      repeated_http_body_bytes=0,repeated_copied_bytes=0,model_generated=False,
+      python_model_environment_complete=False,runtime_activated=False,physical_device_execution=False,
+      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+
+
 def native_encoder_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Build the actual runtime binary with the catalog features and pinned inputs."""
   room(work,3*1024**3)
@@ -1914,7 +1980,7 @@ def main():
     (work / 'ffmpeg-source').mkdir()
     (work / 'provider-assets').mkdir()
     (work / 'provider-export').mkdir()
-    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export','source-lfs-assets','panda-components','panda-export'):
+    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export','source-lfs-assets','panda-components','panda-export','python-assets'):
       (work/name).mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
@@ -1939,6 +2005,7 @@ def main():
              '-b', f'{owned / "native-companion-components"}:{guest_work}/companion-components',
              '-b', f'{owned / "native-companion-exports"}:{guest_work}/companion-exports',
              '-b', f'{owned / "native-source-lfs-assets"}:{guest_work}/source-lfs-assets',
+             '-b', f'{owned / "native-python-assets"}:{guest_work}/python-assets',
              '-b', f'{owned / "native-mpc-components"}:{guest_work}/mpc-components',
              '-b', f'{owned / "native-mpc-export"}:{guest_work}/mpc-export',
              '-b', f'{owned / "native-panda-components"}:{guest_work}/panda-components',
@@ -1996,6 +2063,7 @@ def main():
     native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_ffmpeg_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_provider_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_python_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_encoder_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_eigen_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)

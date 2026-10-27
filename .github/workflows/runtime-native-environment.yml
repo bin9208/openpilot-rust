@@ -72,9 +72,15 @@ on:
       - 'rust/crates/dev-tools/src/bin/stage_encoder_target.rs'
       - 'tools/ci/prepare_native_eigen.py'
       - 'uv.lock'
+      - 'pyproject.toml'
       - 'rust/native-system-sdk.json'
       - 'rust/native-cargo-inputs.json'
       - 'rust/native-source-lfs.json'
+      - 'rust/native-python-toolchain.json'
+      - 'tools/ci/prepare_native_python.py'
+      - 'tools/ci/fixtures/native-python-health.py'
+      - 'rust/crates/runtime-build/src/python.rs'
+      - 'rust/crates/runtime-build/tests/python.rs'
       - 'rust/native-panda-source-contract.json'
       - 'rust/native-panda-provider.json'
       - 'tools/ci/prepare_native_panda_inputs.py'
@@ -494,6 +500,19 @@ jobs:
           python3 tools/ci/prepare_native_panda_inputs.py \
             --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
       - uses: actions/cache/restore@v4
+        id: python-input-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-python-assets
+          key: native-python-arm-${{ hashFiles('rust/native-python-toolchain.json') }}-v1
+          restore-keys: native-python-arm-
+      - name: Prepare the independently pinned ARM Python without running an installer
+        run: python3 tools/ci/prepare_native_python.py
+      - uses: actions/cache/save@v4
+        if: steps.python-input-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-python-assets
+          key: native-python-arm-${{ hashFiles('rust/native-python-toolchain.json') }}-v1
+      - uses: actions/cache/restore@v4
         id: source-lfs-cache
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-source-lfs-assets
@@ -597,6 +616,8 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-companion-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-mpc-*.json
             ${{ env.CI_JOB_TEMP }}/native-panda-*.json
+            ${{ env.CI_JOB_TEMP }}/native-python-*.json
+            ${{ env.CI_JOB_TEMP }}/native-python-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-panda-export/*
             ${{ env.CI_JOB_TEMP }}/native-panda-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-mpc-export/*
@@ -632,6 +653,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-font-reference/
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-*.txt

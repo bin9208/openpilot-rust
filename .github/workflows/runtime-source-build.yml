@@ -7,6 +7,9 @@ on:
       - 'rust/crates/runtime-installer/src/lib.rs'
       - 'rust/crates/runtime-installer/src/identity.rs'
       - 'rust/native-source-lfs.json'
+      - 'rust/native-python-toolchain.json'
+      - 'tools/ci/prepare_native_python.py'
+      - 'tools/ci/fixtures/native-python-health.py'
       - 'rust/native-panda-source-contract.json'
       - 'rust/native-panda-provider.json'
       - 'tools/ci/prepare_native_panda_inputs.py'
@@ -159,6 +162,10 @@ jobs:
         run: |
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-source-assets --test source_assets -- --nocapture
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-source-assets --all-targets -- -D warnings
+      - name: Verify pinned Python preparation without other preparation features
+        run: |
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-python --test python -- --nocapture
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-python --all-targets -- -D warnings
       - name: Verify unchanged codec wheel admission and independent component reuse
         run: |
           python3 - <<'PY'

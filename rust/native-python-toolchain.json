@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "version": "3.12.16",
+  "target": "aarch64-unknown-linux-gnu",
+  "release": "20261026",
+  "reserve_bytes": 4194304,
+  "asset": {
+    "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.12.16%2B20261026-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz",
+    "sha256": "bb4b6392670c5d3f93876996fcaa19858a4a413a0c7720144c18b0d6f1f0db2d",
+    "bytes": 29234064
+  }
+}

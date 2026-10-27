@@ -2,7 +2,8 @@
 #[cfg(any(
     feature = "prepare-rust",
     feature = "prepare-capnp",
-    feature = "prepare-cargo"
+    feature = "prepare-cargo",
+    feature = "prepare-python"
 ))]
 use crate::inputs::Tree;
 use crate::{inputs::Entry, Result};
@@ -11,7 +12,8 @@ use sha2::{Digest, Sha256};
 #[cfg(any(
     feature = "prepare-rust",
     feature = "prepare-capnp",
-    feature = "prepare-cargo"
+    feature = "prepare-cargo",
+    feature = "prepare-python"
 ))]
 use std::collections::BTreeSet;
 use std::{
@@ -108,7 +110,8 @@ pub(crate) fn file(root: &Path, relative: &Path, bytes: &[u8], mode: u32) -> Res
 #[cfg(any(
     feature = "prepare-rust",
     feature = "prepare-capnp",
-    feature = "prepare-cargo"
+    feature = "prepare-cargo",
+    feature = "prepare-python"
 ))]
 pub(crate) fn links(tree: &Tree, destination: Option<&Path>) -> Result<()> {
     for (path, value) in &tree.entries {

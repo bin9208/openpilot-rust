@@ -9,7 +9,8 @@
     feature = "prepare-rust",
     feature = "prepare-capnp",
     feature = "prepare-cargo",
-    feature = "prepare-source-assets"
+    feature = "prepare-source-assets",
+    feature = "prepare-python"
 ))]
 mod archive_tree;
 pub mod assets;
@@ -29,6 +30,8 @@ pub mod objects;
 pub mod panda_inputs;
 pub mod pending;
 pub mod prepare;
+#[cfg(feature = "prepare-python")]
+pub mod python;
 pub mod resources;
 pub mod selection;
 mod source;
