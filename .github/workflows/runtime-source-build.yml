@@ -109,6 +109,7 @@ on:
       - 'tools/native/source_entry.py'
       - 'tools/native/publish_inputs.py'
       - 'tools/ci/stage_native_input_payload.py'
+      - 'tools/ci/validation_context.py'
       - 'tools/ci/tests/test_native_input_publication.py'
       - '.github/workflows/native-input-publication.yml'
       - 'launch_openpilot.sh'

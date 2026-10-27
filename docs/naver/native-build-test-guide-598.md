@@ -5,6 +5,10 @@
 `test_native_input_publication.py`는 소유 ZIP/API fixture와 별도 process group의 byte
 상한/취소를 검사한다. fixture helper/component 파일은 실행하거나 실제 release에 보내지
 않는다. 실제 읽기 검증/발행/공개 URL 검증과 index의 정상 PR·병합 후 결과는 별도로 확인한다.
+PR 연결 정보가 후속 push로 바뀌는 경우는 원래 `GITHUB_EVENT_PATH`와 실제 checkout
+commit을 보존한 작은 validation-context artifact로 검사한다. 실제 SHA-1/부모를 가진
+shallow Git merge, artifact API/digest·보존 bytes 변조·원래 PR/base/attempt 차이와
+main PR 유지 회귀도 같은 소유 fixture에 포함한다. 이 추가 회귀의 실행 성공은 아직 미확인이다.
 
 Rust component 준비의 `memory limit reached` 실패와 추가 검사 절차는
 [XZ decoder 한도 #612](native-rust-toolchain-599.md)에 기록했다. foundation의

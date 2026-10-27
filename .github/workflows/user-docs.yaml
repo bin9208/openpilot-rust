@@ -20,6 +20,7 @@ jobs:
         with:
           fetch-depth: 0
       - uses: ./.github/actions/job-temp
+        with: {validation-context: 'true'}
       - uses: ./.github/actions/rust-path
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
@@ -50,4 +51,4 @@ jobs:
           CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test user_docs
       - uses: ./.github/actions/job-temp
         if: always()
-        with: {cleanup: 'true'}
+        with: {cleanup: 'true', validation-context: 'true'}

@@ -44,6 +44,27 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertTrue({'main', 'dev'}.issubset(events['push']['branches']))
     self.assertIn('pull_request', events)
 
+  def test_original_event_receipts_are_limited_to_the_four_actual_validation_jobs(self):
+    expected = {('rust.yml', 'workspace'), ('tests.yaml', 'build_release'),
+                ('fast-checks.yml', 'fast'), ('user-docs.yaml', 'check_user_docs')}
+    found = set()
+    for name in ('rust.yml', 'tests.yaml', 'fast-checks.yml', 'user-docs.yaml'):
+      for key, job in workflow(name)['jobs'].items():
+        steps = [step for step in job.get('steps', []) if step.get('uses') == './.github/actions/job-temp']
+        starts = [step for step in steps if step.get('with', {}).get('cleanup') != 'true']
+        ends = [step for step in steps if step.get('with', {}).get('cleanup') == 'true']
+        if any(step.get('with', {}).get('validation-context') == 'true' for step in starts):
+          found.add((name, key))
+          self.assertEqual(len(starts), 1)
+          self.assertEqual(len(ends), 1)
+          self.assertEqual(ends[0]['with']['validation-context'], 'true')
+          self.assertEqual(ends[0]['if'], 'always()')
+    self.assertEqual(found, expected)
+    action = yaml.load((ROOT/'.github/actions/job-temp/action.yml').read_text(), Loader=yaml.BaseLoader)
+    uploads = [step for step in action['runs']['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+    self.assertEqual(len(uploads), 1)
+    self.assertIn("steps.verify_validation_context.outcome == 'success'", uploads[0]['if'])
+
 
 if __name__ == '__main__':
   unittest.main()

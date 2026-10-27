@@ -7,6 +7,7 @@ The resulting index is retained for a separate reviewed Git change.
 import argparse
 import base64
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -38,11 +39,19 @@ GATES = [
       {'Native compiler in pinned AGNOS ARM userspace'}),
     ('native-resource-guard.yml', ('push', 'workflow_dispatch'), {'Real memory limit and cancellation (X64 host kernel)'}),
     ('rust.yml', ('pull_request',), {'rust checks', 'rust workspace checks', 'rust aarch64 build'}),
-    ('integration.yml', ('pull_request',), {'integration gate'}),
+    ('integration.yml', ('pull_request',), {'integration gate', 'build / build release'}),
     ('fast-checks.yml', ('push',), {'fast checks'}),
     ('fast-checks.yml', ('pull_request',), {'fast checks'}),
     ('user-docs.yaml', ('pull_request',), {'check mapped user docs'}),
 ]
+PROOF_JOBS = {'rust.yml': 'workspace', 'integration.yml': 'build_release',
+              'fast-checks.yml': 'fast', 'user-docs.yaml': 'check_user_docs'}
+_CONTEXT = importlib.util.spec_from_file_location('native_validation_context_source',
+    Path(__file__).resolve().parents[1]/'ci/validation_context.py')
+validation_context = importlib.util.module_from_spec(_CONTEXT)
+# Compile only this checkout's helper source; an ignored timestamp pyc is never
+# evidence of the publisher's current code. Artifact commit bytes remain data.
+exec(compile(_CONTEXT.loader.get_source(_CONTEXT.name), _CONTEXT.origin, 'exec'), validation_context.__dict__)
 
 
 def pairs(items):
@@ -141,6 +150,9 @@ def transfer(command, expected, destination=None):
 
 
 class GitHub:
+  def __init__(self, root=None):
+    self.root = root
+
   def json(self, method, route, value=None, missing=False):
     if route.startswith('/') or '..' in route.split('/'):
       raise ValueError('invalid repository API route')
@@ -201,6 +213,47 @@ class GitHub:
       value['assets'] = self.collect(f'releases/{value["id"]}/assets')
     return value
 
+  def pr_context(self, run, source, pr_number, job):
+    trusted_run(run, source)
+    if run['event'] != 'pull_request':
+      raise ValueError('PR validation evidence cannot belong to another event type')
+    if self.root is None:
+      raise ValueError('PR validation evidence needs an owned publication directory')
+    name = f'native-validation-context-{run["id"]}-{run["run_attempt"]}-{job}'
+    artifacts = self.collect(f'actions/runs/{run["id"]}/artifacts', 'artifacts')
+    selected = [row for row in artifacts if row['name'] == name and not row['expired']]
+    if len(selected) != 1:
+      raise ValueError(f'PR validation {name} requires one unexpired context artifact')
+    selected = selected[0]
+    pin = artifact_pin(selected, run, source, 1024**2)
+    parent = self.root/'validation-contexts'
+    parent.mkdir(exist_ok=True)
+    if parent.is_symlink() or parent.resolve() != parent:
+      raise ValueError('PR validation evidence directory is redirected')
+    archive = parent/f'{run["id"]}-{run["run_attempt"]}-{job}.zip'
+    if archive.is_symlink() or (archive.exists() and not archive.is_file()):
+      raise ValueError('retained PR validation ZIP is redirected or not regular')
+    if archive.exists():
+      with archive.open('rb') as stream:
+        if archive.stat().st_size != pin['bytes'] or hashlib.file_digest(stream, 'sha256').hexdigest() != pin['sha256']:
+          raise ValueError('retained PR validation ZIP differs from its independent artifact pin')
+    else:
+      room(parent, pin['bytes'])
+      self.download(f'actions/artifacts/{selected["id"]}/zip', pin, archive)
+    bundle = Bundle(archive)
+    try:
+      if set(bundle.members) != {'validation-context.json'}:
+        raise ValueError('PR validation artifact includes unexpected members')
+      value = bundle.json('validation-context.json', 256*1024)
+    finally:
+      bundle.close()
+    context = validation_context.verify(value, run['id'], run['run_attempt'], job,
+        run['repository']['id'], source, pr_number)
+    proof = dict(artifact_id=selected['id'], artifact_digest=selected['digest'],
+        checkout_sha=value['checkout_sha'], checkout_tree=value['checkout_tree'],
+        pr_number=context[0], base_sha=context[1])
+    return {context}, proof
+
 
 def trusted_run(run, source):
   if (run['head_sha'] != source or run['repository']['full_name'] != REPO
@@ -208,24 +261,19 @@ def trusted_run(run, source):
     raise ValueError('native input provenance is not the requested same-repository source')
 
 
-def dev_pr_contexts(run, source):
-  """Identify the same-repository dev PR and base recorded for this run."""
-  contexts = set()
-  for pull in run.get('pull_requests') or []:
-    try:
-      base, head = pull['base'], pull['head']
-      repositories = (base['repo'], head['repo'])
-      if (positive(pull['number']) and base['ref'] == 'dev' and checksum(base['sha'], 40)
-          and head['sha'] == source and positive(run['repository']['id'])
-          and all(positive(repo['id']) and repo['id'] == run['repository']['id']
-              and repo['url'] == f'https://api.github.com/repos/{REPO}' for repo in repositories)):
-        contexts.add((pull['number'], base['sha']))
-    except (KeyError, TypeError):
-      continue
-  return contexts
+def artifact_pin(value, run, source, maximum):
+  link = value['workflow_run']
+  repository_id = run['repository']['id']
+  if (value['expired'] or not positive(value['id']) or link['id'] != run['id'] or link['head_sha'] != source
+      or link['repository_id'] != repository_id or link['head_repository_id'] != repository_id
+      or not positive(value['size_in_bytes']) or value['size_in_bytes'] > maximum
+      or not isinstance(value.get('digest'), str) or not value['digest'].startswith('sha256:')
+      or not checksum(value['digest'][7:])):
+    raise ValueError('native artifact identity/digest differs from the requested source')
+  return dict(bytes=value['size_in_bytes'], sha256=value['digest'][7:])
 
 
-def gates(client, source, producer_id):
+def gates(client, source, producer_id, pr_number):
   producer = client.json('GET', f'actions/runs/{producer_id}')
   trusted_run(producer, source)
   if (producer['path'] != PRODUCER or producer['event'] not in ('push', 'workflow_dispatch')
@@ -237,11 +285,12 @@ def gates(client, source, producer_id):
     candidates = [r for r in runs if r['path'] == '.github/workflows/'+filename and r['event'] in events]
     is_pr = events == ('pull_request',)
     if is_pr:
-      candidates = [r for r in candidates if dev_pr_contexts(r, source)]
+      # Only the linked PR number is used here. Its current head/base fields
+      # change after pushes and cannot prove the original workflow event.
+      candidates = [r for r in candidates if any(isinstance(p, dict) and p.get('number') == pr_number
+          for p in r.get('pull_requests') or [])]
     selected = max(candidates, key=lambda r: r['id']) if candidates else None
-    contexts = dev_pr_contexts(selected, source) if is_pr and selected is not None else set()
-    if is_pr:
-      pr_contexts.append(contexts)
+    contexts, proof = set(), None
     ready = False
     if selected is not None:
       trusted_run(selected, source)
@@ -251,9 +300,14 @@ def gates(client, source, producer_id):
             and j['runner_name'] == 'bin-actions'}
         ready = required <= names and all(j['runner_name'] == 'bin-actions'
             for j in jobs if j['conclusion'] == 'success')
+        if ready and is_pr:
+          contexts, proof = client.pr_context(selected, source, pr_number, PROOF_JOBS[filename])
+    if is_pr:
+      pr_contexts.append(contexts)
     states.append(dict(workflow=filename, events=events, run=None if selected is None else selected['id'],
         target_branch='dev' if is_pr else None,
-        pull_requests=[dict(number=number, base_sha=base) for number, base in sorted(contexts)], ready=ready))
+        pull_requests=[dict(number=number, base_sha=base) for number, base in sorted(contexts)],
+        validation_context=proof, ready=ready))
   # Individual green runs from different PRs or base commits do not prove one
   # coherent dev candidate. A missing PR context must also fail this intersection.
   if pr_contexts and not set.intersection(*pr_contexts):
@@ -588,6 +642,7 @@ def publish(client, rows, source, index_pin, states, report, persist):
 def main():
   parser = argparse.ArgumentParser(description=__doc__)
   parser.add_argument('--source-run-id', required=True, type=int)
+  parser.add_argument('--source-pr-number', required=True, type=int)
   parser.add_argument('--source-commit', required=True)
   parser.add_argument('--index-sha256', required=True)
   parser.add_argument('--publish', action='store_true')
@@ -598,7 +653,8 @@ def main():
       or os.environ.get('GITHUB_EVENT_NAME') != 'workflow_dispatch'
       or not (sys.flags.isolated and sys.flags.no_site and sys.flags.dont_write_bytecode)):
     raise ValueError('native input publication requires the registered manual Actions context and isolated Python')
-  if not positive(args.source_run_id) or not checksum(args.source_commit, 40) or not checksum(args.index_sha256):
+  if (not positive(args.source_run_id) or not positive(args.source_pr_number)
+      or not checksum(args.source_commit, 40) or not checksum(args.index_sha256)):
     raise ValueError('native publication needs an exact source run/commit/index pin')
   job = Path(os.environ['CI_JOB_TEMP'])
   identity = ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB'))
@@ -609,7 +665,8 @@ def main():
   root.mkdir()
   started, free = time.monotonic(), shutil.disk_usage(root).free
   report = dict(schema=1, publisher_source=os.environ['GITHUB_SHA'], source_commit=args.source_commit,
-      source_run_id=args.source_run_id, index_sha256=args.index_sha256, mode='publish' if args.publish else 'verify',
+      source_run_id=args.source_run_id, source_pr_number=args.source_pr_number,
+      index_sha256=args.index_sha256, mode='publish' if args.publish else 'verify',
       published_release=False, committed_input_index=False, runtime_activated=False, device_contacted=False)
   def persist():
     report.update(elapsed_seconds=time.monotonic()-started, own_kernel_peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024,
@@ -618,8 +675,8 @@ def main():
     pending.write_text(json.dumps(report, indent=2)+'\n')
     os.replace(pending, root/'report.json')
   try:
-    client = GitHub()
-    producer, states = gates(client, args.source_commit, args.source_run_id)
+    client = GitHub(root)
+    producer, states = gates(client, args.source_commit, args.source_run_id, args.source_pr_number)
     report.update(source_run_attempt=producer['run_attempt'], gates=states,
         gates_ready=all(s['ready'] for s in states), ready_to_publish=False)
     persist()
@@ -631,19 +688,12 @@ def main():
     if len(candidates) != 1:
       raise ValueError('native producer requires one unexpired input-only payload artifact')
     selected = candidates[0]
-    link = selected['workflow_run']
-    repository_id = producer['repository']['id']
-    if (link['id'] != args.source_run_id or link['head_sha'] != args.source_commit
-        or link['repository_id'] != repository_id or link['head_repository_id'] != repository_id
-        or not positive(selected['size_in_bytes']) or selected['size_in_bytes'] > 8*1024**3
-        or not isinstance(selected.get('digest'), str) or not selected['digest'].startswith('sha256:')
-        or not checksum(selected['digest'][7:])):
-      raise ValueError('native artifact identity/digest differs from the requested source')
+    pin = artifact_pin(selected, producer, args.source_commit, 8*1024**3)
     room(root, selected['size_in_bytes'])
     report.update(artifact_id=selected['id'], artifact_digest=selected['digest'])
     persist()
     archive = root/'producer.zip'
-    client.download(f'actions/artifacts/{selected["id"]}/zip', dict(bytes=selected['size_in_bytes'], sha256=selected['digest'][7:]), archive)
+    client.download(f'actions/artifacts/{selected["id"]}/zip', pin, archive)
     profiles = {role: client.source_json(args.source_commit, f'rust/native-{role}-provider.json') for role in ROLES}
     sdk_plan = client.source_json(args.source_commit, 'rust/native-system-sdk.json')
     commit = client.json('GET', 'git/commits/'+args.source_commit)
@@ -665,7 +715,7 @@ def main():
     (root/'native-bootstrap-inputs.candidate.json').write_bytes(raw_index)
     persist()
     if args.publish:
-      current_producer, current_states = gates(client, args.source_commit, args.source_run_id)
+      current_producer, current_states = gates(client, args.source_commit, args.source_run_id, args.source_pr_number)
       report.update(gates=current_states, gates_ready=all(s['ready'] for s in current_states),
           ready_to_publish=False)
       persist()

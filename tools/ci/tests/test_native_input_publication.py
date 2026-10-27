@@ -5,6 +5,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -19,6 +20,20 @@ payload = importlib.util.module_from_spec(_PAYLOAD)
 _PAYLOAD.loader.exec_module(payload)
 
 SOURCE, TREE = 'a'*40, 'b'*40
+
+
+def context_fixture(run_id=42, job='workspace', base=TREE, base_ref='dev'):
+  raw = (f'tree {"c"*40}\nparent {base}\nparent {SOURCE}\n'
+      'author Owned <ci@example.invalid> 1 +0000\ncommitter Owned <ci@example.invalid> 1 +0000\n\nOwned merge proof\n').encode()
+  merge = hashlib.sha1(b'commit '+str(len(raw)).encode()+b'\0'+raw).hexdigest()
+  repository = dict(id=7, full_name=publication.REPO)
+  event = dict(number=611, repository=repository.copy(), pull_request=dict(
+      body='Owned PR body must not be retained',
+      base=dict(ref=base_ref, sha=base, repo=repository.copy()), head=dict(sha=SOURCE, repo=repository.copy())))
+  env = dict(GITHUB_REPOSITORY=publication.REPO, GITHUB_REPOSITORY_ID='7', GITHUB_RUN_ID=str(run_id),
+      GITHUB_RUN_ATTEMPT='1', GITHUB_JOB=job, GITHUB_EVENT_NAME='pull_request', RUNNER_NAME='bin-actions',
+      RUNNER_ENVIRONMENT='self-hosted', GITHUB_REF='refs/pull/611/merge', GITHUB_SHA=merge)
+  return publication.validation_context.receipt(event, env, raw)
 
 
 def encode(value):
@@ -168,7 +183,7 @@ class PublicationTests(unittest.TestCase):
 
   def test_entry_refuses_non_actions_context_before_any_api_or_file_preparation(self):
     with mock.patch.dict(os.environ, {}, clear=True), \
-         mock.patch('sys.argv', ['publish_inputs.py', '--source-run-id', '42', '--source-commit', SOURCE, '--index-sha256', 'b'*64]), \
+         mock.patch('sys.argv', ['publish_inputs.py', '--source-run-id', '42', '--source-pr-number', '611', '--source-commit', SOURCE, '--index-sha256', 'b'*64]), \
          mock.patch.object(publication, 'GitHub') as client:
       with self.assertRaisesRegex(ValueError, 'registered manual Actions context'):
         publication.main()
@@ -309,12 +324,120 @@ class PublicationTests(unittest.TestCase):
     command.assert_not_called()
 
 
+class ContextEvidenceTests(unittest.TestCase):
+  def test_retained_context_cannot_be_rewritten_or_changed_at_job_completion(self):
+    with tempfile.TemporaryDirectory() as temp:
+      root = Path(temp)
+      data = encode(context_fixture())
+      retain = publication.validation_context.retain
+      previous_umask = os.umask(0o077)
+      try:
+        retain(root, data)
+      finally:
+        os.umask(previous_umask)
+      self.assertEqual((root/'validation-context.json').stat().st_mode & 0o777, 0o444)
+      retain(root, data, verify_only=True)
+      with self.assertRaises(FileExistsError):
+        retain(root, data)
+      with self.assertRaisesRegex(ValueError, 'changed during'):
+        retain(root, data+b' ', verify_only=True)
+      self.assertEqual((root/'validation-context.json').read_bytes(), data)
+
+  def test_original_event_identity_and_complete_commit_bytes_are_required(self):
+    value = context_fixture()
+    verify = publication.validation_context.verify
+    self.assertEqual(verify(value, 42, 1, 'workspace', 7, SOURCE, 611), (611, TREE))
+    self.assertNotIn(b'Owned PR body', encode(value))
+    for field, changed in [('checkout_sha', 'd'*40), ('checkout_tree', 'd'*40),
+                           ('base_sha', 'd'*40), ('commit_object_base64', 'AA=='),
+                           ('run_id', 43), ('run_attempt', True), ('job', 'another'),
+                           ('pr_number', 612), ('ref', 'refs/heads/dev')]:
+      with self.subTest(field=field):
+        invalid = dict(value, **{field: changed})
+        with self.assertRaises(ValueError):
+          verify(invalid, 42, 1, 'workspace', 7, SOURCE, 611)
+
+  def test_release_pr_capture_is_preserved_and_cannot_satisfy_the_dev_publisher(self):
+    value = context_fixture(base_ref='main')
+    with self.assertRaises(ValueError):
+      publication.validation_context.verify(value, 42, 1, 'workspace', 7, SOURCE, 611)
+    self.assertEqual(publication.validation_context.verify(value, 42, 1, 'workspace', 7,
+        SOURCE, 611, target_base='main'), (611, TREE))
+
+  def test_actual_shallow_git_commit_retains_both_parent_identities(self):
+    with tempfile.TemporaryDirectory() as temp:
+      root = Path(temp)
+      command = ['/usr/bin/git', '-c', 'user.name=Owned context fixture', '-c',
+          'user.email=ci@example.invalid', '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', '-C', temp]
+      def git(*args, data=None):
+        return subprocess.check_output([*command, *args], input=data, stderr=subprocess.PIPE).strip()
+      git('init', '-q')
+      tree = git('mktree', data=b'').decode()
+      base = git('commit-tree', tree, data=b'Owned base\n').decode()
+      head = git('commit-tree', tree, '-p', base, data=b'Owned head\n').decode()
+      merge = git('commit-tree', tree, '-p', base, '-p', head, data=b'Owned merge\n').decode()
+      (root/'.git/shallow').write_text(merge+'\n')
+      # Do not strip the raw object: its trailing newline participates in SHA-1.
+      raw = subprocess.check_output([*command, 'cat-file', 'commit', merge])
+      self.assertEqual(publication.validation_context.commit_object(raw), (merge, tree, [base, head]))
+
+  def test_context_entry_refuses_non_actions_execution_before_reading_git(self):
+    with mock.patch.dict(os.environ, {}, clear=True), \
+         mock.patch.object(publication.validation_context.subprocess, 'check_output') as git:
+      with self.assertRaisesRegex(ValueError, 'registered non-root PR Actions'):
+        publication.validation_context.main()
+      git.assert_not_called()
+
+  def test_small_api_pinned_proof_is_verified_and_retained_bytes_are_not_replaced(self):
+    with tempfile.TemporaryDirectory() as temp:
+      root = Path(temp)
+      fixture = Fixture(root)
+      fixture.run['event'] = 'pull_request'
+      fixture.run['path'] = '.github/workflows/rust.yml'
+      original = root/'owned-proof.zip'
+      with zipfile.ZipFile(original, 'w') as archive:
+        archive.writestr('validation-context.json', encode(context_fixture()))
+      digest = 'sha256:'+hashlib.sha256(original.read_bytes()).hexdigest()
+      artifact = dict(id=99, name='native-validation-context-42-1-workspace', expired=False,
+          size_in_bytes=original.stat().st_size, digest=digest,
+          workflow_run=dict(id=42, head_sha=SOURCE, repository_id=7, head_repository_id=7))
+      client = publication.GitHub(root)
+      with mock.patch.object(client, 'collect', return_value=[artifact]), \
+           mock.patch.object(client, 'download', side_effect=lambda route, pin, path:shutil.copyfile(original, path)) as download:
+        context, proof = client.pr_context(fixture.run, SOURCE, 611, 'workspace')
+        self.assertEqual(context, {(611, TREE)})
+        self.assertEqual(proof['artifact_digest'], digest)
+        # GitHub's live linked PR fields may move after the original event.
+        fixture.run['pull_requests'] = [dict(number=611, head=dict(sha='e'*40), base=dict(sha='f'*40))]
+        self.assertEqual(client.pr_context(fixture.run, SOURCE, 611, 'workspace')[0], context)
+        self.assertEqual(download.call_count, 1)
+        retained = root/'validation-contexts/42-1-workspace.zip'
+        raw = retained.read_bytes()
+        retained.write_bytes(b'X'+raw[1:])
+        with self.assertRaisesRegex(ValueError, 'independent artifact pin'):
+          client.pr_context(fixture.run, SOURCE, 611, 'workspace')
+        self.assertEqual(download.call_count, 1)
+        retained.unlink()
+        retained.symlink_to(original)
+        with self.assertRaisesRegex(ValueError, 'redirected'):
+          client.pr_context(fixture.run, SOURCE, 611, 'workspace')
+        self.assertEqual(original.read_bytes(), raw)
+        with self.assertRaisesRegex(ValueError, 'another event type'):
+          client.pr_context(dict(fixture.run, event='push'), SOURCE, 611, 'workspace')
+      for field in ('head_sha', 'repository_id', 'head_repository_id'):
+        with self.subTest(field=field):
+          invalid = copy.deepcopy(artifact)
+          invalid['workflow_run'][field] = 'f'*40 if field == 'head_sha' else 8
+          with self.assertRaisesRegex(ValueError, 'artifact identity'):
+            publication.artifact_pin(invalid, fixture.run, SOURCE, 1024**2)
+
+
 class GateTests(unittest.TestCase):
   def fixture(self):
     producer = dict(id=42, run_attempt=1, head_sha=SOURCE, path=publication.PRODUCER, event='push',
         repository=dict(full_name=publication.REPO, id=7), head_repository=dict(full_name=publication.REPO),
         status='completed', conclusion='success')
-    runs, jobs = [], {42:[dict(name='Native compiler in pinned AGNOS ARM userspace', status='completed',
+    runs, proofs, jobs = [], {}, {42:[dict(name='Native compiler in pinned AGNOS ARM userspace', status='completed',
         conclusion='success', runner_name='bin-actions')]}
     for number, (name, events, required) in enumerate(publication.GATES, 100):
       run = dict(producer, id=number, path='.github/workflows/'+name, event=events[0])
@@ -323,6 +446,7 @@ class GateTests(unittest.TestCase):
         run['pull_requests'] = [dict(number=611,
             base=dict(ref='dev', sha=TREE, repo=repository.copy()),
             head=dict(ref='codex/owned-source', sha=SOURCE, repo=repository.copy()))]
+        proofs[number] = context_fixture(number, publication.PROOF_JOBS[name])
       runs.append(run)
       jobs[number] = [dict(name=n, status='completed', conclusion='success', runner_name='bin-actions') for n in required]
     client = mock.Mock()
@@ -330,48 +454,69 @@ class GateTests(unittest.TestCase):
     def collect(route, key):
       return runs if key == 'workflow_runs' else jobs[int(route.split('/')[2])]
     client.collect.side_effect = collect
-    return client, producer, runs, jobs
+    def pr_context(run, source, number, job):
+      value = proofs[run['id']]
+      context = publication.validation_context.verify(value, run['id'], run['run_attempt'], job,
+          run['repository']['id'], source, number)
+      return {context}, dict(pr_number=context[0], base_sha=context[1])
+    client.pr_context.side_effect = pr_context
+    return client, producer, runs, jobs, proofs
 
   def test_latest_pending_wrong_runner_and_missing_required_arm_job_block_publication(self):
-    client, producer, runs, jobs = self.fixture()
-    self.assertTrue(all(s['ready'] for s in publication.gates(client, SOURCE, 42)[1]))
+    client, producer, runs, jobs, _ = self.fixture()
+    self.assertTrue(all(s['ready'] for s in publication.gates(client, SOURCE, 42, 611)[1]))
     runs.append(dict(runs[-1], id=300, status='queued', conclusion=None))
-    self.assertFalse(publication.gates(client, SOURCE, 42)[1][-1]['ready'])
+    self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][-1]['ready'])
     runs.pop()
-    jobs[100] = jobs[100][1:]
-    self.assertFalse(publication.gates(client, SOURCE, 42)[1][0]['ready'])
+    jobs[100] = [job for job in jobs[100] if job['name'] != 'Actual offline Cargo reuse (ARM QEMU)']
+    self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][0]['ready'])
     jobs[101][0]['runner_name'] = 'unregistered-hosted-runner'
-    self.assertFalse(publication.gates(client, SOURCE, 42)[1][1]['ready'])
+    self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][1]['ready'])
     client.json.return_value = dict(producer, conclusion='failure')
     with self.assertRaisesRegex(ValueError, 'completed successfully'):
-      publication.gates(client, SOURCE, 42)
+      publication.gates(client, SOURCE, 42, 611)
 
   def test_pr_gates_require_one_exact_source_dev_pr_and_base_context(self):
-    for fault in ('missing', 'base', 'head', 'base-repository', 'head-repository', 'number',
-                  'different-pr', 'different-base'):
+    for fault in ('base', 'head', 'base-repository', 'head-repository', 'number', 'attempt'):
       with self.subTest(fault=fault):
-        client, _, runs, _ = self.fixture()
-        run = runs[-1]
-        pull = run['pull_requests'][0]
-        if fault == 'missing': run['pull_requests'] = []
-        if fault == 'base': pull['base']['ref'] = 'dev-md'
-        if fault == 'head': pull['head']['sha'] = 'f'*40
-        if fault == 'base-repository': pull['base']['repo']['id'] = 8
-        if fault == 'head-repository': pull['head']['repo']['url'] = 'https://api.github.com/repos/owned/elsewhere'
-        if fault == 'number': pull['number'] = True
-        if fault == 'different-pr': pull['number'] = 612
-        if fault == 'different-base': pull['base']['sha'] = 'e'*40
-        states = publication.gates(client, SOURCE, 42)[1]
-        self.assertFalse(states[-1]['ready'])
-        self.assertFalse(all(state['ready'] for state in states))
+        client, _, _, _, proofs = self.fixture()
+        proof = proofs[107]
+        if fault == 'base': proof['base_ref'] = 'dev-md'
+        if fault == 'head': proof['head_sha'] = 'f'*40
+        if fault == 'base-repository': proof['base_repository_id'] = 8
+        if fault == 'head-repository': proof['head_repository_id'] = 8
+        if fault == 'number': proof['pr_number'] = True
+        if fault == 'attempt': proof['run_attempt'] = 2
+        with self.assertRaises(ValueError):
+          publication.gates(client, SOURCE, 42, 611)
 
-  def test_an_unrelated_target_does_not_replace_the_latest_eligible_dev_pr_run(self):
-    client, _, runs, _ = self.fixture()
+  def test_missing_context_or_mixed_original_bases_never_form_one_green_candidate(self):
+    for fault in ('missing', 'different-base'):
+      with self.subTest(fault=fault):
+        client, _, runs, _, proofs = self.fixture()
+        if fault == 'missing': runs[-1]['pull_requests'] = []
+        else: proofs[107] = context_fixture(107, 'check_user_docs', 'e'*40)
+        states = publication.gates(client, SOURCE, 42, 611)[1]
+        self.assertFalse(states[-1]['ready'])
+
+  def test_mutable_associated_pr_head_and_base_do_not_rewrite_the_original_event(self):
+    client, _, runs, _, _ = self.fixture()
+    for run in runs:
+      for pull in run.get('pull_requests', []):
+        pull['head']['sha'] = 'f'*40
+        pull['base']['sha'] = 'e'*40
+        pull['base']['ref'] = 'main'
+    states = publication.gates(client, SOURCE, 42, 611)[1]
+    self.assertTrue(all(state['ready'] for state in states))
+    self.assertEqual(states[-1]['pull_requests'], [dict(number=611, base_sha=TREE)])
+
+  def test_an_unrelated_pr_number_does_not_replace_the_requested_pr_run(self):
+    client, _, runs, _, _ = self.fixture()
     unrelated = copy.deepcopy(runs[-1])
     unrelated['id'] = 300
-    unrelated['pull_requests'][0]['base']['ref'] = 'main'
+    unrelated['pull_requests'][0]['number'] = 612
     runs.append(unrelated)
-    states = publication.gates(client, SOURCE, 42)[1]
+    states = publication.gates(client, SOURCE, 42, 611)[1]
     self.assertTrue(all(state['ready'] for state in states))
     self.assertEqual(states[-1]['run'], 107)
     self.assertEqual(states[-1]['pull_requests'], [dict(number=611, base_sha=TREE)])

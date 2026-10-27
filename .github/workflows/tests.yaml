@@ -54,6 +54,7 @@ jobs:
         with:
           submodules: true
       - uses: ./.github/actions/job-temp
+        with: {validation-context: 'true'}
       - uses: ./.github/actions/rust-path
       - run: ./tools/op.sh setup
       - name: Build openpilot
@@ -94,7 +95,7 @@ jobs:
             openpilot/system/tests/test_c3_agnos_manifest.py
       - uses: ./.github/actions/job-temp
         if: always()
-        with: {cleanup: 'true'}
+        with: {cleanup: 'true', validation-context: 'true'}
 
   model_web:
     name: Model and Bluetooth web controls

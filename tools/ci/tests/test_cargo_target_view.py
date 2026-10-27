@@ -55,7 +55,9 @@ class CargoTargetViewTests(unittest.TestCase):
             runner_temp.mkdir()
             environment_file = base/'github-env'
             action = yaml.load((ROOT/'.github/actions/job-temp/action.yml').read_text(), Loader=yaml.BaseLoader)
-            scripts = [step['run'] for step in action['runs']['steps']]
+            scripts = [step['run'] for step in action['runs']['steps'] if 'run' in step and step['if'] in
+                       ("inputs.cleanup != 'true'", "always() && inputs.cleanup == 'true'")]
+            self.assertEqual(len(scripts), 2)
             environment = dict(PATH='/usr/bin:/bin', HOME=str(base), GITHUB_ACTIONS='true',
                 RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='bin-actions', LOCAL_CI_ARCH='x86_64',
                 RUNNER_TEMP=str(runner_temp), GITHUB_WORKSPACE=str(source), GITHUB_ENV=str(environment_file),

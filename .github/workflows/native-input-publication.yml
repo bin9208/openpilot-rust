@@ -10,6 +10,10 @@ on:
         description: Exact tested producer Git commit
         required: true
         type: string
+      source_pr_number:
+        description: Dev PR number whose immutable validation receipts match the producer
+        required: true
+        type: string
       index_sha256:
         description: Exact candidate index SHA from the small producer artifact
         required: true
@@ -38,6 +42,7 @@ jobs:
       GH_PROMPT_DISABLED: '1'
       NATIVE_INPUT_RUN: ${{ inputs.source_run_id }}
       NATIVE_INPUT_SOURCE: ${{ inputs.source_commit }}
+      NATIVE_INPUT_PR: ${{ inputs.source_pr_number }}
       NATIVE_INPUT_INDEX: ${{ inputs.index_sha256 }}
       NATIVE_INPUT_PUBLISH: ${{ inputs.publish }}
     steps:
@@ -50,7 +55,7 @@ jobs:
         shell: bash
         run: |
           command -v gh curl python3
-          arguments=(--source-run-id "$NATIVE_INPUT_RUN" --source-commit "$NATIVE_INPUT_SOURCE" --index-sha256 "$NATIVE_INPUT_INDEX")
+          arguments=(--source-run-id "$NATIVE_INPUT_RUN" --source-pr-number "$NATIVE_INPUT_PR" --source-commit "$NATIVE_INPUT_SOURCE" --index-sha256 "$NATIVE_INPUT_INDEX")
           if [[ $NATIVE_INPUT_PUBLISH == true ]]; then arguments+=(--publish); fi
           /usr/bin/python3 -I -B -S tools/native/publish_inputs.py "${arguments[@]}"
       - uses: actions/upload-artifact@v6

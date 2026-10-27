@@ -27,11 +27,26 @@ SHA의 Git blob에서 source profile을 읽으며 artifact의 코드는 실행�
   PR 검사는 같은 저장소의 정확 head SHA와 `dev` 대상을 요구하고, 모든 필수 PR
   결과에 공통인 PR 번호·base SHA가 있어야 한다. 다른 대상의 실행은 섞지 않으며,
   같은 source여도 서로 다른 PR/기준 커밋의 성공을 합쳐 게시하지 않는다.
+  이때 실행 API의 `pull_requests[].head/base`는 원래 이벤트의 근거로 쓰지 않는다.
+  실제 관측에서 source run40568613889의 `head_sha`는9b118711c 그대로인데 연결된
+  PR head는 다음90a6fc3d1로 변경되었고 attempt1 조회도 같았다. 명시한
+  `source_pr_number`는 실행을 선택할 PR 번호이며, source/base의 근거는 아래 불변 파일이다.
   해당 source에 kernel 검사 자동 실행이 없으면 그 ref의 `native-resource-guard.yml`을
   수동 실행해 정확 SHA의 결과를 확보한다. 기존 실행을 취소하거나 재시작하지 않는다.
 - [Actions artifact API](https://docs.github.com/en/rest/actions/artifacts)의 repository/run/
   source/유효 기간·byte 수·SHA-256 digest를 확인한다. 입력 전용 ZIP 전체를 검증한 뒤 bounded
   central directory와 필요한 regular member만 읽는다.
+- PR Rust workspace·통합의 실제 build release·fast·mapped docs의 네 job은 검사 당시
+  `GITHUB_EVENT_PATH`에서 필요한 필드만 추출하고 실제 checkout이 `GITHUB_SHA`와
+  같은지 확인해 `native-validation-context-<run>-<attempt>-<job>`에 저장한다.
+  검사 종료 시에도 원래 이벤트·checkout·보존한444 파일의 byte를 재확인하며 변경은 거부한다.
+  PR body·이벤트 원문·환경 변수 전체는 보존하지 않는다. 실제 merge commit object의
+  전체 bytes를 제한된 data로 포함하므로 shallow clone도 SHA-1과 부모 두 개를
+  재검증할 수 있다. publisher는 artifact API의 run/source/attempt·만료·byte·SHA-256을
+  검증하고1MiB 이하 ZIP의 단일 JSON만 읽는다. commit data를 실행하지 않는다.
+  이 JSON의 원래 dev/PR/head/base/repository/runner와 실제 commit의 두 부모가 맞고,
+  네 검사에 같은 PR/base가 있어야 한다. 오래된 API 연결 정보로 이를 대체하지 않는다.
+  main PR에서도 원래 검사를 유지하고 증거는 남기지만 dev 입력 게시에는 사용할 수 없다.
 - source run/attempt/job, 독립 index SHA, 실제 입력 선택기의 initial/reused/docs와
   전체99개 sealed generation의 engineering 증거를 확인한다. source profile과 seed
   protocol/SDK/15 descriptor를 대조해 seed2개 파일·metadata17개·component archive15개,
@@ -58,6 +73,7 @@ artifact 크기와34개 파일의 실제 선언 크기로 계산하고 파일시
 ```sh
 gh workflow run native-input-publication.yml --repo bin9208/openpilot-rust --ref dev \
   -f source_run_id="$VERIFIED_PRODUCER_RUN" -f source_commit="$VERIFIED_PRODUCER_SHA" \
+  -f source_pr_number="$VERIFIED_SOURCE_PR" \
   -f index_sha256="$VERIFIED_INDEX_SHA256"
 ```
 

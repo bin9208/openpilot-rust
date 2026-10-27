@@ -630,6 +630,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
+        with: {validation-context: 'true'}
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
@@ -911,7 +912,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/logging-producer/**/*.log
       - uses: ./.github/actions/job-temp
         if: always()
-        with: {cleanup: 'true'}
+        with: {cleanup: 'true', validation-context: 'true'}
 
   xiaoge-runtime:
     name: rust Xiaoge source comparison (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})

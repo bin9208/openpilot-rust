@@ -4,6 +4,9 @@ inputs:
   cleanup:
     description: Remove this job's output after artifact and cache uploads
     default: 'false'
+  validation-context:
+    description: Retain the original PR event and actual checkout for publication gates
+    default: 'false'
 runs:
   using: composite
   steps:
@@ -49,7 +52,20 @@ runs:
           printf 'fi\n'
         } > "$owned/shell-env"
         printf 'CI_RUNNER_TEMP=%s\nCI_JOB_TEMP=%s\nBASH_ENV=%s/shell-env\n' "$RUNNER_TEMP" "$owned" "$owned" >> "$GITHUB_ENV"
-    - if: inputs.cleanup == 'true'
+    - if: inputs.cleanup != 'true' && inputs.validation-context == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      run: /usr/bin/python3 -I -B -S "$GITHUB_ACTION_PATH/../../../tools/ci/validation_context.py"
+    - if: always() && inputs.cleanup == 'true' && inputs.validation-context == 'true' && github.event_name == 'pull_request'
+      id: verify_validation_context
+      shell: bash
+      run: /usr/bin/python3 -I -B -S "$GITHUB_ACTION_PATH/../../../tools/ci/validation_context.py" --verify
+    - if: always() && inputs.cleanup == 'true' && inputs.validation-context == 'true' && github.event_name == 'pull_request' && steps.verify_validation_context.outcome == 'success'
+      uses: actions/upload-artifact@v6
+      with:
+        name: native-validation-context-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+        path: ${{ env.CI_JOB_TEMP }}/validation-context.json
+        if-no-files-found: error
+    - if: always() && inputs.cleanup == 'true'
       shell: bash
       run: |
         if [[ -z ${CI_JOB_TEMP:-} || -z ${CI_RUNNER_TEMP:-} ]]; then exit 0; fi
