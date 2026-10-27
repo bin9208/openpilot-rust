@@ -168,6 +168,11 @@ protocol 응답은 이 기능의 지원 여부이며, 정상 manager 부팅·모
 
 ## 최종 사용자 기기 수용 시험
 
+정확 소스 `2b896bd0e32764ddc7f19bcda1ef935ac79ec2c7`의 실제 loggerd/logmessaged
+ARM6개 비교는 [#608 결과](native-source-stamp-reuse-608.md)에 있다. 문서 변경은 두
+출력 fresh/같은 hash, loggerd만 수정하면 무관한 logmessaged fresh/같은 hash,
+legacy source stamp 보존을 확인했다. X64와 전체99 runtime/AGNOS/실기 수용은 별도다.
+
 전체 계획의 컴파일 입력 연결 검사는 [native 입력 조합기](native-input-bindings-599.md)의
 Actions 절차를 따른다. 실제9개 입력 역할의 pin·13그룹 환경·반복 plan·발행 거부를
 검사한다. 실행 자산/모델·전체 build·기기 수용의 준비 완료 판정은 별도로 유지한다.
