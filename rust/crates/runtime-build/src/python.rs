@@ -26,6 +26,23 @@ const REQUIRED: &[&str] = &[
     "lib/python3.12/encodings/__init__.py",
 ];
 
+// Authenticate the bytes the decompressor actually observes. Reopening a path
+// after assets::prepare must not turn a concurrently changed cache into an
+// independent expected-tree source.
+struct Authenticated<R> {
+    inner: R,
+    sha256: Sha256,
+    bytes: u64,
+}
+impl<R: Read> Read for Authenticated<R> {
+    fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        let count = self.inner.read(buffer)?;
+        self.sha256.update(&buffer[..count]);
+        self.bytes += count as u64;
+        Ok(count)
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Plan {
@@ -112,7 +129,12 @@ impl Plan {
 }
 
 fn unpack(plan: &Plan, archive: &Path, destination: Option<&Path>) -> Result<Tree> {
-    let decoder = flate2::read::MultiGzDecoder::new(regular_file(archive)?);
+    let input = Authenticated {
+        inner: regular_file(archive)?.take(plan.asset.bytes + 1),
+        sha256: Sha256::new(),
+        bytes: 0,
+    };
+    let decoder = flate2::read::MultiGzDecoder::new(input);
     let mut tar = tar::Archive::new(decoder.take(UNPACKED_LIMIT + 1));
     let mut entries = BTreeMap::new();
     let mut seen = BTreeSet::new();
@@ -239,8 +261,16 @@ fn unpack(plan: &Plan, archive: &Path, destination: Option<&Path>) -> Result<Tre
             return Err("unexpected Python archive tail".into());
         }
     }
-    if decoder.limit() == 0
-        || notices == 0
+    if decoder.limit() == 0 {
+        return Err("Python archive exhausted its expansion bound".into());
+    }
+    let compressed = decoder.into_inner().into_inner();
+    if compressed.bytes != plan.asset.bytes
+        || format!("{:x}", compressed.sha256.finalize()) != plan.asset.sha256
+    {
+        return Err("Python compressed stream differs from its authenticated input".into());
+    }
+    if notices == 0
         || REQUIRED
             .iter()
             .any(|path| !matches!(entries.get(Path::new(path)), Some(Entry::File { .. })))
@@ -271,6 +301,41 @@ fn unpack(plan: &Plan, archive: &Path, destination: Option<&Path>) -> Result<Tre
         openpilot_runtime_installer::verify_native_elf(&root.join("bin/python3.12"), true)?;
     }
     Ok(tree)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parser_authenticates_its_own_stream_instead_of_trusting_an_earlier_cache_check() {
+        let temporary = tempfile::tempdir().unwrap();
+        let mut plan: Plan =
+            serde_json::from_str(include_str!("../../../native-python-toolchain.json")).unwrap();
+        let tar = tar::Builder::new(flate2::write::GzEncoder::new(
+            Vec::new(),
+            flate2::Compression::fast(),
+        ));
+        let bytes = tar.into_inner().unwrap().finish().unwrap();
+        let archive = temporary.path().join("owned-empty.tar.gz");
+        fs::write(&archive, &bytes).unwrap();
+        plan.asset.bytes = bytes.len() as u64;
+        plan.asset.sha256 = "0".repeat(64);
+        assert!(unpack(&plan, &archive, None)
+            .unwrap_err()
+            .to_string()
+            .contains("compressed stream differs"));
+        plan.asset.sha256 = hash(&bytes);
+        assert!(unpack(&plan, &archive, None)
+            .unwrap_err()
+            .to_string()
+            .contains("incomplete"));
+        plan.asset.bytes += 1;
+        assert!(unpack(&plan, &archive, None)
+            .unwrap_err()
+            .to_string()
+            .contains("compressed stream differs"));
+    }
 }
 
 pub fn prepare(

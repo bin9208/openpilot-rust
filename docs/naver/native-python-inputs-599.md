@@ -51,6 +51,8 @@ openpilot-runtime-inputs --prepare-python --plan rust/native-python-toolchain.js
 ```
 
 원본 archive는 SHA로 캐시하고 재사용할 때에도 전체 size/hash를 검사한다.
+압축 해제기가 실제 관찰한 압축 byte stream의 전체 길이/SHA도 같은 읽기에서 검사한다.
+cache 인증 후 파일을 다시 여는 사이의 변경으로 기대 Tree를 바꿀 수 없다.
 기대 Tree는 인증한 archive를 읽어서 계산한다. 현재 prefix를 snapshot해 스스로 신뢰하지
 않으며 receipt만 믿지 않는다. 압축 해제/파일 hash와 실제 prefix 검증의 반복 I/O는 남아
 있다. 검증에 원래 archive cache가 필요하며 이를 제거하면 다시 받아야 한다.
@@ -84,6 +86,8 @@ foundation x64/ARM의 다섯 owned gzip fixture 검사는 같은 prefix/inode �
 license/필수 파일 누락·이탈·중복·mode·ELF·link cycle, 위조 receipt/추가 파일/손상된 hit,
 lock 충돌과 해제 후 재사용을 확인한다. GNU long-name도 실제 tar parser 경계에서 검사한다.
 헤더 모양의 가짜 ELF를 실행하지 않으며 실제 interpreter 성공 증거로 사용하지 않는다.
+추가 parser 단위 검사는 앞선 cache 검사에 의존하지 않는 stream 자체의 SHA/길이 검사를
+확인한다. 이 검사를 실제 interpreter/모델 실행 성공으로 표현하지 않는다.
 
 genuine host helper는 실제 공식 archive 준비/반복, 독립 Tree hash와 AArch64 header를
 확인한다. raw archive cache만 ARM guest에 연결하고 source-built ARM helper로 별도
