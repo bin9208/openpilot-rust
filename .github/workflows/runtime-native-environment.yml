@@ -111,6 +111,16 @@ on:
       - 'rust/native-panda-source-contract.json'
       - 'rust/native-panda-provider.json'
       - 'rust/native-dbc-provider.json'
+      - 'rust/native-usbgpu-provider.json'
+      - 'rust/native-usbgpu-source-contract.json'
+      - 'rust/native-usbgpu-model.json'
+      - 'rust/tools/native_runtime_layout.py'
+      - 'rust/crates/runtime-build/examples/native_full_generation.rs'
+      - 'rust/tools/tests/test_native_runtime_layout.py'
+      - 'rust/crates/runtime-build/src/usbgpu_inputs.rs'
+      - 'rust/crates/runtime-build/src/runtime_layout.rs'
+      - 'rust/crates/runtime-build/tests/usbgpu_inputs.rs'
+      - 'tools/ci/prepare_native_usbgpu_inputs.py'
       - 'rust/native-dbc-source-contract.json'
       - 'rust/crates/runtime-build/src/dbc_inputs.rs'
       - 'rust/crates/runtime-build/tests/dbc_inputs.rs'
@@ -539,6 +549,22 @@ jobs:
           python3 tools/ci/prepare_native_dbc_inputs.py \
             --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
       - uses: actions/cache/restore@v4
+        id: usbgpu-model-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-usbgpu-model-assets
+          key: native-usbgpu-model-${{ hashFiles('rust/native-usbgpu-model.json') }}-v1
+      - name: Prepare source-bound eGPU companions and independently cached model
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_usbgpu_inputs.py \
+            --preparer "$native_target/debug/build-runtime-ffmpeg" --inputs "$native_target/debug/openpilot-runtime-inputs" \
+            --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: actions/cache/save@v4
+        if: steps.usbgpu-model-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-usbgpu-model-assets
+          key: native-usbgpu-model-${{ hashFiles('rust/native-usbgpu-model.json') }}-v1
+      - uses: actions/cache/restore@v4
         id: python-input-cache
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-python-assets
@@ -682,6 +708,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-mpc-*.json
             ${{ env.CI_JOB_TEMP }}/native-panda-*.json
             ${{ env.CI_JOB_TEMP }}/native-dbc-*.json
+            ${{ env.CI_JOB_TEMP }}/native-usbgpu-*.json
+            ${{ env.CI_JOB_TEMP }}/native-usbgpu-export/*
+            ${{ env.CI_JOB_TEMP }}/native-usbgpu-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-dbc-export/*
             ${{ env.CI_JOB_TEMP }}/native-dbc-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-python-*.json
@@ -726,6 +755,13 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-dbc-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-usbgpu-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-bound-plan/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-generation-evidence/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-*-evidence/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-input-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-dbc-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-dbc-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-*.json

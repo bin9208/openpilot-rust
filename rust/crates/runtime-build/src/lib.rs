@@ -35,6 +35,7 @@ pub mod prepare;
 #[cfg(feature = "prepare-python")]
 pub mod python;
 pub mod resources;
+pub mod runtime_layout;
 pub mod selection;
 mod source;
 #[cfg(feature = "prepare-source-assets")]
@@ -45,6 +46,7 @@ pub mod supervision;
 pub mod system_sdk;
 #[cfg(feature = "prepare-rust")]
 pub mod toolchain;
+pub mod usbgpu_inputs;
 pub use source::Source;
 
 use serde::{Deserialize, Serialize};

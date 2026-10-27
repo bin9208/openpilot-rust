@@ -9,7 +9,7 @@ use crate::{
 use openpilot_runtime_build::{
     assets, dbc_inputs, digest_file,
     inputs::{Entry, Tree},
-    mpc_inputs, panda_inputs, Source,
+    mpc_inputs, panda_inputs, usbgpu_inputs, Source,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -43,6 +43,10 @@ const PANDA_CONTRACT: &[u8] = include_bytes!("../../../native-panda-source-contr
 const DBC_INVENTORY: &str = "ad6237ec04397457faf2d522a8df5147160addd02a242d160a1d364dc9450215";
 const DBC_CONTRACT_SHA: &str = "a10157df9207fdbe50222e850d08fb571c648f39a24fe9018cc325115054ba9b";
 const DBC_CONTRACT: &[u8] = include_bytes!("../../../native-dbc-source-contract.json");
+const USBGPU_INVENTORY: &str = "c237539c1c61a00e21b87384f0793f79fbb6ccc94816d84147b58221e480c40d";
+const USBGPU_CONTRACT_SHA: &str =
+    "b26cae3cba7e59e41f661294c049d63f0d69b008ecd6081906c61365823fbc95";
+const USBGPU_CONTRACT: &[u8] = include_bytes!("../../../native-usbgpu-source-contract.json");
 const SOURCE: &str = "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31";
 const ORIGIN: &str = "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291";
 const MANIFEST: &str = "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee";
@@ -141,6 +145,7 @@ fn component_names(profile: &str) -> Result<(&'static str, &'static str)> {
         "acados022-runtime" => Ok(("acados022-runtime", "acados022-runtime.tar.gz")),
         "panda-firmware-runtime" => Ok(("panda-firmware", "panda-firmware-runtime.tar.gz")),
         "radarcan-dbc-runtime" => Ok(("radarcan-dbc", "radarcan-dbc-runtime.tar.gz")),
+        "usbgpu-generic-hcq-data" => Ok(("usbgpu-hcq-data", "usbgpu-hcq-data.tar.gz")),
         _ => Err("unknown fixed foreign provider profile".into()),
     }
 }
@@ -199,6 +204,12 @@ impl Plan {
                 DBC_CONTRACT,
                 DBC_CONTRACT_SHA,
             )),
+            "usbgpu-generic-hcq-data" => Some((
+                usbgpu_inputs::PATH,
+                usbgpu_inputs::ARTIFACT_CONTRACT,
+                USBGPU_CONTRACT,
+                USBGPU_CONTRACT_SHA,
+            )),
             _ => None,
         }
     }
@@ -212,6 +223,7 @@ impl Plan {
             "acados022-runtime" => mpc_inputs::Contract::read(&path)?.verify_source(root),
             "panda-firmware-runtime" => panda_inputs::Contract::read(&path)?.verify_source(root),
             "radarcan-dbc-runtime" => dbc_inputs::Contract::read(&path)?.verify_source(root),
+            "usbgpu-generic-hcq-data" => usbgpu_inputs::Contract::read(&path)?.verify_source(root),
             _ => Err("provider has no source contract".into()),
         }
     }
@@ -268,6 +280,7 @@ impl Plan {
             "acados022-runtime" => (15, MPC_INVENTORY),
             "panda-firmware-runtime" => (7, PANDA_INVENTORY),
             "radarcan-dbc-runtime" => (105, DBC_INVENTORY),
+            "usbgpu-generic-hcq-data" => (48, USBGPU_INVENTORY),
             _ => {
                 return Err(
                     "foreign provider plan differs from the fixed original release inventory"
@@ -876,6 +889,7 @@ fn prepare_inner(
             "acados022-runtime" => mpc_inputs::verify_runtime(source, &prepared.root)?,
             "panda-firmware-runtime" => panda_inputs::verify_runtime(source, &prepared.root)?,
             "radarcan-dbc-runtime" => dbc_inputs::verify_runtime(source, &prepared.root)?,
+            "usbgpu-generic-hcq-data" => usbgpu_inputs::verify_companions(source, &prepared.root)?,
             _ => return Err("unexpected bound provider profile".into()),
         }
     }
@@ -977,6 +991,25 @@ pub fn cli(args: &[String]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn egpu_companions_exclude_the_large_independently_pinned_model() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let plan = Plan::read(&root.join("native-usbgpu-provider.json")).unwrap();
+        assert_eq!(plan.members.len(), 48);
+        assert!(!plan
+            .members
+            .contains_key(Path::new(usbgpu_inputs::MODEL_PATH)));
+        assert!(plan
+            .members
+            .values()
+            .all(|m| m.mode == 0o444 && m.link.is_none()));
+        assert!(plan.members.values().map(|m| m.bytes).sum::<u64>() < 4 * 1024 * 1024);
+        assert!(plan.source_binding().is_err());
+        assert!(expected(&plan)
+            .unwrap()
+            .entries
+            .contains_key(Path::new(usbgpu_inputs::ARTIFACT_CONTRACT)));
+    }
     #[test]
     fn dbc_profile_keeps_the_complete_original_data_and_source_contract() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");

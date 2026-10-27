@@ -1,5 +1,9 @@
 # 성능 개선·콤마 자체 빌드 우선 실행 — #598
 
+[전체 입력과 빌드 연결](native-complete-inputs-599.md)은18개 역할과 ordinary Git 자산을
+하나의 검증된 Layout에 묶고 실제99개 빌드·source-built 봉인/ABI·재사용 검사를 실행하도록
+연결한다. 구현 후 새 Actions 성공은 아직 미확인이며 정상 기기 수용은 계속 남아 있다.
+
 [모델 불변 실행 입력](native-model-runtime-inputs-600.md)에 선택한4개 pipeline의 export,
 Git source/원래 compiler provenance와 전체 output 확인, native build/Layout/seal/source
 generation 시작 검사를 연결했다. 실제11개 runtime Tree 계획 조합과 새 기능 검사는 대기다.

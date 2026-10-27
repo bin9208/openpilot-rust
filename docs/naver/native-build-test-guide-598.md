@@ -1,5 +1,9 @@
 # 콤마 자체 빌드·다운로드 재사용 검증 안내 — #598
 
+[전체18개 입력 Layout과99개 실제 빌드 연결](native-complete-inputs-599.md)에 eGPU 모델의
+독립 cache, 완전한 source/data 검증, source-built 봉인/ABI 및 반복·docs·작은 logger 변경의
+재사용 검사를 연결했다. 새 source의 Actions 실행 결과는 아직 미확인이다.
+
 [모델 준비 wheel·factory compiler 안내](native-model-wheel-inputs-599.md)에 NumPy/zstandard
 내용별 준비와 원래 C 라이브러리 대조, 실제 factory LLVM20.1/QCOM 경로의 Actions 검사를
 추가했다. ONNX 전체 생성·생성물 cache와 전체 native runtime 수용은 계속 남아 있다.

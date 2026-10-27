@@ -1,10 +1,10 @@
-# 실제 runtime의 문서 변경 재사용 — #608 (ARM6개 비교 통과, X64 대기)
+# 실제 runtime의 문서 변경 재사용 — #608 (X64·ARM6개 비교 통과)
 
 상위 #598/#600. dependency-free fixture의 Cargo fresh만으로 실제 runtime의 문서 변경
 재사용을 입증할 수 없었다. `logging/build.rs`와 `loggerd/build.rs`가 Git HEAD/index 및
 모든 추적 파일을 감시하고 전체 소스 SHA를 바이너리에 넣으므로, 문서 변경도 공통 logging
-및 관련 실행 파일의 재빌드를 유발할 수 있었다. 아래 정확 소스 ARM6개 비교는 통과했다.
-X64·정상 PR/병합 후 검사와 전체 generation의 정확 SHA 검증은 아직 미완료다.
+및 관련 실행 파일의 재빌드를 유발할 수 있었다. 아래 정확 소스의 X64·ARM6개 비교는 모두 통과했다.
+정상 PR/병합 후 검사와 전체 generation의 정확 SHA 검증은 아직 미완료다.
 
 ## 변경 경계
 
@@ -111,3 +111,26 @@ ARM job121622330958은 원래 logging/loggerd 회귀와 Clippy를 통과했다. 
 schema와 입력 검증은 바꾸지 않는다. ARM 예산만360분으로 늘려 원래6개 비교를 모두 수행한다.
 X6445분, 원래 logging/loggerd 회귀·Clippy·Rust/tool/input pin은 유지한다. 이 시간은 QEMU
 user-space의 해당 CI 실행이며 comma 3X 시간·CPU 개선이나 전체 runtime 성능이 아니다.
+
+## X64까지 완료된 전체 실행 — 2026-10-27
+
+같은 source `2b896bd0e32764ddc7f19bcda1ef935ac79ec2c7`의
+[Actions40376779331](https://github.com/bin9208/openpilot-rust/actions/runs/40376779331)은 전체 success다.
+X64 job121761883374와 ARM job121761883702 모두 원래 logging/loggerd 회귀·strict Clippy·6개 비교를
+통과했다. X64 artifact12731260583(14,977bytes)와 기존 ARM artifact12702798313(15,392bytes)의
+실제 보고서를 읽고 대조했다. 앞 절의 X64 queued는 당시 관측이며 현재 상태는 success다.
+
+| 실제 비교 | X64 elapsed ms | ARM QEMU/PRoot elapsed ms |
+| --- | ---: | ---: |
+| native 초기 | 394120 | 7217097 |
+| native 같은 입력 반복 | 1769 | 20378 |
+| native 문서 변경 | 1568 | 19955 |
+| native logger help 변경 | 13107 | 263135 |
+| legacy 초기 | 395272 | 7251467 |
+| legacy 문서 변경 | 53538 | 1066657 |
+
+양쪽 모두 반복/docs에서는 loggerd와 logmessaged가 fresh=true이고 hash가 그대로였다.
+logger help 변경에서는 실제 loggerd 출력/hash가 바뀌고 logmessaged는 fresh/동일 hash였다.
+legacy 기본 source stamp와 실제 compilation provenance 보존도 summary에서 확인했다.
+이것은 logger 두 실행 파일의 실제 Cargo 입력 재사용 증거다. 전체99개 generation/기기 시간,
+전체 CPU 개선 또는 aggregate RAM peak의 증거가 아니며 정상 PR/병합 후 확인은 남는다.

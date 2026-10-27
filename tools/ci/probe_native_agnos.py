@@ -2102,6 +2102,148 @@ def native_dbc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_w
       emulation='QEMU/PRoot ARM user space on x64 bin-actions')
 
 
+def native_usbgpu_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Reuse original data-only companions and the independent raw model cache."""
+  source=Path(os.environ['GITHUB_WORKSPACE'])
+  plan=json.loads((source/'rust/native-usbgpu-provider.json').read_text())
+  room(work,4*sum(row['bytes'] for row in plan['members'].values())+16*1024**2)
+  exported=json.loads((work.parent/'native-usbgpu-export.json').read_text())
+  host=json.loads((work.parent/'native-usbgpu-initial.json').read_text())
+  def execute(argv,name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return json.loads((work/name).read_text())
+  command=[work/'project-target/debug/build-runtime-ffmpeg','--prepare-released-provider',
+      '--source-root',source_mount,'--plan',f'{source_mount}/rust/native-usbgpu-provider.json',
+      '--descriptor',Path(guest_work)/'usbgpu-export/provider.json','--descriptor-sha256',exported['descriptor_sha256'],
+      '--cache',Path(guest_work)/'usbgpu-components','--store',work/'native-usbgpu-prefixes']
+  rows=[execute(command,f'native-usbgpu-{phase}.json') for phase in ('initial','reused')]
+  for i,row in enumerate(rows):
+    assert row['tree_sha256']==host['tree_sha256']==exported['tree_sha256']
+    assert row['source_binding']==host['source_binding']==exported['source_binding']
+    assert row['source_binding']['source']['commit']==evidence['source_commit']
+    assert row['source_binding']['inputs_match'] and not row['source_binding']['regenerated']
+    assert row['asset']['transferred_bytes']==row['asset']['stored_bytes']==row['offline_seed_bytes']==0
+    assert (row['copied_bytes']>0)==(i==0)
+  model_command=[work/'project-target/debug/openpilot-runtime-inputs','--prepare-assets',
+      '--plan',f'{source_mount}/rust/native-usbgpu-model.json','--cache',Path(guest_work)/'usbgpu-model-assets']
+  models=[execute(model_command,f'native-usbgpu-model-{phase}.json')['usbgpu-model'] for phase in ('initial','reused')]
+  assert all(row['transferred_bytes']==row['stored_bytes']==0 for row in models)
+  assert models[0]['path']==models[1]['path'] and models[0]['sha256']==plan_model(source)['sha256']
+  evidence['native_usbgpu_inputs']=dict(source_binding=rows[0]['source_binding'],tree_sha256=rows[0]['tree_sha256'],
+      model_sha256=models[0]['sha256'],model_cached_independently=True,repeated_http_body_bytes=0,
+      repeated_copied_bytes=0,runtime_data_regenerated=False,gpu_executed=False,physical_device_execution=False)
+
+
+def plan_model(source):
+  return json.loads((source/'rust/native-usbgpu-model.json').read_text())['assets']['usbgpu-model']
+
+
+def native_complete_layout_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Compose every real input and hand a complete layout to the 99-target build."""
+  room(work,64*1024**2)
+  def read(name): return json.loads((work/name).read_text())
+  def pin(row): return dict(root=row['root'],receipt=row['tree_receipt'],sha256=row['tree_sha256'])
+  def execute(argv,name,required=True):
+    before=shutil.disk_usage(work).free
+    result=run(guest_command(argv),log,stdout_path=work/name,required=required)
+    result['observed_disk_growth_bytes']=before-shutil.disk_usage(work).free
+    evidence['commands'].append(result)
+    return result
+  roles={name:pin(read(f'native-companion-{name}-initial.json')) for name in ('numerics','geos','brotli','acados')}
+  roles.update({name:pin(read(f'native-display-{name}-initial.json')) for name in ('sdl','turbojpeg')})
+  roles.update({name:pin(read(f'native-media-{name}-initial.json')) for name in ('ffmpeg-tools','freesans')})
+  roles.update(ffmpeg=pin(read('native-provider-initial.json')),raylib=pin(read('native-raylib-provider-initial.json')),
+      opencv=pin(read('native-opencv-prefix-initial.json')['provider']),
+      panda=pin(read('native-panda-initial.json')),mpc=pin(read('native-mpc-initial.json')),
+      dbc=pin(read('native-dbc-initial.json')),usbgpu=pin(read('native-usbgpu-initial.json')),
+      models=pin(read('native-model-generation-initial.json')['export']),
+      **{'source-lfs':pin(read('native-source-lfs-initial.json'))})
+  raw=read('native-usbgpu-model-initial.json')['usbgpu-model']
+  roles['usbgpu-model']={key:raw[key] for key in ('path','sha256','bytes')}
+  pins=read('native-model-input-pins.json')
+  budget=read('native-project-growth-estimates.json')
+  spec=dict(schema=1,roles=roles,toolchain_root=pins['inputs']['rust']['root'],libraries=['/usr/lib/aarch64-linux-gnu','/lib/aarch64-linux-gnu'],
+      expected_source_growth_bytes=budget['expected_source_growth_bytes'],remaining_object_growth_bytes=budget['remaining_object_growth_bytes'])
+  path=work/'native-complete-input-spec.json'
+  path.write_text(json.dumps(spec,indent=2)+'\n')
+  python=read('native-python-initial.json')['python']
+  command=[python,'-I','-B','-S','-X',f'pycache_prefix={guest_work}/runtime-layout-bytecode',
+      f'{source_mount}/rust/tools/native_runtime_layout.py','--root',source_mount,'--spec',path,
+      '--store',work/'native-complete-input-prefixes','--verifier',work/'project-target/debug/openpilot-runtime-inputs']
+  rows=[]
+  for phase in ('initial','reused'):
+    report=work/f'native-complete-input-{phase}.json'
+    execute([*command,'--report',report],f'native-complete-input-{phase}.txt')
+    row=read(report.name)
+    assert row['source']['commit']==evidence['source_commit'] and row['required_roles']==18
+    assert row['source_data_verified'] and not row['runtime_activated'] and not row['full_runtime_build']
+    rows.append(row)
+  assert rows[0]['identity']==rows[1]['identity'] and rows[0]['root']==rows[1]['root']
+  assert rows[1]['copied_bytes']==rows[1]['linked_bytes']==0
+  (work/'native-complete-layout.json').write_text(json.dumps(rows[0]['layout'],indent=2)+'\n')
+  pins['runtime_inputs']=rows[0]['runtime_inputs']
+  (work/'native-complete-input-pins.json').write_text(json.dumps(pins,indent=2)+'\n')
+  planner=work/'project-target/debug/openpilot-runtime-plan'
+  cargo=Path(pins['inputs']['rust']['root'])/'bin/cargo'
+  execute([planner,'--root',source_mount,'--cargo',cargo,'--native-inputs',work/'native-complete-input-pins.json',
+      '--budgets',work/'native-project-growth-estimates.json','--output',work/'native-complete-bound-plan'],
+      'native-complete-bound-plan-summary.json')
+  complete=read('native-complete-bound-plan/build-plan.json')
+  previous=read('native-model-bound-plan/build-plan.json')
+  assert complete['groups']==previous['groups'] and complete['runtime_inputs']==rows[0]['runtime_inputs']
+  evidence['native_complete_layout']=dict(identity=rows[0]['identity'],tree_sha256=rows[0]['tree_sha256'],
+      required_roles=18,compiler_groups=13,binaries=99,initial_copied_bytes=rows[0]['copied_bytes'],
+      initial_logical_linked_bytes=rows[0]['linked_bytes'],repeated_copied_bytes=0,repeated_linked_bytes=0,
+      source_data_verified=True,full_runtime_build=False,runtime_activated=False,physical_device_execution=False)
+  # Execute the complete bound plan, not an inferred build success from planning.
+  # Per-group/source/object growth is admitted by the same native build APIs.
+  rust=pins['inputs']['rust']['root']
+  room(work,2*1024**3)
+  execute(['/usr/bin/env',f'RUSTC={Path(rust)/"bin/rustc"}',cargo,'build','--locked','--offline',
+      '--manifest-path',f'{source_mount}/rust/Cargo.toml','-p','openpilot-runtime-build',
+      '--example','native_full_generation','--target-dir',work/'project-target'],
+      'native-complete-generation-tool-build.txt')
+  base=work/'native-complete-stores'
+  (base/'params/d').mkdir(parents=True)
+  (base/'params/d/IsOnroad').write_bytes(b'0')
+  fixture=work/'native-complete-fixture-source'
+  execute(['git','clone','--shared',work/'native-model-fixture-source',fixture],'native-complete-source-clone.txt')
+  execute(['git','-C',fixture,'remote','set-url','origin','https://github.com/bin9208/openpilot-rust.git'],
+      'native-complete-source-origin.txt')
+  execute(['git','-C',fixture,'checkout','--detach',evidence['source_commit']],'native-complete-source-checkout.txt')
+  generation_command=[work/'project-target/debug/examples/native_full_generation','--root',fixture,
+      '--plan',work/'native-complete-bound-plan/build-plan.json','--layout',work/'native-complete-layout.json',
+      '--cache',work/'native-complete-cargo-cache','--toolchain',Path(rust)/'bin','--stores',base]
+  execute(['/usr/bin/time','-v','-o',work/'native-complete-initial-resources.txt',
+      *generation_command,'--evidence',work/'native-complete-generation-evidence'],
+      'native-complete-generation-result.json')
+  generation=read('native-complete-generation-evidence/generation.json')
+  assert generation['source']['commit']==evidence['source_commit']
+  assert generation['binaries']==99 and generation['compiler_groups']==13
+  assert generation['source_built_sealer_and_abi_audit_passed'] and generation['source_generation_verified']
+  assert generation['composed_staging_cache_absence_verified'] and not generation['runtime_activated']
+  assert not generation['runtime_started'] and not generation['physical_device_execution']
+  evidence['native_complete_generation']=generation
+  prior=work/'native-complete-generation-evidence/prepared.json'
+  cases=[dict(case='repeat',request_source=dict(commit=evidence['source_commit']))]
+  cases+=evidence['native_model_generation']['actual_source_reuse_cases']
+  reuse=[]
+  for case in cases:
+    kind=case['case']
+    execute(['git','-C',fixture,'checkout','--detach',case['request_source']['commit']],f'native-complete-{kind}-checkout.txt')
+    execute(['/usr/bin/time','-v','-o',work/f'native-complete-{kind}-resources.txt',
+        *generation_command,'--previous',prior,'--reuse-kind',kind,
+        '--evidence',work/f'native-complete-{kind}-evidence'],f'native-complete-{kind}-result.json')
+    result=read(f'native-complete-{kind}-evidence/reuse.json')
+    assert result['source']['commit']==case['request_source']['commit']
+    assert result['compiler_groups']==13 and result['binaries']==99 and not result['runtime_activated']
+    assert bool(result['rebuilt_groups'])==(kind=='small-logger')
+    reuse.append(result)
+  evidence['native_complete_generation_reuse']=reuse
+  evidence['native_complete_generation_resource_limit']='per-command wall time, observed disk growth, and single-child maximum RSS; not aggregate process-tree/kernel memory peak or physical ARM/device evidence'
+
+
+
 def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Assemble the actual 99-target plan using all independently prepared inputs."""
   room(work,4*1024**2)
@@ -2281,7 +2423,7 @@ def main():
     (work / 'ffmpeg-source').mkdir()
     (work / 'provider-assets').mkdir()
     (work / 'provider-export').mkdir()
-    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export','source-lfs-assets','panda-components','panda-export','python-assets','model-wheel-assets','model-assets'):
+    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export','source-lfs-assets','panda-components','panda-export','python-assets','model-wheel-assets','model-assets','dbc-components','dbc-export','usbgpu-components','usbgpu-export','usbgpu-model-assets'):
       (work/name).mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
@@ -2315,6 +2457,9 @@ def main():
              '-b', f'{owned / "native-panda-export"}:{guest_work}/panda-export',
              '-b', f'{owned / "native-dbc-components"}:{guest_work}/dbc-components',
              '-b', f'{owned / "native-dbc-export"}:{guest_work}/dbc-export',
+             '-b', f'{owned / "native-usbgpu-components"}:{guest_work}/usbgpu-components',
+             '-b', f'{owned / "native-usbgpu-export"}:{guest_work}/usbgpu-export',
+             '-b', f'{owned / "native-usbgpu-model-assets"}:{guest_work}/usbgpu-model-assets',
              '-b', f'{owned / "native-raylib-assets"}:{guest_work}/raylib-assets',
              '-b', f'{owned / "native-raylib-components"}:{guest_work}/raylib-components',
              '-b', f'{owned / "native-raylib-provider-export"}:{guest_work}/raylib-provider-export',
@@ -2382,8 +2527,10 @@ def main():
     native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_panda_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_dbc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_usbgpu_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_model_generation_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_complete_layout_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))
