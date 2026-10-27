@@ -4,6 +4,10 @@
 환경 [#599](https://github.com/bin9208/openpilot-rust/issues/599),
 세대·캐시 [#600](https://github.com/bin9208/openpilot-rust/issues/600).
 
+준비된9개 입력 역할을 source의13그룹에 연결하는 `--native-inputs` 모드와
+명시적 예상 증가량·검사 방법은 [입력 연결 안내](native-input-bindings-599.md)에 있다.
+이 경로도 실제 전체 runtime 컴파일과 실행 자산 준비를 별도로 요구한다.
+
 `rust/native-runtime-catalog.json`은 기존 dev 계열 전체 runtime의 실제
 `b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a` 빌드 목록89개/11그룹을 보존하고,
 자체 빌드 도구8개와 기존 sealer/ELF audit2개를 별도 그룹으로 추가한다. 현재 목록은

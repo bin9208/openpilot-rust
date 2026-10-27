@@ -1,14 +1,15 @@
-use openpilot_runtime_build::{catalog, Result};
+use openpilot_runtime_build::{catalog, catalog_bindings, Result};
 use std::path::PathBuf;
 
 fn run() -> Result<()> {
     let mut args = std::env::args_os().skip(1);
     let (mut root, mut cargo, mut bindings, mut output) = (None, None, None, None);
+    let (mut native_inputs, mut budgets) = (None, None);
     let mut check = false;
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--help" | "-h") => {
-                println!("Usage: openpilot-runtime-plan --root CHECKOUT --cargo ABSOLUTE_CARGO (--check | --bindings PINNED_INPUTS_JSON --output NEW_DIRECTORY)\nAudit the tracked ARM runtime roster and compiler input requirements against actual locked Cargo metadata. Assemble the serial plan from verified receipts and per-group assignments; compiler_inputs_bound reports whether all required provider Trees are bound. Incomplete engineering plans cannot pass full generation build/seal/boot validation. No compilation, dependency download, sealing or activation is performed.");
+                println!("Usage: openpilot-runtime-plan --root CHECKOUT --cargo ABSOLUTE_CARGO (--check | --bindings BINDINGS_JSON --output NEW_DIRECTORY | --native-inputs PREPARED_PINS_JSON --budgets GROWTH_ESTIMATES_JSON --output NEW_DIRECTORY)\nAudit the tracked ARM runtime roster and compiler input requirements against actual locked Cargo metadata. Native input assembly verifies independently pinned prepared Trees and the source's complete system SDK profile, assigns each provider only to consuming groups, and publishes bindings.json, build-plan.json and catalog-audit.json atomically. Growth estimates require an explicit basis. compiler_inputs_bound reports compiler coverage; runtime assets and generation sealing remain separate gates. Incomplete engineering plans cannot pass full generation validation. No compilation, dependency download, sealing or activation is performed.");
                 return Ok(());
             }
             Some("--check") if !check => check = true,
@@ -21,6 +22,12 @@ fn run() -> Result<()> {
             Some("--bindings") if bindings.is_none() => {
                 bindings = Some(PathBuf::from(args.next().ok_or("missing bindings")?))
             }
+            Some("--native-inputs") if native_inputs.is_none() => {
+                native_inputs = Some(PathBuf::from(args.next().ok_or("missing native inputs")?))
+            }
+            Some("--budgets") if budgets.is_none() => {
+                budgets = Some(PathBuf::from(args.next().ok_or("missing budgets")?))
+            }
             Some("--output") if output.is_none() => {
                 output = Some(PathBuf::from(args.next().ok_or("missing output")?))
             }
@@ -29,16 +36,24 @@ fn run() -> Result<()> {
     }
     let root = root.ok_or("--root is required")?;
     let cargo = cargo.ok_or("--cargo is required")?;
-    let audit = if check && bindings.is_none() && output.is_none() {
-        catalog::audit(&root, &cargo)?.1
-    } else if !check {
-        let bindings = bindings.ok_or("--bindings is required for assembly")?;
-        let output = output.ok_or("--output is required for assembly")?;
-        let (plan, audit) = catalog::assemble(&root, &cargo, &bindings)?;
-        catalog::publish(&output, &plan, &audit)?;
-        audit
-    } else {
-        return Err("choose --check or assembly with --bindings and --output".into());
+    let audit = match (check, bindings, native_inputs, budgets, output) {
+        (true, None, None, None, None) => catalog::audit(&root, &cargo)?.1,
+        (false, None, Some(inputs), Some(budgets), Some(output)) => {
+            let (bindings, plan, audit) =
+                catalog_bindings::assemble(&root, &cargo, &inputs, &budgets, &output)?;
+            catalog::publish_with_bindings(&output, &plan, &audit, Some(&bindings))?;
+            audit
+        }
+        (false, Some(bindings), None, None, Some(output)) => {
+            let (plan, audit) = catalog::assemble(&root, &cargo, &bindings)?;
+            catalog::publish(&output, &plan, &audit)?;
+            audit
+        }
+        _ => {
+            return Err(
+                "choose --check, --bindings/--output, or --native-inputs/--budgets/--output".into(),
+            )
+        }
     };
     println!("{}", serde_json::to_string_pretty(&audit)?);
     Ok(())

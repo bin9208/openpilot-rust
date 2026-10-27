@@ -17,6 +17,7 @@ pub mod capnp;
 #[cfg(feature = "prepare-cargo")]
 pub mod cargo_inputs;
 pub mod catalog;
+pub mod catalog_bindings;
 mod catalog_features;
 pub mod generation;
 pub mod inputs;

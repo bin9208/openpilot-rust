@@ -1,6 +1,9 @@
 # 성능 개선·콤마 자체 빌드 우선 실행 — #598
 
 사용자 결정: 2026-10-26 KST.
+준비된 toolchain/vendor/SDK/provider9개 역할을 전체13그룹의 계획에 연결하는
+[native 입력 조합기](native-input-bindings-599.md)를 추가했다. 그룹별 캐시 분리와
+현재 vendor lock 검사, 실제 AGNOS plan 생성/반복 CI는 검증 대기다.
 FFmpeg6.1.1의 단일 검증 prefix, 실제 Rust 인코더 release 빌드/반복 재사용 및 원본5개
 codec case의 정확 packet 비교를 #599 CI에 추가했다. 구현·검사 방법은
 [provider 기록](native-provider-components-599.md)에 있으며, 현재 단계는 기능 검증 대기다.

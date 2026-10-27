@@ -1135,6 +1135,104 @@ int main(int argc,char** argv){
       full_runtime_build=False,physical_device_execution=False)
 
 
+def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Assemble the actual 99-target plan using all independently prepared inputs."""
+  room(work,4*1024**2)
+  def read(name):
+    return json.loads((work/name).read_text())
+  def pin(row):
+    return dict(root=row['root'],receipt=row['tree_receipt'],sha256=row['tree_sha256'])
+  rust=json.loads((work.parent/'native-rust-first.json').read_text())
+  rust_pin=pin(rust)
+  for key in ('root','receipt'):
+    rust_pin[key]=str(Path(guest_work)/'pinned-rust'/Path(rust_pin[key]).relative_to(work.parent/'native-rust-toolchains'))
+  pins=dict(schema=1,inputs={
+      'rust':rust_pin,
+      'cargo':pin(read('native-cereal-cargo-inputs-reuse.json')),
+      'system-sdk':dict(root='/',receipt=str(Path(guest_work)/'native-system-sdk.json'),sha256=digest(work/'native-system-sdk.json')),
+      'capnp':pin(read('native-cereal-preparation-initial.json')),
+      'ffmpeg':pin(read('native-encoder-prefix-initial.json')),
+      'libyuv':pin(read('native-codec-initial.json')['libyuv']),
+      'raylib':pin(read('native-raylib-sdk-initial.json')),
+      'opencv':pin(read('native-opencv-prefix-initial.json')),
+      'eigen':pin(read('native-eigen-initial.json')['eigen']),
+  },runtime_inputs=dict(files={},trees={}))
+  catalog=read('native-project-catalog.json')
+  # Explicit conservative plan-only envelopes. This probe does not reserve or
+  # consume these build budgets and is not a measured full-build resource trial.
+  source_catalog=json.loads((Path(os.environ['GITHUB_WORKSPACE'])/'rust/native-runtime-catalog.json').read_text())
+  budgets=dict(schema=1,
+      group_growth_bytes={name:len(group['packages'])*512*1024**2+len(group['binaries'])*64*1024**2
+          for name,group in source_catalog['groups'].items()},
+      expected_source_growth_bytes=2*1024**3,remaining_object_growth_bytes=catalog['binaries']*64*1024**2,
+      estimate_basis='CI plan-only conservative envelope: 512 MiB per selected package + 64 MiB per binary per group; 2 GiB source staging; 64 MiB immutable storage per binary. Not measured full-runtime growth; calibrate for the scheduled full build.')
+  pins_path=work/'native-project-input-pins.json'
+  budgets_path=work/'native-project-growth-estimates.json'
+  for path,value in ((pins_path,pins),(budgets_path,budgets)):
+    path.write_text(json.dumps(value,indent=2)+'\n')
+  planner=work/'project-target/debug/openpilot-runtime-plan'
+  cargo=Path(rust_pin['root'])/'bin/cargo'
+  command=[planner,'--root',source_mount,'--cargo',cargo,'--native-inputs',pins_path,'--budgets',budgets_path]
+  audits=[]
+  outputs=[]
+  for phase in ('initial','reused'):
+    output=work/f'native-project-bindings-{phase}'
+    summary=work/f'native-project-bindings-{phase}.json'
+    evidence['commands'].append(run(guest_command([*command,'--output',output]),log,stdout_path=summary))
+    audit=json.loads(summary.read_text())
+    plan=json.loads((output/'build-plan.json').read_text())
+    bindings=json.loads((output/'bindings.json').read_text())
+    assert audit['source']['commit']==evidence['source_commit']
+    assert audit['groups']==13 and audit['binaries']==99 and audit['compiler_inputs_bound'] is True
+    assert not audit['compiled'] and not audit['activated']
+    assert audit['native_inputs_sha256']==digest(pins_path) and audit['budgets_sha256']==digest(budgets_path)
+    assert audit['bindings_sha256']==digest(output/'bindings.json')
+    assert audit['plan_sha256']==digest(output/'build-plan.json')
+    assert plan['runtime_inputs']==dict(files={},trees={})
+    for name,requirements in catalog['compiler_inputs'].items():
+      recipe=plan['groups'][name]
+      for key,suffix in requirements.items():
+        value=Path(recipe['environment'][key])
+        root=value if not suffix else value.parents[len(Path(suffix).parts)-1]
+        receipt=recipe['input_trees'][str(root)]
+        assert receipt in recipe['inputs']
+      assert recipe['input_trees']['/']==pins['inputs']['system-sdk']['receipt']
+      assert recipe['expected_growth_bytes']==budgets['group_growth_bytes'][name]
+    assert bindings['common']==['rust','cargo','system-sdk']
+    audits.append(audit)
+    outputs.append(output)
+  assert audits[0]==audits[1]
+  assert all(digest(outputs[0]/name)==digest(outputs[1]/name)
+      for name in ('build-plan.json','bindings.json','catalog-audit.json'))
+  # Wrong independently supplied pins and missing operation estimates must fail
+  # without publishing. No prepared input, previous plan or source is modified.
+  failures={}
+  for case in ('bad-receipt-pin','missing-provider','zero-growth'):
+    candidate=json.loads(json.dumps(pins))
+    estimate=json.loads(json.dumps(budgets))
+    if case=='bad-receipt-pin': candidate['inputs']['raylib']['sha256']='0'*64
+    elif case=='missing-provider': del candidate['inputs']['eigen']
+    else: estimate['group_growth_bytes']['12']=0
+    input_path=work/f'native-project-bindings-{case}-inputs.json'
+    budget_path=work/f'native-project-bindings-{case}-budgets.json'
+    input_path.write_text(json.dumps(candidate)+'\n')
+    budget_path.write_text(json.dumps(estimate)+'\n')
+    output=work/f'native-project-bindings-rejected-{case}'
+    result=run(guest_command([planner,'--root',source_mount,'--cargo',cargo,'--native-inputs',input_path,
+        '--budgets',budget_path,'--output',output]),log,required=False,
+        stdout_path=work/f'native-project-bindings-{case}.txt')
+    evidence['commands'].append(result)
+    assert result['exit_code']!=0 and not output.exists()
+    failures[case]=result['exit_code']
+  evidence['native_project_bindings']=dict(source_commit=evidence['source_commit'],
+      groups=13,binaries=99,input_roles=9,compiler_inputs_bound=True,
+      plan_sha256=audits[0]['plan_sha256'],bindings_sha256=audits[0]['bindings_sha256'],
+      repeated_plan_bytes_identical=True,rejected_inputs=failures,
+      operation_estimates_measured=False,full_runtime_build=False,runtime_assets_complete=False,
+      runtime_activated=False,physical_device_execution=False,
+      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -1296,6 +1394,7 @@ def main():
     native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_opencv_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_opencv_prefix_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))

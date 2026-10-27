@@ -74,6 +74,9 @@ pub struct Audit {
     pub compiler_inputs: BTreeMap<String, BTreeMap<String, PathBuf>>,
     pub compiler_inputs_bound: Option<bool>,
     pub compiler_inputs_error: Option<String>,
+    pub native_inputs_sha256: Option<String>,
+    pub budgets_sha256: Option<String>,
+    pub growth_estimate_basis: Option<String>,
     pub compiled: bool,
     pub activated: bool,
 }
@@ -399,6 +402,7 @@ impl Catalog {
                     let mut input = recipe.clone();
                     input.inputs = set.files.clone();
                     input.input_trees = set.trees.clone();
+                    input.environment = set.environment.clone();
                     input.verify_inputs(root)?;
                 }
                 merge(&mut recipe.inputs, &set.files)?;
@@ -479,6 +483,9 @@ pub fn audit(root: &Path, cargo: &Path) -> Result<(Catalog, Audit)> {
             .collect(),
         compiler_inputs_bound: None,
         compiler_inputs_error: None,
+        native_inputs_sha256: None,
+        budgets_sha256: None,
+        growth_estimate_basis: None,
         compiled: false,
         activated: false,
     };
@@ -516,6 +523,21 @@ pub(crate) fn verify_source_plan(root: &Path, plan: &prepare::Plan) -> Result<()
 }
 
 pub fn publish(output: &Path, plan: &prepare::Plan, audit: &Audit) -> Result<()> {
+    publish_with_bindings(output, plan, audit, None)
+}
+
+pub(crate) fn json_sha256(value: &impl Serialize) -> Result<String> {
+    let mut bytes = serde_json::to_vec_pretty(value)?;
+    bytes.push(b'\n');
+    Ok(format!("{:x}", Sha256::digest(&bytes)))
+}
+
+pub fn publish_with_bindings(
+    output: &Path,
+    plan: &prepare::Plan,
+    audit: &Audit,
+    bindings: Option<&Bindings>,
+) -> Result<()> {
     let mut plan_bytes = serde_json::to_vec_pretty(plan)?;
     plan_bytes.push(b'\n');
     if plan_bytes.len() > 4 * 1024 * 1024 {
@@ -540,10 +562,21 @@ pub fn publish(output: &Path, plan: &prepare::Plan, audit: &Audit) -> Result<()>
     let temporary = tempfile::Builder::new()
         .prefix(".native-plan-")
         .tempdir_in(&parent)?;
-    for (name, bytes) in [
+    let mut files = vec![
         ("build-plan.json", serde_json::to_vec_pretty(plan)?),
         ("catalog-audit.json", serde_json::to_vec_pretty(audit)?),
-    ] {
+    ];
+    if let Some(bindings) = bindings {
+        if audit.bindings_sha256.as_deref() != Some(json_sha256(bindings)?.as_str()) {
+            return Err("published bindings differ from the native assembly audit".into());
+        }
+        let bytes = serde_json::to_vec_pretty(bindings)?;
+        if bytes.len() + 1 > 4 * 1024 * 1024 {
+            return Err("native bindings exceed the 4 MiB input limit".into());
+        }
+        files.push(("bindings.json", bytes));
+    }
+    for (name, bytes) in files {
         let mut file = OpenOptions::new()
             .write(true)
             .create_new(true)

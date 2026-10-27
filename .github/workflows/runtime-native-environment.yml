@@ -552,6 +552,8 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-bindings-initial/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-bindings-reused/
             ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-driver-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-driver-*.stdout
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-cereal-*.jsonl

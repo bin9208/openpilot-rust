@@ -168,6 +168,10 @@ protocol 응답은 이 기능의 지원 여부이며, 정상 manager 부팅·모
 
 ## 최종 사용자 기기 수용 시험
 
+전체 계획의 컴파일 입력 연결 검사는 [native 입력 조합기](native-input-bindings-599.md)의
+Actions 절차를 따른다. 실제9개 입력 역할의 pin·13그룹 환경·반복 plan·발행 거부를
+검사한다. 실행 자산/모델·전체 build·기기 수용의 준비 완료 판정은 별도로 유지한다.
+
 전체 build 목록·현재 Cargo 소스 대조와 입력별 recipe 생성 명령은
 [native runtime 계획 안내](native-runtime-plan-599.md)에 있다. 이 도구의
 `compiled=false`/`activated=false`는 실제 의미 그대로이며, plan 생성 성공을 전체
