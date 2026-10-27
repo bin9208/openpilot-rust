@@ -34,6 +34,11 @@
 
 ## 개발 검증 실행 방법
 
+내부 QCOM 주행/운전자 ONNX의 실제4개 pipeline 생성, 종류별 입력 cache와 docs/작은
+logger 변경의 생성·QCOM 호출/전송0 검사는 [모델 생성·재사용 안내](native-model-generation-cache-600.md)를
+따른다. 새 Actions 결과는 대기다. GPU 실행·전체 runtime 부팅/녹화/업로드와 사용자
+comma 3X 수용을 이 카탈로그 검사로 대신하지 않는다.
+
 현재 Git의 LFS SVG/ONNX4개 준비, 문서/한 객체 변경의 전송·복사 재사용과 실패/위조/
 중단/동시 실행 거부 및 ARM 실제 byte 검사는 [LFS 입력 안내](native-source-lfs-599.md)를
 따른다. raw source 준비를 모델 생성·펌웨어 준비·전체 runtime/기기 검증으로 표현하지 않는다.

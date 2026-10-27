@@ -1,8 +1,13 @@
 # 성능 개선·콤마 자체 빌드 우선 실행 — #598
 
+[실제 ONNX 생성·입력별 cache](native-model-generation-cache-600.md)에 내부 QCOM/운전자
+모델의 카메라별4개 생성과 입력 동일성에 따른 생략, 원래 provenance와 이전 세대 보존,
+실제 ARM Rust consumer 및 docs/작은 logger 변경 재사용 검사를 연결했다. 새 검사는 대기다.
+전체 Layout/99개 native 빌드·정상 시작·녹화·업로드와 사용자 comma 3X 수용은 계속 남는다.
+
 [모델 준비 wheel·factory compiler 안내](native-model-wheel-inputs-599.md)에 NumPy/zstandard
 내용별 준비와 원래 C 라이브러리 대조, 실제 factory LLVM20.1/QCOM 경로의 Actions 검사를
-추가했다. ONNX 전체 생성·생성물 cache와 전체 native runtime 수용은 계속 남아 있다.
+추가했다. ONNX 전체 생성·생성물 cache의 새 검증과 전체 native runtime 수용은 계속 남아 있다.
 
 모델 준비용 [ARM Python 입력과 실행 검사](native-python-inputs-599.md)를 추가했다.
 공식 CPython3.12.16 archive를 내용별로 준비하고 실제 ARM interpreter/stdlib/ELF closure와

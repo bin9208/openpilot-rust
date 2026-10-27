@@ -80,6 +80,17 @@ on:
       - 'rust/native-model-wheels.json'
       - 'rust/native-model-compilers.json'
       - 'rust/tools/native_model_inputs.py'
+      - 'rust/tools/native_model_cache.py'
+      - 'rust/tools/native_model_generation.py'
+      - 'rust/tools/model_export/**'
+      - 'rust/tools/build_offline_model_pipelines.py'
+      - 'rust/tools/tests/test_native_model_cache.py'
+      - 'rust/tools/tests/test_native_model_generation_inputs.py'
+      - 'tools/ci/prepare_native_model_assets.py'
+      - 'openpilot/selfdrive/modeld/**'
+      - 'openpilot/common/**'
+      - 'openpilot/system/camerad/cameras/nv12_info.py'
+      - 'tinygrad_repo/tinygrad/**'
       - 'rust/tools/tests/test_native_model_inputs.py'
       - 'tools/ci/prepare_native_model_wheels.py'
       - 'tools/ci/fixtures/native-model-environment.py'
@@ -538,6 +549,19 @@ jobs:
           path: ${{ env.CI_JOB_TEMP }}/native-source-lfs-assets
           key: native-source-lfs-${{ hashFiles('rust/native-source-lfs.json') }}-v1
           restore-keys: native-source-lfs-
+      - uses: actions/cache/restore@v4
+        id: model-assets-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-model-assets
+          key: native-model-assets-${{ hashFiles('openpilot/selfdrive/modeld/models/*.onnx') }}-v1
+          restore-keys: native-model-assets-
+      - name: Prepare current ONNX build inputs without changing the source checkout
+        run: python3 tools/ci/prepare_native_model_assets.py
+      - uses: actions/cache/save@v4
+        if: steps.model-assets-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-model-assets
+          key: native-model-assets-${{ hashFiles('openpilot/selfdrive/modeld/models/*.onnx') }}-v1
       - name: Prepare only the current committed LFS objects without changing checkout files
         run: python3 tools/ci/prepare_native_source_assets.py --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
       - uses: actions/cache/save@v4
@@ -638,6 +662,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-panda-*.json
             ${{ env.CI_JOB_TEMP }}/native-python-*.json
             ${{ env.CI_JOB_TEMP }}/native-model-wheels-*.json
+            ${{ env.CI_JOB_TEMP }}/native-model-assets-*.json
             ${{ env.CI_JOB_TEMP }}/native-model-wheel-packages/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-model-wheel-environments/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-python-prefixes/**/generation/tree.json
@@ -683,6 +708,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-environment.kernel.bin
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-wheel-packages/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-wheel-environments/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-catalogs/**/receipt.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-catalogs/**/current.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-catalogs/**/index.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-*.txt

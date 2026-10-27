@@ -11,6 +11,13 @@ on:
       - 'rust/native-model-wheels.json'
       - 'rust/native-model-compilers.json'
       - 'rust/tools/native_model_inputs.py'
+      - 'rust/tools/native_model_cache.py'
+      - 'rust/tools/native_model_generation.py'
+      - 'rust/tools/model_export/**'
+      - 'rust/tools/build_offline_model_pipelines.py'
+      - 'rust/tools/tests/test_native_model_cache.py'
+      - 'rust/tools/tests/test_native_model_generation_inputs.py'
+      - 'tools/ci/prepare_native_model_assets.py'
       - 'rust/tools/tests/test_native_model_inputs.py'
       - 'tools/ci/prepare_native_model_wheels.py'
       - 'tools/ci/fixtures/native-model-environment.py'
@@ -168,6 +175,8 @@ jobs:
         run: |
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --test assets_cli -- --nocapture
           python3 -m unittest discover -s rust/tools/tests -p test_native_model_inputs.py -v
+          python3 -m unittest discover -s rust/tools/tests -p test_native_model_cache.py -v
+          python3 -m unittest discover -s rust/tools/tests -p test_native_model_generation_inputs.py -v
       - name: Verify committed LFS preparation without archive features
         run: |
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-source-assets --test source_assets -- --nocapture

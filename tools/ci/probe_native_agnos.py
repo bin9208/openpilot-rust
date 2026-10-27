@@ -768,15 +768,23 @@ def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest
   rust_root=Path(guest_work)/'pinned-rust'/Path(rust['root']).relative_to(work.parent/'native-rust-toolchains')
   execute(['/usr/bin/env',f'RUSTC={rust_root}/bin/rustc','OPENPILOT_NATIVE_INCREMENTAL=1',rust_root/'bin/cargo',
       'build','--locked','--offline','--manifest-path',f'{source_mount}/rust/Cargo.toml',
-      '-p','openpilot-model-runtime','--bin','offline-qcom-compile','--bin','model-run',
+      '-p','openpilot-model-runtime','--bin','offline-qcom-compile','--bin','model-run','--bin','qcom-model-run',
       '--target-dir',work/'project-target','--message-format=json'],'native-model-compiler-build.jsonl')
   artifacts=[json.loads(line) for line in (work/'native-model-compiler-build.jsonl').read_text().splitlines()]
   binaries={row['target']['name']:row for row in artifacts
       if row.get('reason')=='compiler-artifact' and row.get('executable')}
-  assert set(binaries)=={'offline-qcom-compile','model-run'}
+  assert set(binaries)=={'offline-qcom-compile','model-run','qcom-model-run'}
   for row in binaries.values():
     assert 'native-skip-miri' in row['features']
   compiler=work/'project-target/debug/offline-qcom-compile'
+  compiler_row=binaries['offline-qcom-compile']
+  source_tree=subprocess.check_output(['git','-C',source,'rev-parse','HEAD^{tree}'],text=True).strip()
+  (work/'native-model-compiler-build.json').write_text(json.dumps(dict(schema=1,
+      source=dict(commit=evidence['source_commit'],tree=source_tree),
+      compiler_sha256=digest(compiler),compiler_bytes=compiler.stat().st_size,
+      features=sorted(compiler_row['features']),profile=compiler_row['profile'],
+      rust_toolchain_identity=rust['identity'],rust_toolchain_tree_sha256=rust['tree_sha256'],
+      cargo_lock_sha256=digest(source/'rust/Cargo.lock')),indent=2)+'\n')
   execute([python['python'],'-I','-B','-S',f'{source_mount}/tools/ci/fixtures/native-model-environment.py',
       '--source',source_mount,'--wheels',work/'native-model-wheels-initial.json',
       '--compiler',compiler,'--output',work/'native-model-environment.json'],'native-model-environment.txt')
@@ -784,12 +792,13 @@ def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest
   assert report['wheels_tree_sha256']==rows[0]['tree_sha256']
   assert report['cpu_llvm_tensor_matches'] and report['numerics_and_zstandard_match']
   assert report['invalid_qcom_source_rejected'] and report['original_offline_pipeline_imported']
+  assert report['unbound_external_initializer_and_attribute_rejected']
   assert report['compiler_executable_sha256']==digest(compiler)
   assert not report['gpu_executed'] and not report['full_model_generation'] and not report['physical_device_execution']
   prefix=Path(rows[0]['root'])
   actual_prefix=work/prefix.relative_to(guest_work)
   receipt=json.loads((work/Path(rows[0]['tree_receipt']).relative_to(guest_work)).read_text())
-  roots=[compiler,work/'project-target/debug/model-run',report['cpu_llvm']['path'],report['qcom']['path']]
+  roots=[compiler,work/'project-target/debug/model-run',work/'project-target/debug/qcom-model-run',report['cpu_llvm']['path'],report['qcom']['path']]
   libraries=set()
   for path,entry in receipt['entries'].items():
     if entry['kind']!='file': continue
@@ -811,10 +820,108 @@ def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest
       python_version=report['python_version'],packages=['numpy','zstandard'],source_built_arm_compiler=True,
       cpu_llvm=report['cpu_llvm'],qcom=report['qcom'],qcom_compiler_sha256=report['compiler_executable_sha256'],
       qcom_kernel_sha256=report['qcom_kernel_sha256'],invalid_qcom_source_rejected=True,
+      unbound_external_initializer_and_attribute_rejected=True,
       strict_elf_closure_compatible=True,prefix_unchanged_after_execution=True,
       repeated_http_body_bytes=0,repeated_copied_bytes=0,repeated_linked_bytes=0,
       full_model_generation=False,full_model_regression=False,full_runtime_build=False,gpu_executed=False,
       physical_device_execution=False,emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+
+
+def native_model_generation_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Generate four real model pipelines, then prove zero generation/compiler calls."""
+  python=json.loads((work/'native-python-initial.json').read_text())
+  command=[python['python'],'-I','-B','-S',f'{source_mount}/rust/tools/native_model_generation.py',
+      '--root',source_mount,'--preparer',work/'project-target/debug/openpilot-runtime-inputs',
+      '--compiler',work/'project-target/debug/offline-qcom-compile',
+      '--compiler-build',work/'native-model-compiler-build.json',
+      '--consumer',work/'project-target/debug/model-run',
+      '--bundle-consumer',work/'project-target/debug/qcom-model-run',
+      '--python-cache',Path(guest_work)/'python-assets','--python-store',work/'native-python-prefixes',
+      '--wheel-cache',Path(guest_work)/'model-wheel-assets','--wheel-store',work/'native-model-wheel-packages',
+      '--environment-store',work/'native-model-wheel-environments',
+      '--model-cache',Path(guest_work)/'model-assets','--output',work/'native-model-catalogs']
+  rows=[]
+  for phase in ('initial','reused'):
+    record=run(guest_command([*command,'--report',work/f'native-model-generation-{phase}.json']),
+        log,stdout_path=work/f'native-model-generation-{phase}.txt')
+    evidence['commands'].append(record)
+    row=json.loads((work/f'native-model-generation-{phase}.json').read_text())
+    assert row['source']['commit']==evidence['source_commit']
+    assert row['full_model_generation'] and not row['full_model_regression'] and not row['full_runtime_build']
+    assert not row['gpu_executed'] and not row['physical_device_execution']
+    assert row['transferred_bytes']==row['stored_bytes']==0
+    assert all(value==0 for value in row['environment_preparation'].values())
+    assert len(row['bundle_validation'])==4 and all(not b['gpu_executed'] for b in row['bundle_validation'])
+    assert set(row['kinds'])=={'driving','driver'}
+    for kind,value in row['kinds'].items():
+      assert value['consumer_validated'] and not value['runtime_activated']
+      assert value['generated_pipelines']==(2 if phase=='initial' else 0)
+      assert value['reused_pipelines']==(0 if phase=='initial' else 2)
+      assert (value['qcom_compiler_calls']>0)==(phase=='initial')
+      if phase=='reused':
+        assert value['linked_output_bytes']==value['published_generated_output_bytes']==0
+        assert value['generation']==rows[0]['kinds'][kind]['generation']
+        assert value['inputs']==rows[0]['kinds'][kind]['inputs']
+        assert value['origins']==rows[0]['kinds'][kind]['origins']
+    rows.append(row)
+  evidence['native_model_generation']=dict(source_commit=evidence['source_commit'],
+      compiler_build_source_commit=evidence['source_commit'],
+      cameras=[[1928,1208],[1344,760]],kinds=['driving','driver'],
+      original_models=rows[0]['original_models'],initial=rows[0]['kinds'],repeated=rows[1]['kinds'],
+      repeated_http_body_bytes=0,repeated_qcom_compiler_calls=0,repeated_generated_pipelines=0,
+      full_model_generation=True,full_model_regression=False,full_runtime_build=False,
+      gpu_executed=False,physical_device_execution=False,
+      measurement_limit='per-command wall time and output counters; aggregate RAM/swap/disk peak remains separate',
+      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+  # Owned source commits exercise the actual producer's reuse key across Git
+  # revisions. The compiler remains the original source-built binary; do not
+  # retag it as built from either fixture revision. No source push or activation.
+  source=Path(os.environ['GITHUB_WORKSPACE'])
+  tracked=subprocess.check_output(['git','-C',source,'ls-files','-z']).decode().rstrip('\0').split('\0')
+  room(work,sum((source/name).lstat().st_size for name in tracked)+16*1024**2)
+  fixture=work/'native-model-fixture-source'
+  def execute(argv,name):
+    record=run(guest_command(argv),log,stdout_path=work/name)
+    evidence['commands'].append(record)
+    return (work/name).read_text()
+  execute(['git','-c','filter.lfs.required=false','-c','filter.lfs.smudge=','-c','filter.lfs.process=',
+      'clone','--shared',source_mount,fixture],'native-model-fixture-clone.txt')
+  fixture_cases=[]
+  for case,name,before,after in (
+      ('docs','docs/naver/native-model-generation-cache-600.md',None,'\nOwned CI docs-only source fixture.\n'),
+      ('small-logger','rust/crates/loggerd/src/main.rs','Continuous native route logger.',
+       'Continuous native route logger (owned model cache fixture).')):
+    path=fixture/name
+    text=path.read_text()
+    if before is None: text+=after
+    else:
+      assert before in text
+      text=text.replace(before,after,1)
+    path.write_text(text)
+    execute(['git','-C',fixture,'add',name],f'native-model-{case}-add.txt')
+    execute(['git','-C',fixture,'-c','user.name=Owned native model fixture',
+        '-c','user.email=fixture@example.invalid','-c','commit.gpgsign=false','-c','core.hooksPath=/dev/null',
+        'commit','-m',f'Owned {case} model generation reuse fixture'],f'native-model-{case}-commit.txt')
+    fixture_sha=execute(['git','-C',fixture,'rev-parse','HEAD'],f'native-model-{case}-sha.txt').strip()
+    owned_command=command.copy()
+    owned_command[owned_command.index('--root')+1]=fixture
+    # Use the fixture's script too, rather than importing a helper from the
+    # original source and merely reporting a different source SHA.
+    owned_command[4]=fixture/'rust/tools/native_model_generation.py'
+    execute([*owned_command,'--report',work/f'native-model-generation-{case}.json'],f'native-model-generation-{case}.txt')
+    row=json.loads((work/f'native-model-generation-{case}.json').read_text())
+    assert row['source']['commit']==fixture_sha and fixture_sha!=evidence['source_commit']
+    assert row['transferred_bytes']==row['stored_bytes']==0
+    assert all(value==0 for value in row['environment_preparation'].values())
+    for kind,value in row['kinds'].items():
+      assert value['generated_pipelines']==value['qcom_compiler_calls']==value['linked_output_bytes']==0
+      assert value['reused_pipelines']==2 and value['consumer_validated']
+      assert value['inputs']==rows[0]['kinds'][kind]['inputs']
+      assert value['generation']==rows[0]['kinds'][kind]['generation']
+      assert value['origins']==rows[0]['kinds'][kind]['origins']
+    fixture_cases.append(dict(case=case,request_source=row['source'],kinds=row['kinds'],
+        compiler_build_source_commit=evidence['source_commit'],runtime_compiled=False))
+  evidence['native_model_generation']['actual_source_reuse_cases']=fixture_cases
 
 
 def native_encoder_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -2062,7 +2169,7 @@ def main():
     (work / 'ffmpeg-source').mkdir()
     (work / 'provider-assets').mkdir()
     (work / 'provider-export').mkdir()
-    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export','source-lfs-assets','panda-components','panda-export','python-assets','model-wheel-assets'):
+    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export','source-lfs-assets','panda-components','panda-export','python-assets','model-wheel-assets','model-assets'):
       (work/name).mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
@@ -2089,6 +2196,7 @@ def main():
              '-b', f'{owned / "native-source-lfs-assets"}:{guest_work}/source-lfs-assets',
              '-b', f'{owned / "native-python-assets"}:{guest_work}/python-assets',
              '-b', f'{owned / "native-model-wheel-assets"}:{guest_work}/model-wheel-assets',
+             '-b', f'{owned / "native-model-assets"}:{guest_work}/model-assets',
              '-b', f'{owned / "native-mpc-components"}:{guest_work}/mpc-components',
              '-b', f'{owned / "native-mpc-export"}:{guest_work}/mpc-export',
              '-b', f'{owned / "native-panda-components"}:{guest_work}/panda-components',
@@ -2160,6 +2268,7 @@ def main():
     native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_panda_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_model_generation_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))

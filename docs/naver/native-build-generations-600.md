@@ -4,6 +4,10 @@
 자산·증분·복구 [#600](https://github.com/bin9208/openpilot-rust/issues/600)의 구현 기록이다.
 기존 Python 모델 준비와 C/C++ provider를 유지하며 dev용 공통 도구만 변경한다.
 
+모델 준비의 실제 ONNX4개 pipeline 생성과 입력 cache/원래 provenance 보존은
+[생성·재사용 기록](native-model-generation-cache-600.md)에 별도로 연결했다. 기능 검증은
+Actions 대기이며 이 개발 catalog를 전체 runtime generation 활성화로 해석하지 않는다.
+
 ## 구현 경계
 
 - `openpilot-runtime-source --root CHECKOUT --store SOURCE_STORE

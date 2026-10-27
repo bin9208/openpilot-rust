@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import struct
 import sys
 
 
@@ -57,6 +58,33 @@ def main():
   with host_only_devices():
     tensor = Tensor([1.,2.,3.,4.],device='CPU:LLVM')
     np.testing.assert_array_equal(((tensor+1)*2).numpy(),[4.,6.,8.,10.])
+    # Owned protobufs exercise both initializer and nested attribute handling.
+    # They include raw bytes AND an external reference, so a normal parser
+    # could silently read the unbound file instead of rejecting its contract.
+    from model_export.offline_onnx import InlineOnnxParser
+    from model_export.schema import ExportError
+    def varint(value):
+      result=bytearray()
+      while value>=128:
+        result.append((value&127)|128)
+        value>>=7
+      return bytes([*result,value])
+    def field(number,data):
+      return varint((number<<3)|2)+varint(len(data))+data
+    external=args.output.with_suffix('.external-weight')
+    external.write_bytes(struct.pack('<f',7.0))
+    reference=field(1,b'location')+field(2,str(external).encode())
+    tensor_proto=b'\x08\x01\x10\x01'+field(8,b'weight')+field(9,struct.pack('<f',3.0))+field(13,reference)+b'\x70\x01'
+    for kind in ('initializer','attribute'):
+      if kind=='initializer': graph=field(5,tensor_proto)
+      else:
+        attribute=field(1,b'value')+field(5,tensor_proto)+b'\xa0\x01\x04'
+        graph=field(1,field(4,b'Constant')+field(5,attribute))
+      model=args.output.with_suffix('.'+kind+'.onnx')
+      model.write_bytes(field(7,graph))
+      try: InlineOnnxParser(model,load_external_data=False).parse()
+      except ExportError: pass
+      else: raise AssertionError('offline model accepted an unbound external tensor')
     compiler = OfflineQcomCompiler(CompilerCommand((str(args.compiler),'--library',compilers['qcom']['path']),60))
     source_cl = ('__kernel void initialized_add(__global float *out, __global const float *input, '
                  '__global const float *weight) { uint i = get_global_id(0); out[i] = input[i] + weight[i]; }')
@@ -79,6 +107,7 @@ def main():
       compiler_executable_sha256=digest(args.compiler),qcom_kernel_sha256=hashlib.sha256(binary).hexdigest(),
       qcom_kernel_bytes=len(binary),invalid_qcom_source_rejected=True,original_offline_pipeline_imported=True,
       cpu_llvm_tensor_matches=True,numerics_and_zstandard_match=True,cameras=cameras,
+      unbound_external_initializer_and_attribute_rejected=True,
       full_model_generation=False,full_model_regression=False,full_runtime_build=False,gpu_executed=False,
       physical_device_execution=False)
   args.output.write_text(json.dumps(result,indent=2)+'\n')
