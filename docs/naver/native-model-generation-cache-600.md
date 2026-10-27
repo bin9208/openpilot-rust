@@ -36,6 +36,10 @@ tinygrad 및 관련 원본 Python package/부모 init, interpreter/wheel Tree,
 실제 ARM compiler binary·Cargo feature/profile/toolchain/lock 입력, factory LLVM20.1/
 QCOM pin, renderer/schedule/environment를 묶는다. Python package 내부의 추가·삭제와
 ignored import shadow를 검사한다. 문서와 무관한 Rust 소스는 생성 key에서 제외한다.
+실제 실행은 `-I -B -S -X pycache_prefix=EMPTY_PRIVATE_PATH`를 요구하고 자식 준비기에도
+전달한다. `-B`만으로는 과거 bytecode 읽기가 차단되지 않으므로 빈 별도 lookup 경로를
+사용한다. stdlib 검색을 먼저 유지하며 실제 import된 source 파일이 입력 closure에 있고
+나머지 module이 검증된 Python/wheel prefix에 있는지 실행 후에도 확인한다.
 Python package 범위 안의 무관한 변경도 보수적으로 재생성할 수 있다.
 
 요청 commit은 보고서에 따로 기록한다. cache hit에서는 최초 생성의 commit/tree와
@@ -70,7 +74,7 @@ source/output 전체 hash 검증 I/O는 남는다. raw ONNX/interpreter/wheel ca
 로컬은 구문/YAML/runner/diff만 확인한다. 아래 기능 검사는 Actions에서만 실행한다.
 
 1. `Runtime source build foundation`: 기존 core asset CLI와 wheel 검사를 유지하고
-   `test_native_model_cache.py`9개, `test_native_model_generation_inputs.py`4개 unittest를
+   `test_native_model_cache.py`9개, `test_native_model_generation_inputs.py`5개 unittest를
    실행한다. 소유한 작은 가짜 출력/Git tree로 재생성 생략·입력별 무효화·최초 provenance/
    inode·실패/손상/중단/공간/lock 보존을 검사한다. 모델 추론 증거로 사용하지 않는다.
 2. `Genuine AGNOS native compiler feasibility`: 원래 모든 명령/pin/360분 제한을 유지하고

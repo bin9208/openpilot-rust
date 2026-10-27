@@ -4,6 +4,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest import mock
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import native_model_generation as generation
@@ -71,6 +73,23 @@ class GenerationInputTests(unittest.TestCase):
       s=Source(Path(temp))
       s.put(generation.MODELS['driving'],b'version https://git-lfs.github.com/spec/v1\noid sha256:untrusted\nsize 17\n'); s.commit()
       with self.assertRaisesRegex(InputError,'LFS pointer'): generation.model_inputs(s.path,source_identity(s.path)['commit'])
+
+  def test_import_origins_reject_unbound_source_and_external_modules(self):
+    with tempfile.TemporaryDirectory() as temp:
+      base=Path(temp); source=base/'source'; source.mkdir(); s=Source(source)
+      closure=generation.source_closure(source)
+      for name,allowed in ((generation.SOURCE_FILES[0],True),('unbound.py',False),('cached.pyc',False)):
+        with mock.patch.object(generation.sys,'modules',{'owned':SimpleNamespace(__file__=str(source/name))}):
+          if allowed: generation.module_origins(source,closure,[base/'python',base/'wheels'])
+          else:
+            with self.assertRaisesRegex(InputError,'source input closure'):
+              generation.module_origins(source,closure,[base/'python',base/'wheels'])
+      for path,allowed in ((base/'python/lib/os.py',True),(base/'wheels/tree/numpy/__init__.py',True),(base/'outside.py',False)):
+        with mock.patch.object(generation.sys,'modules',{'owned':SimpleNamespace(__file__=str(path))}):
+          if allowed: generation.module_origins(source,closure,[base/'python',base/'wheels'])
+          else:
+            with self.assertRaisesRegex(InputError,'authenticated Python'):
+              generation.module_origins(source,closure,[base/'python',base/'wheels'])
 
 
 if __name__=='__main__':

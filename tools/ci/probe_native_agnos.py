@@ -830,7 +830,8 @@ def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest
 def native_model_generation_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Generate four real model pipelines, then prove zero generation/compiler calls."""
   python=json.loads((work/'native-python-initial.json').read_text())
-  command=[python['python'],'-I','-B','-S',f'{source_mount}/rust/tools/native_model_generation.py',
+  command=[python['python'],'-I','-B','-S','-X',f'pycache_prefix={guest_work}/model-generation-bytecode',
+      f'{source_mount}/rust/tools/native_model_generation.py',
       '--root',source_mount,'--preparer',work/'project-target/debug/openpilot-runtime-inputs',
       '--compiler',work/'project-target/debug/offline-qcom-compile',
       '--compiler-build',work/'native-model-compiler-build.json',
@@ -907,7 +908,7 @@ def native_model_generation_probe(guest_command,work,source_mount,evidence,log,g
     owned_command[owned_command.index('--root')+1]=fixture
     # Use the fixture's script too, rather than importing a helper from the
     # original source and merely reporting a different source SHA.
-    owned_command[4]=fixture/'rust/tools/native_model_generation.py'
+    owned_command[owned_command.index(f'{source_mount}/rust/tools/native_model_generation.py')]=fixture/'rust/tools/native_model_generation.py'
     execute([*owned_command,'--report',work/f'native-model-generation-{case}.json'],f'native-model-generation-{case}.txt')
     row=json.loads((work/f'native-model-generation-{case}.json').read_text())
     assert row['source']['commit']==fixture_sha and fixture_sha!=evidence['source_commit']

@@ -1,6 +1,6 @@
 """Generate the original internal-QCOM/DM models with native verified inputs.
 
-Run with the prepared ARM Python and -I -B -S. Generation uses
+Run with the prepared ARM Python, -I -B -S and -X pycache_prefix=EMPTY_PATH. Generation uses
 the retained Python/tinygrad producer and the source-built Rust QCOM compiler.
 The real Rust catalog consumer validates each kind before pointer publication.
 """
@@ -18,6 +18,8 @@ import tempfile
 import time
 
 # Isolated Python does not put this script's directory on sys.path.
+if __name__ == '__main__' and sys.pycache_prefix is None:
+  raise SystemExit('native model generation requires -X pycache_prefix=EMPTY_PRIVATE_PATH before source imports')
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import native_model_cache
 from native_model_inputs import (InputError, digest, encoded, outside,
@@ -96,6 +98,19 @@ def command_json(argv, report):
   return read_json(report, 16*1024**2)
 
 
+def module_origins(root, closure, prefixes):
+  for module in list(sys.modules.values()):
+    filename = getattr(module, '__file__', None)
+    if filename is None: continue
+    path = Path(filename).resolve()
+    if path.is_relative_to(root):
+      name = path.relative_to(root).as_posix()
+      if closure['files'].get(name) is None:
+        raise InputError('loaded producer module is outside the source input closure')
+    elif not any(path.is_relative_to(prefix) for prefix in prefixes):
+      raise InputError('loaded module is outside authenticated Python, wheels and source')
+
+
 def prepare_environment(args, temporary):
   python = command_json([args.preparer, '--prepare-python', '--plan', args.root/'rust/native-python-toolchain.json',
       '--cache', args.python_cache, '--store', args.python_store], temporary/'python.json')
@@ -103,7 +118,8 @@ def prepare_environment(args, temporary):
       or Path(python['root']).resolve() != Path(sys.prefix).resolve()):
     raise InputError('model generation must run in the independently prepared native Python')
   with (temporary/'wheels-stdout.json').open('xb') as output:
-    subprocess.run(list(map(str, [sys.executable, '-I', '-B', '-S', args.root/'rust/tools/native_model_inputs.py',
+    subprocess.run(list(map(str, [sys.executable, '-I', '-B', '-S', '-X', 'pycache_prefix='+sys.pycache_prefix,
+      args.root/'rust/tools/native_model_inputs.py',
       '--root', args.root, '--preparer', args.preparer, '--cache', args.wheel_cache,
       '--store', args.wheel_store, '--environment-store', args.environment_store,
       '--output', temporary/'wheels.json'])), stdout=output, check=True)
@@ -122,6 +138,10 @@ def main():
   if (tuple(sys.version_info[:3]) != (3, 12, 16) or platform.machine() != 'aarch64'
       or not sys.flags.isolated or not sys.flags.no_site or not sys.flags.dont_write_bytecode):
     parser.error('prepared ARM Python 3.12.16 with -I -B -S required')
+  bytecode = Path(sys.pycache_prefix)
+  if (not bytecode.is_absolute() or bytecode.is_symlink()
+      or (bytecode.exists() and (not bytecode.is_dir() or any(bytecode.iterdir())))):
+    parser.error('bytecode lookup prefix must be an empty private absolute directory or unused path')
   args.root = args.root.resolve(strict=True)
   origin = source_identity(args.root)
   stores = [outside(args.root, getattr(args, n)) for n in
@@ -177,11 +197,18 @@ def main():
     os.environ.clear()
     os.environ.update(ENVIRONMENT, PATH='/usr/bin:/bin', LLVM_PATH=compilers['cpu_llvm']['path'],
                       CACHEDB=str(temporary/'tinygrad.sqlite'))
-    sys.path[:0] = [wheels['site_packages'], str(args.root/'tinygrad_repo'), str(args.root)]
+    # Keep authenticated stdlib lookup first. Project roots cannot override an
+    # unimported stdlib module, and module origins below reject unbound project
+    # shadows/sourceless pyc. -B alone would still READ stale source bytecode.
+    script_parent = str(Path(__file__).resolve().parent)
+    sys.path[:] = [p for p in sys.path if p != script_parent]+[
+        wheels['site_packages'], str(args.root/'rust/tools'), str(args.root/'tinygrad_repo'), str(args.root)]
     from model_export.offline_compiler import CompilerCommand, OfflineQcomCompiler
     from model_export.offline_pipeline import OfflinePipelineSpec
     from model_export.offline_publish import emit
     from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
+    prefixes = [Path(python['root']).resolve(), Path(wheels['root']).resolve()]
+    module_origins(args.root, closure, prefixes)
     compiler = OfflineQcomCompiler(CompilerCommand((str(args.compiler), '--library', compilers['qcom']['path']), args.compiler_timeout))
     common = dict(schema=1, target='aarch64-unknown-linux-gnu', producer=closure,
         python_tree_sha256=python['tree_sha256'], wheel_tree_sha256=wheels['tree_sha256'],
@@ -190,8 +217,11 @@ def main():
         factory=compilers, environment=ENVIRONMENT, renderer='a630,IMAGE_PITCH_ALIGNMENT=64',
         schedule=dict(IMAGE=1, FLOAT16=1, NOLOCALS=1, BEAM=0, OPENPILOT_HACKS=1, CAPTURING=1, NO_MEMORY_PLANNER=1),
         python_hash_randomization=bool(sys.flags.hash_randomization))
+    common['python_bytecode_lookup'] = 'empty-private-prefix-with-dont-write-bytecode'
 
     def revalidate():
+      module_origins(args.root, closure, prefixes)
+      if bytecode.exists() and any(bytecode.iterdir()): raise InputError('private bytecode prefix changed during generation')
       if source_identity(args.root) != origin or source_closure(args.root) != closure:
         raise InputError('model producer source changed during generation')
       for kind, model in models.items():
