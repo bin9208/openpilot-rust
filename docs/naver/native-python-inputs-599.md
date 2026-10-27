@@ -35,6 +35,8 @@ AGNOS ABI 성공 증거로 사용하지 않는다. 모든 ELF의 실제 symbol/l
 
 이 단계는 interpreter이며 NumPy/pycapnp/zstandard 등 모델 wheel, CPU LLVM,
 QCOM compiler를 포함한 전체 모델 준비 환경을 완성한 상태가 아니다.
+후속 [wheel·factory compiler 준비](native-model-wheel-inputs-599.md)는 실제 두 wheel과
+factory LLVM20.1/QCOM의 import·미소 기능 검사를 추가한다. 새 결과는 대기다.
 새 Python은 모델 준비 입력으로 결속할 대상이다. 현재 Rust compiler9개 역할이나
 runtime10개 Tree에 Python을 실행 runtime으로 끼워 넣지 않는다.
 모델 준비·생성물 cache·실제 모델/원본 회귀·전체 native 빌드 연결은 다음 필수 작업이다.

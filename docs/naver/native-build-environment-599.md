@@ -1,5 +1,9 @@
 # 실제 AGNOS의 native compiler 환경 — #599 (검증 대기)
 
+[모델 준비 wheel·factory compiler 안내](native-model-wheel-inputs-599.md)에 NumPy/zstandard
+내용별 준비와 원래 C 라이브러리 대조, 실제 factory LLVM20.1/QCOM 경로의 Actions 검사를
+추가했다. ONNX 전체 생성·생성물 cache와 전체 native runtime 수용은 계속 남아 있다.
+
 모델 준비용 [ARM Python 입력과 실행 검사](native-python-inputs-599.md)를 추가했다.
 공식 CPython3.12.16 archive를 내용별로 준비하고 실제 ARM interpreter/stdlib/ELF closure와
 반복 전송·복사0을 Actions에서 확인한다. 새 결과와 전체 모델 환경·생성물 cache는 아직 대기다.

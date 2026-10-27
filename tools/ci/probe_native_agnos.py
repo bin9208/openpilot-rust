@@ -735,6 +735,88 @@ def native_python_probe(guest_command,work,source_mount,evidence,log,guest_work)
       emulation='QEMU/PRoot ARM user space on x64 bin-actions')
 
 
+def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Run the exact Python preparation dependencies and genuine QCOM compiler."""
+  source=Path(os.environ['GITHUB_WORKSPACE'])
+  plan=json.loads((source/'rust/native-model-wheels.json').read_text())
+  room(work,sum(p['maximum_unpacked_bytes'] for p in plan['packages'].values())+8*1024**2+512*1024**2)
+  python=json.loads((work/'native-python-initial.json').read_text())
+  host=json.loads((work.parent/'native-model-wheels-initial.json').read_text())
+  def execute(argv,name):
+    record=run(guest_command(argv),log,stdout_path=work/name)
+    evidence['commands'].append(record)
+    return record
+  command=[python['python'],'-I','-B','-S',f'{source_mount}/rust/tools/native_model_inputs.py',
+      '--root',source_mount,'--preparer',work/'project-target/debug/openpilot-runtime-inputs',
+      '--cache',Path(guest_work)/'model-wheel-assets','--store',work/'native-model-wheel-packages',
+      '--environment-store',work/'native-model-wheel-environments']
+  rows=[]
+  for phase in ('initial','reused'):
+    execute([*command,'--output',work/f'native-model-wheels-{phase}.json'],f'native-model-wheels-{phase}.txt')
+    row=json.loads((work/f'native-model-wheels-{phase}.json').read_text())
+    assert row['source']==host['source'] and row['source']['commit']==evidence['source_commit']
+    assert row['tree_sha256']==host['tree_sha256'] and row['identity']==host['identity']
+    assert set(row['packages'])==set(host['packages'])=={'numpy','zstandard'}
+    for name in row['packages']:
+      assert row['packages'][name]['tree_sha256']==host['packages'][name]['tree_sha256']
+    assert row['transferred_bytes']==row['stored_bytes']==0
+    assert (row['copied_bytes']>0)==(phase=='initial') and (row['linked_bytes']>0)==(phase=='initial')
+    assert not row['wheels_imported'] and not row['compiler_executed'] and not row['model_generated']
+    assert not row['installer_executed'] and not row['runtime_activated']
+    rows.append(row)
+  rust=json.loads((work.parent/'native-rust-first.json').read_text())
+  rust_root=Path(guest_work)/'pinned-rust'/Path(rust['root']).relative_to(work.parent/'native-rust-toolchains')
+  execute(['/usr/bin/env',f'RUSTC={rust_root}/bin/rustc','OPENPILOT_NATIVE_INCREMENTAL=1',rust_root/'bin/cargo',
+      'build','--locked','--offline','--manifest-path',f'{source_mount}/rust/Cargo.toml',
+      '-p','openpilot-model-runtime','--bin','offline-qcom-compile','--bin','model-run',
+      '--target-dir',work/'project-target','--message-format=json'],'native-model-compiler-build.jsonl')
+  artifacts=[json.loads(line) for line in (work/'native-model-compiler-build.jsonl').read_text().splitlines()]
+  binaries={row['target']['name']:row for row in artifacts
+      if row.get('reason')=='compiler-artifact' and row.get('executable')}
+  assert set(binaries)=={'offline-qcom-compile','model-run'}
+  for row in binaries.values():
+    assert 'native-skip-miri' in row['features']
+  compiler=work/'project-target/debug/offline-qcom-compile'
+  execute([python['python'],'-I','-B','-S',f'{source_mount}/tools/ci/fixtures/native-model-environment.py',
+      '--source',source_mount,'--wheels',work/'native-model-wheels-initial.json',
+      '--compiler',compiler,'--output',work/'native-model-environment.json'],'native-model-environment.txt')
+  report=json.loads((work/'native-model-environment.json').read_text())
+  assert report['wheels_tree_sha256']==rows[0]['tree_sha256']
+  assert report['cpu_llvm_tensor_matches'] and report['numerics_and_zstandard_match']
+  assert report['invalid_qcom_source_rejected'] and report['original_offline_pipeline_imported']
+  assert report['compiler_executable_sha256']==digest(compiler)
+  assert not report['gpu_executed'] and not report['full_model_generation'] and not report['physical_device_execution']
+  prefix=Path(rows[0]['root'])
+  actual_prefix=work/prefix.relative_to(guest_work)
+  receipt=json.loads((work/Path(rows[0]['tree_receipt']).relative_to(guest_work)).read_text())
+  roots=[compiler,work/'project-target/debug/model-run',report['cpu_llvm']['path'],report['qcom']['path']]
+  libraries=set()
+  for path,entry in receipt['entries'].items():
+    if entry['kind']!='file': continue
+    with (actual_prefix/path).open('rb') as stream: magic=stream.read(4)
+    if magic==b'\x7fELF':
+      roots.append(prefix/path)
+      libraries.add((prefix/path).parent)
+  audit=work/'native-model-environment-abi.json'
+  execute([work/'project-target/debug/runtime-elf-audit',*(arg for path in roots for arg in ('--root',path)),
+      *(arg for path in sorted(libraries) for arg in ('--library',path)),
+      '--library','/usr/lib/aarch64-linux-gnu','--library','/lib/aarch64-linux-gnu','--output',audit],
+      'native-model-environment-abi-summary.json')
+  assert json.loads(audit.read_text())['compatible'] is True
+  execute([*command,'--output',work/'native-model-wheels-after-health.json'],'native-model-wheels-after-health.txt')
+  after=json.loads((work/'native-model-wheels-after-health.json').read_text())
+  assert after['tree_sha256']==rows[0]['tree_sha256']
+  assert after['copied_bytes']==after['linked_bytes']==after['transferred_bytes']==after['stored_bytes']==0
+  evidence['native_model_preparation_dependencies']=dict(wheels_tree_sha256=rows[0]['tree_sha256'],
+      python_version=report['python_version'],packages=['numpy','zstandard'],source_built_arm_compiler=True,
+      cpu_llvm=report['cpu_llvm'],qcom=report['qcom'],qcom_compiler_sha256=report['compiler_executable_sha256'],
+      qcom_kernel_sha256=report['qcom_kernel_sha256'],invalid_qcom_source_rejected=True,
+      strict_elf_closure_compatible=True,prefix_unchanged_after_execution=True,
+      repeated_http_body_bytes=0,repeated_copied_bytes=0,repeated_linked_bytes=0,
+      full_model_generation=False,full_model_regression=False,full_runtime_build=False,gpu_executed=False,
+      physical_device_execution=False,emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+
+
 def native_encoder_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Build the actual runtime binary with the catalog features and pinned inputs."""
   room(work,3*1024**3)
@@ -1980,7 +2062,7 @@ def main():
     (work / 'ffmpeg-source').mkdir()
     (work / 'provider-assets').mkdir()
     (work / 'provider-export').mkdir()
-    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export','source-lfs-assets','panda-components','panda-export','python-assets'):
+    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export','source-lfs-assets','panda-components','panda-export','python-assets','model-wheel-assets'):
       (work/name).mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
@@ -2006,6 +2088,7 @@ def main():
              '-b', f'{owned / "native-companion-exports"}:{guest_work}/companion-exports',
              '-b', f'{owned / "native-source-lfs-assets"}:{guest_work}/source-lfs-assets',
              '-b', f'{owned / "native-python-assets"}:{guest_work}/python-assets',
+             '-b', f'{owned / "native-model-wheel-assets"}:{guest_work}/model-wheel-assets',
              '-b', f'{owned / "native-mpc-components"}:{guest_work}/mpc-components',
              '-b', f'{owned / "native-mpc-export"}:{guest_work}/mpc-export',
              '-b', f'{owned / "native-panda-components"}:{guest_work}/panda-components',
@@ -2064,6 +2147,7 @@ def main():
     native_ffmpeg_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_provider_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_python_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_model_wheels_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_encoder_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_eigen_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)

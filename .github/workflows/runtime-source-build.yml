@@ -8,6 +8,12 @@ on:
       - 'rust/crates/runtime-installer/src/identity.rs'
       - 'rust/native-source-lfs.json'
       - 'rust/native-python-toolchain.json'
+      - 'rust/native-model-wheels.json'
+      - 'rust/native-model-compilers.json'
+      - 'rust/tools/native_model_inputs.py'
+      - 'rust/tools/tests/test_native_model_inputs.py'
+      - 'tools/ci/prepare_native_model_wheels.py'
+      - 'tools/ci/fixtures/native-model-environment.py'
       - 'tools/ci/prepare_native_python.py'
       - 'tools/ci/fixtures/native-python-health.py'
       - 'rust/native-panda-source-contract.json'
@@ -158,6 +164,10 @@ jobs:
             --root "$GITHUB_WORKSPACE" --cargo "$(rustup which cargo)" --check > "$RUNNER_TEMP/native-runtime-catalog.json"
       - name: Compile the runtime consumer configuration without archive preparation dependencies
         run: cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --all-targets -- -D warnings
+      - name: Verify the core asset CLI and Python model wheel admission
+        run: |
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --test assets_cli -- --nocapture
+          python3 -m unittest discover -s rust/tools/tests -p test_native_model_inputs.py -v
       - name: Verify committed LFS preparation without archive features
         run: |
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-source-assets --test source_assets -- --nocapture

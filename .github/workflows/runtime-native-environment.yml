@@ -77,6 +77,13 @@ on:
       - 'rust/native-cargo-inputs.json'
       - 'rust/native-source-lfs.json'
       - 'rust/native-python-toolchain.json'
+      - 'rust/native-model-wheels.json'
+      - 'rust/native-model-compilers.json'
+      - 'rust/tools/native_model_inputs.py'
+      - 'rust/tools/tests/test_native_model_inputs.py'
+      - 'tools/ci/prepare_native_model_wheels.py'
+      - 'tools/ci/fixtures/native-model-environment.py'
+      - 'rust/crates/runtime-build/tests/assets_cli.rs'
       - 'tools/ci/prepare_native_python.py'
       - 'tools/ci/fixtures/native-python-health.py'
       - 'rust/crates/runtime-build/src/python.rs'
@@ -513,6 +520,19 @@ jobs:
           path: ${{ env.CI_JOB_TEMP }}/native-python-assets
           key: native-python-arm-${{ hashFiles('rust/native-python-toolchain.json') }}-v1
       - uses: actions/cache/restore@v4
+        id: model-wheel-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-model-wheel-assets
+          key: native-model-wheels-${{ hashFiles('rust/native-model-wheels.json') }}-v1
+          restore-keys: native-model-wheels-
+      - name: Prepare only pinned model wheels and retain the original native libraries
+        run: python3 tools/ci/prepare_native_model_wheels.py
+      - uses: actions/cache/save@v4
+        if: steps.model-wheel-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-model-wheel-assets
+          key: native-model-wheels-${{ hashFiles('rust/native-model-wheels.json') }}-v1
+      - uses: actions/cache/restore@v4
         id: source-lfs-cache
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-source-lfs-assets
@@ -617,6 +637,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-mpc-*.json
             ${{ env.CI_JOB_TEMP }}/native-panda-*.json
             ${{ env.CI_JOB_TEMP }}/native-python-*.json
+            ${{ env.CI_JOB_TEMP }}/native-model-wheels-*.json
+            ${{ env.CI_JOB_TEMP }}/native-model-wheel-packages/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-model-wheel-environments/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-python-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-panda-export/*
             ${{ env.CI_JOB_TEMP }}/native-panda-prefixes/**/generation/tree.json
@@ -654,6 +677,12 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-environment.kernel.bin
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-wheel-packages/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-wheel-environments/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-*.txt

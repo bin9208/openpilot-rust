@@ -12,12 +12,13 @@ fn run() -> Result<()> {
     let mut capture_system = false;
     let mut prepare_source_assets = false;
     let mut prepare_python = false;
+    let mut prepare_assets = false;
     let mut objects = None;
     let mut lock = None;
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--help" | "-h") => {
-                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --capture-system-sdk --root VERIFIED_IMAGE_ROOT --plan SDK_ROOTS_JSON --output SDK_RECEIPT\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-capnp --plan PINNED_CAPNP_ASSETS_JSON --cache ASSET_CACHE --store SDK_STORE\n       openpilot-runtime-inputs --prepare-cargo --plan PINNED_CRATES_JSON --lock CARGO_LOCK --cache ASSET_CACHE --store SOURCES_STORE\n       openpilot-runtime-inputs --prepare-source-lfs --root CLEAN_SOURCE --plan SOURCE_LFS_JSON --cache ASSET_CACHE --store PREFIX_STORE --objects OBJECT_STORE\n       openpilot-runtime-inputs --prepare-python --plan PINNED_PYTHON_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\nCapture unpacked inputs, or assemble authenticated native inputs without executing installers. Source LFS preparation requires every current committed pointer and never mutates a checkout. Generic and system capture require independently verified provenance. Archive preparation authenticates vendor bytes on every reuse; it does not compile or activate a runtime.");
+                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --capture-system-sdk --root VERIFIED_IMAGE_ROOT --plan SDK_ROOTS_JSON --output SDK_RECEIPT\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-capnp --plan PINNED_CAPNP_ASSETS_JSON --cache ASSET_CACHE --store SDK_STORE\n       openpilot-runtime-inputs --prepare-cargo --plan PINNED_CRATES_JSON --lock CARGO_LOCK --cache ASSET_CACHE --store SOURCES_STORE\n       openpilot-runtime-inputs --prepare-source-lfs --root CLEAN_SOURCE --plan SOURCE_LFS_JSON --cache ASSET_CACHE --store PREFIX_STORE --objects OBJECT_STORE\n       openpilot-runtime-inputs --prepare-python --plan PINNED_PYTHON_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-assets --plan PINNED_ASSETS_JSON --cache ASSET_CACHE\nCapture unpacked inputs, or assemble authenticated native inputs without executing installers. Source LFS preparation requires every current committed pointer and never mutates a checkout. Generic and system capture require independently verified provenance. Archive preparation authenticates vendor bytes on every reuse; it does not compile or activate a runtime.");
                 return Ok(());
             }
             Some("--root") if root.is_none() => {
@@ -30,6 +31,7 @@ fn run() -> Result<()> {
             Some("--prepare-capnp") if !prepare_capnp => prepare_capnp = true,
             Some("--prepare-cargo") if !prepare_cargo => prepare_cargo = true,
             Some("--prepare-python") if !prepare_python => prepare_python = true,
+            Some("--prepare-assets") if !prepare_assets => prepare_assets = true,
             Some("--capture-system-sdk") if !capture_system => capture_system = true,
             Some("--prepare-source-lfs") if !prepare_source_assets => prepare_source_assets = true,
             Some("--objects") if objects.is_none() => {
@@ -60,6 +62,7 @@ fn run() -> Result<()> {
         + u8::from(capture_system)
         + u8::from(prepare_source_assets)
         + u8::from(prepare_python)
+        + u8::from(prepare_assets)
         > 1
     {
         return Err("choose exactly one native preparation mode".into());
@@ -69,6 +72,19 @@ fn run() -> Result<()> {
     }
     if !prepare_source_assets && objects.is_some() {
         return Err("--objects requires --prepare-source-lfs".into());
+    }
+    if prepare_assets {
+        if root.is_some() || output.is_some() || store.is_some() {
+            return Err("asset preparation accepts only --plan and --cache".into());
+        }
+        let plan = openpilot_runtime_build::assets::Plan::read(&plan.ok_or("--plan is required")?)?;
+        let receipts = openpilot_runtime_build::assets::prepare(
+            &cache.ok_or("--cache is required")?,
+            &plan,
+            &openpilot_runtime_build::assets::Curl,
+        )?;
+        println!("{}", serde_json::to_string_pretty(&receipts)?);
+        return Ok(());
     }
     if prepare_python {
         if root.is_some() || output.is_some() {
