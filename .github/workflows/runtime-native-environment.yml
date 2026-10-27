@@ -38,6 +38,11 @@ on:
       - 'rust/native-acados-provider.json'
       - 'rust/native-sdl-provider.json'
       - 'rust/native-turbojpeg-provider.json'
+      - 'rust/native-ffmpeg-tools-provider.json'
+      - 'rust/native-freesans-provider.json'
+      - 'rust/crates/sdl2/examples/native_font.rs'
+      - 'tools/ci/fixtures/native-font-reference.cc'
+      - 'tools/ci/fixtures/native-media-tools.py'
       - 'tools/ci/fixtures/native-display-probe.cc'
       - 'rust/crates/sdl2/examples/native_provider.rs'
       - 'rust/crates/sdl2/Cargo.toml'
@@ -579,6 +584,13 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-cases/
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-cli-cases/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-font-rust/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-font-reference/
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.jsonl

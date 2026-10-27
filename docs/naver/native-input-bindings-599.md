@@ -7,10 +7,11 @@
 입력과 연결한다. 전체 runtime99개/13그룹의 목록·feature는 그대로다. 컴파일·모델 준비·
 세대 봉인·기기 설치를 수행하는 단계가 아니다.
 
-실행 입력6개 Tree의 acados core는 후속
+실행 입력8개 Tree의 acados core는 후속
 [MPC 소스 결속](native-mpc-source-bindings-599.md)에서 complete source-bound MPC로
 교체해 계획한다. 이전 partial component 증거를 보존하며 새 Actions 결과는 대기다.
 추가 SDL·TurboJPEG2개 입력은 [display 입력 안내](native-display-inputs-599.md)를 따른다.
+FFmpeg 도구·글꼴2개 입력은 [media 입력 안내](native-media-tools-font-599.md)를 따른다.
 
 ## 입력과 신뢰 경계
 
@@ -55,8 +56,9 @@ HOST 변수를 명시한다. 필요한 capnp/FFmpeg/OpenCV의 loader/rpath-link 
 입력 목록 JSON 전체의 SHA를 모든 compiler recipe에 넣지 않는다. 예를 들어 raylib
 pin 변경은00/01/02에만 영향을 주며07/08/10의 compiler 입력은 그대로다. 모델·실행
 companion은 `runtime_inputs`에만 연결한다. 후속 [foreign library 준비](native-runtime-companions-599.md),
-[SDL·TurboJPEG](native-display-inputs-599.md)와 [source-bound MPC](native-mpc-source-bindings-599.md)는
-실행 입력6개 Tree를 CI plan에 연결한다. 모델/나머지 실행 자산과 전체 Layout은 아직 없으므로
+[SDL·TurboJPEG](native-display-inputs-599.md), [도구·글꼴](native-media-tools-font-599.md)과
+[source-bound MPC](native-mpc-source-bindings-599.md)는 실행 입력8개 Tree를 CI plan에 연결한다.
+모델/나머지 실행 자산과 전체 Layout은 아직 없으므로
 `compiler_inputs_bound=true`가 전체 runtime 준비 완료를 뜻하지 않는다.
 
 기존 수동 `--bindings` 조합에도 수정이 있다. set 자체를 검사할 때 그 set의 환경을

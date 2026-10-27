@@ -1,6 +1,8 @@
 # 성능 개선·콤마 자체 빌드 우선 실행 — #598
 
 사용자 결정: 2026-10-26 KST.
+[시작용 FFmpeg 도구·클러스터 글꼴](native-media-tools-font-599.md)을 독립 component로
+추가했다. 실제 CLI lossless 왕복·Rust glyph/window 픽셀 비교와 ARM ELF 검사는 대기다.
 [SDL·TurboJPEG 입력](native-display-inputs-599.md)을 추가해 원래 공용 library53개 경로의
 준비 목록을 완성한다. 실제 Rust API/독립 C 비교와 ARM ELF 검사는 대기이며 전체 배치·
 모델·99개 native 빌드 완료를 뜻하지 않는다.

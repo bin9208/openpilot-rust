@@ -22,6 +22,11 @@ on:
       - 'rust/native-acados-provider.json'
       - 'rust/native-sdl-provider.json'
       - 'rust/native-turbojpeg-provider.json'
+      - 'rust/native-ffmpeg-tools-provider.json'
+      - 'rust/native-freesans-provider.json'
+      - 'rust/crates/sdl2/examples/native_font.rs'
+      - 'tools/ci/fixtures/native-font-reference.cc'
+      - 'tools/ci/fixtures/native-media-tools.py'
       - 'tools/ci/fixtures/native-display-probe.cc'
       - 'rust/crates/sdl2/examples/native_provider.rs'
       - 'rust/crates/sdl2/Cargo.toml'
@@ -266,6 +271,10 @@ jobs:
           rustfmt --edition 2021 --check rust/crates/sdl2/examples/native_provider.rs rust/crates/jpeg/examples/native_turbojpeg.rs
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-sdl2 --features fixture-inspection --example native_provider -- -D warnings
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-jpeg --features native-skip-miri --example native_turbojpeg -- -D warnings
+      - name: Check the actual font provider example
+        run: |
+          rustfmt --edition 2021 --check rust/crates/sdl2/examples/native_font.rs
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-sdl2 --features gui --example native_font -- -D warnings
       - name: Verify composed FFmpeg input identity, collisions and reuse
         run: |
           rustfmt --edition 2021 --check rust/crates/dev-tools/src/native_ffmpeg_prefix.rs

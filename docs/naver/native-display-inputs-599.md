@@ -33,7 +33,9 @@ profile별 URL namespace/descriptor/component SHA를 분리하며 기존 profile
 host prepare_native_runtime_companions.py는 기존4개와 새2개를 준비한다. 원본 manifest의
 53개 root library 경로가 모든 provider plan의 원본 source 경로 합집합과 정확히 같은지도
 대조한다. guest는 기존4개 API 증거에 새2개 runtime input Tree를 더하고 source-bound
-MPC가 partial acados를 대체한다. 전체13그룹/99개 계획에는 실행 입력6개 Tree가 들어간다.
+MPC가 partial acados를 대체한다. 이 절의6개에 후속
+[FFmpeg 도구·글꼴](native-media-tools-font-599.md)2개를 더해 전체13그룹/99개 계획에는
+실행 입력8개 Tree가 들어간다. 후속은 실제 glyph/software-window 비교도 추가한다.
 다른 세션/기존 검증과 partial component 증거는 보존한다.
 
 ## 검사 방법

@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "profile": "freesans-pygame252",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "source_archive": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/runtime-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31/openpilot-rust-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31-aarch64.tar.gz",
+    "sha256": "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291",
+    "bytes": 1155969168
+  },
+  "runtime_manifest_sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+  "members": {
+    "cluster-replay/freesansbold.ttf": {
+      "source": "rust/bin/cluster-replay/freesansbold.ttf",
+      "sha256": "bf9251269f11e4b35582a99376096deee3d0c4973a459cbd97b0bebc01f440ad",
+      "bytes": 98600,
+      "mode": 292,
+      "link": null
+    },
+    "provenance/original-runtime-manifest.json": {
+      "source": "rust/runtime-manifest.json",
+      "sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+      "bytes": 241671,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/COPYING-GPL-2.0.txt": {
+      "source": "rust/bin/licenses/sdl/COPYING-GPL-2.0.txt",
+      "sha256": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6",
+      "bytes": 17984,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/COPYING-GPL-3.0.txt": {
+      "source": "rust/bin/licenses/sdl/COPYING-GPL-3.0.txt",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "bytes": 35149,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/FreeSans-SOURCE-NOTICE.txt": {
+      "source": "rust/bin/licenses/sdl/FreeSans-SOURCE-NOTICE.txt",
+      "sha256": "3850499e03401df2cfbe8104f0a914b0bfb92fdc34da04d4a9f25879d4767b01",
+      "bytes": 826,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/sdl/font-notice.json": {
+      "source": "rust/bin/licenses/sdl/font-notice.json",
+      "sha256": "ae6c643ceb563f5ef9253ef8b18369e86424854cd5daf591da31636f456021f1",
+      "bytes": 2674,
+      "mode": 292,
+      "link": null
+    }
+  }
+}

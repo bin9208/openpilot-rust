@@ -4,6 +4,10 @@
 모델 준비 Python과 기존 C/C++ provider를 유지한다. 이 기록은 전체 runtime의 완성이나
 기기 설치 수용을 뜻하지 않는다.
 
+실제 시작 목록이 요구하는 ffmpeg/ffprobe·FreeSans와 원래 notice의 독립 준비 및 실제
+CLI/Rust glyph/window 비교는 [도구·글꼴 안내](native-media-tools-font-599.md)에 있다.
+입력17개 중 일반 Git9개/LFS4개/생성 Panda firmware4개를 구분하며 새 CI는 대기다.
+
 원래 공용 library의 남은 SDL/TTF/글꼴 처리·TurboJPEG 경로11개는
 [display 입력 안내](native-display-inputs-599.md)에서 별도 component로 준비하고 실제
 Rust API를 검증한다. 전체 runtime 배치·실행은 별도이며 새 검사는 대기다.

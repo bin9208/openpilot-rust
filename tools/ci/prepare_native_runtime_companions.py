@@ -31,7 +31,7 @@ def main():
       subprocess.run(list(map(str, command)), stdout=output, check=True)
     return json.loads(path.read_text())
 
-  for name in ('numerics', 'geos', 'brotli', 'acados', 'sdl', 'turbojpeg'):
+  for name in ('numerics', 'geos', 'brotli', 'acados', 'sdl', 'turbojpeg', 'ffmpeg-tools', 'freesans'):
     plan_path = source/f'rust/native-{name}-provider.json'
     plan = json.loads(plan_path.read_text())
     payload = sum(row['bytes'] for row in plan['members'].values())
@@ -67,7 +67,7 @@ def main():
         payload_bytes=payload, component_bytes=exported['component_bytes'],
         origin_repeated_http_body_bytes=0, consumer_origin_archive_downloaded=False,
         repeated_http_body_bytes=0, repeated_copied_bytes=0)
-  assert len(runtime_inputs['trees']) == 6 and len(runtime_inputs['files']) == 6
+  assert len(runtime_inputs['trees']) == 8 and len(runtime_inputs['files']) == 8
   original = json.loads((Path(exported['origin']['root'])/'provenance/original-runtime-manifest.json').read_text())
   expected_libraries = {row['path'] for row in original['files'] if row['path'].startswith('rust/bin/lib/')}
   selected_libraries = set()
@@ -81,6 +81,7 @@ def main():
   assert not subprocess.check_output(['git', '-C', source, 'status', '--porcelain', '--untracked-files=all'], text=True).strip()
   result = dict(schema=1, source_commit=commit, components=summaries,
       original_root_library_paths_covered=53,
+      foreign_ffmpeg_tools_prepared=True, cluster_font_prepared=True,
       numerics_component_count=1, intended_numerics_runtime_destinations=4,
       compiler_executed=False, provider_executed=False, project_binaries_reused=False,
       project_generated_mpc_solvers_reused=False, runtime_assets_complete=False,

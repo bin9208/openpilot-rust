@@ -1373,6 +1373,140 @@ def native_display_inputs_probe(guest_command,work,source_mount,evidence,log,gue
       physical_device_execution=False,emulation='QEMU/PRoot ARM user space on x64 bin-actions')
 
 
+def native_media_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Complete required foreign tools/font inputs and execute their real APIs."""
+  room(work,2*1024**3)
+  def execute(argv,name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  def read(name):
+    return json.loads((work/name).read_text())
+  def local(path):
+    return work/Path(path).relative_to(guest_work)
+  inputs=read('native-display-runtime-inputs.json')
+  roots={}
+  reports={}
+  commands={}
+  for name in ('ffmpeg-tools','freesans'):
+    host=json.loads((work.parent/f'native-companion-{name}-initial.json').read_text())
+    exported=json.loads((work.parent/f'native-companion-{name}-export.json').read_text())
+    command=[work/'project-target/debug/build-runtime-ffmpeg','--prepare-released-provider',
+        '--plan',f'{source_mount}/rust/native-{name}-provider.json',
+        '--descriptor',Path(guest_work)/'companion-exports'/name/'provider.json',
+        '--descriptor-sha256',exported['descriptor_sha256'],
+        '--cache',Path(guest_work)/'companion-components'/name,'--store',work/'native-media-prefixes'/name]
+    rows=[]
+    for phase in ('initial','reused'):
+      row=json.loads(execute(command,f'native-media-{name}-{phase}.json').read_text())
+      assert row['tree_sha256']==host['tree_sha256']==exported['tree_sha256']
+      assert row['offline_seed_bytes']==row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+      assert (row['copied_bytes']>0)==(phase=='initial')
+      assert not row['origin_archive_downloaded'] and not row['compiler_executed'] and not row['runtime_activated']
+      rows.append(row)
+    assert rows[0]['root']==rows[1]['root']
+    roots[name]=Path(rows[0]['root'])
+    inputs['files'][rows[0]['tree_receipt']]=rows[0]['tree_sha256']
+    inputs['trees'][rows[0]['root']]=rows[0]['tree_receipt']
+    reports[name]=dict(tree_sha256=rows[0]['tree_sha256'],descriptor_sha256=exported['descriptor_sha256'],
+        repeated_http_body_bytes=0,repeated_copied_bytes=0,consumer_origin_archive_downloaded=False)
+    commands[name]=(command,rows[0])
+  assert len(inputs['files'])==len(inputs['trees'])==8
+  (work/'native-media-runtime-inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
+  sdl=Path(read('native-display-sdl-initial.json')['root'])/'lib'
+  ffmpeg=Path(read('native-encoder-prefix-initial.json')['root'])/'lib'
+  loader=':'.join(map(str,(ffmpeg,sdl,'/usr/lib/aarch64-linux-gnu','/lib/aarch64-linux-gnu')))
+  env=['/usr/bin/env',f'LD_LIBRARY_PATH={loader}','SDL_VIDEODRIVER=dummy','SDL_AUDIODRIVER=dummy']
+  tools=roots['ffmpeg-tools']/'bin'
+  for name in ('ffmpeg','ffprobe'):
+    with local(tools/name).open('rb') as stream: header=stream.read(64)
+    assert header[:6]==b'\x7fELF\x02\x01' and int.from_bytes(header[18:20],'little')==183
+  source=Path(os.environ['GITHUB_WORKSPACE'])
+  execute([*env,'python3',f'{source_mount}/tools/ci/fixtures/native-media-tools.py',
+      '--ffmpeg',tools/'ffmpeg','--ffprobe',tools/'ffprobe','--output',work/'native-media-cli-cases'],
+      'native-media-cli.json')
+  cli=read('native-media-cli.json')
+  assert cli['exact_lossless_cli_roundtrips']==2
+  def verify_maps(path,expected):
+    maps=path.read_text()
+    assert len(maps)<8*1024**2 and 'libpython' not in maps
+    mapped={row[5] for line in maps.splitlines() if len(row:=line.split(maxsplit=5))==6}
+    for guest_path in expected:
+      assert {str(guest_path),str(local(guest_path).resolve())}&mapped, f'wrong media provider mapping: {guest_path}'
+  libraries=[ffmpeg/name for name in ('libavcodec.so.60','libavformat.so.60','libavutil.so.58','libavdevice.so.60',
+      'libavfilter.so.9','libpostproc.so.57','libswresample.so.4','libswscale.so.7')]
+  for case in ('ffv1','libx264'):
+    verify_maps(work/f'native-media-cli-cases/{case}.maps.txt',libraries)
+  rust=json.loads((work.parent/'native-rust-first.json').read_text())
+  rust_root=Path(guest_work)/'pinned-rust'/Path(rust['root']).relative_to(work.parent/'native-rust-toolchains')
+  linker=execute(['readlink','-f','/usr/bin/cc'],'native-media-linker.txt').read_text().strip()
+  environment=dict(RUSTC=str(rust_root/'bin/rustc'),LD_LIBRARY_PATH=loader,
+      CARGO_ENCODED_RUSTFLAGS='\x1f'.join(['-C',f'linker={linker}']),
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=linker)
+  for key,value in dict(CC='/usr/bin/gcc',CXX='/usr/bin/g++',AR='/usr/bin/ar',RANLIB='/usr/bin/ranlib').items():
+    environment[key]=environment[f'HOST_{key}']=value
+  compiler_env=['/usr/bin/env',*(f'{key}={value}' for key,value in environment.items())]
+  build=[*compiler_env,rust_root/'bin/cargo','build','--release','--locked','--offline',
+      '--manifest-path',f'{source_mount}/rust/Cargo.toml','--target','aarch64-unknown-linux-gnu',
+      '-p','openpilot-sdl2','--features','gui','--example','native_font',
+      '--target-dir',work/'native-display-target','--message-format=json']
+  def artifact(path):
+    rows=[row for line in path.read_text().splitlines() if (row:=json.loads(line)).get('reason')=='compiler-artifact'
+        and row.get('executable') and row['target']['name']=='native_font']
+    assert len(rows)==1
+    return rows[0]
+  first=artifact(execute(build,'native-media-font-build.jsonl'))
+  assert not first['fresh']
+  binary=Path(first['executable'])
+  binary_sha=digest(local(binary))
+  font=roots['freesans']/'cluster-replay/freesansbold.ttf'
+  assert digest(local(font))=='bf9251269f11e4b35582a99376096deee3d0c4973a459cbd97b0bebc01f440ad'
+  reference=work/'native-media-font-reference-bin'
+  execute(['g++','-std=c++17','-O2','-Wall','-Wextra','-Werror',
+      f'{source_mount}/tools/ci/fixtures/native-font-reference.cc','-ldl','-o',reference],
+      'native-media-font-reference-build.txt')
+  for executable,name in ((binary,'rust'),(reference,'reference')):
+    execute([*env,executable,sdl/'libSDL2-2.0.so.0',sdl/'libSDL2_ttf-2.0.so.0',font,work/f'native-media-font-{name}'],
+        f'native-media-font-{name}.txt')
+  expected=work/'native-media-font-reference'
+  actual=work/'native-media-font-rust'
+  assert (expected/'dimensions.txt').read_bytes()==(actual/'dimensions.txt').read_bytes()
+  dimensions=[tuple(map(int,line.split())) for line in (actual/'dimensions.txt').read_text().splitlines()]
+  assert len(dimensions)==4 and all(0<width<=4096 and 0<height<=4096 for width,height in dimensions)
+  glyphs=[]
+  for index,(width,height) in enumerate(dimensions):
+    hashes={}
+    for kind in ('glyph','window'):
+      filename=f'{index}.{kind}.rgba'
+      assert (actual/filename).stat().st_size==(expected/filename).stat().st_size==width*height*4
+      assert (actual/filename).read_bytes()==(expected/filename).read_bytes()
+      hashes[kind]=digest(actual/filename)
+    glyphs.append(dict(width=width,height=height,sha256=hashes))
+  sdl_libraries=[sdl/'libSDL2-2-6e5c51a6.0.so.0.2800.4',sdl/'libSDL2_ttf-2-e035a276.0.so.0.2000.1']
+  for folder in (expected,actual): verify_maps(folder/'provider-maps.txt',sdl_libraries)
+  audit=work/'native-media-elf-audit.json'
+  audit_command=[work/'project-target/debug/runtime-elf-audit','--root',binary,'--root',reference,
+      '--root',tools/'ffmpeg','--root',tools/'ffprobe']
+  for path in (ffmpeg,sdl,'/usr/lib/aarch64-linux-gnu','/lib/aarch64-linux-gnu'):
+    audit_command+=['--library',path]
+  execute([*audit_command,'--output',audit],'native-media-elf-summary.json')
+  assert read('native-media-elf-audit.json')['compatible']
+  repeated=artifact(execute(build,'native-media-font-build-reused.jsonl'))
+  assert repeated['fresh'] and repeated['executable']==str(binary) and digest(local(binary))==binary_sha
+  for name,(command,before) in commands.items():
+    after=json.loads(execute(command,f'native-media-{name}-after-api.json').read_text())
+    assert after['tree_sha256']==before['tree_sha256'] and after['copied_bytes']==after['asset']['transferred_bytes']==after['asset']['stored_bytes']==0
+  evidence['native_media_inputs']=dict(components=reports,source_commit=evidence['source_commit'],
+      original_foreign_ffmpeg_tools_executed=2,cli=cli,original_font_sha256=digest(local(font)),
+      actual_current_rust_font_example_sha256=binary_sha,exact_glyph_and_window_cases=glyphs,
+      reference_source_sha256=digest(source/'tools/ci/fixtures/native-font-reference.cc'),reference_binary_sha256=digest(reference),
+      strict_elf_audit_compatible=True,actual_provider_maps_verified=True,python_library_mapped=False,
+      repeated_font_cargo_artifact_fresh=True,repeated_http_body_bytes=0,repeated_copied_bytes=0,
+      consumer_origin_archive_downloaded=False,project_rust_binaries_reused=False,
+      hardware_graphics_tested=False,korean_glyph_coverage_verified=False,
+      complete_cluster_upload_regression=False,full_runtime_build=False,physical_device_execution=False,
+      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+
+
 def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Verify source-bound MPC inputs and the current Rust/native solver ABI."""
   room(work,2*1024**3)
@@ -1469,13 +1603,13 @@ def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_w
   assert after['copied_bytes']==after['asset']['transferred_bytes']==after['asset']['stored_bytes']==0
   # Runtime planning uses the complete bound provider; the earlier partial core
   # component/probe remains as independent evidence and is not mutated/deleted.
-  inputs=read('native-display-runtime-inputs.json')
+  inputs=read('native-media-runtime-inputs.json')
   partial=read('native-companion-acados-initial.json')
   assert inputs['files'].pop(partial['tree_receipt'])==partial['tree_sha256']
   assert inputs['trees'].pop(partial['root'])==partial['tree_receipt']
   inputs['files'][rows[0]['tree_receipt']]=rows[0]['tree_sha256']
   inputs['trees'][rows[0]['root']]=rows[0]['tree_receipt']
-  assert len(inputs['files'])==len(inputs['trees'])==6
+  assert len(inputs['files'])==len(inputs['trees'])==8
   (work/'native-runtime-inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
   evidence['native_mpc_inputs']=dict(source_binding=rows[0]['source_binding'],
       tree_sha256=rows[0]['tree_sha256'],descriptor_sha256=exported['descriptor_sha256'],
@@ -1544,7 +1678,7 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
     assert audit['native_inputs_sha256']==digest(pins_path) and audit['budgets_sha256']==digest(budgets_path)
     assert audit['bindings_sha256']==digest(output/'bindings.json')
     assert audit['plan_sha256']==digest(output/'build-plan.json')
-    assert plan['runtime_inputs']==pins['runtime_inputs'] and len(plan['runtime_inputs']['trees'])==6
+    assert plan['runtime_inputs']==pins['runtime_inputs'] and len(plan['runtime_inputs']['trees'])==8
     for name,requirements in catalog['compiler_inputs'].items():
       recipe=plan['groups'][name]
       for key,suffix in requirements.items():
@@ -1756,6 +1890,7 @@ def main():
     native_opencv_prefix_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_runtime_companions_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_display_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_media_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'

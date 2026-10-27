@@ -31,6 +31,9 @@ const ACADOS_INVENTORY: &str = "d8fd2904df5f9f3fdac870da7d644b446474cdc75979732e
 const SDL_INVENTORY: &str = "bae47a4de03ac143d6c3cdcd0e719012b14b76989588b01c9d249b32b69e540f";
 const TURBOJPEG_INVENTORY: &str =
     "4480e350f6f09164b20145db7e3206481394c53129f3772bc27c817e9a3a3f02";
+const FFMPEG_TOOLS_INVENTORY: &str =
+    "adf3b43e0b3bd371c4a9c278a704b8607da0523fcbf79f0fe4eaec5905d19de6";
+const FREESANS_INVENTORY: &str = "ed2fa6bed647ae89a98e4742c9c5c083a5584261219b8165c57cf0e786b5854d";
 const MPC_INVENTORY: &str = "3b95696863cb8b97ad0fb733c7f430ab0d2216abd710ad02d48874b90117501d";
 const MPC_CONTRACT_SHA: &str = "6dd5b809d92e716f6654cfb218d7d6cbc0547b473e009c9e0578c04fc9930e41";
 const MPC_CONTRACT: &[u8] = include_bytes!("../../../native-mpc-source-contract.json");
@@ -127,6 +130,8 @@ fn component_names(profile: &str) -> Result<(&'static str, &'static str)> {
         "acados022-libraries" => Ok(("acados022", "acados022-libraries.tar.gz")),
         "sdl228-runtime" => Ok(("sdl228", "sdl228-runtime.tar.gz")),
         "turbojpeg3141-runtime" => Ok(("turbojpeg3141", "turbojpeg3141-runtime.tar.gz")),
+        "ffmpeg611-tools" => Ok(("ffmpeg611-tools", "ffmpeg611-tools.tar.gz")),
+        "freesans-pygame252" => Ok(("freesans-pygame252", "freesans-pygame252.tar.gz")),
         "acados022-runtime" => Ok(("acados022-runtime", "acados022-runtime.tar.gz")),
         _ => Err("unknown fixed foreign provider profile".into()),
     }
@@ -221,6 +226,8 @@ impl Plan {
             "acados022-libraries" => (13, ACADOS_INVENTORY),
             "sdl228-runtime" => (21, SDL_INVENTORY),
             "turbojpeg3141-runtime" => (7, TURBOJPEG_INVENTORY),
+            "ffmpeg611-tools" => (8, FFMPEG_TOOLS_INVENTORY),
+            "freesans-pygame252" => (6, FREESANS_INVENTORY),
             "acados022-runtime" => (15, MPC_INVENTORY),
             _ => {
                 return Err(
@@ -925,6 +932,53 @@ pub fn cli(args: &[String]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn required_media_tools_and_font_are_original_foreign_inputs_with_their_notices() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        for (name, profile, members, notices) in [
+            ("ffmpeg-tools", "ffmpeg611-tools", 8, 5),
+            ("freesans", "freesans-pygame252", 6, 4),
+        ] {
+            let mut plan = Plan::read(&root.join(format!("native-{name}-provider.json"))).unwrap();
+            assert_eq!(plan.profile, profile);
+            assert_eq!(plan.members.len(), members);
+            assert_eq!(
+                plan.members
+                    .keys()
+                    .filter(|p| p.starts_with("share/licenses"))
+                    .count(),
+                notices
+            );
+            assert!(plan.source_contract_sha256.is_none());
+            let tree = expected(&plan).unwrap();
+            let executables: BTreeSet<_> = plan
+                .members
+                .iter()
+                .filter(|(_, row)| row.mode == 0o555)
+                .map(|(path, _)| path.as_path())
+                .collect();
+            if name == "ffmpeg-tools" {
+                assert_eq!(
+                    executables,
+                    BTreeSet::from([Path::new("bin/ffmpeg"), Path::new("bin/ffprobe")])
+                );
+                plan.members
+                    .get_mut(Path::new("bin/ffmpeg"))
+                    .unwrap()
+                    .source = "rust/bin/openpilot-manager".into();
+            } else {
+                assert!(executables.is_empty());
+                assert!(tree
+                    .entries
+                    .contains_key(Path::new("cluster-replay/freesansbold.ttf")));
+                plan.members
+                    .get_mut(Path::new("cluster-replay/freesansbold.ttf"))
+                    .unwrap()
+                    .mode = 0o555;
+            }
+            assert!(plan.validate().is_err());
+        }
+    }
     #[test]
     fn display_providers_cover_the_remaining_root_libraries_with_original_aliases_and_notices() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");

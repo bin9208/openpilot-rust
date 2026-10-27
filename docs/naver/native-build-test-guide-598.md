@@ -21,6 +21,11 @@
 
 ## 개발 검증 실행 방법
 
+실제 manager 시작 목록의 ffmpeg/ffprobe·클러스터 글꼴 준비, CLI lossless 왕복과
+현재 Rust glyph/software-window의 정확 픽셀 비교는
+[도구·글꼴 검사 안내](native-media-tools-font-599.md)를 따른다. 전체 runtime/기기 수용을
+대신하지 않으며 새 Actions 결과는 대기다.
+
 공용 library53개 경로 중 남은 SDL/TTF/글꼴 dependency/TurboJPEG11개, 원래 alias/notice,
 실제 Rust virtual device·정확 JPEG 비교와 ARM ELF 검사는
 [SDL·TurboJPEG 입력 안내](native-display-inputs-599.md)를 따른다. 전체 GUI/하드웨어/모델
