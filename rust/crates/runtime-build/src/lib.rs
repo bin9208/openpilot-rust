@@ -14,6 +14,8 @@
 ))]
 mod archive_tree;
 pub mod assets;
+#[cfg(all(feature = "prepare-rust", feature = "prepare-cargo"))]
+pub mod bootstrap_tools;
 #[cfg(feature = "prepare-capnp")]
 pub mod capnp;
 #[cfg(feature = "prepare-cargo")]

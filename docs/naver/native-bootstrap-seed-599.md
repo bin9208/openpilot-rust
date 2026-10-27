@@ -10,6 +10,58 @@ Rust compiler와 Cargo 원본을 준비하는 Rust 도구를 처음 얻는 순�
 그 descriptor SHA의 독립된 Git pin과 전체 native build/start 연결은 아직 남는다.
 `rust/tools/ensure_runtime.sh`의 기존 기본 경로와 런타임 선택은 이 변경에서 바꾸지 않았다.
 
+## seed에서 현재 소스의 준비 도구를 빌드하는 경로
+
+seed의 새 `--bootstrap-tools-scope`는 root에서 자기 UID의 기존 고정 cgroup scope만
+준비하고 UID/GID·supplementary groups를 내린 뒤 같은 seed의 frontend로 exec한다.
+Python 진입점 `build-tools`가 실제 AGNOS/기본 loader ABI와 독립 descriptor pin을
+확인하고 원래 요청자의 PID/start ticks를 전달한다. 요청자 종료·취소·offroad 변경은
+기존 supervision 경로로 하위 작업까지 중단한다. root에서 compiler/Git/model을 실행하지 않는다.
+
+큰 Rust/Cargo 준비와 현재 도구의 소스 컴파일은 private cgroup worker 안에서 실행한다.
+현재 source의 Rust/Cargo plan·lock, 독립 SHA에 고정한 factory SDK snapshot과 source의
+전체 SDK profile을 검증한다. 변경된 live `/`를 새 기대값으로 capture하지 않는다.
+memory controller가 없거나 일반 디렉터리인 경우 격리 없는 fallback을 하지 않는다.
+작업별 RAM/디스크 예산·여유, worker log와 kernel peak/관측 디스크 증가량을 기존
+`resources` 구현으로 기록한다. 작은 seed 자체 준비는 기존 크기 상한·streaming 경로다.
+worker의 일반 compiler 임시 파일은 cache 안의 별도 `tmp`를 사용해 같은 쓰기 예산에 넣는다.
+
+현재12개 도구는 runtime-build의8개 CLI와 provider 준비용 FFmpeg/raylib/OpenCV CLI,
+ELF auditor다. 모델/외부 provider가 필요한 전체 runtime을 먼저 요구하지 않는다.
+검증된 동일 Rust/Cargo/SDK 아래의 Cargo cache를 재사용하고 native incremental source
+stamp 모드를 명시한다. source를 보존하고 실제 결과를 불변 object에 복사한 뒤 tool bundle에
+hardlink한다. bundle ID에는 binary·recipe·compiler·입력 tree identity를 묶으며 요청 commit을
+넣어 문서 변경마다 새 binary를 만들지 않는다. hit에서도 기존 최초 검증 출처/manifest를
+유지하고 이번 요청 source와 별도로 보고한다. 이 bundle은 runtime 세대나 active 선택이 아니다.
+
+검증된 seed와 독립 SDK pin·기기별 resource policy로 작성한 Config가 있는 개발 환경의 형태는
+다음과 같다. 공개 seed/기기 설치 후보가 준비되었다는 안내가 아니다.
+
+```sh
+python3 tools/native/bootstrap_seed.py build-tools \
+  --manifest "$VERIFIED_SEED_DESCRIPTOR" --manifest-sha256 "$PINNED_SEED_DESCRIPTOR_SHA256" \
+  --cache "$NATIVE_BOOTSTRAP_CACHE" --config "$VERIFIED_BOOTSTRAP_CONFIG" --source "$CLEAN_SOURCE"
+```
+
+Config에는 별도 source/object/generation/Params store, cache, 독립 SDK receipt/SHA,
+작업별 source/compiler/object 예상 증가량과 기존 `resources::Policy`가 필요하다.
+CI fixture의3GiB 한도·여유값을 comma3X의 생산 예산으로 복사하지 않는다.
+
+foundation은 별도 store·SDK pin·가짜 controller 거부를 검사한다. kernel resource workflow는
+실제 root gateway의 권한 하강/출력 보존과 X64에서의 의도된 AGNOS 거부를 확인한다.
+genuine workflow의 추가 사례는 별도 job-owned **X64 host kernel cgroup**에서 원래
+AGNOS **ARM user space/QEMU/PRoot**를 사용한다. 처음/반복/docs/작은 실제 CLI 수정의
+12개 Cargo 결과와 byte hash, 원래 bundle 출처, 자산 HTTP 전송0, 기존 선택/log sentinel
+보존을 확인한다. 작은 변경은 실제 help marker/hash가 바뀌고 나머지11개는 fresh여야 한다.
+fixture Git commit과 실제 GitHub source SHA를 분리하며 원래 checkout은 바꾸지 않는다.
+raw 입력은 이미 인증된 별도 cache를 bind하므로 공개 seed의 최초 HTTP 전송 시험은 아니다.
+기존 AGNOS 명령·입력 pin·runner·360분 상한과 모든 원래 사례는 유지한다.
+
+새 경로는 아직 정확 source의 기능 검증 전이다. 이 첫 준비 도구의 성공이 전체99개
+runtime의 기본 bootstrap·업데이트·부팅·기록·업로드 완료를 뜻하지 않는다. 공개 seed 및
+SDK/component의 독립 Git pin, 남은 provider/모델 준비 orchestrator와 기존 기본 시작 경로의
+연결, 전체 수용·필수 PR/병합 후 검사·사용자 comma3X 시험은 계속 남아 있다.
+
 ## 신뢰 경계와 저장
 
 `tools/native/bootstrap_seed.py`는 AGNOS에 있는 Python 표준 라이브러리로 첫 도구를

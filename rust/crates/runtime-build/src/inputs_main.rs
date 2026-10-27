@@ -4,6 +4,18 @@ use openpilot_runtime_build::{inputs::Tree, Result};
 use std::{fs::File, io::Write, path::PathBuf};
 
 fn run() -> Result<()> {
+    let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    if arguments.first().and_then(|s| s.to_str()).is_some_and(|s| {
+        matches!(
+            s,
+            "--bootstrap-tools-scope" | "--bootstrap-tools" | "--bootstrap-tools-worker"
+        )
+    }) {
+        #[cfg(all(feature = "prepare-rust", feature = "prepare-cargo"))]
+        return openpilot_runtime_build::bootstrap_tools::run(arguments);
+        #[cfg(not(all(feature = "prepare-rust", feature = "prepare-cargo")))]
+        return Err("this build does not include the native bootstrap preparation features".into());
+    }
     let mut args = std::env::args_os().skip(1);
     let mut root = None;
     let mut output = None;

@@ -373,6 +373,14 @@ def native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log
       seed_executed=True,compiler_executed=True,
       new_native_rust_prefix=True,actual_std_programs=2,repeated_artifacts_fresh=True,
       project_runtime_release_downloaded=False,full_runtime_build=False,device_execution=False)
+  # Only this added bootstrap test enters a job-owned host-kernel scope. The
+  # original guest commands and the other engineering probes remain unchanged.
+  preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH'
+  scope = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/native_resource_scope.py'
+  driver = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/verify_native_bootstrap.py'
+  evidence['commands'].append(run(['sudo','-n',f'--preserve-env={preserve}','/usr/bin/python3',scope,
+      'enter','--','/usr/bin/python3',driver], log, stdout_path=work/'native-bootstrap-current-driver.txt'))
+  evidence['native_bootstrap_current_tools'] = json.loads((work/'bootstrap-current-evidence/summary.json').read_text())
 
 
 def native_system_sdk_probe(guest_command, work, rootfs, evidence, log, guest_work):
@@ -2476,6 +2484,9 @@ def main():
              f'PATH={guest_work}/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin']
     def guest_command(args):
       return [*guest, *(str(arg).replace(str(work), guest_work) for arg in args)]
+    (work/'native-bootstrap-context.json').write_text(json.dumps(dict(schema=1,
+        source_commit=sha,work=str(work),guest_work=guest_work,source_mount=source_mount,
+        proot_sha256=PROOT_SHA,guest=list(map(str,guest))))+'\n')
     evidence['guest_architecture'] = subprocess.check_output(list(map(str, guest_command(['/bin/uname', '-m']))), text=True).strip()
     assert evidence['guest_architecture'] == 'aarch64', 'AGNOS guest is not executing ARM userspace'
     guest_uid = int(subprocess.check_output(list(map(str, guest_command(['/usr/bin/id', '-u']))), text=True))

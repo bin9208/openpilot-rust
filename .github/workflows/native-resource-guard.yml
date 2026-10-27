@@ -1,11 +1,12 @@
 name: Native build kernel resource guard
 on:
   push:
-    branches: ['codex/feat-600-native-resource-*']
+    branches: ['codex/feat-600-native-resource-*', 'codex/feat-599-*']
     paths:
       - 'rust/crates/runtime-build/**'
       - 'rust/crates/updated/src/native.rs'
       - 'tools/ci/native_resource_scope.py'
+      - 'tools/ci/verify_native_bootstrap.py'
       - '.github/workflows/native-resource-guard.yml'
 permissions:
   contents: read
@@ -114,6 +115,42 @@ jobs:
               worker_log_bytes=(attempt/'build.log').stat().st_size,
               frontend_output_bytes=(job/'native-worker-frontend.stderr').stat().st_size)))
           PY
+      - name: Verify the bootstrap seed root gateway drops credentials and retains failure output
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          job = Path(os.environ['CI_JOB_TEMP'])
+          original = json.loads((job/'scope-config.json').read_text())
+          config = dict(schema=1, stores=original['stores'], cache=str(job/'bootstrap-cache'),
+              system_sdk_receipt=str(job/'independent-factory-sdk.json'), system_sdk_sha256='a'*64,
+              expected_source_growth_bytes=64*1024**2, expected_compile_growth_bytes=64*1024**2,
+              remaining_object_growth_bytes=64*1024**2, resources=original['resources'])
+          path = job/'bootstrap-scope-config.json'
+          path.write_text(json.dumps(config))
+          fields = Path('/proc/self/stat').read_text().rsplit(') ',1)[1].split()
+          owner = f'{os.getpid()}:{int(fields[19])}'
+          with (job/'bootstrap-gateway.stdout').open('wb') as stdout, (job/'bootstrap-gateway.stderr').open('wb') as stderr:
+              result = subprocess.run(['sudo','-n','rust/target/debug/openpilot-runtime-inputs',
+                  '--bootstrap-tools-scope','--config',str(path),'--root',os.environ['GITHUB_WORKSPACE'],
+                  '--request-owner',owner], stdout=stdout, stderr=stderr, check=False)
+          assert result.returncode != 0
+          attempts = list((Path(config['stores']['generations'])/'bootstrap-attempts').glob('attempt-*'))
+          assert len(attempts) == 1
+          attempt = attempts[0]
+          rows = [json.loads(line) for line in (attempt/'resources.jsonl').read_text().splitlines()]
+          assert rows[0]['context']['frontend_uid'] == os.getuid() != 0
+          assert rows[0]['context']['supplementary_groups_cleared']
+          assert rows[-1]['state'] == 'failed'
+          assert 'requires actual AGNOS' in (attempt/'build.log').read_text()
+          assert not (attempt/'worker-result.json').exists()
+          assert not (Path(config['cache'])/'tools').exists()
+          assert not (Path(config['stores']['generations'])/'active.json').exists()
+          (job/'bootstrap-gateway-result.json').write_text(json.dumps(dict(
+              original_uid=os.getuid(), root_gateway_dropped_credentials=True,
+              expected_non_agnos_rejection=True, unbounded_fallback=False, runtime_activated=False)))
+          PY
       - name: Prepare only this job kernel scope
         shell: bash
         run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 tools/ci/native_resource_scope.py prepare
@@ -138,6 +175,10 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-resource-evidence/**
             ${{ env.CI_JOB_TEMP }}/native-worker-frontend.*
             ${{ env.CI_JOB_TEMP }}/native-worker-output-result.json
+            ${{ env.CI_JOB_TEMP }}/bootstrap-gateway.*
+            ${{ env.CI_JOB_TEMP }}/bootstrap-gateway-result.json
+            ${{ env.CI_JOB_TEMP }}/generations/bootstrap-attempts/**/build.log
+            ${{ env.CI_JOB_TEMP }}/generations/bootstrap-attempts/**/resources.jsonl
             ${{ env.CI_JOB_TEMP }}/generations/build-attempts/**/build.log
             ${{ env.CI_JOB_TEMP }}/generations/build-attempts/**/resources.jsonl
       - uses: ./.github/actions/job-temp

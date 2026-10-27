@@ -241,6 +241,26 @@ def verify_native(root, plan):
     raise ValueError('native seed default loader mapping differs from its pin')
 
 
+def current_tools(prepared, plan, configuration, source):
+  """Execute only the pinned seed's fixed privilege-dropping bootstrap protocol."""
+  verify_native(Path(prepared['root']), plan)
+  prepared = {**prepared, 'native_abi_checked': True}
+  if os.geteuid() == 0:
+    raise ValueError('bootstrap caller must be the original non-root user')
+  fields = Path('/proc/self/stat').read_text().rsplit(') ', 1)[1].split()
+  owner = f'{os.getpid()}:{int(fields[19])}'
+  output = subprocess.check_output(['/usr/bin/sudo', '-n', prepared['helper'], '--bootstrap-tools-scope',
+      '--config', str(configuration.resolve(strict=True)), '--root', str(source.resolve(strict=True)),
+      '--request-owner', owner], env=ENV)
+  if len(output) > 4*1024**2:
+    raise ValueError('bootstrap current-tools report exceeds 4 MiB')
+  result = json.loads(output)
+  if result.get('schema') != 1 or result.get('seed_helper_sha256') != plan['assets']['helper']['sha256'] or result.get('runtime_activated') is not False or result.get('runtime_started') is not False or result.get('runtime_release_downloaded') is not False:
+    raise ValueError('bootstrap result differs from its pinned seed or preparation-only protocol')
+  return dict(seed=prepared, current_tools=result, seed_native_abi_checked=True, seed_executed_for_current_tools=True,
+              runtime_activated=False, runtime_started=False)
+
+
 def notices(source, cargo, vendor, rust_licenses):
   metadata = json.loads(subprocess.check_output([str(cargo), 'metadata', '--locked', '--offline',
       '--manifest-path', str(source/'rust/Cargo.toml'), '--format-version', '1', '--filter-platform', 'aarch64-unknown-linux-gnu'], timeout=120))
@@ -336,12 +356,16 @@ def main():
   create = commands.add_parser('export')
   for flag in ('source', 'binary', 'cargo', 'vendor', 'rust-licenses', 'output'):
     create.add_argument('--'+flag, type=Path, required=True)
-  use = commands.add_parser('prepare')
-  use.add_argument('--manifest', type=Path, required=True)
-  use.add_argument('--manifest-sha256', required=True)
-  use.add_argument('--cache', type=Path, required=True)
-  use.add_argument('--offline-assets', type=Path)
-  use.add_argument('--verify-native', action='store_true')
+  for name in ('prepare', 'build-tools'):
+    use = commands.add_parser(name)
+    use.add_argument('--manifest', type=Path, required=True)
+    use.add_argument('--manifest-sha256', required=True)
+    use.add_argument('--cache', type=Path, required=True)
+    use.add_argument('--offline-assets', type=Path)
+    use.add_argument('--verify-native', action='store_true')
+    if name == 'build-tools':
+      use.add_argument('--config', type=Path, required=True)
+      use.add_argument('--source', type=Path, required=True)
   args = parser.parse_args()
   if args.command == 'export':
     result = export(args.source, args.binary, args.cargo, args.vendor, args.rust_licenses, args.output)
@@ -352,6 +376,8 @@ def main():
       result['native_abi_checked'] = True
     else:
       result['native_abi_checked'] = False
+    if args.command == 'build-tools':
+      result = current_tools(result, plan, args.config, args.source)
   print(json.dumps(result, indent=2))
 
 

@@ -4,11 +4,16 @@ on:
     branches: ['codex/feat-599-*', 'codex/feat-600-*']
     paths:
       - 'tools/ci/probe_native_agnos.py'
+      - 'tools/ci/verify_native_bootstrap.py'
+      - 'tools/ci/native_resource_scope.py'
       - 'tools/ci/tests/test_readonly_publication.py'
       - 'tools/ci/verify_native_compiler_features.py'
       - 'tools/ci/fixtures/native-agnos-assets-599.json'
       - 'rust/native-rust-toolchain.json'
       - 'rust/crates/runtime-build/src/toolchain.rs'
+      - 'rust/crates/runtime-build/src/bootstrap_tools.rs'
+      - 'rust/crates/runtime-build/src/inputs_main.rs'
+      - 'rust/crates/runtime-build/src/lib.rs'
       - 'rust/crates/runtime-build/src/archive_tree.rs'
       - 'rust/crates/runtime-build/src/capnp.rs'
       - 'rust/crates/runtime-build/src/cargo_inputs.rs'
@@ -654,14 +659,22 @@ jobs:
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-provider-origin
           key: native-provider-origin-9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291-v1
+      - name: Prepare only this bootstrap job kernel scope
+        run: sudo -n --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA /usr/bin/python3 tools/ci/native_resource_scope.py prepare
       - name: Execute Rust and C++ standard ABI probes inside the original AGNOS filesystem
         run: python3 tools/ci/probe_native_agnos.py
+      - name: Stop and remove only the bootstrap job kernel scope
+        if: always()
+        run: sudo -n --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA /usr/bin/python3 tools/ci/native_resource_scope.py cleanup
       - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: native-agnos-environment-${{ github.sha }}
           path: |
             ${{ env.CI_JOB_TEMP }}/native-agnos-environment-599.json
+            ${{ env.CI_JOB_TEMP }}/resource-scope-evidence.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-current-evidence/**
+            ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-current-generations/bootstrap-attempts/**
             ${{ env.CI_JOB_TEMP }}/native-agnos-assets-first.json
             ${{ env.CI_JOB_TEMP }}/native-agnos-assets-reused.json
             ${{ env.CI_JOB_TEMP }}/native-rust-first.json

@@ -218,6 +218,12 @@ protocol 응답은 이 기능의 지원 여부이며, 정상 manager 부팅·모
 
 ## 최종 사용자 기기 수용 시험
 
+그 이전의 첫 도구 재빌드 검증은 [bootstrap 경로](native-bootstrap-seed-599.md)를 따른다.
+foundation의 SDK pin/가짜 controller 거부, kernel workflow의 실제 권한 하강과 실패 로그,
+genuine workflow의 ARM12개 도구 initial/reused/docs/small 결과 및 private cgroup JSONL을
+각각 확인한다. X64 host kernel의 peak를 AGNOS kernel 또는 comma3X의 값으로 표현하지 않는다.
+12개 준비 도구의 성공과 전체99개 runtime/정상 부팅 준비 완료는 구분한다.
+
 정확 소스 `2b896bd0e32764ddc7f19bcda1ef935ac79ec2c7`의 실제 loggerd/logmessaged
 X64/ARM 각각6개 비교는 [#608 결과](native-source-stamp-reuse-608.md)에 있다. 문서 변경은 두
 출력 fresh/같은 hash, loggerd만 수정하면 무관한 logmessaged fresh/같은 hash,
