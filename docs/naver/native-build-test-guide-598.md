@@ -1,5 +1,11 @@
 # 콤마 자체 빌드·다운로드 재사용 검증 안내 — #598
 
+Rust component 준비의 `memory limit reached` 실패와 추가 검사 절차는
+[XZ decoder 한도 #612](native-rust-toolchain-599.md)에 기록했다. foundation의
+`toolchain` integration test는128MiB 선언의 이전 한도 거부와 수정 후 준비·반복 재사용,
+512MiB 거부/이전 세대·로그 보존을 확인한다. 실제 공식 archive와 compiler/Cargo 실행은
+같은 수정 SHA의 genuine workflow에서 확인하며, 로컬 기능 시험으로 대신하지 않는다.
+
 현재 Git index·기기별 정책·초기 빌드/기존 세대 부팅·native updater의 연결은
 [bootstrap 실행 안내](native-bootstrap-seed-599.md)의 첫 절을 따른다. foundation의
 `test_native_source_entry.py`는 metadata initial/repeat/docs/단일 provider 변경,

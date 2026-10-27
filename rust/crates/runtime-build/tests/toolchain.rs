@@ -14,6 +14,7 @@ use std::{
     cell::RefCell,
     collections::BTreeMap,
     fs,
+    io::Read,
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
 };
@@ -181,6 +182,96 @@ fn fixture(
         cache,
         store,
     )
+}
+
+// A larger declared dictionary can decode the same tiny LZMA2 payload. Change
+// only that property and its Block Header CRC32, avoiding a huge test encoder.
+// XZ format sections 3.1.7, 5.3.1 and 6: https://tukaani.org/xz/xz-file-format.txt
+fn dictionary(mut bytes: Vec<u8>, property: u8) -> Vec<u8> {
+    assert_eq!(&bytes[..6], b"\xfd7zXZ\0");
+    assert_eq!(&bytes[13..16], &[0, 0x21, 1]);
+    let end = 12 + (usize::from(bytes[12]) + 1) * 4;
+    bytes[16] = property;
+    let mut crc = u32::MAX;
+    for byte in &bytes[12..end - 4] {
+        crc ^= u32::from(*byte);
+        for _ in 0..8 {
+            crc = if crc & 1 == 1 {
+                (crc >> 1) ^ 0xedb8_8320
+            } else {
+                crc >> 1
+            };
+        }
+    }
+    bytes[end - 4..end].copy_from_slice(&(!crc).to_le_bytes());
+    bytes
+}
+
+fn set_dictionary(plan: &mut Plan, fetch: &mut Fetch, name: &str, property: u8) {
+    let component = plan.components.get_mut(name).unwrap();
+    let bytes = dictionary(fetch.blobs[&component.asset.sha256].clone(), property);
+    let sha = format!("{:x}", Sha256::digest(&bytes));
+    component.asset.sha256 = sha.clone();
+    component.asset.bytes = bytes.len() as u64;
+    fetch.blobs.insert(sha, bytes);
+}
+
+#[test]
+fn pinned_profile_dictionary_has_decoder_headroom_but_oversized_stream_preserves_prior_toolchains()
+{
+    let (temp, mut plan, mut fetch, cache, store) = fixture(None, false);
+    let old_plan = plan.clone();
+    let old = toolchain::prepare(&plan, &cache, &store, &fetch).unwrap();
+    let log = temp.path().join("previous-runtime.log");
+    fs::write(&log, b"previous runtime and logs retained").unwrap();
+    // Match the official Cargo (48 MiB) and rust-std/rustc (128 MiB) headers.
+    for (name, property) in [("cargo", 0x1b), ("rust-std", 0x1e), ("rustc", 0x1e)] {
+        set_dictionary(&mut plan, &mut fetch, name, property);
+    }
+    let bytes = &fetch.blobs[&plan.components["rust-std"].asset.sha256];
+    let mut legacy_limit = xz2::read::XzDecoder::new_stream(
+        bytes.as_slice(),
+        xz2::stream::Stream::new_stream_decoder(128 * 1024 * 1024, 0).unwrap(),
+    );
+    let error = legacy_limit.read_to_end(&mut Vec::new()).unwrap_err();
+    assert!(error.to_string().contains("memory limit"), "{error}");
+    drop(legacy_limit);
+    let first = toolchain::prepare(&plan, &cache, &store, &fetch).unwrap();
+    assert!(!first.compiler_executed && !first.runtime_activated);
+    assert_eq!(fs::read(first.root.join("bin/rustc")).unwrap(), elf(7));
+    let transfers = fetch.calls.borrow().len();
+    let repeated = toolchain::prepare(&plan, &cache, &store, &fetch).unwrap();
+    assert_eq!(repeated.root, first.root);
+    assert_eq!(repeated.copied_bytes, 0);
+    assert_eq!(fetch.calls.borrow().len(), transfers);
+    assert!(repeated.assets.values().all(|a| a.transferred_bytes == 0));
+    let published = || {
+        fs::read_dir(&store)
+            .unwrap()
+            .filter(|p| p.as_ref().unwrap().path().join("generation").exists())
+            .count()
+    };
+    let before = published();
+    // 512 MiB is above the finite decoder limit and must fail before publishing.
+    set_dictionary(&mut plan, &mut fetch, "rustc", 0x22);
+    let error = toolchain::prepare(&plan, &cache, &store, &fetch).unwrap_err();
+    assert!(error.to_string().contains("decoder budget"), "{error}");
+    assert!(error.to_string().contains("memory limit"), "{error}");
+    assert_eq!(published(), before);
+    Tree::read(&first.tree_receipt)
+        .unwrap()
+        .verify(&first.root)
+        .unwrap();
+    assert_eq!(
+        toolchain::prepare(&old_plan, &cache, &store, &fetch)
+            .unwrap()
+            .root,
+        old.root
+    );
+    assert_eq!(
+        fs::read(log).unwrap(),
+        b"previous runtime and logs retained"
+    );
 }
 
 #[test]

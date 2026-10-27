@@ -18,6 +18,12 @@ use std::{
     time::Instant,
 };
 
+// The pinned Rust 1.94.0 rustc/std streams declare a 128 MiB LZMA2 dictionary.
+// liblzma's limit covers the dictionary AND decoder state, so 128 MiB rejects
+// these valid inputs. Keep a finite budget with room for that state; the
+// enclosing build's aggregate cgroup limit is independent and unchanged.
+const XZ_DECODER_MEMORY_BYTES: u64 = 256 * 1024 * 1024;
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Component {
@@ -158,7 +164,7 @@ fn index(
 ) -> Result<u64> {
     let decoder = xz2::read::XzDecoder::new_stream(
         regular_file(blob)?,
-        xz2::stream::Stream::new_stream_decoder(128 * 1024 * 1024, 0)?,
+        xz2::stream::Stream::new_stream_decoder(XZ_DECODER_MEMORY_BYTES, 0)?,
     );
     let decoded_limit = component
         .maximum_unpacked_bytes
@@ -171,8 +177,11 @@ fn index(
     let mut licenses = BTreeSet::new();
     let mut total = 0_u64;
     let mut copied = 0_u64;
-    for entry in archive.entries()? {
-        let mut entry = entry?;
+    let decode_error = |error: std::io::Error| {
+        format!("native Rust {name} archive read failed with XZ decoder budget {XZ_DECODER_MEMORY_BYTES} bytes: {error}")
+    };
+    for entry in archive.entries().map_err(decode_error)? {
+        let mut entry = entry.map_err(decode_error)?;
         let path = entry.path()?.into_owned();
         if !normal(&path)
             || path.as_os_str().len() > 4096

@@ -20,6 +20,32 @@
 합계100072568 bytes의 HTTP body다. 각 원본 HEAD의 크기는 위 값과 같았다.
 이 읽기 감사는 새 준비기의 기능 시험이나 compiler 실행을 뜻하지 않는다.
 
+## XZ decoder 한도 실패 — #612 (수정 검증 대기)
+
+이전 source `f39aef7238ab7fd9bdc71c5c46662c7e2c1dc655`의
+[genuine job121884588873](https://github.com/bin9208/openpilot-rust/actions/runs/40411945529/job/121884588873)은
+AGNOS guest를 시작하기 전의 Rust component 준비에서 `memory limit reached`로 실패했다.
+해당 reader는 현재 `6ae58a47cf1112def97c3ccdb696b0ade2492722`까지 변경되지 않은128MiB
+decoder 한도를 사용한다. kernel OOM이 발생했다는 근거는 없다.
+
+고정 공식 archive의 bytes0..1023만 HTTP206/정확 Content-Range로 읽고 Block Header
+CRC32를 확인했다. Cargo의 LZMA2 property0x1b는48MiB, rust-std/rustc의0x1e는128MiB
+dictionary다. [XZ 형식의 dictionary 계산](https://tukaani.org/xz/xz-file-format.txt)과
+[decoder API](https://docs.rs/xz2/0.1.7/xz2/stream/struct.Stream.html#method.new_stream_decoder)의
+총메모리 한도를 대조해 decoder 상태 메모리가 빠진 것으로 원인을 좁혔다. 로컬에서는
+archive를 압축 해제하거나 실행하지 않았다.
+
+수정은 dictionary와 상태를 함께 처리할 유한256MiB decoder 한도다. 원래 manifest·자산
+SHA/byte pin과 명령, 압축 해제 byte/path/link/ELF/원자적 게시 검사 및 전체 cgroup 한도는
+유지한다. 오류에는 component와 decoder 예산을 함께 남긴다.
+
+소유의 작은 tar/XZ payload에서 dictionary 선언과 Block Header CRC만 바꾼다. 큰
+encoder를 사용하지 않고 기존128MiB 한도의 거부, 실제 준비·반복 전송/복사0,
+512MiB 선언의 계속된 거부와 이전 toolchain/로그 보존을 Actions에서 검사한다.
+이 fixture의 ELF 모양 파일은 실행하지 않는다. 실제 고정 archive initial/reused와
+compiler/Cargo 실행은 원래 genuine 명령으로 별도 확인한다. 아직 새 SHA의 기능 성공은
+증명되지 않았으며 [#612](https://github.com/bin9208/openpilot-rust/issues/612)를 닫지 않는다.
+
 ## 준비·재사용 계약
 
 - 기존 SHA/길이 검증 blob cache와 per-object lock을 재사용한다. 캐시 hit도 검증하고
