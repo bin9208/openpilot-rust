@@ -1,0 +1,281 @@
+{
+  "schema": 1,
+  "profile": "raylib600-shared",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "source_archive": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/runtime-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31/openpilot-rust-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31-aarch64.tar.gz",
+    "sha256": "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291",
+    "bytes": 1155969168
+  },
+  "runtime_manifest_sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+  "members": {
+    "lib/libopenpilot-raylib.so": {
+      "source": "rust/bin/lib/libopenpilot-raylib.so",
+      "sha256": "f62d902f04c9b329d1a8f0741e9ca83dd7c3b92beddaea4a3ec393b1f4bafa44",
+      "bytes": 1487960,
+      "mode": 365,
+      "link": null
+    },
+    "provenance/original-runtime-manifest.json": {
+      "source": "rust/runtime-manifest.json",
+      "sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+      "bytes": 241671,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/LICENSE.txt": {
+      "source": "rust/bin/licenses/raylib/LICENSE.txt",
+      "sha256": "9a6503a0c1b21520365a29188922325ec29249d41e7b2a7b11a5a36ce3d324e8",
+      "bytes": 878,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/build.json": {
+      "source": "rust/bin/licenses/raylib/build.json",
+      "sha256": "979432fc870a25cd270318134d67705c9292c70712f4c355514c5459c9aa3791",
+      "bytes": 1227,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/provenance.json": {
+      "source": "rust/bin/licenses/raylib/provenance.json",
+      "sha256": "46608366515a244caf130f60979f64041bb5c5fe78a722a855b94578022a09c4",
+      "bytes": 15907,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/raylib.h": {
+      "source": "rust/bin/licenses/raylib/raylib.h",
+      "sha256": "047e7255f93f8c34039cab906ad76136706b5c7b4c5b5b065d84141963ee9b6b",
+      "bytes": 134582,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_cgltf.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_cgltf.h.notices.txt",
+      "sha256": "fa30b15a8f566e40bf9e1100ba120a25ed95c65b61ba370a4d58e4c383c77a0f",
+      "bytes": 7360,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_cgltf_write.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_cgltf_write.h.notices.txt",
+      "sha256": "127ff45a853dc67eab5ea7bfd2521295d36b29e1760517e374eb772a9459f608",
+      "bytes": 2408,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_dirent.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_dirent.h.notices.txt",
+      "sha256": "6dc5cc68b5c1741fecb8f58c3344be2dd7e97e906aa6e74ccee98ee3cb1f83be",
+      "bytes": 1744,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_dr_flac.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_dr_flac.h.notices.txt",
+      "sha256": "04d5442fea4f810ae878bb2869f491557b4e60e3181ea2ea5afcf901938b3eb5",
+      "bytes": 17412,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_dr_mp3.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_dr_mp3.h.notices.txt",
+      "sha256": "3642be155c08f58315915e525d6e50c78f1913738b50372a9c0d16f418b4eb5d",
+      "bytes": 13612,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_dr_wav.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_dr_wav.h.notices.txt",
+      "sha256": "ee4b1f65ef2abb14bc9d9534c6fea2f007a8aaea9733f7dcc2313ad811d1a4dc",
+      "bytes": 19359,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_fix_win32_compatibility.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_fix_win32_compatibility.h.notices.txt",
+      "sha256": "4bbed32fc5f9ef1bc58beb4182a40720e8644511536458f0fa2eb202da46c63e",
+      "bytes": 1600,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_glad.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_glad.h.notices.txt",
+      "sha256": "438187dca092de4032c1a16524aa4c34c71a0f985a71251a675aad54e77ed561",
+      "bytes": 1147,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_glad_gles2.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_glad_gles2.h.notices.txt",
+      "sha256": "cd4750de854c7bb3923cdfe313bc9309c30c57a69fd2039a1307c069ebfbed0f",
+      "bytes": 6322,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_jar_mod.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_jar_mod.h.notices.txt",
+      "sha256": "c1b37ae2b47bf81430e6c6dbb8253b6e35c5c00648cc4942756a54f7784eba57",
+      "bytes": 2826,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_jar_xm.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_jar_xm.h.notices.txt",
+      "sha256": "4169d0f3c15cf76c194cf8e9c68f7da97799881238a7394e6c64cea4acbef304",
+      "bytes": 2050,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_m3d.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_m3d.h.notices.txt",
+      "sha256": "c01fbc4b94e797db9be3ad91a8b2370c96e607489a9ede9cbe15df51b241b69d",
+      "bytes": 1809,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_miniaudio.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_miniaudio.h.notices.txt",
+      "sha256": "5ff4a94909cfc3289cd449cb0b70bf5b3cd2f8400a905fdb42389800c0f2448d",
+      "bytes": 220494,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_par_shapes.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_par_shapes.h.notices.txt",
+      "sha256": "a1cd2b07144403f14fb79e372a2efcb713b9c2c30f840e6054c27bc74ac8b924",
+      "bytes": 2248,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_qoa.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_qoa.h.notices.txt",
+      "sha256": "618332bea337438653311d745781754bfd192ae50cddc21208df2b217e56b761",
+      "bytes": 3870,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_qoi.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_qoi.h.notices.txt",
+      "sha256": "6d37b2da0a7e85561472bd1329e06eaa2fd0093cfc3d5b5f6b636cceb59d92b5",
+      "bytes": 7446,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_rlsw.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_rlsw.h.notices.txt",
+      "sha256": "4f312a6327b913cf475e81cf115ab180d7c58c200de2e3fb54206c10c7100d30",
+      "bytes": 4417,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_rltexgpu.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_rltexgpu.h.notices.txt",
+      "sha256": "6a1ebbd78889716ea04ef019a74bcc3c3b4e9b4856ad9dd6f81f04e8e4fb577e",
+      "bytes": 3821,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_rprand.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_rprand.h.notices.txt",
+      "sha256": "d8bf2cc9bcfb6689d6c99fecf4ab09b502c40484c9f2dc260445433f25c2b5d3",
+      "bytes": 4366,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_sdefl.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_sdefl.h.notices.txt",
+      "sha256": "cf4452e02c43926210358bc76b6a7f1b91ed6cae045faf7f366436d1c7b4cda6",
+      "bytes": 6188,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_sinfl.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_sinfl.h.notices.txt",
+      "sha256": "28ce22332a18051abca3b8d88cdc0ea385c8a8c00836602d79d57fb7eee83805",
+      "bytes": 6188,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_stb_image.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_stb_image.h.notices.txt",
+      "sha256": "a88450b2d9abe99a6d2e7b168d457148972a709b746d7b14a253ef9ba9bc7cbc",
+      "bytes": 9931,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_stb_image_resize2.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_stb_image_resize2.h.notices.txt",
+      "sha256": "4b218476c45663b9655a6efdc1746369e5ece17424574f4c1e6eacb040c77318",
+      "bytes": 24939,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_stb_image_write.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_stb_image_write.h.notices.txt",
+      "sha256": "30dc2235b25960a5b967e1d1ec970aa2e5d27c35ec031c4293532056d081a314",
+      "bytes": 9576,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_stb_perlin.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_stb_perlin.h.notices.txt",
+      "sha256": "d863b6c5695e6812ad2461ca5ea0a8bd515c2275120c622c93de2e8a3f32c1de",
+      "bytes": 5724,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_stb_rect_pack.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_stb_rect_pack.h.notices.txt",
+      "sha256": "59d696e904cb1903b17dfccaf920a72701c1b984f9ccc05e19af44db05f04284",
+      "bytes": 4601,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_stb_truetype.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_stb_truetype.h.notices.txt",
+      "sha256": "4a1eb61d21464d2e222b2f98335e851db3a50bb3839da30fa4f8ba4a8ec0c4f0",
+      "bytes": 14851,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_tinyobj_loader_c.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_tinyobj_loader_c.h.notices.txt",
+      "sha256": "eff70a2d52c68a2df9deeb89153660e0a0d2a31376d37711a5ed355659f7c247",
+      "bytes": 1169,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_external_vox_loader.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_external_vox_loader.h.notices.txt",
+      "sha256": "ce045e2d8a0a7d8f05fc75a96b869ffad0075d3d041a44601ed2846ea856d5bd",
+      "bytes": 1858,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_platforms_rcore_comma.c.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_platforms_rcore_comma.c.notices.txt",
+      "sha256": "b60c8e089559f331615e643207c5b1fb127e8c612434cb451c88f88863123b9c",
+      "bytes": 1858,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_raymath.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_raymath.h.notices.txt",
+      "sha256": "3eb97b06f3e68fa7570a4568876f5ef44d76d700ba7052f73d9678062c6d3469",
+      "bytes": 3213,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/raylib/src_rlgl.h.notices.txt": {
+      "source": "rust/bin/licenses/raylib/src_rlgl.h.notices.txt",
+      "sha256": "e81848122e59824b9ad41e3c7db6ec6c7230c7af61933dbd79e0c7de04700842",
+      "bytes": 7153,
+      "mode": 292,
+      "link": null
+    }
+  }
+}

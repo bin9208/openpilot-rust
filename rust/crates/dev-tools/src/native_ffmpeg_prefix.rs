@@ -264,6 +264,9 @@ pub fn cli(arguments: &[String]) -> Result<()> {
     let store = Path::new(value("--store")?);
     let header_plan = native_ffmpeg_headers::Plan::read(Path::new(value("--header-plan")?))?;
     let provider_plan = native_provider::Plan::read(Path::new(value("--provider-plan")?))?;
+    if provider_plan.profile != "ffmpeg611-shared" {
+        return Err("FFmpeg prefix requires its original FFmpeg shared provider profile".into());
+    }
     // Reject an unrelated descriptor before preparing either input.
     if digest_file(descriptor)? != pin {
         return Err("FFmpeg provider descriptor checksum mismatch".into());

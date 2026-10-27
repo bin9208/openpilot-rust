@@ -10,6 +10,7 @@ import json
 import lzma
 import os
 import platform
+import re
 import resource
 import shutil
 import subprocess
@@ -823,6 +824,93 @@ int main(int argc,char** argv){
       full_runtime_build=False,physical_device_execution=False)
 
 
+def native_raylib_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Verify current loader headers/exports and static ABI, without GPU calls."""
+  host=json.loads((work.parent/'native-raylib-sdk-initial.json').read_text())
+  exported=json.loads((work.parent/'native-raylib-provider-export.json').read_text())
+  host_provider=json.loads((work.parent/'native-raylib-provider-initial.json').read_text())
+  room(work,host['copied_bytes']+host_provider['copied_bytes']+128*1024**2)
+  def execute(argv,name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  execute(['cargo','build','--locked','--manifest-path',f'{source_mount}/rust/Cargo.toml',
+      '-p','openpilot-dev-tools','--bin','stage-startup-ui-raylib','--target-dir',work/'project-target',
+      '--message-format=json'],'native-raylib-preparer-build.jsonl')
+  sdk_command=[work/'project-target/debug/stage-startup-ui-raylib','--prepare-native-inputs',
+      '--root',source_mount,'--cache',Path(guest_work)/'raylib-assets','--store',work/'native-raylib-sdk-prefixes']
+  provider_command=[work/'project-target/debug/build-runtime-ffmpeg','--prepare-released-provider',
+      '--plan',f'{source_mount}/rust/native-raylib-provider.json',
+      '--descriptor',Path(guest_work)/'raylib-provider-export/provider.json',
+      '--descriptor-sha256',exported['descriptor_sha256'],'--cache',Path(guest_work)/'raylib-components',
+      '--store',work/'native-raylib-provider-prefixes']
+  sdk_rows=[]
+  provider_rows=[]
+  for phase in ('initial','reused'):
+    sdk=json.loads(execute(sdk_command,f'native-raylib-sdk-{phase}.json').read_text())
+    provider=json.loads(execute(provider_command,f'native-raylib-provider-{phase}.json').read_text())
+    assert sdk['tree_sha256']==host['tree_sha256'] and sdk['identity']==host['identity']
+    assert provider['tree_sha256']==host_provider['tree_sha256']==exported['tree_sha256']
+    assert provider['provider_source_commit']==exported['provider_source_commit']
+    for row in (sdk,provider):
+      assert row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+      assert (row['copied_bytes']>0)==(phase=='initial')
+      assert not row['compiler_executed'] and not row['runtime_activated']
+    assert provider['offline_seed_bytes']==0 and not provider['origin_archive_downloaded']
+    sdk_rows.append(sdk)
+    provider_rows.append(provider)
+  include=Path(sdk_rows[0]['root'])/'include'
+  prefix=Path(provider_rows[0]['root'])
+  # Convert guest paths only for the host's bounded, read-only source inspection.
+  def local(path):
+    return work/Path(path).relative_to(guest_work)
+  original_header=prefix/'share/licenses/raylib/raylib.h'
+  assert digest(local(include/'raylib.h'))==digest(local(original_header))=='047e7255f93f8c34039cab906ad76136706b5c7b4c5b5b065d84141963ee9b6b'
+  relative='rust/crates/startup-ui/native/raylib_loader.cc'
+  loader=Path(os.environ['GITHUB_WORKSPACE'])/relative
+  source=loader.read_text()
+  required_block=re.search(r'const\s+char\s*\*\s*required\[\]\s*=\s*\{(.*?)\};',source,re.S)
+  assert required_block, 'current startup loader symbol contract was not found'
+  required=set(re.findall(r'"([A-Za-z_][A-Za-z_0-9]*)"',required_block.group(1)))
+  forwarded=set(re.findall(r'^FORWARD\([^,]+,\s*([A-Za-z_][A-Za-z_0-9]*)\s*,',source,re.M))
+  assert required and forwarded
+  required|=forwarded|{'openpilot_startup_ui_raylib_contract'}
+  library=prefix/'lib/libopenpilot-raylib.so'
+  symbols=execute(['readelf','--wide','--dyn-syms',library],'native-raylib-symbols.txt').read_text()
+  defined=set()
+  for line in symbols.splitlines():
+    fields=line.split()
+    if len(fields)>=8 and fields[0].endswith(':') and fields[4] in ('GLOBAL','WEAK') and fields[5] in ('DEFAULT','PROTECTED') and fields[6]!='UND':
+      defined.add(fields[7].split('@')[0])
+  assert required<=defined, f'current raylib loader exports missing: {sorted(required-defined)}'
+  output=work/'native-raylib-loader.o'
+  execute(['g++','-std=c++17','-O0','-fPIC','-I',include,'-c',f'{source_mount}/{relative}',
+      '-o',output],'native-raylib-loader-build.txt')
+  with output.open('rb') as stream: header=stream.read(64)
+  assert header[:6]==b'\x7fELF\x02\x01' and int.from_bytes(header[16:18],'little')==1 and int.from_bytes(header[18:20],'little')==183
+  audit=work/'native-raylib-elf-audit.json'
+  execute([work/'project-target/debug/runtime-elf-audit','--root',library,
+      '--library',prefix/'lib','--library','/usr/lib/aarch64-linux-gnu',
+      '--library','/lib/aarch64-linux-gnu','--library','/usr/lib','--output',audit],
+      'native-raylib-audit-summary.json')
+  assert json.loads(audit.read_text())['compatible']
+  for name,command,first in (('sdk',sdk_command,sdk_rows[0]),('provider',provider_command,provider_rows[0])):
+    after=json.loads(execute(command,f'native-raylib-{name}-after-inspection.json').read_text())
+    assert after['tree_sha256']==first['tree_sha256']
+    assert after['copied_bytes']==after['asset']['transferred_bytes']==after['asset']['stored_bytes']==0
+  evidence['native_raylib_inputs']=dict(sdk_tree_sha256=sdk_rows[0]['tree_sha256'],
+      archive_sha256=host['asset']['sha256'],archive_bytes=21707647,
+      provider_tree_sha256=provider_rows[0]['tree_sha256'],provider_source_commit=exported['provider_source_commit'],
+      component_sha256=provider_rows[0]['asset']['sha256'],component_bytes=provider_rows[0]['asset']['bytes'],
+      descriptor_sha256=exported['descriptor_sha256'],library_sha256=digest(local(library)),
+      current_loader_source_sha256=digest(loader),current_loader_object_sha256=digest(output),
+      current_loader_required_exports=len(required),current_loader_forwarded_exports=len(forwarded),
+      original_header_matches=True,strict_elf_audit_compatible=True,actual_arm_preparer=True,
+      independent_host_trees_match=True,repeated_body_bytes=0,repeated_copied_bytes=0,
+      origin_archive_downloaded_by_consumer=False,project_binaries_reused=False,
+      offline_component_seed=True,published_release=False,public_component_download_tested=False,
+      library_loaded=False,graphics_execution_tested=False,full_runtime_build=False,physical_device_execution=False)
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -904,6 +992,8 @@ def main():
     (work / 'ffmpeg-source').mkdir()
     (work / 'provider-assets').mkdir()
     (work / 'provider-export').mkdir()
+    for name in ('raylib-assets','raylib-components','raylib-provider-export'):
+      (work/name).mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
     (work/'cargo').mkdir()
@@ -924,6 +1014,9 @@ def main():
              '-b', f'{owned / "native-ffmpeg-source"}:{guest_work}/ffmpeg-source',
              '-b', f'{owned / "native-provider-components"}:{guest_work}/provider-assets',
              '-b', f'{owned / "native-provider-export"}:{guest_work}/provider-export',
+             '-b', f'{owned / "native-raylib-assets"}:{guest_work}/raylib-assets',
+             '-b', f'{owned / "native-raylib-components"}:{guest_work}/raylib-components',
+             '-b', f'{owned / "native-raylib-provider-export"}:{guest_work}/raylib-provider-export',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
@@ -973,6 +1066,7 @@ def main():
     native_provider_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_encoder_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_eigen_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))

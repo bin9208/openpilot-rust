@@ -16,6 +16,7 @@ pub mod native_codec_inputs;
 pub mod native_ffmpeg_headers;
 pub mod native_ffmpeg_prefix;
 pub mod native_provider;
+pub mod native_raylib_inputs;
 
 pub mod ffmpeg_build;
 pub mod qcom_compiler_stage;

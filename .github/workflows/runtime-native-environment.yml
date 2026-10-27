@@ -16,6 +16,13 @@ on:
       - 'rust/crates/dev-tools/src/native_ffmpeg_headers.rs'
       - 'rust/crates/dev-tools/src/native_ffmpeg_prefix.rs'
       - 'rust/crates/dev-tools/src/native_provider.rs'
+      - 'rust/crates/dev-tools/src/native_raylib_inputs.rs'
+      - 'rust/crates/dev-tools/src/raylib_stage.rs'
+      - 'rust/crates/dev-tools/src/raylib_stage_tests.rs'
+      - 'rust/crates/dev-tools/src/bin/stage_startup_ui_raylib.rs'
+      - 'rust/crates/dev-tools/tests/native_raylib.rs'
+      - 'rust/native-raylib-provider.json'
+      - 'tools/ci/prepare_native_raylib.py'
       - 'rust/native-ffmpeg-provider.json'
       - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
       - 'rust/native-ffmpeg-headers.json'
@@ -29,6 +36,7 @@ on:
       - 'rust/crates/runtime-build/src/inputs_main.rs'
       - 'rust/crates/cereal/**'
       - 'rust/crates/encoderd/**'
+      - 'rust/crates/startup-ui/**'
       - 'rust/crates/jpeg/**'
       - 'rust/tools/check_encoder_codecs.py'
       - 'rust/tools/encoder_oracle/**'
@@ -263,6 +271,22 @@ jobs:
           path: ${{ env.CI_JOB_TEMP }}/native-eigen-assets
           key: native-eigen-340-arm-b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a-v1
       - uses: actions/cache/restore@v4
+        id: raylib-sdk-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-raylib-assets
+          key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
+      - name: Prepare only the original native raylib SDK and reject forged local receipts
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-startup-ui-raylib
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_raylib.py --preparer "$native_target/debug/stage-startup-ui-raylib" \
+            --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: actions/cache/save@v4
+        if: steps.raylib-sdk-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-raylib-assets
+          key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
+      - uses: actions/cache/restore@v4
         id: ffmpeg-headers-cache
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-ffmpeg-source
@@ -338,6 +362,40 @@ jobs:
           assert results[0]['root']==results[1]['root']
           print('Original foreign-only component candidate exported and independently consumed; not published, and not yet executed on ARM.')
           PY
+      - name: Export the original raylib provider without a second origin download
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          helper=(root/'native-provider-preparer.txt').read_text().strip()
+          command=[helper,'--export-released-provider','--plan','rust/native-raylib-provider.json',
+              '--cache',str(root/'native-provider-origin'),'--store',str(root/'native-provider-origins'),
+              '--output',str(root/'native-raylib-provider-export')]
+          with (root/'native-raylib-provider-export.json').open('x') as output:
+              subprocess.run(command,stdout=output,check=True)
+          exported=json.loads((root/'native-raylib-provider-export.json').read_text())
+          assert exported['origin']['asset']['transferred_bytes']==exported['origin']['asset']['stored_bytes']==0
+          assert not exported['published_release'] and not exported['provider_executed']
+          consume=[helper,'--prepare-released-provider','--plan','rust/native-raylib-provider.json',
+              '--descriptor',exported['descriptor'],'--descriptor-sha256',exported['descriptor_sha256'],
+              '--cache',str(root/'native-raylib-components'),'--store',str(root/'native-raylib-provider-prefixes'),
+              '--offline-archive',exported['archive']]
+          rows=[]
+          for phase in ('initial','reused'):
+              path=root/f'native-raylib-provider-{phase}.json'
+              with path.open('x') as output:
+                  subprocess.run(consume,stdout=output,check=True)
+              row=json.loads(path.read_text())
+              assert row['tree_sha256']==exported['tree_sha256']
+              assert row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+              assert not row['origin_archive_downloaded'] and not row['compiler_executed'] and not row['runtime_activated']
+              assert (row['copied_bytes']>0)==(phase=='initial')
+              assert (row['offline_seed_bytes']>0)==(phase=='initial')
+              rows.append(row)
+          assert rows[0]['root']==rows[1]['root']
+          print('Raylib-only component candidate consumed; origin reused without transfer; public publication and graphics execution pending.')
+          PY
       - name: Compose independently expected headers and libraries into one immutable FFmpeg prefix
         run: |
           python3 - <<'PY'
@@ -393,6 +451,12 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-cargo-first.json
             ${{ env.CI_JOB_TEMP }}/native-cargo-reused.json
             ${{ env.CI_JOB_TEMP }}/native-codec-first.json
+            ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-*.json
+            ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-tamper.*
+            ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-raylib-provider-*.json
+            ${{ env.CI_JOB_TEMP }}/native-raylib-provider-export/*
+            ${{ env.CI_JOB_TEMP }}/native-raylib-provider-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-eigen-*.json
             ${{ env.CI_JOB_TEMP }}/native-libyuv-only.json
             ${{ env.CI_JOB_TEMP }}/native-eigen-prefixes/**/generation/tree.json
@@ -414,6 +478,11 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/receipt.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/commands.log
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-sdk-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-provider-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-eigen-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-eigen-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-eigen-*.cc

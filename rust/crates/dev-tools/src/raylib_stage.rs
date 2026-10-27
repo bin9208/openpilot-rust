@@ -1,7 +1,7 @@
 //! Stage the pinned external raylib SDK; the GNU toolchain and libraries stay external.
 use crate::{
     disk_space,
-    encoder_stage::zip_directory_count,
+    encoder_stage::zip_record_count,
     qa_process::{CommandSpec, NativeRunner, Runner},
     seal::Result,
 };
@@ -10,7 +10,7 @@ use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeMap,
     fs,
-    io::{Read, Seek, SeekFrom, Write},
+    io::{Cursor, Read, Seek, SeekFrom, Write},
     os::unix::fs::{MetadataExt, OpenOptionsExt, PermissionsExt},
     path::{Path, PathBuf},
     time::Duration,
@@ -183,9 +183,8 @@ fn freeze_wheel(
 }
 // Inspect ordinary EOCD and raw records before ZipArchive allocates its index.
 // Both reviewed wheels use ordinary single-disk ZIP, not ZIP64 or SFX layouts.
-fn zip_preflight(path: &Path) -> Result<usize> {
-    let mut file = fs::File::open(path)?;
-    let size = file.metadata()?.len();
+fn zip_preflight(mut file: impl Read + Seek) -> Result<usize> {
+    let size = file.seek(SeekFrom::End(0))?;
     let length = size.min(65557);
     file.seek(SeekFrom::Start(size - length))?;
     let mut tail = vec![0; usize::try_from(length)?];
@@ -215,14 +214,29 @@ fn zip_preflight(path: &Path) -> Result<usize> {
         "raylib ZIP directory outside archive",
     )?;
     check(
-        zip_directory_count(path, start)? == count,
+        zip_record_count(file, start)? == count,
         "duplicate or malformed raylib ZIP directory",
     )?;
     Ok(count)
 }
 fn payload(path: &Path, pin: &Pin) -> Result<BTreeMap<String, Vec<u8>>> {
-    let count = zip_preflight(path)?;
-    let mut wheel = zip::ZipArchive::new(fs::File::open(path)?)?;
+    check(
+        pin.size <= 24 * 1024 * 1024,
+        "oversized raylib parser input",
+    )?;
+    let mut bytes = Vec::new();
+    crate::native_codec_inputs::regular(path)?
+        .take(pin.size + 1)
+        .read_to_end(&mut bytes)?;
+    payload_bytes(&bytes, pin)
+}
+fn payload_bytes(bytes: &[u8], pin: &Pin) -> Result<BTreeMap<String, Vec<u8>>> {
+    check(
+        pin.size <= 24 * 1024 * 1024 && bytes.len() as u64 == pin.size && hash(bytes) == pin.sha256,
+        "raylib parser bytes differ from pinned wheel",
+    )?;
+    let count = zip_preflight(Cursor::new(bytes))?;
+    let mut wheel = zip::ZipArchive::new(Cursor::new(bytes))?;
     check(wheel.len() == count, "duplicate raylib ZIP member")?;
     let expected = [
         format!("lib/{}", pin.archive),
@@ -247,9 +261,10 @@ fn payload(path: &Path, pin: &Pin) -> Result<BTreeMap<String, Vec<u8>>> {
                         .all(|part| !part.is_empty() && part != "." && part != ".."),
                 "unsafe raylib ZIP member path",
             )?;
-            let kind = entry.unix_mode().unwrap_or(0) & 0o170000;
+            let mode = entry.unix_mode().unwrap_or(0);
+            let kind = mode & 0o170000;
             check(
-                !entry.is_dir() && (kind == 0 || kind == 0o100000),
+                !entry.is_dir() && mode & 0o6000 == 0 && (kind == 0 || kind == 0o100000),
                 "unsafe raylib ZIP member type",
             )?;
             let limit = if relative.starts_with("include/") {
@@ -290,6 +305,18 @@ fn payload(path: &Path, pin: &Pin) -> Result<BTreeMap<String, Vec<u8>>> {
         format!("{}\n", pin.sha256).into_bytes(),
     );
     Ok(files)
+}
+
+pub(crate) fn native_arm_asset() -> Result<openpilot_runtime_build::assets::Asset> {
+    let pin = pin_for("aarch64")?;
+    Ok(openpilot_runtime_build::assets::Asset {
+        url: pin.url,
+        sha256: pin.sha256,
+        bytes: pin.size,
+    })
+}
+pub(crate) fn native_arm_files(bytes: &[u8]) -> Result<BTreeMap<String, Vec<u8>>> {
+    payload_bytes(bytes, &pin_for("aarch64")?)
 }
 #[derive(PartialEq, Eq)]
 struct Entry {

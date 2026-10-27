@@ -8,6 +8,13 @@ on:
       - 'rust/crates/dev-tools/src/native_ffmpeg_headers.rs'
       - 'rust/crates/dev-tools/src/native_ffmpeg_prefix.rs'
       - 'rust/crates/dev-tools/src/native_provider.rs'
+      - 'rust/crates/dev-tools/src/native_raylib_inputs.rs'
+      - 'rust/crates/dev-tools/src/raylib_stage.rs'
+      - 'rust/crates/dev-tools/src/raylib_stage_tests.rs'
+      - 'rust/crates/dev-tools/src/bin/stage_startup_ui_raylib.rs'
+      - 'rust/crates/dev-tools/tests/native_raylib.rs'
+      - 'rust/native-raylib-provider.json'
+      - 'tools/ci/prepare_native_raylib.py'
       - 'rust/native-ffmpeg-provider.json'
       - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
       - 'rust/crates/dev-tools/tests/ffmpeg_build.rs'
@@ -168,6 +175,29 @@ jobs:
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-eigen-assets
           key: native-eigen-340-arm-b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a-v1
+      - name: Verify unchanged legacy raylib admission and independent native preparation
+        run: |
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/{raylib_stage,native_raylib_inputs}.rs rust/crates/dev-tools/src/bin/stage_startup_ui_raylib.rs rust/crates/dev-tools/tests/native_raylib.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib raylib_stage::tests -- --nocapture
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_raylib_inputs::tests -- --nocapture
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test native_raylib
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --bin stage-startup-ui-raylib -- -D warnings
+      - uses: actions/cache/restore@v4
+        id: raylib-sdk-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-raylib-assets
+          key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
+      - name: Prepare only the original native raylib SDK and reject forged local receipts
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-startup-ui-raylib
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_raylib.py --preparer "$native_target/debug/stage-startup-ui-raylib" \
+            --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: actions/cache/save@v4
+        if: steps.raylib-sdk-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-raylib-assets
+          key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
       - name: Verify released FFmpeg header reconstruction without changing existing profiles
         run: |
           rustfmt --edition 2021 --check rust/crates/dev-tools/src/{native_codec_inputs,native_ffmpeg_headers,ffmpeg_build}.rs rust/crates/dev-tools/tests/ffmpeg_build.rs
@@ -287,6 +317,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-runtime-catalog.json
             ${{ env.CI_JOB_TEMP }}/runtime-build-tests.log
             ${{ env.CI_JOB_TEMP }}/native-codec-first.json
+            ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-*.json
+            ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-tamper.*
+            ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-eigen-*.json
             ${{ env.CI_JOB_TEMP }}/native-libyuv-only.json
             ${{ env.CI_JOB_TEMP }}/native-eigen-prefixes/**/generation/tree.json

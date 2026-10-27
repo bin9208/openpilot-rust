@@ -21,6 +21,11 @@
 
 ## 개발 검증 실행 방법
 
+기존 UI raylib의 원래 헤더/static archive와 독립 shared provider 준비, 반복 전송/복사0,
+캐시 영수증 위조 거부 및 실제 ARM loader 컴파일/정적 ABI 검사는
+[raylib 입력 안내](native-raylib-inputs-599.md)를 따른다. GPU 화면 출력과 전체 runtime
+시작 성공은 이 정적 검사로 대신하지 않는다.
+
 기존 estimator Eigen3.4.0 입력을 원래 wheel에서 준비하고 필요한 wheel만 선택하는 방법과
 전송/복사0·실제 C++ helper 검사는 [Eigen 입력 안내](native-eigen-inputs-599.md)를 따른다.
 이 검사를 전체 locationd/paramsd 또는99개 runtime의 통과로 대신 쓰지 않는다.

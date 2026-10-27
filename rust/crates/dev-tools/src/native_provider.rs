@@ -1,4 +1,4 @@
-//! Export only authenticated foreign FFmpeg providers from the old release.
+//! Export only authenticated foreign FFmpeg/raylib providers from the old release.
 //! Consumers use an independently pinned small component, never the old runtime.
 use crate::{
     encoder_stage,
@@ -20,6 +20,7 @@ use std::{
 };
 
 const INVENTORY: &str = "be0bb63d0d7f71ea38a3f17f923d2b02c0149cc541f785916aaa93f311dbc3f2";
+const RAYLIB_INVENTORY: &str = "4c19e76d8ce5072e60a2a244634f44b62f254b3f02facc08a3dd39637f486cfd";
 const SOURCE: &str = "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31";
 const ORIGIN: &str = "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291";
 const MANIFEST: &str = "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee";
@@ -85,8 +86,16 @@ pub struct Report {
 fn origin_url() -> String {
     format!("https://github.com/bin9208/openpilot-rust/releases/download/runtime-{SOURCE}/openpilot-rust-{SOURCE}-aarch64.tar.gz")
 }
-fn component_url(sha: &str) -> String {
-    format!("https://github.com/bin9208/openpilot-rust/releases/download/native-provider-ffmpeg611-{sha}/ffmpeg611-shared.tar.gz")
+fn component_names(profile: &str) -> Result<(&'static str, &'static str)> {
+    match profile {
+        PROFILE => Ok(("ffmpeg611", "ffmpeg611-shared.tar.gz")),
+        "raylib600-shared" => Ok(("raylib600", "raylib600-shared.tar.gz")),
+        _ => Err("unknown fixed foreign provider profile".into()),
+    }
+}
+fn component_url(profile: &str, sha: &str) -> Result<String> {
+    let (namespace, filename) = component_names(profile)?;
+    Ok(format!("https://github.com/bin9208/openpilot-rust/releases/download/native-provider-{namespace}-{sha}/{filename}"))
 }
 fn safe(path: &Path) -> Result<()> {
     encoder_stage::safe(path.to_str().ok_or("non-UTF8 provider path")?)
@@ -115,8 +124,17 @@ impl Plan {
         Ok(plan)
     }
     fn validate(&self) -> Result<()> {
+        let (member_count, inventory) = match self.profile.as_str() {
+            PROFILE => (36, INVENTORY),
+            "raylib600-shared" => (38, RAYLIB_INVENTORY),
+            _ => {
+                return Err(
+                    "foreign provider plan differs from the fixed original release inventory"
+                        .into(),
+                )
+            }
+        };
         if self.schema != 1
-            || self.profile != PROFILE
             || self.target != "aarch64-unknown-linux-gnu"
             || self.agnos_version != "19.8-carrot-bt1"
             || self.source_commit != SOURCE
@@ -124,8 +142,8 @@ impl Plan {
             || self.source_archive.sha256 != ORIGIN
             || self.source_archive.bytes != 1155969168
             || self.runtime_manifest_sha256 != MANIFEST
-            || self.members.len() != 36
-            || hash(&serde_json::to_vec(&self.members)?) != INVENTORY
+            || self.members.len() != member_count
+            || hash(&serde_json::to_vec(&self.members)?) != inventory
         {
             return Err(
                 "foreign provider plan differs from the fixed original release inventory".into(),
@@ -502,7 +520,8 @@ fn export_inner(
     let temporary = tempfile::Builder::new()
         .prefix(".provider-export-")
         .tempdir_in(&parent)?;
-    let archive = temporary.path().join("ffmpeg611-shared.tar.gz");
+    let (_, filename) = component_names(&plan.profile)?;
+    let archive = temporary.path().join(filename);
     compress(&origin.root, &tree, &archive)?;
     tree.verify(&origin.root)?;
     let sha = digest_file(&archive)?;
@@ -519,7 +538,7 @@ fn export_inner(
         provider_source_commit: plan.source_commit.clone(),
         tree_sha256: hash(&json(&tree)?),
         asset: assets::Asset {
-            url: component_url(&sha),
+            url: component_url(&plan.profile, &sha)?,
             sha256: sha.clone(),
             bytes,
         },
@@ -538,7 +557,7 @@ fn export_inner(
     Ok(Export {
         descriptor: output.join("provider.json"),
         descriptor_sha256: hash(&descriptor_bytes),
-        archive: output.join("ffmpeg611-shared.tar.gz"),
+        archive: output.join(filename),
         component_sha256: sha,
         component_bytes: bytes,
         provider_source_commit: plan.source_commit.clone(),
@@ -569,7 +588,7 @@ fn descriptor(plan: &Plan, path: &Path, pin: &str) -> Result<Descriptor> {
         || value.asset.bytes == 0
         || !hex(&value.asset.sha256)
         || value.asset.bytes > COMPONENT_LIMIT
-        || value.asset.url != component_url(&value.asset.sha256)
+        || value.asset.url != component_url(&plan.profile, &value.asset.sha256)?
     {
         return Err("provider component identity/source/tree differs from pinned profile".into());
     }
@@ -655,14 +674,14 @@ fn prepare_inner(
     let assets = assets::Plan {
         schema: 1,
         reserve_bytes: 0,
-        assets: BTreeMap::from([("ffmpeg611-shared".into(), descriptor.asset)]),
+        assets: BTreeMap::from([(plan.profile.clone(), descriptor.asset)]),
     };
     let prepared = prepare_tree(
         hash(&json(&("openpilot-foreign-provider-component-v1", plan))?),
         store,
         || {
             assets::prepare(cache, &assets, download)?
-                .remove("ffmpeg611-shared")
+                .remove(&plan.profile)
                 .ok_or_else(|| "missing provider component".into())
         },
         |archive, destination| {
@@ -768,6 +787,25 @@ pub fn cli(args: &[String]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn independent_profiles_keep_their_inventory_and_release_namespace() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut raylib = Plan::read(&root.join("native-raylib-provider.json")).unwrap();
+        assert_eq!(raylib.members.len(), 38);
+        assert!(raylib.members.keys().all(|p| p.starts_with("lib")
+            || p.starts_with("share/licenses/raylib")
+            || p == Path::new(MANIFEST_PATH)));
+        let sha = "1".repeat(64);
+        assert_eq!(component_url(PROFILE, &sha).unwrap(), format!("https://github.com/bin9208/openpilot-rust/releases/download/native-provider-ffmpeg611-{sha}/ffmpeg611-shared.tar.gz"));
+        assert_eq!(component_url(&raylib.profile, &sha).unwrap(), format!("https://github.com/bin9208/openpilot-rust/releases/download/native-provider-raylib600-{sha}/raylib600-shared.tar.gz"));
+        assert!(component_url("unknown", &sha).is_err());
+        raylib.profile = PROFILE.into();
+        assert!(raylib.validate().is_err());
+        raylib.profile = "raylib600-shared".into();
+        let first = raylib.members.values_mut().next().unwrap();
+        first.source = "rust/bin/openpilot-manager".into();
+        assert!(raylib.validate().is_err());
+    }
     use std::cell::Cell;
     struct Download {
         bytes: Vec<u8>,
