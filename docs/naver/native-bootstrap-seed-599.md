@@ -19,6 +19,12 @@ working tree나 release 옆 checksum을 독립 pin 대신 사용하지 않는다
 성공한 뒤 실제 파일에서 `native-bootstrap-inputs.candidate.json`과
 `publication-candidate.json`을 산출한다. 후보 생성은 발행/사용 가능 상태를 의미하지 않는다.
 
+그 후보는 추가 검사의 소유 Git fixture에서 실제 metadata 입력으로 사용한다. 현재
+factory Python 입력 선택기로 처음/반복 설정을 만들고 실제 native 준비 도구가 같은
+provider·모델·compiler·composition을 재사용해야 한다. fixture의 새 source SHA는 원래
+workflow SHA와 구분한다. metadata는 실제 소유 artifact로 공급하며 공개 다운로드나
+전체 source entry의 root scope/build/부팅 성공으로 표현하지 않는다. 새 검사는 실행 대기다.
+
 기기별 설정은 별도 `OPENPILOT_NATIVE_MACHINE_CONFIG` JSON이다. 환경변수가 없을 때는
 지속 경로 `/data/openpilot-native/machine.json`의 존재로 native 경로를 선택하므로 재부팅 후
 환경변수 소실이 기존 전체 release 다운로드를 다시 선택하게 하지 않는다. 잘못된 파일이나

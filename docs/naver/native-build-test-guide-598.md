@@ -8,6 +8,17 @@
 Rust의 selection/launcher 검사는 잘못된 초기 선택·손상된 active 보존과 protocol을 검사한다.
 이 검사는 Actions에서 실행하며 로컬에서는 구문·서식·diff만 확인한다.
 
+genuine workflow의 추가 `git-index-initial`/`git-index-reused`/`git-index-docs` 사례는 실제 seed/SDK와
+15 provider descriptor의 후보를 작업 소유 Git fixture에만 커밋한다. factory isolated
+Python에서 운영용 입력 선택기를 호출하고 그 설정으로 실제 native helper의 전체 입력
+준비를 실행한다. 첫 metadata는 소유 artifact에서 공급하며, 그 초기 준비와 반복/docs를
+구분한다. 반복/docs는 metadata 전송/저장0, provider/모델 재전송0·compiler fresh·모델
+재생성0·composition 재복사0을 요구한다. 기존 직접 설정 사례의 초기 namespace와
+metadata cache의 SDK receipt 경로가 다르므로 두 초기 준비를 같은 cache 결과로 추정하지 않는다.
+`runtime-inputs-evidence/*-resolved.json`, 세 native 준비 JSON과 `summary.json`에서
+workflow 원본 SHA와 별도 fixture SHA, index/config pin 및 host cgroup 증거를 구분한다.
+공개 HTTP 자산 소비, source entry의 전체 build/sudo/부팅 검사를 대신하지 않는다.
+
 검증 후 개발 환경에서 지원하는 진입 형태는 다음과 같다. 공개 input index와 seed가
 준비되기 전의 기기 설치 명령이나 현재 기능 성공 증거가 아니다.
 

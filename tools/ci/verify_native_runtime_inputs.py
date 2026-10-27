@@ -16,6 +16,42 @@ from urllib.parse import urlsplit
 from verify_native_bootstrap import digest
 
 
+# This runs in the original AGNOS user space with the factory isolated Python.
+# Only metadata is seeded offline. Native preparation below still runs the real
+# source-built helper and its private host-kernel cgroup, without remapping sudo
+# or claiming that this exercises the full source_entry build/boot command.
+RESOLVE_INDEX = r'''
+import importlib.util, json, os, sys, tempfile
+from pathlib import Path
+assert sys.flags.isolated and sys.flags.no_site and sys.flags.dont_write_bytecode
+assert os.geteuid() != 0 and not os.getgroups()
+source, policy, expected, offline = sys.argv[1:]
+source, policy, offline = Path(source), Path(policy), Path(offline)
+with tempfile.TemporaryDirectory(prefix='native-index-bytecode-', dir='/tmp') as bytecode:
+  sys.pycache_prefix = bytecode
+  spec = importlib.util.spec_from_file_location('native_index_entry', source/'tools/native/source_entry.py')
+  entry = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(entry)
+  entry.seed.native()
+  machine, pin = entry.machine_configuration(policy, expected)
+  entry.validate_machine(machine, source)
+  before = entry.runtime.source_identity(source)
+  owner = entry.seed.owner_chain(os.environ['OPENPILOT_NATIVE_REQUEST_OWNER'])
+  commands = entry.runtime.OwnedCommands(owner, Path(machine['stores']['params']))
+  def observe():
+    commands.observe()
+    entry.machine_configuration(policy, pin)
+    if entry.runtime.source_identity(source) != before:
+      raise ValueError('owned input index source changed during resolution')
+  with entry.runtime.operation(Path(machine['stores']['generations'])) as attempt:
+    result = entry.resolve(machine, source, attempt, commands, observe, offline)
+    result['source'] = before
+    result['machine_configuration_sha256'] = pin
+    entry.seed.write(attempt/'resolved.json', entry.seed.json_bytes(result))
+  print(json.dumps(result))
+'''
+
+
 def main():
   assert os.geteuid() != 0 and not os.getgroups()
   assert os.environ['RUNNER_NAME'] == 'bin-actions' and os.environ['RUNNER_ENVIRONMENT'] == 'self-hosted'
@@ -136,15 +172,10 @@ def main():
   configuration_sha256 = digest(config_path)
   helper = Path(current['tools'])/'openpilot-runtime-inputs'
   command = [helper, '--bootstrap-tools', '--config', config_path, '--configuration-sha256', configuration_sha256, '--root', fixture]
-  first = None
+  composition_roots = {}
   metrics = {}
-  for phase in ('initial', 'reused', 'docs'):
-    if phase == 'docs':
-      path = fixture/'README.md'
-      path.write_bytes(path.read_bytes()+b'\nOwned production runtime input docs fixture.\n')
-      execute([*git, '-C', fixture, 'add', 'README.md'], 'docs-add.txt')
-      execute([*git, '-C', fixture, 'commit', '-m', 'Owned production runtime input docs fixture'], 'docs-commit.txt')
-    row = json.loads(execute(command, phase+'.json').read_text())
+  def prepare(arguments, phase):
+    row = json.loads(execute(arguments, phase+'.json').read_text())
     prepared = row['runtime_inputs']
     assert prepared['runtime_inputs_verified'] and prepared['provider_roles'] == 15 and prepared['runtime_roles'] == 18
     assert prepared['compiler_input_roles'] == 9
@@ -157,24 +188,34 @@ def main():
         and operations['provider-'+role]['asset']['transferred_bytes'] == 0 for role in roles)
     models = operations['models']
     assert models['transferred_bytes'] == 0 and not models['gpu_executed']
-    if phase != 'initial':
+    if phase not in ('initial', 'git-index-initial'):
       assert all(a['fresh'] for a in operations['model-compiler-build']['build']['artifacts'])
       assert all(value['qcom_compiler_calls'] == value['generated_pipelines'] == 0 for value in models['kinds'].values())
       assert all(operations['provider-'+role]['copied_bytes'] == operations['provider-'+role]['asset']['transferred_bytes'] == 0 for role in roles)
       assert all(operations[role+'-sdk']['copied_bytes'] == operations[role+'-sdk']['linked_bytes'] == 0 for role in ('ffmpeg', 'opencv'))
       assert all(v == 0 for v in models['environment_preparation'].values())
     composition = json.loads((folder/'composition.json').read_text())
-    if first is None:
-      first = composition['root']
+    baseline = 'git-index' if phase.startswith('git-index-') else 'direct-config'
+    if baseline not in composition_roots:
+      composition_roots[baseline] = composition['root']
     else:
-      assert composition['root'] == first and composition['copied_bytes'] == composition['linked_bytes'] == 0
+      assert composition['root'] == composition_roots[baseline] and composition['copied_bytes'] == composition['linked_bytes'] == 0
     samples = [json.loads(line) for line in (folder.parent/'resources.jsonl').read_text().splitlines()]
     assert samples[-1]['state'] == 'success' and samples[-1]['memory']['kernel_peak_bytes'] > 0
     metrics[phase] = samples[-1]
     assert (work/'bootstrap-current-generations/active.json').read_bytes() == b'owned previous selection sentinel\n'
     assert (work/'bootstrap-current-generations/previous-log').read_bytes() == b'owned previous log sentinel\n'
-  # Emit only a publication candidate, after the original and added production
-  # preparation cases have succeeded. No release or Git pin is created here.
+    return prepared
+
+  for phase in ('initial', 'reused', 'docs'):
+    if phase == 'docs':
+      path = fixture/'README.md'
+      path.write_bytes(path.read_bytes()+b'\nOwned production runtime input docs fixture.\n')
+      execute([*git, '-C', fixture, 'add', 'README.md'], 'docs-add.txt')
+      execute([*git, '-C', fixture, 'commit', '-m', 'Owned production runtime input docs fixture'], 'docs-commit.txt')
+    prepare(command, phase)
+  # Derive the exact input candidate from the original verified exports. A
+  # publication manifest is emitted only after the added resolver cases pass.
   seed_manifest_path = work/'bootstrap-seed-export/manifest.json'
   seed_manifest = json.loads(seed_manifest_path.read_text())
   assert seed_manifest['source']['commit'] == context['source_commit']
@@ -197,16 +238,71 @@ def main():
         sha256=row['sha256'], bytes=path.stat().st_size)
   candidate_path = evidence/'native-bootstrap-inputs.candidate.json'
   candidate_path.write_text(json.dumps(candidate, sort_keys=True, indent=2)+'\n')
+  # Exercise the production resolver with actual, independently hashed SDK and
+  # provider descriptors. Commit the index only to this job-owned fixture, never
+  # to the workflow source or to a public branch. Its source identity is distinct.
+  metadata_growth = sum(path.stat().st_size+65536 for path in metadata_assets.values())
+  # The indexed source and its documentation-only successor are independent
+  # retained source views; the original operation's estimate did not include them.
+  resolver_growth = metadata_growth+2*configuration['expected_source_growth_bytes']
+  assert shutil.disk_usage(work).free >= resolver_growth+64*1024**2
+  offline = work/'source-index-metadata'
+  offline.mkdir()
+  for checksum, path in metadata_assets.items():
+    assert not path.is_symlink() and digest(path) == checksum
+    os.link(path, offline/(checksum+'.json'), follow_symlinks=False)
+  input_index = fixture/'rust/native-bootstrap-inputs.json'
+  input_index.write_bytes(candidate_path.read_bytes())
+  execute([*git, '-C', fixture, 'add', 'rust/native-bootstrap-inputs.json'], 'index-add.txt')
+  execute([*git, '-C', fixture, 'commit', '-m', 'Owned actual input index fixture'], 'index-commit.txt')
+  indexed_commit = execute([*git, '-C', fixture, 'rev-parse', 'HEAD'], 'index-source.txt').read_text().strip()
+  assert indexed_commit != context['source_commit']
+  machine = copy.deepcopy({key: value for key, value in configuration.items()
+      if key not in ('system_sdk_receipt', 'system_sdk_sha256', 'runtime_inputs')})
+  machine['resources']['filesystems'][str(guest_work)]['maximum_growth_bytes'] += resolver_growth
+  machine.update(seed_cache=str(guest_work/'source-index-seeds'), updater_staging=str(guest_work/'source-index-updater'),
+      budgets=json.loads(budgets.read_text()), compiler_growth_bytes=selection['compiler_growth_bytes'])
+  machine_path = work/'source-index-machine.json'
+  machine_path.write_text(json.dumps(machine)+'\n')
+  machine_pin = digest(machine_path)
+  resolved_rows = {}
+  for phase in ('git-index-initial', 'git-index-reused', 'git-index-docs'):
+    if phase == 'git-index-docs':
+      path = fixture/'README.md'
+      path.write_bytes(path.read_bytes()+b'\nOwned actual input index documentation-only fixture.\n')
+      execute([*git, '-C', fixture, 'add', 'README.md'], 'index-docs-add.txt')
+      execute([*git, '-C', fixture, 'commit', '-m', 'Owned actual input index docs fixture'], 'index-docs-commit.txt')
+    requested = execute([*git, '-C', fixture, 'rev-parse', 'HEAD'], phase+'-source.txt').read_text().strip()
+    resolved = json.loads(execute(['/usr/bin/python3', '-I', '-B', '-S', '-c', RESOLVE_INDEX,
+        fixture, machine_path, machine_pin, offline], phase+'-resolved.json').read_text())
+    assert resolved['source']['commit'] == requested
+    assert (requested != indexed_commit) == (phase == 'git-index-docs')
+    assert resolved['machine_configuration_sha256'] == machine_pin
+    assert resolved['index_sha256'] == digest(candidate_path)
+    receipts = resolved['receipts']
+    assert set(receipts) == {'seed', 'system_sdk', *roles}
+    for receipt in receipts.values():
+      assert receipt['transferred_bytes'] == 0
+      expected = receipt['bytes'] if phase == 'git-index-initial' else 0
+      assert receipt['stored_bytes'] == receipt['offline_seed_bytes'] == expected
+    prepared = prepare([helper, '--bootstrap-tools', '--config', resolved['configuration'],
+        '--configuration-sha256', resolved['configuration_sha256'], '--root', fixture], phase)
+    assert prepared['source'] == resolved['source']
+    assert prepared['bootstrap_configuration_sha256'] == resolved['configuration_sha256']
+    resolved_rows[phase] = resolved
   (evidence/'publication-candidate.json').write_text(json.dumps(dict(schema=1,
       workflow_source_commit=context['source_commit'], index_sha256=digest(candidate_path),
       files=publication_files, published_release=False, committed_input_index=False,
-      physical_device_execution=False), indent=2)+'\n')
+      source_index_resolver_cases_passed=list(resolved_rows), physical_device_execution=False), indent=2)+'\n')
   (evidence/'summary.json').write_text(json.dumps(dict(schema=1, source_commit=context['source_commit'],
       cases=list(metrics), metrics=metrics, production_input_orchestrator_executed=True,
       provider_roles=15, runtime_roles=18, compiler_input_roles=9, actual_host_kernel_cgroup=True,
       process_architecture='aarch64', physical_arm_cpu=False, agnos_kernel=False,
       runtime_started=False, runtime_activated=False, public_component_download_tested=False,
       input_index_candidate_sha256=digest(candidate_path), input_index_committed=False, published_release=False,
+      production_source_index_resolver_executed=True, owned_input_index_source_commit=indexed_commit,
+      input_index_committed_to_workflow_source=False,
+      input_index_cases=resolved_rows, source_entry_full_build_executed=False, source_entry_sudo_scope_exercised=False,
       resource_policy_is_ci_fixture_not_device_budget=True), indent=2)+'\n')
 
 
