@@ -7,7 +7,7 @@
 입력과 연결한다. 전체 runtime99개/13그룹의 목록·feature는 그대로다. 컴파일·모델 준비·
 세대 봉인·기기 설치를 수행하는 단계가 아니다.
 
-실행 입력9개 Tree의 acados core는 후속
+실행 입력10개 Tree의 acados core는 후속
 [MPC 소스 결속](native-mpc-source-bindings-599.md)에서 complete source-bound MPC로
 교체해 계획한다. 이전 partial component 증거를 보존하며 새 Actions 결과는 대기다.
 추가 SDL·TurboJPEG2개 입력은 [display 입력 안내](native-display-inputs-599.md)를 따른다.
@@ -59,7 +59,8 @@ pin 변경은00/01/02에만 영향을 주며07/08/10의 compiler 입력은 그�
 companion은 `runtime_inputs`에만 연결한다. 후속 [foreign library 준비](native-runtime-companions-599.md),
 [SDL·TurboJPEG](native-display-inputs-599.md), [도구·글꼴](native-media-tools-font-599.md)과
 [source-bound MPC](native-mpc-source-bindings-599.md)와 [LFS](native-source-lfs-599.md)는
-실행 입력9개 Tree를 CI plan에 연결한다.
+실행 입력10개 Tree를 CI plan에 연결한다. 추가 [Panda](native-panda-inputs-599.md)
+Tree1개는 현재 source 계약에 결속한 독립 firmware와 원래 provenance를 포함한다.
 모델/나머지 실행 자산과 전체 Layout은 아직 없으므로
 `compiler_inputs_bound=true`가 전체 runtime 준비 완료를 뜻하지 않는다.
 

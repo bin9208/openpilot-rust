@@ -36,7 +36,7 @@ host prepare_native_runtime_companions.py는 기존4개와 새2개를 준비한�
 MPC가 partial acados를 대체한다. 이 절의6개에 후속
 [FFmpeg 도구·글꼴](native-media-tools-font-599.md)2개를 더해 전체13그룹/99개 계획에는
 실행 입력8개 Tree를 만든다. 이후 [Git LFS](native-source-lfs-599.md) Tree1개를 더해
-최종 계획에는9개를 연결한다. media 후속은 실제 glyph/software-window 비교도 추가한다.
+Panda 준비 전에는9개를 연결하고 [Panda](native-panda-inputs-599.md)1개를 더한 현재 계획은10개다. media 후속은 실제 glyph/software-window 비교도 추가한다.
 다른 세션/기존 검증과 partial component 증거는 보존한다.
 
 ## 검사 방법

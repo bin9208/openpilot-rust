@@ -82,7 +82,8 @@ cache가 없어도 기록된 current OID/size를 검사한다.
 genuine host는 실제 HTTPS4개를 준비하고 독립적으로 현재 pointer/실제 파일 hash를 대조한다.
 source-built ARM CLI는 host raw cache만 소비해 별도 object/prefix를 준비하며 host와 같은
 Tree·현재 source를 확인한다. 초기 ARM/반복 전송0, 반복 복사/link0과 잘못된 pointer plan의
-staging 전 거부를 확인한다. 실행 입력은 기존8개에 source LFS Tree를 더한9개다.
+staging 전 거부를 확인한다. 이 단계는 기존8개에 source LFS Tree를 더한9개다.
+후속 [Panda 입력](native-panda-inputs-599.md)1개를 더한 현재 전체 계획은10개다.
 
 ```sh
 gh run list --repo bin9208/openpilot-rust --workflow runtime-source-build.yml --branch BRANCH

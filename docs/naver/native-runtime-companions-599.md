@@ -90,7 +90,7 @@ component의 전체 Tree를 host 예상값과 비교하고 초기/반복/실제 
   API 호출 때 `/proc/self/maps`도 저장해 실제 component 경로의 library가 매핑되고
   libpython이 섞이지 않았는지 확인한다. guest 경로와 PRoot host bind 경로를 구분한다.
 - 이 절의 네 runtime Tree를 `native-companion-runtime-inputs.json`에 SHA-pin한다. 후속에서
-  display2개/도구·글꼴2개와 LFS1개를 더하고 partial acados를 source-bound MPC로 대체한9개 Tree를 기존13그룹
+  display2개/도구·글꼴2개/LFS1개와 [Panda](native-panda-inputs-599.md)1개를 더하고 partial acados를 source-bound MPC로 대체한10개 Tree를 기존13그룹
   계획의 `runtime_inputs`에 연결한다. 이 입력은 compiler recipe/cache에 섞지 않는다.
   동일 입력의 plan/bindings/audit byte 반복 일치 검사도 유지한다.
 

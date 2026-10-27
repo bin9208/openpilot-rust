@@ -63,11 +63,12 @@ gh run view RUN_ID --repo bin9208/openpilot-rust --log-failed
   longitudinal6 solve의 status/x/u/cost f64 비트를 정확 비교한다. 유한값·정상 status,
   실제 provider maps, strict AArch64 ELF/의존성, 반복 Cargo fresh/같은 binary SHA와
   provider 재준비0을 확인한다. 기존 C/C++ provider를 소비하는 ABI 증거다.
-- 전체13그룹/99개 계획의 runtime_inputs9개 Tree에는 partial acados core 대신 complete
+- 전체13그룹/99개 계획의 runtime_inputs10개 Tree에는 partial acados core 대신 complete
   source-bound MPC Tree를 넣는다. 기존 partial component/API 증거는 별도로 보존한다.
   추가 SDL·TurboJPEG2개 Tree는 [display 입력 안내](native-display-inputs-599.md)를 따른다.
   추가 도구·글꼴2개 Tree는 [media 입력 안내](native-media-tools-font-599.md)를 따른다.
   추가 current Git LFS Tree1개는 [LFS 입력 안내](native-source-lfs-599.md)를 따른다.
+  추가 독립 firmware Tree1개는 [Panda 입력 안내](native-panda-inputs-599.md)를 따른다.
 
 artifact의 native-mpc JSON/build JSONL/ELF audit/ABI cases, native-runtime-inputs.json과
 commands log를 정확 source SHA로 확인한다. host 준비는 실행·재생성 증거가 아니다.

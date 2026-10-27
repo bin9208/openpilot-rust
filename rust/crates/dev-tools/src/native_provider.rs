@@ -9,7 +9,7 @@ use crate::{
 use openpilot_runtime_build::{
     assets, digest_file,
     inputs::{Entry, Tree},
-    mpc_inputs, Source,
+    mpc_inputs, panda_inputs, Source,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -37,6 +37,9 @@ const FREESANS_INVENTORY: &str = "ed2fa6bed647ae89a98e4742c9c5c083a5584261219b81
 const MPC_INVENTORY: &str = "3b95696863cb8b97ad0fb733c7f430ab0d2216abd710ad02d48874b90117501d";
 const MPC_CONTRACT_SHA: &str = "6dd5b809d92e716f6654cfb218d7d6cbc0547b473e009c9e0578c04fc9930e41";
 const MPC_CONTRACT: &[u8] = include_bytes!("../../../native-mpc-source-contract.json");
+const PANDA_INVENTORY: &str = "4a6a1bed302950a8120ab0bedfb30c511263a19a50dbb3653434c0b1be7df767";
+const PANDA_CONTRACT_SHA: &str = "206916e6a5722e7159e0607b2dcef1dd93f31124a2d9462ef875c235d3e1ae58";
+const PANDA_CONTRACT: &[u8] = include_bytes!("../../../native-panda-source-contract.json");
 const SOURCE: &str = "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31";
 const ORIGIN: &str = "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291";
 const MANIFEST: &str = "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee";
@@ -133,6 +136,7 @@ fn component_names(profile: &str) -> Result<(&'static str, &'static str)> {
         "ffmpeg611-tools" => Ok(("ffmpeg611-tools", "ffmpeg611-tools.tar.gz")),
         "freesans-pygame252" => Ok(("freesans-pygame252", "freesans-pygame252.tar.gz")),
         "acados022-runtime" => Ok(("acados022-runtime", "acados022-runtime.tar.gz")),
+        "panda-firmware-runtime" => Ok(("panda-firmware", "panda-firmware-runtime.tar.gz")),
         _ => Err("unknown fixed foreign provider profile".into()),
     }
 }
@@ -171,16 +175,41 @@ impl Plan {
             "openpilot-foreign-provider"
         }
     }
+    fn contract(&self) -> Option<(&'static str, &'static str, &'static [u8], &'static str)> {
+        match self.profile.as_str() {
+            "acados022-runtime" => Some((
+                mpc_inputs::PATH,
+                mpc_inputs::ARTIFACT_CONTRACT,
+                MPC_CONTRACT,
+                MPC_CONTRACT_SHA,
+            )),
+            "panda-firmware-runtime" => Some((
+                panda_inputs::PATH,
+                panda_inputs::ARTIFACT_CONTRACT,
+                PANDA_CONTRACT,
+                PANDA_CONTRACT_SHA,
+            )),
+            _ => None,
+        }
+    }
+    fn inspect_bound_source(&self, root: &Path) -> Result<Source> {
+        let (path, _, _, pin) = self.contract().ok_or("provider has no source contract")?;
+        let path = root.join(path);
+        if digest_file(&path)? != pin {
+            return Err("source contract differs from the independently pinned profile".into());
+        }
+        match self.profile.as_str() {
+            "acados022-runtime" => mpc_inputs::Contract::read(&path)?.verify_source(root),
+            "panda-firmware-runtime" => panda_inputs::Contract::read(&path)?.verify_source(root),
+            _ => Err("provider has no source contract".into()),
+        }
+    }
     pub fn bind_source(&mut self, root: &Path) -> Result<()> {
         if self.source_contract_sha256.is_none() {
             return Err("source-root applies only to a source-bound provider profile".into());
         }
         let root = root.canonicalize()?;
-        let path = root.join(mpc_inputs::PATH);
-        if digest_file(&path)? != MPC_CONTRACT_SHA {
-            return Err("MPC source contract differs from the independently pinned profile".into());
-        }
-        let source = mpc_inputs::Contract::read(&path)?.verify_source(&root)?;
+        let source = self.inspect_bound_source(&root)?;
         self.bound_source = Some((root, source));
         Ok(())
     }
@@ -191,12 +220,9 @@ impl Plan {
         let (root, before) = self
             .bound_source
             .as_ref()
-            .ok_or("source-bound MPC provider requires --source-root")?;
-        let path = root.join(mpc_inputs::PATH);
-        if digest_file(&path)? != *pin
-            || mpc_inputs::Contract::read(&path)?.verify_source(root)? != *before
-        {
-            return Err("MPC provider source/contract changed during preparation".into());
+            .ok_or("source-bound provider requires --source-root")?;
+        if self.inspect_bound_source(root)? != *before {
+            return Err("provider source/contract changed during preparation".into());
         }
         Ok(Some(SourceBinding {
             source: before.clone(),
@@ -229,6 +255,7 @@ impl Plan {
             "ffmpeg611-tools" => (8, FFMPEG_TOOLS_INVENTORY),
             "freesans-pygame252" => (6, FREESANS_INVENTORY),
             "acados022-runtime" => (15, MPC_INVENTORY),
+            "panda-firmware-runtime" => (7, PANDA_INVENTORY),
             _ => {
                 return Err(
                     "foreign provider plan differs from the fixed original release inventory"
@@ -246,9 +273,10 @@ impl Plan {
             || self.runtime_manifest_sha256 != MANIFEST
             || self.members.len() != member_count
             || hash(&serde_json::to_vec(&self.members)?) != inventory
-            || self.source_contract_sha256.as_deref()
-                != (self.profile == "acados022-runtime").then_some(MPC_CONTRACT_SHA)
-            || (self.source_contract_sha256.is_some() && hash(MPC_CONTRACT) != MPC_CONTRACT_SHA)
+            || self.source_contract_sha256.as_deref() != self.contract().map(|(_, _, _, pin)| pin)
+            || self
+                .contract()
+                .is_some_and(|(_, _, bytes, pin)| hash(bytes) != pin)
         {
             return Err(
                 "foreign provider plan differs from the fixed original release inventory".into(),
@@ -303,13 +331,13 @@ fn expected(plan: &Plan) -> Result<Tree> {
             mode: 0o444,
         },
     )?;
-    if let Some(pin) = &plan.source_contract_sha256 {
+    if let Some((_, artifact, bytes, pin)) = plan.contract() {
         insert(
             &mut entries,
-            mpc_inputs::ARTIFACT_CONTRACT.into(),
+            artifact.into(),
             Entry::File {
-                sha256: pin.clone(),
-                bytes: MPC_CONTRACT.len() as u64,
+                sha256: pin.into(),
+                bytes: bytes.len() as u64,
                 mode: 0o444,
             },
         )?;
@@ -497,9 +525,9 @@ fn unpack(plan: &Plan, archive: &Path, root: &Path, component: bool) -> Result<(
             &json(&(plan.provenance_kind(), plan))?,
         )?;
         written.insert(PROVENANCE.into());
-        if plan.source_contract_sha256.is_some() {
-            write(&root.join(mpc_inputs::ARTIFACT_CONTRACT), MPC_CONTRACT)?;
-            written.insert(mpc_inputs::ARTIFACT_CONTRACT.into());
+        if let Some((_, artifact, bytes, _)) = plan.contract() {
+            write(&root.join(artifact), bytes)?;
+            written.insert(artifact.into());
         }
     }
     for (path, entry) in &tree.entries {
@@ -832,7 +860,11 @@ fn prepare_inner(
         return Err("provider descriptor changed during preparation".into());
     }
     if let Some((source, _)) = &plan.bound_source {
-        mpc_inputs::verify_runtime(source, &prepared.root)?;
+        match plan.profile.as_str() {
+            "acados022-runtime" => mpc_inputs::verify_runtime(source, &prepared.root)?,
+            "panda-firmware-runtime" => panda_inputs::verify_runtime(source, &prepared.root)?,
+            _ => return Err("unexpected bound provider profile".into()),
+        }
     }
     Ok(Report {
         prepared,
@@ -1072,6 +1104,62 @@ mod tests {
         assert!(foreign.bind_source(source).is_err());
         foreign.source_contract_sha256 = Some(MPC_CONTRACT_SHA.into());
         assert!(foreign.validate().is_err());
+    }
+    #[test]
+    fn independent_panda_firmware_requires_the_current_complete_source_contract() {
+        let rust = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let source = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .nth(3)
+            .unwrap();
+        let mut plan = Plan::read(&rust.join("native-panda-provider.json")).unwrap();
+        assert_eq!(plan.role(), "openpilot-source-bound-provider");
+        assert!(plan.source_binding().is_err());
+        let temp = tempfile::tempdir().unwrap();
+        let download = Download {
+            bytes: vec![],
+            calls: Cell::new(0),
+        };
+        assert!(export(
+            &plan,
+            &temp.path().join("cache"),
+            &temp.path().join("store"),
+            &temp.path().join("output"),
+            &download
+        )
+        .is_err());
+        assert_eq!(download.calls.get(), 0);
+        assert!(!temp.path().join("output").exists());
+        plan.bind_source(source).unwrap();
+        let binding = plan.source_binding().unwrap().unwrap();
+        assert!(binding.inputs_match && !binding.regenerated);
+        assert_eq!(binding.original_source_commit, SOURCE);
+        let tree = expected(&plan).unwrap();
+        assert!(tree
+            .entries
+            .contains_key(Path::new(panda_inputs::ARTIFACT_CONTRACT)));
+        assert_eq!(plan.members.len(), 7);
+        assert!(plan
+            .members
+            .values()
+            .all(|member| member.mode == 0o444 && member.link.is_none()));
+        assert_eq!(
+            plan.members
+                .keys()
+                .filter(|path| path.starts_with("panda/board/obj"))
+                .count(),
+            4
+        );
+        assert!(!plan.members.keys().any(|path| path
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with("openpilot-")));
+        let mut foreign = original();
+        foreign.source_contract_sha256 = Some(PANDA_CONTRACT_SHA.into());
+        assert!(foreign.validate().is_err());
+        plan.source_contract_sha256 = Some(MPC_CONTRACT_SHA.into());
+        assert!(plan.validate().is_err());
     }
     #[test]
     fn runtime_companions_have_independent_pins_and_exclude_project_generated_solvers() {

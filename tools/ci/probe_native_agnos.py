@@ -1680,6 +1680,61 @@ def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_w
       emulation='QEMU/PRoot ARM user space on x64 bin-actions')
 
 
+def native_panda_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Prepare source-bound safety firmware; never execute or flash its bytes."""
+  source=Path(os.environ['GITHUB_WORKSPACE'])
+  plan=json.loads((source/'rust/native-panda-provider.json').read_text())
+  room(work,4*sum(row['bytes'] for row in plan['members'].values())+16*1024**2)
+  exported=json.loads((work.parent/'native-panda-export.json').read_text())
+  host=json.loads((work.parent/'native-panda-initial.json').read_text())
+  def execute(argv,name,required=True):
+    record=run(guest_command(argv),log,stdout_path=work/name,required=required)
+    evidence['commands'].append(record)
+    return record
+  command=[work/'project-target/debug/build-runtime-ffmpeg','--prepare-released-provider',
+      '--plan',f'{source_mount}/rust/native-panda-provider.json',
+      '--descriptor',Path(guest_work)/'panda-export/provider.json',
+      '--descriptor-sha256',exported['descriptor_sha256'],
+      '--cache',Path(guest_work)/'panda-components','--store',work/'native-panda-prefixes']
+  rejected=execute(command,'native-panda-unbound.txt',required=False)
+  assert rejected['exit_code']!=0 and not (work/'native-panda-prefixes').exists()
+  command+=['--source-root',source_mount]
+  rows=[]
+  for phase in ('initial','reused'):
+    execute(command,f'native-panda-{phase}.json')
+    row=json.loads((work/f'native-panda-{phase}.json').read_text())
+    assert row['tree_sha256']==host['tree_sha256']==exported['tree_sha256']
+    assert row['source_binding']==host['source_binding']==exported['source_binding']
+    assert row['source_binding']['source']['commit']==evidence['source_commit']
+    assert row['source_binding']['original_source_commit']==plan['source_commit']!=evidence['source_commit']
+    assert row['source_binding']['inputs_match'] and not row['source_binding']['regenerated']
+    assert row['source_binding']['contract_sha256']==digest(source/'rust/native-panda-source-contract.json')
+    assert row['offline_seed_bytes']==row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+    assert (row['copied_bytes']>0)==(phase=='initial')
+    assert not row['origin_archive_downloaded'] and not row['compiler_executed'] and not row['runtime_activated']
+    rows.append(row)
+  assert rows[0]['root']==rows[1]['root']
+  execute(['/usr/bin/python3',f'{source_mount}/tools/ci/fixtures/native-panda-firmware.py',
+      '--source',source_mount,'--provider',rows[0]['root'],
+      '--output',work/'native-panda-firmware-check.json'],'native-panda-firmware-check.txt')
+  report=json.loads((work/'native-panda-firmware-check.json').read_text())
+  assert len(report['artifacts'])==4 and report['source_input_hashes_checked']==251
+  assert sum(row['debug_signature_verified'] for row in report['artifacts'])==2
+  assert not report['firmware_regenerated'] and not report['private_key_read'] and not report['firmware_executed']
+  assert not report['device_connected'] and not report['physical_device_execution']
+  inputs=json.loads((work/'native-runtime-inputs.json').read_text())
+  inputs['files'][rows[0]['tree_receipt']]=rows[0]['tree_sha256']
+  inputs['trees'][rows[0]['root']]=rows[0]['tree_receipt']
+  assert len(inputs['files'])==len(inputs['trees'])==10
+  (work/'native-runtime-panda-inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
+  evidence['native_panda_inputs']=dict(source_binding=rows[0]['source_binding'],tree_sha256=rows[0]['tree_sha256'],
+      actual_arm_preparer=True,host_expected_tree_matches=True,firmware_outputs_verified=4,
+      signed_images_public_signature_verified=2,firmware_version=report['firmware_version'],
+      repeated_http_body_bytes=0,repeated_copied_bytes=0,unbound_provider_rejected_before_staging=True,
+      independent_firmware_regenerated=False,firmware_executed=False,device_connected=False,
+      full_runtime_build=False,physical_device_execution=False,emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+
+
 def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Assemble the actual 99-target plan using all independently prepared inputs."""
   room(work,4*1024**2)
@@ -1701,7 +1756,7 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
       'raylib':pin(read('native-raylib-sdk-initial.json')),
       'opencv':pin(read('native-opencv-prefix-initial.json')),
       'eigen':pin(read('native-eigen-initial.json')['eigen']),
-  },runtime_inputs=read('native-runtime-inputs.json'))
+  },runtime_inputs=read('native-runtime-panda-inputs.json'))
   catalog=read('native-project-catalog.json')
   # Explicit conservative plan-only envelopes. This probe does not reserve or
   # consume these build budgets and is not a measured full-build resource trial.
@@ -1733,7 +1788,7 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
     assert audit['native_inputs_sha256']==digest(pins_path) and audit['budgets_sha256']==digest(budgets_path)
     assert audit['bindings_sha256']==digest(output/'bindings.json')
     assert audit['plan_sha256']==digest(output/'build-plan.json')
-    assert plan['runtime_inputs']==pins['runtime_inputs'] and len(plan['runtime_inputs']['trees'])==9
+    assert plan['runtime_inputs']==pins['runtime_inputs'] and len(plan['runtime_inputs']['trees'])==10
     for name,requirements in catalog['compiler_inputs'].items():
       recipe=plan['groups'][name]
       for key,suffix in requirements.items():
@@ -1859,7 +1914,7 @@ def main():
     (work / 'ffmpeg-source').mkdir()
     (work / 'provider-assets').mkdir()
     (work / 'provider-export').mkdir()
-    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export','source-lfs-assets'):
+    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export','source-lfs-assets','panda-components','panda-export'):
       (work/name).mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
@@ -1886,6 +1941,8 @@ def main():
              '-b', f'{owned / "native-source-lfs-assets"}:{guest_work}/source-lfs-assets',
              '-b', f'{owned / "native-mpc-components"}:{guest_work}/mpc-components',
              '-b', f'{owned / "native-mpc-export"}:{guest_work}/mpc-export',
+             '-b', f'{owned / "native-panda-components"}:{guest_work}/panda-components',
+             '-b', f'{owned / "native-panda-export"}:{guest_work}/panda-export',
              '-b', f'{owned / "native-raylib-assets"}:{guest_work}/raylib-assets',
              '-b', f'{owned / "native-raylib-components"}:{guest_work}/raylib-components',
              '-b', f'{owned / "native-raylib-provider-export"}:{guest_work}/raylib-provider-export',
@@ -1949,6 +2006,7 @@ def main():
     native_media_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_source_assets_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_panda_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'

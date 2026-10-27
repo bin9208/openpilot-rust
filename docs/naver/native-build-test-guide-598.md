@@ -1,5 +1,10 @@
 # 콤마 자체 빌드·다운로드 재사용 검증 안내 — #598
 
+현재 source와 독립 Panda firmware의 입력871개·출력4개/원래 provenance를 결속하는
+[Panda 준비·검사 안내](native-panda-inputs-599.md)를 추가했다. 현재 source binding,
+공개 debug 서명·버전, 반복 전송/복사0을 Actions에서 검사하며 새 결과는 대기다.
+전체 native 빌드/실기 flash·수용이 완료된 상태는 아니다.
+
 기준일: 2026-10-27 KST. 상위 [#598](https://github.com/bin9208/openpilot-rust/issues/598),
 환경 [#599](https://github.com/bin9208/openpilot-rust/issues/599),
 캐시 [#600](https://github.com/bin9208/openpilot-rust/issues/600),

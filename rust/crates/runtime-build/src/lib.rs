@@ -26,6 +26,7 @@ pub mod memory_cgroup;
 pub mod mpc_inputs;
 mod native_tools;
 pub mod objects;
+pub mod panda_inputs;
 pub mod pending;
 pub mod prepare;
 pub mod resources;

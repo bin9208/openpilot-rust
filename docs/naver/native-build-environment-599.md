@@ -1,5 +1,10 @@
 # 실제 AGNOS의 native compiler 환경 — #599 (검증 대기)
 
+현재 source와 독립 Panda firmware의 입력871개·출력4개/원래 provenance를 결속하는
+[Panda 준비·검사 안내](native-panda-inputs-599.md)를 추가했다. 현재 source binding,
+공개 debug 서명·버전, 반복 전송/복사0을 Actions에서 검사하며 새 결과는 대기다.
+전체 native 빌드/실기 flash·수용이 완료된 상태는 아니다.
+
 상위 [#598](https://github.com/bin9208/openpilot-rust/issues/598).
 모델 준비 Python과 기존 C/C++ provider를 유지한다. 이 기록은 전체 runtime의 완성이나
 기기 설치 수용을 뜻하지 않는다.

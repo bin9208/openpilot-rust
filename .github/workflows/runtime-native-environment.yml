@@ -75,6 +75,13 @@ on:
       - 'rust/native-system-sdk.json'
       - 'rust/native-cargo-inputs.json'
       - 'rust/native-source-lfs.json'
+      - 'rust/native-panda-source-contract.json'
+      - 'rust/native-panda-provider.json'
+      - 'tools/ci/prepare_native_panda_inputs.py'
+      - 'tools/ci/fixtures/native-panda-firmware.py'
+      - 'rust/crates/runtime-build/src/panda_inputs.rs'
+      - 'rust/crates/runtime-build/src/generation.rs'
+      - 'rust/crates/runtime-build/tests/panda_inputs.rs'
       - 'rust/crates/runtime-build/Cargo.toml'
       - 'rust/crates/runtime-build/src/lib.rs'
       - 'rust/crates/runtime-build/src/source_assets.rs'
@@ -481,6 +488,11 @@ jobs:
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           python3 tools/ci/prepare_native_mpc_inputs.py \
             --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - name: Prepare independent safety firmware only against the current source contract
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_panda_inputs.py \
+            --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
       - uses: actions/cache/restore@v4
         id: source-lfs-cache
         with:
@@ -584,6 +596,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-companion-exports/*/*
             ${{ env.CI_JOB_TEMP }}/native-companion-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-mpc-*.json
+            ${{ env.CI_JOB_TEMP }}/native-panda-*.json
+            ${{ env.CI_JOB_TEMP }}/native-panda-export/*
+            ${{ env.CI_JOB_TEMP }}/native-panda-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-mpc-export/*
             ${{ env.CI_JOB_TEMP }}/native-mpc-origins/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-mpc-prefixes/**/generation/tree.json
@@ -616,6 +631,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-font-rust/
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-font-reference/
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.json

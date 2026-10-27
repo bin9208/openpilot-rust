@@ -125,6 +125,18 @@ impl Config {
             recipe
                 .binaries
                 .iter()
+                .any(|name| name == "openpilot-pandad")
+        }) {
+            crate::panda_inputs::verify_mapped(
+                &workspace.root,
+                &layout.provider_root,
+                &layout.files,
+            )?;
+        }
+        if plan.groups.values().any(|recipe| {
+            recipe
+                .binaries
+                .iter()
                 .any(|name| name == "openpilot-plannerd")
         }) {
             crate::mpc_inputs::verify_mapped(
@@ -611,6 +623,9 @@ impl Sealed {
         self.runtime
             .verify_runtime(&stores.sources, Some(&self.metadata_sha256), &assets)?;
         let root = &self.runtime.root;
+        if self.prepared.binaries.contains_key("openpilot-pandad") {
+            crate::panda_inputs::verify_runtime(&self.prepared.source.root, root)?;
+        }
         if digest_file(&root.join("rust/runtime-manifest.json"))? != self.manifest_sha256 {
             return Err("source-build manifest digest mismatch".into());
         }
@@ -674,6 +689,9 @@ impl Sealed {
 
     fn verify_abi_objects(&self, report: &Value) -> Result<()> {
         let root = &self.runtime.root;
+        if self.prepared.binaries.contains_key("openpilot-pandad") {
+            crate::panda_inputs::verify_runtime(&self.prepared.source.root, root)?;
+        }
         let rows = report["objects"]
             .as_array()
             .ok_or("ABI object list missing")?;
@@ -795,6 +813,13 @@ pub fn seal(
     require_tools(prepared.binaries.keys().map(String::as_str))?;
     let pins = layout.verify(&prepared)?;
     crate::source_lfs::verify_layout(&prepared.source.root, &layout.provider_root, &layout.files)?;
+    if prepared.binaries.contains_key("openpilot-pandad") {
+        crate::panda_inputs::verify_mapped(
+            &prepared.source.root,
+            &layout.provider_root,
+            &layout.files,
+        )?;
+    }
     if prepared.binaries.contains_key("openpilot-plannerd") {
         crate::mpc_inputs::verify_mapped(
             &prepared.source.root,
@@ -882,6 +907,9 @@ pub fn seal(
         .map(|(p, o)| (p.clone(), o.sha256.clone()))
         .collect();
     runtime.verify_runtime(&stores.sources, None, &source_assets)?;
+    if prepared.binaries.contains_key("openpilot-pandad") {
+        crate::panda_inputs::verify_runtime(&prepared.source.root, &runtime.root)?;
+    }
     if prepared.binaries.contains_key("openpilot-plannerd") {
         crate::mpc_inputs::verify_runtime(&prepared.source.root, &runtime.root.join("rust/bin"))?;
     }
