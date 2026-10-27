@@ -7,7 +7,7 @@ use crate::{
     seal::Result,
 };
 use openpilot_runtime_build::{
-    assets, digest_file,
+    assets, dbc_inputs, digest_file,
     inputs::{Entry, Tree},
     mpc_inputs, panda_inputs, Source,
 };
@@ -40,6 +40,9 @@ const MPC_CONTRACT: &[u8] = include_bytes!("../../../native-mpc-source-contract.
 const PANDA_INVENTORY: &str = "4a6a1bed302950a8120ab0bedfb30c511263a19a50dbb3653434c0b1be7df767";
 const PANDA_CONTRACT_SHA: &str = "206916e6a5722e7159e0607b2dcef1dd93f31124a2d9462ef875c235d3e1ae58";
 const PANDA_CONTRACT: &[u8] = include_bytes!("../../../native-panda-source-contract.json");
+const DBC_INVENTORY: &str = "ad6237ec04397457faf2d522a8df5147160addd02a242d160a1d364dc9450215";
+const DBC_CONTRACT_SHA: &str = "a10157df9207fdbe50222e850d08fb571c648f39a24fe9018cc325115054ba9b";
+const DBC_CONTRACT: &[u8] = include_bytes!("../../../native-dbc-source-contract.json");
 const SOURCE: &str = "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31";
 const ORIGIN: &str = "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291";
 const MANIFEST: &str = "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee";
@@ -137,6 +140,7 @@ fn component_names(profile: &str) -> Result<(&'static str, &'static str)> {
         "freesans-pygame252" => Ok(("freesans-pygame252", "freesans-pygame252.tar.gz")),
         "acados022-runtime" => Ok(("acados022-runtime", "acados022-runtime.tar.gz")),
         "panda-firmware-runtime" => Ok(("panda-firmware", "panda-firmware-runtime.tar.gz")),
+        "radarcan-dbc-runtime" => Ok(("radarcan-dbc", "radarcan-dbc-runtime.tar.gz")),
         _ => Err("unknown fixed foreign provider profile".into()),
     }
 }
@@ -189,6 +193,12 @@ impl Plan {
                 PANDA_CONTRACT,
                 PANDA_CONTRACT_SHA,
             )),
+            "radarcan-dbc-runtime" => Some((
+                dbc_inputs::PATH,
+                dbc_inputs::ARTIFACT_CONTRACT,
+                DBC_CONTRACT,
+                DBC_CONTRACT_SHA,
+            )),
             _ => None,
         }
     }
@@ -201,6 +211,7 @@ impl Plan {
         match self.profile.as_str() {
             "acados022-runtime" => mpc_inputs::Contract::read(&path)?.verify_source(root),
             "panda-firmware-runtime" => panda_inputs::Contract::read(&path)?.verify_source(root),
+            "radarcan-dbc-runtime" => dbc_inputs::Contract::read(&path)?.verify_source(root),
             _ => Err("provider has no source contract".into()),
         }
     }
@@ -256,6 +267,7 @@ impl Plan {
             "freesans-pygame252" => (6, FREESANS_INVENTORY),
             "acados022-runtime" => (15, MPC_INVENTORY),
             "panda-firmware-runtime" => (7, PANDA_INVENTORY),
+            "radarcan-dbc-runtime" => (105, DBC_INVENTORY),
             _ => {
                 return Err(
                     "foreign provider plan differs from the fixed original release inventory"
@@ -863,6 +875,7 @@ fn prepare_inner(
         match plan.profile.as_str() {
             "acados022-runtime" => mpc_inputs::verify_runtime(source, &prepared.root)?,
             "panda-firmware-runtime" => panda_inputs::verify_runtime(source, &prepared.root)?,
+            "radarcan-dbc-runtime" => dbc_inputs::verify_runtime(source, &prepared.root)?,
             _ => return Err("unexpected bound provider profile".into()),
         }
     }
@@ -964,6 +977,37 @@ pub fn cli(args: &[String]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn dbc_profile_keeps_the_complete_original_data_and_source_contract() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut plan = Plan::read(&root.join("native-dbc-provider.json")).unwrap();
+        assert!(plan.source_binding().is_err());
+        assert_eq!(plan.members.len(), 105);
+        assert_eq!(
+            plan.members
+                .keys()
+                .filter(|p| p.extension().is_some_and(|e| e == "dbc"))
+                .count(),
+            103
+        );
+        assert!(plan
+            .members
+            .values()
+            .all(|m| m.mode == 0o444 && m.link.is_none()));
+        let tree = expected(&plan).unwrap();
+        assert!(tree
+            .entries
+            .contains_key(Path::new(dbc_inputs::ARTIFACT_CONTRACT)));
+        let path = Path::new("rust/bin/radarcan-dbc/ESR.dbc");
+        plan.members.get_mut(path).unwrap().sha256 = "0".repeat(64);
+        assert!(plan.validate().is_err());
+        let mut plan = Plan::read(&root.join("native-dbc-provider.json")).unwrap();
+        plan.members.get_mut(path).unwrap().source = "rust/bin/openpilot-radarcan".into();
+        assert!(plan.validate().is_err());
+        let mut plan = Plan::read(&root.join("native-dbc-provider.json")).unwrap();
+        plan.members.get_mut(path).unwrap().mode = 0o555;
+        assert!(plan.validate().is_err());
+    }
     #[test]
     fn required_media_tools_and_font_are_original_foreign_inputs_with_their_notices() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");

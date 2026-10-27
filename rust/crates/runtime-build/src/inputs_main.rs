@@ -14,13 +14,15 @@ fn run() -> Result<()> {
     let mut prepare_python = false;
     let mut prepare_assets = false;
     let mut verify_models = false;
+    let mut verify_dbcs = false;
     let mut objects = None;
     let mut lock = None;
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--verify-models") if !verify_models => verify_models = true,
+            Some("--verify-dbcs") if !verify_dbcs => verify_dbcs = true,
             Some("--help" | "-h") => {
-                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --capture-system-sdk --root VERIFIED_IMAGE_ROOT --plan SDK_ROOTS_JSON --output SDK_RECEIPT\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-capnp --plan PINNED_CAPNP_ASSETS_JSON --cache ASSET_CACHE --store SDK_STORE\n       openpilot-runtime-inputs --prepare-cargo --plan PINNED_CRATES_JSON --lock CARGO_LOCK --cache ASSET_CACHE --store SOURCES_STORE\n       openpilot-runtime-inputs --prepare-source-lfs --root CLEAN_SOURCE --plan SOURCE_LFS_JSON --cache ASSET_CACHE --store PREFIX_STORE --objects OBJECT_STORE\n       openpilot-runtime-inputs --prepare-python --plan PINNED_PYTHON_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-assets --plan PINNED_ASSETS_JSON --cache ASSET_CACHE\n       openpilot-runtime-inputs --verify-models --root CLEAN_SOURCE --store MODEL_EXPORT\nCapture unpacked inputs, or assemble authenticated native inputs without executing installers. Source LFS preparation requires every current committed pointer and never mutates a checkout. Generic and system capture require independently verified provenance. Archive preparation authenticates vendor bytes on every reuse; it does not compile or activate a runtime.");
+                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --capture-system-sdk --root VERIFIED_IMAGE_ROOT --plan SDK_ROOTS_JSON --output SDK_RECEIPT\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-capnp --plan PINNED_CAPNP_ASSETS_JSON --cache ASSET_CACHE --store SDK_STORE\n       openpilot-runtime-inputs --prepare-cargo --plan PINNED_CRATES_JSON --lock CARGO_LOCK --cache ASSET_CACHE --store SOURCES_STORE\n       openpilot-runtime-inputs --prepare-source-lfs --root CLEAN_SOURCE --plan SOURCE_LFS_JSON --cache ASSET_CACHE --store PREFIX_STORE --objects OBJECT_STORE\n       openpilot-runtime-inputs --prepare-python --plan PINNED_PYTHON_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-assets --plan PINNED_ASSETS_JSON --cache ASSET_CACHE\n       openpilot-runtime-inputs --verify-models --root CLEAN_SOURCE --store MODEL_EXPORT\n       openpilot-runtime-inputs --verify-dbcs --root CLEAN_SOURCE --store DBC_PROVIDER\nCapture unpacked inputs, or assemble authenticated native inputs without executing installers. Source LFS preparation requires every current committed pointer and never mutates a checkout. Generic and system capture require independently verified provenance. Archive preparation authenticates vendor bytes on every reuse; it does not compile or activate a runtime.");
                 return Ok(());
             }
             Some("--root") if root.is_none() => {
@@ -66,6 +68,7 @@ fn run() -> Result<()> {
         + u8::from(prepare_python)
         + u8::from(prepare_assets)
         + u8::from(verify_models)
+        + u8::from(verify_dbcs)
         > 1
     {
         return Err("choose exactly one native preparation mode".into());
@@ -75,6 +78,19 @@ fn run() -> Result<()> {
     }
     if !prepare_source_assets && objects.is_some() {
         return Err("--objects requires --prepare-source-lfs".into());
+    }
+    if verify_dbcs {
+        if plan.is_some() || cache.is_some() || output.is_some() {
+            return Err("DBC verification accepts only --root SOURCE and --store PROVIDER".into());
+        }
+        let source = root.ok_or("--root SOURCE is required")?;
+        let provider = store.ok_or("--store PROVIDER is required")?;
+        openpilot_runtime_build::dbc_inputs::verify_runtime(&source, &provider)?;
+        println!(
+            "{}",
+            serde_json::json!({"schema":1,"databases":103,"runtime_activated":false})
+        );
+        return Ok(());
     }
     if verify_models {
         if plan.is_some() || cache.is_some() || output.is_some() {

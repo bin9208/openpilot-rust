@@ -159,6 +159,17 @@ impl Config {
                 &layout.files,
             )?;
         }
+        if plan
+            .groups
+            .values()
+            .any(|g| g.binaries.iter().any(|n| n == "openpilot-radarcan"))
+        {
+            crate::dbc_inputs::verify_mapped(
+                &workspace.root,
+                &layout.provider_root,
+                &layout.files,
+            )?;
+        }
         let prepared = crate::prepare::from_retained(
             &workspace.root,
             &self.cache,
@@ -637,6 +648,9 @@ impl Sealed {
         self.runtime
             .verify_runtime(&stores.sources, Some(&self.metadata_sha256), &assets)?;
         let root = &self.runtime.root;
+        if self.prepared.binaries.contains_key("openpilot-radarcan") {
+            crate::dbc_inputs::verify_runtime(&self.prepared.source.root, root)?;
+        }
         if self.prepared.binaries.contains_key("openpilot-pandad") {
             crate::panda_inputs::verify_runtime(&self.prepared.source.root, root)?;
         }
@@ -852,6 +866,13 @@ pub fn seal(
             &layout.files,
         )?;
     }
+    if prepared.binaries.contains_key("openpilot-radarcan") {
+        crate::dbc_inputs::verify_mapped(
+            &prepared.source.root,
+            &layout.provider_root,
+            &layout.files,
+        )?;
+    }
     let metadata = metadata(request_root, &prepared)?;
     directory(&stores.generations)?;
     let _lock = lock(&stores.generations)?;
@@ -974,6 +995,9 @@ pub fn seal(
                 }
             }
         }
+    }
+    if prepared.binaries.contains_key("openpilot-radarcan") {
+        crate::dbc_inputs::verify_runtime(&prepared.source.root, &runtime.root)?;
     }
     if prepared.binaries.contains_key("openpilot-pandad") {
         crate::panda_inputs::verify_runtime(&prepared.source.root, &runtime.root)?;

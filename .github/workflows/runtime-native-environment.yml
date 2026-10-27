@@ -110,6 +110,13 @@ on:
       - 'rust/crates/runtime-build/tests/python.rs'
       - 'rust/native-panda-source-contract.json'
       - 'rust/native-panda-provider.json'
+      - 'rust/native-dbc-provider.json'
+      - 'rust/native-dbc-source-contract.json'
+      - 'rust/crates/runtime-build/src/dbc_inputs.rs'
+      - 'rust/crates/runtime-build/tests/dbc_inputs.rs'
+      - 'rust/crates/radarcan/examples/native_dbc_inputs.rs'
+      - 'tools/ci/prepare_native_dbc_inputs.py'
+      - 'tools/ci/fixtures/native-dbc-inputs.py'
       - 'tools/ci/prepare_native_panda_inputs.py'
       - 'tools/ci/fixtures/native-panda-firmware.py'
       - 'rust/crates/runtime-build/src/panda_inputs.rs'
@@ -526,6 +533,11 @@ jobs:
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           python3 tools/ci/prepare_native_panda_inputs.py \
             --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - name: Prepare original DBC data only for identical current generation inputs
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_dbc_inputs.py \
+            --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
       - uses: actions/cache/restore@v4
         id: python-input-cache
         with:
@@ -669,6 +681,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-companion-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-mpc-*.json
             ${{ env.CI_JOB_TEMP }}/native-panda-*.json
+            ${{ env.CI_JOB_TEMP }}/native-dbc-*.json
+            ${{ env.CI_JOB_TEMP }}/native-dbc-export/*
+            ${{ env.CI_JOB_TEMP }}/native-dbc-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-python-*.json
             ${{ env.CI_JOB_TEMP }}/native-model-wheels-*.json
             ${{ env.CI_JOB_TEMP }}/native-model-assets-*.json
@@ -710,6 +725,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-font-reference/
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-dbc-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-dbc-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-dbc-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-*.jsonl

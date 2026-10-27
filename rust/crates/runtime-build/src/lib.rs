@@ -21,6 +21,7 @@ pub mod cargo_inputs;
 pub mod catalog;
 pub mod catalog_bindings;
 mod catalog_features;
+pub mod dbc_inputs;
 pub mod generation;
 pub mod inputs;
 pub mod memory_cgroup;

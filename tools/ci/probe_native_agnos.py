@@ -943,12 +943,12 @@ def native_model_generation_probe(guest_command,work,source_mount,evidence,log,g
     fixture_cases.append(dict(case=case,request_source=row['source'],kinds=row['kinds'],
         compiler_build_source_commit=evidence['source_commit'],runtime_compiled=False))
   evidence['native_model_generation']['actual_source_reuse_cases']=fixture_cases
-  old=json.loads((work/'native-runtime-panda-inputs.json').read_text())
+  old=json.loads((work/'native-runtime-dbc-inputs.json').read_text())
   model_input=rows[0]['export']['runtime_inputs']
   for key in ('files','trees'):
     assert not set(old[key]) & set(model_input[key])
     old[key].update(model_input[key])
-  assert len(old['files'])==len(old['trees'])==11
+  assert len(old['files'])==len(old['trees'])==12
   (work/'native-model-runtime-inputs.json').write_text(json.dumps(old,indent=2)+'\n')
   pins=json.loads((work/'native-project-input-pins.json').read_text())
   pins['runtime_inputs']=old
@@ -963,6 +963,25 @@ def native_model_generation_probe(guest_command,work,source_mount,evidence,log,g
   original=json.loads((work/'native-project-bindings-initial/build-plan.json').read_text())
   assert bound['runtime_inputs']==old and bound['groups']==original['groups']
   evidence['native_model_generation']['export']=rows[0]['export']
+  # Run the actual RadarCAN database loader against all unchanged original data.
+  room(work,3*1024**3)
+  group=next(g for g in bound['groups'].values() if 'openpilot-radarcan' in g['binaries'])
+  environment={**group['environment'],'CARGO_INCREMENTAL':'0','CARGO_BUILD_JOBS':'1',
+      'CARGO_PROFILE_DEV_DEBUG':'0','RUSTC':str(cargo.parent/'rustc'),'RUSTDOC':str(cargo.parent/'rustdoc')}
+  env=['/usr/bin/env',*(f'{k}={v}' for k,v in environment.items())]
+  features=[f for f in group['features'] if f.split('/')[0] in ('openpilot-card','openpilot-msgq')]
+  target=work/'native-dbc-consumer-target'
+  execute([*env,cargo,'--config','source.crates-io.replace-with="openpilot-native"',
+      '--config','source.openpilot-native.directory='+json.dumps(environment['OPENPILOT_CARGO_VENDOR']),
+      'build','--locked','--offline','--manifest-path',f'{source_mount}/rust/Cargo.toml',
+      '--target','aarch64-unknown-linux-gnu','-p','openpilot-radarcan','--example','native_dbc_inputs',
+      '--features',','.join(features),'--target-dir',target],'native-dbc-consumer-build.txt')
+  provider=json.loads((work/'native-dbc-initial.json').read_text())
+  execute([target/'aarch64-unknown-linux-gnu/debug/examples/native_dbc_inputs',
+      Path(provider['root'])/'rust/bin/radarcan-dbc'],'native-dbc-consumer.json')
+  consumer=json.loads((work/'native-dbc-consumer.json').read_text())
+  assert consumer['databases']==103 and consumer['messages']>0 and not consumer['runtime_activated']
+  evidence['native_dbc_inputs']['rust_database_consumer']=consumer
 
 
 def native_encoder_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -2031,6 +2050,58 @@ def native_panda_inputs_probe(guest_command,work,source_mount,evidence,log,guest
       full_runtime_build=False,physical_device_execution=False,emulation='QEMU/PRoot ARM user space on x64 bin-actions')
 
 
+def native_dbc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Bind all original DBC bytes and regenerate only the CI reference."""
+  source=Path(os.environ['GITHUB_WORKSPACE'])
+  plan=json.loads((source/'rust/native-dbc-provider.json').read_text())
+  room(work,4*sum(row['bytes'] for row in plan['members'].values())+128*1024**2)
+  exported=json.loads((work.parent/'native-dbc-export.json').read_text())
+  host=json.loads((work.parent/'native-dbc-initial.json').read_text())
+  def execute(argv,name,required=True):
+    record=run(guest_command(argv),log,stdout_path=work/name,required=required)
+    evidence['commands'].append(record)
+    return record
+  command=[work/'project-target/debug/build-runtime-ffmpeg','--prepare-released-provider',
+      '--plan',f'{source_mount}/rust/native-dbc-provider.json',
+      '--descriptor',Path(guest_work)/'dbc-export/provider.json',
+      '--descriptor-sha256',exported['descriptor_sha256'],
+      '--cache',Path(guest_work)/'dbc-components','--store',work/'native-dbc-prefixes']
+  rejected=execute(command,'native-dbc-unbound.txt',required=False)
+  assert rejected['exit_code']!=0 and not (work/'native-dbc-prefixes').exists()
+  rows=[]
+  for phase in ('initial','reused'):
+    execute([*command,'--source-root',source_mount],f'native-dbc-{phase}.json')
+    row=json.loads((work/f'native-dbc-{phase}.json').read_text())
+    assert row['tree_sha256']==host['tree_sha256']==exported['tree_sha256']
+    assert row['source_binding']==host['source_binding']==exported['source_binding']
+    assert row['source_binding']['source']['commit']==evidence['source_commit']
+    assert row['source_binding']['original_source_commit']==plan['source_commit']!=evidence['source_commit']
+    assert row['source_binding']['inputs_match'] and not row['source_binding']['regenerated']
+    assert row['offline_seed_bytes']==row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+    assert (row['copied_bytes']>0)==(phase=='initial')
+    assert not row['origin_archive_downloaded'] and not row['compiler_executed'] and not row['runtime_activated']
+    rows.append(row)
+  assert rows[0]['root']==rows[1]['root']
+  execute([work/'project-target/debug/openpilot-runtime-inputs','--verify-dbcs','--root',source_mount,
+      '--store',rows[0]['root']],'native-dbc-core-verification.json')
+  execute(['/usr/bin/python3',f'{source_mount}/tools/ci/fixtures/native-dbc-inputs.py',
+      '--source',source_mount,'--provider',rows[0]['root'],'--work',work,
+      '--output',work/'native-dbc-reference.json'],'native-dbc-reference.txt')
+  reference=json.loads((work/'native-dbc-reference.json').read_text())
+  assert reference['source_inputs_checked']==140 and reference['original_databases_regenerated_for_oracle']==103
+  assert reference['exact_byte_comparison']
+  inputs=json.loads((work/'native-runtime-panda-inputs.json').read_text())
+  inputs['files'][rows[0]['tree_receipt']]=rows[0]['tree_sha256']
+  inputs['trees'][rows[0]['root']]=rows[0]['tree_receipt']
+  assert len(inputs['files'])==len(inputs['trees'])==11
+  (work/'native-runtime-dbc-inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
+  evidence['native_dbc_inputs']=dict(source_binding=rows[0]['source_binding'],tree_sha256=rows[0]['tree_sha256'],
+      actual_arm_preparer=True,original_reference=reference,host_expected_tree_matches=True,
+      repeated_http_body_bytes=0,repeated_copied_bytes=0,unbound_provider_rejected_before_staging=True,
+      runtime_data_regenerated=False,full_runtime_build=False,physical_device_execution=False,
+      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+
+
 def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Assemble the actual 99-target plan using all independently prepared inputs."""
   room(work,4*1024**2)
@@ -2052,7 +2123,7 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
       'raylib':pin(read('native-raylib-sdk-initial.json')),
       'opencv':pin(read('native-opencv-prefix-initial.json')),
       'eigen':pin(read('native-eigen-initial.json')['eigen']),
-  },runtime_inputs=read('native-runtime-panda-inputs.json'))
+  },runtime_inputs=read('native-runtime-dbc-inputs.json'))
   catalog=read('native-project-catalog.json')
   # Explicit conservative plan-only envelopes. This probe does not reserve or
   # consume these build budgets and is not a measured full-build resource trial.
@@ -2084,7 +2155,7 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
     assert audit['native_inputs_sha256']==digest(pins_path) and audit['budgets_sha256']==digest(budgets_path)
     assert audit['bindings_sha256']==digest(output/'bindings.json')
     assert audit['plan_sha256']==digest(output/'build-plan.json')
-    assert plan['runtime_inputs']==pins['runtime_inputs'] and len(plan['runtime_inputs']['trees'])==10
+    assert plan['runtime_inputs']==pins['runtime_inputs'] and len(plan['runtime_inputs']['trees'])==11
     for name,requirements in catalog['compiler_inputs'].items():
       recipe=plan['groups'][name]
       for key,suffix in requirements.items():
@@ -2242,6 +2313,8 @@ def main():
              '-b', f'{owned / "native-mpc-export"}:{guest_work}/mpc-export',
              '-b', f'{owned / "native-panda-components"}:{guest_work}/panda-components',
              '-b', f'{owned / "native-panda-export"}:{guest_work}/panda-export',
+             '-b', f'{owned / "native-dbc-components"}:{guest_work}/dbc-components',
+             '-b', f'{owned / "native-dbc-export"}:{guest_work}/dbc-export',
              '-b', f'{owned / "native-raylib-assets"}:{guest_work}/raylib-assets',
              '-b', f'{owned / "native-raylib-components"}:{guest_work}/raylib-components',
              '-b', f'{owned / "native-raylib-provider-export"}:{guest_work}/raylib-provider-export',
@@ -2308,6 +2381,7 @@ def main():
     native_source_assets_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_panda_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_dbc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_model_generation_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'

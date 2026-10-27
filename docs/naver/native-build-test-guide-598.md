@@ -34,6 +34,10 @@
 
 ## 개발 검증 실행 방법
 
+원래103개 RadarCAN DBC를 source 입력과 결속해 별도 component로 재사용하는 명령,
+Python 원본 재생성 oracle·실제 ARM Rust loader 및 Layout/봉인/시작 거부 회귀는
+[DBC 준비 안내](native-dbc-inputs-599.md)를 따른다. 새 source의 Actions 성공은 아직 대기다.
+
 모델 cache와 분리한 불변 export, 현재 Git·compiler source/출력 전체 검증, 모델이 빠진
 native build/잘못된 Layout 거부와 봉인/source generation 시작 검사는
 [모델 실행 입력 안내](native-model-runtime-inputs-600.md)를 따른다. 실제 전체 봉인과
