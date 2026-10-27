@@ -19,3 +19,35 @@ ARM job `121596623745`는 guest에 `/usr/bin/time`이 없어서 비교 명령 �
 `time`을 추가하고 공통 same-repository 실행 조건을 유지한다. 재검증 SHA와 결과는
 실행 후 이슈에 기록한다. ARM은 등록된 bin-actions의 QEMU/PRoot user space이며
 물리 ARM CPU·AGNOS kernel·comma 3X 검증이 아니다.
+
+## 양쪽 환경의 실제 결과와 일반 회귀 연결 — 2026-10-27
+
+source `fb07c98294269e0144d56aeeea02f0cdfa85980e`의
+[Actions40358677927](https://github.com/bin9208/openpilot-rust/actions/runs/40358677927)은
+x64 job121697923570과 ARM job121697923802 모두 성공했다. 같은 환경의 hash 고정 원본과
+Rust의2,544회 result/debug/전체 state bit 비교 및 strict Clippy를 양쪽에서 통과했다.
+ARM artifact12717802440은 원본 대 과거 fixture 차이0과 historical Rust 비교 성공을 기록했다.
+x64 artifact12709949965는 원본도 과거 fixture와8행/8필드가 다르고 historical Rust 비교도
+실패했음을 보존했다. x64 첫 필드는 response_weight의 `3f5b1cdcd1a01bdb` / `3f5b1cdcd1a01bda`다.
+
+ARM은 x64 host/QEMU-PRoot aarch64 guest/Python3.12.14/glibc2.39다. 물리 ARM CPU,
+실제 AGNOS kernel 또는 차량 성능 개선의 증거가 아니다. compile 포함 단일 명령 wall time은
+x64 2:30.08, ARM 46:21.89이며 single-child maximum RSS는789,096/950,140KiB다.
+aggregate peak나 차량 측정값으로 사용하지 않는다. 과거 bit의 환경 의존성은 확인했지만
+libm만을 원인으로 확정하지 않는다.
+
+후속 변경은 일반 `cargo test`에 같은 환경 원본 검사를 필수로 유지한다. 전체 필드 비교와
+2,544 update count 검사는 공통 support로 이동하고, 과거 고정 fixture 검사는 별도
+`bosch_historical_fixture` 예제로 이동한다. ignored test나
+허용 오차, field 생략, fixture/원본 변경을 추가하지 않는다. focused CI도 별도 test 이름 필터
+없이 실제 test target 전체를 실행하며, historical 예제를 독립 로그로 실행한다.
+
+```sh
+cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration -- --nocapture
+cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --example bosch_historical_fixture
+```
+
+위 명령은 Actions에서 실행한다. 두 번째는 해당 x64 환경에서 과거 fixture 차이를
+진단하는 실패를 그대로 반환한다. 이 분리는 새 source의 focused·일반 전체 workspace·
+필수 PR/병합 후 검증 전이며 #607/#601/#598 완료가 아니다. 기존 PR494의 dev-md 트랙을
+유지하며 dev/main으로 runtime을 통합하지 않는다.

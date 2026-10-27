@@ -67,15 +67,15 @@ jobs:
         run: |
           set -o pipefail
           export CARGO_TARGET_DIR="$RUNNER_TEMP/target"
-          rustfmt --edition 2021 --check rust/crates/radarcan/tests/bosch_acceleration.rs
-          /usr/bin/time -v -o "$RUNNER_TEMP/bosch-source-resources.txt" cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration same_environment_original_source_full_filter_states_match_bits -- --exact --nocapture 2>&1 | tee "$RUNNER_TEMP/bosch-source-comparison.log"
-          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration -- -D warnings
+          rustfmt --edition 2021 --check rust/crates/radarcan/tests/bosch_acceleration.rs rust/crates/radarcan/tests/support/bosch_full_state.rs rust/crates/radarcan/examples/bosch_historical_fixture.rs
+          /usr/bin/time -v -o "$RUNNER_TEMP/bosch-source-resources.txt" cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration -- --nocapture 2>&1 | tee "$RUNNER_TEMP/bosch-source-comparison.log"
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration --example bosch_historical_fixture -- -D warnings
       - name: Retain the historical frozen-reference result independently
         continue-on-error: true
         run: |
           set -o pipefail
           export CARGO_TARGET_DIR="$RUNNER_TEMP/target"
-          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration physical_pid_acceleration_full_filter_states_held_invalid_reset_and_cap_match_source -- --exact --nocapture 2>&1 | tee "$RUNNER_TEMP/bosch-historical-comparison.log"
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --example bosch_historical_fixture 2>&1 | tee "$RUNNER_TEMP/bosch-historical-comparison.log"
       - uses: ./.github/actions/local-arm
         if: always()
         with: {cleanup: 'true'}
