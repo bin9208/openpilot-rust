@@ -82,6 +82,35 @@ class Fixture:
 
 
 class SourceEntryTests(unittest.TestCase):
+  def test_machine_configuration_cannot_redirect_or_change_during_the_request(self):
+    with tempfile.TemporaryDirectory() as temp:
+      root = Path(temp)
+      path = root/'machine.json'
+      path.write_bytes(b'{"owned":1}')
+      first, pin = entry.machine_configuration(path)
+      self.assertEqual(first, dict(owned=1))
+      path.write_bytes(b'{"owned":2}')
+      with self.assertRaisesRegex(ValueError, 'operation pin'):
+        entry.machine_configuration(path, pin)
+      alias = root/'alias.json'
+      alias.symlink_to(path)
+      with self.assertRaisesRegex(ValueError, 'redirected'):
+        entry.machine_configuration(alias)
+      parent_alias = root/'parent-alias'
+      parent_alias.symlink_to(root, target_is_directory=True)
+      with self.assertRaisesRegex(ValueError, 'redirected'):
+        entry.machine_configuration(parent_alias/path.name)
+
+  def test_startup_shell_dispatches_to_the_isolated_source_entry_before_legacy_runtime_bootstrap(self):
+    with tempfile.TemporaryDirectory() as temp:
+      env = dict(os.environ, OPENPILOT_NATIVE_MACHINE_CONFIG=str(Path(temp)/'not-read-during-help.json'))
+      root = Path(entry.__file__).resolve().parents[2]
+      result = subprocess.run(['/usr/bin/bash', str(root/'launch_openpilot.sh'), '--help'], env=env,
+          cwd=temp, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30, check=False)
+      self.assertEqual(result.returncode, 0, result.stderr.decode())
+      self.assertIn(b'--machine-config', result.stdout)
+      self.assertIn(b'--launch', result.stdout)
+
   def startup(self, f):
     parent = f.root/'generations/configurations'
     parent.mkdir()
@@ -218,6 +247,17 @@ class SourceEntryTests(unittest.TestCase):
       f.machine['budgets']['group_growth_bytes'] = {'missing-current-source-group': 1}
       with self.assertRaisesRegex(ValueError, 'catalog groups'):
         f.resolve('bad-budget')
+
+  def test_individual_metadata_files_cannot_each_reuse_the_whole_operation_growth_budget(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = Fixture(Path(temp))
+      f.machine['resources']['filesystems'][str(f.root)]['maximum_growth_bytes'] = f.index['seed']['bytes']+65536
+      with self.assertRaisesRegex(ValueError, 'insufficient budget'):
+        f.resolve('bounded-metadata')
+      cache = Path(f.machine['cache'])/'metadata-assets/sha256'
+      self.assertTrue((cache/f.index['seed']['sha256']/'blob').is_file())
+      self.assertFalse((cache/f.index['system_sdk']['sha256']/'blob').exists())
+      self.assertFalse((f.root/'generations/active.json').exists())
 
   def test_overlay_input_is_outside_build_stores_without_recopying_the_source(self):
     with tempfile.TemporaryDirectory() as temp:

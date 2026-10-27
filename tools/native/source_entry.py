@@ -50,6 +50,20 @@ def positive(value):
   return type(value) is int and 0 < value <= (1 << 64)-1
 
 
+def machine_configuration(path, expected=None):
+  runtime.absolute(str(path))
+  if path.is_symlink() or path.parent.resolve(strict=True) != path.parent:
+    raise ValueError('native machine configuration path is redirected')
+  with seed.regular(path) as stream:
+    data = stream.read(4*1024**2+1)
+  if len(data) > 4*1024**2:
+    raise ValueError('native machine settings exceed 4 MiB')
+  pin = hashlib.sha256(data).hexdigest()
+  if expected is not None and pin != expected:
+    raise ValueError('native machine settings differ from the operation pin')
+  return json.loads(data, object_pairs_hook=runtime.pairs), pin
+
+
 def validate_machine(machine, source):
   if (set(machine) not in (MACHINE_FIELDS, MACHINE_FIELDS | {'boot_seed'}) or type(machine['schema']) is not int
       or machine['schema'] != 1 or set(machine['stores']) != {'sources', 'objects', 'generations', 'params'}
@@ -133,6 +147,7 @@ def input_index(source):
 class Metadata:
   def __init__(self, machine, commands, observe, offline=None):
     self.machine, self.commands, self.observe, self.offline = machine, commands, observe, offline
+    self.growth = 0
     self.root = directory(Path(machine['cache']))
     self.root = directory(self.root/'metadata-assets')
     self.objects = directory(self.root/'sha256')
@@ -144,8 +159,9 @@ class Metadata:
     if len(budgets) != 1:
       raise ValueError('metadata cache needs one unambiguous budget for its filesystem')
     growth, reserve = next(iter(budgets))
-    if needed > growth or shutil.disk_usage(self.root).free < needed+reserve:
+    if self.growth+needed > growth or shutil.disk_usage(self.root).free < needed+reserve:
       raise ValueError('insufficient budget for this metadata preparation; other caches retained')
+    self.growth += needed
 
   def asset(self, asset):
     self.observe()
@@ -241,7 +257,7 @@ def build_requested(args, machine, source, pin):
   commands = runtime.OwnedCommands(owner, Path(machine['stores']['params']))
   def observe():
     commands.observe()
-    runtime.read(args.machine_config, pin)
+    machine_configuration(args.machine_config, pin)
     if runtime.source_identity(source) != before:
       raise ValueError('native source changed while resolving its input index')
   observe()
@@ -325,7 +341,7 @@ def launch(args, machine, source, pin):
     # A verified existing runtime must boot even if a stale IsOnroad survived a
     # power loss. Downloads/builds still use the offroad-only command driver.
     seed.verify_owners(owner)
-    runtime.read(args.machine_config, pin)
+    machine_configuration(args.machine_config, pin)
   observe()
   prepared = boot_seed(machine, commands, observe)
   record = startup_record(machine)
@@ -372,17 +388,11 @@ def main():
   if os.geteuid() == 0:
     raise ValueError('native source entry requires the original non-root user')
   source = args.source.resolve(strict=True)
-  args.machine_config = args.machine_config.resolve(strict=True)
+  machine, pin = machine_configuration(args.machine_config, args.machine_configuration_sha256)
   if args.machine_config.is_relative_to(source):
     raise ValueError('device-local machine policy must be outside the source checkout')
-  with seed.regular(args.machine_config) as stream:
-    data = stream.read(4*1024**2+1)
-  if len(data) > 4*1024**2:
-    raise ValueError('native machine settings exceed 4 MiB')
-  pin = hashlib.sha256(data).hexdigest()
-  if (args.machine_configuration_sha256 != pin and (not args.launch or args.machine_configuration_sha256 is not None)):
-    raise ValueError('native machine settings differ from the operation pin')
-  machine = json.loads(data, object_pairs_hook=runtime.pairs)
+  if not args.launch and args.machine_configuration_sha256 is None:
+    raise ValueError('native source build needs the operation machine configuration pin')
   validate_machine(machine, source)
   if args.launch:
     if args.running_config is not None or args.running_configuration_sha256 is not None or args.previous is not None:

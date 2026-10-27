@@ -19,7 +19,10 @@ working tree나 release 옆 checksum을 독립 pin 대신 사용하지 않는다
 성공한 뒤 실제 파일에서 `native-bootstrap-inputs.candidate.json`과
 `publication-candidate.json`을 산출한다. 후보 생성은 발행/사용 가능 상태를 의미하지 않는다.
 
-기기별 설정은 별도 `OPENPILOT_NATIVE_MACHINE_CONFIG` JSON이다. 서로 겹치지 않는
+기기별 설정은 별도 `OPENPILOT_NATIVE_MACHINE_CONFIG` JSON이다. 환경변수가 없을 때는
+지속 경로 `/data/openpilot-native/machine.json`의 존재로 native 경로를 선택하므로 재부팅 후
+환경변수 소실이 기존 전체 release 다운로드를 다시 선택하게 하지 않는다. 잘못된 파일이나
+symlink도 legacy 경로로 우회하지 않고 거부한다. 서로 겹치지 않는
 source/object/generation/Params/cache/seed cache/updater staging, 작업별 예상 증가량과
 근거·메모리/파일시스템 정책만 둔다. 초기 boot controller descriptor는 `boot_seed`에
 독립 고정하고 빌드 입력은 매 요청의 현재 Git index에서 읽는다. 설정의 raw SHA는

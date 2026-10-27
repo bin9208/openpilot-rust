@@ -41,6 +41,12 @@ impl Config {
         if !absolute(path) {
             return Err("native machine policy path must be absolute".into());
         }
+        let parent = path
+            .parent()
+            .ok_or("native machine policy parent missing")?;
+        if parent.canonicalize()? != parent {
+            return Err("native machine policy parent is redirected".into());
+        }
         let (config, pin): (Self, String) = generation::read_pinned(path)?;
         config.resources.validate()?;
         let roots = [
@@ -197,6 +203,13 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let mut policy = fixture(temp.path());
         let path = temp.path().join("machine.json");
+        fs::write(&path, serde_json::to_vec(&policy).unwrap()).unwrap();
+        let alias = temp.path().join("policy-parent-alias");
+        std::os::unix::fs::symlink(temp.path(), &alias).unwrap();
+        assert!(Config::read_pinned(&alias.join("machine.json"))
+            .unwrap_err()
+            .to_string()
+            .contains("parent is redirected"));
         policy.updater_staging = policy.stores.generations.join("updater");
         fs::write(&path, serde_json::to_vec(&policy).unwrap()).unwrap();
         assert!(Config::read_pinned(&path).is_err());
