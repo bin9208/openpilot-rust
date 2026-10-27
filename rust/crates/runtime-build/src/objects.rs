@@ -63,11 +63,21 @@ impl Object {
         }
         let path = directory.join("blob");
         let metadata = regular_file(&path)?.metadata()?;
-        if metadata.len() != self.bytes
-            || metadata.permissions().mode() & 0o7777 != self.mode
-            || digest_file(&path)? != self.sha256
-        {
-            return Err("runtime content object failed size, mode or SHA-256 verification".into());
+        let mode = metadata.permissions().mode() & 0o7777;
+        if metadata.len() != self.bytes || mode != self.mode {
+            return Err(format!(
+                "runtime content object failed size or mode verification: {:?}; expected bytes={} mode={:o}, actual bytes={} mode={mode:o}",
+                path, self.bytes, self.mode, metadata.len()
+            )
+            .into());
+        }
+        let sha256 = digest_file(&path)?;
+        if sha256 != self.sha256 {
+            return Err(format!(
+                "runtime content object failed SHA-256 verification: {:?}; expected {}, actual {sha256}",
+                path, self.sha256
+            )
+            .into());
         }
         Ok(path)
     }

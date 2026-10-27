@@ -65,6 +65,14 @@ fn corrupt_or_redirected_object_is_rejected() {
     let object = import(&store, &input, 0).unwrap().object;
     let blob = object.verify(&store).unwrap();
     fs::set_permissions(&blob, fs::Permissions::from_mode(0o644)).unwrap();
+    let error = object.verify(&store).unwrap_err().to_string();
+    assert!(error.contains("expected bytes=11 mode=444, actual bytes=11 mode=644"));
+    fs::write(&blob, "output dAta").unwrap();
+    fs::set_permissions(&blob, fs::Permissions::from_mode(0o444)).unwrap();
+    let error = object.verify(&store).unwrap_err().to_string();
+    assert!(error.contains("failed SHA-256 verification"));
+    assert!(error.contains(&object.sha256));
+    fs::set_permissions(&blob, fs::Permissions::from_mode(0o644)).unwrap();
     fs::write(&blob, "corruption").unwrap();
     assert!(import(&store, &input, 0).is_err());
     assert!(object

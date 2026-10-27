@@ -109,3 +109,10 @@ X64 assets5개와 Cargo 재사용9개는 성공했지만 catalog3개 중2개가 
 
 로컬은 구문·서식·diff만 검사한다. 기존 실행·실패 근거를 보존하고 새 source의
 foundation 및 전체 native build 결과를 별도로 기다린다. 이 수정의 기능 성공은 미확인이다.
+
+같은 실행의 ARM job `121793394834`도 이후 실패했다. library7개 중6개는 통과했지만
+`compatible_abi_report_must_cover_every_actual_runtime_elf`의 객체 import가 크기·권한·SHA
+검증 오류로 끝났다. 이 결과는 X64의 소스 검사 실패와 다르며 target ignore 수정으로
+해결되었다고 기록하지 않는다. 객체 검증 오류를 크기/권한과 SHA로 나눠 기대값·실제값을
+남긴다. 허용 권한·digest·크기 판정은 그대로다. ARM 에뮬레이션의 영향 여부도 아직
+확정되지 않았으며 새 정확 source의 실제 결과로 원인을 확인해야 한다.
