@@ -29,6 +29,14 @@ runs:
           mkdir "$owned/cargo-target"
           ln -s "$owned/cargo-target" "$target_view"
           printf '%s' "$target_view" > "$owned/target-view"
+          if ! git -C "$GITHUB_WORKSPACE" check-ignore --quiet --no-index -- rust/target; then
+            if [[ -L $target_view && $(readlink -- "$target_view") == "$owned/cargo-target" ]]; then
+              rm -- "$target_view"
+            fi
+            rm -r -- "$owned"
+            echo 'Cargo target view must be ignored as generated output; directory-only ignore rules do not cover this symlink.' >&2
+            exit 1
+          fi
         fi
         # Actions retain their normal runner temp. Bash-run tools use this job's
         # output; explicit subprocess fixture overrides must remain untouched.

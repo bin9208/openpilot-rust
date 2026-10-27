@@ -97,3 +97,22 @@ artifact와 정리는 취소 때도 성공했으며 다른 job/cache를 삭제�
 
 dev 대상 정상 검토 PR은 [#606](https://github.com/bin9208/openpilot-rust/pull/606)이다.
 최종 source의 빠른·집중·필수 PR/병합후 결과는 별도로 확인해야 한다.
+
+## 생성된 Cargo target 링크와 엄격한 소스 검사
+
+source `0b844f4ce422461cb8ac5fe936cd0ade9ebe4f0d`의
+[40385740213](https://github.com/bin9208/openpilot-rust/actions/runs/40385740213)에서
+X64 job `121793394426`은 assets5개와 실제 Cargo 재사용9개를 통과한 뒤 catalog3개 중
+2개가 `runtime source differs from its committed source or exact LFS asset identities`로
+실패했다. ARM job `121793394834`는 이 기록 시점에 계속 실행 중이며 중단하지 않는다.
+
+공통 helper는 원래 `rust/target` 인자를 유지하면서 job 소유 출력으로 심볼릭 링크를
+만든다. 기존 `rust/.gitignore`의 디렉터리 전용 `/target/` 규칙은 이 링크를 무시하지
+않는다. 정확 생성 경로 규칙 `/target`으로 고치고 helper에서 실제 Git ignore 판정을
+확인한다. 소스 동일성 판정이나 LFS 예외는 완화하지 않는다.
+
+새 실제 Git 회귀는 이전 규칙에서 같은 미추적 링크를 재현하고, 수정 규칙에서는
+생성 출력만 깨끗해지는지 확인한다. 다른 링크·추적 소스 변경은 계속 상태에 나타난다.
+실제 helper의 준비·정리 스크립트도 소유 fixture에서 실행해 출력만 제거하고 소스 변경을
+보존하는지 검사한다. 기능 검사는 Actions에서 실행하며 새 SHA의 결과가 나올 때까지
+통과로 기록하지 않는다. 기존 실패 SHA와 실행 기록은 보존한다.
