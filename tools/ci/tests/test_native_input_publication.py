@@ -310,14 +310,19 @@ class PublicationTests(unittest.TestCase):
 
 
 class GateTests(unittest.TestCase):
-  def test_latest_pending_wrong_runner_and_missing_required_arm_job_block_publication(self):
+  def fixture(self):
     producer = dict(id=42, run_attempt=1, head_sha=SOURCE, path=publication.PRODUCER, event='push',
-        repository=dict(full_name=publication.REPO), head_repository=dict(full_name=publication.REPO),
+        repository=dict(full_name=publication.REPO, id=7), head_repository=dict(full_name=publication.REPO),
         status='completed', conclusion='success')
     runs, jobs = [], {42:[dict(name='Native compiler in pinned AGNOS ARM userspace', status='completed',
         conclusion='success', runner_name='bin-actions')]}
     for number, (name, events, required) in enumerate(publication.GATES, 100):
       run = dict(producer, id=number, path='.github/workflows/'+name, event=events[0])
+      if run['event'] == 'pull_request':
+        repository = dict(id=7, url='https://api.github.com/repos/'+publication.REPO)
+        run['pull_requests'] = [dict(number=611,
+            base=dict(ref='dev', sha=TREE, repo=repository.copy()),
+            head=dict(ref='codex/owned-source', sha=SOURCE, repo=repository.copy()))]
       runs.append(run)
       jobs[number] = [dict(name=n, status='completed', conclusion='success', runner_name='bin-actions') for n in required]
     client = mock.Mock()
@@ -325,6 +330,10 @@ class GateTests(unittest.TestCase):
     def collect(route, key):
       return runs if key == 'workflow_runs' else jobs[int(route.split('/')[2])]
     client.collect.side_effect = collect
+    return client, producer, runs, jobs
+
+  def test_latest_pending_wrong_runner_and_missing_required_arm_job_block_publication(self):
+    client, producer, runs, jobs = self.fixture()
     self.assertTrue(all(s['ready'] for s in publication.gates(client, SOURCE, 42)[1]))
     runs.append(dict(runs[-1], id=300, status='queued', conclusion=None))
     self.assertFalse(publication.gates(client, SOURCE, 42)[1][-1]['ready'])
@@ -336,6 +345,36 @@ class GateTests(unittest.TestCase):
     client.json.return_value = dict(producer, conclusion='failure')
     with self.assertRaisesRegex(ValueError, 'completed successfully'):
       publication.gates(client, SOURCE, 42)
+
+  def test_pr_gates_require_one_exact_source_dev_pr_and_base_context(self):
+    for fault in ('missing', 'base', 'head', 'base-repository', 'head-repository', 'number',
+                  'different-pr', 'different-base'):
+      with self.subTest(fault=fault):
+        client, _, runs, _ = self.fixture()
+        run = runs[-1]
+        pull = run['pull_requests'][0]
+        if fault == 'missing': run['pull_requests'] = []
+        if fault == 'base': pull['base']['ref'] = 'dev-md'
+        if fault == 'head': pull['head']['sha'] = 'f'*40
+        if fault == 'base-repository': pull['base']['repo']['id'] = 8
+        if fault == 'head-repository': pull['head']['repo']['url'] = 'https://api.github.com/repos/owned/elsewhere'
+        if fault == 'number': pull['number'] = True
+        if fault == 'different-pr': pull['number'] = 612
+        if fault == 'different-base': pull['base']['sha'] = 'e'*40
+        states = publication.gates(client, SOURCE, 42)[1]
+        self.assertFalse(states[-1]['ready'])
+        self.assertFalse(all(state['ready'] for state in states))
+
+  def test_an_unrelated_target_does_not_replace_the_latest_eligible_dev_pr_run(self):
+    client, _, runs, _ = self.fixture()
+    unrelated = copy.deepcopy(runs[-1])
+    unrelated['id'] = 300
+    unrelated['pull_requests'][0]['base']['ref'] = 'main'
+    runs.append(unrelated)
+    states = publication.gates(client, SOURCE, 42)[1]
+    self.assertTrue(all(state['ready'] for state in states))
+    self.assertEqual(states[-1]['run'], 107)
+    self.assertEqual(states[-1]['pull_requests'], [dict(number=611, base_sha=TREE)])
 
 
 if __name__ == '__main__':

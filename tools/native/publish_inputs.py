@@ -208,6 +208,23 @@ def trusted_run(run, source):
     raise ValueError('native input provenance is not the requested same-repository source')
 
 
+def dev_pr_contexts(run, source):
+  """Identify the same-repository dev PR and base recorded for this run."""
+  contexts = set()
+  for pull in run.get('pull_requests') or []:
+    try:
+      base, head = pull['base'], pull['head']
+      repositories = (base['repo'], head['repo'])
+      if (positive(pull['number']) and base['ref'] == 'dev' and checksum(base['sha'], 40)
+          and head['sha'] == source and positive(run['repository']['id'])
+          and all(positive(repo['id']) and repo['id'] == run['repository']['id']
+              and repo['url'] == f'https://api.github.com/repos/{REPO}' for repo in repositories)):
+        contexts.add((pull['number'], base['sha']))
+    except (KeyError, TypeError):
+      continue
+  return contexts
+
+
 def gates(client, source, producer_id):
   producer = client.json('GET', f'actions/runs/{producer_id}')
   trusted_run(producer, source)
@@ -215,10 +232,16 @@ def gates(client, source, producer_id):
       or producer['status'] != 'completed' or producer['conclusion'] != 'success'):
     raise ValueError('native producer must have completed successfully for the exact source')
   runs = client.collect('actions/runs?head_sha='+source, 'workflow_runs')
-  states = []
+  states, pr_contexts = [], []
   for filename, events, required in GATES:
     candidates = [r for r in runs if r['path'] == '.github/workflows/'+filename and r['event'] in events]
+    is_pr = events == ('pull_request',)
+    if is_pr:
+      candidates = [r for r in candidates if dev_pr_contexts(r, source)]
     selected = max(candidates, key=lambda r: r['id']) if candidates else None
+    contexts = dev_pr_contexts(selected, source) if is_pr and selected is not None else set()
+    if is_pr:
+      pr_contexts.append(contexts)
     ready = False
     if selected is not None:
       trusted_run(selected, source)
@@ -228,7 +251,15 @@ def gates(client, source, producer_id):
             and j['runner_name'] == 'bin-actions'}
         ready = required <= names and all(j['runner_name'] == 'bin-actions'
             for j in jobs if j['conclusion'] == 'success')
-    states.append(dict(workflow=filename, events=events, run=None if selected is None else selected['id'], ready=ready))
+    states.append(dict(workflow=filename, events=events, run=None if selected is None else selected['id'],
+        target_branch='dev' if is_pr else None,
+        pull_requests=[dict(number=number, base_sha=base) for number, base in sorted(contexts)], ready=ready))
+  # Individual green runs from different PRs or base commits do not prove one
+  # coherent dev candidate. A missing PR context must also fail this intersection.
+  if pr_contexts and not set.intersection(*pr_contexts):
+    for state in states:
+      if state['target_branch'] == 'dev':
+        state['ready'] = False
   # The chosen producer itself must have run its real job, even if a newer
   # successful producer happens to exist for the same Git commit.
   jobs = client.collect(f'actions/runs/{producer_id}/jobs', 'jobs')

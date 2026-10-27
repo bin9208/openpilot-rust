@@ -24,6 +24,9 @@ SHA의 Git blob에서 source profile을 읽으며 artifact의 코드는 실행�
   foundation 두 matrix, genuine, kernel guard와 PR Rust/workspace/ARM·integration·fast·
   mapped docs의 최신 같은 SHA 결과와 필수 job/bin-actions를 확인한다. 이전 green,
   skipped ARM, 다른 runner 또는 대기 중인 최신 검사를 대신 사용하지 않는다.
+  PR 검사는 같은 저장소의 정확 head SHA와 `dev` 대상을 요구하고, 모든 필수 PR
+  결과에 공통인 PR 번호·base SHA가 있어야 한다. 다른 대상의 실행은 섞지 않으며,
+  같은 source여도 서로 다른 PR/기준 커밋의 성공을 합쳐 게시하지 않는다.
   해당 source에 kernel 검사 자동 실행이 없으면 그 ref의 `native-resource-guard.yml`을
   수동 실행해 정확 SHA의 결과를 확보한다. 기존 실행을 취소하거나 재시작하지 않는다.
 - [Actions artifact API](https://docs.github.com/en/rest/actions/artifacts)의 repository/run/
