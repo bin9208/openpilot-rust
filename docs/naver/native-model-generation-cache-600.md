@@ -34,7 +34,10 @@ program metadata·인자·dispatch를 확인한다. GPU를 열거나 kernel을 �
 pipeline별 key에 ONNX bytes, 종류/해상도/NV12, Python producer 파일 목록과 내용,
 tinygrad 및 관련 원본 Python package/부모 init, interpreter/wheel Tree,
 실제 ARM compiler binary·Cargo feature/profile/toolchain/lock 입력, factory LLVM20.1/
-QCOM pin, renderer/schedule/environment를 묶는다. Python package 내부의 추가·삭제와
+QCOM pin, renderer/schedule/environment를 묶는다.
+CPU LLVM이 원래 native 설정으로 사용하는 실제 processor/features도 key에 기록하고
+발행 전에 재검사한다. CPU 계산 정책을 바꾸지 않으며 QEMU와 실기 CPU가 다르면 동일
+준비 결과라고 가정하지 않는다. Python package 내부의 추가·삭제와
 ignored import shadow를 검사한다. 문서와 무관한 Rust 소스는 생성 key에서 제외한다.
 실제 실행은 `-I -B -S -X pycache_prefix=EMPTY_PRIVATE_PATH`를 요구하고 자식 준비기에도
 전달한다. `-B`만으로는 과거 bytecode 읽기가 차단되지 않으므로 빈 별도 lookup 경로를

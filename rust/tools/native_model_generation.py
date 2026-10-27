@@ -7,6 +7,7 @@ The real Rust catalog consumer validates each kind before pointer publication.
 from __future__ import annotations
 
 import argparse
+import ctypes
 import json
 import os
 from pathlib import Path
@@ -207,6 +208,14 @@ def main():
     from model_export.offline_pipeline import OfflinePipelineSpec
     from model_export.offline_publish import emit
     from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
+    from tinygrad.runtime.autogen import llvm
+    def cpu_input():
+      # CPULLVMCompiler resolves its original "native" CPU through these exact
+      # APIs. Bind that input without changing original CPU math/codegen policy.
+      return dict(architecture=platform.machine(),
+          processor=ctypes.string_at(llvm.LLVMGetHostCPUName()).decode(),
+          features=ctypes.string_at(llvm.LLVMGetHostCPUFeatures()).decode())
+    cpu = cpu_input()
     prefixes = [Path(python['root']).resolve(), Path(wheels['root']).resolve()]
     module_origins(args.root, closure, prefixes)
     compiler = OfflineQcomCompiler(CompilerCommand((str(args.compiler), '--library', compilers['qcom']['path']), args.compiler_timeout))
@@ -218,10 +227,12 @@ def main():
         schedule=dict(IMAGE=1, FLOAT16=1, NOLOCALS=1, BEAM=0, OPENPILOT_HACKS=1, CAPTURING=1, NO_MEMORY_PLANNER=1),
         python_hash_randomization=bool(sys.flags.hash_randomization))
     common['python_bytecode_lookup'] = 'empty-private-prefix-with-dont-write-bytecode'
+    common['cpu_codegen_host'] = cpu
 
     def revalidate():
       module_origins(args.root, closure, prefixes)
       if bytecode.exists() and any(bytecode.iterdir()): raise InputError('private bytecode prefix changed during generation')
+      if cpu_input() != cpu: raise InputError('native CPU compiler inputs changed during generation')
       if source_identity(args.root) != origin or source_closure(args.root) != closure:
         raise InputError('model producer source changed during generation')
       for kind, model in models.items():
@@ -279,6 +290,7 @@ def main():
         environment_preparation=environment_counts,
         model_assets=receipts, original_models=models, consumer=binaries['consumer'],
         bundle_consumer=binaries['bundle_consumer'], bundle_validation=bundle_validation, compiler_build=build,
+        cpu_codegen_host=cpu,
         elapsed_ms=int(1000*(time.monotonic()-started)), full_model_generation=True,
         full_model_regression=False, full_runtime_build=False, gpu_executed=False, physical_device_execution=False)
     with report.open('xb') as output: output.write(encoded(result))
