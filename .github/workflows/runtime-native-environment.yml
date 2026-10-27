@@ -79,6 +79,15 @@ on:
       - 'rust/native-python-toolchain.json'
       - 'rust/native-model-wheels.json'
       - 'rust/native-model-compilers.json'
+      - 'rust/native-model-source-scope.json'
+      - 'rust/crates/runtime-installer/src/model_inputs.rs'
+      - 'rust/crates/runtime-installer/src/lib.rs'
+      - 'rust/crates/runtime-build/src/model_inputs.rs'
+      - 'rust/crates/runtime-build/tests/model_inputs.rs'
+      - 'rust/crates/runtime-installer/tests/model_inputs.rs'
+      - 'rust/crates/runtime-installer/tests/support/model_inputs.rs'
+      - 'rust/tools/native_model_export.py'
+      - 'rust/tools/tests/test_native_model_export.py'
       - 'rust/tools/native_model_inputs.py'
       - 'rust/tools/native_model_cache.py'
       - 'rust/tools/native_model_generation.py'
@@ -711,6 +720,10 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-catalogs/**/receipt.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-catalogs/**/current.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-catalogs/**/index.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-exports/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-exports/**/generation/receipt.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-exports/**/generation/tree/model-inputs/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-bound-plan/*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-*.txt

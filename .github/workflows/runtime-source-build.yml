@@ -10,6 +10,12 @@ on:
       - 'rust/native-python-toolchain.json'
       - 'rust/native-model-wheels.json'
       - 'rust/native-model-compilers.json'
+      - 'rust/native-model-source-scope.json'
+      - 'rust/crates/runtime-installer/src/model_inputs.rs'
+      - 'rust/crates/runtime-installer/tests/model_inputs.rs'
+      - 'rust/crates/runtime-installer/tests/support/model_inputs.rs'
+      - 'rust/tools/native_model_export.py'
+      - 'rust/tools/tests/test_native_model_export.py'
       - 'rust/tools/native_model_inputs.py'
       - 'rust/tools/native_model_cache.py'
       - 'rust/tools/native_model_generation.py'
@@ -177,6 +183,12 @@ jobs:
           python3 -m unittest discover -s rust/tools/tests -p test_native_model_inputs.py -v
           python3 -m unittest discover -s rust/tools/tests -p test_native_model_cache.py -v
           python3 -m unittest discover -s rust/tools/tests -p test_native_model_generation_inputs.py -v
+          python3 -m unittest discover -s rust/tools/tests -p test_native_model_export.py -v
+      - name: Verify source-bound runtime model payloads before building or selecting a generation
+        run: |
+          rustfmt --edition 2021 --check rust/crates/runtime-installer/src/model_inputs.rs rust/crates/runtime-installer/tests/model_inputs.rs rust/crates/runtime-installer/tests/support/model_inputs.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-installer --test model_inputs -- --nocapture
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-installer --all-targets -- -D warnings
       - name: Verify committed LFS preparation without archive features
         run: |
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-source-assets --test source_assets -- --nocapture

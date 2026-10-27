@@ -1,6 +1,7 @@
 mod activation;
 mod archive;
 mod identity;
+pub mod model_inputs;
 pub mod transaction;
 mod transport;
 
@@ -22,6 +23,17 @@ pub fn verify_source_build(root: &Path, source_commit: &str) -> Result<Manifest>
     let manifest: Manifest = identity::read_json(&root.join("rust/runtime-manifest.json"))?;
     manifest.validate(source_commit)?;
     identity::verify_files(root, &manifest)?;
+    if manifest.files.iter().any(|f| {
+        [
+            "rust/bin/openpilot-driving-modeld",
+            "rust/bin/openpilot-dmonitoringmodeld",
+            "rust/bin/model-inputs/source-contract.json",
+        ]
+        .iter()
+        .any(|p| f.path == Path::new(p))
+    }) {
+        model_inputs::verify(root, &root.join("rust/bin"))?;
+    }
     let mut source_bytes = 0_u64;
     for artifact in manifest
         .files

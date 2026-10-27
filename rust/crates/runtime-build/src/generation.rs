@@ -121,6 +121,20 @@ impl Config {
         crate::catalog::verify_source_plan(&workspace.root, &plan)?;
         crate::system_sdk::generation_profiles(&workspace.root, &plan)?;
         crate::source_lfs::verify_layout(&workspace.root, &layout.provider_root, &layout.files)?;
+        if plan.groups.values().any(|g| {
+            g.binaries.iter().any(|n| {
+                matches!(
+                    n.as_str(),
+                    "openpilot-driving-modeld" | "openpilot-dmonitoringmodeld"
+                )
+            })
+        }) {
+            crate::model_inputs::verify_mapped(
+                &workspace.root,
+                &layout.provider_root,
+                &layout.files,
+            )?;
+        }
         if plan.groups.values().any(|recipe| {
             recipe
                 .binaries
@@ -813,6 +827,17 @@ pub fn seal(
     require_tools(prepared.binaries.keys().map(String::as_str))?;
     let pins = layout.verify(&prepared)?;
     crate::source_lfs::verify_layout(&prepared.source.root, &layout.provider_root, &layout.files)?;
+    if prepared.binaries.contains_key("openpilot-driving-modeld")
+        || prepared
+            .binaries
+            .contains_key("openpilot-dmonitoringmodeld")
+    {
+        crate::model_inputs::verify_mapped(
+            &prepared.source.root,
+            &layout.provider_root,
+            &layout.files,
+        )?;
+    }
     if prepared.binaries.contains_key("openpilot-pandad") {
         crate::panda_inputs::verify_mapped(
             &prepared.source.root,
@@ -907,6 +932,49 @@ pub fn seal(
         .map(|(p, o)| (p.clone(), o.sha256.clone()))
         .collect();
     runtime.verify_runtime(&stores.sources, None, &source_assets)?;
+    if prepared.binaries.contains_key("openpilot-driving-modeld")
+        || prepared
+            .binaries
+            .contains_key("openpilot-dmonitoringmodeld")
+    {
+        crate::model_inputs::verify(&prepared.source.root, &runtime.root.join("rust/bin"))?;
+        for kind in ["driving", "driver"] {
+            let catalog = runtime.root.join(format!("rust/bin/{kind}-models"));
+            let log = evidence.join(format!("{kind}-model-catalog.stdout"));
+            if !tool(&runtime.root, "model-run", &log)?
+                .arg("--check-catalog")
+                .arg(&catalog)
+                .status()?
+                .success()
+                || read::<Value>(&log)?["kernels_executed"] != false
+            {
+                return Err("source-built model consumer rejected the staged catalog".into());
+            }
+            let pointer: Value = read(&catalog.join("current.json"))?;
+            let generation = pointer["generation"]
+                .as_str()
+                .ok_or("missing staged model generation")?;
+            let index: Value = read(&catalog.join(generation).join("index.json"))?;
+            for entry in index["bundles"]
+                .as_array()
+                .ok_or("missing staged model bundles")?
+            {
+                let directory = entry["directory"]
+                    .as_str()
+                    .ok_or("missing staged model directory")?;
+                let log = evidence.join(format!("{directory}-model-bundle.stdout"));
+                if !tool(&runtime.root, "qcom-model-run", &log)?
+                    .arg("--check-bundle")
+                    .arg(catalog.join(generation).join(directory))
+                    .status()?
+                    .success()
+                    || read::<Value>(&log)?["gpu_executed"] != false
+                {
+                    return Err("source-built QCOM consumer rejected staged model assets".into());
+                }
+            }
+        }
+    }
     if prepared.binaries.contains_key("openpilot-pandad") {
         crate::panda_inputs::verify_runtime(&prepared.source.root, &runtime.root)?;
     }

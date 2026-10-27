@@ -34,6 +34,11 @@
 
 ## 개발 검증 실행 방법
 
+모델 cache와 분리한 불변 export, 현재 Git·compiler source/출력 전체 검증, 모델이 빠진
+native build/잘못된 Layout 거부와 봉인/source generation 시작 검사는
+[모델 실행 입력 안내](native-model-runtime-inputs-600.md)를 따른다. 실제 전체 봉인과
+comma 3X 부팅·녹화·업로드 수용은 아직 남으며 새 Actions 결과를 확인해야 한다.
+
 내부 QCOM 주행/운전자 ONNX의 실제4개 pipeline 생성, 종류별 입력 cache와 docs/작은
 logger 변경의 생성·QCOM 호출/전송0 검사는 [모델 생성·재사용 안내](native-model-generation-cache-600.md)를
 따른다. 새 Actions 결과는 대기다. GPU 실행·전체 runtime 부팅/녹화/업로드와 사용자

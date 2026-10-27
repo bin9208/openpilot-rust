@@ -13,12 +13,14 @@ fn run() -> Result<()> {
     let mut prepare_source_assets = false;
     let mut prepare_python = false;
     let mut prepare_assets = false;
+    let mut verify_models = false;
     let mut objects = None;
     let mut lock = None;
     while let Some(arg) = args.next() {
         match arg.to_str() {
+            Some("--verify-models") if !verify_models => verify_models = true,
             Some("--help" | "-h") => {
-                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --capture-system-sdk --root VERIFIED_IMAGE_ROOT --plan SDK_ROOTS_JSON --output SDK_RECEIPT\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-capnp --plan PINNED_CAPNP_ASSETS_JSON --cache ASSET_CACHE --store SDK_STORE\n       openpilot-runtime-inputs --prepare-cargo --plan PINNED_CRATES_JSON --lock CARGO_LOCK --cache ASSET_CACHE --store SOURCES_STORE\n       openpilot-runtime-inputs --prepare-source-lfs --root CLEAN_SOURCE --plan SOURCE_LFS_JSON --cache ASSET_CACHE --store PREFIX_STORE --objects OBJECT_STORE\n       openpilot-runtime-inputs --prepare-python --plan PINNED_PYTHON_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-assets --plan PINNED_ASSETS_JSON --cache ASSET_CACHE\nCapture unpacked inputs, or assemble authenticated native inputs without executing installers. Source LFS preparation requires every current committed pointer and never mutates a checkout. Generic and system capture require independently verified provenance. Archive preparation authenticates vendor bytes on every reuse; it does not compile or activate a runtime.");
+                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --capture-system-sdk --root VERIFIED_IMAGE_ROOT --plan SDK_ROOTS_JSON --output SDK_RECEIPT\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-capnp --plan PINNED_CAPNP_ASSETS_JSON --cache ASSET_CACHE --store SDK_STORE\n       openpilot-runtime-inputs --prepare-cargo --plan PINNED_CRATES_JSON --lock CARGO_LOCK --cache ASSET_CACHE --store SOURCES_STORE\n       openpilot-runtime-inputs --prepare-source-lfs --root CLEAN_SOURCE --plan SOURCE_LFS_JSON --cache ASSET_CACHE --store PREFIX_STORE --objects OBJECT_STORE\n       openpilot-runtime-inputs --prepare-python --plan PINNED_PYTHON_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-assets --plan PINNED_ASSETS_JSON --cache ASSET_CACHE\n       openpilot-runtime-inputs --verify-models --root CLEAN_SOURCE --store MODEL_EXPORT\nCapture unpacked inputs, or assemble authenticated native inputs without executing installers. Source LFS preparation requires every current committed pointer and never mutates a checkout. Generic and system capture require independently verified provenance. Archive preparation authenticates vendor bytes on every reuse; it does not compile or activate a runtime.");
                 return Ok(());
             }
             Some("--root") if root.is_none() => {
@@ -63,6 +65,7 @@ fn run() -> Result<()> {
         + u8::from(prepare_source_assets)
         + u8::from(prepare_python)
         + u8::from(prepare_assets)
+        + u8::from(verify_models)
         > 1
     {
         return Err("choose exactly one native preparation mode".into());
@@ -72,6 +75,21 @@ fn run() -> Result<()> {
     }
     if !prepare_source_assets && objects.is_some() {
         return Err("--objects requires --prepare-source-lfs".into());
+    }
+    if verify_models {
+        if plan.is_some() || cache.is_some() || output.is_some() {
+            return Err(
+                "model verification accepts only --root SOURCE and --store MODEL_EXPORT".into(),
+            );
+        }
+        let source = root.ok_or("--root SOURCE is required")?;
+        let prefix = store.ok_or("--store MODEL_EXPORT is required")?;
+        let files = openpilot_runtime_build::model_inputs::verify(&source, &prefix)?;
+        println!(
+            "{}",
+            serde_json::json!({"schema":1,"files":files,"gpu_executed":false,"runtime_activated":false})
+        );
+        return Ok(());
     }
     if prepare_assets {
         if root.is_some() || output.is_some() || store.is_some() {

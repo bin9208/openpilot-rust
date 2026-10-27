@@ -1,5 +1,10 @@
 # 성능 개선·콤마 자체 빌드 우선 실행 — #598
 
+[모델 불변 실행 입력](native-model-runtime-inputs-600.md)에 선택한4개 pipeline의 export,
+Git source/원래 compiler provenance와 전체 output 확인, native build/Layout/seal/source
+generation 시작 검사를 연결했다. 실제11개 runtime Tree 계획 조합과 새 기능 검사는 대기다.
+전체 Layout/99개 빌드·실제 봉인과 정상 기기 수용이 완료된 상태는 아니다.
+
 [실제 ONNX 생성·입력별 cache](native-model-generation-cache-600.md)에 내부 QCOM/운전자
 모델의 카메라별4개 생성과 입력 동일성에 따른 생략, 원래 provenance와 이전 세대 보존,
 실제 ARM Rust consumer 및 docs/작은 logger 변경 재사용 검사를 연결했다. 새 검사는 대기다.

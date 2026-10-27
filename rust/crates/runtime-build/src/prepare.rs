@@ -31,20 +31,38 @@ pub struct RuntimeInputs {
 }
 
 impl RuntimeInputs {
-    pub(crate) fn verify(&self, root: &Path) -> Result<BTreeMap<std::path::PathBuf, String>> {
+    pub(crate) fn verify(
+        &self,
+        root: &Path,
+        require_models: bool,
+    ) -> Result<BTreeMap<std::path::PathBuf, String>> {
         for (path, expected) in &self.files {
             if crate::digest_file(&root.join(path))? != *expected {
                 return Err("runtime staging input digest mismatch".into());
             }
         }
         let mut verified = BTreeMap::new();
+        let mut models = false;
         for (tree, receipt) in &self.trees {
             let digest = self
                 .files
                 .get(receipt)
                 .ok_or("runtime staging tree receipt is unpinned")?;
-            crate::inputs::Tree::read(&root.join(receipt))?.verify(&root.join(tree))?;
+            let expected = crate::inputs::Tree::read(&root.join(receipt))?;
+            expected.verify(&root.join(tree))?;
+            if expected
+                .entries
+                .contains_key(Path::new(crate::model_inputs::CONTRACT))
+            {
+                crate::model_inputs::verify(root, &root.join(tree))?;
+                models = true;
+            }
             verified.insert(tree.clone(), digest.clone());
+        }
+        if require_models && !models {
+            return Err(
+                "native model daemons require a complete source-bound model runtime input".into(),
+            );
         }
         Ok(verified)
     }
@@ -64,6 +82,16 @@ pub struct Prepared {
 }
 
 impl Plan {
+    fn requires_models(&self) -> bool {
+        self.groups.values().any(|g| {
+            g.binaries.iter().any(|name| {
+                matches!(
+                    name.as_str(),
+                    "openpilot-driving-modeld" | "openpilot-dmonitoringmodeld"
+                )
+            })
+        })
+    }
     pub fn read(path: &Path) -> Result<Self> {
         let file = regular_file(path)?;
         if file.metadata()?.len() > 4 * 1024 * 1024 {
@@ -244,7 +272,7 @@ pub(crate) fn from_retained(
         return Err("build workspace differs from retained source".into());
     }
     let mut reports = BTreeMap::new();
-    let verified_runtime_trees = plan.runtime_inputs.verify(root)?;
+    let verified_runtime_trees = plan.runtime_inputs.verify(root, plan.requires_models())?;
     let mut binaries = BTreeMap::new();
     let mut stored_output_bytes = 0_u64;
     for (group, recipe) in &plan.groups {
@@ -291,7 +319,7 @@ pub(crate) fn from_retained(
         binaries,
         stored_output_bytes,
         elapsed_ms: started.elapsed().as_millis(),
-        verified_runtime_trees: plan.runtime_inputs.verify(root)?,
+        verified_runtime_trees: plan.runtime_inputs.verify(root, plan.requires_models())?,
     };
     if prepared.verified_runtime_trees != verified_runtime_trees {
         return Err("runtime staging inputs changed during compilation".into());

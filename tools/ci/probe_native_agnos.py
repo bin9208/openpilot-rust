@@ -778,6 +778,9 @@ def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest
     assert 'native-skip-miri' in row['features']
   compiler=work/'project-target/debug/offline-qcom-compile'
   compiler_row=binaries['offline-qcom-compile']
+  import sys
+  sys.path.insert(0,str(source/'rust/tools'))
+  from native_model_generation import source_namespace
   source_tree=subprocess.check_output(['git','-C',source,'rev-parse','HEAD^{tree}'],text=True).strip()
   (work/'native-model-compiler-build.json').write_text(json.dumps(dict(schema=1,
       source=dict(commit=evidence['source_commit'],tree=source_tree),
@@ -785,6 +788,12 @@ def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest
       features=sorted(compiler_row['features']),profile=compiler_row['profile'],
       rust_toolchain_identity=rust['identity'],rust_toolchain_tree_sha256=rust['tree_sha256'],
       cargo_lock_sha256=digest(source/'rust/Cargo.lock')),indent=2)+'\n')
+  build_path=work/'native-model-compiler-build.json'
+  build_record=json.loads(build_path.read_text())
+  build_record['compiler_sources_sha256']=source_namespace(source,compiler=True)
+  build_record['cargo_sources_tree_sha256']=json.loads((work/'native-cereal-cargo-inputs-reuse.json').read_text())['tree_sha256']
+  build_record['system_sdk_receipt_sha256']=digest(work/'native-system-sdk.json')
+  build_path.write_text(json.dumps(build_record,indent=2)+'\n')
   execute([python['python'],'-I','-B','-S',f'{source_mount}/tools/ci/fixtures/native-model-environment.py',
       '--source',source_mount,'--wheels',work/'native-model-wheels-initial.json',
       '--compiler',compiler,'--output',work/'native-model-environment.json'],'native-model-environment.txt')
@@ -840,7 +849,8 @@ def native_model_generation_probe(guest_command,work,source_mount,evidence,log,g
       '--python-cache',Path(guest_work)/'python-assets','--python-store',work/'native-python-prefixes',
       '--wheel-cache',Path(guest_work)/'model-wheel-assets','--wheel-store',work/'native-model-wheel-packages',
       '--environment-store',work/'native-model-wheel-environments',
-      '--model-cache',Path(guest_work)/'model-assets','--output',work/'native-model-catalogs']
+      '--model-cache',Path(guest_work)/'model-assets','--output',work/'native-model-catalogs',
+      '--export-store',work/'native-model-exports']
   rows=[]
   for phase in ('initial','reused'):
     record=run(guest_command([*command,'--report',work/f'native-model-generation-{phase}.json']),
@@ -853,6 +863,14 @@ def native_model_generation_probe(guest_command,work,source_mount,evidence,log,g
     assert row['transferred_bytes']==row['stored_bytes']==0
     assert all(value==0 for value in row['environment_preparation'].values())
     assert len(row['bundle_validation'])==4 and all(not b['gpu_executed'] for b in row['bundle_validation'])
+    exported=row['export']
+    assert not exported['runtime_activated'] and not exported['consumer']['gpu_executed']
+    assert not exported['consumer']['runtime_activated']
+    assert len(exported['runtime_inputs']['trees'])==len(exported['runtime_inputs']['files'])==1
+    assert all('.model-cache' not in p and not p.endswith('/lock') for p in exported['files'])
+    if phase=='reused':
+      assert exported['root']==rows[0]['export']['root'] and exported['tree_sha256']==rows[0]['export']['tree_sha256']
+      assert exported['copied_bytes']==exported['linked_bytes']==0
     assert set(row['kinds'])=={'driving','driver'}
     for kind,value in row['kinds'].items():
       assert value['consumer_validated'] and not value['runtime_activated']
@@ -914,6 +932,8 @@ def native_model_generation_probe(guest_command,work,source_mount,evidence,log,g
     assert row['source']['commit']==fixture_sha and fixture_sha!=evidence['source_commit']
     assert row['transferred_bytes']==row['stored_bytes']==0
     assert all(value==0 for value in row['environment_preparation'].values())
+    assert row['export']['root']==rows[0]['export']['root'] and row['export']['tree_sha256']==rows[0]['export']['tree_sha256']
+    assert row['export']['copied_bytes']==row['export']['linked_bytes']==0
     for kind,value in row['kinds'].items():
       assert value['generated_pipelines']==value['qcom_compiler_calls']==value['linked_output_bytes']==0
       assert value['reused_pipelines']==2 and value['consumer_validated']
@@ -923,6 +943,26 @@ def native_model_generation_probe(guest_command,work,source_mount,evidence,log,g
     fixture_cases.append(dict(case=case,request_source=row['source'],kinds=row['kinds'],
         compiler_build_source_commit=evidence['source_commit'],runtime_compiled=False))
   evidence['native_model_generation']['actual_source_reuse_cases']=fixture_cases
+  old=json.loads((work/'native-runtime-panda-inputs.json').read_text())
+  model_input=rows[0]['export']['runtime_inputs']
+  for key in ('files','trees'):
+    assert not set(old[key]) & set(model_input[key])
+    old[key].update(model_input[key])
+  assert len(old['files'])==len(old['trees'])==11
+  (work/'native-model-runtime-inputs.json').write_text(json.dumps(old,indent=2)+'\n')
+  pins=json.loads((work/'native-project-input-pins.json').read_text())
+  pins['runtime_inputs']=old
+  (work/'native-model-input-pins.json').write_text(json.dumps(pins,indent=2)+'\n')
+  cargo=Path(guest_work)/'pinned-rust'/Path(json.loads((work.parent/'native-rust-first.json').read_text())['root']).relative_to(work.parent/'native-rust-toolchains')/'bin/cargo'
+  execute([work/'project-target/debug/openpilot-runtime-plan','--root',source_mount,'--cargo',cargo,
+      '--native-inputs',work/'native-model-input-pins.json','--budgets',work/'native-project-growth-estimates.json',
+      '--output',work/'native-model-bound-plan'], 'native-model-bound-plan-summary.json')
+  summary=json.loads((work/'native-model-bound-plan-summary.json').read_text())
+  assert not summary['compiled'] and not summary['activated']
+  bound=json.loads((work/'native-model-bound-plan/build-plan.json').read_text())
+  original=json.loads((work/'native-project-bindings-initial/build-plan.json').read_text())
+  assert bound['runtime_inputs']==old and bound['groups']==original['groups']
+  evidence['native_model_generation']['export']=rows[0]['export']
 
 
 def native_encoder_probe(guest_command,work,source_mount,evidence,log,guest_work):

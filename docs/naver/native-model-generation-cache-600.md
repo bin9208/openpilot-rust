@@ -69,7 +69,9 @@ source/output 전체 hash 검증 I/O는 남는다. raw ONNX/interpreter/wheel ca
 생성 CLI의 고정27GiB 조건도 같은 작업량 기반 추정으로 바꿨다.
 
 각 종류의 카탈로그는 개발 후보를 따로 발행한다. 두 종류의 원자적 runtime 활성화,
-전체 Layout 조합/immutable export·ABI 봉인과 정상 시작 연결은 별도 후속 작업이다.
+전체 Layout 조합/실제 ABI 봉인과 정상 시작 수용은 별도 후속 작업이다.
+[불변 runtime export와 source/봉인/시작 검사](native-model-runtime-inputs-600.md)를
+추가했으며, CLI는 별도 --export-store를 요구한다. 새 Actions 결과는 대기다.
 이 cache store 전체를 가변 상태 그대로 runtime 입력으로 봉인하지 않는다.
 
 ## 검사 방법

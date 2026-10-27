@@ -20,6 +20,9 @@ class Source:
     self.git('config','user.email','fixture@example.invalid')
     for name in generation.SOURCE_FILES: self.put(name,b'# owned input\n')
     for name in generation.SOURCE_ROOTS: self.put(name+'/owned.py',b'# owned producer\n')
+    for name in generation.SCOPE['compiler_roots']: self.put(name+'/owned.rs',b'// owned compiler input\n')
+    for name in generation.SCOPE['compiler_files']+generation.SCOPE['plan_files']: self.put(name,b'owned bound input\n')
+    self.put(generation.SCOPE_PATH,generation.SCOPE_BYTES)
     self.put(generation.MODELS['driving'],b'version https://git-lfs.github.com/spec/v1\noid sha256:'+b'a'*64+b'\nsize 17\n')
     self.put(generation.MODELS['driver'],b'owned ordinary model bytes')
     self.put('.gitignore',b'*.ignored.py\n')
@@ -39,11 +42,17 @@ class GenerationInputTests(unittest.TestCase):
   def test_docs_and_unrelated_rust_keep_code_identity_but_producer_additions_invalidate(self):
     with tempfile.TemporaryDirectory() as temp:
       s=Source(Path(temp)); before=generation.source_closure(s.path); origin=source_identity(s.path)
+      namespace=generation.source_namespace(s.path)
+      compiler=generation.source_namespace(s.path,compiler=True)
       s.put('docs/owned.md',b'owned docs change'); s.put('rust/crates/loggerd/owned.rs',b'// owned Rust change\n'); s.commit()
       self.assertNotEqual(origin,source_identity(s.path))
       self.assertEqual(before,generation.source_closure(s.path))
+      self.assertEqual(namespace,generation.source_namespace(s.path))
+      self.assertEqual(compiler,generation.source_namespace(s.path,compiler=True))
       s.put('tinygrad_repo/tinygrad/new_module.py',b'# added producer input\n'); s.commit()
       self.assertNotEqual(before,generation.source_closure(s.path))
+      self.assertNotEqual(namespace,generation.source_namespace(s.path))
+      self.assertEqual(compiler,generation.source_namespace(s.path,compiler=True))
 
   def test_ignored_python_shadow_and_missing_tracked_input_are_rejected(self):
     with tempfile.TemporaryDirectory() as temp:

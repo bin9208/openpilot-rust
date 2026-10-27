@@ -26,11 +26,10 @@ import native_model_cache
 from native_model_inputs import (InputError, digest, encoded, outside,
                                 read_json, regular, sha, source_identity)
 
-SOURCE_ROOTS = ('rust/tools/model_export', 'tinygrad_repo/tinygrad', 'openpilot/common',
-                'openpilot/selfdrive/modeld', 'openpilot/system/camerad/cameras')
-SOURCE_FILES = ('rust/tools/native_model_inputs.py', 'rust/tools/native_model_cache.py',
-                'rust/tools/native_model_generation.py', 'rust/tools/build_offline_model_pipelines.py',
-                'pyproject.toml')
+SCOPE_PATH = 'rust/native-model-source-scope.json'
+SCOPE_BYTES = (Path(__file__).resolve().parents[1]/'native-model-source-scope.json').read_bytes()
+SCOPE = json.loads(SCOPE_BYTES)
+SOURCE_ROOTS, SOURCE_FILES = SCOPE['python_roots'], SCOPE['python_files']
 MODELS = {'driving': 'openpilot/selfdrive/modeld/models/driving_supercombo.onnx',
           'driver': 'openpilot/selfdrive/modeld/models/dmonitoring_model.onnx'}
 ENVIRONMENT = dict(DEV='CPU:LLVM', CPU_COUNT='1', OPENBLAS_NUM_THREADS='1', OMP_NUM_THREADS='1',
@@ -39,6 +38,33 @@ ENVIRONMENT = dict(DEV='CPU:LLVM', CPU_COUNT='1', OPENBLAS_NUM_THREADS='1', OMP_
 
 def git(root, *args):
   return subprocess.check_output(['/usr/bin/git', '-C', root, *args])
+
+
+def source_namespace(root, *, compiler=False):
+  if git(root,'show','HEAD:'+SCOPE_PATH) != SCOPE_BYTES:
+    raise InputError('model source scope differs from the executing producer')
+  exact = set(SCOPE['compiler_files'])
+  if not compiler:
+    exact.update(SCOPE['python_files']+SCOPE['plan_files'])
+    for prefix in SOURCE_ROOTS:
+      parent=Path(prefix).parent
+      while parent != Path('.'):
+        exact.add((parent/'__init__.py').as_posix())
+        parent=parent.parent
+  raw=git(root,'ls-tree','-r','-z','HEAD')
+  if len(raw)>32*1024**2: raise InputError('model source namespace exceeds its bound')
+  selected=[]
+  for row in raw.split(b'\0'):
+    if not row: continue
+    metadata,name=row.split(b'\t',1)
+    path=name.decode()
+    include=path in exact or any(path.startswith(p+'/') for p in SCOPE['compiler_roots'])
+    if not compiler:
+      include |= any(path.startswith(p+'/') and (path.endswith('.py') or p=='tinygrad_repo/tinygrad') for p in SOURCE_ROOTS)
+    if include:
+      if metadata.split()[0] not in (b'100644',b'100755'): raise InputError('model source input is not a Git file')
+      selected.append(row+b'\0')
+  return sha(b''.join(selected))
 
 
 def source_closure(root):
@@ -131,7 +157,7 @@ def prepare_environment(args, temporary):
 def main():
   parser = argparse.ArgumentParser(description=__doc__)
   for name in ('root', 'preparer', 'compiler', 'compiler-build', 'consumer', 'bundle-consumer', 'python-cache', 'python-store', 'wheel-cache',
-               'wheel-store', 'environment-store', 'model-cache', 'output', 'report'):
+               'wheel-store', 'environment-store', 'model-cache', 'output', 'export-store', 'report'):
     parser.add_argument('--'+name, type=Path, required=True)
   parser.add_argument('--compiler-timeout', type=float, default=60)
   args = parser.parse_args()
@@ -146,7 +172,7 @@ def main():
   args.root = args.root.resolve(strict=True)
   origin = source_identity(args.root)
   stores = [outside(args.root, getattr(args, n)) for n in
-            ('python_cache', 'python_store', 'wheel_cache', 'wheel_store', 'environment_store', 'model_cache', 'output')]
+            ('python_cache', 'python_store', 'wheel_cache', 'wheel_store', 'environment_store', 'model_cache', 'output', 'export_store')]
   for i, path in enumerate(stores):
     for other in stores[i+1:]:
       if path.is_relative_to(other) or other.is_relative_to(path): raise InputError('model generation stores overlap')
@@ -163,6 +189,7 @@ def main():
   build_sha256 = digest(args.compiler_build)
   if (build['schema'] != 1 or build['compiler_sha256'] != binaries['compiler']['sha256']
       or build['compiler_bytes'] != binaries['compiler']['bytes']
+      or build['compiler_sources_sha256'] != source_namespace(args.root,compiler=True)
       or not re.fullmatch('[0-9a-f]{40}', build['source']['commit'])
       or not re.fullmatch('[0-9a-f]{40}', build['source']['tree'])
       or sorted(build['features']) != ['default', 'native-skip-miri']):
@@ -193,6 +220,7 @@ def main():
       if digest(path, model['bytes']) != model['sha256']: raise InputError('prepared ONNX differs from current source')
       paths[kind] = path
     closure = source_closure(args.root)
+    namespace = source_namespace(args.root)
     # Eliminate inherited tinygrad knobs before any producer import. The cache
     # identity contains all selected code-generation controls, not job paths.
     os.environ.clear()
@@ -228,6 +256,7 @@ def main():
         python_hash_randomization=bool(sys.flags.hash_randomization))
     common['python_bytecode_lookup'] = 'empty-private-prefix-with-dont-write-bytecode'
     common['cpu_codegen_host'] = cpu
+    common['source_namespace'] = namespace
 
     def revalidate():
       module_origins(args.root, closure, prefixes)
@@ -235,6 +264,7 @@ def main():
       if cpu_input() != cpu: raise InputError('native CPU compiler inputs changed during generation')
       if source_identity(args.root) != origin or source_closure(args.root) != closure:
         raise InputError('model producer source changed during generation')
+      if source_namespace(args.root) != namespace: raise InputError('model input namespace changed during generation')
       for kind, model in models.items():
         if digest(paths[kind], model['bytes']) != model['sha256']: raise InputError('ONNX changed during generation')
       for name, value in binaries.items():
@@ -268,7 +298,7 @@ def main():
         bundle_validation.append(dict(kind=kind,camera=entry['camera'],**bundle))
 
     args.output.mkdir(exist_ok=True)
-    results = {}
+    results, requests_by_kind = {}, {}
     for kind in ('driving', 'driver'):
       calls_before, kind_started = compiler.compile_calls, time.monotonic()
       requests = []
@@ -280,10 +310,18 @@ def main():
         spec = OfflinePipelineSpec(kind, paths[kind], models[kind]['sha256'], camera)
         def produce(destination, spec=spec): emit(spec, compiler, destination)
         requests.append((contract, max(64*1024**2, models[kind]['bytes']*12), produce))
-      results[kind] = native_model_cache.publish(args.output/(kind+'-models'), requests, origin, validate, revalidate)
+      requests_by_kind[kind] = requests
+      cache_origin = dict(**origin,compiler_build=build)
+      results[kind] = native_model_cache.publish(args.output/(kind+'-models'), requests, cache_origin, validate, revalidate)
       results[kind].update(qcom_compiler_calls=compiler.compile_calls-calls_before,
                            elapsed_ms=int(1000*(time.monotonic()-kind_started)))
     revalidate()
+    from native_model_export import export
+    def verify_export(prefix):
+      checked = subprocess.run([args.preparer,'--verify-models','--root',args.root,'--store',prefix],
+                               capture_output=True,check=True)
+      return json.loads(checked.stdout)
+    exported = export(args.output,args.export_store,results,requests_by_kind,verify_export,revalidate)
     result = dict(schema=1, source=origin, kinds=results,
         transferred_bytes=environment_counts['transferred_bytes']+sum(r['transferred_bytes'] for r in receipts.values()),
         stored_bytes=environment_counts['stored_bytes']+sum(r['stored_bytes'] for r in receipts.values()),
@@ -291,6 +329,7 @@ def main():
         model_assets=receipts, original_models=models, consumer=binaries['consumer'],
         bundle_consumer=binaries['bundle_consumer'], bundle_validation=bundle_validation, compiler_build=build,
         cpu_codegen_host=cpu,
+        export=exported,
         elapsed_ms=int(1000*(time.monotonic()-started)), full_model_generation=True,
         full_model_regression=False, full_runtime_build=False, gpu_executed=False, physical_device_execution=False)
     with report.open('xb') as output: output.write(encoded(result))
