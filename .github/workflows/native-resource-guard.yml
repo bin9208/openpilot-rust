@@ -10,7 +10,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: native-resource-guard-${{ github.ref }}
+  group: native-resource-guard-${{ github.ref }}-preserve-v1
+  queue: max
   cancel-in-progress: false
 jobs:
   actual-kernel:

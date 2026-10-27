@@ -10,8 +10,9 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: naver-apk-tools-${{ github.ref }}
-  cancel-in-progress: true
+  group: naver-apk-tools-${{ github.ref }}-preserve-v1
+  queue: max
+  cancel-in-progress: false
 jobs:
   host-toolkit:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}

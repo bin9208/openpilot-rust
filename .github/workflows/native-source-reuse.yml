@@ -13,7 +13,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: native-source-reuse-${{ github.ref }}
+  group: native-source-reuse-${{ github.ref }}-preserve-v1
+  queue: max
   cancel-in-progress: false
 jobs:
   real-runtime:

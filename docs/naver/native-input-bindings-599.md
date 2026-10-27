@@ -99,3 +99,19 @@ source/catalog/Cargo/config/receipt가 검증 중 바뀌면 실패한다. 기존
 실행 companion·모델 준비 환경·Layout과 전체99 native build, 정상 update/start/record/upload,
 실패/전원 복구, 정확 SHA PR/병합 후 검사와 comma3X 사용자 수용은 계속 남아 있다.
 현재 기본 시작 경로의 SHA별 legacy runtime release 의존도 아직 바꾸지 않았다.
+
+## 현재 native 브랜치의 검사 대기 보존
+
+공통 #605의 대기 보존 변경은 별도 PR606에 있었고 이 native 브랜치에는 아직 없었다.
+후속 문서/filter push 뒤 source22fcc92a1의 fast run40433843945가 기존
+`cancel-in-progress:true` 정책으로 자동 취소된 것을 확인했다. agent가 수동 취소한 것은
+아니지만 기존 대기를 보존해야 하는 요구를 충족하지 못한 상태였다.
+
+현재 브랜치의 concurrency가 있는 validation workflow10개에도 같은 정책을 적용한다.
+기존7개 fast/integration/Rust/tests/naver/APK/wiki 검사와 native3개 resource/source-reuse/
+genuine이다. 새 `-preserve-v1` group, `queue:max`, `cancel-in-progress:false`를 사용해
+전환 시점의 기존 group 대기와 이후 대기를 함께 보존한다. 기본 대기 한 개 교체를 피하기
+위한 정책이며 [공식 규칙](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)의
+group당100개 pending 한도가 있다. 동시성 설정이 없는 foundation은 기존 동작을 유지한다.
+publish/sync는 바꾸거나 활성화하지 않는다. 기존 source·job/needs/matrix·명령·runner/pin/
+timeout은 그대로이며 새 정책 회귀는 기존 Actions 검사에 포함한다.

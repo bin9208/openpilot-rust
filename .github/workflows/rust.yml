@@ -10,8 +10,9 @@ permissions:
 env:
   RUSTUP_TOOLCHAIN: '1.94.0'
 concurrency:
-  group: rust-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: rust-${{ github.event_name }}-${{ github.ref }}-preserve-v1
+  queue: max
+  cancel-in-progress: false
 jobs:
   fast:
     name: rust checks
