@@ -95,3 +95,17 @@ per-command wall time, 관측 disk 증가량, `/usr/bin/time` single-child maxim
 QEMU/PRoot ARM user space는 물리 ARM CPU·AGNOS kernel 또는 comma 3X 정상 부팅 검증이 아니다.
 공개 component/seed 전송과 default bootstrap, 실제 startup/업데이트/복구·녹화·기존 업로드,
 필수 PR/병합 후 검사·성능 근거·사용자 기기 수용은 남아 있다. #598 완료를 주장하지 않는다.
+
+## Cargo target 생성 경로의 소스 동일성 회귀
+
+이전 source `0b844f4ce422461cb8ac5fe936cd0ade9ebe4f0d`의
+[foundation40385740213](https://github.com/bin9208/openpilot-rust/actions/runs/40385740213)에서
+X64 assets5개와 Cargo 재사용9개는 성공했지만 catalog3개 중2개가 엄격한 소스 검사에서
+실패했다. 공통 #605 수정 `9ceee5303`과 같은 생성 경로 규칙을 적용한다. 디렉터리 전용
+`/target/`은 job helper가 만든 심볼릭 링크를 무시하지 않으므로 정확 경로 `/target`으로
+고친다. 실제 Git/helper 회귀에서 이전 실패를 재현하고 추적 소스와 다른 링크의 변경은
+계속 감지한다. 런타임 소스 검사는 예외를 늘리지 않고 첫 문제 status를512문자 한도로
+이스케이프해 표시한다. 기존 소스 변경 거부 회귀도 그 경로 진단을 확인한다.
+
+로컬은 구문·서식·diff만 검사한다. 기존 실행·실패 근거를 보존하고 새 source의
+foundation 및 전체 native build 결과를 별도로 기다린다. 이 수정의 기능 성공은 미확인이다.

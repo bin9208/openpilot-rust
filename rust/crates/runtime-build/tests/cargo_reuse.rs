@@ -690,13 +690,14 @@ fn dirty_source_and_source_mutation_during_build_cannot_publish_a_success_report
         .join("last-successful-build.json");
     let before = fs::read(&report).unwrap();
     fs::write(fixture.root.join("untracked.rs"), "unrecorded input").unwrap();
-    assert!(build(
+    let error = build(
         &fixture.root,
         &fixture.cache,
         &fixture.toolchain,
-        &fixture.recipe
+        &fixture.recipe,
     )
-    .is_err());
+    .unwrap_err();
+    assert!(error.to_string().contains("\"?? untracked.rs\""));
     fs::remove_file(fixture.root.join("untracked.rs")).unwrap();
     fs::write(fixture.root.join("README.md"), "recorded source").unwrap();
     fs::write(fixture.root.join("rust/build.rs"), "fn main() { std::fs::write(\"../README.md\", \"source changed during build\").unwrap(); }\n").unwrap();

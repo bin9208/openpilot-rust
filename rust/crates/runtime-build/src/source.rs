@@ -71,9 +71,11 @@ pub(crate) fn inspect_runtime(
                 }
             }
         }
-        return Err(
-            "runtime source differs from its committed source or exact LFS asset identities".into(),
-        );
+        let entry: String = entry.chars().take(512).collect();
+        return Err(format!(
+            "runtime source differs from its committed source or exact LFS asset identities: {entry:?}"
+        )
+        .into());
     }
     for (path, expected) in assets {
         if !openpilot_runtime_installer::source_asset_allowed(path) {
