@@ -1,0 +1,870 @@
+{
+  "schema": 1,
+  "version": "4.13.0",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "source": {
+    "url": "https://codeload.github.com/opencv/opencv/tar.gz/fe38fc608f6acb8b68953438a62305d8318f4fcd",
+    "sha256": "6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61",
+    "bytes": 95450266
+  },
+  "released_provider_source": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "released_runtime_manifest_sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+  "original_header_manifest": "5d04fe4002d97cb71e3dd4b5b41d4c6375759be72cdda4b44a37003a8cf6f870  install/lib/libopencv_core.so\n5d04fe4002d97cb71e3dd4b5b41d4c6375759be72cdda4b44a37003a8cf6f870  install/lib/libopencv_core.so.4.13.0\n5d04fe4002d97cb71e3dd4b5b41d4c6375759be72cdda4b44a37003a8cf6f870  install/lib/libopencv_core.so.413\n8efc1a5b8564c67bd5d7615a6ef54a22b4834dadeb4712e0f6e33b291dfd967e  install/lib/libopencv_dnn.so\n8efc1a5b8564c67bd5d7615a6ef54a22b4834dadeb4712e0f6e33b291dfd967e  install/lib/libopencv_dnn.so.4.13.0\n8efc1a5b8564c67bd5d7615a6ef54a22b4834dadeb4712e0f6e33b291dfd967e  install/lib/libopencv_dnn.so.413\ndced5a2b6faf6dcb31fcb6210f6eda7d88e0b6a66b8c31bf02122c4d6cfc1d75  install/lib/libopencv_imgcodecs.so\ndced5a2b6faf6dcb31fcb6210f6eda7d88e0b6a66b8c31bf02122c4d6cfc1d75  install/lib/libopencv_imgcodecs.so.4.13.0\ndced5a2b6faf6dcb31fcb6210f6eda7d88e0b6a66b8c31bf02122c4d6cfc1d75  install/lib/libopencv_imgcodecs.so.413\nb8964efe7434337b60ece086c76eb5e002d5409d9605994c467ce4f5e3e5e54b  install/lib/libopencv_imgproc.so\nb8964efe7434337b60ece086c76eb5e002d5409d9605994c467ce4f5e3e5e54b  install/lib/libopencv_imgproc.so.4.13.0\nb8964efe7434337b60ece086c76eb5e002d5409d9605994c467ce4f5e3e5e54b  install/lib/libopencv_imgproc.so.413\nc332e4b79febaf4bed3c45d98da9ae8649a7b5c621a19f989174b83f029f3b42  install/lib/libopencv_videoio.so\nc332e4b79febaf4bed3c45d98da9ae8649a7b5c621a19f989174b83f029f3b42  install/lib/libopencv_videoio.so.4.13.0\nc332e4b79febaf4bed3c45d98da9ae8649a7b5c621a19f989174b83f029f3b42  install/lib/libopencv_videoio.so.413\nf67b0e1a0d51ed1a0cb0f0010568a3c3649aa99ab51a0183e092858be6b00da4  install/include/opencv4/opencv2/core/affine.hpp\n4ebd7dec356441c35e53447f548cb4c1074d93109a92716ab570d40469992313  install/include/opencv4/opencv2/core/async.hpp\nfabf426229e7acb4e3eca682d8dbcb11146da8e7691a62a7dd40b32c55b6ebf6  install/include/opencv4/opencv2/core/base.hpp\n7438b1e6e13b0cdf73e4792fa1f7b5c2de6f0db621552c7b9dd13c538549f264  install/include/opencv4/opencv2/core/bindings_utils.hpp\n65dd904d4f15850ec23ad7531a8f431fd023c98c429adc59e00ae346c8976667  install/include/opencv4/opencv2/core/bufferpool.hpp\nfb7cf749c4695f02cb311b198efa9823eac1f1e98831b776fe8ab5f976bea4d1  install/include/opencv4/opencv2/core/check.hpp\n21a4ea4d80847984ef8eafe4746ecc18d5bcafd10564ce4c24e2416043d85798  install/include/opencv4/opencv2/core/core.hpp\n7c5d2883897df0d8f86a322078c32132cf890a34f45fcdb9460f1bde84e97466  install/include/opencv4/opencv2/core/core_c.h\n706494ee8db1c697ffa51541ada3ea6eace83f2c776c9fd24f755bb412bc2c6d  install/include/opencv4/opencv2/core/cuda/block.hpp\nec035bb5aba46f139fe841ce5b09f0f098d330378a29b39db9f2d38f19be19c2  install/include/opencv4/opencv2/core/cuda/border_interpolate.hpp\n0092ae7b45369b4eb86bc3b9c2cd64331c93d3ad9c338285e7f842adc3dd3331  install/include/opencv4/opencv2/core/cuda/color.hpp\n74144295b4913025b57b8a15bc4043091f2ad1ad2ad4835766ff76c7a7bfe0ca  install/include/opencv4/opencv2/core/cuda/common.hpp\n758a75bd0e9b2968a50f52132d83acb75c6e49eb6f04be798c627f2b756ed3b3  install/include/opencv4/opencv2/core/cuda/cuda_compat.hpp\n7f9cc05e1ba9db626bb6cdf2833b3f56c0423efa9ae8bbfac7a31ae7d4550bc4  install/include/opencv4/opencv2/core/cuda/datamov_utils.hpp\n79d28f503115106ed34f914e73a184e7691292afa0f2bf1abce5a50e6fa9ff41  install/include/opencv4/opencv2/core/cuda/detail/color_detail.hpp\nce9c9f1286821b1ad2f31e0e8afe3c683503b8eafed0f329880d8aa573cffbfd  install/include/opencv4/opencv2/core/cuda/detail/reduce.hpp\nb781ffca5b62f64332cf62988aa18728d52abb24ffb2cb4a82fcda521d7da88a  install/include/opencv4/opencv2/core/cuda/detail/reduce_key_val.hpp\n72650821b8fd19a4a3b2c18a9bad2878064f41bb82206a1297c2bdbd0193aa82  install/include/opencv4/opencv2/core/cuda/detail/transform_detail.hpp\ncf9aa11a5c0e8a599e93ffd40d3ae45d62d1da19a4b38a00d64c14d8caae8f2a  install/include/opencv4/opencv2/core/cuda/detail/type_traits_detail.hpp\nc6db61c660a173e05a32ba205a113b562316fdeefaf70dcf9c12bc1a22d31a9b  install/include/opencv4/opencv2/core/cuda/detail/vec_distance_detail.hpp\n6c98892ee9425c177d54d8b1f434396b87124250a575cd2bbcd410b53888c9aa  install/include/opencv4/opencv2/core/cuda/dynamic_smem.hpp\n675546d761bb50159c27b8c1afc0b7f97981bbb6a3fe80befff04e6d2ed02f82  install/include/opencv4/opencv2/core/cuda/emulation.hpp\n7be49a92d1376c9be94721c15fd1a3b6005a4db6cf1bc5d6ea2476a9ee2a3bb0  install/include/opencv4/opencv2/core/cuda/filters.hpp\n05038a7802c6f01d755f8bbfd78efe5d09790c3fb1722a8f24a68d4048ff38a3  install/include/opencv4/opencv2/core/cuda/funcattrib.hpp\n8932acace59199f392c2d8404d163261a89c5e2f6a72d573b4ef24078d4205bd  install/include/opencv4/opencv2/core/cuda/functional.hpp\nccd8bb12cc19901476bb61f5b25d62974661481f9e1126ed3af3439a85c100fa  install/include/opencv4/opencv2/core/cuda/limits.hpp\n1a7928067702e4f2889270cca922e6c73c9e6d2cdf88cc4b4f8dab8dee7cec7c  install/include/opencv4/opencv2/core/cuda/reduce.hpp\n63d7ce621e96bad38aa846b9bb001da72048f1dbcd49311606c35a238ae5b926  install/include/opencv4/opencv2/core/cuda/saturate_cast.hpp\n2c3f207fdaca653a09e9167fa3c0dec7e46469c029be17942c5fff0fe564f437  install/include/opencv4/opencv2/core/cuda/scan.hpp\n5501456d3853386bfe71e11a2ab86b3e1c3122ea644d64bd1a3355bbfef48bba  install/include/opencv4/opencv2/core/cuda/simd_functions.hpp\n4ba3c9a282bb1e0d4fd0f00aacca8b4e00261e4c63f2c3e7f9ed472ef320b288  install/include/opencv4/opencv2/core/cuda/transform.hpp\n4d88a91029fa59f1c37a0efb021efe332450c71e9c0194840fb01157fd193f77  install/include/opencv4/opencv2/core/cuda/type_traits.hpp\n8c6ab8996d00802d47194035304744ea6e81c7eddb4c7a20fa4143cb647051da  install/include/opencv4/opencv2/core/cuda/utility.hpp\nf48fdf00b959c67edc38cdd107464c2901adc03dbb6c5e964267813332238195  install/include/opencv4/opencv2/core/cuda/vec_distance.hpp\n272db4c607e7447d32b0e982c3e59e92bbbe61843a9fcd6dfada7e2d59f28448  install/include/opencv4/opencv2/core/cuda/vec_math.hpp\na610615d408722e809729b7a6f29f394263cc727bb45362a1a23153921a76026  install/include/opencv4/opencv2/core/cuda/vec_traits.hpp\nf96ba84d3b06426b3676a1ad09e621107adaf40fc3fd388e7dcbd323cd1db55e  install/include/opencv4/opencv2/core/cuda/warp.hpp\n9ba443e97474d2a97cb8b99eb6c22f76659ba2cb8d352dffbb1c9deb9b944373  install/include/opencv4/opencv2/core/cuda/warp_reduce.hpp\n8efd947fc7abae68bc81841a1243d49022a5328807143d3b818d82043eeeb82c  install/include/opencv4/opencv2/core/cuda/warp_shuffle.hpp\nb725d6848786e49dc878c0b362f7b2b4b3c45ec2463ac03112e5041560a40748  install/include/opencv4/opencv2/core/cuda.hpp\ncaff4880ae6c88f63db928666202f1468c8b16e02843acc24e31bfb0c50091b8  install/include/opencv4/opencv2/core/cuda.inl.hpp\ne23118e9761e8eda3b9223aaf5ef040f58751a67d641953f48f29be9e354b31e  install/include/opencv4/opencv2/core/cuda_stream_accessor.hpp\n01753a8d438bacf14ac4439192542d5fc4bca88afb3918717afd7e1a36efacea  install/include/opencv4/opencv2/core/cuda_types.hpp\nf499c63f0c14479a8f681b5b9c52e9f770d5dbf803c2378ce9791cc90c4f08fa  install/include/opencv4/opencv2/core/cv_cpu_dispatch.h\n1ed879be3ce94c83fd03169e5ae32b24c3c2dc5d41504a23701ff7ff370cf20d  install/include/opencv4/opencv2/core/cv_cpu_helper.h\n68abe35f45279759db0287898a538b3a6fbb71edb68693750cfed278c3a4a681  install/include/opencv4/opencv2/core/cvdef.h\n96a1ddefb0539061389be0704b554e5ab30f20132944485f4c70644ceeb4a0d2  install/include/opencv4/opencv2/core/cvstd.hpp\n33223f6f38d88607f3da7f02683ff91aa07279240d34084e1a0fe7b19ab5ca28  install/include/opencv4/opencv2/core/cvstd.inl.hpp\nbabed4fc9c3d804502aa053c5add427600600f080984985812d8cce716b35ffa  install/include/opencv4/opencv2/core/cvstd_wrapper.hpp\n84920f5944b2561b0f6da3784a5fd281aba39e8544651a7ac8a889e3509982f4  install/include/opencv4/opencv2/core/detail/async_promise.hpp\na6c812132580f4eaca6f35f2f19b32d40b24ef9ab0b75b51291c551c6b4224d9  install/include/opencv4/opencv2/core/detail/dispatch_helper.impl.hpp\n30ae6e20abd03cf3621bfb392e7778aff8a90635bd4679e9f2e706c8c99b0986  install/include/opencv4/opencv2/core/detail/exception_ptr.hpp\nef2b12df417633e49c8a7341e9f82d70eff7ff84fd944fa098947254ee491ea8  install/include/opencv4/opencv2/core/directx.hpp\ned725cacbb20ca9b17c72256504ec74d270bcf44559952508392d7b69764f1ad  install/include/opencv4/opencv2/core/dualquaternion.hpp\n1b6b478123cd15b7f24f2f3399d5c9199f7af979d9b57f0b0265a02cd4279484  install/include/opencv4/opencv2/core/dualquaternion.inl.hpp\nfb98669a1bf5b6ab3c31ed3479663d0608131bc9af743f7b7e868640b3428485  install/include/opencv4/opencv2/core/eigen.hpp\n151bf6365b54bec9836afc3a8bcdba8b600bc5b769d24e7f0147420897a9acf7  install/include/opencv4/opencv2/core/fast_math.hpp\n0f8eadf8fd6899858ab46db329ba94770160ecf9cd8ac897dece8c6884c8d521  install/include/opencv4/opencv2/core/hal/hal.hpp\nbd11814cfd2c331eaa93b42d80a0911a4916f6afa99907f332fe8f641098eb43  install/include/opencv4/opencv2/core/hal/interface.h\neeb3be550b8d7f6492c762bcefeb2e8fe5c9c0628ccb09f2ded7f1b2f34d6aa3  install/include/opencv4/opencv2/core/hal/intrin.hpp\na94f0297f74c4081a341d27eace3e000f6720d2419df890ffbeeccf2174d37aa  install/include/opencv4/opencv2/core/hal/intrin_avx.hpp\nb7fd72f1e96a00370e1096a1d61f75f6bf0355d9f2b1fff2bca64affac7aa23e  install/include/opencv4/opencv2/core/hal/intrin_avx512.hpp\n57a562e14713f00069f53c104521c7d2c0c28e3576b7ae6465523bbf8809eb2a  install/include/opencv4/opencv2/core/hal/intrin_cpp.hpp\nad93e16fdad234aab37ccc96bd37768f213c6ee2fedb3c6309e1057307f621f2  install/include/opencv4/opencv2/core/hal/intrin_forward.hpp\n4d731ad3c689efea2905db049636adb3d48d5fdf3436cd1b61a3bd283ddaa023  install/include/opencv4/opencv2/core/hal/intrin_lasx.hpp\n9162fd638f6523412d095dc69bc67b5d5eb0b945c185003e67b0938a79c90686  install/include/opencv4/opencv2/core/hal/intrin_legacy_ops.h\naa31563f0a5033495e27a5bab0cde7deda49bc2c039aeeabb4ae9ed1f68b172b  install/include/opencv4/opencv2/core/hal/intrin_lsx.hpp\n8d6ed7f222d15da0d73080fe407d7e3f9809b3fc5c93222cbe320f9a9f794e5c  install/include/opencv4/opencv2/core/hal/intrin_math.hpp\n80dfbe94520016a6d10be1444c612cdb889d606ef6f016f2a693f215be289b09  install/include/opencv4/opencv2/core/hal/intrin_msa.hpp\n0e8c9124023cd4ccc3dcfe8e9cf234a7c4f028a227cceb95569177541413a3f0  install/include/opencv4/opencv2/core/hal/intrin_neon.hpp\n2ddc9c4978233a8fa09d7d990349723cf6ad627cdd967c27ad6765b4ede6528b  install/include/opencv4/opencv2/core/hal/intrin_rvv071.hpp\n60e6040f2fcb239699516073bf688d2fab522806d98c0bd364e4fe9f579ac2df  install/include/opencv4/opencv2/core/hal/intrin_rvv_scalable.hpp\ndcd1c37f0c3817c176953e5c15037497954e1ff523467e3379fcb1e0d3d31ffb  install/include/opencv4/opencv2/core/hal/intrin_sse.hpp\n9a8369d287ff500756fae5577f528c360f011e04e5a4a44f5af1d697b1d1442a  install/include/opencv4/opencv2/core/hal/intrin_sse_em.hpp\naaec43fe948c55b3b31d730358d4b266f90aede3c262cff794c293a7370c13fe  install/include/opencv4/opencv2/core/hal/intrin_vsx.hpp\n4c63d4c9717d6c75261415c197a7b0912dd848eefa8d13fc87ad306d60ce9656  install/include/opencv4/opencv2/core/hal/intrin_wasm.hpp\nbf5842830c95304950487c93f9f8ec5ac29ad659a316fb2ea80407229ee2a6e0  install/include/opencv4/opencv2/core/hal/msa_macros.h\na7416b4d5fc41cd2df66f4fdb36a0a85374d79de3dc5d8fb38ce40be049ff772  install/include/opencv4/opencv2/core/hal/simd_utils.impl.hpp\n157c25e4590c3903c0a24be331a24931edfbfa9bebd7545cd1907c5141837677  install/include/opencv4/opencv2/core/mat.hpp\n6670cb2d634103de1070233b4ca4ccbd486a1dc4ca9e1ce3226e0a81e6934b50  install/include/opencv4/opencv2/core/mat.inl.hpp\n086ceebe87ed54c98155bfff778f02305697dc7cd9d10449f2f21a482023872b  install/include/opencv4/opencv2/core/matx.hpp\n010153afc595d6e58ba24949c85af8a6a2fc038d52ec054a35ae9eed8a97980d  install/include/opencv4/opencv2/core/matx.inl.hpp\nac4f537960e50684671ca6a4b95c1eb6db5ba05e8d9f42f66b930ac8702ae7f9  install/include/opencv4/opencv2/core/neon_utils.hpp\n28eb3a7a8d1cc542dd5b76360a732d918dca89048c015b140f6067310229222b  install/include/opencv4/opencv2/core/ocl.hpp\n9744e968d9bdfea84cdee4aeae0c141e300cc90ce44329accdd535952c3c48dd  install/include/opencv4/opencv2/core/ocl_genbase.hpp\n9bdcabf71097dc339f80702269616dc5755f718843759941e79dfc25284c8e89  install/include/opencv4/opencv2/core/opencl/ocl_defs.hpp\n9ab1bf080b8e1438df491a3934f1fbfce154a7ad216e91a7e3f94803694402eb  install/include/opencv4/opencv2/core/opencl/opencl_info.hpp\n73c8f9da9214399ecb88b7e478943ff311464db791abf5625b3b31be479c9da4  install/include/opencv4/opencv2/core/opencl/opencl_svm.hpp\n02380689f8e64c9343cf995bd05a24634215cb8c5ba0d1dc8ec5f447ee0ef8e2  install/include/opencv4/opencv2/core/opencl/runtime/autogenerated/opencl_clblas.hpp\n179a73296a8eaa588efbf2ab0b1a0d181a6ea506aecc50751611c1a97b285c3d  install/include/opencv4/opencv2/core/opencl/runtime/autogenerated/opencl_clfft.hpp\nfb5cbda14014100c23cbd29cd7f542ce6ce6389218532aa5e5db012bab985f51  install/include/opencv4/opencv2/core/opencl/runtime/autogenerated/opencl_core.hpp\n3176bcb1c25904ff4795c0f70ab0fee92f7d4892cbd5250c9be4ed63612647b5  install/include/opencv4/opencv2/core/opencl/runtime/autogenerated/opencl_core_wrappers.hpp\n1b496c1015cb6ee9db7068bd3a6c6da80729d7ee815a15de93dbf9cee1da5d37  install/include/opencv4/opencv2/core/opencl/runtime/autogenerated/opencl_gl.hpp\nbc9e212a5cf9019b75e2a47683c593a10390a1f7bddcb3ab796fb2fdb609c052  install/include/opencv4/opencv2/core/opencl/runtime/autogenerated/opencl_gl_wrappers.hpp\n3b76c057001979ee78c6208f13c8b684c4f0e4d5a7b4a7d597495b80e65b95ed  install/include/opencv4/opencv2/core/opencl/runtime/opencl_clblas.hpp\n3a68d279e239fa325d3abf0113061727251c04a4d629b2f85ce46426ef582e99  install/include/opencv4/opencv2/core/opencl/runtime/opencl_clfft.hpp\nb9e8a9b925a815d26bd1ce94741581f3568027d3b93993f0372a0cc84c650115  install/include/opencv4/opencv2/core/opencl/runtime/opencl_core.hpp\nba119681e962a46083f2985fcb88c325a5277bf5b119e6a7b1508807ad072662  install/include/opencv4/opencv2/core/opencl/runtime/opencl_core_wrappers.hpp\n8c3699033b34fe4502a0c891217a00322a4c8f21ff023fd820a6a0107707d95c  install/include/opencv4/opencv2/core/opencl/runtime/opencl_gl.hpp\n85bb84fc5eaf8f110c3d31c42b691cdef2e9ba6a9a296a788c3e0892a934d7b7  install/include/opencv4/opencv2/core/opencl/runtime/opencl_gl_wrappers.hpp\n2297538b39e076d21c167fb66facc41854293a82f5d34f245083c797cd9b0ffd  install/include/opencv4/opencv2/core/opencl/runtime/opencl_svm_20.hpp\n56e3927d9adff9edd71c42fe675a962660527db1374901f08a8619a876bf9c6a  install/include/opencv4/opencv2/core/opencl/runtime/opencl_svm_definitions.hpp\ne72f6ad28d18a825c8caff56eaca1642298aeb4af960b61ee1ef12e987c04719  install/include/opencv4/opencv2/core/opencl/runtime/opencl_svm_hsa_extension.hpp\n44b70716a071add4946046690bb3232908d1e5b56a9ae236f50497b2d420c790  install/include/opencv4/opencv2/core/opengl.hpp\n426e7a2a9206c603af60a2cda4e3a36a60bdc53d268df577cf1d32ae1156f843  install/include/opencv4/opencv2/core/operations.hpp\nacfc26fa3409d2c7dc897fc816a6eab67554414a514a1a062de68a68cb351e80  install/include/opencv4/opencv2/core/optim.hpp\ne4b13bc11c14d59f640ac59963bd02670ca352d533160d539b6e790052051530  install/include/opencv4/opencv2/core/ovx.hpp\n903d8ba56eae3158e816522c5a816e9e9811e41c62e812a34bbf1dbfde81132e  install/include/opencv4/opencv2/core/parallel/backend/parallel_for.openmp.hpp\naf6dd3c7162df172e8462b8c697f2fcddf2af1777f98a993ab3be8b33fb58b7e  install/include/opencv4/opencv2/core/parallel/backend/parallel_for.tbb.hpp\n79c71d6191b0931cb1db9931ca4ecaa156cfec83bc6e4e71b8407722ed3d7194  install/include/opencv4/opencv2/core/parallel/parallel_backend.hpp\n992e7d7575fd671302b2beb9600a99e380485797aa6448bdbaa81d8c66b524b8  install/include/opencv4/opencv2/core/persistence.hpp\n571ed73ee3df3066b74bdfb18c4420baadbed598ba215132390ba86cf52f62be  install/include/opencv4/opencv2/core/quaternion.hpp\ndff743f883e47035d84e52058cb9bca9fbf5d615e35bf3923097164263d6a164  install/include/opencv4/opencv2/core/quaternion.inl.hpp\nbf418a3f44d575b17c18af968dbe3e2c8bd0663c22f8dcb53c4b0f77b5db14ba  install/include/opencv4/opencv2/core/saturate.hpp\nac81c6962c8b5679dfb63fe06487c27ae197946b66b1df90ad46e410a11a5a20  install/include/opencv4/opencv2/core/simd_intrinsics.hpp\n43c01ea3c1b3f99352437dddaca1b9b862e9d9b734c7a901f63abad5b28e3412  install/include/opencv4/opencv2/core/softfloat.hpp\n2d9f170fdecb359c434387e6379fe5f16f9ffc77ef8dc4ba111ca517c3359023  install/include/opencv4/opencv2/core/sse_utils.hpp\n6c45b2ee5137464ab4080063e38b68a6c5ac8b415e04aee8cb5c634b5dcc9861  install/include/opencv4/opencv2/core/traits.hpp\ned45810298941aefeb838d1d8d080bf2f2925b053bd92ef83a913f5251774d4f  install/include/opencv4/opencv2/core/types.hpp\n0bab108b55e64c5f7b6a1faa3d8eb655591321efd7b30dc0a663201531f48900  install/include/opencv4/opencv2/core/types_c.h\ne5b9e25e349f121c3d3f2347c48afef5d18a8c7c4124acee833c0e04b9c270b0  install/include/opencv4/opencv2/core/utility.hpp\n260d7dff55a04646ae7f78bfe7af249fe2bbe368add0c934cad108703dbb56c1  install/include/opencv4/opencv2/core/utils/allocator_stats.hpp\n62b1f1d878926e7ce8fa323a75a5e8cdb184fd0c6261890963fd82dc9c26c874  install/include/opencv4/opencv2/core/utils/allocator_stats.impl.hpp\n584606928e15cdfa0846f97a4f1922860b6f193e0bc3e9f15bd58796edb10b86  install/include/opencv4/opencv2/core/utils/filesystem.hpp\n2565900dff6e97772c2cb1434b8d136df85446e4596a708d73ae14f3cae9a8d8  install/include/opencv4/opencv2/core/utils/fp_control_utils.hpp\ndcb6a1ae866d143f400f844a4761b52f64429342a7511d1f6402b87105511e9d  install/include/opencv4/opencv2/core/utils/instrumentation.hpp\n03bc3fd53608846ee3ad1b1feeeb97ac68e9758f4ceb5827ecca87c58204304c  install/include/opencv4/opencv2/core/utils/logger.defines.hpp\nd99ae8e0d5d387315e3f98ea6cd04a71d55dee07494380b15b81eb4a6864707b  install/include/opencv4/opencv2/core/utils/logger.hpp\n1ab5f6f986e02af6aec74d7881ce0676dd82b215c4a5b33087f7e8010a1808b5  install/include/opencv4/opencv2/core/utils/logtag.hpp\n3b3261c3900c2d1ab82496b6722979996cb899f3110492d7177651790b6f9aef  install/include/opencv4/opencv2/core/utils/tls.hpp\n0f0d8b3b0c68c871d026a95c549110e4438f8b349c42864ac7f49a9b5fe72066  install/include/opencv4/opencv2/core/utils/trace.hpp\n3da1e78ac9e178d0ff6b2ef03e3cf912582139c1531142a338ba284b3906181b  install/include/opencv4/opencv2/core/va_intel.hpp\n939e2d8dffcbfb4f6851d7b0c115e74b015f40fd8ffa6218c5abc9d0d4fc83bf  install/include/opencv4/opencv2/core/version.hpp\n51c85ce8d989e2b30784a2e512582899ba9ae31f7ec0d6817415620b9b602fe4  install/include/opencv4/opencv2/core/vsx_utils.hpp\n62edcacfea97ab6a6e9e65ce3aaae022618d26f7962f9afd8776d32fa042d75f  install/include/opencv4/opencv2/core.hpp\nd86babae9fcae249a465ba2358837dba91c78a1d52e18639df9790c1b7377d2a  install/include/opencv4/opencv2/cvconfig.h\nbe7e33abff7806908ec25d5373f4120d4592ea891628aa146f524fea3ef4420c  install/include/opencv4/opencv2/dnn/all_layers.hpp\n98faa03a299e950f04d48cec6d7305176fa696014a773b8a0a3a29ab9f9a614e  install/include/opencv4/opencv2/dnn/dict.hpp\n160e5995101b07453803b96349a4dcfe3674f19f8e480a109580c21978ffc294  install/include/opencv4/opencv2/dnn/dnn.hpp\nc979c478eb31f7d03898c536f03d89e439c1c242c44f41dcd6fa63d776e52490  install/include/opencv4/opencv2/dnn/dnn.inl.hpp\n75e0aa313cb8dad528be7ae4e9daa8bd77690e299d38c91182c8913364f64b74  install/include/opencv4/opencv2/dnn/layer.details.hpp\ne3db29dbf6e4928c4a0023ca402e9a43921cd899731f4d763841b235ff503c0b  install/include/opencv4/opencv2/dnn/layer.hpp\n488a6a2f8e23302ad8692fe4c4defda00c5fb22c453167cb89160266587568b3  install/include/opencv4/opencv2/dnn/shape_utils.hpp\n186db370f2d2090247b7f92119ccd0af87086e370b31213db7fd943a5ec340f3  install/include/opencv4/opencv2/dnn/utils/debug_utils.hpp\n0deb20d27d8dbe6ca41cbc6e49fd082d8a7f3108c181be905e480cc5fa257047  install/include/opencv4/opencv2/dnn/utils/inference_engine.hpp\n676d8beb0c3f7472dcda1c5e0307b23765d86de604b515e697d533ceca83b92d  install/include/opencv4/opencv2/dnn/version.hpp\nf2012cb1f4980d641f9dcacba7694c5b129af5589391154e2b2f00477ac31309  install/include/opencv4/opencv2/dnn.hpp\n2d8c47550206d0b6e0c9eeb8a367cb79adcb2176a8f408b6612d90252a40c708  install/include/opencv4/opencv2/imgcodecs/imgcodecs.hpp\ncf95c0b78a6f2468638b85f213b097ab4dda05ac5d9ca4de34ee8e0a618846dc  install/include/opencv4/opencv2/imgcodecs/imgcodecs_c.h\nbf9ec7d5cf531e98d1d0169ca9e59374fc9fc1ad5479178baee2909ac4e3dbf1  install/include/opencv4/opencv2/imgcodecs/ios.h\nd61db5018d9af8cf14ad3cd7cde3627235255aa45ca33a542ff04b610870f39e  install/include/opencv4/opencv2/imgcodecs/legacy/constants_c.h\ne52ae69039bdf1d69cad8191de866d754c0695e97e5f163162c818010654d3a8  install/include/opencv4/opencv2/imgcodecs/macosx.h\nabc49ad969a5b1f8a1f7b59220bd950c944b06cdaf0fd552884ce39c16f84cff  install/include/opencv4/opencv2/imgcodecs.hpp\nf65b79fb4d9e7abcd8aa9bb8bcc2a3410c42dae8f729b8679a71bb85c7b85ee0  install/include/opencv4/opencv2/imgproc/bindings.hpp\ne9e67386e93dd84a428af70e31313a0240a4df982f6c184d50180d9d6c2ea2f9  install/include/opencv4/opencv2/imgproc/detail/gcgraph.hpp\n625ce2e2c4abca32c44815e8ea6ea0d19c7d6f7db2cd142bd7e19b3770d953c4  install/include/opencv4/opencv2/imgproc/detail/legacy.hpp\nefecd002537f5d66489e05401dadca222785c8bd4c69d7d70e1e131fd69a0097  install/include/opencv4/opencv2/imgproc/hal/hal.hpp\n27dd95facd92c6ca8e6fe4b981c51dbdb22b9dafba133cf2be0f5a03f5d8152e  install/include/opencv4/opencv2/imgproc/hal/interface.h\nf519aaf5d2676014d46f0f29719baaa98c14c84bcf2311c10325e210a4103e70  install/include/opencv4/opencv2/imgproc/imgproc.hpp\nc0b4bd7f7769c966dbfada1d3ae65f8ce214fce1038339245a174ac40140ca77  install/include/opencv4/opencv2/imgproc/imgproc_c.h\n1f27474710e792c7ff1f1a63bac86876f53ceb0f648d32eb30b99e67d3dd5fdf  install/include/opencv4/opencv2/imgproc/segmentation.hpp\nc844682f2f7d8dcbce7acdac069b41203dd8a4309946b3d23dbe22663d74a012  install/include/opencv4/opencv2/imgproc/types_c.h\n246c0d95a6bea416087ee5ce3294444756fb4c77351a1d4f3b48fb11bee953fe  install/include/opencv4/opencv2/imgproc.hpp\n37df4ccc15f8a6ed06e2099910c63e486841ddbd5bc2d303405bc34f8fd44b66  install/include/opencv4/opencv2/opencv.hpp\n3cc030a42cb62ed2d01e8d540bc87433499b1ac9cba204538262dfd816134077  install/include/opencv4/opencv2/opencv_modules.hpp\n8a719953ee483167b24033a99e2492b4f715996d85cc3e9365f3bff1a57c6897  install/include/opencv4/opencv2/videoio/legacy/constants_c.h\n8471f25b7c501b797ab01e8531d36b4250c929d1533da7e75da2024cbf46180c  install/include/opencv4/opencv2/videoio/registry.hpp\nd38fe912bef4af8a587bf820e2316202c1253c60fca72a339a32f94e85ac2c81  install/include/opencv4/opencv2/videoio/videoio.hpp\n48ad598cb1609b34ed1f8663a3839b49a65c9ea5998803aa026a42e5dfdab112  install/include/opencv4/opencv2/videoio/videoio_c.h\n8089595960247d65d0c84d292c617ce5343bdd870d695a65a64fa08b8ea20399  install/include/opencv4/opencv2/videoio.hpp\n074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff  licenses/KleidiCV-Apache-2.0.txt\ncfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  licenses/OpenCV-Apache-2.0.txt\n854538f426422b0f989a5e5b7641e5943753d10ef29ea54901dcd36039e43f58  licenses/OpenCV-COPYRIGHT.txt\nfb86be28d90bfef2fffcb86469f7c19962b7a367da9676a521cc1fc33f2996fc  licenses/carotene-BSD-3-Clause.txt\nbc2ea19633e4ce3cc36163cd9bdd544c841a71729b98b3ac0defd248dd03b31b  licenses/external-hal-provenance.json\ncfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  licenses/flatbuffers-Apache-2.0.txt\n75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6  licenses/libjpeg-turbo-README.ijg\n96f5b328adbb78eeaaec6980d73fd558cb1e4d62560ed615646bc3cf5e532430  licenses/libjpeg-turbo-licenses.md\n6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d  licenses/protobuf-BSD-3-Clause.txt\n845efc77857d485d91fb3e0b884aaa929368c717ae8186b66fe1ed2495753243  licenses/zlib-License.txt\n454456bbc7de2ceef612adea9425ed43b51b63bc6a4e56bb55cc89391bd20f19  source.json\n7d17439697d9786b43b2a44dc9eecea34381adb6d2f14c6892266b6699a49aec  opencv-defined-access.patch\n76fd0326de22f6864bc5d9e296bf78dc25329c5b62a19dc3face74cb037b6257  source-files.json\na81c30cf0f685fb2b34e8f8f7d2995c08d662ab7154703d7ee1b8f66fa48baef  aarch64.cmake\n",
+  "headers": {
+    "opencv2/core.hpp": {
+      "source": "modules/core/include/opencv2/core.hpp",
+      "sha256": "62edcacfea97ab6a6e9e65ce3aaae022618d26f7962f9afd8776d32fa042d75f",
+      "bytes": 158640
+    },
+    "opencv2/core/affine.hpp": {
+      "source": "modules/core/include/opencv2/core/affine.hpp",
+      "sha256": "f67b0e1a0d51ed1a0cb0f0010568a3c3649aa99ab51a0183e092858be6b00da4",
+      "bytes": 21536
+    },
+    "opencv2/core/async.hpp": {
+      "source": "modules/core/include/opencv2/core/async.hpp",
+      "sha256": "4ebd7dec356441c35e53447f548cb4c1074d93109a92716ab570d40469992313",
+      "bytes": 2773
+    },
+    "opencv2/core/base.hpp": {
+      "source": "modules/core/include/opencv2/core/base.hpp",
+      "sha256": "fabf426229e7acb4e3eca682d8dbcb11146da8e7691a62a7dd40b32c55b6ebf6",
+      "bytes": 29797
+    },
+    "opencv2/core/bindings_utils.hpp": {
+      "source": "modules/core/include/opencv2/core/bindings_utils.hpp",
+      "sha256": "7438b1e6e13b0cdf73e4792fa1f7b5c2de6f0db621552c7b9dd13c538549f264",
+      "bytes": 8070
+    },
+    "opencv2/core/bufferpool.hpp": {
+      "source": "modules/core/include/opencv2/core/bufferpool.hpp",
+      "sha256": "65dd904d4f15850ec23ad7531a8f431fd023c98c429adc59e00ae346c8976667",
+      "bytes": 852
+    },
+    "opencv2/core/check.hpp": {
+      "source": "modules/core/include/opencv2/core/check.hpp",
+      "sha256": "fb7cf749c4695f02cb311b198efa9823eac1f1e98831b776fe8ab5f976bea4d1",
+      "bytes": 7722
+    },
+    "opencv2/core/core.hpp": {
+      "source": "modules/core/include/opencv2/core/core.hpp",
+      "sha256": "21a4ea4d80847984ef8eafe4746ecc18d5bcafd10564ce4c24e2416043d85798",
+      "bytes": 2366
+    },
+    "opencv2/core/core_c.h": {
+      "source": "modules/core/include/opencv2/core/core_c.h",
+      "sha256": "7c5d2883897df0d8f86a322078c32132cf890a34f45fcdb9460f1bde84e97466",
+      "bytes": 128763
+    },
+    "opencv2/core/cuda.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda.hpp",
+      "sha256": "b725d6848786e49dc878c0b362f7b2b4b3c45ec2463ac03112e5041560a40748",
+      "bytes": 51833
+    },
+    "opencv2/core/cuda.inl.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda.inl.hpp",
+      "sha256": "caff4880ae6c88f63db928666202f1468c8b16e02843acc24e31bfb0c50091b8",
+      "bytes": 16371
+    },
+    "opencv2/core/cuda/block.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/block.hpp",
+      "sha256": "706494ee8db1c697ffa51541ada3ea6eace83f2c776c9fd24f755bb412bc2c6d",
+      "bytes": 8327
+    },
+    "opencv2/core/cuda/border_interpolate.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/border_interpolate.hpp",
+      "sha256": "ec035bb5aba46f139fe841ce5b09f0f098d330378a29b39db9f2d38f19be19c2",
+      "bytes": 24756
+    },
+    "opencv2/core/cuda/color.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/color.hpp",
+      "sha256": "0092ae7b45369b4eb86bc3b9c2cd64331c93d3ad9c338285e7f842adc3dd3331",
+      "bytes": 15518
+    },
+    "opencv2/core/cuda/common.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/common.hpp",
+      "sha256": "74144295b4913025b57b8a15bc4043091f2ad1ad2ad4835766ff76c7a7bfe0ca",
+      "bytes": 4889
+    },
+    "opencv2/core/cuda/cuda_compat.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/cuda_compat.hpp",
+      "sha256": "758a75bd0e9b2968a50f52132d83acb75c6e49eb6f04be798c627f2b756ed3b3",
+      "bytes": 1154
+    },
+    "opencv2/core/cuda/datamov_utils.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/datamov_utils.hpp",
+      "sha256": "7f9cc05e1ba9db626bb6cdf2833b3f56c0423efa9ae8bbfac7a31ae7d4550bc4",
+      "bytes": 4720
+    },
+    "opencv2/core/cuda/detail/color_detail.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/detail/color_detail.hpp",
+      "sha256": "79d28f503115106ed34f914e73a184e7691292afa0f2bf1abce5a50e6fa9ff41",
+      "bytes": 223992
+    },
+    "opencv2/core/cuda/detail/reduce.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/detail/reduce.hpp",
+      "sha256": "ce9c9f1286821b1ad2f31e0e8afe3c683503b8eafed0f329880d8aa573cffbfd",
+      "bytes": 16811
+    },
+    "opencv2/core/cuda/detail/reduce_key_val.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/detail/reduce_key_val.hpp",
+      "sha256": "b781ffca5b62f64332cf62988aa18728d52abb24ffb2cb4a82fcda521d7da88a",
+      "bytes": 26708
+    },
+    "opencv2/core/cuda/detail/transform_detail.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/detail/transform_detail.hpp",
+      "sha256": "72650821b8fd19a4a3b2c18a9bad2878064f41bb82206a1297c2bdbd0193aa82",
+      "bytes": 17598
+    },
+    "opencv2/core/cuda/detail/type_traits_detail.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/detail/type_traits_detail.hpp",
+      "sha256": "cf9aa11a5c0e8a599e93ffd40d3ae45d62d1da19a4b38a00d64c14d8caae8f2a",
+      "bytes": 8599
+    },
+    "opencv2/core/cuda/detail/vec_distance_detail.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/detail/vec_distance_detail.hpp",
+      "sha256": "c6db61c660a173e05a32ba205a113b562316fdeefaf70dcf9c12bc1a22d31a9b",
+      "bytes": 5219
+    },
+    "opencv2/core/cuda/dynamic_smem.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/dynamic_smem.hpp",
+      "sha256": "6c98892ee9425c177d54d8b1f434396b87124250a575cd2bbcd410b53888c9aa",
+      "bytes": 3247
+    },
+    "opencv2/core/cuda/emulation.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/emulation.hpp",
+      "sha256": "675546d761bb50159c27b8c1afc0b7f97981bbb6a3fe80befff04e6d2ed02f82",
+      "bytes": 10061
+    },
+    "opencv2/core/cuda/filters.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/filters.hpp",
+      "sha256": "7be49a92d1376c9be94721c15fd1a3b6005a4db6cf1bc5d6ea2476a9ee2a3bb0",
+      "bytes": 10110
+    },
+    "opencv2/core/cuda/funcattrib.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/funcattrib.hpp",
+      "sha256": "05038a7802c6f01d755f8bbfd78efe5d09790c3fb1722a8f24a68d4048ff38a3",
+      "bytes": 3238
+    },
+    "opencv2/core/cuda/functional.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/functional.hpp",
+      "sha256": "8932acace59199f392c2d8404d163261a89c5e2f6a72d573b4ef24078d4205bd",
+      "bytes": 32256
+    },
+    "opencv2/core/cuda/limits.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/limits.hpp",
+      "sha256": "ccd8bb12cc19901476bb61f5b25d62974661481f9e1126ed3af3439a85c100fa",
+      "bytes": 4830
+    },
+    "opencv2/core/cuda/reduce.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/reduce.hpp",
+      "sha256": "1a7928067702e4f2889270cca922e6c73c9e6d2cdf88cc4b4f8dab8dee7cec7c",
+      "bytes": 13435
+    },
+    "opencv2/core/cuda/saturate_cast.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/saturate_cast.hpp",
+      "sha256": "63d7ce621e96bad38aa846b9bb001da72048f1dbcd49311606c35a238ae5b926",
+      "bytes": 10174
+    },
+    "opencv2/core/cuda/scan.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/scan.hpp",
+      "sha256": "2c3f207fdaca653a09e9167fa3c0dec7e46469c029be17942c5fff0fe564f437",
+      "bytes": 8996
+    },
+    "opencv2/core/cuda/simd_functions.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/simd_functions.hpp",
+      "sha256": "5501456d3853386bfe71e11a2ab86b3e1c3122ea644d64bd1a3355bbfef48bba",
+      "bytes": 31088
+    },
+    "opencv2/core/cuda/transform.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/transform.hpp",
+      "sha256": "4ba3c9a282bb1e0d4fd0f00aacca8b4e00261e4c63f2c3e7f9ed472ef320b288",
+      "bytes": 3362
+    },
+    "opencv2/core/cuda/type_traits.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/type_traits.hpp",
+      "sha256": "4d88a91029fa59f1c37a0efb021efe332450c71e9c0194840fb01157fd193f77",
+      "bytes": 4526
+    },
+    "opencv2/core/cuda/utility.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/utility.hpp",
+      "sha256": "8c6ab8996d00802d47194035304744ea6e81c7eddb4c7a20fa4143cb647051da",
+      "bytes": 7989
+    },
+    "opencv2/core/cuda/vec_distance.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/vec_distance.hpp",
+      "sha256": "f48fdf00b959c67edc38cdd107464c2901adc03dbb6c5e964267813332238195",
+      "bytes": 7863
+    },
+    "opencv2/core/cuda/vec_math.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/vec_math.hpp",
+      "sha256": "272db4c607e7447d32b0e982c3e59e92bbbe61843a9fcd6dfada7e2d59f28448",
+      "bytes": 50278
+    },
+    "opencv2/core/cuda/vec_traits.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/vec_traits.hpp",
+      "sha256": "a610615d408722e809729b7a6f29f394263cc727bb45362a1a23153921a76026",
+      "bytes": 13443
+    },
+    "opencv2/core/cuda/warp.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/warp.hpp",
+      "sha256": "f96ba84d3b06426b3676a1ad09e621107adaf40fc3fd388e7dcbd323cd1db55e",
+      "bytes": 5165
+    },
+    "opencv2/core/cuda/warp_reduce.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/warp_reduce.hpp",
+      "sha256": "9ba443e97474d2a97cb8b99eb6c22f76659ba2cb8d352dffbb1c9deb9b944373",
+      "bytes": 3086
+    },
+    "opencv2/core/cuda/warp_shuffle.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda/warp_shuffle.hpp",
+      "sha256": "8efd947fc7abae68bc81841a1243d49022a5328807143d3b818d82043eeeb82c",
+      "bytes": 5569
+    },
+    "opencv2/core/cuda_stream_accessor.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda_stream_accessor.hpp",
+      "sha256": "e23118e9761e8eda3b9223aaf5ef040f58751a67d641953f48f29be9e354b31e",
+      "bytes": 3249
+    },
+    "opencv2/core/cuda_types.hpp": {
+      "source": "modules/core/include/opencv2/core/cuda_types.hpp",
+      "sha256": "01753a8d438bacf14ac4439192542d5fc4bca88afb3918717afd7e1a36efacea",
+      "bytes": 6045
+    },
+    "opencv2/core/cv_cpu_dispatch.h": {
+      "source": "modules/core/include/opencv2/core/cv_cpu_dispatch.h",
+      "sha256": "f499c63f0c14479a8f681b5b9c52e9f770d5dbf803c2378ce9791cc90c4f08fa",
+      "bytes": 9003
+    },
+    "opencv2/core/cv_cpu_helper.h": {
+      "source": "modules/core/include/opencv2/core/cv_cpu_helper.h",
+      "sha256": "1ed879be3ce94c83fd03169e5ae32b24c3c2dc5d41504a23701ff7ff370cf20d",
+      "bytes": 34413
+    },
+    "opencv2/core/cvdef.h": {
+      "source": "modules/core/include/opencv2/core/cvdef.h",
+      "sha256": "68abe35f45279759db0287898a538b3a6fbb71edb68693750cfed278c3a4a681",
+      "bytes": 36483
+    },
+    "opencv2/core/cvstd.hpp": {
+      "source": "modules/core/include/opencv2/core/cvstd.hpp",
+      "sha256": "96a1ddefb0539061389be0704b554e5ab30f20132944485f4c70644ceeb4a0d2",
+      "bytes": 6079
+    },
+    "opencv2/core/cvstd.inl.hpp": {
+      "source": "modules/core/include/opencv2/core/cvstd.inl.hpp",
+      "sha256": "33223f6f38d88607f3da7f02683ff91aa07279240d34084e1a0fe7b19ab5ca28",
+      "bytes": 5872
+    },
+    "opencv2/core/cvstd_wrapper.hpp": {
+      "source": "modules/core/include/opencv2/core/cvstd_wrapper.hpp",
+      "sha256": "babed4fc9c3d804502aa053c5add427600600f080984985812d8cce716b35ffa",
+      "bytes": 5725
+    },
+    "opencv2/core/detail/async_promise.hpp": {
+      "source": "modules/core/include/opencv2/core/detail/async_promise.hpp",
+      "sha256": "84920f5944b2561b0f6da3784a5fd281aba39e8544651a7ac8a889e3509982f4",
+      "bytes": 1678
+    },
+    "opencv2/core/detail/dispatch_helper.impl.hpp": {
+      "source": "modules/core/include/opencv2/core/detail/dispatch_helper.impl.hpp",
+      "sha256": "a6c812132580f4eaca6f35f2f19b32d40b24ef9ab0b75b51291c551c6b4224d9",
+      "bytes": 1400
+    },
+    "opencv2/core/detail/exception_ptr.hpp": {
+      "source": "modules/core/include/opencv2/core/detail/exception_ptr.hpp",
+      "sha256": "30ae6e20abd03cf3621bfb392e7778aff8a90635bd4679e9f2e706c8c99b0986",
+      "bytes": 745
+    },
+    "opencv2/core/directx.hpp": {
+      "source": "modules/core/include/opencv2/core/directx.hpp",
+      "sha256": "ef2b12df417633e49c8a7341e9f82d70eff7ff84fd944fa098947254ee491ea8",
+      "bytes": 7248
+    },
+    "opencv2/core/dualquaternion.hpp": {
+      "source": "modules/core/include/opencv2/core/dualquaternion.hpp",
+      "sha256": "ed725cacbb20ca9b17c72256504ec74d270bcf44559952508392d7b69764f1ad",
+      "bytes": 37557
+    },
+    "opencv2/core/dualquaternion.inl.hpp": {
+      "source": "modules/core/include/opencv2/core/dualquaternion.inl.hpp",
+      "sha256": "1b6b478123cd15b7f24f2f3399d5c9199f7af979d9b57f0b0265a02cd4279484",
+      "bytes": 14984
+    },
+    "opencv2/core/eigen.hpp": {
+      "source": "modules/core/include/opencv2/core/eigen.hpp",
+      "sha256": "fb98669a1bf5b6ab3c31ed3479663d0608131bc9af743f7b7e868640b3428485",
+      "bytes": 14910
+    },
+    "opencv2/core/fast_math.hpp": {
+      "source": "modules/core/include/opencv2/core/fast_math.hpp",
+      "sha256": "151bf6365b54bec9836afc3a8bcdba8b600bc5b769d24e7f0147420897a9acf7",
+      "bytes": 14563
+    },
+    "opencv2/core/hal/hal.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/hal.hpp",
+      "sha256": "0f8eadf8fd6899858ab46db329ba94770160ecf9cd8ac897dece8c6884c8d521",
+      "bytes": 20380
+    },
+    "opencv2/core/hal/interface.h": {
+      "source": "modules/core/include/opencv2/core/hal/interface.h",
+      "sha256": "bd11814cfd2c331eaa93b42d80a0911a4916f6afa99907f332fe8f641098eb43",
+      "bytes": 4787
+    },
+    "opencv2/core/hal/intrin.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin.hpp",
+      "sha256": "eeb3be550b8d7f6492c762bcefeb2e8fe5c9c0628ccb09f2ded7f1b2f34d6aa3",
+      "bytes": 41730
+    },
+    "opencv2/core/hal/intrin_avx.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_avx.hpp",
+      "sha256": "a94f0297f74c4081a341d27eace3e000f6720d2419df890ffbeeccf2174d37aa",
+      "bytes": 136500
+    },
+    "opencv2/core/hal/intrin_avx512.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_avx512.hpp",
+      "sha256": "b7fd72f1e96a00370e1096a1d61f75f6bf0355d9f2b1fff2bca64affac7aa23e",
+      "bytes": 163084
+    },
+    "opencv2/core/hal/intrin_cpp.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_cpp.hpp",
+      "sha256": "57a562e14713f00069f53c104521c7d2c0c28e3576b7ae6465523bbf8809eb2a",
+      "bytes": 105704
+    },
+    "opencv2/core/hal/intrin_forward.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_forward.hpp",
+      "sha256": "ad93e16fdad234aab37ccc96bd37768f213c6ee2fedb3c6309e1057307f621f2",
+      "bytes": 6355
+    },
+    "opencv2/core/hal/intrin_lasx.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_lasx.hpp",
+      "sha256": "4d731ad3c689efea2905db049636adb3d48d5fdf3436cd1b61a3bd283ddaa023",
+      "bytes": 125930
+    },
+    "opencv2/core/hal/intrin_legacy_ops.h": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_legacy_ops.h",
+      "sha256": "9162fd638f6523412d095dc69bc67b5d5eb0b945c185003e67b0938a79c90686",
+      "bytes": 2474
+    },
+    "opencv2/core/hal/intrin_lsx.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_lsx.hpp",
+      "sha256": "aa31563f0a5033495e27a5bab0cde7deda49bc2c039aeeabb4ae9ed1f68b172b",
+      "bytes": 107271
+    },
+    "opencv2/core/hal/intrin_math.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_math.hpp",
+      "sha256": "8d6ed7f222d15da0d73080fe407d7e3f9809b3fc5c93222cbe320f9a9f794e5c",
+      "bytes": 31380
+    },
+    "opencv2/core/hal/intrin_msa.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_msa.hpp",
+      "sha256": "80dfbe94520016a6d10be1444c612cdb889d606ef6f016f2a693f215be289b09",
+      "bytes": 73081
+    },
+    "opencv2/core/hal/intrin_neon.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_neon.hpp",
+      "sha256": "0e8c9124023cd4ccc3dcfe8e9cf234a7c4f028a227cceb95569177541413a3f0",
+      "bytes": 102625
+    },
+    "opencv2/core/hal/intrin_rvv071.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_rvv071.hpp",
+      "sha256": "2ddc9c4978233a8fa09d7d990349723cf6ad627cdd967c27ad6765b4ede6528b",
+      "bytes": 129993
+    },
+    "opencv2/core/hal/intrin_rvv_scalable.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_rvv_scalable.hpp",
+      "sha256": "60e6040f2fcb239699516073bf688d2fab522806d98c0bd364e4fe9f579ac2df",
+      "bytes": 103937
+    },
+    "opencv2/core/hal/intrin_sse.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_sse.hpp",
+      "sha256": "dcd1c37f0c3817c176953e5c15037497954e1ff523467e3379fcb1e0d3d31ffb",
+      "bytes": 137474
+    },
+    "opencv2/core/hal/intrin_sse_em.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_sse_em.hpp",
+      "sha256": "9a8369d287ff500756fae5577f528c360f011e04e5a4a44f5af1d697b1d1442a",
+      "bytes": 5424
+    },
+    "opencv2/core/hal/intrin_vsx.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_vsx.hpp",
+      "sha256": "aaec43fe948c55b3b31d730358d4b266f90aede3c262cff794c293a7370c13fe",
+      "bytes": 69146
+    },
+    "opencv2/core/hal/intrin_wasm.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/intrin_wasm.hpp",
+      "sha256": "4c63d4c9717d6c75261415c197a7b0912dd848eefa8d13fc87ad306d60ce9656",
+      "bytes": 111780
+    },
+    "opencv2/core/hal/msa_macros.h": {
+      "source": "modules/core/include/opencv2/core/hal/msa_macros.h",
+      "sha256": "bf5842830c95304950487c93f9f8ec5ac29ad659a316fb2ea80407229ee2a6e0",
+      "bytes": 82545
+    },
+    "opencv2/core/hal/simd_utils.impl.hpp": {
+      "source": "modules/core/include/opencv2/core/hal/simd_utils.impl.hpp",
+      "sha256": "a7416b4d5fc41cd2df66f4fdb36a0a85374d79de3dc5d8fb38ce40be049ff772",
+      "bytes": 9530
+    },
+    "opencv2/core/mat.hpp": {
+      "source": "modules/core/include/opencv2/core/mat.hpp",
+      "sha256": "157c25e4590c3903c0a24be331a24931edfbfa9bebd7545cd1907c5141837677",
+      "bytes": 168315
+    },
+    "opencv2/core/mat.inl.hpp": {
+      "source": "modules/core/include/opencv2/core/mat.inl.hpp",
+      "sha256": "6670cb2d634103de1070233b4ca4ccbd486a1dc4ca9e1ce3226e0a81e6934b50",
+      "bytes": 89978
+    },
+    "opencv2/core/matx.hpp": {
+      "source": "modules/core/include/opencv2/core/matx.hpp",
+      "sha256": "086ceebe87ed54c98155bfff778f02305697dc7cd9d10449f2f21a482023872b",
+      "bytes": 20508
+    },
+    "opencv2/core/matx.inl.hpp": {
+      "source": "modules/core/include/opencv2/core/matx.inl.hpp",
+      "sha256": "010153afc595d6e58ba24949c85af8a6a2fc038d52ec054a35ae9eed8a97980d",
+      "bytes": 33331
+    },
+    "opencv2/core/neon_utils.hpp": {
+      "source": "modules/core/include/opencv2/core/neon_utils.hpp",
+      "sha256": "ac4f537960e50684671ca6a4b95c1eb6db5ba05e8d9f42f66b930ac8702ae7f9",
+      "bytes": 4397
+    },
+    "opencv2/core/ocl.hpp": {
+      "source": "modules/core/include/opencv2/core/ocl.hpp",
+      "sha256": "28eb3a7a8d1cc542dd5b76360a732d918dca89048c015b140f6067310229222b",
+      "bytes": 32985
+    },
+    "opencv2/core/ocl_genbase.hpp": {
+      "source": "modules/core/include/opencv2/core/ocl_genbase.hpp",
+      "sha256": "9744e968d9bdfea84cdee4aeae0c141e300cc90ce44329accdd535952c3c48dd",
+      "bytes": 2508
+    },
+    "opencv2/core/opencl/ocl_defs.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/ocl_defs.hpp",
+      "sha256": "9bdcabf71097dc339f80702269616dc5755f718843759941e79dfc25284c8e89",
+      "bytes": 3734
+    },
+    "opencv2/core/opencl/opencl_info.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/opencl_info.hpp",
+      "sha256": "9ab1bf080b8e1438df491a3934f1fbfce154a7ad216e91a7e3f94803694402eb",
+      "bytes": 8431
+    },
+    "opencv2/core/opencl/opencl_svm.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/opencl_svm.hpp",
+      "sha256": "73c8f9da9214399ecb88b7e478943ff311464db791abf5625b3b31be479c9da4",
+      "bytes": 2792
+    },
+    "opencv2/core/opencl/runtime/autogenerated/opencl_clblas.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/autogenerated/opencl_clblas.hpp",
+      "sha256": "02380689f8e64c9343cf995bd05a24634215cb8c5ba0d1dc8ec5f447ee0ef8e2",
+      "bytes": 64353
+    },
+    "opencv2/core/opencl/runtime/autogenerated/opencl_clfft.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/autogenerated/opencl_clfft.hpp",
+      "sha256": "179a73296a8eaa588efbf2ab0b1a0d181a6ea506aecc50751611c1a97b285c3d",
+      "bytes": 8776
+    },
+    "opencv2/core/opencl/runtime/autogenerated/opencl_core.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/autogenerated/opencl_core.hpp",
+      "sha256": "fb5cbda14014100c23cbd29cd7f542ce6ce6389218532aa5e5db012bab985f51",
+      "bytes": 22931
+    },
+    "opencv2/core/opencl/runtime/autogenerated/opencl_core_wrappers.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/autogenerated/opencl_core_wrappers.hpp",
+      "sha256": "3176bcb1c25904ff4795c0f70ab0fee92f7d4892cbd5250c9be4ed63612647b5",
+      "bytes": 21759
+    },
+    "opencv2/core/opencl/runtime/autogenerated/opencl_gl.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/autogenerated/opencl_gl.hpp",
+      "sha256": "1b496c1015cb6ee9db7068bd3a6c6da80729d7ee815a15de93dbf9cee1da5d37",
+      "bytes": 3079
+    },
+    "opencv2/core/opencl/runtime/autogenerated/opencl_gl_wrappers.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/autogenerated/opencl_gl_wrappers.hpp",
+      "sha256": "bc9e212a5cf9019b75e2a47683c593a10390a1f7bddcb3ab796fb2fdb609c052",
+      "bytes": 2802
+    },
+    "opencv2/core/opencl/runtime/opencl_clblas.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/opencl_clblas.hpp",
+      "sha256": "3b76c057001979ee78c6208f13c8b684c4f0e4d5a7b4a7d597495b80e65b95ed",
+      "bytes": 2366
+    },
+    "opencv2/core/opencl/runtime/opencl_clfft.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/opencl_clfft.hpp",
+      "sha256": "3a68d279e239fa325d3abf0113061727251c04a4d629b2f85ce46426ef582e99",
+      "bytes": 2360
+    },
+    "opencv2/core/opencl/runtime/opencl_core.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/opencl_core.hpp",
+      "sha256": "b9e8a9b925a815d26bd1ce94741581f3568027d3b93993f0372a0cc84c650115",
+      "bytes": 3429
+    },
+    "opencv2/core/opencl/runtime/opencl_core_wrappers.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/opencl_core_wrappers.hpp",
+      "sha256": "ba119681e962a46083f2985fcb88c325a5277bf5b119e6a7b1508807ad072662",
+      "bytes": 2314
+    },
+    "opencv2/core/opencl/runtime/opencl_gl.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/opencl_gl.hpp",
+      "sha256": "8c3699033b34fe4502a0c891217a00322a4c8f21ff023fd820a6a0107707d95c",
+      "bytes": 2415
+    },
+    "opencv2/core/opencl/runtime/opencl_gl_wrappers.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/opencl_gl_wrappers.hpp",
+      "sha256": "85bb84fc5eaf8f110c3d31c42b691cdef2e9ba6a9a296a788c3e0892a934d7b7",
+      "bytes": 2321
+    },
+    "opencv2/core/opencl/runtime/opencl_svm_20.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/opencl_svm_20.hpp",
+      "sha256": "2297538b39e076d21c167fb66facc41854293a82f5d34f245083c797cd9b0ffd",
+      "bytes": 2892
+    },
+    "opencv2/core/opencl/runtime/opencl_svm_definitions.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/opencl_svm_definitions.hpp",
+      "sha256": "56e3927d9adff9edd71c42fe675a962660527db1374901f08a8619a876bf9c6a",
+      "bytes": 1077
+    },
+    "opencv2/core/opencl/runtime/opencl_svm_hsa_extension.hpp": {
+      "source": "modules/core/include/opencv2/core/opencl/runtime/opencl_svm_hsa_extension.hpp",
+      "sha256": "e72f6ad28d18a825c8caff56eaca1642298aeb4af960b61ee1ef12e987c04719",
+      "bytes": 6443
+    },
+    "opencv2/core/opengl.hpp": {
+      "source": "modules/core/include/opencv2/core/opengl.hpp",
+      "sha256": "44b70716a071add4946046690bb3232908d1e5b56a9ae236f50497b2d420c790",
+      "bytes": 24152
+    },
+    "opencv2/core/operations.hpp": {
+      "source": "modules/core/include/opencv2/core/operations.hpp",
+      "sha256": "426e7a2a9206c603af60a2cda4e3a36a60bdc53d268df577cf1d32ae1156f843",
+      "bytes": 22421
+    },
+    "opencv2/core/optim.hpp": {
+      "source": "modules/core/include/opencv2/core/optim.hpp",
+      "sha256": "acfc26fa3409d2c7dc897fc816a6eab67554414a514a1a062de68a68cb351e80",
+      "bytes": 16150
+    },
+    "opencv2/core/ovx.hpp": {
+      "source": "modules/core/include/opencv2/core/ovx.hpp",
+      "sha256": "e4b13bc11c14d59f640ac59963bd02670ca352d533160d539b6e790052051530",
+      "bytes": 731
+    },
+    "opencv2/core/parallel/backend/parallel_for.openmp.hpp": {
+      "source": "modules/core/include/opencv2/core/parallel/backend/parallel_for.openmp.hpp",
+      "sha256": "903d8ba56eae3158e816522c5a816e9e9811e41c62e812a34bbf1dbfde81132e",
+      "bytes": 1897
+    },
+    "opencv2/core/parallel/backend/parallel_for.tbb.hpp": {
+      "source": "modules/core/include/opencv2/core/parallel/backend/parallel_for.tbb.hpp",
+      "sha256": "af6dd3c7162df172e8462b8c697f2fcddf2af1777f98a993ab3be8b33fb58b7e",
+      "bytes": 4010
+    },
+    "opencv2/core/parallel/parallel_backend.hpp": {
+      "source": "modules/core/include/opencv2/core/parallel/parallel_backend.hpp",
+      "sha256": "79c71d6191b0931cb1db9931ca4ecaa156cfec83bc6e4e71b8407722ed3d7194",
+      "bytes": 3321
+    },
+    "opencv2/core/persistence.hpp": {
+      "source": "modules/core/include/opencv2/core/persistence.hpp",
+      "sha256": "992e7d7575fd671302b2beb9600a99e380485797aa6448bdbaa81d8c66b524b8",
+      "bytes": 46471
+    },
+    "opencv2/core/quaternion.hpp": {
+      "source": "modules/core/include/opencv2/core/quaternion.hpp",
+      "sha256": "571ed73ee3df3066b74bdfb18c4420baadbed598ba215132390ba86cf52f62be",
+      "bytes": 66811
+    },
+    "opencv2/core/quaternion.inl.hpp": {
+      "source": "modules/core/include/opencv2/core/quaternion.inl.hpp",
+      "sha256": "dff743f883e47035d84e52058cb9bca9fbf5d615e35bf3923097164263d6a164",
+      "bytes": 30722
+    },
+    "opencv2/core/saturate.hpp": {
+      "source": "modules/core/include/opencv2/core/saturate.hpp",
+      "sha256": "bf418a3f44d575b17c18af968dbe3e2c8bd0663c22f8dcb53c4b0f77b5db14ba",
+      "bytes": 11902
+    },
+    "opencv2/core/simd_intrinsics.hpp": {
+      "source": "modules/core/include/opencv2/core/simd_intrinsics.hpp",
+      "sha256": "ac81c6962c8b5679dfb63fe06487c27ae197946b66b1df90ad46e410a11a5a20",
+      "bytes": 2695
+    },
+    "opencv2/core/softfloat.hpp": {
+      "source": "modules/core/include/opencv2/core/softfloat.hpp",
+      "sha256": "43c01ea3c1b3f99352437dddaca1b9b862e9d9b734c7a901f63abad5b28e3412",
+      "bytes": 21195
+    },
+    "opencv2/core/sse_utils.hpp": {
+      "source": "modules/core/include/opencv2/core/sse_utils.hpp",
+      "sha256": "2d9f170fdecb359c434387e6379fe5f16f9ffc77ef8dc4ba111ca517c3359023",
+      "bytes": 42185
+    },
+    "opencv2/core/traits.hpp": {
+      "source": "modules/core/include/opencv2/core/traits.hpp",
+      "sha256": "6c45b2ee5137464ab4080063e38b68a6c5ac8b415e04aee8cb5c634b5dcc9861",
+      "bytes": 12293
+    },
+    "opencv2/core/types.hpp": {
+      "source": "modules/core/include/opencv2/core/types.hpp",
+      "sha256": "ed45810298941aefeb838d1d8d080bf2f2925b053bd92ef83a913f5251774d4f",
+      "bytes": 74445
+    },
+    "opencv2/core/types_c.h": {
+      "source": "modules/core/include/opencv2/core/types_c.h",
+      "sha256": "0bab108b55e64c5f7b6a1faa3d8eb655591321efd7b30dc0a663201531f48900",
+      "bytes": 70894
+    },
+    "opencv2/core/utility.hpp": {
+      "source": "modules/core/include/opencv2/core/utility.hpp",
+      "sha256": "e5b9e25e349f121c3d3f2347c48afef5d18a8c7c4124acee833c0e04b9c270b0",
+      "bytes": 42149
+    },
+    "opencv2/core/utils/allocator_stats.hpp": {
+      "source": "modules/core/include/opencv2/core/utils/allocator_stats.hpp",
+      "sha256": "260d7dff55a04646ae7f78bfe7af249fe2bbe368add0c934cad108703dbb56c1",
+      "bytes": 821
+    },
+    "opencv2/core/utils/allocator_stats.impl.hpp": {
+      "source": "modules/core/include/opencv2/core/utils/allocator_stats.impl.hpp",
+      "sha256": "62b1f1d878926e7ce8fa323a75a5e8cdb184fd0c6261890963fd82dc9c26c874",
+      "bytes": 3182
+    },
+    "opencv2/core/utils/filesystem.hpp": {
+      "source": "modules/core/include/opencv2/core/utils/filesystem.hpp",
+      "sha256": "584606928e15cdfa0846f97a4f1922860b6f193e0bc3e9f15bd58796edb10b86",
+      "bytes": 3193
+    },
+    "opencv2/core/utils/fp_control_utils.hpp": {
+      "source": "modules/core/include/opencv2/core/utils/fp_control_utils.hpp",
+      "sha256": "2565900dff6e97772c2cb1434b8d136df85446e4596a708d73ae14f3cae9a8d8",
+      "bytes": 2215
+    },
+    "opencv2/core/utils/instrumentation.hpp": {
+      "source": "modules/core/include/opencv2/core/utils/instrumentation.hpp",
+      "sha256": "dcb6a1ae866d143f400f844a4761b52f64429342a7511d1f6402b87105511e9d",
+      "bytes": 3829
+    },
+    "opencv2/core/utils/logger.defines.hpp": {
+      "source": "modules/core/include/opencv2/core/utils/logger.defines.hpp",
+      "sha256": "03bc3fd53608846ee3ad1b1feeeb97ac68e9758f4ceb5827ecca87c58204304c",
+      "bytes": 1738
+    },
+    "opencv2/core/utils/logger.hpp": {
+      "source": "modules/core/include/opencv2/core/utils/logger.hpp",
+      "sha256": "d99ae8e0d5d387315e3f98ea6cd04a71d55dee07494380b15b81eb4a6864707b",
+      "bytes": 10631
+    },
+    "opencv2/core/utils/logtag.hpp": {
+      "source": "modules/core/include/opencv2/core/utils/logtag.hpp",
+      "sha256": "1ab5f6f986e02af6aec74d7881ce0676dd82b215c4a5b33087f7e8010a1808b5",
+      "bytes": 559
+    },
+    "opencv2/core/utils/tls.hpp": {
+      "source": "modules/core/include/opencv2/core/utils/tls.hpp",
+      "sha256": "3b3261c3900c2d1ab82496b6722979996cb899f3110492d7177651790b6f9aef",
+      "bytes": 6682
+    },
+    "opencv2/core/utils/trace.hpp": {
+      "source": "modules/core/include/opencv2/core/utils/trace.hpp",
+      "sha256": "0f0d8b3b0c68c871d026a95c549110e4438f8b349c42864ac7f49a9b5fe72066",
+      "bytes": 9324
+    },
+    "opencv2/core/va_intel.hpp": {
+      "source": "modules/core/include/opencv2/core/va_intel.hpp",
+      "sha256": "3da1e78ac9e178d0ff6b2ef03e3cf912582139c1531142a338ba284b3906181b",
+      "bytes": 2849
+    },
+    "opencv2/core/version.hpp": {
+      "source": "modules/core/include/opencv2/core/version.hpp",
+      "sha256": "939e2d8dffcbfb4f6851d7b0c115e74b015f40fd8ffa6218c5abc9d0d4fc83bf",
+      "bytes": 887
+    },
+    "opencv2/core/vsx_utils.hpp": {
+      "source": "modules/core/include/opencv2/core/vsx_utils.hpp",
+      "sha256": "51c85ce8d989e2b30784a2e512582899ba9ae31f7ec0d6817415620b9b602fe4",
+      "bytes": 52447
+    },
+    "opencv2/cvconfig.h": {
+      "source": null,
+      "sha256": "d86babae9fcae249a465ba2358837dba91c78a1d52e18639df9790c1b7377d2a",
+      "bytes": 3269
+    },
+    "opencv2/dnn.hpp": {
+      "source": "modules/dnn/include/opencv2/dnn.hpp",
+      "sha256": "f2012cb1f4980d641f9dcacba7694c5b129af5589391154e2b2f00477ac31309",
+      "bytes": 3347
+    },
+    "opencv2/dnn/all_layers.hpp": {
+      "source": "modules/dnn/include/opencv2/dnn/all_layers.hpp",
+      "sha256": "be7e33abff7806908ec25d5373f4120d4592ea891628aa146f524fea3ef4420c",
+      "bytes": 40522
+    },
+    "opencv2/dnn/dict.hpp": {
+      "source": "modules/dnn/include/opencv2/dnn/dict.hpp",
+      "sha256": "98faa03a299e950f04d48cec6d7305176fa696014a773b8a0a3a29ab9f9a614e",
+      "bytes": 6264
+    },
+    "opencv2/dnn/dnn.hpp": {
+      "source": "modules/dnn/include/opencv2/dnn/dnn.hpp",
+      "sha256": "160e5995101b07453803b96349a4dcfe3674f19f8e480a109580c21978ffc294",
+      "bytes": 97501
+    },
+    "opencv2/dnn/dnn.inl.hpp": {
+      "source": "modules/dnn/include/opencv2/dnn/dnn.inl.hpp",
+      "sha256": "c979c478eb31f7d03898c536f03d89e439c1c242c44f41dcd6fa63d776e52490",
+      "bytes": 10033
+    },
+    "opencv2/dnn/layer.details.hpp": {
+      "source": "modules/dnn/include/opencv2/dnn/layer.details.hpp",
+      "sha256": "75e0aa313cb8dad528be7ae4e9daa8bd77690e299d38c91182c8913364f64b74",
+      "bytes": 2850
+    },
+    "opencv2/dnn/layer.hpp": {
+      "source": "modules/dnn/include/opencv2/dnn/layer.hpp",
+      "sha256": "e3db29dbf6e4928c4a0023ca402e9a43921cd899731f4d763841b235ff503c0b",
+      "bytes": 3367
+    },
+    "opencv2/dnn/shape_utils.hpp": {
+      "source": "modules/dnn/include/opencv2/dnn/shape_utils.hpp",
+      "sha256": "488a6a2f8e23302ad8692fe4c4defda00c5fb22c453167cb89160266587568b3",
+      "bytes": 7872
+    },
+    "opencv2/dnn/utils/debug_utils.hpp": {
+      "source": "modules/dnn/include/opencv2/dnn/utils/debug_utils.hpp",
+      "sha256": "186db370f2d2090247b7f92119ccd0af87086e370b31213db7fd943a5ec340f3",
+      "bytes": 688
+    },
+    "opencv2/dnn/utils/inference_engine.hpp": {
+      "source": "modules/dnn/include/opencv2/dnn/utils/inference_engine.hpp",
+      "sha256": "0deb20d27d8dbe6ca41cbc6e49fd082d8a7f3108c181be905e480cc5fa257047",
+      "bytes": 2640
+    },
+    "opencv2/dnn/version.hpp": {
+      "source": "modules/dnn/include/opencv2/dnn/version.hpp",
+      "sha256": "676d8beb0c3f7472dcda1c5e0307b23765d86de604b515e697d533ceca83b92d",
+      "bytes": 804
+    },
+    "opencv2/imgcodecs.hpp": {
+      "source": "modules/imgcodecs/include/opencv2/imgcodecs.hpp",
+      "sha256": "abc49ad969a5b1f8a1f7b59220bd950c944b06cdaf0fd552884ce39c16f84cff",
+      "bytes": 50546
+    },
+    "opencv2/imgcodecs/imgcodecs.hpp": {
+      "source": "modules/imgcodecs/include/opencv2/imgcodecs/imgcodecs.hpp",
+      "sha256": "2d8c47550206d0b6e0c9eeb8a367cb79adcb2176a8f408b6612d90252a40c708",
+      "bytes": 2371
+    },
+    "opencv2/imgcodecs/imgcodecs_c.h": {
+      "source": "modules/imgcodecs/include/opencv2/imgcodecs/imgcodecs_c.h",
+      "sha256": "cf95c0b78a6f2468638b85f213b097ab4dda05ac5d9ca4de34ee8e0a618846dc",
+      "bytes": 145
+    },
+    "opencv2/imgcodecs/ios.h": {
+      "source": "modules/imgcodecs/include/opencv2/imgcodecs/ios.h",
+      "sha256": "bf9ec7d5cf531e98d1d0169ca9e59374fc9fc1ad5479178baee2909ac4e3dbf1",
+      "bytes": 2699
+    },
+    "opencv2/imgcodecs/legacy/constants_c.h": {
+      "source": "modules/imgcodecs/include/opencv2/imgcodecs/legacy/constants_c.h",
+      "sha256": "d61db5018d9af8cf14ad3cd7cde3627235255aa45ca33a542ff04b610870f39e",
+      "bytes": 1738
+    },
+    "opencv2/imgcodecs/macosx.h": {
+      "source": "modules/imgcodecs/include/opencv2/imgcodecs/macosx.h",
+      "sha256": "e52ae69039bdf1d69cad8191de866d754c0695e97e5f163162c818010654d3a8",
+      "bytes": 731
+    },
+    "opencv2/imgproc.hpp": {
+      "source": "modules/imgproc/include/opencv2/imgproc.hpp",
+      "sha256": "246c0d95a6bea416087ee5ce3294444756fb4c77351a1d4f3b48fb11bee953fe",
+      "bytes": 268783
+    },
+    "opencv2/imgproc/bindings.hpp": {
+      "source": "modules/imgproc/include/opencv2/imgproc/bindings.hpp",
+      "sha256": "f65b79fb4d9e7abcd8aa9bb8bcc2a3410c42dae8f729b8679a71bb85c7b85ee0",
+      "bytes": 1799
+    },
+    "opencv2/imgproc/detail/gcgraph.hpp": {
+      "source": "modules/imgproc/include/opencv2/imgproc/detail/gcgraph.hpp",
+      "sha256": "e9e67386e93dd84a428af70e31313a0240a4df982f6c184d50180d9d6c2ea2f9",
+      "bytes": 11738
+    },
+    "opencv2/imgproc/detail/legacy.hpp": {
+      "source": "modules/imgproc/include/opencv2/imgproc/detail/legacy.hpp",
+      "sha256": "625ce2e2c4abca32c44815e8ea6ea0d19c7d6f7db2cd142bd7e19b3770d953c4",
+      "bytes": 1402
+    },
+    "opencv2/imgproc/hal/hal.hpp": {
+      "source": "modules/imgproc/include/opencv2/imgproc/hal/hal.hpp",
+      "sha256": "efecd002537f5d66489e05401dadca222785c8bd4c69d7d70e1e131fd69a0097",
+      "bytes": 13288
+    },
+    "opencv2/imgproc/hal/interface.h": {
+      "source": "modules/imgproc/include/opencv2/imgproc/hal/interface.h",
+      "sha256": "27dd95facd92c6ca8e6fe4b981c51dbdb22b9dafba133cf2be0f5a03f5d8152e",
+      "bytes": 1236
+    },
+    "opencv2/imgproc/imgproc.hpp": {
+      "source": "modules/imgproc/include/opencv2/imgproc/imgproc.hpp",
+      "sha256": "f519aaf5d2676014d46f0f29719baaa98c14c84bcf2311c10325e210a4103e70",
+      "bytes": 2370
+    },
+    "opencv2/imgproc/imgproc_c.h": {
+      "source": "modules/imgproc/include/opencv2/imgproc/imgproc_c.h",
+      "sha256": "c0b4bd7f7769c966dbfada1d3ae65f8ce214fce1038339245a174ac40140ca77",
+      "bytes": 51155
+    },
+    "opencv2/imgproc/segmentation.hpp": {
+      "source": "modules/imgproc/include/opencv2/imgproc/segmentation.hpp",
+      "sha256": "1f27474710e792c7ff1f1a63bac86876f53ceb0f648d32eb30b99e67d3dd5fdf",
+      "bytes": 6020
+    },
+    "opencv2/imgproc/types_c.h": {
+      "source": "modules/imgproc/include/opencv2/imgproc/types_c.h",
+      "sha256": "c844682f2f7d8dcbce7acdac069b41203dd8a4309946b3d23dbe22663d74a012",
+      "bytes": 18400
+    },
+    "opencv2/opencv.hpp": {
+      "source": "include/opencv2/opencv.hpp",
+      "sha256": "37df4ccc15f8a6ed06e2099910c63e486841ddbd5bc2d303405bc34f8fd44b66",
+      "bytes": 3463
+    },
+    "opencv2/opencv_modules.hpp": {
+      "source": null,
+      "sha256": "3cc030a42cb62ed2d01e8d540bc87433499b1ac9cba204538262dfd816134077",
+      "bytes": 479
+    },
+    "opencv2/videoio.hpp": {
+      "source": "modules/videoio/include/opencv2/videoio.hpp",
+      "sha256": "8089595960247d65d0c84d292c617ce5343bdd870d695a65a64fa08b8ea20399",
+      "bytes": 74126
+    },
+    "opencv2/videoio/legacy/constants_c.h": {
+      "source": "modules/videoio/include/opencv2/videoio/legacy/constants_c.h",
+      "sha256": "8a719953ee483167b24033a99e2492b4f715996d85cc3e9365f3bff1a57c6897",
+      "bytes": 30532
+    },
+    "opencv2/videoio/registry.hpp": {
+      "source": "modules/videoio/include/opencv2/videoio/registry.hpp",
+      "sha256": "8471f25b7c501b797ab01e8531d36b4250c929d1533da7e75da2024cbf46180c",
+      "bytes": 2975
+    },
+    "opencv2/videoio/videoio.hpp": {
+      "source": "modules/videoio/include/opencv2/videoio/videoio.hpp",
+      "sha256": "d38fe912bef4af8a587bf820e2316202c1253c60fca72a339a32f94e85ac2c81",
+      "bytes": 2369
+    },
+    "opencv2/videoio/videoio_c.h": {
+      "source": "modules/videoio/include/opencv2/videoio/videoio_c.h",
+      "sha256": "48ad598cb1609b34ed1f8663a3839b49a65c9ea5998803aa026a42e5dfdab112",
+      "bytes": 5647
+    }
+  },
+  "generated": {
+    "opencv2/cvconfig.h": "#ifndef OPENCV_CVCONFIG_H_INCLUDED\n#define OPENCV_CVCONFIG_H_INCLUDED\n\n/* OpenCV compiled as static or dynamic libs */\n#define BUILD_SHARED_LIBS\n\n/* OpenCV intrinsics optimized code */\n#define CV_ENABLE_INTRINSICS\n\n/* OpenCV additional optimized code */\n/* #undef CV_DISABLE_OPTIMIZATION */\n\n/* Compile for 'real' NVIDIA GPU architectures */\n#define CUDA_ARCH_BIN \"\"\n\n/* NVIDIA GPU features are used */\n#define CUDA_ARCH_FEATURES \"\"\n\n/* Compile for 'virtual' NVIDIA PTX architectures */\n#define CUDA_ARCH_PTX \"\"\n\n/* AMD's Basic Linear Algebra Subprograms Library*/\n/* #undef HAVE_CLAMDBLAS */\n\n/* AMD's OpenCL Fast Fourier Transform Library*/\n/* #undef HAVE_CLAMDFFT */\n\n/* Clp support */\n/* #undef HAVE_CLP */\n\n/* NVIDIA CUDA Runtime API*/\n/* #undef HAVE_CUDA */\n\n/* NVIDIA CUDA Basic Linear Algebra Subprograms (BLAS) API*/\n/* #undef HAVE_CUBLAS */\n\n/* NVIDIA CUDA Deep Neural Network (cuDNN) API*/\n/* #undef HAVE_CUDNN */\n\n/* NVIDIA CUDA Fast Fourier Transform (FFT) API*/\n/* #undef HAVE_CUFFT */\n\n/* DirectX */\n/* #undef HAVE_DIRECTX */\n/* #undef HAVE_DIRECTX_NV12 */\n/* #undef HAVE_D3D11 */\n/* #undef HAVE_D3D10 */\n/* #undef HAVE_D3D9 */\n\n/* Eigen Matrix & Linear Algebra Library */\n/* #undef HAVE_EIGEN */\n\n/* Geospatial Data Abstraction Library */\n/* #undef HAVE_GDAL */\n\n/* Halide support */\n/* #undef HAVE_HALIDE */\n\n/* Vulkan support */\n/* #undef HAVE_VULKAN */\n\n/* Define to 1 if you have the <inttypes.h> header file. */\n/* #undef HAVE_INTTYPES_H */\n\n/* Intel Integrated Performance Primitives */\n/* #undef HAVE_IPP */\n/* #undef HAVE_IPP_ICV */\n/* #undef HAVE_IPP_IW */\n/* #undef HAVE_IPP_IW_LL */\n\n/* JPEG-2000 codec */\n/* #undef HAVE_OPENJPEG */\n#define HAVE_JASPER\n\n/* AVIF codec */\n/* #undef HAVE_AVIF */\n\n/* IJG JPEG codec */\n#define HAVE_JPEG\n\n/* JPEG XL codec */\n/* #undef HAVE_JPEGXL */\n\n/* GDCM DICOM codec */\n/* #undef HAVE_GDCM */\n\n/* NVIDIA Video Decoding API*/\n/* #undef HAVE_NVCUVID */\n/* #undef HAVE_NVCUVID_HEADER */\n/* #undef HAVE_DYNLINK_NVCUVID_HEADER */\n\n/* NVIDIA Video Encoding API*/\n/* #undef HAVE_NVCUVENC */\n\n/* OpenCL Support */\n/* #undef HAVE_OPENCL */\n/* #undef HAVE_OPENCL_STATIC */\n/* #undef HAVE_OPENCL_SVM */\n\n/* NVIDIA OpenCL D3D Extensions support */\n/* #undef HAVE_OPENCL_D3D11_NV */\n\n/* OpenEXR codec */\n/* #undef HAVE_OPENEXR */\n\n/* OpenGL support*/\n/* #undef HAVE_OPENGL */\n\n/* PNG codec */\n/* #undef HAVE_PNG */\n\n/* PNG codec */\n/* #undef HAVE_SPNG */\n\n/* Posix threads (pthreads) */\n#define HAVE_PTHREAD\n\n/* parallel_for with pthreads */\n#define HAVE_PTHREADS_PF\n\n/* Intel Threading Building Blocks */\n/* #undef HAVE_TBB */\n\n/* Ste||ar Group High Performance ParallelX */\n/* #undef HAVE_HPX */\n\n/* TIFF codec */\n/* #undef HAVE_TIFF */\n\n/* Define if your processor stores words with the most significant byte\n   first (like Motorola and SPARC, unlike Intel and VAX). */\n/* #undef WORDS_BIGENDIAN */\n\n/* VA library (libva) */\n/* #undef HAVE_VA */\n\n/* Intel VA-API/OpenCL */\n/* #undef HAVE_VA_INTEL */\n\n/* Lapack */\n/* #undef HAVE_LAPACK */\n\n/* Library was compiled with functions instrumentation */\n/* #undef ENABLE_INSTRUMENTATION */\n\n/* OpenVX */\n/* #undef HAVE_OPENVX */\n\n/* OpenCV trace utilities */\n#define OPENCV_TRACE\n\n/* Library QR-code decoding */\n/* #undef HAVE_QUIRC */\n\n#endif // OPENCV_CVCONFIG_H_INCLUDED\n",
+    "opencv2/opencv_modules.hpp": "/*\n *      ** File generated automatically, do not modify **\n *\n * This file defines the list of modules available in current build configuration\n *\n *\n*/\n\n// This definition means that OpenCV is built with enabled non-free code.\n// For example, patented algorithms for non-profit/non-commercial use only.\n/* #undef OPENCV_ENABLE_NONFREE */\n\n#define HAVE_OPENCV_CORE\n#define HAVE_OPENCV_DNN\n#define HAVE_OPENCV_IMGCODECS\n#define HAVE_OPENCV_IMGPROC\n#define HAVE_OPENCV_VIDEOIO\n\n\n"
+  }
+}

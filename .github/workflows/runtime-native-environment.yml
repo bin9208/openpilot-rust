@@ -22,6 +22,11 @@ on:
       - 'rust/crates/dev-tools/src/bin/stage_startup_ui_raylib.rs'
       - 'rust/crates/dev-tools/tests/native_raylib.rs'
       - 'rust/native-raylib-provider.json'
+      - 'rust/native-opencv-headers.json'
+      - 'rust/crates/dev-tools/src/native_opencv_headers.rs'
+      - 'rust/crates/dev-tools/src/bin/build_runtime_opencv.rs'
+      - 'rust/crates/dev-tools/tests/native_opencv_headers.rs'
+      - 'tools/ci/prepare_native_opencv_headers.py'
       - 'tools/ci/prepare_native_raylib.py'
       - 'rust/native-ffmpeg-provider.json'
       - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
@@ -287,6 +292,22 @@ jobs:
           path: ${{ env.CI_JOB_TEMP }}/native-raylib-assets
           key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
       - uses: actions/cache/restore@v4
+        id: opencv-header-source-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-opencv-source
+          key: native-opencv-source-6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61-v1
+      - name: Restore original OpenCV headers without rebuilding its native libraries
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-opencv
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_opencv_headers.py --preparer "$native_target/debug/build-runtime-opencv" \
+            --plan rust/native-opencv-headers.json --work "$RUNNER_TEMP"
+      - uses: actions/cache/save@v4
+        if: steps.opencv-header-source-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-opencv-source
+          key: native-opencv-source-6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61-v1
+      - uses: actions/cache/restore@v4
         id: ffmpeg-headers-cache
         with:
           path: ${{ env.CI_JOB_TEMP }}/native-ffmpeg-source
@@ -452,6 +473,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-cargo-reused.json
             ${{ env.CI_JOB_TEMP }}/native-codec-first.json
             ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-*.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-headers-*.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-headers-tamper.*
+            ${{ env.CI_JOB_TEMP }}/native-opencv-headers/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-tamper.*
             ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-raylib-provider-*.json
@@ -479,6 +503,10 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/receipt.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/commands.log
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-headers/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-sdk-prefixes/**/generation/tree.json

@@ -911,6 +911,71 @@ def native_raylib_probe(guest_command,work,source_mount,evidence,log,guest_work)
       library_loaded=False,graphics_execution_tested=False,full_runtime_build=False,physical_device_execution=False)
 
 
+def native_opencv_headers_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Compile against the exact original installed headers; do not load OpenCV."""
+  host=json.loads((work.parent/'native-opencv-headers-initial.json').read_text())
+  room(work,host['copied_bytes']+128*1024**2)
+  def execute(argv,name):
+    evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
+    return work/name
+  execute(['cargo','build','--locked','--manifest-path',f'{source_mount}/rust/Cargo.toml',
+      '-p','openpilot-dev-tools','--bin','build-runtime-opencv','--target-dir',work/'project-target',
+      '--message-format=json'],'native-opencv-preparer-build.jsonl')
+  command=[work/'project-target/debug/build-runtime-opencv','--prepare-released-headers',
+      '--plan',f'{source_mount}/rust/native-opencv-headers.json','--cache',Path(guest_work)/'opencv-source',
+      '--store',work/'native-opencv-headers']
+  rows=[]
+  for phase in ('initial','reused'):
+    row=json.loads(execute(command,f'native-opencv-headers-{phase}.json').read_text())
+    assert row['tree_sha256']==host['tree_sha256'] and row['identity']==host['identity']
+    assert row['public_headers']==170 and not row['provider_libraries_prepared']
+    assert row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+    assert (row['copied_bytes']>0)==row['source_archive_decompressed']==(phase=='initial')
+    assert not row['compiler_executed'] and not row['runtime_activated'] and not row['actual_target_execution']
+    rows.append(row)
+  source=work/'native-opencv-header-api.cc'
+  source.write_text('''#include <opencv2/core.hpp>
+#include <opencv2/core/version.hpp>
+#include <opencv2/cvconfig.h>
+#include <opencv2/opencv_modules.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/dnn.hpp>
+#if CV_VERSION_MAJOR != 4 || CV_VERSION_MINOR != 13 || CV_VERSION_REVISION != 0
+#error Original_OpenCV_version_required
+#endif
+#if !defined(HAVE_OPENCV_CORE) || !defined(HAVE_OPENCV_DNN) || !defined(HAVE_OPENCV_VIDEOIO) || !defined(HAVE_OPENCV_IMGCODECS) || !defined(HAVE_OPENCV_IMGPROC)
+#error Original_five_module_configuration_required
+#endif
+cv::Mat native_header_api(const cv::Mat& image) {
+  cv::Mat gray;
+  cv::cvtColor(image,gray,cv::COLOR_BGR2GRAY);
+  std::vector<unsigned char> encoded;
+  cv::imencode(".png",gray,encoded);
+  cv::dnn::Net network;
+  cv::VideoCapture camera;
+  return gray;
+}
+''')
+  output=work/'native-opencv-header-api.o'
+  execute(['g++','-std=c++17','-O0','-fPIC','-I',Path(rows[0]['root'])/'install/include/opencv4',
+      '-c',source,'-o',output],'native-opencv-header-api-build.txt')
+  with output.open('rb') as stream: header=stream.read(64)
+  assert header[:6]==b'\x7fELF\x02\x01' and int.from_bytes(header[16:18],'little')==1 and int.from_bytes(header[18:20],'little')==183
+  after=json.loads(execute(command,'native-opencv-headers-after-compilation.json').read_text())
+  assert after['tree_sha256']==rows[0]['tree_sha256'] and not after['source_archive_decompressed']
+  assert after['copied_bytes']==after['asset']['transferred_bytes']==after['asset']['stored_bytes']==0
+  evidence['native_opencv_headers']=dict(tree_sha256=rows[0]['tree_sha256'],public_headers=170,
+      source_archive_sha256=host['asset']['sha256'],source_archive_bytes=95450266,
+      original_generated_headers=2,original_hardening_preserved=True,actual_arm_preparer=True,
+      independent_host_tree_matches=True,repeated_body_bytes=0,repeated_copied_bytes=0,
+      repeated_source_decompression=False,header_api_source_sha256=digest(source),
+      header_api_object_sha256=digest(output),actual_arm_header_compile=True,
+      provider_libraries_prepared=False,provider_link_or_execution_tested=False,
+      complete_consumer_regression=False,full_runtime_build=False,physical_device_execution=False)
+
+
 def main():
   assert os.environ.get('RUNNER_NAME') == 'bin-actions'
   assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
@@ -992,7 +1057,7 @@ def main():
     (work / 'ffmpeg-source').mkdir()
     (work / 'provider-assets').mkdir()
     (work / 'provider-export').mkdir()
-    for name in ('raylib-assets','raylib-components','raylib-provider-export'):
+    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source'):
       (work/name).mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
@@ -1017,6 +1082,7 @@ def main():
              '-b', f'{owned / "native-raylib-assets"}:{guest_work}/raylib-assets',
              '-b', f'{owned / "native-raylib-components"}:{guest_work}/raylib-components',
              '-b', f'{owned / "native-raylib-provider-export"}:{guest_work}/raylib-provider-export',
+             '-b', f'{owned / "native-opencv-source"}:{guest_work}/opencv-source',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
@@ -1067,6 +1133,7 @@ def main():
     native_encoder_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_eigen_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_opencv_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))
