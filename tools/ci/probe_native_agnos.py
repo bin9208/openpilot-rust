@@ -87,9 +87,24 @@ def native_driver_probe(guest_command, work, source_mount, evidence, log, guest_
   assert catalog['source']['commit'] == actual_source
   assert catalog['groups'] == 13 and catalog['binaries'] == 99
   assert not catalog['compiled'] and not catalog['activated']
+  assert catalog['compiler_inputs_bound'] is None
+  assert len(catalog['compiler_inputs'])==13
+  for name in ('07','08','10'):
+    assert catalog['compiler_inputs'][name]['FFMPEG_DIR']==''
+  for name in ('00','01','02'):
+    assert catalog['compiler_inputs'][name]['STARTUP_UI_RAYLIB_ROOT']==''
+  for requirements in catalog['compiler_inputs'].values():
+    assert requirements['OPENPILOT_CARGO_VENDOR']=='vendor'
   evidence['native_project_catalog'] = dict(source_commit=actual_source, planner_sha256=digest(planner),
       catalog_sha256=catalog['catalog_sha256'], groups=catalog['groups'], binaries=catalog['binaries'],
+      transitive_compiler_input_contract_audited=True,compiler_inputs_bound=False,
       full_runtime_build=False)
+  execute(['/usr/bin/python3',f'{source_mount}/tools/ci/verify_native_compiler_features.py',
+      '--cargo',cargo,'--root',source_mount,'--source-commit',actual_source,
+      '--output',work/'native-compiler-features'],'native-project-compiler-features.json')
+  feature_report=json.loads((work/'native-compiler-features/result.json').read_text())
+  assert feature_report['status']=='PASS' and len(feature_report['groups'])==13
+  evidence['native_project_catalog']['independent_cargo_tree_groups_matched']=13
   toolchain = str(Path(cargo).parent)
   fixture = work / 'driver-fixture'
   shutil.copytree(work / 'fixture/src', fixture / 'rust/src')

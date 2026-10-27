@@ -30,6 +30,9 @@ pub struct Group {
     pub packages: Vec<String>,
     pub features: Vec<String>,
     pub binaries: Vec<String>,
+    /// Environment value = pinned Tree root joined with this relative suffix.
+    #[serde(default)]
+    pub compiler_inputs: BTreeMap<String, PathBuf>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -68,6 +71,9 @@ pub struct Audit {
     pub groups: usize,
     pub binaries: usize,
     pub target: String,
+    pub compiler_inputs: BTreeMap<String, BTreeMap<String, PathBuf>>,
+    pub compiler_inputs_bound: Option<bool>,
+    pub compiler_inputs_error: Option<String>,
     pub compiled: bool,
     pub activated: bool,
 }
@@ -214,6 +220,7 @@ impl Catalog {
             .filter(|p| p["id"].as_str().is_some_and(|id| members.contains(id)))
             .filter_map(|p| p["name"].as_str().map(|name| (name, p)))
             .collect();
+        let workspace = crate::catalog_features::Workspace::read(metadata)?;
         for group in self.groups.values() {
             let selected: BTreeSet<_> = group.packages.iter().map(String::as_str).collect();
             if selected.len() != group.packages.len()
@@ -292,6 +299,70 @@ impl Catalog {
                         )
                         .into());
                     }
+                }
+            }
+            if workspace.requirements(group)? != group.compiler_inputs {
+                return Err(
+                    "catalog compiler inputs differ from actual transitive/default Cargo features"
+                        .into(),
+                );
+            }
+        }
+        Ok(())
+    }
+
+    /// Metadata-only: preserved generations do not require a live build cache.
+    /// The actual driver still verifies every bound Tree before/after compiling.
+    pub fn verify_compiler_bindings(&self, plan: &prepare::Plan) -> Result<()> {
+        self.verify_plan(plan)?;
+        for (name, group) in &self.groups {
+            let recipe = &plan.groups[name];
+            for (environment, suffix) in &group.compiler_inputs {
+                let value=recipe.environment.get(environment).ok_or_else(||format!("native group {name} is missing required compiler environment {environment}"))?;
+                let mut root = PathBuf::from(value);
+                if !root.is_absolute()
+                    || value.contains(['\n', '\r'])
+                    || root.components().any(|c| {
+                        matches!(
+                            c,
+                            std::path::Component::ParentDir | std::path::Component::CurDir
+                        )
+                    })
+                {
+                    return Err(
+                        "native compiler input path must be absolute without dot components".into(),
+                    );
+                }
+                for component in suffix.components().rev() {
+                    let std::path::Component::Normal(expected) = component else {
+                        return Err("invalid tracked compiler input suffix".into());
+                    };
+                    if root.file_name() != Some(expected) || !root.pop() {
+                        return Err(
+                            "native compiler environment differs from its pinned Tree layout"
+                                .into(),
+                        );
+                    }
+                }
+                let receipt=recipe.input_trees.get(&root).ok_or_else(||format!("native group {name} compiler input {environment} is not bound to its complete Tree"))?;
+                if !receipt.is_absolute()
+                    || receipt.components().any(|c| {
+                        matches!(
+                            c,
+                            std::path::Component::ParentDir | std::path::Component::CurDir
+                        )
+                    })
+                    || recipe.inputs.get(receipt).is_none_or(|pin| {
+                        pin.len() != 64
+                            || !pin
+                                .bytes()
+                                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+                    })
+                {
+                    return Err(
+                        "native compiler provider Tree receipt is not independently SHA-pinned"
+                            .into(),
+                    );
                 }
             }
         }
@@ -401,6 +472,13 @@ pub fn audit(root: &Path, cargo: &Path) -> Result<(Catalog, Audit)> {
         groups: catalog.groups.len(),
         binaries: catalog.groups.values().map(|g| g.binaries.len()).sum(),
         target: catalog.target.clone(),
+        compiler_inputs: catalog
+            .groups
+            .iter()
+            .map(|(name, g)| (name.clone(), g.compiler_inputs.clone()))
+            .collect(),
+        compiler_inputs_bound: None,
+        compiler_inputs_error: None,
         compiled: false,
         activated: false,
     };
@@ -412,6 +490,13 @@ pub fn assemble(root: &Path, cargo: &Path, bindings_path: &Path) -> Result<(prep
     let bindings_sha256 = digest_file(bindings_path)?;
     let bindings: Bindings = read(bindings_path)?;
     let plan = catalog.compose(&bindings, root)?;
+    match catalog.verify_compiler_bindings(&plan) {
+        Ok(()) => audit.compiler_inputs_bound = Some(true),
+        Err(error) => {
+            audit.compiler_inputs_bound = Some(false);
+            audit.compiler_inputs_error = Some(error.to_string());
+        }
+    }
     if source::inspect(&root.canonicalize()?)? != audit.source
         || digest_file(&root.join(PATH))? != audit.catalog_sha256
         || digest_file(cargo)? != audit.metadata_cargo_sha256
@@ -427,7 +512,7 @@ pub fn assemble(root: &Path, cargo: &Path, bindings_path: &Path) -> Result<(prep
 }
 
 pub(crate) fn verify_source_plan(root: &Path, plan: &prepare::Plan) -> Result<()> {
-    read::<Catalog>(&root.join(PATH))?.verify_plan(plan)
+    read::<Catalog>(&root.join(PATH))?.verify_compiler_bindings(plan)
 }
 
 pub fn publish(output: &Path, plan: &prepare::Plan, audit: &Audit) -> Result<()> {
@@ -477,4 +562,132 @@ pub fn publish(output: &Path, plan: &prepare::Plan, audit: &Audit) -> Result<()>
     )?;
     File::open(parent)?.sync_all()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod compiler_binding_tests {
+    use super::*;
+    fn complete() -> (Catalog, prepare::Plan) {
+        let catalog: Catalog =
+            serde_json::from_str(include_str!("../../../native-runtime-catalog.json")).unwrap();
+        let mut plan = catalog.recipes();
+        for (name, group) in &catalog.groups {
+            let recipe = plan.groups.get_mut(name).unwrap();
+            for (environment, suffix) in &group.compiler_inputs {
+                let root = if environment == "LIBCLANG_PATH" {
+                    PathBuf::from("/")
+                } else {
+                    Path::new("/owned/compiler-inputs").join(environment)
+                };
+                let receipt = Path::new("/owned/receipts").join(format!("{environment}.json"));
+                recipe
+                    .environment
+                    .insert(environment.clone(), root.join(suffix).display().to_string());
+                recipe.inputs.insert(receipt.clone(), "1".repeat(64));
+                recipe.input_trees.insert(root, receipt);
+            }
+        }
+        (catalog, plan)
+    }
+    #[test]
+    fn every_required_group_provider_needs_its_environment_complete_tree_and_pinned_receipt() {
+        let (catalog, plan) = complete();
+        // Metadata-only fixtures deliberately have no live input directories.
+        catalog.verify_compiler_bindings(&plan).unwrap();
+        for (name, group) in &catalog.groups {
+            for environment in group.compiler_inputs.keys() {
+                let mut bad = plan.clone();
+                bad.groups
+                    .get_mut(name)
+                    .unwrap()
+                    .environment
+                    .remove(environment);
+                assert!(
+                    catalog.verify_compiler_bindings(&bad).is_err(),
+                    "{name}:{environment}"
+                );
+                let mut bad = plan.clone();
+                let recipe = bad.groups.get_mut(name).unwrap();
+                let receipt = Path::new("/owned/receipts").join(format!("{environment}.json"));
+                recipe.inputs.remove(&receipt);
+                assert!(catalog.verify_compiler_bindings(&bad).is_err());
+                let mut bad = plan.clone();
+                bad.groups
+                    .get_mut(name)
+                    .unwrap()
+                    .input_trees
+                    .retain(|_, r| r != &receipt);
+                assert!(catalog.verify_compiler_bindings(&bad).is_err());
+            }
+        }
+    }
+    #[test]
+    fn system_sdk_cannot_stand_in_for_unbound_foreign_prefix_or_wrong_layout() {
+        let (catalog, mut plan) = complete();
+        let recipe = plan.groups.get_mut("07").unwrap();
+        recipe
+            .environment
+            .insert("FFMPEG_DIR".into(), "/unbound/ffmpeg".into());
+        assert!(recipe.input_trees.contains_key(Path::new("/")));
+        assert!(catalog
+            .verify_compiler_bindings(&plan)
+            .unwrap_err()
+            .to_string()
+            .contains("complete Tree"));
+        let (catalog, mut plan) = complete();
+        plan.groups
+            .get_mut("00")
+            .unwrap()
+            .environment
+            .insert("ENCODER_LIBYUV_LIB".into(), "/owned/inputs/headers".into());
+        assert!(catalog
+            .verify_compiler_bindings(&plan)
+            .unwrap_err()
+            .to_string()
+            .contains("layout"));
+    }
+    #[test]
+    fn compiler_receipts_with_relative_paths_or_non_sha_pins_are_not_trusted() {
+        for malformed in [false, true] {
+            let (catalog, mut plan) = complete();
+            let recipe = plan.groups.get_mut("12").unwrap();
+            let root = PathBuf::from("/owned/compiler-inputs/OPENPILOT_CARGO_VENDOR");
+            let receipt = if malformed {
+                PathBuf::from("/owned/not-a-sha.json")
+            } else {
+                PathBuf::from("relative.json")
+            };
+            recipe.input_trees.insert(root, receipt.clone());
+            recipe.inputs.insert(
+                receipt,
+                if malformed {
+                    "z".repeat(64)
+                } else {
+                    "1".repeat(64)
+                },
+            );
+            assert!(catalog.verify_compiler_bindings(&plan).is_err());
+        }
+    }
+    #[test]
+    fn build_seal_and_boot_source_catalog_gate_enforces_the_contract_without_live_caches() {
+        let (catalog, mut plan) = complete();
+        let source = tempfile::tempdir().unwrap();
+        std::fs::create_dir(source.path().join("rust")).unwrap();
+        std::fs::write(
+            source.path().join(PATH),
+            serde_json::to_vec(&catalog).unwrap(),
+        )
+        .unwrap();
+        verify_source_plan(source.path(), &plan).unwrap();
+        plan.groups
+            .get_mut("08")
+            .unwrap()
+            .environment
+            .remove("FFMPEG_DIR");
+        assert!(verify_source_plan(source.path(), &plan)
+            .unwrap_err()
+            .to_string()
+            .contains("FFMPEG_DIR"));
+    }
 }

@@ -32,7 +32,15 @@
         "openpilot-runtime-install",
         "openpilot-cluster",
         "openpilot-cluster-autorun"
-      ]
+      ],
+      "compiler_inputs": {
+        "ENCODER_LIBYUV_LIB": "lib",
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor",
+        "STARTUP_UI_RAYLIB_ROOT": ""
+      }
     },
     "01": {
       "packages": [
@@ -59,7 +67,15 @@
         "openpilot-process-child",
         "openpilot-spinner",
         "openpilot-text-window"
-      ]
+      ],
+      "compiler_inputs": {
+        "ENCODER_LIBYUV_LIB": "lib",
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor",
+        "STARTUP_UI_RAYLIB_ROOT": ""
+      }
     },
     "02": {
       "packages": [
@@ -82,7 +98,12 @@
         "openpilot-agnos",
         "openpilot-timed",
         "openpilot-carrot-recovery"
-      ]
+      ],
+      "compiler_inputs": {
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor",
+        "STARTUP_UI_RAYLIB_ROOT": ""
+      }
     },
     "03": {
       "packages": [
@@ -110,7 +131,14 @@
         "openpilot-webrtcd",
         "openpilot-carrot-man",
         "openpilot-calibrationd"
-      ]
+      ],
+      "compiler_inputs": {
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor",
+        "OPENPILOT_WEBCAM_OPENCV_ROOT": ""
+      }
     },
     "04": {
       "packages": [
@@ -140,7 +168,13 @@
         "openpilot-pandad-supervisor",
         "openpilot-selfdrived",
         "openpilot-locationd"
-      ]
+      ],
+      "compiler_inputs": {
+        "LOCATIOND_EIGEN_INCLUDE": "",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor",
+        "OPENPILOT_OPENCV_ROOT": ""
+      }
     },
     "05": {
       "packages": [
@@ -171,7 +205,11 @@
         "openpilot-lateral-maneuversd",
         "openpilot-longitudinal-maneuversd",
         "openpilot-controlsd"
-      ]
+      ],
+      "compiler_inputs": {
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
     },
     "06": {
       "packages": [
@@ -197,7 +235,12 @@
         "openpilot-feedbackd",
         "openpilot-proclogd",
         "openpilot-proclogd-runtime"
-      ]
+      ],
+      "compiler_inputs": {
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor",
+        "PARAMSD_EIGEN_INCLUDE": ""
+      }
     },
     "07": {
       "packages": [
@@ -221,7 +264,13 @@
         "jetlinkd-rs",
         "openpilot-dmonitoringd",
         "openpilot-loggerd"
-      ]
+      ],
+      "compiler_inputs": {
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
     },
     "08": {
       "packages": [
@@ -243,7 +292,13 @@
         "openpilot-tombstoned",
         "openpilot-bootlog",
         "openpilot-modem"
-      ]
+      ],
+      "compiler_inputs": {
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
     },
     "09": {
       "packages": [
@@ -265,7 +320,11 @@
         "bridge",
         "openpilot-updated",
         "openpilot-micd"
-      ]
+      ],
+      "compiler_inputs": {
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
     },
     "10": {
       "packages": [
@@ -294,7 +353,13 @@
         "openpilot-carrot-server",
         "openpilot-vision-test",
         "openpilot-youtube-test"
-      ]
+      ],
+      "compiler_inputs": {
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
     },
     "11": {
       "packages": [
@@ -310,7 +375,10 @@
         "openpilot-runtime-native",
         "openpilot-native-build-scope",
         "openpilot-runtime-plan"
-      ]
+      ],
+      "compiler_inputs": {
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
     },
     "12": {
       "packages": [
@@ -320,7 +388,10 @@
       "binaries": [
         "seal-runtime-package",
         "runtime-elf-audit"
-      ]
+      ],
+      "compiler_inputs": {
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
     }
   }
 }

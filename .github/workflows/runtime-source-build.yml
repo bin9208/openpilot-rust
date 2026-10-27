@@ -19,6 +19,7 @@ on:
       - 'rust/crates/dev-tools/src/native_opencv_prefix.rs'
       - 'rust/crates/dev-tools/tests/native_opencv_prefix.rs'
       - 'tools/ci/prepare_native_opencv_prefix.py'
+      - 'tools/ci/verify_native_compiler_features.py'
       - 'rust/crates/dev-tools/src/native_opencv_headers.rs'
       - 'rust/crates/dev-tools/src/bin/build_runtime_opencv.rs'
       - 'rust/crates/dev-tools/tests/native_opencv_headers.rs'

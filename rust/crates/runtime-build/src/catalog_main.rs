@@ -8,7 +8,7 @@ fn run() -> Result<()> {
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--help" | "-h") => {
-                println!("Usage: openpilot-runtime-plan --root CHECKOUT --cargo ABSOLUTE_CARGO (--check | --bindings PINNED_INPUTS_JSON --output NEW_DIRECTORY)\nAudit the tracked ARM runtime roster against actual locked Cargo metadata. Assemble its existing serial build plan from verified input receipts and explicit per-group assignments. No compilation, dependency download, generation sealing or activation is performed.");
+                println!("Usage: openpilot-runtime-plan --root CHECKOUT --cargo ABSOLUTE_CARGO (--check | --bindings PINNED_INPUTS_JSON --output NEW_DIRECTORY)\nAudit the tracked ARM runtime roster and compiler input requirements against actual locked Cargo metadata. Assemble the serial plan from verified receipts and per-group assignments; compiler_inputs_bound reports whether all required provider Trees are bound. Incomplete engineering plans cannot pass full generation build/seal/boot validation. No compilation, dependency download, sealing or activation is performed.");
                 return Ok(());
             }
             Some("--check") if !check => check = true,

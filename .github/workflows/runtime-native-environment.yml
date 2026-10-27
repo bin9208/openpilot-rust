@@ -4,6 +4,7 @@ on:
     branches: ['codex/feat-599-*', 'codex/feat-600-*']
     paths:
       - 'tools/ci/probe_native_agnos.py'
+      - 'tools/ci/verify_native_compiler_features.py'
       - 'tools/ci/fixtures/native-agnos-assets-599.json'
       - 'rust/native-rust-toolchain.json'
       - 'rust/crates/runtime-build/src/toolchain.rs'
@@ -11,6 +12,10 @@ on:
       - 'rust/crates/runtime-build/src/capnp.rs'
       - 'rust/crates/runtime-build/src/cargo_inputs.rs'
       - 'rust/crates/runtime-build/src/system_sdk.rs'
+      - 'rust/crates/runtime-build/src/catalog.rs'
+      - 'rust/crates/runtime-build/src/catalog_features.rs'
+      - 'rust/crates/runtime-build/tests/catalog.rs'
+      - 'rust/native-runtime-catalog.json'
       - 'rust/crates/runtime-build/src/inputs.rs'
       - 'rust/crates/dev-tools/src/native_codec_inputs.rs'
       - 'rust/crates/dev-tools/src/native_ffmpeg_headers.rs'
@@ -523,6 +528,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.jsonl
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.cc
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-compiler-features/
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-bridge-cases/
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-headers/**/generation/tree.json

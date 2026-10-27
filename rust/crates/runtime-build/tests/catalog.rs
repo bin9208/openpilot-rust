@@ -73,6 +73,16 @@ fn actual_workspace_roster_and_package_features_are_audited_by_the_real_cli() {
     assert_eq!(audit["compiled"], false);
     assert_eq!(audit["activated"], false);
     assert!(audit["plan_sha256"].is_null());
+    assert!(audit["compiler_inputs_bound"].is_null());
+    for group in ["07", "08", "10"] {
+        assert_eq!(audit["compiler_inputs"][group]["FFMPEG_DIR"], "");
+    }
+    for group in ["00", "01", "02"] {
+        assert_eq!(
+            audit["compiler_inputs"][group]["STARTUP_UI_RAYLIB_ROOT"],
+            ""
+        );
+    }
     let metadata = Command::new(toolchain().join("cargo"))
         .current_dir(root)
         .args([
@@ -92,6 +102,30 @@ fn actual_workspace_roster_and_package_features_are_audited_by_the_real_cli() {
     let catalog: Catalog =
         serde_json::from_str(include_str!("../../../native-runtime-catalog.json")).unwrap();
     catalog.verify(&metadata).unwrap();
+    let mut missing = catalog.clone();
+    missing
+        .groups
+        .get_mut("08")
+        .unwrap()
+        .compiler_inputs
+        .remove("FFMPEG_DIR");
+    assert!(missing
+        .verify(&metadata)
+        .unwrap_err()
+        .to_string()
+        .contains("compiler inputs"));
+    let mut excessive = catalog.clone();
+    excessive
+        .groups
+        .get_mut("12")
+        .unwrap()
+        .compiler_inputs
+        .insert("FFMPEG_DIR".into(), PathBuf::new());
+    assert!(excessive
+        .verify(&metadata)
+        .unwrap_err()
+        .to_string()
+        .contains("compiler inputs"));
     let mut wrong = catalog.clone();
     wrong
         .groups
@@ -197,6 +231,7 @@ fn provider_and_model_changes_partition_actual_compiler_work_without_changing_ot
                         packages: vec![name.into()],
                         features: vec![],
                         binaries: vec![name.into()],
+                        compiler_inputs: BTreeMap::new(),
                     },
                 )
             })
@@ -394,6 +429,11 @@ fn actual_full_plan_assembly_binds_its_receipt_and_never_replaces_an_existing_ou
         String::from_utf8_lossy(&result.stderr)
     );
     let receipt: serde_json::Value = serde_json::from_slice(&result.stdout).unwrap();
+    assert_eq!(receipt["compiler_inputs_bound"], false);
+    assert!(receipt["compiler_inputs_error"]
+        .as_str()
+        .unwrap()
+        .contains("compiler environment"));
     assert_eq!(
         receipt["bindings_sha256"],
         digest_file(&bindings_path).unwrap()

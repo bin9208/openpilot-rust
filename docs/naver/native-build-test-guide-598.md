@@ -21,6 +21,11 @@
 
 ## 개발 검증 실행 방법
 
+전체99개/13그룹의 전이/default feature에 따른 compiler 입력 목록과 필수 Tree 결속은
+[compiler 입력 계약](native-compiler-input-contract-599.md)을 따른다. catalog audit의
+compiler_inputs_bound와 compiled/activated를 구분하며 engineering plan을 전체 runtime
+완료로 사용하지 않는다.
+
 기존 OpenCV4.13.0의168개 source header와 원래 생성 설정 헤더2개 준비, 반복 압축 해제
 생략/전송0/복사0과 ARM API object 검사는 [OpenCV 헤더 안내](native-opencv-headers-599.md)를
 따른다. 같은 shared library5개와 headers/alias185행을 구성하고 실제 ARM Rust bridge를
