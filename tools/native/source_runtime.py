@@ -248,7 +248,7 @@ def preserve_configuration(generations, configuration, pin):
 
 
 def build_runtime(prepared, plan, config_path, config_pin, source, request_owner=None,
-                  running_config=None, running_pin=None, previous=None, expected_source=None):
+                  running_config=None, running_pin=None, previous=None, expected_source=None, observe=None):
   started = time.monotonic()
   seed.verify_native(Path(prepared['root']), plan)
   if os.geteuid() == 0:
@@ -275,6 +275,8 @@ def build_runtime(prepared, plan, config_path, config_pin, source, request_owner
   commands = OwnedCommands(owner, params)
 
   def check(pins=None):
+    if observe is not None:
+      observe()
     seed.verify_owners(owner)
     offroad(params)
     read(config_path, config_pin)

@@ -3,7 +3,7 @@
 use crate::{bootstrap::Paths, handoff, Error};
 use openpilot_runtime_build::{
     generation::{self, Config},
-    pending, selection,
+    machine, pending, selection,
 };
 use std::{
     fs::File,
@@ -23,6 +23,9 @@ pub struct Context {
     pub generation: String,
     config: Config,
     configuration_sha256: String,
+    machine_path: Option<PathBuf>,
+    machine_launch_pin: Option<std::ffi::OsString>,
+    initialize: bool,
 }
 
 impl Context {
@@ -31,10 +34,21 @@ impl Context {
         requested: Option<PathBuf>,
         generation: Option<String>,
     ) -> Result<Option<Self>, Error> {
+        Self::from_arguments_mode(config, requested, generation, false)
+    }
+
+    pub fn from_arguments_mode(
+        config: Option<PathBuf>,
+        requested: Option<PathBuf>,
+        generation: Option<String>,
+        initialize: bool,
+    ) -> Result<Option<Self>, Error> {
         let expected = std::env::var_os("OPENPILOT_NATIVE_LAUNCH_CONFIG_SHA256");
         std::env::remove_var("OPENPILOT_NATIVE_LAUNCH_CONFIG_SHA256");
+        let machine_launch_pin = std::env::var_os(machine::LAUNCH_PIN);
+        std::env::remove_var(machine::LAUNCH_PIN);
         match (config, requested, generation) {
-            (None, None, None) => Ok(None),
+            (None, None, None) if !initialize => Ok(None),
             (Some(config), Some(requested_checkout), Some(generation)) => {
                 if !requested_checkout.is_absolute()
                     || requested_checkout
@@ -58,6 +72,9 @@ impl Context {
                     generation,
                     config,
                     configuration_sha256,
+                    machine_path: std::env::var_os(machine::ENV).map(PathBuf::from),
+                    machine_launch_pin,
+                    initialize,
                 }))
             }
             _ => Err(error(
@@ -68,7 +85,30 @@ impl Context {
 
     pub fn verify(&self, paths: &Paths) -> Result<(), Error> {
         Config::verify_pin(&self.config_path, &self.configuration_sha256).map_err(error)?;
-        let selected = selection::resolve(&self.config.stores).map_err(error)?;
+        let selected = if self.initialize {
+            let sealed = generation::load(&self.config.stores, &self.generation).map_err(error)?;
+            match std::fs::symlink_metadata(self.config.stores.generations.join("active.json")) {
+                Ok(_) => {
+                    if selection::resolve(&self.config.stores).map_err(error)?.id != self.generation
+                    {
+                        return Err(error(
+                            "initial native request conflicts with the selected generation",
+                        ));
+                    }
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
+                Err(e) => return Err(e.into()),
+            }
+            selection::Selected {
+                id: self.generation.clone(),
+                source_commit: sealed.runtime.source.commit,
+                source_root: sealed.runtime.root,
+                recovered_previous: false,
+                rejected: vec![],
+            }
+        } else {
+            selection::resolve(&self.config.stores).map_err(error)?
+        };
         if selected.id != self.generation
             || selected.source_root != paths.repository
             || self.config.stores.params != paths.data.join("params")
@@ -90,6 +130,10 @@ impl Context {
         stopped: &AtomicBool,
         signals: &mut signal_hook::iterator::Signals,
     ) -> Result<bool, Error> {
+        if self.initialize {
+            Config::verify_pin(&self.config_path, &self.configuration_sha256).map_err(error)?;
+            selection::initialize(&self.config.stores, &self.generation).map_err(error)?;
+        }
         if let Err(error) =
             pending::activate_at_boot_pinned(&self.config_path, &self.configuration_sha256)
         {
@@ -109,6 +153,9 @@ impl Context {
         let temporary = tempfile::NamedTempFile::new_in(&paths.temporary)?;
         serde_json::to_writer(temporary.as_file(), &next)?;
         let mut command = Command::new(next.repository.join("rust/bin/openpilot-launch"));
+        if let Some(pin) = &self.machine_launch_pin {
+            command.env(machine::LAUNCH_PIN, pin);
+        }
         command
             .env(
                 "OPENPILOT_NATIVE_LAUNCH_CONFIG_SHA256",
@@ -134,7 +181,34 @@ impl Context {
 
     pub fn prepare_updater(&self) -> Result<(), Error> {
         Config::verify_pin(&self.config_path, &self.configuration_sha256).map_err(error)?;
+        let preparation = self
+            .machine_path
+            .as_ref()
+            .map(|path| {
+                let (policy, pin) = machine::Config::read_pinned(path).map_err(error)?;
+                policy.verify_stores(&self.config.stores).map_err(error)?;
+                policy
+                    .verify_source_paths(&self.requested_checkout)
+                    .map_err(error)?;
+                if self
+                    .machine_launch_pin
+                    .as_ref()
+                    .is_some_and(|p| p.to_str() != Some(pin.as_str()))
+                {
+                    return Err(error(
+                        "native machine policy changed before startup handoff",
+                    ));
+                }
+                Ok((path, policy, pin))
+            })
+            .transpose()?;
+        if preparation.is_none() && self.machine_launch_pin.is_some() {
+            return Err(error("native machine handoff pin has no policy path"));
+        }
         let sealed = generation::load(&self.config.stores, &self.generation).map_err(error)?;
+        if preparation.is_some() {
+            verify_preparation_protocol(&sealed.runtime.root)?;
+        }
         let metadata: serde_json::Value =
             serde_json::from_reader(File::open(sealed.runtime.root.join("build.json"))?)?;
         let branch = metadata["channel"]
@@ -149,7 +223,10 @@ impl Context {
                 sealed.layout.expected_source_growth_bytes,
             )
             .map_err(error)?;
-        let updater = self.config.stores.generations.join("updater");
+        let updater = preparation.as_ref().map_or_else(
+            || self.config.stores.generations.join("updater"),
+            |(_, machine, _)| machine.updater_staging.clone(),
+        );
         for directory in [&updater, &updater.join(&self.generation)] {
             match std::fs::create_dir(directory) {
                 Ok(()) => (),
@@ -161,6 +238,9 @@ impl Context {
             }
         }
         let staging = updater.join(&self.generation);
+        if let Some((path, _, pin)) = preparation {
+            machine::Config::verify_pin(path, &pin).map_err(error)?;
+        }
         std::env::set_var("OPENPILOT_UPDATE_CHECKOUT", checkout);
         std::env::set_var("UPDATER_STAGING_ROOT", &staging);
         std::env::set_var("UPDATER_LOCK_FILE", staging.join("updater.lock"));
@@ -172,6 +252,9 @@ impl Context {
     pub fn environment(&self) {
         std::env::set_var("OPENPILOT_NATIVE_CONFIG", &self.config_path);
         std::env::set_var("OPENPILOT_RUNNING_GENERATION", &self.generation);
+        if let Some(path) = &self.machine_path {
+            std::env::set_var(machine::ENV, path);
+        }
         // The input pointers are materialized through pinned content assets by
         // the native preparation plan, rather than an unbounded Git LFS smudge.
         std::env::set_var("GIT_LFS_SKIP_SMUDGE", "1");
@@ -202,5 +285,21 @@ pub fn protocol(root: &Path) -> Result<(), Error> {
         "{}",
         serde_json::json!({"source_generation_protocol":1,"startup":true,"updates":true})
     );
+    Ok(())
+}
+
+pub fn verify_preparation_protocol(root: &Path) -> Result<(), Error> {
+    let output = Command::new(root.join("rust/bin/openpilot-updated"))
+        .arg("--verify-native-source-preparation-protocol")
+        .current_dir(root)
+        .output()?;
+    if !output.status.success()
+        || serde_json::from_slice::<serde_json::Value>(&output.stdout)?
+            != serde_json::json!({"source_preparation_update_protocol":1})
+    {
+        return Err(error(
+            "source-built updater does not support current-source input preparation",
+        ));
+    }
     Ok(())
 }

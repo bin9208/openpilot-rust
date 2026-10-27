@@ -72,6 +72,14 @@ class BootstrapSeedTests(unittest.TestCase):
         fixture.plan['protocols'] = dict(current_tools=1, request_owner=2)
         fixture.save()
         self.assertEqual(seed.read_plan(fixture.manifest, fixture.sha)[0]['protocols']['request_owner'], 2)
+        fixture.plan['protocols']['generation_boot'] = 1
+        fixture.save()
+        self.assertEqual(seed.read_plan(fixture.manifest, fixture.sha)[0]['protocols']['generation_boot'], 1)
+        fixture.plan['protocols']['generation_boot'] = True
+        fixture.save()
+        with self.assertRaisesRegex(ValueError, 'protocol'):
+          seed.read_plan(fixture.manifest, fixture.sha)
+        fixture.plan['protocols']['generation_boot'] = 1
         fixture.plan['protocols']['current_tools'] = True
         fixture.save()
         with self.assertRaisesRegex(ValueError, 'protocol'):

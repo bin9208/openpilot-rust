@@ -131,12 +131,14 @@ pub fn main() -> Result<(), Error> {
     let mut paths = Paths::default();
     let mut verification_only = false;
     let mut protocol_only = false;
+    let mut initialize = false;
     let (mut native_config, mut update_checkout, mut generation) = (None, None, None);
     let mut arguments = env::args_os().skip(1);
     while let Some(argument) = arguments.next() {
         match argument.to_str() {
             Some("--verify-package") => verification_only = true,
             Some("--verify-native-generation-protocol") => protocol_only = true,
+            Some("--initialize-generation") if !initialize => initialize = true,
             Some("--native-config") if native_config.is_none() => {
                 native_config = Some(std::path::PathBuf::from(arguments.next().ok_or_else(
                     || Error::Configuration("missing native configuration".into()),
@@ -170,15 +172,19 @@ pub fn main() -> Result<(), Error> {
                     .into()
             }
             Some("--help" | "-h") => {
-                println!("usage: openpilot-launch [--root REPOSITORY] [--paths PATHS_JSON] [--verify-package] [--native-config CONFIG --update-checkout REQUESTED_CHECKOUT --generation ID]");
+                println!("usage: openpilot-launch [--root REPOSITORY] [--paths PATHS_JSON] [--verify-package] [--native-config CONFIG --update-checkout REQUESTED_CHECKOUT --generation ID [--initialize-generation]]");
                 return Ok(());
             }
             _ => return Err(Error::Configuration("unexpected launcher argument".into())),
         }
     }
     paths.repository = paths.repository.canonicalize()?;
-    let native =
-        crate::native::Context::from_arguments(native_config, update_checkout, generation)?;
+    let native = crate::native::Context::from_arguments_mode(
+        native_config,
+        update_checkout,
+        generation,
+        initialize,
+    )?;
     if protocol_only {
         if native.is_some() || verification_only {
             return Err(Error::Configuration(
@@ -187,7 +193,10 @@ pub fn main() -> Result<(), Error> {
         }
         return crate::native::protocol(&paths.repository);
     }
-    if native.is_none() && env::var_os("OPENPILOT_NATIVE_CONFIG").is_some() {
+    if native.is_none()
+        && (env::var_os("OPENPILOT_NATIVE_CONFIG").is_some()
+            || env::var_os(openpilot_runtime_build::machine::ENV).is_some())
+    {
         return Err(Error::Configuration(
             "native startup requires explicit generation arguments".into(),
         ));

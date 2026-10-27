@@ -14,6 +14,7 @@
 ))]
 mod archive_tree;
 pub mod assets;
+pub mod boot;
 #[cfg(all(feature = "prepare-rust", feature = "prepare-cargo"))]
 pub mod bootstrap_tools;
 #[cfg(feature = "prepare-capnp")]
@@ -26,6 +27,7 @@ mod catalog_features;
 pub mod dbc_inputs;
 pub mod generation;
 pub mod inputs;
+pub mod machine;
 pub mod memory_cgroup;
 pub mod model_inputs;
 pub mod mpc_inputs;

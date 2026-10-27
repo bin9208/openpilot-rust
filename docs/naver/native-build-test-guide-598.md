@@ -1,5 +1,27 @@
 # 콤마 자체 빌드·다운로드 재사용 검증 안내 — #598
 
+현재 Git index·기기별 정책·초기 빌드/기존 세대 부팅·native updater의 연결은
+[bootstrap 실행 안내](native-bootstrap-seed-599.md)의 첫 절을 따른다. foundation의
+`test_native_source_entry.py`는 metadata initial/repeat/docs/단일 provider 변경,
+변조/공간 부족, 원자적 시작 기록과 기존 부팅에서 재빌드/Git index 읽기 없음을 검사한다.
+기존 부팅 검사는 실제 exec 경계에서 멈추며 fake helper를 실행하지 않는다.
+Rust의 selection/launcher 검사는 잘못된 초기 선택·손상된 active 보존과 protocol을 검사한다.
+이 검사는 Actions에서 실행하며 로컬에서는 구문·서식·diff만 확인한다.
+
+검증 후 개발 환경에서 지원하는 진입 형태는 다음과 같다. 공개 input index와 seed가
+준비되기 전의 기기 설치 명령이나 현재 기능 성공 증거가 아니다.
+
+```sh
+/usr/bin/python3 -I -B -S tools/native/source_entry.py \
+  --source "$REQUESTED_SOURCE" --machine-config "$MACHINE_CONFIG" \
+  --machine-configuration-sha256 "$MACHINE_CONFIG_SHA256"
+```
+
+정상 시작은 검증된 기기 설정을 읽는 `launch_openpilot.sh`의 native 경로다. 업데이트는
+기존 updater가 현재 요청 source의 입력을 사용하며 이전 정상 설정을 덮어쓰지 않는다.
+정확 SHA의 foundation/필수 PR 검사, genuine AGNOS user space의 원래 검사와 추가 입력 준비,
+실제 전체 진입점·정상 boot/update/복구 검증을 각각 확인한 뒤 최종 기기 절차로 진행한다.
+
 [전체18개 입력 Layout과99개 실제 빌드 연결](native-complete-inputs-599.md)에 eGPU 모델의
 독립 cache, 완전한 source/data 검증, source-built 봉인/ABI 및 반복·docs·작은 logger 변경의
 재사용 검사를 연결했다. 새 source의 Actions 실행 결과는 아직 미확인이다.

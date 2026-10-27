@@ -3,7 +3,7 @@
 use crate::{paths::Paths, process::Commands, Error};
 use openpilot_runtime_build::{
     generation::{self, Config},
-    pending, selection, supervision,
+    machine, pending, selection, supervision,
 };
 use std::{env, fs::File, path::PathBuf};
 
@@ -16,6 +16,7 @@ pub struct Context {
     config: Config,
     configuration_sha256: String,
     running: String,
+    machine_path: Option<PathBuf>,
 }
 
 pub fn context() -> Result<Option<Context>, Error> {
@@ -33,11 +34,32 @@ pub fn context() -> Result<Option<Context>, Error> {
         config,
         configuration_sha256,
         running,
+        machine_path: env::var_os(machine::ENV).map(PathBuf::from),
     }))
 }
 
 impl Context {
     pub fn validate(&self, paths: &Paths) -> Result<(), Error> {
+        let preparation = self.preparation()?;
+        self.validate_preparation(paths, preparation.as_ref().map(|p| &p.1))
+    }
+
+    fn preparation(&self) -> Result<Option<(PathBuf, machine::Config, String)>, Error> {
+        self.machine_path
+            .as_ref()
+            .map(|path| {
+                let (config, pin) = machine::Config::read_pinned(path).map_err(error)?;
+                config.verify_stores(&self.config.stores).map_err(error)?;
+                Ok((path.clone(), config, pin))
+            })
+            .transpose()
+    }
+
+    fn validate_preparation(
+        &self,
+        paths: &Paths,
+        preparation: Option<&machine::Config>,
+    ) -> Result<(), Error> {
         Config::verify_pin(&self.path, &self.configuration_sha256).map_err(error)?;
         let selected = selection::resolve(&self.config.stores).map_err(error)?;
         let runtime =
@@ -46,11 +68,11 @@ impl Context {
             || selected.source_root != PathBuf::from(runtime).canonicalize()?
             || self.config.stores.params != paths.system("/data/params")
             || paths.staging
-                != self
-                    .config
-                    .stores
-                    .generations
-                    .join("updater")
+                != preparation
+                    .map_or_else(
+                        || self.config.stores.generations.join("updater"),
+                        |machine| machine.updater_staging.clone(),
+                    )
                     .join(&self.running)
             || paths.lock != paths.staging.join("updater.lock")
         {
@@ -103,28 +125,70 @@ impl Context {
     }
 
     pub fn stage(&self, paths: &Paths, commands: &mut dyn Commands) -> Result<(), Error> {
-        self.validate(paths)?;
+        let preparation = self.preparation()?;
+        self.validate_preparation(paths, preparation.as_ref().map(|p| &p.1))?;
         let selected = selection::resolve(&self.config.stores).map_err(error)?;
-        let binary = selected
-            .source_root
-            .join("rust/bin/openpilot-native-build-scope");
-        let args = [
-            "sudo".into(),
-            "-n".into(),
-            binary.to_string_lossy().into_owned(),
-            "--config".into(),
-            self.path.to_string_lossy().into_owned(),
-            "--configuration-sha256".into(),
-            self.configuration_sha256.clone(),
-            "--stage-update".into(),
-            "--root".into(),
-            paths.merged().to_string_lossy().into_owned(),
-            "--previous".into(),
-            self.running.clone(),
-            "--request-owner".into(),
-            supervision::process_identity(std::process::id()).map_err(error)?,
-        ];
+        let owner = supervision::process_identity(std::process::id()).map_err(error)?;
+        let args = if let Some((path, machine, pin)) = &preparation {
+            machine
+                .verify_source_paths(&paths.merged())
+                .map_err(error)?;
+            machine::Config::verify_pin(path, pin).map_err(error)?;
+            vec![
+                "/usr/bin/env".into(),
+                "-u".into(),
+                "LD_LIBRARY_PATH".into(),
+                "-u".into(),
+                "LD_PRELOAD".into(),
+                "/usr/bin/python3".into(),
+                "-I".into(),
+                "-B".into(),
+                "-S".into(),
+                paths
+                    .merged()
+                    .join("tools/native/source_entry.py")
+                    .to_string_lossy()
+                    .into_owned(),
+                "--source".into(),
+                paths.merged().to_string_lossy().into_owned(),
+                "--machine-config".into(),
+                path.to_string_lossy().into_owned(),
+                "--machine-configuration-sha256".into(),
+                pin.clone(),
+                "--running-config".into(),
+                self.path.to_string_lossy().into_owned(),
+                "--running-configuration-sha256".into(),
+                self.configuration_sha256.clone(),
+                "--previous".into(),
+                self.running.clone(),
+                "--request-owner".into(),
+                owner,
+            ]
+        } else {
+            let binary = selected
+                .source_root
+                .join("rust/bin/openpilot-native-build-scope");
+            vec![
+                "sudo".into(),
+                "-n".into(),
+                binary.to_string_lossy().into_owned(),
+                "--config".into(),
+                self.path.to_string_lossy().into_owned(),
+                "--configuration-sha256".into(),
+                self.configuration_sha256.clone(),
+                "--stage-update".into(),
+                "--root".into(),
+                paths.merged().to_string_lossy().into_owned(),
+                "--previous".into(),
+                self.running.clone(),
+                "--request-owner".into(),
+                owner,
+            ]
+        };
         commands.run(&args, Some(&selected.source_root))?;
+        if let Some((path, _, pin)) = preparation {
+            machine::Config::verify_pin(&path, &pin).map_err(error)?;
+        }
         if !self.ready()? {
             return Err(error(
                 "native builder did not publish a verified pending generation",
@@ -138,6 +202,13 @@ pub fn protocol() {
     println!(
         "{}",
         serde_json::json!({"source_generation_update_protocol":1})
+    );
+}
+
+pub fn preparation_protocol() {
+    println!(
+        "{}",
+        serde_json::json!({"source_preparation_update_protocol":1})
     );
 }
 
@@ -188,6 +259,7 @@ mod tests {
             config: previous,
             configuration_sha256: pin,
             running: "a".repeat(64),
+            machine_path: None,
         };
         fs::write(root.join("previous.log"), b"previous normal runtime log").unwrap();
         config.cache = root.join("changed-cache");
@@ -203,6 +275,7 @@ mod tests {
             config: next,
             configuration_sha256: pin,
             running: "a".repeat(64),
+            machine_path: None,
         };
         assert!(!next.ready().unwrap());
         assert!(!config.cache.exists());

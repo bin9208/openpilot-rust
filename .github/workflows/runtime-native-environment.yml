@@ -166,6 +166,10 @@ on:
       - 'tools/ci/native_cereal_reference.py'
       - 'tools/native/bootstrap_seed.py'
       - 'tools/native/source_runtime.py'
+      - 'tools/native/source_entry.py'
+      - 'launch_openpilot.sh'
+      - 'rust/native-bootstrap-inputs.json'
+      - 'tools/ci/tests/test_native_source_entry.py'
       - 'tools/ci/tests/test_native_source_runtime.py'
       - '.github/workflows/runtime-native-environment.yml'
   workflow_dispatch:

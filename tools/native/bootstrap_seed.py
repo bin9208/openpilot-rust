@@ -136,7 +136,8 @@ def read_plan(path, expected):
   required = {'schema', 'role', 'source', 'build', 'target', 'agnos', 'assets', 'abi'}
   if set(plan) not in (required, required | {'protocols'}) or plan['schema'] != 1 or plan['role'] != ROLE or plan['target'] != 'aarch64-unknown-linux-gnu' or plan['agnos'] != AGNOS:
     raise ValueError('unsupported seed descriptor')
-  if 'protocols' in plan and (plan['protocols'] != dict(current_tools=1, request_owner=2)
+  if 'protocols' in plan and (plan['protocols'] not in (dict(current_tools=1, request_owner=2),
+      dict(current_tools=1, request_owner=2, generation_boot=1))
       or any(type(v) is not int for v in plan['protocols'].values())):
     raise ValueError('unsupported seed bootstrap protocols')
   if set(plan['source']) != {'commit', 'tree'} or any(not re.fullmatch('[0-9a-f]{40}', value) for value in plan['source'].values()):
@@ -379,7 +380,7 @@ def export(source, binary, cargo, vendor, rust_licenses, output):
     base = 'https://github.com/bin9208/openpilot-rust/releases/download/native-bootstrap-' + before['commit'] + '/'
     assets = {name:dict(url=base+filename, sha256=digest(root/filename), bytes=(root/filename).stat().st_size) for name, filename in FILES.items()}
     plan = dict(schema=1, role=ROLE, source=before, build=build, target='aarch64-unknown-linux-gnu', agnos=AGNOS, assets=assets, abi=abi,
-        protocols=dict(current_tools=1, request_owner=2))
+        protocols=dict(current_tools=1, request_owner=2, generation_boot=1))
     data = json_bytes(plan)
     write(root/'manifest.json', data)
     checksum_plan = hashlib.sha256(data).hexdigest()

@@ -6,9 +6,44 @@ Rust compiler와 Cargo 원본을 준비하는 Rust 도구를 처음 얻는 순�
 고정된 작은 `openpilot-runtime-inputs` seed를 재사용하고 현재 프로젝트 런타임은 소스에서
 빌드한다. 소비하는 프로젝트 commit마다 seed를 새로 발행할 필요는 없다.
 
-현재 변경은 후보 추출·검증·소비 검사를 구현한 단계다. 검증된 공개 seed release,
-그 descriptor SHA의 독립된 Git pin과 전체 native build/start 연결은 아직 남는다.
-`rust/tools/ensure_runtime.sh`의 기존 기본 경로와 런타임 선택은 이 변경에서 바꾸지 않았다.
+현재 변경은 후보 추출·검증·소비와 초기 빌드/부팅·업데이트 연결을 구현한 단계다.
+검증된 공개 seed/component release와 독립 Git pin, 정확 소스의 실제 전체 실행 결과는
+아직 남는다. 구성된 native 경로는 전체 runtime release를 내려받지 않는다.
+
+## 현재 Git 입력과 정상 시작 연결 (기능 검증 대기)
+
+`tools/native/source_entry.py`는 소스에 커밋된 `rust/native-bootstrap-inputs.json`의
+Git blob에서 seed·SDK receipt·15 provider descriptor의 URL/SHA/byte 수를 읽는다.
+working tree나 release 옆 checksum을 독립 pin 대신 사용하지 않는다. 현재는 검증된
+발행 결과가 없어 이 index를 가짜 값으로 생성하지 않았다. genuine CI는 원래 검사가
+성공한 뒤 실제 파일에서 `native-bootstrap-inputs.candidate.json`과
+`publication-candidate.json`을 산출한다. 후보 생성은 발행/사용 가능 상태를 의미하지 않는다.
+
+기기별 설정은 별도 `OPENPILOT_NATIVE_MACHINE_CONFIG` JSON이다. 서로 겹치지 않는
+source/object/generation/Params/cache/seed cache/updater staging, 작업별 예상 증가량과
+근거·메모리/파일시스템 정책만 둔다. 초기 boot controller descriptor는 `boot_seed`에
+독립 고정하고 빌드 입력은 매 요청의 현재 Git index에서 읽는다. 설정의 raw SHA는
+요청부터 최종 native 단계까지 유지한다. updater overlay는 build store 밖의 별도
+`updater_staging`에 두므로 검증 입력을 출력 store 안에 두거나 전체 소스를 추가 복사하지 않는다.
+
+`launch_openpilot.sh`는 이 설정이 있으면 factory `/usr/bin/python3 -I -B -S`로 진입한다.
+기존 startup 기록이 없을 때 현재 입력 준비와 전체 build/seal을 실행하고 불변 설정을
+참조하는 `generations/startup.json`을 fsync·rename-NOREPLACE로 남긴다. Python은
+active 선택을 쓰지 않는다. 독립 고정 seed의 `generation_boot=1` 경로가 실제 sealed
+세대를 검증하고 그 세대의 launcher를 exec한다. 최초 선택은 launcher의 기존 boot lock
+안에서만 수행하며 이미 다른 선택이 있으면 덮어쓰지 않는다.
+
+반복 시작은 현재 Git index나 수정된 updater checkout을 읽거나 전체 빌드하지 않는다.
+실제 active/previous 세대는 seed가 재검증하며 잘못된 startup/active 기록은 보존하고
+거부한다. 기존 세대 부팅은 전원 손실 뒤 남은 IsOnroad 값으로 막지 않지만 다운로드·
+빌드·새 선택은 계속 엄격한 offroad 검사를 사용한다. 정상 manager는 build worker나
+출력 byte 한도가 적용되는 자식으로 실행하지 않고 exec로 인계한다.
+
+native updater는 현재 요청 source의 index/도구/모델 준비로 새 세대를 빌드한다.
+실행 중인 native 설정과 SHA는 유지한 채 candidate를 pending으로 등록한다. 실제 updater의
+별도 source-preparation protocol 확인과 기기 설정 재검증이 실패하면 updater를 시작하지
+않고 검증된 기존 runtime을 유지한다. source entry·boot controller·이 연결의 Actions
+성공, 공개 자산 소비, 전체 시작·녹화·기존 업로드와 comma 3X 수용은 아직 증명되지 않았다.
 
 ## seed에서 현재 소스의 준비 도구를 빌드하는 경로
 
@@ -148,8 +183,8 @@ store/resource policy를 재검증하고, 새 native config/pin으로 전체 bui
 `--stage-candidate`가 봉인된 소스·plan·layout·실제 toolchain 및 동일한 store를 확인하고,
 기존 running config SHA 아래에 pending을 기록한다. 실행 중인 설정을 새 plan으로 덮어
 SHA 검사를 통과시키지 않는다. 새 세대의 실제 입력·출처는 자기 sealed descriptor가
-보존하며 다음 부팅의 기존 boot lock/검증/복구 절차를 그대로 사용한다. 기존 launcher와
-updater의 기본 경로에 이 실행기를 연결하는 작업은 아직 남는다.
+보존하며 다음 부팅의 기존 boot lock/검증/복구 절차를 그대로 사용한다. 구성된 launcher와
+updater는 위의 현재 Git 입력 진입점으로 이 실행기를 호출한다. 연결의 기능 검증은 대기다.
 
 요청자 형식은 원래 PID/start ticks와 중간 실행기의 PID/start ticks를 잇는 최대4개 chain이다.
 native frontend는 어느 항목이 종료돼도 private worker를 중단한다. stdlib 실행기도 원래

@@ -5,6 +5,9 @@ use std::{fs::File, io::Write, path::PathBuf};
 
 fn run() -> Result<()> {
     let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    if arguments.first().is_some_and(|a| a == "--boot-runtime") {
+        return openpilot_runtime_build::boot::run(arguments);
+    }
     if arguments.first().and_then(|s| s.to_str()).is_some_and(|s| {
         matches!(
             s,

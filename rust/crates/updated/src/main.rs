@@ -113,6 +113,10 @@ fn main() -> ExitCode {
         openpilot_updated::native::protocol();
         return ExitCode::SUCCESS;
     }
+    if args.len() == 1 && args[0] == "--verify-native-source-preparation-protocol" {
+        openpilot_updated::native::preparation_protocol();
+        return ExitCode::SUCCESS;
+    }
     match openpilot_managed_entry::runtime("openpilot.system.updated.updated", "updated", || {
         run().map_err(openpilot_managed_entry::StepError::raised)
     }) {

@@ -4,6 +4,7 @@ use std::{fs, process::Command};
 #[test]
 fn incomplete_native_context_is_rejected_before_startup() {
     assert!(Context::from_arguments(None, None, None).unwrap().is_none());
+    assert!(Context::from_arguments_mode(None, None, None, true).is_err());
     assert!(Context::from_arguments(Some("/missing-config".into()), None, None).is_err());
     assert!(Context::from_arguments(
         None,
@@ -91,6 +92,9 @@ fn protocol_requires_the_actual_source_built_updater() {
             .output()
             .unwrap();
         assert!(!result.status.success());
+        assert!(
+            openpilot_runtime_launcher::native::verify_preparation_protocol(temp.path()).is_err()
+        );
         return;
     };
     let temp = tempfile::tempdir().unwrap();
@@ -115,10 +119,12 @@ fn protocol_requires_the_actual_source_built_updater() {
         serde_json::from_slice::<serde_json::Value>(&result.stdout).unwrap(),
         serde_json::json!({"source_generation_protocol":1,"startup":true,"updates":true})
     );
+    openpilot_runtime_launcher::native::verify_preparation_protocol(temp.path()).unwrap();
     fs::remove_file(bin.join("openpilot-updated")).unwrap();
     let result = probe();
     assert!(
         !result.status.success(),
         "missing updater must not advertise native update support"
     );
+    assert!(openpilot_runtime_launcher::native::verify_preparation_protocol(temp.path()).is_err());
 }

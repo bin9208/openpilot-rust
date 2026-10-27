@@ -79,6 +79,13 @@ def main():
     return output
 
   providers = {}
+  metadata_assets = {}
+  publication_files = []
+  def metadata_asset(path, url):
+    value = dict(url=url, sha256=digest(path), bytes=path.stat().st_size)
+    metadata_assets[value['sha256']] = path
+    publication_files.append(dict(**value, path=str(path)))
+    return value
   payload = 0
   roles = ('ffmpeg', 'raylib', 'opencv', 'numerics', 'geos', 'brotli', 'acados',
            'sdl', 'turbojpeg', 'ffmpeg-tools', 'freesans', 'panda', 'mpc', 'dbc', 'usbgpu')
@@ -96,6 +103,9 @@ def main():
     assert descriptor['profile'] == plan['profile'] and descriptor['provider_source_commit'] == plan['source_commit']
     archive_name = Path(urlsplit(descriptor['asset']['url']).path).name
     assert (host_directory/archive_name).is_file()
+    descriptor_url = descriptor['asset']['url'].rsplit('/', 1)[0]+'/provider.json'
+    metadata_asset(host_directory/'provider.json', descriptor_url)
+    publication_files.append(dict(**descriptor['asset'], path=str(host_directory/archive_name)))
     providers[role] = dict(path=str(guest_work/directory/'provider.json'),
         sha256=digest(host_directory/'provider.json'), offline_archive=str(guest_work/directory/archive_name))
     payload += sum(p['bytes'] for p in plan['members'].values())
@@ -163,11 +173,40 @@ def main():
     metrics[phase] = samples[-1]
     assert (work/'bootstrap-current-generations/active.json').read_bytes() == b'owned previous selection sentinel\n'
     assert (work/'bootstrap-current-generations/previous-log').read_bytes() == b'owned previous log sentinel\n'
+  # Emit only a publication candidate, after the original and added production
+  # preparation cases have succeeded. No release or Git pin is created here.
+  seed_manifest_path = work/'bootstrap-seed-export/manifest.json'
+  seed_manifest = json.loads(seed_manifest_path.read_text())
+  assert seed_manifest['source']['commit'] == context['source_commit']
+  release = 'https://github.com/bin9208/openpilot-rust/releases/download/'
+  seed_pin = metadata_asset(seed_manifest_path, release+'native-bootstrap-'+seed_manifest['source']['commit']+'/manifest.json')
+  for role, asset in seed_manifest['assets'].items():
+    path = seed_manifest_path.parent/Path(urlsplit(asset['url']).path).name
+    assert digest(path) == asset['sha256'] and path.stat().st_size == asset['bytes']
+    publication_files.append(dict(**asset, path=str(path)))
+  sdk_path = work/'native-system-sdk.json'
+  sdk_pin = metadata_asset(sdk_path, release+'native-system-sdk-'+digest(sdk_path)+'/system-sdk.json')
+  candidate = dict(schema=1, seed=seed_pin, system_sdk=sdk_pin, providers={})
+  for role in roles:
+    row = providers[role]
+    # Resolve the exact host descriptor already admitted through the original
+    # guest binds above, without inferring new hashes from the old runtime.
+    path = metadata_assets[row['sha256']]
+    descriptor = json.loads(path.read_text())
+    candidate['providers'][role] = dict(url=descriptor['asset']['url'].rsplit('/', 1)[0]+'/provider.json',
+        sha256=row['sha256'], bytes=path.stat().st_size)
+  candidate_path = evidence/'native-bootstrap-inputs.candidate.json'
+  candidate_path.write_text(json.dumps(candidate, sort_keys=True, indent=2)+'\n')
+  (evidence/'publication-candidate.json').write_text(json.dumps(dict(schema=1,
+      workflow_source_commit=context['source_commit'], index_sha256=digest(candidate_path),
+      files=publication_files, published_release=False, committed_input_index=False,
+      physical_device_execution=False), indent=2)+'\n')
   (evidence/'summary.json').write_text(json.dumps(dict(schema=1, source_commit=context['source_commit'],
       cases=list(metrics), metrics=metrics, production_input_orchestrator_executed=True,
       provider_roles=15, runtime_roles=18, compiler_input_roles=9, actual_host_kernel_cgroup=True,
       process_architecture='aarch64', physical_arm_cpu=False, agnos_kernel=False,
       runtime_started=False, runtime_activated=False, public_component_download_tested=False,
+      input_index_candidate_sha256=digest(candidate_path), input_index_committed=False, published_release=False,
       resource_policy_is_ci_fixture_not_device_budget=True), indent=2)+'\n')
 
 

@@ -106,11 +106,26 @@ fn selected(id: String, sealed: Sealed, rejected: Vec<Rejected>) -> Selected {
 /// Corruption of the newest candidate may select a recorded, verified prior one;
 /// foreign binaries are never relabeled as the requested checkout's result.
 pub fn resolve(stores: &Stores) -> Result<Selected> {
+    Ok(resolve_verified(stores)?.0)
+}
+
+/// Retain the verified descriptor for a caller which must construct its loader
+/// environment. Do not hash the entire same generation a second time for that.
+pub fn resolve_verified(stores: &Stores) -> Result<(Selected, Sealed)> {
     let state = state(stores)?;
     let mut rejected = Vec::new();
     for candidate in state.candidates {
         match generation::load(stores, &candidate) {
-            Ok(sealed) => return Ok(selected(candidate, sealed, rejected)),
+            Ok(sealed) => {
+                let selection = Selected {
+                    id: candidate,
+                    source_commit: sealed.runtime.source.commit.clone(),
+                    source_root: sealed.runtime.root.clone(),
+                    recovered_previous: !rejected.is_empty(),
+                    rejected,
+                };
+                return Ok((selection, sealed));
+            }
             Err(e) => rejected.push(Rejected {
                 id: candidate,
                 reason: e.to_string(),
@@ -118,6 +133,26 @@ pub fn resolve(stores: &Stores) -> Result<Selected> {
         }
     }
     Err("no recorded source-built generation passed complete verification; state and logs preserved".into())
+}
+
+/// Called only by the launcher after taking its normal boot lock. An initial
+/// request must never overwrite a generation another boot has already chosen.
+pub fn initialize(stores: &Stores, id: &str) -> Result<Selected> {
+    generation::directory(&stores.generations)?;
+    let _lock = generation::lock(&stores.generations)?;
+    match fs::symlink_metadata(stores.generations.join("active.json")) {
+        Ok(_) => {
+            let active = resolve(stores)?;
+            if active.id != id {
+                return Err(
+                    "native initial selection changed before the boot lock was acquired".into(),
+                );
+            }
+            Ok(active)
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => activate_locked(stores, id),
+        Err(e) => Err(e.into()),
+    }
 }
 
 /// Set before exec: the dynamic loader must never borrow an older generation's
@@ -157,12 +192,22 @@ mod tests {
         let log = stores.generations.join("normal.log");
         fs::write(&log, b"previous normal runtime log").unwrap();
         assert!(activate(&stores, &"b".repeat(64)).is_err());
+        assert!(initialize(&stores, &"b".repeat(64)).is_err());
         let lock = generation::lock(&stores.generations).unwrap();
         assert!(activate(&stores, &"b".repeat(64)).is_err());
         drop(lock);
         fs::write(stores.params.join("d/IsOnroad"), b"1").unwrap();
         assert!(activate(&stores, &"b".repeat(64)).is_err());
         assert!(resolve(&stores).is_err());
+        fs::write(
+            &pointer,
+            b"corrupt state must never be reset by initial startup",
+        )
+        .unwrap();
+        let corrupt = fs::read(&pointer).unwrap();
+        assert!(initialize(&stores, &"b".repeat(64)).is_err());
+        assert_eq!(fs::read(&pointer).unwrap(), corrupt);
+        fs::write(&pointer, &bytes).unwrap();
         assert_eq!(fs::read(pointer).unwrap(), bytes);
         assert_eq!(fs::read(log).unwrap(), b"previous normal runtime log");
     }
