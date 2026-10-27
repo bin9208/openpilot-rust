@@ -19,6 +19,11 @@ working tree나 release 옆 checksum을 독립 pin 대신 사용하지 않는다
 성공한 뒤 실제 파일에서 `native-bootstrap-inputs.candidate.json`과
 `publication-candidate.json`을 산출한다. 후보 생성은 발행/사용 가능 상태를 의미하지 않는다.
 
+발행은 [검증·발행 경로](native-input-publication-599.md)를 따른다. 별도 작은 artifact에서
+run/attempt/source/index pin을 읽고, 전체 artifact/필수 source gate/34개 파일을 검사한다.
+수동 workflow는 검증 후 같은 저장소 native release에 발행하고 실제 공개 body를 확인한다.
+최종 index의 Git 반영·후속 검증은 별도 단계이며 현재 발행 성공 증거는 아직 없다.
+
 그 후보는 추가 검사의 소유 Git fixture에서 실제 metadata 입력으로 사용한다. 현재
 factory Python 입력 선택기로 처음/반복 설정을 만들고 실제 native 준비 도구가 같은
 provider·모델·compiler·composition을 재사용해야 한다. fixture의 새 source SHA는 원래

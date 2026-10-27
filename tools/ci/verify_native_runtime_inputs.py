@@ -292,6 +292,8 @@ def main():
     resolved_rows[phase] = resolved
   (evidence/'publication-candidate.json').write_text(json.dumps(dict(schema=1,
       workflow_source_commit=context['source_commit'], index_sha256=digest(candidate_path),
+      source_run_id=int(os.environ['GITHUB_RUN_ID']), source_run_attempt=int(os.environ['GITHUB_RUN_ATTEMPT']),
+      source_job=os.environ['GITHUB_JOB'],
       files=publication_files, published_release=False, committed_input_index=False,
       source_index_resolver_cases_passed=list(resolved_rows), physical_device_execution=False), indent=2)+'\n')
   (evidence/'summary.json').write_text(json.dumps(dict(schema=1, source_commit=context['source_commit'],

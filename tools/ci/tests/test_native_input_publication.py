@@ -1,0 +1,342 @@
+"""Owned ZIP/API fixtures are never executed or sent to GitHub releases."""
+import copy
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+from unittest import mock
+import zipfile
+
+_SPEC = importlib.util.spec_from_file_location('owned_native_publication', Path(__file__).resolve().parents[2]/'native/publish_inputs.py')
+publication = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(publication)
+_PAYLOAD = importlib.util.spec_from_file_location('owned_input_payload', Path(__file__).resolve().parents[1]/'stage_native_input_payload.py')
+payload = importlib.util.module_from_spec(_PAYLOAD)
+_PAYLOAD.loader.exec_module(payload)
+
+SOURCE, TREE = 'a'*40, 'b'*40
+
+
+def encode(value):
+  return (json.dumps(value, sort_keys=True, indent=2)+'\n').encode()
+
+
+class Fixture:
+  def __init__(self, root):
+    self.root, self.entries, self.files = root, {}, {}
+    self.run = dict(id=42, run_attempt=1, head_sha=SOURCE, path=publication.PRODUCER, event='push',
+        repository=dict(full_name=publication.REPO, id=7), head_repository=dict(full_name=publication.REPO),
+        status='completed', conclusion='success')
+    seed_tag = 'native-bootstrap-'+SOURCE
+    helper = self.put(seed_tag, 'openpilot-runtime-inputs-aarch64', b'Owned non-executed helper fixture')
+    notice = self.put(seed_tag, 'THIRD_PARTY_NOTICES.native-bootstrap.txt', b'Owned license fixture')
+    seed = dict(schema=1, role='openpilot-runtime-inputs', source=dict(commit=SOURCE, tree=TREE),
+        target='aarch64-unknown-linux-gnu', agnos='19.8-carrot-bt1',
+        protocols=dict(current_tools=1, request_owner=2, generation_boot=1), assets=dict(helper=helper, notices=notice))
+    self.sdk_plan = dict(schema=1, factory_image_sha256='c'*64)
+    sdk = encode(dict(kind='agnos-system-sdk', plan=self.sdk_plan))
+    sdk_tag = 'native-system-sdk-'+hashlib.sha256(sdk).hexdigest()
+    self.index = dict(schema=1, seed=self.put(seed_tag, 'manifest.json', encode(seed)),
+        system_sdk=self.put(sdk_tag, 'system-sdk.json', sdk), providers={})
+    self.profiles = {}
+    for role in publication.ROLES:
+      tag = 'native-owned-'+role
+      archive = self.put(tag, 'component.tar.zst', ('Owned component '+role).encode())
+      self.profiles[role] = dict(profile=role+'-owned', source_commit='d'*40)
+      self.index['providers'][role] = self.put(tag, 'provider.json', encode(dict(
+          profile=self.profiles[role]['profile'], provider_source_commit='d'*40, asset=archive)))
+    self.index_bytes = encode(self.index)
+    self.pin = hashlib.sha256(self.index_bytes).hexdigest()
+    self.entries[publication.PREFIX+'native-bootstrap-inputs.candidate.json'] = self.index_bytes
+    self.manifest = dict(schema=1, workflow_source_commit=SOURCE, source_run_id=42, source_run_attempt=1,
+        source_job='compiler', index_sha256=self.pin, files=list(self.files.values()), published_release=False,
+        committed_input_index=False, physical_device_execution=False, source_index_resolver_cases_passed=publication.CASES)
+    self.summary = dict(source_commit=SOURCE, production_source_index_resolver_executed=True,
+        provider_roles=15, runtime_roles=18, compiler_input_roles=9, published_release=False,
+        input_index_committed=False, input_index_candidate_sha256=self.pin,
+        input_index_cases={case:dict(index_sha256=self.pin) for case in publication.CASES},
+        metrics={case:dict(state='success', memory=dict(kernel_peak_bytes=1))
+          for case in ['initial', 'reused', 'docs', *publication.CASES]})
+    self.environment = dict(source_commit=SOURCE, native_complete_generation=dict(source=dict(commit=SOURCE),
+        binaries=99, compiler_groups=13, source_built_sealer_and_abi_audit_passed=True,
+        source_generation_verified=True, runtime_activated=False, runtime_started=False, physical_device_execution=False))
+
+  def put(self, tag, name, data):
+    url = publication.BASE+tag+'/'+name
+    member = 'native-agnos/owned-'+tag+'/'+name
+    pin = dict(url=url, bytes=len(data), sha256=hashlib.sha256(data).hexdigest())
+    self.entries[member] = data
+    self.files[url] = dict(**pin, path='/tmp/openpilot-ci.Owned/'+member)
+    return pin
+
+  def write(self):
+    self.entries[publication.PREFIX+'publication-candidate.json'] = encode(self.manifest)
+    self.entries[publication.PREFIX+'summary.json'] = encode(self.summary)
+    self.entries['native-agnos-environment-599.json'] = encode(self.environment)
+    path = self.root/'artifact.zip'
+    with zipfile.ZipFile(path, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+      for name, data in self.entries.items():
+        archive.writestr(name, data)
+    return path
+
+  def validated(self):
+    bundle = publication.Bundle(self.write())
+    try:
+      return publication.validate_bundle(bundle, SOURCE, self.run, self.pin, self.profiles, self.sdk_plan, TREE)
+    finally:
+      bundle.close()
+
+  def staged(self):
+    bundle = publication.Bundle(self.write())
+    try:
+      _, files = publication.validate_bundle(bundle, SOURCE, self.run, self.pin, self.profiles, self.sdk_plan, TREE)
+      root = self.root/'staged'
+      root.mkdir()
+      return publication.stage(bundle, files, root)
+    finally:
+      bundle.close()
+
+
+class Releases:
+  def __init__(self):
+    self.values, self.mutations, self.fail_patch = {}, [], None
+
+  def release(self, tag):
+    return copy.deepcopy(self.values.get(tag))
+
+  def json(self, method, route, value=None, **kwargs):
+    if method == 'GET':
+      return None
+    self.mutations.append((method, route))
+    if method == 'POST':
+      self.values[value['tag_name']] = dict(id=len(self.values)+1, draft=True, body=value['body'], assets=[])
+    elif method == 'PATCH':
+      number = int(route.split('/')[-1])
+      if self.fail_patch == number:
+        raise ValueError('Owned interrupted publication')
+      next(r for r in self.values.values() if r['id'] == number)['draft'] = False
+    elif method == 'DELETE':
+      number = int(route.split('/')[-1])
+      for release in self.values.values():
+        release['assets'] = [a for a in release['assets'] if a['id'] != number]
+    return {}
+
+  def add(self, tag, row):
+    release = self.values[tag]
+    if not any(a['name'] == row['name'] for a in release['assets']):
+      release['assets'].append(dict(id=1000+len(release['assets']), name=row['name'], state='uploaded',
+          size=row['bytes'], digest='sha256:'+row['sha256']))
+
+
+class PublicationTests(unittest.TestCase):
+  def test_input_only_payload_links_exact_files_without_copying_or_following_a_redirect(self):
+    for redirected in (False, True):
+      with self.subTest(redirected=redirected), tempfile.TemporaryDirectory() as temp:
+        base = Path(temp)
+        root = base/'job'
+        root.mkdir()
+        f = Fixture(root)
+        for row in f.manifest['files']:
+          relative = Path(row['path']).parts[3:]
+          row['path'] = str(root.joinpath(*relative))
+        f.write()
+        for name, data in f.entries.items():
+          path = root/name
+          path.parent.mkdir(parents=True, exist_ok=True)
+          path.write_bytes(data)
+        first = Path(f.manifest['files'][0]['path'])
+        if redirected:
+          outside = base/'outside'
+          outside.write_bytes(first.read_bytes())
+          first.unlink()
+          first.symlink_to(outside)
+          with self.assertRaisesRegex(ValueError, 'outside'):
+            payload.stage(root, SOURCE, 42, 1)
+          self.assertFalse((root/'native-input-payload').exists())
+          self.assertEqual(outside.read_bytes(), f.entries[str(first.relative_to(root))])
+        else:
+          result = payload.stage(root, SOURCE, 42, 1)
+          self.assertEqual(result['files'], 38)
+          self.assertEqual(result['copied_bytes'], 0)
+          target = root/'native-input-payload'/first.relative_to(root)
+          self.assertEqual(first.stat().st_ino, target.stat().st_ino)
+          self.assertEqual(first.read_bytes(), target.read_bytes())
+
+  def test_entry_refuses_non_actions_context_before_any_api_or_file_preparation(self):
+    with mock.patch.dict(os.environ, {}, clear=True), \
+         mock.patch('sys.argv', ['publish_inputs.py', '--source-run-id', '42', '--source-commit', SOURCE, '--index-sha256', 'b'*64]), \
+         mock.patch.object(publication, 'GitHub') as client:
+      with self.assertRaisesRegex(ValueError, 'registered manual Actions context'):
+        publication.main()
+    client.assert_not_called()
+
+  def test_stream_is_bounded_and_cancels_only_its_new_process_group(self):
+    with tempfile.TemporaryDirectory() as temp:
+      root = Path(temp)
+      payload = b'Owned transfer bytes'
+      output = root/'artifact'
+      publication.transfer(['/usr/bin/python3', '-I', '-B', '-S', '-c',
+          'import sys;sys.stdout.buffer.write(bytes.fromhex(sys.argv[1]))', payload.hex()],
+          dict(bytes=len(payload), sha256=hashlib.sha256(payload).hexdigest()), output)
+      self.assertEqual(output.read_bytes(), payload)
+      innocent = subprocess.Popen(['/usr/bin/python3', '-I', '-B', '-S', '-c', 'import time;time.sleep(60)'])
+      try:
+        pid = root/'child-pid'
+        script = 'import os,sys,time;from pathlib import Path;Path(sys.argv[1]).write_text(str(os.getpid()));sys.stdout.buffer.write(b"X"*5000);sys.stdout.flush();time.sleep(60)'
+        with self.assertRaisesRegex(ValueError, 'exceeded'):
+          publication.transfer(['/usr/bin/python3', '-I', '-B', '-S', '-c', script, str(pid)],
+              dict(bytes=1, sha256='a'*64))
+        self.assertIsNone(innocent.poll())
+        self.assertFalse(Path('/proc/'+pid.read_text()).exists())
+      finally:
+        innocent.terminate()
+        innocent.wait(timeout=5)
+      with mock.patch.object(publication.subprocess, 'Popen') as child:
+        with self.assertRaises(FileExistsError):
+          publication.transfer(['/owned/not-executed'], dict(bytes=1, sha256='a'*64), output)
+      child.assert_not_called()
+
+  def test_actual_role_selection_stages_only_34_hash_verified_nonexecuted_files(self):
+    with tempfile.TemporaryDirectory() as temp:
+      fixture = Fixture(Path(temp))
+      rows = fixture.staged()
+      self.assertEqual(len(rows), 34)
+      self.assertEqual({row['url'] for row in rows}, set(fixture.files))
+      for row in rows:
+        path = Path(row['path'])
+        self.assertEqual(path.stat().st_mode & 0o777, 0o444)
+        self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), row['sha256'])
+
+  def test_wrong_source_attempt_index_case_or_generation_never_reaches_publication(self):
+    for fault in ('source', 'attempt', 'index', 'cases', 'generation', 'extra-file', 'foreign-url', 'path'):
+      with self.subTest(fault=fault), tempfile.TemporaryDirectory() as temp:
+        f = Fixture(Path(temp))
+        if fault == 'source': f.manifest['workflow_source_commit'] = 'e'*40
+        if fault == 'attempt': f.manifest['source_run_attempt'] = True
+        if fault == 'index': f.pin = 'e'*64
+        if fault == 'cases': f.summary['metrics']['git-index-docs']['state'] = 'failure'
+        if fault == 'generation': f.environment['native_complete_generation']['binaries'] = 1
+        if fault == 'extra-file':
+          extra = f.put('native-foreign', 'capture.bin', b'Owned forbidden extra')
+          f.manifest['files'].append(f.files[extra['url']])
+        if fault == 'foreign-url': f.manifest['files'][0]['url'] = 'https://elsewhere.invalid/payload'
+        if fault == 'path': f.manifest['files'][0]['path'] = '/tmp/openpilot-ci.Owned/../other/data'
+        with self.assertRaises((ValueError, KeyError)):
+          f.validated()
+        self.assertFalse((f.root/'staged').exists())
+
+  def test_member_corruption_and_zip_redirect_do_not_certify_themselves(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = Fixture(Path(temp))
+      name = next(iter(f.entries))
+      body = f.entries[name]
+      f.entries[name] = b'X'+body[1:]
+      with self.assertRaisesRegex(ValueError, 'SHA/size'):
+        f.staged()
+    with tempfile.TemporaryDirectory() as temp:
+      f = Fixture(Path(temp))
+      f.entries['../other-session/capture'] = b'Owned path escape'
+      with self.assertRaisesRegex(ValueError, 'unsafe'):
+        f.validated()
+
+  def test_pending_gate_and_remote_conflicts_preserve_every_existing_asset(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = Fixture(Path(temp))
+      rows, client = f.staged(), Releases()
+      with self.assertRaisesRegex(ValueError, 'every exact-source gate'):
+        publication.publish(client, rows, SOURCE, f.pin, [dict(ready=False)], {}, lambda:None)
+      self.assertEqual(client.mutations, [])
+
+      row = rows[-1]
+      client.values[row['tag']] = dict(id=1, draft=False, body='', assets=[dict(id=1, name=row['name'],
+          size=row['bytes'], state='uploaded', digest='sha256:'+'f'*64)])
+      original = copy.deepcopy(client.values)
+      with self.assertRaisesRegex(ValueError, 'different digest'):
+        publication.publish(client, rows, SOURCE, f.pin, [dict(ready=True)], {}, lambda:None)
+      self.assertEqual(client.values, original)
+      self.assertEqual(client.mutations, [])
+
+  def test_an_existing_foreign_git_tag_cannot_be_retargeted_by_release_creation(self):
+    client = mock.Mock()
+    client.json.return_value = dict(object=dict(type='commit', sha='f'*40))
+    with self.assertRaisesRegex(ValueError, 'different source'):
+      publication.check_new_tag(client, 'native-owned', SOURCE)
+    self.assertEqual(client.json.call_args.args[0], 'GET')
+
+  def test_interrupted_publication_resumes_verified_bytes_without_replacing_public_assets(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = Fixture(Path(temp))
+      rows, client = f.staged(), Releases()
+      report = dict(published_release=False)
+      def upload(api, tag, row, *_): api.add(tag, row)
+      with mock.patch.object(publication, 'upload', side_effect=upload), \
+           mock.patch.object(publication, 'transfer', side_effect=lambda command, row:row['bytes']) as read:
+        client.fail_patch = 2
+        with self.assertRaisesRegex(ValueError, 'interrupted'):
+          publication.publish(client, rows, SOURCE, f.pin, [dict(ready=True)], report, lambda:None)
+        read.assert_not_called()
+        self.assertFalse(client.values[rows[0]['tag']]['draft'])
+        self.assertFalse(report['published_release'])
+        published_assets = copy.deepcopy(client.values[rows[0]['tag']]['assets'])
+        client.fail_patch = None
+        publication.publish(client, rows, SOURCE, f.pin, [dict(ready=True)], report, lambda:None)
+      self.assertTrue(report['published_release'])
+      self.assertEqual(report['public_transfer_bytes'], sum(r['bytes'] for r in rows))
+      self.assertEqual(client.values[rows[0]['tag']]['assets'], published_assets)
+      self.assertFalse(any(r['draft'] for r in client.values.values()))
+      self.assertFalse(any(method == 'DELETE' for method, _ in client.mutations))
+
+  def test_lost_upload_response_and_only_owned_empty_draft_slot_are_recoverable(self):
+    row = dict(tag='native-owned', name='owned.bin', path='/owned/not-executed', bytes=1, sha256='a'*64)
+    client = Releases()
+    client.values[row['tag']] = dict(id=1, draft=True, body=publication.owner_body(SOURCE, 'b'*64),
+        assets=[dict(id=99, name=row['name'], state='starter', size=0, digest=None)])
+    def interrupted(*args, **kwargs):
+      client.add(row['tag'], row)
+      raise subprocess.TimeoutExpired('owned mocked upload', 1)
+    with mock.patch.object(publication.subprocess, 'run', side_effect=interrupted) as command:
+      publication.upload(client, row['tag'], row, SOURCE, 'b'*64)
+    self.assertEqual(command.call_count, 1)
+    self.assertEqual(client.mutations, [('DELETE', 'releases/assets/99')])
+    client.values[row['tag']]['body'] = 'Someone else owns this draft'
+    with mock.patch.object(publication.subprocess, 'run') as command:
+      with self.assertRaisesRegex(ValueError, 'ownership'):
+        publication.upload(client, row['tag'], row, SOURCE, 'b'*64)
+    command.assert_not_called()
+
+
+class GateTests(unittest.TestCase):
+  def test_latest_pending_wrong_runner_and_missing_required_arm_job_block_publication(self):
+    producer = dict(id=42, run_attempt=1, head_sha=SOURCE, path=publication.PRODUCER, event='push',
+        repository=dict(full_name=publication.REPO), head_repository=dict(full_name=publication.REPO),
+        status='completed', conclusion='success')
+    runs, jobs = [], {42:[dict(name='Native compiler in pinned AGNOS ARM userspace', status='completed',
+        conclusion='success', runner_name='bin-actions')]}
+    for number, (name, events, required) in enumerate(publication.GATES, 100):
+      run = dict(producer, id=number, path='.github/workflows/'+name, event=events[0])
+      runs.append(run)
+      jobs[number] = [dict(name=n, status='completed', conclusion='success', runner_name='bin-actions') for n in required]
+    client = mock.Mock()
+    client.json.return_value = producer
+    def collect(route, key):
+      return runs if key == 'workflow_runs' else jobs[int(route.split('/')[2])]
+    client.collect.side_effect = collect
+    self.assertTrue(all(s['ready'] for s in publication.gates(client, SOURCE, 42)[1]))
+    runs.append(dict(runs[-1], id=300, status='queued', conclusion=None))
+    self.assertFalse(publication.gates(client, SOURCE, 42)[1][-1]['ready'])
+    runs.pop()
+    jobs[100] = jobs[100][1:]
+    self.assertFalse(publication.gates(client, SOURCE, 42)[1][0]['ready'])
+    jobs[101][0]['runner_name'] = 'unregistered-hosted-runner'
+    self.assertFalse(publication.gates(client, SOURCE, 42)[1][1]['ready'])
+    client.json.return_value = dict(producer, conclusion='failure')
+    with self.assertRaisesRegex(ValueError, 'completed successfully'):
+      publication.gates(client, SOURCE, 42)
+
+
+if __name__ == '__main__':
+  unittest.main()

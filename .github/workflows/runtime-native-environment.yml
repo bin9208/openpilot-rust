@@ -6,6 +6,7 @@ on:
       - 'tools/ci/probe_native_agnos.py'
       - 'tools/ci/verify_native_bootstrap.py'
       - 'tools/ci/verify_native_runtime_inputs.py'
+      - 'tools/ci/stage_native_input_payload.py'
       - 'rust/tools/native_runtime_inputs.py'
       - 'rust/tools/tests/test_native_runtime_inputs.py'
       - 'tools/ci/native_resource_scope.py'
@@ -167,6 +168,9 @@ on:
       - 'tools/native/bootstrap_seed.py'
       - 'tools/native/source_runtime.py'
       - 'tools/native/source_entry.py'
+      - 'tools/native/publish_inputs.py'
+      - 'tools/ci/tests/test_native_input_publication.py'
+      - '.github/workflows/native-input-publication.yml'
       - 'launch_openpilot.sh'
       - 'rust/native-bootstrap-inputs.json'
       - 'tools/ci/tests/test_native_source_entry.py'
@@ -675,6 +679,22 @@ jobs:
       - name: Stop and remove only the bootstrap job kernel scope
         if: always()
         run: sudo -n --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA /usr/bin/python3 tools/ci/native_resource_scope.py cleanup
+      - name: Retain only the verified input files and evidence for publication
+        run: /usr/bin/python3 -I -B -S tools/ci/stage_native_input_payload.py
+      - uses: actions/upload-artifact@v6
+        with:
+          name: native-input-payload-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ env.CI_JOB_TEMP }}/native-input-payload/
+          if-no-files-found: error
+      - name: Retain the small verified publication candidate separately
+        uses: actions/upload-artifact@v6
+        with:
+          name: native-inputs-publication-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-inputs-evidence/native-bootstrap-inputs.candidate.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-inputs-evidence/publication-candidate.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-inputs-evidence/summary.json
+          if-no-files-found: error
       - uses: actions/upload-artifact@v6
         if: always()
         with:

@@ -107,6 +107,10 @@ on:
       - 'tools/native/bootstrap_seed.py'
       - 'tools/native/source_runtime.py'
       - 'tools/native/source_entry.py'
+      - 'tools/native/publish_inputs.py'
+      - 'tools/ci/stage_native_input_payload.py'
+      - 'tools/ci/tests/test_native_input_publication.py'
+      - '.github/workflows/native-input-publication.yml'
       - 'launch_openpilot.sh'
       - 'rust/native-bootstrap-inputs.json'
       - 'tools/ci/tests/test_native_source_entry.py'
@@ -192,6 +196,8 @@ jobs:
         run: python3 -m unittest discover -s tools/ci/tests -p 'test_native_source_runtime.py' -v
       - name: Verify current-source metadata resolution and independent cache reuse
         run: python3 -m unittest discover -s tools/ci/tests -p 'test_native_source_entry.py' -v
+      - name: Verify exact-source publication gates, archive integrity and resumable uploads
+        run: python3 -m unittest discover -s tools/ci/tests -p test_native_input_publication.py -v
       - name: Check formatting of additional source and asset preparation modules
         run: rustfmt --edition 2021 --check rust/crates/runtime-build/src/*.rs rust/crates/runtime-build/tests/*.rs
       - name: Compile and exercise real offline build reuse

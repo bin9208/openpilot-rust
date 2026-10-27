@@ -1,5 +1,11 @@
 # 콤마 자체 빌드·다운로드 재사용 검증 안내 — #598
 
+공개 입력 발행의 source/CI/artifact/파일 해시·기존 원격 asset 보존·중단/재개 검사는
+[입력 발행 안내](native-input-publication-599.md)를 따른다. foundation의
+`test_native_input_publication.py`는 소유 ZIP/API fixture와 별도 process group의 byte
+상한/취소를 검사한다. fixture helper/component 파일은 실행하거나 실제 release에 보내지
+않는다. 실제 읽기 검증/발행/공개 URL 검증과 index의 정상 PR·병합 후 결과는 별도로 확인한다.
+
 Rust component 준비의 `memory limit reached` 실패와 추가 검사 절차는
 [XZ decoder 한도 #612](native-rust-toolchain-599.md)에 기록했다. foundation의
 `toolchain` integration test는128MiB 선언의 이전 한도 거부와 수정 후 준비·반복 재사용,

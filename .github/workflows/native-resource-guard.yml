@@ -7,7 +7,11 @@ on:
       - 'rust/crates/updated/src/native.rs'
       - 'tools/ci/native_resource_scope.py'
       - 'tools/ci/verify_native_bootstrap.py'
+      - 'tools/native/publish_inputs.py'
+      - 'tools/ci/tests/test_native_input_publication.py'
+      - '.github/workflows/native-input-publication.yml'
       - '.github/workflows/native-resource-guard.yml'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
