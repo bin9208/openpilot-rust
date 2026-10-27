@@ -1507,6 +1507,61 @@ def native_media_inputs_probe(guest_command,work,source_mount,evidence,log,guest
       emulation='QEMU/PRoot ARM user space on x64 bin-actions')
 
 
+def native_source_assets_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """The ARM preparer checks the exact live source pointers against real bytes."""
+  def execute(argv,name,required=True):
+    record=run(guest_command(argv),log,stdout_path=work/name,required=required)
+    evidence['commands'].append(record)
+    return record
+  source=Path(os.environ['GITHUB_WORKSPACE'])
+  plan=json.loads((source/'rust/native-source-lfs.json').read_text())
+  host=json.loads((work.parent/'native-source-lfs-initial.json').read_text())
+  command=[work/'project-target/debug/openpilot-runtime-inputs','--prepare-source-lfs',
+      '--root',source_mount,'--plan',f'{source_mount}/rust/native-source-lfs.json',
+      '--cache',Path(guest_work)/'source-lfs-assets','--store',work/'native-source-lfs-prefixes',
+      '--objects',work/'native-source-lfs-objects']
+  rows=[]
+  for phase in ('initial','reused'):
+    execute(command,f'native-source-lfs-{phase}.json')
+    row=json.loads((work/f'native-source-lfs-{phase}.json').read_text())
+    assert row['source']==host['source'] and row['source']['commit']==evidence['source_commit']
+    assert row['origin_commit']==plan['origin_commit']
+    assert row['tree_sha256']==host['tree_sha256'] and row['identity']==host['identity']
+    assert not row['compiler_executed'] and not row['checkout_modified'] and not row['runtime_activated']
+    assert set(row['assets'])==set(plan['assets'])
+    assert (row['copied_bytes']>0)==(phase=='initial') and (row['linked_bytes']>0)==(phase=='initial')
+    for path,asset in plan['assets'].items():
+      assert row['assets'][path]['transferred_bytes']==row['assets'][path]['stored_bytes']==0
+      actual=work/Path(row['root']).relative_to(guest_work)/path
+      assert actual.stat().st_size==asset['bytes'] and digest(actual)==asset['sha256']
+    if phase=='reused': assert not row['asset_cache_consulted'] and row['expected_additional_bytes']==0
+    rows.append(row)
+  assert rows[0]['root']==rows[1]['root']
+  bad=json.loads(json.dumps(plan))
+  bad['assets'][next(iter(bad['assets']))]['sha256']='0'*64
+  bad_path=work/'native-source-lfs-bad-plan.json'
+  bad_path.write_text(json.dumps(bad)+'\n')
+  rejected=execute([work/'project-target/debug/openpilot-runtime-inputs','--prepare-source-lfs',
+      '--root',source_mount,'--plan',bad_path,'--cache',Path(guest_work)/'source-lfs-assets',
+      '--store',work/'native-source-lfs-rejected','--objects',work/'native-source-lfs-rejected-objects'],
+      'native-source-lfs-rejected.txt',required=False)
+  assert rejected['exit_code']!=0 and not (work/'native-source-lfs-rejected').exists()
+  assert not (work/'native-source-lfs-rejected-objects').exists()
+  inputs=json.loads((work/'native-media-runtime-inputs.json').read_text())
+  inputs['files'][rows[0]['tree_receipt']]=rows[0]['tree_sha256']
+  inputs['trees'][rows[0]['root']]=rows[0]['tree_receipt']
+  assert len(inputs['files'])==len(inputs['trees'])==9
+  (work/'native-source-lfs-runtime-inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
+  evidence['native_source_lfs']=dict(source_commit=evidence['source_commit'],origin_commit=plan['origin_commit'],
+      source_lfs_objects=4,declared_bytes=sum(row['bytes'] for row in plan['assets'].values()),
+      tree_sha256=rows[0]['tree_sha256'],actual_arm_preparer=True,actual_object_hashes_match_current_source=True,
+      host_expected_tree_matches=True,repeated_http_body_bytes=0,repeated_copied_bytes=0,repeated_linked_bytes=0,
+      pointer_mismatch_rejected_before_staging=True,source_checkout_unchanged=True,
+      generated_firmware_prepared=False,python_model_generation_complete=False,
+      full_runtime_build=False,physical_device_execution=False,
+      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+
+
 def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Verify source-bound MPC inputs and the current Rust/native solver ABI."""
   room(work,2*1024**3)
@@ -1603,13 +1658,13 @@ def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_w
   assert after['copied_bytes']==after['asset']['transferred_bytes']==after['asset']['stored_bytes']==0
   # Runtime planning uses the complete bound provider; the earlier partial core
   # component/probe remains as independent evidence and is not mutated/deleted.
-  inputs=read('native-media-runtime-inputs.json')
+  inputs=read('native-source-lfs-runtime-inputs.json')
   partial=read('native-companion-acados-initial.json')
   assert inputs['files'].pop(partial['tree_receipt'])==partial['tree_sha256']
   assert inputs['trees'].pop(partial['root'])==partial['tree_receipt']
   inputs['files'][rows[0]['tree_receipt']]=rows[0]['tree_sha256']
   inputs['trees'][rows[0]['root']]=rows[0]['tree_receipt']
-  assert len(inputs['files'])==len(inputs['trees'])==8
+  assert len(inputs['files'])==len(inputs['trees'])==9
   (work/'native-runtime-inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
   evidence['native_mpc_inputs']=dict(source_binding=rows[0]['source_binding'],
       tree_sha256=rows[0]['tree_sha256'],descriptor_sha256=exported['descriptor_sha256'],
@@ -1678,7 +1733,7 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
     assert audit['native_inputs_sha256']==digest(pins_path) and audit['budgets_sha256']==digest(budgets_path)
     assert audit['bindings_sha256']==digest(output/'bindings.json')
     assert audit['plan_sha256']==digest(output/'build-plan.json')
-    assert plan['runtime_inputs']==pins['runtime_inputs'] and len(plan['runtime_inputs']['trees'])==8
+    assert plan['runtime_inputs']==pins['runtime_inputs'] and len(plan['runtime_inputs']['trees'])==9
     for name,requirements in catalog['compiler_inputs'].items():
       recipe=plan['groups'][name]
       for key,suffix in requirements.items():
@@ -1804,7 +1859,7 @@ def main():
     (work / 'ffmpeg-source').mkdir()
     (work / 'provider-assets').mkdir()
     (work / 'provider-export').mkdir()
-    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export'):
+    for name in ('raylib-assets','raylib-components','raylib-provider-export','opencv-source','opencv-components','opencv-provider-export','source-lfs-assets'):
       (work/name).mkdir()
     cargo_inputs = json.loads((owned/'native-cargo-first.json').read_text())
     cargo_vendor = Path(guest_work)/'cargo-sources'/Path(cargo_inputs['vendor']).relative_to(owned/'native-cargo-sources')
@@ -1828,6 +1883,7 @@ def main():
              '-b', f'{owned / "native-provider-export"}:{guest_work}/provider-export',
              '-b', f'{owned / "native-companion-components"}:{guest_work}/companion-components',
              '-b', f'{owned / "native-companion-exports"}:{guest_work}/companion-exports',
+             '-b', f'{owned / "native-source-lfs-assets"}:{guest_work}/source-lfs-assets',
              '-b', f'{owned / "native-mpc-components"}:{guest_work}/mpc-components',
              '-b', f'{owned / "native-mpc-export"}:{guest_work}/mpc-export',
              '-b', f'{owned / "native-raylib-assets"}:{guest_work}/raylib-assets',
@@ -1891,6 +1947,7 @@ def main():
     native_runtime_companions_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_display_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_media_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_source_assets_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'

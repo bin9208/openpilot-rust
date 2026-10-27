@@ -4,6 +4,10 @@
 모델 준비 Python과 기존 C/C++ provider를 유지한다. 이 기록은 전체 runtime의 완성이나
 기기 설치 수용을 뜻하지 않는다.
 
+현재 SVG/ONNX의 committed OID/size에 결속한 독립 준비와 전송/복사 재사용은
+[LFS 입력 안내](native-source-lfs-599.md)를 따른다. Git9개/LFS4개/생성 firmware4개를
+구분하며 모델 생성·전체 runtime 수용은 별도로 남아 있다.
+
 실제 시작 목록이 요구하는 ffmpeg/ffprobe·FreeSans와 원래 notice의 독립 준비 및 실제
 CLI/Rust glyph/window 비교는 [도구·글꼴 안내](native-media-tools-font-599.md)에 있다.
 입력17개 중 일반 Git9개/LFS4개/생성 Panda firmware4개를 구분하며 새 CI는 대기다.

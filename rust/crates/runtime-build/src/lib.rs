@@ -8,7 +8,8 @@
 #[cfg(any(
     feature = "prepare-rust",
     feature = "prepare-capnp",
-    feature = "prepare-cargo"
+    feature = "prepare-cargo",
+    feature = "prepare-source-assets"
 ))]
 mod archive_tree;
 pub mod assets;
@@ -30,6 +31,9 @@ pub mod prepare;
 pub mod resources;
 pub mod selection;
 mod source;
+#[cfg(feature = "prepare-source-assets")]
+pub mod source_assets;
+pub mod source_lfs;
 pub mod source_store;
 pub mod supervision;
 pub mod system_sdk;

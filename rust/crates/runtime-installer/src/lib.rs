@@ -44,6 +44,13 @@ pub fn source_asset_allowed(path: &Path) -> bool {
     identity::source_asset(path)
 }
 
+/// Permitted source destinations, including ordinary Git, LFS and generated
+/// firmware. Callers must inspect their committed identity rather than assuming
+/// that every entry is a downloadable LFS object.
+pub fn source_asset_paths() -> &'static [&'static str] {
+    &identity::SOURCE_ASSETS
+}
+
 pub fn artifact_path_allowed(path: &Path) -> bool {
     identity::allowed_artifact(path)
 }

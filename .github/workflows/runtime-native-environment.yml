@@ -74,6 +74,15 @@ on:
       - 'uv.lock'
       - 'rust/native-system-sdk.json'
       - 'rust/native-cargo-inputs.json'
+      - 'rust/native-source-lfs.json'
+      - 'rust/crates/runtime-build/Cargo.toml'
+      - 'rust/crates/runtime-build/src/lib.rs'
+      - 'rust/crates/runtime-build/src/source_assets.rs'
+      - 'rust/crates/runtime-build/src/source_lfs.rs'
+      - 'rust/crates/runtime-build/tests/source_assets.rs'
+      - 'rust/crates/runtime-installer/src/lib.rs'
+      - 'rust/crates/runtime-installer/src/identity.rs'
+      - 'tools/ci/prepare_native_source_assets.py'
       - 'rust/Cargo.lock'
       - 'rust/crates/runtime-build/src/inputs_main.rs'
       - 'rust/crates/cereal/**'
@@ -472,6 +481,19 @@ jobs:
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           python3 tools/ci/prepare_native_mpc_inputs.py \
             --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: actions/cache/restore@v4
+        id: source-lfs-cache
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-source-lfs-assets
+          key: native-source-lfs-${{ hashFiles('rust/native-source-lfs.json') }}-v1
+          restore-keys: native-source-lfs-
+      - name: Prepare only the current committed LFS objects without changing checkout files
+        run: python3 tools/ci/prepare_native_source_assets.py --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: actions/cache/save@v4
+        if: steps.source-lfs-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CI_JOB_TEMP }}/native-source-lfs-assets
+          key: native-source-lfs-${{ hashFiles('rust/native-source-lfs.json') }}-v1
       - name: Compose independently expected headers and libraries into one immutable FFmpeg prefix
         run: |
           python3 - <<'PY'
@@ -557,6 +579,8 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-provider-origins/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-provider-consumed/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-companion-*.json
+            ${{ env.CI_JOB_TEMP }}/native-source-lfs-*.json
+            ${{ env.CI_JOB_TEMP }}/native-source-lfs-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-companion-exports/*/*
             ${{ env.CI_JOB_TEMP }}/native-companion-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-mpc-*.json
@@ -591,6 +615,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-cli-cases/
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-font-rust/
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-font-reference/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.jsonl

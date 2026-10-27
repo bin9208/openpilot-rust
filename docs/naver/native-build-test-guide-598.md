@@ -21,6 +21,10 @@
 
 ## 개발 검증 실행 방법
 
+현재 Git의 LFS SVG/ONNX4개 준비, 문서/한 객체 변경의 전송·복사 재사용과 실패/위조/
+중단/동시 실행 거부 및 ARM 실제 byte 검사는 [LFS 입력 안내](native-source-lfs-599.md)를
+따른다. raw source 준비를 모델 생성·펌웨어 준비·전체 runtime/기기 검증으로 표현하지 않는다.
+
 실제 manager 시작 목록의 ffmpeg/ffprobe·클러스터 글꼴 준비, CLI lossless 왕복과
 현재 Rust glyph/software-window의 정확 픽셀 비교는
 [도구·글꼴 검사 안내](native-media-tools-font-599.md)를 따른다. 전체 runtime/기기 수용을

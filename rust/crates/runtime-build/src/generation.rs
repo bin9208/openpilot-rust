@@ -120,6 +120,7 @@ impl Config {
             source.workspace(&self.stores.sources, layout.expected_source_growth_bytes)?;
         crate::catalog::verify_source_plan(&workspace.root, &plan)?;
         crate::system_sdk::generation_profiles(&workspace.root, &plan)?;
+        crate::source_lfs::verify_layout(&workspace.root, &layout.provider_root, &layout.files)?;
         if plan.groups.values().any(|recipe| {
             recipe
                 .binaries
@@ -590,6 +591,7 @@ impl Sealed {
             return Err("invalid source-built runtime identity".into());
         }
         self.prepared.verify(&stores.sources, &stores.objects)?;
+        crate::source_lfs::verify_recorded(&self.prepared.source.root, &self.files)?;
         crate::catalog::verify_source_plan(&self.prepared.source.root, &self.prepared.plan)?;
         // Prepared::verify checks each group's recorded input-tree identities.
         // Do not reopen compiler SDK caches during boot/fallback selection.
@@ -792,6 +794,7 @@ pub fn seal(
     crate::system_sdk::generation_profiles(&prepared.source.root, &prepared.plan)?;
     require_tools(prepared.binaries.keys().map(String::as_str))?;
     let pins = layout.verify(&prepared)?;
+    crate::source_lfs::verify_layout(&prepared.source.root, &layout.provider_root, &layout.files)?;
     if prepared.binaries.contains_key("openpilot-plannerd") {
         crate::mpc_inputs::verify_mapped(
             &prepared.source.root,
@@ -947,6 +950,7 @@ pub fn seal(
             files.insert(artifact.path.clone(), imported.object);
         }
     }
+    crate::source_lfs::verify_recorded(&prepared.source.root, &files)?;
     let mut libraries = vec![runtime.root.join("rust/bin/lib")];
     libraries.extend(layout.libraries.iter().cloned());
     let abi = evidence.join("abi.json");

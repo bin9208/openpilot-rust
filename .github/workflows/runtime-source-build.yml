@@ -4,6 +4,10 @@ on:
     branches: [codex/feat-598-device-native-build, 'codex/feat-598-*', 'codex/feat-599-*', 'codex/feat-600-*', 'codex/feat-605-*', dev, main]
     paths:
       - 'rust/crates/runtime-build/**'
+      - 'rust/crates/runtime-installer/src/lib.rs'
+      - 'rust/crates/runtime-installer/src/identity.rs'
+      - 'rust/native-source-lfs.json'
+      - 'tools/ci/prepare_native_source_assets.py'
       - 'rust/crates/dev-tools/src/native_codec_inputs.rs'
       - 'rust/crates/dev-tools/src/native_ffmpeg_headers.rs'
       - 'rust/crates/dev-tools/src/native_ffmpeg_prefix.rs'
@@ -147,6 +151,10 @@ jobs:
             --root "$GITHUB_WORKSPACE" --cargo "$(rustup which cargo)" --check > "$RUNNER_TEMP/native-runtime-catalog.json"
       - name: Compile the runtime consumer configuration without archive preparation dependencies
         run: cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --all-targets -- -D warnings
+      - name: Verify committed LFS preparation without archive features
+        run: |
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-source-assets --test source_assets -- --nocapture
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-source-assets --all-targets -- -D warnings
       - name: Verify unchanged codec wheel admission and independent component reuse
         run: |
           python3 - <<'PY'

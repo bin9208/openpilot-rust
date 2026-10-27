@@ -10,6 +10,7 @@
 실제 Rust API 검사는 [display 입력 안내](native-display-inputs-599.md)를 따른다.
 FFmpeg 도구·FreeSans2개 component와 CLI/실제 glyph 검사는
 [media 입력 안내](native-media-tools-font-599.md)를 따른다.
+일반 Git/firmware와 구분하는 LFS4개 파일의 Tree1개는 [LFS 입력 안내](native-source-lfs-599.md)를 따른다.
 
 생성 MPC는 이 foreign profile에 넣지 않는다. 별도 source-bound profile의 생성 입력/
 output 계약과 실제 Rust solver ABI 검사 후속은
@@ -89,7 +90,7 @@ component의 전체 Tree를 host 예상값과 비교하고 초기/반복/실제 
   API 호출 때 `/proc/self/maps`도 저장해 실제 component 경로의 library가 매핑되고
   libpython이 섞이지 않았는지 확인한다. guest 경로와 PRoot host bind 경로를 구분한다.
 - 이 절의 네 runtime Tree를 `native-companion-runtime-inputs.json`에 SHA-pin한다. 후속에서
-  display2개/도구·글꼴2개를 더하고 partial acados를 source-bound MPC로 대체한8개 Tree를 기존13그룹
+  display2개/도구·글꼴2개와 LFS1개를 더하고 partial acados를 source-bound MPC로 대체한9개 Tree를 기존13그룹
   계획의 `runtime_inputs`에 연결한다. 이 입력은 compiler recipe/cache에 섞지 않는다.
   동일 입력의 plan/bindings/audit byte 반복 일치 검사도 유지한다.
 

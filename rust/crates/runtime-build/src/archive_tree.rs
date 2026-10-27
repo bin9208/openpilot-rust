@@ -1,12 +1,21 @@
 //! Shared strict file-tree admission for authenticated native archives.
-use crate::{
-    inputs::{Entry, Tree},
-    Result,
-};
+#[cfg(any(
+    feature = "prepare-rust",
+    feature = "prepare-capnp",
+    feature = "prepare-cargo"
+))]
+use crate::inputs::Tree;
+use crate::{inputs::Entry, Result};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
+#[cfg(any(
+    feature = "prepare-rust",
+    feature = "prepare-capnp",
+    feature = "prepare-cargo"
+))]
+use std::collections::BTreeSet;
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeMap,
     fs::{self, File, OpenOptions},
     io::Write,
     os::unix::fs::{OpenOptionsExt, PermissionsExt},
@@ -96,6 +105,11 @@ pub(crate) fn file(root: &Path, relative: &Path, bytes: &[u8], mode: u32) -> Res
     Ok(())
 }
 
+#[cfg(any(
+    feature = "prepare-rust",
+    feature = "prepare-capnp",
+    feature = "prepare-cargo"
+))]
 pub(crate) fn links(tree: &Tree, destination: Option<&Path>) -> Result<()> {
     for (path, value) in &tree.entries {
         let Entry::Symlink { target } = value else {

@@ -10,11 +10,13 @@ fn run() -> Result<()> {
     let (mut plan, mut cache, mut store) = (None, None, None);
     let (mut prepare_rust, mut prepare_capnp, mut prepare_cargo) = (false, false, false);
     let mut capture_system = false;
+    let mut prepare_source_assets = false;
+    let mut objects = None;
     let mut lock = None;
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--help" | "-h") => {
-                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --capture-system-sdk --root VERIFIED_IMAGE_ROOT --plan SDK_ROOTS_JSON --output SDK_RECEIPT\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-capnp --plan PINNED_CAPNP_ASSETS_JSON --cache ASSET_CACHE --store SDK_STORE\n       openpilot-runtime-inputs --prepare-cargo --plan PINNED_CRATES_JSON --lock CARGO_LOCK --cache ASSET_CACHE --store SOURCES_STORE\nCapture unpacked inputs, or assemble authenticated native inputs without executing installers. Generic and system capture require independently verified provenance. Archive preparation authenticates vendor bytes on every reuse; it does not compile or activate a runtime.");
+                println!("Usage: openpilot-runtime-inputs --root INPUT_TREE --output RECEIPT_JSON\n       openpilot-runtime-inputs --capture-system-sdk --root VERIFIED_IMAGE_ROOT --plan SDK_ROOTS_JSON --output SDK_RECEIPT\n       openpilot-runtime-inputs --prepare-rust --plan PINNED_RUST_JSON --cache ASSET_CACHE --store TOOLCHAIN_STORE\n       openpilot-runtime-inputs --prepare-capnp --plan PINNED_CAPNP_ASSETS_JSON --cache ASSET_CACHE --store SDK_STORE\n       openpilot-runtime-inputs --prepare-cargo --plan PINNED_CRATES_JSON --lock CARGO_LOCK --cache ASSET_CACHE --store SOURCES_STORE\n       openpilot-runtime-inputs --prepare-source-lfs --root CLEAN_SOURCE --plan SOURCE_LFS_JSON --cache ASSET_CACHE --store PREFIX_STORE --objects OBJECT_STORE\nCapture unpacked inputs, or assemble authenticated native inputs without executing installers. Source LFS preparation requires every current committed pointer and never mutates a checkout. Generic and system capture require independently verified provenance. Archive preparation authenticates vendor bytes on every reuse; it does not compile or activate a runtime.");
                 return Ok(());
             }
             Some("--root") if root.is_none() => {
@@ -27,6 +29,12 @@ fn run() -> Result<()> {
             Some("--prepare-capnp") if !prepare_capnp => prepare_capnp = true,
             Some("--prepare-cargo") if !prepare_cargo => prepare_cargo = true,
             Some("--capture-system-sdk") if !capture_system => capture_system = true,
+            Some("--prepare-source-lfs") if !prepare_source_assets => prepare_source_assets = true,
+            Some("--objects") if objects.is_none() => {
+                objects = Some(PathBuf::from(
+                    args.next().ok_or("missing immutable object store")?,
+                ))
+            }
             Some("--lock") if lock.is_none() => {
                 lock = Some(PathBuf::from(args.next().ok_or("missing Cargo lock path")?))
             }
@@ -48,12 +56,39 @@ fn run() -> Result<()> {
         + u8::from(prepare_capnp)
         + u8::from(prepare_cargo)
         + u8::from(capture_system)
+        + u8::from(prepare_source_assets)
         > 1
     {
         return Err("choose exactly one native preparation mode".into());
     }
     if !prepare_cargo && lock.is_some() {
         return Err("--lock requires --prepare-cargo".into());
+    }
+    if !prepare_source_assets && objects.is_some() {
+        return Err("--objects requires --prepare-source-lfs".into());
+    }
+    if prepare_source_assets {
+        if output.is_some() {
+            return Err("source LFS preparation does not accept a generic capture output".into());
+        }
+        #[cfg(feature = "prepare-source-assets")]
+        {
+            let plan = openpilot_runtime_build::source_assets::Plan::read(
+                &plan.ok_or("--plan is required")?,
+            )?;
+            let prepared = openpilot_runtime_build::source_assets::prepare(
+                &plan,
+                &root.ok_or("--root is required")?,
+                &cache.ok_or("--cache is required")?,
+                &store.ok_or("--store is required")?,
+                &objects.ok_or("--objects is required")?,
+                &openpilot_runtime_build::assets::Curl,
+            )?;
+            println!("{}", serde_json::to_string_pretty(&prepared)?);
+            return Ok(());
+        }
+        #[cfg(not(feature = "prepare-source-assets"))]
+        return Err("this build does not include the prepare-source-assets Cargo feature".into());
     }
     if capture_system {
         if cache.is_some() || store.is_some() {

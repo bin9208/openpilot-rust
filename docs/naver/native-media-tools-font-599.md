@@ -44,7 +44,8 @@ gh run view RUN_ID --repo bin9208/openpilot-rust --log-failed
 foundation은 닫힌 production profile·notice·파일 모드·프로젝트 실행 파일로의 치환 거부와
 기존 공통 provider 회귀를 실행하고 실제 Rust glyph 예제를 x64/ARM strict Clippy로 검사한다.
 genuine은 source-built ARM 준비기로 host와 같은 Tree, 초기/반복 전송/offline seed0,
-반복 복사0을 확인한다. 실행 입력은 기존6개에 도구/글꼴2개를 더한8개 Tree다.
+반복 복사0을 확인한다. 이 절의8개 Tree에 후속 [Git LFS](native-source-lfs-599.md) Tree1개를
+더한9개를 전체 계획에 연결한다.
 partial acados는 기존 source-bound MPC로 대체하며 compiler recipe와 runtime input을 구분한다.
 
 실제 원래 FFmpeg/ffprobe를 같은 고정 FFmpeg prefix로 실행한다. FFV1와 libx264 lossless
