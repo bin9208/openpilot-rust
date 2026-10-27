@@ -7,6 +7,10 @@
 입력과 연결한다. 전체 runtime99개/13그룹의 목록·feature는 그대로다. 컴파일·모델 준비·
 세대 봉인·기기 설치를 수행하는 단계가 아니다.
 
+실행 입력4개 Tree의 acados core는 후속
+[MPC 소스 결속](native-mpc-source-bindings-599.md)에서 complete source-bound MPC로
+교체해 계획한다. 이전 partial component 증거를 보존하며 새 Actions 결과는 대기다.
+
 ## 입력과 신뢰 경계
 
 기존 `openpilot-runtime-plan`에 `--native-inputs`와 `--budgets`를 추가했다.

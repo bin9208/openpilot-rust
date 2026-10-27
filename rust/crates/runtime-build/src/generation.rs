@@ -120,6 +120,18 @@ impl Config {
             source.workspace(&self.stores.sources, layout.expected_source_growth_bytes)?;
         crate::catalog::verify_source_plan(&workspace.root, &plan)?;
         crate::system_sdk::generation_profiles(&workspace.root, &plan)?;
+        if plan.groups.values().any(|recipe| {
+            recipe
+                .binaries
+                .iter()
+                .any(|name| name == "openpilot-plannerd")
+        }) {
+            crate::mpc_inputs::verify_mapped(
+                &workspace.root,
+                &layout.provider_root,
+                &layout.files,
+            )?;
+        }
         let prepared = crate::prepare::from_retained(
             &workspace.root,
             &self.cache,
@@ -625,6 +637,9 @@ impl Sealed {
                 true,
             )?;
         }
+        if self.prepared.binaries.contains_key("openpilot-plannerd") {
+            crate::mpc_inputs::verify_runtime(&self.prepared.source.root, &root.join("rust/bin"))?;
+        }
         for (path, expected) in &self.system {
             if path.canonicalize()? != expected.target
                 || digest_file(&expected.target)? != expected.sha256
@@ -777,6 +792,13 @@ pub fn seal(
     crate::system_sdk::generation_profiles(&prepared.source.root, &prepared.plan)?;
     require_tools(prepared.binaries.keys().map(String::as_str))?;
     let pins = layout.verify(&prepared)?;
+    if prepared.binaries.contains_key("openpilot-plannerd") {
+        crate::mpc_inputs::verify_mapped(
+            &prepared.source.root,
+            &layout.provider_root,
+            &layout.files,
+        )?;
+    }
     let metadata = metadata(request_root, &prepared)?;
     directory(&stores.generations)?;
     let _lock = lock(&stores.generations)?;
@@ -857,6 +879,9 @@ pub fn seal(
         .map(|(p, o)| (p.clone(), o.sha256.clone()))
         .collect();
     runtime.verify_runtime(&stores.sources, None, &source_assets)?;
+    if prepared.binaries.contains_key("openpilot-plannerd") {
+        crate::mpc_inputs::verify_runtime(&prepared.source.root, &runtime.root.join("rust/bin"))?;
+    }
     let source_input = evidence.join("source.json");
     write(
         &source_input,

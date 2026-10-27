@@ -4,6 +4,11 @@
 모델 준비 Python과 기존 C/C++ provider를 유지한다. 이 기록은 전체 runtime의 완성이나
 기기 설치 수용을 뜻하지 않는다.
 
+생성 C MPC 입력이 같은 경우 기존 provider를 재사용하는 소스 계약, generation의 빌드/
+봉인/시작 검증과 실제 ARM Rust solver ABI 검사 방법은
+[생성 MPC 결속 안내](native-mpc-source-bindings-599.md)에 있다. 새 생성/Python 모델 준비
+환경과 전체 native runtime 검증은 별도이며 해당 변경의 Actions 결과는 대기다.
+
 ## 원본 입력과 실행 범위
 
 저장소의 `openpilot/system/hardware/tici/agnos.json`과 `agnos-tici.json`은 같은 system

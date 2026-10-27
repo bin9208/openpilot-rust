@@ -36,6 +36,13 @@ on:
       - 'rust/native-geos-provider.json'
       - 'rust/native-brotli-provider.json'
       - 'rust/native-acados-provider.json'
+      - 'rust/native-mpc-provider.json'
+      - 'rust/native-mpc-source-contract.json'
+      - 'rust/crates/runtime-build/src/mpc_inputs.rs'
+      - 'rust/crates/runtime-build/src/generation.rs'
+      - 'rust/crates/runtime-build/tests/mpc_inputs.rs'
+      - 'tools/ci/prepare_native_mpc_inputs.py'
+      - 'tools/ci/fixtures/native-mpc-abi.py'
       - 'tools/ci/prepare_native_runtime_companions.py'
       - 'tools/ci/fixtures/native-companion-probe.cc'
       - 'rust/crates/dev-tools/src/native_opencv_prefix.rs'
@@ -448,6 +455,11 @@ jobs:
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           python3 tools/ci/prepare_native_runtime_companions.py \
             --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - name: Prepare the original generated MPC libraries against the exact current source contract
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_mpc_inputs.py \
+            --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
       - name: Compose independently expected headers and libraries into one immutable FFmpeg prefix
         run: |
           python3 - <<'PY'
@@ -535,6 +547,10 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-companion-*.json
             ${{ env.CI_JOB_TEMP }}/native-companion-exports/*/*
             ${{ env.CI_JOB_TEMP }}/native-companion-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-mpc-*.json
+            ${{ env.CI_JOB_TEMP }}/native-mpc-export/*
+            ${{ env.CI_JOB_TEMP }}/native-mpc-origins/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-mpc-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-cargo-sources/sets/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.json
             ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.txt
@@ -545,6 +561,12 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-probe.cc
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-mpc-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-mpc-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-mpc-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-mpc-abi-cases/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-mpc-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-runtime-inputs.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.jsonl

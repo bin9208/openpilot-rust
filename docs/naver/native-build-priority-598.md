@@ -1,6 +1,9 @@
 # 성능 개선·콤마 자체 빌드 우선 실행 — #598
 
 사용자 결정: 2026-10-26 KST.
+[생성 MPC 입력 결속·재사용](native-mpc-source-bindings-599.md)을 추가했다. 원래4662개
+Git 생성 입력과 output hash를 고정하고 현재 source/실제 Rust solver ABI를 별도 검증한다.
+재생성·전체 Python 준비 환경/99개 native 빌드와 실기 수용은 계속 남으며 새 검사는 대기다.
 기존 C/C++ [실행 library4개 component](native-runtime-companions-599.md)의 내용별 준비와
 ARM API/ELF·`runtime_inputs` 연결 검사를 추가했다. 생성 MPC·전체 Layout/빌드는 별도이며
 이 새 경로는 Actions 검증 대기다.

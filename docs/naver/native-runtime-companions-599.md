@@ -6,6 +6,10 @@
 기존 [독립 provider](native-provider-components-599.md)의 닫힌 inventory를 확장한다.
 모델 준비 Python과 기존 C/C++ 라이브러리를 유지하며 runtime 로직/수학을 바꾸지 않는다.
 
+생성 MPC는 이 foreign profile에 넣지 않는다. 별도 source-bound profile의 생성 입력/
+output 계약과 실제 Rust solver ABI 검사 후속은
+[MPC 소스 결속](native-mpc-source-bindings-599.md)을 따른다. 새 후속의 Actions 결과는 대기다.
+
 ## 원본과 선택 범위
 
 기존 provider와 같은 원본 source `a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31`,

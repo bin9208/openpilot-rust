@@ -21,6 +21,11 @@
 
 ## 개발 검증 실행 방법
 
+생성 MPC 입력4662개와 원래 output/현재 source를 함께 묶어 기존 C/C++ solver를
+재사용하는 조건, 변경·누락 거부 및 실제 ARM Rust/direct C ABI12 solve 비교는
+[MPC 소스 결속 안내](native-mpc-source-bindings-599.md)를 따른다. 새 생성·전체 Python/
+Cython planner 회귀와 실기 수용은 별도로 남으며 Actions 성공 전 실행 통과로 쓰지 않는다.
+
 전체99개/13그룹의 전이/default feature에 따른 compiler 입력 목록과 필수 Tree 결속은
 [compiler 입력 계약](native-compiler-input-contract-599.md)을 따른다. catalog audit의
 compiler_inputs_bound와 compiled/activated를 구분하며 engineering plan을 전체 runtime

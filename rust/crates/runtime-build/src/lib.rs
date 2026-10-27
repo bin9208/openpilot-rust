@@ -22,6 +22,7 @@ mod catalog_features;
 pub mod generation;
 pub mod inputs;
 pub mod memory_cgroup;
+pub mod mpc_inputs;
 mod native_tools;
 pub mod objects;
 pub mod pending;

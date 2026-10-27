@@ -1229,6 +1229,124 @@ def native_runtime_companions_probe(guest_command,work,source_mount,evidence,log
       emulation='QEMU/PRoot ARM user space on x64 bin-actions')
 
 
+def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
+  """Verify source-bound MPC inputs and the current Rust/native solver ABI."""
+  room(work,2*1024**3)
+  def execute(argv,name,required=True):
+    record=run(guest_command(argv),log,stdout_path=work/name,required=required)
+    evidence['commands'].append(record)
+    return record
+  def read(name):
+    return json.loads((work/name).read_text())
+  source=Path(os.environ['GITHUB_WORKSPACE'])
+  exported=json.loads((work.parent/'native-mpc-export.json').read_text())
+  host=json.loads((work.parent/'native-mpc-initial.json').read_text())
+  plan=json.loads((source/'rust/native-mpc-provider.json').read_text())
+  command=[work/'project-target/debug/build-runtime-ffmpeg','--prepare-released-provider',
+      '--plan',f'{source_mount}/rust/native-mpc-provider.json',
+      '--descriptor',Path(guest_work)/'mpc-export/provider.json',
+      '--descriptor-sha256',exported['descriptor_sha256'],
+      '--cache',Path(guest_work)/'mpc-components','--store',work/'native-mpc-prefixes']
+  # The generated solver may never enter through the unbound foreign-library path.
+  rejected=execute(command,'native-mpc-unbound.txt',required=False)
+  assert rejected['exit_code']!=0 and not (work/'native-mpc-prefixes').exists()
+  command+=['--source-root',source_mount]
+  rows=[]
+  for phase in ('initial','reused'):
+    execute(command,f'native-mpc-{phase}.json')
+    row=read(f'native-mpc-{phase}.json')
+    assert row['tree_sha256']==host['tree_sha256']==exported['tree_sha256']
+    assert row['source_binding']==host['source_binding']==exported['source_binding']
+    assert row['source_binding']['source']['commit']==evidence['source_commit']
+    assert row['source_binding']['original_source_commit']==plan['source_commit']!=evidence['source_commit']
+    assert row['source_binding']['inputs_match'] and not row['source_binding']['regenerated']
+    assert row['source_binding']['contract_sha256']==digest(source/'rust/native-mpc-source-contract.json')
+    assert row['offline_seed_bytes']==row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+    assert (row['copied_bytes']>0)==(phase=='initial')
+    assert not row['origin_archive_downloaded'] and not row['compiler_executed'] and not row['runtime_activated']
+    rows.append(row)
+  assert rows[0]['root']==rows[1]['root']
+  prefix=Path(rows[0]['root'])/'plannerd-acados'
+  actual_prefix=work/prefix.relative_to(guest_work)
+  rust=json.loads((work.parent/'native-rust-first.json').read_text())
+  rust_root=Path(guest_work)/'pinned-rust'/Path(rust['root']).relative_to(work.parent/'native-rust-toolchains')
+  capnp=Path(read('native-cereal-preparation-initial.json')['root'])
+  execute(['readlink','-f','/usr/bin/cc'],'native-mpc-linker.txt')
+  linker=(work/'native-mpc-linker.txt').read_text().strip()
+  environment=dict(RUSTC=str(rust_root/'bin/rustc'),OPENPILOT_CAPNP=str(capnp/'usr/bin/capnp'),
+      OPENPILOT_NATIVE_INCREMENTAL='1',LD_LIBRARY_PATH=f'{prefix}:{capnp}/usr/lib/aarch64-linux-gnu',
+      CARGO_ENCODED_RUSTFLAGS='\x1f'.join(['-C',f'linker={linker}']),
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=linker)
+  for key,value in dict(CC='/usr/bin/gcc',CXX='/usr/bin/g++',AR='/usr/bin/ar',RANLIB='/usr/bin/ranlib').items():
+    environment[key]=environment[f'HOST_{key}']=value
+  env=['/usr/bin/env',*(f'{key}={value}' for key,value in environment.items())]
+  build=[*env,rust_root/'bin/cargo','build','--release','--locked','--offline',
+      '--manifest-path',f'{source_mount}/rust/Cargo.toml','--target','aarch64-unknown-linux-gnu',
+      '-p','openpilot-plannerd','--features','native-skip-miri','--example','plannerd_solver_trace',
+      '--target-dir',work/'native-mpc-target','--message-format=json']
+  def artifact(name):
+    artifacts=[row for line in (work/name).read_text().splitlines() if (row:=json.loads(line)).get('reason')=='compiler-artifact'
+        and row.get('executable') and row['target']['name']=='plannerd_solver_trace']
+    assert len(artifacts)==1
+    return artifacts[0]
+  execute(build,'native-mpc-build.jsonl')
+  first=artifact('native-mpc-build.jsonl')
+  assert not first['fresh']
+  binary=Path(first['executable'])
+  local_binary=work/binary.relative_to(guest_work)
+  initial_sha=digest(local_binary)
+  header=local_binary.read_bytes()[:64]
+  assert header[:6]==b'\x7fELF\x02\x01' and int.from_bytes(header[18:20],'little')==183
+  cases=Path(guest_work)/'native-mpc-abi-cases'
+  execute([*env,'python3',f'{source_mount}/tools/ci/fixtures/native-mpc-abi.py',
+      '--provider',prefix,'--rust-binary',binary,'--output',cases],'native-mpc-abi.json')
+  comparison=read('native-mpc-abi.json')
+  assert comparison['bit_exact_solves']==12 and comparison['successful_statuses'] and comparison['finite_outputs']
+  maps=(work/'native-mpc-abi-cases/provider-maps.txt').read_text()
+  assert len(maps)<8*1024**2
+  mapped_paths={row[5] for line in maps.splitlines() if len(row:=line.split(maxsplit=5))==6}
+  for filename in ('libacados.so','libacados_ocp_solver_lat.so','libacados_ocp_solver_long.so'):
+    assert {str(prefix/filename),str((actual_prefix/filename).resolve())}&mapped_paths, f'wrong MPC provider mapping: {filename}'
+  audit=work/'native-mpc-elf-audit.json'
+  audit_command=[work/'project-target/debug/runtime-elf-audit','--root',binary]
+  for path in plan['members']:
+    if '.so' in Path(path).name:
+      audit_command+=['--root',Path(rows[0]['root'])/path]
+  for path in (prefix,'/usr/lib/aarch64-linux-gnu','/lib/aarch64-linux-gnu'):
+    audit_command+=['--library',path]
+  execute([*audit_command,'--output',audit],'native-mpc-elf-summary.json')
+  assert read('native-mpc-elf-audit.json')['compatible']
+  execute(build,'native-mpc-build-reused.jsonl')
+  repeated=artifact('native-mpc-build-reused.jsonl')
+  assert repeated['fresh'] and repeated['executable']==str(binary) and digest(local_binary)==initial_sha
+  execute(command,'native-mpc-after-api.json')
+  after=read('native-mpc-after-api.json')
+  assert after['tree_sha256']==rows[0]['tree_sha256'] and after['source_binding']==rows[0]['source_binding']
+  assert after['copied_bytes']==after['asset']['transferred_bytes']==after['asset']['stored_bytes']==0
+  # Runtime planning uses the complete bound provider; the earlier partial core
+  # component/probe remains as independent evidence and is not mutated/deleted.
+  inputs=read('native-companion-runtime-inputs.json')
+  partial=read('native-companion-acados-initial.json')
+  assert inputs['files'].pop(partial['tree_receipt'])==partial['tree_sha256']
+  assert inputs['trees'].pop(partial['root'])==partial['tree_receipt']
+  inputs['files'][rows[0]['tree_receipt']]=rows[0]['tree_sha256']
+  inputs['trees'][rows[0]['root']]=rows[0]['tree_receipt']
+  assert len(inputs['files'])==len(inputs['trees'])==4
+  (work/'native-runtime-inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
+  evidence['native_mpc_inputs']=dict(source_binding=rows[0]['source_binding'],
+      tree_sha256=rows[0]['tree_sha256'],descriptor_sha256=exported['descriptor_sha256'],
+      actual_arm_preparer=True,actual_current_rust_solver_compiled_and_executed=True,
+      rust_example_sha256=initial_sha,direct_c_abi_comparison=comparison,
+      strict_elf_audit_compatible=True,actual_provider_maps_verified=True,
+      repeated_cargo_artifact_fresh=True,repeated_http_body_bytes=0,repeated_copied_bytes=0,
+      consumer_origin_archive_downloaded=False,generated_mpc_solvers_reused=True,
+      solvers_regenerated=False,original_cython_regression=False,
+      complete_python_generation_environment=False,full_planner_regression=False,
+      full_runtime_build=False,runtime_activated=False,published_release=False,
+      public_component_download_tested=False,physical_device_execution=False,
+      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+
+
 def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Assemble the actual 99-target plan using all independently prepared inputs."""
   room(work,4*1024**2)
@@ -1250,7 +1368,7 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
       'raylib':pin(read('native-raylib-sdk-initial.json')),
       'opencv':pin(read('native-opencv-prefix-initial.json')),
       'eigen':pin(read('native-eigen-initial.json')['eigen']),
-  },runtime_inputs=read('native-companion-runtime-inputs.json'))
+  },runtime_inputs=read('native-runtime-inputs.json'))
   catalog=read('native-project-catalog.json')
   # Explicit conservative plan-only envelopes. This probe does not reserve or
   # consume these build budgets and is not a measured full-build resource trial.
@@ -1432,6 +1550,8 @@ def main():
              '-b', f'{owned / "native-provider-export"}:{guest_work}/provider-export',
              '-b', f'{owned / "native-companion-components"}:{guest_work}/companion-components',
              '-b', f'{owned / "native-companion-exports"}:{guest_work}/companion-exports',
+             '-b', f'{owned / "native-mpc-components"}:{guest_work}/mpc-components',
+             '-b', f'{owned / "native-mpc-export"}:{guest_work}/mpc-export',
              '-b', f'{owned / "native-raylib-assets"}:{guest_work}/raylib-assets',
              '-b', f'{owned / "native-raylib-components"}:{guest_work}/raylib-components',
              '-b', f'{owned / "native-raylib-provider-export"}:{guest_work}/raylib-provider-export',
@@ -1491,6 +1611,7 @@ def main():
     native_opencv_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_opencv_prefix_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_runtime_companions_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'

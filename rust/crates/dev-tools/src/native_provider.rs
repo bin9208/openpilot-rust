@@ -1,5 +1,5 @@
-//! Export authenticated foreign libraries from the old release, never its Rust
-//! executables or project-generated MPC solvers.
+//! Export authenticated library inputs, never old project Rust executables.
+//! The generated MPC profile additionally requires its exact source contract.
 //! Consumers use an independently pinned small component, never the old runtime.
 use crate::{
     encoder_stage,
@@ -9,6 +9,7 @@ use crate::{
 use openpilot_runtime_build::{
     assets, digest_file,
     inputs::{Entry, Tree},
+    mpc_inputs, Source,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -27,6 +28,9 @@ const NUMERICS_INVENTORY: &str = "37785e6f41354c9ebcb90e5e243aec4407301479cf7773
 const GEOS_INVENTORY: &str = "eccb36c611ece074d36496137bb9102adf2008e695ae0a7b155aec649e936d62";
 const BROTLI_INVENTORY: &str = "d0cb97c6bd110c5463dc0db8cf618b60c268964eceabf9efbb0679d96bcb527a";
 const ACADOS_INVENTORY: &str = "d8fd2904df5f9f3fdac870da7d644b446474cdc75979732e4a1db444b459eb22";
+const MPC_INVENTORY: &str = "3b95696863cb8b97ad0fb733c7f430ab0d2216abd710ad02d48874b90117501d";
+const MPC_CONTRACT_SHA: &str = "6dd5b809d92e716f6654cfb218d7d6cbc0547b473e009c9e0578c04fc9930e41";
+const MPC_CONTRACT: &[u8] = include_bytes!("../../../native-mpc-source-contract.json");
 const SOURCE: &str = "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31";
 const ORIGIN: &str = "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291";
 const MANIFEST: &str = "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee";
@@ -55,6 +59,19 @@ pub struct Plan {
     pub source_archive: assets::Asset,
     pub runtime_manifest_sha256: String,
     pub members: BTreeMap<PathBuf, Member>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_contract_sha256: Option<String>,
+    #[serde(skip)]
+    bound_source: Option<(PathBuf, Source)>,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize)]
+pub struct SourceBinding {
+    pub source: Source,
+    pub contract_sha256: String,
+    pub original_source_commit: String,
+    pub inputs_match: bool,
+    pub regenerated: bool,
 }
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -80,6 +97,8 @@ pub struct Export {
     pub origin: Prepared,
     pub published_release: bool,
     pub provider_executed: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_binding: Option<SourceBinding>,
 }
 #[derive(Debug, Serialize)]
 pub struct Report {
@@ -88,6 +107,8 @@ pub struct Report {
     pub provider_source_commit: String,
     pub offline_seed_bytes: u64,
     pub origin_archive_downloaded: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_binding: Option<SourceBinding>,
 }
 fn origin_url() -> String {
     format!("https://github.com/bin9208/openpilot-rust/releases/download/runtime-{SOURCE}/openpilot-rust-{SOURCE}-aarch64.tar.gz")
@@ -101,6 +122,7 @@ fn component_names(profile: &str) -> Result<(&'static str, &'static str)> {
         "geos313-shared" => Ok(("geos313", "geos313-shared.tar.gz")),
         "brotli110-shared" => Ok(("brotli110", "brotli110-shared.tar.gz")),
         "acados022-libraries" => Ok(("acados022", "acados022-libraries.tar.gz")),
+        "acados022-runtime" => Ok(("acados022-runtime", "acados022-runtime.tar.gz")),
         _ => Err("unknown fixed foreign provider profile".into()),
     }
 }
@@ -125,6 +147,55 @@ fn mode(value: u32) -> u32 {
     }
 }
 impl Plan {
+    fn provenance_kind(&self) -> &'static str {
+        if self.source_contract_sha256.is_some() {
+            "openpilot-source-bound-provider-v1"
+        } else {
+            "openpilot-foreign-provider-v1"
+        }
+    }
+    fn role(&self) -> &'static str {
+        if self.source_contract_sha256.is_some() {
+            "openpilot-source-bound-provider"
+        } else {
+            "openpilot-foreign-provider"
+        }
+    }
+    pub fn bind_source(&mut self, root: &Path) -> Result<()> {
+        if self.source_contract_sha256.is_none() {
+            return Err("source-root applies only to a source-bound provider profile".into());
+        }
+        let root = root.canonicalize()?;
+        let path = root.join(mpc_inputs::PATH);
+        if digest_file(&path)? != MPC_CONTRACT_SHA {
+            return Err("MPC source contract differs from the independently pinned profile".into());
+        }
+        let source = mpc_inputs::Contract::read(&path)?.verify_source(&root)?;
+        self.bound_source = Some((root, source));
+        Ok(())
+    }
+    fn source_binding(&self) -> Result<Option<SourceBinding>> {
+        let Some(pin) = &self.source_contract_sha256 else {
+            return Ok(None);
+        };
+        let (root, before) = self
+            .bound_source
+            .as_ref()
+            .ok_or("source-bound MPC provider requires --source-root")?;
+        let path = root.join(mpc_inputs::PATH);
+        if digest_file(&path)? != *pin
+            || mpc_inputs::Contract::read(&path)?.verify_source(root)? != *before
+        {
+            return Err("MPC provider source/contract changed during preparation".into());
+        }
+        Ok(Some(SourceBinding {
+            source: before.clone(),
+            contract_sha256: pin.clone(),
+            original_source_commit: self.source_commit.clone(),
+            inputs_match: true,
+            regenerated: false,
+        }))
+    }
     pub fn read(path: &Path) -> Result<Self> {
         let file = regular(path)?;
         if file.metadata()?.len() > 1024 * 1024 {
@@ -143,6 +214,7 @@ impl Plan {
             "geos313-shared" => (8, GEOS_INVENTORY),
             "brotli110-shared" => (7, BROTLI_INVENTORY),
             "acados022-libraries" => (13, ACADOS_INVENTORY),
+            "acados022-runtime" => (15, MPC_INVENTORY),
             _ => {
                 return Err(
                     "foreign provider plan differs from the fixed original release inventory"
@@ -160,6 +232,9 @@ impl Plan {
             || self.runtime_manifest_sha256 != MANIFEST
             || self.members.len() != member_count
             || hash(&serde_json::to_vec(&self.members)?) != inventory
+            || self.source_contract_sha256.as_deref()
+                != (self.profile == "acados022-runtime").then_some(MPC_CONTRACT_SHA)
+            || (self.source_contract_sha256.is_some() && hash(MPC_CONTRACT) != MPC_CONTRACT_SHA)
         {
             return Err(
                 "foreign provider plan differs from the fixed original release inventory".into(),
@@ -204,7 +279,7 @@ fn expected(plan: &Plan) -> Result<Tree> {
         };
         insert(&mut entries, path.clone(), entry)?;
     }
-    let provenance = json(&("openpilot-foreign-provider-v1", plan))?;
+    let provenance = json(&(plan.provenance_kind(), plan))?;
     insert(
         &mut entries,
         PathBuf::from(PROVENANCE),
@@ -214,6 +289,17 @@ fn expected(plan: &Plan) -> Result<Tree> {
             mode: 0o444,
         },
     )?;
+    if let Some(pin) = &plan.source_contract_sha256 {
+        insert(
+            &mut entries,
+            mpc_inputs::ARTIFACT_CONTRACT.into(),
+            Entry::File {
+                sha256: pin.clone(),
+                bytes: MPC_CONTRACT.len() as u64,
+                mode: 0o444,
+            },
+        )?;
+    }
     Ok(Tree { schema: 1, entries })
 }
 fn manifest(plan: &Plan, bytes: &[u8]) -> Result<()> {
@@ -295,7 +381,9 @@ fn unpack(plan: &Plan, archive: &Path, root: &Path, component: bool) -> Result<(
         }
         let destination = if component {
             if !tree.entries.contains_key(&path) {
-                return Err("component contains an unpinned or project-owned member".into());
+                return Err(
+                    "component contains a member outside its pinned provider profile".into(),
+                );
             }
             path.clone()
         } else if let Some(path) = selected.get(&path) {
@@ -392,9 +480,13 @@ fn unpack(plan: &Plan, archive: &Path, root: &Path, component: bool) -> Result<(
         fs::create_dir_all(root.join("provenance"))?;
         write(
             &root.join(PROVENANCE),
-            &json(&("openpilot-foreign-provider-v1", plan))?,
+            &json(&(plan.provenance_kind(), plan))?,
         )?;
         written.insert(PROVENANCE.into());
+        if plan.source_contract_sha256.is_some() {
+            write(&root.join(mpc_inputs::ARTIFACT_CONTRACT), MPC_CONTRACT)?;
+            written.insert(mpc_inputs::ARTIFACT_CONTRACT.into());
+        }
     }
     for (path, entry) in &tree.entries {
         if !matches!(entry, Entry::Directory) && !written.contains(path) {
@@ -414,7 +506,7 @@ fn origin(
     store: &Path,
     download: &impl assets::Download,
 ) -> Result<Prepared> {
-    let identity = hash(&json(&("openpilot-foreign-provider-v1", plan))?);
+    let identity = hash(&json(&(plan.provenance_kind(), plan))?);
     let assets = assets::Plan {
         schema: 1,
         reserve_bytes: 0,
@@ -500,7 +592,10 @@ pub fn export(
     download: &impl assets::Download,
 ) -> Result<Export> {
     plan.validate()?;
-    export_inner(plan, cache, store, output, download)
+    plan.source_binding()?;
+    let exported = export_inner(plan, cache, store, output, download)?;
+    plan.source_binding()?;
+    Ok(exported)
 }
 fn export_inner(
     plan: &Plan,
@@ -547,7 +642,7 @@ fn export_inner(
     }
     let descriptor = Descriptor {
         schema: 1,
-        role: "openpilot-foreign-provider".into(),
+        role: plan.role().into(),
         profile: plan.profile.clone(),
         target: plan.target.clone(),
         agnos_version: plan.agnos_version.clone(),
@@ -562,6 +657,7 @@ fn export_inner(
     let descriptor_bytes = json(&descriptor)?;
     write(&temporary.path().join("provider.json"), &descriptor_bytes)?;
     File::open(temporary.path())?.sync_all()?;
+    plan.source_binding()?;
     rustix::fs::renameat_with(
         rustix::fs::CWD,
         temporary.path(),
@@ -581,6 +677,7 @@ fn export_inner(
         origin,
         published_release: false,
         provider_executed: false,
+        source_binding: plan.source_binding()?,
     })
 }
 fn descriptor(plan: &Plan, path: &Path, pin: &str) -> Result<Descriptor> {
@@ -595,7 +692,7 @@ fn descriptor(plan: &Plan, path: &Path, pin: &str) -> Result<Descriptor> {
     }
     let value: Descriptor = serde_json::from_slice(&bytes)?;
     if value.schema != 1
-        || value.role != "openpilot-foreign-provider"
+        || value.role != plan.role()
         || value.profile != plan.profile
         || value.target != plan.target
         || value.agnos_version != plan.agnos_version
@@ -670,7 +767,10 @@ pub fn prepare(
     download: &impl assets::Download,
 ) -> Result<Report> {
     plan.validate()?;
-    prepare_inner(plan, path, pin, cache, store, offline, download)
+    plan.source_binding()?;
+    let prepared = prepare_inner(plan, path, pin, cache, store, offline, download)?;
+    plan.source_binding()?;
+    Ok(prepared)
 }
 fn prepare_inner(
     plan: &Plan,
@@ -693,7 +793,14 @@ fn prepare_inner(
         assets: BTreeMap::from([(plan.profile.clone(), descriptor.asset)]),
     };
     let prepared = prepare_tree(
-        hash(&json(&("openpilot-foreign-provider-component-v1", plan))?),
+        hash(&json(&(
+            if plan.source_contract_sha256.is_some() {
+                "openpilot-source-bound-provider-component-v1"
+            } else {
+                "openpilot-foreign-provider-component-v1"
+            },
+            plan,
+        ))?),
         store,
         || {
             assets::prepare(cache, &assets, download)?
@@ -710,11 +817,15 @@ fn prepare_inner(
     if digest_file(path)? != pin {
         return Err("provider descriptor changed during preparation".into());
     }
+    if let Some((source, _)) = &plan.bound_source {
+        mpc_inputs::verify_runtime(source, &prepared.root)?;
+    }
     Ok(Report {
         prepared,
         provider_source_commit: plan.source_commit.clone(),
         offline_seed_bytes,
         origin_archive_downloaded: false,
+        source_binding: plan.source_binding()?,
     })
 }
 
@@ -739,6 +850,7 @@ pub fn cli(args: &[String]) -> Result<()> {
             "--descriptor",
             "--descriptor-sha256",
             "--offline-archive",
+            "--source-root",
         ]
         .contains(&key.as_str())
             || values
@@ -752,17 +864,20 @@ pub fn cli(args: &[String]) -> Result<()> {
         }
     }
     let default = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../native-ffmpeg-provider.json");
-    let plan = Plan::read(
+    let mut plan = Plan::read(
         values
             .get("--plan")
             .map_or(default.as_path(), |v| Path::new(v)),
     )?;
+    if let Some(root) = values.get("--source-root") {
+        plan.bind_source(Path::new(root))?;
+    }
     let cache = Path::new(values.get("--cache").ok_or("--cache required")?);
     let store = Path::new(values.get("--store").ok_or("--store required")?);
     if mode == Some("--export-released-provider") {
         if values
             .keys()
-            .any(|k| !["--plan", "--cache", "--store", "--output"].contains(k))
+            .any(|k| !["--plan", "--cache", "--store", "--output", "--source-root"].contains(k))
         {
             return Err("provider export cannot consume a component descriptor".into());
         }
@@ -803,6 +918,55 @@ pub fn cli(args: &[String]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn generated_mpc_cannot_use_the_unbound_foreign_provider_path() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut plan = Plan::read(&root.join("native-mpc-provider.json")).unwrap();
+        assert_eq!(plan.role(), "openpilot-source-bound-provider");
+        assert_eq!(
+            plan.source_contract_sha256.as_deref(),
+            Some(MPC_CONTRACT_SHA)
+        );
+        assert!(plan
+            .source_binding()
+            .unwrap_err()
+            .to_string()
+            .contains("source-root"));
+        let temp = tempfile::tempdir().unwrap();
+        let download = Download {
+            bytes: vec![],
+            calls: Cell::new(0),
+        };
+        assert!(export(
+            &plan,
+            &temp.path().join("cache"),
+            &temp.path().join("store"),
+            &temp.path().join("output"),
+            &download
+        )
+        .is_err());
+        assert_eq!(download.calls.get(), 0);
+        assert!(!temp.path().join("output").exists());
+        let source = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .nth(3)
+            .unwrap();
+        plan.bind_source(source).unwrap();
+        let binding = plan.source_binding().unwrap().unwrap();
+        assert!(binding.inputs_match && !binding.regenerated);
+        assert_eq!(binding.original_source_commit, SOURCE);
+        let tree = expected(&plan).unwrap();
+        assert!(tree
+            .entries
+            .contains_key(Path::new(mpc_inputs::ARTIFACT_CONTRACT)));
+        assert!(tree
+            .entries
+            .contains_key(Path::new("plannerd-acados/libacados_ocp_solver_lat.so")));
+        let mut foreign = original();
+        assert!(foreign.bind_source(source).is_err());
+        foreign.source_contract_sha256 = Some(MPC_CONTRACT_SHA.into());
+        assert!(foreign.validate().is_err());
+    }
     #[test]
     fn runtime_companions_have_independent_pins_and_exclude_project_generated_solvers() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
