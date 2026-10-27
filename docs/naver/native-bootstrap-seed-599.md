@@ -108,7 +108,69 @@ Actions에 실제 비특권 ARM userspace의 initial/reused/docs 준비를 별�
 composition과 link/copy0, 기존 선택/log 보존을 검사한다. host kernel peak/시간/디스크
 증가량은 시도별 JSONL에 남긴다. 이는 물리 ARM CPU·AGNOS kernel·기기 부팅 검증이 아니다.
 
-## 신뢰 경계와 저장
+## 고정 seed에서 전체 build/seal까지 — 2026-10-28, 기능 검증 대기
+
+`tools/native/source_runtime.py`는 고정 seed 준비 → 현재 소스 도구 → 전체 provider/model
+입력 준비 → 현재 scope helper의 전체 build/seal을 한 요청으로 연결한다. 기존 root의
+전체 runtime release를 받아 현재 결과로 사용하지 않는다. 초기 seed의 source와 이번
+요청 source는 별도로 남긴다. 한 번 검증해 고정한 seed를 이후 소비 커밋마다 새로 만들지 않는다.
+
+이 경로는 seed descriptor의 `protocols={current_tools:1,request_owner:2}`를 요구한다.
+이전 descriptor는 기존 prepare/build-tools의 단일 요청자 사용에는 호환되지만, 중간
+실행기가 있는 전체 빌드에는 지원을 추정하지 않는다. 새 producer는 실제 owner-chain
+지원 코드의 소스·바이너리·ABI와 함께 이 protocol을 기록한다. 공개 pin은 검증 후 별도로
+반영해야 하며 현재 발행·수용 완료라는 뜻은 아니다.
+
+아래는 검증된 pin과 작업별 resource policy가 이미 있는 개발 환경의 명령 형태다.
+부모 디렉터리는 미리 존재해야 하고 source/cache/Params/세대 store는 분리한다.
+
+```sh
+/usr/bin/python3 -I -B -S tools/native/source_runtime.py \
+  --manifest "$VERIFIED_SEED_DESCRIPTOR" --manifest-sha256 "$PINNED_SEED_DESCRIPTOR_SHA256" \
+  --seed-cache "$NATIVE_BOOTSTRAP_CACHE" --config "$FULL_INPUT_PREPARATION_CONFIG" \
+  --configuration-sha256 "$PINNED_PREPARATION_CONFIG_SHA256" --source "$CLEAN_CHECKOUT"
+```
+
+실행기는 별도 `source-requests/request-*`에 요청 기록을 남기고 전체 요청 lock을 잡는다.
+고정 seed에는 runtime_inputs를 뺀 기존 schema1 설정만 주고, 새 필드는 현재 소스 helper가
+해석한다. 각 bundle의 실제 파일 hash/mode/inventory, 요청 source, 준비 설정/출력 SHA와
+store/resource policy를 재검증하고, 새 native config/pin으로 전체 build/seal을 호출한다.
+반환된 generation/source/config가 맞아야 `full_runtime_build=true`를 출력한다. 시작이나
+활성화는 하지 않으며 원래 정상 선택·로그를 갱신하지 않는다.
+
+검증된 설정은 임시 입력 준비 시도와 분리해 `generations/configurations/<SHA>.json`에
+불변 mode444·fsync·rename-NOREPLACE로 보존한다. 최초 부팅 설정을 이전 임시 디렉터리
+정리로 잃지 않도록 하며, 이미 존재하는 파일도 hash/mode가 맞아야 재사용한다. 게시 중
+중단이나 잘못된 기존 파일은 정상 선택을 바꾸는 이유가 되지 않는다.
+
+업데이트용 호출은 `--running-config`, `--running-configuration-sha256`, `--previous`,
+`--request-owner`를 함께 전달한다. 새 입력 설정으로 전체 세대를 빌드한 뒤 현재 도구의
+`--stage-candidate`가 봉인된 소스·plan·layout·실제 toolchain 및 동일한 store를 확인하고,
+기존 running config SHA 아래에 pending을 기록한다. 실행 중인 설정을 새 plan으로 덮어
+SHA 검사를 통과시키지 않는다. 새 세대의 실제 입력·출처는 자기 sealed descriptor가
+보존하며 다음 부팅의 기존 boot lock/검증/복구 절차를 그대로 사용한다. 기존 launcher와
+updater의 기본 경로에 이 실행기를 연결하는 작업은 아직 남는다.
+
+요청자 형식은 원래 PID/start ticks와 중간 실행기의 PID/start ticks를 잇는 최대4개 chain이다.
+native frontend는 어느 항목이 종료돼도 private worker를 중단한다. stdlib 실행기도 원래
+요청자를 감시하고 자기 command session만 종료한다. download/중간 명령은 별도 비특권
+Python process에서 parent-death signal을 설정한 뒤 exec하므로 실행기 SIGKILL도 처리한다.
+sudo의 credential 전환 이후에는 native owner-chain 감시가 담당한다. isolated Python과
+매 실행의 빈 bytecode prefix로 프로젝트의 오래된 pyc를 읽지 않는다.
+
+최초 seed 전송 전에도 같은 Params의 정확한 `IsOnroad=0`을 요구하며, 명령 실행 중
+offroad 상태가 바뀌거나 읽을 수 없으면 중단한다. 값 없음/빈 값/추가 byte는 offroad로 추정하지 않는다.
+
+`source-requests`의 단계별 JSON/stderr, 준비·전체 build의 각 cgroup JSONL, 최종 result를
+함께 읽는다. 실행기 자체 kernel peak RSS와 준비된 seed 이후 wall time은 별도 필드다.
+이 RSS를 전체 process tree peak로 합성하지 않는다. 최초 seed 전송량도 원래 준비 보고서에
+남는다. 현재 추가 검사는 protocol/filesystem/process 및 kernel owner-chain 회귀이며,
+이 실행기를 통한 실제 전체 빌드·기본 부팅·기기 수용의 성공 근거는 아직 없다.
+
+공통 CI scope는 같은 job의 두 번째 비특권 진입에서도 기존 실제 소유 증거 디렉터리를
+보존해 재사용한다. symlink/다른 소유자는 거부하고 다른 job의 scope/cache는 건드리지 않는다.
+
+## seed descriptor와 내용별 저장
 
 `tools/native/bootstrap_seed.py`는 AGNOS에 있는 Python 표준 라이브러리로 첫 도구를
 준비한다. 별도 pip 설치나 먼저 설치된 프로젝트 Rust helper를 요구하지 않는다.

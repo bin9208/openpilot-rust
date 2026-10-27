@@ -133,8 +133,12 @@ def read_plan(path, expected):
   if len(data) > 1024**2 or hashlib.sha256(data).hexdigest() != expected:
     raise ValueError('seed descriptor differs from its independently pinned SHA')
   plan = json.loads(data)
-  if set(plan) != {'schema', 'role', 'source', 'build', 'target', 'agnos', 'assets', 'abi'} or plan['schema'] != 1 or plan['role'] != ROLE or plan['target'] != 'aarch64-unknown-linux-gnu' or plan['agnos'] != AGNOS:
+  required = {'schema', 'role', 'source', 'build', 'target', 'agnos', 'assets', 'abi'}
+  if set(plan) not in (required, required | {'protocols'}) or plan['schema'] != 1 or plan['role'] != ROLE or plan['target'] != 'aarch64-unknown-linux-gnu' or plan['agnos'] != AGNOS:
     raise ValueError('unsupported seed descriptor')
+  if 'protocols' in plan and (plan['protocols'] != dict(current_tools=1, request_owner=2)
+      or any(type(v) is not int for v in plan['protocols'].values())):
+    raise ValueError('unsupported seed bootstrap protocols')
   if set(plan['source']) != {'commit', 'tree'} or any(not re.fullmatch('[0-9a-f]{40}', value) for value in plan['source'].values()):
     raise ValueError('seed source identity is incomplete')
   hashes = {'cargo_lock_sha256','cargo_inputs_plan_sha256','cargo_inputs_tree_sha256','rust_inputs_plan_sha256','rustc_sha256','cargo_sha256'}
@@ -153,8 +157,8 @@ def read_plan(path, expected):
   return plan, data
 
 
-def fetch(asset, path):
-  result = subprocess.run(['/usr/bin/curl', '--disable', '--fail', '--silent', '--show-error', '--location',
+def fetch(asset, path, run=subprocess.run):
+  result = run(['/usr/bin/curl', '--disable', '--fail', '--silent', '--show-error', '--location',
       '--proto', '=https', '--proto-redir', '=https', '--connect-timeout', '15', '--max-time', '1800',
       '--retry', '5', '--retry-all-errors', '--retry-max-time', '1800',
       '--max-filesize', str(asset['bytes']), '--write-out', '%{size_download}', '--output', str(path),
@@ -241,22 +245,57 @@ def verify_native(root, plan):
     raise ValueError('native seed default loader mapping differs from its pin')
 
 
-def current_tools(prepared, plan, configuration, source):
+def process_identity(pid):
+  if type(pid) is not int or pid <= 1:
+    raise ValueError('invalid native request owner PID')
+  fields = Path(f'/proc/{pid}/stat').read_text().rsplit(') ', 1)[1].split()
+  if fields[0] in ('Z', 'X'):
+    raise ValueError('native request owner has exited')
+  return f'{pid}:{int(fields[19])}'
+
+
+def verify_owners(owner):
+  identities = owner.split(',')
+  if not 1 <= len(identities) <= 4 or len(set(identities)) != len(identities):
+    raise ValueError('invalid native request owner chain')
+  for identity in identities:
+    if not re.fullmatch('[1-9][0-9]*:[0-9]+', identity) or process_identity(int(identity.split(':')[0])) != identity:
+      raise ValueError('native request owner identity changed')
+
+
+def owner_chain(original=None):
+  own = process_identity(os.getpid())
+  identities = original.split(',') if original is not None else []
+  if own not in identities:
+    identities.append(own)
+  owner = ','.join(identities)
+  verify_owners(owner)
+  return owner
+
+
+def current_tools(prepared, plan, configuration, source, request_owner=None, run=subprocess.run):
   """Execute only the pinned seed's fixed privilege-dropping bootstrap protocol."""
   verify_native(Path(prepared['root']), plan)
   prepared = {**prepared, 'native_abi_checked': True}
   if os.geteuid() == 0:
     raise ValueError('bootstrap caller must be the original non-root user')
-  fields = Path('/proc/self/stat').read_text().rsplit(') ', 1)[1].split()
-  owner = f'{os.getpid()}:{int(fields[19])}'
+  owner = owner_chain(request_owner)
+  if ',' in owner and plan.get('protocols', {}).get('request_owner') != 2:
+    raise ValueError('pinned seed does not support the original requester and driver owner chain')
   configuration = configuration.resolve(strict=True)
   pin = digest(configuration)
-  output = subprocess.check_output(['/usr/bin/sudo', '-n', prepared['helper'], '--bootstrap-tools-scope',
-      '--config', str(configuration), '--configuration-sha256', pin, '--root', str(source.resolve(strict=True)),
-      '--request-owner', owner], env=ENV)
+  try:
+    completed = run(['/usr/bin/sudo', '-n', prepared['helper'], '--bootstrap-tools-scope',
+        '--config', str(configuration), '--configuration-sha256', pin, '--root', str(source.resolve(strict=True)),
+        '--request-owner', owner], env=ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+  except subprocess.CalledProcessError as error:
+    tail = (error.stderr or b'')[-65536:].decode(errors='replace')
+    raise ValueError('native current-tools bootstrap failed; worker evidence retained\n'+tail) from error
+  output = completed.stdout
   if len(output) > 4*1024**2:
     raise ValueError('bootstrap current-tools report exceeds 4 MiB')
   result = json.loads(output)
+  verify_owners(owner)
   if result.get('schema') != 1 or result.get('configuration_sha256') != pin or result.get('seed_helper_sha256') != plan['assets']['helper']['sha256'] or result.get('runtime_activated') is not False or result.get('runtime_started') is not False or result.get('runtime_release_downloaded') is not False:
     raise ValueError('bootstrap result differs from its pinned seed or preparation-only protocol')
   return dict(seed=prepared, current_tools=result, seed_native_abi_checked=True, seed_executed_for_current_tools=True,
@@ -339,7 +378,8 @@ def export(source, binary, cargo, vendor, rust_licenses, output):
     write(root/FILES['notices'], text)
     base = 'https://github.com/bin9208/openpilot-rust/releases/download/native-bootstrap-' + before['commit'] + '/'
     assets = {name:dict(url=base+filename, sha256=digest(root/filename), bytes=(root/filename).stat().st_size) for name, filename in FILES.items()}
-    plan = dict(schema=1, role=ROLE, source=before, build=build, target='aarch64-unknown-linux-gnu', agnos=AGNOS, assets=assets, abi=abi)
+    plan = dict(schema=1, role=ROLE, source=before, build=build, target='aarch64-unknown-linux-gnu', agnos=AGNOS, assets=assets, abi=abi,
+        protocols=dict(current_tools=1, request_owner=2))
     data = json_bytes(plan)
     write(root/'manifest.json', data)
     checksum_plan = hashlib.sha256(data).hexdigest()

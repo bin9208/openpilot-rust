@@ -84,6 +84,53 @@ pub fn stage_pinned(
     stage_with(config_path, &config, pin, candidate, expected_previous)
 }
 
+/// A newly prepared input configuration builds the candidate; the running
+/// launch configuration remains the stable owner of the boot journal. Never
+/// replace that live configuration with a later plan just to make SHA checks
+/// pass. The sealed candidate carries its own complete source/input records.
+pub fn stage_prepared_pinned(
+    running_path: &Path,
+    running_pin: &str,
+    candidate_path: &Path,
+    candidate_pin: &str,
+    source: &Path,
+    candidate: &str,
+    expected_previous: &str,
+) -> Result<Pending> {
+    let running = Config::read_expected(running_path, running_pin)?;
+    let requested = Config::read_expected(candidate_path, candidate_pin)?;
+    crate::supervision::check_request_owner()?;
+    if serde_json::to_value(&running.stores)? != serde_json::to_value(&requested.stores)? {
+        return Err("prepared update belongs to different native generation stores".into());
+    }
+    let before = crate::source::inspect(source)?;
+    let sealed = generation::load(&requested.stores, candidate)?;
+    let plan = crate::prepare::Plan::read(&requested.build_plan)?;
+    let layout: generation::Layout = generation::read(&requested.layout)?;
+    if sealed.runtime.source != before
+        || serde_json::to_value(&sealed.prepared.plan)? != serde_json::to_value(&plan)?
+        || serde_json::to_value(&sealed.layout)? != serde_json::to_value(&layout)?
+        || sealed
+            .prepared
+            .reports
+            .values()
+            .any(|r| r.toolchain_directory != requested.toolchain)
+    {
+        return Err("prepared update differs from its actual source, build plan or layout".into());
+    }
+    Config::verify_pin(candidate_path, candidate_pin)?;
+    if crate::source::inspect(source)? != before {
+        return Err("prepared update source changed before staging".into());
+    }
+    stage_with(
+        running_path,
+        &running,
+        running_pin,
+        candidate,
+        expected_previous,
+    )
+}
+
 fn stage_with(
     config_path: &Path,
     config: &Config,

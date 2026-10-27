@@ -99,11 +99,21 @@ fn requested_owner() -> Result<Option<String>> {
 }
 
 fn verify_owner(identity: &str) -> Result<()> {
-    let (pid, _) = identity
-        .split_once(':')
-        .ok_or("invalid request owner identity")?;
-    if process_identity(pid.parse()?)? != identity {
-        return Err("native build request owner identity changed".into());
+    // The original requester and each dedicated intermediary must stay alive.
+    // A sudo monitor alone can survive either one's death. Keep the old single
+    // PID:start form valid while bounding the new comma-separated owner chain.
+    let mut seen = [None; 4];
+    for (index, identity) in identity.split(',').enumerate() {
+        if index >= seen.len() || seen[..index].contains(&Some(identity)) {
+            return Err("invalid native build request owner chain".into());
+        }
+        seen[index] = Some(identity);
+        let (pid, _) = identity
+            .split_once(':')
+            .ok_or("invalid request owner identity")?;
+        if process_identity(pid.parse()?)? != identity {
+            return Err("native build request owner identity changed".into());
+        }
     }
     Ok(())
 }

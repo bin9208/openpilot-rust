@@ -283,6 +283,8 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
         "frontend-kill",
         "launcher-kill",
         "request-owner-kill",
+        "request-chain-origin-kill",
+        "request-chain-driver-kill",
         "output-flood",
         "unwritable-stderr-frontkill",
     ] {
@@ -309,13 +311,18 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
         )
         .unwrap();
         let log = fs::File::create(root.join("fixture.log")).unwrap();
-        let mut request_owner = if case == "request-owner-kill" {
+        let mut request_owner = if case.starts_with("request-") {
+            Some(Owned(Command::new("sleep").arg("300").spawn().unwrap()))
+        } else {
+            None
+        };
+        let mut driver = if case.starts_with("request-chain-") {
             Some(Owned(Command::new("sleep").arg("300").spawn().unwrap()))
         } else {
             None
         };
         let mut command = child(
-            if matches!(case, "launcher-kill" | "request-owner-kill") {
+            if case == "launcher-kill" || case.starts_with("request-") {
                 "launcher"
             } else {
                 "frontend"
@@ -324,10 +331,12 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
             case,
         );
         if let Some(owner) = &request_owner {
-            command.env(
-                supervision::REQUEST_OWNER,
-                supervision::process_identity(owner.0.id()).unwrap(),
-            );
+            let mut identity = supervision::process_identity(owner.0.id()).unwrap();
+            if let Some(driver) = &driver {
+                identity.push(',');
+                identity.push_str(&supervision::process_identity(driver.0.id()).unwrap());
+            }
+            command.env(supervision::REQUEST_OWNER, identity);
         }
         command
             .stdout(Stdio::from(log.try_clone().unwrap()))
@@ -354,10 +363,15 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
             "frontend-kill" | "launcher-kill" | "unwritable-stderr-frontkill" => {
                 frontend.0.kill().unwrap()
             }
-            "request-owner-kill" => {
+            "request-owner-kill" | "request-chain-origin-kill" => {
                 let owner = request_owner.as_mut().unwrap();
                 owner.0.kill().unwrap();
                 owner.0.wait().unwrap();
+            }
+            "request-chain-driver-kill" => {
+                let driver = driver.as_mut().unwrap();
+                driver.0.kill().unwrap();
+                driver.0.wait().unwrap();
             }
             "worker-kill" => rustix::process::kill_process(
                 rustix::process::Pid::from_raw(i32::try_from(worker).unwrap()).unwrap(),
@@ -391,6 +405,18 @@ fn real_memory_and_filesystem_limits_preserve_normal_execution() {
             normal.0.try_wait().unwrap().is_none(),
             "{case}: unrelated normal runtime was stopped"
         );
+        if case == "request-chain-driver-kill" {
+            assert!(request_owner
+                .as_mut()
+                .unwrap()
+                .0
+                .try_wait()
+                .unwrap()
+                .is_none());
+        }
+        if case == "request-chain-origin-kill" {
+            assert!(driver.as_mut().unwrap().0.try_wait().unwrap().is_none());
+        }
         assert_eq!(
             fs::read(temp.path().join("active.json")).unwrap(),
             b"previous verified generation A"

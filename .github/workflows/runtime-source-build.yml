@@ -105,6 +105,8 @@ on:
       - 'rust/native-cargo-inputs.json'
       - 'rust/native-system-sdk.json'
       - 'tools/native/bootstrap_seed.py'
+      - 'tools/native/source_runtime.py'
+      - 'tools/ci/tests/test_native_source_runtime.py'
       - 'tools/ci/tests/test_native_bootstrap_seed.py'
       - '.github/workflows/runtime-source-build.yml'
       - '.github/actions/**'
@@ -182,6 +184,8 @@ jobs:
           cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 > "$RUNNER_TEMP/runtime-build-metadata.json"
       - name: Verify independently pinned bootstrap seed cache and failure preservation
         run: python -m unittest discover -s tools/ci/tests -p 'test_native_bootstrap_seed.py' -v
+      - name: Verify full native source driver boundaries and cancellation
+        run: python3 -m unittest discover -s tools/ci/tests -p 'test_native_source_runtime.py' -v
       - name: Check formatting of additional source and asset preparation modules
         run: rustfmt --edition 2021 --check rust/crates/runtime-build/src/*.rs rust/crates/runtime-build/tests/*.rs
       - name: Compile and exercise real offline build reuse

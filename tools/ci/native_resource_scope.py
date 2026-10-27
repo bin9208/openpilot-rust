@@ -106,7 +106,9 @@ def enter(arguments):
     os.environ['NATIVE_TEST_CGROUP_PARENT'] = str(path)
     os.environ['TMPDIR'] = str(job)
     evidence = job / 'native-resource-evidence'
-    evidence.mkdir()
+    evidence.mkdir(exist_ok=True)
+    if evidence.is_symlink() or not evidence.is_dir() or evidence.stat().st_uid != uid:
+        raise RuntimeError('refusing a redirected or unrelated resource evidence directory')
     os.environ['NATIVE_TEST_EVIDENCE_DIRECTORY'] = str(evidence)
     for key in ('SUDO_UID', 'SUDO_GID', 'SUDO_USER', 'SUDO_COMMAND'):
         os.environ.pop(key, None)

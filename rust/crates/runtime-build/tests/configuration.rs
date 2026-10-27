@@ -2,7 +2,7 @@
 //! a fake controller can be used. Positive kernel/AGNOS cases run separately.
 use openpilot_runtime_build::{
     generation::{Config, Stores},
-    resources, Source,
+    pending, resources, Source,
 };
 use std::{collections::BTreeMap, fs, path::Path, process::Command};
 
@@ -33,6 +33,41 @@ fn config(root: &Path) -> Config {
             )]),
         },
     }
+}
+
+#[test]
+fn independently_prepared_updates_cannot_rebind_the_running_boot_stores() {
+    let temp = tempfile::tempdir().unwrap();
+    let running = config(temp.path());
+    fs::create_dir(&running.stores.generations).unwrap();
+    let active = running.stores.generations.join("active.json");
+    let log = temp.path().join("normal.log");
+    fs::write(&active, b"previous verified selection").unwrap();
+    fs::write(&log, b"preserved runtime log").unwrap();
+    let running_path = temp.path().join("running.json");
+    fs::write(&running_path, serde_json::to_vec(&running).unwrap()).unwrap();
+    let (_, running_pin) = Config::read_pinned(&running_path).unwrap();
+    let mut candidate = running.clone();
+    candidate.stores.objects = temp.path().join("different-objects");
+    let candidate_path = temp.path().join("prepared.json");
+    fs::write(&candidate_path, serde_json::to_vec(&candidate).unwrap()).unwrap();
+    let (_, candidate_pin) = Config::read_pinned(&candidate_path).unwrap();
+    let error = pending::stage_prepared_pinned(
+        &running_path,
+        &running_pin,
+        &candidate_path,
+        &candidate_pin,
+        temp.path(),
+        &"a".repeat(64),
+        &"b".repeat(64),
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(error.contains("different native generation stores"));
+    assert_eq!(fs::read(active).unwrap(), b"previous verified selection");
+    assert_eq!(fs::read(log).unwrap(), b"preserved runtime log");
+    assert!(!running.stores.generations.join("pending.json").exists());
+    assert!(!candidate.stores.objects.exists());
 }
 
 #[test]

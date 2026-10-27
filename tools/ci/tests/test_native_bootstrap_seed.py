@@ -3,8 +3,10 @@ import fcntl
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import stat
+import subprocess
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -55,6 +57,29 @@ class Fixture:
 
 
 class BootstrapSeedTests(unittest.TestCase):
+  def test_legacy_seed_requires_an_independently_pinned_owner_chain_protocol_for_intermediaries(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      fixture = Fixture(Path(temporary))
+      external = subprocess.Popen(['/usr/bin/python3', '-c', 'import time; time.sleep(60)'])
+      try:
+        original = seed.process_identity(external.pid)
+        runner = mock.Mock()
+        with mock.patch.object(seed, 'verify_native'), mock.patch.object(os, 'geteuid', return_value=1000):
+          with self.assertRaisesRegex(ValueError, 'owner chain'):
+            seed.current_tools(dict(root=str(fixture.root)), fixture.plan,
+                fixture.root/'unused.json', fixture.root, request_owner=original, run=runner)
+        runner.assert_not_called()
+        fixture.plan['protocols'] = dict(current_tools=1, request_owner=2)
+        fixture.save()
+        self.assertEqual(seed.read_plan(fixture.manifest, fixture.sha)[0]['protocols']['request_owner'], 2)
+        fixture.plan['protocols']['current_tools'] = True
+        fixture.save()
+        with self.assertRaisesRegex(ValueError, 'protocol'):
+          seed.read_plan(fixture.manifest, fixture.sha)
+      finally:
+        external.kill()
+        external.wait()
+
   def test_fixed_seed_reuses_without_transfer_or_project_commit_input(self):
     with tempfile.TemporaryDirectory() as temporary:
       fixture = Fixture(Path(temporary))

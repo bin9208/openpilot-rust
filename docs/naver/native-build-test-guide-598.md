@@ -240,6 +240,14 @@ initial/reused/docs를 실행하고, compiler 입력9종·runtime 역할18종·�
 새 구현은 아직 기능 검증 대기이며, 이 입력 준비 성공도 전체99개 빌드·정상 부팅 수용을
 대체하지 않는다.
 
+전체 요청 실행기는 같은 [bootstrap 안내](native-bootstrap-seed-599.md)의
+`source_runtime.py`를 따른다. 현재 도구로 입력을 준비한 뒤 정확 source/config/pin의
+전체 build/seal 결과를 받으며, 업데이트는 기존 부팅 설정 아래에 새 세대를 pending으로
+등록한다. foundation의 `test_native_source_runtime.py`는 tool hash/mode/inventory,
+seed 준비 중 source drift, 원래 요청자 종료와 실행기 SIGKILL, 출력 byte bound를 검사한다.
+kernel resource 검사에는 원래 요청자/중간 실행기 중 각각 하나만 종료되고 다른 하나가
+살아 있는 두 사례가 추가된다. 실제 build/부팅 성공으로 확대 해석하지 않는다.
+
 정확 소스 `2b896bd0e32764ddc7f19bcda1ef935ac79ec2c7`의 실제 loggerd/logmessaged
 X64/ARM 각각6개 비교는 [#608 결과](native-source-stamp-reuse-608.md)에 있다. 문서 변경은 두
 출력 fresh/같은 hash, loggerd만 수정하면 무관한 logmessaged fresh/같은 hash,

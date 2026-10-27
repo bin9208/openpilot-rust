@@ -8,10 +8,12 @@ fn run() -> Result<()> {
     let (mut mode, mut root, mut config, mut id) = (None, None, None, None);
     let mut previous = None;
     let mut pin = None;
+    let (mut candidate_config, mut candidate_pin, mut owner) = (None, None, None);
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some("--help" | "-h") => {
                 println!("Usage: openpilot-runtime-native --config CONFIG_JSON [--configuration-sha256 SHA256] (--build --root CHECKOUT | --stage-update --root CHECKOUT --previous ID | --activate ID | --resolve | --launch --root CHECKOUT)\nBuild/seal a full native AGNOS runtime with source-built manager and ABI tools. Stage-update preserves the active runtime until a locked native boot. Activation requires verified offroad state. Launch resolves an actual preserved source generation and reports fallback explicitly. Requires prepared, pinned toolchain/dependencies/provider inputs. No exact-commit runtime release is fetched.");
+                println!("       openpilot-runtime-native --config RUNNING_CONFIG --configuration-sha256 RUNNING_SHA --stage-candidate ID --candidate-config PREPARED_CONFIG --candidate-configuration-sha256 PREPARED_SHA --root CHECKOUT --previous ID --request-owner PID:START_TICKS[,PID:START_TICKS]\nStage an independently prepared, fully sealed generation under the preserved running boot configuration. No activation or compilation.");
                 return Ok(());
             }
             Some(
@@ -23,8 +25,8 @@ fn run() -> Result<()> {
                 | "--verify-build-scope"
                 | "--launch"),
             ) if mode.is_none() => mode = Some(value.to_owned()),
-            Some("--activate") if mode.is_none() => {
-                mode = Some("--activate".to_owned());
+            Some(value @ ("--activate" | "--stage-candidate")) if mode.is_none() => {
+                mode = Some(value.to_owned());
                 id = Some(
                     args.next()
                         .ok_or("missing source generation ID")?
@@ -54,6 +56,22 @@ fn run() -> Result<()> {
                         .map_err(|_| "invalid configuration pin")?,
                 );
             }
+            Some("--candidate-config") if candidate_config.is_none() => {
+                candidate_config = Some(PathBuf::from(
+                    args.next().ok_or("missing candidate configuration")?,
+                ));
+            }
+            Some("--candidate-configuration-sha256") if candidate_pin.is_none() => {
+                candidate_pin = Some(
+                    args.next()
+                        .ok_or("missing candidate configuration pin")?
+                        .into_string()
+                        .map_err(|_| "invalid candidate configuration pin")?,
+                );
+            }
+            Some("--request-owner") if owner.is_none() => {
+                owner = Some(args.next().ok_or("missing request owner")?);
+            }
             _ => return Err("unknown, duplicate or mixed native runtime argument".into()),
         }
     }
@@ -67,10 +85,44 @@ fn run() -> Result<()> {
         return Err("native runtime configuration changed before the requested phase".into());
     }
     let staging = matches!(mode, "--stage-update" | "--stage-update-worker");
-    if staging != previous.is_some() {
+    let prepared_update = mode == "--stage-candidate";
+    if (staging || prepared_update) != previous.is_some() {
         return Err("--previous is required only for staging an update".into());
     }
+    if prepared_update != candidate_config.is_some()
+        || prepared_update != candidate_pin.is_some()
+        || prepared_update != owner.is_some()
+    {
+        return Err(
+            "prepared candidate staging requires its configuration pin and request owner".into(),
+        );
+    }
     match mode {
+        "--stage-candidate" => {
+            std::env::set_var(
+                supervision::REQUEST_OWNER,
+                owner.ok_or("request owner missing")?,
+            );
+            let root = root
+                .ok_or("prepared candidate source missing")?
+                .canonicalize()?;
+            let candidate_path = candidate_config
+                .ok_or("candidate configuration missing")?
+                .canonicalize()?;
+            let staged = pending::stage_prepared_pinned(
+                &config_path,
+                &configuration_sha256,
+                &candidate_path,
+                &candidate_pin.ok_or("candidate configuration pin missing")?,
+                &root,
+                &id.ok_or("candidate generation ID missing")?,
+                &previous.ok_or("previous generation missing")?,
+            )?;
+            println!(
+                "{}",
+                serde_json::json!({"schema":1,"pending":staged,"activated":false,"staged_for_boot":true})
+            );
+        }
         "--verify-build-scope" if root.is_none() => {
             memory_cgroup::verify_control(&config.resources.memory_cgroup_parent)?;
             let uid = rustix::process::getuid().as_raw();
