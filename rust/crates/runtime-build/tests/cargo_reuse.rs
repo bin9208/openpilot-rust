@@ -1,5 +1,5 @@
 //! Actual offline Cargo invocations, rather than mocked freshness decisions.
-use openpilot_runtime_build::{build, digest_file, Recipe};
+use openpilot_runtime_build::{build, build_with_metadata, digest_file, Recipe, Report};
 use std::{collections::BTreeMap, fs, path::PathBuf, process::Command};
 
 struct Fixture {
@@ -109,6 +109,53 @@ fn git(root: &std::path::Path, args: &[&str]) -> String {
 fn commit(root: &std::path::Path) {
     git(root, &["add", "."]);
     git(root, &["commit", "--quiet", "-m", "fixture input"]);
+}
+
+#[test]
+fn actual_cargo_feature_messages_match_executed_binaries_and_keep_report_schema_compatible() {
+    let mut fixture = Fixture::new();
+    let manifest = fixture.root.join("rust/Cargo.toml");
+    let mut body = fs::read_to_string(&manifest).unwrap();
+    body.push_str("\n[features]\nrecorded-feature=[]\n");
+    fs::write(manifest, body).unwrap();
+    fs::write(fixture.root.join("rust/src/main.rs"),
+        "fn main() { println!(\"{}\", if cfg!(feature=\"recorded-feature\") { 7 } else { 42 }); }\n").unwrap();
+    commit(&fixture.root);
+    for selected in [true, false] {
+        fixture.recipe.features = if selected {
+            vec!["recorded-feature".into()]
+        } else {
+            vec![]
+        };
+        let observed = build_with_metadata(
+            &fixture.root,
+            &fixture.cache,
+            &fixture.toolchain,
+            &fixture.recipe,
+        )
+        .unwrap();
+        assert_eq!(observed.cargo_artifacts.len(), 1);
+        let metadata = &observed.cargo_artifacts[0];
+        assert_eq!(metadata.features, fixture.recipe.features);
+        assert_eq!(metadata.target["name"], "runtime-fixture");
+        assert_eq!(metadata.target["kind"], serde_json::json!(["bin"]));
+        assert_eq!(metadata.profile["test"], false);
+        assert_eq!(metadata.executable, observed.build.artifacts[0].executable);
+        let output = Command::new(&metadata.executable).output().unwrap();
+        assert!(output.status.success());
+        assert_eq!(
+            output.stdout,
+            if selected {
+                b"7\n".as_slice()
+            } else {
+                b"42\n".as_slice()
+            }
+        );
+        let serialized = serde_json::to_value(&observed.build).unwrap();
+        assert!(serialized.get("cargo_artifacts").is_none());
+        assert_eq!(serialized["schema"], 3);
+        serde_json::from_value::<Report>(serialized).unwrap();
+    }
 }
 
 #[test]

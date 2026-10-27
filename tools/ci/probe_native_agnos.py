@@ -2551,6 +2551,14 @@ def main():
     native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_model_generation_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_complete_layout_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    # Add the production orchestration as a separate guarded command after all
+    # original ARM commands. Keep their user space, pins and evidence intact.
+    preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH'
+    scope = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/native_resource_scope.py'
+    driver = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/verify_native_runtime_inputs.py'
+    evidence['commands'].append(run(['sudo', '-n', f'--preserve-env={preserve}', '/usr/bin/python3', scope,
+        'enter', '--', '/usr/bin/python3', driver], log, stdout_path=work/'native-runtime-inputs-driver.txt'))
+    evidence['native_production_runtime_inputs'] = json.loads((work/'runtime-inputs-evidence/summary.json').read_text())
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))

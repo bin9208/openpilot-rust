@@ -28,8 +28,8 @@ worker의 일반 compiler 임시 파일은 cache 안의 별도 `tmp`를 사용�
 Config도 한 번 읽은 같은 byte로 parse/hash하고 Python→root gateway→frontend→worker에
 그 SHA를 전달한다. 도중 재작성·바꿔치기는 결과 검증과 bundle 발행 뒤에도 거부한다.
 
-현재12개 도구는 runtime-build의8개 CLI와 provider 준비용 FFmpeg/raylib/OpenCV CLI,
-ELF auditor다. 모델/외부 provider가 필요한 전체 runtime을 먼저 요구하지 않는다.
+현재13개 도구는 runtime-build의8개 CLI와 provider 준비용 FFmpeg/raylib/OpenCV CLI,
+ELF auditor와 codec wheel 준비 CLI다. 모델/외부 provider가 필요한 전체 runtime을 먼저 요구하지 않는다.
 검증된 동일 Rust/Cargo/SDK 아래의 Cargo cache를 재사용하고 native incremental source
 stamp 모드를 명시한다. source를 보존하고 실제 결과를 불변 object에 복사한 뒤 tool bundle에
 hardlink한다. bundle ID에는 binary·recipe·compiler·입력 tree identity를 묶으며 요청 commit을
@@ -53,16 +53,60 @@ foundation은 별도 store·SDK pin·가짜 controller 거부를 검사한다. k
 실제 root gateway의 권한 하강/출력 보존과 X64에서의 의도된 AGNOS 거부를 확인한다.
 genuine workflow의 추가 사례는 별도 job-owned **X64 host kernel cgroup**에서 원래
 AGNOS **ARM user space/QEMU/PRoot**를 사용한다. 처음/반복/docs/작은 실제 CLI 수정의
-12개 Cargo 결과와 byte hash, 원래 bundle 출처, 자산 HTTP 전송0, 기존 선택/log sentinel
-보존을 확인한다. 작은 변경은 실제 help marker/hash가 바뀌고 나머지11개는 fresh여야 한다.
+13개 Cargo 결과와 byte hash, 원래 bundle 출처, 자산 HTTP 전송0, 기존 선택/log sentinel
+보존을 확인한다. 작은 변경은 실제 help marker/hash가 바뀌고 나머지12개는 fresh여야 한다.
 fixture Git commit과 실제 GitHub source SHA를 분리하며 원래 checkout은 바꾸지 않는다.
 raw 입력은 이미 인증된 별도 cache를 bind하므로 공개 seed의 최초 HTTP 전송 시험은 아니다.
 기존 AGNOS 명령·입력 pin·runner·360분 상한과 모든 원래 사례는 유지한다.
 
 새 경로는 아직 정확 source의 기능 검증 전이다. 이 첫 준비 도구의 성공이 전체99개
 runtime의 기본 bootstrap·업데이트·부팅·기록·업로드 완료를 뜻하지 않는다. 공개 seed 및
-SDK/component의 독립 Git pin, 남은 provider/모델 준비 orchestrator와 기존 기본 시작 경로의
+SDK/component의 독립 Git pin, provider/모델 준비 orchestrator의 실제 검증과 기존 기본 시작 경로의
 연결, 전체 수용·필수 PR/병합 후 검사·사용자 comma3X 시험은 계속 남아 있다.
+
+## 현재 도구에서 전체 입력 준비로 연결 — 2026-10-28, 기능 검증 대기
+
+현재 소스의 `--bootstrap-tools-scope`/frontend는 선택적인 `runtime_inputs`를 받는다.
+고정 seed에 주는 최초 설정은 이 필드를 생략한다. seed로 현재 도구를 얻은 다음 현재
+도구로 전체 입력 준비를 실행한다. 오래된 seed에 새 운영용 준비 코드를 의존하지 않는다.
+13번째 `stage-encoder-target`은 libyuv/Eigen의 기존 wheel 입력을 준비하며 Python 설치
+스크립트나 C/C++ 재컴파일을 실행하지 않는다.
+
+```json
+"runtime_inputs": {"path": "/absolute/runtime-input-selection.json", "sha256": "INDEPENDENT_SELECTION_SHA256"}
+```
+
+selection의 schema1은 `providers`, `budgets`, `compiler_growth_bytes`를 갖는다.
+`providers`는 ffmpeg/raylib/opencv/numerics/geos/brotli/acados/sdl/turbojpeg/ffmpeg-tools/
+freesans/panda/mpc/dbc/usbgpu의15개 역할을 모두 요구한다. 각 값은 독립 pin의
+`{"path":"/absolute/provider.json","sha256":"..."}`이며, 이미 검증해 보관한 component가
+있을 때만 `offline_archive`를 추가한다. `budgets`도 경로와 독립 SHA를 요구하고 실제
+작업별 예상 증가량·산정 근거를 제공한다. 공개 component/pin이 아직 검증·발행되지
+않았으므로 이 예시는 현재 기기 설치 후보나 공개 다운로드 완료 안내가 아니다.
+
+비특권 worker가 factory SDK/현재 Git source/설정 pin을 검증한 뒤 현재 도구를 내용별
+bundle에서 확인하고, 고정 ARM Python3.12.16의 `-I -B -S`와 별도 빈 bytecode 경로로
+`rust/tools/native_runtime_inputs.py`를 실행한다. compiler/provider/model 하위 프로세스도
+같은 hard cgroup·원래 요청자의 종료/취소·offroad 감시 안에 남는다. Python 모델 준비와
+기존 C/C++ provider는 유지하고 전체 runtime archive를 대체 입력으로 내려받지 않는다.
+
+준비 경로는 compiler 입력9종, provider15종, 원래 모델 생성물, source LFS, 별도 eGPU PKL의
+전체18개 runtime 역할을 연결한다. source-built model compiler3종의 feature/profile은
+`openpilot-runtime-build --cargo-metadata`의 실제 Cargo message와 실제 executable SHA에서
+가져온다. 기존 schema3 build report와 generation reader 형식은 유지한다. 모델 생성은
+원래 producer와 검증된 consumer를 거치며 반복/docs에서는 생성 cache를 재검증한다.
+
+시도별 `runtime-inputs/result.json`은 compiler/provider/model 준비 보고서, 전체18역할
+composition, catalog/bindings/99개 대상 build-plan, `native-config.json`의 SHA를 묶는다.
+현재 source/config가 전후 바뀌거나 입력 일부가 없으면 실패하며 active/runtime/log는
+선택하지 않는다. 다음 full build는 반환된 native configuration과 그 SHA로 기존
+`openpilot-native-build-scope --build`를 사용하고, 봉인·ABI·검증된 세대 선택은 그대로 필요하다.
+
+Actions에 실제 비특권 ARM userspace의 initial/reused/docs 준비를 별도로 추가했다.
+원래 ARM 명령/pin을 끝까지 실행한 뒤 job-owned host cgroup에서 운영용 경로를 실행한다.
+반복/docs의 model compiler fresh, QCOM 호출/모델 생성0, provider 전송/복사0, 동일한
+composition과 link/copy0, 기존 선택/log 보존을 검사한다. host kernel peak/시간/디스크
+증가량은 시도별 JSONL에 남긴다. 이는 물리 ARM CPU·AGNOS kernel·기기 부팅 검증이 아니다.
 
 ## 신뢰 경계와 저장
 

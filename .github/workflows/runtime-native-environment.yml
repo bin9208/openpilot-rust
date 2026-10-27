@@ -5,6 +5,9 @@ on:
     paths:
       - 'tools/ci/probe_native_agnos.py'
       - 'tools/ci/verify_native_bootstrap.py'
+      - 'tools/ci/verify_native_runtime_inputs.py'
+      - 'rust/tools/native_runtime_inputs.py'
+      - 'rust/tools/tests/test_native_runtime_inputs.py'
       - 'tools/ci/native_resource_scope.py'
       - 'tools/ci/tests/test_readonly_publication.py'
       - 'tools/ci/verify_native_compiler_features.py'
@@ -674,6 +677,10 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos-environment-599.json
             ${{ env.CI_JOB_TEMP }}/resource-scope-evidence.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-current-evidence/**
+            ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-inputs-evidence/**
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-runtime-inputs-driver.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/production-input-selection.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/production-bootstrap-config.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-current-generations/bootstrap-attempts/**
             ${{ env.CI_JOB_TEMP }}/native-agnos-assets-first.json
             ${{ env.CI_JOB_TEMP }}/native-agnos-assets-reused.json

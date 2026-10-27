@@ -17,7 +17,7 @@
 공개 debug 서명·버전, 반복 전송/복사0을 Actions에서 검사하며 새 결과는 대기다.
 전체 native 빌드/실기 flash·수용이 완료된 상태는 아니다.
 
-기준일: 2026-10-27 KST. 상위 [#598](https://github.com/bin9208/openpilot-rust/issues/598),
+기준일: 2026-10-28 KST. 상위 [#598](https://github.com/bin9208/openpilot-rust/issues/598),
 환경 [#599](https://github.com/bin9208/openpilot-rust/issues/599),
 캐시 [#600](https://github.com/bin9208/openpilot-rust/issues/600),
 전환분·성능·전달 [#601](https://github.com/bin9208/openpilot-rust/issues/601).
@@ -225,9 +225,20 @@ log byte가 유지되어야 한다. 이 metadata/CLI 검사는 정상 업데이�
 
 그 이전의 첫 도구 재빌드 검증은 [bootstrap 경로](native-bootstrap-seed-599.md)를 따른다.
 foundation의 SDK pin/가짜 controller 거부, kernel workflow의 실제 권한 하강과 실패 로그,
-genuine workflow의 ARM12개 도구 initial/reused/docs/small 결과 및 private cgroup JSONL을
+genuine workflow의 ARM13개 도구 initial/reused/docs/small 결과 및 private cgroup JSONL을
 각각 확인한다. X64 host kernel의 peak를 AGNOS kernel 또는 comma3X의 값으로 표현하지 않는다.
-12개 준비 도구의 성공과 전체99개 runtime/정상 부팅 준비 완료는 구분한다.
+13개 준비 도구의 성공과 전체99개 runtime/정상 부팅 준비 완료는 구분한다.
+
+현재 도구와 전체 입력 준비의 연결은 [운영용 준비 경로](native-bootstrap-seed-599.md)를
+따른다. foundation은 실제 Cargo feature를 바꾼 executable 실행/metadata 대조와 기존
+schema3 report 호환, 잘못된 selection pin의 시작 전 거부, Python 입력/출처 회귀를 검사한다.
+genuine workflow는 원래 명령 뒤 별도 hard cgroup에서 운영용 provider/model 준비의
+initial/reused/docs를 실행하고, compiler 입력9종·runtime 역할18종·전체 catalog가
+결속됐는지 확인한다. `runtime-inputs-evidence/summary.json`, 시도별
+`runtime-inputs/result.json`/`operations.json`, `resources.jsonl`과 실제 명령 종료 상태를
+함께 읽는다. 생성/전송/복사0, 기존 선택/log 보존은 성공한 정확 SHA의 결과로만 인정한다.
+새 구현은 아직 기능 검증 대기이며, 이 입력 준비 성공도 전체99개 빌드·정상 부팅 수용을
+대체하지 않는다.
 
 정확 소스 `2b896bd0e32764ddc7f19bcda1ef935ac79ec2c7`의 실제 loggerd/logmessaged
 X64/ARM 각각6개 비교는 [#608 결과](native-source-stamp-reuse-608.md)에 있다. 문서 변경은 두

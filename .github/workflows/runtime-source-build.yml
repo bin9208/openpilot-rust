@@ -36,6 +36,8 @@ on:
       - 'rust/native-usbgpu-source-contract.json'
       - 'rust/native-usbgpu-model.json'
       - 'rust/tools/native_runtime_layout.py'
+      - 'rust/tools/native_runtime_inputs.py'
+      - 'rust/tools/tests/test_native_runtime_inputs.py'
       - 'rust/tools/tests/test_native_runtime_layout.py'
       - 'rust/native-dbc-source-contract.json'
       - 'tools/ci/fixtures/native-dbc-inputs.py'
@@ -201,6 +203,7 @@ jobs:
           python3 -m unittest discover -s rust/tools/tests -p test_native_model_generation_inputs.py -v
           python3 -m unittest discover -s rust/tools/tests -p test_native_model_export.py -v
           python3 -m unittest discover -s rust/tools/tests -p test_native_runtime_layout.py -v
+          python3 -m unittest discover -s rust/tools/tests -p test_native_runtime_inputs.py -v
       - name: Verify source-bound runtime model payloads before building or selecting a generation
         run: |
           rustfmt --edition 2021 --check rust/crates/runtime-installer/src/model_inputs.rs rust/crates/runtime-installer/tests/model_inputs.rs rust/crates/runtime-installer/tests/support/model_inputs.rs

@@ -75,7 +75,7 @@ def main():
     tree = subprocess.check_output(['git', '-C', str(source), 'ls-tree', '-r', '-l', '-z', 'HEAD'])
     source_bytes = sum(int(row.split(b'\t', 1)[0].split()[3]) for row in tree.split(b'\0') if row and row.split(b'\t', 1)[0].split()[3] != b'-')
     source_growth = 2*source_bytes+64*1024**2
-    compile_growth = 2*1024**3  # Serial release compilation of these 12 tools, not all runtime targets.
+    compile_growth = 2*1024**3  # Serial release compilation of these 13 tools, not all runtime targets.
     object_growth = 512*1024**2
     growth = rust_growth+cargo_growth+source_growth+compile_growth+object_growth
     assert shutil.disk_usage(work).free >= growth
@@ -127,10 +127,10 @@ def main():
         assert row['configuration_sha256'] == configuration_sha256 == digest(configuration)
         assert not row['runtime_activated'] and not row['runtime_started'] and not row['runtime_release_downloaded']
         assert row['seed_helper_sha256'] == manifest['assets']['helper']['sha256']
-        assert len(row['build']['binaries']) == 12 and len(row['build']['reports']) == 1
+        assert len(row['build']['binaries']) == 13 and len(row['build']['reports']) == 1
         artifacts = row['build']['reports']['bootstrap-tools']['artifacts']
         hashes = {Path(a['executable']).name:a['sha256'] for a in artifacts}
-        assert len(hashes) == 12
+        assert len(hashes) == 13
         assert all(a['transferred_bytes'] == 0 for kind in ('rust', 'cargo') for a in row['preparations'][kind]['assets'].values())
         if phase != 'initial':
             assert row['preparations']['rust']['copied_bytes'] == 0
@@ -162,10 +162,10 @@ def main():
         assert log.read_bytes() == b'owned previous log sentinel\n'
         reports[phase] = row
     (evidence/'summary.json').write_text(json.dumps(dict(schema=1,
-        actual_current_tools=12, cases=list(reports), source_commit=context['source_commit'],
+        actual_current_tools=13, cases=list(reports), source_commit=context['source_commit'],
         seed_source=manifest['source'], expected_seed_descriptor_sha256=seed['descriptor_sha256'],
         repeated_and_docs_all_fresh=True, repeated_and_docs_binary_storage_bytes=0,
-        small_changed_tool='openpilot-runtime-build', unmodified_tools_fresh=11,
+        small_changed_tool='openpilot-runtime-build', unmodified_tools_fresh=12,
         original_bundle_provenance_retained=True, public_seed_download_tested=False,
         request_owner_pid_and_start_time_bound=True,
         actual_host_kernel_cgroup=True, process_architecture='aarch64', physical_arm_cpu=False,

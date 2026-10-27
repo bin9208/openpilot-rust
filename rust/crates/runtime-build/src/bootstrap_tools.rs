@@ -23,7 +23,7 @@ use std::{
     process::Command,
 };
 
-const TOOLS: [&str; 12] = [
+const TOOLS: [&str; 13] = [
     "openpilot-runtime-build",
     "openpilot-runtime-assets",
     "openpilot-runtime-inputs",
@@ -36,6 +36,7 @@ const TOOLS: [&str; 12] = [
     "stage-startup-ui-raylib",
     "build-runtime-opencv",
     "runtime-elf-audit",
+    "stage-encoder-target",
 ];
 const ATTEMPT: &str = "OPENPILOT_NATIVE_BOOTSTRAP_ATTEMPT";
 
@@ -52,6 +53,17 @@ pub struct Config {
     pub expected_compile_growth_bytes: u64,
     pub remaining_object_growth_bytes: u64,
     pub resources: Policy,
+    /// Only current-source tools consume this. A stable seed still receives the
+    /// smaller tools-only configuration, with this field omitted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub runtime_inputs: Option<PinnedConfiguration>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct PinnedConfiguration {
+    pub path: PathBuf,
+    pub sha256: String,
 }
 
 fn absolute(path: &Path) -> bool {
@@ -90,10 +102,24 @@ impl Config {
                 .system_sdk_sha256
                 .bytes()
                 .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+            || config.runtime_inputs.as_ref().is_some_and(|p| {
+                !absolute(&p.path)
+                    || p.sha256.len() != 64
+                    || !p
+                        .sha256
+                        .bytes()
+                        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+            })
         {
             return Err(
                 "bootstrap needs separate absolute stores and an independent SDK SHA pin".into(),
             );
+        }
+        if let Some(request) = &config.runtime_inputs {
+            let (_, actual): (serde_json::Value, String) = generation::read_pinned(&request.path)?;
+            if actual != request.sha256 {
+                return Err("runtime input configuration differs from its independent pin".into());
+            }
         }
         Ok((config, pin))
     }
@@ -268,17 +294,88 @@ fn worker(
     if crate::digest_file(config_path)? != configuration_sha256 {
         return Err("bootstrap configuration changed during worker execution".into());
     }
-    generation::write(
-        &attempt.join("worker-result.json"),
-        &WorkerResult {
-            schema: 1,
-            configuration_sha256: configuration_sha256.into(),
-            seed_helper_sha256: crate::digest_file(&std::env::current_exe()?)?,
-            preparations: serde_json::json!({"rust":rust,"cargo":cargo}),
-            prepared,
-        },
-        false,
-    )
+    let result = WorkerResult {
+        schema: 1,
+        configuration_sha256: configuration_sha256.into(),
+        seed_helper_sha256: crate::digest_file(&std::env::current_exe()?)?,
+        preparations: serde_json::json!({"rust":rust,"cargo":cargo}),
+        prepared,
+    };
+    generation::write(&attempt.join("worker-result.json"), &result, false)?;
+    if config.runtime_inputs.is_some() {
+        #[cfg(feature = "prepare-python")]
+        prepare_runtime_inputs(
+            config,
+            config_path,
+            configuration_sha256,
+            root,
+            &attempt,
+            &result,
+        )?;
+        #[cfg(not(feature = "prepare-python"))]
+        return Err("runtime input orchestration requires prepare-python".into());
+    }
+    if source::inspect(root)? != source_before
+        || crate::digest_file(config_path)? != configuration_sha256
+    {
+        return Err("bootstrap source or configuration changed during input preparation".into());
+    }
+    config.verify_sdk(root)?;
+    Ok(())
+}
+
+#[cfg(feature = "prepare-python")]
+fn prepare_runtime_inputs(
+    config: &Config,
+    config_path: &Path,
+    pin: &str,
+    root: &Path,
+    attempt: &Path,
+    result: &WorkerResult,
+) -> Result<()> {
+    let request = config
+        .runtime_inputs
+        .as_ref()
+        .ok_or("runtime input configuration missing")?;
+    if crate::digest_file(&request.path)? != request.sha256 {
+        return Err("runtime input configuration differs from its independent pin".into());
+    }
+    let (tools, _) = bundle(config, result)?;
+    let python = crate::python::prepare(
+        &crate::python::Plan::read(&root.join("rust/native-python-toolchain.json"))?,
+        &config.cache.join("python-assets"),
+        &config.cache.join("python-prefixes"),
+        &assets::Curl,
+    )?;
+    generation::write(&attempt.join("python-preparation.json"), &python, false)?;
+    // This child inherits the private worker's hard cgroup and cancellation
+    // boundary. No sudo, shell, package installer or job-only probe is involved.
+    let status = Command::new(&python.python)
+        .args(["-I", "-B", "-S"])
+        .arg(format!(
+            "-Xpycache_prefix={}",
+            attempt.join("pipeline-bytecode").display()
+        ))
+        .arg(root.join("rust/tools/native_runtime_inputs.py"))
+        .arg("--root")
+        .arg(root)
+        .arg("--tools")
+        .arg(tools)
+        .arg("--bootstrap-config")
+        .arg(config_path)
+        .arg("--bootstrap-sha256")
+        .arg(pin)
+        .arg("--preparations")
+        .arg(attempt.join("worker-result.json"))
+        .arg("--output")
+        .arg(attempt.join("runtime-inputs"))
+        .status()?;
+    if !status.success() || crate::digest_file(&request.path)? != request.sha256 {
+        return Err(
+            "runtime input orchestration failed or its pinned configuration changed".into(),
+        );
+    }
+    Ok(())
 }
 
 fn bundle_key(prepared: &Prepared) -> Result<String> {
@@ -473,7 +570,42 @@ fn frontend(
     supervision::check_request_owner()?;
     generation::offroad(&config.stores.params)?;
     let (path, origin) = bundle(config, &current)?;
-    if crate::digest_file(config_path)? != configuration_sha256 {
+    let runtime_inputs = if let Some(request) = &config.runtime_inputs {
+        if crate::digest_file(&request.path)? != request.sha256 {
+            return Err("runtime input configuration changed before publication".into());
+        }
+        let output = attempt.join("runtime-inputs");
+        let outcome: serde_json::Value = generation::read(&output.join("result.json"))?;
+        if outcome["source"] != serde_json::to_value(&before)?
+            || outcome["bootstrap_configuration_sha256"] != configuration_sha256
+            || outcome["configuration_sha256"] != request.sha256
+            || outcome["runtime_inputs_verified"] != true
+        {
+            return Err("runtime input result differs from the original request".into());
+        }
+        let files: BTreeMap<PathBuf, String> = serde_json::from_value(outcome["files"].clone())?;
+        if files.is_empty() {
+            return Err("runtime input result has no pinned output files".into());
+        }
+        for (file, digest) in files {
+            if !file.starts_with(&output)
+                || file.canonicalize()? != file
+                || crate::digest_file(&file)? != digest
+            {
+                return Err("runtime input output changed before publication".into());
+            }
+        }
+        generation::Config::read_expected(
+            &output.join("native-config.json"),
+            outcome["native_configuration_sha256"]
+                .as_str()
+                .ok_or("native configuration pin missing")?,
+        )?;
+        Some(outcome)
+    } else {
+        None
+    };
+    if Config::read_pinned(config_path)?.1 != configuration_sha256 {
         return Err("bootstrap configuration changed during bundle publication".into());
     }
     println!(
@@ -481,6 +613,7 @@ fn frontend(
         serde_json::json!({"schema":1,"tools":path,"resource_evidence":attempt,"configuration_sha256":configuration_sha256,
         "requested_source":before,"bundle_original_verified_source":origin.prepared.source.source,
         "build":current.prepared,"preparations":current.preparations,"seed_helper_sha256":current.seed_helper_sha256,
+        "runtime_inputs":runtime_inputs,
         "runtime_activated":false,"runtime_started":false,"runtime_release_downloaded":false})
     );
     Ok(())
@@ -599,6 +732,7 @@ mod tests {
                     },
                 )]),
             },
+            runtime_inputs: None,
         }
     }
 
@@ -654,6 +788,32 @@ mod tests {
         let error = config.verify_sdk(temp.path()).unwrap_err().to_string();
         assert!(error.contains("independent pin"));
         assert!(!config.cache.exists());
+    }
+
+    #[test]
+    fn changed_runtime_input_selection_is_rejected_before_any_tool_or_controller_work() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut config = fixture(temp.path());
+        let selection = temp.path().join("runtime-inputs.json");
+        fs::write(&selection, b"{\"schema\":1}\n").unwrap();
+        config.runtime_inputs = Some(PinnedConfiguration {
+            path: selection,
+            sha256: "b".repeat(64),
+        });
+        let path = temp.path().join("config.json");
+        generation::write(&path, &config, false).unwrap();
+        let error = run(vec![
+            "--bootstrap-tools".into(),
+            "--config".into(),
+            path.into_os_string(),
+            "--root".into(),
+            temp.path().as_os_str().to_owned(),
+        ])
+        .unwrap_err()
+        .to_string();
+        assert!(error.contains("runtime input configuration differs"));
+        assert!(!config.cache.exists());
+        assert!(!config.stores.generations.exists());
     }
 
     #[test]

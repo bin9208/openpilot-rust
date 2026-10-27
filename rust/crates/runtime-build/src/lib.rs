@@ -108,6 +108,24 @@ pub struct Artifact {
     pub bytes: u64,
 }
 
+/// Actual Cargo messages for callers which need feature/profile provenance.
+/// Kept separate from the persisted schema-3 runtime build report so existing
+/// generation readers continue to accept that report unchanged.
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CargoArtifactMetadata {
+    pub executable: PathBuf,
+    pub features: Vec<String>,
+    pub profile: serde_json::Value,
+    pub target: serde_json::Value,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BuildWithMetadata {
+    pub build: Report,
+    pub cargo_artifacts: Vec<CargoArtifactMetadata>,
+}
+
 fn regular_file(path: &Path) -> Result<File> {
     use std::os::unix::fs::OpenOptionsExt;
     let file = OpenOptions::new()
@@ -260,6 +278,15 @@ impl PhaseTimer<'_> {
 /// Build only. The caller must seal, validate and activate the complete runtime separately.
 /// No runtime release is downloaded, and no existing runtime or Cargo cache is removed.
 pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Result<Report> {
+    Ok(build_with_metadata(root, cache, toolchain, recipe)?.build)
+}
+
+pub fn build_with_metadata(
+    root: &Path,
+    cache: &Path,
+    toolchain: &Path,
+    recipe: &Recipe,
+) -> Result<BuildWithMetadata> {
     let started = Instant::now();
     let mut timing = PhaseTimer {
         enabled: std::env::var_os("OPENPILOT_NATIVE_BUILD_TIMINGS").as_deref()
@@ -418,6 +445,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
     command.stdout(Stdio::piped()).stderr(Stdio::inherit());
     timing.mark("cache_and_command");
     let mut child = command.spawn()?;
+    let mut cargo_artifacts = Vec::new();
     let result = (|| -> Result<Vec<Artifact>> {
         let output = child.stdout.take().ok_or("Cargo stdout missing")?;
         let mut artifacts = Vec::new();
@@ -426,6 +454,12 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
             let value: serde_json::Value = serde_json::from_str(&line)?;
             if value["reason"] == "compiler-artifact" {
                 if let Some(executable) = value["executable"].as_str() {
+                    cargo_artifacts.push(CargoArtifactMetadata {
+                        executable: PathBuf::from(executable),
+                        features: serde_json::from_value(value["features"].clone())?,
+                        profile: value["profile"].clone(),
+                        target: value["target"].clone(),
+                    });
                     artifacts.push(Artifact {
                         executable: PathBuf::from(executable),
                         fresh: value["fresh"]
@@ -500,5 +534,8 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
     saved.as_file_mut().sync_all()?;
     saved.persist(directory.join("last-successful-build.json"))?;
     timing.mark("report_persisted");
-    Ok(report)
+    Ok(BuildWithMetadata {
+        build: report,
+        cargo_artifacts,
+    })
 }
