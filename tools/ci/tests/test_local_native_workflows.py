@@ -54,7 +54,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         for name in ('fast-checks.yml', 'integration.yml', 'rust.yml', 'tests.yaml',
                      'naver-ci.yml', 'naver-apk-tools.yml', 'wiki-settings-check.yaml',
                      'native-resource-guard.yml', 'native-source-reuse.yml',
-                     'runtime-native-environment.yml'):
+                     'runtime-native-environment.yml',
+                     'native-apt-scope.yml', 'carrot-peer-readiness.yml'):
             with self.subTest(workflow=name):
                 policy = load(ROOT / '.github/workflows' / name)['concurrency']
                 self.assertEqual(policy['queue'], 'max')

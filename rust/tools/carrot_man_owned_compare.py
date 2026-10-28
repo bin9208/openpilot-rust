@@ -126,6 +126,7 @@ class Peer:
     roles = ("navigation_udp", "navigation_tcp", "navigation_http", "route_tcp", "kisa_udp", "command_zmq", "broadcast_udp")
     (self.root / "fixture-configuration.json").write_text(json.dumps(dict(fixture, port_roles=dict(zip(roles, self.ports))), indent=2) + "\n")
     reservations.close()
+    self.started = time.monotonic()
     self.process = subprocess.Popen(command, env=env, stdin=subprocess.PIPE, stdout=self.out, stderr=self.err, text=True)
     self.process.stdin.write(payload)
     self.process.stdin.close()
@@ -135,6 +136,23 @@ class Peer:
     self.command.setsockopt(zmq.LINGER, 0)
     self.command.connect(f"tcp://127.0.0.1:{self.ports[5]}")
     self.inputs = InputPublisher(self.publisher, self, self.root)
+  def await_ready(self, timeout=120):
+    # Source imports/AST loading happen before its real service loop exists.
+    # Keep that bounded startup phase out of the unchanged 8-second functional
+    # predicates; only an actual carrotMan packet establishes readiness.
+    ready = False
+    try:
+      while time.monotonic() - self.started < timeout:
+        self.pump()
+        if any(row["service"] == "carrotMan" for row in self.rows):
+          ready = True
+          return
+      raise AssertionError(("startup readiness deadline", self.root, self.rows[-3:]))
+    finally:
+      (self.root / "startup-readiness.json").write_text(json.dumps(dict(
+        ready=ready, elapsed_seconds=time.monotonic() - self.started, startup_budget_seconds=timeout,
+        readiness="actual carrotMan publication", functional_deadline_seconds=8,
+        received_messages=len(self.rows), execution_mode=os.environ.get("OPENPILOT_CI_EXECUTION_MODE", "native")), indent=2) + "\n")
   def put(self, key, value):
     temporary = self.params / (key + ".new")
     temporary.write_text(value)
@@ -218,13 +236,14 @@ def run(implementation, args):
   peer = Peer(implementation, args)
   result = {}
   try:
+    peer.await_ready()
     peer.wait(lambda row: row["service"] == "carrotMan" and row["data"]["xPosLat"] > 36.
       and row["data"]["carrotCmdIndex"] == 100 and row["data"]["carrotCmd"] == "DISPLAY" and row["data"]["carrotArg"] == "MAP")
     maps = Path(f"/proc/{peer.process.pid}/maps").read_text()
     identity = dict(executable=os.readlink(f"/proc/{peer.process.pid}/exe"), libpython="libpython" in maps)
+    (peer.root / "identity.json").write_text(json.dumps(identity, indent=2) + "\n")
     if implementation == "native":
       assert identity["executable"] == str(args.binary.resolve()) and not identity["libpython"]
-    (peer.root / "identity.json").write_text(json.dumps(identity, indent=2) + "\n")
     stream = peer.tcp("127.0.0.2")
     naver = envelope()
     stream.sendall(json.dumps(naver).encode() + b"\n")
