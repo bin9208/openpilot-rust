@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import stat
 import subprocess
+import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -60,7 +61,7 @@ class BootstrapSeedTests(unittest.TestCase):
   def test_legacy_seed_requires_an_independently_pinned_owner_chain_protocol_for_intermediaries(self):
     with tempfile.TemporaryDirectory() as temporary:
       fixture = Fixture(Path(temporary))
-      external = subprocess.Popen(['/usr/bin/python3', '-c', 'import time; time.sleep(60)'])
+      external = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])
       try:
         original = seed.process_identity(external.pid)
         runner = mock.Mock()

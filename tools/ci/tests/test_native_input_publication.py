@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -194,16 +195,16 @@ class PublicationTests(unittest.TestCase):
       root = Path(temp)
       payload = b'Owned transfer bytes'
       output = root/'artifact'
-      publication.transfer(['/usr/bin/python3', '-I', '-B', '-S', '-c',
+      publication.transfer([sys.executable, '-I', '-B', '-S', '-c',
           'import sys;sys.stdout.buffer.write(bytes.fromhex(sys.argv[1]))', payload.hex()],
           dict(bytes=len(payload), sha256=hashlib.sha256(payload).hexdigest()), output)
       self.assertEqual(output.read_bytes(), payload)
-      innocent = subprocess.Popen(['/usr/bin/python3', '-I', '-B', '-S', '-c', 'import time;time.sleep(60)'])
+      innocent = subprocess.Popen([sys.executable, '-I', '-B', '-S', '-c', 'import time;time.sleep(60)'])
       try:
         pid = root/'child-pid'
         script = 'import os,sys,time;from pathlib import Path;Path(sys.argv[1]).write_text(str(os.getpid()));sys.stdout.buffer.write(b"X"*5000);sys.stdout.flush();time.sleep(60)'
         with self.assertRaisesRegex(ValueError, 'exceeded'):
-          publication.transfer(['/usr/bin/python3', '-I', '-B', '-S', '-c', script, str(pid)],
+          publication.transfer([sys.executable, '-I', '-B', '-S', '-c', script, str(pid)],
               dict(bytes=1, sha256='a'*64))
         self.assertIsNone(innocent.poll())
         self.assertFalse(Path('/proc/'+pid.read_text()).exists())
