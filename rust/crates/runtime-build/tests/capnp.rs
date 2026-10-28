@@ -67,7 +67,7 @@ fn ar_member(ar: &mut Vec<u8>, name: &str, bytes: &[u8]) {
         .bytes(),
     );
     ar.extend_from_slice(bytes);
-    if bytes.len() % 2 != 0 {
+    if !bytes.len().is_multiple_of(2) {
         ar.push(b'\n');
     }
 }
