@@ -202,10 +202,16 @@ jobs:
       - name: Check formatting of additional source and asset preparation modules
         run: rustfmt --edition 2021 --check rust/crates/runtime-build/src/*.rs rust/crates/runtime-build/tests/*.rs
       - name: Compile and exercise real offline build reuse
+        id: offline-reuse
         run: |
           set -o pipefail
-          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-fail-fast -- --nocapture 2>&1 | tee "$RUNNER_TEMP/runtime-build-tests.log"
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build -- --nocapture 2>&1 | tee "$RUNNER_TEMP/runtime-build-tests.log"
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
+      - name: Collect remaining build-reuse failures after the required command fails
+        if: failure() && steps.offline-reuse.outcome == 'failure'
+        run: |
+          set -o pipefail
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-fail-fast -- --nocapture 2>&1 | tee "$RUNNER_TEMP/runtime-build-tests-remaining.log"
       - name: Audit the full runtime roster against the actual source workspace
         run: |
           cargo run --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-build --bin openpilot-runtime-plan -- \
@@ -470,6 +476,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/runtime-build-metadata.json
             ${{ env.CI_JOB_TEMP }}/native-runtime-catalog.json
             ${{ env.CI_JOB_TEMP }}/runtime-build-tests.log
+            ${{ env.CI_JOB_TEMP }}/runtime-build-tests-remaining.log
             ${{ env.CI_JOB_TEMP }}/native-codec-first.json
             ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-*.json
             ${{ env.CI_JOB_TEMP }}/native-opencv-headers-*.json

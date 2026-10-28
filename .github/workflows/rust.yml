@@ -160,6 +160,13 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/webcam/binding"
           printf 'OPENPILOT_WEBCAM_OPENCV_ROOT=%s/webcam/provider\nLD_LIBRARY_PATH=%s/webcam/provider/install/lib\nPYTHONPATH=%s/webcam/binding:%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Preserve the selected X64 Python shared library for the source oracle
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+        env:
+          LD_LIBRARY_PATH: ${{ env.pythonLocation }}/lib:${{ env.LD_LIBRARY_PATH }}
+        run: |
+          "$pythonLocation/bin/python" -P -c 'import av,sys; print("webcam_source_python", sys.executable, sys.version, av.__version__)'
+          printf 'LD_LIBRARY_PATH=%s\n' "$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
       - name: Build native daemon and check all webcam targets
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096

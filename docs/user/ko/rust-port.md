@@ -37,6 +37,10 @@ HTTPS 자산을 SHA-256·바이트 수로 확인해 내용별 캐시에 저장�
 커밋·tree·recipe·compiler·linker·실행 파일 해시를 보고서에 남깁니다.
 전체 toolchain/ABI 봉인과 자동 시작 경로 연결은 아직 개발 중입니다.
 
+본문을 받기 전 일시 연결 오류는2·4·8초 간격으로 최대3회 재시도하며, 전체 전송
+시간은1800초 이내로 제한합니다. 일부 본문을 받은 뒤 실패하거나 HTTP·크기·해시
+검증에 실패하면 오류를 반환하고 기존 자산과 정상 실행 세대를 보존합니다.
+
 압축을 푼 toolchain/provider는 `openpilot-runtime-inputs --root INPUT_TREE
 --output RECEIPT_JSON`으로 실제 파일 hash·크기·권한·내부 파일 symlink 목록을
 기록할 수 있습니다. 이 기록을 독립적으로 확인한 자산 출처에 연결한 뒤, recipe의

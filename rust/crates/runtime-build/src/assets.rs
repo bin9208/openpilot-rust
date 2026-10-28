@@ -8,7 +8,7 @@ use std::{
     os::unix::fs::{OpenOptionsExt, PermissionsExt},
     path::{Path, PathBuf},
     process::Command,
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -48,7 +48,28 @@ pub trait Download {
 pub struct Curl;
 impl Download for Curl {
     fn fetch(&self, asset: &Asset, destination: &Path) -> Result<u64> {
-        let output = Command::new("/usr/bin/curl")
+        fetch_with_curl(
+            Path::new("/usr/bin/curl"),
+            asset,
+            destination,
+            std::thread::sleep,
+        )
+    }
+}
+
+fn fetch_with_curl(
+    curl: &Path,
+    asset: &Asset,
+    destination: &Path,
+    sleep: impl Fn(Duration),
+) -> Result<u64> {
+    let started = Instant::now();
+    for attempt in 0..4 {
+        let remaining = 1800_u64.saturating_sub(started.elapsed().as_secs());
+        if remaining == 0 {
+            return Err("build input download time budget exhausted".into());
+        }
+        let output = Command::new(curl)
             .args([
                 "--fail",
                 "--silent",
@@ -61,7 +82,7 @@ impl Download for Curl {
                 "--connect-timeout",
                 "15",
                 "--max-time",
-                "1800",
+                &remaining.to_string(),
                 "--max-filesize",
                 &asset.bytes.to_string(),
                 "--write-out",
@@ -73,12 +94,22 @@ impl Download for Curl {
             .arg(&asset.url)
             .env("LC_ALL", "C")
             .output()?;
-        if !output.status.success() {
+        let transferred: u64 = String::from_utf8(output.stdout)?.trim().parse()?;
+        if output.status.success() {
+            return Ok(transferred);
+        }
+        // Retry only before any body arrived. Partial transfers remain failures,
+        // so successful receipts still account for every transferred body byte.
+        if transferred != 0
+            || attempt == 3
+            || !matches!(output.status.code(), Some(5 | 6 | 7 | 28 | 35 | 52 | 56))
+        {
             // Do not include URLs or response bodies in error reports.
             return Err(format!("build input download failed: {}", output.status).into());
         }
-        Ok(String::from_utf8(output.stdout)?.trim().parse()?)
+        sleep(Duration::from_secs(2_u64 << attempt));
     }
+    unreachable!("last failed attempt returns above")
 }
 
 impl Plan {
@@ -245,4 +276,51 @@ pub fn prepare(
         );
     }
     Ok(receipts)
+}
+
+#[cfg(test)]
+mod curl_tests {
+    use super::*;
+    use std::cell::RefCell;
+
+    fn scenario(failures: usize, exit: i32, body_bytes: u64) -> (bool, usize, Vec<u64>) {
+        let temp = tempfile::tempdir().unwrap();
+        let curl = temp.path().join("curl");
+        let calls = temp.path().join("calls");
+        fs::write(
+            &curl,
+            format!(
+                "#!/bin/sh\ncd -- \"$(dirname -- \"$0\")\"\n\
+                 printf 'call\\n' >> calls\n\
+                 count=$(wc -l < calls)\n\
+                 if [ \"$count\" -le {failures} ]; then printf '{body_bytes}'; exit {exit}; fi\n\
+                 printf '8'\n"
+            ),
+        )
+        .unwrap();
+        fs::set_permissions(&curl, fs::Permissions::from_mode(0o700)).unwrap();
+        let sleeps = RefCell::new(Vec::new());
+        let asset = Asset {
+            url: "https://fixture.invalid/never-contacted".into(),
+            sha256: "a".repeat(64),
+            bytes: 8,
+        };
+        let result = fetch_with_curl(&curl, &asset, &temp.path().join("pending"), |duration| {
+            sleeps.borrow_mut().push(duration.as_secs());
+        });
+        if let Ok(bytes) = &result {
+            assert_eq!(*bytes, 8);
+        }
+        let count = fs::read_to_string(calls).unwrap().lines().count();
+        (result.is_ok(), count, sleeps.into_inner())
+    }
+
+    #[test]
+    fn connection_failures_retry_with_bounded_backoff_without_hiding_body_bytes() {
+        assert_eq!(scenario(2, 28, 0), (true, 3, vec![2, 4]));
+        assert_eq!(scenario(10, 28, 0), (false, 4, vec![2, 4, 8]));
+        assert_eq!(scenario(1, 28, 3), (false, 1, vec![]));
+        assert_eq!(scenario(1, 22, 0), (false, 1, vec![]));
+        assert_eq!(scenario(1, 63, 0), (false, 1, vec![]));
+    }
 }

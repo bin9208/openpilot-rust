@@ -38,6 +38,11 @@ a runtime. The build driver requires a clean Git checkout and reports the actual
 tree, recipe, compiler, linker and executable hashes. Complete toolchain/ABI sealing and
 automatic startup integration remain in development.
 
+Transient connection errors before any body arrives retry up to three times after
+2, 4 and 8 seconds, within a total 1800-second transfer budget. Partial-body failures
+and HTTP, size or hash errors remain failures; existing assets and the working runtime
+generation are preserved.
+
 For unpacked toolchains/providers, `openpilot-runtime-inputs --root INPUT_TREE
 --output RECEIPT_JSON` records actual file hashes, lengths, modes and contained file
 links. Bind this receipt to independently verified asset provenance, pin its SHA-256

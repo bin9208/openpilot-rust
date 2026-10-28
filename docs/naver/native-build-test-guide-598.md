@@ -1,5 +1,32 @@
 # 콤마 자체 빌드·다운로드 재사용 검증 안내 — #598
 
+## 2026-10-28 재개: 실제 실패 수정 #614/#615
+
+기준 source `9e132db8da05c67678c84167f662c04fc989feae`의 실제 실패를 모아
+[환경 회귀 #614](https://github.com/bin9208/openpilot-rust/issues/614)와
+[전송 전 연결 실패 #615](https://github.com/bin9208/openpilot-rust/issues/615)에 기록했다.
+원래 `cargo test`·clippy 명령을 복원하고 해당 단계가 실패했을 때만 나머지 테스트를
+진단용으로 수집한다. 원래 실패 결과와 필수 gate는 유지한다. Xiaoge/planner 검사는
+단계 위치 대신 필요한 결과 변수를 가진 유일한 aggregation 단계를 선택한다.
+Android APK 검사 전에 Python을 준비한다.
+
+webcam source 비교는 선택한 Python의 shared library 경로·실행 파일·`av` 버전을
+확인한다. EGL 비교도 Python의 기존 library 경로를 보존하고 실패한 source/native의
+stdout/stderr를 예외 전에 저장한다. EGL fixture 공간 검사는 폐기된25GiB 고정
+잔여량 대신 해당 빌드 예상 증가량1GiB만 사용한다. loader 수정 성공과 EGL의 실제
+원인은 수정 source의 Actions 결과로 확인한다.
+
+native 입력은 수신 본문0바이트인 일시 연결 오류에만2·4·8초 간격, 최대3회,
+전체1800초 안에서 재시도한다. 일부 body·영구 HTTP·크기/해시 오류는 계속 실패하며
+기존 정상 자산을 덮어쓰지 않는다. 소유 curl 실행 fixture는 재시도 성공·횟수 소진·
+부분 body·HTTP 오류·크기 상한 거부를 검사한다. 기능 검사는 Actions에서 수행한다.
+
+로컬 확인은 Rust 서식, Python AST, YAML/Bash 구문과 diff다. 현재 수정의 기능 통과,
+정상 병합·병합 후 검사, 공개 입력/index와 완전한 자체 빌드 후보는 아직 미완료다.
+기기 시험은 #598 개발 완료 후 #528에서 사용자가 수행한다.
+
+## 입력·실행 검증 절차
+
 공개 입력 발행의 source/CI/artifact/파일 해시·기존 원격 asset 보존·중단/재개 검사는
 [입력 발행 안내](native-input-publication-599.md)를 따른다. foundation의
 `test_native_input_publication.py`는 소유 ZIP/API fixture와 별도 process group의 byte
