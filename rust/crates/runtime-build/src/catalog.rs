@@ -420,7 +420,7 @@ impl Catalog {
         plan.expected_source_growth_bytes = bindings.expected_source_growth_bytes;
         plan.remaining_object_growth_bytes = bindings.remaining_object_growth_bytes;
         plan.runtime_inputs = bindings.runtime_inputs.clone();
-        plan.runtime_inputs.verify(root)?;
+        plan.runtime_inputs.verify(root, plan.requires_models())?;
         plan.validate()?;
         Ok(plan)
     }

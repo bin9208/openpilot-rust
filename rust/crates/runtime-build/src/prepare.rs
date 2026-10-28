@@ -82,7 +82,7 @@ pub struct Prepared {
 }
 
 impl Plan {
-    fn requires_models(&self) -> bool {
+    pub(crate) fn requires_models(&self) -> bool {
         self.groups.values().any(|g| {
             g.binaries.iter().any(|name| {
                 matches!(

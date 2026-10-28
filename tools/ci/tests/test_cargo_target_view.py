@@ -20,6 +20,8 @@ def checkout(base, patterns):
     (source/'rust').mkdir(parents=True)
     (source/'rust/.gitignore').write_text(patterns)
     (source/'rust/Cargo.toml').write_text('[workspace]\n')
+    (source/'tools/ci').mkdir(parents=True)
+    (source/'tools/ci/native-apt-shell').write_bytes((ROOT/'tools/ci/native-apt-shell').read_bytes())
     git(source, 'init', '--quiet')
     git(source, 'add', '.')
     git(source, 'commit', '--quiet', '-m', 'Owned source fixture')
