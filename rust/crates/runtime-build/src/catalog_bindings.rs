@@ -253,10 +253,15 @@ impl NativeInputs {
                     selected.insert(role.name().to_owned());
                 }
                 if role != Kind::Cargo {
-                    environment.environment.insert(
-                        key.clone(),
-                        self.inputs[&role].root.join(suffix).display().to_string(),
-                    );
+                    let root = &self.inputs[&role].root;
+                    let path = if suffix.is_empty() {
+                        root.clone()
+                    } else {
+                        root.join(suffix)
+                    };
+                    environment
+                        .environment
+                        .insert(key.clone(), path.display().to_string());
                 }
             }
             let mut libraries = Vec::new();

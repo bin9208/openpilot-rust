@@ -158,7 +158,12 @@ fn main() {
         for path in ["worker.ready", "script.ready"] {
             let _ = fs::remove_file(root.join(path));
         }
-        let log = fs::File::create(root.join(format!("{case}.log"))).unwrap();
+        let log_path = root.join(format!("attempt-{case}.log"));
+        let log = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&log_path)
+            .unwrap();
         let mut command = child("frontend", root, case);
         command
             .stdout(Stdio::from(log.try_clone().unwrap()))
@@ -176,7 +181,7 @@ fn main() {
                 }
                 panic!(
                     "{case}: frontend exited before ready: {status}: {}",
-                    fs::read_to_string(root.join(format!("{case}.log"))).unwrap()
+                    fs::read_to_string(&log_path).unwrap()
                 );
             }
             assert!(

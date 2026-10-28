@@ -43,6 +43,26 @@ startup job122715470990의 ready timeout을 추적한다. 보존 artifact에서 
 
 ## 입력·실행 검증 절차
 
+동일 source의 foundation X64 job122828044322은 실패 뒤 나머지 target도 수집해
+두 독립 회귀를 확인했다. [compiler root #619](https://github.com/bin9208/openpilot-rust/issues/619)는
+비어 있는 suffix에도 `join("")`을 호출해 `/owned/Opencv/`를 만든다. root만 요구하는
+환경 변수는 원래 root를 사용하고 FFmpeg/raylib/OpenCV/Eigen 경로 검사를 보강한다.
+13개 group·provider 영향 범위·실제 하위 경로와 receipt/pin 검사는 유지한다.
+[supervision fixture #620](https://github.com/bin9208/openpilot-rust/issues/620)은 이전 log
+sentinel `normal.log`와 `normal` 사례의 stdout 파일 이름이 충돌한 문제다. 사례 출력은
+`attempt-<case>.log`를 `create_new`로 만들며 기존 log byte 동일성 assertion과 실제
+Cargo/하위 프로세스·다른 정상 프로세스·workspace lock·active 세대 보존을 유지한다.
+운영 로그 손상으로 과장하지 않는다. 로컬 서식·diff만 확인하고 기능 성공은 새 Actions로 확인한다.
+
+[ARM system Python #618](https://github.com/bin9208/openpilot-rust/issues/618)은
+수정 source `d6a9b5f74f5e5132e0e06faba7c44cc2f19fe8cc`의 foundation ARM
+job122828043659에서 확인했다. `/opt`의 고정 oracle Python은 있었지만 운영 명령 wrapper의
+`/usr/bin/python3`가 없어 소유권/종료 회귀2개가 실제 취소 검증 전에 실패했다.
+ARM 패키지 bootstrap에 Ubuntu system Python을 준비하고 운영과 같은 최소 환경에서
+`/usr/bin/python3 -I -B -S`·ARM·ctypes를 확인한다. 고정 Python3.12.14 archive/hash/venv,
+비특권 검사·원래 명령·owner death/SIGKILL·4MiB 출력 상한·offroad 정책은 유지한다.
+로컬은 Bash 구문·diff만 확인하며 실제 성공은 정확 수정 source의 Actions에서 확인한다.
+
 2026-10-28의 genuine OpenCV prefix 실패는
 [문자열 정렬 회귀 #617](https://github.com/bin9208/openpilot-rust/issues/617)로 추적한다.
 고정185개 입력의 파일 SHA·기대 manifest SHA를 유지하고 Rust `PathBuf` component 순서를

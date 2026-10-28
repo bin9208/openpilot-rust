@@ -100,6 +100,19 @@ fn each_provider_changes_only_consuming_groups_and_models_change_no_compiler_gro
     let env = &before.input_sets["environment-03"].environment;
     assert_eq!(env["LIBCLANG_PATH"], "/usr/lib/llvm-18/lib");
     assert_eq!(env["OPENPILOT_WEBCAM_OPENCV_ROOT"], "/owned/Opencv");
+    for (group, key, expected) in [
+        ("00", "FFMPEG_DIR", "/owned/Ffmpeg"),
+        ("02", "STARTUP_UI_RAYLIB_ROOT", "/owned/Raylib"),
+        ("04", "OPENPILOT_OPENCV_ROOT", "/owned/Opencv"),
+        ("04", "LOCATIOND_EIGEN_INCLUDE", "/owned/Eigen"),
+        ("06", "PARAMSD_EIGEN_INCLUDE", "/owned/Eigen"),
+    ] {
+        assert_eq!(
+            before.input_sets[&format!("environment-{group}")].environment[key],
+            expected,
+            "{group}:{key}"
+        );
+    }
     assert!(env["LD_LIBRARY_PATH"].contains("/owned/Opencv/install/lib"));
     assert!(!env["LD_LIBRARY_PATH"].contains("/owned/Raylib"));
     assert!(!env.contains_key("OPENPILOT_CARGO_VENDOR"));
