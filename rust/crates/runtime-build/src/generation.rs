@@ -1138,7 +1138,10 @@ pub fn seal(
 }
 
 pub(crate) fn agnos_identity() -> Result<BTreeMap<PathBuf, String>> {
-    if fs::read_to_string("/VERSION")?.trim() != AGNOS {
+    let version = fs::read_to_string("/VERSION").map_err(|error| {
+        format!("native runtime work requires actual AGNOS {AGNOS} user space: /VERSION: {error}")
+    })?;
+    if version.trim() != AGNOS {
         return Err("native runtime work requires actual AGNOS 19.8-carrot-bt1 user space".into());
     }
     Ok(BTreeMap::from([
