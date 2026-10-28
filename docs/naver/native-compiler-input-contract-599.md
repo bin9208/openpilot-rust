@@ -15,7 +15,7 @@ Python과 기존 C/C++ 라이브러리를 유지하며 production daemon/수학 
 |---|---|
 | 고정 Cargo vendor |00..12 모두 |
 | capnp compiler/SDK |00..10 |
-| FFmpeg와 factory libclang |00,01,03,07,08,10 |
+| FFmpeg와 factory libclang |00,01,03,07,08,09,10 |
 | libyuv |00,01 |
 | raylib header/static SDK |00,01,02 |
 | webcam OpenCV prefix |03 |
@@ -34,8 +34,9 @@ runtime build에 넣지 않는다. 현재 소스에는 조건부 local dependenc
 없다. 지원하지 않는 조건부 local edge나 mixed build/runtime feature context를 만나면
 명시적으로 실패하며 임의로 모든 provider를 모든 group에 연결하지 않는다.
 
-구체적으로 bootlog→loggerd 때문에08에도 FFmpeg가 필요하고, carrot-server 때문에10에도
-필요하다. UI의 기본 feature는00/02의 raylib를 활성화한다. 이 경로를 빼거나 사용하지 않는
+구체적으로 bootlog→loggerd 때문에08에, manager→bootlog→loggerd 때문에09에도 FFmpeg가
+필요하고, carrot-server 때문에10에도 필요하다. UI의 기본 feature는00/02의 raylib를
+활성화한다. 이 경로를 빼거나 사용하지 않는
 12에 FFmpeg를 추가한 catalog는 실제 metadata 대조에 실패해야 한다.
 
 feature 의미와 metadata field는 Cargo의 [공식 feature 설명](https://doc.rust-lang.org/cargo/reference/features.html)과

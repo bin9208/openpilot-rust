@@ -322,6 +322,8 @@
         "openpilot-micd"
       ],
       "compiler_inputs": {
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
         "OPENPILOT_CAPNP": "usr/bin/capnp",
         "OPENPILOT_CARGO_VENDOR": "vendor"
       }
