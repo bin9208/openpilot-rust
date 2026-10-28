@@ -420,7 +420,9 @@ impl Catalog {
         plan.expected_source_growth_bytes = bindings.expected_source_growth_bytes;
         plan.remaining_object_growth_bytes = bindings.remaining_object_growth_bytes;
         plan.runtime_inputs = bindings.runtime_inputs.clone();
-        plan.runtime_inputs.verify(root, plan.requires_models())?;
+        // Assembly checks declared inputs; preparing and verifying a generation
+        // separately require model inputs for the selected model daemons.
+        plan.runtime_inputs.verify(root, false)?;
         plan.validate()?;
         Ok(plan)
     }
