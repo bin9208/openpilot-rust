@@ -518,7 +518,8 @@ pub fn assemble(root: &Path, cargo: &Path, bindings_path: &Path) -> Result<(prep
     Ok((plan, audit))
 }
 
-pub(crate) fn verify_source_plan(root: &Path, plan: &prepare::Plan) -> Result<()> {
+/// Verify an assembled plan against the source catalog before building a generation.
+pub fn verify_source_plan(root: &Path, plan: &prepare::Plan) -> Result<()> {
     read::<Catalog>(&root.join(PATH))?.verify_compiler_bindings(plan)
 }
 
