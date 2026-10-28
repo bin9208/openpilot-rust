@@ -37,6 +37,17 @@ prefix에는 `install/include/opencv4`, `install/lib`, 원래 notices/provenance
 `d34c38a3ae14a51624759d526a825e596297ff203ad3ad6861cd08a32798934d` 그대로 notices와
 provenance에 보존한다. 새 manifest를 원래 build receipt라고 표시하지 않는다.
 
+2026-10-28의 [정렬 회귀 #617](https://github.com/bin9208/openpilot-rust/issues/617)은
+source `eb7ac90182cf4a81294547ef0da09f0f67ff6c84`의
+[genuine 실패](https://github.com/bin9208/openpilot-rust/actions/runs/40685061209/job/122806456685)로
+확인했다. `PathBuf` component 순서가 `core/affine.hpp`를 `core.hpp`보다 먼저 두어
+185행의 SHA가 `8fe80dcff866a62cfa95f5b9d7950b17b312d9f3e436391ec404e0a514f2f4b2`가 된다.
+고정 원본185개 경로/SHA의 읽기 대조에서 UTF-8 문자열 순서는 기존 고정 SHA
+`bdc3c7f0ea23ea1e15272906478d92433997c8f36a4fe2bd39ab167211be2d06`과 일치한다.
+manifest key만 문자열로 정렬하고 비 UTF-8 경로는 거부한다. 고정값·파일·alias
+검증은 유지하며 두 header 경로가 함께 있는 실제 sha256sum/hardlink/재사용 회귀를
+보강했다. 로컬 서식·diff만 확인하고 실제 준비·재사용 성공은 수정 source의 Actions로 확인한다.
+
 기존 build.rs의 sha256sum, 정확4.13.0 alias 검사와 C++ bridge 컴파일 경로를 유지한다.
 prefix는 모든 입력 Tree/receipt를 검증하고 readonly 파일을 hardlink한다. EXDEV에서는
 exclusive bounded copy·동일 hash 검증·fsync를 적용한다. 생성 metadata 덮어쓰기, 파일

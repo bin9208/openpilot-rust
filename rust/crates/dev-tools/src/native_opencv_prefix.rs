@@ -36,6 +36,10 @@ fn manifest(parts: &[Part; 2]) -> Result<Vec<u8>> {
                     sha256
                 }
             };
+            // The pinned manifest sorts UTF-8 strings, not Path components.
+            let path = path
+                .to_str()
+                .ok_or("non-UTF8 native OpenCV compiler input")?;
             if files.insert(path, sha).is_some() {
                 return Err("duplicate native OpenCV compiler input".into());
             }
@@ -43,7 +47,7 @@ fn manifest(parts: &[Part; 2]) -> Result<Vec<u8>> {
     }
     Ok(files
         .into_iter()
-        .map(|(p, h)| format!("{h}  {}\n", p.display()))
+        .map(|(p, h)| format!("{h}  {p}\n"))
         .collect::<String>()
         .into_bytes())
 }
@@ -216,7 +220,13 @@ mod tests {
             part(
                 parent,
                 "headers",
-                &[("install/include/opencv4/opencv2/core.hpp", b"owned header")],
+                &[
+                    ("install/include/opencv4/opencv2/core.hpp", b"owned header"),
+                    (
+                        "install/include/opencv4/opencv2/core/affine.hpp",
+                        b"owned nested header",
+                    ),
+                ],
             ),
             part(
                 parent,
@@ -251,7 +261,18 @@ mod tests {
             .unwrap();
         assert!(status.success());
         let listing = fs::read_to_string(first.root.join(MANIFEST)).unwrap();
-        assert_eq!(listing.lines().count(), 3);
+        assert_eq!(
+            listing
+                .lines()
+                .map(|line| line.split_once("  ").unwrap().1)
+                .collect::<Vec<_>>(),
+            [
+                "install/include/opencv4/opencv2/core.hpp",
+                "install/include/opencv4/opencv2/core/affine.hpp",
+                "install/lib/libopencv_core.so",
+                "install/lib/libopencv_core.so.4.13.0",
+            ]
+        );
         assert!(listing.contains("  install/lib/libopencv_core.so\n"));
         assert!(listing.contains("  install/lib/libopencv_core.so.4.13.0\n"));
         assert_eq!(

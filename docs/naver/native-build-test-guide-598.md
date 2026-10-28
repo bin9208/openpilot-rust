@@ -43,6 +43,13 @@ startup job122715470990의 ready timeout을 추적한다. 보존 artifact에서 
 
 ## 입력·실행 검증 절차
 
+2026-10-28의 genuine OpenCV prefix 실패는
+[문자열 정렬 회귀 #617](https://github.com/bin9208/openpilot-rust/issues/617)로 추적한다.
+고정185개 입력의 파일 SHA·기대 manifest SHA를 유지하고 Rust `PathBuf` component 순서를
+원래 UTF-8 문자열 순서로 맞춘다. 두 순서의 실제 SHA와 수정/검사 범위는
+[OpenCV prefix 기록](native-opencv-prefix-599.md)에 있다. 소유 회귀와 실제 original
+prefix 준비·반복 재사용의 성공은 정확 수정 source의 Actions에서 확인해야 한다.
+
 공개 입력 발행의 source/CI/artifact/파일 해시·기존 원격 asset 보존·중단/재개 검사는
 [입력 발행 안내](native-input-publication-599.md)를 따른다. foundation의
 `test_native_input_publication.py`는 소유 ZIP/API fixture와 별도 process group의 byte
