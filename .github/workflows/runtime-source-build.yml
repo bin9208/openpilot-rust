@@ -204,7 +204,7 @@ jobs:
       - name: Compile and exercise real offline build reuse
         run: |
           set -o pipefail
-          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build -- --nocapture 2>&1 | tee "$RUNNER_TEMP/runtime-build-tests.log"
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-fail-fast -- --nocapture 2>&1 | tee "$RUNNER_TEMP/runtime-build-tests.log"
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
       - name: Audit the full runtime roster against the actual source workspace
         run: |

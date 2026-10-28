@@ -3124,7 +3124,7 @@ jobs:
     name: rust original model pipelines
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: [self-hosted, Linux, X64, dev-md-local]
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
       CPU_COUNT: '2'

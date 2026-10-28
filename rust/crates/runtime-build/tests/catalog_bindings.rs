@@ -75,7 +75,7 @@ fn each_provider_changes_only_consuming_groups_and_models_change_no_compiler_gro
         (Kind::Libyuv, vec!["00", "01"]),
         (Kind::Opencv, vec!["03", "04"]),
         (Kind::Eigen, vec!["04", "06"]),
-        (Kind::Ffmpeg, vec!["00", "01", "03", "07", "08", "10"]),
+        (Kind::Ffmpeg, vec!["00", "01", "03", "07", "08", "09", "10"]),
     ] {
         let mut changed = inputs.clone();
         changed.inputs.get_mut(&role).unwrap().sha256 = "2".repeat(64);

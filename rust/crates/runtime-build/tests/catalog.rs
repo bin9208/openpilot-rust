@@ -74,7 +74,7 @@ fn actual_workspace_roster_and_package_features_are_audited_by_the_real_cli() {
     assert_eq!(audit["activated"], false);
     assert!(audit["plan_sha256"].is_null());
     assert!(audit["compiler_inputs_bound"].is_null());
-    for group in ["07", "08", "10"] {
+    for group in ["07", "08", "09", "10"] {
         assert_eq!(audit["compiler_inputs"][group]["FFMPEG_DIR"], "");
     }
     for group in ["00", "01", "02"] {
