@@ -58,7 +58,7 @@ fn ar_member(input: &mut impl Read, expected: &str, limit: u64) -> Result<Vec<u8
     }
     let mut bytes = vec![0; usize::try_from(size)?];
     input.read_exact(&mut bytes)?;
-    if size % 2 != 0 {
+    if !size.is_multiple_of(2) {
         let mut padding = [0];
         input.read_exact(&mut padding)?;
         if padding != *b"\n" {
