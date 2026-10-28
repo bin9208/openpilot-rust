@@ -33,6 +33,14 @@ Xiaoge의 폐기된25/35GiB 규칙은 비교별 예상 증가량128/512MiB로 �
 `clippy::redundant_closure`도 원래 동작을 유지하는 `map(Path::new)`로 수정했다.
 genuine의 자동 경로에 실제 변경된 `assets.rs`를 포함하여 후속 source 누락을 방지한다.
 
+[bootstrap 검증 #616](https://github.com/bin9208/openpilot-rust/issues/616)은 실제
+startup job122715470990의 ready timeout을 추적한다. 보존 artifact에서 provider당
+31,728,032byte, launcher65,331,544byte와14개 manifest 항목, 총477,795,960byte를
+확인했다. debug 빌드의 해시 작업이20초를 넘겼다는 것은 현재 추론이다. startup CI의
+불필요한 debug 정보를 끄고 실제 `--verify-package`의 입력 byte·시간·종료 결과를
+`bootstrap/ready/package-verification.json`에 추가한다. 원래20초 시작 deadline과
+모든 manifest 검사·8개 기능 사례는 유지하며 새 source의 실제 결과로 확인한다.
+
 ## 입력·실행 검증 절차
 
 공개 입력 발행의 source/CI/artifact/파일 해시·기존 원격 asset 보존·중단/재개 검사는
