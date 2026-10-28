@@ -76,6 +76,12 @@ impl Plan {
         Ok(plan)
     }
     fn validate(&self) -> Result<()> {
+        // The release inventory uses UTF-8 key order, not PathBuf component order.
+        let inventory = self
+            .headers
+            .iter()
+            .map(|(path, header)| Ok((path.to_str().ok_or("non-UTF8 OpenCV header")?, header)))
+            .collect::<Result<BTreeMap<_, _>>>()?;
         if self.schema != 1
             || self.version != "4.13.0"
             || self.target != "aarch64-unknown-linux-gnu"
@@ -92,7 +98,7 @@ impl Plan {
                 != "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee"
             || hash(self.original_header_manifest.as_bytes()) != ORIGINAL_MANIFEST
             || self.headers.len() != 170
-            || hash(&serde_json::to_vec(&self.headers)?) != INVENTORY
+            || hash(&serde_json::to_vec(&inventory)?) != INVENTORY
             || hash(PATCH) != opencv_build::PATCH_SHA256
             || self
                 .generated
