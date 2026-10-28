@@ -36,6 +36,28 @@ jobs:
       - uses: ./.github/actions/rust-path
       - uses: actions/setup-java@v5
         with: {distribution: temurin, java-version: '17'}
+      - name: Admit the job-owned Android SDK
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          from pathlib import Path
+          owned = Path(os.environ['CI_JOB_TEMP'])
+          # Command-line tools, platform 35 and build-tools 35.0.0, including unpacking.
+          growth = 1536 * 1024**2
+          free = shutil.disk_usage(owned).free
+          print(f'free_bytes={free} estimated_android_sdk_growth_bytes={growth}')
+          if free < growth:
+              raise SystemExit('insufficient space for this Android SDK preparation')
+          sdk = owned / 'android-sdk'
+          sdk.mkdir()
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write(f'ANDROID_HOME={sdk}\nANDROID_SDK_ROOT={sdk}\n')
+          PY
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+        with:
+          cmdline-tools-version: '15859902'
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+          log-accepted-android-sdk-licenses: false
       - run: bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test :app:lintDebug :app:assembleDebug
       - run: python tools/jetlink_android/check_apk.py tools/jetlink_android/app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v6
