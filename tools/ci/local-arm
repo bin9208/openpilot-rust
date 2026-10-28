@@ -82,7 +82,7 @@ case ${1:-} in
       export DEBIAN_FRONTEND=noninteractive
       test -r /var/lib/dpkg && test -w /var/lib/dpkg
       apt-get update
-      apt-get install -y ca-certificates curl git git-lfs sudo make gcc g++ pkg-config xz-utils python3-minimal \
+      apt-get install -y ca-certificates curl git git-lfs sudo make gcc g++ pkg-config xz-utils python3 \
         libssl3t64 libbz2-1.0 libffi8 liblzma5 libreadline8t64 libsqlite3-0 libncursesw6 libexpat1 zlib1g
       # Production command ownership uses an isolated system interpreter with no
       # inherited loader/PATH settings, separately from the pinned oracle venv.

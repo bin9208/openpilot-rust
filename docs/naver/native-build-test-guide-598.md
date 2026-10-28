@@ -62,6 +62,9 @@ ARM 패키지 bootstrap에 Ubuntu system Python을 준비하고 운영과 같은
 `/usr/bin/python3 -I -B -S`·ARM·ctypes를 확인한다. 고정 Python3.12.14 archive/hash/venv,
 비특권 검사·원래 명령·owner death/SIGKILL·4MiB 출력 상한·offroad 정책은 유지한다.
 로컬은 Bash 구문·diff만 확인하며 실제 성공은 정확 수정 source의 Actions에서 확인한다.
+같은 Ubuntu24.04의 설치된 패키지 목록을 읽어 `_ctypes`가 `libpython3.12-stdlib`에
+속함을 확인했다. wrapper는 `ctypes`를 사용하므로 `python3-minimal`만으로 준비하지
+않고 해당 stdlib를 의존성으로 요구하는 `python3`를 설치한다.
 
 2026-10-28의 genuine OpenCV prefix 실패는
 [문자열 정렬 회귀 #617](https://github.com/bin9208/openpilot-rust/issues/617)로 추적한다.
