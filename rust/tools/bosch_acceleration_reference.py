@@ -13,7 +13,7 @@ import types
 from pathlib import Path
 
 
-def source_estimator():
+def source_scope(wanted, extra_scope=None):
   bundle = json.loads((Path(__file__).parents[1] / 'upstream/bosch-acceleration-source-607.json').read_text())
   assert bundle['schema'] == 1
   assert bundle['source_commit'] == 'e8e152dbcfd9574a1791ed12026d1880e87689b3'
@@ -21,6 +21,7 @@ def source_estimator():
   sys.modules[module.__name__] = module
   scope = module.__dict__
   scope.update(math=math, Integral=numbers.Integral, dataclass=dataclasses.dataclass)
+  scope.update(extra_scope or {})
   verified = {}
   expected = {'opendbc_repo/opendbc/car/hyundai/radar_bosch.py': '8c4cf75bcf371980cedc77432d22950c5ca490eff8a300a97685f2f84419a2f6',
               'opendbc_repo/opendbc/car/radar_lead_filter.py': '55ab0ad700459c3c9b02fcfb8f9dcae54fd8626aee515d4b3e473422c70d5528'}
@@ -35,12 +36,10 @@ def source_estimator():
     if path.endswith('/radar_lead_filter.py'):
       exec(compile(tree, path, 'exec'), scope)
     else:
-      wanted = {'BOSCH_STALE_NS', 'BOSCH_ALEAD_SAMPLE_PERIOD_S', 'BOSCH_ALEAD_STATE_MAX',
-                'BoschLeadAccelerationState', 'BoschLeadAccelerationEstimator'}
       selected = []
       found = set()
       for node in tree.body:
-        names = ({node.name} if isinstance(node, ast.ClassDef) else
+        names = ({node.name} if isinstance(node, (ast.ClassDef, ast.FunctionDef)) else
                  {t.id for t in node.targets if isinstance(t, ast.Name)} if isinstance(node, ast.Assign) else set())
         if names & wanted:
           selected.append(node)
@@ -48,7 +47,24 @@ def source_estimator():
       assert found == wanted, f'original source definitions missing: {wanted - found}'
       # Nodes include the original decorators and expressions without rewriting.
       exec(compile(ast.Module(body=selected, type_ignores=[]), path, 'exec'), scope)
+  return scope, verified
+
+
+def source_estimator():
+  scope, verified = source_scope({'BOSCH_STALE_NS', 'BOSCH_ALEAD_SAMPLE_PERIOD_S', 'BOSCH_ALEAD_STATE_MAX',
+                                  'BoschLeadAccelerationState', 'BoschLeadAccelerationEstimator'})
   return scope['BoschLeadAccelerationEstimator'], verified
+
+
+def environment():
+  libraries = {}
+  maps = Path('/proc/self/maps')
+  if maps.exists():
+    for line in maps.read_text().splitlines():
+      path = line.split()[-1]
+      if path.startswith('/') and any(name in Path(path).name for name in ('libm.', 'libm-', 'libc.', 'libc-')):
+        libraries[path] = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+  return dict(python=sys.version, machine=platform.machine(), libc=platform.libc_ver(), libraries=libraries)
 
 
 def frozen(value):
@@ -127,15 +143,8 @@ def run(input_path, output_path, evidence_path):
       changed_rows += bool(row_differences)
       output.write(json.dumps(row, allow_nan=False, separators=(',', ':')) + '\n')
   assert count == 2544, f'original input coverage changed: {count}'
-  libraries = {}
-  maps = Path('/proc/self/maps')
-  if maps.exists():
-    for line in maps.read_text().splitlines():
-      path = line.split()[-1]
-      if path.startswith('/') and any(name in Path(path).name for name in ('libm.', 'libm-', 'libc.', 'libc-')):
-        libraries[path] = hashlib.sha256(Path(path).read_bytes()).hexdigest()
   evidence = dict(source_commit='e8e152dbcfd9574a1791ed12026d1880e87689b3', source_files=hashes,
-                  python=sys.version, machine=platform.machine(), libc=platform.libc_ver(), libraries=libraries,
+                  **environment(),
                   updates=count, frozen_changed_rows=changed_rows, frozen_different_fields=difference_count, examples=examples,
                   comparison='Every result/debug/full-state field; floating point bits; no tolerance or candidate-derived expectations')
   Path(evidence_path).write_text(json.dumps(evidence, indent=2) + '\n')

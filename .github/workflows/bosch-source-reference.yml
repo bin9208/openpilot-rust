@@ -5,6 +5,7 @@ on:
     paths:
       - 'rust/crates/radarcan/**'
       - 'rust/tools/bosch_acceleration_reference.py'
+      - 'rust/tools/bosch_tracking_reference.py'
       - 'rust/upstream/bosch-acceleration-source-607.json'
       - 'rust/Cargo.lock'
       - '.github/workflows/bosch-source-reference.yml'
@@ -63,19 +64,26 @@ jobs:
           rustup toolchain install 1.94.0 --profile minimal --component rustfmt --component clippy
           sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update
           sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq3-dev time
+          python3 -m pip install numpy==2.5.3
       - name: Compare the candidate with the hash-verified original in this environment
         run: |
           set -o pipefail
           export CARGO_TARGET_DIR="$RUNNER_TEMP/target"
-          rustfmt --edition 2021 --check rust/crates/radarcan/tests/bosch_acceleration.rs rust/crates/radarcan/tests/support/bosch_full_state.rs rust/crates/radarcan/examples/bosch_historical_fixture.rs
-          /usr/bin/time -v -o "$RUNNER_TEMP/bosch-source-resources.txt" cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration -- --nocapture 2>&1 | tee "$RUNNER_TEMP/bosch-source-comparison.log"
-          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration --example bosch_historical_fixture -- -D warnings
+          rustfmt --edition 2021 --check rust/crates/radarcan/tests/bosch_acceleration.rs rust/crates/radarcan/tests/bosch_tracking.rs rust/crates/radarcan/tests/support/bosch_full_state.rs rust/crates/radarcan/tests/support/bosch_tracking_state.rs rust/crates/radarcan/examples/bosch_historical_fixture.rs rust/crates/radarcan/examples/bosch_tracking_historical_fixture.rs
+          /usr/bin/time -v -o "$RUNNER_TEMP/bosch-source-resources.txt" cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration --test bosch_tracking -- --nocapture 2>&1 | tee "$RUNNER_TEMP/bosch-source-comparison.log"
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --test bosch_acceleration --test bosch_tracking --example bosch_historical_fixture --example bosch_tracking_historical_fixture -- -D warnings
       - name: Retain the historical frozen-reference result independently
         continue-on-error: true
         run: |
           set -o pipefail
           export CARGO_TARGET_DIR="$RUNNER_TEMP/target"
           cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --example bosch_historical_fixture 2>&1 | tee "$RUNNER_TEMP/bosch-historical-comparison.log"
+      - name: Retain the historical tracking reference independently
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/target"
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --example bosch_tracking_historical_fixture 2>&1 | tee "$RUNNER_TEMP/bosch-tracking-historical-comparison.log"
       - uses: ./.github/actions/local-arm
         if: always()
         with: {cleanup: 'true'}
@@ -85,9 +93,11 @@ jobs:
           name: bosch-source-reference-${{ matrix.arch }}-${{ github.sha }}
           path: |
             ${{ env.CI_JOB_TEMP }}/bosch-source-environment-607.json
+            ${{ env.CI_JOB_TEMP }}/bosch-tracking-environment-607.json
             ${{ env.CI_JOB_TEMP }}/bosch-source-resources.txt
             ${{ env.CI_JOB_TEMP }}/bosch-source-comparison.log
             ${{ env.CI_JOB_TEMP }}/bosch-historical-comparison.log
+            ${{ env.CI_JOB_TEMP }}/bosch-tracking-historical-comparison.log
             ${{ env.CI_JOB_TEMP }}/local-arm/*.json
       - uses: ./.github/actions/job-temp
         if: always()

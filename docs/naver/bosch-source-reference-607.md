@@ -51,3 +51,18 @@ cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-radarcan --examp
 진단하는 실패를 그대로 반환한다. 이 분리는 새 source의 focused·일반 전체 workspace·
 필수 PR/병합 후 검증 전이며 #607/#601/#598 완료가 아니다. 기존 PR494의 dev-md 트랙을
 유지하며 dev/main으로 runtime을 통합하지 않는다.
+
+2026-10-28의 source `0cfefca4d2e3389672314da7122dfe41e87b81f9`는 focused
+[40469418812](https://github.com/bin9208/openpilot-rust/actions/runs/40469418812)의
+x64/ARM 원본 filter 검사를 모두 통과했다. 이후 필수 workspace
+[job122669024975](https://github.com/bin9208/openpilot-rust/actions/runs/40469686475/job/122669024975)는
+tracking의 `state/426/last_decisions/4/residual_bearing_rad`에서
+`0.006532432521419149` / `0.0065324325214191625`의 bit 차이로 실패했다.
+다른 성공을 이 실패의 통과 근거로 사용하지 않는다.
+
+같은 hash 고정 원본에서 기존 raw tracking 정의15개와 원래 NumPy solver를 읽는
+검사로 기존768 transition을 연결한다. 각 입력의 전체 before state를 복원하고
+모든 결과·전체 after state·원래 atomic error를 비교한다. 고정 fixture는 바꾸지 않고
+별도 historical 예제로 계속 실행한다. runtime 수식, epsilon/ULP 허용, 필드 생략은
+추가하지 않는다. 원본 대 과거 fixture 차이와 Python/NumPy/libc/libm 환경은 별도
+evidence에 남긴다. 수정 source의 실제 Actions 결과는 아직 확인 전이다.
