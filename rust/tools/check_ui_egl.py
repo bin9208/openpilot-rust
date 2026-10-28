@@ -25,7 +25,7 @@ for case in ['success', 'retry', 'fallback', 'fail', 'retry-fail', 'no-display',
   for lane in ['source', 'native']:
     trace = args.output / f'{case}-{lane}.jsonl'
     trace.write_text('')
-    libraries = os.pathsep.join([str(args.output.resolve()), os.environ.get('LD_LIBRARY_PATH', '')])
+    libraries = os.pathsep.join(filter(None, (str(args.output.resolve()), os.environ.get('LD_LIBRARY_PATH', ''))))
     env = dict(os.environ, EGL_CASE=case, EGL_TRACE=str(trace.resolve()), LD_LIBRARY_PATH=libraries, PYTHONPATH=str(root))
     command = [sys.executable, str(root / 'rust/tools/ui_qa/egl_source.py')] if lane == 'source' else [str(args.binary)]
     result = subprocess.run(command, env=env, capture_output=True, text=True, check=False)

@@ -25,6 +25,14 @@ native 입력은 수신 본문0바이트인 일시 연결 오류에만2·4·8초
 정상 병합·병합 후 검사, 공개 입력/index와 완전한 자체 빌드 후보는 아직 미완료다.
 기기 시험은 #598 개발 완료 후 #528에서 사용자가 수행한다.
 
+후속 읽기 감사에서 같은 OpenCV loader 덮어쓰기가 Xiaoge의 실제 source subprocess
+세 곳에도 남아 있어 inherited library 경로를 보존했다. 공통 local-arm 셸도 실제로
+선택된 X64/고정 ARM Python library를 보존하며 기존 compiler·guest pin은 유지한다.
+Xiaoge의 폐기된25/35GiB 규칙은 비교별 예상 증가량128/512MiB로 바꿨다(#604).
+이전 workspace job122715470848이 실제로 보고한 `native_provider.rs:981`의
+`clippy::redundant_closure`도 원래 동작을 유지하는 `map(Path::new)`로 수정했다.
+genuine의 자동 경로에 실제 변경된 `assets.rs`를 포함하여 후속 source 누락을 방지한다.
+
 ## 입력·실행 검증 절차
 
 공개 입력 발행의 source/CI/artifact/파일 해시·기존 원격 asset 보존·중단/재개 검사는

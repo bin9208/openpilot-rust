@@ -978,7 +978,7 @@ pub fn cli(args: &[String]) -> Result<()> {
                     .ok_or("independent --descriptor-sha256 required")?,
                 cache,
                 store,
-                values.get("--offline-archive").map(|v| Path::new(v)),
+                values.get("--offline-archive").map(Path::new),
                 &assets::Curl
             )?)?
         );

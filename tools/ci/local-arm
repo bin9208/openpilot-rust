@@ -32,6 +32,7 @@ guest() {
     /usr/bin/env GITHUB_WORKSPACE="$source_dir" HOME=/root CARGO_HOME=/root/.cargo RUSTUP_HOME=/root/.rustup \
     CARGO_TARGET_DIR="$source_dir/rust/target" \
     PATH="/opt/openpilot-python/bin:/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH" \
+    LD_LIBRARY_PATH="/opt/hostedtoolcache/Python/3.12.14/arm64/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
     OPENPILOT_CI_EXECUTION_MODE=qemu-user OPENPILOT_CI_HOST_ARCH="$host_machine" \
     OPENPILOT_CI_TARGET_ARCH=aarch64 "$@"
 }
@@ -120,6 +121,9 @@ PY
   *)
     [[ $# == 1 && -f $1 ]] || fail 'One existing Actions command file is required'
     if [[ $LOCAL_CI_ARCH == x86_64 ]]; then
+      if [[ -n ${pythonLocation:-} ]]; then
+        export LD_LIBRARY_PATH="$pythonLocation/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      fi
       exec bash --noprofile --norc -e -o pipefail "$1"
     fi
     [[ -f $arm_dir/execution.json ]] || fail 'ARM setup did not complete'

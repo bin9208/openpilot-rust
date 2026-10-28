@@ -15,6 +15,7 @@ on:
       - 'tools/ci/fixtures/native-agnos-assets-599.json'
       - 'rust/native-rust-toolchain.json'
       - 'rust/crates/runtime-build/src/toolchain.rs'
+      - 'rust/crates/runtime-build/src/assets.rs'
       - 'rust/crates/runtime-build/src/bootstrap_tools.rs'
       - 'rust/crates/runtime-build/src/inputs_main.rs'
       - 'rust/crates/runtime-build/src/lib.rs'
