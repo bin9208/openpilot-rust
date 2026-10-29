@@ -212,3 +212,17 @@ CI job이 공통 action을 거치는지도 정적 정책 검사에 포함했다.
 mapping이 남지 않도록 해당 빈 header도 제거한다. frozen fixture의 원래 hash는 그대로
 유지하고, 현재 명령이 정확한 cap 제거 결과와 일치하는 때만 원래 명령을 가상 복원해
 hash/조건을 비교한다. 다른 argv 차이는 허용하지 않는다.
+
+
+## 2026-10-29 — #606 Android SDK 준비 복원
+
+사용자가 확인한 a5c Android job `123472213274`의 SDK location 실패에 따라
+`jetlink.yml`의 `android-core`를 부모 main과 같은 `ubuntu-24.04`로 분담한다.
+Python3.12, 원래 Java17과 기존 job 소유 `android-sdk` 경로의 admission, 고정
+`setup-android` commit 및 cmdline-tools15859902/platform35/build-tools35.0.0 준비를
+연결한다. 원래 Gradle core/runtime test·lint·APK build와 APK 검사 및 artifact는
+그대로 보존한다. 정책 검사에는 이 Android job만 hosted 예외를 추가한다.
+
+로컬은 AST/YAML/Bash 구문과 원래 기능 명령·조건의 읽기 대조만 수행했다. SDK 설치나
+Android 기능 검사를 실행하지 않았고 원격 push/CI 조작도 하지 않았다. build release의
+bin-actions3 sudo 권한 문제는 코드 우회나 보안 설정 변경으로 처리하지 않는다.
