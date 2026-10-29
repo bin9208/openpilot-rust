@@ -3553,7 +3553,7 @@ jobs:
           python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_aarch64.py \
             --binary target/aarch64-unknown-linux-musl/release/openpilot-proclogd \
-            --runner /usr/bin/qemu-aarch64-static --report "$RUNNER_TEMP/aarch64-probe.json"
+            --native --report "$RUNNER_TEMP/aarch64-probe.json"
           mkdir -p target/c3x-probe
           cp target/aarch64-unknown-linux-musl/release/openpilot-proclogd target/c3x-probe/
           git rev-parse HEAD > target/c3x-probe/SOURCE_COMMIT

@@ -81,7 +81,8 @@ def arm_migration_adapter(script, job):
     # Source-reviewed ARM migration: preserve target flags and checks while the
     # actual host becomes ARM. QCOM's genuine tests move intact to an ARM job.
     if job == 'arm64':
-        return script.replace('qemu-user-static ', '')
+        return (script.replace('qemu-user-static ', '')
+            .replace('--runner /usr/bin/qemu-aarch64-static', '--native'))
     if job == 'workspace':
         if '--bin stage-qcom-compiler -- ' in script:
             return (script.replace('sudo apt-get install -y gcc-aarch64-linux-gnu\n', '')
@@ -106,6 +107,17 @@ def condition(original):
 
 
 class LocalNativeWorkflowTests(unittest.TestCase):
+    def test_generic_arm_build_and_static_ipc_probe_execute_without_qemu(self):
+        arm = load(ROOT/'.github/workflows/rust.yml')['jobs']['arm64']
+        self.assertEqual(arm['runs-on'], 'ubuntu-24.04-arm')
+        commands = '\n'.join(step.get('run', '') for step in arm['steps'])
+        self.assertNotIn('qemu-aarch64', commands)
+        self.assertNotIn('qemu-user-static', commands)
+        probe = next(s['run'] for s in arm['steps'] if
+                     s.get('name') == 'Build and inspect the static C3X probe candidate')
+        self.assertIn('python tools/check_aarch64.py', probe)
+        self.assertIn('--native --report', probe)
+
     def test_genuine_qcom_tests_move_to_native_arm_without_losing_workspace_gate(self):
         jobs = load(ROOT/'.github/workflows/rust.yml')['jobs']
         arm, workspace = jobs['offline-qcom-arm'], jobs['workspace']
