@@ -1,0 +1,45 @@
+name: Tablet ARM Actions compatibility
+on:
+  push:
+    branches: ['codex/feat-643-tablet-native-build']
+    paths: ['.github/workflows/tablet-actions-compatibility.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tablet-actions-compatibility-643
+  cancel-in-progress: false
+jobs:
+  actions:
+    name: Check standard checkout and artifact upload on ARM tablet
+    runs-on: [self-hosted, Linux, ARM64, openpilot-rust]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: tools/ci/tablet_agnos_native.py
+          sparse-checkout-cone-mode: false
+      - name: Record actual runner and checked-out source
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUNNER_NAME" == bin-Arm-tablet ]]
+          [[ "$(uname -m)" == aarch64 ]]
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
+          python3 - <<'PY'
+          import json, os, platform
+          from pathlib import Path
+          report = dict(runner=os.environ['RUNNER_NAME'], source_commit=os.environ['GITHUB_SHA'],
+                        architecture=platform.machine(), allowed_cpus=sorted(os.sched_getaffinity(0)),
+                        checkout_verified=True)
+          path = Path(os.environ['RUNNER_TEMP']) / ('tablet-actions-' + os.environ['GITHUB_RUN_ID'] + '.json')
+          path.write_text(json.dumps(report, indent=2) + '\n')
+          print(json.dumps(report))
+          PY
+      - uses: actions/upload-artifact@v6
+        with:
+          name: tablet-actions-${{ github.sha }}
+          path: ${{ runner.temp }}/tablet-actions-${{ github.run_id }}.json
+          if-no-files-found: error
+          retention-days: 7
