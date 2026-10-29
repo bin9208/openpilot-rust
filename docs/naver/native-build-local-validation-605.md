@@ -143,8 +143,10 @@ mode·본문 보존을 양쪽 실행 환경에서 필수 검사한다. 객체 �
 유지한다. 집계 step의 runner admission만 공통 허용 정책에 맞춘다.
 
 읽기 검사의 concurrency는 `parallel-v2`로 분리하고 `queue:max`,
-`cancel-in-progress:false`를 유지해 기존 실제 실행을 중단하지 않는다. 기존 publisher와
-sync의 저장소 제한·발행/write group은 유지하며 자동 발행을 활성화하지 않는다.
+`cancel-in-progress:false`를 유지해 기존 실제 실행을 중단하지 않는다. inherited sync/publish 네 workflow
+(`carrot-route-vault-publish.yaml`, `naver-upstream-sync.yml`, `sync.yml`,
+`wiki-settings-publish.yaml`)는 runner/guard/concurrency까지 `ec418` 원문 전체를
+유지하며 기존4label 예외를 정확 검사한다. 자동 발행을 활성화하지 않는다.
 job-temp의 소유자/inode 범위와 기존 source/target view, ARM QEMU proof를 유지하고
 실제 runner 이름·환경과 job owner·target 경로를 연결한다. fixture checkout에는 실제
 job BASH_ENV가 읽는 native APT helper와 정책 파일도 포함한다.

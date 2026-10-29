@@ -22,7 +22,7 @@ jobs:
   synchronize:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.repository == 'bin9208/openpilot') }}
     name: validate and synchronize Wiki
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 15
     steps:
       - name: Check out trusted carrot-wip code

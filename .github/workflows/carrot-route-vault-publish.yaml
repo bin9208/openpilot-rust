@@ -29,7 +29,7 @@ concurrency:
 jobs:
   publish:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.repository == 'bin9208/openpilot' && github.ref == 'refs/heads/carrot-wip') }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6

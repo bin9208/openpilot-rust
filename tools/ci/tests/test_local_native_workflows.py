@@ -12,6 +12,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 BASE = 'e445c9d19c3041bc79d8624589e2eb6ba7d061c6'
 LABELS = ['self-hosted', 'Linux', 'X64']
+INHERITED_WORKFLOWS = {'carrot-route-vault-publish.yaml', 'naver-upstream-sync.yml', 'sync.yml', 'wiki-settings-publish.yaml'}
 HOSTED_JOBS = {'fast-checks.yml': {'fast'}, 'user-docs.yaml': {'check_user_docs'}, 'integration.yml': {'gate'}, 'rust.yml': {'fast'}, 'wiki-settings-check.yaml': {'check'}}
 SAFETY = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
 HOSTED_CLEANUP = 'sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet'
@@ -70,7 +71,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             for name, job in document.get('jobs', {}).items():
                 if 'runs-on' in job:
                     with self.subTest(path=path.name, job=name):
-                        expected = 'ubuntu-24.04' if name in HOSTED_JOBS.get(path.name, set()) else LABELS
+                        expected = (LABELS + ['dev-md-local'] if path.name in INHERITED_WORKFLOWS else
+                                    'ubuntu-24.04' if name in HOSTED_JOBS.get(path.name, set()) else LABELS)
                         self.assertEqual(job['runs-on'], expected)
                         self.assertIn(SAFETY, job['if'])
         template = load(ROOT / 'rust/crates/carrot-man/ci-jobs.yml')['carrot-man-runtime']
@@ -84,6 +86,14 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         self.assertFalse(policy['environment_allowed'](dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='other-session')))
         self.assertTrue(policy['environment_allowed'](dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='github-hosted', RUNNER_OS='Linux', RUNNER_ARCH='X64')))
         self.assertIn('--self-hosted-only', (ROOT/'tools/ci/local-arm').read_text())
+
+    def test_inherited_sync_and_publish_workflows_keep_the_exact_pre_port_bytes(self):
+        for name in INHERITED_WORKFLOWS:
+            relative = '.github/workflows/'+name
+            with self.subTest(workflow=name):
+                original = subprocess.check_output(['git', 'show',
+                    'ec418df39d3b5820f2751978e3898f0a4d858cbc:'+relative], cwd=ROOT)
+                self.assertEqual((ROOT/relative).read_bytes(), original)
 
     def test_frozen_jobs_dependencies_matrix_and_each_original_command_survive(self):
         snapshot = json.loads((ROOT / 'tools/ci/fixtures/local-native-workflows-605.json').read_text())
