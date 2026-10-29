@@ -58,6 +58,19 @@ class Fixture:
 
 
 class BootstrapSeedTests(unittest.TestCase):
+  def test_owner_identity_matches_an_independent_kernel_observer(self):
+    pid = os.getpid()
+    identity = seed.process_identity(pid)
+    observer = ('from pathlib import Path; import sys; pid=int(sys.argv[1]); '
+                'fields=Path(f"/proc/{pid}/task/{pid}/stat").read_text().rsplit(") ",1)[1].split(); '
+                'print(f"{pid}:{int(fields[19])}")')
+    observed = subprocess.check_output(['/usr/bin/python3', '-I', '-B', '-S', '-c', observer, str(pid)],
+        env=seed.ENV, text=True, timeout=10).strip()
+    self.assertEqual(identity, observed)
+    seed.verify_owners(identity)
+    with self.assertRaisesRegex(ValueError, 'identity changed'):
+      seed.verify_owners(f'{pid}:{int(identity.split(":")[1])+1}')
+
   def test_legacy_seed_requires_an_independently_pinned_owner_chain_protocol_for_intermediaries(self):
     with tempfile.TemporaryDirectory() as temporary:
       fixture = Fixture(Path(temporary))

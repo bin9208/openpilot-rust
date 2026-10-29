@@ -249,7 +249,9 @@ def verify_native(root, plan):
 def process_identity(pid):
   if type(pid) is not int or pid <= 1:
     raise ValueError('invalid native request owner PID')
-  fields = Path(f'/proc/{pid}/stat').read_text().rsplit(') ', 1)[1].split()
+  # Read the kernel leader record consistently for self and peer observers.
+  # Userspace emulators may synthesize a different start time for /proc/self/stat.
+  fields = Path(f'/proc/{pid}/task/{pid}/stat').read_text().rsplit(') ', 1)[1].split()
   if fields[0] in ('Z', 'X'):
     raise ValueError('native request owner has exited')
   return f'{pid}:{int(fields[19])}'

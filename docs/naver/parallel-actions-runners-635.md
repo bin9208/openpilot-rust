@@ -127,3 +127,20 @@ always 경로는 local-arm finish, 제한된 로그와 실행 identity/도구 ve
 않는다. Rust build와 factory image download 없이 동일 source command를 진단하며
 기존 self-hosted heavy 검사를 점유하지 않는다. job별 stdout/stderr는 기존4096바이트
 진단과 두 case의 로그로 제한하고 원래 owner·SIGKILL·10/5초 단언을 유지한다.
+
+
+## 2026-10-29 — self/peer가 동일 kernel start time을 읽도록 수정
+
+진단 source16e4bdd3a의 Actions40891941908/job123510809794에서 두 case 모두
+`native request owner identity changed`로 child 초기화 전에 거부됐다. 단순 timeout이나
+prctl 미지원은 아니었다. QEMU8.2.2의 [open_self_stat](https://github.com/qemu/qemu/blob/v8.2.2/linux-user/syscall.c#L7632)은
+자기 PID/stat에 TaskState start_boottime을 쓰며, [init_task_state](https://github.com/qemu/qemu/blob/v8.2.2/linux-user/main.c#L191)는
+에뮬레이터 초기화 때 CLOCK_BOOTTIME으로 값을 만든다. 다른 PID는 실제 kernel stat을
+읽으므로 같은 요청자의 self/peer 관측 값이 달라질 수 있다.
+
+Python seed와 Rust supervision이 `/proc/PID/task/PID/stat`의 실제 kernel leader
+record를 일관되게 읽도록 바꾼다. PID:starttime 형식·정확 비교·Z/X 거부·owner chain·
+prctl·자식/독립 process 정리·4MiB capture·원래10/5초 단언은 유지한다. tolerance나
+QEMU 예외 허용을 추가하지 않는다. 별도 child가 읽는 kernel identity와 parent seed
+identity의 equality 및 잘못된 시작 시각 거부 회귀를 추가한다. AST/rustfmt/diff만
+로컬에서 확인하고 실제 동작은 원래 PRoot ARM 진단과 X64/ARM Actions에서 확인한다.

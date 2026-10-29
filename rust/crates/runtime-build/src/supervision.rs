@@ -73,7 +73,8 @@ pub fn process_identity(pid: u32) -> Result<String> {
     if pid <= 1 {
         return Err("invalid native build request owner".into());
     }
-    let stat = std::fs::read_to_string(format!("/proc/{pid}/stat"))?;
+    // Keep the same kernel identity for self and peer readers under emulation.
+    let stat = std::fs::read_to_string(format!("/proc/{pid}/task/{pid}/stat"))?;
     let fields: Vec<_> = stat
         .rsplit_once(") ")
         .ok_or("invalid process stat")?
