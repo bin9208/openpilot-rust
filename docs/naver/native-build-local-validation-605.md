@@ -265,3 +265,13 @@ PPA404를 해결하는 private official source/list view를 `self-hosted` 환경
 식별자로 실제 gate를 고른다. 같은 main card 회귀에도 CARD env를 가진 유일 step을
 선택해 원래 `test "$CARD" = success` 단언을 유지한다. runner admission·전체 needs·
 수용 상태·command는 바꾸지 않고 AST/diff 읽기만 수행한다.
+
+
+## 2026-10-30 — 공유 CPU와 네 hosted runtime 검사의 지속 병렬 배치
+
+사용자는 bin-actions2/3이 같은 PC임을 확인했다. 두 runner의 실제 machine 이름은
+`bin9208-ONE-XPLAYER`이고 CPU affinity16을 공유한다. 고정2/1 제한을 다시 넣지 않고
+support·telemetry·web upload timeout·joystick 네 독립 X64 runtime 검사를 hosted
+`ubuntu-24.04`에 배치해 self-hosted의 대형 workspace·모델·메모리·AGNOS 검사와 함께
+실행한다. 초기 ARM 병렬 검사 이후에도 네 hosted 작업이 자체 연산 자원을 사용할 수
+있게 한다. 원래 needs·argv·기능·허용 기준·최종 gate와 job별 출력/정리는 유지한다.
