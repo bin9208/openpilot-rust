@@ -1,0 +1,85 @@
+name: Factory ARM sudo transport admission
+on:
+  push:
+    branches: ['codex/feat-613-*', 'codex/fix-613-*', dev, main]
+    paths:
+      - 'tools/ci/probe_native_source_transport.py'
+      - '.github/workflows/native-source-transport.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-source-transport-${{ github.ref }}-preserve-v1
+  queue: max
+  cancel-in-progress: false
+jobs:
+  admission:
+    name: Real factory sudo and owned cgroup in private namespaces
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    timeout-minutes: 30
+    env:
+      LOCAL_CI_ARCH: x86_64
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false}
+      - name: Require the registered self-hosted factory admission runner
+        run: /usr/bin/python3 -I -B -S tools/ci/runner_policy.py --self-hosted-only
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Admit the image and tool operation before allocating its files
+        run: |
+          /usr/bin/python3 -I -B -S - <<'PY'
+          import os, shutil
+          growth = 1010655092 + 2*4718592000 + 1024**3 + 64*1024**2
+          free = shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          print(dict(available_bytes=free, expected_image_and_tool_growth_bytes=growth))
+          assert free >= growth, 'insufficient space for this operation; existing data retained'
+          PY
+          sudo apt-get -o APT::Architectures=amd64 update
+          sudo apt-get -o APT::Architectures=amd64 install -y qemu-user-static android-sdk-libsparse-utils e2fsprogs xz-utils
+          rustup toolchain install 1.94.0 --profile minimal
+          command -v /usr/bin/mount /usr/bin/simg2img /usr/sbin/debugfs /usr/bin/qemu-aarch64-static
+      - uses: ./.github/actions/native-cache
+        id: image
+        with:
+          mode: restore
+          name: native-agnos-assets
+          key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
+      - name: Authenticate the existing pinned factory image
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bin openpilot-runtime-assets
+          rust/target/debug/openpilot-runtime-assets --plan tools/ci/fixtures/native-agnos-assets-599.json --cache "$CI_JOB_TEMP/native-agnos-assets" > "$CI_JOB_TEMP/native-agnos-assets-first.json"
+      - uses: ./.github/actions/native-cache
+        if: steps.image.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-agnos-assets
+          key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
+      - name: Prepare only this job's verified raw image
+        run: /usr/bin/python3 -I -B -S tools/ci/probe_native_source_transport.py --prepare-image
+      - name: Prepare only this job's kernel scope
+        run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 -I -B -S tools/ci/native_resource_scope.py prepare
+      - name: Require actual ARM sudo credentials and private cgroup operations
+        run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 -I -B -S tools/ci/probe_native_source_transport.py --probe
+      - name: Stop and remove only the owned kernel scope
+        if: always() && env.CI_JOB_TEMP != ''
+        run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 -I -B -S tools/ci/native_resource_scope.py cleanup
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: native-source-transport-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/native-agnos/transport-image.json
+            ${{ env.CI_JOB_TEMP }}/source-entry-transport/namespace-admission.json
+            ${{ env.CI_JOB_TEMP }}/source-entry-transport/arm.stdout
+            ${{ env.CI_JOB_TEMP }}/source-entry-transport/arm.stderr
+            ${{ env.CI_JOB_TEMP }}/resource-scope-evidence.json
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

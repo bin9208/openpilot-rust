@@ -1,0 +1,101 @@
+name: Full production source entry from public Git pins
+on:
+  workflow_dispatch:
+    inputs:
+      index_sha256:
+        description: SHA256 of the actually published and committed input index
+        required: true
+        type: string
+      operation_estimates_json:
+        description: Explicit CI growth and memory estimates, including all runtime groups
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: native-source-entry-${{ github.ref }}-preserve-v1
+  queue: max
+  cancel-in-progress: false
+jobs:
+  entry:
+    name: Factory ARM production build seal and package launch
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.repository == 'bin9208/openpilot-rust' && github.event_name == 'workflow_dispatch' }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    timeout-minutes: 330
+    env:
+      LOCAL_CI_ARCH: x86_64
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      NATIVE_ENTRY_INDEX: ${{ inputs.index_sha256 }}
+      NATIVE_ENTRY_BUDGETS: ${{ inputs.operation_estimates_json }}
+      SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false, fetch-depth: 0}
+      - name: Require the registered self-hosted source entry runner
+        run: /usr/bin/python3 -I -B -S tools/ci/runner_policy.py --self-hosted-only
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Require real published metadata and the committed index before allocating an image
+        run: /usr/bin/python3 -I -B -S tools/ci/verify_native_source_entry.py --preflight
+      - name: Admit only this operation and install its host transport tools
+        run: |
+          /usr/bin/python3 -I -B -S - <<'PY'
+          import json, os, shutil
+          from pathlib import Path
+          job = Path(os.environ['CI_JOB_TEMP'])
+          policy = json.loads((job/'source-entry-request.json').read_text())['estimates']
+          growth = 1010655092 + 2*4718592000 + 1024**3 + policy['maximum_growth_bytes'] + policy['minimum_free_bytes']
+          free = shutil.disk_usage(job).free
+          print(dict(available_bytes=free, expected_operation_growth_and_reserve_bytes=growth))
+          assert free >= growth, 'insufficient operation admission; existing caches retained'
+          PY
+          sudo apt-get -o APT::Architectures=amd64 update
+          sudo apt-get -o APT::Architectures=amd64 install -y qemu-user-static android-sdk-libsparse-utils e2fsprogs xz-utils
+          rustup toolchain install 1.94.0 --profile minimal
+          command -v /usr/bin/mount /usr/bin/simg2img /usr/sbin/debugfs /usr/bin/qemu-aarch64-static
+      - uses: ./.github/actions/native-cache
+        id: image
+        with:
+          mode: restore
+          name: native-agnos-assets
+          key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
+      - name: Authenticate the unchanged factory image
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bin openpilot-runtime-assets
+          rust/target/debug/openpilot-runtime-assets --plan tools/ci/fixtures/native-agnos-assets-599.json --cache "$CI_JOB_TEMP/native-agnos-assets" > "$CI_JOB_TEMP/native-agnos-assets-first.json"
+      - uses: ./.github/actions/native-cache
+        if: steps.image.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-agnos-assets
+          key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
+      - name: Prepare this job's verified raw factory image
+        run: /usr/bin/python3 -I -B -S tools/ci/probe_native_source_transport.py --prepare-image
+      - name: Prepare only the owned host-kernel scope
+        run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 -I -B -S tools/ci/native_resource_scope.py prepare
+      - name: Exercise real ARM sudo and the unchanged production entry CLI
+        run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 -I -B -S tools/ci/verify_native_source_entry.py --run
+      - name: Stop only the owned kernel scope
+        if: always() && env.CI_JOB_TEMP != ''
+        run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 -I -B -S tools/ci/native_resource_scope.py cleanup
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: native-source-entry-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/source-entry-request.json
+            ${{ env.CI_JOB_TEMP }}/source-entry-full/result.json
+            ${{ env.CI_JOB_TEMP }}/source-entry-full/namespace.stdout
+            ${{ env.CI_JOB_TEMP }}/source-entry-full/namespace.stderr
+            ${{ env.CI_JOB_TEMP }}/source-entry-full/state/*.json
+            ${{ env.CI_JOB_TEMP }}/source-entry-full/state/*.stdout
+            ${{ env.CI_JOB_TEMP }}/source-entry-full/state/*.stderr
+            ${{ env.CI_JOB_TEMP }}/source-entry-full/state/generations/source-requests/*/*.json
+            ${{ env.CI_JOB_TEMP }}/source-entry-full/state/generations/source-requests/*/*.stderr
+            ${{ env.CI_JOB_TEMP }}/resource-scope-evidence.json
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
