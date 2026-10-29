@@ -10,10 +10,7 @@ runs:
     - if: inputs.cleanup != 'true'
       shell: bash
       run: |
-        [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == self-hosted && ${RUNNER_NAME:-} == bin-actions ]] || {
-          echo 'Registered bin-actions runner required' >&2
-          exit 1
-        }
+        /usr/bin/python3 -I -B -S "$GITHUB_ACTION_PATH/../../../tools/ci/runner_policy.py"
         # Unix-domain socket addresses are bounded; keep the tool/tempfile base
         # shorter than the persistent runner's checkout/temp directory.
         owned=$(mktemp -d /tmp/openpilot-ci.XXXXXX)

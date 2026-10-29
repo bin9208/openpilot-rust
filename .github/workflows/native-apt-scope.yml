@@ -10,14 +10,14 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: native-apt-scope-${{ github.ref }}-preserve-v1
+  group: native-apt-scope-${{ github.ref }}-parallel-v2
   queue: max
   cancel-in-progress: false
 jobs:
   actual-apt:
     name: Native APT and explicit cross source preservation
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 20
     env:
       LOCAL_CI_ARCH: x86_64

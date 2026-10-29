@@ -8,14 +8,14 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: carrot-peer-readiness-${{ github.ref }}-preserve-v1
+  group: carrot-peer-readiness-${{ github.ref }}-parallel-v2
   queue: max
   cancel-in-progress: false
 jobs:
   carrot-man-runtime:
     name: rust CarrotMan owner (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 25 }}
     strategy:
       fail-fast: false

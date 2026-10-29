@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import runpy
 import shlex
 import shutil
 import subprocess
@@ -26,8 +27,7 @@ def snapshot():
 
 
 def main():
-    assert os.environ['GITHUB_ACTIONS'] == 'true'
-    assert os.environ['RUNNER_NAME'] == 'bin-actions' and os.environ['RUNNER_ENVIRONMENT'] == 'self-hosted'
+    runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_environment'](self_hosted_only=True)
     assert os.environ['LOCAL_CI_ARCH'] == 'x86_64' and platform.machine() == 'x86_64'
     job = Path(os.environ['CI_JOB_TEMP'])
     assert job.parent == Path('/tmp') and job.name.startswith('openpilot-ci.') and job.resolve() == job
@@ -41,7 +41,8 @@ def main():
     assert before['native'] == 'amd64'
     work = job/'native-apt'
     work.mkdir()
-    evidence = dict(schema=1, source_commit=sha, runner='bin-actions', host_architecture=platform.machine(),
+    evidence = dict(schema=1, source_commit=sha, runner=os.environ['RUNNER_NAME'], runner_environment=os.environ['RUNNER_ENVIRONMENT'],
+                    host_architecture=platform.machine(),
                     before=before, expected_private_index_growth_bytes=expected_growth,
                     scope='X64 APT transport and original explicit cross repository metadata; no ARM program or device execution')
 

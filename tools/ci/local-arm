@@ -3,7 +3,8 @@
 set -euo pipefail
 
 fail() { printf '%s\n' "$*" >&2; exit 1; }
-[[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == self-hosted && ${RUNNER_NAME:-} == bin-actions ]] || fail 'Local Actions runner required'
+policy_dir=$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")
+/usr/bin/python3 -I -B -S "$policy_dir/runner_policy.py" --self-hosted-only
 [[ ${LOCAL_CI_ARCH:-} == x86_64 || ${LOCAL_CI_ARCH:-} == aarch64 ]] || fail 'Explicit local execution architecture required'
 [[ ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.* && ${CI_JOB_TEMP%/*} == /tmp && ! -L $CI_JOB_TEMP ]] || fail 'Owned job-temp directory required'
 [[ -f $CI_JOB_TEMP/owner && ! -L $CI_JOB_TEMP/owner && $(cat "$CI_JOB_TEMP/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]] || fail 'Wrong job-temp owner'
@@ -103,10 +104,12 @@ case ${1:-} in
     printf '{"schema":1,"source_commit":"%s","runner_name":"%s","runner_environment":"%s","host_architecture":"%s","guest_architecture":"%s","execution_mode":"qemu-user","proot_sha256":"db185300a9daabbce86aca7632d8c7fdc4249f6f153171954013b70c5f491ec0","rootfs_sha256":"a91d5a93010193712d346d761372b7c9db6df093893161c64ca107f05914f2","python_sha256":"6163a77a3339ad4d3729f44065ef0ba51865b90cf92e5b247443cdb4bed5cbab","physical_arm_cpu":false}\n' \
       "$GITHUB_SHA" "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$host_machine" "$guest_machine" > "$arm_dir/execution.json"
     python3 - "$arm_dir/execution.json" "${LOCAL_CI_GUEST_IDENTITY:-root}" "$guest_uid" <<'PY'
-import json, pathlib, sys
+import json, os, pathlib, sys
 path = pathlib.Path(sys.argv[1])
 data = json.loads(path.read_text())
-data.update(guest_identity=sys.argv[2], guest_uid=int(sys.argv[3]), package_bootstrap_identity='emulated-root')
+data.update(guest_identity=sys.argv[2], guest_uid=int(sys.argv[3]), package_bootstrap_identity='emulated-root',
+    owner=':'.join(os.environ[k] for k in ('GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','GITHUB_JOB')),
+    target_architecture='aarch64', target_directory=str(path.parent/'target'))
 path.write_text(json.dumps(data, sort_keys=True)+'\n')
 PY
     "$qemu" --version > "$arm_dir/qemu-version.txt"

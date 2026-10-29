@@ -10,8 +10,8 @@ if [[ ${LOCAL_CI_ARCH:-x86_64} == x86_64 ]]; then
       apt-get|/usr/bin/apt-get) ;;
       *) /usr/bin/sudo "${apt_scope_original[@]}"; return ;;
     esac
-    [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == self-hosted && ${RUNNER_NAME:-} == bin-actions &&
-       ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.* && ${CI_JOB_TEMP%/*} == /tmp && ! -L $CI_JOB_TEMP &&
+    /usr/bin/python3 -I -B -S "$GITHUB_WORKSPACE/tools/ci/runner_policy.py" || return
+    [[ ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.* && ${CI_JOB_TEMP%/*} == /tmp && ! -L $CI_JOB_TEMP &&
        -f $CI_JOB_TEMP/owner && ! -L $CI_JOB_TEMP/owner &&
        $(cat "$CI_JOB_TEMP/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" &&
        ${GITHUB_SHA:-} =~ ^[0-9a-f]{40}$ && ! -L $CI_JOB_TEMP/native-apt-evidence.jsonl ]] || {

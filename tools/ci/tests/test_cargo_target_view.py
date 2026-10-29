@@ -20,6 +20,9 @@ def checkout(base, patterns):
     (source/'rust').mkdir(parents=True)
     (source/'rust/.gitignore').write_text(patterns)
     (source/'rust/Cargo.toml').write_text('[workspace]\n')
+    (source/'tools/ci').mkdir(parents=True)
+    for name in ('native-apt-shell', 'runner_policy.py'):
+        (source/'tools/ci'/name).write_bytes((ROOT/'tools/ci'/name).read_bytes())
     git(source, 'init', '--quiet')
     git(source, 'add', '.')
     git(source, 'commit', '--quiet', '-m', 'Owned source fixture')
@@ -57,7 +60,7 @@ class CargoTargetViewTests(unittest.TestCase):
             action = yaml.load((ROOT/'.github/actions/job-temp/action.yml').read_text(), Loader=yaml.BaseLoader)
             scripts = [step['run'] for step in action['runs']['steps']]
             environment = dict(PATH='/usr/bin:/bin', HOME=str(base), GITHUB_ACTIONS='true',
-                RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='bin-actions', LOCAL_CI_ARCH='x86_64',
+                RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='bin-actions3', LOCAL_CI_ARCH='x86_64',
                 RUNNER_TEMP=str(runner_temp), GITHUB_WORKSPACE=str(source), GITHUB_ENV=str(environment_file),
                 GITHUB_RUN_ID='12345', GITHUB_RUN_ATTEMPT='1', GITHUB_JOB='owned-target-view')
             values = {}

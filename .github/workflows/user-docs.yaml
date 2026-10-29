@@ -14,7 +14,7 @@ jobs:
   check_user_docs:
     name: check mapped user docs
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
         with:

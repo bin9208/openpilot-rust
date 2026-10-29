@@ -17,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: wiki-settings-check-${{ github.event.pull_request.number || github.ref }}-preserve-v1
+  group: wiki-settings-check-${{ github.event.pull_request.number || github.ref }}-parallel-v2
   queue: max
   cancel-in-progress: false
 
@@ -25,7 +25,7 @@ jobs:
   check:
     name: read-only catalog and Wiki diff
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out candidate code
         uses: actions/checkout@v6

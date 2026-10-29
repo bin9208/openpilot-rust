@@ -10,13 +10,13 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: naver-ci-${{ github.ref }}-preserve-v1
+  group: naver-ci-${{ github.ref }}-parallel-v2
   queue: max
   cancel-in-progress: false
 jobs:
   navigation-ui:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -50,7 +50,7 @@ jobs:
 
   phone-mapping-contract:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v7
@@ -76,7 +76,7 @@ jobs:
 
   runtime-controller:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v7
@@ -97,7 +97,7 @@ jobs:
 
   wire-schema:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -123,7 +123,7 @@ jobs:
 
   naver-input:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -150,7 +150,7 @@ jobs:
 
   infrastructure:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
