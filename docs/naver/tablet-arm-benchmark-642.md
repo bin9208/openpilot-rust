@@ -17,7 +17,7 @@ OS/표준 라이브러리 파일 캐시, 순서 효과, 발열과 다른 태블�
 
 정확 실행 커밋: `518fae1b5cb6df59c955d538e06ba65518fc0b72`.
 [성공 Actions](https://github.com/bin9208/openpilot-rust/actions/runs/40935482146), job `123664767669`.
-태블릿은 `aarch64`, 논리 CPU8개·affinity0~7, Ubuntu의 cargo/rustc1.75.0, GCC13.3.0으로 실행됐다.
+태블릿은 `aarch64`, 논리 CPU8개지만 실제 측정 프로세스 affinity는0~4(5개), Ubuntu의 cargo/rustc1.75.0, GCC13.3.0으로 실행됐다.
 누락된 기본 Rust 패키지는 준비 단계에서 설치됐고 그 시간은 아래 빌드 시간에 포함하지 않았다.
 
 | Cargo jobs | 벽시계 시간 중앙값(초) | 1 대비 배속 | 자식 CPU시간/벽시계 평균 |
@@ -29,3 +29,5 @@ OS/표준 라이브러리 파일 캐시, 순서 효과, 발열과 다른 태블�
 6회 모두 실제 ARM 바이너리를 실행했고 출력이 일치했다. 4jobs는 1jobs 대비 약2.4배 빨라 이 구성의 단일 코어 제한은 관찰되지 않았다. 평균 코어 수는 tracer CPU시간을 포함하는 완전한 시스템 프로파일이 아니며 8개 코어를 모두 포화시켰다는 증거로 쓰지 않는다.
 
 첫 [실행40935213809](https://github.com/bin9208/openpilot-rust/actions/runs/40935213809)은 step 실행 전 upload-artifact 액션의 tar 추출에서 ENOENT로 실패했다. 두 번째 실행은 같은 측정을 외부 Action 없이 순수 셸로 수행해 기본 ARM 빌드/실행을 분리 검증했다. 일반 checkout/upload Action 호환성은 아직 해결·검증되지 않았다. 프로젝트가 요구하는 Rust1.94.0으로의 실제 프로젝트 빌드도 별도 검증이 필요하다. 이 합성 진단용 rust.yml은 dev/main에 병합하지 않는다.
+
+후속 확인: CPU8개 인식과 실제 허용 CPU5개는 다르다. Android 앱 foreground 여부와 affinity/cpuset 제한을 구분하기 위한 추가 진단을 준비한다. 현재 자료로 제한 원인을 PRoot 자체라고 단정하지 않는다.
