@@ -172,3 +172,43 @@ fast 로그의 `carrot-peer-readiness.yml:106: new blank line at EOF`는 이번 
 아닌 검사 기준 `e445c9d19c3041bc79d8624589e2eb6ba7d061c6`부터의 diff에서 보인다.
 해당 EOF 빈 줄 하나만 제거하고 이 전체 기준 diff를 다시 읽어 확인한다. 로컬은
 AST/YAML/diff만 확인하며 기능 재검사·build·push·CI 조작은 하지 않는다.
+
+
+## 2026-10-29 — 사용자 지시로 고정 Cargo/테스트 병렬 제한 제거
+
+공통 workflow와 carrot-man job template의 `CARGO_BUILD_JOBS=2`, 문서 검사의 inline
+대입, disk-space bootstrap과 sanitizer/Miri helper의 `-j2`·환경 덮어쓰기를 제거한다.
+별도 숫자 fallback을 만들지 않고 Cargo와 Rust test harness의 CPU 기본 병렬 수를
+사용한다. 호출 환경의 명시적 `CARGO_BUILD_JOBS`/`RUST_TEST_THREADS` override는 그대로
+상속한다. 이번 #606의 project-owned `.cargo/config`에는 별도 고정 jobs 설정이 없고,
+`RUST_TEST_THREADS=1/2` 대입도 없었다. vendor 설정은 변경하지 않는다.
+
+planner Miri, radar ARM/Miri, OpenCV/JPEG sanitizer의 `--test-threads=1`도 제거한다.
+읽기 근거: planner scheduler의 Atomic 관찰자는 해당 단일 테스트만 쓰며,
+radar numerical mock은 호출자가 넘긴 버퍼를 쓰고 scheduler mock은 지역 인자를 확인한다.
+radar Params fixture는 PID/나노초로 고유 경로를 만든다. OpenCV native 테스트는
+`OnceLock`의 동일 초기화 값2를 사용하고 0은 초기화 전에 거부된다. JPEG 테스트의
+입출력 버퍼는 각 테스트 소유다. 이 범위에서 순서 의존을 이유로 남긴 직렬 flag는 없다.
+실제 병렬 실행의 성공 또는 속도 개선은 아직 검증하지 않았다.
+
+원래 command hash fixture는 보존하고, 정책 검사는 사용자 허가된 병렬 제한 제거만
+명시적으로 정규화해 원문 비교를 계속한다. source/동작/검사 feature와 validity 정책,
+자원별 성장 admission·memory 검증은 변경하지 않는다. 과거 실행 증거 문자열인
+`write_mici_offroad_alerts_receipt.py`의 `invocation ... -j2`는 실행 명령이 아닌 이전
+검증 기록이므로 재작성하지 않는다. 로컬은 AST/YAML/Bash 구문과 기준 diff만 확인하고
+기능 실행·build·push·CI 조작은 하지 않는다.
+
+
+host 사용자 Cargo config에 `jobs=2`가 있는 경우 env 대입 삭제만으로는 제한이 남는다.
+따라서 공통 `rust-path` action이 실제 affinity CPU 수(`os.sched_getaffinity(0)`)를 우선,
+없으면 `os.cpu_count()`를 사용해 두 환경 변수의 기본값을 `GITHUB_ENV`와 현재 step의
+export로 설정한다. 명시적 환경 override가 있으면 그대로 보존한다. CPU 수를 알 수
+없으면 실패하고 고정1/2 fallback은 넣지 않는다. available/affinity/logical CPU 수와
+적용값·override 여부를 로그에 남긴다. host의 Cargo config 파일은 수정하지 않는다.
+
+원래 rust-path가 skip되는 ARM QEMU job에는 `parallelism-only` 호출을 추가해 CPU 정책만
+적용한다. 원래 toolchain bootstrap과 step 조건·QEMU pin은 유지한다. 모든 직접 Cargo
+CI job이 공통 action을 거치는지도 정적 정책 검사에 포함했다. cap 제거 후 빈 env
+mapping이 남지 않도록 해당 빈 header도 제거한다. frozen fixture의 원래 hash는 그대로
+유지하고, 현재 명령이 정확한 cap 제거 결과와 일치하는 때만 원래 명령을 가상 복원해
+hash/조건을 비교한다. 다른 argv 차이는 허용하지 않는다.

@@ -35,7 +35,6 @@ jobs:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       LOCAL_CI_GUEST_IDENTITY: unprivileged
       RUSTUP_TOOLCHAIN: '1.94.0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -50,6 +49,9 @@ jobs:
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH == 'aarch64'
+        with: {parallelism-only: 'true'}
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'

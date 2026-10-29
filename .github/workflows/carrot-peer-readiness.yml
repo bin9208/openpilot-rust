@@ -26,7 +26,6 @@ jobs:
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_INCREMENTAL: '0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
       PYTHONPATH: ${{ github.workspace }}

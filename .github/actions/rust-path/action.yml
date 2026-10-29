@@ -1,9 +1,44 @@
 name: Expose provisioned Rust tools
 description: Preserve Rust shims on persistent runners and restore verified missing tools.
+inputs:
+  parallelism-only:
+    description: Set job CPU defaults without changing the pinned guest toolchain
+    default: 'false'
 runs:
   using: composite
   steps:
+    - name: Use available runner CPUs unless explicitly overridden
+      shell: bash
+      run: |
+        parallelism_defaults=$(/usr/bin/python3 -I -B -S - <<'PY_CPU'
+        import json, os, sys
+        try:
+            affinity = len(os.sched_getaffinity(0))
+        except (AttributeError, OSError):
+            affinity = None
+        count = os.cpu_count()
+        available = affinity or count
+        if not isinstance(available, int) or available <= 0:
+            raise SystemExit('Cannot determine available runner CPU count; no fixed fallback applied')
+        effective, overridden = {}, {}
+        for name in ('CARGO_BUILD_JOBS', 'RUST_TEST_THREADS'):
+            value = os.environ.get(name)
+            overridden[name] = bool(value)
+            effective[name] = value if value else str(available)
+            if not value:
+                print(name+'='+str(available))
+        print(json.dumps(dict(available_cpus=available, affinity_cpus=affinity, logical_cpus=count,
+            effective=effective, explicit_override=overridden)), file=sys.stderr)
+        PY_CPU
+        )
+        if [[ -n $parallelism_defaults ]]; then
+          while IFS='=' read -r parallelism_name parallelism_value; do
+            export "$parallelism_name=$parallelism_value"
+            printf '%s=%s\n' "$parallelism_name" "$parallelism_value" >> "$GITHUB_ENV"
+          done <<< "$parallelism_defaults"
+        fi
     - id: locate
+      if: inputs.parallelism-only != 'true'
       shell: bash
       run: |
         if command -v rustup >/dev/null 2>&1; then
@@ -17,7 +52,7 @@ runs:
           echo 'ready=false' >> "$GITHUB_OUTPUT"
         fi
     - name: Restore missing shims from verified Rustup 1.29.1
-      if: steps.locate.outputs.ready != 'true'
+      if: inputs.parallelism-only != 'true' && steps.locate.outputs.ready != 'true'
       shell: bash
       run: |
         free_bytes=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
@@ -38,6 +73,7 @@ runs:
         chmod u+x "$bootstrap_dir/rustup-init"
         CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" "$bootstrap_dir/rustup-init" -y --default-toolchain none --no-modify-path
     - name: Publish the installed Rust tool path
+      if: inputs.parallelism-only != 'true'
       shell: bash
       run: |
         if command -v rustup >/dev/null 2>&1; then

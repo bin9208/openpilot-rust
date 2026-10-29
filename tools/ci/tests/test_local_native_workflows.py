@@ -31,6 +31,19 @@ def normalize(script):
         'Insufficient disk space for estimated documentation build growth (2 GiB).')
 
 
+def parallel_defaults(script):
+    # User-authorized removal of resource caps only. The frozen command hashes
+    # are still checked separately against the original source bytes below.
+    return script.replace('CARGO_BUILD_JOBS=2 ', '').replace(' -- --test-threads=1', '').replace(' --test-threads=1', '')
+
+
+def restore_parallel_caps(script, originals):
+    for original in originals:
+        if script == parallel_defaults(original):
+            return original
+    return script
+
+
 def digest(script):
     return hashlib.sha256(script.encode()).hexdigest()
 
@@ -87,6 +100,47 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         self.assertTrue(policy['environment_allowed'](dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='github-hosted', RUNNER_OS='Linux', RUNNER_ARCH='X64')))
         self.assertIn('--self-hosted-only', (ROOT/'tools/ci/local-arm').read_text())
 
+    def test_common_ci_has_no_fixed_cargo_or_test_thread_limits(self):
+        for path in (ROOT/'.github/workflows').iterdir():
+            if path.suffix not in ('.yml', '.yaml') or path.name in INHERITED_WORKFLOWS:
+                continue
+            document = load(path)
+            for name, job in document.get('jobs', {}).items():
+                with self.subTest(workflow=path.name, job=name):
+                    for field in ('CARGO_BUILD_JOBS', 'RUST_TEST_THREADS'):
+                        self.assertNotIn(field, job.get('env', {}))
+                    for step in job.get('steps', []):
+                        script = step.get('run', '')
+                        self.assertNotIn('CARGO_BUILD_JOBS=2', script)
+                        self.assertNotIn('--test-threads=1', script)
+        for name in ('check_jpeg_sanitizers.py', 'check_locationd_native.py', 'check_paramsd_native.py',
+                     'check_ui_torque_miri.py', 'check_xiaoge_native_memory.py', 'check-disk-space'):
+            with self.subTest(helper=name):
+                text = (ROOT/'rust/tools'/name).read_text()
+                self.assertNotIn('-j2', text)
+                self.assertNotIn('CARGO_BUILD_JOBS=', text)
+                self.assertNotIn('--test-threads=1', text)
+
+    def test_cargo_jobs_always_apply_the_shared_parallel_policy(self):
+        action = load(ROOT/'.github/actions/rust-path/action.yml')
+        script = action['runs']['steps'][0]['run']
+        for required in ('os.sched_getaffinity(0)', 'os.cpu_count()', "os.environ.get(name)",
+                         'CARGO_BUILD_JOBS', 'RUST_TEST_THREADS', 'GITHUB_ENV', 'export'):
+            self.assertIn(required, script)
+        for path in (ROOT/'.github/workflows').iterdir():
+            if path.suffix not in ('.yml', '.yaml'):
+                continue
+            for name, job in load(path).get('jobs', {}).items():
+                steps = job.get('steps', [])
+                if not any('cargo ' in step.get('run', '') for step in steps):
+                    continue
+                with self.subTest(workflow=path.name, job=name):
+                    policies = [step for step in steps if step.get('uses') == './.github/actions/rust-path']
+                    self.assertTrue(policies)
+                    if 'aarch64' in str(job.get('env', {}).get('LOCAL_CI_ARCH', '')):
+                        self.assertTrue(any(step.get('with', {}).get('parallelism-only') == 'true' and
+                                            step.get('if') == "env.LOCAL_CI_ARCH == 'aarch64'" for step in policies))
+
     def test_inherited_sync_and_publish_workflows_keep_the_exact_pre_port_bytes(self):
         for name in INHERITED_WORKFLOWS:
             relative = '.github/workflows/'+name
@@ -111,11 +165,12 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     self.assertEqual(after.get('strategy', {}).get('matrix'), before.get('strategy', {}).get('matrix'))
                     expected = [digest(normalize(step['run'])) for step in before.get('steps', []) if 'run' in step]
                     self.assertEqual(frozen['jobs'][name]['scripts'], expected)
-                    actual = Counter(digest(step['run']) for step in after.get('steps', []) if 'run' in step)
-                    self.assertFalse(Counter(expected) - actual, 'original command changed or removed')
+                    originals = [normalize(step['run']) for step in before.get('steps', []) if 'run' in step]
+                    actual = Counter(digest(restore_parallel_caps(step['run'], originals)) for step in after.get('steps', []) if 'run' in step)
+                    self.assertFalse(Counter(expected) - actual, 'original command changed beyond explicit resource-cap removal')
                     before_steps = Counter((digest(normalize(s['run'])), s.get('if'), s.get('continue-on-error'))
                                            for s in before.get('steps', []) if 'run' in s)
-                    after_steps = Counter((digest(s['run']), s.get('if'), s.get('continue-on-error'))
+                    after_steps = Counter((digest(restore_parallel_caps(s['run'], originals)), s.get('if'), s.get('continue-on-error'))
                                           for s in after.get('steps', []) if 'run' in s)
                     self.assertFalse(before_steps - after_steps, 'original command gained an escape/skip')
                     if 'runs-on' in before:

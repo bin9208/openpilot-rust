@@ -120,7 +120,6 @@ jobs:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -137,6 +136,9 @@ jobs:
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH == 'aarch64'
+        with: {parallelism-only: 'true'}
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -228,7 +230,6 @@ jobs:
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -244,6 +245,9 @@ jobs:
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH == 'aarch64'
+        with: {parallelism-only: 'true'}
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -322,7 +326,6 @@ jobs:
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: '0'
-      CARGO_BUILD_JOBS: '2'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -348,7 +351,7 @@ jobs:
               tree) planner_flags="$planner_flags -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1 -Zmiri-tree-borrows" ;;
             esac
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-            MIRIFLAGS="$planner_flags" cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-plannerd --lib --tests --no-default-features --locked -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/planner-memory/$planner_mode.log"
+            MIRIFLAGS="$planner_flags" cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-plannerd --lib --tests --no-default-features --locked 2>&1 | tee "$RUNNER_TEMP/planner-memory/$planner_mode.log"
           done
       - uses: actions/upload-artifact@v6
         if: always()
@@ -365,7 +368,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
     steps:
@@ -433,7 +435,6 @@ jobs:
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_INCREMENTAL: '0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
       PYTHONPATH: ${{ github.workspace }}
@@ -445,6 +446,9 @@ jobs:
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH == 'aarch64'
+        with: {parallelism-only: 'true'}
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -522,7 +526,6 @@ jobs:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -539,6 +542,9 @@ jobs:
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH == 'aarch64'
+        with: {parallelism-only: 'true'}
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -617,7 +623,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 120
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -929,7 +934,6 @@ jobs:
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 240 || 75 }}
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -944,6 +948,9 @@ jobs:
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH == 'aarch64'
+        with: {parallelism-only: 'true'}
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -1015,7 +1022,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 75
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1079,7 +1085,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 45
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1148,7 +1153,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 40
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1213,7 +1217,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 40
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1275,7 +1278,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 45
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1366,7 +1368,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 90
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1461,7 +1462,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 45
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1531,7 +1531,6 @@ jobs:
     timeout-minutes: 180
     env:
       LOCAL_CI_ARCH: aarch64
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_RELEASE_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1548,6 +1547,9 @@ jobs:
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH == 'aarch64'
+        with: {parallelism-only: 'true'}
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -1595,7 +1597,7 @@ jobs:
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
             cp "$radar_test" "$RUNNER_TEMP/radar-arm/tests/"
             sha256sum "$radar_test" >> "$RUNNER_TEMP/radar-arm/tests-SHA256SUMS"
-            "$radar_test" --test-threads=1 2>&1 | tee "$RUNNER_TEMP/radar-arm/tests/$(basename "$radar_test").log"
+            "$radar_test" 2>&1 | tee "$RUNNER_TEMP/radar-arm/tests/$(basename "$radar_test").log"
           done < "$RUNNER_TEMP/radar-arm/tests.txt"
           for radar_binary in target/aarch64-unknown-linux-gnu/release/openpilot-radarcan target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy; do
             readelf -h -d -V "$radar_binary" > "$RUNNER_TEMP/radar-arm/$(basename "$radar_binary").readelf.txt"
@@ -1635,7 +1637,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1673,8 +1674,8 @@ jobs:
             if test "$radar_level" = tree; then radar_flags="$radar_flags -Zmiri-tree-borrows"; fi
             for radar_filter in numerics_ scheduler_argument_abi_preserves_source_fifo_priority; do
               "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-              printf '%s\n' "MIRIFLAGS=$radar_flags cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked $radar_filter -- --test-threads=1" > "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.command"
-              MIRIFLAGS="$radar_flags" cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked "$radar_filter" -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.log"
+              printf '%s\n' "MIRIFLAGS=$radar_flags cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked $radar_filter" > "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.command"
+              MIRIFLAGS="$radar_flags" cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked "$radar_filter" 2>&1 | tee "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.log"
             done
           done
       - name: Preserve pinned Radar memory invocations and failures
@@ -1694,7 +1695,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 35
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1772,7 +1772,6 @@ jobs:
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1789,6 +1788,9 @@ jobs:
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH == 'aarch64'
+        with: {parallelism-only: 'true'}
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -1930,7 +1932,6 @@ jobs:
     timeout-minutes: 30
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -2070,7 +2071,6 @@ jobs:
     env:
       LOCAL_CI_ARCH: aarch64
       RUSTUP_TOOLCHAIN: '1.94.0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_RELEASE_DEBUG: '0'
       CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: gcc
@@ -2084,6 +2084,9 @@ jobs:
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH == 'aarch64'
+        with: {parallelism-only: 'true'}
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -2134,7 +2137,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2238,7 +2240,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2328,7 +2329,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2423,7 +2423,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2485,7 +2484,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2543,7 +2541,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
@@ -2594,7 +2591,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 35
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       OPENBLAS_NUM_THREADS: '1'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -2652,7 +2648,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 35
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CXX: clang++
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -2728,7 +2723,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 60
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -2834,7 +2828,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 35
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CXX: clang++
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -2901,7 +2894,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2959,7 +2951,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -3025,7 +3016,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
     defaults:
       run:
@@ -3130,7 +3120,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
     env:
-      CARGO_BUILD_JOBS: '2'
       CPU_COUNT: '2'
       DEV: CPU:LLVM
       JIT: '1'
@@ -3236,7 +3225,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 15
     env:
-      CARGO_BUILD_JOBS: '2'
     defaults:
       run:
         working-directory: rust
@@ -3300,7 +3288,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 120
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
     steps:
       - uses: actions/checkout@v7
@@ -3602,7 +3589,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:

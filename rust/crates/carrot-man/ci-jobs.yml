@@ -12,7 +12,6 @@ carrot-man-runtime:
   env:
     LOCAL_CI_ARCH: ${{ matrix.arch }}
     CARGO_INCREMENTAL: '0'
-    CARGO_BUILD_JOBS: '2'
     CARGO_PROFILE_DEV_DEBUG: '0'
     CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
     PYTHONPATH: ${{ github.workspace }}
@@ -24,6 +23,9 @@ carrot-man-runtime:
     - uses: ./.github/actions/job-temp
     - uses: ./.github/actions/rust-path
       if: env.LOCAL_CI_ARCH != 'aarch64'
+    - uses: ./.github/actions/rust-path
+      if: env.LOCAL_CI_ARCH == 'aarch64'
+      with: {parallelism-only: 'true'}
     - uses: ./.github/actions/local-arm
     - uses: actions/setup-python@v6
       if: env.LOCAL_CI_ARCH != 'aarch64'
