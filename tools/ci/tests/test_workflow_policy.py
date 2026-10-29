@@ -52,6 +52,12 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertNotEqual(concurrency['group'],
                         'ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}')
 
+  def test_authorized_release_write_group_is_not_split_by_validation_pool(self):
+    self.assertEqual(workflow('dev-md-runtime.yml')['concurrency'], {
+      'group': 'dev-md-runtime-${{ github.ref }}',
+      'cancel-in-progress': 'false',
+    })
+
   def test_branch_push_pr_and_merge_routing(self):
     script = workflow()['jobs']['route']['steps'][0]['with']['script']
     cases = [

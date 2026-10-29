@@ -146,3 +146,14 @@ pin/숫자·세 gate 보존은 추가 ARM uses16개와 동등한 matrix label �
 로컬 구조 대조에서 이 후속 변경은 ci.yml의 concurrency 세 필드뿐이며 모든 job,
 gate, 조건, step와 argv는 직전 커밋과 같다. queue 세대 분리 회귀를 추가했지만
 실행하지 않았다. AST/YAML/diff만 확인했으며 원격 등록·CI 실행 결과는 미확인이다.
+
+
+## 정책 추적 #635와 발행 write group 보존
+
+현재 사용자 runner 병렬 정책은 [#635](https://github.com/bin9208/openpilot-rust/issues/635)에서
+추적한다. `-parallel-v2` 세대 분리는 ci.yml의 읽기 검증 그룹에만 적용한다.
+기존 dev-md-runtime의 발행 보호 그룹 `dev-md-runtime-${{ github.ref }}`와
+`cancel-in-progress: false`는 기준285 원문 그대로이며 세대별로 나누지 않는다.
+따라서 새 runner 배분이 서로 다른 그룹의 발행 작업을 추가로 열지 않는다.
+부모 main의 native-input-publication 전역 write group도 이번 perf 변경 범위가 아니다.
+관련 회귀는 두 concurrency 용도를 구분하며 실행은 아직 하지 않았다.
