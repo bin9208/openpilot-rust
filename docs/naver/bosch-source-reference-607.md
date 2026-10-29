@@ -66,3 +66,12 @@ tracking의 `state/426/last_decisions/4/residual_bearing_rad`에서
 별도 historical 예제로 계속 실행한다. runtime 수식, epsilon/ULP 허용, 필드 생략은
 추가하지 않는다. 원본 대 과거 fixture 차이와 Python/NumPy/libc/libm 환경은 별도
 evidence에 남긴다. 수정 source의 실제 Actions 결과는 아직 확인 전이다.
+
+## 2026-10-29 일반 workspace의 CI 계약 회귀 (#614/#601)
+
+source `1ebc27abb057f3b5de7682b572ff4abe69729ab0`의40654318834/job122906162899는
+Rust 검사 뒤 Python259성공/2실패/33subtest를 기록했다. 두 실패는 planner/Xiaoge의
+workflow matrix가 옛 hosted label을 기대하고 실제 local-x64/local-arm64-qemu와 달라 발생했다.
+실제 local 실행 label을 검사하고 gate는 EXPECTED 환경키로 고른다. 실패·취소·skip·빈 결과를
+거부하는 필수 gate 검증은 유지한다. runtime/레이더 수식·원본/고정 fixture는 바꾸지 않는다.
+정확 수정 source의 필수 검사 통과 전이며 dev-md 트랙을 dev/main에 합치지 않는다.
