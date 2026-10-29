@@ -113,7 +113,13 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                             expected = LABELS  # Inherited sync/publish routing stays unchanged.
                         elif path.name == 'tests.yaml' and name == 'build_release':
                             expected = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
-                        elif path.name == 'rust.yml' and name in {'support-runtime', 'telemetry-runtime', 'web-upload-timeouts', 'joystickd-runtime'}:
+                        elif path.name == 'rust.yml' and name in {
+                                'support-runtime', 'telemetry-runtime', 'web-upload-timeouts', 'joystickd-runtime',
+                                'encoder-runtime', 'camera-runtime', 'panda-runtime', 'selfdrive-runtime',
+                                'radar-runtime', 'navd-runtime', 'carrot-navi-runtime', 'startup-runtime',
+                                'startup-services', 'sensor-audio', 'gnss-runtime', 'controls-runtime',
+                                'estimation-runtime', 'ui-connectivity', 'platform-runtime', 'hardware-runtime',
+                                'logger-runtime', 'athena-runtime'}:
                             expected = 'ubuntu-24.04'
                         elif ('runner' in job.get('strategy', {}).get('matrix', {})
                               or any('runner' in row for row in job.get('strategy', {}).get('matrix', {}).get('include', []))):

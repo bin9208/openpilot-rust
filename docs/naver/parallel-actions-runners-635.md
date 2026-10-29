@@ -100,3 +100,23 @@ fork/dup로 공유한 open file description은 마지막 descriptor close 또는
 객체 검증과 기존 generation/보존 단언은 유지한다. retry, sleep, test thread 감소는
 추가하지 않는다. 로컬은 rustfmt와 diff만 확인하고 기능 결과는 정확 수정 SHA의
 원래 foundation X64/ARM 및 runtime 검사에서 확인한다.
+
+## 2026-10-30 — 실제 대기열에 따른 일반 X64 추가 분산
+
+`9b8c6337b`에서 GitHub의 native ARM8개·일반 X64 네 job이 끝난 뒤에도 Rust workflow의
+약30개 검사가 자체 runner를 기다렸다. bin-actions2/3은 같은16 CPU PC이므로 세
+agent가 물리 PC 세 대를 뜻하지 않는다. 최초 네 X64 job만의 분산으로는 뒤의 긴
+대기열이 줄지 않는 실제 상태를 확인했다.
+
+encoder/camera/Panda/selfdrive/radar/navd/Carrot Navi/startup/services/sensor-audio/GNSS/
+control/estimation/UI connectivity/platform/hardware/logger/Athena의 독립 X6418개도
+standard `ubuntu-24.04`로 보낸다. workspace·aarch64 전체 빌드·model/memory·Card·UI·
+큰 원본 oracle·AGNOS/foundation/kernel/publication은 공통 self-hosted pool에 유지한다.
+유료 runner나 계정 quota 변경은 없다. 이미 확인한 hosted 동시 실행 범위와 계정의
+기존 queue 정책을 사용하며 실제 동시 수를 설정 변경만으로 확정하지 않는다.
+
+각 job의 parsed YAML에서 `runs-on` 외 모든 필드가 같음을 대조한다. 원래 명령·needs·
+matrix·feature·pin·skip/continue-on-error·최종 gate는 유지하고 기존 route 검사 허용
+목록에 정확18개만 추가한다. 실행 중인9b8 Genuine은 보존하여 준비·컴파일 결과를
+끝까지 확인한다. 그 성공을 새 source의 성공으로 대신하지 않고 새 source의 정확한
+producer/필수 검사를 별도로 확인한다. 로컬은 AST/YAML·diff 읽기만 수행한다.
