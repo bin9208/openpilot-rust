@@ -393,7 +393,7 @@ jobs:
               tree) planner_flags="$planner_flags -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1 -Zmiri-tree-borrows" ;;
             esac
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-            MIRIFLAGS="$planner_flags" cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-plannerd --lib --tests --no-default-features --locked -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/planner-memory/$planner_mode.log"
+            MIRIFLAGS="$planner_flags" cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-plannerd --lib --tests --no-default-features --locked -- 2>&1 | tee "$RUNNER_TEMP/planner-memory/$planner_mode.log"
           done
       - uses: actions/upload-artifact@v6
         if: always()
@@ -1656,7 +1656,7 @@ jobs:
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
             cp "$radar_test" "$RUNNER_TEMP/radar-arm/tests/"
             sha256sum "$radar_test" >> "$RUNNER_TEMP/radar-arm/tests-SHA256SUMS"
-            "$radar_test" --test-threads=1 2>&1 | tee "$RUNNER_TEMP/radar-arm/tests/$(basename "$radar_test").log"
+            "$radar_test" 2>&1 | tee "$RUNNER_TEMP/radar-arm/tests/$(basename "$radar_test").log"
           done < "$RUNNER_TEMP/radar-arm/tests.txt"
           for radar_binary in target/aarch64-unknown-linux-gnu/release/openpilot-radarcan target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy; do
             readelf -h -d -V "$radar_binary" > "$RUNNER_TEMP/radar-arm/$(basename "$radar_binary").readelf.txt"
@@ -1733,8 +1733,8 @@ jobs:
             if test "$radar_level" = tree; then radar_flags="$radar_flags -Zmiri-tree-borrows"; fi
             for radar_filter in numerics_ scheduler_argument_abi_preserves_source_fifo_priority; do
               "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-              printf '%s\n' "MIRIFLAGS=$radar_flags cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked $radar_filter -- --test-threads=1" > "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.command"
-              MIRIFLAGS="$radar_flags" cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked "$radar_filter" -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.log"
+              printf '%s\n' "MIRIFLAGS=$radar_flags cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked $radar_filter --" > "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.command"
+              MIRIFLAGS="$radar_flags" cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked "$radar_filter" -- 2>&1 | tee "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.log"
             done
           done
       - name: Preserve pinned Radar memory invocations and failures

@@ -47,6 +47,13 @@ def ci_adapter(script):
                           'python rust/tools/radarcan_prepare_assets.py ')
 
 
+
+def parallelism_adapter(script):
+    # The user explicitly removed these fixed CPU caps. Keep the frozen source
+    # hashes intact, then compare every other byte of the original command.
+    return script.replace('CARGO_BUILD_JOBS=2 ', '').replace(' --test-threads=1', '')
+
+
 def condition(original):
     expression = original.strip()
     if expression.startswith('${{') and expression.endswith('}}'):
@@ -143,11 +150,14 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     self.assertEqual(after.get('strategy', {}).get('matrix'), before.get('strategy', {}).get('matrix'))
                     expected = [digest(normalize(step['run'])) for step in before.get('steps', []) if 'run' in step]
                     self.assertEqual(frozen['jobs'][name]['scripts'], expected)
-                    actual = Counter(digest(ci_adapter(step['run'])) for step in after.get('steps', []) if 'run' in step)
-                    self.assertFalse(Counter(expected) - actual, 'original command changed or removed')
-                    before_steps = Counter((digest(normalize(s['run'])), s.get('if'), s.get('continue-on-error'))
+                    parallel_expected = [digest(parallelism_adapter(normalize(step['run'])))
+                                         for step in before.get('steps', []) if 'run' in step]
+                    actual = Counter(digest(parallelism_adapter(ci_adapter(step['run'])))
+                                     for step in after.get('steps', []) if 'run' in step)
+                    self.assertFalse(Counter(parallel_expected) - actual, 'original command changed or removed')
+                    before_steps = Counter((digest(parallelism_adapter(normalize(s['run']))), s.get('if'), s.get('continue-on-error'))
                                            for s in before.get('steps', []) if 'run' in s)
-                    after_steps = Counter((digest(ci_adapter(s['run'])), s.get('if'), s.get('continue-on-error'))
+                    after_steps = Counter((digest(parallelism_adapter(ci_adapter(s['run']))), s.get('if'), s.get('continue-on-error'))
                                           for s in after.get('steps', []) if 'run' in s)
                     self.assertFalse(before_steps - after_steps, 'original command gained an escape/skip')
                     if 'runs-on' in before:

@@ -477,7 +477,7 @@ def native_system_sdk_probe(guest_command, work, rootfs, evidence, log, guest_wo
   evidence['commands'].append(run(guest_command(['cargo','test','--locked','--manifest-path',
       f'{source_mount}/rust/Cargo.toml','-p','openpilot-runtime-build','--lib',
       'system_sdk::generation_input_tests','--target-dir',work/'project-target',
-      '--','--nocapture','--test-threads=1']),log,stdout_path=output))
+      '--','--nocapture']),log,stdout_path=output))
   assert '4 passed; 0 failed;' in output.read_text()
   evidence['native_generation_sdk_requirements']=dict(cases=4,roster_binaries=99,roster_groups=13,
       all_groups_same_live_sdk_required=True,reduced_or_other_factory_profile_rejected=True,
