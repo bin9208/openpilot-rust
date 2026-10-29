@@ -37,6 +37,9 @@ jobs:
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH == 'aarch64'
+        with: {parallelism-only: 'true'}
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'

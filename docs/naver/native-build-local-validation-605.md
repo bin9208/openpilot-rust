@@ -226,3 +226,19 @@ Python3.12, 원래 Java17과 기존 job 소유 `android-sdk` 경로의 admission
 로컬은 AST/YAML/Bash 구문과 원래 기능 명령·조건의 읽기 대조만 수행했다. SDK 설치나
 Android 기능 검사를 실행하지 않았고 원격 push/CI 조작도 하지 않았다. build release의
 bin-actions3 sudo 권한 문제는 코드 우회나 보안 설정 변경으로 처리하지 않는다.
+
+
+## 2026-10-29 — 2dd 실제 빈 env 및 ARM CPU 준비 실패 수정
+
+source `2dd0b6cf722a728e6fc880d42b5d1d36e630dfa2`의 fast
+[40884430656](https://github.com/bin9208/openpilot-rust/actions/runs/40884430656) 로그에서
+빈 `rust.yml: jobs.model-memory.env`와 carrot-peer의 ARM CPU 준비 호출 누락을
+확인했다. 빈 env는 그 다음 키가 defaults여서 이전 문자열 정리가 놓쳤다. 모든 공통
+workflow/action/template YAML을 재귀 node/type 읽기로 감사해 실제 빈 key를 제거한다.
+테스트에서 scalar env를 빈 dict로 바꿔 우회하지 않고 mapping schema 검사를 추가한다.
+
+carrot-peer의 원래 조건부 도구 준비와 QEMU pin은 유지하고 ARM CPU 정책 전용 준비
+호출만 보완한다. 공통 정책 검사는 최초 Cargo 앞에 실제 준비 호출이 있는지와 전체
+준비 또는 CPU 전용 mode를 확인하되 특정 if 문자열 모양은 강제하지 않는다. 기존
+source/matrix/gate와 기능 명령은 유지한다. 로컬은 AST/YAML/Bash 구문·재귀 schema·
+기준 diff만 확인하며 기능·build·원격 CI는 실행하지 않는다.

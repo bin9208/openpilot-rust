@@ -121,6 +121,21 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                 self.assertNotIn('CARGO_BUILD_JOBS=', text)
                 self.assertNotIn('--test-threads=1', text)
 
+    def test_actions_and_workflows_have_real_env_mappings(self):
+        paths = [*(ROOT/'.github').rglob('*.yml'), *(ROOT/'.github').rglob('*.yaml'),
+                 ROOT/'rust/crates/carrot-man/ci-jobs.yml']
+        for path in paths:
+            stack = [load(path)]
+            while stack:
+                node = stack.pop()
+                if isinstance(node, dict):
+                    if 'env' in node:
+                        with self.subTest(path=str(path)):
+                            self.assertIsInstance(node['env'], dict)
+                    stack.extend(node.values())
+                elif isinstance(node, list):
+                    stack.extend(node)
+
     def test_cargo_jobs_always_apply_the_shared_parallel_policy(self):
         action = load(ROOT/'.github/actions/rust-path/action.yml')
         script = action['runs']['steps'][0]['run']
@@ -135,11 +150,15 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                 if not any('cargo ' in step.get('run', '') for step in steps):
                     continue
                 with self.subTest(workflow=path.name, job=name):
-                    policies = [step for step in steps if step.get('uses') == './.github/actions/rust-path']
+                    first_cargo = next(i for i, step in enumerate(steps) if 'cargo ' in step.get('run', ''))
+                    policies = [step for step in steps[:first_cargo] if step.get('uses') == './.github/actions/rust-path']
                     self.assertTrue(policies)
+                    # Full unconditional preparation covers every execution mode.
+                    # A mode-specific guest may instead prepare CPU policy only;
+                    # do not require one particular spelling of its condition.
                     if 'aarch64' in str(job.get('env', {}).get('LOCAL_CI_ARCH', '')):
-                        self.assertTrue(any(step.get('with', {}).get('parallelism-only') == 'true' and
-                                            step.get('if') == "env.LOCAL_CI_ARCH == 'aarch64'" for step in policies))
+                        self.assertTrue(any(not step.get('if') or
+                                            step.get('with', {}).get('parallelism-only') == 'true' for step in policies))
 
     def test_inherited_sync_and_publish_workflows_keep_the_exact_pre_port_bytes(self):
         for name in INHERITED_WORKFLOWS:
