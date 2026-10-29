@@ -590,3 +590,26 @@ Actions에서 실행하며 로컬에서는 AST/YAML/diff만 확인한다.
 이후 다른 입력이 실패해도 완료된 원본 검증/전송을 다음 시도에서 재사용하기 위한
 순서 수정이다. 원래 key/bytes/hash 검증을 유지하며 이전 project runtime을 현재 결과로
 캐시하지 않는다. 새 source의 실제 재사용·필수 검사·정상 병합/병합 후 결과는 남아 있다.
+
+## 원래 cereal wire 예제의 실제 compile 회귀 — #632
+
+정확 source `a5e2d10f7ea882f7edf4453c481c8dc5b5f9ffb5`의
+[workspace job123396315060](https://github.com/bin9208/openpilot-rust/actions/runs/40857362214/job/123396315060)은
+native package 거부 검사를 통과한 뒤 원래 workspace/all-target Clippy에서 실패했다.
+`native_roundtrip.rs`의 union reader에 없는 `get_car_state`/`get_log_message` 호출이
+E0599의 원인이다. 생성된 현재 API와 기존 caller를 대조하고 `which()`의
+`CarState`/`LogMessage` variant로 payload를 읽도록 두 접근만 고친다.
+
+원래 message 생성, valid/timestamp/숫자/한국어 text, schema·capnp pin과 원본 Python의
+전체 wire bytes 비교를 유지한다. 다른 variant나 잘못된 값은 계속 실패한다.
+로컬은 Rustfmt·diff/읽기 대조만 수행한다. 새 source의 원래 Clippy·example build와
+기존 genuine의 full-schema 원본 왕복/wire·재사용 비교가 통과해야 수용한다.
+이전 source의 부분 성공으로 대신하지 않으며 전체 #598은 계속 미완료다.
+
+같은 source의 [PR fast job123391576559](https://github.com/bin9208/openpilot-rust/actions/runs/40857362282/job/123391576559)은
+101개 회귀 중 새 DBC 출력 검사의 원래 Tesla 생성 child가 `opendbc`를 import하지
+못해 실패했다. 부모 테스트의 `sys.path`는 새 Python process에 전달되지 않는다.
+테스트가 실행하는 실제 generator child에 기존 opendbc source 경로를 `PYTHONPATH`로
+명시한다. production generator·고정143개 입력·출력 SHA와 실제 free-byte 검사는
+유지한다. 이는 #629의 회귀 환경 보완이며 출력 비교를 생략하거나 pin을 바꾸지 않는다.
+기능 재검증은 새 정확 source의 원래 Actions에서 수행한다.
