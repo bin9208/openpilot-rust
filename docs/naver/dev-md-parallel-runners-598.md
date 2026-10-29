@@ -112,3 +112,19 @@ perf transport의 실행 JSON은 실제 RUNNER_NAME/RUNNER_ENVIRONMENT/uname/sou
 공통 API 외 main599의 준비·발행 코드는 이식하지 않는다. 최종 원래 argv/if/feature/
 pin/숫자·세 gate 보존은 추가 ARM uses16개와 동등한 matrix label 변경을 제외한
 기준285 YAML 전체 구조 대조로 확인했다. 기능·빌드·테스트·원격 CI 조작은 미실행이다.
+
+
+## 기존 AGNOS prerelease 경로의 두 등록 runner 공유
+
+사용자가 기존 완료 조건의 실제 installer 발행 경로도 두 등록 runner에 배분하도록
+명시했다. `.github/workflows/dev-md-runtime.yml`의 verify/package/publish 세 job에서
+`runs-on`만 `[self-hosted, Linux, X64]`로 바꾼다. 비어 있는 등록 X64 runner가
+받을 수 있고 `package.py`의 실제 실행 admission은 `bin-actions`와 `bin-actions2`
+두 이름만 계속 허용한다. workflow event/if/needs/source SHA/필수 CI gate/기존
+발행 조건·토큰 권한·모든 step와 argv는 기준 원문 그대로다. 이 기록은 발행 실행이나
+후보 완성을 의미하지 않으며 새 workflow를 활성화하는 변경도 아니다.
+
+기존 Carrot/NAS 동기화·publish workflow와 ci.yml의 조건부 delivery 요청은 수정하지
+않는다. YAML을 읽어 세 runs-on만 복원하면 기준 workflow 전체가 같음을 대조하고,
+관련 guard AST와 Bash 문법/diff만 확인한다. 실제 기능·빌드·테스트·발행·CI 조작은
+수행하지 않았다. native ARM 준비 보강 및 공통 runner API 후속 커밋과 함께 통합한다.

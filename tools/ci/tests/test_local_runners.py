@@ -31,7 +31,8 @@ class LocalRunnerPolicyTests(unittest.TestCase):
                         self.assertEqual(runners, ['ubuntu-24.04', 'ubuntu-24.04-arm'])
                     else:
                         self.assertTrue(route in ('ubuntu-24.04', 'ubuntu-24.04-arm') or
-                                        route in (LOCAL, ['self-hosted', 'Linux', 'X64', 'support-630']))
+                                        route in (LOCAL, ['self-hosted', 'Linux', 'X64', 'support-630'],
+                                                  ['self-hosted', 'Linux', 'X64']))
 
     def test_three_compute_pools_are_routed_explicitly(self):
         jobs = workflow(ROOT/'.github/workflows/ci.yml')['jobs']
@@ -39,6 +40,14 @@ class LocalRunnerPolicyTests(unittest.TestCase):
         self.assertEqual(jobs['build_release']['runs-on'], ['self-hosted', 'Linux', 'X64', 'support-630'])
         self.assertEqual(jobs['arm-build']['runs-on'], LOCAL)
         self.assertEqual(jobs['runtime-delivery']['runs-on'], LOCAL)
+
+    def test_authorized_runtime_delivery_can_use_either_registered_runner(self):
+        jobs = workflow(ROOT/'.github/workflows/dev-md-runtime.yml')['jobs']
+        self.assertEqual(set(jobs), {'verify', 'package', 'publish'})
+        for name, job in jobs.items():
+            self.assertEqual(job['runs-on'], ['self-hosted', 'Linux', 'X64'], name)
+        self.assertEqual(jobs['package']['needs'], 'verify')
+        self.assertEqual(jobs['publish']['needs'], ['verify', 'package'])
 
     def test_saved_template_remains_a_supported_fallback(self):
         job = workflow(ROOT/'rust/crates/carrot-man/ci-jobs.yml')['carrot-man-runtime']
