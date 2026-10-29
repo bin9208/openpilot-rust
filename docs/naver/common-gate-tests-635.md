@@ -71,3 +71,25 @@ Bash 구문 및 diff를 확인했다. 전체 workflow 자료는 기존 #606에 d
 기존 회귀의 다른 함수·단언은 AST가 같고 frozen 검사는 두 adapter 호출을 제외하면
 AST가 같다. 기능·빌드·테스트·push·dispatch·취소는 수행하지 않았다. 이 정상 병합의
 정확 SHA에 대한 PR/Actions 실행 결과는 부모가 별도로 확인한다.
+
+## 2026-10-30 runner.temp 파생 Cargo·FFmpeg 경로 보존
+
+기준은 `5ac64068c0ff6419332ca90248bacab59c2310cf`다. 실제 logger 실행
+[40911705322/job123583893642](https://github.com/bin9208/openpilot-rust/actions/runs/40911705322/job/123583893642)에서
+ASAN 빌드는 완료됐지만 다음 원래 검사가 `/tmp/openpilot-ci.*/logger-asan-target`의
+바이너리를 찾지 못했다. build step의 `CARGO_TARGET_DIR`는 `${{ runner.temp }}`에서
+확장된 `/home/runner/work/_temp/logger-asan-target`였고, BASH_ENV가 `RUNNER_TEMP`만
+작업 전용 경로로 바꿔 생성 위치와 소비 위치가 달랐다. sanitizer 메모리 실패가 아니다.
+
+공유 `job-temp`의 BASH_ENV 생성 블록에서 기존 `RUNNER_TEMP`가 원래 runner 임시
+경로와 같은 조건을 유지한다. 그 조건 안에서 `CARGO_TARGET_DIR`, `FFMPEG_DIR` 두
+변수가 원래 경로와 `/`로 시작할 때만 동일 suffix를 작업 소유 경로로 옮긴다.
+다른 환경 변수·외부 target·guest source 경로·비슷한 이름의 형제 경로 및 명시적인
+`RUNNER_TEMP` 재정의는 그대로 둔다. workflow env·원래 argv·ASAN 옵션은 바꾸지 않는다.
+
+기존 `test_cargo_target_view.py`의 실제 helper fixture에서 생성된 BASH_ENV를 직접
+source하도록 회귀를 보강했다. 두 변수 각각 파생 경로의 일치와 외부·guest·형제 경로·
+runner 재정의 보존을 확인하며, 기존 action 경로·helper 복사·소스 청결·소유 cleanup
+조건은 유지한다. 로컬은 AST·YAML·Bash 구문·diff만 확인했다. 생성된 두 변수용 Bash
+문장도 실행 없이 `bash -n`으로 확인했고 workflow 원문은 동일하다. 기능·테스트·빌드·
+원격 push·CI 조작은 하지 않았다. 실제 회귀 결과는 새 정확 SHA의 Actions에서 확인해야 한다.

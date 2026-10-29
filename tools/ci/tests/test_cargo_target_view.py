@@ -71,6 +71,32 @@ class CargoTargetViewTests(unittest.TestCase):
                 target = source/'rust/target'
                 self.assertTrue(target.is_symlink())
                 self.assertEqual(os.readlink(target), str(Path(values['CI_JOB_TEMP'])/'cargo-target'))
+                owned = Path(values['CI_JOB_TEMP'])
+                fixture_temp = base/'fixture-temp'
+                for variable, suffix in (('CARGO_TARGET_DIR', 'logger-asan-target'),
+                                         ('FFMPEG_DIR', 'logger-ffmpeg-gnu/install')):
+                    derived = runner_temp/suffix
+                    external = base/'external'/suffix
+                    cases = (
+                        ('derived', runner_temp, derived, owned, owned/suffix),
+                        ('external', runner_temp, external, owned, external),
+                        ('guest-source', runner_temp, Path('/native/state')/suffix,
+                         owned, Path('/native/state')/suffix),
+                        ('sibling-prefix', runner_temp, Path(str(runner_temp)+'-other')/suffix,
+                         owned, Path(str(runner_temp)+'-other')/suffix),
+                        ('runner-override', fixture_temp, derived, fixture_temp, derived),
+                    )
+                    for case, initial_runner, initial_path, expected_runner, expected_path in cases:
+                        with self.subTest(variable=variable, case=case):
+                            shell_environment = {**environment, **values,
+                                'RUNNER_TEMP': str(initial_runner), 'TMPDIR': str(fixture_temp),
+                                variable: str(initial_path)}
+                            shell_env = shell_environment.pop('BASH_ENV')
+                            actual = subprocess.check_output(['/bin/bash', '-e', '-c',
+                                'source "$1"\nprintf "%s\\n" "$RUNNER_TEMP" "$TMPDIR" "${'+variable+'-}"',
+                                'job-temp-fixture', shell_env], env=shell_environment, text=True).splitlines()
+                            expected_tmp = owned if initial_runner == runner_temp else fixture_temp
+                            self.assertEqual(actual, [str(expected_runner), str(expected_tmp), str(expected_path)])
                 (target/'owned-generated-artifact').write_bytes(b'owned build output')
                 self.assertEqual(git(source, 'status', '--porcelain', '-z', '--untracked-files=all'), b'')
                 (source/'preserved-source-change').write_text('owned source fixture\n')
