@@ -294,3 +294,15 @@ runner policy를 사용하게 한다. 실제 self-hosted 이름 세 개·Linux/X
 허용 범위·job owner/source/target view·기존 QEMU·root 전용 입력 도구 정책은
 유지한다. 원래 job 의존/argv/기준/최종 gate는 바꾸지 않으며 AST/YAML/Bash/diff만
 로컬에서 확인한다. 기존 공유 source/cache·호스트 설정은 변경하지 않는다.
+
+## 2026-10-30 — ARM 게스트의 helper용 system Python 준비
+
+source `49d6728701b3cad94d50ce72e3cbbbc8e6511985`의
+[foundation ARM](https://github.com/bin9208/openpilot-rust/actions/runs/40897448743/job/123530324068)은
+local routing 검사 뒤 target-view 실제 helper 실행에서 `/usr/bin/python3` 부재로
+실패했다. 고정 oracle venv는 있지만 job-temp가 사용하는 독립 system interpreter는
+bootstrap 패키지 목록에 없었다. 게스트에 `python3`와 원래 binary 진단용 `file`을
+준비하고 빈 loader 환경에서 isolated system Python의 ARM identity/ctypes를 확인한다.
+oracle Python3.12.14·PRoot/QEMU/rootfs pin·원래 target-view 충돌/정리 단언은 유지한다.
+main #611에는 이미 같은 준비가 있으므로 main source나 그 CI는 재시작하지 않는다.
+로컬은 Bash 문법과 diff만 확인하고 실제 ARM 회귀는 수정 SHA의 Actions에서 확인한다.

@@ -82,8 +82,12 @@ case ${1:-} in
       export DEBIAN_FRONTEND=noninteractive
       test -r /var/lib/dpkg && test -w /var/lib/dpkg
       apt-get update
-      apt-get install -y ca-certificates curl git git-lfs sudo make gcc g++ pkg-config xz-utils \
+      apt-get install -y ca-certificates curl git git-lfs file sudo make gcc g++ pkg-config xz-utils python3 \
         libssl3t64 libbz2-1.0 libffi8 liblzma5 libreadline8t64 libsqlite3-0 libncursesw6 libexpat1 zlib1g
+      # Job helpers use the isolated system interpreter, independently of the
+      # pinned oracle venv and its PATH/loader configuration.
+      /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C /usr/bin/python3 -I -B -S -c \
+        "import ctypes, platform, sys; assert platform.machine() == \"aarch64\"; print(\"source_system_python\", sys.executable, sys.version)"
       python_root=/opt/hostedtoolcache/Python/3.12.14/arm64
       mkdir -p "$python_root"
       tar -xzf "$1/python.tar.gz" -C "$python_root"
