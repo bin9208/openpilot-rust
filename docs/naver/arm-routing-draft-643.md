@@ -61,3 +61,14 @@ ARM에서는 직접 실행하도록 수정한다. legacy `--runner` 호출도 �
 job의 명령에 QEMU가 남지 않도록 정책 검사를 추가했다. 실험 workflow는 이후 수동
 선택 실행만 허용해 해당 generic 검증만 재실행하고, 이미 성공한 다른 ARM job과 원래
 전체 AGNOS 측정을 반복하지 않는다. 기존 실행 결과와 수정 후 실행 결과를 구분한다.
+
+`40956730256`은 GNU workspace release16분52초와 musl workspace release17분52초를
+완료한 뒤, UTC22:09:48에 `FileNotFoundError: /usr/bin/qemu-aarch64-static`으로 실패했다.
+컴파일 실패와 probe 실행 어댑터 실패를 구분한다. 수정 코드가 포함된
+`e7548176f131a3600112d09f1d27a377b673ae46`의
+[40962761699](https://github.com/bin9208/openpilot-rust/actions/runs/40962761699)에서 원래
+generic 전체 job을 다시 검증한다. 새 ARM 정책 검사는 성공했고 실제 컴파일이 진행 중이다.
+
+같은 검증의 미시작 대기 건40962047383만 취소하고, 새 SHA별 독립 concurrency group으로
+수정본 검증을 배정했다. 실행 중이던40956730256과 원래 전체 측정40947309362를
+취소하지 않았다. 이미 성공한 다른 ARM job은 새 선택 실행에서 생략한다.
