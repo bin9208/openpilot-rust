@@ -43,8 +43,32 @@ bind한다. 실제 CLI로 다음을 실행한다.
 따라서 manager 정상 부팅, hardware/model/녹화/업로드, 실제 AGNOS kernel/ARM CPU,
 update/recovery 및 docs/작은 변경 재사용은 이 driver가 검증했다고 표시하지 않는다.
 정상 startup의 20초 deadline과 정책은 바꾸지 않는다. `build_timeout_seconds`는
-CI 작업 전체의 외부 제한이며 startup deadline이 아니다. 최초/반복/launch 성공 후에만
-`source_entry_full_build_executed`와 production package launch flag를 true로 기록한다.
+factory admission과 최초/반복/launch 세 실행을 모두 합친 **단일 payload 예산**이며
+startup deadline이 아니다. root watchdog이 같은 host kernel의 절대 monotonic deadline을
+전달하고, admission과 각 CLI는 매번 그 deadline의 남은 시간만 사용한다. deadline
+이후의 정상 exit도 성공으로 받지 않는다. image 준비는 이 payload 예산 앞에 있다.
+
+watchdog은 payload cgroup 밖에 남아 전체 예산 만료 시 자기 child/cgroup만 종료한다.
+payload 예산과 별도로 cleanup에60초를 두고 pidfd의 종료 대기와 cgroup 제거도 이
+여유 안에서 제한한다. workflow330분 제한은 그대로이며, image/도구 준비와 artifact
+시간도 그 job 제한 안에 포함된다. payload 최대300분을 각 단계에 중복 배정하지 않는다.
+
+각 실행은 실제 production `seed-current-tools.json`, `prepared-inputs.json`,
+`built-generation.json`을 읽는다. 요청 source/index, metadata17개 SHA/byte,
+machine/bootstrap/tools/native config pin, seed helper SHA와 실제 current tool bundle,
+runtime18/compiler9 역할, generation ID를 독립 대조한다. native build receipt에는
+helper SHA 필드가 없으므로 이를 만들어 읽지 않는다. 원래 CLI가 호출하는
+`openpilot-native-build-scope`의 SHA는 검증된 current tool bundle의 pin과 연결한다.
+launch는 새로 남긴 production 전체 build result를 찾아 세 receipt를 동일하게 검사하고,
+startup record의 generation/configuration/path·SHA와 그 launch build를 연결한다.
+
+최초/반복/launch와 receipt 대조가 모두 성공하면 `execution-summary.json`에 실행 범위만
+기록하고 `cleanup_verified=False`를 유지한다. root watchdog은 `cleanup.json`에 자기
+cgroup 경로/inode와 제거 및 공유 binfmt/controller 불변 증거를 별도로 남긴다. 바깥 job
+scope의 기존 workflow cleanup은 별도 단계임도 표시한다. 실행과 cleanup 모두
+성공한 뒤에만 최종 `result.json`을 저장하며 `cleanup_verified=True`와 cleanup 증거의
+SHA를 연결한다. timeout·receipt 불일치·cleanup 실패 시 최종 성공 result는 없다.
+기존 `state/*.json` artifact 경로를 그대로 쓰므로 workflow 변경은 없다.
 
 ## 작업별 admission과 cache identity
 
@@ -57,7 +81,7 @@ dispatch의 `operation_estimates_json`에는 다음 필드가 모두 필요하�
 - `maximum_growth_bytes`, `minimum_free_bytes`
 - `expected_source_growth_bytes`, `expected_compile_growth_bytes`
 - `remaining_object_growth_bytes`, `compiler_growth_bytes`
-- `build_timeout_seconds` (120..18000; image 준비와 정리는 job330분 안에서 별도)
+- `build_timeout_seconds` (120..18000; admission과 세 실행 전체 예산, cleanup60초 별도)
 - `budgets`: production의 schema1, 현재 catalog의 모든 group별
   `group_growth_bytes`, `expected_source_growth_bytes`, `remaining_object_growth_bytes`,
   `estimate_basis`
@@ -94,3 +118,11 @@ metadata의 실제 발행/Git pin, 전체 build에 맞는 작업별 예산, admi
 
 Python AST, workflow YAML 및 포함 Bash 문법, diff만 확인한다. 기능 테스트, build,
 namespace/probe, CI dispatch/cancel/push/외부 comment는 실행하지 않는다.
+
+
+## 후속 정적 보강
+
+기존 `abec6aef8`의 결과 저장 순서·중복 timeout 예산·간접 receipt 검증을 위와 같이
+보강했다. 기존 transport와 workflow는 바꾸지 않았다. production 필드 정의를 읽어
+대조했고 AST/YAML/Bash 구문 및 diff만 확인한다. receipt stub, 기능 실행, 원격 push,
+CI dispatch/cancel/재시작은 수행하지 않는다. 실제 성공 증거는 아직 없다.

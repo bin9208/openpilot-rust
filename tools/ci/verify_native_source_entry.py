@@ -17,6 +17,7 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
+CLEANUP_RESERVE_SECONDS = 60
 FIELDS = {'schema', 'maximum_memory_bytes', 'minimum_available_memory_bytes',
           'maximum_growth_bytes', 'minimum_free_bytes', 'expected_source_growth_bytes',
           'expected_compile_growth_bytes', 'remaining_object_growth_bytes',
@@ -39,6 +40,70 @@ def save(path, value):
     with path.open('x') as stream:
         json.dump(value, stream, indent=2)
         stream.write('\n')
+
+
+def remaining(deadline_ns, cap=None):
+    seconds = (deadline_ns-time.monotonic_ns())/1_000_000_000
+    if seconds <= 0:
+        raise TimeoutError('overall entry budget exhausted; startup policy is unchanged')
+    return seconds if cap is None else min(seconds, cap)
+
+
+def verify_receipts(entry, row, state, request, index, machine_pin):
+    # Only existing production receipts are read. In particular, the native
+    # build receipt has no helper-SHA field: bind its unchanged CLI invocation
+    # to the independently verified current tool bundle instead.
+    runtime = entry.runtime
+    assert row['source'] == request['source'] and row['input_index_sha256'] == request['index_sha256']
+    assert row['machine_configuration_sha256'] == machine_pin and row['full_runtime_build'] is True
+    assert all(row[k] is False for k in ('runtime_started', 'runtime_activated',
+                                        'runtime_release_downloaded', 'staged_for_boot'))
+    parent = state/'generations/source-requests'
+    attempt, resolver = Path(row['evidence']), Path(row['resolver_evidence'])
+    assert all(p.parent == parent and p.resolve(strict=True) == p for p in (attempt, resolver))
+    resolved = runtime.read(resolver/'resolved.json')
+    assert resolved['index_sha256'] == request['index_sha256']
+    assert resolved['configuration_sha256'] == row['bootstrap_configuration_sha256']
+    expected_metadata = dict(seed=index['seed'], system_sdk=index['system_sdk'], **index['providers'])
+    assert set(row['metadata']) == set(resolved['receipts']) == set(expected_metadata)
+    for role, asset in expected_metadata.items():
+        for receipt in (row['metadata'][role], resolved['receipts'][role]):
+            assert receipt['sha256'] == asset['sha256'] and receipt['bytes'] == asset['bytes']
+    config = runtime.read(Path(resolved['configuration']), row['bootstrap_configuration_sha256'])
+    assert config['stores'] == {name: str(state/name) for name in ('sources', 'objects', 'generations', 'params')}
+    first = runtime.read(attempt/'seed-current-tools.json')
+    assert first['seed_executed_for_current_tools'] is True and first['seed_native_abi_checked'] is True
+    assert first['seed']['descriptor_sha256'] == index['seed']['sha256']
+    seed_plan, _ = entry.seed.read_plan(Path(first['seed']['root'])/'manifest.json', index['seed']['sha256'])
+    assert row['seed_source'] == first['seed']['seed_source'] == seed_plan['source']
+    assert runtime.read(attempt/'tools-config.json') == {k: config[k] for k in runtime.TOOLS_FIELDS}
+    assert first['current_tools']['configuration_sha256'] == checksum(attempt/'tools-config.json')
+    assert first['current_tools']['seed_helper_sha256'] == seed_plan['assets']['helper']['sha256']
+    assert checksum(Path(first['seed']['helper'])) == seed_plan['assets']['helper']['sha256']
+    first_tools, first_pins = runtime.tools_from_report(first['current_tools'], request['source'], config)
+    prepared = runtime.read(attempt/'prepared-inputs.json')
+    assert prepared['configuration_sha256'] == row['bootstrap_configuration_sha256']
+    assert prepared['seed_helper_sha256'] == first_pins[first_tools/'openpilot-runtime-inputs']
+    tools, pins = runtime.tools_from_report(prepared, request['source'], config)
+    inputs = prepared['runtime_inputs']
+    assert inputs['source'] == request['source'] and inputs['runtime_inputs_verified'] is True
+    assert inputs['runtime_roles'] == 18 and inputs['compiler_input_roles'] == 9
+    assert inputs['configuration_sha256'] == config['runtime_inputs']['sha256']
+    assert inputs['bootstrap_configuration_sha256'] == row['bootstrap_configuration_sha256']
+    assert inputs['native_configuration'] == row['prepared_configuration']
+    assert inputs['native_configuration_sha256'] == row['build_configuration_sha256']
+    native = runtime.read(Path(inputs['native_configuration']), row['build_configuration_sha256'])
+    assert native['stores'] == config['stores'] and native['cache'] == str(state/'cache/cargo-build')
+    built = runtime.read(attempt/'built-generation.json')
+    assert built['requested_source'] == request['source'] and built['generation_id'] == row['generation_id']
+    assert built['configuration_sha256'] == row['build_configuration_sha256']
+    assert built['activated'] is False and built['staged_for_boot'] is False
+    return dict(evidence=str(attempt), generation_id=built['generation_id'],
+        seed_helper_sha256=seed_plan['assets']['helper']['sha256'],
+        inputs_helper_sha256=prepared['seed_helper_sha256'],
+        native_build_scope_helper_sha256=pins[tools/'openpilot-native-build-scope'],
+        receipt_sha256={name: checksum(attempt/(name+'.json')) for name in
+                       ('seed-current-tools', 'prepared-inputs', 'built-generation')})
 
 
 def policy(raw, source):
@@ -120,13 +185,16 @@ def arm():
     source, state = Path('/native/source'), Path('/native/state')
     request = json.loads((state/'request.json').read_text())
     estimates = request['estimates']
+    deadline_ns = request['payload_deadline_monotonic_ns']
+    remaining(deadline_ns)
     transport = module(source/'tools/ci/probe_native_source_transport.py', 'factory_transport')
     # Require the unchanged factory sudoers to authorize the actual original uid.
     with (state/'sudoers.stdout').open('xb') as out, (state/'sudoers.stderr').open('xb') as err:
-        subprocess.run(['/usr/bin/sudo', '-n', '-l'], stdout=out, stderr=err, check=True, timeout=30)
+        subprocess.run(['/usr/bin/sudo', '-n', '-l'], stdout=out, stderr=err, check=True, timeout=remaining(deadline_ns, 30))
     completed = subprocess.run(['/usr/bin/python3', '-I', '-B', '-S', '-c',
         transport.USER_PROBE, '1000', transport.ROOT_PROBE], capture_output=True, text=True,
-        check=True, timeout=120)
+        check=True, timeout=remaining(deadline_ns, 120))
+    remaining(deadline_ns)
     admission = json.loads(completed.stdout)
     assert admission['factory_sudo_sha256'] == request['factory_sudo']['sha256']
     save(state/'factory-admission.json', admission)
@@ -156,33 +224,52 @@ def arm():
     base = ['/usr/bin/python3', '-I', '-B', '-S', str(source/'tools/native/source_entry.py'),
         '--source', str(source), '--machine-config', str(machine_path),
         '--machine-configuration-sha256', machine_pin]
-    rows = {}
+    rows, receipts = {}, {}
+    requests = state/'generations/source-requests'
     for phase in ('initial', 'reused', 'launch-package'):
+        before_launch = set(requests.glob('request-*/result.json')) if phase == 'launch-package' else set()
         arguments = base + (['--launch', '--verify-package', '--paths', str(paths)]
                             if phase == 'launch-package' else [])
         with (state/(phase+'.stdout')).open('xb') as out, (state/(phase+'.stderr')).open('xb') as err:
             subprocess.run(arguments, env=entry.seed.ENV, stdout=out, stderr=err, check=True,
-                           timeout=estimates['build_timeout_seconds'])
-        if phase != 'launch-package':
+                           timeout=remaining(deadline_ns))
+        remaining(deadline_ns)
+        if phase == 'launch-package':
+            # The launch CLI execs its helper; use its newly retained full build
+            # result, rather than parsing mixed JSON/launcher diagnostics stderr.
+            candidates = []
+            for path in set(requests.glob('request-*/result.json'))-before_launch:
+                candidate = entry.runtime.read(path)
+                if 'resolver_evidence' in candidate:
+                    assert Path(candidate['resolver_evidence']) == path.parent
+                    candidates.append(candidate)
+            assert len(candidates) == 1, 'fresh launch must retain exactly one production source-entry build result'
+            row = candidates[0]
+        else:
             row = entry.runtime.read(state/(phase+'.stdout'))
-            assert row['source'] == request['source'] and row['input_index_sha256'] == pin
-            assert row['full_runtime_build'] and not row['runtime_release_downloaded']
-            assert not row['runtime_started'] and not row['runtime_activated'] and not row['staged_for_boot']
-            native = entry.runtime.read(Path(row['prepared_configuration']), row['build_configuration_sha256'])
-            assert native['cache'] == str(state/'cache/cargo-build')
-            assert native['stores'] == stores
-            rows[phase] = row
+        receipts[phase] = verify_receipts(entry, row, state, request, index, machine_pin)
+        rows[phase] = row
+        remaining(deadline_ns)
     # --verify-package returns before normal manager/hardware startup. Retained
     # startup config is checked by the production launcher, not manufactured here.
     startup = entry.startup_record(machine)
     sealed = entry.runtime.read(state/'generations'/(startup['initial_generation']+'.json'))
     assert sealed['runtime']['source'] == request['source']
+    launch = rows['launch-package']
+    assert startup['initial_generation'] == launch['generation_id']
+    assert startup['configuration'] == launch['launch_configuration']
+    assert startup['configuration_sha256'] == launch['launch_configuration_sha256'] == launch['build_configuration_sha256']
     assert entry.runtime.source_identity(source) == request['source']
-    save(state/'summary.json', dict(schema=1, source=request['source'], index_sha256=pin,
+    remaining(deadline_ns)
+    save(state/'execution-summary.json', dict(schema=1, source=request['source'], index_sha256=pin,
         generation_id=startup['initial_generation'], factory_sudo_sha256=admission['factory_sudo_sha256'],
         actual_arm_sudo_executed=True, source_entry_full_build_executed=True,
         production_three_sudo_build_gates_executed=True, production_launch_verify_package_executed=True,
         generation_ids={k: row['generation_id'] for k, row in rows.items()},
+        production_sudo_receipts=receipts, cleanup_verified=False,
+        overall_budget_seconds=estimates['build_timeout_seconds'],
+        factory_admission_in_overall_budget=True, startup_20_second_policy_changed=False,
+        payload_finished_monotonic_ns=time.monotonic_ns(),
         cargo_cache_identity_path=str(state/'cache/cargo-build'),
         public_metadata_verified=True, warm_same_path_entry_completed=True,
         public_metadata_preflight_transferred_bytes=request['public_metadata_transferred_bytes'],
@@ -280,6 +367,8 @@ def run():
     if resolver.is_symlink():
         resolver.unlink()
     resolver.write_bytes(Path('/etc/resolv.conf').read_bytes())
+    request['payload_started_monotonic_ns'] = time.monotonic_ns()
+    request['payload_deadline_monotonic_ns'] = request['payload_started_monotonic_ns']+request['estimates']['build_timeout_seconds']*1_000_000_000
     save(state/'request.json', request)
     group = scope/'source-entry-full'
     group.mkdir()
@@ -307,8 +396,12 @@ def run():
     pidfd = os.pidfd_open(pid)
     procfd = os.open(f'/proc/{pid}', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     reaped = False
+    result = None
+    deadline_ns = request['payload_deadline_monotonic_ns']
+    # This watchdog remains outside the payload cgroup. Its cleanup reserve is
+    # separate from the one shared ARM admission/build/package-check budget.
     try:
-        assert select.select([ready], [], [], 30)[0]
+        assert select.select([ready], [], [], remaining(deadline_ns, 30))[0]
         assert os.read(ready, 1) == b'U', 'new user namespace did not become ready'
         for name in ('uid_map', 'gid_map'):
             fd = os.open(name, os.O_WRONLY | os.O_NOFOLLOW, dir_fd=procfd)
@@ -317,46 +410,62 @@ def run():
             finally:
                 os.close(fd)
         os.write(send_go, b'M')
-        deadline = time.monotonic()+request['estimates']['build_timeout_seconds']
         while True:
+            remaining(deadline_ns)
             waited, status = os.waitpid(pid, os.WNOHANG)
             if waited:
                 reaped = True
                 break
-            if time.monotonic() >= deadline:
-                raise TimeoutError('full entry operation deadline exceeded; original startup deadline unchanged')
-            time.sleep(0.2)
+            time.sleep(remaining(deadline_ns, 0.2))
+        remaining(deadline_ns)
         if os.waitstatus_to_exitcode(status):
             raise RuntimeError('factory entry failed; see source-entry-full namespace and state stderr')
-        result = json.loads((state/'summary.json').read_text())
+        result = json.loads((state/'execution-summary.json').read_text())
         assert result['source'] == request['source'] and result['index_sha256'] == request['index_sha256']
-        result.update(host_kernel=os.uname().release, host_architecture=os.uname().machine,
-            factory_image_sha256=transport.RAW_SHA, qemu_sha256=qemu_sha)
-        save(work/'result.json', result)
+        assert result['payload_finished_monotonic_ns'] < deadline_ns
+        remaining(deadline_ns)
     finally:
-        assert group.stat().st_ino == inode and group.parent == scope
-        write(group/'cgroup.kill', 1)
-        if not reaped:
-            try:
-                signal.pidfd_send_signal(pidfd, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-            os.waitpid(pid, 0)
-        for fd in (pidfd, procfd, ready, send_go):
-            os.close(fd)
-        deadline = time.monotonic()+10
-        while True:
-            groups = [group, *(p for p in group.rglob('*') if p.is_dir() and not p.is_symlink())]
-            assert len(groups) <= 1024
-            if all(not (p/'cgroup.procs').read_text().strip() for p in groups):
-                for path in sorted(groups, key=lambda p: len(p.parts), reverse=True):
-                    path.rmdir()
-                break
-            if time.monotonic() >= deadline:
-                raise TimeoutError('owned full entry scope remained populated')
-            time.sleep(0.05)
-        assert transport.handlers() == original, 'shared binfmt changed'
-        assert Path('/sys/fs/cgroup/cgroup.subtree_control').read_text() == global_control, 'shared controller changed'
+        cleanup_deadline_ns = time.monotonic_ns()+CLEANUP_RESERVE_SECONDS*1_000_000_000
+        cleanup = dict(schema=1, source=request['source'], index_sha256=request['index_sha256'],
+            cleanup_reserve_seconds=CLEANUP_RESERVE_SECONDS, scope_path=str(group), scope_inode=inode,
+            outer_job_scope_cleanup_is_separate=True, owned_cgroup_removed=False,
+            shared_binfmt_unchanged=False, shared_controller_unchanged=False)
+        try:
+            assert group.stat().st_ino == inode and group.parent == scope
+            write(group/'cgroup.kill', 1)
+            if not reaped:
+                try:
+                    signal.pidfd_send_signal(pidfd, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                if not select.select([pidfd], [], [], remaining(cleanup_deadline_ns))[0]:
+                    raise TimeoutError('owned entry child did not exit within cleanup reserve')
+                os.waitpid(pid, 0)
+            while True:
+                remaining(cleanup_deadline_ns)
+                groups = [group, *(p for p in group.rglob('*') if p.is_dir() and not p.is_symlink())]
+                assert len(groups) <= 1024
+                if all(not (p/'cgroup.procs').read_text().strip() for p in groups):
+                    for path in sorted(groups, key=lambda p: len(p.parts), reverse=True):
+                        path.rmdir()
+                    cleanup['owned_cgroup_removed'] = True
+                    break
+                time.sleep(remaining(cleanup_deadline_ns, 0.05))
+            cleanup['shared_binfmt_unchanged'] = transport.handlers() == original
+            cleanup['shared_controller_unchanged'] = Path('/sys/fs/cgroup/cgroup.subtree_control').read_text() == global_control
+            assert cleanup['shared_binfmt_unchanged'] and cleanup['shared_controller_unchanged']
+            remaining(cleanup_deadline_ns)
+        finally:
+            for fd in (pidfd, procfd, ready, send_go):
+                os.close(fd)
+            # Uploaded by the existing state/*.json artifact path even on failure.
+            save(state/'cleanup.json', cleanup)
+    # Any payload/cleanup exception skips this final success result entirely.
+    assert result is not None and cleanup['owned_cgroup_removed']
+    result.update(cleanup_verified=True, cleanup_evidence_sha256=checksum(state/'cleanup.json'),
+        host_kernel=os.uname().release, host_architecture=os.uname().machine,
+        factory_image_sha256=transport.RAW_SHA, qemu_sha256=qemu_sha)
+    save(work/'result.json', result)
 
 
 if __name__ == '__main__':
