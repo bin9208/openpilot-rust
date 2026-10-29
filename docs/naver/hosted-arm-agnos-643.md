@@ -52,3 +52,10 @@ GitHub Actions ARM 러너의4CPU를 확인했다. 이미지 다운로드8.582초
 기존 x86 기준과 같은 PRoot5.5.0의 소스
 `25dc6a3134891f98a79f57ce1c2c1b23ff15cad1`를 고정해 GitHub ARM 안에서 직접 빌드하고,
 실제 PRoot 실행을 먼저 확인하도록 수정한다. AGNOS 이미지·소스·Rust·컴파일 명령은 유지한다.
+
+## 별도 Fast checks 병행 실행 제거 — 2026-10-30 KST
+
+사용자 지시로 현재 작업의 push마다 ARM 비교와 함께 실행되던 별도 `Fast checks`의
+push 트리거를 제거했다. PR 필수 검사와 수동 실행은 유지하며, CI routing의 기존
+검사도 새 이벤트 정책에 맞췄다. 로컬 확인은 YAML/Python 문법과 diff 검토로 제한한다.
+진행 중이던 Fast checks40945498078만 취소하고 ARM 비교40945498124는 유지했다.
