@@ -1,0 +1,77 @@
+name: Messaging allocation
+
+on:
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'rust/crates/messaging/**'
+      - 'rust/crates/msgq/**'
+      - 'rust/crates/cereal/**'
+      - 'rust/Cargo.toml'
+      - 'rust/Cargo.lock'
+      - 'rust/tools/messaging_update_allocation_probe.rs'
+      - 'rust/tools/check_message_state.py'
+      - 'tools/ci/messaging-allocation-431.sh'
+      - '.github/workflows/messaging-allocation-431.yml'
+  push:
+    branches: [dev]
+    paths:
+      - 'rust/crates/messaging/**'
+      - 'rust/crates/msgq/**'
+      - 'rust/crates/cereal/**'
+      - 'rust/Cargo.toml'
+      - 'rust/Cargo.lock'
+      - 'rust/tools/messaging_update_allocation_probe.rs'
+      - 'rust/tools/check_message_state.py'
+      - 'tools/ci/messaging-allocation-431.sh'
+      - '.github/workflows/messaging-allocation-431.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: messaging-allocation-431-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  comparison:
+    name: messaging allocation (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Prepare focused comparison dependencies
+        run: |
+          set -euo pipefail
+          available=$(df -B1 --output=avail "$RUNNER_TEMP" | tail -n 1)
+          test "$available" -ge $((8 * 1024 * 1024 * 1024))
+          printf 'CARGO_BUILD_JOBS=%s\nRUST_TEST_THREADS=%s\n' "$(nproc)" "$(nproc)" >> "$GITHUB_ENV"
+          sudo apt-get update
+          sudo apt-get install -y capnproto g++
+          rustup toolchain install 1.94.0 --profile minimal --component clippy
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 zstandard==0.25.0
+      - name: Compare source behavior and actual subscriber allocation
+        run: bash tools/ci/messaging-allocation-431.sh
+      - name: Preserve exact source and comparison evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: messaging-allocation-431-${{ matrix.runner }}
+          path: ${{ runner.temp }}/messaging-allocation-431/evidence/
+          if-no-files-found: warn

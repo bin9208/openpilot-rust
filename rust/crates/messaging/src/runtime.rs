@@ -67,11 +67,13 @@ impl SubMaster {
 
     pub fn update(&mut self, timeout: Duration) -> Result<(), Error> {
         let messages = self.subscriptions.receive(timeout)?;
-        let messages: Vec<_> = messages.into_iter().map(|message| message.bytes).collect();
-        Ok(self.state.update_with_clock(&messages, || {
-            let now = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
-            now.tv_sec as f64 + now.tv_nsec as f64 / 1e9
-        })?)
+        Ok(self.state.update_with_clock(
+            messages.iter().map(|message| message.bytes.as_slice()),
+            || {
+                let now = rustix::time::clock_gettime(rustix::time::ClockId::Monotonic);
+                now.tv_sec as f64 + now.tv_nsec as f64 / 1e9
+            },
+        )?)
     }
 }
 
