@@ -18,7 +18,7 @@ GitHub [공식 runner 문서](https://docs.github.com/en/actions/reference/runne
 
 | 실행 풀 | 대상 |
 | --- | --- |
-| 등록 공통 `[self-hosted, Linux, X64]` | workspace/build_release/arm-build, 일반 X64 runtime·memory·빌드, matrix X64 행, 기존 AGNOS prerelease |
+| 등록 공통 `[self-hosted, Linux, X64, openpilot-rust]` | workspace/build_release/arm-build, 일반 X64 runtime·memory·빌드, matrix X64 행, 기존 AGNOS prerelease |
 | GitHub `ubuntu-24.04` | route/fast-checks/docs/model_web/coordination gate/기존 조건부 delivery 요청 |
 | GitHub `ubuntu-24.04-arm` | planner/radard/Xiaoge/CarrotMan/WebRTC/webcam matrix ARM 행, radar-arm, carrot-navi-arm |
 
@@ -184,3 +184,25 @@ runner_policy의 함수/CLI API는 그대로 유지하고 allowlist에 실제 AP
 로컬 AST/YAML/Bash 문법/diff 및 원문 구조 비교만 수행했으며 실제 기능·빌드·테스트와
 원격 push·dispatch·취소·재시작은 하지 않았다. 새 정확 SHA의 실행 근거는 부모 검증이
 필요하다. 이전 두 runner/hosted-X64 우선 기록은 최신 사용자 정책으로 대체된다.
+
+
+## 최종 공통 label과 최소 네 hosted native ARM 준비 작업
+
+최신 사용자 지시의 공통 label `openpilot-rust`를 실제 CI와 기존 AGNOS delivery의
+모든 공통 self-hosted runs-on 및 matrix X64 선택식에 추가한다. 이름 allowlist는
+이미 API에서 확인한 세 등록 이름을 유지한다. 부모가 실제 세 runner에 공통 label
+적용을 확인한 뒤 push한다. 이 로컬 작업에서는 runner label API를 변경하거나
+적용 완료를 주장하지 않는다.
+
+GitHub hosted는 fast/docs/coordination과 native ARM에 분담한다. 현재 그래프에서
+planner/radard/Xiaoge/CarrotMan/WebRTC/webcam의 native ARM6행과 radar-arm/
+carrot-navi-arm2개, 총8개 hosted 작업은 같은 integration-gate 성공 직후 함께
+준비된다. 이들끼리의 직렬 needs는 없고 matrix max-parallel2가 X64와 ARM을 동시에
+허용한다. 따라서 integration 이후 최소4개의 hosted ready 작업과 self-hosted3대의
+동시 분산이 가능한 구조다. 실제7개 동시 실행을 관측한 결과는 아직 없다.
+
+integration 전의 fast/docs 선행 정책은 이번에 풀지 않는다. 기존 모든 check/gate
+목록·검사 조건·원래 명령·pin/threshold·공유 cache 및 job owner/cleanup 절차는
+직전 커밋 그대로다. validation의 parallel-v2와 발행의 기존 write group도 보존한다.
+정적 YAML 대조·AST·Bash 문법/diff만 확인하고, 최소4개 hosted ready 작업의 그래프
+회귀를 추가했다. 기능·빌드·테스트·원격 push/CI 조작은 수행하지 않았다.
