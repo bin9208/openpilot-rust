@@ -305,6 +305,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     if 'runs-on' in before:
                         self.assertEqual(after['if'], condition(before.get('if', '')))
                     for event, config in original.get('on', {}).items():
+                        if relative == '.github/workflows/fast-checks.yml' and event == 'push':
+                            self.assertNotIn('push', current['on'])
+                            continue  # 2026-10-30: explicit removal of parallel Fast checks.
                         self.assertIn(event, current['on'])
                         if isinstance(config, dict) and 'branches' in config:
                             self.assertTrue(set(config['branches']).issubset(current['on'][event]['branches']))
