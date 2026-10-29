@@ -94,6 +94,8 @@ class WorkflowPolicyTests(unittest.TestCase):
 
   def test_runtime_foundation_logical_architectures_share_the_self_hosted_pool(self):
     jobs = workflow('runtime-source-build.yml')['jobs']
+    jobs.update({'messaging-' + job_id: job
+                 for job_id, job in workflow('messaging-allocation-431.yml')['jobs'].items()})
     self.assertTrue(jobs)
     trusted = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}"
     for job_id, job in jobs.items():

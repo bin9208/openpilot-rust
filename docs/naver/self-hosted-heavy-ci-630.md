@@ -12,6 +12,9 @@
 - Rust의 실제 실행39job, 통합 하위 workflow의 실행13job과 runtime-build
   X64/ARM matrix는 `[self-hosted, Linux, X64, openpilot-rust]` 풀을 사용한다.
   등록된 `bin-actions`, `bin-actions2`, `bin-actions3` 모두 이 라벨을 가진다.
+- 개발 중 dev에 병합된 PR #639의 messaging allocation X64/ARM 검사도 같은 풀과
+  기존 ARM transport로 배치한다. 메시징 구현·고정 기준·실제 할당/원본 비교 명령은
+  그대로 보존하며, 다른 작업의 진행 중 검사를 취소하지 않는다.
 - 빠른 문법·정책·작은 회귀, 문서 검사, 필수 결과 집계는 hosted에 둔다.
   빠른 검사에 있던 ONNX/Gradle 실행은 기존 셀프호스트 Jetlink 검사로 이동한다.
 - 기존 검사 명령·입력·필수 gate·needs·matrix를 보존한다. ARM user space의
