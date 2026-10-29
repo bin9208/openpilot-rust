@@ -564,6 +564,7 @@ jobs:
           launcher_target=$(cargo metadata --no-deps --locked --format-version 1 | python -c 'import json,sys; print(json.load(sys.stdin)["target_directory"])')
           export WIFI_PROCESS_CHILD_BINARY="$launcher_target/debug/openpilot-process-child"
           export MODEM_PROCESS_CHILD_BINARY="$WIFI_PROCESS_CHILD_BINARY"
+          export MODEM_SOURCE_PYTHON="$(command -v python)"
           test -x "$WIFI_PROCESS_CHILD_BINARY"
           cargo test --workspace --locked --features openpilot-modem/helper-lifetime-tests
       - name: Require complete Hyundai schemas after workspace tests

@@ -281,6 +281,13 @@ outcome returncode0/last_step=completed, source/index 불변과 native ELF hash5
   모델 입력/동작을 바꾸는 `CPU_COUNT`/`JIT` 값은 이번 변경에 포함하지 않는다.
 
 기존 job·needs·matrix·수용 명령과 전체 필수 gate 범위는 유지한다. 공용 CI 일괄 제외의
-최소 예외이며, #606과의 공유 파일은 이 workflow1개뿐이다. 다른 작업 브랜치나 실제
+최소 예외이며, workflow와 고정 cap을 검사하는 기존 CI 정책 테스트에 한정한다. 다른 작업 브랜치나 실제
 진행 중인 CI를 수정/취소하지 않는다. 정상 PR의 정확 새 SHA 결과와 dev 병합·별도
 병합 후 검사까지 계속 진행하며 집중 결과를 필수 status로 복사하지 않는다.
+
+첫 정상 PR head `aae73b2d76db653b91ff90d1e575f7b9ce9be2cb`의
+[fast40894426442](https://github.com/bin9208/openpilot-rust/actions/runs/40894426442)는
+기존 webcam CI 정책이 `CARGO_BUILD_JOBS=2` 키를 직접 요구해 실패했다. 기존 미디어/
+아키텍처/메모리 관련 단언은 보존하고 사용자 지시에 맞게 해당 고정 cap 부재를 검사한다.
+독립 읽기 리뷰가 찾은 workspace modem 원본 비교용 `MODEM_SOURCE_PYTHON`도 같은
+setup-python의 실제 절대 경로로 연결한다. 테스트를 skip하거나 원본 비교를 제거하지 않는다.
