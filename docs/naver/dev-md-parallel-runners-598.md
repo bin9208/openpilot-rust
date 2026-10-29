@@ -1,5 +1,14 @@
 # dev-md의 세 실행 풀과 native ARM 병렬 검사 — #598
 
+## 2026-10-30 — workspace 구형 순서 단언 보완
+
+`c1c78e6f1` [CI40916707849](https://github.com/bin9208/openpilot-rust/actions/runs/40916707849)의
+fast job123599508979는110개 중109개 성공·1개 실패였다. 별도 isolation 검사의
+workspace `needs: integration-gate` 단언이 남아 있었으므로 새 `check_user_docs` 순서와
+기존 route/full·fast 조건을 함께 검사한다. workspace 원래 명령과 최종 gate 단언은
+유지한다. 다른 후속 gate의 실패는 이 빠른 검사 실패의 결과이며 runtime 실패로
+표시하지 않는다. 로컬은 AST/diff만 확인하고 전체110개는 Actions에서 확인한다.
+
 ## 사용자 지시와 범위
 
 사용자가 2026-10-29 GitHub-hosted Actions와 등록 runner `bin-actions`,

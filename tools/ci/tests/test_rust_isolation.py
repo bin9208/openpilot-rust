@@ -146,10 +146,12 @@ class RustIsolationTests(unittest.TestCase):
                 self.assertNotIn('if', step)
                 self.assertNotIn('continue-on-error', step)
 
-    def test_workspace_checks_wait_for_integration(self):
+    def test_workspace_checks_wait_for_full_scope_docs_and_parallel_integration(self):
         data = yaml.load((ROOT / '.github/workflows/ci.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['workspace']
-        self.assertEqual(job['needs'], ['integration-gate'])
+        self.assertEqual(job['needs'], ['check_user_docs'])
+        self.assertEqual(data['jobs']['check_user_docs']['needs'], ['route', 'fast-checks'])
+        self.assertIn("needs.route.outputs.full == 'true'", data['jobs']['check_user_docs']['if'])
         self.assertNotIn('if', job)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('cargo fmt --all --check', 'cargo clippy --workspace', 'cargo test --workspace',
