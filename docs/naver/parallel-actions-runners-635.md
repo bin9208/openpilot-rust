@@ -96,3 +96,34 @@ python3 -m unittest -v \
   tools.ci.tests.test_native_source_runtime.SourceRuntimeTests.test_driver_sigkill_also_stops_the_non_root_download_command \
   tools.ci.tests.test_native_source_runtime.SourceRuntimeTests.test_original_owner_death_stops_only_the_dedicated_command_and_bounds_capture
 ```
+
+## 진단 브랜치 전용 hosted X64 → ARM QEMU 실행
+
+`native-source-command-diagnostics.yml`은
+`codex/fix-635-source-command-diagnostics` push와 명시 dispatch만 받으며 job도
+같은 저장소·브랜치 및 기존 trusted source 조건으로 제한한다. hosted `ubuntu-24.04`
+X64에서 기존 job-temp/local-arm의 고정 PRoot·Ubuntu ARM rootfs·Python 준비를 그대로
+사용하고 `LOCAL_CI_GUEST_IDENTITY=unprivileged`로 위 두 case만 실행한다.
+host 설정 확인 step은 Bash, 테스트는 기존 `openpilot-local-shell {0}`이다.
+Rust toolchain 설치·빌드나 공장 image 준비 step은 추가하지 않는다. 공통 local-arm의
+기존 bootstrap은 바꾸지 않으므로 그 내부 rustup-init 준비와 모든 입력 pin도 유지한다.
+
+job 예산은30분이며 두 case 내부의 원래 예산·argv·수용 기준은 변경하지 않는다.
+stdout/stderr는 합쳐 앞64KiB만 console과 job 소유 로그에 남긴다. 초과 출력은 끝까지
+읽어서 출력 한도가 unittest에 SIGPIPE를 보내지 않으며 pipefail로 원래 실패를 유지한다.
+always 경로는 local-arm finish, 제한된 로그와 실행 identity/도구 version artifact,
+기존 job-temp 소유권 검증 cleanup 순서다. self-hosted heavy 실행을 추가하지 않는다.
+
+공통 routing 검사는 이 workflow 이름을 hosted 목록에 넣고 이 job 하나만 generic ARM
+분기보다 앞에서 hosted X64로 대조한다. 원본 fixture·기존 gate·workflow는 수정하지 않는다.
+이 workflow는 내부 오류 확인용이며 공개 입력·전체 source build·factory ARM·기기 정상
+시작의 성공 증거가 아니다. 원인 확정 뒤 main에 이 workflow를 통합할 필요는 없다.
+로컬은 AST/YAML/Bash 구문·diff만 확인하며 push·dispatch·기능 실행은 부모가 담당한다.
+
+
+진단 branch 전용 `native-source-command-diagnostics.yml`을 추가한다. hosted X64의
+원래 pinned local-arm PRoot/QEMU·unprivileged 환경에서 위 두 case만 실행하고
+실패를 그대로 유지한다. 실제 ARM host 성공이나 전체 source build 성공을 대신하지
+않는다. Rust build와 factory image download 없이 동일 source command를 진단하며
+기존 self-hosted heavy 검사를 점유하지 않는다. job별 stdout/stderr는 기존4096바이트
+진단과 두 case의 로그로 제한하고 원래 owner·SIGKILL·10/5초 단언을 유지한다.

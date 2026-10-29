@@ -11,9 +11,9 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 BASE = 'e445c9d19c3041bc79d8624589e2eb6ba7d061c6'
 LABELS = ['self-hosted', 'Linux', 'X64', 'dev-md-local']
-HOSTED_WORKFLOWS = {'fast-checks.yml', 'integration.yml', 'jetlink.yml', 'native-cache-reuse.yml',
+HOSTED_WORKFLOWS = {'native-source-command-diagnostics.yml', 'fast-checks.yml', 'integration.yml', 'jetlink.yml', 'native-cache-reuse.yml',
     'naver-apk-tools.yml', 'naver-ci.yml', 'tests.yaml', 'user-docs.yaml', 'wiki-settings-check.yaml',
-    'carrot-peer-readiness.yml', 'rust.yml'}
+    'carrot-peer-readiness.yml', 'rust.yml', 'native-source-command-diagnostics.yml'}
 OWNED_WORKFLOWS = {'native-apt-scope.yml', 'native-input-publication.yml', 'native-resource-guard.yml',
     'native-source-reuse.yml', 'runtime-native-environment.yml', 'runtime-source-build.yml'}
 SAFETY = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
@@ -112,6 +112,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                             expected = LABELS  # Inherited sync/publish routing stays unchanged.
                         elif path.name == 'tests.yaml' and name == 'build_release':
                             expected = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
+                        elif path.name == 'native-source-command-diagnostics.yml':
+                            expected = 'ubuntu-24.04'  # Hosted X64 deliberately diagnoses the original ARM PRoot environment.
                         elif ('runner' in job.get('strategy', {}).get('matrix', {})
                               or any('runner' in row for row in job.get('strategy', {}).get('matrix', {}).get('include', []))):
                             expected = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}'
@@ -120,6 +122,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                                         else ['self-hosted', 'Linux', 'X64', 'openpilot-rust'])
                         elif path.name == 'jetlink.yml' and name == 'model':
                             expected = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
+                        elif path.name == 'native-source-command-diagnostics.yml' and name == 'source-command-diagnostics':
+                            expected = 'ubuntu-24.04'  # Hosted X64 intentionally runs the original ARM QEMU transport.
                         elif job.get('env', {}).get('LOCAL_CI_ARCH') == 'aarch64':
                             expected = 'ubuntu-24.04-arm'
                         else:

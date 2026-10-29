@@ -1,0 +1,54 @@
+name: PRoot ARM source command diagnostics
+on:
+  push:
+    branches: [codex/fix-635-source-command-diagnostics]
+    paths:
+      - tools/ci/tests/test_native_source_runtime.py
+      - .github/workflows/native-source-command-diagnostics.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: source-command-diagnostics-${{ github.ref }}
+  queue: max
+  cancel-in-progress: false
+jobs:
+  source-owner:
+    name: Same PRoot ARM owner and cancellation cases
+    if: ${{ github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LOCAL_CI_ARCH: aarch64
+      LOCAL_CI_GUEST_IDENTITY: unprivileged
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
+    steps:
+      - uses: actions/checkout@v7
+        with: {fetch-depth: 0, persist-credentials: false}
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
+      - name: Retain the original failure and bounded child stderr before Rust builds
+        run: |
+          set -o pipefail
+          python3 -m unittest -v \
+            tools.ci.tests.test_native_source_runtime.SourceRuntimeTests.test_driver_sigkill_also_stops_the_non_root_download_command \
+            tools.ci.tests.test_native_source_runtime.SourceRuntimeTests.test_original_owner_death_stops_only_the_dedicated_command_and_bounds_capture \
+            2>&1 | tee "$CI_JOB_TEMP/source-command-diagnostics.log"
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: source-command-diagnostics-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/source-command-diagnostics.log
+            ${{ env.CI_JOB_TEMP }}/local-arm/execution.json
+            ${{ env.CI_JOB_TEMP }}/local-arm/file-elf.txt
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
