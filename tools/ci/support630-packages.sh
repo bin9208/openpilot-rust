@@ -11,6 +11,7 @@ mkdir -p -- "$EVIDENCE/packages"
 export MODEM_SOURCE_PYTHON="$SOURCE_PYTHON"
 export PYTHONPATH="$SOURCE_ROOT:$SOURCE_ROOT/rust/tools${PYTHONPATH:+:$PYTHONPATH}"
 export MODEM_PROCESS_CHILD_BINARY="$CARGO_TARGET_DIR/debug/openpilot-process-child"
+export WIFI_PROCESS_CHILD_BINARY="$MODEM_PROCESS_CHILD_BINARY"
 packages=(-p openpilot-web-upload -p openpilot-bootlog -p openpilot-tombstoned
   -p openpilot-soundd -p openpilot-bluetooth -p openpilot-wifi -p openpilot-modem
   -p openpilot-lpa -p openpilot-process-supervision)
