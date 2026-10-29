@@ -256,3 +256,12 @@ PPA404를 해결하는 private official source/list view를 `self-hosted` 환경
 적용한다. hosted는 제공된 mirror 설정을 유지하고 기존 native architecture 범위만
 선택한다. URI allowlist·서명 기준을 넓히지 않으며 명시 config/architecture와 원래
 검사 command를 보존한다. AST/Bash/diff만 확인하고 기능 결과는 Actions에서 확인한다.
+
+
+## 2026-10-29 — runner admission 이후 실제 runtime gate 선택
+
+#606의 실제 planner job123497008119는 첫 step에 runner admission이 추가된 뒤
+기존 test의 `steps[0].env` 가정으로 실패했다. main의 planner/Xiaoge는 이미 env
+식별자로 실제 gate를 고른다. 같은 main card 회귀에도 CARD env를 가진 유일 step을
+선택해 원래 `test "$CARD" = success` 단언을 유지한다. runner admission·전체 needs·
+수용 상태·command는 바꾸지 않고 AST/diff 읽기만 수행한다.
