@@ -306,3 +306,30 @@ ubuntu24.04에 배치한다. 대형 workspace/model/memory/AGNOS는 세 self-hos
 pool을 우선 사용하며 native ARM·이 네 검사와 병렬 실행한다. 기존 integration 이후
 의존과 전체 최종 gate·argv·허용 기준·target 소유권·publication write group은
 그대로다. AST/YAML/diff만 확인하며 실제 속도·성공은 해당 source의 Actions에서 확인한다.
+
+## 2026-10-30 — 독립 일반 X64 runtime 18개를 hosted로 추가 분산
+
+사용자는 bin-actions2/3이 같은 PC여서 세 등록 runner가 실제로는 두 PC이며,
+hosted 작업 종료 뒤 일반 X64 작업 약30개가 기다리는 병목을 확인했다.
+기준 `070ea919977d0c49283b0e73b9948a5165cf4f95`의 `ci.yml`에서 다음18개 job이
+실제로 존재하고 main `rust.yml`의 job ID·이름과 일치함을 읽어 대조했다.
+이 job들의 `runs-on`만 `ubuntu-24.04`로 바꾼다.
+
+```text
+encoder-runtime, camera-runtime, panda-runtime, selfdrive-runtime,
+radar-runtime, navd-runtime, carrot-navi-runtime, startup-runtime,
+startup-services, sensor-audio, gnss-runtime, controls-runtime,
+estimation-runtime, ui-connectivity, platform-runtime, hardware-runtime,
+logger-runtime, athena-runtime
+```
+
+기존 hosted4개 support/telemetry/web-upload-timeouts/joystickd는 보존한다.
+workspace·ARM build·model·memory·card·UI 및 oracle matrix의 X64·AGNOS/발행은
+원래 경로 그대로다. needs·실행 argv·pin·feature·env·원본 command hash/baseline·
+필수 gate와 수용 기준은 변경하지 않는다. routing 회귀는22개 hosted runtime을
+명시적으로 대조하고 estimation-runtime의 이전 self-hosted 기대만 옮긴다.
+
+로컬에서 Python AST·YAML·181개 Bash 구문 및 기준070 대비 diff 검사를 통과했다.
+18개 selector를 원래 값으로 복원한 정적 구조가 기준070 전체 workflow와 일치했다.
+기능·빌드·원격 push·CI dispatch/cancel은 하지 않으며 기준070의 실행은 부모가 관리한다.
+dev-md 변경을 dev/main에 통합하지 않고 새 정확 source의 결과는 Actions에서 확인한다.

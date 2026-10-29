@@ -877,7 +877,7 @@ jobs:
   logger-runtime:
     needs: [integration-gate]
     name: rust original route logger
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_INCREMENTAL: '0'
@@ -1175,7 +1175,7 @@ jobs:
   startup-runtime:
     needs: [integration-gate]
     name: rust startup prerequisites
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       # Each owned provider is copied and authenticated; omit non-runtime DWARF
@@ -1272,7 +1272,7 @@ jobs:
   hardware-runtime:
     needs: [integration-gate]
     name: rust hardware and boot runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -1339,7 +1339,7 @@ jobs:
   platform-runtime:
     needs: [integration-gate]
     name: rust platform runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -1398,7 +1398,7 @@ jobs:
   startup-services:
     needs: [integration-gate]
     name: rust startup services
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -1462,7 +1462,7 @@ jobs:
   sensor-audio:
     needs: [integration-gate]
     name: rust sensor and audio runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -1519,7 +1519,7 @@ jobs:
   gnss-runtime:
     needs: [integration-gate]
     name: rust GNSS runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_INCREMENTAL: '0'
@@ -1569,7 +1569,7 @@ jobs:
   estimation-runtime:
     needs: [integration-gate]
     name: rust estimation runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CARGO_INCREMENTAL: '0'
@@ -1644,7 +1644,7 @@ jobs:
   ui-connectivity:
     needs: [integration-gate]
     name: rust UI and connectivity
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CARGO_INCREMENTAL: '0'
@@ -1713,7 +1713,7 @@ jobs:
   athena-runtime:
     needs: [integration-gate]
     name: rust Athena runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_INCREMENTAL: '0'
@@ -1754,7 +1754,7 @@ jobs:
   controls-runtime:
     needs: [integration-gate]
     name: rust control runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CARGO_INCREMENTAL: '0'
@@ -2167,7 +2167,7 @@ jobs:
   radar-runtime:
     needs: [integration-gate]
     name: rust RadarCAN source and host runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: '0'
@@ -2434,7 +2434,7 @@ jobs:
   navd-runtime:
     needs: [integration-gate]
     name: rust navigation runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CARGO_INCREMENTAL: '0'
@@ -2684,7 +2684,7 @@ jobs:
   carrot-navi-runtime:
     needs: [integration-gate]
     name: rust Carrot Navi original and host runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
@@ -2901,7 +2901,7 @@ jobs:
   selfdrive-runtime:
     needs: [integration-gate]
     name: rust selfdrived runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: '0'
@@ -2998,7 +2998,7 @@ jobs:
   panda-runtime:
     needs: [integration-gate]
     name: rust Panda runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
       CARGO_INCREMENTAL: '0'
@@ -3063,7 +3063,7 @@ jobs:
   camera-runtime:
     needs: [integration-gate]
     name: rust camera runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
       CARGO_INCREMENTAL: '0'
@@ -3133,7 +3133,7 @@ jobs:
   encoder-runtime:
     needs: [integration-gate]
     name: rust encoder runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: '0'

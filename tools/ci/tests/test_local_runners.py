@@ -13,6 +13,14 @@ POOL = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
 MATRIX_ROUTE = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}'
 ARM_JOBS = ('planner-runtime', 'radar-arm', 'radard-runtime', 'carrot-navi-arm',
             'xiaoge-runtime', 'carrot-man-runtime', 'webrtc-runtime', 'webcam-runtime')
+HOSTED_X64_RUNTIME_JOBS = (
+    'support-runtime', 'telemetry-runtime', 'web-upload-timeouts', 'joystickd-runtime',
+    'encoder-runtime', 'camera-runtime', 'panda-runtime', 'selfdrive-runtime',
+    'radar-runtime', 'navd-runtime', 'carrot-navi-runtime', 'startup-runtime',
+    'startup-services', 'sensor-audio', 'gnss-runtime', 'controls-runtime',
+    'estimation-runtime', 'ui-connectivity', 'platform-runtime', 'hardware-runtime',
+    'logger-runtime', 'athena-runtime',
+)
 
 
 def workflow(path):
@@ -38,11 +46,13 @@ class LocalRunnerPolicyTests(unittest.TestCase):
 
     def test_heavy_x64_uses_the_shared_pool_without_pinning_support630(self):
         jobs = workflow(ROOT/'.github/workflows/ci.yml')['jobs']
-        for name in ('workspace', 'build_release', 'arm-build', 'android-core', 'estimation-runtime'):
+        for name in ('workspace', 'build_release', 'arm-build', 'android-core'):
             self.assertEqual(jobs[name]['runs-on'], POOL)
         for name in ('route', 'fast-checks', 'check_user_docs', 'model_web',
                      'integration-gate', 'fast', 'arm64', 'runtime-delivery'):
             self.assertEqual(jobs[name]['runs-on'], 'ubuntu-24.04')
+        for name in HOSTED_X64_RUNTIME_JOBS:
+            self.assertEqual(jobs[name]['runs-on'], 'ubuntu-24.04', name)
         self.assertNotIn('support-630', (ROOT/'.github/workflows/ci.yml').read_text())
         for job in jobs.values():
             if job.get('runs-on') == MATRIX_ROUTE:
