@@ -113,6 +113,51 @@ def configure(root, archive_root, defaults):
     return additions
 
 
+def observed_archive_hits(root):
+    paths = sorted((root/'_diag').glob('Worker_*.log'), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not paths:
+        return []
+    with paths[0].open('rb') as stream:
+        stream.seek(max(0, paths[0].stat().st_size-256*1024))
+        lines = stream.read().decode('utf-8', errors='replace').splitlines()
+    # Return only the runner's archive-copy diagnostic, never environment/log contents.
+    return [line for line in lines if 'Found action archive ' in line and ' in cache directory ' in line]
+
+
+def schedule_reload(root, service, marker):
+    if not service or not re.fullmatch(r'actions\.runner\.[A-Za-z0-9_.-]+\.service', service):
+        return False
+    # A transient unit survives its owning Actions worker. It can only restart
+    # after this runner's final proof job leaves its marker AND all workers exit.
+    program = '''import json, pathlib, subprocess, sys, time
+root, marker, service = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3]
+worker = root/'bin/Runner.Worker'
+for attempt in range(3600):
+    active = False
+    for process in pathlib.Path('/proc').glob('[0-9]*'):
+        try:
+            if (process/'exe').resolve(strict=True) == worker:
+                active = True
+                break
+        except (OSError, RuntimeError):
+            continue
+    if marker.is_file() and not active:
+        result = subprocess.run(['/usr/bin/sudo', '-n', '/usr/bin/systemctl', 'restart', service])
+        marker.with_suffix('.json').write_text(json.dumps(dict(service=service, exit_code=result.returncode)))
+        raise SystemExit(result.returncode)
+    time.sleep(2)
+raise SystemExit('cache reload expired without interrupting an Actions worker')
+'''
+    unit = 'openpilot-cache-644-'+os.environ['RUNNER_NAME']+'-'+os.environ['GITHUB_RUN_ID']
+    result = subprocess.run(['/usr/bin/sudo', '-n', '/usr/bin/systemd-run', '--quiet', '--collect',
+        '--unit='+unit, '--on-active=15s', '--property=User='+str(os.getuid()),
+        '/usr/bin/python3', '-I', '-B', '-S', '-c', program, str(root), str(marker), service],
+        capture_output=True, text=True)
+    if result.returncode:
+        print('Idle runner reload could not be scheduled: '+result.stderr.strip(), file=sys.stderr)
+    return result.returncode == 0
+
+
 if __name__ == '__main__':
     runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_environment'](self_hosted_only=True)
     if os.geteuid() == 0:
@@ -127,9 +172,13 @@ if __name__ == '__main__':
         values = DOWNLOADS['setup'](DOWNLOADS['cache_root'](), {})
         additions = configure(root, archives, values)
         service = (root/'.service').read_text().strip() if (root/'.service').is_file() else None
+        restart_required = os.environ.get('ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE') != str(archives)
+        marker = DOWNLOADS['cache_root']()/('reload-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['RUNNER_NAME']+'.ready')
+        scheduled = schedule_reload(root, service, marker) if restart_required else False
         report = dict(runner=os.environ['RUNNER_NAME'], runner_root=str(root), service=service,
             added_cache_variables=sorted(additions), archive_cache=str(archives),
-            restart_required=os.environ.get('ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE') != str(archives),
+            restart_required=restart_required, idle_reload_scheduled=scheduled,
+            actual_runner_archive_hits=observed_archive_hits(root),
             source_commit=os.environ['GITHUB_SHA'])
         (Path(os.environ['CI_JOB_TEMP'])/'action-cache-config.json').write_text(json.dumps(report, indent=2)+'\n')
         print(json.dumps(report))

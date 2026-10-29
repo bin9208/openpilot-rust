@@ -135,6 +135,9 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/apt-reuse.log
             ${{ env.CI_JOB_TEMP }}/native-apt-sources.json
           if-no-files-found: error
+      - name: Allow the configured service to reload only after this final job exits
+        if: success()
+        run: touch "$CI_DOWNLOAD_CACHE_ROOT/reload-$GITHUB_RUN_ID-$RUNNER_NAME.ready"
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}

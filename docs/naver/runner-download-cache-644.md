@@ -26,7 +26,9 @@
   SHA의 archive를 처음 한 번 받고 digest receipt와 함께 저장한다. 공식 runner의
   `ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE`가 읽는 `<owner>_<repo>/<sha>.tar.gz` 형식이다.
   기존 `.env` 값을 보존하며 캐시 변수를 추가한다. 이 변수는 Listener 시작 때
-  읽으므로 현재 실행을 중단하지 않고 다음 안전한 재시작 때 활성화한다. tag가
+  읽으므로 systemd 서비스가 있으면 마지막 검증 job의 완료 marker와 Worker 부재를
+  확인한 별도 임시 unit이 해당 서비스만 재시작한다. 그 전에는 현재 실행을
+  중단하지 않는다. 수동 실행 Listener라면 설정 기록에 재시작 대기를 명시한다. tag가
   갱신되어 SHA가 다르면 runner는 원래 다운로드로 돌아가며 이전 코드를 쓰지 않는다.
   근거: [공식 ActionManager](https://github.com/actions/runner/blob/main/src/Runner.Worker/ActionManager.cs),
   [Listener 환경 로딩](https://github.com/actions/runner/blob/main/src/Runner.Listener/Program.cs).
@@ -50,3 +52,10 @@ SHA·경로를 artifact에 남긴다. 별도 job의 `apt-get update`에서 실�
 진행 중인 다른 source의 검증은 취소하지 않는다. 캐시 검증용 branch push에는
 최신 사용자 지시대로 별도의 Fast checks push workflow를 실행하지 않는다.
 검사 결과·적용 커밋·남은 통합 사항은 실제 Actions 완료 후 이 문서에 기록한다.
+
+2026-10-30 중간 증거: `162a51f9514ad86ae3a091522b6c7acfe85d10a6`의
+[회귀 job](https://github.com/bin9208/openpilot-rust/actions/runs/40947859838/job/123707850153)은
+캐시7개·Cargo target 격리2개·workflow/APT 정책6개·원래 명령/route12개, 총27개 검사를
+통과했다. 앞선 `a1852f6af`는 원래 frozen trigger 단언이 제거된 Fast checks push를
+계속 요구해 실패했으며 해당 한 예외만 사용자 지시에 맞춰 수정했다. source/명령
+hash 단언은 완화하지 않았다. 러너별 실사용 검증은 기존 작업 종료 뒤 진행한다.
