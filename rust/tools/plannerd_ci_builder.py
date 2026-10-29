@@ -70,6 +70,7 @@ def main():
           # output is a fresh, caller-owned artifact checked by original.build.
           shutil.rmtree(output/'sdk/include')
           shutil.copytree(sdk/'include', output/'sdk/include')
+          shutil.copytree(sdk/'licenses', output/'ci-host-licenses')
 
     original.stage_libraries = stage
     try:
@@ -85,6 +86,7 @@ def main():
       sdk, record = used
       provenance['ci_host_foreign_libraries'] = dict(sdk=str(sdk), receipt_sha256=original.digest(sdk/'receipt.json'),
           recipe=record['recipe'], files=record['files'], context=record['context'],
+          licenses=record['licenses'],
           original_generator_wheel_sha256=original.digest(args.generator_wheel or args.wheel),
           vehicle_provider_changed=False)
     path.write_text(json.dumps(provenance, indent=2)+'\n')

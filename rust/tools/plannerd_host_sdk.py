@@ -17,6 +17,9 @@ ROOT = Path(__file__).resolve().parents[2]
 LIBRARIES = ('libacados.so', 'libblasfeo.so', 'libhpipm.so', 'libqpOASES_e.so.3.1', 'libqpOASES_e.so')
 REPOSITORIES = {'acados': 'acados/acados', 'blasfeo': 'giaf/blasfeo',
                 'hpipm': 'giaf/hpipm', 'qpoases': 'acados/qpOASES'}
+# The frozen ARM notice renders nine form feeds as the visible text ^L.
+# Pin the actual upstream bytes separately; never weaken either byte check.
+QPOASES_LICENSE_SHA256 = '5df07007198989c622f5d41de8d703e7bef3d0e79d62e24332ee739a452af62a'
 
 
 def digest(path):
@@ -26,6 +29,21 @@ def digest(path):
 
 def encoded(value):
   return (json.dumps(value, sort_keys=True, separators=(',', ':'))+'\n').encode()
+
+
+def verify_license(row, source, notice):
+  upstream, bundled = source.read_bytes(), notice.read_bytes()
+  raw_sha = hashlib.sha256(upstream).hexdigest()
+  notice_sha = hashlib.sha256(bundled).hexdigest()
+  expected = QPOASES_LICENSE_SHA256 if row['name'] == 'qpoases' else row['sha256']
+  if raw_sha != expected or notice_sha != row['sha256']:
+    raise ValueError(f"{row['name']} license mismatch: source expected={expected} actual={raw_sha}; "
+                     f"notice expected={row['sha256']} actual={notice_sha}")
+  rendered = upstream.replace(b'\x0c', b'^L') if row['name'] == 'qpoases' else upstream
+  if rendered != bundled:
+    raise ValueError(f"{row['name']} notice differs beyond its documented form-feed representation")
+  return dict(source_sha256=raw_sha, bundled_notice_sha256=notice_sha,
+              visible_form_feeds=upstream.count(b'\x0c') if row['name'] == 'qpoases' else 0)
 
 
 def flags():
@@ -64,13 +82,20 @@ def prepare():
   pins = json.loads((ROOT/'rust/crates/plannerd/licenses/sources.json').read_text())
   revisions = {row['name']: row['source'].split('/blob/')[1].split('/')[0] for row in pins['licenses']}
   assert revisions['acados'] == pins['acados_revision']
+  notice_pins = {}
+  for row in pins['licenses']:
+    actual = digest(ROOT/'rust/crates/plannerd/licenses'/(row['name']+'.txt'))
+    if actual != row['sha256']:
+      raise ValueError(f"{row['name']} frozen notice differs from its original pin")
+    notice_pins[row['name']] = actual
   target = 'X64_INTEL_SANDY_BRIDGE' if 'avx' in features else 'GENERIC'
   compilers = {}
   for name in ('gcc', 'g++', 'cmake'):
     path = Path(shutil.which(name) or name).resolve(strict=True)
     compilers[name] = dict(path=str(path), sha256=digest(path))
   recipe = dict(schema=1, revisions=revisions, target=target, compilers=compilers,
-                builder_sha256=digest(__file__), upstream_recipe=pins['source_recipe'])
+                builder_sha256=digest(__file__), upstream_recipe=pins['source_recipe'],
+                bundled_notice_sha256=notice_pins)
   identity = hashlib.sha256(encoded(recipe)).hexdigest()
   sdk = job/('planner-host-sdk-'+identity)
   receipt = sdk/'receipt.json'
@@ -126,10 +151,11 @@ def prepare():
       raise ValueError('licensed dependency differs from pinned acados gitlink')
     roots[name] = source/path
     gits.append(checkout(name, roots[name]))
+  licenses = {}
   for row in pins['licenses']:
     name = row['source'].rsplit('/', 1)[1]
-    if digest(roots[row['name']]/name) != row['sha256']:
-      raise ValueError('host C source license differs from the pinned notice')
+    licenses[row['name']] = verify_license(row, roots[row['name']]/name,
+        ROOT/'rust/crates/plannerd/licenses'/(row['name']+'.txt'))
   install = work/'install'
   run([compilers['cmake']['path'], '-S', source, '-B', work/'build', '-DCMAKE_BUILD_TYPE=Release',
        '-DCMAKE_C_COMPILER='+compilers['gcc']['path'], '-DCMAKE_CXX_COMPILER='+compilers['g++']['path'],
@@ -153,7 +179,14 @@ def prepare():
     if path.is_symlink():
       raise ValueError('unexpected host SDK header alias')
   shutil.copytree(install/'include', sdk/'include', symlinks=False)
+  (sdk/'licenses').mkdir()
+  for row in pins['licenses']:
+    target = sdk/'licenses'/(row['name']+'.txt')
+    shutil.copyfile(roots[row['name']]/row['source'].rsplit('/', 1)[1], target)
+    if digest(target) != licenses[row['name']]['source_sha256']:
+      raise ValueError('upstream license changed while staging the host SDK')
   record = dict(recipe=recipe, context=context, files=tree(sdk), commands=commands,
+                licenses=licenses,
                 source_built_foreign_libraries=True, vehicle_provider_changed=False,
                 host_cpu_flags=sorted(features))
   receipt.write_bytes(encoded(record))

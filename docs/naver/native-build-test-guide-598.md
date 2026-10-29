@@ -494,3 +494,29 @@ X86_V2 complex multiply는 곱셈/덧셈을 각각 반올림하지만 Rust는 �
 host transport 기록은 x86_64 Linux `7.0.2-6-pve`, AArch64 binfmt handler 없음이다.
 QEMU/PRoot component 성공이 실제 root/sudo를 포함한 전체 source entry 성공을 뜻하지
 않으며, 해당 잔여 검증과 완전 후보·발행·정상 병합 조건은 계속 남아 있다.
+
+## 최소 ARM 도구와 라이선스 표시의 실제 실패 — #625/#626
+
+PR head `c7e7c80deafc729839e163f3022dd197d7cc52a9`, 실행 merge
+`83515e47f74198c7a1059ac8d64dc51424c8ca49`의
+[WebRTC ARM job123265711271](https://github.com/bin9208/openpilot-rust/actions/runs/40818463694/job/123265711271)은
+두 native 서비스/예제 빌드·library5개·Clippy를 통과한 뒤 `file: command not found`로
+exit127 종료했다. 이어질 소유권·미디어·HTTP 비교는 아직 실행되지 않았다. 공통 ARM
+bootstrap에 `file`을 설치하고 실제 system Python을 ARM ELF로 분류해 도구/실행 가능성을
+느린 Cargo 빌드 전에 확인한다. 원래 모든 명령과 조건은 유지한다.
+
+같은 head의 [genuine job123265022423](https://github.com/bin9208/openpilot-rust/actions/runs/40818458078/job/123265022423)은
+실제 C source를 받은 뒤 license 대조에서 끝났다. 고정4개 Git blob을 읽어 비교한 결과
+qpOASES 원문의 form feed9개만 고정 notice에서 문자 `^L`로 표시되어 있었다.
+원문26436bytes의 SHA는 `5df07007198989c622f5d41de8d703e7bef3d0e79d62e24332ee739a452af62a`,
+기존 notice26445bytes의 SHA는 `e5d44cfd3a10f2f0e54b262b46089845c9ef27d288ab678240d7ef6d73d58b19`다.
+upstream revision과 raw source SHA, 기존 notice SHA,9개 표시 변환 뒤 전체 bytes 일치를
+각각 확인한다. source contract의 notice와 sources.json은 그대로 유지하며 원문도
+CI artifact에 따로 보관한다. 원문/notice 변조와 이미 표시한 notice를 raw 원문으로
+제출하는 경우를 거부하는 회귀를 추가한다. 검사 자체를 생략하거나 whitespace를
+일반적으로 정규화하지 않는다.
+
+후속 source는 짧은 host ABI 검증을 먼저 확인하고 같은 commit으로 PR #611의 필수
+검사를 진행한다. 각 workflow의 동일 source 중복 등록은 피하며 source와 실제 결과를
+다시 읽는다. 지금 확인한 것은 기존 실행의 부분 성공과 실제 실패 원인이며, 후속
+source의 기능·전체 gate·설치 후보 성공은 아직 확인 전이다.
