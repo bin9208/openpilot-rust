@@ -19,6 +19,9 @@ jobs:
     - name: Verify tablet ownership and prepare missing tools
       shell: bash
       run: |
+        pwd
+        printf "workspace=%s\ntemp=%s\n" "$GITHUB_WORKSPACE" "$RUNNER_TEMP"
+        ls -ld "$GITHUB_WORKSPACE" "$RUNNER_TEMP"
         set -euo pipefail
         [[ "$RUNNER_NAME" == bin-Arm-tablet ]]
         [[ "$(uname -m)" == aarch64 || "$(uname -m)" == arm64 ]]
@@ -140,11 +143,3 @@ jobs:
             shutil.rmtree(root)
 
         PY
-    - name: Keep benchmark measurements
-      if: always()
-      uses: actions/upload-artifact@v6
-      with:
-        name: tablet-arm-benchmark
-        path: ${{ runner.temp }}/tablet-benchmark-results.json
-        if-no-files-found: warn
-        retention-days: 7
