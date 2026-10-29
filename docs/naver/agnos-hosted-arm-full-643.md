@@ -94,3 +94,7 @@ generic ARM, logger 재사용, QCOM, factory transport/source-entry의 배정을
 workspace 수용 조건에 연결한다. factory 검증은 원래 comma uid/gid1000과 이미지
 sudo·실제 cgroup 검증을 유지하도록 private user namespace의 ID mapping을 조정한다.
 아직 push/적용하거나 기능 실행하지 않았으며, 로컬 문법·서식·diff 검토만 수행했다.
+
+준비 시간이 길어져 이후 초안을 별도 실험 브랜치에서 검증하기로 했다. 이 결정과 범위는
+[조건부 전환 실험 기록](arm-routing-draft-643.md)에 남긴다. 실제 배정 전환은 비교 결과의
+조건 확인 이후이며, 원래 전체 측정 실행은 그대로 진행한다.

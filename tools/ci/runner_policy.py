@@ -52,6 +52,11 @@ def job_is_allowed(job, *, self_hosted_only=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--self-hosted-only', action='store_true')
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument('--self-hosted-only', action='store_true')
+    selection.add_argument('--agnos', action='store_true')
     arguments = parser.parse_args()
-    require_environment(self_hosted_only=arguments.self_hosted_only)
+    if arguments.agnos:
+        require_agnos_environment()
+    else:
+        require_environment(self_hosted_only=arguments.self_hosted_only)

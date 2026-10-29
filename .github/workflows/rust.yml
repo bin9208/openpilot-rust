@@ -667,9 +667,79 @@ jobs:
         if: always()
         with: {cleanup: 'true'}
 
+  offline-qcom-arm:
+    name: rust genuine offline QCOM compiler (ARM native)
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    env:
+      LOCAL_CI_ARCH: aarch64
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      DEV: CPU:LLVM
+      JIT: '2'
+      LLVM_PATH: /usr/lib/aarch64-linux-gnu/libLLVM-18.so
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false}
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - name: Require native ARM and admit the compiler operation
+        run: |
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_ARCH" == ARM64 ]]
+          [[ "$(uname -m)" == aarch64 ]]
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libllvm18 liblzma-dev pkg-config
+          rustup toolchain install 1.94.0 --profile minimal
+          python -m pip install numpy==2.5.3 onnx==1.20.1 pytest==9.0.2 PyYAML==6.0.3
+      - name: Preserve staging rejection and ABI audit behavior
+        run: cargo test --locked -p openpilot-dev-tools --lib qcom_compiler_stage
+      - name: Stage the genuine pinned A630 compiler for native execution
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 1024
+          mkdir -p "$RUNNER_TEMP/qcom-downloads"
+          rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=gcc cargo +1.94.0 build --locked -p openpilot-model-runtime --target aarch64-unknown-linux-gnu --bin offline-qcom-compile
+          curl --fail --location --retry 3 --max-time 180 --max-filesize 67108864 \
+            'https://raw.githubusercontent.com/commaai/agnos-builder/ec1cf237a84565a056dbbc6f433b1b1c20c07a2c/userspace/root/usr/lib/aarch64-linux-gnu/libllvm-qcom.so' \
+            --output "$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so"
+          cargo +1.94.0 run --locked -p openpilot-dev-tools --bin stage-qcom-compiler -- --native "$RUNNER_TEMP/qcom-compiler" \
+            "${CARGO_TARGET_DIR:-target}/aarch64-unknown-linux-gnu/debug/offline-qcom-compile" "$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so" \
+            /usr/lib/aarch64-linux-gnu
+          printf 'QCOM_COMPILER_COMMAND=%s\n' "$(cat "$RUNNER_TEMP/qcom-compiler/command.json")" >> "$GITHUB_ENV"
+      - name: Require genuine compilation and offline model scheduling on ARM
+        run: |
+          python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests \
+            tools/tests/test_offline_qcom_compiler.py tools/tests/test_offline_qcom_schedule.py \
+            -q --junitxml="$RUNNER_TEMP/qcom-compiler/tests.xml"
+          python -c 'import json,os,pathlib; p=pathlib.Path(os.environ["RUNNER_TEMP"])/"qcom-compiler/provenance.json"; r=json.loads(p.read_text()); assert r["execution_mode"]=="native-arm" and r["qemu_sha256"] is None and r["dependency_audit"]["compatible"]; print(r["compiler_sha256"])'
+      - name: Preserve genuine offline compiler provenance and test results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-offline-qcom-native-arm-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/qcom-compiler/provenance.json
+            ${{ env.CI_JOB_TEMP }}/qcom-compiler/command.json
+            ${{ env.CI_JOB_TEMP }}/qcom-compiler/tests.xml
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   workspace:
     name: rust workspace checks
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    needs: [offline-qcom-arm]
+    if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 120
     env:
@@ -686,6 +756,11 @@ jobs:
       run:
         working-directory: rust
     steps:
+      - name: Require the genuine ARM compiler tests before workspace acceptance
+        env:
+          ARM_COMPILER_RESULT: ${{ needs.offline-qcom-arm.result }}
+        working-directory: ${{ github.workspace }}
+        run: test "$ARM_COMPILER_RESULT" = success
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
@@ -699,7 +774,7 @@ jobs:
       - name: Reserve capacity for workspace validation
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
-      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev ffmpeg libsdl2-2.0-0 cmake qemu-user-static libc6-arm64-cross libstdc++6-arm64-cross strace
+      - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev ffmpeg libsdl2-2.0-0 cmake strace
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python -m pip install numpy==2.5.3 onnx==1.20.1 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0 pytest==9.0.2 pyzmq==27.2.0 requests==2.34.2 aiohttp==3.13.3 anyio==4.12.1 PyJWT==2.15.1 cryptography==50.0.1 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
@@ -753,29 +828,8 @@ jobs:
           if-no-files-found: warn
       - name: Compare QCOM fixtures with the original argument and packet encoder
         run: python tools/qcom_fixtures.py --verify crates/model-runtime/tests/fixtures/qcom
-      - name: Stage the genuine pinned ARM A630 compiler for offline model tests
-        run: |
-          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 1024
-          mkdir -p "$RUNNER_TEMP/qcom-downloads"
-          sudo apt-get install -y gcc-aarch64-linux-gnu
-          rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo +1.94.0 build --locked -p openpilot-model-runtime --target aarch64-unknown-linux-gnu --bin offline-qcom-compile
-          curl --fail --location --retry 3 --max-time 180 --max-filesize 67108864 \
-            'https://raw.githubusercontent.com/commaai/agnos-builder/ec1cf237a84565a056dbbc6f433b1b1c20c07a2c/userspace/root/usr/lib/aarch64-linux-gnu/libllvm-qcom.so' \
-            --output "$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so"
-          cargo +1.94.0 run --locked -p openpilot-dev-tools --bin stage-qcom-compiler -- "$RUNNER_TEMP/qcom-compiler" \
-            "${CARGO_TARGET_DIR:-target}/aarch64-unknown-linux-gnu/debug/offline-qcom-compile" "$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so" \
-            /usr/bin/qemu-aarch64-static /usr/aarch64-linux-gnu/lib
-          printf 'QCOM_COMPILER_COMMAND=%s\n' "$(cat "$RUNNER_TEMP/qcom-compiler/command.json")" >> "$GITHUB_ENV"
-      - name: Preserve genuine offline compiler provenance
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: rust-offline-qcom-compiler-provenance
-          path: ${{ env.CI_JOB_TEMP }}/qcom-compiler/provenance.json
-          if-no-files-found: warn
       - name: Compare captured graphs and original camera warps with Rust
-        run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests -q
+        run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests -q --ignore=tools/tests/test_offline_qcom_compiler.py --ignore=tools/tests/test_offline_qcom_schedule.py
       - name: Fetch the pinned model from this independent repository
         run: git lfs pull --include=openpilot/selfdrive/modeld/models/driving_supercombo.onnx --exclude=''
       - name: Compare actual models and recurrent policy with Rust
@@ -3358,9 +3412,10 @@ jobs:
   arm64:
     name: rust aarch64 build
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
-    timeout-minutes: 120
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
     env:
+      LOCAL_CI_ARCH: aarch64
       CARGO_INCREMENTAL: '0'
     steps:
       - uses: actions/checkout@v7
@@ -3371,10 +3426,15 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - name: Require native ARM execution for every generic aarch64 build
+        run: |
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_ARCH" == ARM64 ]]
+          [[ "$(uname -m)" == aarch64 ]]
+          python3 -c 'import os; cpus=sorted(os.sched_getaffinity(0)); assert len(cpus)>1; print("ARM_BUILD_CPUS", cpus)'
       - name: Reserve capacity for generic ARM build dependencies
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
-          sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make cmake
+          sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev clang libclang-dev make cmake
       - name: Stage native GNU aarch64 startup renderer and portable loader headers
         run: |
           sudo dpkg --add-architecture arm64

@@ -20,21 +20,22 @@ jobs:
   entry:
     name: Factory ARM production build seal and package launch
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.repository == 'bin9208/openpilot-rust' && github.event_name == 'workflow_dispatch' }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 330
     env:
-      LOCAL_CI_ARCH: x86_64
+      LOCAL_CI_ARCH: aarch64
+      AGNOS_NATIVE_HOSTED_ARM: '1'
       RUSTUP_TOOLCHAIN: '1.94.0'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       NATIVE_ENTRY_INDEX: ${{ inputs.index_sha256 }}
       NATIVE_ENTRY_BUDGETS: ${{ inputs.operation_estimates_json }}
-      SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE
+      SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,AGNOS_NATIVE_HOSTED_ARM,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE
     steps:
       - uses: actions/checkout@v7
         with: {persist-credentials: false, fetch-depth: 0}
-      - name: Require the registered self-hosted source entry runner
-        run: /usr/bin/python3 -I -B -S tools/ci/runner_policy.py --self-hosted-only
+      - name: Require the explicitly admitted native ARM source entry runner
+        run: /usr/bin/python3 -I -B -S tools/ci/runner_policy.py --agnos
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - name: Require real published metadata and the committed index before allocating an image
@@ -51,10 +52,10 @@ jobs:
           print(dict(available_bytes=free, expected_operation_growth_and_reserve_bytes=growth))
           assert free >= growth, 'insufficient operation admission; existing caches retained'
           PY
-          sudo apt-get -o APT::Architectures=amd64 update
-          sudo apt-get -o APT::Architectures=amd64 install -y qemu-user-static android-sdk-libsparse-utils e2fsprogs xz-utils
+          sudo apt-get update
+          sudo apt-get install -y android-sdk-libsparse-utils e2fsprogs xz-utils
           rustup toolchain install 1.94.0 --profile minimal
-          command -v /usr/bin/mount /usr/bin/simg2img /usr/sbin/debugfs /usr/bin/qemu-aarch64-static
+          command -v /usr/bin/mount /usr/bin/simg2img /usr/sbin/debugfs
       - uses: ./.github/actions/native-cache
         id: image
         with:

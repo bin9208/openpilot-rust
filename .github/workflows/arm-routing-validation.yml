@@ -1,0 +1,602 @@
+# Experimental validation only; production routing awaits the full AGNOS comparison.
+name: Native ARM routing validation
+'on':
+  push:
+    branches:
+    - codex/feat-643-arm-routing-draft
+    paths:
+    - .github/workflows/arm-routing-validation.yml
+  workflow_dispatch:
+    inputs:
+      selection:
+        description: Affected native ARM checks
+        type: choice
+        default: all
+        options:
+        - all
+        - policy
+        - qcom-arm
+        - generic-arm
+        - source-reuse-arm
+        - factory-transport-arm
+permissions:
+  contents: read
+concurrency:
+  group: arm-routing-validation-643-parallel-v2
+  queue: max
+  cancel-in-progress: false
+jobs:
+  policy:
+    name: ARM routing and admission contracts
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+    - name: Admit the read-only source history operation
+      run: python3 -c 'import os,shutil; assert shutil.disk_usage(os.environ["RUNNER_TEMP"]).free >= 8*1024**3'
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+        fetch-depth: 0
+    - name: Select only requested native validation jobs
+      id: selection
+      env:
+        ARM_SELECTION: ${{ inputs.selection || 'all' }}
+      run: |-
+        case "$ARM_SELECTION" in all|policy|qcom-arm|generic-arm|source-reuse-arm|factory-transport-arm) ;; *) exit 1 ;; esac
+        printf 'selection=%s\n' "$ARM_SELECTION" >> "$GITHUB_OUTPUT"
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - run: python -m pip install PyYAML==6.0.3
+    - name: Validate routing, unchanged target commands and production identity mapping
+      run: |-
+        python -m unittest discover -s tools/ci/tests -p test_workflow_policy.py -v
+        python -m unittest discover -s tools/ci/tests -p test_local_native_workflows.py -v
+        python -m unittest discover -s tools/ci/tests -p test_native_arm_routing.py -v
+    outputs:
+      selection: ${{ steps.selection.outputs.selection }}
+  qcom-arm:
+    name: rust genuine offline QCOM compiler (ARM native)
+    if: ${{ ((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository))
+      && (needs.policy.outputs.selection == 'all' || needs.policy.outputs.selection == 'qcom-arm') }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    env:
+      LOCAL_CI_ARCH: aarch64
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      DEV: CPU:LLVM
+      JIT: '2'
+      LLVM_PATH: /usr/lib/aarch64-linux-gnu/libLLVM-18.so
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}/rust/tools
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/job-temp
+    - uses: ./.github/actions/rust-path
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Require native ARM and admit the compiler operation
+      run: |
+        [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_ARCH" == ARM64 ]]
+        [[ "$(uname -m)" == aarch64 ]]
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+        sudo apt-get update
+        sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libllvm18 liblzma-dev pkg-config
+        rustup toolchain install 1.94.0 --profile minimal
+        python -m pip install numpy==2.5.3 onnx==1.20.1 pytest==9.0.2 PyYAML==6.0.3
+    - name: Preserve staging rejection and ABI audit behavior
+      run: cargo test --locked -p openpilot-dev-tools --lib qcom_compiler_stage
+    - name: Stage the genuine pinned A630 compiler for native execution
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$RUNNER_TEMP" --growth-mib 1024
+        mkdir -p "$RUNNER_TEMP/qcom-downloads"
+        rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=gcc cargo +1.94.0 build --locked -p openpilot-model-runtime --target aarch64-unknown-linux-gnu --bin offline-qcom-compile
+        curl --fail --location --retry 3 --max-time 180 --max-filesize 67108864 \
+          'https://raw.githubusercontent.com/commaai/agnos-builder/ec1cf237a84565a056dbbc6f433b1b1c20c07a2c/userspace/root/usr/lib/aarch64-linux-gnu/libllvm-qcom.so' \
+          --output "$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so"
+        cargo +1.94.0 run --locked -p openpilot-dev-tools --bin stage-qcom-compiler -- --native "$RUNNER_TEMP/qcom-compiler" \
+          "${CARGO_TARGET_DIR:-target}/aarch64-unknown-linux-gnu/debug/offline-qcom-compile" "$RUNNER_TEMP/qcom-downloads/libllvm-qcom.so" \
+          /usr/lib/aarch64-linux-gnu
+        printf 'QCOM_COMPILER_COMMAND=%s\n' "$(cat "$RUNNER_TEMP/qcom-compiler/command.json")" >> "$GITHUB_ENV"
+    - name: Require genuine compilation and offline model scheduling on ARM
+      run: |
+        python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests \
+          tools/tests/test_offline_qcom_compiler.py tools/tests/test_offline_qcom_schedule.py \
+          -q --junitxml="$RUNNER_TEMP/qcom-compiler/tests.xml"
+        python -c 'import json,os,pathlib; p=pathlib.Path(os.environ["RUNNER_TEMP"])/"qcom-compiler/provenance.json"; r=json.loads(p.read_text()); assert r["execution_mode"]=="native-arm" and r["qemu_sha256"] is None and r["dependency_audit"]["compatible"]; print(r["compiler_sha256"])'
+    - name: Preserve genuine offline compiler provenance and test results
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-offline-qcom-native-arm-${{ github.sha }}
+        path: |
+          ${{ env.CI_JOB_TEMP }}/qcom-compiler/provenance.json
+          ${{ env.CI_JOB_TEMP }}/qcom-compiler/command.json
+          ${{ env.CI_JOB_TEMP }}/qcom-compiler/tests.xml
+        if-no-files-found: warn
+    - uses: ./.github/actions/job-temp
+      if: always()
+      with:
+        cleanup: 'true'
+    needs:
+    - policy
+  generic-arm:
+    name: rust aarch64 build
+    if: ${{ ((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
+      (github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')) && (needs.policy.outputs.selection
+      == 'all' || needs.policy.outputs.selection == 'generic-arm') }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    env:
+      LOCAL_CI_ARCH: aarch64
+      CARGO_INCREMENTAL: '0'
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/job-temp
+    - uses: ./.github/actions/rust-path
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Require native ARM execution for every generic aarch64 build
+      run: |
+        [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_ARCH" == ARM64 ]]
+        [[ "$(uname -m)" == aarch64 ]]
+        python3 -c 'import os; cpus=sorted(os.sched_getaffinity(0)); assert len(cpus)>1; print("ARM_BUILD_CPUS", cpus)'
+    - name: Reserve capacity for generic ARM build dependencies
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
+        sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev clang libclang-dev make cmake
+    - name: Stage native GNU aarch64 startup renderer and portable loader headers
+      run: |
+        sudo dpkg --add-architecture arm64
+        sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- update
+        sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- install -y libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+        cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch aarch64 --output "$RUNNER_TEMP/startup-raylib-arm" --shared --cxx aarch64-linux-gnu-g++
+        printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-arm\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+    - name: Build pinned external FFmpeg for generic aarch64 GNU linking
+      run: |
+        rustup toolchain install 1.94.0 --profile minimal
+        cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-loggerd-ffmpeg -- --root "$RUNNER_TEMP/logger-ffmpeg-gnu" --cc aarch64-linux-gnu-gcc --ar aarch64-linux-gnu-ar --ranlib aarch64-linux-gnu-ranlib
+    - name: Install source-pinned Eigen headers
+      run: |
+        python -m pip install 'git+https://github.com/commaai/dependencies.git@40e5d76de1b33a86c5181b63db6782d8f06da1da#subdirectory=eigen'
+        python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
+    - name: Build generic Linux aarch64 artifact (not AGNOS validation)
+      working-directory: rust
+      env:
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        FFMPEG_DIR: ${{ runner.temp }}/logger-ffmpeg-gnu/install
+      run: |
+        rustup target add --toolchain 1.94.0 aarch64-unknown-linux-gnu
+        cargo build --workspace --release --locked --features openpilot-loggerd/static-ffmpeg --target aarch64-unknown-linux-gnu
+        file target/aarch64-unknown-linux-gnu/release/cpu-sample
+    - name: Build and inspect native Card for generic Linux aarch64
+      working-directory: rust
+      env:
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
+        mkdir -p "$RUNNER_TEMP/card-arm"
+        printf '%s\n' 'cargo build -p openpilot-card --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu' > "$RUNNER_TEMP/card-arm/command.txt"
+        git rev-parse HEAD > "$RUNNER_TEMP/card-arm/SOURCE_COMMIT"
+        set -o pipefail
+        cargo build -p openpilot-card --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/card-arm/build.log"
+        file target/aarch64-unknown-linux-gnu/release/openpilot-card > "$RUNNER_TEMP/card-arm/file.txt"
+        aarch64-linux-gnu-readelf -h target/aarch64-unknown-linux-gnu/release/openpilot-card > "$RUNNER_TEMP/card-arm/elf-header.txt"
+        test "$(aarch64-linux-gnu-readelf -h target/aarch64-unknown-linux-gnu/release/openpilot-card | sed -n 's/.*Machine: *//p')" = AArch64
+        sha256sum target/aarch64-unknown-linux-gnu/release/openpilot-card target/aarch64-unknown-linux-gnu/release/examples/*_trace > "$RUNNER_TEMP/card-arm/SHA256SUMS"
+    - name: Preserve native Card ARM build evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-card-linux-aarch64-not-device-validated
+        path: |
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-card
+          rust/target/aarch64-unknown-linux-gnu/release/examples/*_trace
+          ${{ env.CI_JOB_TEMP }}/card-arm/
+        if-no-files-found: warn
+    - name: Stage native GNU aarch64 torque dependency (not AGNOS validation)
+      working-directory: rust
+      run: |
+        python -m pip download --only-binary=:all: --no-deps --platform manylinux_2_27_aarch64 --python-version 312 --abi cp312 numpy==2.5.3 --dest "$RUNNER_TEMP/torque-arm-wheels"
+        cargo run --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/torque-arm-wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/torque-arm-numerics"
+    - name: Build and inspect native selfdrived for generic Linux aarch64
+      working-directory: rust
+      env:
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+        mkdir -p "$RUNNER_TEMP/selfdrived-arm"
+        git rev-parse HEAD > "$RUNNER_TEMP/selfdrived-arm/SOURCE_COMMIT"
+        printf '%s\n' 'cargo build -p openpilot-selfdrived --bins --example controller --example ratekeeper --release --locked --target aarch64-unknown-linux-gnu' > "$RUNNER_TEMP/selfdrived-arm/command.txt"
+        set -o pipefail
+        cargo build -p openpilot-selfdrived --bins --example controller --example ratekeeper --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/selfdrived-arm/build.log"
+        file target/aarch64-unknown-linux-gnu/release/openpilot-selfdrived > "$RUNNER_TEMP/selfdrived-arm/file.txt"
+        sha256sum target/aarch64-unknown-linux-gnu/release/openpilot-selfdrived target/aarch64-unknown-linux-gnu/release/examples/controller target/aarch64-unknown-linux-gnu/release/examples/ratekeeper > "$RUNNER_TEMP/selfdrived-arm/SHA256SUMS"
+    - name: Preserve selfdrived generic ARM build evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-selfdrived-arm-evidence
+        path: |
+          ${{ env.CI_JOB_TEMP }}/selfdrived-arm/
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-selfdrived
+          rust/target/aarch64-unknown-linux-gnu/release/examples/controller
+          rust/target/aarch64-unknown-linux-gnu/release/examples/ratekeeper
+        if-no-files-found: warn
+    - name: Build and inspect native navigation for generic Linux aarch64
+      working-directory: rust
+      env:
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+        mkdir -p "$RUNNER_TEMP/navd-arm"
+        git rev-parse HEAD > "$RUNNER_TEMP/navd-arm/SOURCE_COMMIT"
+        printf '%s\n' 'cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu' > "$RUNNER_TEMP/navd-arm/command.txt"
+        set -o pipefail
+        cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/navd-arm/build.log"
+        file target/aarch64-unknown-linux-gnu/release/openpilot-navd target/aarch64-unknown-linux-gnu/release/openpilot-set-destination > "$RUNNER_TEMP/navd-arm/file.txt"
+        sha256sum target/aarch64-unknown-linux-gnu/release/openpilot-navd target/aarch64-unknown-linux-gnu/release/openpilot-set-destination target/aarch64-unknown-linux-gnu/release/examples/navd_* > "$RUNNER_TEMP/navd-arm/SHA256SUMS"
+    - name: Preserve navigation generic ARM build evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-navd-arm-evidence
+        path: |
+          ${{ env.CI_JOB_TEMP }}/navd-arm/
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-navd
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-set-destination
+          rust/target/aarch64-unknown-linux-gnu/release/examples/navd_*
+        if-no-files-found: warn
+    - name: Cross-build the original VisionIPC ION boundary (not device execution)
+      working-directory: rust
+      env:
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      run: cargo build -p openpilot-dmonitoringmodeld --features visionipc-ion --locked --target aarch64-unknown-linux-gnu
+    - name: Build and inspect the static C3X probe candidate
+      working-directory: rust
+      run: |
+        python -m pip install cargo-zigbuild==0.23.4 ziglang==0.16.0 pycapnp==2.1.0 Cython==3.2.4 setuptools==82.0.1 zstandard==0.25.0
+        rustup target add --toolchain 1.94.0 aarch64-unknown-linux-musl
+        cargo run --locked -p openpilot-dev-tools --bin build-loggerd-ffmpeg -- --root "$RUNNER_TEMP/logger-ffmpeg-musl" --cc 'python-zig cc -target aarch64-linux-musl' --ar 'python-zig ar' --ranlib 'python-zig ranlib'
+        FFMPEG_DIR="$RUNNER_TEMP/logger-ffmpeg-musl/install" cargo zigbuild --workspace --release --locked --features openpilot-loggerd/static-ffmpeg --target aarch64-unknown-linux-musl
+        python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
+        PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_aarch64.py \
+          --binary target/aarch64-unknown-linux-musl/release/openpilot-proclogd \
+          --runner /usr/bin/qemu-aarch64-static --report "$RUNNER_TEMP/aarch64-probe.json"
+        mkdir -p target/c3x-probe
+        cp target/aarch64-unknown-linux-musl/release/openpilot-proclogd target/c3x-probe/
+        git rev-parse HEAD > target/c3x-probe/SOURCE_COMMIT
+        cp "$RUNNER_TEMP/aarch64-probe.json" target/c3x-probe/
+        cd target/c3x-probe
+        sha256sum openpilot-proclogd SOURCE_COMMIT aarch64-probe.json > SHA256SUMS
+    - uses: actions/upload-artifact@v6
+      with:
+        name: rust-c3x-static-probe-pending-device-test
+        path: rust/target/c3x-probe/
+    - uses: actions/upload-artifact@v6
+      with:
+        name: rust-linux-aarch64-not-device-validated
+        path: |
+          rust/target/aarch64-unknown-linux-gnu/release/cpu-sample
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-uploader
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-dashcam-upload
+          rust/target/aarch64-unknown-linux-gnu/release/journald-rs
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-timed
+          rust/target/aarch64-unknown-linux-musl/release/openpilot-uploader
+          rust/target/aarch64-unknown-linux-musl/release/openpilot-dashcam-upload
+          rust/target/aarch64-unknown-linux-musl/release/journald-rs
+          rust/target/aarch64-unknown-linux-musl/release/openpilot-timed
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-calibrationd
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-loggerd
+          rust/target/aarch64-unknown-linux-musl/release/openpilot-loggerd
+          ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-gnu/invocation.json
+          ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-gnu/build.log
+          ${{ env.CI_JOB_TEMP }}/startup-raylib-arm/SOURCE_SHA256
+          ${{ env.CI_JOB_TEMP }}/startup-raylib-arm/plugin-build.json
+          ${{ env.CI_JOB_TEMP }}/startup-raylib-arm/lib/libopenpilot-raylib.so
+          ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/COPYING.LGPLv2.1
+          ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/LICENSE.md
+          ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-musl/invocation.json
+          ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-musl/build.log
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-torqued
+          ${{ env.CI_JOB_TEMP }}/torque-arm-numerics/
+          rust/target/aarch64-unknown-linux-gnu/release/jetlinkd-rs
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-card
+          rust/target/aarch64-unknown-linux-gnu/release/examples/*_trace
+          ${{ env.CI_JOB_TEMP }}/card-arm/
+    - name: Build native Panda for generic Linux aarch64
+      working-directory: rust
+      env:
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      run: |
+        mkdir -p "$RUNNER_TEMP/panda-arm"
+        git rev-parse HEAD > "$RUNNER_TEMP/panda-arm/SOURCE_COMMIT"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+        set -o pipefail
+        cargo build -p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux --bins --examples --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/panda-arm/build.log"
+        file target/aarch64-unknown-linux-gnu/release/openpilot-pandad target/aarch64-unknown-linux-gnu/release/openpilot-pandad-supervisor > "$RUNNER_TEMP/panda-arm/file.txt"
+        sha256sum target/aarch64-unknown-linux-gnu/release/openpilot-pandad target/aarch64-unknown-linux-gnu/release/openpilot-pandad-supervisor > "$RUNNER_TEMP/panda-arm/SHA256SUMS"
+    - name: Preserve Panda generic ARM build evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-panda-arm-evidence
+        path: |
+          ${{ env.CI_JOB_TEMP }}/panda-arm/
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-pandad
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-pandad-supervisor
+        if-no-files-found: warn
+    - name: Build generic and ION camera aarch64 artifacts
+      working-directory: rust
+      env:
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      run: |
+        mkdir -p "$RUNNER_TEMP/camera-arm/generic" "$RUNNER_TEMP/camera-arm/ion"
+        git rev-parse HEAD > "$RUNNER_TEMP/camera-arm/SOURCE_COMMIT"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+        set -o pipefail
+        cargo build -p openpilot-camerad-runtime --features native-skip-miri --bin openpilot-camerad --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/camera-arm/generic/build.log"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+        cp target/aarch64-unknown-linux-gnu/release/openpilot-camerad "$RUNNER_TEMP/camera-arm/generic/"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+        cargo build -p openpilot-camerad-runtime --features visionipc-ion --bin openpilot-camerad --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/camera-arm/ion/build.log"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
+        cp target/aarch64-unknown-linux-gnu/release/openpilot-camerad "$RUNNER_TEMP/camera-arm/ion/"
+        file "$RUNNER_TEMP"/camera-arm/{generic,ion}/openpilot-camerad > "$RUNNER_TEMP/camera-arm/file.txt"
+        sha256sum "$RUNNER_TEMP"/camera-arm/{generic,ion}/openpilot-camerad > "$RUNNER_TEMP/camera-arm/SHA256SUMS"
+    - name: Preserve generic and ION camera ARM evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-camera-arm-evidence
+        path: ${{ env.CI_JOB_TEMP }}/camera-arm/
+        if-no-files-found: warn
+    - name: Stage exact source-pinned native ARM codec packages
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+        cargo run --manifest-path rust/Cargo.toml -p openpilot-dev-tools --locked --bin stage-encoder-target -- --root "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/encoder-arm/dependencies"
+        printf 'ENCODER_ARM_FFMPEG=%s/encoder-arm/dependencies/ffmpeg/install\nENCODER_ARM_LIBYUV=%s/encoder-arm/dependencies/libyuv/install/lib\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+    - name: Build encoder daemon and probes with pinned ARM codecs and ION
+      working-directory: rust
+      env:
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+        CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+        AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
+        BINDGEN_EXTRA_CLANG_ARGS: --target=aarch64-linux-gnu -I/usr/aarch64-linux-gnu/include
+        FFMPEG_DIR: ${{ env.ENCODER_ARM_FFMPEG }}
+        ENCODER_LIBYUV_LIB: ${{ env.ENCODER_ARM_LIBYUV }}
+        ENCODER_FFMPEG_EXTRA_LIBS: swresample,x264,z,va,va-drm,drm,gcc
+      run: |
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+        git rev-parse HEAD > "$RUNNER_TEMP/encoder-arm/SOURCE_COMMIT"
+        set -o pipefail
+        cargo build -p openpilot-encoderd --features static-ffmpeg,visionipc-ion --bins --examples --release --locked --target aarch64-unknown-linux-gnu --message-format=json 2> "$RUNNER_TEMP/encoder-arm/build.log" | tee "$RUNNER_TEMP/encoder-arm/build.jsonl"
+        for encoder_binary in target/aarch64-unknown-linux-gnu/release/openpilot-encoderd target/aarch64-unknown-linux-gnu/release/examples/encoder_codec_trace target/aarch64-unknown-linux-gnu/release/examples/encoder_v4l_trace; do
+          aarch64-linux-gnu-readelf -h -d -V "$encoder_binary" > "$RUNNER_TEMP/encoder-arm/$(basename "$encoder_binary").readelf.txt"
+          sha256sum "$encoder_binary" >> "$RUNNER_TEMP/encoder-arm/SHA256SUMS"
+        done
+    - name: Preserve pinned codec ARM build evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-encoder-arm-evidence
+        path: |
+          ${{ env.CI_JOB_TEMP }}/encoder-arm/
+          rust/target/aarch64-unknown-linux-gnu/release/openpilot-encoderd
+          rust/target/aarch64-unknown-linux-gnu/release/examples/encoder_codec_trace
+          rust/target/aarch64-unknown-linux-gnu/release/examples/encoder_v4l_trace
+        if-no-files-found: warn
+    - name: Build generic and ION UI aarch64 artifacts
+      working-directory: rust
+      env:
+        CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+        CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      run: |
+        mkdir -p "$RUNNER_TEMP/ui-arm/generic" "$RUNNER_TEMP/ui-arm/ion"
+        git rev-parse HEAD > "$RUNNER_TEMP/ui-arm/SOURCE_COMMIT"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+        set -o pipefail
+        cargo build -p openpilot-ui-application --bin openpilot-ui --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/ui-arm/generic/build.log"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
+        cp target/aarch64-unknown-linux-gnu/release/openpilot-ui "$RUNNER_TEMP/ui-arm/generic/"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
+        cargo build -p openpilot-ui-application --features openpilot-msgq/visionipc-ion --bin openpilot-ui --release --locked --target aarch64-unknown-linux-gnu 2>&1 | tee "$RUNNER_TEMP/ui-arm/ion/build.log"
+        "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 256
+        cp target/aarch64-unknown-linux-gnu/release/openpilot-ui "$RUNNER_TEMP/ui-arm/ion/"
+        cp "$RUNNER_TEMP/startup-raylib-arm/lib/libopenpilot-raylib.so" "$RUNNER_TEMP/startup-raylib-arm/plugin-build.json" "$RUNNER_TEMP/ui-arm/"
+        for ui_artifact in "$RUNNER_TEMP"/ui-arm/{generic,ion}/openpilot-ui "$RUNNER_TEMP/ui-arm/libopenpilot-raylib.so"; do
+          aarch64-linux-gnu-readelf -h -d -V "$ui_artifact" > "$ui_artifact.readelf.txt"
+          test "$(aarch64-linux-gnu-readelf -h "$ui_artifact" | sed -n 's/.*Machine: *//p')" = AArch64
+        done
+        sha256sum "$RUNNER_TEMP"/ui-arm/{generic,ion}/openpilot-ui "$RUNNER_TEMP/ui-arm/libopenpilot-raylib.so" > "$RUNNER_TEMP/ui-arm/SHA256SUMS"
+    - name: Preserve UI generic ARM build and graphics plugin evidence
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: rust-ui-application-arm-not-device-validated
+        path: ${{ env.CI_JOB_TEMP }}/ui-arm/
+        if-no-files-found: warn
+    - uses: ./.github/actions/job-temp
+      if: always()
+      with:
+        cleanup: 'true'
+    needs:
+    - policy
+  source-reuse-arm:
+    name: Actual logger source reuse (${{ matrix.arch }})
+    if: ${{ ((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository))
+      && (needs.policy.outputs.selection == 'all' || needs.policy.outputs.selection == 'source-reuse-arm') }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: ${{ matrix.arch == 'aarch64' && 360 || 45 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+        - aarch64
+    env:
+      LOCAL_CI_ARCH: ${{ matrix.arch }}
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      OPENPILOT_NATIVE_BUILD_TIMINGS: '1'
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/job-temp
+    - uses: ./.github/actions/rust-path
+      if: env.LOCAL_CI_ARCH != 'aarch64'
+    - name: Pin the native ARM oracle interpreter
+      if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+      uses: actions/setup-python@v6
+      with:
+        python-version: 3.12.14
+    - name: Expose native ARM Rust tools
+      if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+      uses: ./.github/actions/rust-path
+    - uses: ./.github/actions/local-arm
+    - uses: actions/setup-python@v6
+      if: env.LOCAL_CI_ARCH != 'aarch64'
+      with:
+        python-version: 3.12.14
+    - name: Admit the actual dependency and source fixture build
+      run: |
+        python3 - <<'PY'
+        import os, shutil
+        growth = 8 * 1024**3
+        for path in (os.environ['RUNNER_TEMP'], os.environ['GITHUB_WORKSPACE']):
+            free = shutil.disk_usage(path).free
+            print(f'path={path} available_bytes={free} expected_dependency_source_and_two_cache_growth_bytes={growth}')
+            if free < growth:
+                raise SystemExit('insufficient space for this operation; all other sources/caches retained')
+        PY
+        rustup toolchain install 1.94.0 --profile minimal --component rustfmt --component clippy
+        sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update
+        sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ pkg-config clang-18 libclang-18-dev libzmq3-dev time 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*'
+    - name: Compile the real build driver and preserve original logging/loggerd regressions
+      run: |
+        rustfmt --edition 2021 --check rust/crates/logging/{build.rs,src/context.rs,src/native/wire.rs,src/producer.rs} rust/crates/loggerd/{build.rs,src/metadata.rs} rust/crates/runtime-build/src/generation.rs
+        cargo build --manifest-path rust/Cargo.toml --locked --release -p openpilot-runtime-build --bin openpilot-runtime-build
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-logging -p openpilot-loggerd
+        cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-logging -p openpilot-loggerd --all-targets -- -D warnings
+    - name: Prove docs-only and one-target reuse with actual runtime crates and legacy control
+      run: |
+        set -o pipefail
+        native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+        export NATIVE_REUSE_BUILD_DRIVER="$native_target/release/openpilot-runtime-build"
+        /usr/bin/time -v -o "$RUNNER_TEMP/native-source-reuse-resources.txt" python3 tools/ci/check_native_source_reuse.py 2>&1 | tee "$RUNNER_TEMP/native-source-reuse-tests.log"
+    - uses: ./.github/actions/local-arm
+      if: always()
+      with:
+        cleanup: 'true'
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: native-source-reuse-${{ matrix.arch }}-${{ github.sha }}
+        path: |
+          ${{ env.CI_JOB_TEMP }}/native-source-reuse-608/evidence/*.json
+          ${{ env.CI_JOB_TEMP }}/native-source-reuse-resources.txt
+          ${{ env.CI_JOB_TEMP }}/native-source-reuse-tests.log
+          ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+    - uses: ./.github/actions/job-temp
+      if: always()
+      with:
+        cleanup: 'true'
+    needs:
+    - policy
+  factory-transport-arm:
+    name: Real factory sudo and owned cgroup in private namespaces
+    if: ${{ ((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository))
+      && (needs.policy.outputs.selection == 'all' || needs.policy.outputs.selection == 'factory-transport-arm') }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    env:
+      LOCAL_CI_ARCH: aarch64
+      AGNOS_NATIVE_HOSTED_ARM: '1'
+      RUSTUP_TOOLCHAIN: 1.94.0
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,AGNOS_NATIVE_HOSTED_ARM,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - name: Require the explicitly admitted native ARM factory admission runner
+      run: /usr/bin/python3 -I -B -S tools/ci/runner_policy.py --agnos
+    - uses: ./.github/actions/job-temp
+    - uses: ./.github/actions/rust-path
+    - name: Admit the image and tool operation before allocating its files
+      run: |
+        /usr/bin/python3 -I -B -S - <<'PY'
+        import os, shutil
+        growth = 1010655092 + 2*4718592000 + 1024**3 + 64*1024**2
+        free = shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+        print(dict(available_bytes=free, expected_image_and_tool_growth_bytes=growth))
+        assert free >= growth, 'insufficient space for this operation; existing data retained'
+        PY
+        sudo apt-get update
+        sudo apt-get install -y android-sdk-libsparse-utils e2fsprogs xz-utils
+        rustup toolchain install 1.94.0 --profile minimal
+        command -v /usr/bin/mount /usr/bin/simg2img /usr/sbin/debugfs
+    - uses: ./.github/actions/native-cache
+      id: image
+      with:
+        mode: restore
+        name: native-agnos-assets
+        key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
+    - name: Authenticate the existing pinned factory image
+      run: |
+        cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bin openpilot-runtime-assets
+        rust/target/debug/openpilot-runtime-assets --plan tools/ci/fixtures/native-agnos-assets-599.json --cache "$CI_JOB_TEMP/native-agnos-assets" > "$CI_JOB_TEMP/native-agnos-assets-first.json"
+    - uses: ./.github/actions/native-cache
+      if: steps.image.outputs.cache-hit != 'true'
+      with:
+        mode: save
+        name: native-agnos-assets
+        key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
+    - name: Prepare only this job's verified raw image
+      run: /usr/bin/python3 -I -B -S tools/ci/probe_native_source_transport.py --prepare-image
+    - name: Prepare only this job's kernel scope
+      run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 -I -B -S tools/ci/native_resource_scope.py prepare
+    - name: Require actual ARM sudo credentials and private cgroup operations
+      run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 -I -B -S tools/ci/probe_native_source_transport.py --probe
+    - name: Stop and remove only the owned kernel scope
+      if: always() && env.CI_JOB_TEMP != ''
+      run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 -I -B -S tools/ci/native_resource_scope.py cleanup
+    - uses: actions/upload-artifact@v6
+      if: always()
+      with:
+        name: native-source-transport-${{ github.sha }}-${{ github.run_attempt }}
+        path: |
+          ${{ env.CI_JOB_TEMP }}/native-agnos/transport-image.json
+          ${{ env.CI_JOB_TEMP }}/source-entry-transport/namespace-admission.json
+          ${{ env.CI_JOB_TEMP }}/source-entry-transport/arm.stdout
+          ${{ env.CI_JOB_TEMP }}/source-entry-transport/arm.stderr
+          ${{ env.CI_JOB_TEMP }}/resource-scope-evidence.json
+        if-no-files-found: warn
+    - uses: ./.github/actions/job-temp
+      if: always()
+      with:
+        cleanup: 'true'
+    needs:
+    - policy

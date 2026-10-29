@@ -20,6 +20,8 @@ HOSTED_WORKFLOWS = {'fast-checks.yml', 'integration.yml', 'jetlink.yml', 'native
 OWNED_WORKFLOWS = {'native-apt-scope.yml', 'native-input-publication.yml', 'native-resource-guard.yml',
     'native-source-entry.yml', 'native-source-reuse.yml', 'native-source-transport.yml',
     'runtime-native-environment.yml', 'runtime-source-build.yml'}
+NATIVE_ARM_WORKFLOWS = {'agnos-arm-full.yml', 'runtime-native-environment.yml',
+    'native-source-entry.yml', 'native-source-transport.yml', 'arm-routing-validation.yml'}
 SAFETY = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
 HOSTED_CLEANUP = 'sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet'
 
@@ -75,6 +77,27 @@ def parallelism_adapter(script):
     return script.replace('CARGO_BUILD_JOBS=2 ', '').replace(' --test-threads=1', '')
 
 
+def arm_migration_adapter(script, job):
+    # Source-reviewed ARM migration: preserve target flags and checks while the
+    # actual host becomes ARM. QCOM's genuine tests move intact to an ARM job.
+    if job == 'arm64':
+        return script.replace('qemu-user-static ', '')
+    if job == 'workspace':
+        if '--bin stage-qcom-compiler -- ' in script:
+            return (script.replace('sudo apt-get install -y gcc-aarch64-linux-gnu\n', '')
+                .replace('CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc ',
+                         'CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=gcc ')
+                .replace('--bin stage-qcom-compiler -- ', '--bin stage-qcom-compiler -- --native ')
+                .replace('/usr/bin/qemu-aarch64-static /usr/aarch64-linux-gnu/lib',
+                         '/usr/lib/aarch64-linux-gnu'))
+        script = script.replace(' cmake qemu-user-static libc6-arm64-cross libstdc++6-arm64-cross strace',
+                                ' cmake strace')
+        script = script.replace('tools/tests tools/tests -q',
+            'tools/tests tools/tests -q --ignore=tools/tests/test_offline_qcom_compiler.py '
+            '--ignore=tools/tests/test_offline_qcom_schedule.py')
+    return script
+
+
 def condition(original):
     expression = original.strip()
     if expression.startswith('${{') and expression.endswith('}}'):
@@ -83,6 +106,31 @@ def condition(original):
 
 
 class LocalNativeWorkflowTests(unittest.TestCase):
+    def test_genuine_qcom_tests_move_to_native_arm_without_losing_workspace_gate(self):
+        jobs = load(ROOT/'.github/workflows/rust.yml')['jobs']
+        arm, workspace = jobs['offline-qcom-arm'], jobs['workspace']
+        self.assertEqual(arm['runs-on'], 'ubuntu-24.04-arm')
+        self.assertEqual(workspace['needs'], ['offline-qcom-arm'])
+        self.assertIn('always()', workspace['if'])
+        gate = workspace['steps'][0]
+        self.assertEqual(gate['env']['ARM_COMPILER_RESULT'], '${{ needs.offline-qcom-arm.result }}')
+        self.assertEqual(gate['run'], 'test "$ARM_COMPILER_RESULT" = success')
+        self.assertNotIn('continue-on-error', gate)
+        current = next(s['run'] for s in workspace['steps'] if
+                       s.get('name') == 'Compare captured graphs and original camera warps with Rust')
+        native_tests = next(s['run'] for s in arm['steps'] if
+                            s.get('name') == 'Require genuine compilation and offline model scheduling on ARM')
+        for filename in ('test_offline_qcom_compiler.py', 'test_offline_qcom_schedule.py'):
+            self.assertIn('--ignore=tools/tests/'+filename, current)
+            self.assertIn('tools/tests/'+filename, native_tests)
+        self.assertNotIn('--ignore', native_tests)
+        self.assertNotIn('--deselect', native_tests)
+        self.assertTrue(all('continue-on-error' not in s for s in arm['steps']))
+        native_stage = next(s['run'] for s in arm['steps'] if
+                            s.get('name') == 'Stage the genuine pinned A630 compiler for native execution')
+        self.assertIn('--bin stage-qcom-compiler -- --native ', native_stage)
+        self.assertNotIn('qemu-aarch64', native_stage)
+
     def test_merged_support_workspace_keeps_both_complete_lifecycle_commands(self):
         updates = support_workspace_updates()
         job = load(ROOT/'.github/workflows/rust.yml')['jobs']['workspace']
@@ -148,7 +196,11 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             for name, job in document.get('jobs', {}).items():
                 if 'runs-on' in job:
                     with self.subTest(path=path.name, job=name):
-                        if path.name == 'runtime-source-build.yml' and name == 'offline-cargo-reuse':
+                        if path.name in NATIVE_ARM_WORKFLOWS:
+                            expected = 'ubuntu-24.04-arm'
+                        elif path.name == 'native-source-reuse.yml':
+                            expected = '${{ matrix.arch == \'aarch64\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}'
+                        elif path.name == 'runtime-source-build.yml' and name == 'offline-cargo-reuse':
                             expected = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}'
                         elif path.name in OWNED_WORKFLOWS:
                             expected = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
@@ -194,27 +246,38 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             original = yaml.load(subprocess.check_output(['git', 'show', BASE + ':' + relative],
                                                         cwd=ROOT, text=True), Loader=yaml.BaseLoader)
             current = load(ROOT / relative)
-            self.assertEqual(set(current['jobs']), set(original['jobs']))
+            additions = {'offline-qcom-arm'} if relative == '.github/workflows/rust.yml' else set()
+            self.assertEqual(set(current['jobs']), set(original['jobs']) | additions)
             for name, before in original['jobs'].items():
                 with self.subTest(path=relative, job=name):
                     after = current['jobs'][name]
-                    self.assertEqual(after.get('needs'), before.get('needs'))
+                    expected_needs = ['offline-qcom-arm'] if name == 'workspace' else before.get('needs')
+                    self.assertEqual(after.get('needs'), expected_needs)
                     self.assertEqual(after.get('strategy', {}).get('matrix'), before.get('strategy', {}).get('matrix'))
                     expected = [digest(normalize(step['run'])) for step in before.get('steps', []) if 'run' in step]
                     self.assertEqual(frozen['jobs'][name]['scripts'], expected)
-                    parallel_expected = [digest(parallelism_adapter(normalize(step['run'])))
+                    parallel_expected = [digest(parallelism_adapter(arm_migration_adapter(normalize(step['run']), name)))
                                          for step in before.get('steps', []) if 'run' in step]
+                    compared_steps = after.get('steps', [])
+                    if name == 'workspace':
+                        compared_steps = [*compared_steps, *current['jobs']['offline-qcom-arm']['steps']]
                     actual = Counter(digest(parallelism_adapter(ci_adapter(step['run'])))
-                                     for step in after.get('steps', []) if 'run' in step)
+                                     for step in compared_steps if 'run' in step)
                     self.assertFalse(Counter(parallel_expected) - actual, 'original command changed or removed')
-                    before_steps = Counter((digest(parallelism_adapter(normalize(s['run']))), s.get('if'), s.get('continue-on-error'))
+                    before_steps = Counter((digest(parallelism_adapter(arm_migration_adapter(normalize(s['run']), name))), s.get('if'), s.get('continue-on-error'))
                                            for s in before.get('steps', []) if 'run' in s)
                     after_steps = Counter((digest(parallelism_adapter(ci_adapter(s['run']))), s.get('if'), s.get('continue-on-error'))
-                                          for s in after.get('steps', []) if 'run' in s)
+                                          for s in compared_steps if 'run' in s)
                     self.assertFalse(before_steps - after_steps, 'original command gained an escape/skip')
                     if 'runs-on' in before:
-                        self.assertEqual(after['if'], condition(before.get('if', '')))
+                        expected_if = condition(before.get('if', ''))
+                        if name == 'workspace':
+                            expected_if = expected_if.replace('${{ ', '${{ always() && ', 1)
+                        self.assertEqual(after['if'], expected_if)
                     for event, config in original.get('on', {}).items():
+                        if relative == '.github/workflows/fast-checks.yml' and event == 'push':
+                            self.assertNotIn('push', current['on'])
+                            continue  # User explicitly retired parallel push Fast checks.
                         self.assertIn(event, current['on'])
                         if isinstance(config, dict) and 'branches' in config:
                             self.assertTrue(set(config['branches']).issubset(current['on'][event]['branches']))

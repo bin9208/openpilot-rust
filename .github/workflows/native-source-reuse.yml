@@ -20,7 +20,7 @@ jobs:
   real-runtime:
     name: Actual logger source reuse (${{ matrix.arch }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     timeout-minutes: ${{ matrix.arch == 'aarch64' && 360 || 45 }}
     strategy:
       fail-fast: false
