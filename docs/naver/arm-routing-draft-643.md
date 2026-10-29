@@ -38,10 +38,19 @@ source-entry의 전체 공개 입력 기반 빌드는 실제 committed input ind
 초안 커밋 `57a5e5afefec02205cc387e5695114af72681435`의
 [40956391986](https://github.com/bin9208/openpilot-rust/actions/runs/40956391986)에서 ARM
 정책·원래 명령 보존·계정 mapping 검증, genuine QCOM 컴파일과 오프라인 스케줄링,
-원본 AGNOS 이미지의 실제 sudo/private cgroup 검증이 성공했다. logger source-reuse는
-진행 중이다. 기본/기존 작업 브랜치의 배정은 바꾸지 않았다.
+원본 AGNOS 이미지의 실제 sudo/private cgroup 검증과 logger source-reuse가 모두
+성공했다. 기본/기존 작업 브랜치의 배정은 바꾸지 않았다.
 
 generic aarch64 job은 원래의 보호 브랜치 push 조건 때문에 위 push 실행에서 생략됐다.
 원래 조건을 보존한 채 해당 항목만 수동으로 실행한
-[40956730256](https://github.com/bin9208/openpilot-rust/actions/runs/40956730256)이 대기 중이다.
+[40956730256](https://github.com/bin9208/openpilot-rust/actions/runs/40956730256)에서 실제
+전체 workspace release 컴파일이 진행 중이다.
 다른 빌드를 재측정하도록 x86 private 러너에 배정하지 않았다.
+
+logger의 실제 첫 빌드는76.723초, 반복0.879초, 문서 변경0.889초, 작은 소스 변경은
+5.500초였다. 문서 변경 시 모든 산출물이 fresh이고, 작은 소스 변경 시 관련 logger만
+재컴파일되며 다른 logmessaged 산출물은 유지되는 원래 조건을 확인했다.
+
+원래 작업 브랜치는 별도 세션의 package 테스트 정합과 조기 검사 변경으로
+`e416c5d07d21588a294cfdeb14104f1602354d4c`까지 진행됐다. 이번 고정 측정 소스는
+변경하지 않고, 실제 전환 시 이 후속 변경을 보존해야 한다.

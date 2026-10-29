@@ -48,7 +48,7 @@ def main():
             stream.write('## 선택한 작업 브랜치의 전체 AGNOS workflow 측정\n\n')
             stream.write(f"- 소스: `{report['source_commit']}`\n")
             stream.write(f"- CPU: `{report['allowed_cpus']}`\n")
-            stream.write(f"- 준비부터 증거 수집 직전까지: {report['elapsed_seconds']:.3f}초\n")
+            stream.write(f"- 준비부터 원본 증거 업로드까지: {report['elapsed_seconds']:.3f}초\n")
             stream.write(f"- 원본 AGNOS 실행 성공: `{report['original_workflow_success']}`\n")
             if 'agnos_execution_seconds' in report:
                 stream.write(f"- AGNOS 내부 전체 명령 구간: {report['agnos_execution_seconds']:.3f}초\n")
