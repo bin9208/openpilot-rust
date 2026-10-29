@@ -15,6 +15,7 @@ on:
       - '.github/actions/job-temp/action.yml'
       - '.github/actions/native-cache/action.yml'
       - '.github/workflows/runner-download-cache.yml'
+      - '.github/workflows/runner-download-probe.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -36,10 +37,9 @@ jobs:
           python3 -m unittest discover -s tools/ci/tests -p test_workflow_policy.py -v
           python3 -m unittest discover -s tools/ci/tests -p test_local_native_workflows.py -v
       - run: bash -n tools/ci/native-apt-shell
-  seed:
-    name: Prepare cache (${{ matrix.runner }})
-    runs-on: [self-hosted, Linux, X64, '${{ matrix.label }}']
-    timeout-minutes: 10
+  probe:
+    name: Download reuse (${{ matrix.runner }})
+    needs: regressions
     strategy:
       fail-fast: false
       matrix:
@@ -47,97 +47,7 @@ jobs:
           - {runner: bin-actions, label: cache-644-bin-actions}
           - {runner: bin-actions2, label: cache-644-bin-actions2}
           - {runner: bin-actions3, label: cache-644-bin-actions3}
-    steps:
-      - uses: actions/checkout@v7
-        with: {persist-credentials: false}
-      - uses: ./.github/actions/job-temp
-      - name: Populate SHA-addressed Actions archives and configure future runner starts
-        run: |
-          python3 -I -B -S tools/ci/runner_action_cache.py prime
-          python3 -I -B -S tools/ci/runner_action_cache.py configure
-      - name: Populate the signed native APT index cache
-        run: sudo apt-get update
-      - name: Restore the pinned wheel input from local disk
-        id: restore
-        uses: ./.github/actions/native-cache
-        with: {mode: restore, name: native-download-proof, key: six-1.17.0-v1}
-      - name: Download only on the first local cache miss
-        if: steps.restore.outputs.cache-hit != 'true'
-        run: |
-          mkdir "$CI_JOB_TEMP/native-download-proof"
-          python3 -m pip download --no-deps six==1.17.0 --dest "$CI_JOB_TEMP/native-download-proof"
-      - uses: ./.github/actions/native-cache
-        if: steps.restore.outputs.cache-hit != 'true'
-        with: {mode: save, name: native-download-proof, key: six-1.17.0-v1}
-      - uses: actions/upload-artifact@v6
-        with:
-          name: action-cache-configuration-${{ matrix.runner }}-${{ github.sha }}
-          path: ${{ env.CI_JOB_TEMP }}/action-cache-config.json
-          if-no-files-found: error
-      - uses: ./.github/actions/job-temp
-        if: always()
-        with: {cleanup: 'true'}
-  offline:
-    name: Offline reuse in another job (${{ matrix.runner }})
-    needs: [regressions, seed]
-    runs-on: [self-hosted, Linux, X64, '${{ matrix.label }}']
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {runner: bin-actions, label: cache-644-bin-actions}
-          - {runner: bin-actions2, label: cache-644-bin-actions2}
-          - {runner: bin-actions3, label: cache-644-bin-actions3}
-    steps:
-      - uses: actions/checkout@v7
-        with: {persist-credentials: false}
-      - uses: ./.github/actions/job-temp
-      - name: Revalidate the retained APT indices against the repository
-        run: |
-          set -o pipefail
-          sudo apt-get update 2>&1 | tee "$CI_JOB_TEMP/apt-reuse.log"
-          python3 -I -B -S - <<'PY'
-          import os
-          from pathlib import Path
-          text = (Path(os.environ['CI_JOB_TEMP'])/'apt-reuse.log').read_text()
-          assert 'Hit:' in text, 'expected an actual retained signed APT index'
-          PY
-      - name: Require a disk hit and install without an index or dependency download
-        id: restore
-        uses: ./.github/actions/native-cache
-        with: {mode: restore, name: native-download-proof, key: six-1.17.0-v1}
-      - name: Verify offline installation and record the actual runner
-        env:
-          CACHE_HIT: ${{ steps.restore.outputs.cache-hit }}
-          EXPECTED_RUNNER: ${{ matrix.runner }}
-        run: |
-          test "$CACHE_HIT" = true
-          test "$RUNNER_NAME" = "$EXPECTED_RUNNER"
-          python3 -m pip install --no-index --no-deps --target "$CI_JOB_TEMP/installed" "$CI_JOB_TEMP"/native-download-proof/*.whl
-          PYTHONPATH="$CI_JOB_TEMP/installed" python3 -c 'import six; assert six.__version__ == "1.17.0"'
-          python3 -I -B -S - <<'PY'
-          import json, os
-          from pathlib import Path
-          report = dict(source_commit=os.environ['GITHUB_SHA'], runner=os.environ['RUNNER_NAME'],
-              disk_cache_hit=True, package='six==1.17.0', index_enabled=False,
-              cache_service_transferred_bytes=0, private_job=os.environ['CI_JOB_TEMP'],
-              cache_root=os.environ['CI_DOWNLOAD_CACHE_ROOT'])
-          (Path(os.environ['CI_JOB_TEMP'])/'download-reuse.json').write_text(json.dumps(report, indent=2)+'\n')
-          print(json.dumps(report))
-          PY
-      - uses: actions/upload-artifact@v6
-        if: always()
-        with:
-          name: runner-download-reuse-${{ matrix.runner }}-${{ github.sha }}
-          path: |
-            ${{ env.CI_JOB_TEMP }}/download-reuse.json
-            ${{ env.CI_JOB_TEMP }}/apt-reuse.log
-            ${{ env.CI_JOB_TEMP }}/native-apt-sources.json
-          if-no-files-found: error
-      - name: Allow the configured service to reload only after this final job exits
-        if: success()
-        run: touch "$CI_DOWNLOAD_CACHE_ROOT/reload-$GITHUB_RUN_ID-$RUNNER_NAME.ready"
-      - uses: ./.github/actions/job-temp
-        if: always()
-        with: {cleanup: 'true'}
+    uses: ./.github/workflows/runner-download-probe.yml
+    with:
+      runner: ${{ matrix.runner }}
+      label: ${{ matrix.label }}

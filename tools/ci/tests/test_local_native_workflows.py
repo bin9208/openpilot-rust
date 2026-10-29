@@ -131,12 +131,19 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             document = load(path)
             if path.name == 'runner-download-cache.yml':
                 self.assertEqual(document['jobs']['regressions']['runs-on'], 'ubuntu-24.04')
-                for role in ('seed', 'offline'):
-                    job = document['jobs'][role]
-                    self.assertEqual(job['runs-on'], ['self-hosted', 'Linux', 'X64', '${{ matrix.label }}'])
-                    self.assertEqual(job['strategy']['matrix']['include'], [
-                        dict(runner=name, label='cache-644-'+name)
-                        for name in ('bin-actions', 'bin-actions2', 'bin-actions3')])
+                job = document['jobs']['probe']
+                self.assertEqual(job['uses'], './.github/workflows/runner-download-probe.yml')
+                self.assertEqual(job['needs'], 'regressions')
+                self.assertEqual(job['strategy']['matrix']['include'], [
+                    dict(runner=name, label='cache-644-'+name)
+                    for name in ('bin-actions', 'bin-actions2', 'bin-actions3')])
+                continue
+            if path.name == 'runner-download-probe.yml':
+                self.assertEqual(set(document['on']), {'workflow_call'})
+                self.assertEqual(set(document['jobs']), {'seed', 'offline'})
+                for job in document['jobs'].values():
+                    self.assertEqual(job['runs-on'], ['self-hosted', 'Linux', 'X64', '${{ inputs.label }}'])
+                self.assertEqual(document['jobs']['offline']['needs'], 'seed')
                 continue
             if path.name == 'messaging-allocation-431.yml':
                 # This independently merged workflow already uses two native
