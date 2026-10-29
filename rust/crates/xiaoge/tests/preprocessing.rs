@@ -11,7 +11,6 @@ use openpilot_xiaoge::{
     nv12::{Frame, Layout},
     vision::Side,
 };
-use serde_json::json;
 
 #[test]
 fn lane_roi_pixels_and_tensor_bits_preserve_packed_center_crop() {
@@ -63,10 +62,20 @@ fn composite_bsd_tensor_preserves_padding_chroma_mask_and_letterbox_bits() {
     cv::initialize(2).unwrap();
     for (width, height, stride, gap) in [(20, 12, 23, 5), (12, 20, 16, 8), (20, 20, 20, 0)] {
         let dimensions = Dimensions::new(width as u32, height as u32).unwrap();
-        let config = Config::normalize(&json!({"width":width,"height":height,
-            "poly_left":[[-2,1],[9,2],[5,11]],
-            "poly_right":[[10,0],[30,2],[18,20],[12,9]]}))
-        .unwrap();
+        // These out-of-frame polygons deliberately exercise geometry clipping,
+        // independently of the production configuration admission policy.
+        let config = Config {
+            width: dimensions.width(),
+            height: dimensions.height(),
+            poly_left: vec![[-2, 1], [9, 2], [5, 11]],
+            poly_right: vec![[10, 0], [30, 2], [18, 20], [12, 9]],
+        };
+        assert!(matches!(
+            Config::normalize(&serde_json::to_value(&config).unwrap()),
+            Err(openpilot_xiaoge::Error::Invalid(
+                "poly_left point is outside the image"
+            ))
+        ));
         let geometry = Geometry::new(&config, dimensions).unwrap();
         let previous = baseline::geometry::Geometry::new(&config, dimensions).unwrap();
         assert_eq!(geometry.dimensions(), previous.dimensions());

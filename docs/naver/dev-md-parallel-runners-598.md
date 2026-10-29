@@ -368,3 +368,27 @@ integration 의존을 유지해야 하는 runtime job은 발견하지 못했다.
 의존 순환이 없으며 기존 명령·환경·runner가 보존됨을 정적으로 확인했다.
 기능 실행·push·CI dispatch/cancel은 하지 않으며 기존8932 실행은 부모가 관리한다.
 dev-md/runtime 소스를 dev/main과 섞지 않고 실제 새 source 결과는 Actions에서 확인한다.
+
+## 2026-10-30 — ARM Xiaoge clipping fixture의 strict config 거부 분리
+
+source `61df63fa492219867bc252c4245d51a06a25c8ab`의 PR CI
+[40918034918/job123606389743](https://github.com/bin9208/openpilot-rust/actions/runs/40918034918/job/123606389743)는
+`composite_bsd_tensor_preserves_padding_chroma_mask_and_letterbox_bits`에서
+`Config::normalize`가 `poly_left point is outside the image`를 반환해 실패했다.
+원래 `[-2,1]` 및 오른쪽 polygon의 image 밖 좌표는 geometry clipping 검사용이며,
+최근 strict config 입구가 geometry 비교 전에 이를 거부한 것이다.
+
+테스트에서 같은 좌표의 typed Config를 직접 구성하고, 별도 단언으로 그 값을
+`serde_json::to_value`로 직렬화한 입력이 normalize에서 정확한 기존 오류로 거부됨을
+확인하도록 한다. runtime Config 정책·geometry·frozen oracle은 변경하지 않는다.
+세 `(width,height,stride,gap)`인 `(20,12,23,5)`, `(12,20,16,8)`, `(20,20,20,0)`과
+양쪽 bounds/mask·tensor shape/모든 float bit 비교, padding/chroma/letterbox,
+UV 부족·겹침·overflow 거부 단언은 원문 그대로 유지한다.
+
+정상 config는 기존 `rust/tools/check_xiaoge_policy.py`의 default/valid config case가
+`examples/xiaoge_policy.rs`의 Config::normalize 경로로 원본과 비교하며,
+`check_xiaoge_inference.py`도 정상 config로 inference trace를 실행하는 경로가 있다.
+별도 positive fixture를 중복 추가하지 않는다. 이번 로컬에서는 해당 기능을 실행하지 않고
+읽기로만 대조했다. 변경 Rust 파일의 Rustfmt 및 기준61df 대비 diff 검사를 통과했고,
+runtime 소스와 frozen support 파일에 차이가 없음을 확인했다. 실제 ARM/X64 결과는
+새 정확 source의 Actions에서 확인한다. push·CI dispatch/cancel은 부모가 담당한다.
