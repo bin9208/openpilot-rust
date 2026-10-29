@@ -52,3 +52,31 @@ QEMU 없이 PRoot 내부에서 Python ARM 실행이 통과했다. 이번 실제 
 원본 전체 workflow의 privileged cgroup/bootstrap 및 codec/provider 회귀는 태블릿에서
 확인되지 않았다. 이 비교는 네이티브 compiler 구간의 증거이며 해당 항목들의 통과가 아니다.
 일반 checkout/upload Action 호환성과 다른 workflow의 공통 runner admission 추가는 별도다.
+
+## 실행 중 로그의 사용자 확인
+
+현재 실행의 사용자 제공 원문에서 `rust-setup`은135.354470677초, 종료0이고,
+`locked-dependency-fetch`는1068.747040895초, 종료0이다. 이후 `START native-project-build`
+까지 확인했다. 이는 의존성 준비에17분49초가 소요된 기록이며 컴파일 완료 시간으로
+합산하지 않는다. 완료 후 Actions 원문과 다시 대조한다.
+
+일반 Actions 호환성은 별도
+[40940667812](https://github.com/bin9208/openpilot-rust/actions/runs/40940667812)로 대기 중이다.
+source `4d0af7c68`의 fast [40940667511](https://github.com/bin9208/openpilot-rust/actions/runs/40940667511)은
+성공했다. 이 변경은 실행 중인 AGNOS 작업을 중단·재시작하지 않았다.
+
+사용자 확인에 따라 x86 비교 상태는 다른 실행 중인 CI와 분리한다. 비교 기준인
+`bin-actions3`의40904508393은 이미 종료됐다. 그 안의 동일한 두 빌드 도구 컴파일은
+213.169038514초에 성공했으며, 뒤의 bootstrap 메모리 제한 실패와 구분한다.
+
+사용자는 태블릿의3코어 제한이 컴파일 지연 원인일 가능성을 지적했다. 사전 확인의
+실제 affinity는0,1,2였고 총8논리 CPU가 보이더라도 모두 사용 가능한 것은 아니다.
+비교 스크립트는 시작 시점의 affinity로 `CARGO_BUILD_JOBS`를 정하므로 실행 도중
+허용 CPU가 증가해도 Cargo 작업 수를 다시 계산하지 않는다. 실제 본 실행의 선택값은
+완료 보고서로 확인한다. 초기 다운로드 지연만으로 이후 컴파일 지연을 설명하거나,
+미완료 상태에서 ARM과 QEMU의 속도 비율을 확정하지 않는다.
+
+40904508393의 원본 Actions 로그는 호스트 단계에서
+`available_cpus=16 cargo_build_jobs=16 rust_test_threads=16`을 기록했다.
+태블릿 사전 확인의3CPU와 동일한 병렬 조건이 아니다. 원본 게스트의 별도 환경 구성까지
+호스트의 환경 변수16이 그대로 전달됐다고 단정하지 않는다.
