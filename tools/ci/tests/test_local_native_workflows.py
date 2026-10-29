@@ -13,7 +13,13 @@ ROOT = Path(__file__).resolve().parents[3]
 BASE = 'e445c9d19c3041bc79d8624589e2eb6ba7d061c6'
 LABELS = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
 INHERITED_WORKFLOWS = {'carrot-route-vault-publish.yaml', 'naver-upstream-sync.yml', 'sync.yml', 'wiki-settings-publish.yaml'}
-HOSTED_JOBS = {'fast-checks.yml': {'fast'}, 'user-docs.yaml': {'check_user_docs'}, 'integration.yml': {'gate'}, 'rust.yml': {'fast', 'support-runtime', 'telemetry-runtime', 'web-upload-timeouts', 'joystickd-runtime'}, 'wiki-settings-check.yaml': {'check'}, 'jetlink.yml': {'android-core'}}
+HOSTED_JOBS = {'fast-checks.yml': {'fast'}, 'user-docs.yaml': {'check_user_docs'}, 'integration.yml': {'gate'},
+    'rust.yml': {'fast', 'support-runtime', 'telemetry-runtime', 'web-upload-timeouts', 'joystickd-runtime',
+        'encoder-runtime', 'camera-runtime', 'panda-runtime', 'selfdrive-runtime', 'radar-runtime',
+        'navd-runtime', 'carrot-navi-runtime', 'startup-runtime', 'startup-services', 'sensor-audio',
+        'gnss-runtime', 'controls-runtime', 'estimation-runtime', 'ui-connectivity', 'platform-runtime',
+        'hardware-runtime', 'logger-runtime', 'athena-runtime'},
+    'wiki-settings-check.yaml': {'check'}, 'jetlink.yml': {'android-core'}}
 SAFETY = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
 HOSTED_CLEANUP = 'sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet'
 
