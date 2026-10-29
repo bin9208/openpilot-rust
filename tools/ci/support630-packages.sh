@@ -5,7 +5,7 @@ set -euo pipefail
 : "${CARGO_TARGET_DIR:?private Actions target required}"
 : "${EVIDENCE:?private Actions evidence required}"
 : "${SOURCE_PYTHON:?private source Python required}"
-[[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_NAME:-} == bin-actions ]] || exit 1
+[[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_NAME:-} == bin-actions2 ]] || exit 1
 cd -- "$SOURCE_ROOT"
 mkdir -p -- "$EVIDENCE/packages"
 export MODEM_SOURCE_PYTHON="$SOURCE_PYTHON"

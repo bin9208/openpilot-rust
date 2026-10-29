@@ -9,7 +9,7 @@ on:
       phase:
         description: Focused verification phase; does not replace required PR gates
         type: choice
-        options: [packages, source, arm, all]
+        options: [packages, source, host, arm, all]
         default: packages
         required: true
 permissions:
@@ -20,7 +20,7 @@ concurrency:
 jobs:
   focused:
     name: support 630 focused ${{ inputs.phase }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64, support-630]
     timeout-minutes: 150
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
@@ -28,6 +28,12 @@ jobs:
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TERM_COLOR: never
+      RUST_TEST_THREADS: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
+      CC: gcc
+      CXX: g++
       REQUESTED_SOURCE: ${{ inputs.source_sha }}
       REQUESTED_PHASE: ${{ inputs.phase }}
     steps:
@@ -35,10 +41,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$RUNNER_NAME" == bin-actions ]]
+          [[ "$RUNNER_NAME" == bin-actions2 ]]
           [[ "$GITHUB_REPOSITORY" == bin9208/openpilot-rust ]]
           [[ "$REQUESTED_SOURCE" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$REQUESTED_PHASE" =~ ^(packages|source|arm|all)$ ]]
+          [[ "$REQUESTED_PHASE" =~ ^(packages|source|host|arm|all)$ ]]
           python3 - <<'PYRESOURCE'
           import os, shutil
           # This job's estimate: native headers/toolchain + locked dependency and debug closure.
@@ -85,8 +91,9 @@ jobs:
         run: |
           set -euo pipefail
           architecture=$(dpkg --print-architecture)
-          sudo apt-get -o "APT::Architectures=$architecture" update
-          sudo apt-get -o "APT::Architectures=$architecture" install -y g++ clang cmake pkg-config capnproto libcapnp-dev libzmq3-dev libdbus-1-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libzstd-dev libclang-dev strace time openssl libasound2-dev dbus-daemon
+          sudo apt-get -o DPkg::Lock::Timeout=600 -o "APT::Architectures=$architecture" update
+          sudo apt-get -o DPkg::Lock::Timeout=600 -o "APT::Architectures=$architecture" install -y --no-remove --no-upgrade g++ clang cmake pkg-config capnproto libcapnp-dev libzmq3-dev libdbus-1-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libzstd-dev libclang-dev strace time openssl libasound2-dev dbus dbus-daemon ffmpeg binutils curl
+          unset FFMPEG_DIR PKG_CONFIG_LIBDIR PKG_CONFIG_SYSROOT_DIR BINDGEN_EXTRA_CLANG_ARGS
           rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
           python -m venv "$SUPPORT_ROOT/venv"
           "$SUPPORT_ROOT/venv/bin/python" -m pip install 'numpy==2.5.3' 'pycapnp==2.1.0' 'zstandard==0.25.0' 'pyzmq==27.2.0' 'pyserial==3.5' 'requests==2.34.2' 'aiohttp==3.13.3' 'anyio==4.12.1' 'Cython==3.2.4' 'setuptools==82.0.1' 'sentry-sdk==2.55.0' 'cffi==2.1.1' 'jeepney==0.9.0' 'cryptography==50.0.1' 'PyJWT==2.15.1'
@@ -97,11 +104,11 @@ jobs:
           "$SUPPORT_ROOT/venv/bin/python" -m pip freeze > "$EVIDENCE/python.txt"
           dpkg-query -W -f='${binary:Package} ${Version}\n' > "$EVIDENCE/native-packages.txt"
       - name: Focused package build tests Clippy and allocation proof
-        if: ${{ inputs.phase == 'packages' || inputs.phase == 'all' }}
+        if: ${{ inputs.phase == 'packages' || inputs.phase == 'host' || inputs.phase == 'all' }}
         shell: bash
         run: bash "$GITHUB_WORKSPACE/controller/tools/ci/support630-packages.sh"
       - name: Maintained unchanged-source comparisons
-        if: ${{ inputs.phase == 'source' || inputs.phase == 'all' }}
+        if: ${{ inputs.phase == 'source' || inputs.phase == 'host' || inputs.phase == 'all' }}
         shell: bash
         run: bash "$GITHUB_WORKSPACE/controller/tools/ci/support630-source.sh"
       - name: Affected ARM verification
