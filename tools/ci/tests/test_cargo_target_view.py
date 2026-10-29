@@ -63,6 +63,7 @@ class CargoTargetViewTests(unittest.TestCase):
             environment = dict(PATH='/usr/bin:/bin', HOME=str(base), GITHUB_ACTIONS='true',
                 RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='bin-actions', LOCAL_CI_ARCH='x86_64',
                 RUNNER_TEMP=str(runner_temp), GITHUB_WORKSPACE=str(source), GITHUB_ENV=str(environment_file),
+                GITHUB_ACTION_PATH=str(ROOT/'.github/actions/job-temp'),
                 GITHUB_RUN_ID='12345', GITHUB_RUN_ATTEMPT='1', GITHUB_JOB='owned-target-view')
             values = {}
             try:

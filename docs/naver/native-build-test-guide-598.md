@@ -112,8 +112,8 @@ workflow 원본 SHA와 별도 fixture SHA, index/config pin 및 host cgroup 증�
 준비되기 전의 기기 설치 명령이나 현재 기능 성공 증거가 아니다.
 
 ```sh
-/usr/bin/python3 -I -B -S tools/native/source_entry.py \
-  --source "$REQUESTED_SOURCE" --machine-config "$MACHINE_CONFIG" \
+/usr/bin/python3 -I -B -S tools/native/source_entry.py 
+  --source "$REQUESTED_SOURCE" --machine-config "$MACHINE_CONFIG" 
   --machine-configuration-sha256 "$MACHINE_CONFIG_SHA256"
 ```
 
@@ -564,3 +564,10 @@ Genuine `40833691796` attempt2/job123323861172도08:04:31–08:05:45 UTC에
 [Buildroot 원래 해시 기록](https://lists.buildroot.org/pipermail/buildroot/2024-April/751360.html)은
 기존 `8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968`와 같다.
 보관본 HEAD의200/같은 길이는 읽기 증거이며 실제 body/140-header 성공을 대신하지 않는다.
+
+`2c5b78b011017bebe45aaf175e867bfaf1418978`의 push fast `40840421557`은 Rust1.94
+공유 build driver all-target typecheck와 새 cache 소유/취소/archive 회귀7개가 통과했다.
+전체97개 중 기존 Cargo target view fixture 한 개가 실제 cleanup 명령을 호출할 때
+`GITHUB_ACTION_PATH`를 주지 않아 `/../../../tools/ci/native_cache.py`를 찾지 못했다.
+실제 Actions가 주는 action 경로를 해당 소유 fixture에도 전달한다. 원래 생성·소스
+cleanliness·정리/다른 파일 보존 검사는 유지하며 새 정확 source에서 다시 확인한다.
