@@ -83,8 +83,15 @@ jobs:
           git -C "$source_root" rev-parse HEAD > "$EVIDENCE/SOURCE_COMMIT"
           git -C "$source_root" ls-files --stage > "$EVIDENCE/source-index.txt"
           sha256sum "$EVIDENCE/source-index.txt" > "$EVIDENCE/source-index.sha256"
+      - name: Read the pinned existing Rust preparation action
+        uses: actions/checkout@v7
+        with:
+          ref: fb33b6503bfd74b75e262d7148505b1381e8f8da
+          path: verified-rust-tools
+          sparse-checkout: .github/actions/rust-path
+          persist-credentials: false
       - name: Expose or bootstrap verified Rust tools
-        uses: bin9208/openpilot-rust/.github/actions/rust-path@fb33b6503bfd74b75e262d7148505b1381e8f8da
+        uses: ./verified-rust-tools/.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
