@@ -12,6 +12,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 BASE = 'e445c9d19c3041bc79d8624589e2eb6ba7d061c6'
 SUPPORT_BASE = '3fd7fd051b0af237fb8f75a4260e48707e3ae7c8'
+MESSAGING_BASE = 'abea63adf5140cb670a1880fa2c350727a0feda9'
 LABELS = ['self-hosted', 'Linux', 'X64', 'dev-md-local']
 HOSTED_WORKFLOWS = {'fast-checks.yml', 'integration.yml', 'jetlink.yml', 'native-cache-reuse.yml',
     'naver-apk-tools.yml', 'naver-ci.yml', 'tests.yaml', 'user-docs.yaml', 'wiki-settings-check.yaml',
@@ -130,6 +131,20 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             if path.suffix not in ('.yml', '.yaml'):
                 continue
             document = load(path)
+            if path.name == 'messaging-allocation-431.yml':
+                # This independently merged workflow already uses two native
+                # hosted runners. Preserve every original command and trigger,
+                # including its hosted fork checks, by comparing the whole job.
+                original = yaml.load(subprocess.check_output(
+                    ['git', 'show', MESSAGING_BASE+':.github/workflows/'+path.name],
+                    cwd=ROOT, text=True), Loader=yaml.BaseLoader)
+                self.assertEqual(document, original)
+                self.assertEqual(set(document['jobs']), {'comparison'})
+                comparison = document['jobs']['comparison']
+                self.assertEqual(comparison['runs-on'], '${{ matrix.runner }}')
+                self.assertEqual(comparison['strategy']['matrix']['runner'],
+                                 ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+                continue
             for name, job in document.get('jobs', {}).items():
                 if 'runs-on' in job:
                     with self.subTest(path=path.name, job=name):

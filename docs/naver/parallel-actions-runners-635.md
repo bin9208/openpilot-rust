@@ -197,3 +197,14 @@ class는 AST가 같고 gate 함수는 두 정책 호출의 교체 외에는 같�
 기능·빌드·테스트·push·CI 조작은 하지 않았다.
 새 정확 SHA의 실제 native ARM 실행과 cache staging의 동일 filesystem admission은
 Actions에서 확인해야 하며, 실패해도 기존 자원·소유권 조건을 완화하지 않는다.
+
+## 2026-10-30 — dev의 독립 메시징 검증 통합
+
+dev `abea63adf5140cb670a1880fa2c350727a0feda9`의 #639를 정상 merge로
+보존했다. 새 `messaging-allocation-431.yml`은 원래부터 hosted X64/native ARM에서
+실행하므로, 기존 routing 회귀가 이를 상속 self-hosted workflow로 오인하지 않도록
+원본 commit의 **전체 YAML**과 대조한다. 두 표준 matrix label과 정확한 selector도
+명시한다. 원래 fork 검사·event·명령·권한은 바꾸지 않으며 다른 workflow의 기존
+trusted-source 검사도 유지한다. 전체 source entry 자원 로그 artifact도 함께 보존한다.
+로컬은 AST·YAML/Bash 구문·edition2021 Rust 서식·diff만 확인했다. 새 정확 source의
+기능·필수 PR 및 병합 후 검사는 별도 Actions 결과를 요구한다.
