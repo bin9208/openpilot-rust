@@ -1,6 +1,7 @@
 """Keep the frozen DBC generator bytes; change only CI capacity admission."""
 import hashlib
 import os
+import runpy
 from pathlib import Path
 import sys
 import types
@@ -29,9 +30,7 @@ def main():
     if (len(sys.argv) < 4 or sys.argv[1] != '--'
             or Path(sys.argv[2]).resolve(strict=True) != ORIGINAL):
         raise ValueError('DBC CI adapter needs -- and the unchanged original generator arguments')
-    if (os.environ.get('GITHUB_ACTIONS') != 'true' or os.environ.get('RUNNER_NAME') != 'bin-actions'
-            or os.environ.get('RUNNER_ENVIRONMENT') != 'self-hosted'):
-        raise ValueError('DBC CI admission requires registered Actions')
+    runpy.run_path(str(ROOT/'tools/ci/runner_policy.py'))['require_environment']()
     module = load_original(ORIGINAL.read_bytes())
     sys.argv = [str(ORIGINAL), *sys.argv[3:]]
     module.prepare(Path(sys.argv[1]))

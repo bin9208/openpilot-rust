@@ -53,7 +53,6 @@ def main() -> None:
     'miri',
     'run',
     '--locked',
-    '-j2',
     '-p',
     'openpilot-ui-application',
     '--example',

@@ -383,6 +383,7 @@ def probe():
 if __name__ == '__main__':
     if not (sys.flags.isolated and sys.flags.no_site and sys.flags.dont_write_bytecode):
         raise SystemExit('requires /usr/bin/python3 -I -B -S')
+    source_module('runner_policy')['require_environment'](self_hosted_only=True)
     if sys.argv[1:] == ['--prepare-image']:
         prepare_image()
     elif sys.argv[1:] == ['--probe']:

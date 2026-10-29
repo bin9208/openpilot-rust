@@ -46,12 +46,16 @@ GATES = [
 ]
 PROOF_JOBS = {'rust.yml': 'workspace', 'integration.yml': 'build_release',
               'fast-checks.yml': 'fast', 'user-docs.yaml': 'check_user_docs'}
+PROOF_JOB_NAMES = {'workspace': 'rust workspace checks', 'build_release': 'build / build release',
+                   'fast': 'fast checks', 'check_user_docs': 'check mapped user docs'}
+SELF_HOSTED_GATES = {'runtime-source-build.yml', 'runtime-native-environment.yml', 'native-resource-guard.yml'}
 _CONTEXT = importlib.util.spec_from_file_location('native_validation_context_source',
     Path(__file__).resolve().parents[1]/'ci/validation_context.py')
 validation_context = importlib.util.module_from_spec(_CONTEXT)
 # Compile only this checkout's helper source; an ignored timestamp pyc is never
 # evidence of the publisher's current code. Artifact commit bytes remain data.
 exec(compile(_CONTEXT.loader.get_source(_CONTEXT.name), _CONTEXT.origin, 'exec'), validation_context.__dict__)
+runner_policy = validation_context.runner_policy
 
 
 def pairs(items):
@@ -247,8 +251,13 @@ class GitHub:
       value = bundle.json('validation-context.json', 256*1024)
     finally:
       bundle.close()
+    jobs = self.collect(f'actions/runs/{run["id"]}/jobs', 'jobs')
+    actual = [row for row in jobs if row['name'] == PROOF_JOB_NAMES[job]
+        and row['status'] == 'completed' and row['conclusion'] == 'success']
+    if len(actual) != 1:
+      raise ValueError('PR validation context needs one actual successful proof job')
     context = validation_context.verify(value, run['id'], run['run_attempt'], job,
-        run['repository']['id'], source, pr_number)
+        run['repository']['id'], source, pr_number, runner_job=actual[0])
     proof = dict(artifact_id=selected['id'], artifact_digest=selected['digest'],
         checkout_sha=value['checkout_sha'], checkout_tree=value['checkout_tree'],
         pr_number=context[0], base_sha=context[1])
@@ -296,9 +305,10 @@ def gates(client, source, producer_id, pr_number):
       trusted_run(selected, source)
       if selected['status'] == 'completed' and selected['conclusion'] == 'success':
         jobs = client.collect(f'actions/runs/{selected["id"]}/jobs', 'jobs')
+        self_hosted_only = filename in SELF_HOSTED_GATES
         names = {j['name'] for j in jobs if j['status'] == 'completed' and j['conclusion'] == 'success'
-            and j['runner_name'] == 'bin-actions'}
-        ready = required <= names and all(j['runner_name'] == 'bin-actions'
+            and runner_policy.job_is_allowed(j, self_hosted_only=self_hosted_only)}
+        ready = required <= names and all(runner_policy.job_is_allowed(j, self_hosted_only=self_hosted_only)
             for j in jobs if j['conclusion'] == 'success')
         if ready and is_pr:
           contexts, proof = client.pr_context(selected, source, pr_number, PROOF_JOBS[filename])
@@ -318,7 +328,8 @@ def gates(client, source, producer_id, pr_number):
   # successful producer happens to exist for the same Git commit.
   jobs = client.collect(f'actions/runs/{producer_id}/jobs', 'jobs')
   if not any(j['name'] == 'Native compiler in pinned AGNOS ARM userspace'
-      and j['runner_name'] == 'bin-actions' and j['conclusion'] == 'success' for j in jobs):
+      and runner_policy.job_is_allowed(j, self_hosted_only=True)
+      and j['status'] == 'completed' and j['conclusion'] == 'success' for j in jobs):
     raise ValueError('selected native producer lacks its actual registered-runner job')
   return producer, states
 
@@ -647,8 +658,8 @@ def main():
   parser.add_argument('--index-sha256', required=True)
   parser.add_argument('--publish', action='store_true')
   args = parser.parse_args()
-  if (os.environ.get('GITHUB_ACTIONS') != 'true' or os.environ.get('RUNNER_ENVIRONMENT') != 'self-hosted'
-      or os.environ.get('RUNNER_NAME') != 'bin-actions' or os.environ.get('GITHUB_REPOSITORY') != REPO
+  if (not runner_policy.environment_allowed(os.environ, self_hosted_only=True)
+      or os.environ.get('GITHUB_REPOSITORY') != REPO
       or os.environ.get('GITHUB_SERVER_URL') != 'https://github.com'
       or os.environ.get('GITHUB_EVENT_NAME') != 'workflow_dispatch'
       or not (sys.flags.isolated and sys.flags.no_site and sys.flags.dont_write_bytecode)):

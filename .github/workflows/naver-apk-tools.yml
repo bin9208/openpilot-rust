@@ -10,13 +10,13 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: naver-apk-tools-${{ github.ref }}-preserve-v1
+  group: naver-apk-tools-${{ github.ref }}-parallel-v2
   queue: max
   cancel-in-progress: false
 jobs:
   host-toolkit:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
@@ -41,7 +41,7 @@ jobs:
 
   payload:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false

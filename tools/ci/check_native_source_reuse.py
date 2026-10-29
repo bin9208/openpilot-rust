@@ -3,13 +3,14 @@
 import hashlib
 import json
 import os
+import runpy
 import subprocess
 import time
 from pathlib import Path
 
 
 def main():
-  assert os.environ['RUNNER_NAME'] == 'bin-actions' and os.environ['RUNNER_ENVIRONMENT'] == 'self-hosted'
+  runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_environment'](self_hosted_only=False)
   source = Path(os.environ['GITHUB_WORKSPACE'])
   work = Path(os.environ['RUNNER_TEMP']) / 'native-source-reuse-608'
   work.mkdir()

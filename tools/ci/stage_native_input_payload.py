@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import shutil
 import stat
@@ -54,8 +55,8 @@ def stage(job, source, run_id, attempt):
 
 
 def main():
-  if (os.environ.get('GITHUB_ACTIONS') != 'true' or os.environ.get('RUNNER_ENVIRONMENT') != 'self-hosted'
-      or os.environ.get('RUNNER_NAME') != 'bin-actions' or os.environ.get('GITHUB_REPOSITORY') != 'bin9208/openpilot-rust'):
+  runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_environment'](self_hosted_only=True)
+  if os.environ.get('GITHUB_REPOSITORY') != 'bin9208/openpilot-rust':
     raise ValueError('native input payload staging requires the registered Actions context')
   job = Path(os.environ['CI_JOB_TEMP'])
   owner = ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB'))

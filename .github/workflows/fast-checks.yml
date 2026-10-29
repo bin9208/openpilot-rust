@@ -8,14 +8,14 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: fast-${{ github.event_name }}-${{ github.ref }}-preserve-v1
+  group: fast-${{ github.event_name }}-${{ github.ref }}-parallel-v2
   queue: max
   cancel-in-progress: false
 jobs:
   fast:
     name: fast checks
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@v7
@@ -41,7 +41,7 @@ jobs:
             exit 1
           }
           rustup toolchain install 1.94.0 --profile minimal
-          CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 check \
+          CARGO_INCREMENTAL=0 cargo +1.94.0 check \
             --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets
       - name: Check CI routing and upstream synchronization guards
         run: |

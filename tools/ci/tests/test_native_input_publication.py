@@ -23,7 +23,8 @@ _PAYLOAD.loader.exec_module(payload)
 SOURCE, TREE = 'a'*40, 'b'*40
 
 
-def context_fixture(run_id=42, job='workspace', base=TREE, base_ref='dev'):
+def context_fixture(run_id=42, job='workspace', base=TREE, base_ref='dev', *,
+                    runner_name='bin-actions', runner_environment='self-hosted'):
   raw = (f'tree {"c"*40}\nparent {base}\nparent {SOURCE}\n'
       'author Owned <ci@example.invalid> 1 +0000\ncommitter Owned <ci@example.invalid> 1 +0000\n\nOwned merge proof\n').encode()
   merge = hashlib.sha1(b'commit '+str(len(raw)).encode()+b'\0'+raw).hexdigest()
@@ -32,9 +33,15 @@ def context_fixture(run_id=42, job='workspace', base=TREE, base_ref='dev'):
       body='Owned PR body must not be retained',
       base=dict(ref=base_ref, sha=base, repo=repository.copy()), head=dict(sha=SOURCE, repo=repository.copy())))
   env = dict(GITHUB_REPOSITORY=publication.REPO, GITHUB_REPOSITORY_ID='7', GITHUB_RUN_ID=str(run_id),
-      GITHUB_RUN_ATTEMPT='1', GITHUB_JOB=job, GITHUB_EVENT_NAME='pull_request', RUNNER_NAME='bin-actions',
-      RUNNER_ENVIRONMENT='self-hosted', GITHUB_REF='refs/pull/611/merge', GITHUB_SHA=merge)
+      GITHUB_RUN_ATTEMPT='1', GITHUB_JOB=job, GITHUB_EVENT_NAME='pull_request', RUNNER_NAME=runner_name,
+      RUNNER_ENVIRONMENT=runner_environment, GITHUB_ACTIONS='true', RUNNER_OS='Linux', RUNNER_ARCH='X64',
+      GITHUB_REF='refs/pull/611/merge', GITHUB_SHA=merge)
   return publication.validation_context.receipt(event, env, raw)
+
+
+def job_fixture(name, runner_name='bin-actions', labels=None):
+  return dict(name=name, status='completed', conclusion='success', runner_name=runner_name,
+      labels=['self-hosted', 'Linux', 'X64'] if labels is None else labels)
 
 
 def encode(value):
@@ -326,6 +333,32 @@ class PublicationTests(unittest.TestCase):
 
 
 class ContextEvidenceTests(unittest.TestCase):
+  def test_retained_runner_identity_is_bound_to_actual_api_name_and_labels(self):
+    for name, environment, labels in [
+        ('bin-actions', 'self-hosted', ['self-hosted', 'Linux', 'X64']),
+        ('bin-actions2', 'self-hosted', ['self-hosted', 'Linux', 'X64']),
+        ('bin-actions3', 'self-hosted', ['self-hosted', 'Linux', 'X64']),
+        ('GitHub Actions owned X64', 'github-hosted', ['ubuntu-24.04']),
+        ('GitHub Actions owned ARM64', 'github-hosted', ['ubuntu-24.04-arm'])]:
+      with self.subTest(name=name):
+        value = context_fixture(runner_name=name, runner_environment=environment)
+        actual = job_fixture('rust workspace checks', name, labels)
+        self.assertEqual(publication.validation_context.verify(value, 42, 1, 'workspace',
+            7, SOURCE, 611, runner_job=actual), (611, TREE))
+        with self.assertRaisesRegex(ValueError, 'runner differs'):
+          publication.validation_context.verify(value, 42, 1, 'workspace', 7, SOURCE,
+              611, runner_job=dict(actual, runner_name='another-runner'))
+
+  def test_hosted_receipt_cannot_disguise_self_hosted_job_or_unsupported_labels(self):
+    value = context_fixture(runner_name='bin-actions', runner_environment='github-hosted')
+    actual = job_fixture('rust workspace checks')
+    with self.assertRaisesRegex(ValueError, 'runner environment differs'):
+      publication.validation_context.verify(value, 42, 1, 'workspace', 7, SOURCE, 611, runner_job=actual)
+    for labels in [['ubuntu-latest'], ['self-hosted', 'ubuntu-24.04'], [], ['Linux', 'X64']]:
+      with self.subTest(labels=labels), self.assertRaises(ValueError):
+        publication.validation_context.verify(value, 42, 1, 'workspace', 7, SOURCE, 611,
+            runner_job=job_fixture('rust workspace checks', 'bin-actions', labels))
+
   def test_retained_context_cannot_be_rewritten_or_changed_at_job_completion(self):
     with tempfile.TemporaryDirectory() as temp:
       root = Path(temp)
@@ -403,11 +436,18 @@ class ContextEvidenceTests(unittest.TestCase):
           size_in_bytes=original.stat().st_size, digest=digest,
           workflow_run=dict(id=42, head_sha=SOURCE, repository_id=7, head_repository_id=7))
       client = publication.GitHub(root)
-      with mock.patch.object(client, 'collect', return_value=[artifact]), \
+      actual_job = job_fixture('rust workspace checks')
+      def collect(route, key):
+        return [artifact] if key == 'artifacts' else [actual_job]
+      with mock.patch.object(client, 'collect', side_effect=collect), \
            mock.patch.object(client, 'download', side_effect=lambda route, pin, path:shutil.copyfile(original, path)) as download:
         context, proof = client.pr_context(fixture.run, SOURCE, 611, 'workspace')
         self.assertEqual(context, {(611, TREE)})
         self.assertEqual(proof['artifact_digest'], digest)
+        actual_job['runner_name'] = 'bin-actions2'
+        with self.assertRaisesRegex(ValueError, 'runner differs'):
+          client.pr_context(fixture.run, SOURCE, 611, 'workspace')
+        actual_job['runner_name'] = 'bin-actions'
         # GitHub's live linked PR fields may move after the original event.
         fixture.run['pull_requests'] = [dict(number=611, head=dict(sha='e'*40), base=dict(sha='f'*40))]
         self.assertEqual(client.pr_context(fixture.run, SOURCE, 611, 'workspace')[0], context)
@@ -438,8 +478,7 @@ class GateTests(unittest.TestCase):
     producer = dict(id=42, run_attempt=1, head_sha=SOURCE, path=publication.PRODUCER, event='push',
         repository=dict(full_name=publication.REPO, id=7), head_repository=dict(full_name=publication.REPO),
         status='completed', conclusion='success')
-    runs, proofs, jobs = [], {}, {42:[dict(name='Native compiler in pinned AGNOS ARM userspace', status='completed',
-        conclusion='success', runner_name='bin-actions')]}
+    runs, proofs, jobs = [], {}, {42:[job_fixture('Native compiler in pinned AGNOS ARM userspace')]}
     for number, (name, events, required) in enumerate(publication.GATES, 100):
       run = dict(producer, id=number, path='.github/workflows/'+name, event=events[0])
       if run['event'] == 'pull_request':
@@ -449,7 +488,7 @@ class GateTests(unittest.TestCase):
             head=dict(ref='codex/owned-source', sha=SOURCE, repo=repository.copy()))]
         proofs[number] = context_fixture(number, publication.PROOF_JOBS[name])
       runs.append(run)
-      jobs[number] = [dict(name=n, status='completed', conclusion='success', runner_name='bin-actions') for n in required]
+      jobs[number] = [job_fixture(n) for n in required]
     client = mock.Mock()
     client.json.return_value = producer
     def collect(route, key):
@@ -457,8 +496,11 @@ class GateTests(unittest.TestCase):
     client.collect.side_effect = collect
     def pr_context(run, source, number, job):
       value = proofs[run['id']]
+      actual = [row for row in jobs[run['id']] if row['name'] == publication.PROOF_JOB_NAMES[job]]
+      if len(actual) != 1:
+        raise ValueError('owned fixture needs one actual proof job')
       context = publication.validation_context.verify(value, run['id'], run['run_attempt'], job,
-          run['repository']['id'], source, number)
+          run['repository']['id'], source, number, runner_job=actual[0])
       return {context}, dict(pr_number=context[0], base_sha=context[1])
     client.pr_context.side_effect = pr_context
     return client, producer, runs, jobs, proofs
@@ -476,6 +518,76 @@ class GateTests(unittest.TestCase):
     client.json.return_value = dict(producer, conclusion='failure')
     with self.assertRaisesRegex(ValueError, 'completed successfully'):
       publication.gates(client, SOURCE, 42, 611)
+
+  def test_general_gates_allow_hosted_or_second_registered_runner_with_bound_receipts(self):
+    for name, environment, labels in [
+        ('bin-actions2', 'self-hosted', ['self-hosted', 'Linux', 'X64']),
+        ('bin-actions3', 'self-hosted', ['self-hosted', 'Linux', 'X64']),
+        ('GitHub Actions owned X64', 'github-hosted', ['ubuntu-24.04']),
+        ('GitHub Actions owned ARM64', 'github-hosted', ['ubuntu-24.04-arm'])]:
+      with self.subTest(name=name):
+        client, _, runs, jobs, proofs = self.fixture()
+        for run in runs:
+          filename = run['path'].rsplit('/', 1)[-1]
+          if filename in publication.SELF_HOSTED_GATES:
+            continue
+          for actual in jobs[run['id']]:
+            actual.update(runner_name=name, labels=labels)
+          if run['event'] == 'pull_request':
+            proofs[run['id']] = context_fixture(run['id'], publication.PROOF_JOBS[filename],
+                runner_name=name, runner_environment=environment)
+        self.assertTrue(all(state['ready'] for state in publication.gates(client, SOURCE, 42, 611)[1]))
+
+  def test_native_gates_and_selected_producer_keep_the_self_hosted_boundary(self):
+    client, _, _, jobs, _ = self.fixture()
+    for rows in jobs.values():
+      for actual in rows:
+        actual['runner_name'] = 'bin-actions2'
+    # Keep unchanged original PR receipts attached to their actual runner.
+    for number in (103, 104, 106, 107):
+      for actual in jobs[number]:
+        actual['runner_name'] = 'bin-actions'
+    self.assertTrue(all(state['ready'] for state in publication.gates(client, SOURCE, 42, 611)[1]))
+    jobs[100][0].update(runner_name='GitHub Actions owned', labels=['ubuntu-24.04'])
+    self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][0]['ready'])
+    jobs[42][0].update(runner_name='GitHub Actions owned', labels=['ubuntu-24.04'])
+    with self.assertRaisesRegex(ValueError, 'registered-runner job'):
+      publication.gates(client, SOURCE, 42, 611)
+
+  def test_unregistered_self_hosted_and_mislabelled_jobs_never_satisfy_general_gates(self):
+    for name, labels in [('unregistered-actions', ['self-hosted', 'Linux', 'X64']),
+                         ('bin-actions2', ['self-hosted', 'Linux']),
+                         ('GitHub Actions owned', ['self-hosted', 'ubuntu-24.04'])]:
+      with self.subTest(name=name, labels=labels):
+        client, _, _, jobs, _ = self.fixture()
+        jobs[105][0].update(runner_name=name, labels=labels)
+        self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][5]['ready'])
+
+  def test_publication_rejects_receipt_runner_name_and_environment_spoofing(self):
+    for fault in ('name', 'environment'):
+      with self.subTest(fault=fault):
+        client, _, _, jobs, proofs = self.fixture()
+        if fault == 'name':
+          next(row for row in jobs[103] if row['name'] == 'rust workspace checks')['runner_name'] = 'bin-actions2'
+        else:
+          proofs[103]['runner_environment'] = 'github-hosted'
+        with self.assertRaisesRegex(ValueError, 'runner'):
+          publication.gates(client, SOURCE, 42, 611)
+
+  def test_publisher_execution_rejects_hosted_and_other_self_hosted_before_api_access(self):
+    argv = ['publish_inputs.py', '--source-run-id', '42', '--source-pr-number', '611',
+        '--source-commit', SOURCE, '--index-sha256', 'a'*64, '--publish']
+    for name, environment in [('GitHub Actions owned', 'github-hosted'), ('unregistered-actions', 'self-hosted')]:
+      env = dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT=environment, RUNNER_NAME=name,
+          RUNNER_OS='Linux', RUNNER_ARCH='X64', GITHUB_REPOSITORY=publication.REPO,
+          GITHUB_SERVER_URL='https://github.com', GITHUB_EVENT_NAME='workflow_dispatch')
+      with self.subTest(name=name), mock.patch.dict(os.environ, env, clear=True), \
+           mock.patch.object(publication.sys, 'argv', argv), \
+           mock.patch.object(publication.sys, 'flags', mock.Mock(isolated=1, no_site=1, dont_write_bytecode=1)), \
+           mock.patch.object(publication, 'GitHub') as api:
+        with self.assertRaisesRegex(ValueError, 'registered manual Actions'):
+          publication.main()
+        api.assert_not_called()
 
   def test_pr_gates_require_one_exact_source_dev_pr_and_base_context(self):
     for fault in ('base', 'head', 'base-repository', 'head-repository', 'number', 'attempt'):

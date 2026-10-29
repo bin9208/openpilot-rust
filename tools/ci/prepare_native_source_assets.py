@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import subprocess
 
@@ -13,7 +14,7 @@ def main():
   parser.add_argument('--root', type=Path, required=True)
   parser.add_argument('--work', type=Path, required=True)
   args = parser.parse_args()
-  assert os.environ['RUNNER_NAME'] == 'bin-actions' and os.environ['RUNNER_ENVIRONMENT'] == 'self-hosted'
+  runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_environment'](self_hosted_only=False)
   root, work = args.root.resolve(), args.work.resolve()
   assert root == Path(os.environ['GITHUB_WORKSPACE']).resolve()
   assert work == Path(os.environ['CI_JOB_TEMP']).resolve()

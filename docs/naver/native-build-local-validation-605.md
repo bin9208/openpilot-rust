@@ -131,3 +131,82 @@ readonly 파일의 rename/unlink 뒤 원래 경로가 사라지는 경우 객체
 실제 readonly444/555 rename, 열린 fd의 mode, hardlink의 한 이름 삭제 후 나머지 객체의
 mode·본문 보존을 양쪽 실행 환경에서 필수 검사한다. 객체 검증 허용값은 바꾸지 않는다.
 이 원인 후보와 transport 수정의 기능적 확인은 새 정확 source의 Actions 결과 대기다.
+
+
+## 2026-10-29 — 세 등록 runner와 hosted 병렬 실행 정책
+
+사용자의 최신 지시가 앞선 `bin-actions` 전용 정책을 변경했다. 공통
+`tools/ci/runner_policy.py`는 `bin-actions`, `bin-actions2`, `bin-actions3`를
+등록된 self-hosted 실행자로 허용한다. `bin-actions3`는 사용자 제공 실제 API 확인상
+online/free이며 기본 `self-hosted`, `Linux`, `X64` label만 있다. 따라서 job 증거에는
+이 공통 세 label을 요구하고 `dev-md-local` 또는 `support-630`을 추가 필수로 요구하지
+않는다. 이름이 다른 self-hosted 실행자는 계속 거부한다.
+
+일반 helper는 Linux GitHub-hosted X64/ARM64도 허용하며, 실제 kernel/genuine 경로의
+`self_hosted_only`는 위 세 등록 runner로 제한한다. heavy 검사의 자원·분담과 실제
+workflow 라우팅은 부모 작업에서 관리한다. 새 runner의 CPU/RAM 우수성이나 기능 검사
+성공을 이 허용 목록 변경만으로 주장하지 않는다. 기존 실행·다른 세션·공유 cache는
+보존하며 기존 argv/pin·검사 임계값·cleanup 범위는 바꾸지 않는다.
+
+`bin-actions3` 환경 허용, 기본 label만 있는 job 증거 허용, job 전용 cache 소유권의
+양성 회귀 검사를 보강했다. 로컬은 Python AST와 diff만 확인했고 회귀 검사·빌드·CI
+실행은 수행하지 않았다. #606의 공통 CI 포트는 별도 작업으로 남긴다.
+
+
+## 2026-10-29 — #606 공통 CI의 세 runner 분산
+
+사용자 지시에 따라 #606의 기존 head `ec418df39d3b5820f2751978e3898f0a4d858cbc`에서
+공통 CI만 별도 포트했다. heavy X64와 기존 ARM QEMU job은 공통
+`[self-hosted, Linux, X64]` pool에서 `bin-actions`, `bin-actions2`, `bin-actions3`를
+사용한다. fast/docs/두 필수 집계 gate와 Wiki 문서 검사는 hosted `ubuntu-24.04`로
+분담한다. 원래 matrix, 의존 관계, 필수 check 이름, 원래 검사 명령과 조건·pin은
+유지한다. 집계 step의 runner admission만 공통 허용 정책에 맞춘다.
+
+읽기 검사의 concurrency는 `parallel-v2`로 분리하고 `queue:max`,
+`cancel-in-progress:false`를 유지해 기존 실제 실행을 중단하지 않는다. inherited sync/publish 네 workflow
+(`carrot-route-vault-publish.yaml`, `naver-upstream-sync.yml`, `sync.yml`,
+`wiki-settings-publish.yaml`)는 runner/guard/concurrency까지 `ec418` 원문 전체를
+유지하며 기존4label 예외를 정확 검사한다. 자동 발행을 활성화하지 않는다.
+job-temp의 소유자/inode 범위와 기존 source/target view, ARM QEMU proof를 유지하고
+실제 runner 이름·환경과 job owner·target 경로를 연결한다. fixture checkout에는 실제
+job BASH_ENV가 읽는 native APT helper와 정책 파일도 포함한다.
+
+이 포트에는 #599 공급자·native_cache·중앙 publisher·실제 입력 발행 코드 또는
+새 native ARM 실행 분기를 가져오지 않는다. 부모 #611에 이미 있는 native ARM 확장은
+부모 통합 때 별도로 유지한다. 로컬은 AST/YAML/Bash 구문과 diff 읽기만 수행했고
+기능 검사·build·push·CI dispatch/cancel은 수행하지 않았다. 새 정확 SHA의 Actions
+결과는 아직 없다.
+
+
+## 2026-10-29 — 공통 label과 CPU 병렬 제한 해제
+
+사용자 지시로 저장소 runner ID22 `bin-actions`, ID23 `bin-actions2`, ID24
+`bin-actions3` 모두에 `openpilot-rust` custom label을 추가하고 실제 API 응답을 확인했다.
+기존 `dev-md-local`·`support-630` label은 유지했다. active heavy X64 검사는
+`[self-hosted, Linux, X64, openpilot-rust]`, ARM은 `ubuntu-24.04-arm`, 빠른 검사·집계는
+`ubuntu-24.04`를 선택한다. 세 self-hosted와 hosted 네 작업 이상을 함께 실행할 수
+있도록 독립 job과 기존 최종 gate를 유지한다. runner 한 개는 job 하나를 처리한다.
+실제 계정 quota는 API에서 확인되지 않아 공개된 표준 한도와 실제 실행을 구분한다.
+
+추가 지시에 따라 workflow의 `CARGO_BUILD_JOBS=2`, genuine guest와 production native
+Cargo driver의 기본 `CARGO_BUILD_JOBS=1`, 호출 helper의 `-j2`를 제거한다. Cargo는
+사용 가능한 CPU 수를 기본 병렬도로 사용한다. recipe에 명시한 환경은 계속 적용한다.
+이미 실행 중인 프로세스의 환경은 변경되지 않으며 이 수정 source의 새 작업부터
+적용된다. 로컬은 AST/YAML/Bash 구문·rustfmt·전체 기준 diff만 확인하며 기능·빌드
+성공과 실제 동시 실행 수는 정확 source의 Actions 결과로 별도 확인한다.
+
+
+## 2026-10-29 — #606 a5c 실제 실패 두 건 수정
+
+source `a5c5267554c1c1c5317d029c1f5fcc0400b9cc4c`의 fast
+[40881014451](https://github.com/bin9208/openpilot-rust/actions/runs/40881014451)와 foundation
+[40881005066](https://github.com/bin9208/openpilot-rust/actions/runs/40881005066) 로그를 읽었다.
+Cargo target fixture가 실제 composite step을 subprocess로 호출하면서
+`GITHUB_ACTION_PATH`를 주지 않아 `/../../../tools/ci/runner_policy.py`를 찾지 못했다.
+fixture env에 실제 `ROOT/.github/actions/job-temp`를 명시한다. production helper의
+경로·소유권·정리 검사는 바꾸지 않는다. 부모 main fixture에는 이미 이 값이 있다.
+
+fast 로그의 `carrot-peer-readiness.yml:106: new blank line at EOF`는 이번 HEAD 대비가
+아닌 검사 기준 `e445c9d19c3041bc79d8624589e2eb6ba7d061c6`부터의 diff에서 보인다.
+해당 EOF 빈 줄 하나만 제거하고 이 전체 기준 diff를 다시 읽어 확인한다. 로컬은
+AST/YAML/diff만 확인하며 기능 재검사·build·push·CI 조작은 하지 않는다.

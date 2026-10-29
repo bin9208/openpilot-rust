@@ -15,7 +15,7 @@ class RustIsolationTests(unittest.TestCase):
         job = workflow['jobs']['webcam-runtime']
         self.assertEqual(job['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
         self.assertEqual(job.get('if'), TRUSTED_SOURCE)
-        self.assertEqual(job['env']['CARGO_BUILD_JOBS'], '2')
+        self.assertNotIn('CARGO_BUILD_JOBS', job['env'])
         self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
         self.assertEqual(job['env']['CARGO_PROFILE_DEV_DEBUG'], '0')
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
@@ -161,7 +161,7 @@ class RustIsolationTests(unittest.TestCase):
         aggregate = data['jobs']['fast']['steps']
         self.assertEqual(len(aggregate), 2)
         self.assertEqual(aggregate[0]['name'], 'Require the registered execution environment')
-        self.assertEqual(aggregate[0]['run'], 'test "$RUNNER_ENVIRONMENT" = self-hosted\ntest "$RUNNER_NAME" = bin-actions\n')
+        self.assertEqual(aggregate[0]['run'], 'test "$GITHUB_ACTIONS" = true\nif [[ $RUNNER_ENVIRONMENT == self-hosted ]]; then\n  [[ $RUNNER_NAME == bin-actions || $RUNNER_NAME == bin-actions2 || $RUNNER_NAME == bin-actions3 ]]\nelse\n  [[ $RUNNER_ENVIRONMENT == github-hosted && $RUNNER_OS == Linux &&\n     ( $RUNNER_ARCH == X64 || $RUNNER_ARCH == ARM64 ) ]]\nfi\n')
         self.assertEqual(aggregate[1]['name'], 'Require runtime validation')
 
     def test_hardware_runtime_requires_source_and_native_boundaries(self):
@@ -247,7 +247,7 @@ class RustIsolationTests(unittest.TestCase):
                          '-p openpilot-radarcan -p openpilot-can', '--all-targets --locked -- -D warnings'):
             self.assertIn(required, host)
         arm = '\n'.join(step.get('run', '') for step in data['jobs']['radar-arm']['steps'])
-        self.assertEqual(data['jobs']['radar-arm']['runs-on'], ['self-hosted', 'Linux', 'X64', 'dev-md-local'])
+        self.assertEqual(data['jobs']['radar-arm']['runs-on'], 'ubuntu-24.04-arm')
         self.assertEqual(data['jobs']['radar-arm']['env']['LOCAL_CI_ARCH'], 'aarch64')
         for required in ('--target aarch64-unknown-linux-gnu', '--no-run', '--message-format=json',
                          '"$radar_test" --test-threads=1', 'test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64',

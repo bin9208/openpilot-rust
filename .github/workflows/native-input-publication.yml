@@ -33,7 +33,7 @@ jobs:
   inputs:
     name: Validate or publish source-pinned native inputs
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.repository == 'bin9208/openpilot-rust' && github.event_name == 'workflow_dispatch' }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
       LOCAL_CI_ARCH: x86_64

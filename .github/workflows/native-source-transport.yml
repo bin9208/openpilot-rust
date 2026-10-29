@@ -1,7 +1,7 @@
 name: Factory ARM sudo transport admission
 on:
   push:
-    branches: ['codex/feat-613-*', dev, main]
+    branches: ['codex/feat-613-*', 'codex/fix-613-*', dev, main]
     paths:
       - 'tools/ci/probe_native_source_transport.py'
       - '.github/workflows/native-source-transport.yml'
@@ -16,18 +16,19 @@ jobs:
   admission:
     name: Real factory sudo and owned cgroup in private namespaces
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
       LOCAL_CI_ARCH: x86_64
       RUSTUP_TOOLCHAIN: '1.94.0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA
     steps:
       - uses: actions/checkout@v7
         with: {persist-credentials: false}
+      - name: Require the registered self-hosted factory admission runner
+        run: /usr/bin/python3 -I -B -S tools/ci/runner_policy.py --self-hosted-only
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - name: Admit the image and tool operation before allocating its files

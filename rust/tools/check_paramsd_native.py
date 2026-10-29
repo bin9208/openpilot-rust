@@ -51,7 +51,6 @@ def main():
       'ownership',
       '--no-run',
       '--locked',
-      '-j2',
       '--message-format=json',
     ],
     environment,

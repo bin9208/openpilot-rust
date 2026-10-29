@@ -24,7 +24,10 @@ fn main() {
     let root = reader.get_root::<event::Reader<'_>>().unwrap();
     assert!(root.get_valid());
     assert_eq!(root.get_log_mono_time(), 123456789);
-    assert_eq!(root.get_car_state().unwrap().get_v_ego(), 12.5);
+    let event::CarState(state) = root.which().unwrap() else {
+        panic!("expected carState event");
+    };
+    assert_eq!(state.unwrap().get_v_ego(), 12.5);
     print(&bytes);
 
     let mut message = capnp::message::Builder::new_default();
@@ -41,9 +44,9 @@ fn main() {
     let root = reader.get_root::<event::Reader<'_>>().unwrap();
     assert!(!root.get_valid());
     assert_eq!(root.get_log_mono_time(), 987654321);
-    assert_eq!(
-        root.get_log_message().unwrap().to_str().unwrap(),
-        "SDK path | capnp 원본"
-    );
+    let event::LogMessage(text) = root.which().unwrap() else {
+        panic!("expected logMessage event");
+    };
+    assert_eq!(text.unwrap().to_str().unwrap(), "SDK path | capnp 원본");
     print(&bytes);
 }

@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import subprocess
 
@@ -12,7 +13,7 @@ def digest(path):
 
 
 def main():
-  assert os.environ['RUNNER_NAME'] == 'bin-actions' and os.environ['RUNNER_ENVIRONMENT'] == 'self-hosted'
+  runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_environment'](self_hosted_only=False)
   source, work = Path(os.environ['GITHUB_WORKSPACE']), Path(os.environ['CI_JOB_TEMP'])
   assert (work/'owner').read_text() == ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','GITHUB_JOB'))
   assert subprocess.check_output(['git','-C',source,'rev-parse','HEAD'],text=True).strip() == os.environ['GITHUB_SHA']

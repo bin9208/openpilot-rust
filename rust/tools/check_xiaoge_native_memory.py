@@ -56,7 +56,7 @@ def main() -> None:
   args.output.mkdir()
   library = Path(subprocess.check_output(["clang-18", "--print-file-name=libclang_rt.asan-x86_64.so"], text=True).strip()).resolve(strict=True)
   flags = "-fsanitize=address,undefined -fno-omit-frame-pointer"
-  environment = dict(os.environ, CARGO_TARGET_DIR=str(args.target_dir), CARGO_INCREMENTAL="0", CARGO_BUILD_JOBS="2",
+  environment = dict(os.environ, CARGO_TARGET_DIR=str(args.target_dir), CARGO_INCREMENTAL="0",
     CARGO_PROFILE_DEV_DEBUG="0", CARGO_PROFILE_TEST_DEBUG="0", CC="clang-18", CXX="clang++-18", CFLAGS=flags, CXXFLAGS=flags,
     RUSTFLAGS=f"-C link-arg={library}", OPENPILOT_OPENCV_ROOT=str(args.opencv))
   commands = []

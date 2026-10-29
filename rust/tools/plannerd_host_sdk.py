@@ -6,6 +6,7 @@ Git revisions already recorded with its licenses, compiled for the actual host.
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import platform
 import shutil
@@ -70,9 +71,7 @@ def prepare():
   features = flags()
   if {'avx2', 'fma'} <= features:
     return None
-  if (os.environ.get('GITHUB_ACTIONS') != 'true' or os.environ.get('RUNNER_NAME') != 'bin-actions'
-      or os.environ.get('RUNNER_ENVIRONMENT') != 'self-hosted'):
-    raise ValueError('pinned wheel requires AVX2/FMA; compatible source SDK is Actions-only')
+  runpy.run_path(str(ROOT/'tools/ci/runner_policy.py'))['require_environment']()
   job = Path(os.environ['CI_JOB_TEMP'])
   context = {key: os.environ[key] for key in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB')}
   owner = ':'.join(context.values())

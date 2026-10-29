@@ -2,6 +2,7 @@
 """Admit current-Git model build inputs without smudging the source checkout."""
 import json
 import os
+import runpy
 from pathlib import Path
 import subprocess
 import sys
@@ -9,7 +10,7 @@ import tempfile
 
 
 def main():
-  assert os.environ['RUNNER_NAME'] == 'bin-actions' and os.environ['RUNNER_ENVIRONMENT'] == 'self-hosted'
+  runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_environment'](self_hosted_only=False)
   source, work = Path(os.environ['GITHUB_WORKSPACE']).resolve(), Path(os.environ['CI_JOB_TEMP'])
   assert (work/'owner').read_text() == ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','GITHUB_JOB'))
   sys.path.insert(0,str(source/'rust/tools'))

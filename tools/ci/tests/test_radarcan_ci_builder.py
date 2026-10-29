@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -23,10 +24,14 @@ class RadarcanCiBuilderTests(unittest.TestCase):
         original = builder.load_original(builder.ORIGINAL.read_bytes())
         contract = json.loads((ROOT/'rust/native-dbc-source-contract.json').read_text())
         expected = {Path(name).name: pin for name, pin in contract['outputs'].items() if name.endswith('.dbc')}
+        python_path = os.pathsep.join(filter(None, (str(ROOT/'opendbc_repo'), os.environ.get('PYTHONPATH'))))
         with tempfile.TemporaryDirectory() as temporary:
             target = Path(temporary)/'dbc'
             # A unit capacity fixture, never a report of actual available space.
-            with patch.object(original.shutil, 'disk_usage', return_value=SimpleNamespace(free=1024**3)):
+            # generate_all starts the unchanged generator in a fresh Python.
+            # That child cannot inherit this test module's sys.path insertion.
+            with patch.dict(os.environ, PYTHONPATH=python_path), \
+                    patch.object(original.shutil, 'disk_usage', return_value=SimpleNamespace(free=1024**3)):
                 with redirect_stdout(io.StringIO()):
                     original.prepare(target)
             actual = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in target.glob('*.dbc')}

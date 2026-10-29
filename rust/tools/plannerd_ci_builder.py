@@ -6,6 +6,7 @@ intact: capacity admission and host-only library compatibility belong here.
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import platform
 import shutil
@@ -32,9 +33,7 @@ def main():
   source_builder = ROOT/'rust/tools/build_plannerd_source.py'
   if requested not in (expected, source_builder):
     raise ValueError('CI adapter may invoke only the solver and original-binding builders')
-  if (os.environ.get('GITHUB_ACTIONS') != 'true' or os.environ.get('RUNNER_NAME') != 'bin-actions'
-      or os.environ.get('RUNNER_ENVIRONMENT') != 'self-hosted'):
-    raise ValueError('planner CI adapter requires the registered Actions runner')
+  runpy.run_path(str(ROOT/'tools/ci/runner_policy.py'))['require_environment']()
   # An ignored timestamp pyc is never evidence of the frozen builder bytes.
   original = types.ModuleType('build_plannerd_acados')
   original.__file__ = str(expected)

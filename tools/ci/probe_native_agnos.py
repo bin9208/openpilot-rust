@@ -12,6 +12,7 @@ import os
 import platform
 import re
 import resource
+import runpy
 import shutil
 import subprocess
 import time
@@ -740,7 +741,7 @@ def native_python_probe(guest_command,work,source_mount,evidence,log,guest_work)
       stdlib_checks=health['standard_library_checks'],prefix_unchanged_after_execution=True,
       repeated_http_body_bytes=0,repeated_copied_bytes=0,model_generated=False,
       python_model_environment_complete=False,runtime_activated=False,physical_device_execution=False,
-      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
 
 
 def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -841,7 +842,7 @@ def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest
       strict_elf_closure_compatible=True,prefix_unchanged_after_execution=True,
       repeated_http_body_bytes=0,repeated_copied_bytes=0,repeated_linked_bytes=0,
       full_model_generation=False,full_model_regression=False,full_runtime_build=False,gpu_executed=False,
-      physical_device_execution=False,emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+      physical_device_execution=False,emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
 
 
 def native_model_generation_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -899,7 +900,7 @@ def native_model_generation_probe(guest_command,work,source_mount,evidence,log,g
       full_model_generation=True,full_model_regression=False,full_runtime_build=False,
       gpu_executed=False,physical_device_execution=False,
       measurement_limit='per-command wall time and output counters; aggregate RAM/swap/disk peak remains separate',
-      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
   # Owned source commits exercise the actual producer's reuse key across Git
   # revisions. The compiler remains the original source-built binary; do not
   # retag it as built from either fixture revision. No source push or activation.
@@ -974,7 +975,7 @@ def native_model_generation_probe(guest_command,work,source_mount,evidence,log,g
   # Run the actual RadarCAN database loader against all unchanged original data.
   room(work,3*1024**3)
   group=next(g for g in bound['groups'].values() if 'openpilot-radarcan' in g['binaries'])
-  environment={**group['environment'],'CARGO_INCREMENTAL':'0','CARGO_BUILD_JOBS':'1',
+  environment={**group['environment'],'CARGO_INCREMENTAL':'0',
       'CARGO_PROFILE_DEV_DEBUG':'0','RUSTC':str(cargo.parent/'rustc'),'RUSTDOC':str(cargo.parent/'rustdoc')}
   env=['/usr/bin/env',*(f'{k}={v}' for k,v in environment.items())]
   features=[f for f in group['features'] if f.split('/')[0] in ('openpilot-card','openpilot-msgq')]
@@ -1091,7 +1092,7 @@ def native_encoder_probe(guest_command,work,source_mount,evidence,log,guest_work
       original_source_codec_cases=5,packet_bytes_and_metadata_equal=True,
       oracle_receipt_sha256=digest(work/'native-encoder-codec-reference/receipt.json'),
       strict_elf_audit_compatible=True,actual_arm_native_compiler=True,
-      emulation='QEMU/PRoot ARM user space on x64 bin-actions',full_runtime_build=False,
+      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}',full_runtime_build=False,
       runtime_activated=False,daemon_started=False,physical_device_execution=False)
 
 
@@ -1550,7 +1551,7 @@ def native_runtime_companions_probe(guest_command,work,source_mount,evidence,log
       runtime_inputs_trees=len(runtime_inputs['trees']),project_generated_mpc_solvers_reused=False,
       full_mpc_regression=False,full_module_regression=False,runtime_assets_complete=False,
       full_runtime_build=False,physical_device_execution=False,
-      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
 
 
 def native_display_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -1695,7 +1696,7 @@ def native_display_inputs_probe(guest_command,work,source_mount,evidence,log,gue
       repeated_cargo_artifacts_fresh=True,repeated_http_body_bytes=0,repeated_copied_bytes=0,
       consumer_origin_archive_downloaded=False,font_glyph_rendering_tested=False,
       hardware_graphics_tested=False,full_module_regression=False,full_runtime_build=False,
-      physical_device_execution=False,emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+      physical_device_execution=False,emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
 
 
 def native_media_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -1830,7 +1831,7 @@ def native_media_inputs_probe(guest_command,work,source_mount,evidence,log,guest
       consumer_origin_archive_downloaded=False,project_rust_binaries_reused=False,
       hardware_graphics_tested=False,korean_glyph_coverage_verified=False,
       complete_cluster_upload_regression=False,full_runtime_build=False,physical_device_execution=False,
-      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
 
 
 def native_source_assets_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -1885,7 +1886,7 @@ def native_source_assets_probe(guest_command,work,source_mount,evidence,log,gues
       pointer_mismatch_rejected_before_staging=True,source_checkout_unchanged=True,
       generated_firmware_prepared=False,python_model_generation_complete=False,
       full_runtime_build=False,physical_device_execution=False,
-      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
 
 
 def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -2003,7 +2004,7 @@ def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_w
       complete_python_generation_environment=False,full_planner_regression=False,
       full_runtime_build=False,runtime_activated=False,published_release=False,
       public_component_download_tested=False,physical_device_execution=False,
-      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
 
 
 def native_panda_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -2058,7 +2059,7 @@ def native_panda_inputs_probe(guest_command,work,source_mount,evidence,log,guest
       signed_images_public_signature_verified=2,firmware_version=report['firmware_version'],
       repeated_http_body_bytes=0,repeated_copied_bytes=0,unbound_provider_rejected_before_staging=True,
       independent_firmware_regenerated=False,firmware_executed=False,device_connected=False,
-      full_runtime_build=False,physical_device_execution=False,emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+      full_runtime_build=False,physical_device_execution=False,emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
 
 
 def native_dbc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -2110,7 +2111,7 @@ def native_dbc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_w
       actual_arm_preparer=True,original_reference=reference,host_expected_tree_matches=True,
       repeated_http_body_bytes=0,repeated_copied_bytes=0,unbound_provider_rejected_before_staging=True,
       runtime_data_regenerated=False,full_runtime_build=False,physical_device_execution=False,
-      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
 
 
 def native_usbgpu_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -2350,12 +2351,11 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
       repeated_plan_bytes_identical=True,rejected_inputs=failures,
       operation_estimates_measured=False,full_runtime_build=False,runtime_assets_complete=False,
       runtime_activated=False,physical_device_execution=False,
-      emulation='QEMU/PRoot ARM user space on x64 bin-actions')
+      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
 
 
 def main():
-  assert os.environ.get('RUNNER_NAME') == 'bin-actions'
-  assert os.environ.get('RUNNER_ENVIRONMENT') == 'self-hosted'
+  runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_environment'](self_hosted_only=True)
   source = Path(os.environ['GITHUB_WORKSPACE']).resolve()
   sha = subprocess.check_output(['git', '-C', source, 'rev-parse', 'HEAD'], text=True).strip()
   assert sha == os.environ['GITHUB_SHA']
@@ -2481,7 +2481,7 @@ def main():
              '-b', f'{owned / "native-opencv-components"}:{guest_work}/opencv-components',
              '-b', f'{owned / "native-opencv-provider-export"}:{guest_work}/opencv-provider-export',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
-             f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
+             f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
              f'GIT_CONFIG_GLOBAL={guest_work}/probe.gitconfig', 'GIT_OPTIONAL_LOCKS=0',
              f'PATH={guest_work}/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin']

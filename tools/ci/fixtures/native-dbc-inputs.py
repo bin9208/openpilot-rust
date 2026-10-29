@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import shutil
 import subprocess
@@ -20,7 +21,7 @@ def main():
   for name in ('source', 'provider', 'work', 'output'):
     parser.add_argument('--'+name, type=Path, required=True)
   args = parser.parse_args()
-  assert os.environ['RUNNER_NAME'] == 'bin-actions' and os.environ['RUNNER_ENVIRONMENT'] == 'self-hosted'
+  runpy.run_path(str(Path(__file__).resolve().parents[1]/'runner_policy.py'))['require_environment'](self_hosted_only=False)
   source = args.source.resolve()
 
   def git(*arguments):

@@ -8,6 +8,7 @@ replaced. This is ARM userspace emulation, not a physical ARM or AGNOS kernel.
 import copy
 import json
 import os
+import runpy
 from pathlib import Path
 import shutil
 import subprocess
@@ -54,7 +55,7 @@ with tempfile.TemporaryDirectory(prefix='native-index-bytecode-', dir='/tmp') as
 
 def main():
   assert os.geteuid() != 0 and not os.getgroups()
-  assert os.environ['RUNNER_NAME'] == 'bin-actions' and os.environ['RUNNER_ENVIRONMENT'] == 'self-hosted'
+  runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_environment'](self_hosted_only=True)
   job = Path(os.environ['CI_JOB_TEMP'])
   assert job.parent == Path('/tmp') and job.name.startswith('openpilot-ci.') and job.resolve() == job
   owner = ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB'))
