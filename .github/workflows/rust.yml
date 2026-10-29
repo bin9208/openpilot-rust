@@ -110,9 +110,9 @@ jobs:
           test "$XIAOGE_MEMORY" = success
           test "$UI_RUNTIME" = success
   webcam-runtime:
-    name: rust webcam source runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
+    name: rust webcam source runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 35 }}
     strategy:
       fail-fast: false
@@ -139,6 +139,13 @@ jobs:
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH == 'aarch64'
         with: {parallelism-only: 'true'}
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -220,9 +227,9 @@ jobs:
         with: {cleanup: 'true'}
 
   planner-runtime:
-    name: rust planner source comparison (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
+    name: rust planner source comparison (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
       fail-fast: false
       matrix:
@@ -248,6 +255,13 @@ jobs:
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH == 'aarch64'
         with: {parallelism-only: 'true'}
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -422,9 +436,9 @@ jobs:
         with: {cleanup: 'true'}
 
   carrot-man-runtime:
-    name: rust CarrotMan owner (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
+    name: rust CarrotMan owner (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 25 }}
     strategy:
       fail-fast: false
@@ -449,6 +463,13 @@ jobs:
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH == 'aarch64'
         with: {parallelism-only: 'true'}
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -516,9 +537,9 @@ jobs:
         with: {cleanup: 'true'}
 
   webrtc-runtime:
-    name: rust WebRTC source runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
+    name: rust WebRTC source runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     strategy:
       fail-fast: false
@@ -545,6 +566,13 @@ jobs:
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH == 'aarch64'
         with: {parallelism-only: 'true'}
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -930,9 +958,9 @@ jobs:
         with: {cleanup: 'true'}
 
   xiaoge-runtime:
-    name: rust Xiaoge source comparison (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
+    name: rust Xiaoge source comparison (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
       fail-fast: false
       matrix:
@@ -957,6 +985,13 @@ jobs:
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH == 'aarch64'
         with: {parallelism-only: 'true'}
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -1531,9 +1566,9 @@ jobs:
         with: {cleanup: 'true'}
 
   radar-arm:
-    name: rust RadarCAN emulated ARM functional validation
+    name: rust RadarCAN native ARM functional validation
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
     env:
       LOCAL_CI_ARCH: aarch64
@@ -1556,6 +1591,13 @@ jobs:
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH == 'aarch64'
         with: {parallelism-only: 'true'}
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -1764,9 +1806,9 @@ jobs:
         with: {cleanup: 'true'}
 
   radard-runtime:
-    name: rust radard source and native runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
+    name: rust radard source and native runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
       fail-fast: false
       matrix:
@@ -1797,6 +1839,13 @@ jobs:
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH == 'aarch64'
         with: {parallelism-only: 'true'}
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'
@@ -2070,9 +2119,9 @@ jobs:
         with: {cleanup: 'true'}
 
   carrot-navi-arm:
-    name: rust Carrot Navi emulated ARM build
+    name: rust Carrot Navi native ARM build
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
     env:
       LOCAL_CI_ARCH: aarch64
@@ -2093,6 +2142,13 @@ jobs:
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH == 'aarch64'
         with: {parallelism-only: 'true'}
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'

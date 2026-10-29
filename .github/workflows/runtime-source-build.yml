@@ -23,9 +23,9 @@ permissions:
   contents: read
 jobs:
   offline-cargo-reuse:
-    name: Actual offline Cargo reuse (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
+    name: Actual offline Cargo reuse (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
       fail-fast: false
       matrix:
@@ -52,6 +52,13 @@ jobs:
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH == 'aarch64'
         with: {parallelism-only: 'true'}
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
         if: env.LOCAL_CI_ARCH != 'aarch64'

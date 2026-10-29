@@ -306,3 +306,35 @@ bootstrap 패키지 목록에 없었다. 게스트에 `python3`와 원래 binary
 oracle Python3.12.14·PRoot/QEMU/rootfs pin·원래 target-view 충돌/정리 단언은 유지한다.
 main #611에는 이미 같은 준비가 있으므로 main source나 그 CI는 재시작하지 않는다.
 로컬은 Bash 문법과 diff만 확인하고 실제 ARM 회귀는 수정 SHA의 Actions에서 확인한다.
+
+## 2026-10-30 — #606에 검증된 native ARM backend와 분산 경로 선택 이식
+
+원격 PR #606의 head가 `099474a5d5578809a9c1ecbc2e64a6376b0da8bd`임을 먼저
+확인했다. main `c7bd7b6a514e122a6cd6ea8bba957f3ae8709297`의 native ARM 분기와
+분산 경로만 선택 이식하며 dev `abea63ad` 병합과 #599 입력 발행·cache 기능은 가져오지
+않는다. main 전체 파일이나 Rust 기능 코드는 복사하지 않는다.
+
+`rust.yml`의 webcam·planner·CarrotMan·WebRTC·Xiaoge·RadarCAN·radard·Carrot Navi
+ARM 8종, foundation과 peer 각 1종을 `ubuntu-24.04-arm`으로 배치한다. matrix X64는
+기존 `[self-hosted, Linux, X64, openpilot-rust]` pool을 유지하고 CarrotMan CI template도
+같은 경로로 맞춘다. common에는 foundation/peer 표시 이름을 소비하는 publisher나
+receipt 경계가 없음을 확인하고 `ARM QEMU`/`emulated ARM` 표시만 실제 native로 고친다.
+job ID·전체 원래 명령/feature·skip·needs·matrix 개수·timeout·고정 원본 SHA·최종 gate는
+보존한다.
+
+host와 target이 같은 때만 native 실행하고 job 소유 Cargo target view를 확인한다.
+실제 source SHA·runner 이름/환경·host/target·UID·job owner·target 경로와 native/비기기
+증거를 남긴다. native ARM에 Python3.12.14와 Rust 전체 준비를 원래 shell 준비 전에
+추가한다. 명령 실행은 setup-python의 `pythonLocation`과 loader 경로를 사용한다.
+기존 ARM CPU 전용 준비와 affinity/CPU 기반 기본값·명시 override 정책은 그대로 둔다.
+X64→ARM 요청은 기존 QEMU/PRoot/rootfs/Python/Rustup pin·owner 증거·argv를 유지한다.
+`099474a5`의 Cargo/FFmpeg 정확한 runner-temp prefix remap과 cleanup 경계도 보존한다.
+
+target-view fixture는 고정 X64 대신 실제 실행 host architecture를 사용하게 하고,
+정책 검사에는 허용한 10개 job 경로와 template의 native Python/Rust 준비만 추가한다.
+로컬에서는 AST·YAML과 Bash `-n` 402개 command block 및 wrapper 구문, 기준 source
+대비 diff만 확인했다. 원래 step 전체와 조건·matrix·timeout·workflow trigger의 동일성,
+QEMU prepare/argv/pin/owner·정확 prefix/cleanup·CPU 정책·frozen fixture의 byte 동일성을
+읽기 대조했다. 기능 검사·빌드·push·CI dispatch/취소·원격 글은 실행하지 않았으며 새
+source의 Actions 성공은 미확인이다.
+기존 queued/running 작업은 그대로 보존하고 대체 여부는 부모가 별도로 판단한다.

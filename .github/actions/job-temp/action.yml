@@ -15,9 +15,11 @@ runs:
         # shorter than the persistent runner's checkout/temp directory.
         owned=$(mktemp -d /tmp/openpilot-ci.XXXXXX)
         printf '%s:%s:%s' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_JOB" > "$owned/owner"
-        # Keep original rust/target argv while giving X64 each job its own target.
-        # ARM has a separate PRoot bind and target managed by local-arm.
-        if [[ ${LOCAL_CI_ARCH:-x86_64} != aarch64 && -f "$GITHUB_WORKSPACE/rust/Cargo.toml" ]]; then
+        # Native X64/ARM use a job-private target view; X64 -> ARM retains its
+        # separate PRoot target bind managed by local-arm.
+        host_arch=$(/usr/bin/uname -m)
+        requested_arch=${LOCAL_CI_ARCH:-$host_arch}
+        if [[ $requested_arch == "$host_arch" && -f "$GITHUB_WORKSPACE/rust/Cargo.toml" ]]; then
           target_view="$GITHUB_WORKSPACE/rust/target"
           if [[ -e $target_view || -L $target_view ]]; then
             echo 'Refusing to replace an existing Cargo target view' >&2

@@ -22,6 +22,14 @@ HOSTED_JOBS = {'fast-checks.yml': {'fast'}, 'user-docs.yaml': {'check_user_docs'
         'gnss-runtime', 'controls-runtime', 'estimation-runtime', 'ui-connectivity', 'platform-runtime',
         'hardware-runtime', 'logger-runtime', 'athena-runtime'},
     'wiki-settings-check.yaml': {'check'}, 'jetlink.yml': {'android-core'}}
+NATIVE_ARM_JOBS = {
+    'rust.yml': {'webcam-runtime', 'planner-runtime', 'carrot-man-runtime', 'webrtc-runtime',
+        'xiaoge-runtime', 'radar-arm', 'radard-runtime', 'carrot-navi-arm'},
+    'runtime-source-build.yml': {'offline-cargo-reuse'},
+    'carrot-peer-readiness.yml': {'carrot-man-runtime'},
+}
+NATIVE_ARM_MATRIX = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}'
+NATIVE_ARM_SETUP = "runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'"
 SAFETY = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
 HOSTED_CLEANUP = 'sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet'
 
@@ -115,7 +123,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                 self.assertEqual(policy['cancel-in-progress'], 'false')
                 self.assertTrue(policy['group'].endswith('-parallel-v2'))
 
-    def test_every_execution_job_requires_the_registered_local_labels(self):
+    def test_every_execution_job_requires_its_explicit_native_or_registered_route(self):
         for path in sorted((ROOT / '.github/workflows').glob('*')):
             if path.suffix not in ('.yml', '.yaml'):
                 continue
@@ -125,10 +133,13 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     with self.subTest(path=path.name, job=name):
                         expected = (['self-hosted', 'Linux', 'X64', 'dev-md-local'] if path.name in INHERITED_WORKFLOWS else
                                     'ubuntu-24.04' if name in HOSTED_JOBS.get(path.name, set()) else LABELS)
+                        if name in NATIVE_ARM_JOBS.get(path.name, set()):
+                            expected = ('ubuntu-24.04-arm' if job['env']['LOCAL_CI_ARCH'] == 'aarch64'
+                                        else NATIVE_ARM_MATRIX)
                         self.assertEqual(job['runs-on'], expected)
                         self.assertIn(SAFETY, job['if'])
         template = load(ROOT / 'rust/crates/carrot-man/ci-jobs.yml')['carrot-man-runtime']
-        self.assertEqual(template['runs-on'], LABELS)
+        self.assertEqual(template['runs-on'], NATIVE_ARM_MATRIX)
         owner = (ROOT / '.github/actions/job-temp/action.yml').read_text()
         self.assertIn('runner_policy.py', owner)
         policy = runpy.run_path(str(ROOT/'tools/ci/runner_policy.py'))
@@ -137,7 +148,33 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             self.assertTrue(policy['job_is_allowed'](dict(runner_name=runner, labels=LABELS), self_hosted_only=True))
         self.assertFalse(policy['environment_allowed'](dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='other-session')))
         self.assertTrue(policy['environment_allowed'](dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='github-hosted', RUNNER_OS='Linux', RUNNER_ARCH='X64')))
+        self.assertTrue(policy['environment_allowed'](dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='github-hosted', RUNNER_OS='Linux', RUNNER_ARCH='ARM64')))
         self.assertNotIn('--self-hosted-only', (ROOT/'tools/ci/local-arm').read_text())
+
+    def test_native_arm_prepares_pinned_python_and_full_rust_before_the_original_shell(self):
+        jobs = [(path, name, load(ROOT/'.github/workflows'/path)['jobs'][name])
+                for path, names in NATIVE_ARM_JOBS.items() for name in names]
+        jobs.append(('ci-jobs.yml', 'carrot-man-runtime',
+                     load(ROOT/'rust/crates/carrot-man/ci-jobs.yml')['carrot-man-runtime']))
+        self.assertEqual(len(jobs), 11)
+        for path, name, job in jobs:
+            with self.subTest(workflow=path, job=name):
+                steps = job['steps']
+                prepare = next(i for i, step in enumerate(steps) if step.get('uses') == './.github/actions/local-arm')
+                python, = (i for i, step in enumerate(steps[:prepare]) if
+                           step.get('uses') == 'actions/setup-python@v6' and step.get('if') == NATIVE_ARM_SETUP)
+                rust, = (i for i, step in enumerate(steps[:prepare]) if
+                         step.get('uses') == './.github/actions/rust-path' and step.get('if') == NATIVE_ARM_SETUP)
+                self.assertEqual(steps[python]['with']['python-version'], '3.12.14')
+                self.assertNotEqual(steps[rust].get('with', {}).get('parallelism-only'), 'true')
+                self.assertLess(python, rust)
+        transport = (ROOT/'tools/ci/local-arm').read_text()
+        for proof in ('execution_mode=\'native\'', 'emulated=False', 'proot_used=False',
+                      'native_arm_execution=', "'GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','GITHUB_JOB'",
+                      'Native target view must belong to this job', 'OPENPILOT_CI_EXECUTION_MODE=native',
+                      'export PATH="$pythonLocation/bin:$PATH"',
+                      'export LD_LIBRARY_PATH="$pythonLocation/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"'):
+            self.assertIn(proof, transport)
 
     def test_common_ci_has_no_fixed_cargo_or_test_thread_limits(self):
         for path in (ROOT/'.github/workflows').iterdir():
@@ -248,7 +285,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                         if isinstance(config, dict) and 'branches' in config:
                             self.assertTrue(set(config['branches']).issubset(current['on'][event]['branches']))
 
-    def test_arm_variants_use_the_separate_guest_and_preserve_evidence(self):
+    def test_arm_variants_preserve_native_or_separate_guest_execution_evidence(self):
         snapshot = json.loads((ROOT / 'tools/ci/fixtures/local-native-workflows-605.json').read_text())
         for relative in snapshot['workflows']:
             original = yaml.load(subprocess.check_output(['git', 'show', BASE + ':' + relative],
