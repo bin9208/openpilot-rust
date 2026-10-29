@@ -28,7 +28,7 @@ def test_failed_comparison_is_recorded_and_stops_before_the_next_check(tmp_path:
 
 def test_planner_host_arm_and_memory_results_are_required() -> None:
   jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
-  assert jobs["planner-runtime"]["strategy"]["matrix"]["runner"] == ["ubuntu-24.04", "ubuntu-24.04-arm"]
+  assert jobs["planner-runtime"]["strategy"]["matrix"]["runner"] == ["self-hosted-x64", "ubuntu-24.04-arm"]
   assert {"planner-runtime", "planner-memory"} <= set(jobs["fast"]["needs"])
   gate = next(step for step in jobs["fast"]["steps"] if "EXPECTED" in step.get("env", {}))
   results = {name: {"result": "success"} for name in jobs["fast"]["needs"]}

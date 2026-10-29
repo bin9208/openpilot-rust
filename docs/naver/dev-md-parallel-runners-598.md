@@ -18,14 +18,17 @@ GitHub [공식 runner 문서](https://docs.github.com/en/actions/reference/runne
 
 | 실행 풀 | 대상 |
 | --- | --- |
-| GitHub `ubuntu-24.04` | workspace, 일반 X64 runtime·memory·정책 검사와 gate |
-| GitHub `ubuntu-24.04-arm` | planner/radard/Xiaoge/CarrotMan/WebRTC/webcam matrix의 ARM 행, radar-arm, carrot-navi-arm |
-| `bin-actions2`: self-hosted/Linux/X64/support-630 | 원래 `build_release` 전체 setup/scons/모델·기존 Python 통합 검사 |
-| `bin-actions`: self-hosted/Linux/X64/dev-md-local | 원래 private ARM sysroot를 사용하는 `arm-build`; 기존 조건부 runtime-delivery 요청 |
+| 등록 공통 `[self-hosted, Linux, X64]` | workspace/build_release/arm-build, 일반 X64 runtime·memory·빌드, matrix X64 행, 기존 AGNOS prerelease |
+| GitHub `ubuntu-24.04` | route/fast-checks/docs/model_web/coordination gate/기존 조건부 delivery 요청 |
+| GitHub `ubuntu-24.04-arm` | planner/radard/Xiaoge/CarrotMan/WebRTC/webcam matrix ARM 행, radar-arm, carrot-navi-arm |
+
+등록 이름은 실제 API의 `bin-actions`, `bin-actions2`, `bin-actions3`다. #630이 실행 중인
+support-630 전용 runner에 perf를 고정하지 않으며, 공통 label을 만족하는 빈 runner가
+받는다. 무거운 X64 검사를 GitHub VM으로 보내던 이전 배분은 이 최신 지시로 대체한다.
 
 matrix는 X64·ARM 두 행을 동시에 허용한다(`max-parallel: 2`). 원래 `fail-fast`
 설정과 각 architecture의 시간 제한·환경·compile feature·메모리 검사는 유지한다.
-workspace는 별도 GitHub VM에서 실행하므로 긴 release build 및 ARM QEMU에 막히지 않는다.
+workspace와 release build는 같은 공통 풀의 빈 등록 runner에 분산되고, native ARM과 hosted coordination은 독립 실행한다.
 
 ## 의존 관계와 필수 결과
 
@@ -157,3 +160,27 @@ gate, 조건, step와 argv는 직전 커밋과 같다. queue 세대 분리 회�
 따라서 새 runner 배분이 서로 다른 그룹의 발행 작업을 추가로 열지 않는다.
 부모 main의 native-input-publication 전역 write group도 이번 perf 변경 범위가 아니다.
 관련 회귀는 두 concurrency 용도를 구분하며 실행은 아직 하지 않았다.
+
+
+## 최신 #635 정책: 세 등록 runner의 무거운 X64 공통 풀
+
+저장소 runner API를 읽어 `bin-actions`/`bin-actions2`가 online/busy,
+`bin-actions3`가 online/idle이며 세 대 모두 self-hosted/Linux/X64 label을 가진 것을
+확인했다. 이는 해당 조회 시점의 상태이며 새 job의 실행 또는 성공 증거가 아니다.
+`bin-actions3`에는 별도 사용자 label이 없어 특정 dev-md-local/support-630 label로
+고정하면 선택할 수 없다. 따라서 무거운 X64 job과 실제 AGNOS 발행 경로는
+`[self-hosted, Linux, X64]`로 유지/변경하고 환경·root admission은 등록 이름 세 개만
+허용한다. #630의 actual 실행을 취소하거나 runner 등록·label을 수정하지 않는다.
+
+matrix X64 행은 `self-hosted-x64`라는 논리 이름으로 기록하고 `runs-on` 식에서 공통
+세 label을 선택한다. ARM 행은 계속 ubuntu-24.04-arm의 native ARM이다. X64 전용
+sanitizer 조건도 같은 논리 행에 대응시키며 원래 실행 argv·feature·pin·숫자·허용
+오차·원본 Python 조건과 메모리 검사를 보존한다. 세 gate의 필수 목록과 본문,
+parallel-v2 validation group 및 기존 발행 write group도 그대로다.
+
+runner_policy의 함수/CLI API는 그대로 유지하고 allowlist에 실제 API 이름
+`bin-actions3`만 추가한다. 실제 package root admission 및 관련 회귀도 세 이름을
+대조한다. 상속 Carrot/NAS sync/publish와 main599 입력 기능은 변경하지 않는다.
+로컬 AST/YAML/Bash 문법/diff 및 원문 구조 비교만 수행했으며 실제 기능·빌드·테스트와
+원격 push·dispatch·취소·재시작은 하지 않았다. 새 정확 SHA의 실행 근거는 부모 검증이
+필요하다. 이전 두 runner/hosted-X64 우선 기록은 최신 사용자 정책으로 대체된다.

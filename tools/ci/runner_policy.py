@@ -4,7 +4,7 @@ import argparse
 from collections.abc import Mapping
 import os
 
-SELF_HOSTED_NAMES = frozenset(('bin-actions', 'bin-actions2'))
+SELF_HOSTED_NAMES = frozenset(('bin-actions', 'bin-actions2', 'bin-actions3'))
 HOSTED_LABELS = frozenset(('ubuntu-24.04', 'ubuntu-24.04-arm'))
 
 

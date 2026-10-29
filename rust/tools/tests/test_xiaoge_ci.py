@@ -56,7 +56,7 @@ def test_failed_or_missing_build_receipts_are_rejected(tmp_path: Path, batch: in
 
 def test_both_host_architectures_and_native_memory_are_required_gates() -> None:
   jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
-  assert jobs["xiaoge-runtime"]["strategy"]["matrix"]["runner"] == ["ubuntu-24.04", "ubuntu-24.04-arm"]
+  assert jobs["xiaoge-runtime"]["strategy"]["matrix"]["runner"] == ["self-hosted-x64", "ubuntu-24.04-arm"]
   assert {"xiaoge-runtime", "xiaoge-memory"} <= set(jobs["fast"]["needs"])
   gate = next(step for step in jobs["fast"]["steps"] if "EXPECTED" in step.get("env", {}))
   results = {name: {"result": "success"} for name in jobs["fast"]["needs"]}

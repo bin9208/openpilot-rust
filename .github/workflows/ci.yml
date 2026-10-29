@@ -177,7 +177,7 @@ jobs:
   git_update:
     needs: [check_user_docs]
     name: Git update lifecycle
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
@@ -200,8 +200,8 @@ jobs:
   build_release:
     needs: [check_user_docs]
     name: build release
-    # Registered second runner retains the original heavy build commands.
-    runs-on: [self-hosted, Linux, X64, support-630]
+    # Share the original heavy build across all three registered X64 runners.
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
@@ -268,7 +268,7 @@ jobs:
   model:
     needs: [check_user_docs]
     name: model contract and CPU inference
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -286,7 +286,7 @@ jobs:
   android-core:
     needs: [check_user_docs]
     name: Android protocol and Java inference
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -326,7 +326,7 @@ jobs:
   jetlink-native:
     needs: [check_user_docs]
     name: Jetlink power policy fast checks
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 15
     env:
       CARGO_INCREMENTAL: '0'
@@ -387,7 +387,7 @@ jobs:
   workspace:
     needs: [integration-gate]
     name: rust workspace checks
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 120
     env:
       CARGO_BUILD_JOBS: '2'
@@ -705,7 +705,7 @@ jobs:
   model-memory:
     needs: [integration-gate]
     name: rust model memory
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 15
     env:
       CARGO_BUILD_JOBS: '2'
@@ -772,7 +772,7 @@ jobs:
   model-pipelines:
     needs: [integration-gate]
     name: rust original model pipelines
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -880,7 +880,7 @@ jobs:
   logger-runtime:
     needs: [integration-gate]
     name: rust original route logger
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -985,7 +985,7 @@ jobs:
   support-runtime:
     needs: [integration-gate]
     name: rust support runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1089,7 +1089,7 @@ jobs:
   telemetry-runtime:
     needs: [integration-gate]
     name: rust telemetry runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1181,7 +1181,7 @@ jobs:
   startup-runtime:
     needs: [integration-gate]
     name: rust startup prerequisites
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1279,7 +1279,7 @@ jobs:
   hardware-runtime:
     needs: [integration-gate]
     name: rust hardware and boot runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1347,7 +1347,7 @@ jobs:
   platform-runtime:
     needs: [integration-gate]
     name: rust platform runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1407,7 +1407,7 @@ jobs:
   startup-services:
     needs: [integration-gate]
     name: rust startup services
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1472,7 +1472,7 @@ jobs:
   sensor-audio:
     needs: [integration-gate]
     name: rust sensor and audio runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1530,7 +1530,7 @@ jobs:
   gnss-runtime:
     needs: [integration-gate]
     name: rust GNSS runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1581,7 +1581,7 @@ jobs:
   estimation-runtime:
     needs: [integration-gate]
     name: rust estimation runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1657,7 +1657,7 @@ jobs:
   ui-connectivity:
     needs: [integration-gate]
     name: rust UI and connectivity
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1727,7 +1727,7 @@ jobs:
   athena-runtime:
     needs: [integration-gate]
     name: rust Athena runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1769,7 +1769,7 @@ jobs:
   controls-runtime:
     needs: [integration-gate]
     name: rust control runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1830,7 +1830,7 @@ jobs:
   web-upload-timeouts:
     needs: [integration-gate]
     name: active upload timeout contracts
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -1865,7 +1865,7 @@ jobs:
   joystickd-runtime:
     needs: [integration-gate]
     name: rust control tools source and native runtimes
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1925,12 +1925,12 @@ jobs:
   planner-runtime:
     needs: [integration-gate]
     name: rust planner source comparison (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64"]') }}
     strategy:
       max-parallel: 2
       fail-fast: true
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        runner: [self-hosted-x64, ubuntu-24.04-arm]
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
@@ -2005,7 +2005,7 @@ jobs:
         run: |
           python -P rust/tools/check_plannerd_ci.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-artifact" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --output "$RUNNER_TEMP/planner-comparison"
       - name: Check generated C with ASan, UBSan and allocator leak detection
-        if: matrix.runner == 'ubuntu-24.04'
+        if: matrix.runner == 'self-hosted-x64'
         run: |
           python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_acados.py --source-fixture rust/upstream/planner-source.json --architecture x86_64 --cc gcc --sanitize --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-sanitized"
           python -P rust/tools/check_plannerd_native_memory.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-sanitized" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --asan-library "$(gcc -print-file-name=libasan.so)" --output "$RUNNER_TEMP/planner-native-memory"
@@ -2038,7 +2038,7 @@ jobs:
   planner-memory:
     needs: [integration-gate]
     name: rust planner pure memory contracts
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: '0'
@@ -2086,7 +2086,7 @@ jobs:
   card-runtime:
     needs: [integration-gate]
     name: rust Card and CAN runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 90
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2187,7 +2187,7 @@ jobs:
   radar-runtime:
     needs: [integration-gate]
     name: rust RadarCAN source and host runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2394,7 +2394,7 @@ jobs:
   radar-memory:
     needs: [integration-gate]
     name: rust RadarCAN buffer ownership with Miri
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2457,7 +2457,7 @@ jobs:
   navd-runtime:
     needs: [integration-gate]
     name: rust navigation runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2530,13 +2530,13 @@ jobs:
   radard-runtime:
     needs: [integration-gate]
     name: rust radard source runtime (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64"]') }}
     strategy:
       max-parallel: 2
       fail-fast: true
       matrix:
         include:
-          - runner: ubuntu-24.04
+          - runner: self-hosted-x64
             machine: x86_64
           - runner: ubuntu-24.04-arm
             machine: aarch64
@@ -2709,7 +2709,7 @@ jobs:
   carrot-navi-runtime:
     needs: [integration-gate]
     name: rust Carrot Navi original and host runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
@@ -2928,7 +2928,7 @@ jobs:
   selfdrive-runtime:
     needs: [integration-gate]
     name: rust selfdrived runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3026,7 +3026,7 @@ jobs:
   panda-runtime:
     needs: [integration-gate]
     name: rust Panda runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 40
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3092,7 +3092,7 @@ jobs:
   camera-runtime:
     needs: [integration-gate]
     name: rust camera runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 40
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3163,7 +3163,7 @@ jobs:
   encoder-runtime:
     needs: [integration-gate]
     name: rust encoder runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3240,12 +3240,12 @@ jobs:
   xiaoge-runtime:
     needs: [integration-gate]
     name: rust Xiaoge source comparison (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64"]') }}
     strategy:
       max-parallel: 2
       fail-fast: true
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        runner: [self-hosted-x64, ubuntu-24.04-arm]
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 75 }}
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
@@ -3355,7 +3355,7 @@ jobs:
   xiaoge-memory:
     needs: [integration-gate]
     name: rust Xiaoge native memory
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 75
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3425,7 +3425,7 @@ jobs:
   ui-runtime:
     needs: [integration-gate]
     name: rust UI application runtime
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 60
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3538,14 +3538,14 @@ jobs:
   carrot-man-runtime:
     needs: [integration-gate]
     name: rust CarrotMan owner (${{ matrix.arch }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64"]') }}
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 25 }}
     strategy:
       max-parallel: 2
       fail-fast: true
       matrix:
         include:
-          - { arch: x86_64, runner: ubuntu-24.04 }
+          - { arch: x86_64, runner: self-hosted-x64 }
           - { arch: aarch64, runner: ubuntu-24.04-arm }
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
@@ -3642,13 +3642,13 @@ jobs:
   webrtc-runtime:
     needs: [integration-gate]
     name: rust WebRTC source runtime (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64"]') }}
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     strategy:
       max-parallel: 2
       fail-fast: true
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        runner: [self-hosted-x64, ubuntu-24.04-arm]
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
@@ -3753,13 +3753,13 @@ jobs:
   webcam-runtime:
     needs: [integration-gate]
     name: rust webcam source runtime (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64"]') }}
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 35 }}
     strategy:
       max-parallel: 2
       fail-fast: true
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        runner: [self-hosted-x64, ubuntu-24.04-arm]
     env:
       LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
@@ -3892,8 +3892,8 @@ jobs:
   arm-build:
     name: Build generic ARM64 artifacts
     needs: [fast]
-    # Registered first runner retains the existing cross-build and private ARM sysroot.
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    # Share the existing cross-build and private ARM sysroot across registered X64 runners.
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 120
     env:
       CARGO_BUILD_JOBS: '2'
@@ -4252,7 +4252,7 @@ jobs:
     name: Request marked runtime delivery
     needs: arm64
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev-md' && contains(github.event.head_commit.message, '[runtime-package]')
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     permissions:
       contents: read

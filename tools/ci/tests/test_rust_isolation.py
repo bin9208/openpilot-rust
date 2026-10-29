@@ -12,7 +12,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_webcam_requires_two_architectures_and_real_capture_ipc(self):
         workflow = yaml.load((ROOT / '.github/workflows/ci.yml').read_text(), Loader=yaml.BaseLoader)
         job = workflow['jobs']['webcam-runtime']
-        self.assertEqual(job['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+        self.assertEqual(job['strategy']['matrix']['runner'], ['self-hosted-x64', 'ubuntu-24.04-arm'])
         self.assertNotIn('if', job)
         self.assertEqual(job['env']['CARGO_BUILD_JOBS'], '2')
         self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
@@ -327,7 +327,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_webrtc_requires_native_host_and_arm_real_media_and_failure_boundaries(self):
         jobs = yaml.load((ROOT / '.github/workflows/ci.yml').read_text(), Loader=yaml.BaseLoader)['jobs']
         job = jobs['webrtc-runtime']
-        self.assertEqual(job['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+        self.assertEqual(job['strategy']['matrix']['runner'], ['self-hosted-x64', 'ubuntu-24.04-arm'])
         self.assertNotIn('if', job)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('webrtc_source_requirements.txt', 'libavcodec-dev=7:6.1.1-*', 'build_params_python.py', 'build_msgq_python.py',
@@ -351,7 +351,7 @@ class RustIsolationTests(unittest.TestCase):
 
     def test_xiaoge_requires_both_architectures_and_instrumented_native_libraries(self):
         jobs = yaml.load((ROOT / '.github/workflows/ci.yml').read_text(), Loader=yaml.BaseLoader)['jobs']
-        self.assertEqual(jobs['xiaoge-runtime']['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+        self.assertEqual(jobs['xiaoge-runtime']['strategy']['matrix']['runner'], ['self-hosted-x64', 'ubuntu-24.04-arm'])
         required = {
             'xiaoge-runtime': ('build-xiaoge-opencv', 'build_params_python.py', 'build_visionipc_python.py',
                               'check_xiaoge_ci.py', '--features native-skip-miri', 'test_xiaoge_ci.py'),

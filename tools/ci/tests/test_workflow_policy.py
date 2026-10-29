@@ -169,10 +169,9 @@ class WorkflowPolicyTests(unittest.TestCase):
     for name in ('ci.yml', 'dev-md-runtime.yml'):
       for key, job in workflow(name)['jobs'].items():
         selected = job['runs-on']
-        self.assertTrue(selected in ('ubuntu-24.04', 'ubuntu-24.04-arm', '${{ matrix.runner }}') or
-                        selected in (['self-hosted', 'Linux', 'X64', 'dev-md-local'],
-                                     ['self-hosted', 'Linux', 'X64', 'support-630'],
-                                     ['self-hosted', 'Linux', 'X64']), (name, key))
+        matrix_route = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64"]\') }}'
+        self.assertTrue(selected in ('ubuntu-24.04', 'ubuntu-24.04-arm', matrix_route) or
+                        selected == ['self-hosted', 'Linux', 'X64'], (name, key))
     commands = '\n'.join(step.get('run', '') for step in workflow()['jobs']['check_user_docs']['steps'])
     self.assertNotIn('package.py source-policy', commands)
     delivery = '\n'.join(step.get('run', '') for step in workflow('dev-md-runtime.yml')['jobs']['package']['steps'])

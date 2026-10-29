@@ -9,6 +9,8 @@ SPEC = importlib.util.spec_from_file_location('tested_runner_policy', ROOT/'tool
 POLICY = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(POLICY)
 LOCAL = ['self-hosted', 'Linux', 'X64', 'dev-md-local']
+POOL = ['self-hosted', 'Linux', 'X64']
+MATRIX_ROUTE = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64"]\') }}'
 ARM_JOBS = ('planner-runtime', 'radar-arm', 'radard-runtime', 'carrot-navi-arm',
             'xiaoge-runtime', 'carrot-man-runtime', 'webrtc-runtime', 'webcam-runtime')
 
@@ -25,23 +27,28 @@ class LocalRunnerPolicyTests(unittest.TestCase):
                     continue
                 route = job.get('runs-on')
                 with self.subTest(workflow=path.name, job=name):
-                    if route == '${{ matrix.runner }}':
+                    if route == MATRIX_ROUTE:
                         matrix = job['strategy']['matrix']
                         runners = matrix.get('runner') or [row['runner'] for row in matrix['include']]
-                        self.assertEqual(runners, ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+                        self.assertEqual(runners, ['self-hosted-x64', 'ubuntu-24.04-arm'])
                     else:
                         self.assertTrue(route in ('ubuntu-24.04', 'ubuntu-24.04-arm') or
                                         route in (LOCAL, ['self-hosted', 'Linux', 'X64', 'support-630'],
                                                   ['self-hosted', 'Linux', 'X64']))
 
-    def test_three_compute_pools_are_routed_explicitly(self):
+    def test_heavy_x64_uses_the_shared_pool_without_pinning_support630(self):
         jobs = workflow(ROOT/'.github/workflows/ci.yml')['jobs']
-        self.assertEqual(jobs['workspace']['runs-on'], 'ubuntu-24.04')
-        self.assertEqual(jobs['build_release']['runs-on'], ['self-hosted', 'Linux', 'X64', 'support-630'])
-        self.assertEqual(jobs['arm-build']['runs-on'], LOCAL)
-        self.assertEqual(jobs['runtime-delivery']['runs-on'], LOCAL)
+        for name in ('workspace', 'build_release', 'arm-build', 'android-core', 'estimation-runtime'):
+            self.assertEqual(jobs[name]['runs-on'], POOL)
+        for name in ('route', 'fast-checks', 'check_user_docs', 'model_web',
+                     'integration-gate', 'fast', 'arm64', 'runtime-delivery'):
+            self.assertEqual(jobs[name]['runs-on'], 'ubuntu-24.04')
+        self.assertNotIn('support-630', (ROOT/'.github/workflows/ci.yml').read_text())
+        for job in jobs.values():
+            if job.get('runs-on') == MATRIX_ROUTE:
+                self.assertIn('self-hosted-x64', str(job['strategy']['matrix']))
 
-    def test_authorized_runtime_delivery_can_use_either_registered_runner(self):
+    def test_authorized_runtime_delivery_can_use_the_three_registered_runners(self):
         jobs = workflow(ROOT/'.github/workflows/dev-md-runtime.yml')['jobs']
         self.assertEqual(set(jobs), {'verify', 'package', 'publish'})
         for name, job in jobs.items():
@@ -60,7 +67,7 @@ class LocalRunnerPolicyTests(unittest.TestCase):
         for name in ARM_JOBS:
             job = jobs[name]
             with self.subTest(job=name):
-                self.assertIn(job['runs-on'], ('ubuntu-24.04-arm', '${{ matrix.runner }}'))
+                self.assertIn(job['runs-on'], ('ubuntu-24.04-arm', MATRIX_ROUTE))
                 self.assertEqual(job['defaults']['run']['shell'], 'openpilot-local-shell {0}')
                 transport = [s for s in job['steps'] if s.get('uses') == './.github/actions/local-arm']
                 self.assertEqual(len(transport), 2)
@@ -99,8 +106,8 @@ class LocalRunnerPolicyTests(unittest.TestCase):
             self.assertIn(required, text)
         self.assertLess(text.index('LOCAL_CI_EXECUTION_MODE=native'), text.index('download \'https://'))
 
-    def test_environment_policy_accepts_two_registered_and_native_hosted_architectures(self):
-        for name in ('bin-actions', 'bin-actions2'):
+    def test_environment_policy_accepts_three_registered_and_native_hosted_architectures(self):
+        for name in ('bin-actions', 'bin-actions2', 'bin-actions3'):
             self.assertTrue(POLICY.environment_allowed(dict(GITHUB_ACTIONS='true',
                             RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME=name)))
         for arch in ('X64', 'ARM64'):
@@ -117,7 +124,7 @@ class LocalRunnerPolicyTests(unittest.TestCase):
         for label in ('ubuntu-24.04', 'ubuntu-24.04-arm'):
             self.assertTrue(POLICY.job_is_allowed(dict(runner_name='GitHub Actions 1', labels=[label])))
             self.assertFalse(POLICY.job_is_allowed(dict(runner_name='GitHub Actions 1', labels=[label]), self_hosted_only=True))
-        for name in ('bin-actions', 'bin-actions2'):
+        for name in ('bin-actions', 'bin-actions2', 'bin-actions3'):
             self.assertTrue(POLICY.job_is_allowed(dict(runner_name=name, labels=LOCAL)))
         self.assertFalse(POLICY.job_is_allowed(dict(runner_name='unregistered', labels=LOCAL)))
         self.assertFalse(POLICY.job_is_allowed(dict(runner_name='GitHub Actions 1', labels=['ubuntu-latest'])))

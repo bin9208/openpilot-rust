@@ -13,7 +13,7 @@ import tarfile
 import zipfile
 
 def runner_environment_allowed(environment, name):
-    return environment == "self-hosted" and name in {"bin-actions", "bin-actions2"}
+    return environment == "self-hosted" and name in {"bin-actions", "bin-actions2", "bin-actions3"}
 
 
 assert os.environ.get("GITHUB_ACTIONS") == "true", "runtime validation/builds belong in GitHub Actions"
