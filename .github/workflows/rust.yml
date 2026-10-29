@@ -91,8 +91,28 @@ jobs:
         run: |
           set -euo pipefail
           architecture=$(dpkg --print-architecture)
-          sudo apt-get -o DPkg::Lock::Timeout=600 -o "APT::Architectures=$architecture" update
-          sudo apt-get -o DPkg::Lock::Timeout=600 -o "APT::Architectures=$architecture" install -y --no-remove --no-upgrade g++ clang cmake pkg-config capnproto libcapnp-dev libzmq3-dev libdbus-1-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libzstd-dev libclang-dev strace time openssl libasound2-dev dbus dbus-daemon ffmpeg binutils curl
+          . /etc/os-release
+          [[ "$ID" == ubuntu && "$VERSION_CODENAME" == noble ]]
+          test -f /usr/share/keyrings/ubuntu-archive-keyring.gpg
+          cat > "$SUPPORT_ROOT/ubuntu.sources" <<'UBUNTU'
+          Types: deb
+          URIs: https://archive.ubuntu.com/ubuntu/
+          Suites: noble noble-updates noble-backports
+          Components: main restricted universe multiverse
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+          Types: deb
+          URIs: https://security.ubuntu.com/ubuntu/
+          Suites: noble-security
+          Components: main restricted universe multiverse
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+          UBUNTU
+          mkdir -p "$SUPPORT_ROOT/apt-lists/partial" "$SUPPORT_ROOT/apt-archives/partial"
+          apt_scope=(-o DPkg::Lock::Timeout=600 -o "APT::Architecture=$architecture" -o "APT::Architectures=$architecture"
+            -o "Dir::Etc::sourcelist=$SUPPORT_ROOT/ubuntu.sources" -o Dir::Etc::sourceparts=-
+            -o "Dir::State::lists=$SUPPORT_ROOT/apt-lists" -o "Dir::Cache::archives=$SUPPORT_ROOT/apt-archives")
+          sudo apt-get "${apt_scope[@]}" update
+          sudo apt-get "${apt_scope[@]}" install -y --no-remove --no-upgrade g++ clang cmake pkg-config capnproto libcapnp-dev libzmq3-dev libdbus-1-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libzstd-dev libclang-dev strace time openssl libasound2-dev dbus dbus-daemon ffmpeg binutils curl
           unset FFMPEG_DIR PKG_CONFIG_LIBDIR PKG_CONFIG_SYSROOT_DIR BINDGEN_EXTRA_CLANG_ARGS
           rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
           python -m venv "$SUPPORT_ROOT/venv"
