@@ -338,3 +338,18 @@ QEMU prepare/argv/pin/owner·정확 prefix/cleanup·CPU 정책·frozen fixture�
 읽기 대조했다. 기능 검사·빌드·push·CI dispatch/취소·원격 글은 실행하지 않았으며 새
 source의 Actions 성공은 미확인이다.
 기존 queued/running 작업은 그대로 보존하고 대체 여부는 부모가 별도로 판단한다.
+
+## 2026-10-30 — A294 fast의 두 routing 단언 실패 보정
+
+`a2943e2c2fffda1c7acf8a0595864409dbeffbb1`의
+[fast run40934083328/job123659886644](https://github.com/bin9208/openpilot-rust/actions/runs/40934083328/job/123659886644)은
+50개 검사 중 48개가 성공하고 routing 단언 두 개가 실패했다. PR synthetic merge에는
+dev의 `messaging-allocation-431.yml`이 포함되므로 common의 self-hosted 기본 단언과
+충돌했다. main c7과 같은 한 파일 예외를 적용해 전체 YAML을 고정 `abea63ad` Git blob과
+비교하고 comparison 1개 job·원래 matrix selector·두 공식 hosted label을 모두 확인한
+후에만 일반 단언을 건너뛴다. 고정 blob은 이미 로컬 Git에 있으며 dev 병합은 하지 않는다.
+workflow event/if/fork/steps/permissions는 변경하지 않는다.
+
+RadarCAN 단언은 이미 변경된 `radar-arm`의 `ubuntu-24.04-arm` 경로에 맞춘다. fresh
+source/runtime/ARM/memory 필수 명령과 목록은 그대로 보존한다. 두 검사 파일과 이 기록만
+수정하고 로컬 AST·diff 읽기만 확인했다. 기능 검사·빌드·push·CI 조작은 하지 않았다.
