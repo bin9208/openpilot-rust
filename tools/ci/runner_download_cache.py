@@ -31,13 +31,19 @@ def cache_root():
     return directory(directory(cache/'openpilot-ci-v1')/platform.machine())
 
 
-def setup(root, env):
+def setup(root, env, *, home=None):
     defaults = dict(PIP_CACHE_DIR=root/'pip', UV_CACHE_DIR=root/'uv',
                     npm_config_cache=root/'npm', GRADLE_USER_HOME=root/'gradle')
     result = {'CI_DOWNLOAD_CACHE_ROOT': str(root)}
+    existing = {} if home is None else dict(PIP_CACHE_DIR=home/'.cache/pip',
+        UV_CACHE_DIR=home/'.cache/uv', npm_config_cache=home/'.npm', GRADLE_USER_HOME=home/'.gradle')
     for name, path in defaults.items():
         # Preserve explicit per-job caches, including cold-cache comparison fixtures.
         if not env.get(name):
+            previous = existing.get(name)
+            if (previous is not None and previous.is_dir() and not previous.is_symlink()
+                    and previous.stat().st_uid == os.getuid() and not previous.stat().st_mode & 0o022):
+                path = previous  # Reuse an already warm standard cache instead of starting empty.
             directory(path)
             result[name] = str(path)
     for name, value in (('PIP_DISABLE_PIP_VERSION_CHECK', '1'), ('NPM_CONFIG_UPDATE_NOTIFIER', 'false')):
@@ -138,7 +144,7 @@ def main():
     root = cache_root()
     operation, *args = sys.argv[1:]
     if operation == 'setup' and not args:
-        values = setup(root, os.environ)
+        values = setup(root, os.environ, home=Path.home())
         with Path(os.environ['GITHUB_ENV']).open('a') as stream:
             for name, value in values.items():
                 if '\n' in value or '\r' in value:

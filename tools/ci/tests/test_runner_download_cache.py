@@ -101,6 +101,18 @@ class DownloadCacheTests(unittest.TestCase):
         (views[1]/'sources.list').write_text('deb https://archive.ubuntu.com/ubuntu noble-updates main\n')
         self.assertNotEqual(first, cache.apt_cache(self.root, views[1], 'amd64'))
 
+    def test_populated_standard_caches_are_used_without_an_initial_redownload(self):
+        home = self.root/'home'
+        for relative in ('.cache/pip', '.cache/uv', '.npm', '.gradle'):
+            path = home/relative
+            path.mkdir(parents=True)
+            (path/'existing-download').write_bytes(b'already downloaded')
+        values = cache.setup(self.root, {}, home=home)
+        for name, relative in (('PIP_CACHE_DIR', '.cache/pip'), ('UV_CACHE_DIR', '.cache/uv'),
+                               ('npm_config_cache', '.npm'), ('GRADLE_USER_HOME', '.gradle')):
+            self.assertEqual(values[name], str(home/relative))
+            self.assertEqual((Path(values[name])/'existing-download').read_bytes(), b'already downloaded')
+
     def test_action_archive_hits_are_sha_addressed_and_tampering_fails(self):
         identity = dict(repository='actions/checkout', sha='a'*40)
 

@@ -169,7 +169,7 @@ if __name__ == '__main__':
         print(json.dumps(dict(archive_cache=str(archives), actions=prime(archives, manifest['actions']))))
     elif operation == 'configure':
         root = runner_root()
-        values = DOWNLOADS['setup'](DOWNLOADS['cache_root'](), {})
+        values = DOWNLOADS['setup'](DOWNLOADS['cache_root'](), {}, home=Path.home())
         additions = configure(root, archives, values)
         service = (root/'.service').read_text().strip() if (root/'.service').is_file() else None
         restart_required = os.environ.get('ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE') != str(archives)
