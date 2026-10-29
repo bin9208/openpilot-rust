@@ -22,8 +22,14 @@
   동시 저장은 잠금·원자 rename으로 보호하고 저장 copy 예상 증가량이 부족하면
   캐시 저장만 생략한다. 기존 입력 도구의 SHA/길이/형식 검증은 그대로 필요하다.
 - Actions 플러그인은 runner가 매 job 시작 때 `_actions`를 정리하므로 별도 archive
-  캐시가 필요하다. 공식 runner의 `ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE` 지원과
-  실제 서비스 설정을 추가 확인한다. tool cache와 빌드 산출물 재사용은 구분한다.
+  캐시가 필요하다. `runner_action_cache.py`는 현재 참조를 GitHub API로 확인한 정확
+  SHA의 archive를 처음 한 번 받고 digest receipt와 함께 저장한다. 공식 runner의
+  `ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE`가 읽는 `<owner>_<repo>/<sha>.tar.gz` 형식이다.
+  기존 `.env` 값을 보존하며 캐시 변수를 추가한다. 이 변수는 Listener 시작 때
+  읽으므로 현재 실행을 중단하지 않고 다음 안전한 재시작 때 활성화한다. tag가
+  갱신되어 SHA가 다르면 runner는 원래 다운로드로 돌아가며 이전 코드를 쓰지 않는다.
+  근거: [공식 ActionManager](https://github.com/actions/runner/blob/main/src/Runner.Worker/ActionManager.cs),
+  [Listener 환경 로딩](https://github.com/actions/runner/blob/main/src/Runner.Listener/Program.cs).
 
 명시적 cross source/APT_CONFIG와 QEMU guest의 APT는 기존 선택을 유지한다.
 hosted runner의 실행도 바꾸지 않는다. cache fallback prefix 대신 정확 key만

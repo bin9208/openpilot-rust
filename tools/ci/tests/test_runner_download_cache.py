@@ -1,14 +1,19 @@
 import importlib.util
 import json
 import multiprocessing
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 MODULE_PATH = Path(__file__).resolve().parents[1]/'runner_download_cache.py'
 spec = importlib.util.spec_from_file_location('runner_download_cache', MODULE_PATH)
 cache = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cache)
+action_spec = importlib.util.spec_from_file_location('runner_action_cache', MODULE_PATH.with_name('runner_action_cache.py'))
+actions = importlib.util.module_from_spec(action_spec)
+action_spec.loader.exec_module(actions)
 
 
 def save_in_process(root, source, ready):
@@ -95,6 +100,38 @@ class DownloadCacheTests(unittest.TestCase):
         self.assertNotEqual(first, cache.apt_cache(self.root, views[1], 'arm64'))
         (views[1]/'sources.list').write_text('deb https://archive.ubuntu.com/ubuntu noble-updates main\n')
         self.assertNotEqual(first, cache.apt_cache(self.root, views[1], 'amd64'))
+
+    def test_action_archive_hits_are_sha_addressed_and_tampering_fails(self):
+        identity = dict(repository='actions/checkout', sha='a'*40)
+
+        def download(argv, **kwargs):
+            self.assertIn('https://codeload.github.com/actions/checkout/tar.gz/'+'a'*40, argv)
+            Path(argv[argv.index('--output')+1]).write_bytes(b'known action archive')
+
+        with patch.object(actions.subprocess, 'run', side_effect=download) as downloader:
+            first = actions.prime(self.root, [identity])
+            second = actions.prime(self.root, [identity])
+            self.assertEqual(downloader.call_count, 1)
+            self.assertFalse(first[0]['cache_hit'])
+            self.assertTrue(second[0]['cache_hit'])
+            self.assertEqual(second[0]['downloaded_bytes'], 0)
+        archive = self.root/'actions_checkout'/('a'*40+'.tar.gz')
+        archive.write_bytes(b'tampered')
+        with self.assertRaises(ValueError):
+            actions.prime(self.root, [identity])
+
+    def test_runner_configuration_is_idempotent_and_preserves_existing_values(self):
+        environment = self.root/'.env'
+        environment.write_text('EXISTING_VALUE=preserved\nPIP_CACHE_DIR=/explicit/cache\n')
+        environment.chmod(0o600)
+        defaults = dict(PIP_CACHE_DIR='/new/pip', UV_CACHE_DIR='/new/uv')
+        added = actions.configure(self.root, Path('/new/actions'), defaults)
+        self.assertNotIn('PIP_CACHE_DIR', added)
+        self.assertEqual(environment.read_text().splitlines(), [
+            'EXISTING_VALUE=preserved', 'PIP_CACHE_DIR=/explicit/cache',
+            'ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE=/new/actions', 'UV_CACHE_DIR=/new/uv'])
+        self.assertEqual(actions.configure(self.root, Path('/new/actions'), defaults), {})
+        self.assertEqual(environment.stat().st_mode & 0o777, 0o600)
 
 
 if __name__ == '__main__':
