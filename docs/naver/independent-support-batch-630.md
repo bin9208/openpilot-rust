@@ -3,6 +3,15 @@
 실행 대단원: [#630](https://github.com/bin9208/openpilot-rust/issues/630).
 전체 현황: [#522](https://github.com/bin9208/openpilot-rust/issues/522).
 
+## 최종 판정 — 2026-10-30 KST
+
+선정9개의 개발·검증·정상 dev 통합과 해당 범위의 별도 post 검증을 완료했다.
+정확 SHA·Actions·개별 수용·남은 실기·중복 CI 조정은
+[최종 완료 기록](support-630-completion.md)을 따른다. #351/#353/#397/#439는
+원래 범위 완료로 종료하고 #363/#392/#394/#395/#398의 실기 수용은 #528과
+원래 이슈에 OPEN으로 남긴다. 독립 logger 실패 #641과 Rust post aggregate 실패를
+전체 성공으로 바꾸지 않는다. 아래 착수·대기 설명은 당시의 이력이다.
+
 ## 사용자 요청과 결정
 
 진행 중인 [#598](https://github.com/bin9208/openpilot-rust/issues/598)의 종료를
