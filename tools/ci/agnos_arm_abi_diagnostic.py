@@ -151,6 +151,8 @@ def main():
             'chroot-ldd-seed', required=False, timeout=30)
         run(['sudo', '-n', 'chroot', rootfs, *inspect, '/lib/ld-linux-aarch64.so.1',
              '--list', '/tmp/diagnostic-seed'], 'chroot-loader-list', required=False, timeout=30)
+        if report['proot_patch_sha256']:
+            assert all(row['exit_code'] == 0 for row in report['commands']), 'patched loader or permission contract failed'
     finally:
         (work/'report.json').write_text(json.dumps(report, indent=2)+'\n')
 

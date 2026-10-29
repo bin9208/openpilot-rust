@@ -2422,6 +2422,9 @@ def main():
       shutil.copy2(native_proot, proot)
       evidence['proot_sha256'] = digest(proot)
       evidence['proot_source_commit'] = '25dc6a3134891f98a79f57ce1c2c1b23ff15cad1'
+      patch = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/patches/proot-arm64-faccessat2.patch'
+      evidence['proot_patch_sha256'] = digest(patch)
+      assert evidence['proot_patch_sha256'] == os.environ['AGNOS_PROOT_PATCH_SHA256']
       qemu_arguments = []
     else:
       download('https://github.com/proot-me/proot/releases/download/v5.5.0/proot', proot, PROOT_SHA, log)

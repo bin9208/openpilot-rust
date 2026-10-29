@@ -21,7 +21,8 @@ OWNED_WORKFLOWS = {'native-apt-scope.yml', 'native-input-publication.yml', 'nati
     'native-source-entry.yml', 'native-source-reuse.yml', 'native-source-transport.yml',
     'runtime-native-environment.yml', 'runtime-source-build.yml'}
 NATIVE_ARM_WORKFLOWS = {'agnos-arm-full.yml', 'runtime-native-environment.yml',
-    'native-source-entry.yml', 'native-source-transport.yml', 'arm-routing-validation.yml'}
+    'native-source-entry.yml', 'native-source-transport.yml', 'arm-routing-validation.yml',
+    'agnos-arm-abi-diagnostic.yml'}
 SAFETY = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
 HOSTED_CLEANUP = 'sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet'
 

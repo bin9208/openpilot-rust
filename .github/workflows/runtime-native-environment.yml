@@ -4,6 +4,7 @@ on:
     branches: ['codex/feat-599-*', 'codex/feat-600-*']
     paths:
       - 'tools/ci/probe_native_agnos.py'
+      - 'tools/ci/patches/proot-arm64-faccessat2.patch'
       - 'tools/ci/verify_native_bootstrap.py'
       - 'tools/ci/verify_native_runtime_inputs.py'
       - 'tools/ci/stage_native_input_payload.py'
@@ -229,11 +230,24 @@ jobs:
           git -C "$proot_source" fetch --depth=1 origin 25dc6a3134891f98a79f57ce1c2c1b23ff15cad1
           git -C "$proot_source" checkout --detach FETCH_HEAD
           [[ $(git -C "$proot_source" rev-parse HEAD) == 25dc6a3134891f98a79f57ce1c2c1b23ff15cad1 ]]
+          git -C "$proot_source" apply --check "$GITHUB_WORKSPACE/tools/ci/patches/proot-arm64-faccessat2.patch"
+          git -C "$proot_source" apply "$GITHUB_WORKSPACE/tools/ci/patches/proot-arm64-faccessat2.patch"
           make -C "$proot_source/src" -j"$(nproc)" WITHOUT_PYTHON=1 loader.elf build.h
           make -C "$proot_source/src" -j"$(nproc)" WITHOUT_PYTHON=1 proot
           "$proot_source/src/proot" --version
           timeout 30 "$proot_source/src/proot" -r / -w "$CI_JOB_TEMP" /bin/uname -m
+          permission_fixture=$(mktemp -d "$CI_JOB_TEMP/proot-permissions.XXXXXX")
+          printf readable > "$permission_fixture/readable"
+          printf blocked > "$permission_fixture/blocked"
+          chmod 000 "$permission_fixture/blocked"
+          timeout 30 "$proot_source/src/proot" -r / \
+            -b "$permission_fixture/readable:$permission_fixture/guest-readable" \
+            -b "$permission_fixture/blocked:$permission_fixture/guest-blocked" \
+            /bin/bash -c 'test -r "$1" && ! test -r "$2" && ! test -r "$3"' \
+            native-proot-permissions "$permission_fixture/guest-readable" "$permission_fixture/guest-blocked" "$permission_fixture/absent"
+          rm -rf -- "$permission_fixture"
           printf 'AGNOS_PROOT_PATH=%s\n' "$proot_source/src/proot" >> "$GITHUB_ENV"
+          printf 'AGNOS_PROOT_PATCH_SHA256=%s\n' "$(sha256sum tools/ci/patches/proot-arm64-faccessat2.patch | cut -d' ' -f1)" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'

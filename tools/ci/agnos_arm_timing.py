@@ -38,6 +38,9 @@ def main():
             report['agnos_execution_seconds'] = evidence['elapsed_seconds']
             report['original_workflow_success'] = evidence['success']
             report['failure'] = evidence.get('failure')
+            for key in ('proot_source_commit', 'proot_patch_sha256', 'proot_sha256'):
+                if key in evidence:
+                    report[key] = evidence[key]
             report['completed_native_phases'] = sorted(k for k in evidence if k.startswith('native_'))
             report['commands'] = [dict(elapsed_seconds=c['elapsed_seconds'], exit_code=c['exit_code'],
                                        argv=c['argv']) for c in evidence['commands']]

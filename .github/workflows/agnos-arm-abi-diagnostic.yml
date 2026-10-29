@@ -1,11 +1,5 @@
 name: AGNOS native ARM loader diagnosis
 on:
-  push:
-    branches: ['codex/feat-643-arm-routing-draft']
-    paths:
-      - '.github/workflows/agnos-arm-abi-diagnostic.yml'
-      - 'tools/ci/agnos_arm_abi_diagnostic.py'
-      - 'tools/ci/patches/proot-arm64-faccessat2.patch'
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,6 +8,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   loader:
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 40
     env:
