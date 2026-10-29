@@ -38,7 +38,8 @@ def ci_adapter(script):
     for name in ('build_plannerd_acados.py', 'build_plannerd_source.py'):
         script = script.replace('python rust/tools/plannerd_ci_builder.py -- rust/tools/' + name + ' ',
                                 'python rust/tools/' + name + ' ')
-    return script
+    return script.replace('python rust/tools/radarcan_ci_builder.py -- rust/tools/radarcan_prepare_assets.py ',
+                          'python rust/tools/radarcan_prepare_assets.py ')
 
 
 def condition(original):
@@ -49,6 +50,13 @@ def condition(original):
 
 
 class LocalNativeWorkflowTests(unittest.TestCase):
+    def test_ci_admission_keeps_the_immutable_dbc_generator_bytes(self):
+        contract = json.loads((ROOT/'rust/native-dbc-source-contract.json').read_text())
+        relative = 'rust/tools/radarcan_prepare_assets.py'
+        self.assertIn(relative, contract['roots'])
+        original = subprocess.check_output(['git', 'show', contract['original_source_commit']+':'+relative], cwd=ROOT)
+        self.assertEqual((ROOT/relative).read_bytes(), original)
+
     def test_ci_admission_keeps_the_immutable_arm_mpc_builder_bytes(self):
         contract = json.loads((ROOT/'rust/native-mpc-source-contract.json').read_text())
         relative = 'rust/tools/build_plannerd_acados.py'

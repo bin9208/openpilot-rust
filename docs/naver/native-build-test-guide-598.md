@@ -571,3 +571,22 @@ Genuine `40833691796` attempt2/job123323861172도08:04:31–08:05:45 UTC에
 `GITHUB_ACTION_PATH`를 주지 않아 `/../../../tools/ci/native_cache.py`를 찾지 못했다.
 실제 Actions가 주는 action 경로를 해당 소유 fixture에도 전달한다. 원래 생성·소스
 cleanliness·정리/다른 파일 보존 검사는 유지하며 새 정확 source에서 다시 확인한다.
+
+## DBC 생성기의 정확 source pin 보존 — #629
+
+`e591ee13beab02bfa5d81f41b0d947ffd02e9578`의 Genuine `40841326495`/job123338218920은
+기존53개 library component·MPC·Panda 단계를 통과한 뒤09:49:47 UTC에 DBC 생성 입력
+불일치로 실패했다. 고정143개 입력 중 `radarcan_prepare_assets.py`의25GiB floor 제거만
+bytes를 바꾼 원인이었다. DBC 정의·생성 계산·runtime 감지/lead 선택은 바꾸지 않는다.
+
+생성기 원래 bytes(SHA256 `392dd87d54bfea8fe160a9c3e7cf6d5c2c888b4be2aee94822b1417b1b31d450`)와
+143행 source pin `60d1c67b28395a25ec103a2e3481317fd136a78f2ccb0f7dce821055c7456d05`를
+유지한다. CI는 명시적인 `radarcan_ci_builder.py --` adapter가 원래 bytes를 확인한 뒤
+resource 조건/오류 문구 두 줄만 기존 operation 성장량으로 바꾼다. 실제 free 값과
+나머지 생성 코드·argv는 유지한다. 모든 원래 DBC 출력 SHA 비교와 부족/변조 거부를
+Actions에서 실행하며 로컬에서는 AST/YAML/diff만 확인한다.
+
+검증된 original archive의 기존 cache save도 첫 foreign-only export 직후로 옮긴다.
+이후 다른 입력이 실패해도 완료된 원본 검증/전송을 다음 시도에서 재사용하기 위한
+순서 수정이다. 원래 key/bytes/hash 검증을 유지하며 이전 project runtime을 현재 결과로
+캐시하지 않는다. 새 source의 실제 재사용·필수 검사·정상 병합/병합 후 결과는 남아 있다.

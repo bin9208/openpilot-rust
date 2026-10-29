@@ -1525,7 +1525,7 @@ jobs:
           python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
       - name: Generate original DBC assets and stage pinned numerical libraries
         run: |
-          python rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
+          python rust/tools/radarcan_ci_builder.py -- rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/radar-native/wheels"
           cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
@@ -1601,7 +1601,7 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radar-native/msgq"
           python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
-          python rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
+          python rust/tools/radarcan_ci_builder.py -- rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
       - name: Stage pinned generic ARM numerical dependency
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512

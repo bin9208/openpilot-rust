@@ -25,8 +25,8 @@ def prepare(destination: Path) -> None:
     and '__pycache__' not in path.parts and path.suffix != '.pyc')
   growth = 4 * sum(path.stat().st_size for path in inputs) + 64 * 1024**2
   free = shutil.disk_usage(destination.parent).free
-  if free < growth:
-    raise OSError(f'RadarCAN assets need {growth} free bytes; found {free}')
+  if free < 25 * 1024**3 + growth:
+    raise OSError(f'RadarCAN assets need {25 * 1024**3 + growth} free bytes; found {free}')
   destination.mkdir()
   generated = generate_all()
   for original in sorted(source.glob('*.dbc')):

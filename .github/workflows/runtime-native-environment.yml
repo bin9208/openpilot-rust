@@ -592,6 +592,12 @@ jobs:
           assert results[0]['root']==results[1]['root']
           print('Original foreign-only component candidate exported and independently consumed; not published, and not yet executed on ARM.')
           PY
+      - uses: ./.github/actions/native-cache
+        if: steps.provider-origin-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-provider-origin
+          key: native-provider-origin-9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291-v1
       - name: Export the original raylib provider without a second origin download
         run: |
           python3 - <<'PY'
@@ -759,12 +765,6 @@ jobs:
           assert all(rows[1][part]['copied_bytes']==0 for part in ('headers','provider'))
           print('One content-addressed FFmpeg input prefix; repeat archive transfer, prefix copy and hardlink bytes zero.')
           PY
-      - uses: ./.github/actions/native-cache
-        if: steps.provider-origin-cache.outputs.cache-hit != 'true'
-        with:
-          mode: save
-          name: native-provider-origin
-          key: native-provider-origin-9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291-v1
       - name: Prepare only this bootstrap job kernel scope
         run: sudo -n --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA /usr/bin/python3 tools/ci/native_resource_scope.py prepare
       - name: Execute Rust and C++ standard ABI probes inside the original AGNOS filesystem
