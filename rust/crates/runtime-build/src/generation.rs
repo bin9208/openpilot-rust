@@ -288,7 +288,7 @@ pub(crate) fn write<T: Serialize>(path: &Path, value: &T, replace: bool) -> Resu
     Ok(())
 }
 
-pub(crate) fn lock(store: &Path) -> Result<File> {
+pub(crate) fn lock(store: &Path) -> Result<crate::file_lock::FileLock> {
     let file = OpenOptions::new()
         .write(true)
         .create(true)
@@ -298,8 +298,7 @@ pub(crate) fn lock(store: &Path) -> Result<File> {
     if !file.metadata()?.is_file() {
         return Err("native generation lock is not regular".into());
     }
-    rustix::fs::flock(&file, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
-    Ok(file)
+    crate::file_lock::FileLock::exclusive(file)
 }
 
 fn git(root: &Path, args: &[&str]) -> Result<String> {

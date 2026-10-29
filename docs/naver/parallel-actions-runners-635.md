@@ -78,3 +78,25 @@ prctl·자식/독립 process 정리·4MiB capture·원래10/5초 단언은 유�
 QEMU 예외 허용을 추가하지 않는다. 별도 child가 읽는 kernel identity와 parent seed
 identity의 equality 및 잘못된 시작 시각 거부 회귀를 추가한다. AST/rustfmt/diff만
 로컬에서 확인하고 실제 동작은 원래 PRoot ARM 진단과 X64/ARM Actions에서 확인한다.
+
+## 2026-10-30 — 세대·객체 작업 종료 시 상속된 flock 해제
+
+source `e6e01a6c60809294bbbc173ca4bbb4b0709499b0`의
+[foundation X64](https://github.com/bin9208/openpilot-rust/actions/runs/40895764298/job/123524296923)에서
+`pending.rs:315`의 세대 lock 재획득과, 전체 남은 검사 중 `generation.rs:1199`의
+두 번째 `objects::import()`가 각각 `WouldBlock`(errno11)로 실패했다. 첫 실행과
+남은 전체 실행은 모두33개 중32개 성공·1개 실패였고 서로 다른 case가 실패했다.
+최신 `e6ec2166`과 이 두 경로의 코드가 같음을 diff로 확인했다. 별도 tempdir이며
+정상 작업 종료 뒤 File close에만 의존한다는 공통점이 있다.
+
+[Linux flock 설명](https://man7.org/linux/man-pages/man2/flock.2.html)에 따르면
+fork/dup로 공유한 open file description은 마지막 descriptor close 또는 명시 Unlock까지
+잠금을 유지한다. 해당 실패 순간의 fork 상속은 추적하지 않았으므로 원인 추정과
+실패 로그를 구분한다. 이 수명을 결정적으로 재현할 수 있도록 live `try_clone()`을
+남긴 상태에서 작업 성공/오류 뒤 재획득하고, 작업 중 별도 open의 충돌 거부를 검사한다.
+
+확인된 두 production 경로만 `FileLock` guard로 묶어 보호 작업의 모든 정상/오류
+반환에서 명시 Unlock한다. 원래 비차단 충돌 거부, 파일 종류/경로 검증, fsync,
+객체 검증과 기존 generation/보존 단언은 유지한다. retry, sleep, test thread 감소는
+추가하지 않는다. 로컬은 rustfmt와 diff만 확인하고 기능 결과는 정확 수정 SHA의
+원래 foundation X64/ARM 및 runtime 검사에서 확인한다.

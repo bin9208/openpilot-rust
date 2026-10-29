@@ -145,7 +145,7 @@ pub fn import(store: &Path, input: &Path, remaining_growth_bytes: u64) -> Result
     if !lock.metadata()?.is_file() {
         return Err("runtime content object lock is not a regular file".into());
     }
-    rustix::fs::flock(&lock, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
+    let _lock = crate::file_lock::FileLock::exclusive(lock)?;
     let destination = directory_path.join("blob");
     if fs::symlink_metadata(&destination).is_ok() {
         object.verify(store)?;
