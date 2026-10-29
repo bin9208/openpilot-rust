@@ -129,6 +129,7 @@ def policy(raw, source):
 
 def preflight():
     transport = module(ROOT/'tools/ci/probe_native_source_transport.py', 'entry_transport')
+    transport.source_module('runner_policy')['require_environment'](self_hosted_only=True)
     context = transport.source_module('native_cache')['Context']()
     source = context.workspace
     entry = module(source/'tools/native/source_entry.py', 'entry_preflight')
@@ -308,8 +309,7 @@ def namespace_child(transport, uid, gid, work, factory, source, ready, go, group
     write(memory/'cgroup.subtree_control', '+memory')
     for name in ('dev', 'proc', 'sys'):
         mount('-t', 'tmpfs', 'tmpfs', factory/name)
-    mount('--bind', '/proc', factory/'proc')
-    mount('-o', 'remount,bind,ro', factory/'proc')
+    transport.readonly_proc_tree(factory/'proc')
     for name in ('null', 'zero', 'random', 'urandom'):
         target = factory/'dev'/name
         target.touch()
@@ -338,6 +338,7 @@ def namespace_child(transport, uid, gid, work, factory, source, ready, go, group
 
 def run():
     transport = module(ROOT/'tools/ci/probe_native_source_transport.py', 'entry_transport')
+    transport.source_module('runner_policy')['require_environment'](self_hosted_only=True)
     scope_module = transport.source_module('native_resource_scope')
     uid, gid, job, scope, version = scope_module['owned']()
     assert version == 2 and uid == gid == 1000

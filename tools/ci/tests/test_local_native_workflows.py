@@ -15,7 +15,8 @@ HOSTED_WORKFLOWS = {'fast-checks.yml', 'integration.yml', 'jetlink.yml', 'native
     'naver-apk-tools.yml', 'naver-ci.yml', 'tests.yaml', 'user-docs.yaml', 'wiki-settings-check.yaml',
     'carrot-peer-readiness.yml', 'rust.yml'}
 OWNED_WORKFLOWS = {'native-apt-scope.yml', 'native-input-publication.yml', 'native-resource-guard.yml',
-    'native-source-reuse.yml', 'native-source-transport.yml', 'runtime-native-environment.yml', 'runtime-source-build.yml'}
+    'native-source-entry.yml', 'native-source-reuse.yml', 'native-source-transport.yml',
+    'runtime-native-environment.yml', 'runtime-source-build.yml'}
 SAFETY = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
 HOSTED_CLEANUP = 'sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet'
 

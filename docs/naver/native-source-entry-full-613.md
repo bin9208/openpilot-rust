@@ -7,7 +7,8 @@
 
 ## 실행 경로
 
-`native-source-entry.yml`은 `workflow_dispatch`만 받는다. 등록된 `bin-actions`의
+`native-source-entry.yml`은 `workflow_dispatch`만 받는다. 공통 `openpilot-rust` pool의
+등록된 `bin-actions`, `bin-actions2`, `bin-actions3` 중 하나의
 독립 Actions checkout에서 정확 HEAD/tree와 clean 상태를 확인하고 **커밋된 Git blob**의
 입력 index SHA를 dispatch의 독립 SHA와 비교한다. 후보 artifact, 임시 index commit,
 fixture provider, 런타임 release를 대체 입력으로 받지 않는다. index가 없으면 image
@@ -126,3 +127,27 @@ namespace/probe, CI dispatch/cancel/push/외부 comment는 실행하지 않는�
 보강했다. 기존 transport와 workflow는 바꾸지 않았다. production 필드 정의를 읽어
 대조했고 AST/YAML/Bash 구문 및 diff만 확인한다. receipt stub, 기능 실행, 원격 push,
 CI dispatch/cancel/재시작은 수행하지 않는다. 실제 성공 증거는 아직 없다.
+
+## 2026-10-29 admission 수정과 최신 main 기반 통합
+
+`34ae6cb1ea3f4cb1536cf40baab7efd08464c445`에서 별도
+`codex/feat-613-full-native-entry` 브랜치를 만들고 기존 구현
+`abec6aef80abf075fe5b04d268e598f23464efd3`,
+`c88e8c91538892d85ccd8e1ebe5a7a85084e1b76`의 세 파일만 순서대로 가져왔다.
+이후 수정은 다음 연결로 제한한다.
+
+- 실제 admission 실패에서 보완한 transport의 `readonly_proc_tree()`를 재사용한다.
+  `/proc`의 locked 하위 mount를 `--rbind`로 보존하고 복제 mount 전체에만 readonly를
+  추가하며 원본 mount 불변을 확인한다. 별도 namespace 설계 변경은 없다.
+- workflow와 host preflight/run은 공통 runner 정책의 `self_hosted_only=True`를 요구한다.
+  factory 내부의 최소 환경에는 Actions 값을 주입하지 않고 기존 실제 ARM UID·sudo·
+  source/index/receipt 검사를 유지한다.
+- 고정 `CARGO_BUILD_JOBS=2`를 제거하고 기존 `rust-path`의 실제 CPU 기반 기본값을
+  사용한다. 기존 세 production sudo, 전체 deadline, 독립 cleanup 예산은 변경하지 않는다.
+- 기존 `OWNED_WORKFLOWS`에 entry workflow만 추가하여 pool label과 동일 저장소 PR
+  안전식을 검사한다. 원래 명령·skip 허용 조건과 고정 입력은 바꾸지 않는다.
+
+공개 index는 아직 커밋되어 있지 않다. fake/candidate index를 만들거나 dispatch하지
+않았으며 preflight, 기능·빌드·namespace 실행도 하지 않았다. 로컬 확인은 AST,
+workflow YAML, 포함 Bash의 `bash -n`, diff에 한정된다. public metadata의 실제 HTTPS
+body·source/profile pin 확인과 production receipt 검증은 원래 실행 조건 그대로다.

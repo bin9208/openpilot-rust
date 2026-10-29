@@ -19,13 +19,12 @@ concurrency:
 jobs:
   entry:
     name: Factory ARM production build seal and package launch
-    if: ${{ github.repository == 'bin9208/openpilot-rust' && github.event_name == 'workflow_dispatch' }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.repository == 'bin9208/openpilot-rust' && github.event_name == 'workflow_dispatch' }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 330
     env:
       LOCAL_CI_ARCH: x86_64
       RUSTUP_TOOLCHAIN: '1.94.0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       NATIVE_ENTRY_INDEX: ${{ inputs.index_sha256 }}
@@ -34,6 +33,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with: {persist-credentials: false, fetch-depth: 0}
+      - name: Require the registered self-hosted source entry runner
+        run: /usr/bin/python3 -I -B -S tools/ci/runner_policy.py --self-hosted-only
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - name: Require real published metadata and the committed index before allocating an image
