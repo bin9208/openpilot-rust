@@ -1,7 +1,7 @@
-# Sourced only by a job-owned BASH_ENV on the registered X64 runner. Original
+# Sourced only by a job-owned BASH_ENV on an admitted native runner. Original
 # scripts remain intact; constrain their default APT view like a clean native VM.
 # Explicit architecture/config/source options keep their original cross view.
-if [[ ${LOCAL_CI_ARCH:-x86_64} == x86_64 ]]; then
+if [[ ${OPENPILOT_CI_EXECUTION_MODE:-native} != qemu-user && ${LOCAL_CI_ARCH:-$(uname -m)} == "$(uname -m)" ]]; then
   sudo() {
     local -a apt_scope_original=("$@")
     local apt_scope_index=0 apt_scope_mode=native-default apt_scope_argument apt_scope_native
@@ -10,8 +10,8 @@ if [[ ${LOCAL_CI_ARCH:-x86_64} == x86_64 ]]; then
       apt-get|/usr/bin/apt-get) ;;
       *) /usr/bin/sudo "${apt_scope_original[@]}"; return ;;
     esac
-    [[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == self-hosted && ${RUNNER_NAME:-} == bin-actions &&
-       ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.* && ${CI_JOB_TEMP%/*} == /tmp && ! -L $CI_JOB_TEMP &&
+    /usr/bin/python3 -I -B -S "$GITHUB_WORKSPACE/tools/ci/runner_policy.py" || return
+    [[ ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.* && ${CI_JOB_TEMP%/*} == /tmp && ! -L $CI_JOB_TEMP &&
        -f $CI_JOB_TEMP/owner && ! -L $CI_JOB_TEMP/owner &&
        $(cat "$CI_JOB_TEMP/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" &&
        ${GITHUB_SHA:-} =~ ^[0-9a-f]{40}$ && ! -L $CI_JOB_TEMP/native-apt-evidence.jsonl ]] || {
@@ -23,9 +23,19 @@ if [[ ${LOCAL_CI_ARCH:-x86_64} == x86_64 ]]; then
       esac
     done
     apt_scope_native=$(/usr/bin/dpkg --print-architecture)
-    [[ $apt_scope_native == amd64 ]] || { echo 'Registered X64 native architecture required' >&2; return 1; }
-    printf '{"schema":1,"mode":"%s","native_architecture":"%s","source_commit":"%s","shared_source_or_architecture_modified":false}\n' \
-      "$apt_scope_mode" "$apt_scope_native" "$GITHUB_SHA" >> "$CI_JOB_TEMP/native-apt-evidence.jsonl"
+    case "$(uname -m):$apt_scope_native" in
+      x86_64:amd64|aarch64:arm64) ;;
+      *) echo 'Native APT architecture differs from the actual host' >&2; return 1 ;;
+    esac
+    /usr/bin/python3 -I -B -S - "$CI_JOB_TEMP/native-apt-evidence.jsonl" "$apt_scope_mode" "$apt_scope_native" <<'PY_APT'
+import json, os, platform, sys
+with open(sys.argv[1], 'a') as stream:
+    stream.write(json.dumps(dict(schema=1, mode=sys.argv[2], native_architecture=sys.argv[3],
+        source_commit=os.environ['GITHUB_SHA'], runner_name=os.environ['RUNNER_NAME'],
+        runner_environment=os.environ['RUNNER_ENVIRONMENT'], host_architecture=platform.machine(),
+        target_architecture=os.environ.get('LOCAL_CI_ARCH', platform.machine()), execution_mode='native',
+        shared_source_or_architecture_modified=False))+'\n')
+PY_APT
     if [[ $apt_scope_mode == explicit-configuration ]]; then
       /usr/bin/sudo "${apt_scope_original[@]}"
     else

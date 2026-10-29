@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: integration-${{ github.event_name }}-${{ github.ref }}-preserve-v1
+  group: integration-${{ github.event_name }}-${{ github.ref }}-parallel-v2
   queue: max
   cancel-in-progress: false
 jobs:
@@ -26,13 +26,18 @@ jobs:
     name: integration gate
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}
     needs: [build, navigation, apk, jetlink]
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Require the registered execution environment
         run: |
-          test "$RUNNER_ENVIRONMENT" = self-hosted
-          test "$RUNNER_NAME" = bin-actions
+          test "$GITHUB_ACTIONS" = true
+          if [[ $RUNNER_ENVIRONMENT == self-hosted ]]; then
+            [[ $RUNNER_NAME == bin-actions || $RUNNER_NAME == bin-actions2 || $RUNNER_NAME == bin-actions3 ]]
+          else
+            [[ $RUNNER_ENVIRONMENT == github-hosted && $RUNNER_OS == Linux &&
+               ( $RUNNER_ARCH == X64 || $RUNNER_ARCH == ARM64 ) ]]
+          fi
       - name: Require every integration suite to succeed
         env:
           BUILD: ${{ needs.build.result }}

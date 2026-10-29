@@ -5,6 +5,7 @@ previous job's staging nor a shared cache is adopted or removed.
 """
 import json
 import os
+import runpy
 from pathlib import Path
 import re
 import sys
@@ -13,9 +14,8 @@ import tempfile
 
 class Context:
     def __init__(self):
-        if (os.environ.get('GITHUB_ACTIONS') != 'true'
-                or os.environ.get('RUNNER_ENVIRONMENT') != 'self-hosted'
-                or os.environ.get('RUNNER_NAME') != 'bin-actions' or os.geteuid() == 0):
+        runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_environment']()
+        if os.geteuid() == 0:
             raise ValueError('registered unprivileged cache job required')
         self.job = Path(os.environ['CI_JOB_TEMP'])
         self.workspace = Path(os.environ['GITHUB_WORKSPACE'])

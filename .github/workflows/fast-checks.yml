@@ -8,14 +8,14 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: fast-${{ github.event_name }}-${{ github.ref }}-preserve-v1
+  group: fast-${{ github.event_name }}-${{ github.ref }}-parallel-v2
   queue: max
   cancel-in-progress: false
 jobs:
   fast:
     name: fast checks
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@v7

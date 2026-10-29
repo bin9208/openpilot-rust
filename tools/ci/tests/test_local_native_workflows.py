@@ -11,6 +11,11 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 BASE = 'e445c9d19c3041bc79d8624589e2eb6ba7d061c6'
 LABELS = ['self-hosted', 'Linux', 'X64', 'dev-md-local']
+HOSTED_WORKFLOWS = {'fast-checks.yml', 'integration.yml', 'jetlink.yml', 'native-cache-reuse.yml',
+    'naver-apk-tools.yml', 'naver-ci.yml', 'tests.yaml', 'user-docs.yaml', 'wiki-settings-check.yaml',
+    'carrot-peer-readiness.yml', 'rust.yml'}
+OWNED_WORKFLOWS = {'native-apt-scope.yml', 'native-input-publication.yml', 'native-resource-guard.yml',
+    'native-source-reuse.yml', 'runtime-native-environment.yml', 'runtime-source-build.yml'}
 SAFETY = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
 HOSTED_CLEANUP = 'sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet'
 
@@ -84,9 +89,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                 policy = load(ROOT / '.github/workflows' / name)['concurrency']
                 self.assertEqual(policy['queue'], 'max')
                 self.assertEqual(policy['cancel-in-progress'], 'false')
-                self.assertTrue(policy['group'].endswith('-preserve-v1'))
+                self.assertTrue(policy['group'].endswith('-parallel-v2'))
 
-    def test_every_execution_job_requires_the_registered_local_labels(self):
+    def test_jobs_use_approved_parallel_routes_without_reactivating_inherited_publishers(self):
         for path in sorted((ROOT / '.github/workflows').glob('*')):
             if path.suffix not in ('.yml', '.yaml'):
                 continue
@@ -94,13 +99,33 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             for name, job in document.get('jobs', {}).items():
                 if 'runs-on' in job:
                     with self.subTest(path=path.name, job=name):
-                        self.assertEqual(job['runs-on'], LABELS)
+                        if path.name in OWNED_WORKFLOWS:
+                            expected = ['self-hosted', 'Linux', 'X64']
+                        elif path.name not in HOSTED_WORKFLOWS:
+                            expected = LABELS  # Inherited sync/publish routing stays unchanged.
+                        elif path.name == 'tests.yaml' and name == 'build_release':
+                            expected = ['self-hosted', 'Linux', 'X64']
+                        elif ('runner' in job.get('strategy', {}).get('matrix', {})
+                              or any('runner' in row for row in job.get('strategy', {}).get('matrix', {}).get('include', []))):
+                            expected = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64"]\') }}'
+                        elif path.name == 'rust.yml' and name != 'fast':
+                            expected = ('ubuntu-24.04-arm' if job.get('env', {}).get('LOCAL_CI_ARCH') == 'aarch64'
+                                        else ['self-hosted', 'Linux', 'X64'])
+                        elif path.name == 'jetlink.yml' and name == 'model':
+                            expected = ['self-hosted', 'Linux', 'X64']
+                        elif job.get('env', {}).get('LOCAL_CI_ARCH') == 'aarch64':
+                            expected = 'ubuntu-24.04-arm'
+                        else:
+                            expected = 'ubuntu-24.04'
+                        self.assertEqual(job['runs-on'], expected)
                         self.assertIn(SAFETY, job['if'])
         template = load(ROOT / 'rust/crates/carrot-man/ci-jobs.yml')['carrot-man-runtime']
-        self.assertEqual(template['runs-on'], LABELS)
+        self.assertEqual(template['runs-on'], '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64"]\') }}')
         owner = (ROOT / '.github/actions/job-temp/action.yml').read_text()
-        self.assertIn('${RUNNER_ENVIRONMENT:-} == self-hosted', owner)
-        self.assertIn('${RUNNER_NAME:-} == bin-actions', owner)
+        self.assertIn('runner_policy.py', owner)
+        policy = (ROOT/'tools/ci/runner_policy.py').read_text()
+        for admission in ('bin-actions', 'bin-actions2', 'bin-actions3', 'github-hosted'):
+            self.assertIn(admission, policy)
 
     def test_frozen_jobs_dependencies_matrix_and_each_original_command_survive(self):
         snapshot = json.loads((ROOT / 'tools/ci/fixtures/local-native-workflows-605.json').read_text())
@@ -132,7 +157,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                         if isinstance(config, dict) and 'branches' in config:
                             self.assertTrue(set(config['branches']).issubset(current['on'][event]['branches']))
 
-    def test_arm_variants_use_the_separate_guest_and_preserve_evidence(self):
+    def test_arm_variants_preserve_native_or_guest_execution_evidence(self):
         snapshot = json.loads((ROOT / 'tools/ci/fixtures/local-native-workflows-605.json').read_text())
         for relative in snapshot['workflows']:
             original = yaml.load(subprocess.check_output(['git', 'show', BASE + ':' + relative],

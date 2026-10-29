@@ -15,14 +15,14 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: native-resource-guard-${{ github.ref }}-preserve-v1
+  group: native-resource-guard-${{ github.ref }}-parallel-v2
   queue: max
   cancel-in-progress: false
 jobs:
   actual-kernel:
     name: Real memory limit and cancellation (X64 host kernel)
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 25
     env:
       LOCAL_CI_ARCH: x86_64

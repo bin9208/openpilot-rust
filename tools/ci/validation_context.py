@@ -2,6 +2,7 @@
 """Retain the original PR event and hash-verifiable checkout commit as data."""
 import base64
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -16,6 +17,30 @@ MAX_COMMIT = 64*1024
 FIELDS = {'schema', 'repository', 'repository_id', 'head_repository_id', 'base_repository_id',
           'run_id', 'run_attempt', 'job', 'event', 'runner_name', 'runner_environment', 'ref',
           'pr_number', 'head_sha', 'base_ref', 'base_sha', 'checkout_sha', 'checkout_tree', 'commit_object_base64'}
+_POLICY = importlib.util.spec_from_file_location('validation_runner_policy',
+    Path(__file__).with_name('runner_policy.py'))
+runner_policy = importlib.util.module_from_spec(_POLICY)
+exec(compile(_POLICY.loader.get_source(_POLICY.name), _POLICY.origin, 'exec'), runner_policy.__dict__)
+
+
+def recorded_runner_allowed(value):
+  name, environment = value.get('runner_name'), value.get('runner_environment')
+  if not isinstance(name, str) or not name.strip():
+    return False
+  if environment == 'self-hosted':
+    return runner_policy.environment_allowed(dict(GITHUB_ACTIONS='true',
+        RUNNER_ENVIRONMENT=environment, RUNNER_NAME=name), self_hosted_only=True)
+  # This is only the retained receipt's shape. Publication must also bind the
+  # exact name/environment to the independently fetched Actions job below.
+  return environment == 'github-hosted'
+
+
+def bind_runner(value, job):
+  if not runner_policy.job_is_allowed(job) or job.get('runner_name') != value['runner_name']:
+    raise ValueError('validation context runner differs from the actual allowed Actions job')
+  environment = 'self-hosted' if 'self-hosted' in job['labels'] else 'github-hosted'
+  if value['runner_environment'] != environment:
+    raise ValueError('validation context runner environment differs from actual job labels')
 
 
 def positive(value):
@@ -38,10 +63,10 @@ def commit_object(raw):
   return digest, trees[0], parents
 
 
-def verify(value, run_id, attempt, job, repository_id, source, pr_number, target_base='dev'):
+def verify(value, run_id, attempt, job, repository_id, source, pr_number, target_base='dev', *, runner_job=None):
   if (set(value) != FIELDS or type(value['schema']) is not int or value['schema'] != 1
       or value['repository'] != REPO or value['event'] != 'pull_request'
-      or value['runner_name'] != 'bin-actions' or value['runner_environment'] != 'self-hosted'
+      or not recorded_runner_allowed(value)
       or target_base not in ('dev', 'main') or value['job'] != job or value['base_ref'] != target_base
       or value['ref'] != f'refs/pull/{pr_number}/merge'
       or value['head_sha'] != source or not sha(value['base_sha'])
@@ -59,10 +84,13 @@ def verify(value, run_id, attempt, job, repository_id, source, pr_number, target
   digest, tree, parents = commit_object(raw)
   if digest != value['checkout_sha'] or tree != value['checkout_tree'] or parents != [value['base_sha'], source]:
     raise ValueError('validation commit bytes do not bind the recorded base and source head')
+  if runner_job is not None:
+    bind_runner(value, runner_job)
   return value['pr_number'], value['base_sha']
 
 
 def receipt(event, env, raw):
+  runner_policy.require_environment(env=env)
   pull = event['pull_request']
   repositories = (event['repository'], pull['base']['repo'], pull['head']['repo'])
   if any(repo['full_name'] != REPO for repo in repositories):
@@ -111,8 +139,7 @@ def retain(job, data, verify_only=False):
 
 
 def main():
-  if (os.environ.get('GITHUB_ACTIONS') != 'true' or os.environ.get('RUNNER_ENVIRONMENT') != 'self-hosted'
-      or os.environ.get('RUNNER_NAME') != 'bin-actions' or os.environ.get('GITHUB_REPOSITORY') != REPO
+  if (not runner_policy.environment_allowed(os.environ) or os.environ.get('GITHUB_REPOSITORY') != REPO
       or os.environ.get('GITHUB_EVENT_NAME') != 'pull_request' or os.geteuid() == 0
       or not (sys.flags.isolated and sys.flags.no_site and sys.flags.dont_write_bytecode)):
     raise ValueError('validation context requires the registered non-root PR Actions job and isolated Python')

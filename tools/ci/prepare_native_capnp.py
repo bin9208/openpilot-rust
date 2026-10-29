@@ -8,6 +8,7 @@ import email.parser
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import shutil
 import stat
@@ -20,7 +21,7 @@ def digest(path):
 
 
 def main():
-  assert os.environ['RUNNER_NAME'] == 'bin-actions' and os.environ['RUNNER_ENVIRONMENT'] == 'self-hosted'
+  runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_environment'](self_hosted_only=False)
   owned = Path(os.environ['CI_JOB_TEMP'])
   assert owned.parent == Path('/tmp') and owned.name.startswith('openpilot-ci.') and not owned.is_symlink()
   assert (owned/'owner').read_text() == ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','GITHUB_JOB'))

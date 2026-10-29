@@ -181,14 +181,14 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: native-agnos-environment-${{ github.ref }}-preserve-v1
+  group: native-agnos-environment-${{ github.ref }}-parallel-v2
   queue: max
   cancel-in-progress: false
 jobs:
   compiler:
     name: Native compiler in pinned AGNOS ARM userspace
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64]
     # #608 actual ARM release build alone took 6,386,611 ms. This job now also
     # builds the real encoder; retain every command/pin and allow a bounded 6h.
     timeout-minutes: 360
@@ -205,7 +205,7 @@ jobs:
       - uses: ./.github/actions/rust-path
       - name: Admit this host tool and extract operation
         run: |
-          test "$RUNNER_NAME" = bin-actions
+          [[ $RUNNER_NAME == bin-actions || $RUNNER_NAME == bin-actions2 || $RUNNER_NAME == bin-actions3 ]]
           test "$RUNNER_ENVIRONMENT" = self-hosted
           python3 - <<'PY'
           import os, shutil

@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import runpy
 from pathlib import Path
 import shutil
 import subprocess
@@ -15,7 +16,7 @@ def main():
   parser.add_argument('--inputs', type=Path, required=True)
   parser.add_argument('--work', type=Path, required=True)
   args = parser.parse_args()
-  assert os.environ['RUNNER_NAME'] == 'bin-actions' and os.environ['RUNNER_ENVIRONMENT'] == 'self-hosted'
+  runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_environment'](self_hosted_only=False)
   source = args.root.resolve()
   assert source == Path(os.environ['GITHUB_WORKSPACE']).resolve()
   commit = subprocess.check_output(['git', '-C', source, 'rev-parse', 'HEAD'], text=True).strip()

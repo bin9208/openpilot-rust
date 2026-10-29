@@ -8,16 +8,16 @@ import json
 import os
 from pathlib import Path
 import pwd
+import runpy
 import signal
 import sys
 import time
 
 
 def identity():
-    if (os.geteuid() != 0 or os.environ.get('GITHUB_ACTIONS') != 'true'
-            or os.environ.get('RUNNER_ENVIRONMENT') != 'self-hosted'
-            or os.environ.get('RUNNER_NAME') != 'bin-actions'):
-        raise RuntimeError('registered bin-actions root setup required')
+    runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_environment'](self_hosted_only=True)
+    if os.geteuid() != 0:
+        raise RuntimeError('registered self-hosted root setup required')
     uid, gid = int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID'])
     if uid <= 0 or gid < 0:
         raise RuntimeError('non-root runner identity required')

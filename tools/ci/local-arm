@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Execute the original ARM workflow commands on the real self-hosted X64 runner.
+# Execute original commands natively, or use the pinned X64 -> ARM transport.
 set -euo pipefail
 
 fail() { printf '%s\n' "$*" >&2; exit 1; }
-[[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == self-hosted && ${RUNNER_NAME:-} == bin-actions ]] || fail 'Local Actions runner required'
+policy_dir=$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")
+/usr/bin/python3 -I -B -S "$policy_dir/runner_policy.py"
 [[ ${LOCAL_CI_ARCH:-} == x86_64 || ${LOCAL_CI_ARCH:-} == aarch64 ]] || fail 'Explicit local execution architecture required'
 [[ ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.* && ${CI_JOB_TEMP%/*} == /tmp && ! -L $CI_JOB_TEMP ]] || fail 'Owned job-temp directory required'
 [[ -f $CI_JOB_TEMP/owner && ! -L $CI_JOB_TEMP/owner && $(cat "$CI_JOB_TEMP/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]] || fail 'Wrong job-temp owner'
@@ -15,6 +16,7 @@ rootfs="$arm_dir/rootfs"
 proot="$arm_dir/proot"
 qemu=/usr/bin/qemu-aarch64-static
 host_machine=$(uname -m)
+[[ $host_machine == "$LOCAL_CI_ARCH" || ( $host_machine == x86_64 && $LOCAL_CI_ARCH == aarch64 ) ]] || fail 'Unsupported host/target architecture pair'
 
 # Guest filesystem paths retain the real Actions workspace and command-file paths.
 # CARGO_TARGET_DIR is private to ARM in the guest; uploads use its real host path.
@@ -46,11 +48,27 @@ download() {
 
 case ${1:-} in
   prepare)
-    [[ $host_machine == x86_64 ]] || fail 'This transport expects the registered X64 host'
     mkdir -p "$CI_JOB_TEMP/bin" "$arm_dir"
     ln -s "$source_dir/tools/ci/local-arm" "$CI_JOB_TEMP/bin/openpilot-local-shell"
     printf '%s\n' "$CI_JOB_TEMP/bin" >> "$GITHUB_PATH"
-    if [[ $LOCAL_CI_ARCH == x86_64 ]]; then
+    if [[ $LOCAL_CI_ARCH == "$host_machine" ]]; then
+      if [[ ${LOCAL_CI_GUEST_IDENTITY:-root} == unprivileged && $(id -u) == 0 ]]; then
+        fail 'Unprivileged native validation must not run as root'
+      fi
+      if [[ -f $source_dir/rust/Cargo.toml ]]; then
+        [[ -L $source_dir/rust/target && $(readlink -- "$source_dir/rust/target") == "$CI_JOB_TEMP/cargo-target" ]] || fail 'Native target view must belong to this job'
+      fi
+      /usr/bin/python3 -I -B -S - "$arm_dir/execution.json" "$host_machine" "$LOCAL_CI_ARCH" <<'PY_NATIVE'
+import json, os, platform, sys
+from pathlib import Path
+Path(sys.argv[1]).write_text(json.dumps(dict(schema=1, source_commit=os.environ['GITHUB_SHA'],
+    runner_name=os.environ['RUNNER_NAME'], runner_environment=os.environ['RUNNER_ENVIRONMENT'],
+    host_architecture=sys.argv[2], target_architecture=sys.argv[3], guest_architecture=sys.argv[2],
+    execution_mode='native', emulated=False, proot_used=False, native_arm_execution=sys.argv[2]=='aarch64',
+    device_execution=False, kernel=platform.release(), uid=os.getuid(),
+    cargo_target_directory=str(Path(os.environ['CI_JOB_TEMP'])/'cargo-target')), sort_keys=True)+'\n')
+PY_NATIVE
+      cat "$arm_dir/execution.json"
       printf 'LOCAL_CI_TARGET_DIR=%s/rust/target\n' "$source_dir" >> "$GITHUB_ENV"
       exit 0
     fi
@@ -117,7 +135,8 @@ case ${1:-} in
 import json, pathlib, sys
 path = pathlib.Path(sys.argv[1])
 data = json.loads(path.read_text())
-data.update(guest_identity=sys.argv[2], guest_uid=int(sys.argv[3]), package_bootstrap_identity='emulated-root')
+data.update(guest_identity=sys.argv[2], guest_uid=int(sys.argv[3]), package_bootstrap_identity='emulated-root',
+    target_architecture='aarch64', emulated=True, proot_used=True, device_execution=False)
 path.write_text(json.dumps(data, sort_keys=True)+'\n')
 PY
     "$qemu" --version > "$arm_dir/qemu-version.txt"
@@ -130,8 +149,12 @@ PY
     ;;
   *)
     [[ $# == 1 && -f $1 ]] || fail 'One existing Actions command file is required'
-    if [[ $LOCAL_CI_ARCH == x86_64 ]]; then
+    if [[ $LOCAL_CI_ARCH == "$host_machine" ]]; then
+      [[ -f $arm_dir/execution.json ]] || fail 'Native setup did not complete'
+      export OPENPILOT_CI_EXECUTION_MODE=native OPENPILOT_CI_HOST_ARCH="$host_machine" OPENPILOT_CI_TARGET_ARCH="$LOCAL_CI_ARCH"
       if [[ -n ${pythonLocation:-} ]]; then
+        [[ -x $pythonLocation/bin/python ]] || fail 'Configured native Python is unavailable'
+        export PATH="$pythonLocation/bin:$PATH"
         export LD_LIBRARY_PATH="$pythonLocation/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
       fi
       exec bash --noprofile --norc -e -o pipefail "$1"

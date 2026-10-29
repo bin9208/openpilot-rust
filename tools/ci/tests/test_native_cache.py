@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import runpy
 from pathlib import Path
 import tarfile
 import tempfile
@@ -13,6 +14,7 @@ SPEC = importlib.util.spec_from_file_location('owned_native_cache', Path(__file_
 cache = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(cache)
 ROLE = 'native-cache-fixture'
+policy = runpy.run_path(str(Path(__file__).resolve().parents[1]/'runner_policy.py'))
 
 
 class NativeCacheTests(unittest.TestCase):
@@ -21,15 +23,52 @@ class NativeCacheTests(unittest.TestCase):
         self.workspace = self.root/'workspace'
         self.workspace.mkdir()
 
-    def job(self, number):
+    def job(self, number, **runner):
         job = Path(self.enterContext(tempfile.TemporaryDirectory(prefix='openpilot-ci.', dir='/tmp')))
         owner = f'123:1:job{number}'
         (job/'owner').write_text(owner)
         environment = dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='bin-actions',
                            CI_JOB_TEMP=str(job), GITHUB_WORKSPACE=str(self.workspace),
                            GITHUB_RUN_ID='123', GITHUB_RUN_ATTEMPT='1', GITHUB_JOB=f'job{number}')
+        environment.update(runner)
         with patch.dict(os.environ, environment):
             return cache.Context()
+
+    def test_registered_private_and_hosted_native_jobs_keep_private_cache_ownership(self):
+        contexts = [dict(RUNNER_NAME='bin-actions2'), dict(RUNNER_NAME='bin-actions3'),
+                    dict(RUNNER_ENVIRONMENT='github-hosted', RUNNER_NAME='Hosted X64', RUNNER_OS='Linux', RUNNER_ARCH='X64'),
+                    dict(RUNNER_ENVIRONMENT='github-hosted', RUNNER_NAME='Hosted ARM', RUNNER_OS='Linux', RUNNER_ARCH='ARM64')]
+        for number, runner in enumerate(contexts, 10):
+            with self.subTest(runner=runner):
+                context = self.job(number, **runner)
+                target = self.inputs(context)
+                context.begin(ROLE, 'save')
+                context.cleanup()
+                self.assertEqual((target/'blob').read_bytes(), b'independently pinned body\n')
+
+    def test_policy_rejects_unregistered_or_mismatched_runner_evidence(self):
+        allowed, jobs = policy['environment_allowed'], policy['job_is_allowed']
+        private = dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='bin-actions2')
+        hosted = dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='github-hosted', RUNNER_OS='Linux', RUNNER_ARCH='ARM64')
+        self.assertTrue(allowed(private, self_hosted_only=True))
+        self.assertTrue(allowed({**private, 'RUNNER_NAME': 'bin-actions3'}, self_hosted_only=True))
+        self.assertTrue(allowed(hosted))
+        self.assertFalse(allowed(hosted, self_hosted_only=True))
+        self.assertFalse(allowed({**private, 'RUNNER_NAME': 'other-session'}))
+        self.assertFalse(allowed({**hosted, 'RUNNER_OS': 'Windows'}))
+        self.assertFalse(allowed({**hosted, 'GITHUB_ACTIONS': 'false'}))
+        registered = dict(runner_name='bin-actions2', labels=['self-hosted', 'Linux', 'X64', 'support-630'])
+        native = dict(runner_name='GitHub Actions', labels=['ubuntu-24.04-arm'])
+        self.assertTrue(jobs(registered, self_hosted_only=True))
+        self.assertTrue(jobs(dict(runner_name='bin-actions3', labels=['self-hosted', 'Linux', 'X64']),
+                             self_hosted_only=True))
+        self.assertTrue(jobs(native))
+        self.assertFalse(jobs(native, self_hosted_only=True))
+        self.assertFalse(jobs({**registered, 'runner_name': 'other-session'}))
+        self.assertFalse(jobs({**registered, 'labels': ['self-hosted', 'Linux']}))
+        self.assertFalse(jobs({**native, 'runner_name': ''}))
+        self.assertFalse(jobs({**native, 'labels': ['self-hosted', 'ubuntu-24.04-arm']}))
+        self.assertFalse(jobs({**native, 'labels': ['ubuntu-latest']}))
 
     def inputs(self, context):
         target = context.job/ROLE

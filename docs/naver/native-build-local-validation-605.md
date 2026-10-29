@@ -131,3 +131,23 @@ readonly 파일의 rename/unlink 뒤 원래 경로가 사라지는 경우 객체
 실제 readonly444/555 rename, 열린 fd의 mode, hardlink의 한 이름 삭제 후 나머지 객체의
 mode·본문 보존을 양쪽 실행 환경에서 필수 검사한다. 객체 검증 허용값은 바꾸지 않는다.
 이 원인 후보와 transport 수정의 기능적 확인은 새 정확 source의 Actions 결과 대기다.
+
+
+## 2026-10-29 — 세 등록 runner와 hosted 병렬 실행 정책
+
+사용자의 최신 지시가 앞선 `bin-actions` 전용 정책을 변경했다. 공통
+`tools/ci/runner_policy.py`는 `bin-actions`, `bin-actions2`, `bin-actions3`를
+등록된 self-hosted 실행자로 허용한다. `bin-actions3`는 사용자 제공 실제 API 확인상
+online/free이며 기본 `self-hosted`, `Linux`, `X64` label만 있다. 따라서 job 증거에는
+이 공통 세 label을 요구하고 `dev-md-local` 또는 `support-630`을 추가 필수로 요구하지
+않는다. 이름이 다른 self-hosted 실행자는 계속 거부한다.
+
+일반 helper는 Linux GitHub-hosted X64/ARM64도 허용하며, 실제 kernel/genuine 경로의
+`self_hosted_only`는 위 세 등록 runner로 제한한다. heavy 검사의 자원·분담과 실제
+workflow 라우팅은 부모 작업에서 관리한다. 새 runner의 CPU/RAM 우수성이나 기능 검사
+성공을 이 허용 목록 변경만으로 주장하지 않는다. 기존 실행·다른 세션·공유 cache는
+보존하며 기존 argv/pin·검사 임계값·cleanup 범위는 바꾸지 않는다.
+
+`bin-actions3` 환경 허용, 기본 label만 있는 job 증거 허용, job 전용 cache 소유권의
+양성 회귀 검사를 보강했다. 로컬은 Python AST와 diff만 확인했고 회귀 검사·빌드·CI
+실행은 수행하지 않았다. #606의 공통 CI 포트는 별도 작업으로 남긴다.

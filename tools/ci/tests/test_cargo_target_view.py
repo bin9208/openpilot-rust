@@ -1,6 +1,7 @@
 """Real Git source cleanliness with the existing job-owned Cargo target view."""
 import os
 from pathlib import Path
+import platform
 import subprocess
 import tempfile
 import unittest
@@ -21,7 +22,8 @@ def checkout(base, patterns):
     (source/'rust/.gitignore').write_text(patterns)
     (source/'rust/Cargo.toml').write_text('[workspace]\n')
     (source/'tools/ci').mkdir(parents=True)
-    (source/'tools/ci/native-apt-shell').write_bytes((ROOT/'tools/ci/native-apt-shell').read_bytes())
+    for name in ('native-apt-shell', 'runner_policy.py'):
+        (source/'tools/ci'/name).write_bytes((ROOT/'tools/ci'/name).read_bytes())
     git(source, 'init', '--quiet')
     git(source, 'add', '.')
     git(source, 'commit', '--quiet', '-m', 'Owned source fixture')
@@ -61,7 +63,7 @@ class CargoTargetViewTests(unittest.TestCase):
                        ("inputs.cleanup != 'true'", "always() && inputs.cleanup == 'true'")]
             self.assertEqual(len(scripts), 2)
             environment = dict(PATH='/usr/bin:/bin', HOME=str(base), GITHUB_ACTIONS='true',
-                RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='bin-actions', LOCAL_CI_ARCH='x86_64',
+                RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='bin-actions2', LOCAL_CI_ARCH=platform.machine(),
                 RUNNER_TEMP=str(runner_temp), GITHUB_WORKSPACE=str(source), GITHUB_ENV=str(environment_file),
                 GITHUB_ACTION_PATH=str(ROOT/'.github/actions/job-temp'),
                 GITHUB_RUN_ID='12345', GITHUB_RUN_ATTEMPT='1', GITHUB_JOB='owned-target-view')

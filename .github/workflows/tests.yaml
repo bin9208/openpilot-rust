@@ -14,7 +14,7 @@ on:
         type: string
 
 concurrency:
-  group: tests-ci-run-${{ inputs.run_number }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/carrot-wip' && github.run_id || github.head_ref || github.ref }}-${{ github.workflow }}-${{ github.event_name }}-preserve-v1
+  group: tests-ci-run-${{ inputs.run_number }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/carrot-wip' && github.run_id || github.head_ref || github.ref }}-${{ github.workflow }}-${{ github.event_name }}-parallel-v2
   queue: max
   cancel-in-progress: false
 
@@ -25,7 +25,7 @@ jobs:
   git_update:
     name: Git update lifecycle
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/job-temp
@@ -48,7 +48,7 @@ jobs:
   build_release:
     name: build release
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -100,7 +100,7 @@ jobs:
   model_web:
     name: Model and Bluetooth web controls
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/job-temp
