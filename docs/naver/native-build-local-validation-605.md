@@ -210,3 +210,9 @@ fast 로그의 `carrot-peer-readiness.yml:106: new blank line at EOF`는 이번 
 아닌 검사 기준 `e445c9d19c3041bc79d8624589e2eb6ba7d061c6`부터의 diff에서 보인다.
 해당 EOF 빈 줄 하나만 제거하고 이 전체 기준 diff를 다시 읽어 확인한다. 로컬은
 AST/YAML/diff만 확인하며 기능 재검사·build·push·CI 조작은 하지 않는다.
+
+공통 Rust action은 실제 CPU affinity의 CPU 수를 `CARGO_BUILD_JOBS`와
+`RUST_TEST_THREADS`의 기본값으로 내보내며 선택 값을 로그로 남긴다. 이 방식은 runner
+사용자 Cargo config의 `jobs=2`도 덮어쓰고 명시 env override는 존중한다. 순서 의존
+근거가 없던 GenSDK·RadarCAN ARM·planner/radar Miri·Xiaoge native의 blanket
+`--test-threads=1`도 제거한다. 각 검사 mode·필터·입력·판정 기준은 유지한다.

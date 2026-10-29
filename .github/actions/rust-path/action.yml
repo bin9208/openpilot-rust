@@ -3,6 +3,18 @@ description: Preserve Rust shims on persistent runners and restore verified miss
 runs:
   using: composite
   steps:
+    - name: Use the runner CPU capacity for Cargo and Rust tests
+      shell: bash
+      run: |
+        cpu_count=$(/usr/bin/python3 -I -B -S - <<'PY_CPU'
+        import os
+        print(max(1, len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else os.cpu_count() or 1))
+        PY_CPU
+        )
+        export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-$cpu_count}"
+        export RUST_TEST_THREADS="${RUST_TEST_THREADS:-$cpu_count}"
+        printf 'CARGO_BUILD_JOBS=%s\nRUST_TEST_THREADS=%s\n' "$CARGO_BUILD_JOBS" "$RUST_TEST_THREADS" >> "$GITHUB_ENV"
+        printf 'available_cpus=%s cargo_build_jobs=%s rust_test_threads=%s\n' "$cpu_count" "$CARGO_BUILD_JOBS" "$RUST_TEST_THREADS"
     - id: locate
       shell: bash
       run: |

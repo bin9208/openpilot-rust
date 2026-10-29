@@ -15,7 +15,7 @@ HOSTED_WORKFLOWS = {'fast-checks.yml', 'integration.yml', 'jetlink.yml', 'native
     'naver-apk-tools.yml', 'naver-ci.yml', 'tests.yaml', 'user-docs.yaml', 'wiki-settings-check.yaml',
     'carrot-peer-readiness.yml', 'rust.yml'}
 OWNED_WORKFLOWS = {'native-apt-scope.yml', 'native-input-publication.yml', 'native-resource-guard.yml',
-    'native-source-reuse.yml', 'runtime-native-environment.yml', 'runtime-source-build.yml'}
+    'native-source-reuse.yml', 'native-source-transport.yml', 'runtime-native-environment.yml', 'runtime-source-build.yml'}
 SAFETY = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
 HOSTED_CLEANUP = 'sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet'
 
@@ -45,6 +45,13 @@ def ci_adapter(script):
                                 'python rust/tools/' + name + ' ')
     return script.replace('python rust/tools/radarcan_ci_builder.py -- rust/tools/radarcan_prepare_assets.py ',
                           'python rust/tools/radarcan_prepare_assets.py ')
+
+
+
+def parallelism_adapter(script):
+    # The user explicitly removed these fixed CPU caps. Keep the frozen source
+    # hashes intact, then compare every other byte of the original command.
+    return script.replace('CARGO_BUILD_JOBS=2 ', '').replace(' --test-threads=1', '')
 
 
 def condition(original):
@@ -143,11 +150,14 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     self.assertEqual(after.get('strategy', {}).get('matrix'), before.get('strategy', {}).get('matrix'))
                     expected = [digest(normalize(step['run'])) for step in before.get('steps', []) if 'run' in step]
                     self.assertEqual(frozen['jobs'][name]['scripts'], expected)
-                    actual = Counter(digest(ci_adapter(step['run'])) for step in after.get('steps', []) if 'run' in step)
-                    self.assertFalse(Counter(expected) - actual, 'original command changed or removed')
-                    before_steps = Counter((digest(normalize(s['run'])), s.get('if'), s.get('continue-on-error'))
+                    parallel_expected = [digest(parallelism_adapter(normalize(step['run'])))
+                                         for step in before.get('steps', []) if 'run' in step]
+                    actual = Counter(digest(parallelism_adapter(ci_adapter(step['run'])))
+                                     for step in after.get('steps', []) if 'run' in step)
+                    self.assertFalse(Counter(parallel_expected) - actual, 'original command changed or removed')
+                    before_steps = Counter((digest(parallelism_adapter(normalize(s['run']))), s.get('if'), s.get('continue-on-error'))
                                            for s in before.get('steps', []) if 'run' in s)
-                    after_steps = Counter((digest(ci_adapter(s['run'])), s.get('if'), s.get('continue-on-error'))
+                    after_steps = Counter((digest(parallelism_adapter(ci_adapter(s['run']))), s.get('if'), s.get('continue-on-error'))
                                           for s in after.get('steps', []) if 'run' in s)
                     self.assertFalse(before_steps - after_steps, 'original command gained an escape/skip')
                     if 'runs-on' in before:

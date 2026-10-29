@@ -79,7 +79,7 @@ def main() -> None:
     "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1", "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1",
     "OPENCV_TEST_LANE_MODEL": str(args.models / "lane.onnx")}
   for index, binary in enumerate(tests):
-    run(f"native-test-{index}", [str(binary), "--nocapture", "--test-threads=1"], dict(environment, **runtime))
+    run(f"native-test-{index}", [str(binary), "--nocapture"], dict(environment, **runtime))
   cache = list(args.target_dir.glob("debug/build/openpilot-jpeg-*/out/jpeg/CMakeCache.txt"))
   if len(cache) != 1 or "CMAKE_C_FLAGS:STRING=" + flags not in cache[0].read_text():
     raise ValueError("complete JPEG codec sanitizer flags are missing or ambiguous")

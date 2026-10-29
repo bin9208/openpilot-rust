@@ -250,7 +250,7 @@ class RustIsolationTests(unittest.TestCase):
         self.assertEqual(data['jobs']['radar-arm']['runs-on'], 'ubuntu-24.04-arm')
         self.assertEqual(data['jobs']['radar-arm']['env']['LOCAL_CI_ARCH'], 'aarch64')
         for required in ('--target aarch64-unknown-linux-gnu', '--no-run', '--message-format=json',
-                         '"$radar_test" --test-threads=1', 'test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64',
+                         '"$radar_test" 2>&1', 'test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64',
                          'check_radarcan_ci.py --phase reference', 'check_radarcan_ci.py --phase ipc',
                          '--platform manylinux_2_27_aarch64', 'sha256sum'):
             self.assertIn(required, arm)
