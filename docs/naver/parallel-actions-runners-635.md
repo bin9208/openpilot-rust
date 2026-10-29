@@ -134,3 +134,16 @@ feature·실제 process-child 준비를 모두 보존한다. conflict는 실행 
 workspace에 전체 그대로 남는지도 별도로 검사한다. feature flag를 일반적으로
 삭제하거나 새 수명 검사를 생략하는 normalization은 없다. 기능 결과는 새 merge SHA의
 정상 PR 검사로 확인한다. 기존 AGNOS 실행은 계속 보존한다.
+
+## 2026-10-30 — 파생된 Cargo·FFmpeg 경로와 작업 temp 일치
+
+정확 source e6f3/5ac6의 logger ASan 빌드는 성공했지만 env의
+`CARGO_TARGET_DIR=${{ runner.temp }}/logger-asan-target`는 원래 runner 경로이고
+뒤의 `$RUNNER_TEMP`는 owned 경로라 검사 파일을 찾지 못했다. 실제 실패는
+main40911190766/job123581795243, common40911705322/job123583893642다.
+공유 수정099474a5d의 두 helper/test 파일만 적용한다. 기존 RUNNER_TEMP 조건 안에서
+CARGO_TARGET_DIR와 FFMPEG_DIR의 정확 old prefix만 owned prefix로 옮긴다. 확인된
+FFMPEG_DIR aarch64 SDK와 세 Cargo target 선언도 같은 경로 규칙을 사용한다.
+외부/guest/형제 prefix 및 명시 runner override는 유지하며 실제 helper fixture로
+10개 경로 case를 확인한다. 원래 workflow argv·ASan/누수 옵션·기준은 바꾸지 않는다.
+로컬은 AST/YAML/Bash 문법·diff만 확인하고 실제 sanitizer는 수정 SHA Actions에서 확인한다.

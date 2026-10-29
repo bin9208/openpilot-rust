@@ -47,6 +47,12 @@ runs:
             printf 'source %q\n' "$BASH_ENV"
           fi
           printf 'if [[ ${RUNNER_TEMP:-} == %q ]]; then\n' "$RUNNER_TEMP"
+          # Remap only these runner.temp-derived tool paths before RUNNER_TEMP.
+          for temp_path_variable in CARGO_TARGET_DIR FFMPEG_DIR; do
+            printf '  if [[ ${%s:-} == "$RUNNER_TEMP/"* ]]; then\n' "$temp_path_variable"
+            printf '    export %s=%q/"${%s#"$RUNNER_TEMP/"}"\n' "$temp_path_variable" "$owned" "$temp_path_variable"
+            printf '  fi\n'
+          done
           printf '  export RUNNER_TEMP=%q TMPDIR=%q\n' "$owned" "$owned"
           printf 'fi\n'
           if [[ -n ${GITHUB_ACTION_PATH:-} ]]; then
