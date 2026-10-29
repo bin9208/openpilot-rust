@@ -127,3 +127,23 @@ ABI 검사를 바꾸지 않았다. 패치 SHA256은
 함께 남긴다. 원래 준비·컴파일·검증과 도구 profile은 유지하며 전체 검증을 재실행한다.
 기본/기존 작업 브랜치 전환 조건은 아직 확정하지 않는다. 별도 전환 초안의 기능 검증은
 `codex/feat-643-arm-routing-draft`에서 진행한다.
+
+### 현재 작업 브랜치의 검증 수정 반영과 비교 기준 갱신
+
+기존 작업 브랜치가 `2375949c19c63667ad66de0f9ee7e2c90ad8ba70`까지 진행된 것을
+읽기 감사했다. 후속 변경은 loggerd에서 bootlog·manager로 이어지는 실제 Cargo 전이
+재빌드와 최종 ELF 변경 여부를 구분하고, 실제 compiler-provider의 검증된 loader 경로로
+logger help를 실행하도록 검증 코드를 고쳤다. 이전 dff의 helper는 logger 그룹 외의
+정상 전이 재빌드를 오류로 판단하므로, 최신 검증 코드를 별도 측정에 반영해야 한다.
+
+원래 작업 브랜치의 source와 CI는 수정하지 않고, 그 커밋들을 이 측정 브랜치에 merge했다.
+이미 진행 중인 같은 source의 기존 QEMU
+[40961936699](https://github.com/bin9208/openpilot-rust/actions/runs/40961936699),
+job123757390030을 비교 기준으로 추가한다. 새 x86 실행을 배정한 것이 아니다.
+기존 dff/f62 공통 명령59개 기록은 이전 동일 기준 비교로 따로 유지한다.
+
+현재 원본 workflow에 추가된 package 정책 사전 검사도 보존하고, 변경된 full-generation
+재사용 판정의 Rust unit 검사를 깊은 준비 전에 실행한다. 원래 컴파일·검증과 profile은
+유지한다. 측정 기록의 selected_branch_base와 baseline_run도 위 source/실행을 가리킨다.
+이미 실행 중인78fe 측정은 보존하고, 새 source는 SHA별 독립 concurrency group에서
+검증한다. 실제 기본/기존 작업 브랜치의 ARM 배정 전환은 여전히 조건부다.

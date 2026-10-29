@@ -21,7 +21,8 @@ def main():
         assert len(cpus) > 1, 'User prohibits one-job execution'
         report = dict(source_commit=os.environ['GITHUB_SHA'],
                       selected_branch='codex/feat-599-complete-runtime-inputs',
-                      selected_branch_base='dff230060a2ccec0cc58c3d09822b9a026beff1f',
+                      selected_branch_base='2375949c19c63667ad66de0f9ee7e2c90ad8ba70',
+                      baseline_run=40961936699,
                       runner=os.environ['RUNNER_NAME'], allowed_cpus=cpus,
                       started_utc=datetime.now(timezone.utc).isoformat(),
                       monotonic_start=time.monotonic(), initial_free_bytes=shutil.disk_usage(root).free,

@@ -218,6 +218,12 @@ jobs:
           sudo apt-get -o APT::Architectures=amd64 update
           sudo apt-get -o APT::Architectures=amd64 install -y qemu-user-static android-sdk-libsparse-utils e2fsprogs xz-utils
           rustup toolchain install 1.94.0 --profile minimal
+      - name: Validate the current package growth policy before deep ARM preparation
+        run: |
+          sudo apt-get -o APT::Architectures=amd64 install -y g++ liblzma-dev pkg-config
+          set -o pipefail
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib package::tests \
+            2>&1 | tee "$CI_JOB_TEMP/host-package-space-tests.log"
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
@@ -796,6 +802,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/resource-scope-evidence.json
             ${{ env.CI_JOB_TEMP }}/host-planner-abi*
             ${{ env.CI_JOB_TEMP }}/host-native-entry-transport.json
+            ${{ env.CI_JOB_TEMP }}/host-package-space-tests.log
             ${{ env.CI_JOB_TEMP }}/host-planner-cpu.txt
             ${{ env.CI_JOB_TEMP }}/host-planner-gdb*
             ${{ env.CI_JOB_TEMP }}/host-planner-artifact/
