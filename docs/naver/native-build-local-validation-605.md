@@ -156,3 +156,19 @@ job BASH_ENV가 읽는 native APT helper와 정책 파일도 포함한다.
 부모 통합 때 별도로 유지한다. 로컬은 AST/YAML/Bash 구문과 diff 읽기만 수행했고
 기능 검사·build·push·CI dispatch/cancel은 수행하지 않았다. 새 정확 SHA의 Actions
 결과는 아직 없다.
+
+
+## 2026-10-29 — #606 a5c 실제 실패 두 건 수정
+
+source `a5c5267554c1c1c5317d029c1f5fcc0400b9cc4c`의 fast
+[40881014451](https://github.com/bin9208/openpilot-rust/actions/runs/40881014451)와 foundation
+[40881005066](https://github.com/bin9208/openpilot-rust/actions/runs/40881005066) 로그를 읽었다.
+Cargo target fixture가 실제 composite step을 subprocess로 호출하면서
+`GITHUB_ACTION_PATH`를 주지 않아 `/../../../tools/ci/runner_policy.py`를 찾지 못했다.
+fixture env에 실제 `ROOT/.github/actions/job-temp`를 명시한다. production helper의
+경로·소유권·정리 검사는 바꾸지 않는다. 부모 main fixture에는 이미 이 값이 있다.
+
+fast 로그의 `carrot-peer-readiness.yml:106: new blank line at EOF`는 이번 HEAD 대비가
+아닌 검사 기준 `e445c9d19c3041bc79d8624589e2eb6ba7d061c6`부터의 diff에서 보인다.
+해당 EOF 빈 줄 하나만 제거하고 이 전체 기준 diff를 다시 읽어 확인한다. 로컬은
+AST/YAML/diff만 확인하며 기능 재검사·build·push·CI 조작은 하지 않는다.
