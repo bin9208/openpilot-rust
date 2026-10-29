@@ -3310,8 +3310,12 @@ jobs:
       - name: Stage native GNU aarch64 startup renderer and portable loader headers
         run: |
           sudo dpkg --add-architecture arm64
-          sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- update
-          sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- install -y libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
+          mkdir -p "$RUNNER_TEMP/startup-ui-cross-apt/lists/partial"
+          cross_apt=(-o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources"
+            -o Dir::Etc::sourceparts=- -o Dir::State::lists="$RUNNER_TEMP/startup-ui-cross-apt/lists"
+            -o Dir::Cache::pkgcache= -o Dir::Cache::srcpkgcache=)
+          sudo apt-get "${cross_apt[@]}" update
+          sudo apt-get "${cross_apt[@]}" install -y libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
           cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch aarch64 --output "$RUNNER_TEMP/startup-raylib-arm" --shared --cxx aarch64-linux-gnu-g++
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-arm\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"

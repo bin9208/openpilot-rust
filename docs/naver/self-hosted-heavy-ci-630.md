@@ -30,6 +30,9 @@ source view, ARM transport, Cargo target ignore·회귀, 증가량 기반 디스
 hosted용 Android/GHC/.NET 전체 삭제는 제거한다. 작업별 소유 임시 경로·target·
 Android SDK만 정리하고, APT source/list는 작업별 공식 Ubuntu view를 사용한다.
 실제 패키지 설치는 dpkg 잠금을 최대600초 기다려 같은 PC의 runner2/3 충돌을 줄인다.
+명시적 ARM cross source를 쓰는 준비 단계도 source pin은 그대로 두고 metadata lists를
+작업별 경로로 분리한다. 이 호출은 기본 APT wrapper의 source 선택 예외이므로 별도로
+분리해야 하며, 고정 source 파일·ARM 패키지·서명 검증은 보존한다.
 고정 Cargo/test 병렬 cap과25/35GiB 추가 floor 대신 실제 CPU와 작업별 증가량을 쓴다.
 기기 설치의 별도 디스크 정책은 변경하지 않는다.
 

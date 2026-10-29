@@ -111,6 +111,17 @@ class WorkflowPolicyTests(unittest.TestCase):
         for step in job['steps']:
           self.assertNotIn('continue-on-error', step)
 
+  def test_cross_apt_retains_sources_without_sharing_metadata_locks(self):
+    steps = workflow('rust.yml')['jobs']['arm64']['steps']
+    setup = next(step['run'] for step in steps
+                 if step.get('name') == 'Stage native GNU aarch64 startup renderer and portable loader headers')
+    for required in ('startup-ui-cross.sources', 'Dir::Etc::sourceparts=-',
+                     'Dir::State::lists="$RUNNER_TEMP/startup-ui-cross-apt/lists"',
+                     'Dir::Cache::pkgcache=', 'Dir::Cache::srcpkgcache=',
+                     'sudo apt-get "${cross_apt[@]}" update',
+                     'sudo apt-get "${cross_apt[@]}" install -y libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64'):
+      self.assertIn(required, setup)
+
   def test_jetlink_functional_checks_run_in_heavy_suite_instead_of_fast(self):
     fast_steps = workflow('fast-checks.yml')['jobs']['fast']['steps']
     fast_runs = '\n'.join(step.get('run', '') for step in fast_steps)
