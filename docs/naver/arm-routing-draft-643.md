@@ -32,3 +32,16 @@ source-entry의 전체 공개 입력 기반 빌드는 실제 committed input ind
 검증한다. 조건이 충족되고 검증이 끝나기 전 기본/기존 작업 브랜치에 적용하지 않는다.
 
 이슈: https://github.com/bin9208/openpilot-rust/issues/643
+
+## 실험 Actions 진행
+
+초안 커밋 `57a5e5afefec02205cc387e5695114af72681435`의
+[40956391986](https://github.com/bin9208/openpilot-rust/actions/runs/40956391986)에서 ARM
+정책·원래 명령 보존·계정 mapping 검증, genuine QCOM 컴파일과 오프라인 스케줄링,
+원본 AGNOS 이미지의 실제 sudo/private cgroup 검증이 성공했다. logger source-reuse는
+진행 중이다. 기본/기존 작업 브랜치의 배정은 바꾸지 않았다.
+
+generic aarch64 job은 원래의 보호 브랜치 push 조건 때문에 위 push 실행에서 생략됐다.
+원래 조건을 보존한 채 해당 항목만 수동으로 실행한
+[40956730256](https://github.com/bin9208/openpilot-rust/actions/runs/40956730256)이 대기 중이다.
+다른 빌드를 재측정하도록 x86 private 러너에 배정하지 않았다.
