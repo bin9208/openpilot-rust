@@ -49,7 +49,11 @@ runs:
           printf 'if [[ ${RUNNER_TEMP:-} == %q ]]; then\n' "$RUNNER_TEMP"
           printf '  export RUNNER_TEMP=%q TMPDIR=%q\n' "$owned" "$owned"
           printf 'fi\n'
-          printf 'source %q\n' "$GITHUB_WORKSPACE/tools/ci/native-apt-shell"
+          if [[ -n ${GITHUB_ACTION_PATH:-} ]]; then
+            printf 'source %q\n' "$GITHUB_ACTION_PATH/../../../tools/ci/native-apt-shell"
+          elif [[ -n ${LOCAL_CI_SOURCE_ROOT:-${GITHUB_WORKSPACE:-}} && -f ${LOCAL_CI_SOURCE_ROOT:-$GITHUB_WORKSPACE}/tools/ci/native-apt-shell ]]; then
+            printf 'source %q\n' "${LOCAL_CI_SOURCE_ROOT:-$GITHUB_WORKSPACE}/tools/ci/native-apt-shell"
+          fi
         } > "$owned/shell-env"
         printf 'CI_RUNNER_TEMP=%s\nCI_JOB_TEMP=%s\nBASH_ENV=%s/shell-env\n' "$RUNNER_TEMP" "$owned" "$owned" >> "$GITHUB_ENV"
     - if: inputs.cleanup != 'true' && inputs.validation-context == 'true' && github.event_name == 'pull_request'

@@ -360,6 +360,8 @@ fn interrupted_object_import_is_retriable_and_prefix_lock_conflict_preserves_com
         .unwrap()
         .verify(&first.root)
         .unwrap();
+    // Other tests may fork while this deliberate conflict lock is held.
+    rustix::fs::flock(&lock, rustix::fs::FlockOperation::Unlock).unwrap();
     drop(lock);
     assert_eq!(f.prepare().unwrap().copied_bytes, 0);
     let inside_source = f.root.join("cache");
