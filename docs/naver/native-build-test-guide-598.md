@@ -112,8 +112,8 @@ workflow 원본 SHA와 별도 fixture SHA, index/config pin 및 host cgroup 증�
 준비되기 전의 기기 설치 명령이나 현재 기능 성공 증거가 아니다.
 
 ```sh
-/usr/bin/python3 -I -B -S tools/native/source_entry.py 
-  --source "$REQUESTED_SOURCE" --machine-config "$MACHINE_CONFIG" 
+/usr/bin/python3 -I -B -S tools/native/source_entry.py \
+  --source "$REQUESTED_SOURCE" --machine-config "$MACHINE_CONFIG" \
   --machine-configuration-sha256 "$MACHINE_CONFIG_SHA256"
 ```
 
