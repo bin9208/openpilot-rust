@@ -14,7 +14,7 @@ class RustIsolationTests(unittest.TestCase):
         job = workflow['jobs']['webcam-runtime']
         self.assertEqual(job['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
         self.assertNotIn('if', job)
-        self.assertEqual(job['env']['CARGO_BUILD_JOBS'], '2')
+        self.assertNotIn('CARGO_BUILD_JOBS', job['env'])
         self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
         self.assertEqual(job['env']['CARGO_PROFILE_DEV_DEBUG'], '0')
         commands = '\n'.join(step.get('run', '') for step in job['steps'])

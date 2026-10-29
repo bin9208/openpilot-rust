@@ -2,6 +2,7 @@ use crate::{protocol, Result};
 use serde_json::Value;
 use std::time::Duration;
 use ureq::tls::{parse_pem, PemItem, RootCerts, TlsConfig};
+mod cookies;
 
 pub const GSMA_CI_BUNDLE: &[u8] =
     include_bytes!("../../../../openpilot/system/hardware/tici/gsma_ci_bundle.pem");
@@ -76,11 +77,8 @@ impl Es9 for Http {
             let mut matched = self.cookies.matches(&url);
             matched.retain(|cookie| cookie.secure() != Some(true) || url.scheme() == "https");
             matched.sort_by_key(|cookie| std::cmp::Reverse(cookie.path.as_ref().len()));
-            let cookies = matched
-                .into_iter()
-                .map(|cookie| format!("{}={}", cookie.name(), cookie.value()))
-                .collect::<Vec<_>>()
-                .join("; ");
+            let cookies =
+                cookies::header(matched.iter().map(|cookie| (cookie.name(), cookie.value())));
             if !cookies.is_empty() {
                 request = request.header("Cookie", cookies);
             }

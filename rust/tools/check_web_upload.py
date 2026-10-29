@@ -136,7 +136,7 @@ def main() -> None:
   process = subprocess.Popen([str(args.binary.resolve())], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
   assert process.stdin is not None and process.stdout is not None
 
-  def run(name: str, command: dict[str, Json], plans: list[dict[str, Json]] | None = None, loose: bool = False, compare_wire: bool = True) -> None:
+  def run(name: str, command: dict[str, Json], plans: list[dict[str, Json]] | None = None, loose: bool = False, compare_wire: bool = True, file_error: str | None = None) -> None:
     outputs = []
     captures = []
     for language in ['python', 'rust']:
@@ -171,7 +171,17 @@ def main() -> None:
     source_wire, native_wire = captures
     record = {'name': name, 'command': command, 'python': source, 'rust': native, 'python_requests': source_wire, 'rust_requests': native_wire}
     (args.output / f'{name}.json').write_text(json.dumps(record, indent=2))
-    compare(source, native, loose)
+    if file_error is not None:
+      # Python exposes OSError subclasses; the native trace labels the same
+      # filesystem failure OSError. Require both failures before any HTTP side effect.
+      assert source.get('error_type') == file_error, source
+      assert native.get('error_type') == 'OSError', native
+      assert source.get('error') and native.get('error'), (source, native)
+      assert source['progress'] == native['progress'] == [], (source, native)
+      assert source['cancel_checks'] == native['cancel_checks'] == 0, (source, native)
+      assert source_wire == native_wire == [], (source_wire, native_wire)
+    else:
+      compare(source, native, loose)
     if command['op'] == 'folder':
       assert all(item['method'] in {'PUT', 'GET'} and '/complete' not in str(item['path']) for item in source_wire + native_wire)
     if compare_wire:
@@ -287,6 +297,8 @@ def main() -> None:
       }
       run('tmux-multipart', tmux)
       run('tmux-without-settings', tmux | {'settings_path': str(root / 'missing')})
+      run('tmux-missing-file', tmux | {'tmux_path': str(root / 'missing')}, file_error='FileNotFoundError')
+      run('tmux-directory-read-error', tmux | {'tmux_path': str(root / 'subdir')}, file_error='IsADirectoryError')
       run('tmux-error-status', tmux, [{'status': 403}])
       for status in [301, 302, 303, 307, 308]:
         run(f'tmux-redirect-{status}', tmux, [{'status': status, 'location': '/tmux-final'}, {}])
