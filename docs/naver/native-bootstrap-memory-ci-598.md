@@ -65,3 +65,40 @@ production `resources.rs`/`memory_cgroup.rs`, SDK/source/Git/ABI, owner,
 기능·build·test·실제 cgroup/AGNOS 실행은 하지 않는다. 새 정확 source의 메모리 필요량,
 진단 수집 성공과 전체 bootstrap 성공은 부모의 Actions 검증에서 확인해야 한다.
 기존 c7 Genuine 실행은 취소하거나 재시작하지 않는다. push·CI 조작·원격 글은 수행하지 않는다.
+
+## 2026-10-30 — workspace package의 폐기된 reserve 단언 정합
+
+별도 source `a5838a5461e26a2af5c82343cea18478cf58f90a`의 실제 workspace
+`job123668662006`은
+2026-10-29 20:54:10 UTC에 `openpilot-dev-tools --lib` 52개 성공·2개 실패를 기록했다.
+보존한 `a583-workspace-failed.log`의 두 실패는
+`disk_reserve_overflow_returns_an_error`와
+`disk_reserve_includes_growth_and_keeps_recovery_instruction`이다.
+로그의 PR merge checkout은 `311bf2384`이며 head는 위 A583이다.
+A583와 Dff의 `rust/crates/dev-tools/src/package.rs` Git blob은 모두
+`dc1aa3a70be9820a320b65c8e737015b84d2a6a3`로 완전히 같다.
+다른 세션의 원격 D0 source나 #644 변경을 가져오거나 수정하지 않는다.
+
+현재 package의 `check_space`는 이미 `Space::new(free,growth)?.require()`에 위임하며,
+공통 `disk-space`는 reserve를 더하지 않고 `required_bytes=growth_bytes`로 두어
+`free < growth`일 때만 원래 부족 메시지를 반환한다. 사용자가 폐기한25GiB reserve와
+35GiB 재개 문구 및 존재하지 않는 덧셈 overflow를 기대한 두 테스트가 낡은 것이다.
+따라서 현재 Dff에도 같은 테스트 결함이 있으며 production guard 결함으로 분류하지 않는다.
+
+기존 두 테스트만 현재 계약에 맞게 이름과 단언을 고친다. `0/0`, `MAX/0`, `MAX/MAX`와
+일반 growth의 초과/정확 일치는 성공을 요구하고, `MAX-1/MAX`, `0/MAX` 및 일반 growth보다
+1byte 부족한 경우는 실패를 요구한다. 부족 경계의 원래 메시지
+`insufficient disk: available space is below estimated operation growth`를 정확히 대조한다.
+새 mirror 테스트를 만들지 않으며 `check_space`·`disk_guard`·공통 disk-space·기기 설치 공간
+정책이나 기존 안전 조건을 바꾸지 않는다.
+
+로컬에서는 해당 Rust 파일의 Rustfmt와 diff·테스트 module 밖의 byte 동일성만 확인한다.
+test/build·push·CI 취소/추가/재시작은 하지 않는다. Dff Genuine의6GiB 결과는 아직 확인하지
+않았으며, 부모가 진행 중 실행을 보존하면서 다음 정확 source 검증을 결정한다.
+
+부모는 별도 workflow 커밋에서 기존 host transport 준비/rustup 직후 package 단언을
+집중 실행하고 `host-package-space-tests.log`를 기존 always artifact에 추가한다.
+이는 같은 테스트 실패를 deep AGNOS 전에 검출하는 CI 단계이며 기존 원래 명령·
+production guard와 후속 workspace gate는 유지한다. 예상 compile growth는 기존4GiB
+호스트 준비 admission 안의 CI용 추정이며, 실측 증가량이나 기기 예산을 뜻하지 않는다.
+이 테스트 정합 커밋에는 부모의 workflow 파일을 포함하지 않는다.
