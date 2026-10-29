@@ -158,7 +158,7 @@ def bootstrap_memory_observer(job, owner, work, pin, output):
 
 def main():
     assert os.geteuid() != 0 and not os.getgroups()
-    runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_environment'](self_hosted_only=True)
+    runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_agnos_environment']()
     job = Path(os.environ['CI_JOB_TEMP'])
     assert job.parent == Path('/tmp') and job.name.startswith('openpilot-ci.') and job.resolve() == job
     owner = ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB'))

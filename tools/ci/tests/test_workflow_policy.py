@@ -17,13 +17,13 @@ def workflow(name):
 
 
 class WorkflowPolicyTests(unittest.TestCase):
-  def test_fast_checks_cover_all_branch_pushes_and_protected_prs(self):
+  def test_fast_checks_run_only_for_protected_prs_or_manual_dispatch(self):
     events = workflow('fast-checks.yml')['on']
-    self.assertEqual(events['push']['branches'], ['**'])
+    self.assertNotIn('push', events)
+    self.assertIn('workflow_dispatch', events)
     self.assertEqual(set(events['pull_request']['branches']), {'dev', 'main'})
-    for event in ('push', 'pull_request'):
-      self.assertNotIn('paths', events[event])
-      self.assertNotIn('paths-ignore', events[event])
+    self.assertNotIn('paths', events['pull_request'])
+    self.assertNotIn('paths-ignore', events['pull_request'])
 
   def test_integration_runs_before_and_after_merge_without_path_skips(self):
     spec = workflow('integration.yml')

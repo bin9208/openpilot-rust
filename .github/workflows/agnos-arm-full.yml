@@ -1,0 +1,846 @@
+name: Full AGNOS build on GitHub ARM
+on:
+  push:
+    branches: ['codex/feat-643-agnos-arm-full']
+    paths:
+      - '.github/workflows/agnos-arm-full.yml'
+      - 'tools/ci/agnos_arm_timing.py'
+      - 'tools/ci/probe_native_agnos.py'
+      - 'tools/ci/runner_policy.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: agnos-full-hosted-arm-643
+  cancel-in-progress: false
+jobs:
+  compiler:
+    name: Full AGNOS build and validation on GitHub ARM
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-24.04-arm
+    # #608 actual ARM release build alone took 6,386,611 ms. This job now also
+    # builds the real encoder; retain every command/pin and allow a bounded 6h.
+    timeout-minutes: 360
+    env:
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      AGNOS_NATIVE_HOSTED_ARM: '1'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Admit this host tool and extract operation
+        run: |
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted && "$RUNNER_ARCH" == ARM64 ]]
+          [[ "$(uname -m)" == aarch64 ]]
+          lscpu
+          free -h
+          df -h "$CI_JOB_TEMP"
+          python3 tools/ci/agnos_arm_timing.py start
+          python3 - <<'PY'
+          import os, shutil
+          growth = 4 * 1024**3
+          for path in (os.environ['RUNNER_TEMP'], os.environ['GITHUB_WORKSPACE']):
+              free = shutil.disk_usage(path).free
+              print(f'path={path} available_bytes={free} expected_host_tool_growth_bytes={growth}')
+              if free < growth:
+                  raise SystemExit('insufficient capacity for this operation; other data retained')
+          PY
+          sudo apt-get update
+          sudo apt-get install -y android-sdk-libsparse-utils e2fsprogs xz-utils gcc make pkg-config libtalloc-dev
+          rustup toolchain install 1.94.0 --profile minimal
+          proot_source=$(mktemp -d "$CI_JOB_TEMP/proot-5.5.0.XXXXXX")
+          git -C "$proot_source" init
+          git -C "$proot_source" remote add origin https://github.com/proot-me/proot.git
+          git -C "$proot_source" fetch --depth=1 origin 25dc6a3134891f98a79f57ce1c2c1b23ff15cad1
+          git -C "$proot_source" checkout --detach FETCH_HEAD
+          [[ $(git -C "$proot_source" rev-parse HEAD) == 25dc6a3134891f98a79f57ce1c2c1b23ff15cad1 ]]
+          make -C "$proot_source/src" -j"$(nproc)" WITHOUT_PYTHON=1 loader.elf build.h
+          make -C "$proot_source/src" -j"$(nproc)" WITHOUT_PYTHON=1 proot
+          "$proot_source/src/proot" --version
+          timeout 30 "$proot_source/src/proot" -r / -w "$CI_JOB_TEMP" /bin/uname -m
+          printf 'AGNOS_PROOT_PATH=%s\n' "$proot_source/src/proot" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Build the pinned original planner ABI before deep ARM preparation
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+        run: |
+          sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev gdb cmake make
+          python - <<'PY'
+          import json, os, platform, shutil
+          from pathlib import Path
+          base = Path('/proc/sys/fs/binfmt_misc')
+          handlers = {}
+          try:
+              for p in base.iterdir():
+                  if p.name not in ('register', 'status'):
+                      try:
+                          handlers[p.name] = p.read_text()[:8192]
+                      except OSError as error:
+                          handlers[p.name] = dict(unavailable=type(error).__name__)
+          except OSError as error:
+              handlers['unavailable'] = type(error).__name__
+          record = dict(schema=1, source_commit=os.environ['GITHUB_SHA'],
+                        kernel=platform.release(), architecture=platform.machine(),
+                        uid=os.getuid(), gid=os.getgid(), binfmt_handlers=handlers,
+                        tools={name: shutil.which(name) for name in
+                               ('qemu-aarch64-static', 'chroot', 'unshare', 'nsenter', 'qemu-system-aarch64')},
+                        shared_configuration_modified=False, source_entry_executed=False)
+          (Path(os.environ['CI_JOB_TEMP'])/'host-native-entry-transport.json').write_text(json.dumps(record, indent=2)+'\n')
+          PY
+          python -m pip install numpy==2.5.3 pycapnp==2.1.0 Cython==3.3.0 setuptools==82.0.1 zstandard==0.25.0 pyzmq==27.2.0 requests==2.34.2 pycryptodome==3.23.0 setproctitle==1.3.7 pyserial==3.5 tqdm==4.70.1 PyYAML==6.0.3
+          python -m pip download --only-binary=:all: --no-deps comma-deps-acados==0.2.2.post103 --dest "$CI_JOB_TEMP/host-planner-wheel"
+          python -m pip install --no-deps "$CI_JOB_TEMP"/host-planner-wheel/*.whl
+          planner_generator=$(python -P -c 'import acados; from pathlib import Path; print(Path(acados.__file__).parent)')
+          python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_acados.py --architecture aarch64 --cc gcc --python "$(command -v python)" --acados "$planner_generator" --wheel "$CI_JOB_TEMP"/host-planner-wheel/*.whl --output "$CI_JOB_TEMP/host-planner-artifact"
+          python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_source.py --artifact "$CI_JOB_TEMP/host-planner-artifact" --python "$(command -v python)" --acados "$planner_generator" --generator-wheel "$CI_JOB_TEMP"/host-planner-wheel/*.whl --cc gcc --output "$CI_JOB_TEMP/host-planner-source"
+      - name: Exercise the unchanged original planner ABI before the full AGNOS build
+        id: planner-host-abi
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+        run: |
+          set +e
+          python -X faulthandler -u -P rust/tools/plannerd_acados_source.py \
+            --baseline "$CI_JOB_TEMP/host-planner-source" --evidence "$CI_JOB_TEMP/host-planner-abi" \
+            2>&1 | tee "$CI_JOB_TEMP/host-planner-abi.log"
+          planner_abi_status=${PIPESTATUS[0]}
+          printf '%s\n' "$planner_abi_status" > "$CI_JOB_TEMP/host-planner-abi.status"
+          exit "$planner_abi_status"
+      - name: Locate a planner ABI SIGILL without waiting for deep ARM execution
+        if: failure() && steps.planner-host-abi.outcome == 'failure'
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+        run: |
+          if [[ $(cat "$CI_JOB_TEMP/host-planner-abi.status") == 132 ]]; then
+            lscpu > "$CI_JOB_TEMP/host-planner-cpu.txt"
+            gdb --batch -ex run -ex 'info registers' -ex 'x/16i $pc-16' \
+              -ex 'info sharedlibrary' -ex 'thread apply all bt' --args \
+              "$(command -v python)" -u -P rust/tools/plannerd_acados_source.py \
+              --baseline "$CI_JOB_TEMP/host-planner-source" --evidence "$CI_JOB_TEMP/host-planner-gdb-abi" \
+              > "$CI_JOB_TEMP/host-planner-gdb.txt" 2>&1
+          fi
+      - uses: ./.github/actions/native-cache
+        id: image-cache
+        with:
+          mode: restore
+          name: native-agnos-assets
+          key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
+      - name: Prepare the exact genuine image through the content cache and prove zero-transfer repeat
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bin openpilot-runtime-assets
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          "$native_target/debug/openpilot-runtime-assets" --plan tools/ci/fixtures/native-agnos-assets-599.json --cache "$RUNNER_TEMP/native-agnos-assets" > "$RUNNER_TEMP/native-agnos-assets-first.json"
+          "$native_target/debug/openpilot-runtime-assets" --plan tools/ci/fixtures/native-agnos-assets-599.json --cache "$RUNNER_TEMP/native-agnos-assets" > "$RUNNER_TEMP/native-agnos-assets-reused.json"
+      - uses: ./.github/actions/native-cache
+        if: steps.image-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-agnos-assets
+          key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
+      - uses: ./.github/actions/native-cache
+        id: rust-components-cache
+        with:
+          mode: restore
+          name: native-rust-assets
+          key: native-rust-194-aarch64-aaa177def36e01d539bee6bde95295230b9ce378f81057845db8d0ebe97898ee-v1
+      - name: Prepare authenticated native Rust components and verify zero-transfer reuse
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bin openpilot-runtime-inputs
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          "$native_target/debug/openpilot-runtime-inputs" --prepare-rust --plan rust/native-rust-toolchain.json \
+            --cache "$RUNNER_TEMP/native-rust-assets" --store "$RUNNER_TEMP/native-rust-toolchains" > "$RUNNER_TEMP/native-rust-first.json"
+          "$native_target/debug/openpilot-runtime-inputs" --prepare-rust --plan rust/native-rust-toolchain.json \
+            --cache "$RUNNER_TEMP/native-rust-assets" --store "$RUNNER_TEMP/native-rust-toolchains" > "$RUNNER_TEMP/native-rust-reused.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['CI_JOB_TEMP'])
+          first = json.loads((root/'native-rust-first.json').read_text())
+          repeated = json.loads((root/'native-rust-reused.json').read_text())
+          assert first['copied_bytes'] > 0 and repeated['copied_bytes'] == 0
+          assert first['root'] == repeated['root'] and first['tree_sha256'] == repeated['tree_sha256']
+          assert not first['compiler_executed'] and not first['runtime_activated']
+          assert all(row['transferred_bytes'] in (0,row['bytes']) for row in first['assets'].values())
+          assert all(row['transferred_bytes'] == row['stored_bytes'] == 0 for row in repeated['assets'].values())
+          print('Authenticated ARM toolchain files prepared; repeated HTTP body and copied bytes both zero; compiler execution remains the following AGNOS step.')
+          PY
+      - uses: ./.github/actions/native-cache
+        if: steps.rust-components-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-rust-assets
+          key: native-rust-194-aarch64-aaa177def36e01d539bee6bde95295230b9ce378f81057845db8d0ebe97898ee-v1
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - uses: ./.github/actions/native-cache
+        id: capnp-packages-cache
+        with:
+          mode: restore
+          name: native-capnp-assets
+          key: native-capnp-101-4-arm64-9d693ded6a718a142063ccf0bb3250fa4e15b846980362ec6c38cff2a711a81c-v1
+      - name: Prepare only pinned SDK packages and the original full-schema reference
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          free = shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          growth = 512 * 1024**2
+          print(f'available_bytes={free} expected_reference_and_sdk_growth_bytes={growth}')
+          if free < growth:
+              raise SystemExit('insufficient capacity for reference and SDK inputs; other data retained')
+          PY
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          printf '%s\n' "$native_target/debug/openpilot-runtime-inputs" > "$RUNNER_TEMP/native-capnp-inputs-cli.txt"
+          "$native_target/debug/openpilot-runtime-assets" --plan rust/native-capnp-assets.json --cache "$RUNNER_TEMP/native-capnp-assets" > "$RUNNER_TEMP/native-capnp-assets-first.json"
+          "$native_target/debug/openpilot-runtime-assets" --plan rust/native-capnp-assets.json --cache "$RUNNER_TEMP/native-capnp-assets" > "$RUNNER_TEMP/native-capnp-assets-reused.json"
+          python3 tools/ci/prepare_native_capnp.py
+          "$native_target/debug/openpilot-runtime-inputs" --root "$RUNNER_TEMP/native-capnp" --output "$RUNNER_TEMP/native-capnp-dpkg-tree.json"
+          "$native_target/debug/openpilot-runtime-inputs" --prepare-capnp --plan rust/native-capnp-assets.json \
+            --cache "$RUNNER_TEMP/native-capnp-assets" --store "$RUNNER_TEMP/native-capnp-toolchains" > "$RUNNER_TEMP/native-capnp-first.json"
+          "$native_target/debug/openpilot-runtime-inputs" --prepare-capnp --plan rust/native-capnp-assets.json \
+            --cache "$RUNNER_TEMP/native-capnp-assets" --store "$RUNNER_TEMP/native-capnp-toolchains" > "$RUNNER_TEMP/native-capnp-reused.json"
+          python3 - <<'PYCODE'
+          import json, os, shutil
+          from pathlib import Path
+          root = Path(os.environ['CI_JOB_TEMP'])
+          first = json.loads((root/'native-capnp-first.json').read_text())
+          repeat = json.loads((root/'native-capnp-reused.json').read_text())
+          assert first['root'] == repeat['root'] and first['tree_sha256'] == repeat['tree_sha256']
+          assert first['copied_bytes'] > 0 and repeat['copied_bytes'] == 0
+          assert not first['compiler_executed'] and not first['runtime_activated']
+          assert all(row['transferred_bytes'] == row['stored_bytes'] == 0 for r in (first,repeat) for row in r['assets'].values())
+          original = json.loads((root/'native-capnp-dpkg-tree.json').read_text())['entries']
+          actual = json.loads(Path(first['tree_receipt']).read_text())['entries']
+          vendor = lambda tree: {p:v for p,v in tree.items() if p == 'usr' or p.startswith('usr/')}
+          assert vendor(actual) == vendor(original), 'native SDK differs from independent dpkg-deb extraction'
+          shutil.copyfile(first['tree_receipt'],root/'native-capnp-tree.json')
+          print('Native preparation matches the independent vendor tree exactly; repeated HTTP body and copied bytes zero.')
+          PYCODE
+          python -m pip install pycapnp==2.1.0
+          PYTHONPATH="$GITHUB_WORKSPACE" python3 tools/ci/native_cereal_reference.py
+      - uses: ./.github/actions/native-cache
+        if: steps.capnp-packages-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-capnp-assets
+          key: native-capnp-101-4-arm64-9d693ded6a718a142063ccf0bb3250fa4e15b846980362ec6c38cff2a711a81c-v1
+      - uses: ./.github/actions/native-cache
+        id: cargo-archives-cache
+        with:
+          mode: restore
+          name: native-cargo-assets
+          key: native-cargo-crates-${{ hashFiles('rust/Cargo.lock') }}-v1
+          restore-keys: native-cargo-crates-
+      - name: Prepare the complete locked registry sources and prove zero-transfer repeat
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          "$native_target/debug/openpilot-runtime-inputs" --prepare-cargo --plan rust/native-cargo-inputs.json --lock rust/Cargo.lock \
+            --cache "$RUNNER_TEMP/native-cargo-assets" --store "$RUNNER_TEMP/native-cargo-sources" > "$RUNNER_TEMP/native-cargo-first.json"
+          "$native_target/debug/openpilot-runtime-inputs" --prepare-cargo --plan rust/native-cargo-inputs.json --lock rust/Cargo.lock \
+            --cache "$RUNNER_TEMP/native-cargo-assets" --store "$RUNNER_TEMP/native-cargo-sources" > "$RUNNER_TEMP/native-cargo-reused.json"
+          python3 - <<'PYCODE'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['CI_JOB_TEMP'])
+          first = json.loads((root/'native-cargo-first.json').read_text())
+          repeat = json.loads((root/'native-cargo-reused.json').read_text())
+          assert first['packages'] == repeat['packages'] == 458
+          assert first['root'] == repeat['root'] and first['tree_sha256'] == repeat['tree_sha256']
+          assert first['copied_bytes'] > 0 and first['linked_bytes'] > 0
+          assert repeat['copied_bytes'] == repeat['linked_bytes'] == 0
+          assert not first['compiler_executed'] and not first['runtime_activated']
+          assert all(row['transferred_bytes'] in (0,row['bytes']) for row in first['assets'].values())
+          assert all(row['transferred_bytes'] == row['stored_bytes'] == 0 for row in repeat['assets'].values())
+          print('Locked Cargo registry sources authenticated; repeated archive body, copied bytes and linked bytes all zero. Cache-service traffic is separate.')
+          PYCODE
+      - uses: ./.github/actions/native-cache
+        if: steps.cargo-archives-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-cargo-assets
+          key: native-cargo-crates-${{ hashFiles('rust/Cargo.lock') }}-v1
+      - uses: ./.github/actions/native-cache
+        id: codec-wheels-cache
+        with:
+          mode: restore
+          name: native-codec-assets
+          key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
+      - name: Prepare independently expected original codec wheel trees
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          free=shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          growth=1024**3
+          print(f'available_bytes={free} expected_codec_host_tool_and_inputs_growth_bytes={growth}')
+          if free<growth:
+              raise SystemExit('insufficient capacity for this codec operation; other data retained')
+          PY
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-encoder-target -- \
+            --prepare-wheels --root "$GITHUB_WORKSPACE" --cache "$RUNNER_TEMP/native-codec-assets" --store "$RUNNER_TEMP/native-codec-prefixes" > "$RUNNER_TEMP/native-codec-first.json"
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-encoder-target -- \
+            --prepare-wheels --root "$GITHUB_WORKSPACE" --cache "$RUNNER_TEMP/native-codec-assets" --store "$RUNNER_TEMP/native-codec-prefixes" > "$RUNNER_TEMP/native-codec-reused.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          first=json.loads((root/'native-codec-first.json').read_text())
+          repeat=json.loads((root/'native-codec-reused.json').read_text())
+          assert set(first)==set(repeat)=={'ffmpeg','libyuv'}
+          for name,row in first.items():
+              assert row['copied_bytes']>0 and repeat[name]['copied_bytes']==0
+              assert row['tree_sha256']==repeat[name]['tree_sha256']
+              assert repeat[name]['asset']['transferred_bytes']==repeat[name]['asset']['stored_bytes']==0
+              assert not row['compiler_executed'] and not row['runtime_activated']
+          PY
+      - uses: ./.github/actions/native-cache
+        if: steps.codec-wheels-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-codec-assets
+          key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
+      - uses: ./.github/actions/native-cache
+        id: eigen-headers-cache
+        with:
+          mode: restore
+          name: native-eigen-assets
+          key: native-eigen-340-arm-b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a-v1
+      - name: Prepare only the original Eigen headers and reuse libyuv without the other wheel
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_eigen.py --preparer "$native_target/debug/stage-encoder-target" \
+            --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: ./.github/actions/native-cache
+        if: steps.eigen-headers-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-eigen-assets
+          key: native-eigen-340-arm-b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a-v1
+      - uses: ./.github/actions/native-cache
+        id: raylib-sdk-cache
+        with:
+          mode: restore
+          name: native-raylib-assets
+          key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
+      - name: Prepare only the original native raylib SDK and reject forged local receipts
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-startup-ui-raylib
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_raylib.py --preparer "$native_target/debug/stage-startup-ui-raylib" \
+            --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: ./.github/actions/native-cache
+        if: steps.raylib-sdk-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-raylib-assets
+          key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
+      - uses: ./.github/actions/native-cache
+        id: opencv-header-source-cache
+        with:
+          mode: restore
+          name: native-opencv-source
+          key: native-opencv-source-6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61-v1
+      - name: Restore original OpenCV headers without rebuilding its native libraries
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-opencv
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_opencv_headers.py --preparer "$native_target/debug/build-runtime-opencv" \
+            --plan rust/native-opencv-headers.json --work "$RUNNER_TEMP"
+      - uses: ./.github/actions/native-cache
+        if: steps.opencv-header-source-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-opencv-source
+          key: native-opencv-source-6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61-v1
+      - uses: ./.github/actions/native-cache
+        id: ffmpeg-headers-cache
+        with:
+          mode: restore
+          name: native-ffmpeg-source
+          key: native-ffmpeg-source-8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968-v1
+      - name: Independently prepare the exact released FFmpeg 6.1.1 headers
+        run: |
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg -- \
+            --prepare-released-headers --plan rust/native-ffmpeg-headers.json --cache "$RUNNER_TEMP/native-ffmpeg-source" --store "$RUNNER_TEMP/native-ffmpeg-headers" > "$RUNNER_TEMP/native-ffmpeg-headers-first.json"
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg -- \
+            --prepare-released-headers --plan rust/native-ffmpeg-headers.json --cache "$RUNNER_TEMP/native-ffmpeg-source" --store "$RUNNER_TEMP/native-ffmpeg-headers" > "$RUNNER_TEMP/native-ffmpeg-headers-reused.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          first=json.loads((root/'native-ffmpeg-headers-first.json').read_text())
+          repeat=json.loads((root/'native-ffmpeg-headers-reused.json').read_text())
+          assert first['public_headers']==repeat['public_headers']==140
+          assert first['root']==repeat['root'] and first['tree_sha256']==repeat['tree_sha256']
+          assert first['copied_bytes']>0 and repeat['copied_bytes']==0
+          assert repeat['asset']['transferred_bytes']==repeat['asset']['stored_bytes']==0
+          assert not first['compiler_executed'] and not first['provider_libraries_prepared'] and not first['actual_target_execution']
+          PY
+      - uses: ./.github/actions/native-cache
+        if: steps.ffmpeg-headers-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-ffmpeg-source
+          key: native-ffmpeg-source-8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968-v1
+      - uses: ./.github/actions/native-cache
+        id: provider-origin-cache
+        with:
+          mode: restore
+          name: native-provider-origin
+          key: native-provider-origin-9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291-v1
+      - name: Export only original foreign provider members and verify independent component reuse
+        run: |
+          python3 - <<'PY'
+          import json, os, shutil
+          from pathlib import Path
+          plan=json.loads(Path('rust/native-ffmpeg-provider.json').read_text())
+          growth=plan['source_archive']['bytes']+4*sum(row['bytes'] for row in plan['members'].values())+10*1024**2
+          free=shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          print(f'available_bytes={free} expected_origin_component_prefix_export_growth_bytes={growth}')
+          if free<growth:
+              raise SystemExit('insufficient capacity for provider origin/export; other data retained')
+          PY
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg -- \
+            --export-released-provider --plan rust/native-ffmpeg-provider.json --cache "$RUNNER_TEMP/native-provider-origin" \
+            --store "$RUNNER_TEMP/native-provider-origins" --output "$RUNNER_TEMP/native-provider-export" > "$RUNNER_TEMP/native-provider-export.json"
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          printf '%s\n' "$native_target/debug/build-runtime-ffmpeg" > "$RUNNER_TEMP/native-provider-preparer.txt"
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          exported=json.loads((root/'native-provider-export.json').read_text())
+          assert not exported['published_release'] and not exported['provider_executed']
+          helper=(root/'native-provider-preparer.txt').read_text().strip()
+          command=[helper,'--prepare-released-provider','--plan','rust/native-ffmpeg-provider.json',
+              '--descriptor',exported['descriptor'],'--descriptor-sha256',exported['descriptor_sha256'],
+              '--cache',str(root/'native-provider-components'),'--store',str(root/'native-provider-consumed'),
+              '--offline-archive',exported['archive']]
+          results=[]
+          for phase in ('initial','reused'):
+              with (root/f'native-provider-consumer-{phase}.json').open('w') as output:
+                  subprocess.run(command,stdout=output,check=True)
+              row=json.loads((root/f'native-provider-consumer-{phase}.json').read_text())
+              assert row['tree_sha256']==exported['tree_sha256']
+              assert row['provider_source_commit']==exported['provider_source_commit']
+              assert row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+              assert not row['origin_archive_downloaded'] and not row['compiler_executed'] and not row['runtime_activated']
+              assert (row['copied_bytes']>0)==(phase=='initial')
+              assert (row['offline_seed_bytes']>0)==(phase=='initial')
+              results.append(row)
+          assert results[0]['root']==results[1]['root']
+          print('Original foreign-only component candidate exported and independently consumed; not published, and not yet executed on ARM.')
+          PY
+      - uses: ./.github/actions/native-cache
+        if: steps.provider-origin-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-provider-origin
+          key: native-provider-origin-9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291-v1
+      - name: Export the original raylib provider without a second origin download
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          helper=(root/'native-provider-preparer.txt').read_text().strip()
+          command=[helper,'--export-released-provider','--plan','rust/native-raylib-provider.json',
+              '--cache',str(root/'native-provider-origin'),'--store',str(root/'native-provider-origins'),
+              '--output',str(root/'native-raylib-provider-export')]
+          with (root/'native-raylib-provider-export.json').open('x') as output:
+              subprocess.run(command,stdout=output,check=True)
+          exported=json.loads((root/'native-raylib-provider-export.json').read_text())
+          assert exported['origin']['asset']['transferred_bytes']==exported['origin']['asset']['stored_bytes']==0
+          assert not exported['published_release'] and not exported['provider_executed']
+          consume=[helper,'--prepare-released-provider','--plan','rust/native-raylib-provider.json',
+              '--descriptor',exported['descriptor'],'--descriptor-sha256',exported['descriptor_sha256'],
+              '--cache',str(root/'native-raylib-components'),'--store',str(root/'native-raylib-provider-prefixes'),
+              '--offline-archive',exported['archive']]
+          rows=[]
+          for phase in ('initial','reused'):
+              path=root/f'native-raylib-provider-{phase}.json'
+              with path.open('x') as output:
+                  subprocess.run(consume,stdout=output,check=True)
+              row=json.loads(path.read_text())
+              assert row['tree_sha256']==exported['tree_sha256']
+              assert row['asset']['transferred_bytes']==row['asset']['stored_bytes']==0
+              assert not row['origin_archive_downloaded'] and not row['compiler_executed'] and not row['runtime_activated']
+              assert (row['copied_bytes']>0)==(phase=='initial')
+              assert (row['offline_seed_bytes']>0)==(phase=='initial')
+              rows.append(row)
+          assert rows[0]['root']==rows[1]['root']
+          print('Raylib-only component candidate consumed; origin reused without transfer; public publication and graphics execution pending.')
+          PY
+      - name: Export the original OpenCV component and compose both compiler consumers' prefix
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_opencv_prefix.py \
+            --provider-preparer "$native_target/debug/build-runtime-ffmpeg" \
+            --prefix-preparer "$native_target/debug/build-runtime-opencv" \
+            --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - name: Prepare independent numerical geometry compression and acados library components
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_runtime_companions.py \
+            --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - name: Prepare the original generated MPC libraries against the exact current source contract
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_mpc_inputs.py \
+            --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - name: Prepare independent safety firmware only against the current source contract
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_panda_inputs.py \
+            --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - name: Prepare original DBC data only for identical current generation inputs
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_dbc_inputs.py \
+            --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: ./.github/actions/native-cache
+        id: usbgpu-model-cache
+        with:
+          mode: restore
+          name: native-usbgpu-model-assets
+          key: native-usbgpu-model-${{ hashFiles('rust/native-usbgpu-model.json') }}-v1
+      - name: Prepare source-bound eGPU companions and independently cached model
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_usbgpu_inputs.py \
+            --preparer "$native_target/debug/build-runtime-ffmpeg" --inputs "$native_target/debug/openpilot-runtime-inputs" \
+            --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: ./.github/actions/native-cache
+        if: steps.usbgpu-model-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-usbgpu-model-assets
+          key: native-usbgpu-model-${{ hashFiles('rust/native-usbgpu-model.json') }}-v1
+      - uses: ./.github/actions/native-cache
+        id: python-input-cache
+        with:
+          mode: restore
+          name: native-python-assets
+          key: native-python-arm-${{ hashFiles('rust/native-python-toolchain.json') }}-v1
+          restore-keys: native-python-arm-
+      - name: Prepare the independently pinned ARM Python without running an installer
+        run: python3 tools/ci/prepare_native_python.py
+      - uses: ./.github/actions/native-cache
+        if: steps.python-input-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-python-assets
+          key: native-python-arm-${{ hashFiles('rust/native-python-toolchain.json') }}-v1
+      - uses: ./.github/actions/native-cache
+        id: model-wheel-cache
+        with:
+          mode: restore
+          name: native-model-wheel-assets
+          key: native-model-wheels-${{ hashFiles('rust/native-model-wheels.json') }}-v1
+          restore-keys: native-model-wheels-
+      - name: Prepare only pinned model wheels and retain the original native libraries
+        run: python3 tools/ci/prepare_native_model_wheels.py
+      - uses: ./.github/actions/native-cache
+        if: steps.model-wheel-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-model-wheel-assets
+          key: native-model-wheels-${{ hashFiles('rust/native-model-wheels.json') }}-v1
+      - uses: ./.github/actions/native-cache
+        id: source-lfs-cache
+        with:
+          mode: restore
+          name: native-source-lfs-assets
+          key: native-source-lfs-${{ hashFiles('rust/native-source-lfs.json') }}-v1
+          restore-keys: native-source-lfs-
+      - uses: ./.github/actions/native-cache
+        id: model-assets-cache
+        with:
+          mode: restore
+          name: native-model-assets
+          key: native-model-assets-${{ hashFiles('openpilot/selfdrive/modeld/models/*.onnx') }}-v1
+          restore-keys: native-model-assets-
+      - name: Prepare current ONNX build inputs without changing the source checkout
+        run: python3 tools/ci/prepare_native_model_assets.py
+      - uses: ./.github/actions/native-cache
+        if: steps.model-assets-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-model-assets
+          key: native-model-assets-${{ hashFiles('openpilot/selfdrive/modeld/models/*.onnx') }}-v1
+      - name: Prepare only the current committed LFS objects without changing checkout files
+        run: python3 tools/ci/prepare_native_source_assets.py --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: ./.github/actions/native-cache
+        if: steps.source-lfs-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-source-lfs-assets
+          key: native-source-lfs-${{ hashFiles('rust/native-source-lfs.json') }}-v1
+      - name: Compose independently expected headers and libraries into one immutable FFmpeg prefix
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          exported=json.loads((root/'native-provider-export.json').read_text())
+          helper=(root/'native-provider-preparer.txt').read_text().strip()
+          command=[helper,'--prepare-released-prefix','--header-plan','rust/native-ffmpeg-headers.json',
+              '--provider-plan','rust/native-ffmpeg-provider.json','--descriptor',exported['descriptor'],
+              '--descriptor-sha256',exported['descriptor_sha256'],'--header-cache',str(root/'native-ffmpeg-source'),
+              '--provider-cache',str(root/'native-provider-components'),'--store',str(root/'native-ffmpeg-prefixes')]
+          rows=[]
+          for phase in ('initial','reused'):
+              path=root/f'native-ffmpeg-prefix-{phase}.json'
+              with path.open('w') as output:
+                  subprocess.run(command,stdout=output,check=True)
+              row=json.loads(path.read_text())
+              assert not row['compiler_executed'] and not row['runtime_activated']
+              for part in ('headers','provider'):
+                  assert row[part]['asset']['transferred_bytes']==row[part]['asset']['stored_bytes']==0
+              rows.append(row)
+          assert rows[0]['tree_sha256']==rows[1]['tree_sha256'] and rows[0]['root']==rows[1]['root']
+          assert rows[0]['linked_bytes']>0
+          assert rows[1]['copied_bytes']==rows[1]['linked_bytes']==0
+          assert all(rows[1][part]['copied_bytes']==0 for part in ('headers','provider'))
+          print('One content-addressed FFmpeg input prefix; repeat archive transfer, prefix copy and hardlink bytes zero.')
+          PY
+      - name: Prepare only this bootstrap job kernel scope
+        run: sudo -n --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,AGNOS_NATIVE_HOSTED_ARM,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA /usr/bin/python3 tools/ci/native_resource_scope.py prepare
+      - name: Execute Rust and C++ standard ABI probes inside the original AGNOS filesystem
+        run: python3 tools/ci/probe_native_agnos.py
+      - name: Stop and remove only the bootstrap job kernel scope
+        if: always()
+        run: sudo -n --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,AGNOS_NATIVE_HOSTED_ARM,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA /usr/bin/python3 tools/ci/native_resource_scope.py cleanup
+      - name: Retain only the verified input files and evidence for publication
+        run: /usr/bin/python3 -I -B -S tools/ci/stage_native_input_payload.py
+      - uses: actions/upload-artifact@v6
+        with:
+          name: native-input-payload-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ env.CI_JOB_TEMP }}/native-input-payload/
+          if-no-files-found: error
+      - name: Retain the small verified publication candidate separately
+        uses: actions/upload-artifact@v6
+        with:
+          name: native-inputs-publication-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-inputs-evidence/native-bootstrap-inputs.candidate.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-inputs-evidence/publication-candidate.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-inputs-evidence/summary.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: native-agnos-environment-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/native-agnos-environment-599.json
+            ${{ env.CI_JOB_TEMP }}/resource-scope-evidence.json
+            ${{ env.CI_JOB_TEMP }}/host-planner-abi*
+            ${{ env.CI_JOB_TEMP }}/host-native-entry-transport.json
+            ${{ env.CI_JOB_TEMP }}/host-planner-cpu.txt
+            ${{ env.CI_JOB_TEMP }}/host-planner-gdb*
+            ${{ env.CI_JOB_TEMP }}/host-planner-artifact/
+            ${{ env.CI_JOB_TEMP }}/host-planner-source/
+            ${{ env.CI_JOB_TEMP }}/planner-host-sdk-*/receipt.json
+            ${{ env.CI_JOB_TEMP }}/planner-host-build-*/*.log
+            ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-current-evidence/**
+            ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-inputs-evidence/**
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-runtime-inputs-driver.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/production-input-selection.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/production-bootstrap-config.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-current-generations/bootstrap-attempts/**
+            ${{ env.CI_JOB_TEMP }}/native-agnos-assets-first.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos-assets-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-rust-first.json
+            ${{ env.CI_JOB_TEMP }}/native-rust-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-capnp-assets-first.json
+            ${{ env.CI_JOB_TEMP }}/native-capnp-assets-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-capnp-preparation.json
+            ${{ env.CI_JOB_TEMP }}/native-capnp-tree.json
+            ${{ env.CI_JOB_TEMP }}/native-capnp-dpkg-tree.json
+            ${{ env.CI_JOB_TEMP }}/native-capnp-first.json
+            ${{ env.CI_JOB_TEMP }}/native-capnp-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-cargo-first.json
+            ${{ env.CI_JOB_TEMP }}/native-cargo-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-codec-first.json
+            ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-*.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-headers-*.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-provider-*.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-prefix-*.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-provider-export/*
+            ${{ env.CI_JOB_TEMP }}/native-opencv-provider-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-headers-tamper.*
+            ${{ env.CI_JOB_TEMP }}/native-opencv-headers/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-tamper.*
+            ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-raylib-provider-*.json
+            ${{ env.CI_JOB_TEMP }}/native-raylib-provider-export/*
+            ${{ env.CI_JOB_TEMP }}/native-raylib-provider-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-eigen-*.json
+            ${{ env.CI_JOB_TEMP }}/native-libyuv-only.json
+            ${{ env.CI_JOB_TEMP }}/native-eigen-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-codec-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-codec-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers-first.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-provider-export.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-prefix-*.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-provider-export/*
+            ${{ env.CI_JOB_TEMP }}/native-provider-consumer-*.json
+            ${{ env.CI_JOB_TEMP }}/native-provider-origins/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-provider-consumed/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-companion-*.json
+            ${{ env.CI_JOB_TEMP }}/native-source-lfs-*.json
+            ${{ env.CI_JOB_TEMP }}/native-source-lfs-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-companion-exports/*/*
+            ${{ env.CI_JOB_TEMP }}/native-companion-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-mpc-*.json
+            ${{ env.CI_JOB_TEMP }}/native-panda-*.json
+            ${{ env.CI_JOB_TEMP }}/native-dbc-*.json
+            ${{ env.CI_JOB_TEMP }}/native-usbgpu-*.json
+            ${{ env.CI_JOB_TEMP }}/native-usbgpu-export/*
+            ${{ env.CI_JOB_TEMP }}/native-usbgpu-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-dbc-export/*
+            ${{ env.CI_JOB_TEMP }}/native-dbc-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-python-*.json
+            ${{ env.CI_JOB_TEMP }}/native-model-wheels-*.json
+            ${{ env.CI_JOB_TEMP }}/native-model-assets-*.json
+            ${{ env.CI_JOB_TEMP }}/native-model-wheel-packages/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-model-wheel-environments/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-python-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-panda-export/*
+            ${{ env.CI_JOB_TEMP }}/native-panda-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-mpc-export/*
+            ${{ env.CI_JOB_TEMP }}/native-mpc-origins/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-mpc-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-cargo-sources/sets/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.json
+            ${{ env.CI_JOB_TEMP }}/native-cereal-original-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/receipt.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/commands.log
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-probe.cc
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-mpc-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-mpc-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-mpc-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-mpc-abi-cases/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-mpc-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-runtime-inputs.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-cases/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-display-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-cli-cases/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-font-rust/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-media-font-reference/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-dbc-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-usbgpu-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-bound-plan/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-generation-evidence/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-*-evidence/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-complete-input-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-dbc-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-dbc-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-environment.kernel.bin
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-wheel-packages/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-wheel-environments/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-catalogs/**/receipt.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-catalogs/**/current.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-catalogs/**/index.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-exports/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-exports/**/generation/receipt.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-exports/**/generation/tree/model-inputs/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-model-bound-plan/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-python-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-panda-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-source-lfs-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-*.cc
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-compiler-features/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-bridge-cases/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-opencv-headers/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-sdk-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-raylib-provider-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-eigen-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-eigen-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-eigen-*.cc
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-eigen-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-generation-sdk-tests.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-codec-reference/*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-codec-reference/*.log
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-encoder-codec-reference/source-oracle.cc
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-ffmpeg-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/cargo-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-bindings-initial/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-project-bindings-reused/
+            ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-driver-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-driver-*.stdout
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-cereal-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-cereal-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-cereal-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-bootstrap-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-bootstrap-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-bootstrap-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-readonly-publication.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-seed-export/*
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-system-sdk*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-codec-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-codec-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-codec-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-ffmpeg611-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-ffmpeg611-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-ffmpeg611-*.txt
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-provider-*.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-provider-*.jsonl
+            ${{ env.CI_JOB_TEMP }}/native-agnos/native-provider-*.txt
+      - name: Record whole-job and AGNOS execution timing
+        if: always()
+        run: python3 tools/ci/agnos_arm_timing.py finish
+      - name: Upload the timing record
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: agnos-arm-full-timing-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/agnos-arm-timing.json
+          if-no-files-found: error
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

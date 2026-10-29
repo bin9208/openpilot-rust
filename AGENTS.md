@@ -1,5 +1,11 @@
 # Independent Rust port repository (2026-09-29)
 
+## Fast checks 자동 병행 실행 제거 (2026-10-30)
+
+- 현재 작업은 작업 브랜치 push마다 별도 `Fast checks`를 병행하지 않는다.
+  해당 workflow의 push 트리거를 제거하며, 아래의 과거 fast push 검사 요구보다 우선한다.
+- PR 필수 검사와 실제 빌드·ARM/AGNOS 검증은 기존 정책대로 수행한다.
+
 ## #598 검증 실행 재확인 — 2026-10-26
 
 - 이 채팅에 다시 제공된 지침에 따라 이후 모든 Actions job은 등록된 `bin-actions`

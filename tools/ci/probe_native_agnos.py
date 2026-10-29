@@ -22,6 +22,8 @@ RAW_BYTES = 4718592000
 SPARSE_SHA = 'a67410a888105ecce7bcc05e17cda77fd10572aa4380e9de242a7c92f3497114'
 RAW_SHA = '375c5d22335770ac08750660bb5b29a3331c550d6a9875b35f36b88af792ea44'
 PROOT_SHA = 'db185300a9daabbce86aca7632d8c7fdc4249f6f153171954013b70c5f491ec0'
+HOSTED_ARM = runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['hosted_arm_agnos']()
+EXECUTION_MODE = 'native ARM / PRoot' if HOSTED_ARM else 'QEMU/PRoot ARM user space'
 RUSTUP_SHA = '15f6e4ce9f583b929c996c91562bad6d4454f3281de858b02cdfdef615fac433'
 
 
@@ -39,6 +41,7 @@ def room(path, growth):
 
 def run(argv, log, *, required=True, stdout_path=None):
   started = time.monotonic()
+  print('COMMAND_START ' + json.dumps(list(map(str, argv))), flush=True)
   with log.open('ab') as output:
     output.write((json.dumps(list(map(str, argv))) + '\n').encode())
     output.flush()
@@ -376,7 +379,7 @@ def native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log
       project_runtime_release_downloaded=False,full_runtime_build=False,device_execution=False)
   # Only this added bootstrap test enters a job-owned host-kernel scope. The
   # original guest commands and the other engineering probes remain unchanged.
-  preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH'
+  preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,AGNOS_NATIVE_HOSTED_ARM,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH'
   scope = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/native_resource_scope.py'
   driver = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/verify_native_bootstrap.py'
   evidence['commands'].append(run(['sudo','-n',f'--preserve-env={preserve}','/usr/bin/python3',scope,
@@ -741,7 +744,7 @@ def native_python_probe(guest_command,work,source_mount,evidence,log,guest_work)
       stdlib_checks=health['standard_library_checks'],prefix_unchanged_after_execution=True,
       repeated_http_body_bytes=0,repeated_copied_bytes=0,model_generated=False,
       python_model_environment_complete=False,runtime_activated=False,physical_device_execution=False,
-      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
+      emulation=f'{EXECUTION_MODE} on {platform.machine()} {os.environ["RUNNER_NAME"]}')
 
 
 def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -842,7 +845,7 @@ def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest
       strict_elf_closure_compatible=True,prefix_unchanged_after_execution=True,
       repeated_http_body_bytes=0,repeated_copied_bytes=0,repeated_linked_bytes=0,
       full_model_generation=False,full_model_regression=False,full_runtime_build=False,gpu_executed=False,
-      physical_device_execution=False,emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
+      physical_device_execution=False,emulation=f'{EXECUTION_MODE} on {platform.machine()} {os.environ["RUNNER_NAME"]}')
 
 
 def native_model_generation_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -900,7 +903,7 @@ def native_model_generation_probe(guest_command,work,source_mount,evidence,log,g
       full_model_generation=True,full_model_regression=False,full_runtime_build=False,
       gpu_executed=False,physical_device_execution=False,
       measurement_limit='per-command wall time and output counters; aggregate RAM/swap/disk peak remains separate',
-      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
+      emulation=f'{EXECUTION_MODE} on {platform.machine()} {os.environ["RUNNER_NAME"]}')
   # Owned source commits exercise the actual producer's reuse key across Git
   # revisions. The compiler remains the original source-built binary; do not
   # retag it as built from either fixture revision. No source push or activation.
@@ -1092,7 +1095,7 @@ def native_encoder_probe(guest_command,work,source_mount,evidence,log,guest_work
       original_source_codec_cases=5,packet_bytes_and_metadata_equal=True,
       oracle_receipt_sha256=digest(work/'native-encoder-codec-reference/receipt.json'),
       strict_elf_audit_compatible=True,actual_arm_native_compiler=True,
-      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}',full_runtime_build=False,
+      emulation=f'{EXECUTION_MODE} on {platform.machine()} {os.environ["RUNNER_NAME"]}',full_runtime_build=False,
       runtime_activated=False,daemon_started=False,physical_device_execution=False)
 
 
@@ -1551,7 +1554,7 @@ def native_runtime_companions_probe(guest_command,work,source_mount,evidence,log
       runtime_inputs_trees=len(runtime_inputs['trees']),project_generated_mpc_solvers_reused=False,
       full_mpc_regression=False,full_module_regression=False,runtime_assets_complete=False,
       full_runtime_build=False,physical_device_execution=False,
-      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
+      emulation=f'{EXECUTION_MODE} on {platform.machine()} {os.environ["RUNNER_NAME"]}')
 
 
 def native_display_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -1696,7 +1699,7 @@ def native_display_inputs_probe(guest_command,work,source_mount,evidence,log,gue
       repeated_cargo_artifacts_fresh=True,repeated_http_body_bytes=0,repeated_copied_bytes=0,
       consumer_origin_archive_downloaded=False,font_glyph_rendering_tested=False,
       hardware_graphics_tested=False,full_module_regression=False,full_runtime_build=False,
-      physical_device_execution=False,emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
+      physical_device_execution=False,emulation=f'{EXECUTION_MODE} on {platform.machine()} {os.environ["RUNNER_NAME"]}')
 
 
 def native_media_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -1831,7 +1834,7 @@ def native_media_inputs_probe(guest_command,work,source_mount,evidence,log,guest
       consumer_origin_archive_downloaded=False,project_rust_binaries_reused=False,
       hardware_graphics_tested=False,korean_glyph_coverage_verified=False,
       complete_cluster_upload_regression=False,full_runtime_build=False,physical_device_execution=False,
-      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
+      emulation=f'{EXECUTION_MODE} on {platform.machine()} {os.environ["RUNNER_NAME"]}')
 
 
 def native_source_assets_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -1886,7 +1889,7 @@ def native_source_assets_probe(guest_command,work,source_mount,evidence,log,gues
       pointer_mismatch_rejected_before_staging=True,source_checkout_unchanged=True,
       generated_firmware_prepared=False,python_model_generation_complete=False,
       full_runtime_build=False,physical_device_execution=False,
-      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
+      emulation=f'{EXECUTION_MODE} on {platform.machine()} {os.environ["RUNNER_NAME"]}')
 
 
 def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -2004,7 +2007,7 @@ def native_mpc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_w
       complete_python_generation_environment=False,full_planner_regression=False,
       full_runtime_build=False,runtime_activated=False,published_release=False,
       public_component_download_tested=False,physical_device_execution=False,
-      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
+      emulation=f'{EXECUTION_MODE} on {platform.machine()} {os.environ["RUNNER_NAME"]}')
 
 
 def native_panda_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -2059,7 +2062,7 @@ def native_panda_inputs_probe(guest_command,work,source_mount,evidence,log,guest
       signed_images_public_signature_verified=2,firmware_version=report['firmware_version'],
       repeated_http_body_bytes=0,repeated_copied_bytes=0,unbound_provider_rejected_before_staging=True,
       independent_firmware_regenerated=False,firmware_executed=False,device_connected=False,
-      full_runtime_build=False,physical_device_execution=False,emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
+      full_runtime_build=False,physical_device_execution=False,emulation=f'{EXECUTION_MODE} on {platform.machine()} {os.environ["RUNNER_NAME"]}')
 
 
 def native_dbc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -2111,7 +2114,7 @@ def native_dbc_inputs_probe(guest_command,work,source_mount,evidence,log,guest_w
       actual_arm_preparer=True,original_reference=reference,host_expected_tree_matches=True,
       repeated_http_body_bytes=0,repeated_copied_bytes=0,unbound_provider_rejected_before_staging=True,
       runtime_data_regenerated=False,full_runtime_build=False,physical_device_execution=False,
-      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
+      emulation=f'{EXECUTION_MODE} on {platform.machine()} {os.environ["RUNNER_NAME"]}')
 
 
 def native_usbgpu_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
@@ -2351,11 +2354,11 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
       repeated_plan_bytes_identical=True,rejected_inputs=failures,
       operation_estimates_measured=False,full_runtime_build=False,runtime_assets_complete=False,
       runtime_activated=False,physical_device_execution=False,
-      emulation=f'QEMU/PRoot ARM user space on x64 {os.environ["RUNNER_NAME"]}')
+      emulation=f'{EXECUTION_MODE} on {platform.machine()} {os.environ["RUNNER_NAME"]}')
 
 
 def main():
-  runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_environment'](self_hosted_only=True)
+  runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_agnos_environment']()
   source = Path(os.environ['GITHUB_WORKSPACE']).resolve()
   sha = subprocess.check_output(['git', '-C', source, 'rev-parse', 'HEAD'], text=True).strip()
   assert sha == os.environ['GITHUB_SHA']
@@ -2367,8 +2370,8 @@ def main():
   log = work / 'commands.log'
   evidence = dict(schema=1, source_commit=sha, runner_name=os.environ['RUNNER_NAME'],
                   runner_environment=os.environ['RUNNER_ENVIRONMENT'], host_architecture=platform.machine(),
-                  host_kernel=platform.release(), guest_os='AGNOS 19.8-carrot-bt1', execution_mode='QEMU user / PRoot',
-                  physical_arm_cpu=False, device_execution=False, full_runtime_build=False,
+                  host_kernel=platform.release(), guest_os='AGNOS 19.8-carrot-bt1', execution_mode=EXECUTION_MODE,
+                  physical_arm_cpu=HOSTED_ARM, device_execution=False, full_runtime_build=False,
                   image_compressed_sha256='077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4',
                   image_raw_sha256=RAW_SHA, proot_sha256=PROOT_SHA, rustup_sha256=RUSTUP_SHA, commands=[])
   initial_disk = shutil.disk_usage(owned).free
@@ -2413,10 +2416,19 @@ def main():
     room(work, 3 * 1024**3)
     proot = work / 'proot'
     rustup = work / 'rustup-init'
-    download('https://github.com/proot-me/proot/releases/download/v5.5.0/proot', proot, PROOT_SHA, log)
+    if HOSTED_ARM:
+      assert platform.machine() == 'aarch64'
+      native_proot = Path(os.environ['AGNOS_PROOT_PATH'])
+      shutil.copy2(native_proot, proot)
+      evidence['proot_sha256'] = digest(proot)
+      evidence['proot_source_commit'] = '25dc6a3134891f98a79f57ce1c2c1b23ff15cad1'
+      qemu_arguments = []
+    else:
+      download('https://github.com/proot-me/proot/releases/download/v5.5.0/proot', proot, PROOT_SHA, log)
+      qemu = Path('/usr/bin/qemu-aarch64-static')
+      evidence['qemu_sha256'] = digest(qemu)
+      qemu_arguments = ['-q', qemu]
     download('https://static.rust-lang.org/rustup/archive/1.29.1/aarch64-unknown-linux-gnu/rustup-init', rustup, RUSTUP_SHA, log)
-    qemu = Path('/usr/bin/qemu-aarch64-static')
-    evidence['qemu_sha256'] = digest(qemu)
     guest_work = '/openpilot-native-build-probe-599'
     (rootfs / guest_work.lstrip('/')).mkdir()
     source_mount = '/openpilot-native-source-599'
@@ -2447,7 +2459,7 @@ def main():
     # The authenticated factory namespace already contains its native tools.
     # Build as the real unprivileged user: PRoot's fake-root DAC emulation
     # temporarily chmods immutable paths and can retain that mode after rename.
-    guest = [proot, '-r', rootfs, '-q', qemu, '-b', '/proc', '-b', '/dev', '-b', '/etc/resolv.conf',
+    guest = [proot, '-r', rootfs, *qemu_arguments, '-b', '/proc', '-b', '/dev', '-b', '/etc/resolv.conf',
              '-b', '/etc/hosts', '-b', f'{work}:{guest_work}', '-b', f'{owned / "native-rust-toolchains"}:{guest_work}/pinned-rust',
              '-b', f'{owned / "native-capnp"}:{guest_work}/capnp-sdk',
              '-b', f'{owned / "native-capnp-assets"}:{guest_work}/capnp-assets',
@@ -2482,14 +2494,16 @@ def main():
              '-b', f'{owned / "native-opencv-provider-export"}:{guest_work}/opencv-provider-export',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
              f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_INCREMENTAL=0',
-             'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
+             'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0',
+             f'CARGO_BUILD_JOBS={len(os.sched_getaffinity(0))}', f'RUST_TEST_THREADS={len(os.sched_getaffinity(0))}',
+             'GIT_CONFIG_NOSYSTEM=1',
              f'GIT_CONFIG_GLOBAL={guest_work}/probe.gitconfig', 'GIT_OPTIONAL_LOCKS=0',
              f'PATH={guest_work}/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin']
     def guest_command(args):
       return [*guest, *(str(arg).replace(str(work), guest_work) for arg in args)]
     (work/'native-bootstrap-context.json').write_text(json.dumps(dict(schema=1,
         source_commit=sha,work=str(work),guest_work=guest_work,source_mount=source_mount,
-        proot_sha256=PROOT_SHA,guest=list(map(str,guest))))+'\n')
+        proot_sha256=digest(proot),guest=list(map(str,guest))))+'\n')
     evidence['guest_architecture'] = subprocess.check_output(list(map(str, guest_command(['/bin/uname', '-m']))), text=True).strip()
     assert evidence['guest_architecture'] == 'aarch64', 'AGNOS guest is not executing ARM userspace'
     guest_uid = int(subprocess.check_output(list(map(str, guest_command(['/usr/bin/id', '-u']))), text=True))
@@ -2529,34 +2543,59 @@ def main():
       evidence['commands'].append(run(guest_command([work / 'target/debug' / name]), log))
     evidence['binaries'] = before
     evidence['toolchain_files'] = {str(path.relative_to(work)): digest(path) for path in (work / 'rustup/toolchains').glob('*/bin/*') if path.is_file()}
+    print('AGNOS_PHASE native_driver_probe', flush=True)
     native_driver_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_cereal_probe', flush=True)
     native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_bootstrap_seed_probe', flush=True)
     native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_system_sdk_probe', flush=True)
     native_system_sdk_probe(guest_command, work, rootfs, evidence, log, guest_work)
+    print('AGNOS_PHASE native_codec_probe', flush=True)
     native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_ffmpeg_headers_probe', flush=True)
     native_ffmpeg_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_provider_probe', flush=True)
     native_provider_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_python_probe', flush=True)
     native_python_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_model_wheels_probe', flush=True)
     native_model_wheels_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_encoder_probe', flush=True)
     native_encoder_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_eigen_probe', flush=True)
     native_eigen_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_raylib_probe', flush=True)
     native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_opencv_headers_probe', flush=True)
     native_opencv_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_opencv_prefix_probe', flush=True)
     native_opencv_prefix_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_runtime_companions_probe', flush=True)
     native_runtime_companions_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_display_inputs_probe', flush=True)
     native_display_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_media_inputs_probe', flush=True)
     native_media_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_source_assets_probe', flush=True)
     native_source_assets_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_mpc_inputs_probe', flush=True)
     native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_panda_inputs_probe', flush=True)
     native_panda_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_dbc_inputs_probe', flush=True)
     native_dbc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_usbgpu_inputs_probe', flush=True)
     native_usbgpu_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_catalog_bindings_probe', flush=True)
     native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_model_generation_probe', flush=True)
     native_model_generation_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    print('AGNOS_PHASE native_complete_layout_probe', flush=True)
     native_complete_layout_probe(guest_command, work, source_mount, evidence, log, guest_work)
     # Add the production orchestration as a separate guarded command after all
     # original ARM commands. Keep their user space, pins and evidence intact.
-    preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH'
+    preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,AGNOS_NATIVE_HOSTED_ARM,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH'
     scope = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/native_resource_scope.py'
     driver = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/verify_native_runtime_inputs.py'
     evidence['commands'].append(run(['sudo', '-n', f'--preserve-env={preserve}', '/usr/bin/python3', scope,

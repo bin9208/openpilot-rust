@@ -24,6 +24,18 @@ def require_environment(*, self_hosted_only=False, env=None):
                          else 'registered self-hosted or supported Linux GitHub-hosted Actions runner required')
 
 
+def hosted_arm_agnos(env=None):
+    env = os.environ if env is None else env
+    return (env.get('AGNOS_NATIVE_HOSTED_ARM') == '1'
+            and env.get('GITHUB_ACTIONS') == 'true'
+            and env.get('RUNNER_ENVIRONMENT') == 'github-hosted'
+            and env.get('RUNNER_OS') == 'Linux' and env.get('RUNNER_ARCH') == 'ARM64')
+
+
+def require_agnos_environment():
+    require_environment(self_hosted_only=not hosted_arm_agnos())
+
+
 def job_is_allowed(job, *, self_hosted_only=False):
     if not isinstance(job, Mapping):
         return False

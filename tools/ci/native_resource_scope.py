@@ -15,7 +15,7 @@ import time
 
 
 def identity():
-    runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_environment'](self_hosted_only=True)
+    runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_agnos_environment']()
     if os.geteuid() != 0:
         raise RuntimeError('registered self-hosted root setup required')
     uid, gid = int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID'])
@@ -71,7 +71,7 @@ def prepare():
         os.chown(entry, uid, gid)
     with (job / 'resource-scope-evidence.json').open('x') as stream:
         json.dump({**lease, 'host_kernel': os.uname().release,
-                   'host_architecture': os.uname().machine, 'physical_arm_cpu': False,
+                   'host_architecture': os.uname().machine, 'physical_arm_cpu': os.uname().machine == 'aarch64',
                    'existing_processes_migrated': False, 'shared_controller_modified': False}, stream)
     print(json.dumps(lease), flush=True)
 
