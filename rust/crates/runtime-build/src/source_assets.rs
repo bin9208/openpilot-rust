@@ -422,6 +422,9 @@ pub fn prepare(
         Err(error) => return Err(error.into()),
     }
     require_source(plan, &source_root, &source)?;
+    // A concurrent fork may briefly inherit this open file description before
+    // exec closes it. Release the flock explicitly before reporting completion.
+    rustix::fs::flock(&lock, rustix::fs::FlockOperation::Unlock)?;
     Ok(Prepared {
         schema: 1,
         identity,
