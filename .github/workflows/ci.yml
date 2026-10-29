@@ -981,7 +981,7 @@ jobs:
   support-runtime:
     needs: [integration-gate]
     name: rust support runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -1084,7 +1084,7 @@ jobs:
   telemetry-runtime:
     needs: [integration-gate]
     name: rust telemetry runtime
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -1814,7 +1814,7 @@ jobs:
   web-upload-timeouts:
     needs: [integration-gate]
     name: active upload timeout contracts
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -1849,7 +1849,7 @@ jobs:
   joystickd-runtime:
     needs: [integration-gate]
     name: rust control tools source and native runtimes
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_INCREMENTAL: '0'

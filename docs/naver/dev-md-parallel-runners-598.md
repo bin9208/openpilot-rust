@@ -296,3 +296,13 @@ GitHub-hosted native-default는 원래 이미지의 source를 보존하고, 명�
 변경하지 않는다. Bash syntax·내장 Python AST·diff만 확인했으며 기능·apt 실행과
 원격 push/CI 조작은 하지 않았다. 실제 hosted/등록 runner 성공은 부모 Actions 검증이
 필요하다.
+
+
+## 2026-10-30 — 네 hosted runtime job으로 실제 CPU 추가 사용
+
+사용자가 bin-actions2/3은 동일 CPU16 PC라고 확인했다. 고정2/1 제한은 해제한 상태로
+유지하고 support·telemetry·web upload timeout·joystick의 네 독립 X64 검사를 hosted
+ubuntu24.04에 배치한다. 대형 workspace/model/memory/AGNOS는 세 self-hosted 공통
+pool을 우선 사용하며 native ARM·이 네 검사와 병렬 실행한다. 기존 integration 이후
+의존과 전체 최종 gate·argv·허용 기준·target 소유권·publication write group은
+그대로다. AST/YAML/diff만 확인하며 실제 속도·성공은 해당 source의 Actions에서 확인한다.
