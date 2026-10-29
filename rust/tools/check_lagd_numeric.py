@@ -88,7 +88,11 @@ def main():
       failures.append(str(error))
     records.append({'case': name, 'input': row, 'source': expected, 'native': value})
   args.output.parent.mkdir(parents=True, exist_ok=True)
-  args.output.write_text(json.dumps({'records': records, 'failures': failures}, indent=2) + '\n')
+  args.output.write_text(json.dumps({
+    'numpy_cpu_features': np._core._multiarray_umath.__cpu_features__,
+    'numpy_multiply_dispatch': np.lib.introspect.opt_func_info(func_name='multiply'),
+    'records': records, 'failures': failures,
+  }, indent=2) + '\n')
   assert not failures, '\n'.join(failures[:12])
   print(f'PASS: {len(records)} original-source numeric/candidate scenarios with unchanged preimplementation tolerances')
 

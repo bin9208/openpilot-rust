@@ -47,6 +47,45 @@ pub struct Correlator {
     n: usize,
     scale: f64,
     kernel: Transform,
+    fused_complex: bool,
+}
+
+fn numpy_fused_complex() -> bool {
+    // NumPy 2.5.3 dispatches complex multiplication to X86_V3 or ASIMD.
+    // Its X86_V2 fallback rounds the products before adding/subtracting.
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    {
+        std::is_x86_feature_detected!("avx")
+            && std::is_x86_feature_detected!("avx2")
+            && std::is_x86_feature_detected!("fma")
+            && std::is_x86_feature_detected!("bmi1")
+            && std::is_x86_feature_detected!("bmi2")
+            && std::is_x86_feature_detected!("lzcnt")
+            && std::is_x86_feature_detected!("f16c")
+            && std::is_x86_feature_detected!("movbe")
+    }
+    #[cfg(target_arch = "aarch64")]
+    {
+        true
+    }
+    #[cfg(not(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")))]
+    {
+        false
+    }
+}
+
+fn complex_product(a: &Complex, b: &Complex, fused: bool) -> Complex {
+    if fused {
+        Complex {
+            re: a.re.mul_add(b.re, -(a.im * b.im)),
+            im: a.re.mul_add(b.im, a.im * b.re),
+        }
+    } else {
+        Complex {
+            re: a.re * b.re - a.im * b.im,
+            im: a.re * b.im + a.im * b.re,
+        }
+    }
 }
 impl Correlator {
     pub fn new(n: usize) -> Result<Self, Error> {
@@ -57,6 +96,7 @@ impl Correlator {
             n,
             scale: 1. / n.to_f64().ok_or(Error::Contract("FFT size conversion"))?,
             kernel: Transform::new(n)?,
+            fused_complex: numpy_fused_complex(),
         })
     }
     fn fft(&mut self, values: impl Iterator<Item = f64>) -> Result<Vec<Complex>, Error> {
@@ -71,10 +111,7 @@ impl Correlator {
         let mut buffer: Vec<_> = left
             .iter()
             .zip(right)
-            .map(|(a, b)| Complex {
-                re: a.re.mul_add(b.re, -(a.im * b.im)),
-                im: a.re.mul_add(b.im, a.im * b.re),
-            })
+            .map(|(a, b)| complex_product(a, b, self.fused_complex))
             .collect();
         self.kernel.execute(&mut buffer, self.scale, false)?;
         Ok(buffer.iter().map(|value| value.re).collect())
@@ -138,5 +175,37 @@ impl Correlator {
                 }
             })
             .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::complex_product;
+    use openpilot_pocketfft::Complex;
+
+    #[test]
+    fn cancellation_keeps_the_source_backends_distinct() {
+        let step = 2_f64.powi(-27);
+        let left = Complex {
+            re: 1. + step,
+            im: 1.,
+        };
+        let right = Complex {
+            re: 1. - step,
+            im: 1.,
+        };
+        assert_eq!(complex_product(&left, &right, false).re, 0.);
+        assert_eq!(complex_product(&left, &right, true).re, -2_f64.powi(-54));
+
+        let left = Complex {
+            re: 1. + step,
+            im: -1.,
+        };
+        let right = Complex {
+            re: 1.,
+            im: 1. - step,
+        };
+        assert_eq!(complex_product(&left, &right, false).im, 0.);
+        assert_eq!(complex_product(&left, &right, true).im, -2_f64.powi(-54));
     }
 }
