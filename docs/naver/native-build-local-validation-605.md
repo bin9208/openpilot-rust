@@ -151,3 +151,28 @@ workflow 라우팅은 부모 작업에서 관리한다. 새 runner의 CPU/RAM �
 `bin-actions3` 환경 허용, 기본 label만 있는 job 증거 허용, job 전용 cache 소유권의
 양성 회귀 검사를 보강했다. 로컬은 Python AST와 diff만 확인했고 회귀 검사·빌드·CI
 실행은 수행하지 않았다. #606의 공통 CI 포트는 별도 작업으로 남긴다.
+
+
+## 2026-10-29 — #606 공통 CI의 세 runner 분산
+
+사용자 지시에 따라 #606의 기존 head `ec418df39d3b5820f2751978e3898f0a4d858cbc`에서
+공통 CI만 별도 포트했다. heavy X64와 기존 ARM QEMU job은 공통
+`[self-hosted, Linux, X64]` pool에서 `bin-actions`, `bin-actions2`, `bin-actions3`를
+사용한다. fast/docs/두 필수 집계 gate와 Wiki 문서 검사는 hosted `ubuntu-24.04`로
+분담한다. 원래 matrix, 의존 관계, 필수 check 이름, 원래 검사 명령과 조건·pin은
+유지한다. 집계 step의 runner admission만 공통 허용 정책에 맞춘다.
+
+읽기 검사의 concurrency는 `parallel-v2`로 분리하고 `queue:max`,
+`cancel-in-progress:false`를 유지해 기존 실제 실행을 중단하지 않는다. inherited sync/publish 네 workflow
+(`carrot-route-vault-publish.yaml`, `naver-upstream-sync.yml`, `sync.yml`,
+`wiki-settings-publish.yaml`)는 runner/guard/concurrency까지 `ec418` 원문 전체를
+유지하며 기존4label 예외를 정확 검사한다. 자동 발행을 활성화하지 않는다.
+job-temp의 소유자/inode 범위와 기존 source/target view, ARM QEMU proof를 유지하고
+실제 runner 이름·환경과 job owner·target 경로를 연결한다. fixture checkout에는 실제
+job BASH_ENV가 읽는 native APT helper와 정책 파일도 포함한다.
+
+이 포트에는 #599 공급자·native_cache·중앙 publisher·실제 입력 발행 코드 또는
+새 native ARM 실행 분기를 가져오지 않는다. 부모 #611에 이미 있는 native ARM 확장은
+부모 통합 때 별도로 유지한다. 로컬은 AST/YAML/Bash 구문과 diff 읽기만 수행했고
+기능 검사·build·push·CI dispatch/cancel은 수행하지 않았다. 새 정확 SHA의 Actions
+결과는 아직 없다.
