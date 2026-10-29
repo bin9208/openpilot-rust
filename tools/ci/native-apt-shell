@@ -134,11 +134,13 @@ for path in paths:
 if not legacy and not deb822:
     raise ValueError('no signed official Ubuntu archive/security/ports source was found')
 view = job/'native-apt-sources'
-view.mkdir(mode=0o700, exist_ok=True)
 parts = view/'sources.list.d'
-parts.mkdir(mode=0o700, exist_ok=True)
-if any(p.is_symlink() or p.stat().st_uid != os.geteuid() for p in (view, parts)):
-    raise ValueError('redirected or foreign APT source view')
+for directory in (view, parts, view/'lists', view/'cache'):
+    if directory.exists() or directory.is_symlink():
+        if directory.is_symlink() or not directory.is_dir() or directory.stat().st_uid != os.geteuid():
+            raise ValueError('redirected or foreign APT source/metadata directory')
+    else:
+        directory.mkdir(mode=0o700)
 files = {view/'sources.list': ('\n'.join(dict.fromkeys(legacy))+'\n').encode(),
          parts/'official.sources': ('\n\n'.join(dict.fromkeys(deb822))+'\n').encode()}
 for path, data in files.items():
@@ -163,7 +165,9 @@ else:
 print(view)
 PY_APT_SOURCES
       ) || return
-      apt_scope_defaults=(-oDir::Etc::sourcelist="$apt_scope_view/sources.list" -oDir::Etc::sourceparts="$apt_scope_view/sources.list.d")
+      apt_scope_defaults=(-oDir::Etc::sourcelist="$apt_scope_view/sources.list" -oDir::Etc::sourceparts="$apt_scope_view/sources.list.d"
+        -oDir::State::lists="$apt_scope_view/lists" -oDir::Cache::pkgcache="$apt_scope_view/cache/pkgcache.bin"
+        -oDir::Cache::srcpkgcache="$apt_scope_view/cache/srcpkgcache.bin")
       if [[ $apt_scope_arch_explicit != true ]]; then
         apt_scope_defaults+=(-oAPT::Architectures="$apt_scope_native")
       fi

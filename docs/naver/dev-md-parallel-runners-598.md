@@ -269,3 +269,15 @@ BASH_ENV에 연결한다. 기존 API/환경/명령/패키지 pin과 공유 설�
 로컬에서 Python AST·YAML·Bash -n·diff만 확인했다. 현재 parser/재귀 회귀는 작성만
 되어 있고 실행하지 않았으며, 로컬 apt·기능·빌드·원격 CI 조작은 하지 않았다.
 실제 PPA404 해소와 기존 fake-uname 회귀 성공은 부모의 Actions 검증이 남아 있다.
+
+
+## APT list cleanup과 package metadata도 job 경로에 격리
+
+부모 검토에 따라 source view에 더해 `view/lists`, `view/cache`를 job 소유
+디렉터리로 만들고 기존 경로의 symlink/foreign owner를 먼저 거절한다. 기본 APT에만
+`Dir::State::lists`, `Dir::Cache::pkgcache`, `Dir::Cache::srcpkgcache` 세 인자를
+추가한다. 따라서 기본 apt update의 List-Cleanup 및 package metadata 작성 대상도
+job private 경로이며 공유 host PPA lists/cache를 대상으로 하지 않는다.
+명시 source/config 호출의 원문 통과와 architecture 값·parser·서명·mode guard는
+유지한다. 로컬 Bash syntax·내장 Python AST·diff만 확인했으며 apt/기능 실행이나
+공유 설정 변경·원격 CI 조작은 하지 않았다.
