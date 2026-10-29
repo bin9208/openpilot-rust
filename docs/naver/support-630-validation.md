@@ -229,3 +229,10 @@ Docs-Not-Needed: 개발용 검증 병렬 설정으로 사용자 기능·설정 �
 `source`/`host`/`all`에는 기존 전체 비교와 모든 timeout을 그대로 남긴다.
 서로 다른 실행은 정확 source와 각 단계별 receipt로 묶으며 실패한 앞선 run 전체를
 성공으로 바꾸지 않는다. #637은 실제 후속 Actions 결과를 확인한 뒤 종료한다.
+
+[baselines40881804452](https://github.com/bin9208/openpilot-rust/actions/runs/40881804452)은
+sound5실패/3성공, Bluetooth1실패/2성공, tombstoned의 실제 reap-before-kill trace와
+각 compiler-success를 확인했다. #637 출력 판정은 동작했지만 다음 modem baseline
+checkout에서 shallow clone의 unreferenced SHA 누락으로 중단됐다(#638).
+별도 modem clone에 동일 저장소의 정확1364e48c SHA를 명시 fetch한 뒤 detach하도록
+보완한다. 기존 baseline 파일 bytes/실패 assertion과 후보 회귀·원본 비교는 보존한다.

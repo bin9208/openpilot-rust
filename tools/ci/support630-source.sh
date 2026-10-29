@@ -308,6 +308,10 @@ red tombstone-red 'group identity released before final numeric group signal' \
   cargo +1.94.0 test --manifest-path "$baselines/behavior/rust/Cargo.toml" --locked \
   -p openpilot-tombstoned --test apport_owner invalid_utf8_cleanup_retains_waitable_group_identity_until_last_signal
 run clone-modem-baseline git clone --no-hardlinks --no-checkout "$SOURCE_ROOT" "$baselines/modem"
+# A shallow local clone need not copy an unreferenced object fetched by SHA.
+# Fetch the reviewed baseline into its own clone before checking it out.
+run fetch-modem-baseline git -C "$baselines/modem" -c maintenance.auto=false fetch \
+  --no-tags --no-write-fetch-head --depth=1 https://github.com/bin9208/openpilot-rust.git "$modem_baseline"
 run checkout-modem-baseline git -C "$baselines/modem" checkout --detach "$modem_baseline"
 export MODEM398_BASELINE_ROOT="$baselines/modem" MODEM_HELPER_EVIDENCE="$EVIDENCE/modem-red-green"
 run modem-red-green env CARGO_TARGET_DIR="$baselines/modem-target" \
