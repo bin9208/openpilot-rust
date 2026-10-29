@@ -36,3 +36,29 @@ sudo·cgroup chown의 실제 지원 여부는 Actions 실행 전에는 확인된
 입력의 실제 발행/검증/Git pin 뒤에 전체 실제 `source_entry` build, 반복·docs·작은 수정,
 `--launch --verify-package` 및 source/update/복구 경로를 연결해야 #598의 최종 조건을
 완료할 수 있다. 최종 기기 시험은 #528에서 사용자가 수행한다.
+
+## 2026-10-29 실제 `/proc` bind 실패와 최소 보완
+
+[`c6496134877f1f605160ccfec5f88ddaaa6c1376`의 실행](https://github.com/bin9208/openpilot-rust/actions/runs/40859979932/job/123400840567)은
+원본 image·SUID 검사와 NEWUSER/NEWNS/NEWCGROUP, private binfmt 및 cgroup mount를
+통과한 뒤 non-recursive `/proc` bind에서 mount exit32로 종료했다. 자기 cgroup의
+후속 cleanup은 성공했다. raw image나 factory sudo 권한 문제로 분류하지 않는다.
+
+[커널 `fs/namespace.c`](https://github.com/torvalds/linux/blob/v6.18/fs/namespace.c)의
+`__do_loopback()`은 non-recursive bind에 locked child가 있으면 `-EINVAL`을 반환한다.
+새 user namespace의 mount namespace로 상속된 `/proc` 하위 mount를 분리하려는
+기존 호출이 이 거부 경로와 일치한다. mount32 로그 자체는 syscall errno를 기록하지
+않으므로 최종 errno의 직접 관측과 수정 성공은 후속 Actions에서 확인해야 한다.
+
+수정은 `/proc` 전체를 `--rbind`하여 잠긴 하위 mount를 보존하고,
+[`mount_setattr(2)`](https://man7.org/linux/man-pages/man2/mount_setattr.2.html)의
+`AT_EMPTY_PATH | AT_RECURSIVE`와 `MOUNT_ATTR_RDONLY`만 설정한다. attr_clr와
+propagation은 0이며 기존 noexec/nosuid/nodev/readonly를 풀지 않는다. 호출은 이미
+`--make-rprivate /`한 child에서, 새 복제 root를 `O_PATH`로 연 fd에만 적용한다.
+X64 syscall442와 32-byte ABI를 명시적으로 제한하며 실패 시 writable fallback은 없다.
+새 mount ID 전부의 `ro`와 원본 `/proc` mount ID·옵션 불변을 mountinfo로 확인한다.
+host proc superblock·전역 설정·기존 process·PID namespace는 변경하지 않는다.
+
+로컬은 변경 Python과 두 embedded probe의 AST, diff만 확인했다. namespace·probe·
+테스트는 실행하지 않았다. 전체 source-entry driver의 같은 `/proc --bind`와 단일
+`remount,bind,ro` 조합에도 동일 보완이 필요하며 해당 구현은 별도 담당자가 통합한다.

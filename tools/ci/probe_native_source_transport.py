@@ -52,6 +52,49 @@ def command(executable, *arguments, timeout=60):
     return subprocess.run(argv, check=True, timeout=timeout)
 
 
+def readonly_proc_tree(target):
+    # A less-privileged mount namespace cannot split inherited locked mounts.
+    # Preserve /proc's complete subtree, then add only per-mount read-only flags.
+    def mounts():
+        result = {}
+        for line in Path('/proc/self/mountinfo').read_text().splitlines():
+            fields = line.split()
+            path = Path(re.sub(r'\\([0-7]{3})', lambda m: chr(int(m[1], 8)), fields[4]))
+            result[int(fields[0])] = (path, fields[5])
+        return result
+
+    assert os.uname().machine == 'x86_64', 'mount_setattr syscall number is pinned to the X64 host'
+    assert target.is_absolute() and target.resolve(strict=True) == target and target.name == 'proc'
+    before = mounts()
+    source = {key: row for key, row in before.items() if row[0].is_relative_to('/proc')}
+    command('/usr/bin/mount', '--rbind', '/proc', target)
+    clones = {key for key, row in mounts().items()
+              if key not in before and row[0].is_relative_to(target)}
+    assert clones, 'recursive proc bind created no private mounts'
+
+    class MountAttr(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_uint64) for name in ('attr_set', 'attr_clr', 'propagation', 'userns_fd')]
+
+    attributes = MountAttr(1, 0, 0, 0)  # MOUNT_ATTR_RDONLY; never clear inherited restrictions.
+    assert ctypes.sizeof(attributes) == 32
+    fd = os.open(target, os.O_PATH | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        library = ctypes.CDLL(None, use_errno=True)
+        library.syscall.restype = ctypes.c_long
+        # X64 __NR_mount_setattr=442, AT_EMPTY_PATH=0x1000, AT_RECURSIVE=0x8000.
+        if library.syscall(ctypes.c_long(442), ctypes.c_int(fd), ctypes.c_char_p(b''),
+                           ctypes.c_uint(0x9000), ctypes.byref(attributes), ctypes.c_size_t(32)):
+            error = ctypes.get_errno()
+            raise OSError(error, 'recursive private proc read-only: '+os.strerror(error))
+    finally:
+        os.close(fd)
+    after = mounts()
+    assert {key: row for key, row in after.items() if row[0].is_relative_to('/proc')} == source
+    assert all(key in after and 'ro' in after[key][1].split(',') for key in clones)
+    print(json.dumps(dict(private_proc_mounts_readonly=len(clones), source_proc_mounts_unchanged=True)),
+          file=sys.stderr, flush=True)
+
+
 def handlers():
     root = Path('/proc/sys/fs/binfmt_misc')
     return {p.name: p.read_text() for p in root.iterdir() if p.name != 'register'}
@@ -210,8 +253,7 @@ def child(uid, gid, work, factory, ready, go, expected_userns, group, group_inod
     write(memory/'cgroup.subtree_control', '+memory')
     for name in ('dev', 'proc', 'sys'):
         command('/usr/bin/mount', '-t', 'tmpfs', 'tmpfs', factory/name)
-    command('/usr/bin/mount', '--bind', '/proc', factory/'proc')
-    command('/usr/bin/mount', '-o', 'remount,bind,ro', factory/'proc')
+    readonly_proc_tree(factory/'proc')
     for name in ('null', 'zero', 'random', 'urandom'):
         target = factory/'dev'/name
         target.touch()
