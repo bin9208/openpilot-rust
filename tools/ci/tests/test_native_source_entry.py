@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 from types import SimpleNamespace
 import unittest
 from unittest import mock
@@ -15,6 +16,10 @@ _SPEC = importlib.util.spec_from_file_location('owned_source_entry', Path(__file
 entry = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(entry)
 runtime, seed = entry.runtime, entry.seed
+_FULL_SPEC = importlib.util.spec_from_file_location('owned_full_source_entry',
+    Path(__file__).resolve().parents[1]/'verify_native_source_entry.py')
+full_entry = importlib.util.module_from_spec(_FULL_SPEC)
+_FULL_SPEC.loader.exec_module(full_entry)
 
 
 class Fixture:
@@ -268,6 +273,151 @@ class SourceEntryTests(unittest.TestCase):
       changed['updater_staging'] = str(Path(changed['stores']['generations'])/'updater')
       with self.assertRaisesRegex(ValueError, 'separate real stores'):
         entry.validate_machine(changed, staged)
+
+
+class PublicSourceReuseTests(unittest.TestCase):
+  """Receipt rejection and real owned Git derivation; no native builds or providers."""
+
+  def build_receipt(self):
+    binaries = {f'owned-{n}': dict(sha256=f'{n:064x}', bytes=n+1, mode=0o555) for n in range(98)}
+    binaries['openpilot-loggerd'] = dict(sha256='f'*64, bytes=100, mode=0o555)
+    groups = {f'{n:02d}': dict(artifacts=[], cache_key='owned-cache', target_directory='/owned/target',
+        recipe_sha256='a'*64, rustc_sha256='b'*64, cargo_sha256='c'*64,
+        toolchain_directory='/owned/toolchain', native_tools={}, verified_input_trees={}) for n in range(13)}
+    for n, name in enumerate(binaries):
+      group = '07' if name == 'openpilot-loggerd' else f'{n % 13:02d}'
+      groups[group]['artifacts'].append(dict(executable='/owned/'+name, fresh=True, **binaries[name]))
+    return dict(groups=groups, binaries=binaries, stored_output_bytes=0)
+
+  def test_same_source_and_docs_require_every_binary_fresh_and_identical(self):
+    before = self.build_receipt()
+    for phase in ('reused', 'launch-package', 'docs-only'):
+      self.assertEqual(full_entry.verify_reuse(before, copy.deepcopy(before), phase), [])
+      rebuilt = copy.deepcopy(before)
+      rebuilt['groups']['04']['artifacts'][0]['fresh'] = False
+      with self.assertRaisesRegex(AssertionError, 'rebuilt groups'):
+        full_entry.verify_reuse(before, rebuilt, phase)
+      corrupted = copy.deepcopy(before)
+      corrupted['binaries']['owned-0']['sha256'] = 'c'*64
+      with self.assertRaisesRegex(AssertionError, 'binary change'):
+        full_entry.verify_reuse(before, corrupted, phase)
+      rekeyed = copy.deepcopy(before)
+      rekeyed['groups']['04']['cache_key'] = 'different-cache'
+      with self.assertRaisesRegex(AssertionError, 'cache/input identity'):
+        full_entry.verify_reuse(before, rekeyed, phase)
+    missing = copy.deepcopy(before)
+    del missing['groups']['12']
+    with self.assertRaises(AssertionError):
+      full_entry.verify_reuse(before, missing, 'docs-only')
+
+  def test_small_logger_requires_exact_group07_and_only_actual_logger_object_change(self):
+    before = self.build_receipt()
+    after = copy.deepcopy(before)
+    logger = next(a for a in after['groups']['07']['artifacts']
+                  if Path(a['executable']).name == 'openpilot-loggerd')
+    logger['fresh'] = False
+    with self.assertRaisesRegex(AssertionError, 'binary change'):
+      full_entry.verify_reuse(before, after, 'small-logger')
+    after['binaries']['openpilot-loggerd']['sha256'] = 'c'*64
+    self.assertEqual(full_entry.verify_reuse(before, after, 'small-logger'), ['07'])
+    after['binaries']['owned-7']['sha256'] = 'd'*64
+    with self.assertRaisesRegex(AssertionError, 'binary change'):
+      full_entry.verify_reuse(before, after, 'small-logger')
+    del after['binaries']['owned-7']
+    with self.assertRaises(AssertionError):
+      full_entry.verify_reuse(before, after, 'small-logger')
+
+  def test_asset_aggregate_is_not_counted_again_and_missing_or_invalid_counters_fail(self):
+    row = dict(models=dict(transferred_bytes=7, model_assets={'raw': dict(transferred_bytes=7)}),
+               seed=dict(transferred_bytes=dict(helper=2, notices=1)))
+    self.assertEqual(sum(full_entry.transfer_counts(row).values()), 10)
+    for row in ({'bytes': 1}, {'transferred_bytes': {}}, {'transferred_bytes': True},
+                {'transferred_bytes': -1}, {'transferred_bytes': '0'}):
+      with self.assertRaises(AssertionError):
+        full_entry.transfer_counts(row)
+
+  def test_warm_asset_zero_cannot_hide_a_metadata_download_or_different_pins(self):
+    before = dict(input_index_sha256='a'*64, machine_configuration_sha256='b'*64,
+                  sealed_build=self.build_receipt())
+    after = dict(copy.deepcopy(before), large_asset_transferred_bytes=0,
+                 metadata_transferred_bytes={'seed': 0})
+    full_entry.verify_warm_reuse(before, after, 'docs-only')
+    for field, value in (('large_asset_transferred_bytes', 1),
+                         ('metadata_transferred_bytes', {'seed': 1}),
+                         ('input_index_sha256', 'c'*64),
+                         ('machine_configuration_sha256', 'd'*64)):
+      changed = dict(after, **{field: value})
+      with self.assertRaises(AssertionError):
+        full_entry.verify_warm_reuse(before, changed, 'docs-only')
+
+  def test_derived_commits_are_clean_separate_sources_preserving_the_original_index(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = Fixture(Path(temp))
+      (f.source/'README.md').write_text('Owned base documentation.\n')
+      logger = f.source/'rust/crates/loggerd/src/main.rs'
+      logger.parent.mkdir(parents=True)
+      logger.write_text(full_entry.LOGGER_HELP+'\n')
+      f.commit()
+      original = runtime.source_identity(f.source)
+      index, pin = entry.input_index(f.source)
+      request = dict(source=original, index_sha256=pin,
+                     estimates=dict(expected_source_growth_bytes=1, minimum_free_bytes=1))
+      derived = f.root/'derived-source'
+      deadline_ns = time.monotonic_ns()+60_000_000_000
+      with self.assertRaises(AssertionError):
+        full_entry.derive_source(entry, f.source, f.source, 'small-logger', request, deadline_ns)
+      docs = full_entry.derive_source(entry, f.source, derived, 'docs-only', request, deadline_ns)
+      self.assertEqual(docs['parent_source'], original)
+      self.assertNotEqual(docs['source'], original)
+      entry.validate_machine(f.machine, derived)
+      small = full_entry.derive_source(entry, f.source, derived, 'small-logger', request, deadline_ns)
+      self.assertEqual(small['parent_source'], docs['source'])
+      self.assertNotEqual(small['source'], original)
+      self.assertEqual(runtime.source_identity(derived), small['source'])
+      self.assertEqual(runtime.source_identity(f.source), original)
+      self.assertEqual(entry.input_index(derived), (index, pin))
+      self.assertEqual(logger.read_text(), full_entry.LOGGER_HELP+'\n')
+      self.assertIn(full_entry.REUSE_LOGGER_HELP, (derived/'rust/crates/loggerd/src/main.rs').read_text())
+      # The original pin is retained, rather than relabeling derived results as P.
+      (derived/'README.md').write_text('uncommitted change')
+      with self.assertRaises(ValueError):
+        full_entry.derive_source(entry, f.source, derived, 'small-logger', request, deadline_ns)
+
+  def test_deadline_is_not_reset_for_derived_git_commands(self):
+    with mock.patch.object(full_entry.subprocess, 'run') as run:
+      with self.assertRaises(TimeoutError):
+        full_entry.reuse_git(entry, time.monotonic_ns()-1, 'status')
+      run.assert_not_called()
+
+  def test_resource_receipt_requires_its_real_source_policy_and_successful_kernel_limits(self):
+    with tempfile.TemporaryDirectory() as temp:
+      parent = Path(temp)
+      attempt = parent/'attempt-owned'
+      attempt.mkdir()
+      path = attempt/'resources.jsonl'
+      source = dict(commit='a'*40, tree='b'*40)
+      budget = dict(maximum_growth_bytes=10, minimum_free_bytes=20)
+      policy = dict(maximum_memory_bytes=100, filesystems={str(parent): budget})
+      row = dict(state='success', elapsed_ms=3, policy=policy,
+          context=dict(requested_source=source, configuration_sha256='c'*64),
+          memory=dict(kernel_peak_bytes=50, limit_events=0),
+          filesystems=[dict(budget=budget, observed_peak_growth_bytes=5, minimum_available_bytes=25)])
+      def write(value):
+        path.write_text(json.dumps(dict(state='admitted'))+'\n'+json.dumps(value)+'\n')
+      write(row)
+      result = full_entry.resource_receipt(entry, attempt, parent, source, 'c'*64, policy)
+      self.assertEqual(result['sha256'], full_entry.checksum(path))
+      for changes in (dict(state='failure'), dict(context=dict(row['context'], requested_source=dict(source, tree='d'*40))),
+                      dict(memory=dict(kernel_peak_bytes=50, limit_events=1)),
+                      dict(memory=dict(kernel_peak_bytes=101, limit_events=0)),
+                      dict(filesystems=[dict(row['filesystems'][0], minimum_available_bytes=19)]),
+                      dict(filesystems=[dict(row['filesystems'][0], observed_peak_growth_bytes=11)])):
+        write(dict(row, **changes))
+        with self.assertRaises(AssertionError):
+          full_entry.resource_receipt(entry, attempt, parent, source, 'c'*64, policy)
+      write(row)
+      with self.assertRaises(AssertionError):
+        full_entry.resource_receipt(entry, attempt, parent, source, 'e'*64, policy)
 
 
 if __name__ == '__main__':

@@ -39,12 +39,19 @@ bind한다. 실제 CLI로 다음을 실행한다.
    launcher의 data/params와 일치시킨다. 최초 startup record가 없으면 이 호출에서
    원래 production 정책대로 한 번 더 build 요청 후 startup record를 보존한다.
    generation ID는 seal에 포함되는 요청별 증거 때문에 같다고 가정하지 않는다.
+4. `/native/state/reuse-source`에 원본 P의 owned Git clone을 만들고 `README.md`만
+   바꾼 실제 docs-only commit을 생성한다. 공개 index bytes와 원본 P는 그대로 두고,
+   derived checkout의 CLI로 같은 state/cache/machine SHA의 전체 build/seal을 실행한다.
+5. 같은 owned checkout에서 logger `--help` 문자열만 바꾼 실제 후속 commit을 만든다.
+   그 source의 CLI 전체 경로를 실행하고 sealed logger의 실제 `--help` 결과도 확인한다.
+   원본 readonly mount는 수정하지 않으며 derived SHA/tree를 P라고 재표기하지 않는다.
 
 `--verify-package`는 원래 launcher의 패키지 검증 후 manager 시작 전에 반환한다.
 따라서 manager 정상 부팅, hardware/model/녹화/업로드, 실제 AGNOS kernel/ARM CPU,
-update/recovery 및 docs/작은 변경 재사용은 이 driver가 검증했다고 표시하지 않는다.
+update/recovery는 이 driver가 검증했다고 표시하지 않는다. docs/작은 변경 재사용은
+아래 실제 receipt 대조까지 성공한 실행에서만 표시한다. 현재 Actions 실행 증거는 없다.
 정상 startup의 20초 deadline과 정책은 바꾸지 않는다. `build_timeout_seconds`는
-factory admission과 최초/반복/launch 세 실행을 모두 합친 **단일 payload 예산**이며
+factory admission과 최초/반복/launch/docs/logger 다섯 실행, Git 준비와 receipt 검사를 합친 **단일 payload 예산**이며
 startup deadline이 아니다. root watchdog이 같은 host kernel의 절대 monotonic deadline을
 전달하고, admission과 각 CLI는 매번 그 deadline의 남은 시간만 사용한다. deadline
 이후의 정상 exit도 성공으로 받지 않는다. image 준비는 이 payload 예산 앞에 있다.
@@ -63,7 +70,7 @@ helper SHA 필드가 없으므로 이를 만들어 읽지 않는다. 원래 CLI�
 launch는 새로 남긴 production 전체 build result를 찾아 세 receipt를 동일하게 검사하고,
 startup record의 generation/configuration/path·SHA와 그 launch build를 연결한다.
 
-최초/반복/launch와 receipt 대조가 모두 성공하면 `execution-summary.json`에 실행 범위만
+다섯 실행과 receipt 대조가 모두 성공하면 `execution-summary.json`에 실행 범위만
 기록하고 `cleanup_verified=False`를 유지한다. root watchdog은 `cleanup.json`에 자기
 cgroup 경로/inode와 제거 및 공유 binfmt/controller 불변 증거를 별도로 남긴다. 바깥 job
 scope의 기존 workflow cleanup은 별도 단계임도 표시한다. 실행과 cleanup 모두
@@ -82,12 +89,14 @@ dispatch의 `operation_estimates_json`에는 다음 필드가 모두 필요하�
 - `maximum_growth_bytes`, `minimum_free_bytes`
 - `expected_source_growth_bytes`, `expected_compile_growth_bytes`
 - `remaining_object_growth_bytes`, `compiler_growth_bytes`
-- `build_timeout_seconds` (120..18000; admission과 세 실행 전체 예산, cleanup60초 별도)
+- `build_timeout_seconds` (120..18000; admission과 다섯 실행 전체 예산, cleanup60초 별도)
 - `budgets`: production의 schema1, 현재 catalog의 모든 group별
   `group_growth_bytes`, `expected_source_growth_bytes`, `remaining_object_growth_bytes`,
   `estimate_basis`
 
-image 압축본/sparse/raw/추출본과 도구, 위 전체 build 증가량·여유를 사전 확인한다.
+image 압축본/sparse/raw/추출본과 도구, owned clone 및 두 추가 source의 보존·seal까지
+위 전체 증가량·여유에 포함해 사전 확인한다. clone 전에도 명시적인
+`expected_source_growth_bytes + minimum_free_bytes`를 요구하며 예산을 자동 확대하지 않는다.
 각 production gate는 자체 원래 resource policy를 계속 검사한다. root setup은 job의
 실제 소유/inode/lease를 확인한다. 마지막에는 자기 cgroup만 kill/rmdir하고 artifact를
 올린 뒤 기존 job-temp cleanup을 사용한다. 다른 process/cache/worktree는 삭제하지 않는다.
@@ -95,9 +104,61 @@ image 압축본/sparse/raw/추출본과 도구, 위 전체 build 증가량·여�
 Genuine API 검사에서 사용하는 `native-complete-cargo-cache`를 이름만 바꿔 연결하지
 않는다. source/target/툴체인/provider 절대 경로와 build recipe identity가 같다는 증거가
 없기 때문이다. 이번 driver는 job 간 Cargo cache를 복원하지 않는다. 같은 namespace의
-동일 production cache 경로에서 반복 실행했다는 사실만 기록하며, origin 전송0 또는
-전체 후보 재다운로드 제거 성공을 추론하지 않는다. 전체 재사용 수용에는 정확한
-다운로드/compile receipt 비교와 docs/작은 수정 실행이 추가로 필요하다.
+동일 production cache 경로를 사용하며 아래 실제 전송/compile receipt를 대조한다.
+동일 경로라는 사실만으로 전송0이나 재사용 성공을 추론하지 않는다.
+
+## 2026-10-30 공개 pin의 docs-only / logger 변경 연결 검증 준비
+
+이 변경은 `tools/ci/verify_native_source_entry.py`와 기존 회귀 파일,
+이 문서에 한정한다. runtime/library/build 코드·inputs/catalog/gates/workflow는
+변경하지 않는다. 진행 중 E416/ce20 CI는 부모가 담당하며 재시작하지 않는다.
+
+- Git clone/commit은 factory UID1000의 writable owned state에서 실제 생성한다.
+  Git hook/signing/LFS smudge를 끄고 로컬 원본 objects를 읽어 사용한다. origin은 원래
+  저장소 URL로 설정한다. 매 commit의 실제 parent·tree·변경 경로 한 개·clean 상태와
+  index Git blob을 대조하고, 매 phase 뒤 원본 P 및 machine/startup bytes 불변도 확인한다.
+  index나 provider를 임의로 생성하지 않으며 원래 source identity 검사를 우회하지 않는다.
+- 각 phase의 세 sudo 경로가 남긴 `seed-current-tools`, `prepared-inputs`,
+  `built-generation`을 실제 source/config/helper SHA와 결합한다. 입력 결과의 해시 목록으로
+  `operations.json`을 검증하고, sealed generation ID/descriptor·source·protocol·ABI와
+  현재 catalog의 99 binaries/13 groups, 실제 immutable object bytes를 확인한다.
+- repeated/launch/docs는 전 group fresh, 99개 object 동일, 새 binary 저장0을 요구한다.
+  각 group의 cache key/target 경로·recipe·Rust/Cargo/toolchain·검증한 입력 tree도 동일해야 한다.
+  작은 logger 변경은 정확히 group `07`만 rebuild하고 logger object만 달라야 한다.
+  같은 group의 나머지 binary도 동일해야 하며, 새 sealed logger의 `--help`에 변경한
+  문자열이 실제로 나와야 한다. 변경 source의 새 tools build는 그 source provenance로
+  기록하며 이전 bundle의 검증된 origin이 재사용될 수 있음을 별도로 남긴다.
+- seed helper/notices, 두 bootstrap의 Rust/Cargo, capnp/codecs/raylib/15 provider,
+  FFmpeg/OpenCV headers+provider, Python 준비, model+wheel 환경, source LFS/eGPU model의
+  기존 `transferred_bytes` receipt를 읽는다. model처럼 이미 합산한 값은 자식과 중복 합산하지
+  않는다. provider의 원래 전체 runtime archive 다운로드도 false여야 한다.
+  **17 metadata body의 전송량은 이 큰 입력 전송량과 별도 필드**다. warm phase는 두 값이
+  각각0인 경우만 통과하며, 필드 누락이나 bool/음수 counter를0으로 추정하지 않는다.
+- phase별 `cli_elapsed_ms`는 CLI 전체 호출의 실제 경과 시간이며, production의
+  `elapsed_ms`도 별도로 남긴다. 세 worker의 실제 `resources.jsonl` 최종 success를
+  source/config/policy SHA에 결합하고 kernel peak·limit events0·관측 disk 증가량 및
+  최소 free를 확인한다. 이 값은 **각 private worker cgroup 범위**이며 전체 CLI/clone을
+  합친 동시 memory peak라고 표현하지 않는다. filesystem 수치도 기존 정책대로
+  동시 writer를 포함한 관측 free-space 감소이지 hard quota가 아니다.
+- `state/{initial,reused,launch-package,docs-only,small-logger}-proof.json`과
+  `state/{docs-only,small-logger}-source.json`에 실제 receipt·생성 신원을 보존한다.
+  기존 `state/*.json` 및 resource JSONL artifact 경로를 그대로 사용한다.
+  summary의 `warm_zero_download_claimed`, `docs_and_small_change_reuse_tested`는
+  위 검사를 모두 마친 뒤에만 true이며, 최종 성공 result는 원래 cleanup 검증 뒤에만 생성한다.
+
+필드 계약은 기존 `bootstrap_tools.rs`의 `resource_evidence/preparations/runtime_inputs.files`,
+`native_runtime_inputs.py`의 해시된 `operations.json`, `generation.rs`의
+`prepared.reports/binaries/abi_report`, `resources.rs`의 최종 journal이다. native build
+receipt에는 helper SHA 필드가 없으므로 새 필드를 가정하지 않고 검증한 tool bundle의 실제
+scope helper SHA에 원래 호출을 결합한다. 다른 필드가 실제 실행에서 없거나 계약이 바뀌면
+해당 경로에서 실패하고 최종 성공/true summary를 만들지 않는다. 새로운 receipt 필드나
+기능을 runtime에 추가해 통과시키지 않는다.
+
+기존 테스트 파일에 실제 owned Git 두 commit/원본 보존, counter 누락·metadata/asset 구분,
+무관 group rebuild·같은 group 무관 binary 변경, resource source/pin/limit 불일치 및
+공유 deadline 만료의 거부 회귀를 작성했다. **로컬에서는 AST와 diff만 확인하며 이 회귀를
+실행하지 않는다.** 공개 index·작업 예산·실제 factory admission과 이후 Actions 성공은
+아직 필요하다. manager/기기/model 실행·녹화/upload·update/recovery 수용을 주장하지 않는다.
 
 ## 최소 공유 helper 확장 제안 / 미확정 blocker
 
