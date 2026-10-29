@@ -1,5 +1,9 @@
 # ARM 태블릿 AGNOS 빌드 비교 (#643)
 
+사용자의2026-10-30 KST 지시로 태블릿 사용을 중단했다. 실행40937256101과 대기 중인
+40940667812 모두 취소 완료했다. 이후 작업은
+[GitHub 제공 ARM 비교](hosted-arm-agnos-643.md)로 변경하며 기존 x86 기록만 사용한다.
+
 2026-10-30 KST 사용자 요청으로 `bin-Arm-tablet`(runner ID25)에 공통
 `openpilot-rust` 라벨을 추가하고 API로 확인했다. 등록 라벨은 `self-hosted`,
 `Linux`, `ARM64`, `openpilot-rust`다. ARM 작업의 선택자는
