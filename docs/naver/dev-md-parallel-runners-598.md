@@ -392,3 +392,36 @@ UV 부족·겹침·overflow 거부 단언은 원문 그대로 유지한다.
 읽기로만 대조했다. 변경 Rust 파일의 Rustfmt 및 기준61df 대비 diff 검사를 통과했고,
 runtime 소스와 frozen support 파일에 차이가 없음을 확인했다. 실제 ARM/X64 결과는
 새 정확 source의 Actions에서 확인한다. push·CI dispatch/cancel은 부모가 담당한다.
+
+## 2026-10-30 — Webcam X64 source oracle의 선택 Python loader 보존
+
+시작 시 전용 perf checkout과 원격 PR #494의 head가 모두
+`90e2f5e58e16c69d217c0da88ba8acb7a2f93038`이며 PR base가 `dev-md`임을 확인했다.
+[40922150657/job123623233132](https://github.com/bin9208/openpilot-rust/actions/runs/40922150657/job/123623233132)는
+`bin-actions3`에서 2026-10-29 21:15:48 UTC에 실패 종료했다.
+완료된 job 로그155,961bytes를 전용 scratch
+`.analysis/scratch/2026-10-30-598-perf-webcam/90e-webcam-job123623233132.log`에 보존했다.
+
+실제 실패는 비교 step12의 첫 `webcam_camera_compare.py:12`에서
+`ModuleNotFoundError: No module named 'av'`다. pixel/frames/IPC/lifecycle 비교 전에
+source oracle import에서 중단됐으므로 픽셀 불일치나 runtime 기능 결함으로 분류하지 않는다.
+같은 로그628행은 `av==16.1.0`이 setup-python3.12.14의 x64 site-packages에 이미 있다고
+기록한다. provider/IPC 준비 시693행에는 그 Python의 `lib`가 `LD_LIBRARY_PATH`에 있지만,
+workflow의 GITHUB_ENV 덮어쓰기 뒤927/1204행에는 OpenCV provider lib만 남는다.
+현재 source의 해당 printf와 실제 로그의 명령이 같아 선택 Python library 경로 손실을
+확정했다. 실패 process의 실제 loader mapping/sys.path는 원래 로그에 없으므로
+어느 대체 libpython을 로드했는지나 이 수정의 실제 성공은 아직 단정하지 않는다.
+
+같은 source-oracle 환경 문제에 적용돼 있던 main의 좁은 CI 단계만 dev-md workflow에
+추가한다. `LOCAL_CI_ARCH != aarch64`일 때 setup-python의 `pythonLocation/lib`를
+현재 provider library 경로 앞에 보존하고, 그 명시 interpreter의 `av` import·실행 경로·
+버전·av 버전을 기록한 뒤 후속 단계에도 같은 loader 경로를 넘긴다.
+main runtime·다른 common/캐시 branch·공통 shell helper를 가져오지 않는다.
+ARM 행과 원래 dependency pins/requirements·provider source SHA·모든 기존 run body,
+픽셀/프레임/IPC/lifecycle/timeout·정확 비교·최종 source gate는 그대로 유지한다.
+
+로컬은 YAML/추가 inline Python AST·Bash 구문·diff만 검사한다. 새 단계 하나를 제거한
+전체 workflow 구조가 기준90e와 같은지 정적으로 대조한다. 기능·build·test 실행이나
+캐시/다른 CI 정리·push·dispatch/cancel·원격 글은 하지 않는다. 기존90e의 성공 결과를
+수정 source의 성공으로 바꾸지 않으며, 실제 비교 통과는 다음 정확 source의 Actions에서
+확인해야 한다. 이 perf 실패를 #598 전체 완료나 실기 수용 완료로 표시하지 않는다.
