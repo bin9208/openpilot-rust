@@ -254,7 +254,7 @@ impl NativeInputs {
                 }
                 if role != Kind::Cargo {
                     let root = &self.inputs[&role].root;
-                    let path = if suffix.is_empty() {
+                    let path = if suffix.as_os_str().is_empty() {
                         root.clone()
                     } else {
                         root.join(suffix)

@@ -287,6 +287,27 @@ jobs:
       - name: Compare exact policies, main loops, real IPC and lifecycle
         run: |
           python -P rust/tools/check_plannerd_ci.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-artifact" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --output "$RUNNER_TEMP/planner-comparison"
+      - name: Capture the actual instruction and library after a planner SIGILL
+        if: failure() && env.LOCAL_CI_ARCH != 'aarch64'
+        run: |
+          if python - <<'PY'
+          import json, os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP'])/'planner-comparison/commands.json'
+          rows = json.loads(path.read_text()) if path.exists() else []
+          raise SystemExit(0 if any(row['name'] == 'abi' and row['returncode'] == -4 for row in rows) else 1)
+          PY
+          then
+            sudo apt-get install -y gdb
+            lscpu > "$RUNNER_TEMP/planner-sigill-cpu.txt"
+            gdb --batch -ex run -ex 'info registers' -ex 'x/16i $pc-16' \
+              -ex 'info sharedlibrary' -ex 'thread apply all bt' --args \
+              "$(command -v python)" -u -P rust/tools/plannerd_acados_source.py \
+              --baseline "$RUNNER_TEMP/planner-source" --artifact "$RUNNER_TEMP/planner-artifact" \
+              --trace "$GITHUB_WORKSPACE/rust/target/debug/examples/plannerd_solver_trace" \
+              --evidence "$RUNNER_TEMP/planner-sigill-abi" \
+              > "$RUNNER_TEMP/planner-sigill.txt" 2>&1
+          fi
       - name: Check generated C with ASan, UBSan and allocator leak detection
         if: matrix.runner == 'ubuntu-24.04'
         run: |
@@ -299,6 +320,7 @@ jobs:
           path: |
             ${{ env.CI_JOB_TEMP }}/planner-comparison/
             ${{ env.CI_JOB_TEMP }}/planner-native-memory/
+            ${{ env.CI_JOB_TEMP }}/planner-sigill*
             ${{ env.CI_JOB_TEMP }}/planner-artifact/
             ${{ env.CI_JOB_TEMP }}/planner-source/
             ${{ env.CI_JOB_TEMP }}/planner-sanitized/

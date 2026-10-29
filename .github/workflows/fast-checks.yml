@@ -33,6 +33,16 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python tools/ci/check_changed_files.py
+      - name: Type-check the shared runtime build driver with the pinned compiler
+        run: |
+          free_bytes=$(df --output=avail -B1 "$CI_JOB_TEMP" | tail -n 1)
+          (( free_bytes >= 1024 * 1024 * 1024 )) || {
+            echo 'Insufficient capacity for estimated runtime build type-check growth (1 GiB).' >&2
+            exit 1
+          }
+          rustup toolchain install 1.94.0 --profile minimal
+          CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 check \
+            --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets
       - name: Check CI routing and upstream synchronization guards
         run: |
           python -m unittest discover -s tools/ci/tests -v

@@ -103,3 +103,10 @@ ARM source/compile/API/ELF 보고서와 commands log다. 로컬에서는 Rustfmt
 전체 provider/data/model/Python 준비·생성 MPC·Layout·99개 native build/seal/default update/
 정상 start/record/upload/복구·실측 자원/성능·정확 PR/병합 후 검사와 사용자 comma3X 수용은
 계속 남아 있다. 실행 자산 일부의 준비가 전체 runtime 완료를 뜻하지 않는다.
+
+## 2026-10-29 초기 소비 경로 실패 (#621)
+
+genuine40691750328/job122844676184에서 numerics export 뒤 nested cache/store 부모 누락으로
+첫 consume이 ENOENT 종료됐다. Actions 전용 준비기가 work 안의 두 부모를 명시적으로
+생성한다. 공통 provider의 단일 leaf 생성과 전체 경로/hash/mode 검증을 유지한다.
+정확 수정 소스의 초기·반복·실제 AGNOS API 성공은 아직 확인 전이다.

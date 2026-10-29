@@ -415,3 +415,25 @@ runtime 빌드나 사용자 기기 시험 준비 완료로 판정하지 않는�
 검증된 완전한 후보 및 테스트 절차 제공을 마친 뒤 닫고 사용자 기기 테스트로 넘긴다.
 실제 자체 빌드·정상 부팅·기록·업로드와 성능 수용은 기존 #528에서 별도로 기록한다.
 #598의 개발 완료나 CI 성공을 실제 기기 수용으로 대신 체크하지 않는다.
+
+## 2026-10-29 실패 묶음과 후속 검증
+
+`b0d1d9f2efe0fa6a11abf877ce3ac35999899b75`의 fast·integration은 성공했지만 foundation,
+genuine, kernel, docs와 여러 runtime job은 같은 `path_is_empty` E0658로 실패했다.
+`PathBuf` suffix에 stable `as_os_str().is_empty()`를 사용하고 fast에 Rust1.94.0의
+runtime-build 전체 target 타입 검사를 추가한다(#619). 기존 필수 명령은 유지한다.
+ARM 소유권 fixture의 자식은 최소 환경에서 실행 가능한 `/usr/bin/python3 -I -B -S`를
+사용한다. 부모 oracle의 `/opt` Python loader를 production 격리 환경에 섞지 않는다(#618).
+
+구소스 genuine40691750328은 이미 실패 종료됐으며 취소할 실행은 없었다. 그 실패의
+companion 부모 디렉터리 누락은 Actions 소유 work에서 고친다(#621).
+Planner X6440703120388/job122883492732의 SIGILL은 원인 미확정이며 실제 PC/CPU/역추적을
+실패 artifact에 추가한다(#622). ARM/job122883492855는 원본·Rust 각2회/121메시지의
+출력이 같지만 유효 게시0으로 실패했다. model_done 간격 평균135.45/77.54ms를 확인했고
+동일 fixture 입력의 생성·직렬화를 timed 전송 앞에 옮긴다. 기존40입력/주기/bit 비교와
+유효 게시/trigger/overlay 필수 기준은 유지한다. planner helper에 남은 고정25GiB만
+제거하고 기존128/512MiB operation 예상 증가량을 유지한다(#558).
+
+사용자는 이 작업의 구소스 검사 취소와 최신 수정본 우선 검증을 승인했다. 다른 세션과
+최신 source 검사는 보존한다. 자동화598은 삭제됐으며 새 주기 프롬프트를 만들지 않는다.
+이 수정의 기능 성공·필수 gate 통과·완전 후보 준비는 아직 확인 전이다.

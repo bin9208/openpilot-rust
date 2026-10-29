@@ -22,6 +22,9 @@ def main():
   work = args.work.resolve()
   exports = work/'native-companion-exports'
   exports.mkdir()
+  # Each component owns a leaf; the provider deliberately requires a real parent.
+  (work/'native-companion-components').mkdir()
+  (work/'native-companion-prefixes').mkdir()
   summaries = {}
   runtime_inputs = dict(files={}, trees={})
 

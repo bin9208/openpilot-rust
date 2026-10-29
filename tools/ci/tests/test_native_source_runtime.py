@@ -148,7 +148,8 @@ class SourceRuntimeTests(unittest.TestCase):
         runner = driver.OwnedCommands(seed.owner_chain(seed.process_identity(owner.pid)))
         killer.start()
         with self.assertRaises((ValueError, OSError)):
-          runner.run([sys.executable, '-c',
+          # The isolated production command cannot inherit the /opt oracle's loader.
+          runner.run(['/usr/bin/python3', '-I', '-B', '-S', '-c',
               'import os,pathlib,sys,time; p=pathlib.Path(sys.argv[1]); t=p.with_suffix(".pending"); t.write_text(str(os.getpid())); t.replace(p); time.sleep(60)', str(ready)],
               env=seed.ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
         killer.join(timeout=12)
@@ -160,7 +161,7 @@ class SourceRuntimeTests(unittest.TestCase):
           seed.process_identity(pid)
         runner = driver.OwnedCommands(seed.owner_chain())
         with self.assertRaisesRegex(ValueError, '4 MiB'):
-          runner.run([sys.executable, '-c', 'import sys; sys.stdout.buffer.write(b"x"*(5*1024**2))'],
+          runner.run(['/usr/bin/python3', '-I', '-B', '-S', '-c', 'import sys; sys.stdout.buffer.write(b"x"*(5*1024**2))'],
               env=seed.ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
         self.assertIsNone(normal.poll())
       finally:
@@ -180,7 +181,7 @@ class SourceRuntimeTests(unittest.TestCase):
               't=p.with_suffix(".pending"); t.write_text(str(os.getpid())); t.replace(p); time.sleep(60)')
       code = ('import sys,subprocess; sys.path.insert(0,sys.argv[1]); '
               'import source_runtime as d; import bootstrap_seed as s; '
-              'd.OwnedCommands(s.owner_chain()).run([sys.executable,"-c",sys.argv[3],sys.argv[2]],'
+              'd.OwnedCommands(s.owner_chain()).run(["/usr/bin/python3","-I","-B","-S","-c",sys.argv[3],sys.argv[2]],'
               'env=s.ENV,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True)')
       parent = subprocess.Popen([sys.executable, '-c', code, native, str(ready), body])
       identity = None
