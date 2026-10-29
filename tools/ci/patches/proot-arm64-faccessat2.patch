@@ -1,0 +1,10 @@
+diff --git a/src/syscall/sysnums-arm64.h b/src/syscall/sysnums-arm64.h
+--- a/src/syscall/sysnums-arm64.h
++++ b/src/syscall/sysnums-arm64.h
+@@ -265,5 +265,6 @@
+     [276] = PR_renameat2,
+     [291] = PR_statx,
+     [435] = PR_clone3,
++    [439] = PR_faccessat2,
+     [452] = PR_fchmodat2,
+ };

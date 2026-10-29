@@ -94,3 +94,36 @@ generic ARM, logger 재사용, QCOM, factory transport/source-entry의 배정을
 workspace 수용 조건에 연결한다. factory 검증은 원래 comma uid/gid1000과 이미지
 sudo·실제 cgroup 검증을 유지하도록 private user namespace의 ID mapping을 조정한다.
 아직 push/적용하거나 기능 실행하지 않았으며, 로컬 문법·서식·diff 검토만 수행했다.
+
+### 첫 전체 실행의 실패와 native PRoot 수정
+
+첫 실행40947309362는 준비부터 원본 증거 업로드까지7714.026초를 기록하고 실패했다.
+호스트 준비는 job 시작부터 AGNOS 내부 단계 시작까지1시간55분42초였으며,
+기존 x86의49분37초보다 길었다. AGNOS 내부 단계는752.699초 진행됐으나 seed export의
+`ldd` 검사에서 종료돼 전체99개 바이너리 빌드 성공으로 취급하지 않는다.
+
+기존 동일 기준 소스의 완료 명령과59개를 대응시킨 합산 시간은 QEMU3009.542초,
+ARM523.747초였다. 이 공통 부분은 약5.75배 단축됐으며, 빌드 도구 첫 컴파일은
+217.964초 대22.446초였다. 전체 준비·전체 빌드 완료 시간의 비교나 전체5.75배 개선으로
+확대하지 않는다. 최초 이미지1010655092bytes와 eGPU 모델776634338bytes를 전송했고
+같은 입력의 반복 전송은0이었다. 캐시와 네트워크 조건도 구분한다.
+
+별도 짧은 진단 [40966055910](https://github.com/bin9208/openpilot-rust/actions/runs/40966055910)은
+같은 f62 소스에서 만든 seed의 실행과 기본 loader 검사는 통과하지만, PRoot 안에서
+`ldd`의 `test -r`만 실패하고 실제 chroot의 `ldd`는 성공함을 재현했다. 고정 PRoot
+`25dc6a3134891f98a79f57ce1c2c1b23ff15cad1`의 ARM64 syscall table에는 Linux의
+439번 `faccessat2` 매핑이 빠져 있었다.
+
+해당 매핑 한 줄을 추가한
+[40966682467](https://github.com/bin9208/openpilot-rust/actions/runs/40966682467),
+진단 SHA `8713b4cd1fab0f223b8194bdd08600df98327065`에서22개 진단 항목이 전부0으로
+종료했다. 원래 `bootstrap_seed.inspect_abi`, 원본 `ldd`, 기본 loader, 실제 chroot가
+통과하고 권한 없는 파일과 없는 파일의 읽기는 계속 거부됐다. 원본 AGNOS 파일이나
+ABI 검사를 바꾸지 않았다. 패치 SHA256은
+`bb510391bb9a57ca6249e9046dc2247f2c5e131698881f1578e10074861aaae2`다.
+
+같은 패치를 전체 측정 workflow에 적용하고 깊은 준비 전에 실제 bind 경로의 읽기·거부
+검사를 추가했다. 기본 PRoot source SHA, 패치 SHA와 실제 실행 파일 SHA를 증거에
+함께 남긴다. 원래 준비·컴파일·검증과 도구 profile은 유지하며 전체 검증을 재실행한다.
+기본/기존 작업 브랜치 전환 조건은 아직 확정하지 않는다. 별도 전환 초안의 기능 검증은
+`codex/feat-643-arm-routing-draft`에서 진행한다.
