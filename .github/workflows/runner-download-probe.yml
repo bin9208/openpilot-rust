@@ -1,5 +1,14 @@
 name: Runner download cache proof
 on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        type: choice
+        options: [bin-actions, bin-actions2, bin-actions3]
+        required: true
+      label:
+        type: string
+        required: true
   workflow_call:
     inputs:
       runner:

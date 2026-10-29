@@ -77,7 +77,7 @@ def runner_root():
             root = executable.parent.parent
             if not (root/'run.sh').is_file() or root.stat().st_uid != os.getuid():
                 raise ValueError('runner installation is not owned by this account')
-            return root
+            return root, pid
         pid = int((process/'stat').read_text().rsplit(')', 1)[1].split()[1])
     raise ValueError('registered runner listener ancestor required')
 
@@ -124,13 +124,13 @@ def observed_archive_hits(root):
     return [line for line in lines if 'Found action archive ' in line and ' in cache directory ' in line]
 
 
-def schedule_reload(root, service, marker):
-    if not service or not re.fullmatch(r'actions\.runner\.[A-Za-z0-9_.-]+\.service', service):
+def schedule_reload(root, service, marker, listener):
+    if service and not re.fullmatch(r'actions\.runner\.[A-Za-z0-9_.-]+\.service', service):
         return False
     # A transient unit survives its owning Actions worker. It can only restart
     # after this runner's final proof job leaves its marker AND all workers exit.
-    program = '''import json, pathlib, subprocess, sys, time
-root, marker, service = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3]
+    program = '''import json, os, pathlib, signal, subprocess, sys, time
+root, marker, service, listener = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3], int(sys.argv[4])
 worker = root/'bin/Runner.Worker'
 for attempt in range(3600):
     active = False
@@ -142,16 +142,42 @@ for attempt in range(3600):
         except (OSError, RuntimeError):
             continue
     if marker.is_file() and not active:
-        result = subprocess.run(['/usr/bin/sudo', '-n', '/usr/bin/systemctl', 'restart', service])
-        marker.with_suffix('.json').write_text(json.dumps(dict(service=service, exit_code=result.returncode)))
-        raise SystemExit(result.returncode)
+        if service:
+            result = subprocess.run(['/usr/bin/sudo', '-n', '/usr/bin/systemctl', 'restart', service])
+            marker.with_suffix('.json').write_text(json.dumps(dict(service=service, exit_code=result.returncode)))
+            raise SystemExit(result.returncode)
+        process = pathlib.Path('/proc')/str(listener)
+        if (process/'exe').resolve(strict=True) != root/'bin/Runner.Listener':
+            raise SystemExit('listener changed; no process stopped')
+        os.kill(listener, signal.SIGINT)
+        for stopped in range(150):
+            if not process.exists():
+                started = subprocess.Popen(['/bin/bash', str(root/'run.sh')], cwd=root,
+                    env=os.environ, start_new_session=True, stdin=subprocess.DEVNULL)
+                marker.with_suffix('.json').write_text(json.dumps(dict(manual_launcher=True, started_pid=started.pid)))
+                raise SystemExit(0)
+            time.sleep(0.2)
+        raise SystemExit('listener did not exit; no duplicate runner started')
     time.sleep(2)
 raise SystemExit('cache reload expired without interrupting an Actions worker')
 '''
+    if not service:
+        # Preserve the Listener's launch environment, not the current job's token,
+        # BASH_ENV, temporary directories or runner process-tracking identifier.
+        original = (Path('/proc')/str(listener)/'environ').read_bytes().split(b'\0')
+        environment = dict(item.decode().split('=', 1) for item in original if b'=' in item)
+        if environment.get('RUNNER_TRACKING_ID'):
+            raise ValueError('manual Listener unexpectedly inherits a job process-tracking identifier')
+        log = marker.with_suffix('.log')
+        with log.open('ab') as stream:
+            subprocess.Popen(['/usr/bin/python3', '-I', '-B', '-S', '-c', program,
+                str(root), str(marker), '', str(listener)], cwd=root, env=environment,
+                stdin=subprocess.DEVNULL, stdout=stream, stderr=subprocess.STDOUT, start_new_session=True)
+        return True
     unit = 'openpilot-cache-644-'+os.environ['RUNNER_NAME']+'-'+os.environ['GITHUB_RUN_ID']
     result = subprocess.run(['/usr/bin/sudo', '-n', '/usr/bin/systemd-run', '--quiet', '--collect',
         '--unit='+unit, '--on-active=15s', '--property=User='+str(os.getuid()),
-        '/usr/bin/python3', '-I', '-B', '-S', '-c', program, str(root), str(marker), service],
+        '/usr/bin/python3', '-I', '-B', '-S', '-c', program, str(root), str(marker), service, str(listener)],
         capture_output=True, text=True)
     if result.returncode:
         print('Idle runner reload could not be scheduled: '+result.stderr.strip(), file=sys.stderr)
@@ -168,13 +194,13 @@ if __name__ == '__main__':
         manifest = json.loads(Path(__file__).with_name('action-archives.json').read_text())
         print(json.dumps(dict(archive_cache=str(archives), actions=prime(archives, manifest['actions']))))
     elif operation == 'configure':
-        root = runner_root()
+        root, listener = runner_root()
         values = DOWNLOADS['setup'](DOWNLOADS['cache_root'](), {}, home=Path.home())
         additions = configure(root, archives, values)
         service = (root/'.service').read_text().strip() if (root/'.service').is_file() else None
         restart_required = os.environ.get('ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE') != str(archives)
         marker = DOWNLOADS['cache_root']()/('reload-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['RUNNER_NAME']+'.ready')
-        scheduled = schedule_reload(root, service, marker) if restart_required else False
+        scheduled = schedule_reload(root, service, marker, listener) if restart_required else False
         report = dict(runner=os.environ['RUNNER_NAME'], runner_root=str(root), service=service,
             added_cache_variables=sorted(additions), archive_cache=str(archives),
             restart_required=restart_required, idle_reload_scheduled=scheduled,

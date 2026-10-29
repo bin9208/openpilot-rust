@@ -139,7 +139,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     for name in ('bin-actions', 'bin-actions2', 'bin-actions3')])
                 continue
             if path.name == 'runner-download-probe.yml':
-                self.assertEqual(set(document['on']), {'workflow_call'})
+                self.assertEqual(set(document['on']), {'workflow_call', 'workflow_dispatch'})
                 self.assertEqual(set(document['jobs']), {'seed', 'offline'})
                 for job in document['jobs'].values():
                     self.assertEqual(job['runs-on'], ['self-hosted', 'Linux', 'X64', '${{ inputs.label }}'])
