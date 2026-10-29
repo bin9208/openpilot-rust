@@ -42,6 +42,105 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertTrue({'main', 'dev'}.issubset(events['push']['branches']))
     self.assertIn('pull_request', events)
 
+  def test_integration_execution_uses_owned_self_hosted_jobs(self):
+    suites = {
+      'tests.yaml': {'git_update', 'build_release', 'model_web'},
+      'naver-ci.yml': {'navigation-ui', 'phone-mapping-contract', 'runtime-controller',
+                       'wire-schema', 'naver-input', 'infrastructure'},
+      'naver-apk-tools.yml': {'host-toolkit', 'payload'},
+      'jetlink.yml': {'model', 'android-core'},
+    }
+    trusted = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}"
+    for name, expected in suites.items():
+      jobs = workflow(name)['jobs']
+      self.assertEqual(set(jobs), expected)
+      for job_id, job in jobs.items():
+        with self.subTest(workflow=name, job=job_id):
+          self.assertEqual(job['runs-on'], ['self-hosted', 'Linux', 'X64', 'openpilot-rust'])
+          self.assertEqual(job['if'], trusted)
+          self.assertNotIn('continue-on-error', job)
+          steps = job['steps']
+          self.assertEqual(steps[1]['uses'], './.github/actions/job-temp')
+          self.assertEqual(steps[2]['uses'], './.github/actions/rust-path')
+          self.assertEqual(steps[-1], {'uses': './.github/actions/job-temp',
+                                      'if': 'always()', 'with': {'cleanup': 'true'}})
+
+  def test_light_required_checks_remain_hosted(self):
+    for name, job_id in (('fast-checks.yml', 'fast'), ('integration.yml', 'gate'),
+                         ('user-docs.yaml', 'check_user_docs'), ('rust.yml', 'fast')):
+      with self.subTest(workflow=name, job=job_id):
+        self.assertEqual(workflow(name)['jobs'][job_id]['runs-on'], 'ubuntu-24.04')
+
+  def test_every_rust_execution_job_uses_the_trusted_common_pool(self):
+    jobs = workflow('rust.yml')['jobs']
+    execution = {job_id: job for job_id, job in jobs.items() if job_id != 'fast'}
+    self.assertTrue(execution)
+    trusted = "(github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)"
+    for job_id, job in execution.items():
+      with self.subTest(job=job_id):
+        self.assertEqual(job['runs-on'], ['self-hosted', 'Linux', 'X64', 'openpilot-rust'])
+        condition = trusted
+        if job_id == 'arm64':
+          condition += " && (github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')"
+        self.assertEqual(job['if'], '${{ ' + condition + ' }}')
+        self.assertNotIn('continue-on-error', job)
+        for step in job['steps']:
+          self.assertNotIn('continue-on-error', step)
+          # Explicit build roots must match the RUNNER_TEMP producer/consumer view.
+          for value in step.get('env', {}).values():
+            self.assertNotIn('${{ runner.temp }}', value)
+    self.assertEqual(jobs['fast']['name'], 'rust checks')
+    self.assertEqual(jobs['fast']['if'], '${{ ' + trusted + ' && (always()) }}')
+
+  def test_runtime_foundation_logical_architectures_share_the_self_hosted_pool(self):
+    jobs = workflow('runtime-source-build.yml')['jobs']
+    self.assertTrue(jobs)
+    trusted = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}"
+    for job_id, job in jobs.items():
+      with self.subTest(job=job_id):
+        self.assertEqual(job['runs-on'], ['self-hosted', 'Linux', 'X64', 'openpilot-rust'])
+        self.assertEqual(job['if'], trusted)
+        self.assertNotIn('continue-on-error', job)
+        self.assertEqual(job['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+        self.assertEqual(job['strategy']['fail-fast'], 'false')
+        self.assertEqual(job['env']['LOCAL_CI_ARCH'],
+                         "${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}")
+        self.assertTrue(any(step.get('uses') == './.github/actions/local-arm'
+                            and step.get('with', {}).get('cleanup') != 'true'
+                            for step in job['steps']))
+        for step in job['steps']:
+          self.assertNotIn('continue-on-error', step)
+
+  def test_jetlink_functional_checks_run_in_heavy_suite_instead_of_fast(self):
+    fast_steps = workflow('fast-checks.yml')['jobs']['fast']['steps']
+    fast_runs = '\n'.join(step.get('run', '') for step in fast_steps)
+    self.assertIn('bash -n openpilot/selfdrive/modeld/jetlink/setup_gadget.sh', fast_runs)
+    for heavy_command in ('tools/jetlink_model/requirements.lock', 'tools/jetlink_model/tests',
+                          'openpilot/selfdrive/modeld/tests/test_jetlink', 'gradlew', 'gradle '):
+      self.assertNotIn(heavy_command, fast_runs)
+    self.assertFalse(any(step.get('uses', '').startswith('actions/setup-java@') for step in fast_steps))
+
+    heavy = workflow('jetlink.yml')['jobs']
+    model_runs = [step['run'] for step in heavy['model']['steps'] if 'run' in step]
+    self.assertIn('python -m pip install -r tools/jetlink_model/requirements.lock', model_runs)
+    package_command = 'python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/jetlink_model/tests tools/jetlink_model/tests -q'
+    self.assertEqual(model_runs.count(package_command), 1)
+    self.assertIn('python -m pytest -c /dev/null --rootdir=. --confcutdir=openpilot/selfdrive/modeld/tests -q openpilot/selfdrive/modeld/tests/test_jetlink*.py', model_runs)
+    android_runs = [step['run'] for step in heavy['android-core']['steps'] if 'run' in step]
+    self.assertIn('bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test :app:lintDebug :app:assembleDebug', android_runs)
+
+  def test_android_builds_prepare_job_owned_sdks_before_setup(self):
+    for name, job_id in (('naver-apk-tools.yml', 'host-toolkit'),
+                         ('naver-apk-tools.yml', 'payload'), ('jetlink.yml', 'android-core')):
+      with self.subTest(workflow=name, job=job_id):
+        steps = workflow(name)['jobs'][job_id]['steps']
+        setup = next(i for i, step in enumerate(steps)
+                     if step.get('uses', '').startswith('android-actions/setup-android@'))
+        self.assertEqual(steps[setup - 1]['name'], 'Admit the job-owned Android SDK')
+        preparation = steps[setup - 1]['run']
+        for env_name in ('CI_JOB_TEMP', 'ANDROID_HOME', 'ANDROID_SDK_ROOT'):
+          self.assertIn(env_name, preparation)
+
 
 if __name__ == '__main__':
   unittest.main()

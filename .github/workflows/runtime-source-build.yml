@@ -13,23 +13,39 @@ permissions:
   contents: read
 jobs:
   offline-cargo-reuse:
-    name: Actual offline Cargo reuse (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    name: Actual offline Cargo reuse (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     strategy:
       fail-fast: false
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
-    timeout-minutes: 15
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 90 || 15 }}
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
+      LOCAL_CI_GUEST_IDENTITY: unprivileged
       RUSTUP_TOOLCHAIN: '1.94.0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH == 'aarch64'
+        with: {parallelism-only: 'true'}
+      - uses: ./.github/actions/local-arm
+      - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+        with:
+          python-version: '3.12.14'
       - name: Inspect resources for this bounded toolchain and crate build
         run: |
           python3 - <<'PY'
@@ -59,5 +75,16 @@ jobs:
         with:
           name: runtime-source-build-${{ matrix.runner }}-${{ github.sha }}
           path: |
-            ${{ runner.temp }}/runtime-build-metadata.json
-            ${{ runner.temp }}/runtime-build-tests.log
+            ${{ env.CI_JOB_TEMP }}/runtime-build-metadata.json
+            ${{ env.CI_JOB_TEMP }}/runtime-build-tests.log
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always() && env.LOCAL_CI_ARCH == 'aarch64'
+        with:
+          name: local-arm-offline-cargo-reuse-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

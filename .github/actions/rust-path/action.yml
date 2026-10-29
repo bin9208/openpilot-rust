@@ -1,0 +1,88 @@
+name: Expose provisioned Rust tools
+description: Preserve Rust shims on persistent runners and restore verified missing tools.
+inputs:
+  parallelism-only:
+    description: Set job CPU defaults without changing the pinned guest toolchain
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Use available runner CPUs unless explicitly overridden
+      shell: bash
+      run: |
+        parallelism_defaults=$(/usr/bin/python3 -I -B -S - <<'PY_CPU'
+        import json, os, sys
+        try:
+            affinity = len(os.sched_getaffinity(0))
+        except (AttributeError, OSError):
+            affinity = None
+        count = os.cpu_count()
+        available = affinity or count
+        if not isinstance(available, int) or available <= 0:
+            raise SystemExit('Cannot determine available runner CPU count; no fixed fallback applied')
+        effective, overridden = {}, {}
+        for name in ('CARGO_BUILD_JOBS', 'RUST_TEST_THREADS'):
+            value = os.environ.get(name)
+            overridden[name] = bool(value)
+            effective[name] = value if value else str(available)
+            if not value:
+                print(name+'='+str(available))
+        print(json.dumps(dict(available_cpus=available, affinity_cpus=affinity, logical_cpus=count,
+            effective=effective, explicit_override=overridden)), file=sys.stderr)
+        PY_CPU
+        )
+        if [[ -n $parallelism_defaults ]]; then
+          while IFS='=' read -r parallelism_name parallelism_value; do
+            export "$parallelism_name=$parallelism_value"
+            printf '%s=%s\n' "$parallelism_name" "$parallelism_value" >> "$GITHUB_ENV"
+          done <<< "$parallelism_defaults"
+        fi
+    - id: locate
+      if: inputs.parallelism-only != 'true'
+      shell: bash
+      run: |
+        if command -v rustup >/dev/null 2>&1; then
+          rust_bin=$(dirname "$(command -v rustup)")
+        else
+          rust_bin="${CARGO_HOME:-$HOME/.cargo}/bin"
+        fi
+        if [ -x "$rust_bin/rustup" ] && [ -x "$rust_bin/cargo" ]; then
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+        else
+          echo 'ready=false' >> "$GITHUB_OUTPUT"
+        fi
+    - name: Restore missing shims from verified Rustup 1.29.1
+      if: inputs.parallelism-only != 'true' && steps.locate.outputs.ready != 'true'
+      shell: bash
+      run: |
+        free_bytes=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
+        if (( free_bytes < 512 * 1024 * 1024 )); then
+          echo 'Insufficient disk space for estimated Rust bootstrap growth (512 MiB).' >&2
+          exit 1
+        fi
+        case "$(uname -m)" in
+          x86_64) rust_host=x86_64-unknown-linux-gnu; rust_hash=dda7234360b7f578ca8b0ddcb80145646fa61a67c1720a5abc7051b35c9fcb71 ;;
+          aarch64) rust_host=aarch64-unknown-linux-gnu; rust_hash=15f6e4ce9f583b929c996c91562bad6d4454f3281de858b02cdfdef615fac433 ;;
+          *) echo 'Unsupported Rust bootstrap architecture' >&2; exit 1 ;;
+        esac
+        bootstrap_dir=$(mktemp -d "$RUNNER_TEMP/rustup-bootstrap.XXXXXX")
+        trap 'rm -rf -- "$bootstrap_dir"' EXIT
+        curl --proto '=https' --tlsv1.2 --fail --location --retry 5 --retry-all-errors \
+          "https://static.rust-lang.org/rustup/archive/1.29.1/$rust_host/rustup-init" --output "$bootstrap_dir/rustup-init"
+        printf '%s  %s\n' "$rust_hash" "$bootstrap_dir/rustup-init" | sha256sum --check -
+        chmod u+x "$bootstrap_dir/rustup-init"
+        CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" "$bootstrap_dir/rustup-init" -y --default-toolchain none --no-modify-path
+    - name: Publish the installed Rust tool path
+      if: inputs.parallelism-only != 'true'
+      shell: bash
+      run: |
+        if command -v rustup >/dev/null 2>&1; then
+          rust_bin=$(dirname "$(command -v rustup)")
+        else
+          rust_bin="${CARGO_HOME:-$HOME/.cargo}/bin"
+        fi
+        if [ ! -x "$rust_bin/rustup" ] || [ ! -x "$rust_bin/cargo" ]; then
+          echo 'Rust tools are not provisioned; install rustup/cargo for the runner service account.' >&2
+          exit 1
+        fi
+        printf '%s\n' "$rust_bin" >> "$GITHUB_PATH"

@@ -291,3 +291,15 @@ outcome returncode0/last_step=completed, source/index 불변과 native ELF hash5
 아키텍처/메모리 관련 단언은 보존하고 사용자 지시에 맞게 해당 고정 cap 부재를 검사한다.
 독립 읽기 리뷰가 찾은 workspace modem 원본 비교용 `MODEM_SOURCE_PYTHON`도 같은
 setup-python의 실제 절대 경로로 연결한다. 테스트를 skip하거나 원본 비교를 제거하지 않는다.
+
+## dev 통합 및 무거운 CI 배치 변경 — 2026-10-30 KST
+
+선정9개는 PR #631로 dev `3fd7fd051b0af237fb8f75a4260e48707e3ae7c8`에 반영됐다.
+정확 PR head `875e7a4b6172305dbc6ae4d16c78d5f02ba84fe3`에서 필수5개와
+Rust46job/통합16job/전체 ARM이 성공했다. 병합 후 통합16job·fast/docs도 성공했다.
+사용자가 무거운 모든 검사를 셀프호스트로, hosted는 가벼운 검사만 남기도록 지시하여
+진행 중이던 이 작업의 hosted post Rust40908894073은 취소했다. 취소를 성공으로 표시하지 않는다.
+
+새 dev 기반 후속 CI 변경과 남은 정상 PR·병합 후 검증은
+[self-hosted-heavy-ci-630.md](self-hosted-heavy-ci-630.md)와 #630에서 이어서 추적한다.
+이 최신 배치 지시가 위 과거 hosted 병렬 실행 설명보다 우선한다.

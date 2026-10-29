@@ -7,13 +7,14 @@ import unittest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
+TRUSTED_SOURCE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}"
 
 class RustIsolationTests(unittest.TestCase):
     def test_webcam_requires_two_architectures_and_real_capture_ipc(self):
         workflow = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = workflow['jobs']['webcam-runtime']
         self.assertEqual(job['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         self.assertNotIn('CARGO_BUILD_JOBS', job['env'])
         self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
         self.assertEqual(job['env']['CARGO_PROFILE_DEV_DEBUG'], '0')
@@ -28,13 +29,13 @@ class RustIsolationTests(unittest.TestCase):
             if 'python -P rust/tools/webcam_' in step.get('run', ''):
                 self.assertNotIn('if', step)
                 self.assertNotIn('continue-on-error', step)
-        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@') and not step.get('with', {}).get('name', '').startswith('local-arm-')]
         self.assertEqual(len(artifacts), 1)
         self.assertEqual(artifacts[0]['if'], 'always()')
     def test_athena_requires_complete_native_runtime_and_codec_checks(self):
         workflow = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = workflow['jobs']['athena-runtime']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('openpilot-athena', 'openpilot-process-supervision', 'check_athena_runtime.py', 'check_jpeg_sanitizers.py'):
             self.assertIn(required, commands)
@@ -42,14 +43,14 @@ class RustIsolationTests(unittest.TestCase):
             if 'check_athena_runtime.py' in step.get('run', '') or 'check_jpeg_sanitizers.py' in step.get('run', ''):
                 self.assertNotIn('if', step)
                 self.assertNotIn('continue-on-error', step)
-        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@') and not step.get('with', {}).get('name', '').startswith('local-arm-')]
         self.assertEqual(len(artifacts), 1)
         self.assertEqual(artifacts[0]['if'], 'always()')
 
     def test_ui_connectivity_requires_source_render_and_private_protocol_checks(self) -> None:
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['ui-connectivity']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('xvfb-run', 'check_ui_framework.py', 'check_startup_ui.py',
                          'check_ui_emoji.py', 'check_ui_translations.py', 'check_wifi_policy.py',
@@ -60,14 +61,14 @@ class RustIsolationTests(unittest.TestCase):
             if 'python rust/tools/check_' in step.get('run', ''):
                 self.assertNotIn('if', step)
                 self.assertNotIn('continue-on-error', step)
-        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@') and not step.get('with', {}).get('name', '').startswith('local-arm-')]
         self.assertEqual(len(artifacts), 1)
         self.assertEqual(artifacts[0]['if'], 'always()')
 
     def test_estimators_require_original_models_loops_and_native_boundaries(self) -> None:
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['estimation-runtime']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('build_locationd_oracle.py', 'build_paramsd_oracle.py', 'build_params_python.py',
                          'check_locationd.py', 'check_locationd_loop.py', 'check_locationd_timestamp.py',
@@ -94,7 +95,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_gnss_requires_source_serial_and_daemon_checks(self) -> None:
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['gnss-runtime']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('check_ublox.py', 'check_pigeon.py', 'check_ublox_serial.py', 'check_ublox_daemons.py',
                          'check_qcomgps_reference.py', 'check_qcomgps_daemon.py', 'check_qcomgps_nmea.py',
@@ -108,7 +109,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_sensor_audio_requires_original_and_live_native_checks(self) -> None:
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['sensor-audio']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('check_sensord.py', 'check_sensord_kernel.py', 'check_sensord_daemon.py',
                          'check_micd_analysis.py', 'check_micd_daemon.py', 'check_soundd.py', 'check_soundd_daemon.py', 'check_feedbackd.py',
@@ -122,7 +123,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_startup_services_require_source_and_live_native_protocols(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['startup-services']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('check_lpa.py', 'check_bridge.py', 'check_agnos.py', 'build_bridge_reference.py', 'build_msgq_python.py'):
             self.assertIn(required, commands)
@@ -134,7 +135,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_platform_runtime_requires_original_source_and_live_native_processes(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['platform-runtime']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('check_manager.py', 'check_manager_logging.py', 'generate_manager_cars.py',
                          'examples/manager_native', 'examples/manager_adapters',
@@ -150,19 +151,23 @@ class RustIsolationTests(unittest.TestCase):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['workspace']
         self.assertNotIn('needs', job)
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('cargo fmt --all --check', 'cargo clippy --workspace', 'cargo test --workspace',
                          'cargo build --workspace --release --locked', 'check_usbgpu_hardware.py',
                          'check_usbgpu_asm.py', 'check_usbgpu_status.py'):
             self.assertIn(required, commands)
         self.assertEqual(data['jobs']['fast']['name'], 'rust checks')
-        self.assertEqual(len(data['jobs']['fast']['steps']), 1)
+        aggregate = data['jobs']['fast']['steps']
+        self.assertEqual(len(aggregate), 2)
+        self.assertEqual(aggregate[0]['name'], 'Require the registered execution environment')
+        self.assertEqual(aggregate[0]['run'], 'test "$GITHUB_ACTIONS" = true\nif [[ $RUNNER_ENVIRONMENT == self-hosted ]]; then\n  [[ $RUNNER_NAME == bin-actions || $RUNNER_NAME == bin-actions2 || $RUNNER_NAME == bin-actions3 ]]\nelse\n  [[ $RUNNER_ENVIRONMENT == github-hosted && $RUNNER_OS == Linux &&\n     ( $RUNNER_ARCH == X64 || $RUNNER_ARCH == ARM64 ) ]]\nfi\n')
+        self.assertEqual(aggregate[1]['name'], 'Require runtime validation')
 
     def test_hardware_runtime_requires_source_and_native_boundaries(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['hardware-runtime']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('check_bootlog.py', 'check_bootlog_snapshot.py', 'check_logger_identifier.py',
                          'check_hardware_info.py', 'check_hardware_control.py', 'check_amplifier.py',
@@ -176,7 +181,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_startup_prerequisites_run_actual_children_and_collectors(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['startup-runtime']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('check_process_supervision.py', 'check_managed_entry.py', 'check_sdk_receiver.py',
                          'check_registration.py', 'check_registration_clock.py', 'check_registration_utf7.py',
@@ -189,7 +194,7 @@ class RustIsolationTests(unittest.TestCase):
             if 'python rust/tools/check_' in step.get('run', ''):
                 self.assertNotIn('if', step)
                 self.assertNotIn('continue-on-error', step)
-        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@') and not step.get('with', {}).get('name', '').startswith('local-arm-')]
         self.assertEqual(len(artifacts), 1)
         self.assertEqual(artifacts[0]['if'], 'always()')
 
@@ -228,13 +233,13 @@ class RustIsolationTests(unittest.TestCase):
         for name in ('radar-runtime', 'radar-arm', 'radar-memory'):
             job = data['jobs'][name]
             with self.subTest(job=name):
-                self.assertNotIn('if', job)
+                self.assertEqual(job.get('if'), TRUSTED_SOURCE)
                 self.assertNotIn('continue-on-error', job)
                 commands = '\n'.join(step.get('run', '') for step in job['steps'])
                 self.assertIn('check-disk-space', commands)
                 self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
                 self.assertTrue(any(step.get('if') == 'always()' and
-                                    step.get('uses', '').startswith('actions/upload-artifact@') for step in job['steps']))
+                                    step.get('uses', '').startswith('actions/upload-artifact@') and not step.get('with', {}).get('name', '').startswith('local-arm-') for step in job['steps']))
         host = '\n'.join(step.get('run', '') for step in data['jobs']['radar-runtime']['steps'])
         for required in ('build_params_python.py', 'build_msgq_python.py', 'RADAR_PARAMS_BINDING',
                          'radarcan_prepare_assets.py', '--bin stage-torque-numerics', 'test_radarcan_ci.py',
@@ -242,9 +247,10 @@ class RustIsolationTests(unittest.TestCase):
                          '-p openpilot-radarcan -p openpilot-can', '--all-targets --locked -- -D warnings'):
             self.assertIn(required, host)
         arm = '\n'.join(step.get('run', '') for step in data['jobs']['radar-arm']['steps'])
-        self.assertEqual(data['jobs']['radar-arm']['runs-on'], 'ubuntu-24.04-arm')
+        self.assertEqual(data['jobs']['radar-arm']['runs-on'], ['self-hosted', 'Linux', 'X64', 'openpilot-rust'])
+        self.assertEqual(data['jobs']['radar-arm']['env']['LOCAL_CI_ARCH'], 'aarch64')
         for required in ('--target aarch64-unknown-linux-gnu', '--no-run', '--message-format=json',
-                         '"$radar_test" --test-threads=1', 'test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64',
+                         '"$radar_test" 2>&1', 'test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64',
                          'check_radarcan_ci.py --phase reference', 'check_radarcan_ci.py --phase ipc',
                          '--platform manylinux_2_27_aarch64', 'sha256sum'):
             self.assertIn(required, arm)
@@ -258,7 +264,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_selfdrived_requires_source_loop_native_ipc_and_failure_checks(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['selfdrive-runtime']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         for checker in ('check_selfdrived_controller.py', 'check_selfdrived_ipc.py', 'check_selfdrived_failures.py'):
             step = next(step for step in job['steps'] if checker in step.get('run', ''))
             self.assertNotIn('if', step)
@@ -273,7 +279,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_navigation_requires_original_transport_auth_and_timer_evidence(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['navd-runtime']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('build_params_python.py', 'build_msgq_python.py', 'NAVD_PARAMS_BINDING',
                          'requests==2.34.2', 'urllib3==2.7.0', 'PyJWT==2.14.0',
@@ -301,7 +307,7 @@ class RustIsolationTests(unittest.TestCase):
             self.assertNotIn('paths', data['on'][event])
             self.assertNotIn('paths-ignore', data['on'][event])
         gate = data['jobs']['fast']
-        self.assertEqual(gate['if'], '${{ always() }}')
+        self.assertEqual(gate['if'], "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}")
         self.assertEqual(set(gate['needs']), {
             'workspace', 'model-memory', 'model-pipelines', 'logger-runtime', 'support-runtime', 'telemetry-runtime',
             'startup-runtime', 'hardware-runtime', 'platform-runtime', 'startup-services', 'sensor-audio', 'gnss-runtime',
@@ -364,7 +370,7 @@ class RustIsolationTests(unittest.TestCase):
         jobs = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)['jobs']
         job = jobs['webrtc-runtime']
         self.assertEqual(job['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('webrtc_source_requirements.txt', 'libavcodec-dev=7:6.1.1-*', 'build_params_python.py', 'build_msgq_python.py',
                          '-p openpilot-webrtc --features native --bins', '--features native --lib --locked', '--features native --all-targets --locked',
@@ -377,7 +383,7 @@ class RustIsolationTests(unittest.TestCase):
             if 'run' in step:
                 self.assertNotIn('if', step)
                 self.assertNotIn('continue-on-error', step)
-        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@') and not step.get('with', {}).get('name', '').startswith('local-arm-')]
         self.assertEqual(len(artifacts), 1)
         self.assertEqual(artifacts[0]['if'], 'always()')
         requirements = (ROOT / 'rust/tools/webrtc_source_requirements.txt').read_text().splitlines()
@@ -397,7 +403,7 @@ class RustIsolationTests(unittest.TestCase):
         }
         for name, commands in required.items():
             job = jobs[name]
-            self.assertNotIn('if', job)
+            self.assertEqual(job.get('if'), TRUSTED_SOURCE)
             script = '\n'.join(step.get('run', '') for step in job['steps'])
             for command in commands:
                 self.assertIn(command, script)
@@ -405,14 +411,14 @@ class RustIsolationTests(unittest.TestCase):
                 if 'run' in step:
                     self.assertNotIn('if', step)
                     self.assertNotIn('continue-on-error', step)
-            artifact = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+            artifact = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@') and not step.get('with', {}).get('name', '').startswith('local-arm-')]
             self.assertEqual(len(artifact), 1)
             self.assertEqual(artifact[0]['if'], 'always()')
 
     def test_encoder_requires_source_runtime_and_pinned_arm_artifacts(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['encoder-runtime']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('build_visionipc_python.py', 'check_encoder_ci.py', 'test_encoder_outcomes.py',
                          '-p openpilot-dev-tools --locked --test encoder_stage', '--features native --bins --examples',
@@ -428,7 +434,7 @@ class RustIsolationTests(unittest.TestCase):
             subprocess.run(['bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', setup['run']], env=environment, check=True)
             self.assertEqual(output.read_text(), f'PYTHONPATH={temporary}/encoder-native/python:/fixture/repository:/fixture/tools\n'
                                                 f'ENCODER_MSGQ_PYTHON={temporary}/encoder-native/python\n')
-        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@')]
+        artifacts = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@') and not step.get('with', {}).get('name', '').startswith('local-arm-')]
         self.assertEqual(len(artifacts), 1)
         self.assertEqual(artifacts[0]['if'], 'always()')
         arm = next(step for step in data['jobs']['arm64']['steps']
@@ -443,7 +449,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_camera_requires_source_driver_fixture_and_visionipc_checks(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['camera-runtime']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('check_camerad_ci.py', 'build_visionipc_python.py', 'libclang-rt-18-dev',
                          'openpilot-camerad-runtime --features native-skip-miri', '--test vision --test vision_server'):
@@ -461,7 +467,7 @@ class RustIsolationTests(unittest.TestCase):
     def test_panda_requires_native_transports_and_source_composition(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['panda-runtime']
-        self.assertNotIn('if', job)
+        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('check_pandad_ci.py', 'build_msgq_python.py', 'libusb1==3.4.0',
                          '-p openpilot-pandad -p openpilot-panda-usb -p openpilot-panda-spi -p openpilot-panda-spi-linux',

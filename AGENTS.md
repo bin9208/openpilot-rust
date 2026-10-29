@@ -12,6 +12,11 @@
 - 실제 기기 설치·부팅·녹화·업로드·주행 수용은 사용자가 수행한다. 기기 부재를
   CI로 대체하지 않는다. 한국어 작업 기록과 정확 SHA/Actions 증거를 유지한다.
 - 모든 별도 sub-agent는 `gpt-6.1-sol`로 실행한다. 다른 세션의 소스·CI는 보존한다.
+- CI 배치 — 2026-10-30 사용자 지시: 무거운 전체 빌드·기능·ARM 검사는
+  `bin-actions`/`bin-actions2`/`bin-actions3`의 공통
+  `[self-hosted, Linux, X64, openpilot-rust]` 풀에서 실행한다. GitHub 기본 러너에는
+  빠른 문법·정책·문서 검사와 결과 집계만 둔다. 기존 필수 검사·ARM 비교를 보존하고
+  QEMU/PRoot 결과와 실제 기기 수용을 구분한다. 다른 작업의 실행·공유 도구/cache는 보존한다.
 
 - On 2026-10-14 the user selected Astra for the parent agent and explicitly
   required GPT-6.1 Sol for all separately launched sub-agents. Specify

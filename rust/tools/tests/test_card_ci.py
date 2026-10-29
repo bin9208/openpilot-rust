@@ -72,7 +72,8 @@ def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -
     'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'panda-runtime', 'camera-runtime', 'encoder-runtime',
     'xiaoge-runtime', 'xiaoge-memory', 'ui-runtime', 'carrot-man-runtime'}
   assert set(jobs['fast']['needs']) == inherited | {'card-runtime', 'webrtc-runtime', 'webcam-runtime'}
-  assert 'test "$CARD" = success' in jobs['fast']['steps'][0]['run']
+  gate, = [step for step in jobs['fast']['steps'] if 'CARD' in step.get('env', {})]
+  assert 'test "$CARD" = success' in gate['run']
   for job, test_command in (('workspace', 'cargo test --workspace'), ('card-runtime', 'cargo test -p openpilot-can')):
     scripts = [step.get('run', '') for step in jobs[job]['steps']]
     generation = next(index for index, script in enumerate(scripts) if 'stage_card_fixtures.py' in script)
