@@ -145,6 +145,15 @@ class DownloadCacheTests(unittest.TestCase):
         self.assertEqual(actions.configure(self.root, Path('/new/actions'), defaults), {})
         self.assertEqual(environment.stat().st_mode & 0o777, 0o600)
 
+    def test_actual_runner_resolution_warms_new_shas_and_composite_repository_roots(self):
+        text = "Download action repository 'actions/checkout@v7' (SHA:"+'a'*40+")\n"
+        text += "Download action repository 'gradle/actions/setup-gradle@v4' (SHA:"+'b'*40+")\n"
+        text += "Download action repository 'actions/checkout@v7' (SHA:"+'c'*40+")\n"
+        self.assertEqual(actions.resolved_actions(text), [
+            dict(repository='actions/checkout', sha='a'*40),
+            dict(repository='gradle/actions', sha='b'*40),
+            dict(repository='actions/checkout', sha='c'*40)])
+
 
 if __name__ == '__main__':
     unittest.main()

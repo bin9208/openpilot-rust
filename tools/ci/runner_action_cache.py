@@ -124,6 +124,15 @@ def observed_archive_hits(root):
     return [line for line in lines if 'Found action archive ' in line and ' in cache directory ' in line]
 
 
+def resolved_actions(text):
+    found = {}
+    for repository, sha in re.findall(
+            r"Download action repository '([A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+)@[^']+' \(SHA:([a-f0-9]{40})\)", text):
+        repository = '/'.join(repository.split('/')[:2])
+        found[repository, sha] = dict(repository=repository, sha=sha)
+    return list(found.values())
+
+
 def schedule_reload(root, service, marker, listener):
     if service and not re.fullmatch(r'actions\.runner\.[A-Za-z0-9_.-]+\.service', service):
         return False
@@ -193,6 +202,16 @@ if __name__ == '__main__':
     if operation == 'prime':
         manifest = json.loads(Path(__file__).with_name('action-archives.json').read_text())
         print(json.dumps(dict(archive_cache=str(archives), actions=prime(archives, manifest['actions']))))
+    elif operation == 'prime-current':
+        root, _ = runner_root()
+        logs = sorted((root/'_diag').glob('Worker_*.log'), key=lambda p: p.stat().st_mtime, reverse=True)
+        if logs:
+            with logs[0].open('rb') as stream:
+                current = stream.read(1024*1024).decode('utf-8', errors='replace')
+            try:
+                print(json.dumps(dict(current_job_actions=prime(archives, resolved_actions(current)))))
+            except subprocess.CalledProcessError:
+                print('Optional action archive warmup unavailable; the original runner download remains valid', file=sys.stderr)
     elif operation == 'configure':
         root, listener = runner_root()
         values = DOWNLOADS['setup'](DOWNLOADS['cache_root'](), {}, home=Path.home())
@@ -209,4 +228,4 @@ if __name__ == '__main__':
         (Path(os.environ['CI_JOB_TEMP'])/'action-cache-config.json').write_text(json.dumps(report, indent=2)+'\n')
         print(json.dumps(report))
     else:
-        raise ValueError('prime / configure')
+        raise ValueError('prime / prime-current / configure')
