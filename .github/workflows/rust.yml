@@ -263,12 +263,15 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component clippy
           python -P -c 'import acados; from pathlib import Path; print("PLANNER_GENERATOR="+str(Path(acados.__file__).parent))' >> "$GITHUB_ENV"
+      - name: Provision the CI host SDK build tools
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+        run: sudo apt-get install -y cmake make
       - name: Build pinned solvers and unchanged original bindings
         run: |
           planner_cc=gcc
           if [ "$(uname -m)" = aarch64 ]; then planner_cc=clang-18; fi
-          python rust/tools/build_plannerd_acados.py --architecture "$(uname -m)" --cc "$planner_cc" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-artifact"
-          python rust/tools/build_plannerd_source.py --artifact "$RUNNER_TEMP/planner-artifact" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --generator-wheel "$RUNNER_TEMP"/planner-wheel/*.whl --cc "$planner_cc" --output "$RUNNER_TEMP/planner-source"
+          python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_acados.py --architecture "$(uname -m)" --cc "$planner_cc" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-artifact"
+          python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_source.py --artifact "$RUNNER_TEMP/planner-artifact" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --generator-wheel "$RUNNER_TEMP"/planner-wheel/*.whl --cc "$planner_cc" --output "$RUNNER_TEMP/planner-source"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_params_python.py --output "$RUNNER_TEMP/planner-original/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -311,7 +314,7 @@ jobs:
       - name: Check generated C with ASan, UBSan and allocator leak detection
         if: matrix.runner == 'ubuntu-24.04'
         run: |
-          python rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --sanitize --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-sanitized"
+          python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --sanitize --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-sanitized"
           python -P rust/tools/check_plannerd_native_memory.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-sanitized" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --asan-library "$(gcc -print-file-name=libasan.so)" --output "$RUNNER_TEMP/planner-native-memory"
       - uses: actions/upload-artifact@v6
         if: always()
@@ -323,6 +326,8 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/planner-sigill*
             ${{ env.CI_JOB_TEMP }}/planner-artifact/
             ${{ env.CI_JOB_TEMP }}/planner-source/
+            ${{ env.CI_JOB_TEMP }}/planner-host-sdk-*/receipt.json
+            ${{ env.CI_JOB_TEMP }}/planner-host-build-*/*.log
             ${{ env.CI_JOB_TEMP }}/planner-sanitized/
             ${{ env.CI_JOB_TEMP }}/planner-original/params/*.json
             ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-plannerd

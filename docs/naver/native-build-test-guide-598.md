@@ -455,3 +455,42 @@ genuine의 긴 ARM 입력/전체 빌드 전에 추가한다. 실패132를 그대
 GDB로 재현해 CPU/PC/명령어/library/역추적을 남긴다. 기존 Rust의 원본/native bit 비교와
 모든 genuine ARM 명령·pin은 유지한다. 진단 성공이나 source-only smoke를 필수 전체
 통과로 대신하지 않으며 해당 후속 정확 source 결과는 아직 확인 전이다.
+
+## 실제 runner의 ISA와 수치 연산 경로 — #622/#624
+
+source `46f5758e24160cce167ab19ab9e8c05828a20d66`의
+[genuine40814444977/job123252682506](https://github.com/bin9208/openpilot-rust/actions/runs/40814444977/job/123252682506)은
+긴 ARM 준비 전에 원본 ABI의 SIGILL을 재현했다. GDB PC는
+`libblasfeo.so:blasfeo_dvecse+35`, 명령은 `vbroadcastsd %xmm0,%ymm1`이다.
+실제 Xeon E3-1230 V2에는 AVX만 있고 AVX2/FMA는 없으나 wheel의 헤더는
+`X64_INTEL_HASWELL`과 AVX2/FMA 필수를 지정한다. 진단 artifact는
+[12872915150](https://github.com/bin9208/openpilot-rust/actions/runs/40814444977/artifacts/12872915150)이다.
+
+X64 Actions 비교용 C SDK를 실제 CPU에 맞춰 소스 빌드한다. acados/BLASFEO/HPIPM/
+qpOASES revision은 기존 license source와 acados gitlink를 모두 대조하며,
+[고정 upstream recipe](https://github.com/commaai/dependencies/blob/d78ef2d42d1cfbda02eabec706839a70bc762145/acados/build.sh)의
+같은 C 소스와 QPOASES 설정을 사용한다. AVX 호스트는 `X64_INTEL_SANDY_BRIDGE`,
+그 밖에는 `GENERIC`을 선택한다. 원래 generator wheel/파일 검사와 ELF/파일 목록·SHA
+검사는 유지한다. 실제 SDK revision/compiler/recipe/output SHA를 원래 생성 결과의
+별도 provenance에 기록하며, 한 job의 소유 임시 경로에서만 immutable SDK를 재사용한다.
+기기용 ARM wheel/provider와 그 출력 pin은 바꾸지 않는다.
+
+`build_plannerd_acados.py`는 고정 ARM MPC source contract의 입력이므로 원래
+`a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31`의 bytes로 복원한다.
+SHA256은 `9f18eda8bb1764f77227c5a4cbaf12258add346c7833abfcf545761ce71e8199`다.
+CI는 명시적인 `plannerd_ci_builder.py -- <원래 builder> <원래 인자>`를 사용해
+원래 main과 전체 인자를 실행한다. solver와 원본 Cython binding 모두 기존128MiB
+작업 증가량을 적용하며, source contract 자체나 원래 generation namespace는 완화하지
+않는다. 명령 보존 회귀와 frozen builder의 실제 Git 원문 bytes 회귀로 경계를 확인한다.
+
+같은 source의 [estimation job123254262542](https://github.com/bin9208/openpilot-rust/actions/runs/40814449746/job/123254262542)은
+lagd의 상수/mask/주기/sparse 비교가 실패했다(#624). 고정 NumPy2.5.3의
+X86_V2 complex multiply는 곱셈/덧셈을 각각 반올림하지만 Rust는 항상 `mul_add`를
+사용했다. 고정 원본의 X86_V3/ASIMD dispatch와 같은 CPU 조건으로 융합 경로를
+선택하고, 비융합 결과와 실제로 달라지는 cancellation 회귀를 더한다. 입력·PocketFFT·
+허용 오차·유효성·delay 정책은 유지한다. 결과에 실제 NumPy CPU/ufunc dispatch도
+남긴다. 이 수정의 기능 성공은 후속 정확 source의 Actions에서 확인해야 한다.
+
+host transport 기록은 x86_64 Linux `7.0.2-6-pve`, AArch64 binfmt handler 없음이다.
+QEMU/PRoot component 성공이 실제 root/sudo를 포함한 전체 source entry 성공을 뜻하지
+않으며, 해당 잔여 검증과 완전 후보·발행·정상 병합 조건은 계속 남아 있다.

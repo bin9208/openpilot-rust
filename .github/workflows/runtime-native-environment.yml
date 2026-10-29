@@ -227,7 +227,7 @@ jobs:
           OPENBLAS_NUM_THREADS: '1'
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
         run: |
-          sudo apt-get -o APT::Architectures=amd64 install -y capnproto libcapnp-dev g++ libzmq3-dev gdb
+          sudo apt-get -o APT::Architectures=amd64 install -y capnproto libcapnp-dev g++ libzmq3-dev gdb cmake make
           python - <<'PY'
           import json, os, platform, shutil
           from pathlib import Path
@@ -254,8 +254,8 @@ jobs:
           python -m pip download --only-binary=:all: --no-deps comma-deps-acados==0.2.2.post103 --dest "$CI_JOB_TEMP/host-planner-wheel"
           python -m pip install --no-deps "$CI_JOB_TEMP"/host-planner-wheel/*.whl
           planner_generator=$(python -P -c 'import acados; from pathlib import Path; print(Path(acados.__file__).parent)')
-          python rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --python "$(command -v python)" --acados "$planner_generator" --wheel "$CI_JOB_TEMP"/host-planner-wheel/*.whl --output "$CI_JOB_TEMP/host-planner-artifact"
-          python rust/tools/build_plannerd_source.py --artifact "$CI_JOB_TEMP/host-planner-artifact" --python "$(command -v python)" --acados "$planner_generator" --generator-wheel "$CI_JOB_TEMP"/host-planner-wheel/*.whl --cc gcc --output "$CI_JOB_TEMP/host-planner-source"
+          python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --python "$(command -v python)" --acados "$planner_generator" --wheel "$CI_JOB_TEMP"/host-planner-wheel/*.whl --output "$CI_JOB_TEMP/host-planner-artifact"
+          python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_source.py --artifact "$CI_JOB_TEMP/host-planner-artifact" --python "$(command -v python)" --acados "$planner_generator" --generator-wheel "$CI_JOB_TEMP"/host-planner-wheel/*.whl --cc gcc --output "$CI_JOB_TEMP/host-planner-source"
       - name: Exercise the unchanged original planner ABI before the full AGNOS build
         id: planner-host-abi
         env:
@@ -771,6 +771,8 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/host-planner-gdb*
             ${{ env.CI_JOB_TEMP }}/host-planner-artifact/
             ${{ env.CI_JOB_TEMP }}/host-planner-source/
+            ${{ env.CI_JOB_TEMP }}/planner-host-sdk-*/receipt.json
+            ${{ env.CI_JOB_TEMP }}/planner-host-build-*/*.log
             ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-current-evidence/**
             ${{ env.CI_JOB_TEMP }}/native-agnos/runtime-inputs-evidence/**
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-runtime-inputs-driver.txt

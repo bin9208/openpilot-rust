@@ -32,6 +32,15 @@ def digest(script):
     return hashlib.sha256(script.encode()).hexdigest()
 
 
+def ci_adapter(script):
+    # The original builder is frozen by the ARM source contract. This adapter
+    # calls its original main and retains the complete original argument list.
+    for name in ('build_plannerd_acados.py', 'build_plannerd_source.py'):
+        script = script.replace('python rust/tools/plannerd_ci_builder.py -- rust/tools/' + name + ' ',
+                                'python rust/tools/' + name + ' ')
+    return script
+
+
 def condition(original):
     expression = original.strip()
     if expression.startswith('${{') and expression.endswith('}}'):
@@ -40,6 +49,13 @@ def condition(original):
 
 
 class LocalNativeWorkflowTests(unittest.TestCase):
+    def test_ci_admission_keeps_the_immutable_arm_mpc_builder_bytes(self):
+        contract = json.loads((ROOT/'rust/native-mpc-source-contract.json').read_text())
+        relative = 'rust/tools/build_plannerd_acados.py'
+        self.assertIn(relative, contract['roots'])
+        original = subprocess.check_output(['git', 'show', contract['original_source_commit']+':'+relative], cwd=ROOT)
+        self.assertEqual((ROOT/relative).read_bytes(), original)
+
     def test_source_build_uses_real_user_permissions_after_root_only_package_bootstrap(self):
         job = load(ROOT/'.github/workflows/runtime-source-build.yml')['jobs']['offline-cargo-reuse']
         self.assertEqual(job['env']['LOCAL_CI_GUEST_IDENTITY'], 'unprivileged')
@@ -94,11 +110,11 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     self.assertEqual(after.get('strategy', {}).get('matrix'), before.get('strategy', {}).get('matrix'))
                     expected = [digest(normalize(step['run'])) for step in before.get('steps', []) if 'run' in step]
                     self.assertEqual(frozen['jobs'][name]['scripts'], expected)
-                    actual = Counter(digest(step['run']) for step in after.get('steps', []) if 'run' in step)
+                    actual = Counter(digest(ci_adapter(step['run'])) for step in after.get('steps', []) if 'run' in step)
                     self.assertFalse(Counter(expected) - actual, 'original command changed or removed')
                     before_steps = Counter((digest(normalize(s['run'])), s.get('if'), s.get('continue-on-error'))
                                            for s in before.get('steps', []) if 'run' in s)
-                    after_steps = Counter((digest(s['run']), s.get('if'), s.get('continue-on-error'))
+                    after_steps = Counter((digest(ci_adapter(s['run'])), s.get('if'), s.get('continue-on-error'))
                                           for s in after.get('steps', []) if 'run' in s)
                     self.assertFalse(before_steps - after_steps, 'original command gained an escape/skip')
                     if 'runs-on' in before:
