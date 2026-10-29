@@ -387,7 +387,7 @@ jobs:
           PYTHON
 
   workspace:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust workspace checks
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 120
@@ -704,7 +704,7 @@ jobs:
         with: {cleanup: 'true'}
 
   model-memory:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust model memory
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 15
@@ -768,7 +768,7 @@ jobs:
         with: {cleanup: 'true'}
 
   model-pipelines:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust original model pipelines
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
@@ -875,7 +875,7 @@ jobs:
         with: {cleanup: 'true'}
 
   logger-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust original route logger
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -979,7 +979,7 @@ jobs:
         with: {cleanup: 'true'}
 
   support-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust support runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1082,7 +1082,7 @@ jobs:
         with: {cleanup: 'true'}
 
   telemetry-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust telemetry runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1173,7 +1173,7 @@ jobs:
         with: {cleanup: 'true'}
 
   startup-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust startup prerequisites
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1270,7 +1270,7 @@ jobs:
         with: {cleanup: 'true'}
 
   hardware-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust hardware and boot runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1337,7 +1337,7 @@ jobs:
         with: {cleanup: 'true'}
 
   platform-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust platform runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1396,7 +1396,7 @@ jobs:
         with: {cleanup: 'true'}
 
   startup-services:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust startup services
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1460,7 +1460,7 @@ jobs:
         with: {cleanup: 'true'}
 
   sensor-audio:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust sensor and audio runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1517,7 +1517,7 @@ jobs:
         with: {cleanup: 'true'}
 
   gnss-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust GNSS runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1567,7 +1567,7 @@ jobs:
         with: {cleanup: 'true'}
 
   estimation-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust estimation runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -1642,7 +1642,7 @@ jobs:
         with: {cleanup: 'true'}
 
   ui-connectivity:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust UI and connectivity
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -1711,7 +1711,7 @@ jobs:
         with: {cleanup: 'true'}
 
   athena-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust Athena runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -1752,7 +1752,7 @@ jobs:
         with: {cleanup: 'true'}
 
   controls-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust control runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -1812,7 +1812,7 @@ jobs:
         with: {cleanup: 'true'}
 
   web-upload-timeouts:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: active upload timeout contracts
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -1847,7 +1847,7 @@ jobs:
         with: {cleanup: 'true'}
 
   joystickd-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust control tools source and native runtimes
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -1906,7 +1906,7 @@ jobs:
         with: {cleanup: 'true'}
 
   planner-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust planner source comparison (${{ matrix.runner }})
     runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
@@ -2018,7 +2018,7 @@ jobs:
         with: {cleanup: 'true'}
 
   planner-memory:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust planner pure memory contracts
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 45
@@ -2065,7 +2065,7 @@ jobs:
         with: {cleanup: 'true'}
 
   card-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust Card and CAN runtime
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 90
@@ -2165,7 +2165,7 @@ jobs:
         with: {cleanup: 'true'}
 
   radar-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust RadarCAN source and host runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -2250,7 +2250,7 @@ jobs:
         with: {cleanup: 'true'}
 
   radar-arm:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust RadarCAN native ARM functional validation
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
@@ -2370,7 +2370,7 @@ jobs:
         with: {cleanup: 'true'}
 
   radar-memory:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust RadarCAN buffer ownership with Miri
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
@@ -2432,7 +2432,7 @@ jobs:
         with: {cleanup: 'true'}
 
   navd-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust navigation runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -2504,7 +2504,7 @@ jobs:
         with: {cleanup: 'true'}
 
   radard-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust radard source runtime (${{ matrix.runner }})
     runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
@@ -2682,7 +2682,7 @@ jobs:
         with: {cleanup: 'true'}
 
   carrot-navi-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust Carrot Navi original and host runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -2824,7 +2824,7 @@ jobs:
         with: {cleanup: 'true'}
 
   carrot-navi-arm:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust Carrot Navi native ARM build
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
@@ -2899,7 +2899,7 @@ jobs:
         with: {cleanup: 'true'}
 
   selfdrive-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust selfdrived runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -2996,7 +2996,7 @@ jobs:
         with: {cleanup: 'true'}
 
   panda-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust Panda runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 40
@@ -3061,7 +3061,7 @@ jobs:
         with: {cleanup: 'true'}
 
   camera-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust camera runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 40
@@ -3131,7 +3131,7 @@ jobs:
         with: {cleanup: 'true'}
 
   encoder-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust encoder runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -3207,7 +3207,7 @@ jobs:
         with: {cleanup: 'true'}
 
   xiaoge-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust Xiaoge source comparison (${{ matrix.runner }})
     runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
@@ -3321,7 +3321,7 @@ jobs:
         with: {cleanup: 'true'}
 
   xiaoge-memory:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust Xiaoge native memory
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 75
@@ -3390,7 +3390,7 @@ jobs:
         with: {cleanup: 'true'}
 
   ui-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust UI application runtime
     runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 60
@@ -3502,7 +3502,7 @@ jobs:
         with: {cleanup: 'true'}
 
   carrot-man-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust CarrotMan owner (${{ matrix.arch }})
     runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 25 }}
@@ -3605,7 +3605,7 @@ jobs:
         with: {cleanup: 'true'}
 
   webrtc-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust WebRTC source runtime (${{ matrix.runner }})
     runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
@@ -3715,7 +3715,7 @@ jobs:
         with: {cleanup: 'true'}
 
   webcam-runtime:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust webcam source runtime (${{ matrix.runner }})
     runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 35 }}

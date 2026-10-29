@@ -333,3 +333,29 @@ workspace·ARM build·model·memory·card·UI 및 oracle matrix의 X64·AGNOS/�
 18개 selector를 원래 값으로 복원한 정적 구조가 기준070 전체 workflow와 일치했다.
 기능·빌드·원격 push·CI dispatch/cancel은 하지 않으며 기준070의 실행은 부모가 관리한다.
 dev-md 변경을 dev/main에 통합하지 않고 새 정확 source의 결과는 Actions에서 확인한다.
+
+## 2026-10-30 — 독립 runtime38개를 docs 이후 integration 검사와 병렬 시작
+
+기준 `8932dc4aa5ee06e93fb0339ad9905ef1a1a729ff`의 PR CI
+[40910714151](https://github.com/bin9208/openpilot-rust/actions/runs/40910714151)는
+일반 X64의 hosted 배분 뒤에도 build release 등 self-hosted 선행 작업을 기다렸다.
+runtime job38개 모두 `needs: [integration-gate]`여서 이 단계 전에는 시작할 수 없었다.
+
+38개 job과 호출하는 공통 job-temp/rust-path/local-arm action을 읽어 대조했다.
+다른 job의 `needs` 출력 참조나 artifact 다운로드 소비는 없고 각 job이 독립 checkout과
+자기 tool/provider/fixture 준비를 갖는다. 이38개의 `needs`만 `[check_user_docs]`로 옮겨
+기존 Git/model/build release 검사와 병렬로 시작한다. 선행 산출물 때문에 원래
+integration 의존을 유지해야 하는 runtime job은 발견하지 못했다.
+
+`check_user_docs`의 `[route, fast-checks]`와 `route.full == 'true'` 조건은 그대로다.
+따라서 fast-only feature push, 다른 저장소 fork, dev 대상 차단은 기존 경로로 유지한다.
+38개 job의 if·runner·명령·env·feature·원본 pin·수용 기준을 바꾸지 않는다.
+최종 integration/fast/arm64 gate의 전체 needs·EXPECTED 목록과 실제 실패 거부 body,
+`arm-build: [fast]`, `runtime-delivery: arm64` 및 발행 workflow는 그대로 보존한다.
+기존 needs 회귀의 기대값만 이번 순서로 바꾸고 docs 선행 조건도 명시 대조한다.
+
+로컬에서 Python AST·YAML·386개 Bash 구문·기준8932 대비 diff 검사를 통과했다.
+38개 needs를 복원한 전체 workflow 구조와 모든 최종 gate가 기준8932와 동일했고,
+의존 순환이 없으며 기존 명령·환경·runner가 보존됨을 정적으로 확인했다.
+기능 실행·push·CI dispatch/cancel은 하지 않으며 기존8932 실행은 부모가 관리한다.
+dev-md/runtime 소스를 dev/main과 섞지 않고 실제 새 source 결과는 Actions에서 확인한다.

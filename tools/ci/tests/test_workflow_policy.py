@@ -77,10 +77,12 @@ class WorkflowPolicyTests(unittest.TestCase):
 
   def test_independent_runtime_jobs_are_parallel_and_all_results_remain_required(self):
     jobs = workflow()['jobs']
+    self.assertEqual(jobs['check_user_docs']['needs'], ['route', 'fast-checks'])
+    self.assertEqual(jobs['check_user_docs']['if'], "needs.route.outputs.full == 'true'")
     runtime = list(jobs)[list(jobs).index('workspace'):list(jobs).index('fast')]
     self.assertGreater(len(runtime), 30)
     for key in runtime:
-      self.assertEqual(jobs[key]['needs'], ['integration-gate'], key)
+      self.assertEqual(jobs[key]['needs'], ['check_user_docs'], key)
       self.assertIn(key, jobs['fast']['needs'])
       self.assertIn(key, jobs['arm64']['needs'])
       self.assertNotIn('continue-on-error', jobs[key])

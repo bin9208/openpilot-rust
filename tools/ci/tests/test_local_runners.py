@@ -58,12 +58,12 @@ class LocalRunnerPolicyTests(unittest.TestCase):
             if job.get('runs-on') == MATRIX_ROUTE:
                 self.assertIn('self-hosted-x64', str(job['strategy']['matrix']))
 
-    def test_at_least_four_native_hosted_jobs_are_ready_together_after_integration(self):
+    def test_at_least_four_native_hosted_jobs_are_ready_together_after_docs(self):
         jobs = workflow(ROOT/'.github/workflows/ci.yml')['jobs']
         self.assertGreaterEqual(len(ARM_JOBS), 4)
         for name in ARM_JOBS:
             job = jobs[name]
-            self.assertEqual(job['needs'], ['integration-gate'], name)
+            self.assertEqual(job['needs'], ['check_user_docs'], name)
             self.assertNotIn('if', job, name)
             self.assertIn(job['runs-on'], ('ubuntu-24.04-arm', MATRIX_ROUTE))
             if job['runs-on'] == MATRIX_ROUTE:
