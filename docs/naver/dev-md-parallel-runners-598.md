@@ -50,7 +50,7 @@ Linux/X64 또는 ARM64만 허용한다. API job 근거에서는 두 표준 hoste
 등록 self-hosted 이름/기본 label을 확인한다. `self_hosted_only=True`는 hosted를 거절한다.
 
 `local-arm`은 실제 `uname -m`과 명시 target이 같으면 원래 command 파일을 native로
-실행한다. native ARM은 같은 pinned setup-python을 사용하고 QEMU/PRoot/rootfs를
+실행한다. native ARM은 prepare 앞의 별도 pinned setup-python/rust-path를 사용하고 QEMU/PRoot/rootfs를
 다운로드하지 않는다. X64→ARM만 기존 고정 SHA의 QEMU/PRoot 경로를 유지한다.
 `native-apt-shell`은 환경을 확인한 뒤 기존 Bash 옵션과 command bytes로 실행한다.
 원래 apt의 명시 architecture와 cross-build의 private APT_CONFIG는 수정하지 않는다.
@@ -73,8 +73,25 @@ Actions-only 조건을 확장해 hosted에서 기존 기능 검사가 skip되지
 로컬에서는 Python AST, YAML, Bash `-n`, diff 및 기준285와의 구조 비교만 수행한다.
 원래 job ID·event·permissions·concurrency·세 gate 목록과 body·모든 원래 run command,
 feature/pin/숫자/threshold/검사 순서를 대조한다. 의도한 차이는 runner/직렬 needs/matrix
-label과 동시 행 수, native ARM Python setup 조건 및 실행 모드 설명뿐이다.
+label과 동시 행 수, native ARM용 추가 준비 단계 및 실행 모드 설명뿐이다.
 회귀는 새 라우팅과 실제 환경/API 허용·거절, native/fallback 구분, 모든 필수 gate의
 실패 거절을 검사하도록 준비한다. 로컬에서 이 회귀나 기능·빌드·테스트는 실행하지 않는다.
 새 정확 SHA의 Actions 성공과 세 풀/native ARM의 실제 증거는 아직 없다. 기준285의
 기존 성공을 이 수정본의 성공으로 대신하지 않으며 부모가 통합 후 검증한다.
+
+
+## 후속: 원래 Python 조건을 보존한 native ARM 사전 준비
+
+부모 검토에 따라 기존 setup-python의 `if: env.LOCAL_CI_ARCH == 'x86_64'`와
+기존 run/argv는 기준285 원문으로 유지한다. ARM을 지원하는8개 job의 local-arm
+prepare 앞에만 `actions/setup-python@v6`/Python3.12.14와 rust-path를 추가한다.
+두 추가 단계의 조건은 모두
+`runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'`다.
+따라서 GitHub native ARM이 이미지의 기본 Python에 의존하지 않으며 X64→ARM
+fallback은 원래 guest Python pin을 계속 사용한다.
+
+native helper는 `pythonLocation`, PATH, HOME을 덮어쓰지 않고 현재 환경을 Bash에
+상속한다. 정책 확인용 `/usr/bin/python3 -I -B -S`는 명시 시스템 Python으로 계속
+분리된다. 이는 코드의 정적 확인이며 실제 interpreter/version/실행 metadata를
+관측했다는 의미가 아니다. 새16개 uses와 기존 단계의 순서·if·argv를 구조적으로
+대조하고 AST/YAML/Bash 문법/diff만 확인했다. 실제 native ARM 검사는 미실행이다.

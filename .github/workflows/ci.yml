@@ -1948,11 +1948,19 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - name: Prepare pinned Python for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Expose Rust tools for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12.14'
       - name: Reserve capacity and install original planner dependencies
@@ -2284,11 +2292,19 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - name: Prepare pinned Python for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Expose Rust tools for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12'
       - name: Configure original Radar IPC imports
@@ -2542,11 +2558,19 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - name: Prepare pinned Python for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Expose Rust tools for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12.14'
       - name: Reserve capacity and install original oracle dependencies
@@ -2845,9 +2869,17 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - name: Prepare pinned Python for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Expose Rust tools for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12.14'
       - name: Reserve runner capacity and install native ARM build dependencies
@@ -3231,11 +3263,19 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - name: Prepare pinned Python for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Expose Rust tools for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12'
       - name: Reserve capacity and install Xiaoge build prerequisites
@@ -3520,9 +3560,17 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - name: Prepare pinned Python for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Expose Rust tools for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12.14'
       - name: Reserve runner capacity and install pinned dependencies
@@ -3618,9 +3666,17 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - name: Prepare pinned Python for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Expose Rust tools for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12.14'
       - name: Reserve capacity and install pinned source and native providers
@@ -3721,9 +3777,17 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
+      - name: Prepare pinned Python for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12.14'
+      - name: Expose Rust tools for native ARM64
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
+        if: env.LOCAL_CI_ARCH == 'x86_64'
         with:
           python-version: '3.12.14'
       - name: Install exact source closure and native capture providers

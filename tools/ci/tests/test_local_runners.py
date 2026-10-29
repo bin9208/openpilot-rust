@@ -57,9 +57,19 @@ class LocalRunnerPolicyTests(unittest.TestCase):
                 self.assertEqual(len(transport), 2)
                 self.assertNotIn('if', transport[0])
                 self.assertEqual(transport[-1].get('if'), 'always()')
-                for step in job['steps']:
+                condition = "runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'"
+                prepare_index = job['steps'].index(transport[0])
+                pinned = [s for s in job['steps'][:prepare_index]
+                          if s.get('uses') == 'actions/setup-python@v6' and s.get('if') == condition]
+                rust = [s for s in job['steps'][:prepare_index]
+                        if s.get('uses') == './.github/actions/rust-path' and s.get('if') == condition]
+                self.assertEqual(len(pinned), 1)
+                self.assertEqual(pinned[0]['with']['python-version'], '3.12.14')
+                self.assertEqual(len(rust), 1)
+                for step in job['steps'][prepare_index+1:]:
                     if step.get('uses', '').startswith('actions/setup-python@'):
-                        self.assertIn("LOCAL_CI_EXECUTION_MODE == 'native'", step.get('if', ''))
+                        self.assertEqual(step.get('if'), "env.LOCAL_CI_ARCH == 'x86_64'")
+                for step in job['steps']:
                     if step.get('uses', '').startswith('actions/upload-artifact@'):
                         paths = step['with']['path']
                         self.assertIn('local-arm/execution.json', paths)
