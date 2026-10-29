@@ -247,7 +247,7 @@ class RustIsolationTests(unittest.TestCase):
                          '-p openpilot-radarcan -p openpilot-can', '--all-targets --locked -- -D warnings'):
             self.assertIn(required, host)
         arm = '\n'.join(step.get('run', '') for step in data['jobs']['radar-arm']['steps'])
-        self.assertEqual(data['jobs']['radar-arm']['runs-on'], ['self-hosted', 'Linux', 'X64'])
+        self.assertEqual(data['jobs']['radar-arm']['runs-on'], ['self-hosted', 'Linux', 'X64', 'openpilot-rust'])
         self.assertEqual(data['jobs']['radar-arm']['env']['LOCAL_CI_ARCH'], 'aarch64')
         for required in ('--target aarch64-unknown-linux-gnu', '--no-run', '--message-format=json',
                          '"$radar_test" --test-threads=1', 'test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64',

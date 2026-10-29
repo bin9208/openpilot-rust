@@ -11,7 +11,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 BASE = 'e445c9d19c3041bc79d8624589e2eb6ba7d061c6'
-LABELS = ['self-hosted', 'Linux', 'X64']
+LABELS = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
 INHERITED_WORKFLOWS = {'carrot-route-vault-publish.yaml', 'naver-upstream-sync.yml', 'sync.yml', 'wiki-settings-publish.yaml'}
 HOSTED_JOBS = {'fast-checks.yml': {'fast'}, 'user-docs.yaml': {'check_user_docs'}, 'integration.yml': {'gate'}, 'rust.yml': {'fast'}, 'wiki-settings-check.yaml': {'check'}}
 SAFETY = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
@@ -71,7 +71,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             for name, job in document.get('jobs', {}).items():
                 if 'runs-on' in job:
                     with self.subTest(path=path.name, job=name):
-                        expected = (LABELS + ['dev-md-local'] if path.name in INHERITED_WORKFLOWS else
+                        expected = (['self-hosted', 'Linux', 'X64', 'dev-md-local'] if path.name in INHERITED_WORKFLOWS else
                                     'ubuntu-24.04' if name in HOSTED_JOBS.get(path.name, set()) else LABELS)
                         self.assertEqual(job['runs-on'], expected)
                         self.assertIn(SAFETY, job['if'])

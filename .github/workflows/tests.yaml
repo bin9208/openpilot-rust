@@ -25,7 +25,7 @@ jobs:
   git_update:
     name: Git update lifecycle
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/job-temp
@@ -48,7 +48,7 @@ jobs:
   build_release:
     name: build release
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -99,7 +99,7 @@ jobs:
   model_web:
     name: Model and Bluetooth web controls
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/job-temp

@@ -16,7 +16,7 @@ concurrency:
 jobs:
   host-toolkit:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
@@ -41,7 +41,7 @@ jobs:
 
   payload:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 15
     strategy:
       fail-fast: false

@@ -112,7 +112,7 @@ jobs:
   webcam-runtime:
     name: rust webcam source runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 35 }}
     strategy:
       fail-fast: false
@@ -220,7 +220,7 @@ jobs:
   planner-runtime:
     name: rust planner source comparison (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     strategy:
       fail-fast: false
       matrix:
@@ -318,7 +318,7 @@ jobs:
   planner-memory:
     name: rust planner pure memory contracts
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: '0'
@@ -362,7 +362,7 @@ jobs:
   joystickd-runtime:
     name: rust control tools source and native runtimes
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -422,7 +422,7 @@ jobs:
   carrot-man-runtime:
     name: rust CarrotMan owner (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 25 }}
     strategy:
       fail-fast: false
@@ -514,7 +514,7 @@ jobs:
   webrtc-runtime:
     name: rust WebRTC source runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     strategy:
       fail-fast: false
@@ -614,7 +614,7 @@ jobs:
   workspace:
     name: rust workspace checks
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 120
     env:
       CARGO_BUILD_JOBS: '2'
@@ -921,7 +921,7 @@ jobs:
   xiaoge-runtime:
     name: rust Xiaoge source comparison (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     strategy:
       fail-fast: false
       matrix:
@@ -1012,7 +1012,7 @@ jobs:
   xiaoge-memory:
     name: rust Xiaoge native memory
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 75
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1076,7 +1076,7 @@ jobs:
   encoder-runtime:
     name: rust encoder runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1145,7 +1145,7 @@ jobs:
   camera-runtime:
     name: rust camera runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 40
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1210,7 +1210,7 @@ jobs:
   panda-runtime:
     name: rust Panda runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 40
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1272,7 +1272,7 @@ jobs:
   selfdrive-runtime:
     name: rust selfdrived runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1363,7 +1363,7 @@ jobs:
   card-runtime:
     name: rust Card and CAN runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 90
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1458,7 +1458,7 @@ jobs:
   radar-runtime:
     name: rust RadarCAN source and host runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1527,7 +1527,7 @@ jobs:
   radar-arm:
     name: rust RadarCAN emulated ARM functional validation
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 180
     env:
       LOCAL_CI_ARCH: aarch64
@@ -1632,7 +1632,7 @@ jobs:
   radar-memory:
     name: rust RadarCAN buffer ownership with Miri
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1691,7 +1691,7 @@ jobs:
   navd-runtime:
     name: rust navigation runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1760,7 +1760,7 @@ jobs:
   radard-runtime:
     name: rust radard source and native runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM QEMU' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     strategy:
       fail-fast: false
       matrix:
@@ -1926,7 +1926,7 @@ jobs:
   carrot-navi-runtime:
     name: rust Carrot Navi original and host runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
@@ -2065,7 +2065,7 @@ jobs:
   carrot-navi-arm:
     name: rust Carrot Navi emulated ARM build
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 180
     env:
       LOCAL_CI_ARCH: aarch64
@@ -2131,7 +2131,7 @@ jobs:
   support-runtime:
     name: rust support runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2235,7 +2235,7 @@ jobs:
   telemetry-runtime:
     name: rust telemetry runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2325,7 +2325,7 @@ jobs:
   startup-runtime:
     name: rust startup prerequisites
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2420,7 +2420,7 @@ jobs:
   startup-services:
     name: rust startup services
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2482,7 +2482,7 @@ jobs:
   sensor-audio:
     name: rust sensor and audio runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2540,7 +2540,7 @@ jobs:
   gnss-runtime:
     name: rust GNSS runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2591,7 +2591,7 @@ jobs:
   controls-runtime:
     name: rust control runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2649,7 +2649,7 @@ jobs:
   estimation-runtime:
     name: rust estimation runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2725,7 +2725,7 @@ jobs:
   ui-runtime:
     name: rust UI application runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 60
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2831,7 +2831,7 @@ jobs:
   ui-connectivity:
     name: rust UI and connectivity
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2898,7 +2898,7 @@ jobs:
   platform-runtime:
     name: rust platform runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2956,7 +2956,7 @@ jobs:
   hardware-runtime:
     name: rust hardware and boot runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3022,7 +3022,7 @@ jobs:
   logger-runtime:
     name: rust original route logger
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3127,7 +3127,7 @@ jobs:
   model-pipelines:
     name: rust original model pipelines
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3233,7 +3233,7 @@ jobs:
   model-memory:
     name: rust model memory
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 15
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3297,7 +3297,7 @@ jobs:
   arm64:
     name: rust aarch64 build
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 120
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3599,7 +3599,7 @@ jobs:
   athena-runtime:
     name: rust Athena runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3641,7 +3641,7 @@ jobs:
   web-upload-timeouts:
     name: active upload timeout contracts
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
