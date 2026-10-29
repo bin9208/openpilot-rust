@@ -206,3 +206,39 @@ integration 전의 fast/docs 선행 정책은 이번에 풀지 않는다. 기존
 직전 커밋 그대로다. validation의 parallel-v2와 발행의 기존 write group도 보존한다.
 정적 YAML 대조·AST·Bash 문법/diff만 확인하고, 최소4개 hosted ready 작업의 그래프
 회귀를 추가했다. 기능·빌드·테스트·원격 push/CI 조작은 수행하지 않았다.
+
+
+## CPU 병렬도: 고정2/1 제거와 실제 affinity 기본값
+
+추가 사용자 지시로 Cargo/libtest의 고정 worker 제한을 제거한다. ci.yml 및 기존
+AGNOS delivery·Bosch source reference·media fixture·self-hosted readiness의
+`CARGO_BUILD_JOBS: 2`, docs command의 inline `CARGO_BUILD_JOBS=2`, 저장된
+CarrotMan job template의2를 제거한다. disk-space bootstrap·실제 AGNOS build·
+Xiaoge native memory의 child 환경도 고정2를 덮어쓰지 않고 원래 환경을 상속한다.
+
+등록 runner에 사용자 Cargo config의 `jobs=2`가 남아 있을 수 있으므로 env 제거만으로
+끝내지 않는다. 공통 rust-path action은 `os.sched_getaffinity(0)`를 우선 사용하고,
+사용 불가 시 `os.cpu_count()`로 사용 가능한 CPU 수를 산출한다. 각 환경 변수가
+정의되지 않았을 때만 `CARGO_BUILD_JOBS`/`RUST_TEST_THREADS`에 그 값을 설정해
+GITHUB_ENV와 현재 shell export에 반영한다. 명시된 환경 override는 빈 값까지도
+임의로 바꾸지 않는다. CPU 수를 판별할 수 없으면 고정1/2로 숨겨 진행하지 않고
+실패한다. 로컬 `/home/fma1/.cargo/config.toml`의 `jobs=2`는 수정하지 않는다.
+
+누락된 fast-checks의 간접 disk guard bootstrap, scons/native model build,
+readiness ARM transport와 delivery publish에도 기존 rust-path를 연결한다.
+모든 명시·간접 Cargo CI 소비자의 common action 사용을 정적으로 대조했다.
+기존 action의 Rustup URL/SHA·space admission·cache·job owner·cleanup은 유지한다.
+
+직접 `--test-threads=1`은 Jetlink ASan, planner/radar Miri, radar ARM 실제 test,
+Xiaoge OpenCV/JPEG native suite에서 제거한다. 읽기 감사에서 유지해야 할 테스트
+순서 의존 근거를 찾지 못했다. Jetlink의50ms deadline과 Rust fixture 내부의
+기존 mutex, sanitizer/Miri 옵션·대상·기존 유효성/허용 오차는 바꾸지 않는다.
+별도 `RUST_TEST_THREADS` 고정 기본값이나 저장소 .cargo build.jobs는 없었다.
+읽은 vendor RTC .cargo 설정은 ARM 암호화 rustflags만 지정하며 그대로다.
+
+perf에는 이번 변경에 영향을 받는 전체 docs command frozen hash 검사가 없었다.
+기존 native disk guard의 raylib/reservation/template 인자 hash 입력은 그대로이고
+독립 hash pin은 수정하지 않는다. 프로덕션 source guard·acceptance는 변경하지 않는다.
+기존 test_rust_path에 actual CPU/default/명시 override와 helper child 환경 상속 회귀를
+추가했으나 실행하지 않았다. AST/YAML/Bash 문법/diff와 원문 구조 비교만 수행했으며
+기능·빌드·테스트·원격 push/CI 조작과 추가 실패 원인 수정은 수행하지 않았다.

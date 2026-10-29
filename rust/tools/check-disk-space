@@ -107,7 +107,7 @@ if [[ ! -x $binary ]]; then
   rustup toolchain install 1.94.0 --profile minimal >&2
   mkdir -p -- "$cache"
   env -u RUSTFLAGS -u CARGO_ENCODED_RUSTFLAGS -u CARGO_BUILD_TARGET -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
-    CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 build \
+    CARGO_INCREMENTAL=0 cargo +1.94.0 build \
     --manifest-path "$root/rust/Cargo.toml" -p openpilot-disk-space --bin disk-space-guard \
     --locked --target "$host" --target-dir "$cache/build" >&2
   temporary=$(mktemp "$cache/.publish.XXXXXXXX")

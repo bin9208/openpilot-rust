@@ -583,7 +583,7 @@ def build_opencv():
 
 
 def environment():
-    env = dict(os.environ, CARGO_TARGET_DIR=str(TARGET), CARGO_INCREMENTAL="0", CARGO_BUILD_JOBS="2", CARGO_PROFILE_RELEASE_DEBUG="0", LIBCLANG_PATH="/usr/lib/llvm-18/lib")
+    env = dict(os.environ, CARGO_TARGET_DIR=str(TARGET), CARGO_INCREMENTAL="0", CARGO_PROFILE_RELEASE_DEBUG="0", LIBCLANG_PATH="/usr/lib/llvm-18/lib")
     for language, compiler in (("cc", "aarch64-linux-gnu-gcc"), ("cxx", "aarch64-linux-gnu-g++")):
         path = WORK / language
         args = [compiler, f"--sysroot={SDK}", f"-B{SDK}/usr/lib/aarch64-linux-gnu/", f"-L{SDK}/usr/lib/aarch64-linux-gnu", f"-Wl,-rpath-link,{SDK}/usr/lib/aarch64-linux-gnu", "-nostdinc", "-isystem", "/usr/lib/gcc-cross/aarch64-linux-gnu/13/include"]

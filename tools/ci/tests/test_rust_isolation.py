@@ -14,7 +14,7 @@ class RustIsolationTests(unittest.TestCase):
         job = workflow['jobs']['webcam-runtime']
         self.assertEqual(job['strategy']['matrix']['runner'], ['self-hosted-x64', 'ubuntu-24.04-arm'])
         self.assertNotIn('if', job)
-        self.assertEqual(job['env']['CARGO_BUILD_JOBS'], '2')
+        self.assertNotIn('CARGO_BUILD_JOBS', job['env'])
         self.assertEqual(job['env']['CARGO_INCREMENTAL'], '0')
         self.assertEqual(job['env']['CARGO_PROFILE_DEV_DEBUG'], '0')
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
@@ -244,7 +244,7 @@ class RustIsolationTests(unittest.TestCase):
         arm = '\n'.join(step.get('run', '') for step in data['jobs']['radar-arm']['steps'])
         self.assertEqual(data['jobs']['radar-arm']['runs-on'], 'ubuntu-24.04-arm')
         for required in ('--target aarch64-unknown-linux-gnu', '--no-run', '--message-format=json',
-                         '"$radar_test" --test-threads=1', 'test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64',
+                         '"$radar_test" 2>&1 | tee', 'test "$(cat "$RUNNER_TEMP/radar-arm/machine.txt")" = aarch64',
                          'check_radarcan_ci.py --phase reference', 'check_radarcan_ci.py --phase ipc',
                          '--platform manylinux_2_27_aarch64', 'sha256sum'):
             self.assertIn(required, arm)

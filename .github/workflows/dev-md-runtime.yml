@@ -72,7 +72,6 @@ jobs:
       RUNTIME_SOURCE_SHA: ${{ needs.verify.outputs.source_sha }}
       GIT_LFS_SKIP_SMUDGE: '1'
       CARGO_INCREMENTAL: '0'
-      CARGO_BUILD_JOBS: '2'
       RUSTUP_TOOLCHAIN: '1.94.0'
     steps:
       - uses: actions/checkout@v7
@@ -254,6 +253,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - name: Reserve disk and install ARM execution tools
         run: |
           # Only GitHub-hosted images contain these disposable tool bundles.
