@@ -281,3 +281,18 @@ job private 경로이며 공유 host PPA lists/cache를 대상으로 하지 않�
 명시 source/config 호출의 원문 통과와 architecture 값·parser·서명·mode guard는
 유지한다. 로컬 Bash syntax·내장 Python AST·diff만 확인했으며 apt/기능 실행이나
 공유 설정 변경·원격 CI 조작은 하지 않았다.
+
+
+## GitHub-hosted 기본 mirror 보존
+
+실제 hosted navigationwire job123495106545 (`GitHub Actions 1000030444`)에서
+`no signed official Ubuntu archive/security/ports source was found`가 발생했다.
+GitHub 이미지의 기본 source는 mirror+file 등을 사용할 수 있으므로 self-hosted PPA
+격리용 allowlist를 넓히지 않는다. source/lists/cache view 생성은
+native-default이면서 RUNNER_ENVIRONMENT가 self-hosted일 때만 적용한다.
+GitHub-hosted native-default는 원래 이미지의 source를 보존하고, 명시 architecture가
+없을 때만 기존 native architecture 기본 옵션을 사용한다. 명시 config/source 호출과
+명시 architecture 값은 원문대로다. parser/URI allowlist와 기존 세 parser/재귀 회귀는
+변경하지 않는다. Bash syntax·내장 Python AST·diff만 확인했으며 기능·apt 실행과
+원격 push/CI 조작은 하지 않았다. 실제 hosted/등록 runner 성공은 부모 Actions 검증이
+필요하다.
