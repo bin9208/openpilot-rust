@@ -93,7 +93,7 @@ def main() -> None:
   parser.add_argument('--source-result', type=Path)
   args = parser.parse_args()
   output = args.output.resolve()
-  assert shutil.disk_usage(output.parent).free >= 25 * 1024**3 + args.reserve_mib * 1024**2
+  assert shutil.disk_usage(output.parent).free >= args.reserve_mib * 1024**2
   output.mkdir(exist_ok=False)
   source = (
     json.loads(args.source_result.read_text())

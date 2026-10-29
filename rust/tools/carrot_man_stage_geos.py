@@ -34,7 +34,7 @@ def main():
       files[name] = wheel.read("shapely-2.1.2.dist-info/licenses/" + name)
   args.output.parent.mkdir(parents=True, exist_ok=True)
   free = shutil.disk_usage(args.output.parent).free
-  assert free >= 25 * 1024**3 + sum(map(len, files.values())) + 1024**2, "25 GiB plus artifact growth floor"
+  assert free >= sum(map(len, files.values())) + 1024**2, "artifact payload plus 1 MiB estimated growth required"
   args.output.mkdir(exist_ok=False)
   for name, content in files.items():
     (args.output / name).write_bytes(content)

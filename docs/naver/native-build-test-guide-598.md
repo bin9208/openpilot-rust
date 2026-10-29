@@ -437,3 +437,21 @@ Planner X6440703120388/job122883492732의 SIGILL은 원인 미확정이며 실�
 사용자는 이 작업의 구소스 검사 취소와 최신 수정본 우선 검증을 승인했다. 다른 세션과
 최신 source 검사는 보존한다. 자동화598은 삭제됐으며 새 주기 프롬프트를 만들지 않는다.
 이 수정의 기능 성공·필수 gate 통과·완전 후보 준비는 아직 확인 전이다.
+
+## 필수 helper의 잔여 고정 공간 규칙 읽기 감사 — #623
+
+필수 Rust/Integration workflow가 직접 부르는14개 Python helper에서 남은25GiB 항을
+제거하도록 수정한다. JPEG/USB GPU/Params/location 빌드의 원래1/2GiB 예상 증가량,
+Xiaoge memory의2GiB, GEOS의 실제 payload+1MiB, recovery의 growth+25MiB,
+webcam의 명시 reserve_mib와 RadarCAN의 실제 growth는 유지한다. 원본·수치·유효성·
+메모리/보안 검사와 명령은 그대로다. local AST/diff만 확인했으며 정확 후속 source의
+Actions 결과와 정상 PR/병합 후 근거는 아직 확인 전이다. 현재 d0 검사는 보존한다.
+
+## 기존 X64 ABI 실패를 긴 ARM 준비 전에 확인 — #622
+
+이전SIGILL은 Python 원본 ABI가 evidence/input.json을 남기기 전 종료한 실패다.
+같은 generator/NumPy/Cython/wheel/원본 생성·컴파일 도구를 재사용한 작은 원본 ABI 검사를
+genuine의 긴 ARM 입력/전체 빌드 전에 추가한다. 실패132를 그대로 반환하고 같은 실패만
+GDB로 재현해 CPU/PC/명령어/library/역추적을 남긴다. 기존 Rust의 원본/native bit 비교와
+모든 genuine ARM 명령·pin은 유지한다. 진단 성공이나 source-only smoke를 필수 전체
+통과로 대신하지 않으며 해당 후속 정확 source 결과는 아직 확인 전이다.

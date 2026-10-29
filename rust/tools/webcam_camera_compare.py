@@ -116,8 +116,8 @@ def main() -> None:
   parser.add_argument('--reserve-mib', type=int, default=32)
   args = parser.parse_args()
   root = args.output.resolve()
-  if shutil.disk_usage(root.parent).free < 25 * 1024**3 + args.reserve_mib * 1024**2:
-    raise OSError('owned webcam fixtures require the 25 GiB floor plus combined reservations')
+  if shutil.disk_usage(root.parent).free < args.reserve_mib * 1024**2:
+    raise OSError('owned webcam fixtures require the estimated combined operation growth')
   root.mkdir(exist_ok=False)
   rows = pixels(args.binary.resolve(strict=True), root)
   captured = capture(args.binary.resolve(strict=True), root)
