@@ -42,6 +42,16 @@ class WorkflowPolicyTests(unittest.TestCase):
                 'tests.yaml', 'jetlink.yml', 'jetlink-native.yml', 'naver-ci.yml', 'naver-apk-tools.yml'):
       self.assertFalse((ROOT / '.github/workflows' / old).exists(), old)
 
+  def test_parallel_pool_has_a_separate_preserving_concurrency_group(self):
+    concurrency = workflow()['concurrency']
+    self.assertEqual(concurrency, {
+      'group': 'ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-parallel-v2',
+      'cancel-in-progress': 'false',
+      'queue': 'max',
+    })
+    self.assertNotEqual(concurrency['group'],
+                        'ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}')
+
   def test_branch_push_pr_and_merge_routing(self):
     script = workflow()['jobs']['route']['steps'][0]['with']['script']
     cases = [

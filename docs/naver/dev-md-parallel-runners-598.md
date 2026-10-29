@@ -128,3 +128,21 @@ pin/숫자·세 gate 보존은 추가 ARM uses16개와 동등한 matrix label �
 않는다. YAML을 읽어 세 runs-on만 복원하면 기준 workflow 전체가 같음을 대조하고,
 관련 guard AST와 Bash 문법/diff만 확인한다. 실제 기능·빌드·테스트·발행·CI 조작은
 수행하지 않았다. native ARM 준비 보강 및 공통 runner API 후속 커밋과 함께 통합한다.
+
+
+## 기존 실행을 보존하는 concurrency 세대 분리
+
+새 사용자 지시에 따라 ci.yml의 workflow-level concurrency를 다음으로 바꾼다.
+
+- group: 기존 event/PR-or-ref 구분 뒤 `-parallel-v2`를 붙인다.
+- `cancel-in-progress: false`, `queue: max`.
+
+기존285 등 이전 source는 원래 concurrency group에 남고 현재 수정은 별도 group을
+사용한다. 새 hosted/native ARM job이 이전 단일 runner workflow의 concurrency
+대기열 때문에 시작하지 못하는 문제를 피한다. 기존 실제 실행이나 queued run을
+취소·재시작하지 않는다. 같은 새 group 안에서는 실행을 보존하며 순서대로 기다린다.
+이 단락은 앞의 원래 concurrency 보존 기록을 새 명시 정책으로 대체한다.
+
+로컬 구조 대조에서 이 후속 변경은 ci.yml의 concurrency 세 필드뿐이며 모든 job,
+gate, 조건, step와 argv는 직전 커밋과 같다. queue 세대 분리 회귀를 추가했지만
+실행하지 않았다. AST/YAML/diff만 확인했으며 원격 등록·CI 실행 결과는 미확인이다.

@@ -14,8 +14,9 @@ env:
   CI: '1'
   RUSTUP_TOOLCHAIN: '1.94.0'
 concurrency:
-  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-parallel-v2
+  cancel-in-progress: false
+  queue: max
 jobs:
   route:
     if: github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
