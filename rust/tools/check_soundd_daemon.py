@@ -32,6 +32,26 @@ def lines(path):
   return [json.loads(line) for line in path.read_text().splitlines()]
 
 
+def check_callback_samples(callbacks, values, *, gain=1.0, repeat=False):
+  """Check all 4096 ABI samples, including intentional #392 finite silence.
+
+  The fixture PCM values are converted independently of native playback. The
+  unchanged original repeats the first suffix beyond a finite clip's end.
+  """
+  clip = (np.asarray(values, dtype=np.float64) * gain).astype(np.float32) / np.float32(32768)
+  clip *= np.float32(0.73)
+  assert callbacks.ndim == 2 and callbacks.shape[1] == 4096
+  matches = np.flatnonzero(callbacks[:, 0] == clip[0])
+  assert len(matches), ('expected alert callback missing', clip.tolist())
+  expected = np.zeros(4096, dtype=np.float32)
+  if repeat:
+    expected[:] = np.resize(clip, 4096)
+  else:
+    expected[:len(clip)] = clip
+  for index in matches:
+    np.testing.assert_array_equal(callbacks[index].view(np.uint32), expected.view(np.uint32))
+
+
 def scenario(binary, library, output, mode):
   output.mkdir(parents=True, exist_ok=True)
   prefix = 'sound-' + uuid.uuid4().hex[:16]
@@ -125,6 +145,7 @@ def scenario(binary, library, output, mode):
           samples = np.fromfile(output / 'samples.f32', dtype=np.float32).reshape(-1, 4096)
           expected = np.float32(np.float32(1200 * 0.37) / 32768) * np.float32(0.73)
           assert np.any(samples[:, 0] == expected), (samples[:, 0], expected)
+          check_callback_samples(samples, [1200, -2400, 3600, -4800], gain=0.37)
           send('selfdriveState', enabled=False, alertSound=7)
           before = event_count('callback')
           wait_for(lambda: event_count('callback') >= before + 3)
@@ -134,6 +155,7 @@ def scenario(binary, library, output, mode):
           wait_for(lambda: event_count('callback') >= before + 2)
           samples = np.fromfile(output / 'samples.f32', dtype=np.float32).reshape(-1, 4096)
           assert np.any(samples[:, 0] == np.float32(800 / 32768) * np.float32(0.73))
+          check_callback_samples(samples, [800, -900, 1000, -1100], repeat=True)
           send('selfdriveState', enabled=False, alertSound=0)
           send('carrotMan', leftSec=3)
           before = event_count('callback')
@@ -148,6 +170,7 @@ def scenario(binary, library, output, mode):
           samples = np.fromfile(output / 'samples.f32', dtype=np.float32).reshape(-1, 4096)[start_sample:]
           assert np.all(samples[:20] == 0), 'MAIN fired before two seconds'
           assert np.any(samples[:, 0] == np.float32(800 / 32768) * np.float32(0.73)), 'MAIN did not produce prompt'
+          check_callback_samples(samples, [800, -900, 1000, -1100])
           send('carState', buttonEvents=[{'type': 'mainCruise', 'pressed': False}])
           send('selfdriveState', enabled=True, alertSound=0)
           start_sample = event_count('callback')
@@ -155,6 +178,7 @@ def scenario(binary, library, output, mode):
           samples = np.fromfile(output / 'samples.f32', dtype=np.float32).reshape(-1, 4096)[start_sample:]
           assert np.all(samples[2:55] == 0), 'timeout fired before five seconds'
           assert np.any(samples[61:, 0] == np.float32(1200 / 32768) * np.float32(0.73)), 'timeout warning did not play'
+          check_callback_samples(samples[61:], [1200, -2400, 3600, -4800], repeat=True)
           process.send_signal(signal.SIGTERM)
           code = process.wait(timeout=2)
           assert code == 0

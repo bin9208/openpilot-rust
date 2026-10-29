@@ -1,5 +1,6 @@
 """Retain exact required commands while routing this track to the named runner."""
 from collections import Counter
+from functools import cache
 import hashlib
 import json
 import runpy
@@ -11,6 +12,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 BASE = 'e445c9d19c3041bc79d8624589e2eb6ba7d061c6'
+SUPPORT_BASE = '3fd7fd051b0af237fb8f75a4260e48707e3ae7c8'
 LABELS = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
 INHERITED_WORKFLOWS = {'carrot-route-vault-publish.yaml', 'naver-upstream-sync.yml', 'sync.yml', 'wiki-settings-publish.yaml'}
 HOSTED_JOBS = {'fast-checks.yml': {'fast'}, 'user-docs.yaml': {'check_user_docs'}, 'integration.yml': {'gate'},
@@ -47,6 +49,37 @@ def restore_parallel_caps(script, originals):
     for original in originals:
         if script == parallel_defaults(original):
             return original
+    return script
+
+
+@cache
+def support_workspace_command_pairs():
+    # Compare only the two reviewed #631 scripts with their exact frozen bytes.
+    commands = (
+        ('cargo clippy --workspace --all-targets --locked -- -D warnings',
+         'cargo clippy --workspace --all-targets --locked --features openpilot-modem/helper-lifetime-tests -- -D warnings'),
+        ('cargo test --workspace --locked',
+         'cargo test --workspace --locked --features openpilot-modem/helper-lifetime-tests'),
+    )
+    versions = []
+    for ref, column in ((BASE, 0), (SUPPORT_BASE, 1)):
+        document = yaml.load(subprocess.check_output(
+            ['git', 'show', ref + ':.github/workflows/rust.yml'], cwd=ROOT, text=True),
+            Loader=yaml.BaseLoader)
+        scripts = []
+        for pair in commands:
+            script, = (step['run'] for step in document['jobs']['workspace']['steps']
+                       if pair[column] in step.get('run', '').splitlines())
+            scripts.append(script)
+        versions.append(scripts)
+    return tuple(zip(*versions))
+
+
+def restore_support_workspace_command(relative, name, script):
+    if relative == '.github/workflows/rust.yml' and name == 'workspace':
+        for original, updated in support_workspace_command_pairs():
+            if script == updated:
+                return original
     return script
 
 
@@ -174,6 +207,13 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     'ec418df39d3b5820f2751978e3898f0a4d858cbc:'+relative], cwd=ROOT)
                 self.assertEqual((ROOT/relative).read_bytes(), original)
 
+    def test_workspace_keeps_exact_support_631_feature_and_process_child_setup(self):
+        steps = load(ROOT / '.github/workflows/rust.yml')['jobs']['workspace']['steps']
+        scripts = [step['run'] for step in steps if any(
+            command in step.get('run', '') for command in
+            ('cargo clippy --workspace', 'cargo test --workspace'))]
+        self.assertEqual(scripts, [updated for _, updated in support_workspace_command_pairs()])
+
     def test_frozen_jobs_dependencies_matrix_and_each_original_command_survive(self):
         snapshot = json.loads((ROOT / 'tools/ci/fixtures/local-native-workflows-605.json').read_text())
         self.assertEqual(snapshot['schema'], 1)
@@ -191,11 +231,14 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     expected = [digest(normalize(step['run'])) for step in before.get('steps', []) if 'run' in step]
                     self.assertEqual(frozen['jobs'][name]['scripts'], expected)
                     originals = [normalize(step['run']) for step in before.get('steps', []) if 'run' in step]
-                    actual = Counter(digest(restore_parallel_caps(step['run'], originals)) for step in after.get('steps', []) if 'run' in step)
+                    actual = Counter(digest(restore_parallel_caps(
+                        restore_support_workspace_command(relative, name, step['run']), originals))
+                        for step in after.get('steps', []) if 'run' in step)
                     self.assertFalse(Counter(expected) - actual, 'original command changed beyond explicit resource-cap removal')
                     before_steps = Counter((digest(normalize(s['run'])), s.get('if'), s.get('continue-on-error'))
                                            for s in before.get('steps', []) if 'run' in s)
-                    after_steps = Counter((digest(restore_parallel_caps(s['run'], originals)), s.get('if'), s.get('continue-on-error'))
+                    after_steps = Counter((digest(restore_parallel_caps(
+                        restore_support_workspace_command(relative, name, s['run']), originals)), s.get('if'), s.get('continue-on-error'))
                                           for s in after.get('steps', []) if 'run' in s)
                     self.assertFalse(before_steps - after_steps, 'original command gained an escape/skip')
                     if 'runs-on' in before:
