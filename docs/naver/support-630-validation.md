@@ -211,3 +211,21 @@ Rust 테스트 스레드는 1→2로 조정한다. source/ARM script는 workflow
 검사: 두 shell script의 `bash -n`, workflow YAML parse와 병렬 값 확인 및 diff 공백 검사.
 실제 병렬 빌드/테스트 실행 결과와 처리 시간·최대 메모리 개선은 아직 확인하지 않았다.
 Docs-Not-Needed: 개발용 검증 병렬 설정으로 사용자 기능·설정 안내 변경 없음.
+
+### 원본 비교 성공과 대조군 출력 판정 보완 — #637
+
+정확 후보 `5723dd8fcdd125be0d4b008c6838e89188d89ae9`의
+[40877475304](https://github.com/bin9208/openpilot-rust/actions/runs/40877475304)은
+선정9package build/tests/strict Clippy, 유지된 원본 비교 전체와 고정 후보 회귀,
+할당 probe 및 multipart RSS를 통과했다. artifact12900446282의 source 전후 diff는
+비어 있고 index hash도 같다. 이후 sound old-source 컴파일과 실제5실패/3성공을
+재현했으나 controller가 `test NAME ... FAILED`를 한 줄로 요구해 중단됐다.
+`--nocapture`의 panic 출력은 해당 줄을 나누므로 실패 요약의 정확 test 이름과
+5실패/3성공 요약을 검사한다. overflow control과 compiler-success 요구는 유지한다.
+
+`phase=baselines`는 동일 source의 뒤쪽 대조군·multipart 계측과 modem RED/GREEN만
+별도 실행한다. 원본 전체 비교를 성공한 것처럼 다시 표시하지 않도록 산출물에
+`validation_scope=baselines`, `maintained_comparisons_executed=false`를 기록한다.
+`source`/`host`/`all`에는 기존 전체 비교와 모든 timeout을 그대로 남긴다.
+서로 다른 실행은 정확 source와 각 단계별 receipt로 묶으며 실패한 앞선 run 전체를
+성공으로 바꾸지 않는다. #637은 실제 후속 Actions 결과를 확인한 뒤 종료한다.

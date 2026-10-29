@@ -18,6 +18,8 @@ fi
 cd -- "$SOURCE_ROOT"
 SOURCE_ROOT=$(pwd -P)
 export SOURCE_ROOT CARGO_TARGET_DIR SOURCE_PYTHON RUNNER_TEMP
+export SUPPORT630_SOURCE_SCOPE=${SUPPORT630_SOURCE_SCOPE:-all}
+case $SUPPORT630_SOURCE_SCOPE in all|baselines) ;; *) exit 2 ;; esac
 # Parent RUNNER_TEMP is an Actions directory, not necessarily job-private.
 RUNNER_TEMP=$(mktemp -d /tmp/s630.XXXXXX)
 chmod 700 "$RUNNER_TEMP"
@@ -96,6 +98,8 @@ root=Path(os.environ['EVIDENCE'])
     source_sha=(root/'SOURCE_COMMIT').read_text().strip(),
     returncode=int(os.environ['SUPPORT630_RC']), last_step=os.environ['SUPPORT630_STEP'],
     architecture=platform.machine(), execution_mode=os.environ.get('OPENPILOT_CI_EXECUTION_MODE','native'),
+    validation_scope=os.environ['SUPPORT630_SOURCE_SCOPE'],
+    maintained_comparisons_executed=os.environ['SUPPORT630_SOURCE_SCOPE']=='all',
     required_contexts_satisfied=False, device_acceptance=False), indent=2)+'\n')
 PY
   exit "$rc"
@@ -166,6 +170,7 @@ params=("$EVIDENCE"/providers/params/params_pyx*.so)
 test "${#params[@]}" = 1 && test -f "${params[0]}"
 export PYTHONPATH="$EVIDENCE/providers/msgq:$SOURCE_ROOT:$SOURCE_ROOT/rust/tools"
 # The retained comparators own their original scenarios, tolerances and deadlines.
+if [[ $SUPPORT630_SOURCE_SCOPE == all ]]; then
 run web-upload "$SOURCE_PYTHON" rust/tools/check_web_upload.py \
   --binary "$bin/examples/web_upload_trace" --output "$EVIDENCE/web-upload"
 run web-upload-timeouts "$SOURCE_PYTHON" rust/tools/check_web_upload_timeouts.py \
@@ -237,6 +242,7 @@ run bootlog-xattrs cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked \
   -p openpilot-bootlog --test snapshot_xattrs -- --nocapture
 run sound-playback cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked \
   -p openpilot-soundd --test playback -- --nocapture
+fi
 # Baselines live only in this run's private directory. No candidate file is replaced.
 admit baseline-checkouts-and-build 8192 "$RUNNER_TEMP" "$CARGO_TARGET_DIR"
 baselines=$(mktemp -d "$RUNNER_TEMP/support630-baselines.XXXXXX")
@@ -287,9 +293,10 @@ red() {
   grep -F "$expected" "$EVIDENCE/logs/$label.log"
   if grep -E '^error\[E[0-9]+\]|could not compile' "$EVIDENCE/logs/$label.log"; then return 1; fi
 }
-red sound-red 'test finite_clip_stops_at_its_end_inside_a_callback ... FAILED' \
+red sound-red '    finite_clip_stops_at_its_end_inside_a_callback' \
   cargo +1.94.0 test --manifest-path "$baselines/behavior/rust/Cargo.toml" --locked \
   -p openpilot-soundd --test playback
+grep -F 'test result: FAILED. 3 passed; 5 failed; 0 ignored;' "$EVIDENCE/logs/sound-red.log"
 grep -F 'test sample_counter_overflow_is_reported_without_wrapping ... ok' "$EVIDENCE/logs/sound-red.log"
 red bluetooth-red 'old reply erased live new prompt' \
   cargo +1.94.0 test --manifest-path "$baselines/behavior/rust/Cargo.toml" --locked \
