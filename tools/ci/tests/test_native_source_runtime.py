@@ -164,6 +164,9 @@ class SourceRuntimeTests(unittest.TestCase):
           runner.run(['/usr/bin/python3', '-I', '-B', '-S', '-c', 'import sys; sys.stdout.buffer.write(b"x"*(5*1024**2))'],
               env=seed.ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
         self.assertIsNone(normal.poll())
+      except subprocess.CalledProcessError as error:
+        print('owned command stderr (first 4096 bytes):\n'+(error.stderr or b'')[:4096].decode(errors='replace'), file=sys.stderr, flush=True)
+        raise
       finally:
         if killer.is_alive():
           killer.join(timeout=12)
@@ -180,9 +183,13 @@ class SourceRuntimeTests(unittest.TestCase):
       body = ('import os,pathlib,sys,time; p=pathlib.Path(sys.argv[1]); '
               't=p.with_suffix(".pending"); t.write_text(str(os.getpid())); t.replace(p); time.sleep(60)')
       code = ('import sys,subprocess; sys.path.insert(0,sys.argv[1]); '
-              'import source_runtime as d; import bootstrap_seed as s; '
-              'd.OwnedCommands(s.owner_chain()).run(["/usr/bin/python3","-I","-B","-S","-c",sys.argv[3],sys.argv[2]],'
-              'env=s.ENV,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True)')
+              'import source_runtime as d; import bootstrap_seed as s\n'
+              'try:\n'
+              '  d.OwnedCommands(s.owner_chain()).run(["/usr/bin/python3","-I","-B","-S","-c",sys.argv[3],sys.argv[2]],'
+              'env=s.ENV,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True)\n'
+              'except subprocess.CalledProcessError as error:\n'
+              '  print("owned command stderr (first 4096 bytes):\\n"+(error.stderr or b"")[:4096].decode(errors="replace"),file=sys.stderr,flush=True)\n'
+              '  raise\n')
       parent = subprocess.Popen([sys.executable, '-c', code, native, str(ready), body])
       identity = None
       try:

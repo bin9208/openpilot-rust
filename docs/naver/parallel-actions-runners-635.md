@@ -61,3 +61,38 @@ PR 검증 context는 원래 source/head/base와 실제 merge bytes를 계속 묶
 회귀를 Actions에 연결한다. 새 정확 source의 실제 hosted X64/ARM 및 세 self-hosted
 실행, 원래 필수 PR·병합 후 결과를 확인해야 수용한다. 단순 routing 수정이나 CI 등록을
 #598의 자체 빌드·전체 후보 완료로 처리하지 않는다.
+
+## 2026-10-29 — ARM source command 초기화 실패의 제한된 진단
+
+source `b1c6040749910d8e161b34233a3069f318be0d49`의
+[foundation ARM job123495075956](https://github.com/bin9208/openpilot-rust/actions/runs/40887511364/job/123495075956)은
+bin-actions2의 X64 → PRoot/QEMU AArch64, uid1000 환경이었다.
+`test_native_source_runtime.py`의 SIGKILL 검사는 자식 준비 전에 wrapper가 exit1로
+종료됐고, original-owner 검사도 `CalledProcessError`로 실패했다. 이 시점에는
+owner-death 이후 자식 정리와 4MiB capture 한도까지 검사가 도달하지 못했다.
+단순 10초 초기화 예산 초과나 CPU thread 설정 문제로 확정하지 않는다.
+
+`OwnedCommands.run()`은 stderr를 임시 파일로 받았다가 예외의 `stderr`에 담지만,
+unittest traceback은 그 bytes를 출력하지 않는다. 해당 임시 파일도 반환/오류 시
+닫히고 artifact 목록에 없으므로 기존 로그에서는 내부 원인을 복원할 수 없다.
+실패 source와 `924710ae8ac25e52dace839cc9ba89f2fd0fc4e6`의 production driver·
+회귀 파일은 각각 Git blob이 같다. `prctl`/부모 PID/owner identity 검증 또는 exec
+실패 중 어느 것인지는 실제 stderr를 확인해야 한다.
+
+두 실패 case에서만 `CalledProcessError.stderr`의 앞4096바이트를 decode하여 stderr에
+출력하고 원래 예외를 다시 발생시킨다. SIGKILL case는 테스트가 만든 중간 Python
+process에서 예외가 발생하므로 그 code 안에서 출력한다. production 출력 정책,
+원래 argv·10초/5초 예산·non-root/owner/독립 process 정리 단언과 4MiB 한도는 유지한다.
+로컬에서는 모듈과 생성된 `-c` code/body의 AST 및 diff만 검사하고 기능 실행은 하지 않는다.
+
+부모에게는 같은 `offline-cargo-reuse` ARM matrix의 local-arm 준비와 자원 admission 뒤,
+Rust toolchain 설치·빌드 전에 아래 두 case만 진단 선행 step으로 실행하도록 제안한다.
+기존 `openpilot-local-shell`과 `LOCAL_CI_GUEST_IDENTITY=unprivileged`를 사용하며,
+전체 회귀 step을 삭제하거나 native-host ARM 성공으로 대체하지 않는다.
+이 변경에는 workflow 수정·CI dispatch·원격 push를 포함하지 않는다.
+
+```sh
+python3 -m unittest -v \
+  tools.ci.tests.test_native_source_runtime.SourceRuntimeTests.test_driver_sigkill_also_stops_the_non_root_download_command \
+  tools.ci.tests.test_native_source_runtime.SourceRuntimeTests.test_original_owner_death_stops_only_the_dedicated_command_and_bounds_capture
+```
