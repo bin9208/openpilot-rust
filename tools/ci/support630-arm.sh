@@ -213,10 +213,46 @@ Path(sys.argv[1]).write_text(json.dumps(dict(
 PY
 # Use the existing tool/codec flags/source pin; do not reimplement FFmpeg configure.
 admit existing-ffmpeg-provider-build 6144 "$SUPPORT_ROOT" "$arm_job/provider-host-target"
-run build-pinned-ffmpeg env CARGO_TARGET_DIR="$arm_job/provider-host-target" \
-  cargo +1.94.0 run --manifest-path "$helper_root/rust/Cargo.toml" --locked \
-  -p openpilot-dev-tools --bin build-loggerd-ffmpeg -- \
-  --root "$provider_root" --cc "$cc" --ar "$ar" --ranlib "$ranlib" --jobs 2
+run build-pinned-provider-tool env CARGO_TARGET_DIR="$arm_job/provider-host-target" \
+  cargo +1.94.0 build --manifest-path "$helper_root/rust/Cargo.toml" --locked \
+  -p openpilot-dev-tools --bin build-loggerd-ffmpeg
+# Reuse the already implemented #628 downloader, including its bounded zero-body
+# retry/mirror policy. This adapter supplies inputs; it implements no transport.
+cat > "$arm_job/fetch-ffmpeg.rs" <<'RUST'
+use openpilot_runtime_build::assets::{Asset, Curl};
+use std::{error::Error, path::PathBuf};
+fn main() -> Result<(), Box<dyn Error>> {
+    let destination = PathBuf::from(std::env::args_os().nth(1).ok_or("archive path required")?);
+    let asset = Asset {
+        url: "https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.xz".into(),
+        sha256: "8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968".into(),
+        bytes: 10458600,
+    };
+    let transferred = Curl.fetch_with_mirror(
+        &asset,
+        &destination,
+        "https://sources.buildroot.net/ffmpeg/ffmpeg-6.1.1.tar.xz",
+    )?;
+    println!("{{\"transferred_bytes\":{transferred},\"expected_bytes\":10458600}}");
+    Ok(())
+}
+RUST
+runtime_build_rlib=$(find "$arm_job/provider-host-target/debug/deps" -maxdepth 1 \
+  -type f -name 'libopenpilot_runtime_build-*.rlib' -print -quit)
+test -n "$runtime_build_rlib"
+run build-source-fetch-adapter rustc +1.94.0 --edition=2021 -D warnings \
+  "$arm_job/fetch-ffmpeg.rs" --crate-name support630_ffmpeg_fetch \
+  --extern "openpilot_runtime_build=$runtime_build_rlib" \
+  -L "dependency=$arm_job/provider-host-target/debug/deps" -o "$arm_job/fetch-ffmpeg"
+run fetch-original-source "$arm_job/fetch-ffmpeg" "$arm_job/ffmpeg-6.1.1.tar.xz"
+test "$(stat -c %s "$arm_job/ffmpeg-6.1.1.tar.xz")" = 10458600
+printf '%s  %s\n' 8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968 \
+  "$arm_job/ffmpeg-6.1.1.tar.xz" | sha256sum --check -
+sha256sum "$arm_job/fetch-ffmpeg.rs" "$arm_job/fetch-ffmpeg" "$runtime_build_rlib" \
+  > "$arm_evidence/source-fetch-adapter.sha256"
+run build-pinned-ffmpeg "$arm_job/provider-host-target/debug/build-loggerd-ffmpeg" \
+  --root "$provider_root" --archive "$arm_job/ffmpeg-6.1.1.tar.xz" \
+  --cc "$cc" --ar "$ar" --ranlib "$ranlib" --jobs 2
 export FFMPEG_DIR="$provider_root/install"
 "$SOURCE_PYTHON" - "$arm_evidence/ffmpeg-provider.json" <<'PY'
 import hashlib, json, os, re, subprocess, sys

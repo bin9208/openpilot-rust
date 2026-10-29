@@ -188,3 +188,14 @@ OS/패키지·네트워크·cross dependency·FFmpeg wrapper link·빌드 시간
 commit/push/dispatch와 다른 채팅 메시지도 보내지 않았다.
 source의 최신 정확 SHA 기능 결과, baseline runtime RED/GREEN, provider 준비 결과와
 ARM 대안의 실제 실행 가능성은 상위 Actions에서 확인해야 한다.
+
+### 첫 ARM 실행의 원본 전송 실패와 기존 #628 경로 재사용
+
+[40876851867](https://github.com/bin9208/openpilot-rust/actions/runs/40876851867)은
+runner2의 GNU13 cross compiler·Rust ARM target·고정 helper 빌드를 통과했으나
+FFmpeg 원본 URL의 curl28로 중단됐다. 프로젝트가 추적 중인 #628과 같은 전송 실패다.
+후속 controller는 같은 fb33의 `assets::Curl::fetch_with_mirror`를 작은 인자 adapter로
+호출하고 원래 source URL 우선·zero-body 제한 재시도·Buildroot 동일 archive fallback
+정책을 그대로 재사용한다. 별도 downloader를 구현하거나 source pin을 바꾸지 않는다.
+archive10,458,600bytes와 SHA256을 확인한 뒤 기존 helper의 `--archive`에 전달한다.
+실제 전송 byte·adapter/library hash·archive hash와 provider 원래 영수증을 보존한다.
