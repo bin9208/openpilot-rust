@@ -80,7 +80,7 @@ class PlannerIsaTests(unittest.TestCase):
         ]
         self.assertEqual(normalized, expected)
         self.assertEqual(workflow['jobs']['planner-runtime']['strategy']['matrix']['runner'],
-                         ['local-x64', 'local-arm64-qemu'])
+                         ['ubuntu-24.04', 'ubuntu-24.04-arm'])
 
 
 if __name__ == '__main__':

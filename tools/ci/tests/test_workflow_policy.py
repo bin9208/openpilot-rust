@@ -58,26 +58,24 @@ class WorkflowPolicyTests(unittest.TestCase):
         result = javascript(script, dict(event=event, ref=ref, pulls=pulls))
         self.assertEqual(json.loads(result.stdout), expected)
 
-  def test_all_jobs_form_one_chain_and_matrices_are_serial(self):
+  def test_independent_runtime_jobs_are_parallel_and_all_results_remain_required(self):
     jobs = workflow()['jobs']
-    ancestors = {}
-    # Jobs are stored in execution order; every pair must be ordered by needs.
-    for key, job in jobs.items():
-      needs = job.get('needs', [])
-      if isinstance(needs, str):
-        needs = [needs]
-      self.assertTrue(all(dep in ancestors for dep in needs), key)
-      ancestors[key] = set(needs).union(*(ancestors[dep] for dep in needs))
-      self.assertEqual(ancestors[key], set(ancestors) - {key}, key)
-      self.assertNotIn('continue-on-error', job)
-      if 'matrix' in job.get('strategy', {}):
-        self.assertEqual(job['strategy']['max-parallel'], '1', key)
-        self.assertEqual(job['strategy']['fail-fast'], 'true', key)
-    for key in ('fast-checks', 'check_user_docs', 'git_update', 'build_release', 'model_web',
-                'model', 'android-core', 'integration-gate', 'workspace', 'fast', 'arm-build', 'arm64'):
-      self.assertIn(key, jobs)
-    self.assertEqual(jobs['workspace']['needs'], ['integration-gate'])
+    runtime = list(jobs)[list(jobs).index('workspace'):list(jobs).index('fast')]
+    self.assertGreater(len(runtime), 30)
+    for key in runtime:
+      self.assertEqual(jobs[key]['needs'], ['integration-gate'], key)
+      self.assertIn(key, jobs['fast']['needs'])
+      self.assertIn(key, jobs['arm64']['needs'])
+      self.assertNotIn('continue-on-error', jobs[key])
+      strategy = jobs[key].get('strategy', {})
+      if 'matrix' in strategy:
+        self.assertEqual(strategy['max-parallel'], '2')
+        self.assertEqual(strategy['fail-fast'], 'true')
     self.assertEqual(jobs['runtime-delivery']['needs'], 'arm64')
+    self.assertEqual(jobs['arm-build']['needs'], ['fast'])
+    for key in ('build_release', 'model_web', 'model', 'android-core', 'jetlink-native'):
+      self.assertEqual(jobs[key]['needs'], ['check_user_docs'])
+      self.assertIn(key, jobs['integration-gate']['needs'])
 
   def test_gates_reject_failure_cancellation_skips_and_missing_results(self):
     jobs = workflow()['jobs']
@@ -154,7 +152,10 @@ class WorkflowPolicyTests(unittest.TestCase):
   def test_user_selected_local_runner_policy_preserves_validation_scope(self):
     for name in ('ci.yml', 'dev-md-runtime.yml'):
       for key, job in workflow(name)['jobs'].items():
-        self.assertEqual(job['runs-on'], ['self-hosted', 'Linux', 'X64', 'dev-md-local'], (name, key))
+        selected = job['runs-on']
+        self.assertTrue(selected in ('ubuntu-24.04', 'ubuntu-24.04-arm', '${{ matrix.runner }}') or
+                        selected in (['self-hosted', 'Linux', 'X64', 'dev-md-local'],
+                                     ['self-hosted', 'Linux', 'X64', 'support-630']), (name, key))
     commands = '\n'.join(step.get('run', '') for step in workflow()['jobs']['check_user_docs']['steps'])
     self.assertNotIn('package.py source-policy', commands)
     delivery = '\n'.join(step.get('run', '') for step in workflow('dev-md-runtime.yml')['jobs']['package']['steps'])

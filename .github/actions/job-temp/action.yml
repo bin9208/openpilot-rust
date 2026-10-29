@@ -1,5 +1,5 @@
 name: Isolate validation output
-description: Give each job fresh shell/tool output and remove only its owned directory.
+description: Give each hosted or registered job private shell/tool output and remove only its owned directory.
 inputs:
   cleanup:
     description: Remove this job's output after artifact and cache uploads

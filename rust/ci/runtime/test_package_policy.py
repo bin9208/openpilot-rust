@@ -61,6 +61,7 @@ class SourcePolicyTests(unittest.TestCase):
             ("github-hosted", "GitHub Actions", False),
             ("github-hosted", "bin-actions", False),
             ("self-hosted", "bin-actions", True),
+            ("self-hosted", "bin-actions2", True),
             ("self-hosted", "other-runner", False),
             ("self-hosted", "bin-actions-extra", False),
             ("self-hosted", None, False),

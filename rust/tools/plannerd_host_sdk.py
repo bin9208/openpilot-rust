@@ -14,6 +14,11 @@ import subprocess
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
+
+import importlib.util
+_POLICY = importlib.util.spec_from_file_location('planner_runner_policy', ROOT/'tools/ci/runner_policy.py')
+_POLICY_MODULE = importlib.util.module_from_spec(_POLICY)
+exec(compile(_POLICY.loader.get_source(_POLICY.name), _POLICY.origin, 'exec'), _POLICY_MODULE.__dict__)
 LIBRARIES = ('libacados.so', 'libblasfeo.so', 'libhpipm.so', 'libqpOASES_e.so.3.1', 'libqpOASES_e.so')
 REPOSITORIES = {'acados': 'acados/acados', 'blasfeo': 'giaf/blasfeo',
                 'hpipm': 'giaf/hpipm', 'qpoases': 'acados/qpOASES'}
@@ -70,8 +75,7 @@ def prepare():
   features = flags()
   if {'avx2', 'fma'} <= features:
     return None
-  if (os.environ.get('GITHUB_ACTIONS') != 'true' or os.environ.get('RUNNER_NAME') != 'bin-actions'
-      or os.environ.get('RUNNER_ENVIRONMENT') != 'self-hosted'):
+  if not _POLICY_MODULE.environment_allowed(os.environ):
     raise ValueError('pinned wheel requires AVX2/FMA; compatible source SDK is Actions-only')
   job = Path(os.environ['CI_JOB_TEMP'])
   context = {key: os.environ[key] for key in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB')}

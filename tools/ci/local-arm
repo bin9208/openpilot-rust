@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Execute the original ARM workflow commands on the real self-hosted X64 runner.
+# Execute original commands natively when host/target match; retain owned QEMU fallback.
 set -euo pipefail
 
 fail() { printf '%s\n' "$*" >&2; exit 1; }
-[[ ${GITHUB_ACTIONS:-} == true && ${RUNNER_ENVIRONMENT:-} == self-hosted && ${RUNNER_NAME:-} == bin-actions ]] || fail 'Local Actions runner required'
+policy_root=${LOCAL_CI_SOURCE_ROOT:-$GITHUB_WORKSPACE}
+/usr/bin/python3 -I -B -S "$policy_root/tools/ci/runner_policy.py"
 [[ ${LOCAL_CI_ARCH:-} == x86_64 || ${LOCAL_CI_ARCH:-} == aarch64 ]] || fail 'Explicit local execution architecture required'
 [[ ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.* && ${CI_JOB_TEMP%/*} == /tmp && ! -L $CI_JOB_TEMP ]] || fail 'Owned job-temp directory required'
 [[ -f $CI_JOB_TEMP/owner && ! -L $CI_JOB_TEMP/owner && $(cat "$CI_JOB_TEMP/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]] || fail 'Wrong job-temp owner'
@@ -39,14 +40,22 @@ download() {
 
 case ${1:-} in
   prepare)
-    [[ $host_machine == x86_64 ]] || fail 'This transport expects the registered X64 host'
     mkdir -p "$CI_JOB_TEMP/bin" "$arm_dir"
     ln -s "$source_dir/tools/ci/local-arm" "$CI_JOB_TEMP/bin/openpilot-local-shell"
     printf '%s\n' "$CI_JOB_TEMP/bin" >> "$GITHUB_PATH"
-    if [[ $LOCAL_CI_ARCH == x86_64 ]]; then
+    if [[ $host_machine == "$LOCAL_CI_ARCH" ]]; then
       printf 'LOCAL_CI_TARGET_DIR=%s/rust/target\n' "$source_dir" >> "$GITHUB_ENV"
+      printf 'LOCAL_CI_EXECUTION_MODE=native\n' >> "$GITHUB_ENV"
+      [[ $GITHUB_SHA =~ ^[0-9a-f]{40}$ ]] || fail 'Exact source SHA required'
+      physical_arm=false
+      if [[ $host_machine == aarch64 ]]; then physical_arm=true; fi
+      printf '{"schema":1,"source_commit":"%s","runner_name":"%s","runner_environment":"%s","host_architecture":"%s","guest_architecture":"%s","execution_mode":"native","physical_arm_cpu":%s,"physical_device_execution":false}\n' \
+        "$GITHUB_SHA" "$RUNNER_NAME" "$RUNNER_ENVIRONMENT" "$host_machine" "$host_machine" "$physical_arm" > "$arm_dir/execution.json"
+      cat "$arm_dir/execution.json"
       exit 0
     fi
+    [[ $host_machine == x86_64 && $LOCAL_CI_ARCH == aarch64 ]] || fail 'Unsupported host/target architecture pair'
+    printf 'LOCAL_CI_EXECUTION_MODE=qemu-user\n' >> "$GITHUB_ENV"
     printf 'LOCAL_CI_TARGET_DIR=%s/target\n' "$arm_dir" >> "$GITHUB_ENV"
     free_bytes=$(df --output=avail -B1 "$CI_JOB_TEMP" | tail -n 1)
     (( free_bytes >= 2 * 1024 * 1024 * 1024 )) || fail 'Insufficient space for estimated ARM bootstrap growth'
@@ -102,8 +111,8 @@ case ${1:-} in
     ;;
   *)
     [[ $# == 1 && -f $1 ]] || fail 'One existing Actions command file is required'
-    if [[ $LOCAL_CI_ARCH == x86_64 ]]; then
-      exec bash --noprofile --norc -e -o pipefail "$1"
+    if [[ $host_machine == "$LOCAL_CI_ARCH" ]]; then
+      exec "$source_dir/tools/ci/native-apt-shell" "$1"
     fi
     [[ -f $arm_dir/execution.json ]] || fail 'ARM setup did not complete'
     guest /bin/bash --noprofile --norc -e -o pipefail "$1"

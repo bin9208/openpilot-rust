@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Native Actions commands retain their explicit apt architecture/private configs.
+set -euo pipefail
+source_dir=${LOCAL_CI_SOURCE_ROOT:-$GITHUB_WORKSPACE}
+/usr/bin/python3 -I -B -S "$source_dir/tools/ci/runner_policy.py"
+[[ $# == 1 && -f $1 ]] || { echo 'One existing Actions command file is required' >&2; exit 1; }
+exec bash --noprofile --norc -e -o pipefail "$1"

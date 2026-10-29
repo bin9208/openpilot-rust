@@ -1,5 +1,5 @@
-name: Local x64 or emulated ARM shell
-description: Keep Actions on bin-actions and execute ARM commands in a separate pinned ARM user space.
+name: Native or emulated architecture shell
+description: Use the selected native Linux architecture and retain the pinned ARM guest only for an X64-to-ARM fallback.
 inputs:
   cleanup:
     description: Finish execution evidence before owned job-temp cleanup

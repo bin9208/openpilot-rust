@@ -15,6 +15,11 @@ import types
 from plannerd_host_sdk import LIBRARIES, prepare
 
 ROOT = Path(__file__).resolve().parents[2]
+
+import importlib.util
+_POLICY = importlib.util.spec_from_file_location('planner_runner_policy', ROOT/'tools/ci/runner_policy.py')
+_POLICY_MODULE = importlib.util.module_from_spec(_POLICY)
+exec(compile(_POLICY.loader.get_source(_POLICY.name), _POLICY.origin, 'exec'), _POLICY_MODULE.__dict__)
 # dev-md retains its source-fixture-aware builder, independently from dev.
 BUILDER_SHA256 = '4bab1a9e70be6d6b3c91fe592137bc9f3d89b3179aff53736f294e4fa604d5e9'
 
@@ -34,9 +39,7 @@ def main():
   source_builder = ROOT/'rust/tools/build_plannerd_source.py'
   if requested not in (expected, source_builder):
     raise ValueError('CI adapter may invoke only the solver and original-binding builders')
-  if (os.environ.get('GITHUB_ACTIONS') != 'true' or os.environ.get('RUNNER_NAME') != 'bin-actions'
-      or os.environ.get('RUNNER_ENVIRONMENT') != 'self-hosted'):
-    raise ValueError('planner CI adapter requires the registered Actions runner')
+  _POLICY_MODULE.require_environment()
   # An ignored timestamp pyc is never evidence of the frozen builder bytes.
   original = types.ModuleType('build_plannerd_acados')
   original.__file__ = str(expected)

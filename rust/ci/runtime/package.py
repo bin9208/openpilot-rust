@@ -13,12 +13,12 @@ import tarfile
 import zipfile
 
 def runner_environment_allowed(environment, name):
-    return environment == "self-hosted" and name == "bin-actions"
+    return environment == "self-hosted" and name in {"bin-actions", "bin-actions2"}
 
 
 assert os.environ.get("GITHUB_ACTIONS") == "true", "runtime validation/builds belong in GitHub Actions"
 assert os.environ.get("GITHUB_REPOSITORY") == "bin9208/openpilot-rust"
-assert runner_environment_allowed(os.environ.get("RUNNER_ENVIRONMENT"), os.environ.get("RUNNER_NAME")), "runtime delivery requires the registered self-hosted bin-actions runner"
+assert runner_environment_allowed(os.environ.get("RUNNER_ENVIRONMENT"), os.environ.get("RUNNER_NAME")), "runtime delivery requires the registered self-hosted runner"
 ROOT = Path(os.environ["GITHUB_WORKSPACE"])
 WORK = Path(os.environ["RUNNER_TEMP"]) / "agnos-runtime"
 WORK.mkdir(exist_ok=True)
@@ -226,6 +226,12 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         '.lfsconfig',
         '.github/actions/rust-path/',
         '.github/actions/job-temp/',
+        '.github/actions/local-arm/',
+        'tools/ci/local-arm',
+        'tools/ci/native-apt-shell',
+        'tools/ci/runner_policy.py',
+        'tools/ci/tests/test_local_runners.py',
+        'docs/naver/dev-md-parallel-runners-598.md',
         'tools/check_jetlink_usb_policy.py',
         'tools/naver_ci/tests/test_sync_upstream.py',
         '.github/workflows/ci.yml',

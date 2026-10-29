@@ -20,7 +20,7 @@ jobs:
   route:
     if: github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     name: Select validation scope
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     outputs:
       fast: ${{ steps.scope.outputs.fast }}
@@ -45,7 +45,7 @@ jobs:
   fast-checks:
     needs: [route]
     name: ${{ needs.route.outputs.fast == 'true' && 'fast checks' || 'PR owns fast validation' }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 7
     if: needs.route.outputs.fast == 'true'
     steps:
@@ -129,7 +129,7 @@ jobs:
   check_user_docs:
     needs: [route, fast-checks]
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'check mapped user docs' || 'Not requested - check mapped user docs' }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     if: needs.route.outputs.full == 'true'
     steps:
       - uses: actions/checkout@v6
@@ -176,7 +176,7 @@ jobs:
   git_update:
     needs: [check_user_docs]
     name: Git update lifecycle
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
@@ -197,10 +197,10 @@ jobs:
         with: {cleanup: 'true'}
 
   build_release:
-    needs: [git_update]
+    needs: [check_user_docs]
     name: build release
-    # Legacy setup / noble multiarch packages require an isolated Ubuntu 24.04 host.
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    # Registered second runner retains the original heavy build commands.
+    runs-on: [self-hosted, Linux, X64, support-630]
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
@@ -249,9 +249,9 @@ jobs:
         with: {cleanup: 'true'}
 
   model_web:
-    needs: [build_release]
+    needs: [check_user_docs]
     name: Model and Bluetooth web controls
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
@@ -265,9 +265,9 @@ jobs:
         with: {cleanup: 'true'}
 
   model:
-    needs: [model_web]
+    needs: [check_user_docs]
     name: model contract and CPU inference
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -283,9 +283,9 @@ jobs:
         with: {cleanup: 'true'}
 
   android-core:
-    needs: [model]
+    needs: [check_user_docs]
     name: Android protocol and Java inference
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -323,9 +323,9 @@ jobs:
         with: {cleanup: 'true'}
 
   jetlink-native:
-    needs: [android-core]
+    needs: [check_user_docs]
     name: Jetlink power policy fast checks
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       CARGO_INCREMENTAL: '0'
@@ -367,7 +367,7 @@ jobs:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'integration gate' || 'Not requested - integration gate' }}
     needs: [route, fast-checks, check_user_docs, git_update, build_release, model_web, model, android-core, jetlink-native]
     if: ${{ (github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && (always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name))) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Require every preceding validation result
@@ -386,7 +386,7 @@ jobs:
   workspace:
     needs: [integration-gate]
     name: rust workspace checks
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
       CARGO_BUILD_JOBS: '2'
@@ -702,9 +702,9 @@ jobs:
         with: {cleanup: 'true'}
 
   model-memory:
-    needs: [workspace]
+    needs: [integration-gate]
     name: rust model memory
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       CARGO_BUILD_JOBS: '2'
@@ -769,9 +769,9 @@ jobs:
         with: {cleanup: 'true'}
 
   model-pipelines:
-    needs: [model-memory]
+    needs: [integration-gate]
     name: rust original model pipelines
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -877,9 +877,9 @@ jobs:
         with: {cleanup: 'true'}
 
   logger-runtime:
-    needs: [model-pipelines]
+    needs: [integration-gate]
     name: rust original route logger
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -982,9 +982,9 @@ jobs:
         with: {cleanup: 'true'}
 
   support-runtime:
-    needs: [logger-runtime]
+    needs: [integration-gate]
     name: rust support runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1086,9 +1086,9 @@ jobs:
         with: {cleanup: 'true'}
 
   telemetry-runtime:
-    needs: [support-runtime]
+    needs: [integration-gate]
     name: rust telemetry runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1178,9 +1178,9 @@ jobs:
         with: {cleanup: 'true'}
 
   startup-runtime:
-    needs: [telemetry-runtime]
+    needs: [integration-gate]
     name: rust startup prerequisites
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1276,9 +1276,9 @@ jobs:
         with: {cleanup: 'true'}
 
   hardware-runtime:
-    needs: [startup-runtime]
+    needs: [integration-gate]
     name: rust hardware and boot runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1344,9 +1344,9 @@ jobs:
         with: {cleanup: 'true'}
 
   platform-runtime:
-    needs: [hardware-runtime]
+    needs: [integration-gate]
     name: rust platform runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1404,9 +1404,9 @@ jobs:
         with: {cleanup: 'true'}
 
   startup-services:
-    needs: [platform-runtime]
+    needs: [integration-gate]
     name: rust startup services
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1469,9 +1469,9 @@ jobs:
         with: {cleanup: 'true'}
 
   sensor-audio:
-    needs: [startup-services]
+    needs: [integration-gate]
     name: rust sensor and audio runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1527,9 +1527,9 @@ jobs:
         with: {cleanup: 'true'}
 
   gnss-runtime:
-    needs: [sensor-audio]
+    needs: [integration-gate]
     name: rust GNSS runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1578,9 +1578,9 @@ jobs:
         with: {cleanup: 'true'}
 
   estimation-runtime:
-    needs: [gnss-runtime]
+    needs: [integration-gate]
     name: rust estimation runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1654,9 +1654,9 @@ jobs:
         with: {cleanup: 'true'}
 
   ui-connectivity:
-    needs: [estimation-runtime]
+    needs: [integration-gate]
     name: rust UI and connectivity
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1724,9 +1724,9 @@ jobs:
         with: {cleanup: 'true'}
 
   athena-runtime:
-    needs: [ui-connectivity]
+    needs: [integration-gate]
     name: rust Athena runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1766,9 +1766,9 @@ jobs:
         with: {cleanup: 'true'}
 
   controls-runtime:
-    needs: [athena-runtime]
+    needs: [integration-gate]
     name: rust control runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1827,9 +1827,9 @@ jobs:
         with: {cleanup: 'true'}
 
   web-upload-timeouts:
-    needs: [controls-runtime]
+    needs: [integration-gate]
     name: active upload timeout contracts
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -1862,9 +1862,9 @@ jobs:
         with: {cleanup: 'true'}
 
   joystickd-runtime:
-    needs: [web-upload-timeouts]
+    needs: [integration-gate]
     name: rust control tools source and native runtimes
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -1922,17 +1922,17 @@ jobs:
         with: {cleanup: 'true'}
 
   planner-runtime:
-    needs: [joystickd-runtime]
+    needs: [integration-gate]
     name: rust planner source comparison (${{ matrix.runner }})
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ${{ matrix.runner }}
     strategy:
-      max-parallel: 1
+      max-parallel: 2
       fail-fast: true
       matrix:
-        runner: [local-x64, local-arm64-qemu]
-    timeout-minutes: ${{ matrix.runner == 'local-arm64-qemu' && 180 || 45 }}
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     env:
-      LOCAL_CI_ARCH: ${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -1952,7 +1952,7 @@ jobs:
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64'
+        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
         with:
           python-version: '3.12.14'
       - name: Reserve capacity and install original planner dependencies
@@ -1996,7 +1996,7 @@ jobs:
         run: |
           python -P rust/tools/check_plannerd_ci.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-artifact" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --output "$RUNNER_TEMP/planner-comparison"
       - name: Check generated C with ASan, UBSan and allocator leak detection
-        if: matrix.runner == 'local-x64'
+        if: matrix.runner == 'ubuntu-24.04'
         run: |
           python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_acados.py --source-fixture rust/upstream/planner-source.json --architecture x86_64 --cc gcc --sanitize --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-sanitized"
           python -P rust/tools/check_plannerd_native_memory.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-sanitized" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --asan-library "$(gcc -print-file-name=libasan.so)" --output "$RUNNER_TEMP/planner-native-memory"
@@ -2027,9 +2027,9 @@ jobs:
         with: {cleanup: 'true'}
 
   planner-memory:
-    needs: [planner-runtime]
+    needs: [integration-gate]
     name: rust planner pure memory contracts
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: '0'
@@ -2075,9 +2075,9 @@ jobs:
         with: {cleanup: 'true'}
 
   card-runtime:
-    needs: [planner-memory]
+    needs: [integration-gate]
     name: rust Card and CAN runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2176,9 +2176,9 @@ jobs:
         with: {cleanup: 'true'}
 
   radar-runtime:
-    needs: [card-runtime]
+    needs: [integration-gate]
     name: rust RadarCAN source and host runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2262,9 +2262,9 @@ jobs:
         with: {cleanup: 'true'}
 
   radar-arm:
-    needs: [radar-runtime]
-    name: rust RadarCAN ARM QEMU functional validation
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    needs: [integration-gate]
+    name: rust RadarCAN native ARM functional validation
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
     env:
       LOCAL_CI_ARCH: aarch64
@@ -2288,7 +2288,7 @@ jobs:
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64'
+        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
         with:
           python-version: '3.12'
       - name: Configure original Radar IPC imports
@@ -2375,9 +2375,9 @@ jobs:
         with: {cleanup: 'true'}
 
   radar-memory:
-    needs: [radar-arm]
+    needs: [integration-gate]
     name: rust RadarCAN buffer ownership with Miri
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2438,9 +2438,9 @@ jobs:
         with: {cleanup: 'true'}
 
   navd-runtime:
-    needs: [radar-memory]
+    needs: [integration-gate]
     name: rust navigation runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2511,21 +2511,21 @@ jobs:
         with: {cleanup: 'true'}
 
   radard-runtime:
-    needs: [navd-runtime]
+    needs: [integration-gate]
     name: rust radard source runtime (${{ matrix.runner }})
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ${{ matrix.runner }}
     strategy:
-      max-parallel: 1
+      max-parallel: 2
       fail-fast: true
       matrix:
         include:
-          - runner: local-x64
+          - runner: ubuntu-24.04
             machine: x86_64
-          - runner: local-arm64-qemu
+          - runner: ubuntu-24.04-arm
             machine: aarch64
-    timeout-minutes: ${{ matrix.runner == 'local-arm64-qemu' && 180 || 45 }}
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     env:
-      LOCAL_CI_ARCH: ${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -2546,7 +2546,7 @@ jobs:
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64'
+        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
         with:
           python-version: '3.12.14'
       - name: Reserve capacity and install original oracle dependencies
@@ -2682,9 +2682,9 @@ jobs:
         with: {cleanup: 'true'}
 
   carrot-navi-runtime:
-    needs: [radard-runtime]
+    needs: [integration-gate]
     name: rust Carrot Navi original and host runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
@@ -2825,9 +2825,9 @@ jobs:
         with: {cleanup: 'true'}
 
   carrot-navi-arm:
-    needs: [carrot-navi-runtime]
-    name: rust Carrot Navi ARM QEMU build
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    needs: [integration-gate]
+    name: rust Carrot Navi native ARM build
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
     env:
       LOCAL_CI_ARCH: aarch64
@@ -2847,7 +2847,7 @@ jobs:
       - uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64'
+        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
         with:
           python-version: '3.12.14'
       - name: Reserve runner capacity and install native ARM build dependencies
@@ -2893,9 +2893,9 @@ jobs:
         with: {cleanup: 'true'}
 
   selfdrive-runtime:
-    needs: [carrot-navi-arm]
+    needs: [integration-gate]
     name: rust selfdrived runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -2991,9 +2991,9 @@ jobs:
         with: {cleanup: 'true'}
 
   panda-runtime:
-    needs: [selfdrive-runtime]
+    needs: [integration-gate]
     name: rust Panda runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3057,9 +3057,9 @@ jobs:
         with: {cleanup: 'true'}
 
   camera-runtime:
-    needs: [panda-runtime]
+    needs: [integration-gate]
     name: rust camera runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3128,9 +3128,9 @@ jobs:
         with: {cleanup: 'true'}
 
   encoder-runtime:
-    needs: [camera-runtime]
+    needs: [integration-gate]
     name: rust encoder runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3205,17 +3205,17 @@ jobs:
         with: {cleanup: 'true'}
 
   xiaoge-runtime:
-    needs: [encoder-runtime]
+    needs: [integration-gate]
     name: rust Xiaoge source comparison (${{ matrix.runner }})
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ${{ matrix.runner }}
     strategy:
-      max-parallel: 1
+      max-parallel: 2
       fail-fast: true
       matrix:
-        runner: [local-x64, local-arm64-qemu]
-    timeout-minutes: ${{ matrix.runner == 'local-arm64-qemu' && 180 || 75 }}
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 75 }}
     env:
-      LOCAL_CI_ARCH: ${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       OPENCV_TEST_GPU: reject
@@ -3235,7 +3235,7 @@ jobs:
       - name: Fetch exact upstream reference commits
         run: git fetch --no-tags --depth=1 https://github.com/ajouatom/openpilot.git e8e152dbcfd9574a1791ed12026d1880e87689b3 8e7eec049241b6ba384e9197aacdfb01f7d88ed3 8cf5570f6962bd9cb17ec384bbfa12a3a167a5a8 163c000e05641adea88e9221094d45c90c3e186d
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64'
+        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
         with:
           python-version: '3.12'
       - name: Reserve capacity and install Xiaoge build prerequisites
@@ -3312,9 +3312,9 @@ jobs:
         with: {cleanup: 'true'}
 
   xiaoge-memory:
-    needs: [xiaoge-runtime]
+    needs: [integration-gate]
     name: rust Xiaoge native memory
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 75
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3382,9 +3382,9 @@ jobs:
         with: {cleanup: 'true'}
 
   ui-runtime:
-    needs: [xiaoge-memory]
+    needs: [integration-gate]
     name: rust UI application runtime
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       CARGO_BUILD_JOBS: '2'
@@ -3495,19 +3495,19 @@ jobs:
         with: {cleanup: 'true'}
 
   carrot-man-runtime:
-    needs: [ui-runtime]
+    needs: [integration-gate]
     name: rust CarrotMan owner (${{ matrix.arch }})
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
-    timeout-minutes: ${{ matrix.runner == 'local-arm64-qemu' && 180 || 25 }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 25 }}
     strategy:
-      max-parallel: 1
+      max-parallel: 2
       fail-fast: true
       matrix:
         include:
-          - { arch: x86_64, runner: local-x64 }
-          - { arch: aarch64, runner: local-arm64-qemu }
+          - { arch: x86_64, runner: ubuntu-24.04 }
+          - { arch: aarch64, runner: ubuntu-24.04-arm }
     env:
-      LOCAL_CI_ARCH: ${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_INCREMENTAL: '0'
       CARGO_BUILD_JOBS: '2'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -3522,7 +3522,7 @@ jobs:
       - uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64'
+        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
         with:
           python-version: '3.12.14'
       - name: Reserve runner capacity and install pinned dependencies
@@ -3591,17 +3591,17 @@ jobs:
         with: {cleanup: 'true'}
 
   webrtc-runtime:
-    needs: [carrot-man-runtime]
+    needs: [integration-gate]
     name: rust WebRTC source runtime (${{ matrix.runner }})
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
-    timeout-minutes: ${{ matrix.runner == 'local-arm64-qemu' && 180 || 45 }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     strategy:
-      max-parallel: 1
+      max-parallel: 2
       fail-fast: true
       matrix:
-        runner: [local-x64, local-arm64-qemu]
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
     env:
-      LOCAL_CI_ARCH: ${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -3620,7 +3620,7 @@ jobs:
       - uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64'
+        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
         with:
           python-version: '3.12.14'
       - name: Reserve capacity and install pinned source and native providers
@@ -3694,17 +3694,17 @@ jobs:
         with: {cleanup: 'true'}
 
   webcam-runtime:
-    needs: [webrtc-runtime]
+    needs: [integration-gate]
     name: rust webcam source runtime (${{ matrix.runner }})
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
-    timeout-minutes: ${{ matrix.runner == 'local-arm64-qemu' && 180 || 35 }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 35 }}
     strategy:
-      max-parallel: 1
+      max-parallel: 2
       fail-fast: true
       matrix:
-        runner: [local-x64, local-arm64-qemu]
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
     env:
-      LOCAL_CI_ARCH: ${{ matrix.runner == 'local-arm64-qemu' && 'aarch64' || 'x86_64' }}
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -3723,7 +3723,7 @@ jobs:
       - uses: ./.github/actions/rust-path
       - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
-        if: env.LOCAL_CI_ARCH == 'x86_64'
+        if: env.LOCAL_CI_ARCH == 'x86_64' || env.LOCAL_CI_EXECUTION_MODE == 'native'
         with:
           python-version: '3.12.14'
       - name: Install exact source closure and native capture providers
@@ -3808,7 +3808,7 @@ jobs:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'rust checks' || 'Not requested - rust checks' }}
     needs: [integration-gate, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime]
     if: ${{ (github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && (always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name))) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Require every preceding validation result
@@ -3827,7 +3827,7 @@ jobs:
   arm-build:
     name: Build generic ARM64 artifacts
     needs: [fast]
-    # bin-actions provides Ubuntu 24.04; ARM graphics dependencies stay job-local.
+    # Registered first runner retains the existing cross-build and private ARM sysroot.
     runs-on: [self-hosted, Linux, X64, dev-md-local]
     timeout-minutes: 120
     env:
@@ -4167,7 +4167,7 @@ jobs:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'rust aarch64 build' || 'Not requested - rust aarch64 build' }}
     needs: [route, fast-checks, check_user_docs, integration-gate, fast, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime, arm-build]
     if: ${{ (github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && (always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name))) }}
-    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Require all validation and the actual ARM build
