@@ -88,3 +88,20 @@ PRoot의 ARM64 syscall table에 누락된 `faccessat2`439번을 확인하고 한
 [정책40967329083](https://github.com/bin9208/openpilot-rust/actions/runs/40967329083)도
 성공했다. 이미 진행 중인 generic 수정 검증은 같은 Rust/IPC 수정 source의
 40962761699를 계속 사용한다. 기본/기존 작업 브랜치 배정은 아직 변경하지 않았다.
+
+## Generic ARM 전체 검증 성공
+
+source `e7548176f131a3600112d09f1d27a377b673ae46`의
+[40962761699](https://github.com/bin9208/openpilot-rust/actions/runs/40962761699),
+job123759750537은 UTC22:03:26부터22:56:08까지3162초(52분42초)에 전체 성공했다.
+실제 허용 CPU는0..3이며 1job 제한은 사용하지 않았다.
+
+GNU/musl 전체 workspace release, native Card/selfdrived/navigation/Panda,
+VisionIPC ION 경계, camera/encoder/UI의 generic·ION 빌드와 원래 ELF 검사를 모두
+유지한 채 통과했다. 정적 probe 보고서는 `execution=native-aarch64`, `frames=3`,
+`result=pass`이며 실제 기기 검증은 수행하지 않았다. GNU Cargo 컴파일 보고는16분28초,
+musl은17분24초다. job 전체 시간과 준비/후속 빌드가 포함된 step 시간과 구분한다.
+
+따라서 조건부 전환 초안의 QCOM·factory transport·logger reuse·generic ARM 및
+배정 정책 검증은 통과했다. 전체 AGNOS 재측정40967438168의 결과와 사용자 조건을
+확인한 뒤 실제 배정 전환 여부를 결정한다.
