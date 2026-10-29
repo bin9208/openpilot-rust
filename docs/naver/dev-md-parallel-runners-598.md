@@ -242,3 +242,30 @@ perf에는 이번 변경에 영향을 받는 전체 docs command frozen hash 검
 기존 test_rust_path에 actual CPU/default/명시 override와 helper child 환경 상속 회귀를
 추가했으나 실행하지 않았다. AST/YAML/Bash 문법/diff와 원문 구조 비교만 수행했으며
 기능·빌드·테스트·원격 push/CI 조작과 추가 실패 원인 수정은 수행하지 않았다.
+
+
+## 실제 unsupported PPA 404: job 소유 공식 Ubuntu APT view
+
+[#635](https://github.com/bin9208/openpilot-rust/issues/635)의 실제
+[telemetry job123482820046](https://github.com/bin9208/openpilot-rust/actions/jobs/123482820046)에서
+bin-actions2의 기존 appimagelauncher-team/stable Ubuntu noble PPA Release404로
+apt update가 exit100인 실패를 사용자와 부모가 확인했다. 공유 /etc/apt 설정은
+삭제·수정하지 않고 기본 CI APT만 job 소유 source view를 사용하도록 한다.
+
+native-apt-shell은 root-owned 공식 Ubuntu archive/security/ports source만 읽어
+기존 deb822 ubuntu.sources와 legacy sources.list 형식을 그대로 보존한 private
+view를 만든다. HTTPS URI와 Signed-By/architecture/suite/component 필드는 원문을
+유지하고 signature 우회 source는 거부한다. PPA source는 포함하지 않는다.
+source hash와 실제 runner/job/source metadata를 job 임시 경로에 남긴다.
+
+명시 architecture 인자는 원문 그대로 전달하면서 기본 source view를 적용한다.
+APT_CONFIG 또는 명시 config/source 설정이 있으면 해당 호출 전체를 원래 방식으로
+통과시킨다. 실제 host의 /usr/bin/dpkg architecture와 /usr/bin/uname 결과 일치를
+확인한다. PATH의 fixture uname은 호출하지 않는다. header는 qemu-user 모드만
+제외하므로 host X64→ARM bootstrap APT도 보호하고, 명시 qemu-user인 guest 내부는
+원래 동작을 유지한다. job-temp는 기존 owner/cleanup 절차를 유지하며 이 wrapper를
+BASH_ENV에 연결한다. 기존 API/환경/명령/패키지 pin과 공유 설정은 변경하지 않는다.
+
+로컬에서 Python AST·YAML·Bash -n·diff만 확인했다. 현재 parser/재귀 회귀는 작성만
+되어 있고 실행하지 않았으며, 로컬 apt·기능·빌드·원격 CI 조작은 하지 않았다.
+실제 PPA404 해소와 기존 fake-uname 회귀 성공은 부모의 Actions 검증이 남아 있다.
