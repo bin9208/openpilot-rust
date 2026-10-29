@@ -108,7 +108,6 @@ jobs:
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -195,7 +194,6 @@ jobs:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     timeout-minutes: 45
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -269,7 +267,6 @@ jobs:
     timeout-minutes: 45
     env:
       CARGO_INCREMENTAL: '0'
-      CARGO_BUILD_JOBS: '2'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -306,7 +303,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
     steps:
@@ -366,7 +362,6 @@ jobs:
           - { arch: aarch64, runner: ubuntu-24.04-arm }
     env:
       CARGO_INCREMENTAL: '0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
       PYTHONPATH: ${{ github.workspace }}
@@ -434,7 +429,6 @@ jobs:
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -509,7 +503,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -555,7 +548,7 @@ jobs:
           python -c 'import eigen; print("LOCATIOND_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR); print("PARAMSD_EIGEN_INCLUDE=" + eigen.INCLUDE_DIR)' >> "$GITHUB_ENV"
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          cargo clippy --workspace --all-targets --locked -- -D warnings
+          cargo clippy --workspace --all-targets --locked --features openpilot-modem/helper-lifetime-tests -- -D warnings
       - name: Stage pinned numerical dependency before required workspace tests
         run: |
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/torque-wheels"
@@ -567,7 +560,13 @@ jobs:
           printf 'HYUNDAI_FIXTURE_DIR=%s/card-workspace/fixtures\nHYUNDAI_DBC_DIR=%s/card-workspace/dbc\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
-          cargo test --workspace --locked
+          cargo build -p openpilot-process-supervision --bin openpilot-process-child --locked
+          launcher_target=$(cargo metadata --no-deps --locked --format-version 1 | python -c 'import json,sys; print(json.load(sys.stdin)["target_directory"])')
+          export WIFI_PROCESS_CHILD_BINARY="$launcher_target/debug/openpilot-process-child"
+          export MODEM_PROCESS_CHILD_BINARY="$WIFI_PROCESS_CHILD_BINARY"
+          export MODEM_SOURCE_PYTHON="$(command -v python)"
+          test -x "$WIFI_PROCESS_CHILD_BINARY"
+          cargo test --workspace --locked --features openpilot-modem/helper-lifetime-tests
       - name: Require complete Hyundai schemas after workspace tests
         run: |
           python tools/check_card_hyundai_params.py "$HYUNDAI_FIXTURE_DIR"
@@ -814,7 +813,6 @@ jobs:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     timeout-minutes: 75
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -880,7 +878,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -938,7 +935,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1001,7 +997,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1060,7 +1055,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1116,7 +1110,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1201,7 +1194,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1290,7 +1282,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1353,7 +1344,6 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 45
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_RELEASE_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1437,7 +1427,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1490,7 +1479,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1561,7 +1549,6 @@ jobs:
             machine: aarch64
     timeout-minutes: 45
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1699,7 +1686,6 @@ jobs:
     timeout-minutes: 30
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -1833,7 +1819,6 @@ jobs:
     timeout-minutes: 25
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_RELEASE_DEBUG: '0'
       CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: gcc
@@ -1877,7 +1862,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -1974,7 +1958,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2057,7 +2040,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2145,7 +2127,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2200,7 +2181,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2251,7 +2231,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
@@ -2295,7 +2274,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       OPENBLAS_NUM_THREADS: '1'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -2346,7 +2324,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CXX: clang++
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -2415,7 +2392,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
@@ -2515,7 +2491,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CXX: clang++
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -2575,7 +2550,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2626,7 +2600,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      CARGO_BUILD_JOBS: '2'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
@@ -2685,7 +2658,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
     defaults:
       run:
@@ -2783,7 +2755,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      CARGO_BUILD_JOBS: '2'
       CPU_COUNT: '2'
       DEV: CPU:LLVM
       JIT: '1'
@@ -2881,8 +2852,6 @@ jobs:
     name: rust model memory
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    env:
-      CARGO_BUILD_JOBS: '2'
     defaults:
       run:
         working-directory: rust
@@ -2940,7 +2909,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
     steps:
       - uses: actions/checkout@v7
@@ -3236,7 +3204,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:

@@ -100,6 +100,7 @@ async fn reply(
                 }
             }
             state.prompt = None;
+            state.answer_owner = None;
             return Ok(Some(message.method_return()));
         }
         let path = message
@@ -124,7 +125,7 @@ async fn reply(
         Ok(value) => value,
         Err(_) => return wire::error(&message, "org.bluez.Error.Canceled").map(Some),
     };
-    let answer = {
+    let (answer, owner) = {
         let mut state = shared.lock()?;
         if matches!(
             kind,
@@ -141,19 +142,21 @@ async fn reply(
             return wire::error(&message, "org.bluez.Error.Canceled").map(Some);
         }
         let (sender, receiver) = oneshot::channel();
+        let owner = uuid::Uuid::new_v4();
         state.answer = Some(sender);
+        state.answer_owner = Some(owner);
         state.prompt = Some(Prompt::new(kind, value));
-        receiver
+        (receiver, owner)
     };
     let received = tokio::select! {
         biased;
         _ = stopping.wait_for(|stop| *stop) => None,
         answer = tokio::time::timeout(Duration::from_secs(60), answer) => answer.ok().and_then(Result::ok),
     };
+    shared.finish_answer(owner)?;
     let Some(value) = received else {
         return wire::error(&message, "org.bluez.Error.Canceled").map(Some);
     };
-    shared.lock()?.prompt = None;
     if matches!(value.view(), JsonView::Bool(false)) {
         return wire::error(&message, "org.bluez.Error.Rejected").map(Some);
     }
@@ -189,5 +192,150 @@ fn prompt_value(message: &Message, kind: PromptKind) -> Result<String, Error> {
         | PromptKind::AuthorizeService
         | PromptKind::RequestPinCode
         | PromptKind::RequestPasskey => Ok(String::new()),
+    }
+}
+
+#[cfg(test)]
+mod prompt_owner_tests {
+    use super::*;
+    use std::{future::poll_fn, future::Future, pin::Pin, task::Poll};
+
+    fn message(method: &str, serial: u32) -> Message {
+        let mut message =
+            Message::new_method_call("org.carrot.Bluetooth", AGENT, "org.bluez.Agent1", method)
+                .unwrap()
+                .append1(dbus::Path::new("/fixture/device").unwrap());
+        message.set_serial(serial);
+        message.set_sender(Some(dbus::strings::BusName::new(":1.42").unwrap()));
+        message
+    }
+
+    fn shared() -> Shared {
+        let shared = Shared::default();
+        {
+            let mut state = shared.lock().unwrap();
+            state.owner = Some(":1.42".into());
+            state.target = Some("/fixture/device".into());
+        }
+        shared
+    }
+
+    async fn pending(future: Pin<&mut impl Future>) {
+        let mut future = future;
+        poll_fn(|context| {
+            assert!(future.as_mut().poll(context).is_pending());
+            Poll::Ready(())
+        })
+        .await;
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn previous_reply_cannot_clear_a_newer_interactive_prompt() {
+        for completion in ["respond", "Cancel", "Release"] {
+            let shared = shared();
+            let (_stop, stopping) = watch::channel(false);
+            let mut first = Box::pin(reply(
+                message("RequestAuthorization", 1),
+                shared.clone(),
+                stopping.clone(),
+            ));
+            pending(first.as_mut()).await;
+            let old_id = shared.lock().unwrap().prompt.as_ref().unwrap().id.clone();
+            if completion == "respond" {
+                shared
+                    .respond(&old_id, JsonValue::parse("true").unwrap())
+                    .unwrap();
+            } else {
+                reply(message(completion, 2), shared.clone(), stopping.clone())
+                    .await
+                    .unwrap()
+                    .unwrap();
+            }
+            // Poll the new real handler before allowing the answered handler to
+            // resume. No sleep or D-Bus timing assumption establishes this race.
+            let mut second = Box::pin(reply(
+                message("RequestAuthorization", 3),
+                shared.clone(),
+                stopping,
+            ));
+            pending(second.as_mut()).await;
+            let new_id = shared.lock().unwrap().prompt.as_ref().unwrap().id.clone();
+            assert_ne!(old_id, new_id);
+            first.await.unwrap().unwrap();
+            let remaining = shared.lock().unwrap().prompt.as_ref().map(|p| p.id.clone());
+            assert_eq!(
+                remaining.as_deref(),
+                Some(new_id.as_str()),
+                "{completion}: old reply erased live new prompt"
+            );
+            assert!(shared
+                .respond(&old_id, JsonValue::parse("true").unwrap())
+                .is_err());
+            shared
+                .respond(&new_id, JsonValue::parse("true").unwrap())
+                .unwrap();
+            second.await.unwrap().unwrap();
+            assert!(shared.lock().unwrap().prompt.is_none());
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn display_overlap_still_belongs_to_the_existing_answer() {
+        let shared = shared();
+        let (_stop, stopping) = watch::channel(false);
+        let mut request = Box::pin(reply(
+            message("RequestPasskey", 1),
+            shared.clone(),
+            stopping.clone(),
+        ));
+        pending(request.as_mut()).await;
+        let display = message("DisplayPinCode", 2).append1("display overrides prompt");
+        reply(display, shared.clone(), stopping)
+            .await
+            .unwrap()
+            .unwrap();
+        let display_id = shared.lock().unwrap().prompt.as_ref().unwrap().id.clone();
+        shared
+            .respond(&display_id, JsonValue::parse("42").unwrap())
+            .unwrap();
+        let response = request.await.unwrap().unwrap();
+        assert_eq!(response.read1::<u32>().unwrap(), 42);
+        assert!(shared.lock().unwrap().prompt.is_none());
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn wrong_sender_or_target_cannot_install_a_prompt() {
+        for wrong_sender in [false, true] {
+            let shared = shared();
+            let (_stop, stopping) = watch::channel(false);
+            let mut request = if wrong_sender {
+                message("RequestAuthorization", 1)
+            } else {
+                let mut value = Message::new_method_call(
+                    "org.carrot.Bluetooth",
+                    AGENT,
+                    "org.bluez.Agent1",
+                    "RequestAuthorization",
+                )
+                .unwrap()
+                .append1(dbus::Path::new("/wrong").unwrap());
+                value.set_serial(1);
+                value.set_sender(Some(dbus::strings::BusName::new(":1.42").unwrap()));
+                value
+            };
+            if wrong_sender {
+                request.set_sender(Some(dbus::strings::BusName::new(":1.99").unwrap()));
+            }
+            let mut response = reply(request, shared.clone(), stopping)
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(
+                response.as_result().unwrap_err().name(),
+                Some("org.bluez.Error.Rejected")
+            );
+            assert!(shared.lock().unwrap().prompt.is_none());
+            assert!(shared.lock().unwrap().answer.is_none());
+        }
     }
 }

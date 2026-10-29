@@ -3,7 +3,11 @@ use crate::{
     http::{Body, Client, Request},
     Error, Fields, Response, Target, Value,
 };
-use std::{fs, io::Cursor, path::Path};
+use std::{
+    fs::File,
+    io::{Cursor, Read},
+    path::Path,
+};
 
 pub struct TmuxUpload<'a> {
     pub target: &'a Target,
@@ -58,9 +62,9 @@ impl TmuxUpload<'_> {
             ),
         ] {
             if let Some(path) = path {
-                let bytes = fs::read(path)?;
+                let mut file = File::open(path)?;
                 body.extend_from_slice(format!("--{boundary}\r\nContent-Disposition: form-data; name=\"{field}\"; filename=\"{filename}\"\r\nContent-Type: {mime}\r\n\r\n").as_bytes());
-                body.extend_from_slice(&bytes);
+                file.read_to_end(&mut body)?;
                 body.extend_from_slice(b"\r\n");
             }
         }

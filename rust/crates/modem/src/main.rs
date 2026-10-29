@@ -1,7 +1,10 @@
 use openpilot_modem::{config::Config, runtime::Modem, Error};
 use std::{
     process::ExitCode,
-    sync::{atomic::AtomicBool, Arc},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 fn run() -> Result<(), Error> {
     let mut args = std::env::args().skip(1);
@@ -27,7 +30,17 @@ fn run() -> Result<(), Error> {
     signal_hook::flag::register(signal_hook::consts::SIGINT, Arc::clone(&stop))?;
     let mut modem = Modem::new(config);
     modem.run(&stop)?;
-    modem.stop()
+    // The first request ends the runtime phase; restoration keeps its original
+    // unbounded command contract. A subsequent signal can cancel that phase too.
+    stop.store(false, Ordering::Relaxed);
+    match modem.stop_controlled(&stop) {
+        Err(Error::Io(error))
+            if error.kind() == std::io::ErrorKind::Interrupted && stop.load(Ordering::Relaxed) =>
+        {
+            Ok(())
+        }
+        result => result,
+    }
 }
 fn main() -> ExitCode {
     match openpilot_managed_entry::runtime("openpilot.system.hardware.tici.modem", "modem", || {
