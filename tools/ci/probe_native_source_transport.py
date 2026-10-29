@@ -157,15 +157,15 @@ print(json.dumps(row), flush=True)
 
 
 def child(uid, gid, work, factory, ready, go, expected_userns, group, group_inode, write):
+    # Enter with the real setup credentials, before restricting the user ns.
+    # The child writes only its own live PID; no parent PID lookup can race.
+    assert group.stat().st_ino == group_inode
+    write(group/'cgroup.procs', os.getpid())
     unshare(NEWUSER)
     os.write(ready, b'U')
     assert os.read(go, 1) == b'M'
     assert os.getuid() == os.geteuid() == 0
     assert os.readlink('/proc/self/ns/user') != expected_userns
-    # The child migrates only itself. No numeric PID from another process is
-    # ever written by the parent during setup, including PID-reuse races.
-    assert group.stat().st_ino == group_inode
-    write(group/'cgroup.procs', os.getpid())
     unshare(NEWNS | NEWCGROUP)
     command('/usr/bin/mount', '--make-rprivate', '/')
     registry, memory = work/'binfmt', work/'memory'
