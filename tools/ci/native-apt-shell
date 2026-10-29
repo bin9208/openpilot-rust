@@ -7,7 +7,8 @@ if [[ ${OPENPILOT_CI_EXECUTION_MODE:-native} != qemu-user ]]; then
   sudo() {
     local -a apt_scope_original=("$@") apt_scope_defaults=()
     local apt_scope_index=0 apt_scope_mode=native-default apt_scope_argument apt_scope_native
-    local apt_scope_arch_explicit=false apt_scope_view apt_scope_root
+    local apt_scope_arch_explicit=false apt_scope_view apt_scope_root apt_scope_cache
+    local -a apt_scope_lock=()
     if [[ ${apt_scope_original[0]:-} == -n ]]; then apt_scope_index=1; fi
     case ${apt_scope_original[apt_scope_index]:-} in
       apt-get|/usr/bin/apt-get) ;;
@@ -174,6 +175,15 @@ PY_APT_SOURCES
         -oDir::Cache::srcpkgcache="$apt_scope_view/cache/srcpkgcache.bin")
       if [[ $apt_scope_arch_explicit != true ]]; then
         apt_scope_defaults+=(-oAPT::Architectures="$apt_scope_native")
+        if [[ -n ${CI_DOWNLOAD_CACHE_ROOT:-} ]]; then
+          apt_scope_cache=$(/usr/bin/python3 -I -B -S "$apt_scope_root/tools/ci/runner_download_cache.py" apt "$apt_scope_view" "$apt_scope_native") || return
+          apt_scope_defaults+=(-oDir::State::lists="$apt_scope_cache/lists"
+            -oDir::Cache::pkgcache="$apt_scope_cache/metadata/pkgcache.bin"
+            -oDir::Cache::srcpkgcache="$apt_scope_cache/metadata/srcpkgcache.bin"
+            -oDir::Cache::archives="$apt_scope_cache/archives"
+            -oBinary::apt-get::APT::Keep-Downloaded-Packages=true)
+          apt_scope_lock=(/usr/bin/flock --timeout 600 "$apt_scope_cache/operation.lock")
+        fi
       fi
     elif [[ $apt_scope_mode == native-default && $apt_scope_arch_explicit != true ]]; then
       # Hosted Ubuntu keeps its provisioned mirror configuration.
@@ -188,8 +198,8 @@ with open(sys.argv[1], 'a') as stream:
         target_architecture=os.environ.get('LOCAL_CI_ARCH', platform.machine()), execution_mode='native',
         shared_source_or_architecture_modified=False))+'\n')
 PY_APT
-    /usr/bin/sudo "${apt_scope_original[@]:0:apt_scope_index}" "${apt_scope_original[apt_scope_index]}" \
-      "${apt_scope_defaults[@]}" "${apt_scope_original[@]:apt_scope_index+1}"
+    "${apt_scope_lock[@]}" /usr/bin/sudo "${apt_scope_original[@]:0:apt_scope_index}" "${apt_scope_original[apt_scope_index]}" \
+      -oDPkg::Lock::Timeout=600 "${apt_scope_defaults[@]}" "${apt_scope_original[@]:apt_scope_index+1}"
   }
 fi
 
