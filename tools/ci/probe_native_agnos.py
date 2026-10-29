@@ -1464,6 +1464,7 @@ def native_runtime_companions_probe(guest_command,work,source_mount,evidence,log
   names=('numerics','geos','brotli','acados')
   payload=sum(sum(row['bytes'] for row in json.loads((source/f'rust/native-{name}-provider.json').read_text())['members'].values()) for name in names)
   room(work,payload+128*1024**2)
+  (work/'native-companion-prefixes').mkdir()
   def execute(argv,name):
     evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
     return work/name
@@ -1555,6 +1556,7 @@ def native_runtime_companions_probe(guest_command,work,source_mount,evidence,log
 def native_display_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Consume the remaining root libraries and exercise their actual Rust APIs."""
   room(work,2*1024**3)
+  (work/'native-display-prefixes').mkdir()
   def execute(argv,name):
     evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
     return work/name
@@ -1699,6 +1701,7 @@ def native_display_inputs_probe(guest_command,work,source_mount,evidence,log,gue
 def native_media_inputs_probe(guest_command,work,source_mount,evidence,log,guest_work):
   """Complete required foreign tools/font inputs and execute their real APIs."""
   room(work,2*1024**3)
+  (work/'native-media-prefixes').mkdir()
   def execute(argv,name):
     evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
     return work/name

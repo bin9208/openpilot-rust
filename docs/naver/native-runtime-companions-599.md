@@ -110,3 +110,6 @@ genuine40691750328/job122844676184에서 numerics export 뒤 nested cache/store 
 첫 consume이 ENOENT 종료됐다. Actions 전용 준비기가 work 안의 두 부모를 명시적으로
 생성한다. 공통 provider의 단일 leaf 생성과 전체 경로/hash/mode 검증을 유지한다.
 정확 수정 소스의 초기·반복·실제 AGNOS API 성공은 아직 확인 전이다.
+host 소비뿐 아니라 guest의 companion/display/media 세 store도 같은 단일 leaf 생성
+계약을 사용한다. 관련 호출 전부를 대조해 guest work의 세 부모도 명시적으로 생성한다.
+공유 cache는 host가 이미 준비한 bind를 사용하며 다시 만들거나 삭제하지 않는다.
