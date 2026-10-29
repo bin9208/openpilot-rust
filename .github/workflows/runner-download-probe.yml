@@ -64,6 +64,8 @@ jobs:
         with: {persist-credentials: false}
       - uses: ./.github/actions/job-temp
       - name: Revalidate the retained APT indices against the repository
+        env:
+          LC_ALL: C
         run: |
           set -o pipefail
           sudo apt-get update 2>&1 | tee "$CI_JOB_TEMP/apt-reuse.log"
