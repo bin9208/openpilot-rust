@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[3]
 BASE = 'e445c9d19c3041bc79d8624589e2eb6ba7d061c6'
 LABELS = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
 INHERITED_WORKFLOWS = {'carrot-route-vault-publish.yaml', 'naver-upstream-sync.yml', 'sync.yml', 'wiki-settings-publish.yaml'}
-HOSTED_JOBS = {'fast-checks.yml': {'fast'}, 'user-docs.yaml': {'check_user_docs'}, 'integration.yml': {'gate'}, 'rust.yml': {'fast'}, 'wiki-settings-check.yaml': {'check'}, 'jetlink.yml': {'android-core'}}
+HOSTED_JOBS = {'fast-checks.yml': {'fast'}, 'user-docs.yaml': {'check_user_docs'}, 'integration.yml': {'gate'}, 'rust.yml': {'fast', 'support-runtime', 'telemetry-runtime', 'web-upload-timeouts', 'joystickd-runtime'}, 'wiki-settings-check.yaml': {'check'}, 'jetlink.yml': {'android-core'}}
 SAFETY = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
 HOSTED_CLEANUP = 'sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet'
 
@@ -98,7 +98,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             self.assertTrue(policy['job_is_allowed'](dict(runner_name=runner, labels=LABELS), self_hosted_only=True))
         self.assertFalse(policy['environment_allowed'](dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='other-session')))
         self.assertTrue(policy['environment_allowed'](dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='github-hosted', RUNNER_OS='Linux', RUNNER_ARCH='X64')))
-        self.assertIn('--self-hosted-only', (ROOT/'tools/ci/local-arm').read_text())
+        self.assertNotIn('--self-hosted-only', (ROOT/'tools/ci/local-arm').read_text())
 
     def test_common_ci_has_no_fixed_cargo_or_test_thread_limits(self):
         for path in (ROOT/'.github/workflows').iterdir():

@@ -283,3 +283,14 @@ PPA404를 해결하는 private official source/list view를 `self-hosted` 환경
 적용한다. hosted는 제공된 mirror 설정을 유지하고 기존 native architecture 범위만
 선택한다. URI allowlist·서명 기준을 넓히지 않으며 명시 config/architecture와 원래
 검사 command를 보존한다. AST/Bash/diff만 확인하고 기능 결과는 Actions에서 확인한다.
+
+
+## 2026-10-30 — #606 네 hosted runtime 검사와 일반 host admission
+
+bin-actions2/3이 같은 CPU16 PC임을 사용자에게 확인했다. 고정2/1 제한을 다시 넣지
+않고 support·telemetry·web upload timeout·joystick의 독립 X64 네 job을 hosted
+ubuntu24.04에 분담한다. local-arm의 일반 실행은 이미 hosted를 허용하는 공통
+runner policy를 사용하게 한다. 실제 self-hosted 이름 세 개·Linux/X64/ARM64
+허용 범위·job owner/source/target view·기존 QEMU·root 전용 입력 도구 정책은
+유지한다. 원래 job 의존/argv/기준/최종 gate는 바꾸지 않으며 AST/YAML/Bash/diff만
+로컬에서 확인한다. 기존 공유 source/cache·호스트 설정은 변경하지 않는다.

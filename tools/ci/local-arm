@@ -4,7 +4,7 @@ set -euo pipefail
 
 fail() { printf '%s\n' "$*" >&2; exit 1; }
 policy_dir=$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")
-/usr/bin/python3 -I -B -S "$policy_dir/runner_policy.py" --self-hosted-only
+/usr/bin/python3 -I -B -S "$policy_dir/runner_policy.py"
 [[ ${LOCAL_CI_ARCH:-} == x86_64 || ${LOCAL_CI_ARCH:-} == aarch64 ]] || fail 'Explicit local execution architecture required'
 [[ ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.* && ${CI_JOB_TEMP%/*} == /tmp && ! -L $CI_JOB_TEMP ]] || fail 'Owned job-temp directory required'
 [[ -f $CI_JOB_TEMP/owner && ! -L $CI_JOB_TEMP/owner && $(cat "$CI_JOB_TEMP/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]] || fail 'Wrong job-temp owner'

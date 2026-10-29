@@ -365,7 +365,7 @@ jobs:
   joystickd-runtime:
     name: rust control tools source and native runtimes
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       CARGO_INCREMENTAL: '0'
@@ -2134,7 +2134,7 @@ jobs:
   support-runtime:
     name: rust support runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -2237,7 +2237,7 @@ jobs:
   telemetry-runtime:
     name: rust telemetry runtime
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
@@ -3626,7 +3626,7 @@ jobs:
   web-upload-timeouts:
     name: active upload timeout contracts
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
