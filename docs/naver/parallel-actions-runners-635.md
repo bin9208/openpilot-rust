@@ -120,3 +120,17 @@ matrix·feature·pin·skip/continue-on-error·최종 gate는 유지하고 기존
 목록에 정확18개만 추가한다. 실행 중인9b8 Genuine은 보존하여 준비·컴파일 결과를
 끝까지 확인한다. 그 성공을 새 source의 성공으로 대신하지 않고 새 source의 정확한
 producer/필수 검사를 별도로 확인한다. 로컬은 AST/YAML·diff 읽기만 수행한다.
+
+## 2026-10-30 — 동시 병합된 지원 서비스 #631 보존
+
+추가 routing push 직후 `dev`에 `3fd7fd051b0af237fb8f75a4260e48707e3ae7c8`
+(#631/#630)이 들어와 PR mergeability가 dirty가 되었고 PR 검사가 등록되지 않았다.
+이 dev를 정상 merge하고 지원 서비스9개 변경 및 workspace의 modem helper lifetime
+feature·실제 process-child 준비를 모두 보존한다. conflict는 실행 architecture 환경과
+안전식만 기존 공통 helper의 요구대로 유지하고 고정 Cargo2를 복구하지 않는다.
+
+고정 e445 command fixture/hash는 그대로 둔다. 새 dev의 workspace 두 전체 script만
+원래 e445 script와 정확한 쌍으로 대조해 기준 변경을 인정하고, 두 새 script가 현재
+workspace에 전체 그대로 남는지도 별도로 검사한다. feature flag를 일반적으로
+삭제하거나 새 수명 검사를 생략하는 normalization은 없다. 기능 결과는 새 merge SHA의
+정상 PR 검사로 확인한다. 기존 AGNOS 실행은 계속 보존한다.

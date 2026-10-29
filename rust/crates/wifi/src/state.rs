@@ -84,26 +84,33 @@ impl State {
         networks
     }
     pub fn snapshot(&self) -> Snapshot {
-        let mut result = self.snapshot.clone();
-        result.networks = self.networks();
-        result.saved_ssids = self
-            .connections
-            .iter()
-            .map(|(ssid, _)| ssid.clone())
-            .collect();
-        result.tethering_active =
-            result.wifi_state.ssid.as_deref() == Some(self.tethering_ssid.as_str());
-        result.connecting_to_ssid = if result.wifi_state.status == ConnectStatus::Connecting {
-            result.wifi_state.ssid.clone()
+        let wifi_state = self.snapshot.wifi_state.clone();
+        let tethering_active = wifi_state.ssid.as_deref() == Some(self.tethering_ssid.as_str());
+        let connecting_to_ssid = if wifi_state.status == ConnectStatus::Connecting {
+            wifi_state.ssid.clone()
         } else {
             None
         };
-        result.connected_ssid = if result.wifi_state.status == ConnectStatus::Connected {
-            result.wifi_state.ssid.clone()
+        let connected_ssid = if wifi_state.status == ConnectStatus::Connected {
+            wifi_state.ssid.clone()
         } else {
             None
         };
-        result
+        Snapshot {
+            networks: self.networks(),
+            wifi_state,
+            ipv4_address: self.snapshot.ipv4_address.clone(),
+            current_network_metered: self.snapshot.current_network_metered,
+            connecting_to_ssid,
+            connected_ssid,
+            tethering_password: self.snapshot.tethering_password.clone(),
+            tethering_active,
+            saved_ssids: self
+                .connections
+                .iter()
+                .map(|(ssid, _)| ssid.clone())
+                .collect(),
+        }
     }
     pub fn scan_due(&self, now: f64) -> bool {
         (self.active || self.snapshot.wifi_state.status != ConnectStatus::Connected)

@@ -34,7 +34,29 @@ def definitions(path, scope):
   exec(compile(tree, str(path), 'exec'), scope)
 
 
-def source(config, binding, root):
+def intended_sound_data(sound, sound_list, frames):
+  """Independent linear-index contract for the intentional #392 correction.
+
+  Assets, alert selection and volume still come from the unchanged source.
+  Unlike the native span-copy implementation, this emits one sample at a time.
+  """
+  result = np.zeros(frames, dtype=np.float32)
+  if sound.current_alert != 0:
+    samples = sound.loaded_sounds[sound.current_alert]
+    length = len(samples)
+    limit = sound_list[sound.current_alert][1]
+    if length == 0:
+      raise ZeroDivisionError('integer modulo by zero')
+    for position in range(frames):
+      index = sound.current_sound_frame
+      if limit is not None and index // length >= limit:
+        break
+      result[position] = samples[index % length]
+      sound.current_sound_frame += 1
+  return result * sound.current_volume
+
+
+def source(config, binding, root, *, intended=False):
   os.environ['OPENPILOT_PREFIX'] = 'sound-source-' + uuid.uuid4().hex[:16]
   module, cloudlog = load(binding, 'ipc://' + str(root / 'log'), root / 'logs')
   params = module.Params(str(root / 'params'))
@@ -63,6 +85,8 @@ def source(config, binding, root):
   definitions(ROOT / 'openpilot/selfdrive/car/openpilot_toggle.py', scope)
   definitions(ROOT / 'openpilot/selfdrive/ui/soundd.py', scope)
   sound = scope['Soundd']()
+  if intended:
+    sound.get_sound_data = functools.partial(intended_sound_data, sound, scope['sound_list'])
   toggle = scope['CruiseMainOpenpilotToggle'](car.CarState.ButtonEvent.Type.mainCruise)
   rows = []
 
@@ -174,6 +198,9 @@ def main():
   for path, expected in provenance['sources'].items():
     assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == expected, path
   comparisons = 0
+  original_unchanged_samples = 0
+  corrected_samples = 0
+  corrected_frame_rows = 0
   for index, (rate, channels, tizi) in enumerate([(48000, 1, False), (48000, 2, True), (12000, 1, False), (44100, 2, True), (0, 1, False), (0, 1, True)]):
     with tempfile.TemporaryDirectory(prefix='sound-source-') as temporary:
       root = Path(temporary)
@@ -186,26 +213,44 @@ def main():
       }
       if not rate:
         config['basedir'] = str(ROOT)
-      expected = source(config, args.binding, root)
+      original = source(config, args.binding, root)
+      expected = source(config, args.binding, root, intended=True)
       result = subprocess.run([str(args.binary)], input=json.dumps(config), text=True, capture_output=True, check=True)
       observed = [json.loads(line) for line in result.stdout.splitlines() if line.startswith('{')]
       (args.output / f'{index}-input.json').write_text(json.dumps(config))
-      (args.output / f'{index}-source.json').write_text(json.dumps(expected))
+      (args.output / f'{index}-source.json').write_text(json.dumps(original))
+      (args.output / f'{index}-intended.json').write_text(json.dumps(expected))
       (args.output / f'{index}-native.json').write_text(json.dumps(observed))
       (args.output / f'{index}-stderr.log').write_text(result.stderr or 'no stderr\n')
       assert len(observed) == len(expected)
-      for step, (left, right) in enumerate(zip(expected, observed, strict=True)):
+      for step, (raw, left, right) in enumerate(zip(original, expected, observed, strict=True)):
+        # Only playback samples/frame may intentionally differ from the old
+        # callback. Every other state transition must remain source-exact.
+        for key in raw['state']:
+          if key != 'frame':
+            assert raw['state'][key] == left['state'][key], (index, step, key, raw['state'], left['state'])
+        raw_bits = np.array(raw['samples'], dtype=np.float32).view(np.uint32)
+        intended_bits = np.array(left['samples'], dtype=np.float32).view(np.uint32)
+        corrected_samples += int(np.count_nonzero(raw_bits != intended_bits))
+        original_unchanged_samples += int(np.count_nonzero(raw_bits == intended_bits))
+        corrected_frame_rows += int(raw['state']['frame'] != left['state']['frame'])
         for key in ['alert', 'frame', 'adjust', 'countdown', 'timeout']:
           assert left['state'][key] == right['state'][key], (index, step, key, left['state'], right['state'])
         for key in ['volume', 'filter']:
           assert math.isclose(left['state'][key], right['state'][key], rel_tol=1e-12, abs_tol=1e-12), (index, step, key)
         np.testing.assert_array_equal(np.array(left['samples'], dtype=np.float32).view(np.uint32), np.array(right['samples'], dtype=np.float32).view(np.uint32))
         comparisons += len(left['samples'])
+  assert original_unchanged_samples > 0, 'source-exact sample controls missing'
+  assert corrected_samples > 0 and corrected_frame_rows > 0, '#392 boundary coverage missing'
   summary = {
     'passed': True,
     'scenarios': 6,
     'steps_per_scenario': len(steps()),
     'sample_comparisons': comparisons,
+    'original_unchanged_sample_comparisons': original_unchanged_samples,
+    'intentional_clip_boundary_corrected_samples': corrected_samples,
+    'intentional_clip_boundary_corrected_frame_rows': corrected_frame_rows,
+    'all_nonplayback_state_source_exact': True,
     'binding_sources_verified': len(provenance['sources']),
     'audio_initialized': False,
   }

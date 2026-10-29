@@ -49,17 +49,21 @@ impl Playback {
             if sound.samples.is_empty() {
                 return Err(Error::Contract("empty active sound"));
             }
-            let offset = self.frame % sound.samples.len();
-            let loops = self.frame / sound.samples.len();
-            // Source deliberately keeps callback-local offset and loops unchanged.
-            if sound.loops.is_none_or(|limit| loops < limit) {
-                for chunk in output.chunks_mut(sound.samples.len() - offset) {
-                    chunk.copy_from_slice(&sound.samples[offset..offset + chunk.len()]);
-                    self.frame = self
-                        .frame
-                        .checked_add(chunk.len())
-                        .ok_or(Error::Contract("sample counter overflow"))?;
+            let mut written = 0;
+            while written < output.len() {
+                let offset = self.frame % sound.samples.len();
+                let loops = self.frame / sound.samples.len();
+                if sound.loops.is_some_and(|limit| loops >= limit) {
+                    break;
                 }
+                let count = (sound.samples.len() - offset).min(output.len() - written);
+                output[written..written + count]
+                    .copy_from_slice(&sound.samples[offset..offset + count]);
+                self.frame = self
+                    .frame
+                    .checked_add(count)
+                    .ok_or(Error::Contract("sample counter overflow"))?;
+                written += count;
             }
         }
         // NumPy multiplies the float32 array by its scalar cast to float32.

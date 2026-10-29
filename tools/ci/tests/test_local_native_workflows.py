@@ -1,5 +1,6 @@
 """Retain exact required commands while routing this track to the named runner."""
 from collections import Counter
+from functools import cache
 import hashlib
 import json
 from pathlib import Path
@@ -10,6 +11,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 BASE = 'e445c9d19c3041bc79d8624589e2eb6ba7d061c6'
+SUPPORT_BASE = '3fd7fd051b0af237fb8f75a4260e48707e3ae7c8'
 LABELS = ['self-hosted', 'Linux', 'X64', 'dev-md-local']
 HOSTED_WORKFLOWS = {'fast-checks.yml', 'integration.yml', 'jetlink.yml', 'native-cache-reuse.yml',
     'naver-apk-tools.yml', 'naver-ci.yml', 'tests.yaml', 'user-docs.yaml', 'wiki-settings-check.yaml',
@@ -38,14 +40,31 @@ def digest(script):
     return hashlib.sha256(script.encode()).hexdigest()
 
 
+@cache
+def support_workspace_updates():
+    # #631 legitimately adds modem helper lifecycle coverage to two commands.
+    # Match whole immutable scripts, never strip a feature flag generally.
+    def scripts(ref):
+        document = yaml.load(subprocess.check_output(
+            ['git', 'show', ref+':.github/workflows/rust.yml'], cwd=ROOT, text=True),
+            Loader=yaml.BaseLoader)
+        return [step['run'] for step in document['jobs']['workspace']['steps'] if 'run' in step]
+    before, after = scripts(BASE), scripts(SUPPORT_BASE)
+    assert len(before) == len(after)
+    updates = {new: old for old, new in zip(before, after) if old != new}
+    assert len(updates) == 2
+    return updates
+
+
 def ci_adapter(script):
     # The original builder is frozen by the ARM source contract. This adapter
     # calls its original main and retains the complete original argument list.
     for name in ('build_plannerd_acados.py', 'build_plannerd_source.py'):
         script = script.replace('python rust/tools/plannerd_ci_builder.py -- rust/tools/' + name + ' ',
                                 'python rust/tools/' + name + ' ')
-    return script.replace('python rust/tools/radarcan_ci_builder.py -- rust/tools/radarcan_prepare_assets.py ',
-                          'python rust/tools/radarcan_prepare_assets.py ')
+    script = script.replace('python rust/tools/radarcan_ci_builder.py -- rust/tools/radarcan_prepare_assets.py ',
+                            'python rust/tools/radarcan_prepare_assets.py ')
+    return support_workspace_updates().get(script, script)
 
 
 
@@ -63,6 +82,12 @@ def condition(original):
 
 
 class LocalNativeWorkflowTests(unittest.TestCase):
+    def test_merged_support_workspace_keeps_both_complete_lifecycle_commands(self):
+        updates = support_workspace_updates()
+        job = load(ROOT/'.github/workflows/rust.yml')['jobs']['workspace']
+        actual = Counter(step['run'] for step in job['steps'] if 'run' in step)
+        self.assertFalse(Counter(updates.keys()) - actual)
+
     def test_ci_admission_keeps_the_immutable_dbc_generator_bytes(self):
         contract = json.loads((ROOT/'rust/native-dbc-source-contract.json').read_text())
         relative = 'rust/tools/radarcan_prepare_assets.py'
