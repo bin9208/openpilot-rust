@@ -82,6 +82,7 @@ runs:
               $(cat "$CI_JOB_TEMP/owner") != "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" ]]; then
           echo 'Refusing output owned by another job' >&2; exit 1
         fi
+        /usr/bin/python3 -I -B -S "$GITHUB_ACTION_PATH/../../../tools/ci/native_cache.py" cleanup
         if [[ -f $CI_JOB_TEMP/target-view && ! -L $CI_JOB_TEMP/target-view ]]; then
           target_view=$(cat "$CI_JOB_TEMP/target-view")
           if [[ $target_view != "$GITHUB_WORKSPACE/rust/target" ||

@@ -520,3 +520,47 @@ CI artifact에 따로 보관한다. 원문/notice 변조와 이미 표시한 not
 검사를 진행한다. 각 workflow의 동일 source 중복 등록은 피하며 source와 실제 결과를
 다시 읽는다. 지금 확인한 것은 기존 실행의 부분 성공과 실제 실패 원인이며, 후속
 source의 기능·전체 gate·설치 후보 성공은 아직 확인 전이다.
+
+## CI cache의 작업 사이 재사용 오류 — #627
+
+`eacfe059180c17c827f2236a16642a4124409ae9`의 Genuine `40833691796` attempt1은
+원래 Planner ABI와 같은 고정 C 소스의 host SDK 빌드는 통과했으나 FFmpeg 소스의
+`curl 28`로 실패했다. 같은 ID의 실패 job을 재시도했으며 전체 성공은 아직 아니다.
+
+실제 cache API와 toolkit 소스를 읽어 별도 설정 오류를 확정했다. workflow의 cache path가
+매번 달라지는 `/tmp/openpilot-ci.<random>/native-*`였으므로 key가 같아도 version이 달라졌다.
+같은 ref/key의 이미지 cache가 attempt1/2에서 각각 약1.01GB로 새로 저장됐고 version은
+`f45bab628f2b6ff89a6dad9916620c06c75ee5c69a595abcc452b8d10bf9b3f7`/
+`09e1761945950d42790ecd4aa85ff68c8cc35035e5ab5c7b7ed365adc0a4d19c`다.
+단일 작업 내부의 반복 전송0은 이 작업 사이 재사용 성공을 뜻하지 않는다.
+
+고정된 ignored workspace staging의 `payload`만 Actions archive에 넣고, 준비 도구 실행
+전후에는 job 전용 입력 폴더로 같은 filesystem에서 원자 이동한다. lease·inode·runner와
+기존 파일을 확인하며 다른 작업이나 기존 원격 cache는 채택·삭제하지 않는다. 취소 시
+job 소유 payload만 되돌리고 정상 job-temp 정리로 연결한다. 실제 원래 검증 명령과
+자산 SHA/byte 및 다운로드 검증은 유지한다. 서로 다른2개 Actions job의 실제 hit와
+소유 archive·취소·충돌·redirect 회귀를 추가했다. 로컬 AST/YAML/diff만 수행하며
+이 새 source의 실제 cache hit·필수 검사·병합 후 성공은 아직 확인 전이다.
+
+근거: [실제 실행](https://github.com/bin9208/openpilot-rust/actions/runs/40833691796),
+[cache version 구현](https://github.com/actions/toolkit/blob/main/packages/cache/src/internal/cacheUtils.ts),
+[archive 경로 구현](https://github.com/actions/toolkit/blob/main/packages/cache/src/internal/tar.ts).
+
+## 같은 source 다운로드의 반복 시간 초과 — #628
+
+Genuine `40833691796` attempt2/job123323861172도08:04:31–08:05:45 UTC에
+같은 FFmpeg source 준비의 `curl 28`로 실패했다. 먼저 같은 실행을 코드 변경 없이
+재시도했지만, 각 실행의 기존4회 연결 재시도 후에도 실패했다. 이 기록은 FFmpeg의
+전역 장애나 header 검증 실패를 주장하지 않는다.
+
+원래 URL의 zero-body 일시 연결 실패가 모두 소진된 경우에만 Buildroot 보관본의
+같은 release tarball을 사용한다. 원래 source URL·SHA·10,458,600byte와 header140개
+전체 inventory 및 provider pin은 바꾸지 않는다. mirror도 HTTPS와 같은 SHA/byte를
+검사한 뒤에만 cache에 발행하며 부분 body·HTTP/크기/hash 오류는 대체 근거가 아니다.
+전체1800초 예산과 origin별4회 제한, 실패한 모든 body 전송량 보존을 유지한다.
+소유 curl fixture 회귀와 실제 header 준비·재사용은 새 source의 Actions에서 확인한다.
+로컬 rustfmt/AST/YAML/diff만 확인했으며 기능 성공은 아직 주장하지 않는다.
+
+[Buildroot 원래 해시 기록](https://lists.buildroot.org/pipermail/buildroot/2024-April/751360.html)은
+기존 `8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968`와 같다.
+보관본 HEAD의200/같은 길이는 읽기 증거이며 실제 body/140-header 성공을 대신하지 않는다.

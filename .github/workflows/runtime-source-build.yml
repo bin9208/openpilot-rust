@@ -254,10 +254,11 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test encoder_stage
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_codec_inputs::tests -- --nocapture
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --bin stage-encoder-target -- -D warnings
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: codec-wheels-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-codec-assets
+          mode: restore
+          name: native-codec-assets
           key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
       - name: Prepare the original ARM codec wheels without pip or compiler execution
         run: |
@@ -280,25 +281,28 @@ jobs:
             assert not row['compiler_executed'] and not row['runtime_activated']
           print('Original codec wheels verified; repeat HTTP body, stored archive bytes and copied prefix bytes zero. This step does not execute ARM codecs.')
           PY
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.codec-wheels-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-codec-assets
+          mode: save
+          name: native-codec-assets
           key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: eigen-headers-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-eigen-assets
+          mode: restore
+          name: native-eigen-assets
           key: native-eigen-340-arm-b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a-v1
       - name: Prepare only the original Eigen headers and reuse libyuv without the other wheel
         run: |
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           python3 tools/ci/prepare_native_eigen.py --preparer "$native_target/debug/stage-encoder-target" \
             --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.eigen-headers-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-eigen-assets
+          mode: save
+          name: native-eigen-assets
           key: native-eigen-340-arm-b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a-v1
       - name: Verify unchanged legacy raylib admission and independent native preparation
         run: |
@@ -307,10 +311,11 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_raylib_inputs::tests -- --nocapture
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test native_raylib
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --bin stage-startup-ui-raylib -- -D warnings
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: raylib-sdk-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-raylib-assets
+          mode: restore
+          name: native-raylib-assets
           key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
       - name: Prepare only the original native raylib SDK and reject forged local receipts
         run: |
@@ -318,10 +323,11 @@ jobs:
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           python3 tools/ci/prepare_native_raylib.py --preparer "$native_target/debug/stage-startup-ui-raylib" \
             --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.raylib-sdk-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-raylib-assets
+          mode: save
+          name: native-raylib-assets
           key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
       - name: Verify released OpenCV header and generated configuration admission
         run: |
@@ -333,10 +339,11 @@ jobs:
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_opencv_prefix::tests -- --nocapture
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test native_opencv_prefix
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --bin build-runtime-opencv -- -D warnings
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: opencv-header-source-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-opencv-source
+          mode: restore
+          name: native-opencv-source
           key: native-opencv-source-6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61-v1
       - name: Restore original OpenCV headers without rebuilding its native libraries
         run: |
@@ -344,10 +351,11 @@ jobs:
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           python3 tools/ci/prepare_native_opencv_headers.py --preparer "$native_target/debug/build-runtime-opencv" \
             --plan rust/native-opencv-headers.json --work "$RUNNER_TEMP"
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.opencv-header-source-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-opencv-source
+          mode: save
+          name: native-opencv-source
           key: native-opencv-source-6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61-v1
       - name: Verify released FFmpeg header reconstruction without changing existing profiles
         run: |
@@ -372,10 +380,11 @@ jobs:
         run: |
           rustfmt --edition 2021 --check rust/crates/dev-tools/src/native_ffmpeg_prefix.rs
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_ffmpeg_prefix::tests -- --nocapture
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: ffmpeg-headers-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-ffmpeg-source
+          mode: restore
+          name: native-ffmpeg-source
           key: native-ffmpeg-source-8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968-v1
       - name: Prepare all original released headers and prove zero-transfer repeat
         run: |
@@ -395,10 +404,11 @@ jobs:
           assert repeat['asset']['transferred_bytes']==repeat['asset']['stored_bytes']==0
           assert not first['compiler_executed'] and not first['provider_libraries_prepared'] and not first['actual_target_execution']
           PY
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.ffmpeg-headers-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-ffmpeg-source
+          mode: save
+          name: native-ffmpeg-source
           key: native-ffmpeg-source-8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968-v1
       - name: Verify the real HTTPS CLI and zero-transfer reuse of a pinned public input
         run: |

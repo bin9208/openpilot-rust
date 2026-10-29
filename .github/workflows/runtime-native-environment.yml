@@ -281,10 +281,11 @@ jobs:
               --baseline "$CI_JOB_TEMP/host-planner-source" --evidence "$CI_JOB_TEMP/host-planner-gdb-abi" \
               > "$CI_JOB_TEMP/host-planner-gdb.txt" 2>&1
           fi
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: image-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-agnos-assets
+          mode: restore
+          name: native-agnos-assets
           key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
       - name: Prepare the exact genuine image through the content cache and prove zero-transfer repeat
         run: |
@@ -292,15 +293,17 @@ jobs:
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           "$native_target/debug/openpilot-runtime-assets" --plan tools/ci/fixtures/native-agnos-assets-599.json --cache "$RUNNER_TEMP/native-agnos-assets" > "$RUNNER_TEMP/native-agnos-assets-first.json"
           "$native_target/debug/openpilot-runtime-assets" --plan tools/ci/fixtures/native-agnos-assets-599.json --cache "$RUNNER_TEMP/native-agnos-assets" > "$RUNNER_TEMP/native-agnos-assets-reused.json"
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.image-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-agnos-assets
+          mode: save
+          name: native-agnos-assets
           key: native-agnos-image-077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4-v1
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: rust-components-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-rust-assets
+          mode: restore
+          name: native-rust-assets
           key: native-rust-194-aarch64-aaa177def36e01d539bee6bde95295230b9ce378f81057845db8d0ebe97898ee-v1
       - name: Prepare authenticated native Rust components and verify zero-transfer reuse
         run: |
@@ -323,18 +326,20 @@ jobs:
           assert all(row['transferred_bytes'] == row['stored_bytes'] == 0 for row in repeated['assets'].values())
           print('Authenticated ARM toolchain files prepared; repeated HTTP body and copied bytes both zero; compiler execution remains the following AGNOS step.')
           PY
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.rust-components-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-rust-assets
+          mode: save
+          name: native-rust-assets
           key: native-rust-194-aarch64-aaa177def36e01d539bee6bde95295230b9ce378f81057845db8d0ebe97898ee-v1
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: capnp-packages-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-capnp-assets
+          mode: restore
+          name: native-capnp-assets
           key: native-capnp-101-4-arm64-9d693ded6a718a142063ccf0bb3250fa4e15b846980362ec6c38cff2a711a81c-v1
       - name: Prepare only pinned SDK packages and the original full-schema reference
         run: |
@@ -375,15 +380,17 @@ jobs:
           PYCODE
           python -m pip install pycapnp==2.1.0
           PYTHONPATH="$GITHUB_WORKSPACE" python3 tools/ci/native_cereal_reference.py
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.capnp-packages-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-capnp-assets
+          mode: save
+          name: native-capnp-assets
           key: native-capnp-101-4-arm64-9d693ded6a718a142063ccf0bb3250fa4e15b846980362ec6c38cff2a711a81c-v1
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: cargo-archives-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-cargo-assets
+          mode: restore
+          name: native-cargo-assets
           key: native-cargo-crates-${{ hashFiles('rust/Cargo.lock') }}-v1
           restore-keys: native-cargo-crates-
       - name: Prepare the complete locked registry sources and prove zero-transfer repeat
@@ -408,15 +415,17 @@ jobs:
           assert all(row['transferred_bytes'] == row['stored_bytes'] == 0 for row in repeat['assets'].values())
           print('Locked Cargo registry sources authenticated; repeated archive body, copied bytes and linked bytes all zero. Cache-service traffic is separate.')
           PYCODE
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.cargo-archives-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-cargo-assets
+          mode: save
+          name: native-cargo-assets
           key: native-cargo-crates-${{ hashFiles('rust/Cargo.lock') }}-v1
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: codec-wheels-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-codec-assets
+          mode: restore
+          name: native-codec-assets
           key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
       - name: Prepare independently expected original codec wheel trees
         run: |
@@ -445,30 +454,34 @@ jobs:
               assert repeat[name]['asset']['transferred_bytes']==repeat[name]['asset']['stored_bytes']==0
               assert not row['compiler_executed'] and not row['runtime_activated']
           PY
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.codec-wheels-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-codec-assets
+          mode: save
+          name: native-codec-assets
           key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: eigen-headers-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-eigen-assets
+          mode: restore
+          name: native-eigen-assets
           key: native-eigen-340-arm-b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a-v1
       - name: Prepare only the original Eigen headers and reuse libyuv without the other wheel
         run: |
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           python3 tools/ci/prepare_native_eigen.py --preparer "$native_target/debug/stage-encoder-target" \
             --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.eigen-headers-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-eigen-assets
+          mode: save
+          name: native-eigen-assets
           key: native-eigen-340-arm-b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a-v1
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: raylib-sdk-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-raylib-assets
+          mode: restore
+          name: native-raylib-assets
           key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
       - name: Prepare only the original native raylib SDK and reject forged local receipts
         run: |
@@ -476,15 +489,17 @@ jobs:
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           python3 tools/ci/prepare_native_raylib.py --preparer "$native_target/debug/stage-startup-ui-raylib" \
             --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.raylib-sdk-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-raylib-assets
+          mode: save
+          name: native-raylib-assets
           key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: opencv-header-source-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-opencv-source
+          mode: restore
+          name: native-opencv-source
           key: native-opencv-source-6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61-v1
       - name: Restore original OpenCV headers without rebuilding its native libraries
         run: |
@@ -492,15 +507,17 @@ jobs:
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           python3 tools/ci/prepare_native_opencv_headers.py --preparer "$native_target/debug/build-runtime-opencv" \
             --plan rust/native-opencv-headers.json --work "$RUNNER_TEMP"
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.opencv-header-source-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-opencv-source
+          mode: save
+          name: native-opencv-source
           key: native-opencv-source-6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61-v1
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: ffmpeg-headers-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-ffmpeg-source
+          mode: restore
+          name: native-ffmpeg-source
           key: native-ffmpeg-source-8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968-v1
       - name: Independently prepare the exact released FFmpeg 6.1.1 headers
         run: |
@@ -520,15 +537,17 @@ jobs:
           assert repeat['asset']['transferred_bytes']==repeat['asset']['stored_bytes']==0
           assert not first['compiler_executed'] and not first['provider_libraries_prepared'] and not first['actual_target_execution']
           PY
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.ffmpeg-headers-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-ffmpeg-source
+          mode: save
+          name: native-ffmpeg-source
           key: native-ffmpeg-source-8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968-v1
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: provider-origin-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-provider-origin
+          mode: restore
+          name: native-provider-origin
           key: native-provider-origin-9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291-v1
       - name: Export only original foreign provider members and verify independent component reuse
         run: |
@@ -634,10 +653,11 @@ jobs:
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           python3 tools/ci/prepare_native_dbc_inputs.py \
             --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: usbgpu-model-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-usbgpu-model-assets
+          mode: restore
+          name: native-usbgpu-model-assets
           key: native-usbgpu-model-${{ hashFiles('rust/native-usbgpu-model.json') }}-v1
       - name: Prepare source-bound eGPU companions and independently cached model
         run: |
@@ -645,62 +665,71 @@ jobs:
           python3 tools/ci/prepare_native_usbgpu_inputs.py \
             --preparer "$native_target/debug/build-runtime-ffmpeg" --inputs "$native_target/debug/openpilot-runtime-inputs" \
             --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.usbgpu-model-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-usbgpu-model-assets
+          mode: save
+          name: native-usbgpu-model-assets
           key: native-usbgpu-model-${{ hashFiles('rust/native-usbgpu-model.json') }}-v1
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: python-input-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-python-assets
+          mode: restore
+          name: native-python-assets
           key: native-python-arm-${{ hashFiles('rust/native-python-toolchain.json') }}-v1
           restore-keys: native-python-arm-
       - name: Prepare the independently pinned ARM Python without running an installer
         run: python3 tools/ci/prepare_native_python.py
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.python-input-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-python-assets
+          mode: save
+          name: native-python-assets
           key: native-python-arm-${{ hashFiles('rust/native-python-toolchain.json') }}-v1
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: model-wheel-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-model-wheel-assets
+          mode: restore
+          name: native-model-wheel-assets
           key: native-model-wheels-${{ hashFiles('rust/native-model-wheels.json') }}-v1
           restore-keys: native-model-wheels-
       - name: Prepare only pinned model wheels and retain the original native libraries
         run: python3 tools/ci/prepare_native_model_wheels.py
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.model-wheel-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-model-wheel-assets
+          mode: save
+          name: native-model-wheel-assets
           key: native-model-wheels-${{ hashFiles('rust/native-model-wheels.json') }}-v1
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: source-lfs-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-source-lfs-assets
+          mode: restore
+          name: native-source-lfs-assets
           key: native-source-lfs-${{ hashFiles('rust/native-source-lfs.json') }}-v1
           restore-keys: native-source-lfs-
-      - uses: actions/cache/restore@v4
+      - uses: ./.github/actions/native-cache
         id: model-assets-cache
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-model-assets
+          mode: restore
+          name: native-model-assets
           key: native-model-assets-${{ hashFiles('openpilot/selfdrive/modeld/models/*.onnx') }}-v1
           restore-keys: native-model-assets-
       - name: Prepare current ONNX build inputs without changing the source checkout
         run: python3 tools/ci/prepare_native_model_assets.py
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.model-assets-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-model-assets
+          mode: save
+          name: native-model-assets
           key: native-model-assets-${{ hashFiles('openpilot/selfdrive/modeld/models/*.onnx') }}-v1
       - name: Prepare only the current committed LFS objects without changing checkout files
         run: python3 tools/ci/prepare_native_source_assets.py --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.source-lfs-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-source-lfs-assets
+          mode: save
+          name: native-source-lfs-assets
           key: native-source-lfs-${{ hashFiles('rust/native-source-lfs.json') }}-v1
       - name: Compose independently expected headers and libraries into one immutable FFmpeg prefix
         run: |
@@ -730,10 +759,11 @@ jobs:
           assert all(rows[1][part]['copied_bytes']==0 for part in ('headers','provider'))
           print('One content-addressed FFmpeg input prefix; repeat archive transfer, prefix copy and hardlink bytes zero.')
           PY
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/native-cache
         if: steps.provider-origin-cache.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CI_JOB_TEMP }}/native-provider-origin
+          mode: save
+          name: native-provider-origin
           key: native-provider-origin-9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291-v1
       - name: Prepare only this bootstrap job kernel scope
         run: sudo -n --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA /usr/bin/python3 tools/ci/native_resource_scope.py prepare

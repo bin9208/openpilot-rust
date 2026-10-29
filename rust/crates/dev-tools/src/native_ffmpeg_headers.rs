@@ -21,6 +21,24 @@ use std::{
 const HEADER_INVENTORY: &str = "1b6513ff4ece0545db8776726b8b64bc2f5f00a002378ca7f7a53cf6a0f06542";
 const LIBRARY_INVENTORY: &str = "270eebd548e54ad59717a0fa511a5e44bb0ec3bcd636398d868f9abcb3f96c4a";
 const LIMIT: u64 = 512 * 1024 * 1024;
+// Buildroot retains the original release tarball with the same independently
+// recorded SHA256 and length. Neither the source plan nor header identity changes.
+pub(crate) struct ReleasedSourceDownload;
+impl assets::Download for ReleasedSourceDownload {
+    fn fetch(&self, asset: &assets::Asset, destination: &Path) -> Result<u64> {
+        if asset.url != ffmpeg_build::SOURCE_URL
+            || asset.sha256 != ffmpeg_build::SOURCE_SHA256
+            || asset.bytes != 10458600
+        {
+            return Err("FFmpeg source mirror requires the original pinned release".into());
+        }
+        assets::Curl.fetch_with_mirror(
+            asset,
+            destination,
+            "https://sources.buildroot.net/ffmpeg/ffmpeg-6.1.1.tar.xz",
+        )
+    }
+}
 const LICENSES: [&str; 5] = [
     "COPYING.GPLv2",
     "COPYING.GPLv3",
@@ -353,7 +371,7 @@ pub fn cli(args: &[String]) -> Result<()> {
     let store = Path::new(values.get("--store").ok_or("--store required")?);
     println!(
         "{}",
-        serde_json::to_string(&prepare(&plan, cache, store, &assets::Curl)?)?
+        serde_json::to_string(&prepare(&plan, cache, store, &ReleasedSourceDownload)?)?
     );
     Ok(())
 }

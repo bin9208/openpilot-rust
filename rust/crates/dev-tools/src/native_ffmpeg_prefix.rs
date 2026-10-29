@@ -312,7 +312,7 @@ pub fn cli(arguments: &[String]) -> Result<()> {
         &header_plan,
         header_cache,
         &store.join("headers"),
-        &assets::Curl,
+        &native_ffmpeg_headers::ReleasedSourceDownload,
     )?;
     let prefix = compose(
         [

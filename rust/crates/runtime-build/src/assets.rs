@@ -46,6 +46,29 @@ pub trait Download {
 }
 
 pub struct Curl;
+impl Curl {
+    /// The mirror changes transport only; preparation still verifies the same
+    /// byte count and digest before publishing the object. Failed partial bodies
+    /// never switch origins or disappear from a successful receipt's accounting.
+    pub fn fetch_with_mirror(
+        &self,
+        asset: &Asset,
+        destination: &Path,
+        mirror: &str,
+    ) -> Result<u64> {
+        asset.validate()?;
+        let mut alternate = asset.clone();
+        alternate.url = mirror.into();
+        alternate.validate()?;
+        fetch_from_curl_sources(
+            Path::new("/usr/bin/curl"),
+            asset,
+            destination,
+            std::thread::sleep,
+            &[&asset.url, &alternate.url],
+        )
+    }
+}
 impl Download for Curl {
     fn fetch(&self, asset: &Asset, destination: &Path) -> Result<u64> {
         fetch_with_curl(
@@ -63,51 +86,78 @@ fn fetch_with_curl(
     destination: &Path,
     sleep: impl Fn(Duration),
 ) -> Result<u64> {
+    fetch_from_curl_sources(curl, asset, destination, sleep, &[&asset.url])
+}
+
+fn fetch_from_curl_sources(
+    curl: &Path,
+    asset: &Asset,
+    destination: &Path,
+    sleep: impl Fn(Duration),
+    sources: &[&str],
+) -> Result<u64> {
     let started = Instant::now();
-    for attempt in 0..4 {
-        let remaining = 1800_u64.saturating_sub(started.elapsed().as_secs());
-        if remaining == 0 {
-            return Err("build input download time budget exhausted".into());
+    for (origin, url) in sources.iter().enumerate() {
+        for attempt in 0..4 {
+            let remaining = 1800_u64.saturating_sub(started.elapsed().as_secs());
+            if remaining == 0 {
+                return Err("build input download time budget exhausted".into());
+            }
+            let output = Command::new(curl)
+                .args([
+                    "--fail",
+                    "--silent",
+                    "--show-error",
+                    "--location",
+                    "--proto",
+                    "=https",
+                    "--proto-redir",
+                    "=https",
+                    "--connect-timeout",
+                    "15",
+                    "--max-time",
+                    &remaining.to_string(),
+                    "--max-filesize",
+                    &asset.bytes.to_string(),
+                    "--write-out",
+                    "%{size_download}",
+                    "--output",
+                ])
+                .arg(destination)
+                .arg("--url")
+                .arg(url)
+                .env("LC_ALL", "C")
+                .output()?;
+            let transferred: u64 = String::from_utf8(output.stdout)?.trim().parse()?;
+            if output.status.success() {
+                return Ok(transferred);
+            }
+            // Retry only before any body arrived. Partial transfers remain failures,
+            // so successful receipts still account for every transferred body byte.
+            if transferred != 0
+                || !matches!(output.status.code(), Some(5 | 6 | 7 | 28 | 35 | 52 | 56))
+            {
+                // Do not include URLs or response bodies in error reports.
+                return Err(format!(
+                    "build input download failed: {}; body_bytes={transferred}",
+                    output.status
+                )
+                .into());
+            }
+            if attempt == 3 {
+                if origin + 1 == sources.len() {
+                    return Err(format!(
+                        "build input download failed: {}; body_bytes=0; attempts={}",
+                        output.status,
+                        (origin + 1) * 4
+                    )
+                    .into());
+                }
+                eprintln!("build input origin unavailable before body transfer; trying the independently pinned source mirror");
+                break;
+            }
+            sleep(Duration::from_secs(2_u64 << attempt));
         }
-        let output = Command::new(curl)
-            .args([
-                "--fail",
-                "--silent",
-                "--show-error",
-                "--location",
-                "--proto",
-                "=https",
-                "--proto-redir",
-                "=https",
-                "--connect-timeout",
-                "15",
-                "--max-time",
-                &remaining.to_string(),
-                "--max-filesize",
-                &asset.bytes.to_string(),
-                "--write-out",
-                "%{size_download}",
-                "--output",
-            ])
-            .arg(destination)
-            .arg("--url")
-            .arg(&asset.url)
-            .env("LC_ALL", "C")
-            .output()?;
-        let transferred: u64 = String::from_utf8(output.stdout)?.trim().parse()?;
-        if output.status.success() {
-            return Ok(transferred);
-        }
-        // Retry only before any body arrived. Partial transfers remain failures,
-        // so successful receipts still account for every transferred body byte.
-        if transferred != 0
-            || attempt == 3
-            || !matches!(output.status.code(), Some(5 | 6 | 7 | 28 | 35 | 52 | 56))
-        {
-            // Do not include URLs or response bodies in error reports.
-            return Err(format!("build input download failed: {}", output.status).into());
-        }
-        sleep(Duration::from_secs(2_u64 << attempt));
     }
     unreachable!("last failed attempt returns above")
 }
@@ -322,5 +372,63 @@ mod curl_tests {
         assert_eq!(scenario(1, 28, 3), (false, 1, vec![]));
         assert_eq!(scenario(1, 22, 0), (false, 1, vec![]));
         assert_eq!(scenario(1, 63, 0), (false, 1, vec![]));
+    }
+
+    #[test]
+    fn mirror_only_follows_exhausted_zero_body_connection_failures() {
+        for (code, body, expected_calls, expected_success) in [
+            (28, 0, 5, true),
+            (28, 3, 1, false),
+            (22, 0, 1, false),
+            (63, 0, 1, false),
+        ] {
+            let temp = tempfile::tempdir().unwrap();
+            let curl = temp.path().join("curl");
+            fs::write(&curl, format!(
+                "#!/bin/sh\ncd -- \"$(dirname -- \"$0\")\"\n\
+                 for url; do :; done\n\
+                 printf '%s\\n' \"$url\" >> calls\n\
+                 if [ \"$url\" = 'https://origin.invalid/source' ]; then printf '{body}'; exit {code}; fi\n\
+                 printf '8'\n")).unwrap();
+            fs::set_permissions(&curl, fs::Permissions::from_mode(0o700)).unwrap();
+            let asset = Asset {
+                url: "https://origin.invalid/source".into(),
+                sha256: "a".repeat(64),
+                bytes: 8,
+            };
+            let sleeps = RefCell::new(Vec::new());
+            let result = fetch_from_curl_sources(
+                &curl,
+                &asset,
+                &temp.path().join("pending"),
+                |duration| sleeps.borrow_mut().push(duration.as_secs()),
+                &[&asset.url, "https://mirror.invalid/source"],
+            );
+            let calls = fs::read_to_string(temp.path().join("calls")).unwrap();
+            assert_eq!(calls.lines().count(), expected_calls);
+            assert_eq!(result.is_ok(), expected_success);
+            if expected_success {
+                assert_eq!(result.unwrap(), 8);
+                assert_eq!(sleeps.into_inner(), vec![2, 4, 8]);
+                assert_eq!(calls.lines().last(), Some("https://mirror.invalid/source"));
+            } else {
+                assert!(sleeps.into_inner().is_empty());
+            }
+        }
+    }
+
+    #[test]
+    fn insecure_mirror_is_rejected_before_any_download() {
+        let asset = Asset {
+            url: "https://fixture.invalid/source".into(),
+            sha256: "a".repeat(64),
+            bytes: 8,
+        };
+        let temp = tempfile::tempdir().unwrap();
+        let output = temp.path().join("must-not-exist");
+        assert!(Curl
+            .fetch_with_mirror(&asset, &output, "http://mirror.invalid/source")
+            .is_err());
+        assert!(!output.exists());
     }
 }
