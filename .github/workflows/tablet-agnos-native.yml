@@ -13,9 +13,9 @@ concurrency:
   cancel-in-progress: false
 jobs:
   native:
-    name: Verify native AGNOS execution transport on tablet
+    name: Compare genuine AGNOS compiler on native ARM tablet
     runs-on: [self-hosted, Linux, ARM64, openpilot-rust]
-    timeout-minutes: 15
+    timeout-minutes: 180
     steps:
       - name: Record actual ARM CPU capacity and native transport prerequisites
         shell: bash
@@ -64,3 +64,18 @@ jobs:
           proot --version
           timeout 30 proot -r / -w "$RUNNER_TEMP" /usr/bin/python3 -c 'import os,platform; assert platform.machine()=="aarch64"; print("NATIVE_PROOT_OK", platform.machine(), sorted(os.sched_getaffinity(0)))'
           printf '\nQEMU 없는 native PRoot 실행 확인. 실제 AGNOS 이미지/빌드 검증은 별도 단계입니다.\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Prepare extraction tools and retrieve this exact comparison script
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ $(id -u) == 0 ]]; then apt=(apt-get); else apt=(sudo -n apt-get); fi
+          "${apt[@]}" update -qq
+          "${apt[@]}" install -y --no-install-recommends --no-upgrade curl git android-sdk-libsparse-utils e2fsprogs xz-utils
+          comparison_script=$(mktemp "$RUNNER_TEMP/tablet-agnos-script.XXXXXX.py")
+          curl --proto '=https' --tlsv1.2 --fail --location --retry 5 --retry-all-errors \
+            "https://raw.githubusercontent.com/bin9208/openpilot-rust/$GITHUB_SHA/tools/ci/tablet_agnos_native.py" \
+            --output "$comparison_script"
+          printf 'TABLET_AGNOS_SCRIPT=%s\n' "$comparison_script" >> "$GITHUB_ENV"
+      - name: Compile the same source inside the same genuine AGNOS image without QEMU
+        shell: bash
+        run: python3 "$TABLET_AGNOS_SCRIPT"
