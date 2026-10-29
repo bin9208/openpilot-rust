@@ -24,6 +24,12 @@ FIELDS = {'schema', 'maximum_memory_bytes', 'minimum_available_memory_bytes',
           'compiler_growth_bytes', 'build_timeout_seconds', 'budgets'}
 LOGGER_HELP = 'Continuous native route logger.'
 REUSE_LOGGER_HELP = 'Continuous native route logger (public source reuse proof).'
+# loggerd/build.rs watches src, embedding the derived Git stamp in its library;
+# bootlog consumes Environment::init_data, and manager depends on bootlog.
+# Normal/target path-dependency closure is checked against Cargo.toml in tests.
+# Cargo freshness and linked ELF changes are distinct, especially for manager.
+LOGGER_CHANGE_CONSUMERS = {'07': 'openpilot-loggerd', '08': 'openpilot-bootlog', '09': 'openpilot-manager'}
+LOGGER_REQUIRED_CHANGES = {'openpilot-loggerd', 'openpilot-bootlog'}
 
 
 def module(path, name):
@@ -155,12 +161,20 @@ def verify_reuse(previous, current, phase):
             assert group[field] == previous['groups'][name][field], 'build cache/input identity changed: '+name+'/'+field
     rebuilt = [name for name, group in current['groups'].items()
                if any(not a['fresh'] for a in group['artifacts'])]
-    assert set(rebuilt) == ({'07'} if phase == 'small-logger' else set()), 'unexpected rebuilt groups'
-    logger = [a for a in current['groups']['07']['artifacts']
-              if Path(a['executable']).name == 'openpilot-loggerd']
-    assert len(logger) == 1 and logger[0]['fresh'] is (phase != 'small-logger')
+    assert set(rebuilt) == (set(LOGGER_CHANGE_CONSUMERS) if phase == 'small-logger' else set()), 'unexpected rebuilt groups'
+    for group, binary in LOGGER_CHANGE_CONSUMERS.items():
+        artifacts = [a for a in current['groups'][group]['artifacts']
+                     if Path(a['executable']).name == binary]
+        assert len(artifacts) == 1 and artifacts[0]['fresh'] is (phase != 'small-logger')
+    for group in current['groups'].values():
+        for artifact in group['artifacts']:
+            if phase != 'small-logger' or Path(artifact['executable']).name not in LOGGER_CHANGE_CONSUMERS.values():
+                assert artifact['fresh'] is True, 'unaffected Cargo artifact rebuilt'
     changed = {name for name, obj in current['binaries'].items() if obj != previous['binaries'][name]}
-    assert changed == ({'openpilot-loggerd'} if phase == 'small-logger' else set()), 'unexpected binary change'
+    if phase == 'small-logger':
+        assert LOGGER_REQUIRED_CHANGES <= changed <= set(LOGGER_CHANGE_CONSUMERS.values()), 'unexpected binary change'
+    else:
+        assert not changed, 'unexpected binary change'
     if phase != 'small-logger':
         assert current['stored_output_bytes'] == 0
     return rebuilt
@@ -173,6 +187,21 @@ def verify_warm_reuse(previous, current, phase):
     # Descriptor bodies are separate from seed/toolchain/provider/model/LFS bodies.
     assert all(n == 0 for n in current['metadata_transferred_bytes'].values()), 'warm metadata download'
     current['rebuilt_groups'] = verify_reuse(previous['sealed_build'], current['sealed_build'], phase)
+    current['changed_binaries'] = sorted(name for name, obj in current['sealed_build']['binaries'].items()
+        if obj != previous['sealed_build']['binaries'][name])
+
+
+def verify_logger_help(entry, logger, state, deadline_ns):
+    # Match generation::tool: prefer only the verified sealed library directory.
+    with (state/'small-logger-help.stdout').open('xb') as out, (state/'small-logger-help.stderr').open('xb') as err:
+        subprocess.run([str(logger), '--help'], env=dict(entry.seed.ENV,
+            LD_LIBRARY_PATH=str(logger.parent/'lib'), LOG_ROOT=str(state/'logger-help-logs'),
+            PARAMS_ROOT=str(state/'params'), OPENPILOT_PREFIX='native-public-reuse'),
+            stdout=out, stderr=err, check=True, timeout=remaining(deadline_ns, 30))
+    remaining(deadline_ns)
+    help_path = state/'small-logger-help.stdout'
+    assert help_path.stat().st_size < 65536 and REUSE_LOGGER_HELP in help_path.read_text()
+    return checksum(help_path)
 
 
 def reuse_git(entry, deadline_ns, *arguments):
@@ -520,14 +549,7 @@ def arm():
         if phase == 'small-logger':
             # Execute the verified sealed logger, with its original colocated libraries.
             logger = Path(proof['sealed_build']['logger_executable'])
-            with (state/'small-logger-help.stdout').open('xb') as out, (state/'small-logger-help.stderr').open('xb') as err:
-                subprocess.run([str(logger), '--help'], env=dict(entry.seed.ENV,
-                    LOG_ROOT=str(state/'logger-help-logs'), PARAMS_ROOT=str(state/'params'),
-                    OPENPILOT_PREFIX='native-public-reuse'), stdout=out, stderr=err,
-                    check=True, timeout=remaining(deadline_ns, 30))
-            help_path = state/'small-logger-help.stdout'
-            assert help_path.stat().st_size < 65536 and REUSE_LOGGER_HELP in help_path.read_text()
-            proof['logger_help_sha256'] = checksum(help_path)
+            proof['logger_help_sha256'] = verify_logger_help(entry, logger, state, deadline_ns)
         assert checksum(machine_path) == machine_pin
         assert checksum(state/'generations/startup.json') == startup_pin
         assert entry.runtime.source_identity(source) == request['source']

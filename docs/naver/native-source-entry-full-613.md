@@ -124,9 +124,17 @@ Genuine API 검사에서 사용하는 `native-complete-cargo-cache`를 이름만
   현재 catalog의 99 binaries/13 groups, 실제 immutable object bytes를 확인한다.
 - repeated/launch/docs는 전 group fresh, 99개 object 동일, 새 binary 저장0을 요구한다.
   각 group의 cache key/target 경로·recipe·Rust/Cargo/toolchain·검증한 입력 tree도 동일해야 한다.
-  작은 logger 변경은 정확히 group `07`만 rebuild하고 logger object만 달라야 한다.
-  같은 group의 나머지 binary도 동일해야 하며, 새 sealed logger의 `--help`에 변경한
-  문자열이 실제로 나와야 한다. 변경 source의 새 tools build는 그 source provenance로
+  작은 logger 변경은 실제 normal/target path dependency의 nonoptional reverse closure인
+  `loggerd→bootlog→manager`와 catalog의 `07`·`08`·`09`를 대조한다. 세 binary의 Cargo
+  rebuild를 요구하지만 ELF hash 판정은 분리한다. `loggerd/build.rs`의 `src` 추적으로
+  새 Git commit stamp가 library에 들어가며 bootlog의 `capture()`가
+  `Environment::init_data()`로 사용하므로 logger·bootlog 두 object 변경은 필수다.
+  manager는 snapshot 경로를 사용하므로 rebuild 뒤 최종 ELF가 같아도 허용한다.
+  세 group 안의 무관 binary까지 포함한 나머지96개는 모두 fresh·object 동일이어야 한다.
+  `rebuilt_groups`와 `changed_binaries`를 실제 report/object 비교로 각각 기록한다.
+  새 sealed logger의 `--help`에는 `generation::tool`과 같이
+  `LD_LIBRARY_PATH=logger.parent/lib`를 명시하여 검증한 sealed library를 우선한다.
+  loader의 nonzero 종료나 help 문자열 불일치는 거부한다. 변경 source의 새 tools build는 그 source provenance로
   기록하며 이전 bundle의 검증된 origin이 재사용될 수 있음을 별도로 남긴다.
 - seed helper/notices, 두 bootstrap의 Rust/Cargo, capnp/codecs/raylib/15 provider,
   FFmpeg/OpenCV headers+provider, Python 준비, model+wheel 환경, source LFS/eGPU model의
@@ -155,7 +163,9 @@ scope helper SHA에 원래 호출을 결합한다. 다른 필드가 실제 실�
 기능을 runtime에 추가해 통과시키지 않는다.
 
 기존 테스트 파일에 실제 owned Git 두 commit/원본 보존, counter 누락·metadata/asset 구분,
-무관 group rebuild·같은 group 무관 binary 변경, resource source/pin/limit 불일치 및
+모든 crate manifest의 실제 normal/target path 전이 closure·07/08/09 rebuild 누락·manager ELF 동일 수용·
+무관 group/artifact rebuild 및 무관 binary 변경,
+sealed library 환경·loader 실패, resource source/pin/limit 불일치 및
 공유 deadline 만료의 거부 회귀를 작성했다. **로컬에서는 AST와 diff만 확인하며 이 회귀를
 실행하지 않는다.** 공개 index·작업 예산·실제 factory admission과 이후 Actions 성공은
 아직 필요하다. manager/기기/model 실행·녹화/upload·update/recovery 수용을 주장하지 않는다.
