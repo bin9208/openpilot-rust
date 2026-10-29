@@ -1,5 +1,16 @@
 # Independent Rust port repository (2026-09-29)
 
+## #598 검증 실행 재확인 — 2026-10-26
+
+- 이 채팅에 다시 제공된 지침에 따라 이후 모든 Actions job은 등록된 `bin-actions`
+  (`self-hosted`, `Linux`, `X64`, `dev-md-local`)에서 실행한다. hosted fallback은 없다.
+- ARM의 원래 명령과 입력 pin은 QEMU/PRoot의 별도 ARM user space에서 유지하고
+  host/guest/source/emulation을 기록한다. 물리 ARM CPU 또는 기기 검증으로 표현하지 않는다.
+- 이미 실행 중인 검사와 다른 세션의 소스·CI·cache는 보존한다. 로컬은 구문·서식·diff/
+  읽기만 수행한다. 고정25/35GiB 대신 작업별 예상 증가량을 확인한다.
+- dev-md runtime은 dev/main에 통합하지 않는다. #605는 #502의 공통 execution helper를
+  재사용하는 별도 dev 검증 변경이며 runtime 포트나 별도 #296 언어 전환을 가져오지 않는다.
+
 ## 우선 실행 범위 — 2026-10-26, 대단원 #598
 
 - 성능 개선·콤마 자체 빌드·커밋별 전체 runtime 재다운로드 제거를 먼저 완료한다.

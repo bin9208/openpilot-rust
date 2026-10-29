@@ -1,0 +1,53 @@
+name: Runner dependency download reuse
+on:
+  push:
+    branches: ['codex/fix-644-*']
+    paths:
+      - 'tools/ci/runner_download_cache.py'
+      - 'tools/ci/runner_action_cache.py'
+      - 'tools/ci/action-archives.json'
+      - 'tools/ci/native-apt-shell'
+      - 'tools/ci/native_cache.py'
+      - 'tools/ci/tests/test_runner_download_cache.py'
+      - 'tools/ci/tests/test_cargo_target_view.py'
+      - 'tools/ci/tests/test_local_native_workflows.py'
+      - 'tools/ci/tests/test_workflow_policy.py'
+      - '.github/actions/job-temp/action.yml'
+      - '.github/actions/native-cache/action.yml'
+      - '.github/workflows/runner-download-cache.yml'
+      - '.github/workflows/runner-download-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: runner-download-cache-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  regressions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false, fetch-depth: 0}
+      - run: python3 -m pip install PyYAML==6.0.2
+      - name: Exercise cache ownership, APT selection and existing job isolation
+        run: |
+          python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_runner_download_cache.py -v
+          python3 -m unittest discover -s tools/ci/tests -p test_cargo_target_view.py -v
+          python3 -m unittest discover -s tools/ci/tests -p test_workflow_policy.py -v
+          python3 -m unittest discover -s tools/ci/tests -p test_local_native_workflows.py -v
+      - run: bash -n tools/ci/native-apt-shell
+  probe:
+    name: Download reuse (${{ matrix.runner }})
+    needs: regressions
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {runner: bin-actions, label: cache-644-bin-actions}
+          - {runner: bin-actions2, label: cache-644-bin-actions2}
+          - {runner: bin-actions3, label: cache-644-bin-actions3}
+    uses: ./.github/workflows/runner-download-probe.yml
+    with:
+      runner: ${{ matrix.runner }}
+      label: ${{ matrix.label }}

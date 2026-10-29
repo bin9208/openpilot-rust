@@ -29,3 +29,9 @@ tool `openpilot-runtime-build` builds selected targets with a prepared native Ru
 toolchain and offline Cargo dependencies. It is not connected to automatic installation
 or startup and does not yet provide a complete device source build.
 Track progress and acceptance in [#598](https://github.com/bin9208/openpilot-rust/issues/598).
+
+Future development checks run on the designated `bin-actions` runner. ARM checks retain
+their original commands in a separate QEMU/PRoot ARM environment and are distinct from
+device validation. Development tools admit each operation by its estimated growth and
+do not automatically delete logs or another task's caches. The device installer's space
+and integrity checks remain in place.

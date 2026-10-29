@@ -10,17 +10,21 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: naver-ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: naver-ci-${{ github.ref }}-parallel-v2
+  queue: max
+  cancel-in-progress: false
 jobs:
   navigation-ui:
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
         with:
           lfs: false
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
@@ -40,14 +44,21 @@ jobs:
       - run: python -m pip install pytest==9.0.2
       - name: Native HUD regression
         run: python -m pytest -c /dev/null --rootdir=. --confcutdir=openpilot/selfdrive/ui/tests -q openpilot/selfdrive/ui/tests/test_carrot_hud_renderer.py openpilot/selfdrive/ui/tests/test_navigation_status.py
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   phone-mapping-contract:
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v7
         with:
           lfs: false
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -59,28 +70,42 @@ jobs:
           python-version: '3.12'
       - name: Java-produced bump envelope through strict C3 input
         run: python -m tools.naver_ci.check_bump_wire
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   runtime-controller:
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v7
         with:
           lfs: false
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - run: python -m pip install pytest==9.0.2 pycapnp==2.1.0 numpy==2.2.6 aiohttp==3.12.15 requests==2.32.5 psutil==7.0.0 pyzmq==27.0.2 setproctitle==1.3.7 zstandard==0.24.0
       - name: Real controller and native wire runtime tests
         run: python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/naver_ci/controller_tests -q tools/naver_ci/controller_tests
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   wire-schema:
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
           lfs: false
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -92,14 +117,21 @@ jobs:
       - run: bash tools/naver_ci/build_wire_probe.sh
       - name: Real Capnp and native/browser wire roundtrip
         run: python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/naver_ci/wire_tests -q tools/naver_ci/wire_tests
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   naver-input:
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
         with:
           lfs: false
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -112,14 +144,21 @@ jobs:
             openpilot/selfdrive/carrot/tests/test_navigation_sources.py \
             openpilot/selfdrive/carrot/tests/test_navigation_ingress.py \
             openpilot/selfdrive/carrot/tests/test_navigation_runtime.py
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   infrastructure:
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
         with:
           lfs: false
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -131,3 +170,6 @@ jobs:
         run: |
           echo 'Infrastructure and standalone Naver input checks. Controller, APK and device acceptance remain separate open issues.' >> "$GITHUB_STEP_SUMMARY"
           echo "Commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

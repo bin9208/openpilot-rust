@@ -18,7 +18,7 @@ def main():
   assert shutil.disk_usage(ROOT).free >= 26 * 1024**3, '25 GiB floor plus 1 GiB estimated build growth required'
   flags = '-fsanitize=address,undefined -fno-omit-frame-pointer'
   environment = dict(os.environ, CARGO_TARGET_DIR=str(args.target_dir.resolve()), CARGO_INCREMENTAL='0', CFLAGS=flags, CXXFLAGS=flags, RUSTFLAGS='-C link-arg=-lasan -C link-arg=-lubsan')
-  build = subprocess.run(['cargo', 'test', '-p', 'openpilot-jpeg', '--test', 'ownership', '--no-run', '--locked', '--message-format=json', '-j2'], cwd=ROOT, env=environment, text=True, capture_output=True)
+  build = subprocess.run(['cargo', 'test', '-p', 'openpilot-jpeg', '--test', 'ownership', '--no-run', '--locked', '--message-format=json'], cwd=ROOT, env=environment, text=True, capture_output=True)
   (args.output / 'build.jsonl').write_text(build.stdout)
   (args.output / 'build.log').write_text(build.stderr)
   assert build.returncode == 0, build.stderr

@@ -18,9 +18,13 @@ permissions:
 
 jobs:
   sync:
-    if: github.repository == 'bin9208/openpilot'
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.repository == 'bin9208/openpilot') }}
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
     steps:
+      - name: Require the registered execution environment
+        run: |
+          test "$RUNNER_ENVIRONMENT" = self-hosted
+          test "$RUNNER_NAME" = bin-actions
       - name: Validate explicit synchronization target
         env:
           SOURCE_REPOSITORY: ${{ inputs.source_repository }}
