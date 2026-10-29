@@ -94,6 +94,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/source-entry-full/state/*.stderr
             ${{ env.CI_JOB_TEMP }}/source-entry-full/state/generations/source-requests/*/*.json
             ${{ env.CI_JOB_TEMP }}/source-entry-full/state/generations/source-requests/*/*.stderr
+            ${{ env.CI_JOB_TEMP }}/source-entry-full/state/generations/**/resources.jsonl
             ${{ env.CI_JOB_TEMP }}/resource-scope-evidence.json
           if-no-files-found: warn
       - uses: ./.github/actions/job-temp

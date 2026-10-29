@@ -115,6 +115,15 @@ metadata의 실제 발행/Git pin, 전체 build에 맞는 작업별 예산, admi
 실행의 선행 조건이다. 최초 실행에서 새 실제 실패가 나오면 그 원인만 보정한다.
 최종 기기 수용은 [#528](https://github.com/bin9208/openpilot-rust/issues/528)에 남긴다.
 
+## 2026-10-30 자원 계측 보존
+
+전체 source entry의 job 전용 `state/generations/**/resources.jsonl`을 artifact에
+포함한다. 기존 production bootstrap/build worker가 남기는 kernel memory peak와
+filesystem 증가량을 cleanup 전에 보존하여 요청별 receipt와 대조하기 위한 변경이다.
+실행 명령·예산·deadline·판정은 변경하지 않는다. 현재 공개 index가 없어 이 실행의
+실제 측정값은 아직 없으며, 예산 상한이나 단일 child RSS를 전체 빌드 측정값으로
+대신 표시하지 않는다.
+
 ## 이번 로컬 확인
 
 Python AST, workflow YAML 및 포함 Bash 문법, diff만 확인한다. 기능 테스트, build,
