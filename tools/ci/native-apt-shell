@@ -33,7 +33,7 @@ if [[ ${OPENPILOT_CI_EXECUTION_MODE:-native} != qemu-user ]]; then
       x86_64:amd64|aarch64:arm64) ;;
       *) echo 'Native APT architecture differs from the actual host' >&2; return 1 ;;
     esac
-    if [[ $apt_scope_mode == native-default ]]; then
+    if [[ $apt_scope_mode == native-default && $RUNNER_ENVIRONMENT == self-hosted ]]; then
       apt_scope_view=$(/usr/bin/python3 -I -B -S - <<'PY_APT_SOURCES'
 import hashlib, json, os, re, shlex, stat
 from pathlib import Path
@@ -175,6 +175,9 @@ PY_APT_SOURCES
       if [[ $apt_scope_arch_explicit != true ]]; then
         apt_scope_defaults+=(-oAPT::Architectures="$apt_scope_native")
       fi
+    elif [[ $apt_scope_mode == native-default && $apt_scope_arch_explicit != true ]]; then
+      # Hosted Ubuntu keeps its provisioned mirror configuration.
+      apt_scope_defaults=(-oAPT::Architectures="$apt_scope_native")
     fi
     /usr/bin/python3 -I -B -S - "$CI_JOB_TEMP/native-apt-evidence.jsonl" "$apt_scope_mode" "$apt_scope_native" <<'PY_APT'
 import json, os, platform, sys

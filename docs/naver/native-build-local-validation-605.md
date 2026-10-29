@@ -273,3 +273,13 @@ BASH_ENV에 연결한다. 기존 API/환경/명령/패키지 pin과 공유 설�
 source view뿐 아니라 APT lists와 binary/source package cache도 이 job의 경로를
 사용한다. 임시 source 선택에 따른 APT list cleanup이 공유 PPA metadata를 지우지
 않게 한다. 기존 명시 source/config/architecture 인자와 서명 검증은 유지한다.
+
+
+## 2026-10-29 — hosted Ubuntu의 제공된 APT mirror 보존
+
+`b1c604074` integration의 hosted wire-schema job123495106545는 공식 archive URI
+직접 지정이 없는 이미지에서 source filter가 비어 실패했다. self-hosted의 실제
+PPA404를 해결하는 private official source/list view를 `self-hosted` 환경에만
+적용한다. hosted는 제공된 mirror 설정을 유지하고 기존 native architecture 범위만
+선택한다. URI allowlist·서명 기준을 넓히지 않으며 명시 config/architecture와 원래
+검사 command를 보존한다. AST/Bash/diff만 확인하고 기능 결과는 Actions에서 확인한다.
