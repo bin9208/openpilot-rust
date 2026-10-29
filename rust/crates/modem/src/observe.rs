@@ -4,7 +4,7 @@ use crate::{
     ppp,
     state::{network_type, Snapshot},
 };
-use std::{fs, net::Ipv4Addr};
+use std::{fs, net::Ipv4Addr, sync::atomic::AtomicBool};
 
 pub fn identity(config: &Config, state: &mut Snapshot) {
     let first = |cmd| {
@@ -110,9 +110,17 @@ pub fn dns(config: &Config) -> Vec<String> {
         .collect()
 }
 pub fn poll(config: &Config, state: &mut Snapshot, session: &mut ppp::Session) -> bool {
+    poll_controlled(config, state, session, &crate::helper::NEVER_CANCELLED)
+}
+pub(crate) fn poll_controlled(
+    config: &Config,
+    state: &mut Snapshot,
+    session: &mut ppp::Session,
+    cancelled: &AtomicBool,
+) -> bool {
     let mut changed = radio(config, state);
     // Source catches interface/route exceptions independently of radio and byte counters.
-    match poll_interface(config, state, session) {
+    match poll_interface(config, state, session, cancelled) {
         Ok(updated) => changed |= updated,
         Err(error) => eprintln!("modem: interface poll failed: {error}"),
     }
@@ -132,11 +140,12 @@ fn poll_interface(
     config: &Config,
     state: &mut Snapshot,
     session: &mut ppp::Session,
+    cancelled: &AtomicBool,
 ) -> Result<bool, crate::Error> {
-    let (ip, peer) = ppp::interface(config)?;
+    let (ip, peer) = ppp::interface_controlled(config, cancelled)?;
     if !ip.is_empty() {
-        if session.routes(config, &ip, &peer)? {
-            session.dns(config, &dns(config))?;
+        if session.routes_controlled(config, &ip, &peer, cancelled)? {
+            session.dns_controlled(config, &dns(config), cancelled)?;
         }
         state.ip_address = ip;
         state.connected = true;
