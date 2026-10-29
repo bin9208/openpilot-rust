@@ -106,12 +106,18 @@ class LocalRunnerPolicyTests(unittest.TestCase):
 
     def test_api_job_policy_preserves_registered_names_and_hosted_labels(self):
         for label in ('ubuntu-24.04', 'ubuntu-24.04-arm'):
-            self.assertTrue(POLICY.job_is_allowed(dict(labels=[label])))
-            self.assertFalse(POLICY.job_is_allowed(dict(labels=[label]), self_hosted_only=True))
+            self.assertTrue(POLICY.job_is_allowed(dict(runner_name='GitHub Actions 1', labels=[label])))
+            self.assertFalse(POLICY.job_is_allowed(dict(runner_name='GitHub Actions 1', labels=[label]), self_hosted_only=True))
         for name in ('bin-actions', 'bin-actions2'):
             self.assertTrue(POLICY.job_is_allowed(dict(runner_name=name, labels=LOCAL)))
         self.assertFalse(POLICY.job_is_allowed(dict(runner_name='unregistered', labels=LOCAL)))
-        self.assertFalse(POLICY.job_is_allowed(dict(labels=['ubuntu-latest'])))
+        self.assertFalse(POLICY.job_is_allowed(dict(runner_name='GitHub Actions 1', labels=['ubuntu-latest'])))
+        for malformed in (None, [], 'job', {'labels': 'ubuntu-24.04'},
+                          {'labels': [None]}, {'labels': ['ubuntu-24.04']},
+                          {'labels': ['ubuntu-24.04'], 'runner_name': ' '}):
+            self.assertFalse(POLICY.job_is_allowed(malformed))
+        for malformed in (None, [], 'environment'):
+            self.assertFalse(POLICY.environment_allowed(malformed))
 
     def test_untrusted_fork_source_cannot_reach_registered_jobs(self):
         jobs = workflow(ROOT/'.github/workflows/ci.yml')['jobs']

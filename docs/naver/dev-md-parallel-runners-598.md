@@ -95,3 +95,20 @@ native helper는 `pythonLocation`, PATH, HOME을 덮어쓰지 않고 현재 환�
 분리된다. 이는 코드의 정적 확인이며 실제 interpreter/version/실행 metadata를
 관측했다는 의미가 아니다. 새16개 uses와 기존 단계의 순서·if·argv를 구조적으로
 대조하고 AST/YAML/Bash 문법/diff만 확인했다. 실제 native ARM 검사는 미실행이다.
+
+
+## 공통 API 확정본 대조
+
+후속으로 `tools/ci/runner_policy.py`를 부모 공통 helper
+`14f26458c9321e7a3f905c04946911daef922319`와 정확히 같은 bytes로 맞춘다.
+세 함수의 keyword API와 `--self-hosted-only` CLI를 공유하며 malformed mapping/labels와
+hosted job의 누락·빈 runner_name도 거절한다. perf의 두 Python adapter는 반환값에
+의존하지 않으므로 `require_environment()`의 None 반환과 호환된다.
+
+환경 검사 helper가 실행 성공을 기록하거나 임의 runner 이름을 만들지 않는다.
+perf transport의 실행 JSON은 실제 RUNNER_NAME/RUNNER_ENVIRONMENT/uname/source를
+자체 job 디렉터리에 기록하고 SDK provenance도 실제 job context를 유지한다.
+현재 대조는 코드 읽기이며 실제 hosted/native ARM 실행 metadata를 새로 얻지는 않았다.
+공통 API 외 main599의 준비·발행 코드는 이식하지 않는다. 최종 원래 argv/if/feature/
+pin/숫자·세 gate 보존은 추가 ARM uses16개와 동등한 matrix label 변경을 제외한
+기준285 YAML 전체 구조 대조로 확인했다. 기능·빌드·테스트·원격 CI 조작은 미실행이다.
