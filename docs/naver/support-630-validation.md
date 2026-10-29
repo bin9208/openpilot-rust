@@ -199,3 +199,15 @@ FFmpeg 원본 URL의 curl28로 중단됐다. 프로젝트가 추적 중인 #628�
 정책을 그대로 재사용한다. 별도 downloader를 구현하거나 source pin을 바꾸지 않는다.
 archive10,458,600bytes와 SHA256을 확인한 뒤 기존 helper의 `--archive`에 전달한다.
 실제 전송 byte·adapter/library hash·archive hash와 provider 원래 영수증을 보존한다.
+
+### 2026-10-29 러너 병렬 수 조정
+
+사용자가 이 컴퓨터의 병렬 실행 수 증가를 요청했다. 전용 controller의 Cargo 병렬 빌드는 2→4,
+Rust 테스트 스레드는 1→2로 조정한다. source/ARM script는 workflow의 Cargo 설정을
+존중하고 기본값4를 사용하며, source 테스트 기본값은2, ARM FFmpeg provider의
+`--jobs`도 같은 Cargo 병렬 수를 사용한다. 실행 중인 작업과 candidate 소스는 수정하지
+않으며 이 controller의 다음 실행부터 적용된다. 다른 브랜치의 공용 CI는 변경하지 않는다.
+
+검사: 두 shell script의 `bash -n`, workflow YAML parse와 병렬 값 확인 및 diff 공백 검사.
+실제 병렬 빌드/테스트 실행 결과와 처리 시간·최대 메모리 개선은 아직 확인하지 않았다.
+Docs-Not-Needed: 개발용 검증 병렬 설정으로 사용자 기능·설정 안내 변경 없음.

@@ -22,7 +22,7 @@ chmod 700 "$arm_job"
 export RUNNER_TEMP="$arm_job/tmp" TMPDIR="$arm_job/tmp"
 export XDG_CACHE_HOME="$arm_job/cache" PIP_CACHE_DIR="$arm_job/cache/pip"
 mkdir -p "$RUNNER_TEMP" "$arm_job/cache" "$arm_evidence/logs" "$arm_evidence/provider"
-export CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 RUSTUP_TOOLCHAIN=1.94.0
+export CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-4}" RUSTUP_TOOLCHAIN=1.94.0
 export CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TERM_COLOR=never
 export GIT_LFS_SKIP_SMUDGE=1 PYTHONDONTWRITEBYTECODE=1 PYTHONNOUSERSITE=1
 source_sha=$(git rev-parse HEAD)
@@ -252,7 +252,7 @@ sha256sum "$arm_job/fetch-ffmpeg.rs" "$arm_job/fetch-ffmpeg" "$runtime_build_rli
   > "$arm_evidence/source-fetch-adapter.sha256"
 run build-pinned-ffmpeg "$arm_job/provider-host-target/debug/build-loggerd-ffmpeg" \
   --root "$provider_root" --archive "$arm_job/ffmpeg-6.1.1.tar.xz" \
-  --cc "$cc" --ar "$ar" --ranlib "$ranlib" --jobs 2
+  --cc "$cc" --ar "$ar" --ranlib "$ranlib" --jobs "$CARGO_BUILD_JOBS"
 export FFMPEG_DIR="$provider_root/install"
 "$SOURCE_PYTHON" - "$arm_evidence/ffmpeg-provider.json" <<'PY'
 import hashlib, json, os, re, subprocess, sys
