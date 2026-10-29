@@ -4,6 +4,8 @@ on:
     branches: [codex/fix-635-source-command-diagnostics]
     paths:
       - tools/ci/tests/test_native_source_runtime.py
+      - tools/ci/tests/test_native_bootstrap_seed.py
+      - tools/native/bootstrap_seed.py
       - .github/workflows/native-source-command-diagnostics.yml
   workflow_dispatch:
 permissions:
@@ -33,7 +35,17 @@ jobs:
       - name: Retain the original failure and bounded child stderr before Rust builds
         run: |
           set -o pipefail
+          python3 -I -B -S - <<'PY_IDENTITY'
+          import json, os
+          from pathlib import Path
+          pid = os.getpid()
+          def ticks(path):
+              return int(Path(path).read_text().rsplit(') ', 1)[1].split()[19])
+          print(json.dumps(dict(pid=pid, self_stat_ticks=ticks(f'/proc/{pid}/stat'),
+              kernel_task_ticks=ticks(f'/proc/{pid}/task/{pid}/stat'))))
+          PY_IDENTITY
           python3 -m unittest -v \
+            tools.ci.tests.test_native_bootstrap_seed.BootstrapSeedTests.test_owner_identity_matches_an_independent_kernel_observer \
             tools.ci.tests.test_native_source_runtime.SourceRuntimeTests.test_driver_sigkill_also_stops_the_non_root_download_command \
             tools.ci.tests.test_native_source_runtime.SourceRuntimeTests.test_original_owner_death_stops_only_the_dedicated_command_and_bounds_capture \
             2>&1 | tee "$CI_JOB_TEMP/source-command-diagnostics.log"
