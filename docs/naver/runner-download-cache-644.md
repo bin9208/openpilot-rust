@@ -15,6 +15,7 @@
 - `job-temp`가 등록된 self-hosted 환경에서 pip·uv·npm·Gradle 다운로드 캐시를
   `~/.cache/openpilot-ci-v1/<host architecture>/`에 연결한다. 같은 계정·호스트의
   러너는 이 경로를 함께 사용한다. 서로 다른 호스트는 각 호스트에 한 번씩 받는다.
+  이미 채워진 안전한 표준 cache 디렉터리가 있으면 그 경로를 우선 사용한다.
   명시된 캐시 override, Cargo/Rustup 설치 경로, 작업별 target/output은 보존한다.
 - `runner_download_cache.py restore|save`는 고정 native 입력을 이름·정확 key로
   저장하고 작업별 폴더로 복원한다. GitHub cache 업로드·다운로드를 하지 않는다.
@@ -28,10 +29,14 @@
   기존 `.env` 값을 보존하며 캐시 변수를 추가한다. 이 변수는 Listener 시작 때
   읽으므로 systemd 서비스가 있으면 마지막 검증 job의 완료 marker와 Worker 부재를
   확인한 별도 임시 unit이 해당 서비스만 재시작한다. 그 전에는 현재 실행을
-  중단하지 않는다. 수동 실행 Listener라면 설정 기록에 재시작 대기를 명시한다. tag가
+  중단하지 않는다. 수동 Listener도 원래 Listener의 환경을 메모리에서 보존한 별도
+  대기 프로세스가 동일 조건을 확인한 뒤 `run.sh`로 다시 시작한다. job token이나
+  임시 `BASH_ENV`를 새 Listener에 상속하지 않는다. tag가
   갱신되어 SHA가 다르면 runner는 원래 다운로드로 돌아가며 이전 코드를 쓰지 않는다.
   근거: [공식 ActionManager](https://github.com/actions/runner/blob/main/src/Runner.Worker/ActionManager.cs),
   [Listener 환경 로딩](https://github.com/actions/runner/blob/main/src/Runner.Listener/Program.cs).
+  활성화 뒤에는 현재 Worker가 실제 해석한 action SHA도 읽어 캐시에 추가하므로
+  버전 tag가 이동한 경우에도 처음 한 번 이후의 archive 다운로드를 줄인다.
 
 명시적 cross source/APT_CONFIG와 QEMU guest의 APT는 기존 선택을 유지한다.
 hosted runner의 실행도 바꾸지 않는다. cache fallback prefix 대신 정확 key만
@@ -59,3 +64,23 @@ SHA·경로를 artifact에 남긴다. 별도 job의 `apt-get update`에서 실�
 통과했다. 앞선 `a1852f6af`는 원래 frozen trigger 단언이 제거된 Fast checks push를
 계속 요구해 실패했으며 해당 한 예외만 사용자 지시에 맞춰 수정했다. source/명령
 hash 단언은 완화하지 않았다. 러너별 실사용 검증은 기존 작업 종료 뒤 진행한다.
+
+러너별 준비→별도 job의 offline 검증은 서로 독립된 reusable workflow로 연결한다.
+먼저 끝난 러너가 다른 러너의 긴 빌드 종료를 기다리며 비어 있지 않도록 했다.
+
+## bin-actions2 실사용 증거
+
+- `daadfbda17d380dc0c9a96d0aa699009b7b4958d`의
+  [offline job](https://github.com/bin9208/openpilot-rust/actions/runs/40949858432/job/123715382339):
+  실제 디스크 hit, `six==1.17.0`의 `--no-index --no-deps` 새 폴더 설치 성공,
+  cache service 전송0 byte를 확인했다. APT의 원래 공식 archive/security4개 모두
+  `Hit:`였으며 전체 목록을 다시 받지 않았다. 한국어 `기존:`을 영어로 잘못 판정한
+  앞선 검사는 검증 step에만 `LC_ALL=C`를 설정해 교정했다.
+- 작업 종료 후 수동 Listener를 재시작한 뒤 `93d7e3b52c126ccefe650da9d00369f14b26c05a`의
+  [다음 seed job](https://github.com/bin9208/openpilot-rust/actions/runs/40950014023/job/123716497072)에서
+  `restart_required=false`와 실제 `ActionManager`의 checkout/upload-artifact archive
+  hit2건을 확인했다. 원래 버전2.338.0도 이 archive cache를 지원함을 공식 source로
+  확인했다. 다른 러너의 실행 중 Worker는 중단하지 않았다.
+
+이슈 #644가 나머지 러너·공통 PR 필수 검사와 routing 라벨 복구 상태의 최신 기록이다.
+부분 증거를 세 러너 전체의 완료나 ARM/AGNOS 런타임 검증으로 확대하지 않는다.
