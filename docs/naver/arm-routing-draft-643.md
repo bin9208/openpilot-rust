@@ -72,3 +72,19 @@ generic 전체 job을 다시 검증한다. 새 ARM 정책 검사는 성공했고
 같은 검증의 미시작 대기 건40962047383만 취소하고, 새 SHA별 독립 concurrency group으로
 수정본 검증을 배정했다. 실행 중이던40956730256과 원래 전체 측정40947309362를
 취소하지 않았다. 이미 성공한 다른 ARM job은 새 선택 실행에서 생략한다.
+
+## 전체 AGNOS의 PRoot 권한 처리 수정
+
+원래 f62 전체 측정은 seed export의 원본 `ldd`에서 실패했다. 별도 ARM 진단으로 고정
+PRoot의 ARM64 syscall table에 누락된 `faccessat2`439번을 확인하고 한 줄을 보완했다.
+진단 [40966682467](https://github.com/bin9208/openpilot-rust/actions/runs/40966682467)에서
+원래 seed ABI 함수·ldd·기본 loader·실제 chroot와 정상/거부 파일 권한 검사22개가 모두
+통과했다. AGNOS 이미지와 ABI 검사는 변경하지 않았다.
+
+같은 수정을 적용한 전체 재측정은 별도 실험 source
+`78fe1dd503f9b3a9727c78bcb407b491290d9d87`,
+[40967438168](https://github.com/bin9208/openpilot-rust/actions/runs/40967438168)에서 진행한다.
+전환 초안 `08bf18f23b6a30301ff537ad5a06a5897b7de007`의
+[정책40967329083](https://github.com/bin9208/openpilot-rust/actions/runs/40967329083)도
+성공했다. 이미 진행 중인 generic 수정 검증은 같은 Rust/IPC 수정 source의
+40962761699를 계속 사용한다. 기본/기존 작업 브랜치 배정은 아직 변경하지 않았다.
