@@ -188,13 +188,12 @@ jobs:
   compiler:
     name: Native compiler in pinned AGNOS ARM userspace
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     # #608 actual ARM release build alone took 6,386,611 ms. This job now also
     # builds the real encoder; retain every command/pin and allow a bounded 6h.
     timeout-minutes: 360
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
     steps:

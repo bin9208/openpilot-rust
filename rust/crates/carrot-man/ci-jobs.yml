@@ -1,7 +1,7 @@
 carrot-man-runtime:
   name: rust CarrotMan owner (${{ matrix.arch }})
   if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-  runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64"]') }}
+  runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
   timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 25 }}
   strategy:
     fail-fast: false
@@ -12,7 +12,6 @@ carrot-man-runtime:
   env:
     LOCAL_CI_ARCH: ${{ matrix.arch }}
     CARGO_INCREMENTAL: '0'
-    CARGO_BUILD_JOBS: '2'
     CARGO_PROFILE_DEV_DEBUG: '0'
     CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
     PYTHONPATH: ${{ github.workspace }}

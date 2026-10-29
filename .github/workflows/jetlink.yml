@@ -8,7 +8,7 @@ jobs:
   model:
     name: model contract and CPU inference
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7

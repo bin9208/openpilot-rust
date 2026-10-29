@@ -403,7 +403,6 @@ pub fn build_with_metadata(
         .env("HOME", &cache)
         .env("CARGO_HOME", &cargo_home)
         .env("CARGO_TARGET_DIR", &target)
-        .env("CARGO_BUILD_JOBS", "1")
         .env("CARGO_INCREMENTAL", "0")
         .env("RUSTC", &rustc)
         .env("RUSTDOC", toolchain.join("rustdoc"))

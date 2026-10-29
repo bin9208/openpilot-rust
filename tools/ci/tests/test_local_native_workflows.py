@@ -100,19 +100,19 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                 if 'runs-on' in job:
                     with self.subTest(path=path.name, job=name):
                         if path.name in OWNED_WORKFLOWS:
-                            expected = ['self-hosted', 'Linux', 'X64']
+                            expected = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
                         elif path.name not in HOSTED_WORKFLOWS:
                             expected = LABELS  # Inherited sync/publish routing stays unchanged.
                         elif path.name == 'tests.yaml' and name == 'build_release':
-                            expected = ['self-hosted', 'Linux', 'X64']
+                            expected = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
                         elif ('runner' in job.get('strategy', {}).get('matrix', {})
                               or any('runner' in row for row in job.get('strategy', {}).get('matrix', {}).get('include', []))):
-                            expected = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64"]\') }}'
+                            expected = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}'
                         elif path.name == 'rust.yml' and name != 'fast':
                             expected = ('ubuntu-24.04-arm' if job.get('env', {}).get('LOCAL_CI_ARCH') == 'aarch64'
-                                        else ['self-hosted', 'Linux', 'X64'])
+                                        else ['self-hosted', 'Linux', 'X64', 'openpilot-rust'])
                         elif path.name == 'jetlink.yml' and name == 'model':
-                            expected = ['self-hosted', 'Linux', 'X64']
+                            expected = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
                         elif job.get('env', {}).get('LOCAL_CI_ARCH') == 'aarch64':
                             expected = 'ubuntu-24.04-arm'
                         else:
@@ -120,7 +120,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                         self.assertEqual(job['runs-on'], expected)
                         self.assertIn(SAFETY, job['if'])
         template = load(ROOT / 'rust/crates/carrot-man/ci-jobs.yml')['carrot-man-runtime']
-        self.assertEqual(template['runs-on'], '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64"]\') }}')
+        self.assertEqual(template['runs-on'], '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}')
         owner = (ROOT / '.github/actions/job-temp/action.yml').read_text()
         self.assertIn('runner_policy.py', owner)
         policy = (ROOT/'tools/ci/runner_policy.py').read_text()

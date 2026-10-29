@@ -20,7 +20,7 @@ jobs:
   real-runtime:
     name: Actual logger source reuse (${{ matrix.arch }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: ${{ matrix.arch == 'aarch64' && 360 || 45 }}
     strategy:
       fail-fast: false
@@ -29,7 +29,6 @@ jobs:
     env:
       LOCAL_CI_ARCH: ${{ matrix.arch }}
       RUSTUP_TOOLCHAIN: '1.94.0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'

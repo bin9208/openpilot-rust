@@ -975,7 +975,7 @@ def native_model_generation_probe(guest_command,work,source_mount,evidence,log,g
   # Run the actual RadarCAN database loader against all unchanged original data.
   room(work,3*1024**3)
   group=next(g for g in bound['groups'].values() if 'openpilot-radarcan' in g['binaries'])
-  environment={**group['environment'],'CARGO_INCREMENTAL':'0','CARGO_BUILD_JOBS':'1',
+  environment={**group['environment'],'CARGO_INCREMENTAL':'0',
       'CARGO_PROFILE_DEV_DEBUG':'0','RUSTC':str(cargo.parent/'rustc'),'RUSTDOC':str(cargo.parent/'rustdoc')}
   env=['/usr/bin/env',*(f'{k}={v}' for k,v in environment.items())]
   features=[f for f in group['features'] if f.split('/')[0] in ('openpilot-card','openpilot-msgq')]
@@ -2481,7 +2481,7 @@ def main():
              '-b', f'{owned / "native-opencv-components"}:{guest_work}/opencv-components',
              '-b', f'{owned / "native-opencv-provider-export"}:{guest_work}/opencv-provider-export',
              '-b', f'{source}:{source_mount}', '-w', guest_work, '/usr/bin/env', '-i', 'HOME=/root',
-             f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_BUILD_JOBS=1', 'CARGO_INCREMENTAL=0',
+             f'CARGO_HOME={guest_work}/cargo', f'RUSTUP_HOME={guest_work}/rustup', 'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_DEV_DEBUG=0', 'CARGO_PROFILE_TEST_DEBUG=0', 'GIT_CONFIG_NOSYSTEM=1',
              f'GIT_CONFIG_GLOBAL={guest_work}/probe.gitconfig', 'GIT_OPTIONAL_LOCKS=0',
              f'PATH={guest_work}/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin']

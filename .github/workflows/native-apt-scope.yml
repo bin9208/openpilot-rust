@@ -17,7 +17,7 @@ jobs:
   actual-apt:
     name: Native APT and explicit cross source preservation
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 20
     env:
       LOCAL_CI_ARCH: x86_64

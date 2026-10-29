@@ -176,3 +176,21 @@ job BASH_ENV가 읽는 native APT helper와 정책 파일도 포함한다.
 부모 통합 때 별도로 유지한다. 로컬은 AST/YAML/Bash 구문과 diff 읽기만 수행했고
 기능 검사·build·push·CI dispatch/cancel은 수행하지 않았다. 새 정확 SHA의 Actions
 결과는 아직 없다.
+
+
+## 2026-10-29 — 공통 label과 CPU 병렬 제한 해제
+
+사용자 지시로 저장소 runner ID22 `bin-actions`, ID23 `bin-actions2`, ID24
+`bin-actions3` 모두에 `openpilot-rust` custom label을 추가하고 실제 API 응답을 확인했다.
+기존 `dev-md-local`·`support-630` label은 유지했다. active heavy X64 검사는
+`[self-hosted, Linux, X64, openpilot-rust]`, ARM은 `ubuntu-24.04-arm`, 빠른 검사·집계는
+`ubuntu-24.04`를 선택한다. 세 self-hosted와 hosted 네 작업 이상을 함께 실행할 수
+있도록 독립 job과 기존 최종 gate를 유지한다. runner 한 개는 job 하나를 처리한다.
+실제 계정 quota는 API에서 확인되지 않아 공개된 표준 한도와 실제 실행을 구분한다.
+
+추가 지시에 따라 workflow의 `CARGO_BUILD_JOBS=2`, genuine guest와 production native
+Cargo driver의 기본 `CARGO_BUILD_JOBS=1`, 호출 helper의 `-j2`를 제거한다. Cargo는
+사용 가능한 CPU 수를 기본 병렬도로 사용한다. recipe에 명시한 환경은 계속 적용한다.
+이미 실행 중인 프로세스의 환경은 변경되지 않으며 이 수정 source의 새 작업부터
+적용된다. 로컬은 AST/YAML/Bash 구문·rustfmt·전체 기준 diff만 확인하며 기능·빌드
+성공과 실제 동시 실행 수는 정확 source의 Actions 결과로 별도 확인한다.

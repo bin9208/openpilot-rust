@@ -39,7 +39,7 @@ jobs:
           if [ "$DOCS_EVENT_NAME" = "push" ]; then
             args+=(--commit-overrides)
           fi
-          CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin check-user-docs -- "${args[@]}"
+          CARGO_INCREMENTAL=0 cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin check-user-docs -- "${args[@]}"
       - name: Test user documentation checker
         if: ${{ !cancelled() }}
         run: |
@@ -48,7 +48,7 @@ jobs:
             echo 'Insufficient disk space for estimated documentation build growth (2 GiB).' >&2
             exit 1
           fi
-          CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test user_docs
+          CARGO_INCREMENTAL=0 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test user_docs
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true', validation-context: 'true'}
