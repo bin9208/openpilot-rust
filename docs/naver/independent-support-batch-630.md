@@ -263,3 +263,24 @@ outcome returncode0/last_step=completed, source/index 불변과 native ELF hash5
 `917369a5162c983e2519a0151330aba1790bc3eb`에서 미병합이다.
 정상 source PR의 새 회귀 연결·필수5개 검사·dev 병합과 별도 병합 후 검사는 아직 남았다.
 #630의 항목별 개발·검증·통합 체크와 원래 실기 조건 이슈는 이 때문에 열어 둔다.
+
+## 정상 PR 검사 재개 — 기존 사용자 승인과 CI 연결
+
+사용자는 #630 완료까지 계속 진행하라고 이미 지시했다. 공통 CI 대기를 작업 종료로
+처리한 판단을 바로잡는다. 관련 #598 채팅의 실제 사용자 지시에서 GitHub Actions와
+등록 self-hosted3개를 함께 병렬 사용하라는 승인 및 Cargo/test 병렬 제한 해제 지시를
+확인했다. 따라서 #606 병합 자체를 #630 정상 PR 검사의 절대 선행으로 두지 않는다.
+
+현재 dev에서 상속한 전체 PR workflow를 그대로 실행한다. #606의 runner/guard/provider
+전환을 복사하지 않고 `.github/workflows/rust.yml`에 다음 최소 변경만 포함한다.
+
+- workspace test 전에 fresh `openpilot-process-child`를 빌드하고 Cargo metadata가
+  보고한 실제 target 경로로 Wi-Fi/modem 소유 자식 회귀를 연결한다.
+- 기존 workspace test와 all-target strict Clippy에 modem helper15개 opt-in을 추가한다.
+- 이 workflow의 고정 `CARGO_BUILD_JOBS=2`를 제거해 runner의 기본 병렬도를 사용한다.
+  모델 입력/동작을 바꾸는 `CPU_COUNT`/`JIT` 값은 이번 변경에 포함하지 않는다.
+
+기존 job·needs·matrix·수용 명령과 전체 필수 gate 범위는 유지한다. 공용 CI 일괄 제외의
+최소 예외이며, #606과의 공유 파일은 이 workflow1개뿐이다. 다른 작업 브랜치나 실제
+진행 중인 CI를 수정/취소하지 않는다. 정상 PR의 정확 새 SHA 결과와 dev 병합·별도
+병합 후 검사까지 계속 진행하며 집중 결과를 필수 status로 복사하지 않는다.
