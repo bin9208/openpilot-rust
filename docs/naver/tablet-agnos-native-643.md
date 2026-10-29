@@ -25,3 +25,30 @@ resource guard와 ABI 판정을 완화하거나 Ubuntu에서의 일반 Rust 빌�
 확인하며 기능·ARM 실행은 Actions에서 수행한다.
 
 이슈: https://github.com/bin9208/openpilot-rust/issues/643
+
+## 네이티브 실행 전제 확인
+
+source `063db70514eb57cb63caeecbc13df36fb1bd72d2`,
+[Actions40936714336](https://github.com/bin9208/openpilot-rust/actions/runs/40936714336),
+job123669068409가 성공했다. 공통 ARM selector가 실제 `bin-Arm-tablet`를 선택했고
+QEMU 없이 PRoot 내부에서 Python ARM 실행이 통과했다. 이번 실제 affinity는0,1,2로
+3jobs였다. #642의5CPU와 달라 자동 선택값을 고정5로 표현하지 않는다. 보고된 Ubuntu는
+24.04.5, PRoot kernel 문자열6.2.1-PRoot-Distro, 실제 CapEff는0이며 cgroup controller
+읽기는 PermissionError였다. `top-app` cpuset 표시만으로 전체8CPU 사용을 주장하지 않는다.
+
+기준 QEMU artifact12924545511(50,179,819bytes)의
+`native-agnos/bootstrap-current-evidence/initial.json.stderr`를 읽었다.
+실패 원문은 `private native build memory limit reached; normal runtime retained`다.
+이 실패는 완료 빌드나 성공 검증이 아니며 제한을 제거해 성공으로 바꾸지 않는다.
+
+후속 source `a48686e1fc841d95eeee844f0c6b92ef142882bb`의
+[Actions40937256101](https://github.com/bin9208/openpilot-rust/actions/runs/40937256101)은
+정확한 원본 `9b8c6337...` Git 소스와 AGNOS raw SHA를 확인한 뒤 원본의
+`openpilot-runtime-build`/`openpilot-runtime-plan` 두 실제 바이너리 컴파일 명령을
+실행한다. Rust1.94.0과 Cargo.lock을 유지한다. 다운로드·이미지 해제·의존성 fetch와
+컴파일 시간을 별도로 남긴다. ARM ELF·원래13그룹/99바이너리 catalog·compiler feature
+판정을 유지하며 실제99개 전체 runtime 컴파일로 표현하지 않는다.
+
+원본 전체 workflow의 privileged cgroup/bootstrap 및 codec/provider 회귀는 태블릿에서
+확인되지 않았다. 이 비교는 네이티브 compiler 구간의 증거이며 해당 항목들의 통과가 아니다.
+일반 checkout/upload Action 호환성과 다른 workflow의 공통 runner admission 추가는 별도다.
