@@ -32,9 +32,10 @@ ROLES = ('ffmpeg', 'raylib', 'opencv', 'numerics', 'geos', 'brotli', 'acados', '
 CASES = ['git-index-initial', 'git-index-reused', 'git-index-docs']
 PREFIX = 'native-agnos/runtime-inputs-evidence/'
 MARKER = 'openpilot-native-inputs-publication-v1'
+FOUNDATION_ARM_JOB = 'Actual offline Cargo reuse (ARM native)'
 GATES = [
     ('runtime-source-build.yml', ('push', 'workflow_dispatch'),
-      {'Actual offline Cargo reuse (ARM QEMU)', 'Actual offline Cargo reuse (X64)'}),
+      {FOUNDATION_ARM_JOB, 'Actual offline Cargo reuse (X64)'}),
     ('runtime-native-environment.yml', ('push', 'workflow_dispatch'),
       {'Native compiler in pinned AGNOS ARM userspace'}),
     ('native-resource-guard.yml', ('push', 'workflow_dispatch'), {'Real memory limit and cancellation (X64 host kernel)'}),
@@ -282,6 +283,19 @@ def artifact_pin(value, run, source, maximum):
   return dict(bytes=value['size_in_bytes'], sha256=value['digest'][7:])
 
 
+def gate_job_allowed(filename, job):
+  if filename == 'runtime-source-build.yml' and job.get('name') == FOUNDATION_ARM_JOB:
+    # Only this native ARM job may cross the foundation's self-hosted boundary.
+    # Labels/group/identity come from the Actions jobs API, not a claimed environment.
+    return (runner_policy.job_is_allowed(job)
+        and 'ubuntu-24.04-arm' in job['labels'] and 'self-hosted' not in job['labels']
+        and type(job.get('runner_group_id')) is int and job['runner_group_id'] == 0
+        and job.get('runner_group_name') == 'GitHub Actions'
+        and type(job.get('runner_id')) is int and job['runner_id'] > 0
+        and job['runner_name'] not in runner_policy.SELF_HOSTED_NAMES)
+  return runner_policy.job_is_allowed(job, self_hosted_only=filename in SELF_HOSTED_GATES)
+
+
 def gates(client, source, producer_id, pr_number):
   producer = client.json('GET', f'actions/runs/{producer_id}')
   trusted_run(producer, source)
@@ -305,10 +319,9 @@ def gates(client, source, producer_id, pr_number):
       trusted_run(selected, source)
       if selected['status'] == 'completed' and selected['conclusion'] == 'success':
         jobs = client.collect(f'actions/runs/{selected["id"]}/jobs', 'jobs')
-        self_hosted_only = filename in SELF_HOSTED_GATES
         names = {j['name'] for j in jobs if j['status'] == 'completed' and j['conclusion'] == 'success'
-            and runner_policy.job_is_allowed(j, self_hosted_only=self_hosted_only)}
-        ready = required <= names and all(runner_policy.job_is_allowed(j, self_hosted_only=self_hosted_only)
+            and gate_job_allowed(filename, j)}
+        ready = required <= names and all(gate_job_allowed(filename, j)
             for j in jobs if j['conclusion'] == 'success')
         if ready and is_pr:
           contexts, proof = client.pr_context(selected, source, pr_number, PROOF_JOBS[filename])

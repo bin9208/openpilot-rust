@@ -104,6 +104,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
 
     def test_source_build_uses_real_user_permissions_after_root_only_package_bootstrap(self):
         job = load(ROOT/'.github/workflows/runtime-source-build.yml')['jobs']['offline-cargo-reuse']
+        self.assertEqual(job['name'], "Actual offline Cargo reuse (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})")
         self.assertEqual(job['env']['LOCAL_CI_GUEST_IDENTITY'], 'unprivileged')
         self.assertTrue(any('test_readonly_publication.py' in step.get('run', '') for step in job['steps']))
         transport = (ROOT/'tools/ci/local-arm').read_text()
@@ -132,7 +133,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             for name, job in document.get('jobs', {}).items():
                 if 'runs-on' in job:
                     with self.subTest(path=path.name, job=name):
-                        if path.name in OWNED_WORKFLOWS:
+                        if path.name == 'runtime-source-build.yml' and name == 'offline-cargo-reuse':
+                            expected = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}'
+                        elif path.name in OWNED_WORKFLOWS:
                             expected = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
                         elif path.name not in HOSTED_WORKFLOWS:
                             expected = LABELS  # Inherited sync/publish routing stays unchanged.

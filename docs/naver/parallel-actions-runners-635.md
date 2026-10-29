@@ -147,3 +147,53 @@ FFMPEG_DIR aarch64 SDK와 세 Cargo target 선언도 같은 경로 규칙을 사
 외부/guest/형제 prefix 및 명시 runner override는 유지하며 실제 helper fixture로
 10개 경로 case를 확인한다. 원래 workflow argv·ASan/누수 옵션·기준은 바꾸지 않는다.
 로컬은 AST/YAML/Bash 문법·diff만 확인하고 실제 sanitizer는 수정 SHA Actions에서 확인한다.
+
+## 2026-10-30 — foundation ARM만 공식 native ARM runner로 이동
+
+기준은 `0645cf61aff4104c3d6e87ac8f4e2902116e9032`다. 사용자가 제공한9b8
+foundation 결과에서 같은 Cargo test·Clippy 구간이 QEMU ARM은16:14:45부터16:50:53까지
+약36분, X64는 약4.5분 걸렸고 ARM 전체는70분을 넘어서도 추가 feature 검사가 진행됐다.
+원래 검사를 줄이지 않고 foundation의 ARM matrix만 공식 `ubuntu-24.04-arm`으로
+옮긴다. 앞선 self-hosted 유지 기록 중 foundation ARM의 실행 위치만 이 결정으로 바뀐다.
+X64는 기존 `self-hosted/Linux/X64/openpilot-rust` pool을 유지한다.
+
+job 이름은 `Actual offline Cargo reuse (ARM native)`로 구분한다. 기존 `local-arm`의
+native 경로와 job-temp의 소유 target view, 고정 Python3.12.14 준비를 사용한다.
+원래 명령·features·matrix 수량·90분 ARM 제한·disk/memory admission·비특권 UID·
+readonly publication·owner-death/cancellation·artifact·cleanup·최종 gate는 바꾸지 않는다.
+별도 real-kernel resource 검사, genuine AGNOS/QEMU, full-entry와 완료된 PRoot owner
+진단도 보존한다. 과거 QEMU 성공을 새 source의 native ARM 성공으로 바꿔 쓰지 않는다.
+
+publisher의 `SELF_HOSTED_GATES`에는 foundation을 그대로 남긴다. 해당 workflow의
+새 ARM required name에만 실제 Actions jobs API의 `ubuntu-24.04-arm` label,
+`self-hosted` label 부재 및 유효한 runner 이름을 요구한다. 자체 runner의 등록 이름을
+hosted ARM 이름으로 위장해 쓰는 경우도 거부한다. X64·genuine·kernel·publisher
+자체 실행의 self-hosted 경계와 source/PR/base/merge object/artifact/digest/expiry
+검증, 필수 job 수와 모든 conclusion 검사는 보존한다. 공통 runner policy·validation
+context·execution helper는 변경하지 않는다.
+
+추가 리뷰에서 사용자가 제공한 실제 API 관측은 hosted ARM job123555870373의
+`runner_group_id=0`, `runner_group_name='GitHub Actions'`, `runner_id=1000030832`,
+`runner_name='GitHub Actions 1000030832'`, `labels=['ubuntu-24.04-arm']`다.
+self-hosted job123555478513은 group1/`Default`/runner23이다. 새 ARM 예외에만
+group ID가 bool이 아닌 정확 int0, group 이름이 정확 `GitHub Actions`, runner ID가
+bool이 아닌 양의 int라는 조건을 더한다. default label을 제거한 자체 runner가
+`ubuntu-24.04-arm` label만 사용해도 공식 group이 아니면 거부한다. fixture에는
+관측된 ARM row를 넣되 실제 runner ID를 이 값 하나로 고정하지 않는다. group/runner
+필드 누락, 다른 group, bool·문자열 ID 및 알 수 없는 자체 runner의 group1 위장을
+거부하는 회귀를 추가한다. X64·genuine·kernel의 기존 API 정책은 바꾸지 않는다.
+
+기존 routing 단언에 foundation의 정확한 matrix 선택자만 추가한다. publication
+fixture도 ARM만 실제 hosted ARM job으로 구성하고 이름으로 row를 선택한다.
+공식 hosted ARM 허용, hosted X64·self-hosted ARM/label·자체 runner 이름·빈 identity
+거부, ARM 누락과 옛 QEMU 이름의 대체 거부 회귀를 추가한다. 나머지 자체 runner
+경계와 기존 exact-source PR proof 회귀는 유지한다.
+
+로컬에서 Python3개 AST, YAML, 원래 script38개의 `bash -n`, diff를 확인했다.
+전체 YAML 자료는 job 이름과 `runs-on` 외 모든 필드가 같다. publisher의 다른 함수·
+class는 AST가 같고 gate 함수는 두 정책 호출의 교체 외에는 같다. self-hosted 집합·
+필수 gate 수·PR proof 매핑은 보존했고 공통 helper와 frozen fixture도 byte 단위로 같다.
+변경은 workflow·publisher·기존 회귀2개·이 기록의 정확5파일이다.
+기능·빌드·테스트·push·CI 조작은 하지 않았다.
+새 정확 SHA의 실제 native ARM 실행과 cache staging의 동일 filesystem admission은
+Actions에서 확인해야 하며, 실패해도 기존 자원·소유권 조건을 완화하지 않는다.
