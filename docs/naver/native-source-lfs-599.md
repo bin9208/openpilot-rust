@@ -101,3 +101,31 @@ x64 위 QEMU/PRoot AGNOS user space이며 물리 ARM CPU/AGNOS kernel 부팅/기
 이것은 source bytes 준비이며 Python 모델 생성·실제 Xiaoge/모델 회귀나 Panda firmware 준비,
 전체 Layout/99개 native build/seal/default update/start/record/upload·복구/실측 자원·성능,
 정상 PR·병합 후 검사·공개 seed/component/최종 한영 문서·사용자 comma3X 수용을 대신하지 않는다.
+
+## 병렬 검사 중 성공 반환의 prefix lock 해제 — #635, 2026-10-29
+
+source `38514bda99eb5ddca74949a4e47caaffbeab44b7`의
+[foundation x64 job](https://github.com/bin9208/openpilot-rust/actions/runs/40883666277/job/123481545700)은
+`source_assets` 7개 검사 중 6개 성공·1개 실패였다. 실패 위치는
+`interrupted_object_import_is_retriable_and_prefix_lock_conflict_preserves_completed_data`의
+첫 `prepare()` 성공 직후 자기 prefix lock을 비차단으로 획득하는 부분이며,
+`WouldBlock`(errno11)이 반환됐다. `CARGO_BUILD_JOBS=16`, `RUST_TEST_THREADS=16`이었다.
+
+각 fixture는 독립 tempdir를 사용한다. 확인한 코드에서 prefix lock은 마지막
+`require_source()`와 발행/fsync까지 유지되지만 성공 반환 시 `File` drop에만 의존했다.
+다른 검사 thread의 fork가 같은 open file description을 잠시 상속하면 부모의 close만으로
+lock 해제가 완료되지 않을 수 있다. CLOEXEC는 exec 전 상속 기간까지 없애지는 않는다.
+이는 로그와 코드가 뒷받침하는 해제 수명 문제이며, 해당 실패 순간의 fork 상속 자체는
+프로세스 추적 없이 확정하지 않는다.
+
+성공 경로는 마지막 source 검증 뒤 `flock(Unlock)`이 성공해야 `Prepared`를 반환한다.
+반환값은 lock 소유권을 갖지 않고 이후 파일 변경도 없으므로 이 지점에서 해제한다.
+발행·전체 파일/receipt 검증·source identity 검증의 보호 구간은 유지한다.
+조기 오류는 기존 drop 처리를 유지하고 장기 소유 `Workspace` 및 다른 object lock은 변경하지 않는다.
+회귀의 첫 비차단 획득/실제 충돌 거부/기존 세대 검증/재사용 단언은 유지하며,
+검사가 직접 보유한 충돌 lock도 재사용 검사 전에 명시적으로 해제한다.
+재시도·sleep·thread 수 제한을 추가하지 않는다.
+
+로컬은 변경 Rust 파일의 Rustfmt 및 diff 읽기/공백 검사만 수행한다.
+기능 검사·빌드·ARM 실행은 하지 않았으며 수정본의 foundation 결과는 대기다.
+Actions에서는 위 원래 `source_assets` 명령과 병렬 설정을 유지해 정확 수정 SHA로 확인한다.
