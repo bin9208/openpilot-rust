@@ -112,7 +112,7 @@ jobs:
   webcam-runtime:
     name: rust webcam source runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 35 }}
     strategy:
       fail-fast: false
@@ -466,7 +466,7 @@ jobs:
   carrot-man-runtime:
     name: rust CarrotMan owner (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 25 }}
     strategy:
       fail-fast: false
@@ -564,7 +564,7 @@ jobs:
   webrtc-runtime:
     name: rust WebRTC source runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     strategy:
       fail-fast: false
@@ -1832,7 +1832,7 @@ jobs:
   radard-runtime:
     name: rust radard source and native runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:

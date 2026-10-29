@@ -164,6 +164,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                                 'estimation-runtime', 'ui-connectivity', 'platform-runtime', 'hardware-runtime',
                                 'logger-runtime', 'athena-runtime'}:
                             expected = 'ubuntu-24.04'
+                        elif path.name == 'rust.yml' and name in {
+                                'radard-runtime', 'carrot-man-runtime', 'webrtc-runtime', 'webcam-runtime'}:
+                            expected = '${{ matrix.runner }}'
                         elif ('runner' in job.get('strategy', {}).get('matrix', {})
                               or any('runner' in row for row in job.get('strategy', {}).get('matrix', {}).get('include', []))):
                             expected = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}'

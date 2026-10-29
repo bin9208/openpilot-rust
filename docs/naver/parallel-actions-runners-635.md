@@ -208,3 +208,50 @@ dev `abea63adf5140cb670a1880fa2c350727a0feda9`의 #639를 정상 merge로
 trusted-source 검사도 유지한다. 전체 source entry 자원 로그 artifact도 함께 보존한다.
 로컬은 AST·YAML/Bash 구문·edition2021 Rust 서식·diff만 확인했다. 새 정확 source의
 기능·필수 PR 및 병합 후 검사는 별도 Actions 결과를 요구한다.
+
+## 2026-10-30 — 향후 input Git pin PR용 네 X64 oracle 분산 준비
+
+기준 source는 `2375949c19c63667ad66de0f9ee7e2c90ad8ba70`이다. 사용자 지시에 따라
+전용 proof checkout의 `codex/fix-598-four-hosted-oracles`에서 향후 적용할 패치만
+준비한다. 현재 S237과 실행 중인 Genuine·publication, perf494, 원격 및 도구 cache는
+변경하지 않는다. 적용 여부와 실제 input Git pin PR 반영은 부모 검토에 남긴다.
+
+정확한 job ID는 `radard-runtime`, `carrot-man-runtime`(표시명 `rust CarrotMan owner`),
+`webrtc-runtime`, `webcam-runtime`이다. 네 job 모두 기존 matrix에
+`ubuntu-24.04`/`ubuntu-24.04-arm`이 있다. `runs-on`만 `${{ matrix.runner }}`로 바꾸어
+X64를 공식 hosted로 보낸다. 최종 집계 job을 제외한 일반 hosted X64는22→26개,
+hosted ARM은8개로 유지된다. workspace·전체 ARM 빌드·model/memory·UI·Genuine·
+kernel·publisher와 foundation의 기존 실행·소유권 경계는 바꾸지 않는다.
+
+원래 코드의 지원 근거는 다음과 같다.
+
+| job ID | 원래 oracle·자원 조건 |
+| --- | --- |
+| `radard-runtime` | 원본 snapshot 회귀와 별도 `/dev/shm` namespace의 Params/msgq IPC·signal lifecycle. `RLIMIT_CORE=0`으로 core dump를 막으며 root cgroup controller는 요구하지 않는다. |
+| `carrot-man-runtime` | job 전용 Params/msgq, loopback 임시 port·HTTP 수신자와 owned tmux fixture로 원본과 native를 비교한다. |
+| `webrtc-runtime` | software FFmpeg/PyAV와 loopback HTTP·UDP/STUN peer, 별도 IPC namespace를 사용한다. CLI affinity는 실제 허용 CPU에서 고른다. |
+| `webcam-runtime` | pinned OpenCV와 owned 영상, `/dev/videowebcam255_*`를 owned 파일로 연결하는 open shim을 사용하며 물리 V4L2 장치를 요구하지 않는다. |
+
+네 job의 현재 명령에는 ASAN/UBSAN 옵션이나 cgroup memory/controller 전용 검사가
+없다. webcam의 `build-xiaoge-opencv --prepare-only`는 source만 준비하며 실제 provider는
+Webcam profile로 빌드한다. `--sanitizers`가 없어 sanitizer는 false다. 공통
+`runner_policy.py`·`job-temp`·`local-arm`은 hosted Linux X64를 이미 허용하며
+host/target이 같으면 native 경로로 실행한다. 이 정책/helper는 수정하지 않는다.
+
+[GitHub 공식 공개 저장소 runner 표와 관리 권한](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)은
+`ubuntu-24.04` X64에4 CPU·16 GB RAM·14 GB SSD와 passwordless sudo를 명시한다.
+이는 VM 사양이며 실제 free capacity·peak memory 측정이나 성공 보장이 아니다.
+네 job의 초기 `--growth-mib 8192`, 이후 의존성·binding·build 단계별512~4096 MiB와
+CarrotMan GEOS128 MiB, webcam fixture512 MiB 검사는 모두 원문 유지한다.
+disk guard의 cache/Rustup/Cargo bootstrap 각1 GiB admission도 보존한다. webcam source
+준비의 기본2 GiB와 provider의 명시4 GiB growth는 각 원래 phase에서 확인한다.
+별도 고정 RAM 하한은 이 네 job에 없으며 실제 peak·잔여 disk·timeout 충족은 미검증이다.
+
+로컬에서 YAML parsing·Python AST·네 job의 원래 `run`23개 `bash -n`과 diff 검사를
+통과했다. 기존 routing 회귀에는 정확 네 selector만 추가한다. 네 `runs-on` 변경을
+되돌리면 기준 YAML과 byte 단위로 같고, parsed YAML에서도 selector 외 모든 필드와
+모든 `run` bytes가 같다. 기준 YAML SHA256은
+`78355c75f41503279fb5c7aedc4f6a7ccdde78581fb9bf33a53c40b9118d360d`이다.
+ARM 행·matrix 병렬도·timeout·if·needs·feature·pin·최종 gate를 보존한다. 기능·unit·
+빌드 실행, push·dispatch·cancel·PR 생성과 기기 접속은 하지 않는다. 실제 hosted oracle
+성공과 자원 admission 결과는 향후 부모가 적용한 정확 source의 Actions 검증에 남긴다.
