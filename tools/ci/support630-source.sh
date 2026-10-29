@@ -285,7 +285,9 @@ red() {
   local label=$1 expected=$2
   shift 2
   run "$label-compile" env CARGO_TARGET_DIR="$baseline_target" "$@" --no-run
-  if run "$label" env CARGO_TARGET_DIR="$baseline_target" "$@" -- --nocapture; then
+  # Libtest prints captured panic diagnostics for failed cases after stable
+  # per-test results; keep concurrent test output from splitting control lines.
+  if run "$label" env CARGO_TARGET_DIR="$baseline_target" "$@"; then
     echo "Expected actual old-source runtime failure: $label" >&2
     return 1
   fi
