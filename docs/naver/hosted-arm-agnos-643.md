@@ -40,3 +40,15 @@ GitHub VM은 작업마다 새로 생성되므로 이미지·Rust 설치·Cargo �
 수행하며 결과 전에는 완료로 표시하지 않는다.
 
 이슈: https://github.com/bin9208/openpilot-rust/issues/643
+
+## 첫 실행과 전송 계층 수정
+
+`fb0285c733c9970f3fa88fef17da5bae2e67e5f2`의
+[40944913721](https://github.com/bin9208/openpilot-rust/actions/runs/40944913721)은 실제
+GitHub Actions ARM 러너의4CPU를 확인했다. 이미지 다운로드8.582초, raw 변환11.687초,
+파일시스템 추출10.720초에 성공했으나 기본 배포판 PRoot의 첫 guest 명령에서 signal11로
+종료됐다. 컴파일 실패/성능 결과로 취급하지 않는다. 해당 SHA의 fast40944912982는 성공했다.
+
+기존 x86 기준과 같은 PRoot5.5.0의 소스
+`25dc6a3134891f98a79f57ce1c2c1b23ff15cad1`를 고정해 GitHub ARM 안에서 직접 빌드하고,
+실제 PRoot 실행을 먼저 확인하도록 수정한다. AGNOS 이미지·소스·Rust·컴파일 명령은 유지한다.

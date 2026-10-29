@@ -131,8 +131,9 @@ def main():
         for name in ('cargo', 'rustup'):
             (work/name).mkdir()
         (work/'probe.gitconfig').write_text(f'[safe]\n\tdirectory = {source_mount}\n[core]\n\thooksPath = /dev/null\n')
-        proot = shutil.which('proot')
-        assert proot
+        proot = os.environ['AGNOS_PROOT_PATH']
+        assert Path(proot).is_file()
+        report['proot_source_commit'] = '25dc6a3134891f98a79f57ce1c2c1b23ff15cad1'
         report['proot_path'] = proot
         report['proot_sha256'] = digest(Path(proot))
         guest = [proot, '-r', rootfs, '-b', '/proc', '-b', '/dev', '-b', '/etc/resolv.conf',
