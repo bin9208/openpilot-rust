@@ -9,9 +9,11 @@ import json
 import lzma
 import os
 from pathlib import Path
+import re
 import select
 import signal
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -70,6 +72,30 @@ def static_emulator():
             assert len(row) == size
             assert int.from_bytes(row[:4], 'little') != 3, 'fixed chroot interpreter must not require a host ELF loader'
     return digest(path)
+
+
+def restore_factory_sudo(raw, sudo):
+    # rdump's mode_xlate preserves rwx bits only; fchown also clears SUID.
+    # Read the original inode from the already authenticated image. Restore
+    # only that exact mode on the extracted, root-owned regular sudo file.
+    metadata = subprocess.run(['/usr/sbin/debugfs', '-R', 'stat /usr/bin/sudo', str(raw)],
+                              capture_output=True, text=True, check=True, timeout=30)
+    assert len(metadata.stdout) <= 16384
+    modes = re.findall(r'^Inode:\s+\d+\s+Type:\s+regular\s+Mode:\s+([0-7]+)\s+Flags:',
+                       metadata.stdout, re.MULTILINE)
+    owners = re.findall(r'^User:\s+(\d+)\s+Group:\s+(\d+)\b', metadata.stdout, re.MULTILINE)
+    assert len(modes) == len(owners) == 1, 'factory sudo inode metadata missing'
+    mode = int(modes[0], 8)
+    uid, gid = map(int, owners[0])
+    assert (mode, uid, gid) == (0o4755, 0, 0), 'unexpected original factory sudo permissions'
+    with os.fdopen(os.open(sudo, os.O_RDONLY | os.O_NOFOLLOW), 'rb') as stream:
+        before = os.fstat(stream.fileno())
+        assert stat.S_ISREG(before.st_mode) and (before.st_uid, before.st_gid) == (uid, gid)
+        checksum = hashlib.file_digest(stream, 'sha256').hexdigest()
+        os.fchmod(stream.fileno(), mode)
+        assert stat.S_IMODE(os.fstat(stream.fileno()).st_mode) == mode
+    return dict(uid=uid, gid=gid, mode=oct(mode), sha256=checksum,
+                permission_source='authenticated factory image inode')
 
 
 def prepare_image():
@@ -222,11 +248,13 @@ def probe():
     factory = work/'factory'
     factory.mkdir()
     assert shutil.disk_usage(job).free >= RAW_BYTES+64*1024**2
-    # Real root extraction retains factory ownership/SUID metadata. This avoids
+    # Root extraction retains factory ownership; restore sudo's original SUID
+    # separately from its authenticated inode below. This avoids
     # changing global loop devices or requiring an ext4 mount in the host ns.
     command('/usr/sbin/debugfs', '-R', f'rdump / {factory}', raw, timeout=600)
     assert (factory/'VERSION').read_text().strip() == '19.8-carrot-bt1'
     sudo = factory/'usr/bin/sudo'
+    sudo_metadata = restore_factory_sudo(raw, sudo)
     assert sudo.stat().st_uid == 0 and sudo.stat().st_mode & 0o4000
     group = scope/'source-entry-transport'
     group.mkdir()
@@ -275,12 +303,13 @@ def probe():
         assert handlers() == original
         assert Path('/sys/fs/cgroup/cgroup.subtree_control').read_text() == global_control
         result = json.loads((work/'arm.stdout').read_text())
+        assert result['factory_sudo_sha256'] == sudo_metadata['sha256']
         result.update(source_commit=os.environ['GITHUB_SHA'], host_kernel=os.uname().release,
             host_architecture=os.uname().machine, physical_arm_cpu=False, agnos_kernel=False,
             factory_image_sha256=RAW_SHA, shared_binfmt_modified=False,
             shared_controller_modified=False, namespace_cgroup_inode=group_inode,
             root_cgroup_namespace_verified=True, qemu_sha256=emulator_sha,
-            static_fixed_interpreter_verified=True)
+            static_fixed_interpreter_verified=True, factory_sudo_image_metadata=sudo_metadata)
     finally:
         assert group.stat().st_ino == group_inode and group.parent == scope
         write(group/'cgroup.kill', 1)

@@ -9,6 +9,15 @@ SHA/크기를 검증하고 해당 job 폴더에만 추출한다. root의 실제 
 유지한 원래 ARM `/usr/bin/sudo`를 사용한다. 가짜 root/PRoot나 host sudo 대체로
 factory의 권한 상승을 통과시켰다고 처리하지 않는다.
 
+`debugfs rdump`는 UID/GID와 rwx만 복원하며 SUID는 보존하지 않는다.
+[e2fsprogs 원문](https://github.com/tytso/e2fsprogs/blob/master/debugfs/dump.c)의
+`mode_xlate`/`fix_perms`를 읽어 확인했다. 추출 후 이미 전체 SHA를 검증한 raw image의
+`stat /usr/bin/sudo`에서 regular inode와 원래 UID/GID0, mode04755를 읽는다.
+이 값과 추출한 regular 파일의 소유권을 확인한 뒤 그 sudo 파일에만 원래 mode를
+복원한다. body를 바꾸거나 다른 실행 파일에 SUID를 부여하지 않으며, 실제 ARM
+실행에서 읽은 sudo SHA와 복원 시 SHA도 같아야 한다. 이는 추출기 보완이며
+실제 sudo/namespace 지원의 성공 근거는 여전히 Actions 실행에 남아 있다.
+
 새 child만 자기 job의 cgroup으로 이동한 뒤 private user/mount/cgroup namespace와
 그 user namespace의 binfmt registry를 만든다. 고정된 static QEMU와 credential(C)
 규칙으로 실제 ARM Python→factory sudo→root Python의 UID를 검사한다. root Python이
