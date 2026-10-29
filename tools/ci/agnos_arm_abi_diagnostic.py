@@ -100,6 +100,7 @@ def main():
         proot = Path(os.environ['AGNOS_PROOT_PATH'])
         report['proot_sha256'] = digest(proot)
         report['proot_source_commit'] = '25dc6a3134891f98a79f57ce1c2c1b23ff15cad1'
+        report['proot_patch_sha256'] = os.environ.get('AGNOS_PROOT_PATCH_SHA256')
         guest = [proot, '-r', rootfs, '-b', '/proc', '-b', '/dev', '-b', '/etc/resolv.conf',
                  '-b', '/etc/hosts', '-b', f'{work}:/diag', '-b', f'{source}:/source',
                  '-b', f'{cache}/cargo:/diag/cargo', '-b', f'{cache}/rustup:/diag/rustup',
@@ -128,6 +129,16 @@ def main():
             ('loader-list', ['/lib/ld-linux-aarch64.so.1', '--list', binary]),
             ('default-loader-trace', ['/usr/bin/env', 'LD_TRACE_LOADED_OBJECTS=1', binary]),
             ('ldd-system', ['/usr/bin/ldd', '/bin/true']),
+            ('seed-abi', ['/usr/bin/python3', '-c',
+                "import json,runpy; from pathlib import Path; "
+                "m=runpy.run_path('/source/tools/native/bootstrap_seed.py'); "
+                f"print(json.dumps(m['inspect_abi'](Path('{binary}'))))"]),
+            ('permission-contract', ['/usr/bin/python3', '-c',
+                "import os; from pathlib import Path; "
+                f"assert os.access('{binary}',os.R_OK); "
+                "p=Path('/diag/permission-'+str(os.getpid())); p.write_bytes(b'blocked'); p.chmod(0); "
+                "assert not os.access(p,os.R_OK); p.chmod(0o600); p.unlink(); "
+                "assert not os.access('/diag/missing-file',os.R_OK); print('real read permissions preserved')"]),
         ]
         for prefix, outer_env in [('normal', None), ('no-seccomp', dict(os.environ, PROOT_NO_SECCOMP='1'))]:
             for name, args in cases:

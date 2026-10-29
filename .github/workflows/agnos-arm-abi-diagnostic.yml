@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/agnos-arm-abi-diagnostic.yml'
       - 'tools/ci/agnos_arm_abi_diagnostic.py'
+      - 'tools/ci/patches/proot-arm64-faccessat2.patch'
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,7 +22,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-          sparse-checkout: tools/ci/agnos_arm_abi_diagnostic.py
+          sparse-checkout: |
+            tools/ci/agnos_arm_abi_diagnostic.py
+            tools/ci/patches/proot-arm64-faccessat2.patch
           sparse-checkout-cone-mode: false
       - name: Admit only the owned image and native source build
         run: |
@@ -36,9 +39,12 @@ jobs:
           git -C "$proot_source" fetch --depth=1 origin 25dc6a3134891f98a79f57ce1c2c1b23ff15cad1
           git -C "$proot_source" checkout --detach FETCH_HEAD
           [[ $(git -C "$proot_source" rev-parse HEAD) == 25dc6a3134891f98a79f57ce1c2c1b23ff15cad1 ]]
+          git -C "$proot_source" apply --check "$GITHUB_WORKSPACE/tools/ci/patches/proot-arm64-faccessat2.patch"
+          git -C "$proot_source" apply "$GITHUB_WORKSPACE/tools/ci/patches/proot-arm64-faccessat2.patch"
           make -C "$proot_source/src" -j"$(nproc)" WITHOUT_PYTHON=1 loader.elf build.h
           make -C "$proot_source/src" -j"$(nproc)" WITHOUT_PYTHON=1 proot
           printf 'AGNOS_PROOT_PATH=%s\n' "$proot_source/src/proot" >> "$GITHUB_ENV"
+          printf 'AGNOS_PROOT_PATCH_SHA256=%s\n' "$(sha256sum tools/ci/patches/proot-arm64-faccessat2.patch | cut -d' ' -f1)" >> "$GITHUB_ENV"
       - uses: actions/cache@v4
         with:
           path: ${{ runner.tool_cache }}/agnos-arm-abi-643
