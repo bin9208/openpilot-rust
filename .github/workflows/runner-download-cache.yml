@@ -20,8 +20,14 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-        with: {persist-credentials: false}
-      - run: python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_runner_download_cache.py -v
+        with: {persist-credentials: false, fetch-depth: 0}
+      - run: python3 -m pip install PyYAML==6.0.2
+      - name: Exercise cache ownership, APT selection and existing job isolation
+        run: |
+          python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_runner_download_cache.py -v
+          python3 -m unittest discover -s tools/ci/tests -p test_cargo_target_view.py -v
+          python3 -m unittest discover -s tools/ci/tests -p test_workflow_policy.py -v
+          python3 -m unittest discover -s tools/ci/tests -p test_local_native_workflows.py -v
       - run: bash -n tools/ci/native-apt-shell
   seed:
     name: Prepare cache (${{ matrix.runner }})

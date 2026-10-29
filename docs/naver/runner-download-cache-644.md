@@ -21,9 +21,9 @@
   다른 consumer가 캐시를 수정하지 않도록 hardlink 대신 독립 copy/reflink를 쓴다.
   동시 저장은 잠금·원자 rename으로 보호하고 저장 copy 예상 증가량이 부족하면
   캐시 저장만 생략한다. 기존 입력 도구의 SHA/길이/형식 검증은 그대로 필요하다.
-- 전체 Actions 플러그인 설치를 새로 만들지 않는다. 기존 runner `_actions`와 tool
-  cache는 runner가 관리하며 패키지 캐시와 함께 유지된다. 빌드 산출물 전체의
-  재사용은 이번 변경 범위가 아니다.
+- Actions 플러그인은 runner가 매 job 시작 때 `_actions`를 정리하므로 별도 archive
+  캐시가 필요하다. 공식 runner의 `ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE` 지원과
+  실제 서비스 설정을 추가 확인한다. tool cache와 빌드 산출물 재사용은 구분한다.
 
 명시적 cross source/APT_CONFIG와 QEMU guest의 APT는 기존 선택을 유지한다.
 hosted runner의 실행도 바꾸지 않는다. cache fallback prefix 대신 정확 key만

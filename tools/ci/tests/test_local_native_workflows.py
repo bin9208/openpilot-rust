@@ -129,6 +129,15 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             if path.suffix not in ('.yml', '.yaml'):
                 continue
             document = load(path)
+            if path.name == 'runner-download-cache.yml':
+                self.assertEqual(document['jobs']['regressions']['runs-on'], 'ubuntu-24.04')
+                for role in ('seed', 'offline'):
+                    job = document['jobs'][role]
+                    self.assertEqual(job['runs-on'], ['self-hosted', 'Linux', 'X64', '${{ matrix.label }}'])
+                    self.assertEqual(job['strategy']['matrix']['include'], [
+                        dict(runner=name, label='cache-644-'+name)
+                        for name in ('bin-actions', 'bin-actions2', 'bin-actions3')])
+                continue
             if path.name == 'messaging-allocation-431.yml':
                 # This independently merged workflow already uses two native
                 # hosted runners. Preserve every original command and trigger,

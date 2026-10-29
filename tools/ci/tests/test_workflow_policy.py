@@ -17,11 +17,11 @@ def workflow(name):
 
 
 class WorkflowPolicyTests(unittest.TestCase):
-  def test_fast_checks_cover_all_branch_pushes_and_protected_prs(self):
+  def test_fast_checks_keep_protected_prs_without_parallel_push_runs(self):
     events = workflow('fast-checks.yml')['on']
-    self.assertEqual(events['push']['branches'], ['**'])
+    self.assertNotIn('push', events)
     self.assertEqual(set(events['pull_request']['branches']), {'dev', 'main'})
-    for event in ('push', 'pull_request'):
+    for event in ('pull_request',):
       self.assertNotIn('paths', events[event])
       self.assertNotIn('paths-ignore', events[event])
 

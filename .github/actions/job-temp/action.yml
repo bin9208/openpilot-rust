@@ -59,10 +59,9 @@ runs:
           fi
         } > "$owned/shell-env"
         printf 'CI_RUNNER_TEMP=%s\nCI_JOB_TEMP=%s\nBASH_ENV=%s/shell-env\n' "$RUNNER_TEMP" "$owned" "$owned" >> "$GITHUB_ENV"
-    - name: Reuse runner-local dependency downloads
-      if: inputs.cleanup != 'true' && runner.environment == 'self-hosted'
-      shell: bash
-      run: /usr/bin/python3 -I -B -S "$GITHUB_ACTION_PATH/../../../tools/ci/runner_download_cache.py" setup
+        if [[ $RUNNER_ENVIRONMENT == self-hosted ]]; then
+          /usr/bin/python3 -I -B -S "$GITHUB_ACTION_PATH/../../../tools/ci/runner_download_cache.py" setup
+        fi
     - if: inputs.cleanup == 'true'
       shell: bash
       run: |
