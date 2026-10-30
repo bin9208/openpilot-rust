@@ -127,19 +127,10 @@ pub fn check_workflow_policy(files: &[(String, String)]) -> Result<(), String> {
             .get(name)
             .ok_or_else(|| format!("missing workflow {name}"))
     };
-    let fast = get("fast-checks.yml")?;
     require(
-        fast["on"]["push"]["branches"] == serde_json::json!(["**"]),
-        "fast checks must cover every branch push",
+        !workflows.contains_key("fast-checks.yml"),
+        "Fast checks workflow has been retired",
     )?;
-    require(
-        strings(&fast["on"]["pull_request"]["branches"])? == expected_strings(&["dev", "main"]),
-        "fast protected PR branches changed",
-    )?;
-    for event in ["push", "pull_request"] {
-        absent(&fast["on"][event], &["paths", "paths-ignore"])?;
-    }
-    validate_fast_gate(fast)?;
     let integration = get("integration.yml")?;
     for event in ["push", "pull_request"] {
         require(
