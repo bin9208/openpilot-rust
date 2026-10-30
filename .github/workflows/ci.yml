@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: ['**']
+    branches: [dev, dev-md, main]
   pull_request:
     branches: [dev, dev-md, main]
     types: [opened, synchronize, reopened, edited, ready_for_review]
@@ -17,104 +17,15 @@ concurrency:
   group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  route:
-    name: Select validation scope
+  check_user_docs:
+    name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'check mapped user docs' || 'Not requested - check mapped user docs' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 2
-    outputs:
-      fast: ${{ steps.scope.outputs.fast }}
-      full: ${{ steps.scope.outputs.full }}
-    steps:
-      - uses: actions/github-script@v7
-        id: scope
-        with:
-          script: |
-            const protectedBranches = ['dev', 'dev-md', 'main'];
-            const full = context.eventName !== 'push' || protectedBranches.includes(context.ref.replace('refs/heads/', ''));
-            let fast = true;
-            if (!full) {
-              const pulls = await github.paginate(github.rest.pulls.list, {
-                ...context.repo, state: 'open', head: `${context.repo.owner}:${context.ref.replace('refs/heads/', '')}`, per_page: 100
-              });
-              fast = !pulls.some(pr => protectedBranches.includes(pr.base.ref));
-            }
-            core.setOutput('fast', String(fast));
-            core.setOutput('full', String(full));
-
-  fast-checks:
-    needs: [route]
-    name: ${{ needs.route.outputs.fast == 'true' && 'fast checks' || 'PR owns fast validation' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 7
-    if: needs.route.outputs.fast == 'true'
+    if: github.repository == 'bin9208/openpilot-rust' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - name: Keep dev-md changes out of dev
         env:
           TARGET_BRANCH: ${{ github.base_ref || github.ref_name }}
-        run: |
-          if [ "$TARGET_BRANCH" = dev ]; then
-            echo 'dev-md upstream ports must not be integrated into dev (issue #338).' >&2
-            exit 1
-          fi
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/job-temp
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - uses: actions/setup-node@v6
-        with: {node-version: '24'}
-      - run: python -m pip install pytest==9.0.2 PyYAML==6.0.2
-      - name: Check changed Python syntax and whitespace
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: python tools/ci/check_changed_files.py
-      - name: Verify frozen production Xiaoge oracles
-        run: |
-          python3 - <<'PY'
-          import hashlib, json, subprocess
-          from pathlib import Path
-          receipts = list(Path('rust/crates/xiaoge/tests/support').glob('*_0682e933.json'))
-          assert len(receipts) == 3
-          paths = set()
-          for receipt in receipts:
-            data = json.loads(receipt.read_text())
-            assert data['source_commit'] == '0682e933d3fea06e8953ace63fc521a29ee02b6e'
-            paths.add(data['path'])
-            expected = subprocess.check_output(['git', 'show', data['source_commit'] + ':' + data['path']])
-            actual = receipt.with_suffix('.rs').read_bytes()
-            assert actual == expected and hashlib.sha256(actual).hexdigest() == data['sha256'], receipt
-          assert paths == {'rust/crates/xiaoge/src/lane/head.rs', 'rust/crates/xiaoge/src/inference/lane.rs', 'rust/crates/xiaoge/src/inference/geometry.rs'}
-          PY
-      - name: Check CI routing and upstream synchronization guards
-        run: |
-          python -m unittest discover -s tools/ci/tests -v
-          python3 rust/ci/runtime/test_package_policy.py
-          python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/ci/tests -q tools/ci/tests/test_native_disk_guard.py
-      - name: Wiki documentation regressions
-        run: python -m unittest discover -s tools/docs/wiki_settings/tests -p 'test_*.py' -v
-      - name: Jetlink package and protocol regressions
-        run: |
-          python -m pip install -r tools/jetlink_model/requirements.lock
-          python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/jetlink_model/tests -q tools/jetlink_model/tests
-          python -m pytest -c /dev/null --rootdir=. --confcutdir=openpilot/selfdrive/modeld/tests -q openpilot/selfdrive/modeld/tests/test_jetlink*.py
-          bash -n openpilot/selfdrive/modeld/jetlink/setup_gadget.sh
-      - uses: actions/setup-java@v5
-        with: {distribution: temurin, java-version: '17'}
-      - name: Android Jetlink core regressions
-        run: bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test
-      - uses: ./.github/actions/job-temp
-        if: always()
-        with: {cleanup: 'true'}
-
-  check_user_docs:
-    needs: [route, fast-checks]
-    name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'check mapped user docs' || 'Not requested - check mapped user docs' }}
-    runs-on: ubuntu-24.04
-    if: needs.route.outputs.full == 'true'
-    steps:
+        run: "if [ \"$TARGET_BRANCH\" = dev ]; then\n  echo 'dev-md upstream ports must not be integrated into dev (issue #338).' >&2\n  exit 1\nfi\n"
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
@@ -152,6 +63,8 @@ jobs:
         run: |
           CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test publish
           CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib publish::policy_tests
+      - name: Verify runtime packaging policy
+        run: python3 rust/ci/runtime/test_package_policy.py
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
@@ -348,7 +261,7 @@ jobs:
 
   integration-gate:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'integration gate' || 'Not requested - integration gate' }}
-    needs: [route, fast-checks, check_user_docs, git_update, build_release, model_web, model, android-core, jetlink-native]
+    needs: [check_user_docs, git_update, build_release, model_web, model, android-core, jetlink-native]
     if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -356,7 +269,7 @@ jobs:
       - name: Require every preceding validation result
         env:
           RESULTS: ${{ toJSON(needs) }}
-          EXPECTED: route, fast-checks, check_user_docs, git_update, build_release, model_web, model, android-core, jetlink-native
+          EXPECTED: check_user_docs, git_update, build_release, model_web, model, android-core, jetlink-native
         run: |
           python3 - <<'PYTHON'
           import json, os
@@ -3218,6 +3131,13 @@ jobs:
             rust/target/debug/examples/xiaoge_*
             rust/target/debug/examples/opencv_trace
             rust/target/debug/examples/jpeg_options
+      - name: Verify frozen production Xiaoge oracles
+        run: "python3 - <<'PY'\nimport hashlib, json, subprocess\nfrom pathlib import Path\nreceipts = list(Path('rust/crates/xiaoge/tests/support').glob('*_0682e933.json'))\n\
+          assert len(receipts) == 3\npaths = set()\nfor receipt in receipts:\n  data = json.loads(receipt.read_text())\n  assert data['source_commit']\
+          \ == '0682e933d3fea06e8953ace63fc521a29ee02b6e'\n  paths.add(data['path'])\n  expected = subprocess.check_output(['git', 'show', data['source_commit']\
+          \ + ':' + data['path']])\n  actual = receipt.with_suffix('.rs').read_bytes()\n  assert actual == expected and hashlib.sha256(actual).hexdigest()\
+          \ == data['sha256'], receipt\nassert paths == {'rust/crates/xiaoge/src/lane/head.rs', 'rust/crates/xiaoge/src/inference/lane.rs', 'rust/crates/xiaoge/src/inference/geometry.rs'}\n\
+          PY\n"
       - uses: ./.github/actions/job-temp
         if: always()
         with: {cleanup: 'true'}
@@ -4006,7 +3926,7 @@ jobs:
 
   arm64:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'rust aarch64 build' || 'Not requested - rust aarch64 build' }}
-    needs: [route, fast-checks, check_user_docs, integration-gate, fast, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime, arm-build]
+    needs: [check_user_docs, integration-gate, fast, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime, arm-build]
     if: ${{ always() && (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -4014,7 +3934,7 @@ jobs:
       - name: Require all validation and the actual ARM build
         env:
           RESULTS: ${{ toJSON(needs) }}
-          EXPECTED: route, fast-checks, check_user_docs, integration-gate, fast, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime, arm-build
+          EXPECTED: check_user_docs, integration-gate, fast, workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime, arm-build
         run: |
           python3 - <<'PYTHON'
           import json, os
