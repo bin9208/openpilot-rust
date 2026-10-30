@@ -84,20 +84,34 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
     workflow = ROOT / '.github/workflows/rust.yml'
     text = workflow.read_text()
     assert 'card_ci_space.py' not in text
-    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 184
+    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 185
     jobs = yaml.safe_load(text)['jobs']
     guarded = [job for job in jobs.values() if any('check-disk-space' in step.get('run', '') for step in job.get('steps', []))]
-    assert len(guarded) == 26
+    assert len(guarded) == 27
     def has_baseline_guard(script):
         lines = script.splitlines()
         return any('check-disk-space' in line and
                    (index + 1 == len(lines) or '--bin stage-startup-ui-raylib' not in lines[index + 1])
                    for index, line in enumerate(lines))
     assert sum(any(has_baseline_guard(step.get('run', '')) for step in job.get('steps', []))
-               for job in jobs.values()) == 24
+               for job in jobs.values()) == 25
     # Preserve the original179 migration baseline independently of the five
     # #326 guards added specifically before compiling its native stager.
-    lines = text.splitlines()
+    qcom = '\n'.join(step.get('run', '') for step in jobs['offline-qcom-arm']['steps'])
+    qcom_arguments = re.findall(r'"\$GITHUB_WORKSPACE/rust/tools/check-disk-space"([^\n]*)', qcom)
+    assert qcom_arguments == [' --path "$GITHUB_WORKSPACE" --growth-mib 4096',
+                              ' --path "$RUNNER_TEMP" --growth-mib 1024']
+    # Reconstruct only the moved QCOM guard at its legacy position. The original
+    # 179-argument ordered digest below remains unchanged; the extra preparation
+    # guard is checked explicitly above, rather than accepting a new digest.
+    baseline, removed = re.subn(r'^  offline-qcom-arm:.*?(?=^  workspace:)', '', text,
+                                count=1, flags=re.MULTILINE | re.DOTALL)
+    assert removed == 1
+    anchor = '      - name: Compare captured graphs and original camera warps with Rust'
+    assert baseline.count(anchor) == 1
+    legacy_guard = '      - run: |\n          "$GITHUB_WORKSPACE/rust/tools/check-disk-space"' + qcom_arguments[1] + '\n'
+    baseline = baseline.replace(anchor, legacy_guard + anchor, 1)
+    lines = baseline.splitlines()
     arguments, raylib_guards = [], []
     for index, line in enumerate(lines):
         match = re.search(r'"\$GITHUB_WORKSPACE/rust/tools/check-disk-space"([^\n]*)', line)

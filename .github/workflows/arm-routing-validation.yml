@@ -44,7 +44,7 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: '3.12'
-    - run: python -m pip install PyYAML==6.0.3 ruff==0.16.7
+    - run: python -m pip install PyYAML==6.0.3 ruff==0.16.7 pytest==9.0.2
     - name: Reject undefined AGNOS probe names
       run: ruff check --isolated --select F821 tools/ci/probe_native_agnos.py tools/ci/verify_native_bootstrap.py tools/ci/verify_native_runtime_inputs.py
     - name: Validate routing, unchanged target commands and production identity mapping
@@ -54,6 +54,7 @@ jobs:
         python -m unittest discover -s tools/ci/tests -p test_local_native_workflows.py -v
         python -m unittest discover -s tools/ci/tests -p test_native_arm_routing.py -v
         python -m unittest discover -s tools/ci/tests -p test_native_source_entry.py -v
+        python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/ci/tests tools/ci/tests/test_native_disk_guard.py -q
     - uses: ./.github/actions/rust-path
       if: ${{ inputs.selection == 'helper-tests' }}
     - name: Validate the combined native helper and generation reuse tests
