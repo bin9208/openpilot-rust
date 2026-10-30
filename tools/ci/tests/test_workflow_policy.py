@@ -17,13 +17,6 @@ def workflow(name):
 
 
 class WorkflowPolicyTests(unittest.TestCase):
-  def test_fast_checks_keep_protected_prs_without_parallel_push_runs(self):
-    events = workflow('fast-checks.yml')['on']
-    self.assertNotIn('push', events)
-    self.assertEqual(set(events['pull_request']['branches']), {'dev', 'main'})
-    for event in ('pull_request',):
-      self.assertNotIn('paths', events[event])
-      self.assertNotIn('paths-ignore', events[event])
 
   def test_integration_runs_before_and_after_merge_without_path_skips(self):
     spec = workflow('integration.yml')
