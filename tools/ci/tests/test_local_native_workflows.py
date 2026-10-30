@@ -4,6 +4,9 @@ from functools import cache
 import ast
 import hashlib
 import json
+import os
+import stat
+import tempfile
 from pathlib import Path
 import subprocess
 import unittest
@@ -139,6 +142,106 @@ def condition(original):
 
 
 class LocalNativeWorkflowTests(unittest.TestCase):
+    def test_seed_abi_preflight_preserves_the_full_probe_and_build_argv(self):
+        path = 'tools/ci/probe_native_agnos.py'
+        before = ast.parse(subprocess.check_output(['git', 'show',
+            '84fbed62953b61474e80f308aa1f530343d20561:'+path], cwd=ROOT, text=True))
+        after = ast.parse((ROOT/path).read_text())
+        original = {n.name: n for n in before.body if isinstance(n, ast.FunctionDef)}
+        current = {n.name: n for n in after.body if isinstance(n, ast.FunctionDef)}
+        dump = lambda n: ast.dump(n, include_attributes=False)
+        self.assertEqual(dump(current['native_bootstrap_seed_probe']),
+                         dump(original['native_bootstrap_seed_probe']))
+        def probe_calls(node):
+            return [n.func.id for n in ast.walk(node) if isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Name) and n.func.id in original
+                and n.func.id.startswith('native_')]
+        self.assertEqual(probe_calls(current['main']), probe_calls(original['main']))
+        old_argv = next(n.args[0] for n in ast.walk(original['native_cereal_probe'])
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+            and n.func.id == 'execute' and isinstance(n.args[0], ast.List)
+            and any(isinstance(v, ast.Constant) and v.value == 'openpilot-runtime-inputs'
+                    for v in n.args[0].elts))
+        shared_argv = next(n.args[0] for n in ast.walk(current['build_native_inputs'])
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'guest_command')
+        self.assertEqual(dump(shared_argv), dump(old_argv))
+        code = next(n.value for n in ast.walk(current['native_seed_abi_preflight'])
+            if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'code' for t in n.targets))
+        abi = ast.parse(ast.literal_eval(code))
+        calls = [n.func.slice.value for n in ast.walk(abi) if isinstance(n, ast.Call)
+            and isinstance(n.func, ast.Subscript) and isinstance(n.func.value, ast.Name)
+            and n.func.value.id == 'seed']
+        self.assertEqual(calls, ['native', 'elf', 'inspect_abi'])
+
+    def seed_preflight_cleanup_helpers(self):
+        # Exercise only directory ownership helpers, without importing the probe
+        # or running any compiler, guest, runner gate or source initializer.
+        tree = ast.parse((ROOT/'tools/ci/probe_native_agnos.py').read_text())
+        selected = [n for n in tree.body if
+            isinstance(n, ast.FunctionDef) and n.name in
+                ('prepare_preflight_bind_roots', 'cleanup_preflight_bind_roots')
+            or isinstance(n, ast.Assign) and any(isinstance(t, ast.Name)
+                and t.id == 'PREFLIGHT_EMPTY_BIND_ROOTS' for t in n.targets)]
+        namespace = dict(Path=Path, os=os, stat=stat)
+        exec(compile(ast.Module(body=selected, type_ignores=[]), '<preflight-directory-helpers>', 'exec'), namespace)
+        return namespace
+
+    def test_seed_preflight_removes_only_new_empty_roots_and_retains_existing_cache(self):
+        helpers = self.seed_preflight_cleanup_helpers()
+        with tempfile.TemporaryDirectory() as temporary:
+            owned = Path(temporary)
+            existing = owned/helpers['PREFLIGHT_EMPTY_BIND_ROOTS'][0]
+            existing.mkdir()
+            (existing/'retained-cache').write_bytes(b'original cache')
+            identity = existing.stat().st_ino
+            created = []
+            helpers['prepare_preflight_bind_roots'](owned, created)
+            self.assertNotIn(str(existing), [row['path'] for row in created])
+            self.assertEqual(len(created), len(helpers['PREFLIGHT_EMPTY_BIND_ROOTS'])-1)
+            helpers['cleanup_preflight_bind_roots'](owned, created)
+            self.assertEqual(existing.stat().st_ino, identity)
+            self.assertEqual((existing/'retained-cache').read_bytes(), b'original cache')
+            self.assertTrue(all(not Path(row['path']).exists() for row in created))
+
+    def test_seed_preflight_changed_roots_are_fatal_and_preserved(self):
+        helpers = self.seed_preflight_cleanup_helpers()
+        for change in ('nonempty', 'replacement', 'symlink', 'foreign-owner'):
+            with self.subTest(change=change), tempfile.TemporaryDirectory() as temporary:
+                owned = Path(temporary)
+                created = []
+                helpers['prepare_preflight_bind_roots'](owned, created)
+                root = Path(created[-1]['path'])
+                if change == 'nonempty':
+                    (root/'retained-data').write_bytes(b'do not remove')
+                elif change in ('replacement', 'symlink'):
+                    moved = root.with_name(root.name+'.original')
+                    root.rename(moved)
+                    if change == 'replacement':
+                        root.mkdir()
+                    else:
+                        root.symlink_to(moved, target_is_directory=True)
+                else:
+                    original_lstat = Path.lstat
+                    def changed_uid(path, *args, **kwargs):
+                        result = original_lstat(path, *args, **kwargs)
+                        if path == root:
+                            fields = list(result)
+                            fields[4] = os.geteuid()+1
+                            return os.stat_result(fields)
+                        return result
+                if change == 'foreign-owner':
+                    with mock.patch.object(Path, 'lstat', changed_uid):
+                        with self.assertRaises(AssertionError):
+                            helpers['cleanup_preflight_bind_roots'](owned, created)
+                else:
+                    with self.assertRaises(AssertionError):
+                        helpers['cleanup_preflight_bind_roots'](owned, created)
+                self.assertTrue(all(Path(row['path']).exists() for row in created))
+                if change == 'nonempty':
+                    self.assertEqual((root/'retained-data').read_bytes(), b'do not remove')
+                if change in ('replacement', 'symlink'):
+                    self.assertTrue(moved.is_dir())
+
     def active_frozen_workflows(self, snapshot):
         retired = {
             '.github/workflows/naver-upstream-sync.yml',
@@ -207,6 +310,25 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     scope = new['steps'].pop(4)
                     original_index = next(i for i, s in enumerate(old['steps']) if s.get('name') == scope_name)
                     new['steps'].insert(original_index, scope)
+                    preflight = dict(name='Fail fast on the exact native bootstrap seed ABI before heavy providers',
+                        run='python3 tools/ci/probe_native_agnos.py --bootstrap-seed-abi-preflight')
+                    self.assertEqual(new['steps'].count(preflight), 1)
+                    index = new['steps'].index(preflight)
+                    cargo_index = next(i for i, step in enumerate(new['steps'])
+                        if step.get('name') == 'Prepare the complete locked registry sources and prove zero-transfer repeat')
+                    heavy_index = next(i for i, step in enumerate(new['steps'])
+                        if step.get('id') == 'codec-wheels-cache')
+                    self.assertLess(cargo_index, index)
+                    self.assertLess(index, heavy_index)
+                    new['steps'].remove(preflight)
+                    artifact = next(step for step in new['steps'] if step.get('with', {}).get('name') == 'native-agnos-environment-${{ github.sha }}')
+                    additions = ['${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight.json',
+                                 '${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight/']
+                    paths = artifact['with']['path'].splitlines()
+                    for path in additions:
+                        self.assertEqual(paths.count(path), 1)
+                        paths.remove(path)
+                    artifact['with']['path'] = '\n'.join(paths)+'\n'
                 self.assertEqual(after, before, 'unreviewed workflow, command, pin, gate or deadline change')
 
     def test_native_arm_probe_preserves_original_acceptance_and_deadlines(self):

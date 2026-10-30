@@ -347,3 +347,33 @@ receipt CLI3 회귀와 strict Clippy, 실제 HTTPS 최초403바이트/재사용0
 완전한 source/result 검증 후 generation 전환 및 기존 startup/update 연결이다.
 기기 설치·시험은 아직 하지 않았다. 사용자 장치 종류 질문은 답변 대기이며,
 구현/CI는 장치 종류 답변 없이도 진행할 수 있다. 사용자의 수용을 대신 체크하지 않는다.
+
+
+## 2026-10-30 — #598 seed ABI 사전 검사와 실패 증거 분리
+
+S `84fbed62953b61474e80f308aa1f530343d20561`의 Genuine
+[41001309333/job123886092388](https://github.com/bin9208/openpilot-rust/actions/runs/41001309333/job/123886092388)는
+step65에서 실제 실패했다. `bootstrap_seed.py export`의 `inspect_abi()`가 호출한
+`ldd`가 exit1이었으며, 당시 내부 stdout/stderr는 보존되지 않았다. candidate index I와
+payload는 생성되지 않았다. 이 S를 입력 supplier로 재사용하는 계획과 old S ARM/WS
+조건부 재시도는 폐기한다. 실제 재시도는 각각0회이며 기존 Actions 자체는 보존한다.
+
+기존 Genuine job에 `--bootstrap-seed-abi-preflight` 내부 mode를 추가한다. 고정 image,
+Rust1.94.0, 인증된 Cargo vendor, Capnp/host preparer가 준비된 뒤 codec/provider의 큰
+준비 전에 실행한다. 동일 canonical PRoot bind/env와 system SDK pin을 유지하고,
+정규 `native_cereal_probe`와 공유하는 동일 Cargo argv로 실제 `openpilot-runtime-inputs`만
+빌드한다. guest 안에서 `runpy`로 기존 seed의 `native`, `elf`, `inspect_abi`를 호출하며
+early export·generation 발행은 하지 않는다. 아직 준비 전인 bind source는 고정된
+job-owned 빈 root 목록만 생성하며 provider가 준비되었다고 간주하지 않는다.
+
+사전 검사 결과는 별도 `native-bootstrap-seed-abi-preflight.json`과 같은 이름의
+증거 폴더에 보존하며 `preflight_only=true`, `full_probe_success=false`,
+`seed_exported=false`, `payload_created=false`로 구분한다. 성공 때만 owner/비 symlink/
+inode를 재확인하여 본인이 만든 canonical work를 제거한다. 이후 무인자 전체 probe는
+fresh work에서 원래 모든 검사와 late seed export를 계속 수행한다. 실패 시 work와
+오류 자료는 유지하고 기존 always artifact의 수집 경로에 별도 report/증거 폴더를 추가한다.
+
+이번 수정은 AST/YAML/diff 정적 검토만 수행한다. unit/기능/build/gate helper는 로컬에서
+실행하지 않는다. 새 patch source의 실제 preflight·Genuine 전체 성공·입력 발행 검증은
+후속 Actions에서 필요하며 현재 성공으로 계산하지 않는다. commit/push/CI 재실행·취소는
+이 변경 담당 범위에 포함되지 않는다.

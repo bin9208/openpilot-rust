@@ -5,6 +5,7 @@ Actions only. This does not boot an AGNOS kernel, flash a device or build the fu
 runtime. It checks native toolchain/ABI facts and the actual Rust encoder against
 the unchanged source codec methods in native ARM AGNOS user space under PRoot.
 """
+import argparse
 import hashlib
 import json
 import lzma
@@ -14,6 +15,7 @@ import re
 import resource
 import runpy
 import shutil
+import stat
 import subprocess
 import time
 from pathlib import Path
@@ -232,9 +234,7 @@ def native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_
   def execute(argv, name):
     evidence['commands'].append(run(guest_command(argv),log,stdout_path=work/name))
     return work/name
-  execute(['cargo','build','--locked','--manifest-path',f'{source_mount}/rust/Cargo.toml',
-           '-p','openpilot-runtime-build','--bin','openpilot-runtime-inputs',
-           '--target-dir',work/'project-target','--message-format=json'],'native-cereal-inputs-build.jsonl')
+  build_native_inputs(guest_command, work, source_mount, evidence, log)
   preparer = work/'project-target/debug/openpilot-runtime-inputs'
   registry_prepare = [preparer,'--prepare-cargo','--plan',f'{source_mount}/rust/native-cargo-inputs.json',
                       '--lock',f'{source_mount}/rust/Cargo.lock','--cache',Path(guest_work)/'cargo-assets',
@@ -2354,7 +2354,100 @@ def native_catalog_bindings_probe(guest_command,work,source_mount,evidence,log,g
       execution_mode=NATIVE_PROOT['MODE'], native_arm_execution=True, emulated=False)
 
 
+def build_native_inputs(guest_command, work, source_mount, evidence, log):
+  # Shared with the full cereal probe: identical package, feature set and argv.
+  evidence['commands'].append(run(guest_command([
+      'cargo','build','--locked','--manifest-path',f'{source_mount}/rust/Cargo.toml',
+      '-p','openpilot-runtime-build','--bin','openpilot-runtime-inputs',
+      '--target-dir',work/'project-target','--message-format=json']), log,
+      stdout_path=work/'native-cereal-inputs-build.jsonl'))
+
+
+def prepare_guest_rust(guest_command, work, rustup, evidence, log):
+  evidence['commands'].append(run(guest_command([rustup, '-y', '--default-toolchain', '1.94.0', '--profile', 'minimal', '--no-modify-path']), log))
+  for argv in [['rustc', '-vV'], ['cargo', '-vV'], ['rustc', '--print', 'sysroot'], ['gcc', '-print-search-dirs']]:
+    evidence['commands'].append(run(guest_command(argv), log))
+
+
+# Only future job-owned canonical bind roots; never claim prepared providers.
+PREFLIGHT_EMPTY_BIND_ROOTS = (
+    'native-codec-assets', 'native-eigen-assets', 'native-ffmpeg-source',
+    'native-provider-components', 'native-provider-export',
+    'native-companion-components', 'native-companion-exports',
+    'native-source-lfs-assets', 'native-python-assets', 'native-model-wheel-assets',
+    'native-model-assets', 'native-mpc-components', 'native-mpc-export',
+    'native-panda-components', 'native-panda-export', 'native-dbc-components',
+    'native-dbc-export', 'native-usbgpu-components', 'native-usbgpu-export',
+    'native-usbgpu-model-assets', 'native-raylib-assets', 'native-raylib-components',
+    'native-raylib-provider-export', 'native-opencv-source',
+    'native-opencv-components', 'native-opencv-provider-export')
+
+
+def prepare_preflight_bind_roots(owned, created):
+  for name in PREFLIGHT_EMPTY_BIND_ROOTS:
+    path = owned/name
+    if not path.exists():
+      path.mkdir()
+      info = path.lstat()
+      created.append(dict(path=str(path), dev=info.st_dev, ino=info.st_ino, uid=info.st_uid))
+    assert path.is_dir() and not path.is_symlink() and path.resolve(strict=True) == path
+
+
+def cleanup_preflight_bind_roots(owned, created):
+  assert not owned.is_symlink() and owned.resolve(strict=True) == owned
+  def checked(row):
+    path = Path(row['path'])
+    assert path.parent == owned and path.name in PREFLIGHT_EMPTY_BIND_ROOTS
+    info = path.lstat()
+    assert stat.S_ISDIR(info.st_mode) and not path.is_symlink()
+    assert (info.st_dev, info.st_ino, info.st_uid) == (row['dev'], row['ino'], row['uid'])
+    assert info.st_uid == os.geteuid() and path.resolve(strict=True) == path
+    assert not any(path.iterdir()), 'preflight bind root is no longer empty; retained'
+    return path
+  # Reject changed roots before removing any, then recheck each immediately.
+  for row in created:
+    checked(row)
+  for row in created:
+    checked(row).rmdir()
+
+
+def retain_seed_abi_preflight(work, destination):
+  assert destination.is_dir() and not destination.is_symlink()
+  for name in ('commands.log', 'native-bootstrap-context.json',
+               'native-bootstrap-proot-build.json', 'native-cereal-inputs-build.jsonl',
+               'native-bootstrap-seed-abi.json', 'native-preflight-source.txt',
+               'native-preflight-status.txt'):
+    path = work/name
+    if path.exists():
+      assert path.is_file() and not path.is_symlink()
+      shutil.copyfile(path, destination/name)
+
+
+def native_seed_abi_preflight(guest_command, work, source_mount, evidence, log):
+  room(work, 2*1024**3)
+  build_native_inputs(guest_command, work, source_mount, evidence, log)
+  binary = work/'project-target/debug/openpilot-runtime-inputs'
+  code = ("import json,runpy,sys; from pathlib import Path; "
+          "seed=runpy.run_path(sys.argv[1]); binary=Path(sys.argv[2]); "
+          "seed['native'](); seed['elf'](binary); "
+          "print(json.dumps(seed['inspect_abi'](binary)))")
+  evidence['commands'].append(run(guest_command([
+      '/usr/bin/python3', '-B', '-c', code,
+      f'{source_mount}/tools/native/bootstrap_seed.py', binary]), log,
+      stdout_path=work/'native-bootstrap-seed-abi.json'))
+  evidence['seed_abi'] = json.loads((work/'native-bootstrap-seed-abi.json').read_text())
+  evidence['seed_binary_sha256'] = digest(binary)
+  for argv, name in [(['git','-C',source_mount,'rev-parse','HEAD'], 'native-preflight-source.txt'),
+                     (['git','-C',source_mount,'status','--porcelain','--untracked-files=all'], 'native-preflight-status.txt')]:
+    evidence['commands'].append(run(guest_command(argv), log, stdout_path=work/name))
+  assert (work/'native-preflight-source.txt').read_text().strip() == evidence['source_commit']
+  assert not (work/'native-preflight-status.txt').read_text().strip()
+
+
 def main():
+  parser = argparse.ArgumentParser(description=__doc__)
+  parser.add_argument('--bootstrap-seed-abi-preflight', action='store_true')
+  preflight = parser.parse_args().bootstrap_seed_abi_preflight
   runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_github_native_arm']()
   assert platform.machine() == 'aarch64' and os.geteuid() != 0
   source = Path(os.environ['GITHUB_WORKSPACE']).resolve()
@@ -2365,6 +2458,10 @@ def main():
   assert (owned / 'owner').read_text() == ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB'))
   work = owned / 'native-agnos'
   work.mkdir()
+  work_identity = (work.stat().st_dev, work.stat().st_ino)
+  preflight_evidence = owned/'native-bootstrap-seed-abi-preflight'
+  if preflight:
+    preflight_evidence.mkdir()
   log = work / 'commands.log'
   evidence = dict(schema=1, source_commit=sha, runner_name=os.environ['RUNNER_NAME'],
                   runner_environment=os.environ['RUNNER_ENVIRONMENT'], host_architecture=platform.machine(),
@@ -2373,6 +2470,9 @@ def main():
                   physical_arm_cpu=False, device_execution=False, full_runtime_build=False,
                   image_compressed_sha256='077d42186def98025ffad9723774c96f45da10c87cc6fedbc58d0cf4fa65ffd4',
                   image_raw_sha256=RAW_SHA, rustup_sha256=RUSTUP_SHA, commands=[])
+  if preflight:
+    evidence.update(preflight_only=True, published_release=False, payload_created=False,
+                    full_probe_success=False, seed_exported=False, created_bind_roots=[])
   initial_disk = shutil.disk_usage(owned).free
   started = time.monotonic()
   try:
@@ -2448,6 +2548,8 @@ def main():
     # The authenticated factory namespace already contains its native tools.
     # Build as the real unprivileged user: PRoot's fake-root DAC emulation
     # temporarily chmods immutable paths and can retain that mode after rename.
+    if preflight:
+      prepare_preflight_bind_roots(owned, evidence['created_bind_roots'])
     guest = NATIVE_PROOT['expected_guest_command'](work)
     def guest_command(args):
       return [*guest, *(str(arg).replace(str(work), guest_work) for arg in args)]
@@ -2461,6 +2563,22 @@ def main():
     guest_uid = int(subprocess.check_output(list(map(str, guest_command(['/usr/bin/id', '-u']))), text=True))
     assert guest_uid == os.geteuid() != 0, 'native guest build must retain the real non-root identity'
     evidence['guest_identity'] = dict(mode='unprivileged', uid=guest_uid, host_uid=os.geteuid(), fake_root=False)
+    if preflight:
+      prepare_guest_rust(guest_command, work, rustup, evidence, log)
+      native_seed_abi_preflight(guest_command, work, source_mount, evidence, log)
+      NATIVE_PROOT['verify_context'](context, work)
+      retain_seed_abi_preflight(work, preflight_evidence)
+      assert not owned.is_symlink() and owned.resolve(strict=True) == owned
+      assert not (owned/'owner').is_symlink()
+      assert (owned/'owner').read_text() == ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB'))
+      assert not work.is_symlink() and work.resolve(strict=True) == owned/'native-agnos'
+      assert (work.stat().st_dev, work.stat().st_ino) == work_identity and work.stat().st_uid == os.geteuid()
+      cleanup_preflight_bind_roots(owned, evidence['created_bind_roots'])
+      assert shutil.rmtree.avoids_symlink_attacks
+      shutil.rmtree(work)
+      evidence.update(success=True, work_removed_after_success=True)
+      return
+
     evidence['commands'].append(run(guest_command(['/usr/bin/python3', '-B', '-m', 'unittest', 'discover',
         '-s', f'{source_mount}/tools/ci/tests', '-p', 'test_readonly_publication.py', '-v']), log,
         stdout_path=work/'native-readonly-publication.txt'))
@@ -2468,9 +2586,7 @@ def main():
                     ['gcc', '--version'], ['g++', '--version'], ['clang', '--version'], ['cmake', '--version'],
                     ['pkg-config', '--version'], ['capnp', '--version'], ['python3', '--version']]:
       evidence['commands'].append(run(guest_command(argv), log, required=False))
-    evidence['commands'].append(run(guest_command([rustup, '-y', '--default-toolchain', '1.94.0', '--profile', 'minimal', '--no-modify-path']), log))
-    for argv in [['rustc', '-vV'], ['cargo', '-vV'], ['rustc', '--print', 'sysroot'], ['gcc', '-print-search-dirs']]:
-      evidence['commands'].append(run(guest_command(argv), log))
+    prepare_guest_rust(guest_command, work, rustup, evidence, log)
     fixture = work / 'fixture'
     (fixture / 'src/bin').mkdir(parents=True)
     (fixture / 'Cargo.toml').write_text("[package]\nname='agnos-native-compiler-probe'\nversion='0.1.0'\nedition='2021'\n[workspace]\n")
@@ -2543,7 +2659,13 @@ def main():
     evidence['observed_final_disk_growth_bytes'] = initial_disk - shutil.disk_usage(owned).free
     evidence['maximum_single_child_rss_kib'] = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
     evidence['measurement_limit'] = 'single-child maximum RSS; not aggregate process-tree peak, device time or complete runtime resource evidence'
-    (owned / 'native-agnos-environment-599.json').write_text(json.dumps(evidence, indent=2) + '\n')
+    if preflight:
+      if work.exists():
+        retain_seed_abi_preflight(work, preflight_evidence)
+      report = owned/'native-bootstrap-seed-abi-preflight.json'
+    else:
+      report = owned/'native-agnos-environment-599.json'
+    report.write_text(json.dumps(evidence, indent=2) + '\n')
 
 
 if __name__ == '__main__':

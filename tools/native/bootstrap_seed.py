@@ -98,17 +98,29 @@ def native():
 
 def inspect_abi(binary):
   """Inspect a trusted source-built seed and its actual default loader mapping."""
+  binary = Path(binary).absolute()
   def output(args):
-    result = subprocess.run(args, env=ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30, check=True)
-    if len(result.stdout) + len(result.stderr) > 1024**2:
-      raise ValueError('seed ABI inspection exceeded its output bound')
-    return result.stdout.decode()
+    failure = None
+    try:
+      result = subprocess.run(args, env=ENV, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30, check=True)
+    except subprocess.CalledProcessError as error:
+      result = failure = error
+    stdout, stderr = result.stdout or b'', result.stderr or b''
+    exceeded = len(stdout) + len(stderr) > 1024**2
+    if failure is not None or exceeded:
+      reason = 'seed ABI inspection exceeded its output bound' if exceeded else 'seed ABI inspection command failed'
+      details = dict(argv=args, returncode=result.returncode,
+          stdout=stdout[:8192].decode(errors='replace'), stderr=stderr[:8192].decode(errors='replace'),
+          stdout_bytes=len(stdout), stderr_bytes=len(stderr),
+          stdout_truncated=len(stdout) > 8192, stderr_truncated=len(stderr) > 8192)
+      raise ValueError(reason + ': ' + json.dumps(details)) from failure
+    return stdout.decode()
   program = output(['/usr/bin/readelf', '--wide', '-l', str(binary)])
   match = re.search(r'Requesting program interpreter: ([^\]]+)\]', program)
   if not match or match[1] != '/lib/ld-linux-aarch64.so.1':
     raise ValueError('unexpected native seed interpreter')
   libraries = {}
-  for line in output(['/usr/bin/ldd', str(binary)]).splitlines():
+  for line in output([match[1], '--list', str(binary)]).splitlines():
     fields = line.split()
     if not fields or fields[0] == 'linux-vdso.so.1':
       continue
@@ -123,6 +135,8 @@ def inspect_abi(binary):
     libraries[path] = file_pin(path)
   if match[1] not in libraries:
     raise ValueError('native seed interpreter was not resolved')
+  # ldd remains an environment-compatibility pin for the existing schema.
+  # The declared loader, pinned in libraries, performs the actual query.
   return dict(interpreter=match[1], libraries=libraries,
               tools={path: file_pin(path) for path in ('/usr/bin/readelf', '/usr/bin/ldd')})
 

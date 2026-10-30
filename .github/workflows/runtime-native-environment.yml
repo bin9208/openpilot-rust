@@ -434,6 +434,8 @@ jobs:
           mode: save
           name: native-cargo-assets
           key: native-cargo-crates-${{ hashFiles('rust/Cargo.lock') }}-v1
+      - name: Fail fast on the exact native bootstrap seed ABI before heavy providers
+        run: python3 tools/ci/probe_native_agnos.py --bootstrap-seed-abi-preflight
       - uses: ./.github/actions/native-cache
         id: codec-wheels-cache
         with:
@@ -805,6 +807,8 @@ jobs:
           name: native-agnos-environment-${{ github.sha }}
           path: |
             ${{ env.CI_JOB_TEMP }}/native-agnos-environment-599.json
+            ${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight.json
+            ${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight/
             ${{ env.CI_JOB_TEMP }}/resource-scope-evidence.json
             ${{ env.CI_JOB_TEMP }}/host-planner-abi*
             ${{ env.CI_JOB_TEMP }}/host-native-entry-transport.json

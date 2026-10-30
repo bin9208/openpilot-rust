@@ -63,6 +63,99 @@ class Fixture:
 
 
 class BootstrapSeedTests(unittest.TestCase):
+  def test_abi_uses_the_declared_loader_and_fixed_environment_with_compatible_pins(self):
+    binary = Path('owned-seed').absolute()
+    interpreter = '/lib/ld-linux-aarch64.so.1'
+    libc = '/lib/aarch64-linux-gnu/libc.so.6'
+    program = f'[Requesting program interpreter: {interpreter}]\n'.encode()
+    mapping = f'linux-vdso.so.1 (0x1)\nlibc.so.6 => {libc} (0x2)\n{interpreter} (0x3)\n'.encode()
+    pin = dict(resolved=interpreter, bytes=1, mode=0o755, sha256='a'*64)
+    with mock.patch.dict(os.environ, LD_LIBRARY_PATH='/untrusted'), \
+         mock.patch.object(seed.subprocess, 'run', side_effect=[
+             subprocess.CompletedProcess([], 0, program, b''),
+             subprocess.CompletedProcess([], 0, mapping, b'')]) as runner, \
+         mock.patch.object(seed, 'file_pin', return_value=pin) as file_pin:
+      actual = seed.inspect_abi(Path('owned-seed'))
+    options = dict(env={'PATH':'/usr/bin:/bin','LC_ALL':'C'}, stdout=subprocess.PIPE,
+                   stderr=subprocess.PIPE, timeout=30, check=True)
+    self.assertEqual(runner.call_args_list, [
+        mock.call(['/usr/bin/readelf','--wide','-l',str(binary)], **options),
+        mock.call([interpreter,'--list',str(binary)], **options)])
+    self.assertEqual(actual, dict(interpreter=interpreter, libraries={libc:pin,interpreter:pin},
+        tools={'/usr/bin/readelf':pin,'/usr/bin/ldd':pin}))
+    self.assertEqual(file_pin.call_args_list, [mock.call(libc),mock.call(interpreter),
+        mock.call('/usr/bin/readelf'),mock.call('/usr/bin/ldd')])
+
+  def test_abi_still_rejects_other_interpreters_and_invalid_loader_mappings(self):
+    interpreter = '/lib/ld-linux-aarch64.so.1'
+    valid = f'[Requesting program interpreter: {interpreter}]\n'.encode()
+    pin = dict(resolved=interpreter, bytes=1, mode=0o755, sha256='a'*64)
+    for program in (b'no interpreter\n', b'[Requesting program interpreter: /other/loader]\n'):
+      with self.subTest(program=program), mock.patch.object(seed.subprocess, 'run',
+          return_value=subprocess.CompletedProcess([], 0, program, b'')) as runner:
+        with self.assertRaisesRegex(ValueError, 'unexpected native seed interpreter'):
+          seed.inspect_abi(Path('/owned-seed'))
+        self.assertEqual(runner.call_count, 1)
+    for mapping, error in [
+        ('libc.so.6 => not found\n','unresolved or unsupported'),
+        (f'/outside/libc.so.6 (0x1)\n{interpreter} (0x2)\n','unexpected native seed provider path'),
+        (f'{interpreter} (0x1)\n{interpreter} (0x2)\n','unexpected native seed provider path'),
+        ('/lib/aarch64-linux-gnu/libc.so.6 (0x1)\n','interpreter was not resolved')]:
+      with self.subTest(mapping=mapping), mock.patch.object(seed.subprocess, 'run', side_effect=[
+          subprocess.CompletedProcess([], 0, valid, b''),
+          subprocess.CompletedProcess([], 0, mapping.encode(), b'')]), \
+          mock.patch.object(seed, 'file_pin', return_value=pin):
+        with self.assertRaisesRegex(ValueError, error):
+          seed.inspect_abi(Path('/owned-seed'))
+
+  def test_abi_command_failure_retains_argv_status_and_bounded_streams(self):
+    binary = Path('/owned-seed')
+    interpreter = '/lib/ld-linux-aarch64.so.1'
+    argv = [interpreter,'--list',str(binary)]
+    program = f'[Requesting program interpreter: {interpreter}]\n'.encode()
+    for stdout, stderr in ((b'',b''), (b'loader stdout\n'+b'o'*9000,b'loader stderr\n'+b'e'*9000)):
+      failure = subprocess.CalledProcessError(1, argv, output=stdout, stderr=stderr)
+      with self.subTest(stdout_bytes=len(stdout),stderr_bytes=len(stderr)), \
+           mock.patch.object(seed.subprocess, 'run', side_effect=[
+               subprocess.CompletedProcess([], 0, program, b''),failure]), \
+           mock.patch.object(seed, 'file_pin') as file_pin:
+        with self.assertRaisesRegex(ValueError, 'seed ABI inspection command failed') as caught:
+          seed.inspect_abi(binary)
+        file_pin.assert_not_called()
+      self.assertIs(caught.exception.__cause__, failure)
+      details = json.loads(str(caught.exception).split(': ',1)[1])
+      self.assertEqual(details['argv'], argv)
+      self.assertEqual(details['returncode'], 1)
+      for name, content in (('stdout',stdout),('stderr',stderr)):
+        self.assertEqual(details[name], content[:8192].decode())
+        self.assertEqual(details[name+'_bytes'], len(content))
+        self.assertEqual(details[name+'_truncated'], len(content)>8192)
+
+  def test_abi_combined_output_bound_applies_to_success_and_failure(self):
+    interpreter = '/lib/ld-linux-aarch64.so.1'
+    argv = [interpreter,'--list','/owned-seed']
+    program = f'[Requesting program interpreter: {interpreter}]\n'.encode()
+    mapping = f'{interpreter} (0x1)\n'.encode()
+    pin = dict(resolved=interpreter, bytes=1, mode=0o755, sha256='a'*64)
+    for extra, failed in ((0,False),(1,False),(1,True)):
+      stderr = b'e'*(1024**2-len(mapping)+extra)
+      result = (subprocess.CalledProcessError(1, argv, output=mapping, stderr=stderr) if failed
+                else subprocess.CompletedProcess(argv, 0, mapping, stderr))
+      with self.subTest(extra=extra,failed=failed), \
+           mock.patch.object(seed.subprocess, 'run', side_effect=[
+               subprocess.CompletedProcess([], 0, program, b''),result]), \
+           mock.patch.object(seed, 'file_pin', return_value=pin):
+        if not extra:
+          self.assertEqual(seed.inspect_abi(Path('/owned-seed'))['interpreter'], interpreter)
+        else:
+          with self.assertRaisesRegex(ValueError, 'exceeded its output bound') as caught:
+            seed.inspect_abi(Path('/owned-seed'))
+          details = json.loads(str(caught.exception).split(': ',1)[1])
+          self.assertEqual(details['returncode'], 1 if failed else 0)
+          self.assertEqual(details['stdout_bytes']+details['stderr_bytes'], 1024**2+1)
+          self.assertEqual(len(details['stderr']), 8192)
+          self.assertTrue(details['stderr_truncated'])
+
   def test_owner_identity_matches_an_independent_kernel_observer(self):
     pid = os.getpid()
     identity = seed.process_identity(pid)
