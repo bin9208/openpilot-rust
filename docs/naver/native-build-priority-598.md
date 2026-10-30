@@ -59,6 +59,14 @@ ID105 참조로 `KeyError`였다. 해당 참조만 제거하고 실제 세 PR fi
 원래 runner/gate 단언을 유지한다. 기존 foundation에서 수정 후 회귀 전체를 먼저
 확인한 뒤 최신 PR 검증을 재개하며 실행 중인 Genuine 입력 준비는 보존한다.
 
+수정 source `458d1516cbbb6ebb35a875df07d4a44a198c69a6`의
+[foundation ARM job123904525231](https://github.com/bin9208/openpilot-rust/actions/runs/41007145972/job/123904525231)은
+`2026-10-30T05:25:06Z`에 전체 성공했다. routing12개·publication32개와 source driver/
+cache/취소 경계, 실제 offline Cargo 재사용 등 원래 ARM foundation 검증을 통과했다.
+X64 job은 아직 대기 중이며 전체 runtime/production entry·후보 완료를 뜻하지 않는다.
+이 결과 기록만 추가한 후속 source에서 [PR611 필수 검사](https://github.com/bin9208/openpilot-rust/pull/611/checks)를
+재개한다. 기능 파일·입력 pin·명령·deadline은458과 동일하며 S 입력 준비와 기존 실행을 보존한다.
+
 ## 기존 #484 복구 unit fixture의 PID 공개 경합 — 2026-10-30
 
 source `ed1061eb5f6bdc540a70c8a2fbc84071f64388b0`의
