@@ -2,36 +2,6 @@
   "schema": 1,
   "source_commit": "e445c9d19c3041bc79d8624589e2eb6ba7d061c6",
   "workflows": {
-    ".github/workflows/fast-checks.yml": {
-      "on": {
-        "push": {
-          "branches": [
-            "**"
-          ]
-        },
-        "pull_request": {
-          "branches": [
-            "dev",
-            "main"
-          ]
-        },
-        "workflow_dispatch": ""
-      },
-      "jobs": {
-        "fast": {
-          "needs": null,
-          "matrix": null,
-          "scripts": [
-            "5fc1a55cfa3dcfb01cb0cea18fd929fa412d2d1031c5db21603d5cd6786f2cd0",
-            "0866c7be99e5c56aeab5095b33664ffacb1d9f8759702c8fed54e50a438590e5",
-            "9aaea3970d6c73ac50c6711e17a4705ea917577fd1822460058c13cd99e26d11",
-            "2eef928fb9c5c7b305c71e44040e6880627c14de798fee693a9fc30c4dfc7ad7",
-            "0086a0c0d2ce799b3fb85dcd93edc7698e5975aa6aad2469e482f376f2b2e352",
-            "cf91a5848c16239254f474a744cf3cbeb5051dc4794d531e6f1f732d2d9471f2"
-          ]
-        }
-      }
-    },
     ".github/workflows/integration.yml": {
       "on": {
         "pull_request": {
@@ -1146,35 +1116,6 @@
             "d349427cf26024331210c4303b18c18e448e7435ba1588c215ce64932d8ff4ad",
             "c0fd05619012b4d44baed190c31b3e3d0e009c321e90dd291ee2fe3925aa4810",
             "3bbc06f41f073b3d7a581ef430f47c650185079ede4ee1f078e0514f28212320"
-          ]
-        }
-      }
-    },
-    ".github/workflows/wiki-settings-check.yaml": {
-      "on": {
-        "pull_request": {
-          "branches": [
-            "carrot-wip"
-          ],
-          "paths": [
-            "openpilot/selfdrive/carrot_settings.json",
-            "tools/docs/wiki_settings/**",
-            "docs/user/ko/**",
-            "docs/user/en/**",
-            "docs/user/docs_map.json",
-            ".github/workflows/wiki-settings-check.yaml"
-          ]
-        },
-        "workflow_dispatch": ""
-      },
-      "jobs": {
-        "check": {
-          "needs": null,
-          "matrix": null,
-          "scripts": [
-            "50e332db19d70034a3dc7179efc96f039ba86d371179b577fa074709f2fc5841",
-            "5d8661a01b4f7e4868ee100fa772d8109772028d0f2faf4823c0a92c4212b4a0",
-            "d0a08c64470d2d1310dd17bb3db5603c4162d485489da1fdd685a079b9ea0740"
           ]
         }
       }
