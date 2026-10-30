@@ -121,3 +121,9 @@ factory/logger 실행을 불필요하게 다시 배정하지 않는다. 전체 �
 ARM source `640f3afc22dec7681e3645f5de2040271cdb0d37`의
 [40976444856](https://github.com/bin9208/openpilot-rust/actions/runs/40976444856)에서 비교한다.
 기존78fe 실행은 보존했고 새 x86 실행을 추가하지 않았다.
+
+통합 source `1cdf4a3235f087a35fdd2d8613689d7d5d8811c7`의
+[helper40977304844](https://github.com/bin9208/openpilot-rust/actions/runs/40977304844)은
+성공했다. Python 배정/원래 명령/ID mapping/source-entry 검사7+11+4+20개와
+Rust DevTools lib87개, full-generation 재사용4개 검사가 모두 통과했다. Source-entry
+20개는 메타데이터·해결 fixture 단위 검사이며 공개 입력을 쓰는 전체 실행으로 확대하지 않는다.
