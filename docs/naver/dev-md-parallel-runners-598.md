@@ -425,3 +425,54 @@ ARM 행과 원래 dependency pins/requirements·provider source SHA·모든 기�
 캐시/다른 CI 정리·push·dispatch/cancel·원격 글은 하지 않는다. 기존90e의 성공 결과를
 수정 source의 성공으로 바꾸지 않으며, 실제 비교 통과는 다음 정확 source의 Actions에서
 확인해야 한다. 이 perf 실패를 #598 전체 완료나 실기 수용 완료로 표시하지 않는다.
+
+## 2026-10-30 — Xiaoge X64 source oracle의 선택 Python loader 보존 (#614)
+
+시작 시 원격 PR #494 head와 전용 perf checkout이 모두
+`ce20f2582dfdc5ca77776e58ba23a52c28f90655`임을 확인했다.
+[40957390360/job123744005591](https://github.com/bin9208/openpilot-rust/actions/runs/40957390360/job/123744005591)는
+`bin-actions`에서 2026-10-30 00:58:44 UTC에 실패 종료했다. 완료 로그의 실제 checkout은
+`8339fd9df14ecb78fb4be9fe49e3049a7ab816a5`이며 두 parent가 PR의 base
+`dc95138076836ea3a5c1b6c27262be3f3b912f71`과 위 head임을 API로 확인했다.
+완료 로그와 artifact `12946115927` (`rust-xiaoge-self-hosted-x64-evidence`)를
+전용 scratch의 `ce20-evidence/`에 보존했다.
+
+직접 확인된 실패는 artifact의 `xiaoge-comparison/policy.log`에 기록된
+`check_xiaoge_policy.py:14`의 `ModuleNotFoundError: No module named 'numpy'`다.
+`commands.json`은 첫 policy subprocess의 returncode1만 기록한다. 이후 source pixel·
+tensor·IPC·lifecycle 및 CPU equivalence 비교를 완료하거나 불일치를 발견한 결과가 아니다.
+설치 로그에는 `numpy==2.5.3`가 선택한 toolcache Python3.12.15의 site-packages에
+이미 설치돼 있다. provider 준비 전에는 같은 Python의 `lib`가 `LD_LIBRARY_PATH`에
+있지만, GITHUB_ENV 덮어쓰기 뒤 실패 단계에는 OpenCV provider lib만 남는다.
+Python library 경로 소실은 로그와 현재 workflow에서 확인했고, 그에 따른 loader 선택
+변화가 import 실패의 원인이라는 설명은 가설이다. 실제 로드된 libpython mapping과
+sys.path는 로그에 없으므로 특정 대체 library를 로드했다고 단정하지 않는다.
+
+기존 [#614](https://github.com/bin9208/openpilot-rust/issues/614)의 같은 loader 회귀로
+연결한다. provider 준비 직후 X64에서만 선택 `pythonLocation/lib`와 기존 provider
+library 경로를 함께 보존한다. 명시 interpreter로 numpy import·실행 경로·버전을
+기록하고 같은 LD_LIBRARY_PATH를 GITHUB_ENV에 넘기는 7줄 단계 하나를 workflow에 추가한다.
+기존 dependency pin·provider 경로/OpenCL·source oracle·runtime·ARM/native argv와
+다른 job은 변경하지 않는다. #497/#506의 중단 트랙은 재개하지 않는다.
+
+후속 읽기 감사에서 `check_xiaoge_runtime.py`와 `check_xiaoge_lifecycle.py`가 source
+Python에도 provider-only 환경을 넘기고, `check_xiaoge_live.py`가 두 Python wrapper에
+같은 환경을 넘기는 경계를 확인했다. 이는 직접 실패한 policy import와 구분되는
+소스 확인 결과다. 이 후속 peer 경계의 실제 실패를 이번 Actions에서 관측한 것은 아니다.
+`c929c0fe1540d005def3469aff4304e4b81d93db`의 해당 세 파일 수정 전례만 읽었으며,
+옛 고정25GiB 정책·broad #506 helper/probe 모듈이나 다른 트랙 변경은 가져오지 않았다.
+
+세 caller에서만 짧은 표현식으로 provider 경로를 먼저 두고 기존 LD_LIBRARY_PATH의
+비어 있지 않은 tail 항목을 보존한다. runtime/lifecycle은 source peer에만 적용하고
+native peer는 원래 provider-only 환경을 유지한다. live의 source/native Python wrapper는
+tail을 보존하되 실제 native child를 실행할 때만 명시적으로 provider-only로 복원한다.
+source/native argv·timeout·payload·실제 native maps의 libpython 부재 단언과
+원래 동등성 비교는 그대로다. 별도 테스트나 공통 환경/probe 모듈은 추가하지 않는다.
+
+로컬에서 수정 Python/추가 inline Python AST·YAML·추가 Bash 구문·diff 검사를 통과했다.
+추가 7줄을 제거하면 ce20 workflow와 바이트·전체 YAML 구조가 같고, 세 Python 파일도
+승인된 환경 연결 변경만 제거하면 ce20 원문과 일치함을 정적으로 확인했다.
+기능·unit·build는 실행하지 않았다.
+부모 독립 review 전 commit/push·CI cancel/rerun·병합·새 Actions 실행은 하지 않는다. 기존 ce20의
+남은 실행과 다른 세션·공유 cache는 보존한다. 실제 import·원본 비교와 전체 필수 검사의
+통과는 부모 diff review 후 승인된 다음 정확 source의 Actions에서 확인해야 한다.

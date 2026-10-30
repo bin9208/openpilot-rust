@@ -72,6 +72,9 @@ def run_peer(kind: str, case: Case, arguments: argparse.Namespace):
     http_port = available_port()
   environment = dict(os.environ, OPENPILOT_PREFIX=prefix, PARAMS_ROOT=str(params),
                      LD_LIBRARY_PATH=str(arguments.opencv / "install/lib"), PWD=str(output))
+  if kind == "source":
+    environment["LD_LIBRARY_PATH"] = ":".join(
+      path for path in (environment["LD_LIBRARY_PATH"], *os.environ.get("LD_LIBRARY_PATH", "").split(":")) if path)
   try:
     with ExitStack() as stack:
       match case:

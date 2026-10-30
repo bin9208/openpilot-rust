@@ -32,6 +32,9 @@ def run_peer(kind: str, arguments: argparse.Namespace):
   prefix = "xiaoge_" + uuid.uuid4().hex
   environment = dict(os.environ, OPENPILOT_PREFIX=prefix, PARAMS_ROOT=str(output / "params"),
                      LD_LIBRARY_PATH=str(arguments.opencv / "install/lib"), PWD=str(output))
+  if kind == "source":
+    environment["LD_LIBRARY_PATH"] = ":".join(
+      path for path in (environment["LD_LIBRARY_PATH"], *os.environ.get("LD_LIBRARY_PATH", "").split(":")) if path)
   queue = Path("/dev/shm") / ("msgq_" + prefix)
   queue.mkdir()
   tcp_port, http_port = available_port(), available_port()
