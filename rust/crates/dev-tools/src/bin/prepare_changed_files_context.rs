@@ -1,7 +1,7 @@
 //! 현재 Cargo artifact와 source bytes만 pin하는 CI metadata builder. 원본/후보 실행 없음.
 #[cfg(target_os = "linux")]
 mod linux {
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
     use sha2::{Digest, Sha256};
     use std::{
         collections::{BTreeMap, BTreeSet},
@@ -35,7 +35,6 @@ mod linux {
         "rust/crates/dev-tools/src/changed_files_check.rs",
         "rust/crates/dev-tools/tests/changed_files_caller.rs",
         "rust/crates/dev-tools/tests/changed_files_caller/absence.rs",
-        ".github/workflows/fast-checks.yml",
     ];
     type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
     type Identity = (u64, u64, u32, u32, u32, u64, i64, i64, i64, i64);
@@ -152,7 +151,7 @@ mod linux {
             self.file.rewind()?;
             let mut magic = [0_u8; 4];
             self.file.read_exact(&mut magic)?;
-            if magic != *b"\x7fELF" || self.before.0 .2 & 0o111 == 0 {
+            if magic != *b"\x7fELF" || self.before.0.2 & 0o111 == 0 {
                 return Err("actual executable ELF required".into());
             }
             self.verify()
@@ -394,7 +393,7 @@ mod linux {
         let mut test_elf = Held::new(&test_path, ELF_LIMIT)?;
         cli.elf()?;
         test_elf.elf()?;
-        if (cli.before.0 .0, cli.before.0 .1) == (test_elf.before.0 .0, test_elf.before.0 .1) {
+        if (cli.before.0.0, cli.before.0.1) == (test_elf.before.0.0, test_elf.before.0.1) {
             return Err("CLI/test must be distinct actual ELFs".into());
         }
         let tree = Tree::new(&root.join(DATA_TREE))?;
@@ -408,7 +407,7 @@ mod linux {
         let mut total = 0;
         for path in paths {
             let file = Held::new(&path, SOURCE_LIMIT)?;
-            total += file.before.0 .5;
+            total += file.before.0.5;
             if total > 64 * 1024 * 1024 {
                 return Err("source read budget exceeded".into());
             }

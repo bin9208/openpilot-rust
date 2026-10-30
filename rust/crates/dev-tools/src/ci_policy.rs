@@ -182,17 +182,22 @@ fn validate_hosted_arm_boundary(job: &Value) -> Result<(), String> {
         .ok_or("missing native ARM boundary")?;
     source_result_binding(first)?;
     let context = match job["env"].get("CI296_NATIVE_ARM_CALLER") {
-        None => "test \"$GITHUB_EVENT_NAME\" = push\ntest \"$GITHUB_REF\" = refs/heads/codex/feat-523-python-rust\n",
+        None => {
+            "test \"$GITHUB_EVENT_NAME\" = push\ntest \"$GITHUB_REF\" = refs/heads/codex/feat-523-python-rust\n"
+        }
         Some(value) if value == "rust.yml" => {
             require(
-                job["env"]["CI296_PR_HEAD_REPOSITORY"] == "${{ github.event.pull_request.head.repo.full_name }}",
+                job["env"]["CI296_PR_HEAD_REPOSITORY"]
+                    == "${{ github.event.pull_request.head.repo.full_name }}",
                 "native ARM PR head repository must bind the caller event",
             )?;
             NATIVE_ARM_MAIN_CONTEXT
         }
         _ => return Err("unknown native ARM caller scope".into()),
     };
-    let expected = format!("{ARM_FORK_DENIAL}set -euo pipefail\ntest \"$GITHUB_ACTIONS\" = true\ntest \"$GITHUB_REPOSITORY\" = bin9208/openpilot-rust\ntest \"$RUNNER_ENVIRONMENT\" = github-hosted\ntest \"$RUNNER_OS\" = Linux\ntest \"$RUNNER_ARCH\" = ARM64\ntest \"$(uname -s)\" = Linux\ntest \"$(uname -m)\" = aarch64\n{context}");
+    let expected = format!(
+        "{ARM_FORK_DENIAL}set -euo pipefail\ntest \"$GITHUB_ACTIONS\" = true\ntest \"$GITHUB_REPOSITORY\" = bin9208/openpilot-rust\ntest \"$RUNNER_ENVIRONMENT\" = github-hosted\ntest \"$RUNNER_OS\" = Linux\ntest \"$RUNNER_ARCH\" = ARM64\ntest \"$(uname -s)\" = Linux\ntest \"$(uname -m)\" = aarch64\n{context}"
+    );
     require(
         first["name"] == "Deny fork source and require GitHub-hosted Linux ARM64"
             && first["run"]
@@ -503,13 +508,22 @@ fn validate_arm_sdk530_steps(job: &Value, steps: &[Value]) -> Result<(), String>
     ] {
         let step = &steps[at];
         absent(step, &["continue-on-error", "uses"])?;
-        require(step["id"] == id && steps.iter().filter(|s| s["id"] == id).count() == 1
-            && step["if"] == condition && step["timeout-minutes"] == minutes
-            && step["working-directory"] == "${{ env.CI296_SOURCE }}" && step["shell"] == "bash"
-            && step["env"] == serde_json::json!({"CI296_HOST_CONTROL":"1",
+        require(
+            step["id"] == id
+                && steps.iter().filter(|s| s["id"] == id).count() == 1
+                && step["if"] == condition
+                && step["timeout-minutes"] == minutes
+                && step["working-directory"] == "${{ env.CI296_SOURCE }}"
+                && step["shell"] == "bash"
+                && step["env"]
+                    == serde_json::json!({"CI296_HOST_CONTROL":"1",
                 "ARM530_HELPER_SHA256":"faa58b5a058a927824870ac2df8e9aeed3f33830d62c8bb6407c6e6540277b9b"})
-            && step["run"] == format!("/usr/bin/bash \"$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530\" {phase}\n"),
-            format!("ARM SDK530 exact {phase} binding changed"))?;
+                && step["run"]
+                    == format!(
+                        "/usr/bin/bash \"$CI296_SOURCE/tools/ci/prepare-readonly-arm-rust-530\" {phase}\n"
+                    ),
+            format!("ARM SDK530 exact {phase} binding changed"),
+        )?;
     }
     let run = steps[dependency]["run"]
         .as_str()
@@ -627,8 +641,18 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
         steps[seal]["if"] == private_source_condition("always() && env.CI296_SOURCE != ''"),
         "source seal guard changed",
     )?;
-    for marker in ["cmp \"$CI_JOB_TEMP/proof/index-before.bin\" \"$CI_JOB_TEMP/proof/index-after.bin\"", "cmp \"$CI_JOB_TEMP/proof/source-before.sha256\" \"$CI_JOB_TEMP/proof/source-after.sha256\"", "git diff --exit-code", "git diff --cached --exit-code"] {
-        require(steps[seal]["run"].as_str().is_some_and(|body| body.contains(marker)), "source seal comparison lost")?;
+    for marker in [
+        "cmp \"$CI_JOB_TEMP/proof/index-before.bin\" \"$CI_JOB_TEMP/proof/index-after.bin\"",
+        "cmp \"$CI_JOB_TEMP/proof/source-before.sha256\" \"$CI_JOB_TEMP/proof/source-after.sha256\"",
+        "git diff --exit-code",
+        "git diff --cached --exit-code",
+    ] {
+        require(
+            steps[seal]["run"]
+                .as_str()
+                .is_some_and(|body| body.contains(marker)),
+            "source seal comparison lost",
+        )?;
     }
     for step in steps {
         if step["uses"]
@@ -652,15 +676,17 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
                 .ok_or("missing private command directory")?;
             let host = directory == "${{ github.workspace }}"
                 && step["env"]["CI296_HOST_CONTROL"] == "1"
-                && matches!(step["name"].as_str().unwrap_or(""),
-                "Deny fork source and require registered local runner" |
-                "Deny fork source and require GitHub-hosted Linux X64" |
-                "Deny fork source and require GitHub-hosted Ubuntu X64 runner" |
-                "Deny fork source and require GitHub-hosted Linux ARM64" |
-                "Require unavailable Darwin execution interface" |
-                "Prepare GNU and Rust providers on native Darwin" |
-                "Allocate private source cache target and local action alias before checkout" |
-                "Clean only uploaded owned source alias and target");
+                && matches!(
+                    step["name"].as_str().unwrap_or(""),
+                    "Deny fork source and require registered local runner"
+                        | "Deny fork source and require GitHub-hosted Linux X64"
+                        | "Deny fork source and require GitHub-hosted Ubuntu X64 runner"
+                        | "Deny fork source and require GitHub-hosted Linux ARM64"
+                        | "Require unavailable Darwin execution interface"
+                        | "Prepare GNU and Rust providers on native Darwin"
+                        | "Allocate private source cache target and local action alias before checkout"
+                        | "Clean only uploaded owned source alias and target"
+                );
             let private = directory
                 .strip_prefix("${{ env.CI296_SOURCE }}")
                 .is_some_and(|suffix| !suffix.split('/').any(|part| part == ".."));
@@ -867,7 +893,9 @@ pub fn validate_private_job_layout(job: &Value) -> Result<(), String> {
             absent(&steps[at], &["continue-on-error"])?;
         }
         for (at, phase) in [(before, "before"), (after, "after")] {
-            let command = format!("DIAG_SOURCE=\"$CI296_SOURCE\" \"$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust\" {phase}");
+            let command = format!(
+                "DIAG_SOURCE=\"$CI296_SOURCE\" \"$CI296_SOURCE/rust/tools/prepare-readonly-ci-rust\" {phase}"
+            );
             require(
                 steps[at]["run"]
                     .as_str()
@@ -1105,19 +1133,10 @@ pub fn check_workflow_policy(files: &[(String, String)]) -> Result<(), String> {
             .get(name)
             .ok_or_else(|| format!("missing workflow {name}"))
     };
-    let fast = get("fast-checks.yml")?;
     require(
-        fast["on"]["push"]["branches"] == serde_json::json!(["**"]),
-        "fast checks must cover every branch push",
+        !workflows.contains_key("fast-checks.yml"),
+        "Fast checks workflow has been retired",
     )?;
-    require(
-        strings(&fast["on"]["pull_request"]["branches"])? == expected_strings(&["dev", "main"]),
-        "fast protected PR branches changed",
-    )?;
-    for event in ["push", "pull_request"] {
-        absent(&fast["on"][event], &["paths", "paths-ignore"])?;
-    }
-    validate_fast_gate(fast)?;
     let integration = get("integration.yml")?;
     for event in ["push", "pull_request"] {
         require(
@@ -1494,7 +1513,11 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
                 "grep -F 'test result: ok. 1 passed;' \"$CI_JOB_TEMP/proof/prepared-cold-native-audit.log\"",
             ] {
                 require(
-                    audit_lines.iter().filter(|line| line.as_str() == command).count() == 1,
+                    audit_lines
+                        .iter()
+                        .filter(|line| line.as_str() == command)
+                        .count()
+                        == 1,
                     "Fast actual cold audit must execute and check the bound thin-crate receipt",
                 )?;
             }
@@ -1535,27 +1558,35 @@ pub fn validate_fast_gate(workflow: &Value) -> Result<(), String> {
         for step in &steps[1..] {
             absent(step, &["continue-on-error"])?;
             let condition = match (name, step["name"].as_str().unwrap_or("")) {
-                ("native", "Verify SDK contents after permission preparation even on failure") => private_source_condition(
-                    "always() && steps.sdk_permissions.outcome != 'skipped' && env.DIAG_SOURCE != ''",
-                ),
-                ("native", "Seal Fast private cold provider after maintained checks") => private_source_condition(
-                    "always() && steps.fast_cold.outcome != 'skipped' && env.DIAG_SOURCE != ''",
-                ),
-                (_, stage) if stage == prepared_final => private_source_condition(
-                    "always() && steps.prepared_rust.outcome == 'success'",
-                ),
-                (_, "Seal Fast source and index after all maintained checks") => private_source_condition(
-                    "always() && env.DIAG_SOURCE != ''",
-                ),
+                ("native", "Verify SDK contents after permission preparation even on failure") => {
+                    private_source_condition(
+                        "always() && steps.sdk_permissions.outcome != 'skipped' && env.DIAG_SOURCE != ''",
+                    )
+                }
+                ("native", "Seal Fast private cold provider after maintained checks") => {
+                    private_source_condition(
+                        "always() && steps.fast_cold.outcome != 'skipped' && env.DIAG_SOURCE != ''",
+                    )
+                }
+                (_, stage) if stage == prepared_final => {
+                    private_source_condition("always() && steps.prepared_rust.outcome == 'success'")
+                }
+                (_, "Seal Fast source and index after all maintained checks") => {
+                    private_source_condition("always() && env.DIAG_SOURCE != ''")
+                }
                 ("native", "Clean only uploaded private Fast source") => private_source_condition(
                     "always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && env.DIAG_SOURCE_OWNER != '' && steps.source_final.outcome == 'success' && steps.prepared_rust_final.outcome == 'success' && steps.sdk_permissions_final.outcome == 'success' && steps.fast_cold_final.outcome == 'success'",
                 ),
-                ("native", "Clean common owned Fast job temporary paths") => private_source_condition(
-                    "always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success' && steps.fast_cold_final.outcome == 'success'",
-                ),
+                ("native", "Clean common owned Fast job temporary paths") => {
+                    private_source_condition(
+                        "always() && steps.fast_evidence.outcome == 'success' && steps.fast_evidence.outputs.artifact-id != '' && steps.fast_evidence.outputs.artifact-digest != '' && steps.fast_source_cleanup.outcome == 'success' && steps.fast_cold_final.outcome == 'success'",
+                    )
+                }
                 (_, "Retain Fast job ownership evidence") => DIAGNOSTIC_PROOF.to_owned(),
                 (_, "Clean only uploaded private Fast source") => DIAGNOSTIC_CLEANUP.to_owned(),
-                (_, "Clean common owned Fast job temporary paths") => DIAGNOSTIC_COMMON_CLEANUP.to_owned(),
+                (_, "Clean common owned Fast job temporary paths") => {
+                    DIAGNOSTIC_COMMON_CLEANUP.to_owned()
+                }
                 _ => DIAGNOSTIC_TRUSTED_SOURCE.to_owned(),
             };
             require(
@@ -1942,8 +1973,12 @@ pub fn validate_native_arm_reuse(main: &Value, native: &Value) -> Result<(), Str
             absent(matches[0], &["continue-on-error"])?;
             let expected = match *stage {
                 "Preserve bounded final binaries and their identities" => TRUSTED_ALWAYS,
-                "Compare affected original policy, cereal and time boundaries" => "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.arch == 'x86_64') }}",
-                "Check generated C with ASan, UBSan and allocator leak detection" => "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.runner == 'local-x64') }}",
+                "Compare affected original policy, cereal and time boundaries" => {
+                    "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.arch == 'x86_64') }}"
+                }
+                "Check generated C with ASan, UBSan and allocator leak detection" => {
+                    "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.runner == 'local-x64') }}"
+                }
                 _ => TRUSTED_SOURCE,
             };
             require(
