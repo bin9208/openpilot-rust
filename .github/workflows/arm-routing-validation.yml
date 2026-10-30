@@ -44,7 +44,9 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: '3.12'
-    - run: python -m pip install PyYAML==6.0.3
+    - run: python -m pip install PyYAML==6.0.3 ruff==0.16.7
+    - name: Reject undefined AGNOS probe names
+      run: ruff check --isolated --select F821 tools/ci/probe_native_agnos.py tools/ci/verify_native_bootstrap.py tools/ci/verify_native_runtime_inputs.py
     - name: Validate routing, unchanged target commands and production identity mapping
       run: |-
         python -m unittest discover -s tools/ci/tests -p test_workflow_policy.py -v
