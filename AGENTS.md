@@ -1,4 +1,15 @@
 # Independent Rust port repository (2026-09-29)
+## CI 비용 정리 — 2026-10-30 최신 사용자 지시
+
+- 모든 브랜치에서 별도 Fast checks workflow와 통합 CI의 fast-checks job을 제거한다.
+  PR/수동 Fast checks 및 필수 검사·발행 조건에서도 제거하며 다시 생성하지 않는다.
+- 일회성 `*-once` 검증, 완료된 환경·용량 진단, 원본 포크 전용 동기화·Wiki/NAS
+  발행 workflow를 제거한다. 과거 결과와 소스는 Git/Actions 이력으로 확인한다.
+- 통합 CI와 Rust 전체 검증의 push는 dev/dev-md/main에 한정하고 작업 브랜치는
+  PR 검증을 사용한다. 별도 기능·네이티브 입력 검증의 좁은 경로 트리거는 유지한다.
+- 실행 중인 검사를 취소하거나 재시작하지 않는다. 위 지시는 아래의 오래된 Fast
+  checks 보존·push 실행 지침보다 우선한다. 실제 기능·빌드·ARM 검증은 유지한다.
+
 
 - This checkout belongs to bin9208/openpilot-rust. Never push to bin9208/openpilot or ajouatom/openpilot.
 - User explicitly authorized isolated Rust development here. Work from dev on issue branches; PRs target dev. Older carrot-wip synchronization instructions below are historical source context and do not authorize synchronization from this repository.
