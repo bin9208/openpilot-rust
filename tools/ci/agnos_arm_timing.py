@@ -20,9 +20,9 @@ def main():
         cpus = sorted(os.sched_getaffinity(0))
         assert len(cpus) > 1, 'User prohibits one-job execution'
         report = dict(source_commit=os.environ['GITHUB_SHA'],
-                      selected_branch='codex/feat-599-complete-runtime-inputs',
-                      selected_branch_base='2375949c19c63667ad66de0f9ee7e2c90ad8ba70',
-                      baseline_run=40961936699,
+                      selected_branch=os.environ.get('AGNOS_BENCHMARK_BRANCH', os.environ.get('GITHUB_REF_NAME')),
+                      selected_branch_base=os.environ.get('AGNOS_BENCHMARK_BASE', os.environ['GITHUB_SHA']),
+                      baseline_run=int(os.environ['AGNOS_BENCHMARK_RUN']) if os.environ.get('AGNOS_BENCHMARK_RUN') else None,
                       runner=os.environ['RUNNER_NAME'], allowed_cpus=cpus,
                       started_utc=datetime.now(timezone.utc).isoformat(),
                       monotonic_start=time.monotonic(), initial_free_bytes=shutil.disk_usage(root).free,
@@ -59,7 +59,7 @@ def main():
             if report['failure']:
                 stream.write(f"- 실패: `{report['failure']}`\n")
     path.write_text(json.dumps(report, indent=2) + '\n')
-    print('AGNOS_ARM_TIMING ' + json.dumps(report), flush=True)
+    print('AGNOS_ARM_TIMING ' + json.dumps({key: value for key, value in report.items() if key != 'commands'}), flush=True)
 
 
 if __name__ == '__main__':

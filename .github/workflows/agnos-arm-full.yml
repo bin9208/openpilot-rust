@@ -26,6 +26,9 @@ jobs:
     env:
       RUSTUP_TOOLCHAIN: '1.94.0'
       AGNOS_NATIVE_HOSTED_ARM: '1'
+      AGNOS_BENCHMARK_BRANCH: codex/feat-599-complete-runtime-inputs
+      AGNOS_BENCHMARK_BASE: 2375949c19c63667ad66de0f9ee7e2c90ad8ba70
+      AGNOS_BENCHMARK_RUN: '40961936699'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
     steps:

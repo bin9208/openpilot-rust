@@ -127,3 +127,8 @@ ARM source `640f3afc22dec7681e3645f5de2040271cdb0d37`의
 성공했다. Python 배정/원래 명령/ID mapping/source-entry 검사7+11+4+20개와
 Rust DevTools lib87개, full-generation 재사용4개 검사가 모두 통과했다. Source-entry
 20개는 메타데이터·해결 fixture 단위 검사이며 공개 입력을 쓰는 전체 실행으로 확대하지 않는다.
+
+일반 AGNOS workflow의 시간 기록은 실제 실행 브랜치·SHA를 사용하며 비교 기준 run은
+비워 둔다. 고정 비교 브랜치·기준 SHA·기존 QEMU run은 실험 workflow의 명시적 환경
+변수로만 제공한다. 개별 명령 시간은 artifact에 보존하고 콘솔에는 요약만 출력한다.
+진행 중인640f/78fe 측정 실행의 source와 시간 기록은 바꾸지 않는다.
