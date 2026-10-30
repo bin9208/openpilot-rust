@@ -11,7 +11,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 SHA = 'a' * 40
-GATES = ['fast checks', 'check mapped user docs', 'integration gate', 'rust checks', 'rust aarch64 build']
+GATES = ['check mapped user docs', 'integration gate', 'rust checks', 'rust aarch64 build']
 
 
 def fixture():
@@ -52,7 +52,7 @@ class RuntimeDeliveryTests(unittest.TestCase):
     self.assertTrue(any('--bin build-xiaoge-opencv -- --opencl' in script for script in scripts))
     self.assertTrue(any('--example xiaoge_compute_bench' in script and '-- --assert' in script for script in scripts))
     self.assertTrue(any('python3 rust/ci/runtime/test_package_policy.py' in step.get('run', '')
-                        for step in ci['fast-checks']['steps']))
+                        for step in ci['check_user_docs']['steps']))
 
   def test_ci_only_dm_fixture_does_not_change_reused_producers(self):
     tree = ast.parse((ROOT / 'rust/ci/runtime/package.py').read_text())
