@@ -148,7 +148,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             for name, job in document.get('jobs', {}).items():
                 if 'runs-on' in job:
                     with self.subTest(path=path.name, job=name):
-                        if path.name == 'runtime-source-build.yml' and name == 'offline-cargo-reuse':
+                        if path.name == 'native-cache-reuse.yml':
+                            expected = LABELS  # #644 cache proof uses only registered bin-actions.
+                        elif path.name == 'runtime-source-build.yml' and name == 'offline-cargo-reuse':
                             expected = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}'
                         elif path.name in OWNED_WORKFLOWS:
                             expected = ['self-hosted', 'Linux', 'X64', 'openpilot-rust']
