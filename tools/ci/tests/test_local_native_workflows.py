@@ -139,6 +139,20 @@ def condition(original):
 
 
 class LocalNativeWorkflowTests(unittest.TestCase):
+    def active_frozen_workflows(self, snapshot):
+        retired = {
+            '.github/workflows/naver-upstream-sync.yml',
+            '.github/workflows/sync.yml',
+            '.github/workflows/carrot-route-vault-publish.yaml',
+            '.github/workflows/wiki-settings-publish.yaml',
+        }
+        for relative in sorted(retired):
+            self.assertIn(relative, snapshot['workflows'])
+            path = ROOT / relative
+            self.assertFalse(path.exists() or path.is_symlink(), 'retired workflow reappeared: '+relative)
+        return {relative: frozen for relative, frozen in snapshot['workflows'].items()
+                if relative not in retired}
+
     def test_owned_native_arm_jobs_change_only_reviewed_host_preparation(self):
         renames = {
             'Require the GitHub-hosted Linux ARM64 source entry runner': 'Require the registered self-hosted source entry runner',
@@ -337,7 +351,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         snapshot = json.loads((ROOT / 'tools/ci/fixtures/local-native-workflows-605.json').read_text())
         self.assertEqual(snapshot['schema'], 1)
         self.assertEqual(snapshot['source_commit'], BASE)
-        for relative, frozen in snapshot['workflows'].items():
+        for relative, frozen in self.active_frozen_workflows(snapshot).items():
             original = yaml.load(subprocess.check_output(['git', 'show', BASE + ':' + relative],
                                                         cwd=ROOT, text=True), Loader=yaml.BaseLoader)
             current = load(ROOT / relative)
@@ -372,7 +386,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
 
     def test_arm_variants_preserve_native_or_guest_execution_evidence(self):
         snapshot = json.loads((ROOT / 'tools/ci/fixtures/local-native-workflows-605.json').read_text())
-        for relative in snapshot['workflows']:
+        for relative in self.active_frozen_workflows(snapshot):
             original = yaml.load(subprocess.check_output(['git', 'show', BASE + ':' + relative],
                                                         cwd=ROOT, text=True), Loader=yaml.BaseLoader)
             current = load(ROOT / relative)

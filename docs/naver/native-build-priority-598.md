@@ -40,6 +40,18 @@ preserve queue를 사용한다. `queue: max`와 `cancel-in-progress: false`는 �
 취소 방지·기존 모든 검사와 소유 자원 분리는 유지한다. 독립 hosted ARM VM에서
 현재 검증을 시작하기 위한 CI 조정이며 runner 수·요금·compile/test 기준은 바꾸지 않는다.
 
+## #644 CI 정리와 고정 workflow 회귀 대조 — 2026-10-30
+
+source `6f744c55bf3a5784b398b1a1a1228371e2085afe`의
+[foundation ARM job123901870304](https://github.com/bin9208/openpilot-rust/actions/runs/41006302295/job/123901870304)은
+고정 snapshot의 두 회귀가 의도적으로 삭제한 `naver-upstream-sync.yml`을 읽으며
+`FileNotFoundError`로 실패했다(12개 중10개 성공·2개 오류, 실제 Cargo reuse 전).
+과거 fixture는 그대로 두고 sync·NAS·Wiki의 정확한 retired4개만 공통 목록으로 제외하며,
+각 파일의 부재를 명시적으로 단언한다. 나머지 workflow의 원래 명령·pin·의존성·matrix·
+ARM 증거·deadline 대조는 유지한다. Fast 등 삭제 정책을 되돌리지 않는다.
+로컬은 AST·diff만 확인하며 수정 후 실제 회귀 성공은 Actions 검증 전이다.
+기존 S/C 실행은 재시작하거나 취소하지 않는다.
+
 ## 기존 #484 복구 unit fixture의 PID 공개 경합 — 2026-10-30
 
 source `ed1061eb5f6bdc540a70c8a2fbc84071f64388b0`의
