@@ -156,7 +156,16 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             return [n.func.id for n in ast.walk(node) if isinstance(n, ast.Call)
                 and isinstance(n.func, ast.Name) and n.func.id in original
                 and n.func.id.startswith('native_')]
-        self.assertEqual(probe_calls(current['main']), probe_calls(original['main']))
+        original_calls = probe_calls(original['main'])
+        current_calls = probe_calls(current['main'])
+        codec = 'native_codec_probe'
+        self.assertEqual(current_calls.count(codec), 1)
+        self.assertEqual(original_calls.count(codec), 1)
+        self.assertEqual(current_calls.index(codec), current_calls.index('native_cereal_probe') + 1)
+        self.assertEqual(current_calls.index('native_bootstrap_seed_probe'), current_calls.index(codec) + 1)
+        # codec 한 호출만 앞당기고 나머지 원래 호출의 순서·개수는 모두 보존한다.
+        self.assertEqual([name for name in current_calls if name != codec],
+                         [name for name in original_calls if name != codec])
         old_argv = next(n.args[0] for n in ast.walk(original['native_cereal_probe'])
             if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
             and n.func.id == 'execute' and isinstance(n.args[0], ast.List)

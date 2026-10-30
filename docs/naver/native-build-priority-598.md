@@ -397,3 +397,24 @@ prepare 2회는 실제 exit0이며, 뒤쪽 SDK 회귀 cargo test argv 작성 중
 `uv.lock`에 고정된 Ruff0.16.7 wheel의 SHA·bytes를 검증해 정적 검사에만 사용했다. 원본은 F821 한 건을 재현했고,
 수정본의 native CI·source entry·모델 준비 helper·fixture·관련 검사 파일은 F821/F823이 없다. 로컬 기능 검사는 실행하지 않았다.
 원본 성공6개와3 immutable context는 보존하며, 후속 정확 source의 전체 Genuine·I/payload·필수 검사 성공은 별도로 확인한다.
+
+## 2026-10-30 — #598 84d05 FFmpeg C++ fixture 전처리 실패
+
+`84d05e994d9cd8f18d41c6ca75cc54bfff260c81`의 Genuine
+[41043044388/job124020269257](https://github.com/bin9208/openpilot-rust/actions/runs/41043044388/job/124020269257)는
+SDK 회귀4개를 실제 통과한 뒤 `native_codec_probe`의 FFmpeg C++ fixture에서 실패했다.
+실제 stderr는 `libavutil/common.h:30`의 `__STDC_CONSTANT_MACROS` 미정의 `#error`이며,
+링크 및 ABI 버전 비교 전 전처리 실패다. 해당 fixture의 include 앞에 매크로 한 줄만 추가한다.
+공식 [FFmpeg n6.1.1 common.h](https://raw.githubusercontent.com/FFmpeg/FFmpeg/n6.1.1/libavutil/common.h)의
+26–28행에서도 같은 C++ macro guard를 확인했다. `native_ffmpeg_headers_probe`와
+`native_provider_probe`의 동형 inline C++에도 각각 한 줄을 추가해 총3 fixture만 보완한다.
+원본 archive의 선택적 읽기는 network timeout으로 검증하지 못했으며 실제 asset URL·SHA는 변경하지 않는다.
+version58/59·140 headers·hash·`avutil_version()`/ABI 비교·실행 stdout·ELF183·입력 pin·guard·startup20·원래 g++ argv와 호출 순서는 유지한다.
+로컬 AST·F821/F823·diff만 확인하며 C++ 링크·기능 검사는 실행하지 않는다. 수정 후 실제 Genuine 전체·I/payload 성공은 미검증이다.
+
+codec 검사는 `native_cereal_probe` 직후·`native_bootstrap_seed_probe` 직전으로 한 호출만 앞당긴다.
+호스트 wheel/cache와 guest compiler는 이미 준비돼 있으며 codec 출력은 독립 owned 경로를 사용하고
+source·factory SDK를 수정하지 않는다. seed helper를 덮어쓰지 않으며13tools의 별도 store도 유지한다.
+회귀는 codec1회·cereal 바로 뒤·bootstrap 바로 앞을 명시하고, 나머지 원래 호출 순서·개수와 seed 함수
+본문·공유 Cargo argv 전체 대조를 유지한다. 원래 각 검사·명령·단언은 모두1회 수행한다.
+선행 컴파일에 따른 시간·디스크/cache 수치는 후속 실제 Actions 결과로 다시 판정하며 성공을 예단하지 않는다.

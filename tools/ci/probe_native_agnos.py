@@ -518,6 +518,7 @@ int main() {
 }
 ''',['yuv'],'native libyuv white pixels matched\n'),
     'ffmpeg':('''extern "C" {
+#define __STDC_CONSTANT_MACROS
 #include <libavutil/avutil.h>
 #include <libavutil/version.h>
 }
@@ -571,6 +572,7 @@ def native_ffmpeg_headers_probe(guest_command,work,source_mount,evidence,log,gue
   assert not first['compiler_executed'] and not first['provider_libraries_prepared'] and not first['actual_target_execution']
   source=work/'native-ffmpeg611-headers.cc'
   source.write_text('''extern "C" {
+#define __STDC_CONSTANT_MACROS
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
@@ -633,6 +635,7 @@ def native_provider_probe(guest_command,work,source_mount,evidence,log,guest_wor
   headers=Path(json.loads((work/'native-ffmpeg611-headers-initial.json').read_text())['root'])
   source=work/'native-provider-abi.cc'
   source.write_text('''extern "C" {
+#define __STDC_CONSTANT_MACROS
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
@@ -2613,9 +2616,9 @@ def main():
     evidence['toolchain_files'] = {str(path.relative_to(work)): digest(path) for path in (work / 'rustup/toolchains').glob('*/bin/*') if path.is_file()}
     native_driver_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_system_sdk_probe(guest_command, work, source_mount, rootfs, evidence, log, guest_work)
-    native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_ffmpeg_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_provider_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_python_probe(guest_command, work, source_mount, evidence, log, guest_work)
