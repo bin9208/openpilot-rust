@@ -248,6 +248,14 @@ jobs:
           rm -rf -- "$permission_fixture"
           printf 'AGNOS_PROOT_PATH=%s\n' "$proot_source/src/proot" >> "$GITHUB_ENV"
           printf 'AGNOS_PROOT_PATCH_SHA256=%s\n' "$(sha256sum tools/ci/patches/proot-arm64-faccessat2.patch | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Validate the current package growth policy before deep ARM preparation
+        run: |
+          sudo apt-get install -y g++ liblzma-dev pkg-config
+          set -o pipefail
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib package::tests \
+            2>&1 | tee "$CI_JOB_TEMP/host-package-space-tests.log"
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --example native_full_generation \
+            2>&1 | tee "$CI_JOB_TEMP/host-generation-reuse-tests.log"
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
@@ -825,6 +833,8 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-agnos-environment-599.json
             ${{ env.CI_JOB_TEMP }}/resource-scope-evidence.json
             ${{ env.CI_JOB_TEMP }}/host-planner-abi*
+            ${{ env.CI_JOB_TEMP }}/host-package-space-tests.log
+            ${{ env.CI_JOB_TEMP }}/host-generation-reuse-tests.log
             ${{ env.CI_JOB_TEMP }}/host-native-entry-transport.json
             ${{ env.CI_JOB_TEMP }}/host-planner-cpu.txt
             ${{ env.CI_JOB_TEMP }}/host-planner-gdb*

@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import time
+import tomllib
 from types import SimpleNamespace
 import unittest
 from unittest import mock
@@ -15,6 +17,10 @@ _SPEC = importlib.util.spec_from_file_location('owned_source_entry', Path(__file
 entry = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(entry)
 runtime, seed = entry.runtime, entry.seed
+_FULL_SPEC = importlib.util.spec_from_file_location('owned_full_source_entry',
+    Path(__file__).resolve().parents[1]/'verify_native_source_entry.py')
+full_entry = importlib.util.module_from_spec(_FULL_SPEC)
+_FULL_SPEC.loader.exec_module(full_entry)
 
 
 class Fixture:
@@ -268,6 +274,235 @@ class SourceEntryTests(unittest.TestCase):
       changed['updater_staging'] = str(Path(changed['stores']['generations'])/'updater')
       with self.assertRaisesRegex(ValueError, 'separate real stores'):
         entry.validate_machine(changed, staged)
+
+
+class PublicSourceReuseTests(unittest.TestCase):
+  """Receipt rejection and real owned Git derivation; no native builds or providers."""
+
+  def build_receipt(self):
+    binaries = {f'owned-{n}': dict(sha256=f'{n:064x}', bytes=n+1, mode=0o555) for n in range(96)}
+    binaries['openpilot-loggerd'] = dict(sha256='f'*64, bytes=100, mode=0o555)
+    binaries['openpilot-bootlog'] = dict(sha256='e'*64, bytes=101, mode=0o555)
+    binaries['openpilot-manager'] = dict(sha256='d'*64, bytes=102, mode=0o555)
+    groups = {f'{n:02d}': dict(artifacts=[], cache_key='owned-cache', target_directory='/owned/target',
+        recipe_sha256='a'*64, rustc_sha256='b'*64, cargo_sha256='c'*64,
+        toolchain_directory='/owned/toolchain', native_tools={}, verified_input_trees={}) for n in range(13)}
+    for n, name in enumerate(binaries):
+      group = {'openpilot-loggerd': '07', 'openpilot-bootlog': '08', 'openpilot-manager': '09'}.get(name, f'{n % 13:02d}')
+      groups[group]['artifacts'].append(dict(executable='/owned/'+name, fresh=True, **binaries[name]))
+    return dict(groups=groups, binaries=binaries, stored_output_bytes=0)
+
+  def test_same_source_and_docs_require_every_binary_fresh_and_identical(self):
+    before = self.build_receipt()
+    for phase in ('reused', 'launch-package', 'docs-only'):
+      self.assertEqual(full_entry.verify_reuse(before, copy.deepcopy(before), phase), [])
+      rebuilt = copy.deepcopy(before)
+      rebuilt['groups']['04']['artifacts'][0]['fresh'] = False
+      with self.assertRaisesRegex(AssertionError, 'rebuilt groups'):
+        full_entry.verify_reuse(before, rebuilt, phase)
+      corrupted = copy.deepcopy(before)
+      corrupted['binaries']['owned-0']['sha256'] = 'c'*64
+      with self.assertRaisesRegex(AssertionError, 'binary change'):
+        full_entry.verify_reuse(before, corrupted, phase)
+      rekeyed = copy.deepcopy(before)
+      rekeyed['groups']['04']['cache_key'] = 'different-cache'
+      with self.assertRaisesRegex(AssertionError, 'cache/input identity'):
+        full_entry.verify_reuse(before, rekeyed, phase)
+    missing = copy.deepcopy(before)
+    del missing['groups']['12']
+    with self.assertRaises(AssertionError):
+      full_entry.verify_reuse(before, missing, 'docs-only')
+
+  def test_logger_stamp_consumers_match_the_committed_catalog_and_direct_dependency(self):
+    root = Path(entry.__file__).resolve().parents[2]
+    catalog = json.loads((root/'rust/native-runtime-catalog.json').read_text())
+    for group, binary in full_entry.LOGGER_CHANGE_CONSUMERS.items():
+      self.assertIn(binary, catalog['groups'][group]['binaries'])
+    manifests = {path.parent.resolve(): tomllib.loads(path.read_text())
+                 for path in (root/'rust/crates').glob('*/Cargo.toml')}
+    reverse = {}
+    for directory, manifest in manifests.items():
+      dependencies = [manifest.get('dependencies', {})]
+      dependencies += [target.get('dependencies', {}) for target in manifest.get('target', {}).values()]
+      for section in dependencies:
+        for dependency in section.values():
+          if isinstance(dependency, dict) and 'path' in dependency:
+            origin = manifests.get((directory/dependency['path']).resolve())
+            if origin:
+              reverse.setdefault(origin['package']['name'], set()).add(
+                  (manifest['package']['name'], dependency.get('optional', False)))
+    closure = {'openpilot-loggerd'}
+    while True:
+      consumers = {(name, optional) for dependency in closure for name, optional in reverse.get(dependency, set())}
+      self.assertTrue(all(not optional for _, optional in consumers))
+      expanded = closure | {name for name, _ in consumers}
+      if expanded == closure:
+        break
+      closure = expanded
+    self.assertEqual(closure, set(full_entry.LOGGER_CHANGE_CONSUMERS.values()))
+    self.assertIn('environment.init_data()', (root/'rust/crates/bootlog/src/lib.rs').read_text())
+    build = (root/'rust/crates/loggerd/build.rs').read_text()
+    self.assertIn('cargo:rerun-if-changed=src', build)
+    self.assertIn('cargo:rustc-env=LOGGERD_SOURCE_COMMIT={commit}', build)
+    self.assertIn('env!("LOGGERD_SOURCE_COMMIT")', (root/'rust/crates/loggerd/src/metadata.rs').read_text())
+
+  def test_small_logger_requires_the_three_consumers_but_manager_elf_may_stay_identical(self):
+    before = self.build_receipt()
+    after = copy.deepcopy(before)
+    for group, binary in full_entry.LOGGER_CHANGE_CONSUMERS.items():
+      next(a for a in after['groups'][group]['artifacts']
+           if Path(a['executable']).name == binary)['fresh'] = False
+    with self.assertRaisesRegex(AssertionError, 'binary change'):
+      full_entry.verify_reuse(before, after, 'small-logger')
+    after['binaries']['openpilot-loggerd']['sha256'] = 'c'*64
+    with self.assertRaisesRegex(AssertionError, 'binary change'):
+      full_entry.verify_reuse(before, after, 'small-logger')
+    after['binaries']['openpilot-bootlog']['sha256'] = 'd'*64
+    self.assertEqual(full_entry.verify_reuse(before, after, 'small-logger'), ['07', '08', '09'])
+    manager_changed = copy.deepcopy(after)
+    manager_changed['binaries']['openpilot-manager']['sha256'] = 'c'*64
+    self.assertEqual(full_entry.verify_reuse(before, manager_changed, 'small-logger'), ['07', '08', '09'])
+    for group, binary in full_entry.LOGGER_CHANGE_CONSUMERS.items():
+      missing = copy.deepcopy(after)
+      for artifact in missing['groups'][group]['artifacts']:
+        artifact['fresh'] = True
+      with self.assertRaisesRegex(AssertionError, 'rebuilt groups'):
+        full_entry.verify_reuse(before, missing, 'small-logger')
+      unchanged = copy.deepcopy(after)
+      unchanged['binaries'][binary] = before['binaries'][binary]
+      if binary in full_entry.LOGGER_REQUIRED_CHANGES:
+        with self.assertRaisesRegex(AssertionError, 'binary change'):
+          full_entry.verify_reuse(before, unchanged, 'small-logger')
+    for binary in ('owned-7', 'owned-8', 'owned-9', 'owned-0'):
+      changed = copy.deepcopy(after)
+      changed['binaries'][binary]['sha256'] = 'c'*64
+      with self.assertRaisesRegex(AssertionError, 'binary change'):
+        full_entry.verify_reuse(before, changed, 'small-logger')
+      rebuilt = copy.deepcopy(after)
+      for group in rebuilt['groups'].values():
+        for artifact in group['artifacts']:
+          if Path(artifact['executable']).name == binary:
+            artifact['fresh'] = False
+      with self.assertRaises(AssertionError):
+        full_entry.verify_reuse(before, rebuilt, 'small-logger')
+    outside = copy.deepcopy(after)
+    outside['groups']['10']['artifacts'][0]['fresh'] = False
+    with self.assertRaisesRegex(AssertionError, 'rebuilt groups'):
+      full_entry.verify_reuse(before, outside, 'small-logger')
+    del after['binaries']['openpilot-bootlog']
+    with self.assertRaises(AssertionError):
+      full_entry.verify_reuse(before, after, 'small-logger')
+
+  def test_sealed_logger_help_prefers_its_libraries_and_rejects_loader_failure(self):
+    with tempfile.TemporaryDirectory() as temp:
+      state = Path(temp)
+      logger = state/'sealed/rust/bin/openpilot-loggerd'
+      deadline = time.monotonic_ns()+60_000_000_000
+      def help_output(*args, **kwargs):
+        kwargs['stdout'].write(full_entry.REUSE_LOGGER_HELP.encode())
+      with mock.patch.dict(os.environ, {'LD_LIBRARY_PATH': '/unverified'}), \
+           mock.patch.object(full_entry.subprocess, 'run', side_effect=help_output) as run:
+        full_entry.verify_logger_help(entry, logger, state, deadline)
+      self.assertEqual(run.call_args.args[0], [str(logger), '--help'])
+      self.assertEqual(run.call_args.kwargs['env']['LD_LIBRARY_PATH'], str(logger.parent/'lib'))
+      self.assertIs(run.call_args.kwargs['check'], True)
+      failure = state/'loader-failure'
+      failure.mkdir()
+      with mock.patch.object(full_entry.subprocess, 'run', side_effect=subprocess.CalledProcessError(127, str(logger))):
+        with self.assertRaises(subprocess.CalledProcessError):
+          full_entry.verify_logger_help(entry, logger, failure, deadline)
+
+  def test_asset_aggregate_is_not_counted_again_and_missing_or_invalid_counters_fail(self):
+    row = dict(models=dict(transferred_bytes=7, model_assets={'raw': dict(transferred_bytes=7)}),
+               seed=dict(transferred_bytes=dict(helper=2, notices=1)))
+    self.assertEqual(sum(full_entry.transfer_counts(row).values()), 10)
+    for row in ({'bytes': 1}, {'transferred_bytes': {}}, {'transferred_bytes': True},
+                {'transferred_bytes': -1}, {'transferred_bytes': '0'}):
+      with self.assertRaises(AssertionError):
+        full_entry.transfer_counts(row)
+
+  def test_warm_asset_zero_cannot_hide_a_metadata_download_or_different_pins(self):
+    before = dict(input_index_sha256='a'*64, machine_configuration_sha256='b'*64,
+                  sealed_build=self.build_receipt())
+    after = dict(copy.deepcopy(before), large_asset_transferred_bytes=0,
+                 metadata_transferred_bytes={'seed': 0})
+    full_entry.verify_warm_reuse(before, after, 'docs-only')
+    for field, value in (('large_asset_transferred_bytes', 1),
+                         ('metadata_transferred_bytes', {'seed': 1}),
+                         ('input_index_sha256', 'c'*64),
+                         ('machine_configuration_sha256', 'd'*64)):
+      changed = dict(after, **{field: value})
+      with self.assertRaises(AssertionError):
+        full_entry.verify_warm_reuse(before, changed, 'docs-only')
+
+  def test_derived_commits_are_clean_separate_sources_preserving_the_original_index(self):
+    with tempfile.TemporaryDirectory() as temp:
+      f = Fixture(Path(temp))
+      (f.source/'README.md').write_text('Owned base documentation.\n')
+      logger = f.source/'rust/crates/loggerd/src/main.rs'
+      logger.parent.mkdir(parents=True)
+      logger.write_text(full_entry.LOGGER_HELP+'\n')
+      f.commit()
+      original = runtime.source_identity(f.source)
+      index, pin = entry.input_index(f.source)
+      request = dict(source=original, index_sha256=pin,
+                     estimates=dict(expected_source_growth_bytes=1, minimum_free_bytes=1))
+      derived = f.root/'derived-source'
+      deadline_ns = time.monotonic_ns()+60_000_000_000
+      with self.assertRaises(AssertionError):
+        full_entry.derive_source(entry, f.source, f.source, 'small-logger', request, deadline_ns)
+      docs = full_entry.derive_source(entry, f.source, derived, 'docs-only', request, deadline_ns)
+      self.assertEqual(docs['parent_source'], original)
+      self.assertNotEqual(docs['source'], original)
+      entry.validate_machine(f.machine, derived)
+      small = full_entry.derive_source(entry, f.source, derived, 'small-logger', request, deadline_ns)
+      self.assertEqual(small['parent_source'], docs['source'])
+      self.assertNotEqual(small['source'], original)
+      self.assertEqual(runtime.source_identity(derived), small['source'])
+      self.assertEqual(runtime.source_identity(f.source), original)
+      self.assertEqual(entry.input_index(derived), (index, pin))
+      self.assertEqual(logger.read_text(), full_entry.LOGGER_HELP+'\n')
+      self.assertIn(full_entry.REUSE_LOGGER_HELP, (derived/'rust/crates/loggerd/src/main.rs').read_text())
+      # The original pin is retained, rather than relabeling derived results as P.
+      (derived/'README.md').write_text('uncommitted change')
+      with self.assertRaises(ValueError):
+        full_entry.derive_source(entry, f.source, derived, 'small-logger', request, deadline_ns)
+
+  def test_deadline_is_not_reset_for_derived_git_commands(self):
+    with mock.patch.object(full_entry.subprocess, 'run') as run:
+      with self.assertRaises(TimeoutError):
+        full_entry.reuse_git(entry, time.monotonic_ns()-1, 'status')
+      run.assert_not_called()
+
+  def test_resource_receipt_requires_its_real_source_policy_and_successful_kernel_limits(self):
+    with tempfile.TemporaryDirectory() as temp:
+      parent = Path(temp)
+      attempt = parent/'attempt-owned'
+      attempt.mkdir()
+      path = attempt/'resources.jsonl'
+      source = dict(commit='a'*40, tree='b'*40)
+      budget = dict(maximum_growth_bytes=10, minimum_free_bytes=20)
+      policy = dict(maximum_memory_bytes=100, filesystems={str(parent): budget})
+      row = dict(state='success', elapsed_ms=3, policy=policy,
+          context=dict(requested_source=source, configuration_sha256='c'*64),
+          memory=dict(kernel_peak_bytes=50, limit_events=0),
+          filesystems=[dict(budget=budget, observed_peak_growth_bytes=5, minimum_available_bytes=25)])
+      def write(value):
+        path.write_text(json.dumps(dict(state='admitted'))+'\n'+json.dumps(value)+'\n')
+      write(row)
+      result = full_entry.resource_receipt(entry, attempt, parent, source, 'c'*64, policy)
+      self.assertEqual(result['sha256'], full_entry.checksum(path))
+      for changes in (dict(state='failure'), dict(context=dict(row['context'], requested_source=dict(source, tree='d'*40))),
+                      dict(memory=dict(kernel_peak_bytes=50, limit_events=1)),
+                      dict(memory=dict(kernel_peak_bytes=101, limit_events=0)),
+                      dict(filesystems=[dict(row['filesystems'][0], minimum_available_bytes=19)]),
+                      dict(filesystems=[dict(row['filesystems'][0], observed_peak_growth_bytes=11)])):
+        write(dict(row, **changes))
+        with self.assertRaises(AssertionError):
+          full_entry.resource_receipt(entry, attempt, parent, source, 'c'*64, policy)
+      write(row)
+      with self.assertRaises(AssertionError):
+        full_entry.resource_receipt(entry, attempt, parent, source, 'e'*64, policy)
 
 
 if __name__ == '__main__':

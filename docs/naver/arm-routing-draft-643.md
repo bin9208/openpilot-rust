@@ -105,3 +105,19 @@ musl은17분24초다. job 전체 시간과 준비/후속 빌드가 포함된 ste
 따라서 조건부 전환 초안의 QCOM·factory transport·logger reuse·generic ARM 및
 배정 정책 검증은 통과했다. 전체 AGNOS 재측정40967438168의 결과와 사용자 조건을
 확인한 뒤 실제 배정 전환 여부를 결정한다.
+
+## 현재 작업 브랜치의 검증 보정 보존
+
+별도 source2375949c1은 loggerd -> bootlog -> manager의 실제 전이 Cargo 재빌드와
+최종 ELF 변경을 구분하고, 검증된 compiler-provider loader로 help를 실행하도록 고쳤다.
+이 부모 변경을 측정 브랜치640f3afc2를 통해 초안에도 merge해 보존한다. namespace의
+native caller ID mapping과 root/소유권/정리 검사는 유지한다. Source-entry의 최종 보고는
+실제 host 판정으로 native ARM CPU 여부를 보완하며 장치/AGNOS kernel 증거로 바꾸지 않는다.
+
+helper-tests 선택 실행으로 원래 배정 정책과 새 source-entry 단위 검사, DevTools lib,
+full-generation 재사용 판정 검사를 GitHub ARM에서 검증한다. 이미 성공한 generic/QCOM/
+factory/logger 실행을 불필요하게 다시 배정하지 않는다. 전체 비교의 새 기준 source는
+`2375949c19c63667ad66de0f9ee7e2c90ad8ba70`, 기존 QEMU40961936699이며,
+ARM source `640f3afc22dec7681e3645f5de2040271cdb0d37`의
+[40976444856](https://github.com/bin9208/openpilot-rust/actions/runs/40976444856)에서 비교한다.
+기존78fe 실행은 보존했고 새 x86 실행을 추가하지 않았다.

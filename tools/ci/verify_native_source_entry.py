@@ -22,6 +22,14 @@ FIELDS = {'schema', 'maximum_memory_bytes', 'minimum_available_memory_bytes',
           'maximum_growth_bytes', 'minimum_free_bytes', 'expected_source_growth_bytes',
           'expected_compile_growth_bytes', 'remaining_object_growth_bytes',
           'compiler_growth_bytes', 'build_timeout_seconds', 'budgets'}
+LOGGER_HELP = 'Continuous native route logger.'
+REUSE_LOGGER_HELP = 'Continuous native route logger (public source reuse proof).'
+# loggerd/build.rs watches src, embedding the derived Git stamp in its library;
+# bootlog consumes Environment::init_data, and manager depends on bootlog.
+# Normal/target path-dependency closure is checked against Cargo.toml in tests.
+# Cargo freshness and linked ELF changes are distinct, especially for manager.
+LOGGER_CHANGE_CONSUMERS = {'07': 'openpilot-loggerd', '08': 'openpilot-bootlog', '09': 'openpilot-manager'}
+LOGGER_REQUIRED_CHANGES = {'openpilot-loggerd', 'openpilot-bootlog'}
 
 
 def module(path, name):
@@ -49,11 +57,210 @@ def remaining(deadline_ns, cap=None):
     return seconds if cap is None else min(seconds, cap)
 
 
-def verify_receipts(entry, row, state, request, index, machine_pin):
+def transfer_counts(value):
+    """Read existing counters, stopping at aggregates to avoid double counting."""
+    counts = {}
+    def visit(row, path):
+        if isinstance(row, dict):
+            if 'transferred_bytes' in row:
+                count = row['transferred_bytes']
+                counters = count if isinstance(count, dict) else {'body': count}
+                assert counters, 'empty asset transfer receipt: '+path
+                for name, number in counters.items():
+                    assert type(number) is int and number >= 0, 'invalid transfer counter: '+path
+                    counts[path+'/'+name] = number
+                return
+            for name, child in row.items():
+                visit(child, path+'/'+name)
+        elif isinstance(row, list):
+            for number, child in enumerate(row):
+                visit(child, path+'/'+str(number))
+    visit(value, '')
+    assert counts, 'missing asset transferred_bytes receipt'
+    return counts
+
+
+def resource_receipt(entry, attempt, parent, source, configuration_pin, policy):
+    attempt = Path(attempt)
+    assert attempt.parent == parent and attempt.resolve(strict=True) == attempt
+    path = attempt/'resources.jsonl'
+    last = None
+    # A long build journal can exceed the JSON receipt size bound; stream it.
+    with entry.seed.regular(path) as stream:
+        while line := stream.readline(4*1024**2+1):
+            assert len(line) <= 4*1024**2
+            last = json.loads(line, object_pairs_hook=entry.runtime.pairs)
+    assert last is not None and last['state'] == 'success'
+    assert last['context']['requested_source'] == source
+    assert last['context']['configuration_sha256'] == configuration_pin
+    assert last['policy'] == policy and last['elapsed_ms'] >= 0
+    assert 0 < last['memory']['kernel_peak_bytes'] <= policy['maximum_memory_bytes']
+    assert last['memory']['limit_events'] == 0 and last['filesystems']
+    for disk in last['filesystems']:
+        assert disk['budget'] in policy['filesystems'].values()
+        assert disk['observed_peak_growth_bytes'] <= disk['budget']['maximum_growth_bytes']
+        assert disk['minimum_available_bytes'] >= disk['budget']['minimum_free_bytes']
+    return dict(path=str(path), sha256=checksum(path), final=last)
+
+
+def sealed_build(entry, state, row, source, catalog):
+    path = state/'generations'/(row['generation_id']+'.json')
+    # Rust hashes its pretty JSON before generation::write appends one newline.
+    sealed = entry.runtime.read(path)
+    with entry.seed.regular(path) as stream:
+        data = stream.read(4*1024**2+1)
+    assert data.endswith(b'\n') and hashlib.sha256(data[:-1]).hexdigest() == row['generation_id']
+    assert sealed['origin'] == 'source-build' and sealed['architecture'] == 'aarch64'
+    assert sealed['agnos_version'] == '19.8-carrot-bt1' and sealed['startup_update_protocol'] == 1
+    prepared = sealed['prepared']
+    assert prepared['source']['source'] == sealed['runtime']['source'] == source
+    groups, binaries = prepared['reports'], prepared['binaries']
+    assert set(groups) == set(catalog['groups']) == {f'{n:02d}' for n in range(13)}
+    assert len(binaries) == 99 and set(prepared['plan']['groups']) == set(groups)
+    for name, report in groups.items():
+        assert report['source'] == source
+        expected = set(catalog['groups'][name]['binaries'])
+        assert set(prepared['plan']['groups'][name]['binaries']) == expected
+        artifacts = {Path(a['executable']).name: a for a in report['artifacts']}
+        assert set(artifacts) == expected and len(artifacts) == len(report['artifacts'])
+        for binary, artifact in artifacts.items():
+            obj = binaries[binary]
+            assert type(artifact['fresh']) is bool and obj['mode'] == 0o555
+            assert (obj['sha256'], obj['bytes']) == (artifact['sha256'], artifact['bytes'])
+            assert sealed['files']['rust/bin/'+binary] == obj
+    assert set(binaries) == {b for g in catalog['groups'].values() for b in g['binaries']}
+    # Retained object bytes, not mutable Cargo output paths, are authoritative.
+    def object_path(obj):
+        target = state/'objects'/(obj['sha256']+f'-{obj["mode"]:o}')/'blob'
+        with entry.seed.regular(target) as stream:
+            info = os.fstat(stream.fileno())
+            assert info.st_size == obj['bytes'] and info.st_mode & 0o7777 == obj['mode']
+            assert hashlib.file_digest(stream, 'sha256').hexdigest() == obj['sha256']
+        return target
+    for obj in binaries.values():
+        object_path(obj)
+    abi_path = object_path(sealed['abi_report'])
+    abi = entry.runtime.read(abi_path, sealed['abi_report']['sha256'])
+    assert abi['compatible'] is True
+    logger = Path(sealed['runtime']['root'])/'rust/bin/openpilot-loggerd'
+    assert logger.is_relative_to(state/'sources') and logger.resolve(strict=True) == logger
+    assert checksum(logger) == binaries['openpilot-loggerd']['sha256']
+    return dict(source=source, generation_id=row['generation_id'], descriptor_sha256=checksum(path),
+        abi_report=sealed['abi_report'], binaries=binaries, groups=groups,
+        stored_output_bytes=prepared['stored_output_bytes'],
+        logger_executable=str(logger))
+
+
+def verify_reuse(previous, current, phase):
+    assert phase in ('reused', 'launch-package', 'docs-only', 'small-logger')
+    assert set(current['groups']) == set(previous['groups']) == {f'{n:02d}' for n in range(13)}
+    assert set(current['binaries']) == set(previous['binaries']) and len(current['binaries']) == 99
+    for name, group in current['groups'].items():
+        for field in ('cache_key', 'target_directory', 'recipe_sha256', 'rustc_sha256', 'cargo_sha256',
+                      'toolchain_directory', 'native_tools', 'verified_input_trees'):
+            assert group[field] == previous['groups'][name][field], 'build cache/input identity changed: '+name+'/'+field
+    rebuilt = [name for name, group in current['groups'].items()
+               if any(not a['fresh'] for a in group['artifacts'])]
+    assert set(rebuilt) == (set(LOGGER_CHANGE_CONSUMERS) if phase == 'small-logger' else set()), 'unexpected rebuilt groups'
+    for group, binary in LOGGER_CHANGE_CONSUMERS.items():
+        artifacts = [a for a in current['groups'][group]['artifacts']
+                     if Path(a['executable']).name == binary]
+        assert len(artifacts) == 1 and artifacts[0]['fresh'] is (phase != 'small-logger')
+    for group in current['groups'].values():
+        for artifact in group['artifacts']:
+            if phase != 'small-logger' or Path(artifact['executable']).name not in LOGGER_CHANGE_CONSUMERS.values():
+                assert artifact['fresh'] is True, 'unaffected Cargo artifact rebuilt'
+    changed = {name for name, obj in current['binaries'].items() if obj != previous['binaries'][name]}
+    if phase == 'small-logger':
+        assert LOGGER_REQUIRED_CHANGES <= changed <= set(LOGGER_CHANGE_CONSUMERS.values()), 'unexpected binary change'
+    else:
+        assert not changed, 'unexpected binary change'
+    if phase != 'small-logger':
+        assert current['stored_output_bytes'] == 0
+    return rebuilt
+
+
+def verify_warm_reuse(previous, current, phase):
+    assert current['input_index_sha256'] == previous['input_index_sha256']
+    assert current['machine_configuration_sha256'] == previous['machine_configuration_sha256']
+    assert current['large_asset_transferred_bytes'] == 0, 'warm entry downloaded a large input'
+    # Descriptor bodies are separate from seed/toolchain/provider/model/LFS bodies.
+    assert all(n == 0 for n in current['metadata_transferred_bytes'].values()), 'warm metadata download'
+    current['rebuilt_groups'] = verify_reuse(previous['sealed_build'], current['sealed_build'], phase)
+    current['changed_binaries'] = sorted(name for name, obj in current['sealed_build']['binaries'].items()
+        if obj != previous['sealed_build']['binaries'][name])
+
+
+def verify_logger_help(entry, logger, state, deadline_ns):
+    # Match generation::tool: prefer only the verified sealed library directory.
+    with (state/'small-logger-help.stdout').open('xb') as out, (state/'small-logger-help.stderr').open('xb') as err:
+        subprocess.run([str(logger), '--help'], env=dict(entry.seed.ENV,
+            LD_LIBRARY_PATH=str(logger.parent/'lib'), LOG_ROOT=str(state/'logger-help-logs'),
+            PARAMS_ROOT=str(state/'params'), OPENPILOT_PREFIX='native-public-reuse'),
+            stdout=out, stderr=err, check=True, timeout=remaining(deadline_ns, 30))
+    remaining(deadline_ns)
+    help_path = state/'small-logger-help.stdout'
+    assert help_path.stat().st_size < 65536 and REUSE_LOGGER_HELP in help_path.read_text()
+    return checksum(help_path)
+
+
+def reuse_git(entry, deadline_ns, *arguments):
+    result = subprocess.run(['/usr/bin/git', '-c', 'user.name=Owned public source reuse',
+        '-c', 'user.email=ci@example.invalid', '-c', 'commit.gpgsign=false',
+        '-c', 'core.hooksPath=/dev/null', '-c', 'filter.lfs.required=false',
+        '-c', 'filter.lfs.smudge=', '-c', 'filter.lfs.process=', *map(str, arguments)],
+        env=dict(entry.seed.ENV, GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_SYSTEM='/dev/null',
+                 GIT_LFS_SKIP_SMUDGE='1'), capture_output=True, check=True,
+        timeout=remaining(deadline_ns))
+    remaining(deadline_ns)
+    return result.stdout.decode().strip()
+
+
+def derive_source(entry, original, derived, phase, request, deadline_ns):
+    assert phase in ('docs-only', 'small-logger')
+    assert not derived.is_relative_to(original) and not original.is_relative_to(derived)
+    assert entry.runtime.source_identity(original) == request['source']
+    if phase == 'docs-only':
+        assert not derived.exists() and derived.parent.resolve(strict=True) == derived.parent
+        estimates = request['estimates']
+        assert shutil.disk_usage(derived.parent).free >= (estimates['expected_source_growth_bytes']
+                                                        + estimates['minimum_free_bytes'])
+        reuse_git(entry, deadline_ns, 'clone', '--shared', '--no-checkout', '--', original, derived)
+        reuse_git(entry, deadline_ns, '-C', derived, 'remote', 'set-url', 'origin',
+                  'https://github.com/bin9208/openpilot-rust.git')
+        reuse_git(entry, deadline_ns, '-C', derived, 'checkout', '--detach', request['source']['commit'])
+    before = entry.runtime.source_identity(derived)
+    name = 'README.md' if phase == 'docs-only' else 'rust/crates/loggerd/src/main.rs'
+    path = derived/name
+    assert path.resolve(strict=True) == path and not path.is_symlink()
+    text = path.read_text()
+    if phase == 'docs-only':
+        assert before == request['source']
+        text += '\nOwned public input production CLI documentation reuse proof.\n'
+    else:
+        assert text.count(LOGGER_HELP) == 1
+        text = text.replace(LOGGER_HELP, REUSE_LOGGER_HELP, 1)
+    path.write_text(text)
+    reuse_git(entry, deadline_ns, '-C', derived, 'add', '--', name)
+    reuse_git(entry, deadline_ns, '-C', derived, 'commit', '-m', '공개 입력 production CLI 재사용 검증: '+phase)
+    identity = entry.runtime.source_identity(derived)
+    assert identity['commit'] != before['commit'] and identity['tree'] != before['tree']
+    assert reuse_git(entry, deadline_ns, '-C', derived, 'rev-parse', 'HEAD^') == before['commit']
+    assert reuse_git(entry, deadline_ns, '-C', derived, 'diff', '--name-only', '--no-renames',
+                     'HEAD^', 'HEAD', '--') == name
+    assert entry.input_index(derived) == entry.input_index(original)
+    assert entry.input_index(derived)[1] == request['index_sha256']
+    assert entry.runtime.source_identity(original) == request['source']
+    return dict(source=identity, parent_source=before, changed_path=name,
+                changed_file_sha256=checksum(path), original_source=request['source'])
+
+
+def verify_receipts(entry, row, state, request, index, machine_pin, source):
     # Only existing production receipts are read. In particular, the native
     # build receipt has no helper-SHA field: bind its unchanged CLI invocation
     # to the independently verified current tool bundle instead.
     runtime = entry.runtime
+    assert runtime.source_identity(source) == request['source']
     assert row['source'] == request['source'] and row['input_index_sha256'] == request['index_sha256']
     assert row['machine_configuration_sha256'] == machine_pin and row['full_runtime_build'] is True
     assert all(row[k] is False for k in ('runtime_started', 'runtime_activated',
@@ -98,7 +305,53 @@ def verify_receipts(entry, row, state, request, index, machine_pin):
     assert built['requested_source'] == request['source'] and built['generation_id'] == row['generation_id']
     assert built['configuration_sha256'] == row['build_configuration_sha256']
     assert built['activated'] is False and built['staged_for_boot'] is False
+    output = Path(inputs['native_configuration']).parent
+    assert output == Path(prepared['resource_evidence'])/'runtime-inputs'
+    for name, pin in inputs['files'].items():
+        path = Path(name)
+        assert path.is_relative_to(output) and path.resolve(strict=True) == path and checksum(path) == pin
+    operations_path = output/'operations.json'
+    operations = runtime.read(operations_path, inputs['files'][str(operations_path)])
+    asset_operations = {'capnp', 'codecs', 'raylib-sdk', 'ffmpeg-sdk', 'opencv-sdk', 'python',
+                        'python-initial-preparation', 'models', 'source-lfs', 'usbgpu-model'}
+    asset_operations.update('provider-'+role for role in entry.ROLES)
+    assert set(operations) == asset_operations | {'catalog', 'model-compiler-build'}
+    assert operations['catalog']['source'] == request['source']
+    assert operations['catalog']['groups'] == 13 and operations['catalog']['binaries'] == 99
+    assert operations['catalog']['compiler_inputs_bound'] is True
+    assert operations['catalog']['compiled'] is False and operations['catalog']['activated'] is False
+    transfers = {'seed': transfer_counts(row['seed_preparation'])}
+    for scope, report in (('current-tools', first['current_tools']), ('runtime-inputs', prepared)):
+        for role in ('rust', 'cargo'):
+            transfers[scope+'/'+role] = transfer_counts(report['preparations'][role])
+    for name in sorted(asset_operations):
+        transfers[name] = transfer_counts(operations[name])
+    for role in entry.ROLES:
+        assert operations['provider-'+role]['origin_archive_downloaded'] is False
+    metadata_transfers = {name: receipt['transferred_bytes'] for name, receipt in row['metadata'].items()}
+    assert all(type(n) is int and n >= 0 for n in metadata_transfers.values())
+    resources = {}
+    for name, report, parent, configuration_pin in (
+            ('current-tools', first['current_tools'], 'bootstrap-attempts', first['current_tools']['configuration_sha256']),
+            ('runtime-inputs', prepared, 'bootstrap-attempts', row['bootstrap_configuration_sha256']),
+            ('build-seal', built, 'build-attempts', row['build_configuration_sha256'])):
+        resources[name] = resource_receipt(entry, report['resource_evidence'], state/'generations'/parent,
+            request['source'], configuration_pin, config['resources'])
+    catalog, _ = entry.git_json(source, 'rust/native-runtime-catalog.json')
+    build = sealed_build(entry, state, row, request['source'], catalog)
     return dict(evidence=str(attempt), generation_id=built['generation_id'],
+        source=request['source'], input_index_sha256=request['index_sha256'],
+        machine_configuration_sha256=machine_pin, elapsed_ms=row['elapsed_ms'],
+        bootstrap_configuration_sha256=row['bootstrap_configuration_sha256'],
+        build_configuration_sha256=row['build_configuration_sha256'],
+        metadata_transferred_bytes=metadata_transfers, asset_transferred_bytes=transfers,
+        large_asset_transferred_bytes=sum(sum(counts.values()) for counts in transfers.values()),
+        resource_receipts=resources, sealed_build=build,
+        current_tools=dict(requested_source=prepared['requested_source'],
+            bundle_original_verified_source=prepared['bundle_original_verified_source'],
+            executable_sha256={p.name: sha for p, sha in pins.items()}),
+        production_source_sha256={name: checksum(source/'tools/native'/name)
+                                  for name in ('source_entry.py', 'source_runtime.py', 'bootstrap_seed.py')},
         seed_helper_sha256=seed_plan['assets']['helper']['sha256'],
         inputs_helper_sha256=prepared['seed_helper_sha256'],
         native_build_scope_helper_sha256=pins[tools/'openpilot-native-build-scope'],
@@ -231,9 +484,11 @@ def arm():
         before_launch = set(requests.glob('request-*/result.json')) if phase == 'launch-package' else set()
         arguments = base + (['--launch', '--verify-package', '--paths', str(paths)]
                             if phase == 'launch-package' else [])
+        phase_started = time.monotonic_ns()
         with (state/(phase+'.stdout')).open('xb') as out, (state/(phase+'.stderr')).open('xb') as err:
             subprocess.run(arguments, env=entry.seed.ENV, stdout=out, stderr=err, check=True,
                            timeout=remaining(deadline_ns))
+        cli_elapsed_ms = (time.monotonic_ns()-phase_started)//1_000_000
         remaining(deadline_ns)
         if phase == 'launch-package':
             # The launch CLI execs its helper; use its newly retained full build
@@ -248,7 +503,11 @@ def arm():
             row = candidates[0]
         else:
             row = entry.runtime.read(state/(phase+'.stdout'))
-        receipts[phase] = verify_receipts(entry, row, state, request, index, machine_pin)
+        receipts[phase] = verify_receipts(entry, row, state, request, index, machine_pin, source)
+        receipts[phase]['cli_elapsed_ms'] = cli_elapsed_ms
+        if phase != 'initial':
+            verify_warm_reuse(receipts['initial'], receipts[phase], phase)
+        save(state/(phase+'-proof.json'), receipts[phase])
         rows[phase] = row
         remaining(deadline_ns)
     # --verify-package returns before normal manager/hardware startup. Retained
@@ -261,6 +520,42 @@ def arm():
     assert startup['configuration'] == launch['launch_configuration']
     assert startup['configuration_sha256'] == launch['launch_configuration_sha256'] == launch['build_configuration_sha256']
     assert entry.runtime.source_identity(source) == request['source']
+    derived = state/'reuse-source'
+    derived_sources = {}
+    startup_pin = checksum(state/'generations/startup.json')
+    for phase in ('docs-only', 'small-logger'):
+        derived_sources[phase] = derive_source(entry, source, derived, phase, request, deadline_ns)
+        assert derived_sources[phase]['parent_source'] == (request['source'] if phase == 'docs-only'
+                                                         else derived_sources['docs-only']['source'])
+        save(state/(phase+'-source.json'), derived_sources[phase])
+        phase_request = dict(request, source=derived_sources[phase]['source'])
+        phase_entry = module(derived/'tools/native/source_entry.py', 'entry_'+phase.replace('-', '_'))
+        # The actual derived checkout's unchanged CLI uses exactly the same machine bytes/stores.
+        arguments = ['/usr/bin/python3', '-I', '-B', '-S', str(derived/'tools/native/source_entry.py'),
+            '--source', str(derived), '--machine-config', str(machine_path),
+            '--machine-configuration-sha256', machine_pin]
+        phase_started = time.monotonic_ns()
+        with (state/(phase+'.stdout')).open('xb') as out, (state/(phase+'.stderr')).open('xb') as err:
+            subprocess.run(arguments, env=entry.seed.ENV, stdout=out, stderr=err, check=True,
+                           timeout=remaining(deadline_ns))
+        cli_elapsed_ms = (time.monotonic_ns()-phase_started)//1_000_000
+        remaining(deadline_ns)
+        row = phase_entry.runtime.read(state/(phase+'.stdout'))
+        proof = verify_receipts(phase_entry, row, state, phase_request, index, machine_pin, derived)
+        proof['cli_elapsed_ms'] = cli_elapsed_ms
+        assert proof['production_source_sha256'] == receipts['initial']['production_source_sha256']
+        previous = receipts['docs-only'] if phase == 'small-logger' else receipts['initial']
+        verify_warm_reuse(previous, proof, phase)
+        if phase == 'small-logger':
+            # Execute the verified sealed logger, with its original colocated libraries.
+            logger = Path(proof['sealed_build']['logger_executable'])
+            proof['logger_help_sha256'] = verify_logger_help(entry, logger, state, deadline_ns)
+        assert checksum(machine_path) == machine_pin
+        assert checksum(state/'generations/startup.json') == startup_pin
+        assert entry.runtime.source_identity(source) == request['source']
+        receipts[phase], rows[phase] = proof, row
+        save(state/(phase+'-proof.json'), proof)
+        remaining(deadline_ns)
     remaining(deadline_ns)
     save(state/'execution-summary.json', dict(schema=1, source=request['source'], index_sha256=pin,
         generation_id=startup['initial_generation'], factory_sudo_sha256=admission['factory_sudo_sha256'],
@@ -268,14 +563,15 @@ def arm():
         production_three_sudo_build_gates_executed=True, production_launch_verify_package_executed=True,
         generation_ids={k: row['generation_id'] for k, row in rows.items()},
         production_sudo_receipts=receipts, cleanup_verified=False,
+        derived_sources=derived_sources,
         overall_budget_seconds=estimates['build_timeout_seconds'],
         factory_admission_in_overall_budget=True, startup_20_second_policy_changed=False,
         payload_finished_monotonic_ns=time.monotonic_ns(),
         cargo_cache_identity_path=str(state/'cache/cargo-build'),
         public_metadata_verified=True, warm_same_path_entry_completed=True,
         public_metadata_preflight_transferred_bytes=request['public_metadata_transferred_bytes'],
-        cross_job_cargo_cache_reused=False, warm_zero_download_claimed=False,
-        docs_and_small_change_reuse_tested=False, update_and_recovery_tested=False,
+        cross_job_cargo_cache_reused=False, warm_zero_download_claimed=True,
+        docs_and_small_change_reuse_tested=True, update_and_recovery_tested=False,
         physical_arm_cpu=False, agnos_kernel=False, proot_used=False,
         manager_started=False, hardware_model_record_upload_tested=False,
         resource_policy_is_ci_fixture_not_device_budget=True))
@@ -467,7 +763,7 @@ def run():
         host_kernel=os.uname().release, host_architecture=os.uname().machine,
         host_runner_uid=uid, host_runner_gid=gid, factory_caller_ids=transport.factory_ids(uid, gid),
         factory_image_sha256=transport.RAW_SHA, qemu_sha256=qemu_sha,
-        native_arm_execution=transport.native_host())
+        native_arm_execution=transport.native_host(), physical_arm_cpu=transport.native_host())
     save(work/'result.json', result)
 
 

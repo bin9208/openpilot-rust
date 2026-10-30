@@ -10,6 +10,7 @@ name: Native ARM routing validation
         options:
         - all
         - policy
+        - helper-tests
         - qcom-arm
         - generic-arm
         - source-reuse-arm
@@ -38,7 +39,7 @@ jobs:
       env:
         ARM_SELECTION: ${{ inputs.selection || 'all' }}
       run: |-
-        case "$ARM_SELECTION" in all|policy|qcom-arm|generic-arm|source-reuse-arm|factory-transport-arm) ;; *) exit 1 ;; esac
+        case "$ARM_SELECTION" in all|policy|helper-tests|qcom-arm|generic-arm|source-reuse-arm|factory-transport-arm) ;; *) exit 1 ;; esac
         printf 'selection=%s\n' "$ARM_SELECTION" >> "$GITHUB_OUTPUT"
     - uses: actions/setup-python@v6
       with:
@@ -49,6 +50,34 @@ jobs:
         python -m unittest discover -s tools/ci/tests -p test_workflow_policy.py -v
         python -m unittest discover -s tools/ci/tests -p test_local_native_workflows.py -v
         python -m unittest discover -s tools/ci/tests -p test_native_arm_routing.py -v
+        python -m unittest discover -s tools/ci/tests -p test_native_source_entry.py -v
+    - uses: ./.github/actions/rust-path
+      if: ${{ inputs.selection == 'helper-tests' }}
+    - name: Validate the combined native helper and generation reuse tests
+      if: ${{ inputs.selection == 'helper-tests' }}
+      env:
+        RUSTUP_TOOLCHAIN: 1.94.0
+        CARGO_INCREMENTAL: '0'
+        CARGO_PROFILE_DEV_DEBUG: '0'
+        CARGO_PROFILE_TEST_DEBUG: '0'
+        CARGO_TARGET_DIR: ${{ runner.temp }}/arm-helper-target
+      run: |
+        python3 -c 'import os,shutil; assert len(os.sched_getaffinity(0))>1; assert shutil.disk_usage(os.environ["RUNNER_TEMP"]).free >= 4*1024**3'
+        sudo apt-get update
+        sudo apt-get install -y g++ liblzma-dev pkg-config
+        rustup toolchain install 1.94.0 --profile minimal
+        set -o pipefail
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib \
+          2>&1 | tee "$RUNNER_TEMP/arm-helper-tests.log"
+        cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --example native_full_generation \
+          2>&1 | tee "$RUNNER_TEMP/arm-generation-tests.log"
+    - uses: actions/upload-artifact@v6
+      if: ${{ always() && inputs.selection == 'helper-tests' }}
+      with:
+        name: native-arm-helper-tests-${{ github.sha }}
+        path: |
+          ${{ runner.temp }}/arm-helper-tests.log
+          ${{ runner.temp }}/arm-generation-tests.log
     outputs:
       selection: ${{ steps.selection.outputs.selection }}
   qcom-arm:
