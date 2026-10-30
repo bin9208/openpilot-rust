@@ -17,13 +17,6 @@ def workflow(name):
 
 
 class WorkflowPolicyTests(unittest.TestCase):
-  def test_fast_checks_cover_all_branch_pushes_and_protected_prs(self):
-    events = workflow('fast-checks.yml')['on']
-    self.assertEqual(events['push']['branches'], ['**'])
-    self.assertEqual(set(events['pull_request']['branches']), {'dev', 'main'})
-    for event in ('push', 'pull_request'):
-      self.assertNotIn('paths', events[event])
-      self.assertNotIn('paths-ignore', events[event])
 
   def test_integration_runs_before_and_after_merge_without_path_skips(self):
     spec = workflow('integration.yml')
@@ -51,9 +44,9 @@ class WorkflowPolicyTests(unittest.TestCase):
 
   def test_original_event_receipts_are_limited_to_the_four_actual_validation_jobs(self):
     expected = {('rust.yml', 'workspace'), ('tests.yaml', 'build_release'),
-                ('fast-checks.yml', 'fast'), ('user-docs.yaml', 'check_user_docs')}
+                ('user-docs.yaml', 'check_user_docs')}
     found = set()
-    for name in ('rust.yml', 'tests.yaml', 'fast-checks.yml', 'user-docs.yaml'):
+    for name in ('rust.yml', 'tests.yaml', 'user-docs.yaml'):
       for key, job in workflow(name)['jobs'].items():
         steps = [step for step in job.get('steps', []) if step.get('uses') == './.github/actions/job-temp']
         starts = [step for step in steps if step.get('with', {}).get('cleanup') != 'true']

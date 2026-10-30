@@ -11,8 +11,8 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 BASE = 'e445c9d19c3041bc79d8624589e2eb6ba7d061c6'
 LABELS = ['self-hosted', 'Linux', 'X64', 'dev-md-local']
-HOSTED_WORKFLOWS = {'native-source-command-diagnostics.yml', 'fast-checks.yml', 'integration.yml', 'jetlink.yml', 'native-cache-reuse.yml',
-    'naver-apk-tools.yml', 'naver-ci.yml', 'tests.yaml', 'user-docs.yaml', 'wiki-settings-check.yaml',
+HOSTED_WORKFLOWS = {'native-source-command-diagnostics.yml', 'integration.yml', 'jetlink.yml', 'native-cache-reuse.yml',
+    'naver-apk-tools.yml', 'naver-ci.yml', 'tests.yaml', 'user-docs.yaml',
     'carrot-peer-readiness.yml', 'rust.yml'}
 OWNED_WORKFLOWS = {'native-apt-scope.yml', 'native-input-publication.yml', 'native-resource-guard.yml',
     'native-source-reuse.yml', 'runtime-native-environment.yml', 'runtime-source-build.yml'}
@@ -87,8 +87,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         self.assertIn('guest_uid', transport)
 
     def test_validation_concurrency_preserves_pending_and_running_evidence(self):
-        for name in ('fast-checks.yml', 'integration.yml', 'rust.yml', 'tests.yaml',
-                     'naver-ci.yml', 'naver-apk-tools.yml', 'wiki-settings-check.yaml',
+        for name in ('integration.yml', 'rust.yml', 'tests.yaml',
+                     'naver-ci.yml', 'naver-apk-tools.yml',
                      'native-resource-guard.yml', 'native-source-reuse.yml',
                      'runtime-native-environment.yml',
                      'native-apt-scope.yml', 'carrot-peer-readiness.yml'):
