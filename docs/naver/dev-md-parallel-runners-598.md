@@ -476,3 +476,28 @@ source/native argv·timeout·payload·실제 native maps의 libpython 부재 단
 부모 독립 review 전 commit/push·CI cancel/rerun·병합·새 Actions 실행은 하지 않는다. 기존 ce20의
 남은 실행과 다른 세션·공유 cache는 보존한다. 실제 import·원본 비교와 전체 필수 검사의
 통과는 부모 diff review 후 승인된 다음 정확 source의 Actions에서 확인해야 한다.
+
+## 2026-10-30 — Xiaoge 준비 단계의 기존 정책 검사 대응 (#614)
+
+source `1c5d326bb2e81d6680343de840b0aed6bff556c2`의 최신 PR CI
+[40984000661/job123832713478](https://github.com/bin9208/openpilot-rust/actions/runs/40984000661/job/123832713478)는
+fast 검사110개 중1개가 실패했다. 기존 `test_rust_isolation.py:372`의 모든 Xiaoge
+run 단계에 대한 `if` 부재 단언이 새 X64-only Python 준비 단계를 거부한 결과다.
+완료 로그의 checkout은 `78ddb028343868b987d4b9ae64b60506abb77169`로 위 source와
+base `dc95138076836ea3a5c1b6c27262be3f3b912f71`의 검증용 병합이다.
+앞선 동일 source PR CI `40983838085`도 같은 오류로 실제 failure 종료했다.
+ce20 두 번째 실행 `40957600548`은 snapshot 보존 후 정상 취소해 completed/cancelled를
+확인했다. 완료된 두1c5 failure를 cancelled로 바꾸지 않으며 중복 정리는 재동작하지 않는다.
+
+기존 `test_xiaoge_requires_both_architectures_and_instrumented_native_libraries` 안에서만
+새 준비 단계의 정확 이름 유일성과 `{name, if, env, run}` 전체 dict를 검증한다.
+정확 X64 조건·LD 환경·명시 interpreter numpy import·GITHUB_ENV persist를 확인한
+그 객체 하나만 `if` 부재 단언의 예외로 둔다. 원래 source/build/compare/memory run의
+`if` 부재와 모든 run의 `continue-on-error` 금지, 양쪽 architecture·필수 명령·artifact
+검증은 유지한다. workflow/runtime·다른 테스트는 변경하지 않는다.
+
+로컬 AST·YAML·추가 run body의 Bash 문법·diff 검증을 통과했다. 해당 함수 외 AST와
+workflow/runtime이 불변임을 정적으로 확인했으며 unit·기능·build는 실행하지 않았다.
+부모 diff review 전 commit/push·PR 본문/제목 edit·Actions cancel/rerun/dispatch는 하지 않는다.
+이번 정책 보정과 원래 loader 수정의 실제 성공 및 원본 비교·memory·전체 ARM 결과는
+다음 정확 source의 Actions 검증 대기 상태다. 현재 main/S·Genuine·다른 checkout은 변경하지 않는다.
