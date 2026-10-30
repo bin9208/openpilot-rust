@@ -162,7 +162,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                                 'radar-runtime', 'navd-runtime', 'carrot-navi-runtime', 'startup-runtime',
                                 'startup-services', 'sensor-audio', 'gnss-runtime', 'controls-runtime',
                                 'estimation-runtime', 'ui-connectivity', 'platform-runtime', 'hardware-runtime',
-                                'logger-runtime', 'athena-runtime'}:
+                                'logger-runtime', 'athena-runtime', 'planner-memory', 'radar-memory'}:
                             expected = 'ubuntu-24.04'
                         elif path.name == 'rust.yml' and name in {
                                 'radard-runtime', 'carrot-man-runtime', 'webrtc-runtime', 'webcam-runtime'}:

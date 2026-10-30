@@ -255,3 +255,32 @@ disk guard의 cache/Rustup/Cargo bootstrap 각1 GiB admission도 보존한다. w
 ARM 행·matrix 병렬도·timeout·if·needs·feature·pin·최종 gate를 보존한다. 기능·unit·
 빌드 실행, push·dispatch·cancel·PR 생성과 기기 접속은 하지 않는다. 실제 hosted oracle
 성공과 자원 admission 결과는 향후 부모가 적용한 정확 source의 Actions 검증에 남긴다.
+
+## 2026-10-30 — 향후 P에만 적용할 Miri 두 job 추가 분산
+
+사용자의 병렬 검증 지시에 따라, 네 oracle 패치
+`b59f38058f9a99fc176ce0405a2b7e65dd9b1ed2`의 후속으로 읽기 감사에서 적합하다고
+확인한 `planner-memory`·`radar-memory` 두 job을 부모가 선정하여 추가 준비했다. 같은 proof branch에서
+두 `runs-on`을 `ubuntu-24.04`로 바꾸고 기존 routing 회귀의 정확 두 job 기대값만
+보강한다. 현재 원격 S·Genuine40961936699·perf·source cache·다른 worktree는
+변경하지 않으며, 실제 Git input pin P에 적용할지는 이후 부모가 판단한다.
+
+`planner-memory`는 `--no-default-features`의 네 Miri 모드를 실행하며 물리장치나
+host memory controller를 요구하지 않는다. `radar-memory`의 BLAS/SVD buffer 검사는
+Rust fixture를 사용하고 scheduler ABI 검사는 주입한 setter를 사용하므로 실제 FIFO
+권한이 필요하지 않다. 두 job의 초기4 GiB·단계별1 GiB growth admission과 원래
+nightly pin, Miri flags/filter,45분/20분 timeout, env·if·needs·모든 run bytes를 보존한다.
+Cargo/Rust test 병렬도와 원본 비교·ARM·최종 gate도 바꾸지 않는다.
+
+UI는 원래 oracle의 고정 여유 disk 단언이 남아 있고, `model-memory`는 workload용
+disk/memory admission 및 자원 실측 근거가 부족하여 보류를 유지한다. 두 job과 나머지
+self job, 공통 정책/helper·cache·publisher·foundation 경계는 수정하지 않는다.
+최종 집계 제외 배분은 기존 네 oracle 준비본의 hosted X6426→28개·ARM8개·self X649개다.
+
+로컬에서 YAML·Python AST·두 job의 원래 run4개 `bash -n`·원본 구조와 diff 검사를
+통과했다. 이번 두 selector를 복원하면 `b59f38058` YAML과 같고, 원래 네 selector까지
+총 여섯 개를 복원하면 기준
+S237 `2375949c19c63667ad66de0f9ee7e2c90ad8ba70` YAML과 byte 단위로 같다.
+의도한 routing 회귀와 이 기존 한국어 기록 외 변경은 없다. 단위·기능·빌드·새 CI 실행,
+push·dispatch·PR 생성은 하지 않는다. 실제 hosted 성공·peak memory·최대 disk 사용량·
+소요시간과 timeout 충족은 아직 미검증이며 향후 P의 실제 Actions 결과가 필요하다.
