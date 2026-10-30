@@ -751,6 +751,13 @@ jobs:
           name: rust-card-workspace-fixtures
           path: ${{ env.CI_JOB_TEMP }}/card-workspace/
           if-no-files-found: warn
+      - name: Preserve workspace test evidence outside the source checkout
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-workspace-test-evidence
+          path: ${{ env.CI_JOB_TEMP }}/test-evidence/
+          if-no-files-found: warn
       - name: Compare QCOM fixtures with the original argument and packet encoder
         run: python tools/qcom_fixtures.py --verify crates/model-runtime/tests/fixtures/qcom
       - name: Stage the genuine pinned ARM A630 compiler for offline model tests

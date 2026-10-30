@@ -4,7 +4,7 @@ use http_body_util::Full;
 use hyper::{body::Incoming, service::service_fn, Request, Response};
 use hyper_util::rt::TokioIo;
 use sha2::{Digest, Sha256};
-use std::{convert::Infallible, error::Error, path::Path, time::Duration};
+use std::{convert::Infallible, error::Error, path::PathBuf, time::Duration};
 use tokio::{
     io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader},
     net::{TcpListener, TcpStream},
@@ -103,8 +103,11 @@ async fn control(
     assert!(tokio::time::timeout(Duration::from_secs(1), server)
         .await??
         .is_ok());
-    let directory = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../.omo/evidence/carrot-server-225-resume/request-decoding/hyper-tcp");
+    let temporary = tempfile::tempdir()?;
+    let directory = std::env::var_os("CI_JOB_TEMP")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| temporary.path().to_path_buf())
+        .join("test-evidence/carrot-server-225-resume/request-decoding/hyper-tcp");
     std::fs::create_dir_all(&directory)?;
     let headers =
         |rows: Vec<String>| Value::Array(rows.iter().map(|row| Value::text(row)).collect());

@@ -3,7 +3,7 @@ use std::{
     fs::{self, OpenOptions},
     io::{Read, Write},
     os::fd::AsFd,
-    path::Path,
+    path::PathBuf,
     process::Command,
 };
 
@@ -71,8 +71,10 @@ fn inherited_child_keeps_terminal_session_and_lock_when_parent_closes() {
     assert!(child.process.wait().unwrap().success());
     assert_eq!(fs::read(root.join("observed")).unwrap(), b"inherited");
     contender.try_lock().unwrap();
-    let evidence = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../.omo/evidence/carrot-recovery-263/actions-native-lock");
+    let evidence = std::env::var_os("CI_JOB_TEMP")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| root.to_path_buf())
+        .join("test-evidence/carrot-recovery-263/actions-native-lock");
     fs::create_dir_all(&evidence).unwrap();
     fs::write(
         evidence.join("inherited-lock.json"),

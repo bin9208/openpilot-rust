@@ -1,5 +1,43 @@
 # 콤마 자체 빌드·다운로드 재사용 검증 안내 — #598
 
+## 2026-10-30 — workspace 테스트 기록의 source checkout 오염 분리 ([#645](https://github.com/bin9208/openpilot-rust/issues/645))
+
+실제 실패와 테스트 기록 격리는 [#645](https://github.com/bin9208/openpilot-rust/issues/645)에서 추적한다.
+
+고정 source `2375949c19c63667ad66de0f9ee7e2c90ad8ba70`의
+[Rust 40961947131/workspace job123757140114](https://github.com/bin9208/openpilot-rust/actions/runs/40961947131/job/123757140114)은
+`bin-actions`에서 01:12:43–01:38:16 UTC에 실행됐다. PR611의 원래 base는
+`abea63adf5140cb670a1880fa2c350727a0feda9`, 실제 checkout은
+`3f72cb97aa9791c95a484bbfd62d5749a37e805d`이며 tree는 source와 같다.
+완료 로그 367,516bytes의 SHA256은
+`2eaf7dad2ed7df8a6aa04bf896332a6963146a34ce768a544cb195d20d009660`이다.
+
+같은 workspace 실행에서 먼저 성공한 carrot-server 테스트가 checkout 안의
+`.omo/evidence/225-heartbeat/provider-controls/chunk-default-and-opt-in.json`을 생성했다.
+뒤의 dev-tools `generated_mpc_cannot_use_the_unbound_foreign_provider_path`와
+`independent_panda_firmware_requires_the_current_complete_source_contract`가 해당
+untracked 파일을 source 불일치로 거부했다. dev-tools unit 결과는 85개 성공·2개 실패,
+전체 명령은 exit101이다. source guard의 거부는 정상이며 disk admission·numpy·네트워크
+실패로 해석하지 않는다. step 이름 첫 줄은 disk 검사지만 같은 step의 workspace test가
+실패했다. 이 결과로 전체 필수 gate 성공이나 정상 병합을 주장하지 않는다.
+
+carrot-server의 기존 HTTP/ureq 기록 두 곳과 process-supervision의 lock/PTY 기록
+세 곳만 `CI_JOB_TEMP/test-evidence/`로 옮긴다. CI 환경이 없으면 HTTP/ureq는 소유
+`tempfile` 디렉터리를, lock/PTY는 해당 테스트의 기존 소유 임시 디렉터리를 사용한다.
+JSON payload·파일명·상대 하위 경로·fixture·명령·검사를 그대로 유지한다.
+`tempfile = "3"`은 두 crate 모두 기존 `[dependencies]`에 이미 있으며 새 의존성이나
+Cargo manifest/lock 변경은 없다. 기존 `rust-card-workspace-fixtures` 단계·path·archive
+루트는 원문 그대로 유지한다. 바로 뒤의 별도 `always()` 단계가
+`CI_JOB_TEMP/test-evidence/`만 `rust-workspace-test-evidence`로 수집하고, 파일이 없으면
+기존 방식대로 경고한다. job-temp 정리 전 실패 시에도 별도 artifact로 증거를 보존한다.
+
+source guard·ignore·삭제 정책·ABI·입력 pin·자원 기준은 변경하지 않는다. 로컬 확인은
+Rustfmt·YAML/Bash 구문·기준 source 대비 diff와 payload/명령 보존 읽기 감사뿐이다.
+unit·기능·build는 실행하지 않았다. 새 수정본의 정확한 Actions 결과는 아직 미검증이며
+추가 사용자 승인에 따라 7개 파일만 한국어 로컬 커밋 하나로 보존한다.
+push·취소·재실행·dispatch·PR 편집이나 부모의 future stack 적용은 하지 않는다.
+Genuine의 기존 S 실행과 다른 진행 중 Actions는 그대로 보존한다.
+
 ## 2026-10-28 재개: 실제 실패 수정 #614/#615
 
 기준 source `9e132db8da05c67678c84167f662c04fc989feae`의 실제 실패를 모아
