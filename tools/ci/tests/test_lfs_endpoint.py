@@ -1,4 +1,4 @@
-"""Real Git/LFS checkout regressions; run on hosted CI, never against GitHub."""
+"""Real Git/LFS checkout regressions; run in Actions, never against GitHub."""
 
 import configparser
 import hashlib
@@ -14,6 +14,10 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[3]
+import importlib.util
+_POLICY = importlib.util.spec_from_file_location('lfs_runner_policy', ROOT/'tools/ci/runner_policy.py')
+_POLICY_MODULE = importlib.util.module_from_spec(_POLICY)
+_POLICY.loader.exec_module(_POLICY_MODULE)
 PRODUCTION_ENDPOINT = 'https://github.com/bin9208/openpilot-rust.git/info/lfs'
 TARGET_REF = 'refs/remotes/rust/dev-md'
 MODEL = b'\x08\x01synthetic-lfs-model-fixture\x00' * 40
@@ -22,8 +26,8 @@ POINTER = f'version https://git-lfs.github.com/spec/v1\noid sha256:{OID}\nsize {
 
 
 @unittest.skipUnless(
-  os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('RUNNER_ENVIRONMENT') == 'github-hosted',
-  'Real Git/LFS regressions run only on GitHub-hosted Actions',
+  _POLICY_MODULE.environment_allowed(os.environ),
+  'Real Git/LFS regressions run only in approved Actions',
 )
 class LfsEndpointTests(unittest.TestCase):
   def setUp(self):

@@ -40,8 +40,8 @@ def owned_source() -> tuple[Any, Any, Any]:
 
 def disk_guard(output: Path, growth: int) -> None:
   free = shutil.disk_usage(output).free
-  save(output / 'disk-guard.json', {'free_bytes': free, 'estimated_growth_bytes': growth, 'required_reserve_bytes': 25 * 1024**3})
-  if free < 25 * 1024**3 + growth: raise RuntimeError('disk reserve requires recovery before fixture generation')
+  save(output / 'disk-guard.json', {'free_bytes': free, 'estimated_growth_bytes': growth, 'required_bytes': growth})
+  if free < growth: raise RuntimeError('insufficient space for estimated fixture growth')
 
 def native_policy(binary: Path, value: dict[str, Any], env: dict[str, str]) -> dict[str, Any]:
   result = subprocess.run([str(binary)], input=json.dumps(value) + '\n', text=True, capture_output=True, timeout=10, env=env)

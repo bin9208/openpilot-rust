@@ -48,7 +48,7 @@ def main() -> None:
   arguments = parser.parse_args()
   output = arguments.output.resolve()
   free = shutil.disk_usage(output.parent).free
-  assert free >= 25 * 1024**3 + 128 * 1024**2, free
+  assert free >= 128 * 1024**2, free
   output.mkdir(parents=True, exist_ok=True)
   inputs = cases()
   (output / "inputs.json").write_text(json.dumps(inputs) + "\n")

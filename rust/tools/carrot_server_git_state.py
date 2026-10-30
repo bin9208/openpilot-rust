@@ -77,10 +77,10 @@ def main() -> None:
   parser.add_argument('--output', type=Path, required=True)
   args = parser.parse_args()
   free = shutil.disk_usage(args.output.parent).free
-  if free < 25 * 1024 ** 3 + 32 * 1024 ** 2:
-    raise RuntimeError('Git state fixture requires 25GiB +32MiB free')
+  if free < 32 * 1024 ** 2:
+    raise RuntimeError('Git state fixture requires 32 MiB estimated growth')
   args.output.mkdir(parents=True, exist_ok=False)
-  (args.output / 'space-guard.json').write_text(json.dumps(dict(free_bytes=free, floor=25 * 1024 ** 3, growth=32 * 1024 ** 2)) + '\n')
+  (args.output / 'space-guard.json').write_text(json.dumps(dict(free_bytes=free, growth=32 * 1024 ** 2)) + '\n')
   source = Path(__file__).with_name('carrot_server_git_state_source.py')
   sides = [('source', [sys.executable, '-P', str(source)])]
   if args.binary is not None:

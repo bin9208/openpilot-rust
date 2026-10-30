@@ -18,7 +18,7 @@ class InsufficientSpace(OSError):
   def __init__(self, free: int, growth: int) -> None:
     self.free = free
     self.growth = growth
-    super().__init__(f'require25GiB+growth={growth}; free={free}; recover35GiB before resuming')
+    super().__init__(f'insufficient space for estimated growth: required={growth}; free={free}')
 
 
 def main() -> None:
@@ -38,9 +38,9 @@ def main() -> None:
   growth = args.growth_mib * 1024**2
   args.evidence.mkdir(parents=True, exist_ok=True)
   record = {'argv': command, 'cwd': str(args.cwd), 'env': overrides, 'free_bytes': free,
-    'growth_bytes': growth, 'required_bytes': 25 * 1024**3 + growth}
+    'growth_bytes': growth, 'required_bytes': growth}
   (args.evidence / (args.phase + '.command.json')).write_text(json.dumps(record, indent=2) + '\n')
-  if free < 25 * 1024**3 + growth:
+  if free < growth:
     raise InsufficientSpace(free, growth)
   started = time.monotonic()
   with (args.evidence / (args.phase + '.log')).open('w') as log:

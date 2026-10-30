@@ -1,9 +1,12 @@
 """Provisioned Rust must remain visible after language setup actions."""
+import ast
 import os
 from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import yaml
 
@@ -72,7 +75,7 @@ done
                                 env=env, capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
         if low_space:
-          self.assertIn('recover at least 35 GiB', result.stderr)
+          self.assertIn('estimated Rust bootstrap growth', result.stderr)
           self.assertFalse(calls.exists())
         else:
           self.assertTrue(calls.exists())
@@ -87,13 +90,34 @@ done
           self.assertEqual(step['with']['cache-bin'], 'false')
           self.assertEqual(step['with']['prefix-key'], 'v1-rust-no-bins')
 
+  def test_available_cpu_defaults_and_explicit_overrides_reach_later_steps(self):
+    spec = yaml.load((ROOT / '.github/actions/rust-path/action.yml').read_text(), Loader=yaml.BaseLoader)
+    script = next(step['run'] for step in spec['runs']['steps']
+                  if step.get('name', '').startswith('Select available CPU parallelism'))
+    count = len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else os.cpu_count()
+    for overrides in ({}, {'CARGO_BUILD_JOBS': '13'}, {'RUST_TEST_THREADS': '7'},
+                      {'CARGO_BUILD_JOBS': '13', 'RUST_TEST_THREADS': '7'}):
+      with self.subTest(overrides=overrides), tempfile.TemporaryDirectory() as temporary:
+        output = Path(temporary)/'github-env'
+        environment = dict(os.environ, GITHUB_ENV=str(output))
+        environment.pop('CARGO_BUILD_JOBS', None)
+        environment.pop('RUST_TEST_THREADS', None)
+        environment.update(overrides)
+        result = subprocess.run(['bash', '-eu', '-o', 'pipefail', '-c', script],
+                                env=environment, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        saved = dict(line.split('=', 1) for line in output.read_text().splitlines()) if output.exists() else {}
+        self.assertEqual(saved, {key: str(count) for key in ('CARGO_BUILD_JOBS', 'RUST_TEST_THREADS')
+                                 if key not in overrides})
+        self.assertTrue(all(key not in saved for key in overrides))
+
   def test_all_explicit_rust_consumers_register_path_before_setup(self):
     for filename in ('ci.yml', 'dev-md-runtime.yml'):
       jobs = yaml.load((ROOT / '.github/workflows' / filename).read_text(), Loader=yaml.BaseLoader)['jobs']
       for key, job in jobs.items():
         steps = job.get('steps', [])
         commands = '\n'.join(step.get('run', '') for step in steps)
-        if not any(token in commands for token in ('cargo ', 'rustup ', 'package.py host-tools')):
+        if not any(token in commands for token in ('cargo ', 'rustup ', 'package.py host-tools', 'package.py publish', 'scons', './tools/op.sh setup')):
           continue
         with self.subTest(workflow=filename, job=key):
           checkout = next(i for i, step in enumerate(steps) if step.get('uses', '').startswith('actions/checkout@'))
@@ -104,6 +128,43 @@ done
             if step.get('uses', '').startswith('actions/setup-python@'):
               self.assertLess(helper, i)
 
+
+class CargoConcurrencyTests(unittest.TestCase):
+    def environment_assignment(self, filename, function, variable, inherited):
+        path = ROOT/filename
+        tree = ast.parse(path.read_text())
+        function = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == function)
+        assignment = next(n for n in ast.walk(function) if isinstance(n, ast.Assign)
+                          and any(isinstance(t, ast.Name) and t.id == variable for t in n.targets))
+        source = compile(ast.Module(body=[assignment], type_ignores=[]), str(path), 'exec')
+        namespace = dict(os=os, TARGET=Path('/owned/target'), flags='fixture-sanitizer-flags',
+                         library=Path('/owned/asan.so'),
+                         args=SimpleNamespace(target_dir=Path('/owned/target'), opencv=Path('/owned/opencv')))
+        # Only the actual environment dictionary is evaluated: no build, external
+        # command, filesystem initialization or other helper statement is executed.
+        with patch.dict(os.environ, inherited, clear=True):
+            exec(source, namespace)
+        return namespace[variable]
+
+    def environments(self, inherited):
+        for filename, function, variable in (
+            ('rust/ci/runtime/package.py', 'environment', 'env'),
+            ('rust/tools/check_xiaoge_native_memory.py', 'main', 'environment'),
+        ):
+            yield filename, self.environment_assignment(filename, function, variable, inherited)
+
+    def test_absent_override_reaches_cargo_and_libtest_without_a_hidden_cap(self):
+        for filename, environment in self.environments({}):
+            with self.subTest(filename=filename):
+                self.assertNotIn('CARGO_BUILD_JOBS', environment)
+                self.assertNotIn('RUST_TEST_THREADS', environment)
+
+    def test_explicit_user_build_and_test_parallelism_survives_child_environment(self):
+        overrides = dict(CARGO_BUILD_JOBS='13', RUST_TEST_THREADS='7')
+        for filename, environment in self.environments(overrides):
+            with self.subTest(filename=filename):
+                for key, value in overrides.items():
+                    self.assertEqual(environment[key], value)
 
 if __name__ == '__main__':
   unittest.main()

@@ -1,27 +1,29 @@
 # Independent Rust port repository (2026-09-29)
 
-## dev-md sequential CI policy (2026-10-20, issue #409)
-
-- The user approved a single sequential CI entry point, serial architecture
-  matrices, removal of dedicated Naver CI/APK checks, and PR-only changes to
-  dev/dev-md. Preserve common runtime checks and the five required check names.
-- Branch protection applies to administrators and bots without bypass. Keep PR
-  and post-merge checks. Implement on codex/feat-cicd-optimization targeting
-  dev-md only; this does not authorize dev/main integration or runtime delivery.
-- Preserve the runner routing already present on dev-md. The user-approved
-  infrastructure work may run those existing Actions jobs on the registered
-  self-hosted runner; do not run functional/build checks in a local checkout.
-- Marked runtime delivery builds the exact merged SHA after unified CI passes.
-  Do not request a runtime release for this CI change.
-
 ## dev-md validation execution (2026-10-20)
 
 - The user requires local checks to stay at syntax, formatting and diff review.
   Run functional tests, ARM/AGNOS builds, sealing, installation verification and
   release publication in GitHub Actions. Separate quick branch checks from deep
-  PR/release checks. Do not repeat successful unchanged checks locally or use a
-  local/self-hosted runner as a workaround. This applies to the dev-md track;
-  the separate #296 conversion is not part of this task.
+  PR/release checks. Do not repeat successful unchanged checks locally. This
+  applies to the dev-md track; the separate #296 conversion remains separate.
+- On 2026-10-23 the user required **every Actions job** on the registered local
+  runner `bin-actions`, including ARM execution (#502). This supersedes both the
+  earlier self-hosted ban and the previous GitHub ARM exception. Do not schedule
+  GitHub-hosted x64 or ARM jobs or use them as an automatic fallback. Preserve the
+  original ARM tests in a separate ARM user space through QEMU/PRoot on the X64
+  local runner, recording host/guest architectures and emulated execution. Do not
+  label it physical ARM CPU validation or replace ARM checks with X64 duplicates.
+  Preserve other running validations and unchanged successful checks; apply the
+  new route to the next necessary execution. All work chats must carry this
+  policy in their own workflow and continuation records. The fixed 25/35 GiB
+  stop/resume rule was removed; retain operation-specific growth admission.
+
+- CPU task #422 / PR #494 reuses the focused-validated all-local foundation from
+  #502 / PR #504 source `77663836a95a9e2aff9aa66592d8b06ed9c87cd9`. Its common
+  PR remains unmerged; focused execution transport checks are not full module
+  or physical ARM validation. Preserve CPU-specific source/performance tests and
+  continue exact-source dev-md delivery under the existing task authorization.
 
 ## dev-md upstream port isolation (2026-10-15, issue #338)
 
@@ -79,12 +81,7 @@
   device comparison after the complete runtime candidate is ready. Keep unported
   components and native external dependencies explicit in the inventory.
 
-- The user required prevention of disk exhaustion on 2026-09-30. Check available
-  space before each local build, dependency install or large artifact copy. Keep
-  at least 25 GiB free plus the operation's estimated growth; when below that
-  floor, stop new build work and recover at least 35 GiB before resuming. Prefer
-  bounded package builds with incremental compilation disabled and reuse a
-  coordinated target cache. On 2026-10-09 the user explicitly authorized deleting
+- On 2026-10-09 the user explicitly authorized deleting
   old Rust-port records, archived validation artifacts and all unused build
   caches without another approval or preservation/compression step. This
   supersedes earlier instructions to retain historical local evidence. Preserve

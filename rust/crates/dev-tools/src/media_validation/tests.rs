@@ -1,6 +1,27 @@
 use super::*;
 use serde_json::json;
 use std::{io::Write, os::unix::fs::PermissionsExt, process::Command};
+
+fn fixture_space(_: &Path, growth: u64) -> Result<crate::disk_space::Space> {
+    crate::disk_space::Space::new(1024 * 1024 * 1024, growth)
+}
+fn graphics(options: &GraphicsOptions, runner: &mut impl Runner) -> Result<Value> {
+    graphics::graphics_with_space(options, runner, &mut fixture_space)
+}
+fn ffmpeg(options: &FfmpegOptions, runner: &mut impl Runner) -> Result<Value> {
+    ffmpeg::ffmpeg_with_space(options, runner, &mut fixture_space)
+}
+fn sdl(options: &SdlOptions, runner: &mut impl Runner) -> Result<Value> {
+    sdl_with_pins(options, runner, SDL_WHEEL_SHA256, SDL_TTF_SHA256)
+}
+fn sdl_with_pins(
+    options: &SdlOptions,
+    runner: &mut impl Runner,
+    wheel: &str,
+    source: &str,
+) -> Result<Value> {
+    sdl::sdl_with_pins_space(options, runner, wheel, source, &mut fixture_space)
+}
 struct Fixture {
     temp: tempfile::TempDir,
     elf: PathBuf,
@@ -340,7 +361,7 @@ fn sdl_preserves_provider_closure_dummy_pixels_and_independent_oracle_equality()
         let source = digest(&options.ttf_source).unwrap();
         let mut runner = f.runner();
         runner.oracle_mismatch = mismatch;
-        let result = sdl::sdl_with_pins(&options, &mut runner, &wheel, &source);
+        let result = sdl_with_pins(&options, &mut runner, &wheel, &source);
         assert_eq!(result.is_ok(), !mismatch);
         assert_eq!(runner.commands.len(), 3);
         assert_eq!(runner.commands[1].env["SDL_VIDEODRIVER"], "dummy");
@@ -370,7 +391,7 @@ fn sdl_public_pins_and_empty_pixels_fail_closed() {
     runner.empty_pixels = true;
     let wheel = digest(&options.wheel).unwrap();
     let source = digest(&options.ttf_source).unwrap();
-    assert!(sdl::sdl_with_pins(&options, &mut runner, &wheel, &source).is_err());
+    assert!(sdl_with_pins(&options, &mut runner, &wheel, &source).is_err());
     assert_eq!(runner.commands.len(), 2);
     assert_eq!(saved(&options.output)["passed"], false);
 }
@@ -449,7 +470,7 @@ fn sdl_rejects_duplicate_linked_oversized_and_corrupt_wheel_records_before_compi
         }
         fs::write(&options.wheel, bytes).unwrap();
         let mut runner = f.runner();
-        let result = sdl::sdl_with_pins(
+        let result = sdl_with_pins(
             &options,
             &mut runner,
             &digest(&options.wheel).unwrap(),
@@ -501,7 +522,7 @@ fn sdl_ttf_header_must_be_unique_regular_and_bounded() {
         archive.into_inner().unwrap().finish().unwrap();
         let mut runner = f.runner();
         assert!(
-            sdl::sdl_with_pins(
+            sdl_with_pins(
                 &options,
                 &mut runner,
                 &digest(&options.wheel).unwrap(),
@@ -512,5 +533,70 @@ fn sdl_ttf_header_must_be_unique_regular_and_bounded() {
         );
         assert!(runner.commands.is_empty());
         assert!(!options.output.join("lib").exists());
+    }
+}
+
+#[test]
+fn insufficient_or_unreadable_space_stops_before_execution_and_preserves_prior_report() {
+    for (family, fail_at) in [
+        ("graphics", 1),
+        ("graphics", 2),
+        ("ffmpeg", 1),
+        ("sdl", 1),
+        ("sdl", 2),
+    ] {
+        for unreadable in [false, true] {
+            let f = Fixture::new();
+            let output = f.path(&format!("{family}-proof"));
+            fs::create_dir_all(&output).unwrap();
+            fs::write(output.join("report.json"), b"previous verified report").unwrap();
+            let mut calls = 0;
+            let mut inspect = |_: &Path, growth| {
+                calls += 1;
+                assert_eq!(growth, 1024 * 1024 * 1024);
+                if calls == fail_at && unreadable {
+                    return Err("injected space observation failure".into());
+                }
+                crate::disk_space::Space::new(
+                    if calls == fail_at { growth - 1 } else { growth },
+                    growth,
+                )
+            };
+            let mut runner = f.runner();
+            let result = match family {
+                "graphics" => {
+                    graphics::graphics_with_space(&graphics_fixture(&f), &mut runner, &mut inspect)
+                }
+                "ffmpeg" => {
+                    ffmpeg::ffmpeg_with_space(&ffmpeg_fixture(&f), &mut runner, &mut inspect)
+                }
+                "sdl" => {
+                    let options = sdl_fixture(&f);
+                    sdl::sdl_with_pins_space(
+                        &options,
+                        &mut runner,
+                        &digest(&options.wheel).unwrap(),
+                        &digest(&options.ttf_source).unwrap(),
+                        &mut inspect,
+                    )
+                }
+                _ => unreachable!(),
+            };
+            let error = result.unwrap_err();
+            assert!(
+                error.to_string().contains(if unreadable {
+                    "observation failure"
+                } else {
+                    "insufficient disk"
+                }),
+                "{error}"
+            );
+            assert_eq!(calls, fail_at);
+            assert!(runner.commands.is_empty());
+            assert_eq!(
+                fs::read(output.join("report.json")).unwrap(),
+                b"previous verified report"
+            );
+        }
     }
 }

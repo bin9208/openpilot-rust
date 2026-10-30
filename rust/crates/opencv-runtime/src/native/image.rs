@@ -9,6 +9,48 @@ pub fn resize_linear(input: ImageView<'_>, output: Dimensions) -> Result<Image, 
     Image::from_parts(ImageLayout::new(output, input.layout().format())?, data)
 }
 
+/// Resize a grayscale ROI without packing rows. The complete source Y allocation
+/// (including final-row padding) must be present; odd strides are supported.
+pub fn resize_gray_roi(
+    input: &[u8],
+    dimensions: Dimensions,
+    stride: usize,
+    roi: Rect,
+    output: Dimensions,
+) -> Result<Image, Error> {
+    let extent = stride
+        .checked_mul(dimensions.height() as usize)
+        .ok_or(Error::Contract("grayscale plane extent overflow"))?;
+    if stride < dimensions.width() as usize
+        || input.len() < extent
+        || roi.x < 0
+        || roi.y < 0
+        || roi.width == 0
+        || roi.height == 0
+        || i64::from(roi.x) + i64::from(roi.width) > i64::from(dimensions.width())
+        || i64::from(roi.y) + i64::from(roi.height) > i64::from(dimensions.height())
+    {
+        return Err(Error::Contract(
+            "strided grayscale ROI differs from checked plane extent",
+        ));
+    }
+    ready()?;
+    let data = ffi::resize_gray_roi(
+        input,
+        size(dimensions),
+        stride,
+        ffi::Rect {
+            x: roi.x,
+            y: roi.y,
+            width: roi.width,
+            height: roi.height,
+        },
+        size(output),
+    )
+    .map_err(|error| native_error("resize grayscale ROI", error))?;
+    Image::from_parts(ImageLayout::new(output, Format::Gray)?, data)
+}
+
 pub fn bgr_to_gray(input: ImageView<'_>) -> Result<Image, Error> {
     if input.layout().format() != Format::Bgr {
         return Err(Error::Contract("BGR grayscale conversion needs BGR pixels"));
@@ -30,6 +72,29 @@ pub fn nv12_to_rgb(input: &[u8], dimensions: Dimensions) -> Result<Image, Error>
     let data = ffi::nv12_rgb(input, size(dimensions))
         .map_err(|error| native_error("cvtColor NV12", error))?;
     Image::from_parts(ImageLayout::new(dimensions, Format::Rgb)?, data)
+}
+
+/// Keep the conversion and masked image native, copying only resized RGB back.
+pub fn nv12_masked_resize_rgb(
+    input: &[u8],
+    dimensions: Dimensions,
+    mask: ImageView<'_>,
+    output: Dimensions,
+) -> Result<Image, Error> {
+    if input.len() != dimensions.nv12_len()? {
+        return Err(Error::Contract(
+            "NV12 slice differs from packed plane length",
+        ));
+    }
+    if mask.layout().format() != Format::Gray || mask.layout().dimensions() != dimensions {
+        return Err(Error::Contract(
+            "mask must be grayscale with matching dimensions",
+        ));
+    }
+    ready()?;
+    let data = ffi::nv12_masked_resize_rgb(input, size(dimensions), mask.data(), size(output))
+        .map_err(|error| native_error("NV12 conversion, mask and resize", error))?;
+    Image::from_parts(ImageLayout::new(output, Format::Rgb)?, data)
 }
 
 /// Convert padded borrowed planes directly; the result owns all RGB storage.

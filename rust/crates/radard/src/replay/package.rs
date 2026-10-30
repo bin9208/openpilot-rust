@@ -6,9 +6,9 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 pub fn space(parent: &Path, growth: u64) -> Result<()> {
     let status = rustix::fs::statvfs(parent)?;
     let available = status.f_bavail.saturating_mul(status.f_frsize);
-    if available < 25 * 1024u64.pow(3) + growth {
+    if available < growth {
         return Err(format!(
-            "native replay requires 25 GiB plus {growth} bytes growth; available {available}"
+            "native replay requires {growth} bytes estimated growth; available {available}"
         )
         .into());
     }
@@ -159,6 +159,12 @@ pub fn stage_dbcs(source: &Path) -> Result<Vec<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn bundle_growth_admission_rejects_impossible_growth() {
+        let parent = std::env::temp_dir();
+        assert!(space(&parent, 0).is_ok());
+        assert!(space(&parent, u64::MAX).is_err());
+    }
     #[test]
     fn staging_needs_no_python_and_preserves_existing_source_tables() {
         let source =

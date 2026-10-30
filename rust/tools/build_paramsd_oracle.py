@@ -26,8 +26,8 @@ def main():
               ['clang++', '-std=c++17', '-O2', '-shared', '-fPIC', '-I' + str(root / 'rednose_repo'), '-I' + str(args.eigen_include),
                str(output / 'car.cpp'), '-o', str(output / 'libcar.so')]]
   if args.reuse_wrapper is not None:
-    if shutil.disk_usage(output).free < 26 * 1024**3:
-      raise RuntimeError('25 GiB floor plus 1 GiB growth unavailable')
+    if shutil.disk_usage(output).free < 1024**3:
+      raise RuntimeError('1 GiB estimated growth unavailable')
     wrapper.symlink_to(args.reuse_wrapper.resolve())
     (output / 'reused-wrapper.json').write_text(json.dumps({'path': str(args.reuse_wrapper.resolve()),
       'sha256': hashlib.sha256(args.reuse_wrapper.read_bytes()).hexdigest()}, indent=2) + '\n')
@@ -42,8 +42,8 @@ def main():
   with (output / 'build.log').open('w') as log:
     for command in commands:
       free = shutil.disk_usage(output).free
-      if free < 26 * 1024**3:
-        raise RuntimeError('25 GiB floor plus 1 GiB build estimate unavailable')
+      if free < 1024**3:
+        raise RuntimeError('1 GiB estimated build growth unavailable')
       log.write(json.dumps({'command': command, 'free_bytes': free}) + '\n')
       log.flush()
       result = subprocess.run(command, cwd=root, env=environment, stdout=log, stderr=subprocess.STDOUT)

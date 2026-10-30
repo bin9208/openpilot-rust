@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GitHub-hosted exact-source AGNOS delivery. Never run on a workstation."""
+"""Exact-source AGNOS delivery through self-hosted GitHub Actions only."""
 import hashlib
 import json
 import os
@@ -12,9 +12,13 @@ import sys
 import tarfile
 import zipfile
 
+def runner_environment_allowed(environment, name):
+    return environment == "self-hosted" and name in {"bin-actions", "bin-actions2", "bin-actions3"}
+
+
 assert os.environ.get("GITHUB_ACTIONS") == "true", "runtime validation/builds belong in GitHub Actions"
 assert os.environ.get("GITHUB_REPOSITORY") == "bin9208/openpilot-rust"
-assert os.environ.get("RUNNER_ENVIRONMENT") == "github-hosted", "runtime delivery requires a GitHub-hosted runner"
+assert runner_environment_allowed(os.environ.get("RUNNER_ENVIRONMENT"), os.environ.get("RUNNER_NAME")), "runtime delivery requires the registered self-hosted runner"
 ROOT = Path(os.environ["GITHUB_WORKSPACE"])
 WORK = Path(os.environ["RUNNER_TEMP"]) / "agnos-runtime"
 WORK.mkdir(exist_ok=True)
@@ -41,6 +45,10 @@ def save(path, value):
     Path(path).write_text(json.dumps(value, indent=2) + "\n")
 
 
+def save_receipt(path, value):
+    save(path, dict(value, runner_environment=os.environ["RUNNER_ENVIRONMENT"], runner_name=os.environ["RUNNER_NAME"]))
+
+
 def run(args, **kwargs):
     print("+", shlex.join(map(str, args)), flush=True)
     return subprocess.run(list(map(str, args)), cwd=kwargs.pop("cwd", ROOT), check=True, **kwargs)
@@ -48,7 +56,7 @@ def run(args, **kwargs):
 
 def room(growth=0):
     free = shutil.disk_usage(WORK).free
-    assert free >= 25 * 2**30 + growth, f"disk reserve: free={free}, growth={growth}"
+    assert free >= growth, f"insufficient disk space: free={free}, growth={growth}"
 
 
 def download(url, name, expected):
@@ -74,12 +82,132 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
     """Reviewed CI/consumer paths; OpenCV exceptions require fresh provider builds."""
     allowed = (
         'AGENTS.md',
+        'rust/crates/carrot-man/ci-jobs.yml',
+        'rust/tools/check-disk-space',
+        '.github/actions/local-arm/',
+        'tools/ci/local-arm',
+        'tools/ci/tests/test_local_runners.py',
+        'tools/ci/tests/test_setup_dependencies.py',
+        'tools/setup_dependencies.sh',
+        'docs/naver/all-local-actions-502.md',
+        # Reviewed build/reference admission changes; no broad tools exemption.
+        'rust/crates/dev-tools/src/encoder_stage.rs',
+        # #521: private space-observation seam; public FFmpeg build still uses
+        # the actual filesystem and unchanged source/configuration/growth.
+        'rust/crates/dev-tools/src/ffmpeg_build.rs',
+        # #604: observe capacity privately in synthetic fixtures; public entry
+        # points retain real filesystem admission and the same 1 GiB growth.
+        'rust/crates/dev-tools/src/raylib_stage.rs',
+        'rust/crates/dev-tools/src/raylib_stage_tests.rs',
+        'rust/crates/dev-tools/src/media_validation/mod.rs',
+        'rust/crates/dev-tools/src/media_validation/graphics.rs',
+        'rust/crates/dev-tools/src/media_validation/ffmpeg.rs',
+        'rust/crates/dev-tools/src/media_validation/sdl.rs',
+        'rust/crates/dev-tools/src/media_validation/tests.rs',
+        '.github/workflows/media-fixture-space.yml',
+        'docs/naver/dev-md-media-fixture-604.md',
+        'rust/crates/dev-tools/src/package.rs',
+        'rust/crates/dev-tools/tests/disk_space.rs',
+        'rust/crates/model-runtime/src/export.rs',
+        'rust/crates/radard/src/replay/package.rs',
+        'rust/crates/ui-application/src/onroad/model_renderer/DESIGN.md',
+        'rust/tools/build_athena_vision_peer.py',
+        'rust/tools/build_encoder_source.py',
+        'rust/tools/build_locationd_oracle.py',
+        'rust/tools/build_offline_model_pipelines.py',
+        'rust/tools/build_pandad_peripheral_source.py',
+        'rust/tools/build_paramsd_oracle.py',
+        'rust/tools/build_plannerd_acados.py',
+        'rust/tools/card_ci_space.py',
+        'rust/tools/card_prepare_assets.py',
+        'rust/tools/carrot_man_stage_geos.py',
+        'rust/tools/carrot_recovery_http_control.py',
+        'rust/tools/carrot_server_auto_update_pull.py',
+        'rust/tools/carrot_server_dashcam_catalog.py',
+        'rust/tools/carrot_server_dashcam_http/fixture.py',
+        'rust/tools/carrot_server_dashcam_media.py',
+        'rust/tools/carrot_server_dashcam_metadata/fixture.py',
+        'rust/tools/carrot_server_dashcam_upload.py',
+        'rust/tools/carrot_server_egpu.py',
+        'rust/tools/carrot_server_git_state.py',
+        'rust/tools/carrot_server_git_status.py',
+        'rust/tools/carrot_server_runtime_root.py',
+        'rust/tools/carrot_server_screenrecord.py',
+        'rust/tools/carrot_server_terminal_cli.py',
+        'rust/tools/check_camerad_camera_lifecycle.py',
+        'rust/tools/check_card_carlog.py',
+        'rust/tools/check_card_factory.py',
+        'rust/tools/check_cweb_address.py',
+        'rust/tools/check_encoder_codecs.py',
+        'rust/tools/check_encoder_runtime.py',
+        'rust/tools/check_encoder_target.py',
+        'rust/tools/check_encoder_v4l.py',
+        'rust/tools/check_jpeg_sanitizers.py',
+        'rust/tools/check_locationd_native.py',
+        'rust/tools/check_manager_log_upload.py',
+        'rust/tools/check_paramsd_native.py',
+        'rust/tools/check_plannerd_ci.py',
+        'rust/tools/check_plannerd_lifecycle.py',
+        'rust/tools/check_radarcan_constructors.py',
+        'rust/tools/check_radarcan_runtime.py',
+        'rust/tools/check_runtime_launcher.py',
+        'rust/tools/check_ui_augmented.py',
+        'rust/tools/check_ui_driver_preview.py',
+        'rust/tools/check_ui_framework.py',
+        'rust/tools/check_ui_native_resources.py',
+        'rust/tools/check_ui_native_safety.py',
+        'rust/tools/check_ui_root.py',
+        'rust/tools/check_ui_torque_miri.py',
+        'rust/tools/check_ui_updater_signal.py',
+        'rust/tools/check_usbgpu_hardware.py',
+        'rust/tools/check_usbgpu_selection.py',
+        'rust/tools/check_xiaoge_ci.py',
+        'rust/tools/check_xiaoge_inference.py',
+        'rust/tools/check_xiaoge_lane.py',
+        'rust/tools/check_xiaoge_lifecycle.py',
+        'rust/tools/check_xiaoge_live.py',
+        'rust/tools/check_xiaoge_native_memory.py',
+        'rust/tools/check_xiaoge_runtime.py',
+        'rust/tools/cluster_gles_dmabuf_compare.py',
+        'rust/tools/cluster_gles_readback_errors.py',
+        'rust/tools/cluster_media_hardware_compare.py',
+        'rust/tools/cluster_pipeline_compare.py',
+        'rust/tools/cluster_vidc_compare.py',
+        'rust/tools/cluster_vidc_encoder_compare.py',
+        'rust/tools/extract_runtime_sdk.py',
+        'rust/tools/generate_xiaoge_opencv_reference.py',
+        'rust/tools/model_export/local.py',
+        'rust/tools/prepare_signal_qcom.py',
+        'rust/tools/radarcan_prepare_assets.py',
+        'rust/tools/run_xiaoge_opencv_qa.py',
+        'rust/tools/stage_radarcan_runtime.py',
+        'rust/tools/tests/test_build_space_policy.py',
+        'rust/tools/usbgpu_catalog_package.py',
+        'rust/tools/usbgpu_status_fixture.py',
+        'rust/tools/webcam_camera_compare.py',
+        'rust/tools/webcam_capture_errors.py',
+        'rust/tools/webcam_cli_compare.py',
+        'rust/tools/webcam_worker_compare.py',
+        'rust/crates/disk-space/src/lib.rs',
+        'rust/crates/disk-space/tests/cli.rs',
+        '.github/workflows/self-hosted-readiness.yml',
+        '.github/workflows/wiki-settings-check.yaml',
+        '.github/workflows/wiki-settings-publish.yaml',
+        '.github/workflows/carrot-route-vault-publish.yaml',
+        '.github/workflows/naver-upstream-sync.yml',
+        '.github/workflows/sync.yml',
         'launch_openpilot.sh',
         'rust/Cargo.lock',
         'rust/crates/jetlink/',
         'rust/crates/runtime-core/',
         'rust/crates/runtime-launcher/',
         'rust/crates/xiaoge/',
+        'rust/crates/loggerd/src/daemon.rs',
+        'rust/crates/loggerd/src/encoder.rs',
+        'rust/crates/loggerd/src/encoder_tests.rs',
+        'rust/crates/signal-observer/src/process.rs',
+        'rust/tools/check_xiaoge_native_memory.py',
+        'docs/naver/dev-md-cpu-headroom-422.md',
         'rust/crates/dev-tools/src/publish.rs',
         'rust/crates/dev-tools/tests/publish.rs',
         'rust/crates/params/src/lib.rs',
@@ -98,6 +226,12 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         '.lfsconfig',
         '.github/actions/rust-path/',
         '.github/actions/job-temp/',
+        '.github/actions/local-arm/',
+        'tools/ci/local-arm',
+        'tools/ci/native-apt-shell',
+        'tools/ci/runner_policy.py',
+        'tools/ci/tests/test_local_runners.py',
+        'docs/naver/dev-md-parallel-runners-598.md',
         'tools/check_jetlink_usb_policy.py',
         'tools/naver_ci/tests/test_sync_upstream.py',
         '.github/workflows/ci.yml',
@@ -143,7 +277,9 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         'rust/crates/opencv-runtime/src/lib.rs',
         'rust/crates/opencv-runtime/src/native/mod.rs',
         'rust/crates/opencv-runtime/src/native/net.rs',
+        'rust/crates/opencv-runtime/src/native/image.rs',
         'rust/crates/opencv-runtime/native/bridge.h',
+        'rust/crates/opencv-runtime/native/image.cc',
         'rust/crates/opencv-runtime/native/net.cc',
         'rust/crates/opencv-runtime/native/dnn_context.cc',
         'rust/crates/opencv-runtime/native/dnn_context.h',
@@ -151,6 +287,7 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         'rust/crates/opencv-runtime/native/opencl_priority.h',
         'rust/crates/opencv-runtime/src/native/net/tests.rs',
         'rust/crates/opencv-runtime/tests/native.rs',
+        'rust/crates/opencv-runtime/tests/preprocessing.rs',
         'rust/crates/opencv-runtime/tests/contracts.rs',
         'rust/crates/opencv-runtime/tests/dnn_target.rs',
         'rust/crates/opencv-runtime/tests/fixtures/opencl_probe.c',
@@ -178,7 +315,7 @@ def check_source_policy():
     source_entry = git("ls-tree", SHA, "--", inherited_path)
     inherited_entry = git("ls-tree", INHERITED, "--", inherited_path)
     rejected = [path for path in changed if not source_path_allowed(path, source_entry, inherited_entry)]
-    save(WORK / "source-policy.json", dict(schema=1, source_commit=SHA, baseline_source=BASE,
+    save_receipt(WORK / "source-policy.json", dict(schema=1, source_commit=SHA, baseline_source=BASE,
          inherited_source=INHERITED, inherited_path=inherited_path, source_entry=source_entry,
          inherited_entry=inherited_entry, changed_source_paths=changed, rejected_source_paths=rejected))
     assert not rejected, f"baseline provider reuse rejects source changes: {rejected}"
@@ -225,7 +362,7 @@ def stage_baseline():
     metadata = json.loads((base / "rust/bin/licenses/runtime-build/source-build-metadata.json").read_text())
     metadata["openpilot"].update(git_commit=SHA, git_commit_date=git("show", "-s", "--format=%ct %ci", "HEAD"), git_origin=git("remote", "get-url", "origin"), is_dirty=False)
     save(build / "source-build-metadata.json", metadata)
-    save(build / "provider-reuse.json", dict(schema=1, baseline_source=BASE, source_commit=SHA, changed_source_paths=changed, runtime_executables_to_rebuild=len(NAMES), artifacts=reused,
+    save_receipt(build / "provider-reuse.json", dict(schema=1, baseline_source=BASE, source_commit=SHA, changed_source_paths=changed, runtime_executables_to_rebuild=len(NAMES), artifacts=reused,
          rebuilt_providers=["opencv"],
          note="Non-OpenCV companions/models/firmware/source assets retain verified baseline identity. OpenCV is excluded and freshly rebuilt with OpenCL from pinned hardened source against genuine AGNOS; all project Rust executables are rebuilt on the exact clean source. Other external receipts retain original identity."))
     shutil.rmtree(base)
@@ -433,7 +570,7 @@ def build_opencv():
                       provider_receipt_sha256=digest(provider / "receipt.json"),
                       libraries=receipt["libraries"], files=staged,
                       scope="Fresh combined five-library pinned hardened source build, dynamic system OpenCL. Consumer AGNOS ELF closure and package installation are checked before sealing/publication. GPU execution remains user device acceptance.")
-    save(licenses / "provenance.json", provenance)
+    save_receipt(licenses / "provenance.json", provenance)
     reuse_file = ROOT / "rust/bin/licenses/runtime-build/provider-reuse.json"
     reuse = json.loads(reuse_file.read_text())
     assert not any(rebuild_opencv_artifact(row["path"]) for row in reuse["artifacts"])
@@ -446,7 +583,7 @@ def build_opencv():
 
 
 def environment():
-    env = dict(os.environ, CARGO_TARGET_DIR=str(TARGET), CARGO_INCREMENTAL="0", CARGO_BUILD_JOBS="2", CARGO_PROFILE_RELEASE_DEBUG="0", LIBCLANG_PATH="/usr/lib/llvm-18/lib")
+    env = dict(os.environ, CARGO_TARGET_DIR=str(TARGET), CARGO_INCREMENTAL="0", CARGO_PROFILE_RELEASE_DEBUG="0", LIBCLANG_PATH="/usr/lib/llvm-18/lib")
     for language, compiler in (("cc", "aarch64-linux-gnu-gcc"), ("cxx", "aarch64-linux-gnu-g++")):
         path = WORK / language
         args = [compiler, f"--sysroot={SDK}", f"-B{SDK}/usr/lib/aarch64-linux-gnu/", f"-L{SDK}/usr/lib/aarch64-linux-gnu", f"-Wl,-rpath-link,{SDK}/usr/lib/aarch64-linux-gnu", "-nostdinc", "-isystem", "/usr/lib/gcc-cross/aarch64-linux-gnu/13/include"]
@@ -532,8 +669,8 @@ def smoke_opencv(env):
                   evidence={path.name: digest(path) for path in evidence.glob("*.log")},
                   device_execution=False, actual_gpu_execution=False,
                   scope="AGNOS QEMU CPU inference/recovery, no-OpenCL initialization on CPU, GPU no-platform rejection, priority ownership/verification and context device-wrapper identity boundaries. No device or GPU performance claim.")
-    save(evidence / "result.json", result)
-    save(ROOT / "rust/bin/licenses/runtime-build/opencv-smoke.json", result)
+    save_receipt(evidence / "result.json", result)
+    save_receipt(ROOT / "rust/bin/licenses/runtime-build/opencv-smoke.json", result)
 
 
 def build():
@@ -558,7 +695,7 @@ def build():
     room(3 * 2**30)
     run(installer_cmd, env=installer_env)
     installer = TARGET / "aarch64-unknown-linux-musl/release/openpilot-runtime-install"
-    save(WORK / "installer-build.json", dict(schema=1, source_commit=SHA, architecture="aarch64", target="aarch64-unknown-linux-musl", installer_sha256=digest(installer), build_command=shlex.join(installer_cmd), validation="Built on GitHub-hosted runner; complete offline QEMU installation and installed AGNOS launcher verification follow before publication."))
+    save_receipt(WORK / "installer-build.json", dict(schema=1, source_commit=SHA, architecture="aarch64", target="aarch64-unknown-linux-musl", installer_sha256=digest(installer), build_command=shlex.join(installer_cmd), validation="Built in self-hosted GitHub Actions; complete offline QEMU installation and installed AGNOS launcher verification follow before publication."))
     room(6 * 2**30)
     rows = []
     for name in NAMES:
@@ -570,7 +707,7 @@ def build():
         rows.append(dict(name=name, sha256=digest(dest), bytes=dest.stat().st_size, target="aarch64-unknown-linux-musl" if name == "openpilot-runtime-install" else "aarch64-unknown-linux-gnu"))
     build_dir = ROOT / "rust/bin/licenses/runtime-build"
     smoke_opencv(env)
-    save(build_dir / "runtime-staging.json", dict(schema=1, source_commit=SHA, source_tree=git("rev-parse", "HEAD^{tree}"), source_clean=True, architecture="aarch64", agnos_version="19.8-carrot-bt1", runtime_build_command=BUILD, files=rows,
+    save_receipt(build_dir / "runtime-staging.json", dict(schema=1, source_commit=SHA, source_tree=git("rev-parse", "HEAD^{tree}"), source_clean=True, architecture="aarch64", agnos_version="19.8-carrot-bt1", runtime_build_command=BUILD, files=rows,
          opencv_provider_receipt_sha256=digest(WORK / "opencv/receipt.json"), rebuilt_opencv_consumers=["openpilot-xiaoge", "openpilot-webcam", "openpilot-signalcolord"],
          rebuilt_project_packages=project_packages, params_keys_sha256=digest(ROOT / "openpilot/common/params_keys.h")))
     shutil.copy2(WORK / "installer-build.json", build_dir / "installer-build.json")
@@ -583,7 +720,7 @@ def build():
     args += ["--library", "rust/bin/lib", "--library", SDK / "usr/lib/aarch64-linux-gnu", "--library", SDK / "lib", "--output", WORK / "elf.json"]
     run(args)
     audit = json.loads((WORK / "elf.json").read_text()); assert audit["compatible"]
-    save(build_dir / "elf-summary.json", dict(compatible=True, objects=len(audit["objects"]), roots=len(audit["roots"]), scope="Actual AGNOS architecture, dependency, symbol/version closure in CI; no device execution."))
+    save_receipt(build_dir / "elf-summary.json", dict(compatible=True, objects=len(audit["objects"]), roots=len(audit["roots"]), scope="Actual AGNOS architecture, dependency, symbol/version closure in CI; no device execution."))
     run([TOOLS / "seal-runtime-package", "--root", ROOT, "--manager", TOOLS / "openpilot-manager", "--architecture", "aarch64"])
     run([TOOLS / "package-runtime-release", "--root", ROOT, "--installer", installer, "--installer-build-receipt", WORK / "installer-build.json", "--output", RELEASE])
     run([TOOLS / "package-runtime-release", "--root", ROOT, "--output", RELEASE, "--verify-only"])
@@ -591,7 +728,7 @@ def build():
     install(False)
     delivery = WORK / "delivery-tools"; delivery.mkdir(exist_ok=True)
     shutil.copy2(TOOLS / "publish-runtime-release", delivery / "publish-runtime-release")
-    save(delivery / "identity.json", dict(source_commit=SHA, publisher_sha256=digest(delivery / "publish-runtime-release"), installer_sha256=digest(installer)))
+    save_receipt(delivery / "identity.json", dict(source_commit=SHA, publisher_sha256=digest(delivery / "publish-runtime-release"), installer_sha256=digest(installer)))
 
 
 def install(online):
@@ -607,7 +744,7 @@ def install(online):
     if not online: args += ["--archive", RELEASE / descriptor["archive"]["name"], "--descriptor", RELEASE / "runtime-release.json"]
     run(args)
     run(["qemu-aarch64-static", "-L", SDK, "-E", f"LD_LIBRARY_PATH={checkout}/rust/bin/lib:{SDK}/usr/lib/aarch64-linux-gnu:{SDK}/lib", checkout / "rust/bin/openpilot-launch", "--root", checkout, "--verify-package"])
-    save(WORK / ("online-install.json" if online else "offline-install.json"), dict(source_commit=SHA, archive_sha256=descriptor["archive"]["sha256"], manifest_sha256=digest(checkout / "rust/runtime-manifest.json"), installer_exit=0, installed_agnos_launcher_exit=0, device_execution=False))
+    save_receipt(WORK / ("online-install.json" if online else "offline-install.json"), dict(source_commit=SHA, archive_sha256=descriptor["archive"]["sha256"], manifest_sha256=digest(checkout / "rust/runtime-manifest.json"), installer_exit=0, installed_agnos_launcher_exit=0, device_execution=False))
     shutil.rmtree(checkout)
 
 

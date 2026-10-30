@@ -1,0 +1,198 @@
+# Default CI APT uses only job-owned copies of official Ubuntu sources. Explicit
+# source/config selections are untouched; explicit architecture argv is retained.
+# Absolute uname avoids recursive BASH_ENV entry through test fixture commands.
+_OPENPILOT_NATIVE_APT_ROOT=$(cd -- "$(/usr/bin/dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)
+export _OPENPILOT_NATIVE_APT_ROOT
+if [[ ${OPENPILOT_CI_EXECUTION_MODE:-native} != qemu-user ]]; then
+  sudo() {
+    local -a apt_scope_original=("$@") apt_scope_defaults=()
+    local apt_scope_index=0 apt_scope_mode=native-default apt_scope_argument apt_scope_native
+    local apt_scope_arch_explicit=false apt_scope_view apt_scope_root
+    if [[ ${apt_scope_original[0]:-} == -n ]]; then apt_scope_index=1; fi
+    case ${apt_scope_original[apt_scope_index]:-} in
+      apt-get|/usr/bin/apt-get) ;;
+      *) /usr/bin/sudo "${apt_scope_original[@]}"; return ;;
+    esac
+    apt_scope_root=$_OPENPILOT_NATIVE_APT_ROOT
+    /usr/bin/python3 -I -B -S "$apt_scope_root/tools/ci/runner_policy.py" || return
+    [[ ${CI_JOB_TEMP:-} == /tmp/openpilot-ci.* && ${CI_JOB_TEMP%/*} == /tmp && ! -L $CI_JOB_TEMP &&
+       -f $CI_JOB_TEMP/owner && ! -L $CI_JOB_TEMP/owner &&
+       $(cat "$CI_JOB_TEMP/owner") == "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GITHUB_JOB" &&
+       ${GITHUB_SHA:-} =~ ^[0-9a-f]{40}$ && ! -L $CI_JOB_TEMP/native-apt-evidence.jsonl ]] || {
+      echo 'Job-owned native APT context required' >&2; return 1;
+    }
+    if [[ ${APT_CONFIG+x} ]]; then apt_scope_mode=explicit-configuration; fi
+    for apt_scope_argument in "${apt_scope_original[@]:apt_scope_index+1}"; do
+      case ${apt_scope_argument,,} in
+        -c|-c?*|--config-file|--config-file=*|*dir::etc*) apt_scope_mode=explicit-configuration ;;
+        *apt::architectur*|-a|-a?*|--host-architecture|--host-architecture=*) apt_scope_arch_explicit=true ;;
+      esac
+    done
+    apt_scope_native=$(/usr/bin/dpkg --print-architecture)
+    case "$(/usr/bin/uname -m):$apt_scope_native" in
+      x86_64:amd64|aarch64:arm64) ;;
+      *) echo 'Native APT architecture differs from the actual host' >&2; return 1 ;;
+    esac
+    if [[ $apt_scope_mode == native-default && $RUNNER_ENVIRONMENT == self-hosted ]]; then
+      apt_scope_view=$(/usr/bin/python3 -I -B -S - <<'PY_APT_SOURCES'
+import hashlib, json, os, re, shlex, stat
+from pathlib import Path
+from urllib.parse import urlsplit
+
+
+def official_uri(value):
+    uri = urlsplit(value)
+    host = uri.hostname or ''
+    if uri.scheme not in ('http', 'https') or uri.username or uri.password or uri.query or uri.fragment:
+        return False
+    if uri.port not in (None, 80 if uri.scheme == 'http' else 443):
+        return False
+    return ((host in ('archive.ubuntu.com', 'security.ubuntu.com')
+             or re.fullmatch(r'[a-z0-9-]+\.archive\.ubuntu\.com', host)) and uri.path.rstrip('/') == '/ubuntu'
+            or host == 'ports.ubuntu.com' and uri.path.rstrip('/') == '/ubuntu-ports')
+
+
+def official_deb822(block):
+    fields, previous = {}, None
+    for line in block.splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        if line[:1].isspace() and previous is not None:
+            fields[previous] += '\n'+line
+            continue
+        key, separator, value = line.partition(':')
+        if not separator or not re.fullmatch(r'[A-Za-z][A-Za-z0-9-]*', key) or key.lower() in fields:
+            raise ValueError('ambiguous APT deb822 source fields')
+        previous = key.lower()
+        fields[previous] = value.strip()
+    if fields.get('enabled', '').lower() == 'no':
+        return False
+    uris = fields.get('uris', '').split()
+    selected = [official_uri(uri) for uri in uris]
+    if not any(selected):
+        return False
+    if not all(selected) or not fields.get('suites') or not fields.get('components') or not fields.get('types'):
+        raise ValueError('mixed or incomplete official Ubuntu source stanza')
+    for key in ('trusted', 'allow-insecure', 'allow-weak', 'allow-downgrade-to-insecure'):
+        if fields.get(key, '').lower() in ('yes', 'true', '1'):
+            raise ValueError('official CI sources cannot bypass signature verification')
+    return True
+
+
+def official_legacy(line):
+    tokens = shlex.split(line, comments=True)
+    if not tokens or tokens[0] not in ('deb', 'deb-src'):
+        return False
+    index, options = 1, []
+    if index < len(tokens) and tokens[index].startswith('['):
+        while index < len(tokens):
+            options.append(tokens[index])
+            index += 1
+            if options[-1].endswith(']'):
+                break
+        else:
+            raise ValueError('unterminated APT source options')
+    if index >= len(tokens) or not official_uri(tokens[index]):
+        return False
+    if len(tokens) < index+3:
+        raise ValueError('incomplete official Ubuntu legacy source')
+    if re.search(r'(?:trusted|allow-insecure|allow-weak|allow-downgrade-to-insecure)\s*=\s*(?:yes|true|1)(?:\s|\])',
+                 ' '.join(options), re.IGNORECASE):
+        raise ValueError('official CI sources cannot bypass signature verification')
+    return True
+
+
+release = dict(line.split('=', 1) for line in Path('/etc/os-release').read_text().splitlines() if '=' in line)
+if release.get('ID', '').strip('"') != 'ubuntu':
+    raise ValueError('default CI official source view requires Ubuntu')
+job = Path(os.environ['CI_JOB_TEMP'])
+identity = ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB'))
+if (job.parent != Path('/tmp') or not job.name.startswith('openpilot-ci.') or job.is_symlink()
+        or job.resolve() != job or job.stat().st_uid != os.geteuid()
+        or (job/'owner').is_symlink() or (job/'owner').read_text() != identity):
+    raise ValueError('official APT source view requires this job owner')
+legacy, deb822, inputs = [], [], []
+parts = Path('/etc/apt/sources.list.d')
+paths = [Path('/etc/apt/sources.list'), *sorted(parts.glob('*.list')), *sorted(parts.glob('*.sources'))]
+for path in paths:
+    if not path.exists():
+        continue
+    info = path.lstat()
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022 or info.st_size > 1024**2:
+        raise ValueError('APT host source must be a bounded root-owned regular file')
+    raw = path.read_bytes()
+    text = raw.decode('utf-8')
+    selected = []
+    if path.suffix == '.sources':
+        selected = [block for block in re.split(r'\n\s*\n', text.strip()) if official_deb822(block)]
+        deb822.extend(selected)
+    else:
+        selected = [line for line in text.splitlines() if official_legacy(line)]
+        legacy.extend(selected)
+    if selected:
+        inputs.append(dict(path=str(path), sha256=hashlib.sha256(raw).hexdigest()))
+if not legacy and not deb822:
+    raise ValueError('no signed official Ubuntu archive/security/ports source was found')
+view = job/'native-apt-sources'
+parts = view/'sources.list.d'
+for directory in (view, parts, view/'lists', view/'cache'):
+    if directory.exists() or directory.is_symlink():
+        if directory.is_symlink() or not directory.is_dir() or directory.stat().st_uid != os.geteuid():
+            raise ValueError('redirected or foreign APT source/metadata directory')
+    else:
+        directory.mkdir(mode=0o700)
+files = {view/'sources.list': ('\n'.join(dict.fromkeys(legacy))+'\n').encode(),
+         parts/'official.sources': ('\n\n'.join(dict.fromkeys(deb822))+'\n').encode()}
+for path, data in files.items():
+    if path.exists() or path.is_symlink():
+        if path.is_symlink() or not path.is_file() or path.read_bytes() != data or path.stat().st_uid != os.geteuid():
+            raise ValueError('existing job APT source view differs; preserved')
+    else:
+        with path.open('xb') as output:
+            output.write(data)
+        path.chmod(0o444)
+report = dict(schema=1, source_commit=os.environ['GITHUB_SHA'], runner_name=os.environ['RUNNER_NAME'],
+              runner_environment=os.environ['RUNNER_ENVIRONMENT'], inputs=inputs,
+              files={str(p): hashlib.sha256(data).hexdigest() for p, data in files.items()},
+              shared_source_or_architecture_modified=False, signature_policy_weakened=False)
+report_path = job/'native-apt-sources.json'
+if report_path.exists() or report_path.is_symlink():
+    if report_path.is_symlink() or json.loads(report_path.read_text()) != report:
+        raise ValueError('existing job APT source receipt differs; preserved')
+else:
+    with report_path.open('x') as stream:
+        json.dump(report, stream, sort_keys=True)
+print(view)
+PY_APT_SOURCES
+      ) || return
+      apt_scope_defaults=(-oDir::Etc::sourcelist="$apt_scope_view/sources.list" -oDir::Etc::sourceparts="$apt_scope_view/sources.list.d"
+        -oDir::State::lists="$apt_scope_view/lists" -oDir::Cache::pkgcache="$apt_scope_view/cache/pkgcache.bin"
+        -oDir::Cache::srcpkgcache="$apt_scope_view/cache/srcpkgcache.bin")
+    fi
+    if [[ $apt_scope_mode == native-default && $apt_scope_arch_explicit != true ]]; then
+      apt_scope_defaults+=(-oAPT::Architectures="$apt_scope_native")
+    fi
+    /usr/bin/python3 -I -B -S - "$CI_JOB_TEMP/native-apt-evidence.jsonl" "$apt_scope_mode" "$apt_scope_native" <<'PY_APT'
+import json, os, platform, sys
+with open(sys.argv[1], 'a') as stream:
+    stream.write(json.dumps(dict(schema=1, mode=sys.argv[2], native_architecture=sys.argv[3],
+        source_commit=os.environ['GITHUB_SHA'], runner_name=os.environ['RUNNER_NAME'],
+        runner_environment=os.environ['RUNNER_ENVIRONMENT'], host_architecture=platform.machine(),
+        target_architecture=os.environ.get('LOCAL_CI_ARCH', platform.machine()), execution_mode='native',
+        shared_source_or_architecture_modified=False))+'\n')
+PY_APT
+    /usr/bin/sudo "${apt_scope_original[@]:0:apt_scope_index}" "${apt_scope_original[apt_scope_index]}" \
+      "${apt_scope_defaults[@]}" "${apt_scope_original[@]:apt_scope_index+1}"
+  }
+fi
+
+# The perf transport also supports invoking this file with its original command
+# file argument. Sourcing from BASH_ENV only defines the bounded sudo adapter.
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+  set -euo pipefail
+  source_dir=$_OPENPILOT_NATIVE_APT_ROOT
+  /usr/bin/python3 -I -B -S "$source_dir/tools/ci/runner_policy.py"
+  [[ $# == 1 && -f $1 ]] || { echo 'One existing Actions command file is required' >&2; exit 1; }
+  if declare -F sudo >/dev/null; then export -f sudo; fi
+  exec bash --noprofile --norc -e -o pipefail "$1"
+fi

@@ -56,10 +56,10 @@ def invoke(environment):
 
 
 def test_capacity_failure_precedes_rustup_and_cargo(tmp_path):
-    environment, log = fixture(tmp_path, str(25 * 1024**3 + 1024**3 - 1))
+    environment, log = fixture(tmp_path, str(1024**3 - 1))
     result = invoke(environment)
     assert result.returncode != 0
-    assert 'recover at least 35 GiB' in result.stderr
+    assert 'below estimated operation growth' in result.stderr
     assert not log.exists(), 'toolchain/build ran before capacity admission'
 
 
@@ -84,7 +84,7 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
     workflow = ROOT / '.github/workflows/ci.yml'
     text = workflow.read_text()
     assert 'card_ci_space.py' not in text
-    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 188
+    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 190
     jobs = yaml.safe_load(text)['jobs']
     guarded = [job for job in jobs.values() if any('check-disk-space' in step.get('run', '') for step in job.get('steps', []))]
     assert len(guarded) == 26
@@ -99,6 +99,7 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
     # #326 guards added specifically before compiling its native stager.
     lines = text.splitlines()
     arguments, raylib_guards, replay_guards, encoder_guards, compute_guards = [], [], [], [], []
+    signal_guards, cross_graphics_guards = [], []
     for index, line in enumerate(lines):
         match = re.search(r'"\$GITHUB_WORKSPACE/rust/tools/check-disk-space"([^\n]*)', line)
         if match:
@@ -110,18 +111,28 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
                 encoder_guards.append(match.group(1))
             elif index + 1 < len(lines) and '--example xiaoge_compute_bench' in lines[index + 1]:
                 compute_guards.append(match.group(1))
+            elif index + 1 < len(lines) and 'rust/tools/check_signal_process.py' in lines[index + 1]:
+                signal_guards.append(match.group(1))
+            elif index + 1 < len(lines) and 'cross_root=$(mktemp' in lines[index + 1]:
+                cross_graphics_guards.append(match.group(1))
             else:
                 arguments.append(match.group(1))
     assert replay_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 1024']
+    assert cross_graphics_guards == [' --path "$RUNNER_TEMP" --growth-mib 2048']
     assert len(arguments) == 179
     assert raylib_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 2048'] * 5
     assert encoder_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 1024'] * 2
     assert compute_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 4096']
+    assert signal_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 2048']
     native_calls = [index for index, line in enumerate(lines) if '--bin stage-startup-ui-raylib' in line]
     assert len(native_calls) == 5
     # Job execution order is governed by the CI graph; preserve the exact
     # multiset of provider arguments and disk reservations independently.
     native_arguments = re.findall(r'--bin stage-startup-ui-raylib -- ([^\n]*)', text)
+    cross_arguments = '--arch aarch64 --output "$raylib_root" --shared --cxx "$cross_root/cxx" --library-directory "$cross_root/sysroot/usr/lib/aarch64-linux-gnu"'
+    assert native_arguments.count(cross_arguments) == 1
+    # Only #422's isolated ARM linker inputs differ from the five-call baseline.
+    native_arguments[native_arguments.index(cross_arguments)] = '--arch aarch64 --output "$raylib_root" --shared --cxx aarch64-linux-gnu-g++'
     assert hashlib.sha256('\n'.join(sorted(native_arguments)).encode()).hexdigest() == '4035dc39d9f01018c578febe0de32e8802291867c2c50e2dc701f1a5990f3752'
     for index in native_calls:
         assert 'cargo +1.94.0 run' in lines[index]
@@ -163,10 +174,10 @@ def test_requested_operation_filesystem_is_checked_before_toolchain_work(tmp_pat
     operation = tmp_path / 'operation space'
     operation.mkdir()
     environment['GUARD_OPERATION_PATH'] = str(operation / 'new output')
-    environment['GUARD_OPERATION_FREE'] = str(25 * 1024**3 + 128 * 1024**2 - 1)
+    environment['GUARD_OPERATION_FREE'] = str(128 * 1024**2 - 1)
     result = invoke(environment)
     assert result.returncode != 0
-    assert 'recover at least 35 GiB' in result.stderr
+    assert 'below estimated operation growth' in result.stderr
     assert not log.exists()
 
 

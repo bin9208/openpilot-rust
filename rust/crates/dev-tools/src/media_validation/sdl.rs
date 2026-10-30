@@ -197,7 +197,22 @@ pub(super) fn sdl_with_pins(
     wheel_sha: &str,
     ttf_sha: &str,
 ) -> Result<Value> {
-    crate::package::disk_guard(&options.output, 1024 * 1024 * 1024)?;
+    sdl_with_pins_space(
+        options,
+        runner,
+        wheel_sha,
+        ttf_sha,
+        &mut crate::disk_space::inspect,
+    )
+}
+pub(super) fn sdl_with_pins_space(
+    options: &SdlOptions,
+    runner: &mut impl Runner,
+    wheel_sha: &str,
+    ttf_sha: &str,
+    inspect: &mut impl FnMut(&Path, u64) -> Result<crate::disk_space::Space>,
+) -> Result<Value> {
+    inspect(&options.output, 1024 * 1024 * 1024)?.require()?;
     fs::create_dir_all(&options.output)?;
     checked_digest(&options.wheel, wheel_sha)?;
     checked_digest(&options.ttf_source, ttf_sha)?;
@@ -213,6 +228,7 @@ pub(super) fn sdl_with_pins(
             headers,
         ],
         runner,
+        inspect,
     )?;
     let libraries = vec![
         options.output.join("lib"),

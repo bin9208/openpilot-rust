@@ -15,7 +15,7 @@ def main():
   parser.add_argument('--output', type=Path, required=True)
   args = parser.parse_args()
   args.output.mkdir(parents=True, exist_ok=True)
-  assert shutil.disk_usage(ROOT).free >= 26 * 1024**3, '25 GiB floor plus 1 GiB estimated build growth required'
+  assert shutil.disk_usage(ROOT).free >= 1024**3, '1 GiB estimated build growth required'
   flags = '-fsanitize=address,undefined -fno-omit-frame-pointer'
   environment = dict(os.environ, CARGO_TARGET_DIR=str(args.target_dir.resolve()), CARGO_INCREMENTAL='0', CFLAGS=flags, CXXFLAGS=flags, RUSTFLAGS='-C link-arg=-lasan -C link-arg=-lubsan')
   build = subprocess.run(['cargo', 'test', '-p', 'openpilot-jpeg', '--test', 'ownership', '--no-run', '--locked', '--message-format=json', '-j2'], cwd=ROOT, env=environment, text=True, capture_output=True)

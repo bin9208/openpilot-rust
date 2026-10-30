@@ -34,8 +34,8 @@ ledger = []
 for name, script, binary, display in checks:
   if name == 'egl':
     available = shutil.disk_usage(args.output).free
-    required = 26 * 1024**3
-    assert available >= required, 'requires 25GiB floor plus 1GiB fixture build allowance'
+    required = 1024**3
+    assert available >= required, 'requires 1 GiB estimated fixture build growth'
     (args.output / 'egl-build-disk.json').write_text(json.dumps({'available_bytes': available, 'required_bytes': required}, indent=2))
   command = [sys.executable, str(root / 'rust/tools' / script), '--binary', str(args.target / 'examples' / binary), '--output', str(args.output / name)]
   if display:

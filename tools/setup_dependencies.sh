@@ -35,6 +35,11 @@ function install_linux_deps() {
     SUDO="sudo"
   fi
 
+  local native_arch=""
+  if command -v apt-get > /dev/null 2>&1; then
+    native_arch="$(dpkg --print-architecture)"
+  fi
+
   local -a ubuntu_tool_deps=()
   if command -v apt-get > /dev/null 2>&1 && is_ubuntu_pc; then
     # Runtime and plugin dependencies for the prebuilt PlotJuggler bundle.
@@ -68,7 +73,7 @@ function install_linux_deps() {
 
   if [[ "$missing_linux_deps" -eq 0 ]]; then
     for package in "${ubuntu_tool_deps[@]}"; do
-      if ! dpkg-query -W -f='${Status}\n' "$package" 2>/dev/null | grep -q '^install ok installed$'; then
+      if ! dpkg-query -W -f='${Status}\n' "$package:$native_arch" 2>/dev/null | grep -q '^install ok installed$'; then
         missing_linux_deps=1
         break
       fi
@@ -80,8 +85,11 @@ function install_linux_deps() {
     # the native package managers are slow, so skip if we can
     echo "[ ] system packages already installed t=$SECONDS"
   elif command -v apt-get > /dev/null 2>&1; then
-    $SUDO apt-get update
-    $SUDO apt-get install -y --no-install-recommends \
+    # Bootstrap native tools without inheriting foreign targets from prior jobs.
+    # The scalar list overrides inherited entries; :: would append to them.
+    # Keep dpkg registration and cross-build/ARM guest sources unchanged.
+    $SUDO apt-get -o "APT::Architectures=$native_arch" update
+    $SUDO apt-get -o "APT::Architectures=$native_arch" install -y --no-install-recommends \
       ca-certificates build-essential curl libcurl4-openssl-dev locales git \
       "${ubuntu_tool_deps[@]}"
   elif command -v dnf > /dev/null 2>&1; then

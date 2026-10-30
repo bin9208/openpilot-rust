@@ -21,8 +21,8 @@ def main():
   cli.add_argument("--library", action="append", default=[])
   args = cli.parse_args()
   args.output.mkdir(parents=True, exist_ok=True)
-  if shutil.disk_usage(args.output).free < 27 * 1024**3:
-    raise RuntimeError("SDK extraction needs 25 GiB reserve plus 2 GiB estimated growth")
+  if shutil.disk_usage(args.output).free < 2 * 1024**3:
+    raise RuntimeError("SDK extraction needs 2 GiB estimated growth")
   identity = json.loads(args.identity.read_text())
   if args.image.stat().st_size != identity["raw_size"]:
     raise RuntimeError("pinned image size differs")

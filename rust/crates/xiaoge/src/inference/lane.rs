@@ -6,7 +6,7 @@ use crate::{
 };
 use num_traits::ToPrimitive;
 use openpilot_opencv_runtime::{
-    self as cv, Dimensions, Format, Image, ImageLayout, Tensor, TensorView,
+    self as cv, Dimensions, Format, Image, ImageLayout, Rect, Tensor, TensorView,
 };
 use std::path::Path;
 
@@ -14,14 +14,31 @@ pub fn lane_image(frame: &Frame<'_>) -> Result<Image, Error> {
     let layout = frame.layout();
     let size = u32::try_from(layout.width.min(layout.height))
         .map_err(|_| Error::Contract("lane image dimension overflow"))?;
-    let image = Image::from_parts(
-        ImageLayout::new(Dimensions::new(size, size)?, Format::Gray)?,
-        frame.center_square()?,
-    )?;
     if size == 416 {
-        return Ok(image);
+        return Ok(Image::from_parts(
+            ImageLayout::new(Dimensions::new(size, size)?, Format::Gray)?,
+            frame.center_square()?,
+        )?);
     }
-    Ok(cv::resize_linear(image.view(), Dimensions::new(416, 416)?)?)
+    let dimensions = Dimensions::new(
+        u32::try_from(layout.width).map_err(|_| Error::Contract("lane frame width overflow"))?,
+        u32::try_from(layout.height).map_err(|_| Error::Contract("lane frame height overflow"))?,
+    )?;
+    let roi = Rect {
+        x: i32::try_from((layout.width - size as usize) / 2)
+            .map_err(|_| Error::Contract("lane crop x overflow"))?,
+        y: i32::try_from((layout.height - size as usize) / 2)
+            .map_err(|_| Error::Contract("lane crop y overflow"))?,
+        width: size,
+        height: size,
+    };
+    Ok(cv::resize_gray_roi(
+        frame.y_plane(),
+        dimensions,
+        layout.stride,
+        roi,
+        Dimensions::new(416, 416)?,
+    )?)
 }
 
 pub fn lane_tensor(image: &Image) -> Result<Tensor, Error> {

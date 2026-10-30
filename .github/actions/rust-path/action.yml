@@ -21,8 +21,8 @@ runs:
       shell: bash
       run: |
         free_bytes=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
-        if (( free_bytes < 25 * 1024 * 1024 * 1024 + 512 * 1024 * 1024 )); then
-          echo 'Retain 25 GiB plus Rust bootstrap growth; recover at least 35 GiB before retry.' >&2
+        if (( free_bytes < 512 * 1024 * 1024 )); then
+          echo 'Insufficient disk space for estimated Rust bootstrap growth (512 MiB).' >&2
           exit 1
         fi
         case "$(uname -m)" in
@@ -37,6 +37,30 @@ runs:
         printf '%s  %s\n' "$rust_hash" "$bootstrap_dir/rustup-init" | sha256sum --check -
         chmod u+x "$bootstrap_dir/rustup-init"
         CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" "$bootstrap_dir/rustup-init" -y --default-toolchain none --no-modify-path
+    - name: Select available CPU parallelism without overriding explicit environment
+      shell: bash
+      run: |
+        available_cpus=$(/usr/bin/python3 -I -B -S - <<'PYTHON'
+        import os
+        try:
+            count = len(os.sched_getaffinity(0))
+        except (AttributeError, OSError):
+            count = os.cpu_count()
+        if not isinstance(count, int) or count < 1:
+            raise SystemExit('Cannot determine available runner CPUs; no fixed concurrency fallback')
+        print(count)
+        PYTHON
+        )
+        if [[ ! ${CARGO_BUILD_JOBS+x} ]]; then
+          export CARGO_BUILD_JOBS="$available_cpus"
+          printf 'CARGO_BUILD_JOBS=%s\n' "$CARGO_BUILD_JOBS" >> "$GITHUB_ENV"
+        fi
+        if [[ ! ${RUST_TEST_THREADS+x} ]]; then
+          export RUST_TEST_THREADS="$available_cpus"
+          printf 'RUST_TEST_THREADS=%s\n' "$RUST_TEST_THREADS" >> "$GITHUB_ENV"
+        fi
+        export CARGO_BUILD_JOBS RUST_TEST_THREADS
+        printf 'Available runner CPUs: %s; explicit concurrency environment is preserved\n' "$available_cpus"
     - name: Publish the installed Rust tool path
       shell: bash
       run: |

@@ -13,7 +13,7 @@ from check_xiaoge_native_memory import ROOT, artifacts
 
 def receipts(tmp_path: Path) -> tuple[list[dict], list[dict]]:
   tests, examples = [], []
-  for package, names, example in [("openpilot-opencv-runtime", ["contracts", "native"], "opencv_trace"),
+  for package, names, example in [("openpilot-opencv-runtime", ["contracts", "native", "preprocessing"], "opencv_trace"),
                                    ("openpilot-jpeg", ["ownership", "options"], "jpeg_options")]:
     for name in [*names, example]:
       path = tmp_path / name
@@ -34,8 +34,8 @@ def encoded(rows: list[dict]) -> str:
 def test_only_successful_current_native_suites_and_real_examples_are_accepted(tmp_path: Path) -> None:
   tests, examples = receipts(tmp_path)
   selected, binaries = artifacts(encoded(tests), encoded(examples))
-  assert len(selected) == 4 and set(binaries) == {"opencv_trace", "jpeg_options"}
-  for index in range(4):
+  assert len(selected) == 5 and set(binaries) == {"opencv_trace", "jpeg_options"}
+  for index in range(5):
     with pytest.raises(ValueError):
       artifacts(encoded(tests[:index] + tests[index + 1:]), encoded(examples))
   examples[0]["profile"]["test"] = True
@@ -56,9 +56,9 @@ def test_failed_or_missing_build_receipts_are_rejected(tmp_path: Path, batch: in
 
 def test_both_host_architectures_and_native_memory_are_required_gates() -> None:
   jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
-  assert jobs["xiaoge-runtime"]["strategy"]["matrix"]["runner"] == ["ubuntu-24.04", "ubuntu-24.04-arm"]
+  assert jobs["xiaoge-runtime"]["strategy"]["matrix"]["runner"] == ["self-hosted-x64", "ubuntu-24.04-arm"]
   assert {"xiaoge-runtime", "xiaoge-memory"} <= set(jobs["fast"]["needs"])
-  gate = jobs["fast"]["steps"][0]
+  gate = next(step for step in jobs["fast"]["steps"] if "EXPECTED" in step.get("env", {}))
   results = {name: {"result": "success"} for name in jobs["fast"]["needs"]}
   environment = dict(os.environ, RESULTS=json.dumps(results), EXPECTED=gate["env"]["EXPECTED"])
   assert subprocess.run(["bash", "-e", "-c", gate["run"]], env=environment, check=False).returncode == 0

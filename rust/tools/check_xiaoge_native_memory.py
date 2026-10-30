@@ -36,7 +36,7 @@ def artifacts(test_messages: str, example_messages: str) -> tuple[list[Path], di
       tests.append(path)
     elif "example" in row["target"]["kind"]:
       examples[row["target"]["name"]] = path
-  required = {("openpilot-opencv-runtime", name) for name in ["native", "contracts"]}
+  required = {("openpilot-opencv-runtime", name) for name in ["native", "contracts", "preprocessing"]}
   required.update(("openpilot-jpeg", name) for name in ["ownership", "options"])
   if not required <= suites or set(examples) != {"opencv_trace", "jpeg_options"}:
     raise ValueError("missing current OpenCV/JPEG test or example artifacts")
@@ -51,12 +51,12 @@ def main() -> None:
   args = parser.parse_args()
   for name in ["opencv", "models", "target_dir", "output"]:
     setattr(args, name, getattr(args, name).resolve())
-  if shutil.disk_usage(args.output.parent).free < 25 * 1024**3 + 2 * 1024**3:
-    raise OSError("memory validation requires 25 GiB plus 2 GiB; recover 35 GiB before resuming")
+  if shutil.disk_usage(args.output.parent).free < 2 * 1024**3:
+    raise OSError("memory validation requires 2 GiB estimated growth")
   args.output.mkdir()
   library = Path(subprocess.check_output(["clang-18", "--print-file-name=libclang_rt.asan-x86_64.so"], text=True).strip()).resolve(strict=True)
   flags = "-fsanitize=address,undefined -fno-omit-frame-pointer"
-  environment = dict(os.environ, CARGO_TARGET_DIR=str(args.target_dir), CARGO_INCREMENTAL="0", CARGO_BUILD_JOBS="2",
+  environment = dict(os.environ, CARGO_TARGET_DIR=str(args.target_dir), CARGO_INCREMENTAL="0",
     CARGO_PROFILE_DEV_DEBUG="0", CARGO_PROFILE_TEST_DEBUG="0", CC="clang-18", CXX="clang++-18", CFLAGS=flags, CXXFLAGS=flags,
     RUSTFLAGS=f"-C link-arg={library}", OPENPILOT_OPENCV_ROOT=str(args.opencv))
   commands = []
@@ -79,7 +79,7 @@ def main() -> None:
     "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1", "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1",
     "OPENCV_TEST_LANE_MODEL": str(args.models / "lane.onnx")}
   for index, binary in enumerate(tests):
-    run(f"native-test-{index}", [str(binary), "--nocapture", "--test-threads=1"], dict(environment, **runtime))
+    run(f"native-test-{index}", [str(binary), "--nocapture"], dict(environment, **runtime))
   cache = list(args.target_dir.glob("debug/build/openpilot-jpeg-*/out/jpeg/CMakeCache.txt"))
   if len(cache) != 1 or "CMAKE_C_FLAGS:STRING=" + flags not in cache[0].read_text():
     raise ValueError("complete JPEG codec sanitizer flags are missing or ambiguous")

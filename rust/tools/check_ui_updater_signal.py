@@ -16,8 +16,8 @@ args.output = args.output.resolve()
 args.output.mkdir(parents=True, exist_ok=True)
 root = Path(__file__).resolve().parents[2]
 free = shutil.disk_usage(args.output).free
-(args.output / 'disk.json').write_text(json.dumps({'free_bytes': free, 'reserve_bytes': 25 * 1024**3, 'estimated_growth_bytes': 1024**2}))
-assert free >= 25 * 1024**3 + 1024**2
+(args.output / 'disk.json').write_text(json.dumps({'free_bytes': free, 'estimated_growth_bytes': 1024**2}))
+assert free >= 1024**2
 expected = args.output / 'openpilot-updated'
 compile_command = ['cc', '-O2', '-Wall', '-Wextra', '-Werror', str(root / 'rust/tools/ui_application_qa/updater_target.c'), '-o', str(expected)]
 with (args.output / 'build.log').open('w') as log:

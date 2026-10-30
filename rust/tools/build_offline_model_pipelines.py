@@ -31,8 +31,8 @@ def main() -> None:
     existing = args.output.resolve()
     while not existing.exists():
         existing = existing.parent
-    if shutil.disk_usage(existing).free < 27 * 1024**3:
-        parser.error("25 GiB free-space reserve plus 2 GiB build allowance required")
+    if shutil.disk_usage(existing).free < 2 * 1024**3:
+        parser.error("2 GiB estimated build growth required")
     publish(args.output, specs, compiler)
     print(json.dumps({"catalog": str(args.output / "current.json"), "kind": args.kind, "source_sha256": args.sha256,
                       "cameras": [spec.camera for spec in specs], "gpu_executed": False}, sort_keys=True))

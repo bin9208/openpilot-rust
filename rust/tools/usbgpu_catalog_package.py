@@ -168,8 +168,8 @@ def publish(sources: Sources, destination: Path) -> Path:
   selected = catalog(sources)
   destination.parent.mkdir(parents=True, exist_ok=True)
   growth = (128 << 20) + sources.model.stat().st_size
-  if shutil.disk_usage(destination.parent).free < (25 << 30) + growth:
-    raise ArtifactError('native catalog export requires 25 GiB free plus estimated growth')
+  if shutil.disk_usage(destination.parent).free < growth:
+    raise ArtifactError('insufficient space for estimated native catalog growth')
   with tempfile.TemporaryDirectory(prefix='.catalog-export-', dir=destination.parent) as temporary:
     temporary = Path(temporary)
     runtime = temporary / 'runtime'

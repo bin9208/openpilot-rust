@@ -31,6 +31,7 @@ public:
 };
 void set_threads(std::int32_t count);
 rust::Vec<std::uint8_t> resize(rust::Slice<const std::uint8_t>, Layout, Dimensions);
+rust::Vec<std::uint8_t> resize_gray_roi(rust::Slice<const std::uint8_t>, Dimensions, std::size_t, Rect, Dimensions);
 rust::Vec<std::uint8_t> bgr_gray(rust::Slice<const std::uint8_t>, Dimensions);
 rust::Vec<std::uint8_t> rgb_gray(rust::Slice<const std::uint8_t>, Dimensions);
 rust::Vec<std::uint8_t> rgb_hsv(rust::Slice<const std::uint8_t>, Dimensions);
@@ -42,6 +43,7 @@ rust::Vec<Contour> external_contours(rust::Slice<const std::uint8_t>, Dimensions
 rust::Vec<float> match_template(rust::Slice<const std::uint8_t>, Dimensions, rust::Slice<const std::uint8_t>, Dimensions, rust::Slice<const std::uint8_t>);
 rust::Vec<float> match_template_ccorr(rust::Slice<const std::uint8_t>, Dimensions, rust::Slice<const std::uint8_t>, Dimensions, rust::Slice<const std::uint8_t>);
 rust::Vec<std::uint8_t> nv12_rgb(rust::Slice<const std::uint8_t>, Dimensions);
+rust::Vec<std::uint8_t> nv12_masked_resize_rgb(rust::Slice<const std::uint8_t>, Dimensions, rust::Slice<const std::uint8_t>, Dimensions);
 rust::Vec<std::uint8_t> nv12_planes_rgb(rust::Slice<const std::uint8_t>, Dimensions, std::size_t, std::size_t);
 rust::Vec<std::uint8_t> mask_polygon(rust::Slice<const Point>, Dimensions);
 Rect bounds(rust::Slice<const Point>);

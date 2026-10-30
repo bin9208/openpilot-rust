@@ -36,7 +36,14 @@ fn run(
     Ok(result.stdout)
 }
 pub fn ffmpeg(options: &FfmpegOptions, runner: &mut impl Runner) -> Result<Value> {
-    crate::package::disk_guard(&options.output, 1024 * 1024 * 1024)?;
+    ffmpeg_with_space(options, runner, &mut crate::disk_space::inspect)
+}
+pub(super) fn ffmpeg_with_space(
+    options: &FfmpegOptions,
+    runner: &mut impl Runner,
+    inspect: &mut impl FnMut(&Path, u64) -> Result<crate::disk_space::Space>,
+) -> Result<Value> {
+    inspect(&options.output, 1024 * 1024 * 1024)?.require()?;
     fs::create_dir_all(&options.output)?;
     let roots = vec![
         options.prefix.join("bin/ffmpeg"),

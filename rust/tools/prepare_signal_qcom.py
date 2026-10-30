@@ -55,8 +55,8 @@ def main() -> None:
     if args.output.exists():
         raise ValueError("output must be a new directory")
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    if shutil.disk_usage(args.output.parent).free < 26 * 2**30:
-        raise ValueError("export requires 25 GiB free plus 1 GiB growth")
+    if shutil.disk_usage(args.output.parent).free < 2**30:
+        raise ValueError("export requires 1 GiB estimated growth")
     sys.path.insert(0, str(args.tinygrad_root.resolve()))
     from model_export.offline_onnx import load_model
     from model_export.offline_schedule import export_model

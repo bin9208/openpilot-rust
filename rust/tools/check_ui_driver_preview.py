@@ -26,7 +26,7 @@ def packets(index, mode):
 
 def main():
   parser=argparse.ArgumentParser();parser.add_argument('--binary',type=Path,required=True);parser.add_argument('--peer',type=Path,required=True);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--display',default=':139');parser.add_argument('--lane',choices=['both','source','native','compare'],default='both');args=parser.parse_args()
-  root=Path(__file__).resolve().parents[2];assert shutil.disk_usage(root).free>26*1024**3
+  root=Path(__file__).resolve().parents[2];assert shutil.disk_usage(root).free>1024**3
   args.output.mkdir(parents=True,exist_ok=True);results=[]
   modes=['tracking','rhd','search','distracted','wheel','unavailable','lockout','stale','invalid','alert','offroad','tracking']
   for big in (False,True):

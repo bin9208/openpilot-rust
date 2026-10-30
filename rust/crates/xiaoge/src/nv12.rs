@@ -60,6 +60,11 @@ impl<'a> Frame<'a> {
             .map(|row| &row[..self.layout.width])
     }
 
+    /// The validated Y allocation, including scanline padding; no UV is required.
+    pub fn y_plane(&self) -> &'a [u8] {
+        &self.data[..self.y_size]
+    }
+
     pub fn center_square(&self) -> Result<Vec<u8>, Error> {
         let size = self.layout.width.min(self.layout.height);
         let start_x = (self.layout.width - size) / 2;

@@ -81,8 +81,9 @@ fn build_probe(
     output: &Path,
     includes: &[PathBuf],
     runner: &mut impl Runner,
+    inspect: &mut impl FnMut(&Path, u64) -> Result<crate::disk_space::Space>,
 ) -> Result<Vec<String>> {
-    crate::package::disk_guard(output, 1024 * 1024 * 1024)?;
+    inspect(output, 1024 * 1024 * 1024)?.require()?;
     let mut args = vec![
         text(cc)?,
         "-std=c11".into(),

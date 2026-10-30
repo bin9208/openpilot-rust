@@ -32,6 +32,9 @@ def run_peer(kind: str, arguments: argparse.Namespace):
   prefix = "xiaoge_" + uuid.uuid4().hex
   environment = dict(os.environ, OPENPILOT_PREFIX=prefix, PARAMS_ROOT=str(output / "params"),
                      LD_LIBRARY_PATH=str(arguments.opencv / "install/lib"), PWD=str(output))
+  if kind == "source":
+    environment["LD_LIBRARY_PATH"] = ":".join(
+      path for path in (environment["LD_LIBRARY_PATH"], *os.environ.get("LD_LIBRARY_PATH", "").split(":")) if path)
   queue = Path("/dev/shm") / ("msgq_" + prefix)
   queue.mkdir()
   tcp_port, http_port = available_port(), available_port()
@@ -108,7 +111,7 @@ def main() -> None:
   arguments = parser.parse_args()
   for name in ["binary", "binding", "assets", "opencv", "output"]:
     setattr(arguments, name, getattr(arguments, name).resolve())
-  assert shutil.disk_usage(arguments.output.parent).free > 25 * 2**30 + 128 * 2**20
+  assert shutil.disk_usage(arguments.output.parent).free > 128 * 2**20
   arguments.output.mkdir(parents=True, exist_ok=False)
   source = run_peer("source", arguments)
   native = run_peer("native", arguments)
