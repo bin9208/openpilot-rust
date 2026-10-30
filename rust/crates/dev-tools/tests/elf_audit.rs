@@ -143,7 +143,7 @@ fn real_readelf_origin_paths_keep_object_local_versions_and_strong_symbols() {
             ));
             let root = f.consumer(dir);
             let info = elf(&root).unwrap();
-            assert_eq!(info.needed, [needed.clone()]);
+            assert_eq!(info.needed.as_slice(), std::slice::from_ref(&needed));
             assert_eq!(info.needs[&needed], [version]);
             roots.push(root);
         }
