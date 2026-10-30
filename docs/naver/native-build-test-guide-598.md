@@ -669,3 +669,10 @@ X64 전용 7줄 단계를 준비했다. provider 준비 뒤 선택 `pythonLocati
 및 최종 gate는 유지한다. [#614](https://github.com/bin9208/openpilot-rust/issues/614)에
 연결하며 실제 import·전체 source 비교의 성공은 적용한 P의 Actions에서 확인한다.
 로컬은 YAML·inline Python AST·Bash 구문·diff만 확인하며 기능 검사는 실행하지 않는다.
+
+별도 dev-md source1c5의 [빠른 정책 검사](https://github.com/bin9208/openpilot-rust/actions/runs/40984000661/job/123832713478)는
+기존 Xiaoge 테스트의 모든 run에 if가 없어야 한다는 규칙이 새 준비 단계와 충돌해
+110개 중1개 실패했다. 향후 P에는 준비 단계 하나의 유일성·정확 조건·env·run 전체를
+검증하는 대응 정책도 함께 준비했다. 그 객체 외 원래 비교/build/memory 단계의
+무조건 실행과 모든 run의 continue-on-error 금지를 그대로 요구한다. 현재 S237에는
+적용하지 않았으며 새 조건의 실제 테스트 통과는 P의 Actions에서 확인한다.

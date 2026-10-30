@@ -394,6 +394,18 @@ class RustIsolationTests(unittest.TestCase):
     def test_xiaoge_requires_both_architectures_and_instrumented_native_libraries(self):
         jobs = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)['jobs']
         self.assertEqual(jobs['xiaoge-runtime']['strategy']['matrix']['runner'], ['ubuntu-24.04', 'ubuntu-24.04-arm'])
+        preparations = [step for step in jobs['xiaoge-runtime']['steps']
+                        if step.get('name') == 'Preserve selected Python for Xiaoge source comparisons']
+        self.assertEqual(len(preparations), 1)
+        preparation = preparations[0]
+        self.assertEqual(preparation, {
+            'name': 'Preserve selected Python for Xiaoge source comparisons',
+            'if': "env.LOCAL_CI_ARCH == 'x86_64'",
+            'env': {'LD_LIBRARY_PATH': '${{ env.pythonLocation }}/lib:${{ env.LD_LIBRARY_PATH }}'},
+            'run': ('"$pythonLocation/bin/python" -P -c '
+                    '\'import numpy,sys; print("xiaoge_source_python", sys.executable, sys.version, numpy.__version__)\'\n'
+                    'printf \'LD_LIBRARY_PATH=%s\\n\' "$LD_LIBRARY_PATH" >> "$GITHUB_ENV"\n'),
+        })
         required = {
             'xiaoge-runtime': ('build-xiaoge-opencv', 'build_params_python.py', 'build_visionipc_python.py',
                               'check_xiaoge_ci.py', '--features native-skip-miri', 'test_xiaoge_ci.py'),
@@ -409,7 +421,8 @@ class RustIsolationTests(unittest.TestCase):
                 self.assertIn(command, script)
             for step in job['steps']:
                 if 'run' in step:
-                    self.assertNotIn('if', step)
+                    if step is not preparation:
+                        self.assertNotIn('if', step)
                     self.assertNotIn('continue-on-error', step)
             artifact = [step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@') and not step.get('with', {}).get('name', '').startswith('local-arm-')]
             self.assertEqual(len(artifact), 1)
