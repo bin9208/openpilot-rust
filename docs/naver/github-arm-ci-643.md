@@ -28,6 +28,9 @@ genuine QCOM Rust5개·pytest6개와 factory 권한 검사가 통과했다. gene
 52분42초에 통과했고 실제 CPU affinity는0..3이었다. 이는 해당 실험 SHA의 증거이며
 이 dev 초안의 최종 SHA 검사 대신 사용하지 않는다.
 
-로컬은 Python/YAML/Bash 문법·Rust 서식·diff 읽기 점검만 수행한다. 이 초안은 아직
-push/PR 생성 전이며, 최종 비교와 조건부 적용 및 해당 SHA의 Actions 결과를 추가한다.
+로컬 Python/YAML/Bash 문법·Rust 서식·diff 읽기 점검을 완료했다. 전체 측정 대기 중
+Draft PR에서 해당 SHA의 원래 필수 검사와 ARM 빌드를 병행 검증한다. 비교 조건과 필수
+검사 성공 확인 후 반영하며, 최종 비교·조건부 적용·Actions 결과를 이 기록에 추가한다.
+최신 전체 측정은 source151858a97의
+[40989886027](https://github.com/bin9208/openpilot-rust/actions/runs/40989886027)이다.
 실제 기기 설치·부팅·주행은 수행하지 않는다.
