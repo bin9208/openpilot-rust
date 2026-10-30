@@ -17,6 +17,9 @@ SOURCES = {
         sha256='2ddb6665e82ffd7e87a27b97081bddf8f09520b7a2cfd6ab011541e7cde991fa',
         url='https://codeload.github.com/proot-me/uthash/tar.gz/'+UTHASH_COMMIT),
 }
+ARM64_FACCESSAT2_PATCH = dict(path='src/syscall/sysnums-arm64.h',
+    before_sha256='86a55e5ae211a0838a45a23aa9d8889e41b9b8e6de56df0440d6a72f3ae9e253',
+    after_sha256='b850a9a4390554f6b6ec3d3454ab4f7039d1e93006dcbd6be7e5ecd63c9841b1')
 MODE = 'native-arm-proot'
 GUEST_WORK = '/openpilot-native-build-probe-599'
 SOURCE_MOUNT = '/openpilot-native-source-599'
@@ -114,6 +117,38 @@ def unpack(work, name, download, log):
     return destination/prefix
 
 
+def patch_arm64_faccessat2(source):
+    # 고정 v5.5.0의 누락된 ARM64 커널 syscall 명칭 한 행만 복구한다.
+    path = source/ARM64_FACCESSAT2_PATCH['path']
+    if path.resolve(strict=True) != path:
+        raise ValueError('native PRoot syscall header is redirected')
+    with os.fdopen(os.open(path, os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK), 'r+b') as stream:
+        info = os.fstat(stream.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_nlink != 1:
+            raise ValueError('native PRoot syscall header must be an owned regular file with one link')
+        original = stream.read()
+        anchor = b'    [435] = PR_clone3,\n'
+        entry = b'    [439] = PR_faccessat2,\n'
+        if (hashlib.sha256(original).hexdigest() != ARM64_FACCESSAT2_PATCH['before_sha256']
+                or original.count(anchor) != 1 or b'[439]' in original):
+            raise ValueError('native PRoot syscall header differs from the pinned original')
+        patched = original.replace(anchor, anchor+entry, 1)
+        if (patched.count(entry) != 1
+                or hashlib.sha256(patched).hexdigest() != ARM64_FACCESSAT2_PATCH['after_sha256']):
+            raise ValueError('native PRoot syscall patch differs from its fixed result')
+        stream.seek(0)
+        stream.write(patched)
+        stream.truncate()
+        stream.flush()
+        os.fsync(stream.fileno())
+    after = path.lstat()
+    if ((after.st_dev, after.st_ino, after.st_uid, after.st_gid, after.st_mode, after.st_nlink)
+            != (info.st_dev, info.st_ino, info.st_uid, info.st_gid, info.st_mode, info.st_nlink)
+            or file_pin(path)['sha256'] != ARM64_FACCESSAT2_PATCH['after_sha256']):
+        raise ValueError('native PRoot patched header ownership or bytes changed')
+    return dict(ARM64_FACCESSAT2_PATCH)
+
+
 def build(work, log, download, run):
     if (os.uname().machine != 'aarch64' or os.geteuid() == 0
             or work.resolve(strict=True) != work or work.stat().st_uid != os.geteuid()
@@ -123,6 +158,7 @@ def build(work, log, download, run):
     talloc = Path('/usr/lib/aarch64-linux-gnu/libtalloc.a')
     talloc_pin = file_pin(talloc)
     source = unpack(work, 'proot', download, log)
+    source_patch = patch_arm64_faccessat2(source)
     uthash = unpack(work, 'uthash', download, log)
     target = source/'lib/uthash'
     if target.is_symlink() or target.parent.resolve(strict=True) != source/'lib':
@@ -135,14 +171,15 @@ def build(work, log, download, run):
     affinity = sorted(os.sched_getaffinity(0))
     argv, environment = build_argv(work, affinity), build_environment(work)
     result = run(argv, log, env=environment)
-    if result['exit_code'] != 0 or file_pin(talloc) != talloc_pin:
+    if (result['exit_code'] != 0 or file_pin(talloc) != talloc_pin
+            or file_pin(source/source_patch['path'])['sha256'] != source_patch['after_sha256']):
         raise ValueError('native PRoot build failed or its static talloc changed')
     binary = work/'proot'
     with regular(source/'src/proot') as stream, binary.open('xb') as output:
         shutil.copyfileobj(stream, output)
     binary.chmod(0o555)
     proof = dict(schema=1, source_commit=os.environ['GITHUB_SHA'], execution_mode=MODE,
-        host_architecture='aarch64', sources=SOURCES, build_affinity=affinity,
+        host_architecture='aarch64', sources=SOURCES, source_patches=[source_patch], build_affinity=affinity,
         build_argv=argv, build_environment=environment,
         build_exit_code=result['exit_code'], static_talloc=dict(path=str(talloc), **talloc_pin),
         executable=dict(path=str(binary), **static_arm_elf(binary)))
@@ -226,6 +263,11 @@ def verify_context(context, work):
             or proof['build_environment'] != build_environment(work) or proof['build_exit_code'] != 0
             or proof['executable'] != expected or context['proot_sha256'] != expected['sha256']):
         raise ValueError('native PRoot executable or build provenance changed')
+    header = work/'proot-native-source'/('proot-'+PROOT_COMMIT)/ARM64_FACCESSAT2_PATCH['path']
+    if (proof.get('source_patches') != [ARM64_FACCESSAT2_PATCH]
+            or file_pin(header)['sha256'] != ARM64_FACCESSAT2_PATCH['after_sha256']
+            or header.stat().st_uid != os.getuid() or header.stat().st_nlink != 1):
+        raise ValueError('native PRoot ARM64 syscall patch provenance changed')
     for name, pin in SOURCES.items():
         if file_pin(work/(name+'-source.tar.gz')) != {k: pin[k] for k in ('bytes', 'sha256')}:
             raise ValueError('native PRoot source archive changed: '+name)

@@ -466,3 +466,24 @@ ELF 통합12개·unit4개를 실제 통과했다. 호스트 회귀를 AGNOS 전�
 후보 ELF·인터프리터·모델은 실행하지 않고 원래 seed 검사·Cargo argv·공간 admission·전체 probe를 유지한다.
 Rust resolver도 원래 I/O 오류와 확장 경로를 보존한다. 원인을 추측해 경로 fallback이나 ABI 예외를 넣지 않는다.
 별도 workflow·모드·검증 체계·발행 후보를 추가하지 않으며 실제 진단 결과는 Actions에서 확인한다.
+
+## 2026-10-31 — 네이티브 ARM 검증 도구의 접근 검사 매핑
+
+진단 source `1c62279a457909bb005ad7ad1ca45491a8fa9a81`의
+[Genuine41129815036/job124317574169](https://github.com/bin9208/openpilot-rust/actions/runs/41129815036/job/124317574169)은
+기존 조기 단계에서 실패했다. 두 고정 파일 모두 plain 경로의 `realpath(path,NULL)`은 성공하고
+`lib/../lib/` 형식만 NULL·ENOENT(2)였다. 네 경로의 stat·열기·SHA·크기·모드와 파일별 dev/ino는
+모두 일치했다. artifact13013821376은8,048,145B·SHA
+`55e9baea8e080d20f1051c5619ebcf4f919b7cf4083222071dc486bb24597a42`로 API와 일치한다.
+이는 두 파일의 투영 경로 증거이며 원래 seed ABI·전체 prefix·전체 Genuine 성공은 아니다.
+같은 source의 [기반 검사41129773929](https://github.com/bin9208/openpilot-rust/actions/runs/41129773929)는
+네이티브 ARM과 x64에서 성공했다. PR611의 기존 검사는 별도로 보존한다.
+
+현재 PRoot pin은 `25dc6a3134891f98a79f57ce1c2c1b23ff15cad1`(v5.5.0)이다.
+[고정 ARM64 syscall 테이블](https://github.com/proot-me/proot/blob/25dc6a3134891f98a79f57ce1c2c1b23ff15cad1/src/syscall/sysnums-arm64.h)에
+`faccessat2`의439번 매핑이 없지만 같은 소스의 enter·seccomp에는 해당 처리 코드가 있다.
+[glibc2.39 canonicalize](https://github.com/bminor/glibc/blob/release/2.39/master/stdlib/canonicalize.c)는
+`..` 앞 디렉터리 검사에서 `faccessat`의 `AT_EACCESS` 경로를 사용한다.
+CI 도구의 ARM64 매핑 한 항목만 보완하고 원본 archive 및 수정 전후 파일 SHA와 빌드 receipt를 검증한다.
+원래 네 경로 검사가 실제 통과하는지 Actions에서 먼저 확인하며 내부 원인의 완전한 입증이나 전체 성공을
+수정만으로 주장하지 않는다. 원본 이미지·libc·후보 resolver·Python·네이티브 라이브러리·ABI 경계는 유지한다.

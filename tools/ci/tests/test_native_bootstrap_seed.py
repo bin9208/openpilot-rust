@@ -308,7 +308,8 @@ class NativeProotPolicyTests(unittest.TestCase):
     binary.chmod(0o555)
     talloc_pin = dict(bytes=1, sha256='a'*64)
     proof = dict(schema=1, source_commit='b'*40, execution_mode=proot.MODE, host_architecture='aarch64',
-        sources=copy.deepcopy(proot.SOURCES), build_affinity=[2, 4], build_argv=proot.build_argv(work, [2, 4]),
+        sources=copy.deepcopy(proot.SOURCES), source_patches=[dict(proot.ARM64_FACCESSAT2_PATCH)],
+        build_affinity=[2, 4], build_argv=proot.build_argv(work, [2, 4]),
         build_environment=proot.build_environment(work), build_exit_code=0,
         static_talloc=dict(path='/usr/lib/aarch64-linux-gnu/libtalloc.a', **talloc_pin),
         executable=dict(path=str(binary), **proot.static_arm_elf(binary)))
@@ -323,6 +324,10 @@ class NativeProotPolicyTests(unittest.TestCase):
     pins = {str(work/(name+'-source.tar.gz')): {k: pin[k] for k in ('bytes', 'sha256')}
             for name, pin in proot.SOURCES.items()}
     pins['/usr/lib/aarch64-linux-gnu/libtalloc.a'] = talloc_pin
+    header = work/'proot-native-source'/('proot-'+proot.PROOT_COMMIT)/proot.ARM64_FACCESSAT2_PATCH['path']
+    header.parent.mkdir(parents=True)
+    header.write_bytes(b'owned syscall header fixture')
+    pins[str(header)] = dict(bytes=header.stat().st_size, sha256=proot.ARM64_FACCESSAT2_PATCH['after_sha256'])
     original_pin = proot.file_pin
     def file_pin(path):
       return pins[str(path)] if str(path) in pins else original_pin(path)
@@ -351,6 +356,48 @@ class NativeProotPolicyTests(unittest.TestCase):
       with self.assertRaises(ValueError):
         proot.build_argv(Path('/owned'), affinity)
 
+  def test_arm64_syscall_patch_is_exact_and_preserves_owned_header_identity(self):
+    original = b'const int table[] = {\n    [435] = PR_clone3,\n    [452] = PR_fchmodat2,\n};\n'
+    patched = original.replace(b'    [435] = PR_clone3,\n',
+        b'    [435] = PR_clone3,\n    [439] = PR_faccessat2,\n')
+    with tempfile.TemporaryDirectory() as temporary:
+      source = Path(temporary)
+      header = source/proot.ARM64_FACCESSAT2_PATCH['path']
+      header.parent.mkdir(parents=True)
+      header.write_bytes(original)
+      header.chmod(0o640)
+      before = header.stat()
+      pin = dict(proot.ARM64_FACCESSAT2_PATCH,
+          before_sha256=hashlib.sha256(original).hexdigest(), after_sha256=hashlib.sha256(patched).hexdigest())
+      with mock.patch.dict(proot.ARM64_FACCESSAT2_PATCH, pin):
+        self.assertEqual(proot.patch_arm64_faccessat2(source), pin)
+        self.assertEqual(header.read_bytes(), patched)
+        after = header.stat()
+        for key in ('st_dev', 'st_ino', 'st_uid', 'st_gid', 'st_mode', 'st_nlink'):
+          self.assertEqual(getattr(before, key), getattr(after, key))
+        with self.assertRaisesRegex(ValueError, 'pinned original'):
+          proot.patch_arm64_faccessat2(source)
+        header.write_bytes(original)
+        with mock.patch.dict(proot.ARM64_FACCESSAT2_PATCH, after_sha256='c'*64):
+          with self.assertRaisesRegex(ValueError, 'fixed result'):
+            proot.patch_arm64_faccessat2(source)
+        self.assertEqual(header.read_bytes(), original)
+        with mock.patch.object(proot.os, 'getuid', return_value=before.st_uid+1):
+          with self.assertRaisesRegex(ValueError, 'owned'):
+            proot.patch_arm64_faccessat2(source)
+        self.assertEqual(header.read_bytes(), original)
+        header.unlink()
+        unrelated = source/'keep'
+        unrelated.write_bytes(original)
+        header.symlink_to(unrelated)
+        with self.assertRaisesRegex(ValueError, 'redirected'):
+          proot.patch_arm64_faccessat2(source)
+        header.unlink()
+        os.link(unrelated, header)
+        with self.assertRaisesRegex(ValueError, 'owned'):
+          proot.patch_arm64_faccessat2(source)
+        self.assertEqual(unrelated.read_bytes(), original)
+
   def test_context_binds_built_bytes_source_gitlink_and_build_command(self):
     with tempfile.TemporaryDirectory() as temporary:
       work = Path(temporary)/'native-agnos'
@@ -375,6 +422,17 @@ class NativeProotPolicyTests(unittest.TestCase):
         changed_context = dict(context, proot_build_receipt_sha256=proot.file_pin(receipt)['sha256'])
         with self.assertRaisesRegex(ValueError, 'provenance'):
           proot.verify_context(changed_context, work)
+        for patches in ([], [dict(proot.ARM64_FACCESSAT2_PATCH, after_sha256='c'*64)]):
+          changed = dict(proof, source_patches=patches)
+          receipt.write_text(json.dumps(changed))
+          changed_context = dict(context, proot_build_receipt_sha256=proot.file_pin(receipt)['sha256'])
+          with self.assertRaisesRegex(ValueError, 'syscall patch'):
+            proot.verify_context(changed_context, work)
+        receipt.write_text(json.dumps(proof))
+        header = work/'proot-native-source'/('proot-'+proot.PROOT_COMMIT)/proot.ARM64_FACCESSAT2_PATCH['path']
+        pins[str(header)] = dict(pins[str(header)], sha256='c'*64)
+        with self.assertRaisesRegex(ValueError, 'syscall patch'):
+          proot.verify_context(context, work)
 
   def test_guest_rejects_qemu_and_fake_credentials_but_keeps_env_clear(self):
     with tempfile.TemporaryDirectory() as temporary:
