@@ -181,7 +181,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: native-agnos-environment-${{ github.ref }}-parallel-v2
+  group: native-agnos-environment-${{ github.ref }}-${{ github.sha }}-native-arm-v1
   queue: max
   cancel-in-progress: false
 jobs:

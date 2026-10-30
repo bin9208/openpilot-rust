@@ -10,7 +10,7 @@ permissions:
 env:
   RUSTUP_TOOLCHAIN: '1.94.0'
 concurrency:
-  group: rust-${{ github.event_name }}-${{ github.ref }}-native-arm-v1
+  group: rust-${{ github.event_name }}-${{ github.ref }}-${{ github.sha }}-native-arm-v1
   queue: max
   cancel-in-progress: false
 jobs:

@@ -166,6 +166,10 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     new['env']['SCOPE_CONTEXT'] = old['env']['SCOPE_CONTEXT']
                 elif filename == 'runtime-native-environment.yml':
                     self.assertEqual(new['env'].pop('LOCAL_CI_ARCH'), 'aarch64')
+                    self.assertEqual(after['concurrency'], dict(
+                        group='native-agnos-environment-${{ github.ref }}-${{ github.sha }}-native-arm-v1',
+                        queue='max', **{'cancel-in-progress': 'false'}))
+                    after['concurrency'] = before['concurrency']
                 for step_name, expected in NATIVE_OWNED_SCRIPTS[filename].items():
                     matches = [step for step in new['steps'] if step.get('name') == step_name]
                     self.assertEqual(len(matches), 1)
@@ -254,7 +258,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                 self.assertEqual(policy['queue'], 'max')
                 self.assertEqual(policy['cancel-in-progress'], 'false')
                 if name == 'rust.yml':
-                    self.assertEqual(policy['group'], 'rust-${{ github.event_name }}-${{ github.ref }}-native-arm-v1')
+                    self.assertEqual(policy['group'], 'rust-${{ github.event_name }}-${{ github.ref }}-${{ github.sha }}-native-arm-v1')
+                elif name == 'runtime-native-environment.yml':
+                    self.assertEqual(policy['group'], 'native-agnos-environment-${{ github.ref }}-${{ github.sha }}-native-arm-v1')
                 else:
                     self.assertTrue(policy['group'].endswith('-parallel-v2'))
 

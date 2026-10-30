@@ -34,6 +34,12 @@ preserve queue를 사용한다. `queue: max`와 `cancel-in-progress: false`는 �
 현재 #599 issue branch의 변경에서 자동 실행해 실제 sudo/UID/controller 능력을 먼저
 확인한다. 같은 source의 factory 검사를 별도로 중복 dispatch하지 않는다.
 
+실제 관측에서 뒤이은 CI 정책 변경의 N/O 실행은 기존 M 실행과 같은 branch key에
+묶여 job0의 pending 상태가 됐다. Rust와 Genuine은 group에 `github.sha`를 포함해
+서로 다른 소스를 독립 실행한다. 같은 소스/이벤트/ref는 같은 queue를 사용하고
+취소 방지·기존 모든 검사와 소유 자원 분리는 유지한다. 독립 hosted ARM VM에서
+현재 검증을 시작하기 위한 CI 조정이며 runner 수·요금·compile/test 기준은 바꾸지 않는다.
+
 ## 기존 #484 복구 unit fixture의 PID 공개 경합 — 2026-10-30
 
 source `ed1061eb5f6bdc540a70c8a2fbc84071f64388b0`의
