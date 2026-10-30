@@ -3372,7 +3372,7 @@ jobs:
   arm64:
     name: rust aarch64 build
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
       CARGO_INCREMENTAL: '0'

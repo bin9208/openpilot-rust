@@ -1,5 +1,42 @@
 # GitHub 호스팅과 세 등록 runner의 병렬 검증 — #635/#598
 
+## 현재 적용 상태 — 필수 수정본의 일곱 selector
+
+PR #611의 필수 수정본에는 #645·판정값 진단과 함께 앞서 proof checkout에서 준비한
+네 oracle·Miri 두 job 및 generic full ARM의 일곱 selector가 통합돼 있다. 아래의
+「향후 P용」 기록은 준비 당시 계획이다. S237의 workspace #645와 Genuine40961936699의
+유효한 guard 실패 이후 필요한 수정본에 함께 반영했다. 새 source의 실제 Actions 성공과
+정상 병합·발행·후보 수용은 별도 검증 단계다.
+
+현재 변경된 일곱 job은 `radard-runtime`, `carrot-man-runtime`, `webrtc-runtime`,
+`webcam-runtime`, `planner-memory`, `radar-memory`, `arm64`다. 앞의 네 matrix는 X64만
+hosted로 이동했고 기존 ARM 행은 그대로다. `arm64`는 `ubuntu-24.04` X64에서 기존
+cross-compiler로 generic GNU/musl AArch64를 빌드하는 job이며 AGNOS·물리 ARM 검증이 아니다.
+별도 VM으로 cross-build 부하를 분리하는 목적이며 특정 동시 job이 host headroom 부족의
+원인이라고 확정하지 않는다. guard 예산·알고리즘·재시도 loop는 변경하지 않는다.
+
+`.github/workflows/rust.yml`의 정의40개를 matrix로 펼치면46개다. `fast`는 최종
+`rust checks` 집계 job이며 아래의 포함/제외 차이는 그 hosted X64 한 개뿐이다.
+이는 정적 배분 수로, 실제 동시 실행 수나 skip·성공 관측값이 아니다.
+
+| source/준비 단계 | hosted X64 (`fast` 제외/포함) | hosted ARM | self X64 | 총계 (`fast` 제외/포함) |
+| --- | --- | --- | --- | --- |
+| S237 |22/23|8|15|45/46|
+| 네 oracle 이동 |26/27|8|11|45/46|
+| Miri 두 job 추가 단계 |28/29|8|9|45/46|
+| generic `arm64` 분산 포함 |29/30|8|8|45/46|
+
+기존 기록의 집계 제외22→26→28은 그대로 맞으며 포함하면23→27→29다.
+`model-memory`·UI와 나머지 self job, native Genuine·package/publish·foundation의
+기존 self 경계는 유지한다. `arm64`의 원래120분·초기12 GiB disk growth·FFmpeg 내부
+3 GiB growth와 모든 argv·env·if·needs·compiler/sysroot·ABI·feature·pin·artifact·최종
+gate는 보존한다. 실제 hosted free disk·peak memory·소요시간과120분 준수는 미검증이다.
+로컬 YAML·Python AST·원래 ARM run16개의 `bash -n`·diff 검사를 통과했다. 이번
+`arm64` selector를 복원하면 검토 기준 `0c64c54fde35815b199131e4c0f9232545127f0c`의
+YAML과 byte 단위로 같고 다른 필드는 그대로다.
+
+이하 항목은 각 준비 시점의 근거와 제한을 보존한 기록이다.
+
 2026-10-29 사용자는 이 세션에서 GitHub Actions 호스팅과 `bin-actions`를 병렬로
 사용하고 `bin-actions2`도 사용하라고 명시했다. 이전 단일 `bin-actions` 전용 지침을
 이 요청이 대체한다. 기능·빌드 검사는 계속 Actions에서만 수행한다.
@@ -209,12 +246,12 @@ trusted-source 검사도 유지한다. 전체 source entry 자원 로그 artifac
 로컬은 AST·YAML/Bash 구문·edition2021 Rust 서식·diff만 확인했다. 새 정확 source의
 기능·필수 PR 및 병합 후 검사는 별도 Actions 결과를 요구한다.
 
-## 2026-10-30 — 향후 input Git pin PR용 네 X64 oracle 분산 준비
+## 2026-10-30 — 당초 향후 input Git pin PR용 네 X64 oracle 분산 준비
 
-기준 source는 `2375949c19c63667ad66de0f9ee7e2c90ad8ba70`이다. 사용자 지시에 따라
-전용 proof checkout의 `codex/fix-598-four-hosted-oracles`에서 향후 적용할 패치만
-준비한다. 현재 S237과 실행 중인 Genuine·publication, perf494, 원격 및 도구 cache는
-변경하지 않는다. 적용 여부와 실제 input Git pin PR 반영은 부모 검토에 남긴다.
+준비 당시 기준 source는 `2375949c19c63667ad66de0f9ee7e2c90ad8ba70`이었다. 사용자
+지시에 따라 전용 proof checkout의 `codex/fix-598-four-hosted-oracles`에서 향후 적용할
+패치만 준비했고 당시 S237·Genuine·publication·perf494·원격·도구 cache는 변경하지
+않았다. 이후 부모 검토로 현재 필수 수정본에 통합했으며 현재 상태는 문서 첫 요약을 따른다.
 
 정확한 job ID는 `radard-runtime`, `carrot-man-runtime`(표시명 `rust CarrotMan owner`),
 `webrtc-runtime`, `webcam-runtime`이다. 네 job 모두 기존 matrix에
@@ -254,16 +291,16 @@ disk guard의 cache/Rustup/Cargo bootstrap 각1 GiB admission도 보존한다. w
 `78355c75f41503279fb5c7aedc4f6a7ccdde78581fb9bf33a53c40b9118d360d`이다.
 ARM 행·matrix 병렬도·timeout·if·needs·feature·pin·최종 gate를 보존한다. 기능·unit·
 빌드 실행, push·dispatch·cancel·PR 생성과 기기 접속은 하지 않는다. 실제 hosted oracle
-성공과 자원 admission 결과는 향후 부모가 적용한 정확 source의 Actions 검증에 남긴다.
+성공과 자원 admission 결과는 이 패치를 포함한 정확 source의 Actions 검증에 남긴다.
 
-## 2026-10-30 — 향후 P에만 적용할 Miri 두 job 추가 분산
+## 2026-10-30 — 당초 향후 P용 Miri 두 job 추가 분산 준비
 
 사용자의 병렬 검증 지시에 따라, 네 oracle 패치
 `b59f38058f9a99fc176ce0405a2b7e65dd9b1ed2`의 후속으로 읽기 감사에서 적합하다고
 확인한 `planner-memory`·`radar-memory` 두 job을 부모가 선정하여 추가 준비했다. 같은 proof branch에서
 두 `runs-on`을 `ubuntu-24.04`로 바꾸고 기존 routing 회귀의 정확 두 job 기대값만
-보강한다. 현재 원격 S·Genuine40961936699·perf·source cache·다른 worktree는
-변경하지 않으며, 실제 Git input pin P에 적용할지는 이후 부모가 판단한다.
+보강했다. 당시 원격 S·Genuine40961936699·perf·source cache·다른 worktree는 변경하지
+않았다. 이후 부모가 현재 필수 수정본에 통합했으며 현재 상태는 문서 첫 요약을 따른다.
 
 `planner-memory`는 `--no-default-features`의 네 Miri 모드를 실행하며 물리장치나
 host memory controller를 요구하지 않는다. `radar-memory`의 BLAS/SVD buffer 검사는
@@ -283,4 +320,4 @@ self job, 공통 정책/helper·cache·publisher·foundation 경계는 수정하
 S237 `2375949c19c63667ad66de0f9ee7e2c90ad8ba70` YAML과 byte 단위로 같다.
 의도한 routing 회귀와 이 기존 한국어 기록 외 변경은 없다. 단위·기능·빌드·새 CI 실행,
 push·dispatch·PR 생성은 하지 않는다. 실제 hosted 성공·peak memory·최대 disk 사용량·
-소요시간과 timeout 충족은 아직 미검증이며 향후 P의 실제 Actions 결과가 필요하다.
+소요시간과 timeout 충족은 아직 미검증이며 이 패치를 포함한 정확 source의 Actions 결과가 필요하다.
