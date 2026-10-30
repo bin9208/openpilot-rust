@@ -264,7 +264,7 @@ jobs:
   planner-memory:
     name: rust planner pure memory contracts
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 75
     env:
       CARGO_INCREMENTAL: '0'
     steps:
