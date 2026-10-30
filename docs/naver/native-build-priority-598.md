@@ -418,3 +418,22 @@ source·factory SDK를 수정하지 않는다. seed helper를 덮어쓰지 않�
 회귀는 codec1회·cereal 바로 뒤·bootstrap 바로 앞을 명시하고, 나머지 원래 호출 순서·개수와 seed 함수
 본문·공유 Cargo argv 전체 대조를 유지한다. 원래 각 검사·명령·단언은 모두1회 수행한다.
 선행 컴파일에 따른 시간·디스크/cache 수치는 후속 실제 Actions 결과로 다시 판정하며 성공을 예단하지 않는다.
+
+## 2026-10-31 — #598 Python ELF의 객체 기준 ORIGIN 해석
+
+`1614b70eb3d12ee57ba0ce9765ec601e987283c8`의 Genuine
+[41071607072/job124116883850](https://github.com/bin9208/openpilot-rust/actions/runs/41071607072/job/124116883850)는
+Python health와 FFmpeg 세 fixture의 해당 compile/실행/ABI 단언을 통과한 뒤 Python ELF 탐색에서 실패했다.
+`libpython3.so`의 DT_NEEDED `$ORIGIN/../lib/libpython3.12.so.1.0`을 기존 resolver가 탐색
+디렉터리에 그대로 붙였다. 대상 파일은 인증된 prefix receipt에 존재한다. 진단 artifact13000705489의
+52,032,053B·SHA `aa60516576323efb3d7ebea78dffd6894fff9f98eb1a79327909e7669fe729ff`가 API와 일치한다.
+의존성 탐색에서 중단되어 전체 Python 심볼·버전 보고서는 생성되지 않았다. 추가 오류가 없다는 뜻은 아니다.
+
+[동적 loader 문서](https://man7.org/linux/man-pages/man8/ld.so.8.html)의 DT_NEEDED 토큰 의미에 따라
+ORIGIN을 선언한 객체의 디렉터리를 기준으로 해석한다. 서로 다른 객체의 같은 상대 문자열을 하나의
+provider로 합치지 않으며, 기존 명시적 탐색 경계와 아키텍처·버전·강한 심볼 판정을 유지한다.
+Python 검사를 codec 뒤·긴 bootstrap fixture 앞으로 옮기고, 필수 auditor의 원래 Cargo 빌드 한 호출도
+같이 옮긴다. 이후 provider는 같은 auditor를 사용한다. 원래 Cargo argv·로그 이름과 검사 횟수,
+나머지 호출의 순서·개수, seed 본문·공유 Cargo argv를 회귀에서 계속 비교한다.
+로컬은 서식·구문·diff 검토만 수행하며 실제 resolver 회귀·Python 전체 ABI·Genuine/입력 공급·전체
+source entry와 완전 후보 성공은 Actions에서 별도 확인한다. 기존 성공6 workflow와 실패 증거는 보존한다.

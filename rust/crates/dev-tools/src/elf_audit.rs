@@ -149,14 +149,67 @@ fn architecture(path: &Path, machine: u16) -> Result<()> {
     }
     Ok(())
 }
+fn provider(object: &Path, needed: &str, libraries: &[PathBuf]) -> Result<PathBuf> {
+    let missing = || format!("missing provider {needed} required by {}", object.display());
+    let mut expanded = String::new();
+    let mut rest = needed;
+    while let Some(index) = rest.find('$') {
+        expanded.push_str(&rest[..index]);
+        let token = &rest[index..];
+        rest = token
+            .strip_prefix("${ORIGIN}")
+            .or_else(|| {
+                token.strip_prefix("$ORIGIN").filter(|suffix| {
+                    !suffix.starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_')
+                })
+            })
+            .ok_or_else(|| format!("unsupported dynamic token in provider {needed}"))?;
+        expanded.push_str(
+            object
+                .parent()
+                .and_then(Path::to_str)
+                .ok_or("ELF origin directory is not UTF-8")?,
+        );
+    }
+    expanded.push_str(rest);
+    if expanded.contains('/') {
+        // DT_NEEDED pathnames are direct, not searches relative to each library.
+        // Only ORIGIN supplies an object-relative base; a relative pathname would
+        // need the runtime working directory, which this static audit cannot infer.
+        let path = Path::new(&expanded);
+        if !path.is_absolute() {
+            return Err(format!("relative provider pathname is unsupported: {needed}").into());
+        }
+        let found = path.canonicalize().map_err(|_| missing())?;
+        if !found.is_file()
+            || !libraries
+                .iter()
+                .filter_map(|dir| dir.canonicalize().ok())
+                .any(|dir| found.parent() == Some(dir.as_path()))
+        {
+            return Err(
+                format!("provider {needed} is outside explicit library directories").into(),
+            );
+        }
+        return Ok(found);
+    }
+    libraries
+        .iter()
+        .map(|folder| folder.join(needed))
+        .find(|p| p.is_file())
+        .ok_or_else(missing)?
+        .canonicalize()
+        .map_err(Into::into)
+}
 /// Resolve explicit ordered provider directories and evaluate each root separately.
-/// This does not model a loader's search policy or execute any hardware provider.
+/// ORIGIN pathnames use their declaring object, within those explicit directories.
+/// This does not model RPATH/other loader search policy or execute any provider.
 pub fn audit(roots: &[PathBuf], libraries: &[PathBuf], machine: u16) -> Result<Value> {
     if roots.is_empty() {
         return Err("at least one ELF root required".into());
     }
     let mut objects = BTreeMap::<PathBuf, ElfInfo>::new();
-    let mut providers = BTreeMap::<String, PathBuf>::new();
+    let mut providers = BTreeMap::<(PathBuf, String), PathBuf>::new();
     let mut pending = roots
         .iter()
         .map(fs::canonicalize)
@@ -168,13 +221,8 @@ pub fn audit(roots: &[PathBuf], libraries: &[PathBuf], machine: u16) -> Result<V
         architecture(&path, machine)?;
         let info = elf(&path)?;
         for needed in &info.needed {
-            let found = libraries
-                .iter()
-                .map(|folder| folder.join(needed))
-                .find(|p| p.is_file())
-                .ok_or_else(|| format!("missing provider {needed} required by {}", path.display()))?
-                .canonicalize()?;
-            providers.insert(needed.clone(), found.clone());
+            let found = provider(&path, needed, libraries)?;
+            providers.insert((path.clone(), needed.clone()), found.clone());
             pending.push(found);
         }
         objects.insert(path, info);
@@ -191,7 +239,7 @@ pub fn audit(roots: &[PathBuf], libraries: &[PathBuf], machine: u16) -> Result<V
             for needed in &objects[&path].needed {
                 pending.push(
                     providers
-                        .get(needed)
+                        .get(&(path.clone(), needed.clone()))
                         .ok_or_else(|| format!("unresolved provider {needed}"))?
                         .clone(),
                 );
@@ -206,12 +254,14 @@ pub fn audit(roots: &[PathBuf], libraries: &[PathBuf], machine: u16) -> Result<V
             let info = &objects[path];
             let mut missing_versions = BTreeMap::<String, Vec<String>>::new();
             for (provider, versions) in &info.needs {
-                let provider_path = providers.get(provider).ok_or_else(|| {
-                    format!(
-                        "missing version provider {provider} required by {}",
-                        path.display()
-                    )
-                })?;
+                let provider_path = providers
+                    .get(&(path.clone(), provider.clone()))
+                    .ok_or_else(|| {
+                        format!(
+                            "missing version provider {provider} required by {}",
+                            path.display()
+                        )
+                    })?;
                 let definitions: BTreeSet<_> = objects[provider_path].definitions.iter().collect();
                 let missing: BTreeSet<_> = versions
                     .iter()
@@ -282,6 +332,43 @@ mod tests {
                 _ => panic!("unexpected inspection failure: {error}"),
             }
         }
+    }
+    #[test]
+    fn origin_paths_require_exact_tokens_and_explicit_provider_directories() {
+        let temp = tempfile::tempdir().unwrap();
+        let lib = temp.path().join("lib");
+        fs::create_dir(&lib).unwrap();
+        let object = lib.join("consumer.so");
+        let target = lib.join("libprovider.so");
+        fs::write(&target, b"provider").unwrap();
+        let libraries = [lib];
+        for needed in [
+            "$ORIGIN/../lib/libprovider.so",
+            "${ORIGIN}/../lib/libprovider.so",
+        ] {
+            assert_eq!(
+                provider(&object, needed, &libraries).unwrap(),
+                target.canonicalize().unwrap()
+            );
+            assert!(provider(&object, needed, &[]).is_err());
+        }
+        for (needed, expected) in [
+            ("$ORIGIN_SUFFIX/libprovider.so", "unsupported dynamic token"),
+            ("${ORIGIN/libprovider.so", "unsupported dynamic token"),
+            ("$LIB/libprovider.so", "unsupported dynamic token"),
+            ("../lib/libprovider.so", "relative provider pathname"),
+        ] {
+            let error = provider(&object, needed, &libraries).unwrap_err();
+            assert!(error.to_string().contains(expected), "{needed}: {error}");
+        }
+        let outside = temp.path().join("outside.so");
+        fs::write(&outside, b"outside").unwrap();
+        assert!(provider(&object, "$ORIGIN/../outside.so", &libraries).is_err());
+        assert_eq!(
+            provider(&object, target.to_str().unwrap(), &libraries).unwrap(),
+            target.canonicalize().unwrap()
+        );
+        assert!(provider(&object, outside.to_str().unwrap(), &libraries).is_err());
     }
     #[test]
     fn malformed_elf_and_invalid_readelf_text_are_rejected() {

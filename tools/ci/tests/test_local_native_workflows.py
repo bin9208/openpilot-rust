@@ -162,10 +162,25 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         self.assertEqual(current_calls.count(codec), 1)
         self.assertEqual(original_calls.count(codec), 1)
         self.assertEqual(current_calls.index(codec), current_calls.index('native_cereal_probe') + 1)
-        self.assertEqual(current_calls.index('native_bootstrap_seed_probe'), current_calls.index(codec) + 1)
-        # codec 한 호출만 앞당기고 나머지 원래 호출의 순서·개수는 모두 보존한다.
-        self.assertEqual([name for name in current_calls if name != codec],
-                         [name for name in original_calls if name != codec])
+        python = 'native_python_probe'
+        self.assertEqual(current_calls.count(python), 1)
+        self.assertEqual(original_calls.count(python), 1)
+        self.assertEqual(current_calls.index(python), current_calls.index(codec) + 1)
+        self.assertEqual(current_calls.index('native_bootstrap_seed_probe'), current_calls.index(python) + 1)
+        # 독립 codec/Python 검사만 앞당기고 나머지 원래 호출 순서·개수는 보존한다.
+        moved = {codec, python}
+        self.assertEqual([name for name in current_calls if name not in moved],
+                         [name for name in original_calls if name not in moved])
+        def auditor_build(node):
+            return [n.args[0] for n in ast.walk(node)
+                if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+                and n.func.id == 'execute' and isinstance(n.args[0], ast.List)
+                and any(isinstance(v, ast.Constant) and v.value == 'runtime-elf-audit'
+                        for v in n.args[0].elts)]
+        self.assertEqual([dump(n) for n in auditor_build(current[python])],
+                         [dump(n) for n in auditor_build(original['native_provider_probe'])])
+        self.assertEqual(len(auditor_build(current[python])), 1)
+        self.assertEqual(auditor_build(current['native_provider_probe']), [])
         old_argv = next(n.args[0] for n in ast.walk(original['native_cereal_probe'])
             if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
             and n.func.id == 'execute' and isinstance(n.args[0], ast.List)

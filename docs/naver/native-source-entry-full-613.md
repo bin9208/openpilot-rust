@@ -7,8 +7,8 @@
 
 ## 실행 경로
 
-`native-source-entry.yml`은 `workflow_dispatch`만 받는다. 공통 `openpilot-rust` pool의
-등록된 `bin-actions`, `bin-actions2`, `bin-actions3` 중 하나의
+`native-source-entry.yml`은 `workflow_dispatch`만 받는다. GitHub native ARM
+`ubuntu-24.04-arm` runner의
 독립 Actions checkout에서 정확 HEAD/tree와 clean 상태를 확인하고 **커밋된 Git blob**의
 입력 index SHA를 dispatch의 독립 SHA와 비교한다. 후보 artifact, 임시 index commit,
 fixture provider, 런타임 release를 대체 입력으로 받지 않는다. index가 없으면 image
@@ -135,6 +135,8 @@ Genuine API 검사에서 사용하는 `native-complete-cargo-cache`를 이름만
   `Environment::init_data()`로 사용하므로 logger·bootlog 두 object 변경은 필수다.
   manager는 snapshot 경로를 사용하므로 rebuild 뒤 최종 ELF가 같아도 허용한다.
   세 group 안의 무관 binary까지 포함한 나머지96개는 모두 fresh·object 동일이어야 한다.
+  이3/96은 해당 logger 사례의 값이며 모든 작은 변경에 적용하는 고정 규칙이 아니다.
+  다른 변경의 재빌드 범위는 실제 소스·의존성·feature·provider 입력으로 결정한다.
   `rebuilt_groups`와 `changed_binaries`를 실제 report/object 비교로 각각 기록한다.
   새 sealed logger의 `--help`에는 `generation::tool`과 같이
   `LD_LIBRARY_PATH=logger.parent/lib`를 명시하여 검증한 sealed library를 우선한다.

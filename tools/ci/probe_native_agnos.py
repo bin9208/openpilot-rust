@@ -658,8 +658,6 @@ int main(){
   execute(['g++','-std=c++17','-I',headers/'include',source,'-L',prefix/'lib',
       f'-Wl,-rpath-link,{prefix}/lib','-lavdevice','-lavfilter','-lavformat','-lavcodec','-lpostproc',
       '-lswresample','-lswscale','-lavutil','-o',program],'native-provider-abi-build.txt')
-  execute(['cargo','build','--locked','--manifest-path',f'{source_mount}/rust/Cargo.toml','-p','openpilot-dev-tools',
-      '--bin','runtime-elf-audit','--target-dir',work/'project-target','--message-format=json'],'native-provider-auditor-build.jsonl')
   audit=work/'native-provider-abi-audit.json'
   execute([work/'project-target/debug/runtime-elf-audit','--root',program,'--root',prefix/'bin/ffmpeg',
       '--root',prefix/'bin/ffprobe','--library',prefix/'lib','--library','/usr/lib/aarch64-linux-gnu',
@@ -690,6 +688,10 @@ def native_python_probe(guest_command,work,source_mount,evidence,log,guest_work)
     record=run(guest_command(argv),log,stdout_path=work/name)
     evidence['commands'].append(record)
     return record
+  # Build the same auditor once before checking Python, ahead of the long
+  # bootstrap fixture. The later provider probe reuses this exact executable.
+  execute(['cargo','build','--locked','--manifest-path',f'{source_mount}/rust/Cargo.toml','-p','openpilot-dev-tools',
+      '--bin','runtime-elf-audit','--target-dir',work/'project-target','--message-format=json'],'native-provider-auditor-build.jsonl')
   command=[work/'project-target/debug/openpilot-runtime-inputs','--prepare-python',
       '--plan',f'{source_mount}/rust/native-python-toolchain.json',
       '--cache',Path(guest_work)/'python-assets','--store',work/'native-python-prefixes']
@@ -2617,11 +2619,11 @@ def main():
     native_driver_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    native_python_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_system_sdk_probe(guest_command, work, source_mount, rootfs, evidence, log, guest_work)
     native_ffmpeg_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_provider_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_python_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_model_wheels_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_encoder_probe(guest_command, work, source_mount, evidence, log, guest_work)
     native_eigen_probe(guest_command, work, source_mount, evidence, log, guest_work)

@@ -27,6 +27,17 @@ impl Fixture {
         links: &[&str],
         version: Option<&str>,
     ) -> PathBuf {
+        self.library_with_soname(dir, name, source, links, version, name)
+    }
+    fn library_with_soname(
+        &self,
+        dir: &str,
+        name: &str,
+        source: &str,
+        links: &[&str],
+        version: Option<&str>,
+        soname: &str,
+    ) -> PathBuf {
         let directory = self.root().join(dir);
         fs::create_dir_all(&directory).unwrap();
         let code = directory.join(format!("{name}.c"));
@@ -39,7 +50,7 @@ impl Fixture {
             .arg(&code)
             .arg("-o")
             .arg(&output)
-            .arg(format!("-Wl,-soname,{name}"));
+            .arg(format!("-Wl,-soname,{soname}"));
         if let Some(version) = version {
             let script = directory.join(format!("{name}.map"));
             fs::write(
@@ -112,6 +123,112 @@ fn real_readelf_resolves_versions_default_aliases_and_ordered_provider_paths() {
         bad_report["roots"][0]["failures"][0]["missing_versions"]["libprovider.so"][0],
         "PROVIDER_1"
     );
+}
+#[test]
+fn real_readelf_origin_paths_keep_object_local_versions_and_strong_symbols() {
+    for token in ["$ORIGIN", "${ORIGIN}"] {
+        let f = Fixture::new();
+        let needed = format!("{token}/../lib/libprovider.so");
+        let mut providers = Vec::new();
+        let mut roots = Vec::new();
+        for (dir, version) in [("first/lib", "FIRST_1"), ("second/lib", "SECOND_1")] {
+            providers.push(f.library_with_soname(
+                dir,
+                "libprovider.so",
+                "int supplied(void) { return 7; }",
+                &[],
+                Some(version),
+                &needed,
+            ));
+            let root = f.consumer(dir);
+            let info = elf(&root).unwrap();
+            assert_eq!(info.needed, [needed.clone()]);
+            assert_eq!(info.needs[&needed], [version]);
+            roots.push(root);
+        }
+        let libraries = [f.root().join("second/lib"), f.root().join("first/lib")];
+        let report = audit(&roots, &libraries, 62).unwrap();
+        assert_eq!(report["compatible"], true);
+        for i in 0..2 {
+            let closure = report["roots"][i]["closure"].as_array().unwrap();
+            assert_eq!(closure.len(), 2);
+            assert!(closure.contains(&serde_json::json!(providers[i].canonicalize().unwrap())));
+            assert!(!closure.contains(&serde_json::json!(providers[1 - i].canonicalize().unwrap())));
+        }
+        f.library_with_soname(
+            "first/lib",
+            "libprovider.so",
+            "int supplied(void) { return 7; }",
+            &[],
+            Some("WRONG_1"),
+            &needed,
+        );
+        let report = audit(&roots, &libraries, 62).unwrap();
+        assert_eq!(report["roots"][0]["compatible"], false);
+        assert_eq!(report["roots"][1]["compatible"], true);
+        assert_eq!(
+            report["roots"][0]["failures"][0]["missing_versions"][needed.as_str()][0],
+            "FIRST_1"
+        );
+        f.library_with_soname(
+            "first/lib",
+            "libprovider.so",
+            "int other(void) { return 7; }",
+            &[],
+            Some("FIRST_1"),
+            &needed,
+        );
+        let report = audit(&roots, &libraries, 62).unwrap();
+        assert_eq!(report["roots"][1]["compatible"], true);
+        let failure = &report["roots"][0]["failures"][0];
+        assert_eq!(failure["missing_versions"], serde_json::json!({}));
+        assert_eq!(
+            failure["missing_strong_symbols"],
+            serde_json::json!(["supplied@FIRST_1"])
+        );
+        let mut bytes = fs::read(&providers[0]).unwrap();
+        bytes[18..20].copy_from_slice(&183u16.to_le_bytes());
+        fs::write(&providers[0], bytes).unwrap();
+        assert!(audit(&roots, &libraries, 62)
+            .unwrap_err()
+            .to_string()
+            .contains("unexpected ELF architecture"));
+    }
+}
+#[test]
+fn origin_paths_do_not_search_other_folders_or_escape_the_explicit_boundary() {
+    let f = Fixture::new();
+    let needed = "$ORIGIN/libprovider.so";
+    let provider = f.library_with_soname(
+        "owned",
+        "libprovider.so",
+        "int supplied(void) { return 7; }",
+        &[],
+        Some("PROVIDER_1"),
+        needed,
+    );
+    let root = f.consumer("owned");
+    let other = f.provider("other", "PROVIDER_1", "supplied");
+    assert!(
+        audit(std::slice::from_ref(&root), &[f.root().join("other")], 62)
+            .unwrap_err()
+            .to_string()
+            .contains("outside explicit library directories")
+    );
+    fs::remove_file(&provider).unwrap();
+    let libraries = [f.root().join("other"), f.root().join("owned")];
+    assert!(audit(std::slice::from_ref(&root), &libraries, 62)
+        .unwrap_err()
+        .to_string()
+        .contains("missing provider $ORIGIN/libprovider.so"));
+    std::os::unix::fs::symlink(other, provider).unwrap();
+    assert!(
+        audit(std::slice::from_ref(&root), &[f.root().join("owned")], 62)
+            .unwrap_err()
+            .to_string()
+            .contains("outside explicit library directories")
+    );
+    assert_eq!(audit(&[root], &libraries, 62).unwrap()["compatible"], true);
 }
 #[test]
 fn wrong_architecture_is_rejected_for_roots_and_every_provider() {
