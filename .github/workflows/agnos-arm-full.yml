@@ -92,6 +92,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
+      - name: Reject undefined probe names before deep ARM preparation
+        run: |
+          python -m pip install ruff==0.16.7
+          ruff check --isolated --select F821 tools/ci/probe_native_agnos.py tools/ci/verify_native_bootstrap.py tools/ci/verify_native_runtime_inputs.py
       - name: Build the pinned original planner ABI before deep ARM preparation
         env:
           OPENBLAS_NUM_THREADS: '1'

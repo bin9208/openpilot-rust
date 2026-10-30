@@ -387,7 +387,7 @@ def native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log
   evidence['native_bootstrap_current_tools'] = json.loads((work/'bootstrap-current-evidence/summary.json').read_text())
 
 
-def native_system_sdk_probe(guest_command, work, rootfs, evidence, log, guest_work):
+def native_system_sdk_probe(guest_command, work, rootfs, source_mount, evidence, log, guest_work):
   """Bind the verified factory namespace to the actual native build driver."""
   room(work, 64*1024**2)
   receipt = work/'native-system-sdk.json'
@@ -2553,7 +2553,7 @@ def main():
     print('AGNOS_PHASE native_bootstrap_seed_probe', flush=True)
     native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work)
     print('AGNOS_PHASE native_system_sdk_probe', flush=True)
-    native_system_sdk_probe(guest_command, work, rootfs, evidence, log, guest_work)
+    native_system_sdk_probe(guest_command, work, rootfs, source_mount, evidence, log, guest_work)
     print('AGNOS_PHASE native_codec_probe', flush=True)
     native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
     print('AGNOS_PHASE native_ffmpeg_headers_probe', flush=True)
