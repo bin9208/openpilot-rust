@@ -1,5 +1,5 @@
 // UNRUN: 실제 source-absence/held-file 경계의 Actions 회귀. 원본을 실행하지 않는다.
-use rustix::fs::{openat, statat, AtFlags, Mode, OFlags};
+use rustix::fs::{AtFlags, Mode, OFlags, openat, statat};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::{Digest, Sha256};
@@ -28,7 +28,6 @@ const SOURCE_FILES: &[&str] = &[
     "rust/crates/dev-tools/src/changed_files_check.rs",
     "rust/crates/dev-tools/tests/changed_files_caller.rs",
     "rust/crates/dev-tools/tests/changed_files_caller/absence.rs",
-    ".github/workflows/fast-checks.yml",
 ];
 const CONTEXT_LIMIT: u64 = 64 * 1024;
 const SOURCE_LIMIT: u64 = 8 * 1024 * 1024;
@@ -123,7 +122,7 @@ fn require_absent(root: &Path) -> Result<(), String> {
                     Ok(_) => {
                         return Err(format!(
                             "retired path exists (including directory/link): {relative}"
-                        ))
+                        ));
                     }
                     Err(e) => return Err(format!("absence check {relative}: {e}")),
                 }
