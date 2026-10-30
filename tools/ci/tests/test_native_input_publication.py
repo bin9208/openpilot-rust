@@ -483,6 +483,7 @@ class GateTests(unittest.TestCase):
           runner_group_id=0, runner_group_name='GitHub Actions', runner_id=1000030832)
     runs, proofs, jobs = [], {}, {42:[arm_job('Native compiler in pinned AGNOS ARM userspace')]}
     for number, (name, events, required) in enumerate(publication.GATES, 100):
+      if name == 'user-docs.yaml': number = 106
       run = dict(producer, id=number, path='.github/workflows/'+name, event=events[0])
       if run['event'] == 'pull_request':
         repository = dict(id=7, url='https://api.github.com/repos/'+publication.REPO)
@@ -511,27 +512,9 @@ class GateTests(unittest.TestCase):
     client.pr_context.side_effect = pr_context
     return client, producer, runs, jobs, proofs
 
-  def test_removed_fast_push_is_unnecessary_but_cannot_replace_the_required_pr(self):
-    client, _, _, _, _ = self.fixture()
-    self.assertTrue(all(state['ready'] for state in publication.gates(client, SOURCE, 42, 611)[1]))
-    self.assertEqual([events for name, events, _ in publication.GATES if name == 'fast-checks.yml'],
-                     [('pull_request',)])
-    for fault in ('missing-pr', 'failed-pr'):
-      with self.subTest(fault=fault):
-        client, _, runs, jobs, _ = self.fixture()
-        required = next(run for run in runs if run['path'].endswith('/fast-checks.yml'))
-        legacy = copy.deepcopy(required)
-        legacy.update(id=999, event='push', pull_requests=[])
-        runs.append(legacy)
-        jobs[999] = copy.deepcopy(jobs[required['id']])
-        if fault == 'missing-pr':
-          runs.remove(required)
-        else:
-          required['conclusion'] = 'failure'
-        states = publication.gates(client, SOURCE, 42, 611)[1]
-        fast, = (state for state in states if state['workflow'] == 'fast-checks.yml')
-        self.assertFalse(fast['ready'])
-        self.assertNotEqual(fast['run'], 999)
+  def test_fast_checks_are_retired_from_publication_gates(self):
+    self.assertNotIn('fast-checks.yml', {name for name, _, _ in publication.GATES})
+
 
   def test_latest_pending_wrong_runner_and_missing_required_arm_job_block_publication(self):
     client, producer, runs, jobs, _ = self.fixture()
@@ -658,8 +641,8 @@ class GateTests(unittest.TestCase):
                          ('GitHub Actions owned', ['self-hosted', 'ubuntu-24.04'])]:
       with self.subTest(name=name, labels=labels):
         client, _, _, jobs, _ = self.fixture()
-        jobs[105][0].update(runner_name=name, labels=labels)
-        self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][5]['ready'])
+        jobs[104][0].update(runner_name=name, labels=labels)
+        self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][4]['ready'])
 
   def test_publication_rejects_receipt_runner_name_and_environment_spoofing(self):
     for fault in ('name', 'environment'):

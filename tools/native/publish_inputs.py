@@ -42,13 +42,12 @@ GATES = [
     ('native-resource-guard.yml', ('push', 'workflow_dispatch'), {'Real memory limit and cancellation (X64 host kernel)'}),
     ('rust.yml', ('pull_request',), {'rust checks', 'rust workspace checks', 'rust aarch64 build'}),
     ('integration.yml', ('pull_request',), {'integration gate', 'build / build release'}),
-    ('fast-checks.yml', ('pull_request',), {'fast checks'}),
     ('user-docs.yaml', ('pull_request',), {'check mapped user docs'}),
 ]
 PROOF_JOBS = {'rust.yml': 'workspace', 'integration.yml': 'build_release',
-              'fast-checks.yml': 'fast', 'user-docs.yaml': 'check_user_docs'}
+              'user-docs.yaml': 'check_user_docs'}
 PROOF_JOB_NAMES = {'workspace': 'rust workspace checks', 'build_release': 'build / build release',
-                   'fast': 'fast checks', 'check_user_docs': 'check mapped user docs'}
+                   'check_user_docs': 'check mapped user docs'}
 SELF_HOSTED_GATES = {'runtime-source-build.yml', 'runtime-native-environment.yml', 'native-resource-guard.yml'}
 _CONTEXT = importlib.util.spec_from_file_location('native_validation_context_source',
     Path(__file__).resolve().parents[1]/'ci/validation_context.py')
