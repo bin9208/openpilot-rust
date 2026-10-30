@@ -593,7 +593,7 @@ class GateTests(unittest.TestCase):
         if actual['name'] not in (publication.FOUNDATION_ARM_JOB, publication.PRODUCER_ARM_JOB):
           actual['runner_name'] = 'bin-actions2'
     # Keep unchanged original PR receipts attached to their actual runner.
-    for number in (103, 104, 105, 106):
+    for number in (103, 104, 106):
       for actual in jobs[number]:
         actual['runner_name'] = 'bin-actions'
     self.assertTrue(all(state['ready'] for state in publication.gates(client, SOURCE, 42, 611)[1]))

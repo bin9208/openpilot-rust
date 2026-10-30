@@ -52,6 +52,13 @@ ARM 증거·deadline 대조는 유지한다. Fast 등 삭제 정책을 되돌리
 로컬은 AST·diff만 확인하며 수정 후 실제 회귀 성공은 Actions 검증 전이다.
 기존 S/C 실행은 재시작하거나 취소하지 않는다.
 
+후속 source `a395db720284efe171444ff7eb893279c535de83`의
+[foundation ARM job123903206610](https://github.com/bin9208/openpilot-rust/actions/runs/41006731360/job/123903206610)에서
+routing12개는 모두 통과했다. 다음 publication 회귀32개 중1개는 삭제된 Fast fixture
+ID105 참조로 `KeyError`였다. 해당 참조만 제거하고 실제 세 PR fixture103/104/106과
+원래 runner/gate 단언을 유지한다. 기존 foundation에서 수정 후 회귀 전체를 먼저
+확인한 뒤 최신 PR 검증을 재개하며 실행 중인 Genuine 입력 준비는 보존한다.
+
 ## 기존 #484 복구 unit fixture의 PID 공개 경합 — 2026-10-30
 
 source `ed1061eb5f6bdc540a70c8a2fbc84071f64388b0`의
