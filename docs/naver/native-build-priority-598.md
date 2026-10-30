@@ -34,6 +34,23 @@ preserve queue를 사용한다. `queue: max`와 `cancel-in-progress: false`는 �
 현재 #599 issue branch의 변경에서 자동 실행해 실제 sudo/UID/controller 능력을 먼저
 확인한다. 같은 source의 factory 검사를 별도로 중복 dispatch하지 않는다.
 
+## 기존 #484 복구 unit fixture의 PID 공개 경합 — 2026-10-30
+
+source `ed1061eb5f6bdc540a70c8a2fbc84071f64388b0`의
+[workspace job123873260557](https://github.com/bin9208/openpilot-rust/actions/runs/40997291847/job/123873260557)은
+carrot-recovery20개 성공/1개 실패/3개 ignored로 종료했다. `child_driver`가
+`descendant.pid`의 존재만 확인한 뒤 빈 내용을 읽어 `ParseIntError::Empty`로 중단됐으며
+실제 cleanup 단언에 도달하기 전이다. N4b0a의 해당 source도 같은 bytes다.
+
+이는 이미 열린 [#484](https://github.com/bin9208/openpilot-rust/issues/484)의 동일 unit
+fixture 사건이다. 기존 `8ae95f73330fa8a18bc78b3b6192de7485443719`의 임시 파일/rename
+방식을 필요한 descendant writer 한 곳에 재사용하고, 현재 PID bytes/파서와 나머지
+단언을 유지한다. leader PID는 background fork 전에 쓰기가 끝나므로 바꾸지 않는다.
+runtime 코드,2초 준비/5초 전체 한도, SIGKILL·같은 session/다른 PGID·무관 child 생존·
+leader/descendant 회수 판정은 그대로다. 기존 #296 작업 전체를 가져오거나 #474의
+production shutdown 원인을 해결했다고 주장하지 않는다. 로컬은 서식·구문·diff만
+확인하며 정확 수정 source의 실제 workspace/복구 결과는 Actions에서 확인한다.
+
 ## S237 Genuine 실패와 메모리 진단 보강 — 2026-10-30
 
 source `2375949c19c63667ad66de0f9ee7e2c90ad8ba70`의
