@@ -480,6 +480,7 @@ class GateTests(unittest.TestCase):
         status='completed', conclusion='success')
     runs, proofs, jobs = [], {}, {42:[job_fixture('Native compiler in pinned AGNOS ARM userspace')]}
     for number, (name, events, required) in enumerate(publication.GATES, 100):
+      if name == 'user-docs.yaml': number = 106
       run = dict(producer, id=number, path='.github/workflows/'+name, event=events[0])
       if run['event'] == 'pull_request':
         repository = dict(id=7, url='https://api.github.com/repos/'+publication.REPO)
@@ -610,8 +611,8 @@ class GateTests(unittest.TestCase):
                          ('GitHub Actions owned', ['self-hosted', 'ubuntu-24.04'])]:
       with self.subTest(name=name, labels=labels):
         client, _, _, jobs, _ = self.fixture()
-        jobs[105][0].update(runner_name=name, labels=labels)
-        self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][5]['ready'])
+        jobs[104][0].update(runner_name=name, labels=labels)
+        self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][4]['ready'])
 
   def test_publication_rejects_receipt_runner_name_and_environment_spoofing(self):
     for fault in ('name', 'environment'):
