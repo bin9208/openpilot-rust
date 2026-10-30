@@ -651,3 +651,21 @@ E0599의 원인이다. 생성된 현재 API와 기존 caller를 대조하고 `wh
 명시한다. production generator·고정143개 입력·출력 SHA와 실제 free-byte 검사는
 유지한다. 이는 #629의 회귀 환경 보완이며 출력 비교를 생략하거나 pin을 바꾸지 않는다.
 기능 재검증은 새 정확 source의 원래 Actions에서 수행한다.
+
+## 2026-10-30 — 향후 입력 Git pin 검사의 Xiaoge Python 경로 보존 준비
+
+dev-md의 별도 source `ce20f2582dfdc5ca77776e58ba23a52c28f90655`에서
+[X64 job123744005591](https://github.com/bin9208/openpilot-rust/actions/runs/40957390360/job/123744005591)이
+설치된 numpy를 첫 policy import에서 찾지 못했다. provider 준비가 선택 Python의
+library 경로를 덮어쓰는 명령은 현재 dev 대상 source S237에도 동일하게 있다.
+현재 S237의 Xiaoge job123757139846는 성공했으므로 그 실행을 실패나 수정 성공으로
+재표기하지 않는다. 현재 S237·Genuine·원격 실행은 유지한다.
+
+향후 공개 입력 Git pin P에만 적용할 전용 proof checkout에서 기존 Webcam과 같은
+X64 전용 7줄 단계를 준비했다. provider 준비 뒤 선택 `pythonLocation/lib`와 provider
+경로를 함께 보존하고, 명시 interpreter의 numpy import·경로·버전을 확인하여 후속
+단계에 넘긴다. source Python peer 세 곳의 기존 LD tail 보존은 S237에 이미 있으므로
+그 파일들은 바꾸지 않는다. 원래 명령·provider/모델 pin·픽셀·tensor·IPC·timeout·ARM
+및 최종 gate는 유지한다. [#614](https://github.com/bin9208/openpilot-rust/issues/614)에
+연결하며 실제 import·전체 source 비교의 성공은 적용한 P의 Actions에서 확인한다.
+로컬은 YAML·inline Python AST·Bash 구문·diff만 확인하며 기능 검사는 실행하지 않는다.
