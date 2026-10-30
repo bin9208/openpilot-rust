@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import platform
 import subprocess
 import tempfile
 import time
@@ -11,7 +12,9 @@ from check_proclog_reference import make_process
 from device_probe import binary_digest
 
 
-def check(binary: Path, runner: Path, report: Path) -> None:
+def check(binary: Path, runner: Path | None, report: Path) -> None:
+  if runner is None and platform.machine() != 'aarch64':
+    raise RuntimeError('native AArch64 checks require an AArch64 host')
   header = subprocess.check_output(["readelf", "-h", str(binary)], text=True)
   segments = subprocess.check_output(["readelf", "-l", str(binary)], text=True)
   dynamic = subprocess.check_output(["readelf", "-d", str(binary)], text=True)
@@ -27,7 +30,7 @@ def check(binary: Path, runner: Path, report: Path) -> None:
     os.environ.pop("CEREAL_FAKE", None)
     from openpilot.cereal import messaging
 
-    command = [str(runner), str(binary), "--proc-root", str(root)]
+    command = ([str(runner)] if runner is not None else []) + [str(binary), "--proc-root", str(root)]
     subprocess.run([*command, "--self-test"], check=True, timeout=15)
     subscriber = messaging.sub_sock("procLog", timeout=100)
     frames = 0
@@ -55,7 +58,7 @@ def check(binary: Path, runner: Path, report: Path) -> None:
           producer.kill()
           producer.wait(timeout=3)
     del subscriber
-  result = {"result": "pass", "execution": "qemu-aarch64", "procfs": "synthetic fixture", "frames": frames,
+  result = {"result": "pass", "execution": "native-aarch64" if runner is None else "qemu-aarch64", "procfs": "synthetic fixture", "frames": frames,
             "binary_sha256": binary_digest(binary), "elf": "static AArch64; no interpreter or shared dependencies",
             "device_validation": "not_run"}
   report.write_text(json.dumps(result, indent=2) + "\n")
@@ -63,9 +66,11 @@ def check(binary: Path, runner: Path, report: Path) -> None:
 
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description="Static AArch64 ELF and emulated synthetic IPC/Params checks; not device validation")
+  parser = argparse.ArgumentParser(description="Static AArch64 ELF and synthetic IPC/Params checks; not device validation")
   parser.add_argument("--binary", type=Path, required=True)
-  parser.add_argument("--runner", type=Path, required=True)
+  execution = parser.add_mutually_exclusive_group(required=True)
+  execution.add_argument("--runner", type=Path)
+  execution.add_argument("--native", action="store_true")
   parser.add_argument("--report", type=Path, required=True)
   args = parser.parse_args()
-  check(args.binary.resolve(), args.runner.resolve(), args.report)
+  check(args.binary.resolve(), args.runner.resolve() if args.runner is not None else None, args.report)

@@ -21,7 +21,7 @@ fn arm(path: &Path) -> Result<()> {
 pub struct Providers {
     pub binary: PathBuf,
     pub compiler: PathBuf,
-    pub qemu: PathBuf,
+    pub qemu: Option<PathBuf>,
     pub libraries: PathBuf,
 }
 pub fn stage(output: &Path, providers: &Providers) -> Result<Value> {
@@ -51,7 +51,14 @@ fn stage_with_audit(
     }
     let binary = providers.binary.canonicalize()?;
     let compiler = providers.compiler.canonicalize()?;
-    let qemu = providers.qemu.canonicalize()?;
+    let qemu = providers
+        .qemu
+        .as_ref()
+        .map(|path| path.canonicalize())
+        .transpose()?;
+    if qemu.is_none() && std::env::consts::ARCH != "aarch64" {
+        return Err("native QCOM compiler execution requires an AArch64 host".into());
+    }
     let libraries = providers.libraries.canonicalize()?;
     let loader = libraries.join("ld-linux-aarch64.so.1");
     for path in [&binary, &compiler, &loader] {
@@ -86,10 +93,15 @@ fn stage_with_audit(
         return Err("frozen compiler input changed during audit".into());
     }
     let output = parent.join(output.file_name().ok_or("staging output has no filename")?);
-    let command = vec![
-        qemu.to_string_lossy().into_owned(),
-        "-cpu".into(),
-        "cortex-a57".into(),
+    let mut command = match &qemu {
+        Some(qemu) => vec![
+            qemu.to_string_lossy().into_owned(),
+            "-cpu".into(),
+            "cortex-a57".into(),
+        ],
+        None => Vec::new(),
+    };
+    command.extend([
         loader.to_string_lossy().into_owned(),
         "--library-path".into(),
         libraries.to_string_lossy().into_owned(),
@@ -102,8 +114,9 @@ fn stage_with_audit(
             .join("libllvm-qcom.so")
             .to_string_lossy()
             .into_owned(),
-    ];
-    let provenance = json!({"compiler_url":"https://raw.githubusercontent.com/commaai/agnos-builder/ec1cf237a84565a056dbbc6f433b1b1c20c07a2c/userspace/root/usr/lib/aarch64-linux-gnu/libllvm-qcom.so","compiler_sha256":compiler_sha,"native_frontend_sha256":binary_hash,"qemu_sha256":digest(&qemu)?,"loader_sha256":digest(&loader)?,"command":command,"gpu_executed":false,"dependency_audit":abi});
+    ]);
+    let qemu_hash = qemu.as_ref().map(|path| digest(path)).transpose()?;
+    let provenance = json!({"compiler_url":"https://raw.githubusercontent.com/commaai/agnos-builder/ec1cf237a84565a056dbbc6f433b1b1c20c07a2c/userspace/root/usr/lib/aarch64-linux-gnu/libllvm-qcom.so","compiler_sha256":compiler_sha,"native_frontend_sha256":binary_hash,"qemu_sha256":qemu_hash,"execution_mode":if qemu.is_some(){"qemu-user"}else{"native-arm"},"loader_sha256":digest(&loader)?,"command":command,"gpu_executed":false,"dependency_audit":abi});
     fs::write(
         temporary.path().join("command.json"),
         format!("{}\n", serde_json::to_string(&command)?),
@@ -163,7 +176,7 @@ mod tests {
         let providers = Providers {
             binary: bad.clone(),
             compiler: bad.clone(),
-            qemu: bad.clone(),
+            qemu: Some(bad.clone()),
             libraries: temp.path().into(),
         };
         let output = temp.path().join("stage");
@@ -205,7 +218,7 @@ mod tests {
             let providers = Providers {
                 binary: binary.clone(),
                 compiler: compiler.clone(),
-                qemu: loader,
+                qemu: Some(loader),
                 libraries: temp.path().into(),
             };
             let output = temp.path().join("stage");
