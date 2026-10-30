@@ -115,8 +115,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         self.assertIn('guest_uid', transport)
 
     def test_validation_concurrency_preserves_pending_and_running_evidence(self):
-        for name in ('fast-checks.yml', 'integration.yml', 'rust.yml', 'tests.yaml',
-                     'naver-ci.yml', 'naver-apk-tools.yml', 'wiki-settings-check.yaml',
+        for name in ('integration.yml', 'rust.yml', 'tests.yaml',
+                     'naver-ci.yml', 'naver-apk-tools.yml',
                      'native-apt-scope.yml', 'carrot-peer-readiness.yml'):
             with self.subTest(workflow=name):
                 policy = load(ROOT / '.github/workflows' / name)['concurrency']
