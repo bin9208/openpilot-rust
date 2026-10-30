@@ -205,15 +205,47 @@ fn provider(object: &Path, needed: &str, libraries: &[PathBuf]) -> Result<PathBu
 /// ORIGIN pathnames use their declaring object, within those explicit directories.
 /// This does not model RPATH/other loader search policy or execute any provider.
 pub fn audit(roots: &[PathBuf], libraries: &[PathBuf], machine: u16) -> Result<Value> {
+    audit_in_context(roots, libraries, machine, None)
+}
+/// Check the owner independently first, then expose only its startup closure to
+/// each plugin root. Other roots never supply exports to one another.
+pub fn audit_with_load_owner(
+    roots: &[PathBuf],
+    libraries: &[PathBuf],
+    machine: u16,
+    load_owner: &Path,
+) -> Result<Value> {
+    audit_in_context(roots, libraries, machine, Some(load_owner))
+}
+fn audit_in_context(
+    roots: &[PathBuf],
+    libraries: &[PathBuf],
+    machine: u16,
+    load_owner: Option<&Path>,
+) -> Result<Value> {
     if roots.is_empty() {
         return Err("at least one ELF root required".into());
     }
+    let load_owner = load_owner.map(fs::canonicalize).transpose()?;
+    let mut scoped_roots = roots.to_vec();
+    if let Some(owner) = &load_owner {
+        scoped_roots = scoped_roots
+            .iter()
+            .map(fs::canonicalize)
+            .collect::<std::io::Result<Vec<_>>>()?;
+        scoped_roots.retain(|root| root != owner);
+        scoped_roots.insert(0, owner.clone());
+    }
+    let roots = &scoped_roots;
     let mut objects = BTreeMap::<PathBuf, ElfInfo>::new();
     let mut providers = BTreeMap::<(PathBuf, String), PathBuf>::new();
     let mut pending = roots
         .iter()
         .map(fs::canonicalize)
         .collect::<std::io::Result<Vec<_>>>()?;
+    if load_owner.is_some() {
+        pending.reverse();
+    }
     while let Some(path) = pending.pop() {
         if objects.contains_key(&path) {
             continue;
@@ -228,7 +260,8 @@ pub fn audit(roots: &[PathBuf], libraries: &[PathBuf], machine: u16) -> Result<V
         objects.insert(path, info);
     }
     let mut results = Vec::new();
-    for root in roots {
+    let mut owner_closure = BTreeSet::new();
+    for (index, root) in roots.iter().enumerate() {
         let root = root.canonicalize()?;
         let mut closure = BTreeSet::new();
         let mut pending = vec![root.clone()];
@@ -243,6 +276,14 @@ pub fn audit(roots: &[PathBuf], libraries: &[PathBuf], machine: u16) -> Result<V
                         .ok_or_else(|| format!("unresolved provider {needed}"))?
                         .clone(),
                 );
+            }
+        }
+        if load_owner.is_some() {
+            if index == 0 {
+                // This owner's result cannot be rescued by any plugin exports.
+                owner_closure = closure.clone();
+            } else {
+                closure.extend(owner_closure.iter().cloned());
             }
         }
         let exports: BTreeSet<_> = closure
@@ -283,9 +324,12 @@ pub fn audit(roots: &[PathBuf], libraries: &[PathBuf], machine: u16) -> Result<V
     for (path, info) in objects {
         object_rows.push(json!({"path":path,"needed":info.needed,"sha256":digest(&path)?}));
     }
-    Ok(
-        json!({"compatible":results.iter().all(|v|v["compatible"]==true),"roots":results,"objects":object_rows,"scope":"static ELF64 little-endian architecture, per-root DT_NEEDED closure, version and strong-symbol resolution; no hardware execution"}),
-    )
+    let mut report = json!({"compatible":results.iter().all(|v|v["compatible"]==true),"roots":results,"objects":object_rows,"scope":"static ELF64 little-endian architecture, per-root DT_NEEDED closure, version and strong-symbol resolution; no hardware execution"});
+    if let Some(owner) = load_owner {
+        report["load_owner"] = json!(owner);
+        report["scope"] = json!("static ELF64 little-endian architecture, independent load-owner startup closure plus each plugin's DT_NEEDED closure, version and strong-symbol resolution; no hardware execution");
+    }
+    Ok(report)
 }
 
 #[cfg(test)]

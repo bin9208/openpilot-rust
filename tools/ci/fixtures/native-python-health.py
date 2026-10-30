@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Run only under the prepared ARM Python in Actions; no model/GPU/device work."""
 import argparse
+import _crypt
+import _dbm
+import _tkinter
 import bz2
 import ctypes
 import encodings
@@ -27,10 +30,12 @@ def main():
   assert tuple(sys.version_info[:3]) == (3, 12, 16)
   assert sys.implementation.cache_tag == 'cpython-312' and platform.machine() == 'aarch64'
   assert sys.flags.isolated == 1 and sys.flags.dont_write_bytecode == 1 and sys.flags.no_site == 1
+  assert sys.getdlopenflags() & os.RTLD_NOW
   assert Path(sys.executable).resolve() == prefix/'bin/python3.12'
   assert Path(sys.prefix).resolve() == Path(sys.base_prefix).resolve() == prefix
   assert sysconfig.get_config_var('SOABI') == 'cpython-312-aarch64-linux-gnu'
-  for module in (os, encodings, ctypes, bz2, lzma, ssl, sqlite3):
+  extensions = (_crypt, _dbm, _tkinter)
+  for module in (os, encodings, ctypes, bz2, lzma, ssl, sqlite3, *extensions):
     assert Path(module.__file__).resolve().is_relative_to(prefix)
   libc = ctypes.CDLL(None)
   libc.getpid.restype = ctypes.c_int
@@ -51,6 +56,8 @@ def main():
       ssl_version=ssl.OPENSSL_VERSION, sqlite_version=sqlite3.sqlite_version,
       isolated=True, source_checkout_imported=False, bytecode_written=False,
       standard_library_checks=['prefix', 'ctypes-getpid', 'bz2', 'lzma', 'zlib', 'math', 'sha256', 'sqlite3', 'ssl-import'],
+      extension_modules=[module.__name__ for module in extensions],
+      extension_load_now=True,
       python_model_environment_complete=False, model_generated=False, gpu_executed=False,
       physical_device_execution=False)
   args.output.write_text(json.dumps(result, indent=2)+'\n')

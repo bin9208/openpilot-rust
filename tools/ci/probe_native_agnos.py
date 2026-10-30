@@ -715,26 +715,48 @@ def native_python_probe(guest_command,work,source_mount,evidence,log,guest_work)
   assert health['version']==plan['version'] and health['architecture']=='aarch64'
   assert health['isolated'] and not health['bytecode_written'] and not health['model_generated']
   assert not health['gpu_executed'] and not health['physical_device_execution']
+  assert health['extension_modules']==['_crypt','_dbm','_tkinter']
+  assert health['extension_load_now'] is True
   # Every ELF member, including extension modules not imported by the health
   # fixture, must have a compatible closure against this prefix/factory SDK.
   actual_prefix=work/prefix.relative_to(guest_work)
   receipt=json.loads((work/Path(rows[0]['tree_receipt']).relative_to(guest_work)).read_text())
   roots=[]
+  extensions=[]
+  extension_dir=prefix/'lib/python3.12/lib-dynload'
   library_dirs={prefix/'lib',prefix/'lib/python3.12/lib-dynload'}
   for path,entry in receipt['entries'].items():
     if entry['kind']!='file': continue
     with (actual_prefix/path).open('rb') as stream:
       magic=stream.read(4)
     if magic==b'\x7fELF':
-      roots.append(prefix/path)
+      (extensions if (prefix/path).parent==extension_dir else roots).append(prefix/path)
       library_dirs.add((prefix/path).parent)
   assert prefix/'bin/python3.12' in roots
+  assert set(extensions)=={extension_dir/f'{name}.cpython-312-aarch64-linux-gnu.so'
+      for name in health['extension_modules']}
+  assert len(roots)==7 and len(extensions)==3
+  search=[*(arg for path in sorted(library_dirs) for arg in ('--library',path)),
+      '--library','/usr/lib/aarch64-linux-gnu','--library','/lib/aarch64-linux-gnu']
   audit=work/'native-python-abi.json'
   execute([work/'project-target/debug/runtime-elf-audit',*(arg for path in roots for arg in ('--root',path)),
-      *(arg for path in sorted(library_dirs) for arg in ('--library',path)),
-      '--library','/usr/lib/aarch64-linux-gnu','--library','/lib/aarch64-linux-gnu','--output',audit],
+      *search,'--output',audit],
       'native-python-abi-summary.json')
-  assert json.loads(audit.read_text())['compatible'] is True
+  standalone=json.loads(audit.read_text())
+  assert standalone['compatible'] is True
+  assert len(standalone['roots'])==len(roots)
+  assert {row['root'] for row in standalone['roots']}=={str(path) for path in roots}
+  # These standard-library extension modules resolve Python symbols from the
+  # verified interpreter that loads them, not from unrelated audited roots.
+  owner=prefix/'bin/python3.12'
+  extension_audit=work/'native-python-extensions-abi.json'
+  execute([work/'project-target/debug/runtime-elf-audit','--load-owner',owner,
+      *(arg for path in extensions for arg in ('--root',path)),*search,'--output',extension_audit],
+      'native-python-extensions-abi-summary.json')
+  loaded=json.loads(extension_audit.read_text())
+  assert loaded['compatible'] is True and loaded['load_owner']==str(owner)
+  assert len(loaded['roots'])==len(extensions)+1
+  assert {row['root'] for row in loaded['roots']}=={str(path) for path in [owner,*extensions]}
   execute(command,'native-python-after-health.json')
   after=json.loads((work/'native-python-after-health.json').read_text())
   assert after['tree_sha256']==rows[0]['tree_sha256']
@@ -742,7 +764,8 @@ def native_python_probe(guest_command,work,source_mount,evidence,log,guest_work)
   evidence['native_python']=dict(version=health['version'],target=plan['target'],
       archive_sha256=plan['asset']['sha256'],tree_sha256=rows[0]['tree_sha256'],
       actual_arm_preparer=True,actual_arm_interpreter_executed=True,host_expected_tree_matches=True,
-      strict_all_elf_closure_compatible=True,elf_members=len(roots),
+      strict_all_elf_closure_compatible=True,elf_members=len(roots)+len(extensions),
+      extension_modules=health['extension_modules'],extension_load_owner=str(owner),
       stdlib_checks=health['standard_library_checks'],prefix_unchanged_after_execution=True,
       repeated_http_body_bytes=0,repeated_copied_bytes=0,model_generated=False,
       python_model_environment_complete=False,runtime_activated=False,physical_device_execution=False,

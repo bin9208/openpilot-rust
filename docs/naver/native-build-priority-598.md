@@ -437,3 +437,15 @@ Python 검사를 codec 뒤·긴 bootstrap fixture 앞으로 옮기고, 필수 au
 나머지 호출의 순서·개수, seed 본문·공유 Cargo argv를 회귀에서 계속 비교한다.
 로컬은 서식·구문·diff 검토만 수행하며 실제 resolver 회귀·Python 전체 ABI·Genuine/입력 공급·전체
 source entry와 완전 후보 성공은 Actions에서 별도 확인한다. 기존 성공6 workflow와 실패 증거는 보존한다.
+
+같은 고정 Python 원본29,234,064B·SHA `bb4b6392670c5d3f93876996fcaa19858a4a413a0c7720144c18b0d6f1f0db2d`의
+10개 ELF를 실행 없이 읽어 receipt의 각 SHA/byte와 대조했다. `_crypt`·`_dbm`·`_tkinter`에는
+각각9·31·96개의 강한 Python 미정의 심볼과 Python DT_NEEDED 부재를 확인했다. 실제 실행파일은
+해당 Python export를 제공한다. 독립 root closure만 검사하면 이 실제 로딩 소유자 관계가 빠진다.
+[dlopen의 main program/dependency 심볼 범위](https://man7.org/linux/man-pages/man3/dlopen.3.html)에 맞춰
+3개 확장에만 `--load-owner`로 실제 Python 실행파일을 명시한다. 나머지7개 ELF는 기존 독립 검사로
+유지하고 소유자 자체도 독립 검사한다. 무관 root의 export 합집합이나 Python 심볼 무시는 허용하지 않는다.
+기존 health에서도 세 확장을 실제 import하고 `RTLD_NOW`·prefix·격리 상태를 확인한다. Tcl/Tk는
+확장의 실제 DT_NEEDED에 있으며 별도 Tcl 소유자 예외를 추가하지 않는다. factory 의존성과 전체 ABI의
+실제 수용은 Actions에서 확인해야 한다. 이 추가 원본 읽기는 실행 중인46b9e 검사의 성공/실패 판정이 아니며,
+그 검사·기존 성공 결과를 취소하거나 변경하지 않는다.

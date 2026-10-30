@@ -1,15 +1,24 @@
-use openpilot_dev_tools::elf_audit::audit;
+use openpilot_dev_tools::elf_audit::{audit, audit_with_load_owner};
 use std::{fs, io::Write, path::PathBuf};
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut roots = Vec::new();
     let mut libraries = Vec::new();
     let mut output = None;
+    let mut load_owner = None;
     let mut args = std::env::args_os().skip(1);
     while let Some(arg) = args.next() {
         match arg.to_str().ok_or("invalid argument")? {
             "--root" => roots.push(PathBuf::from(args.next().ok_or("missing --root value")?)),
             "--library" => {
                 libraries.push(PathBuf::from(args.next().ok_or("missing --library value")?))
+            }
+            "--load-owner" => {
+                if load_owner.is_some() {
+                    return Err("duplicate --load-owner".into());
+                }
+                load_owner = Some(PathBuf::from(
+                    args.next().ok_or("missing --load-owner value")?,
+                ));
             }
             "--output" => {
                 if output.is_some() {
@@ -18,7 +27,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 output = Some(PathBuf::from(args.next().ok_or("missing --output value")?));
             }
             "--help" | "-h" => {
-                println!("Usage: runtime-elf-audit --root ELF [--root ELF ...] --library DIRECTORY [--library DIRECTORY ...] --output REPORT.json");
+                println!("Usage: runtime-elf-audit [--load-owner ELF] --root ELF [--root ELF ...] --library DIRECTORY [--library DIRECTORY ...] --output REPORT.json");
                 return Ok(());
             }
             _ => return Err("unknown argument".into()),
@@ -28,7 +37,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err("--root and --library required".into());
     }
     let output = output.ok_or("--output required")?;
-    let report = audit(&roots, &libraries, 183)?;
+    let report = if let Some(owner) = load_owner {
+        audit_with_load_owner(&roots, &libraries, 183, &owner)?
+    } else {
+        audit(&roots, &libraries, 183)?
+    };
     if let Some(parent) = output.parent().filter(|p| !p.as_os_str().is_empty()) {
         fs::create_dir_all(parent)?;
     }

@@ -1,8 +1,9 @@
 use openpilot_dev_tools::{
-    elf_audit::{audit, elf},
+    elf_audit::{audit, audit_with_load_owner, elf},
     package::disk_guard,
 };
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
     process::Command,
@@ -296,6 +297,148 @@ fn unrelated_root_exports_cannot_satisfy_a_missing_dependency() {
         serde_json::json!(["required"])
     );
     assert_eq!(report["roots"][1]["compatible"], true);
+}
+#[test]
+fn explicit_load_owner_exposes_only_its_verified_startup_closure_to_plugins() {
+    let f = Fixture::new();
+    let dependency = f.provider("startup", "OWNER_1", "supplied");
+    let owner = f.library(
+        "startup",
+        "owner.so",
+        "extern int supplied(void); int owner_export(void) { return supplied(); }",
+        &["libprovider.so"],
+        None,
+    );
+    let roots: Vec<_> = ["first.so", "second.so", "third.so"]
+        .into_iter()
+        .map(|name| {
+            f.library(
+                "plugins",
+                name,
+                "extern int owner_export(void); extern int supplied(void); int plugin(void) { return owner_export()+supplied(); }",
+                &[],
+                None,
+            )
+        })
+        .collect();
+    let libraries = [f.root().join("startup")];
+    let independent_roots: Vec<_> = std::iter::once(owner.clone())
+        .chain(roots.iter().cloned())
+        .collect();
+    let independent = audit(&independent_roots, &libraries, 62).unwrap();
+    assert!(independent.get("load_owner").is_none());
+    assert_eq!(independent["roots"][0]["compatible"], true);
+    assert!(independent["roots"].as_array().unwrap()[1..]
+        .iter()
+        .all(|row| row["compatible"] == false));
+    let report = audit_with_load_owner(&roots, &libraries, 62, &owner).unwrap();
+    assert_eq!(report["compatible"], true);
+    assert_eq!(
+        report["load_owner"],
+        serde_json::json!(owner.canonicalize().unwrap())
+    );
+    assert_eq!(report["roots"][0]["root"], report["load_owner"]);
+    let rows = report["roots"].as_array().unwrap();
+    assert_eq!(rows.len(), 4);
+    let actual: BTreeSet<_> = rows
+        .iter()
+        .map(|row| PathBuf::from(row["root"].as_str().unwrap()))
+        .collect();
+    let expected: BTreeSet<_> = independent_roots
+        .iter()
+        .map(|p| p.canonicalize().unwrap())
+        .collect();
+    assert_eq!(actual, expected);
+    assert_eq!(report["roots"][0]["closure"].as_array().unwrap().len(), 2);
+    for row in &rows[1..] {
+        let closure = row["closure"].as_array().unwrap();
+        assert_eq!(closure.len(), 3);
+        assert!(closure.contains(&report["load_owner"]));
+        assert!(closure.contains(&serde_json::json!(dependency.canonicalize().unwrap())));
+    }
+    f.provider("startup", "WRONG_1", "supplied");
+    let report = audit_with_load_owner(&roots, &libraries, 62, &owner).unwrap();
+    assert_eq!(report["compatible"], false);
+    assert_eq!(
+        report["roots"][0]["failures"][0]["missing_versions"]["libprovider.so"][0],
+        "OWNER_1"
+    );
+}
+#[test]
+fn explicit_load_owner_does_not_merge_unrelated_plugin_exports() {
+    let f = Fixture::new();
+    let owner = f.library(
+        "scope",
+        "owner.so",
+        "int owned(void) { return 1; }",
+        &[],
+        None,
+    );
+    let plugin = f.library(
+        "scope",
+        "plugin.so",
+        "extern int foreign_only(void); int plugin(void) { return foreign_only(); }",
+        &[],
+        None,
+    );
+    let foreign = f.library(
+        "scope",
+        "foreign.so",
+        "int foreign_only(void) { return 2; }",
+        &[],
+        None,
+    );
+    let report = audit_with_load_owner(&[plugin, foreign], &[], 62, &owner).unwrap();
+    assert_eq!(report["compatible"], false);
+    assert_eq!(report["roots"][0]["compatible"], true);
+    assert_eq!(report["roots"][2]["compatible"], true);
+    assert_eq!(
+        report["roots"][1]["failures"][0]["missing_strong_symbols"],
+        serde_json::json!(["foreign_only"])
+    );
+}
+#[test]
+fn plugins_cannot_rescue_a_bad_owner_and_the_cli_checks_owner_architecture() {
+    let f = Fixture::new();
+    let owner = f.library(
+        "scope",
+        "owner.so",
+        "extern int plugin_only(void); int owned(void) { return plugin_only(); }",
+        &[],
+        None,
+    );
+    let plugin = f.library(
+        "scope",
+        "plugin.so",
+        "int plugin_only(void) { return 2; }",
+        &[],
+        None,
+    );
+    let report = audit_with_load_owner(std::slice::from_ref(&plugin), &[], 62, &owner).unwrap();
+    assert_eq!(report["compatible"], false);
+    assert_eq!(report["roots"][0]["compatible"], false);
+    assert_eq!(
+        report["roots"][0]["failures"][0]["missing_strong_symbols"],
+        serde_json::json!(["plugin_only"])
+    );
+    assert_eq!(report["roots"][0]["closure"].as_array().unwrap().len(), 1);
+    let output = f.root().join("owner-report.json");
+    let result = Command::new(env!("CARGO_BIN_EXE_runtime-elf-audit"))
+        .arg("--load-owner")
+        .arg(&owner)
+        .arg("--root")
+        .arg(plugin)
+        .arg("--library")
+        .arg(f.root().join("scope"))
+        .arg("--output")
+        .arg(&output)
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    let stderr = String::from_utf8_lossy(&result.stderr);
+    assert!(stderr.contains("unexpected ELF architecture"), "{stderr}");
+    assert!(stderr.contains(owner.to_str().unwrap()), "{stderr}");
+    assert!(!output.exists());
 }
 #[test]
 fn weak_undefined_symbols_do_not_require_a_provider() {
