@@ -46,3 +46,18 @@ ARM 및 workspace
 Actions에서 확인하고 정확 SHA·실행 URL을 #644에 추가한다. 이전 #644 source의
 성공을 새 #598 source의 성공으로 대신하지 않는다. PR 전체 필수 검사·병합 및
 ARM/AGNOS runtime/실기 수용은 cache 집중 검증과 별도로 유지한다.
+
+## Fast checks push 제거의 #598 반영
+
+앞선 push 제거는 다른 작업 브랜치에만 반영되어 #598에는 기존 push 트리거가
+남아 있었다. `ed1061eb5f6bdc540a70c8a2fbc84071f64388b0`에서
+[push40997288026](https://github.com/bin9208/openpilot-rust/actions/runs/40997288026)과
+[PR40997291909](https://github.com/bin9208/openpilot-rust/actions/runs/40997291909)가
+각각 실행된 원인이었다.
+
+사용자 재확인에 따라 #598에서도 push 트리거를 제거한다. PR 필수 Fast checks와
+수동 실행은 유지하고, 기존 frozen event 검사에는 이 push 제거 한 경우만 명시적으로
+반영한다. 입력 발행 gate도 더 이상 생성되지 않는 push Fast checks를 기다리지
+않도록 수정하되, 정확 source의 PR Fast checks·원래 PR/base receipt와 나머지
+발행 필수 검사는 유지한다. push 성공 기록으로 PR 검사 부재·실패를 대신할 수
+없음을 회귀로 확인한다. 캐시 변경과 동시에 들어온 native ARM 변경도 보존한다.

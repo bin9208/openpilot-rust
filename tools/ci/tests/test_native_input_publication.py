@@ -511,6 +511,28 @@ class GateTests(unittest.TestCase):
     client.pr_context.side_effect = pr_context
     return client, producer, runs, jobs, proofs
 
+  def test_removed_fast_push_is_unnecessary_but_cannot_replace_the_required_pr(self):
+    client, _, _, _, _ = self.fixture()
+    self.assertTrue(all(state['ready'] for state in publication.gates(client, SOURCE, 42, 611)[1]))
+    self.assertEqual([events for name, events, _ in publication.GATES if name == 'fast-checks.yml'],
+                     [('pull_request',)])
+    for fault in ('missing-pr', 'failed-pr'):
+      with self.subTest(fault=fault):
+        client, _, runs, jobs, _ = self.fixture()
+        required = next(run for run in runs if run['path'].endswith('/fast-checks.yml'))
+        legacy = copy.deepcopy(required)
+        legacy.update(id=999, event='push', pull_requests=[])
+        runs.append(legacy)
+        jobs[999] = copy.deepcopy(jobs[required['id']])
+        if fault == 'missing-pr':
+          runs.remove(required)
+        else:
+          required['conclusion'] = 'failure'
+        states = publication.gates(client, SOURCE, 42, 611)[1]
+        fast, = (state for state in states if state['workflow'] == 'fast-checks.yml')
+        self.assertFalse(fast['ready'])
+        self.assertNotEqual(fast['run'], 999)
+
   def test_latest_pending_wrong_runner_and_missing_required_arm_job_block_publication(self):
     client, producer, runs, jobs, _ = self.fixture()
     self.assertTrue(all(s['ready'] for s in publication.gates(client, SOURCE, 42, 611)[1]))
@@ -588,7 +610,7 @@ class GateTests(unittest.TestCase):
         if actual['name'] not in (publication.FOUNDATION_ARM_JOB, publication.PRODUCER_ARM_JOB):
           actual['runner_name'] = 'bin-actions2'
     # Keep unchanged original PR receipts attached to their actual runner.
-    for number in (103, 104, 106, 107):
+    for number in (103, 104, 105, 106):
       for actual in jobs[number]:
         actual['runner_name'] = 'bin-actions'
     self.assertTrue(all(state['ready'] for state in publication.gates(client, SOURCE, 42, 611)[1]))
@@ -669,7 +691,7 @@ class GateTests(unittest.TestCase):
     for fault in ('base', 'head', 'base-repository', 'head-repository', 'number', 'attempt'):
       with self.subTest(fault=fault):
         client, _, _, _, proofs = self.fixture()
-        proof = proofs[107]
+        proof = proofs[106]
         if fault == 'base': proof['base_ref'] = 'dev-md'
         if fault == 'head': proof['head_sha'] = 'f'*40
         if fault == 'base-repository': proof['base_repository_id'] = 8
@@ -684,7 +706,7 @@ class GateTests(unittest.TestCase):
       with self.subTest(fault=fault):
         client, _, runs, _, proofs = self.fixture()
         if fault == 'missing': runs[-1]['pull_requests'] = []
-        else: proofs[107] = context_fixture(107, 'check_user_docs', 'e'*40)
+        else: proofs[106] = context_fixture(106, 'check_user_docs', 'e'*40)
         states = publication.gates(client, SOURCE, 42, 611)[1]
         self.assertFalse(states[-1]['ready'])
 
@@ -707,7 +729,7 @@ class GateTests(unittest.TestCase):
     runs.append(unrelated)
     states = publication.gates(client, SOURCE, 42, 611)[1]
     self.assertTrue(all(state['ready'] for state in states))
-    self.assertEqual(states[-1]['run'], 107)
+    self.assertEqual(states[-1]['run'], 106)
     self.assertEqual(states[-1]['pull_requests'], [dict(number=611, base_sha=TREE)])
 
 

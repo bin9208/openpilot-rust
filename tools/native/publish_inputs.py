@@ -42,7 +42,6 @@ GATES = [
     ('native-resource-guard.yml', ('push', 'workflow_dispatch'), {'Real memory limit and cancellation (X64 host kernel)'}),
     ('rust.yml', ('pull_request',), {'rust checks', 'rust workspace checks', 'rust aarch64 build'}),
     ('integration.yml', ('pull_request',), {'integration gate', 'build / build release'}),
-    ('fast-checks.yml', ('push',), {'fast checks'}),
     ('fast-checks.yml', ('pull_request',), {'fast checks'}),
     ('user-docs.yaml', ('pull_request',), {'check mapped user docs'}),
 ]
