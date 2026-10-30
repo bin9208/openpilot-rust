@@ -16,24 +16,33 @@ inputs:
 outputs:
   cache-hit:
     description: Exact content key restored by Actions
-    value: ${{ steps.restore.outputs.cache-hit }}
+    value: ${{ steps.local.outputs.cache-hit || steps.restore.outputs.cache-hit }}
 runs:
   using: composite
   steps:
+    - id: local
+      if: runner.environment == 'self-hosted'
+      shell: bash
+      env:
+        NATIVE_CACHE_NAME: ${{ inputs.name }}
+        NATIVE_CACHE_MODE: ${{ inputs.mode }}
+        NATIVE_CACHE_KEY: ${{ inputs.key }}
+      run: /usr/bin/python3 -I -B -S "$GITHUB_ACTION_PATH/../../../tools/ci/runner_download_cache.py" "$NATIVE_CACHE_MODE" "$NATIVE_CACHE_NAME" "$NATIVE_CACHE_KEY"
     - id: begin
+      if: runner.environment != 'self-hosted'
       shell: bash
       env:
         NATIVE_CACHE_NAME: ${{ inputs.name }}
         NATIVE_CACHE_MODE: ${{ inputs.mode }}
       run: /usr/bin/python3 -I -B -S "$GITHUB_ACTION_PATH/../../../tools/ci/native_cache.py" begin "$NATIVE_CACHE_NAME" "$NATIVE_CACHE_MODE"
     - id: restore
-      if: inputs.mode == 'restore'
+      if: runner.environment != 'self-hosted' && inputs.mode == 'restore'
       uses: actions/cache/restore@v4
       with:
         path: ${{ steps.begin.outputs.path }}
         key: ${{ inputs.key }}
         restore-keys: ${{ inputs.restore-keys }}
-    - if: inputs.mode == 'save'
+    - if: runner.environment != 'self-hosted' && inputs.mode == 'save'
       uses: actions/cache/save@v4
       with:
         path: ${{ steps.begin.outputs.path }}

@@ -62,6 +62,12 @@ runs:
           fi
         } > "$owned/shell-env"
         printf 'CI_RUNNER_TEMP=%s\nCI_JOB_TEMP=%s\nBASH_ENV=%s/shell-env\n' "$RUNNER_TEMP" "$owned" "$owned" >> "$GITHUB_ENV"
+        if [[ $RUNNER_ENVIRONMENT == self-hosted ]]; then
+          /usr/bin/python3 -I -B -S "$GITHUB_ACTION_PATH/../../../tools/ci/runner_download_cache.py" setup
+          if [[ -n ${ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE:-} ]]; then
+            /usr/bin/python3 -I -B -S "$GITHUB_ACTION_PATH/../../../tools/ci/runner_action_cache.py" prime-current
+          fi
+        fi
     - if: inputs.cleanup != 'true' && inputs.validation-context == 'true' && github.event_name == 'pull_request'
       shell: bash
       run: /usr/bin/python3 -I -B -S "$GITHUB_ACTION_PATH/../../../tools/ci/validation_context.py"

@@ -4,8 +4,14 @@ on:
     branches: ['codex/feat-599-*', dev, main]
     paths:
       - '.github/actions/native-cache/**'
+      - '.github/actions/job-temp/action.yml'
       - 'tools/ci/native_cache.py'
+      - 'tools/ci/runner_download_cache.py'
+      - 'tools/ci/runner_action_cache.py'
+      - 'tools/ci/action-archives.json'
+      - 'tools/ci/native-apt-shell'
       - 'tools/ci/tests/test_native_cache.py'
+      - 'tools/ci/tests/test_runner_download_cache.py'
       - '.github/workflows/native-cache-reuse.yml'
   workflow_dispatch:
 permissions:
@@ -18,14 +24,24 @@ jobs:
   save:
     name: Save from the first private job
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-        with: {persist-credentials: false}
+        with: {persist-credentials: false, fetch-depth: 0}
       - uses: ./.github/actions/job-temp
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - run: python -m pip install PyYAML==6.0.2
       - name: Exercise archive, cancellation and ownership regressions
-        run: /usr/bin/python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_native_cache.py -v
+        run: |
+          /usr/bin/python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_native_cache.py -v
+          /usr/bin/python3 -I -B -S -m unittest discover -s tools/ci/tests -p test_runner_download_cache.py -v
+          python -m unittest discover -s tools/ci/tests -p test_cargo_target_view.py -v
+          python -m unittest discover -s tools/ci/tests -p test_workflow_policy.py -v
+          python -m unittest discover -s tools/ci/tests -p test_local_native_workflows.py -v
+      - name: Retain signed APT indices for the next independent job
+        run: sudo apt-get update
       - uses: ./.github/actions/native-cache
         id: initial
         with:
@@ -59,12 +75,23 @@ jobs:
     name: Restore into a different private job
     needs: save
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    runs-on: [self-hosted, Linux, X64, dev-md-local]
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with: {persist-credentials: false}
       - uses: ./.github/actions/job-temp
+      - name: Require real APT index reuse while revalidating the repository
+        env:
+          LC_ALL: C
+        run: |
+          set -o pipefail
+          sudo apt-get update 2>&1 | tee "$CI_JOB_TEMP/apt-reuse.log"
+          /usr/bin/python3 -I -B -S - <<'PY'
+          import os
+          from pathlib import Path
+          assert 'Hit:' in (Path(os.environ['CI_JOB_TEMP'])/'apt-reuse.log').read_text()
+          PY
       - uses: ./.github/actions/native-cache
         id: repeated
         with:
@@ -88,14 +115,18 @@ jobs:
           report = dict(schema=1, source_commit=os.environ['GITHUB_SHA'], exact_cache_hit=True,
               first_job=origin['job'], second_job=str(job), asset_origin_transferred_bytes=0,
               body_sha256=hashlib.sha256((target/'blob').read_bytes()).hexdigest(),
-              cache_service_traffic_is_separate=True, shared_cache_modified=False)
+              cache_backend='runner-local', cache_service_transferred_bytes=0,
+              private_outputs_preserved=True, source_pin_validation_unchanged=True)
           (job/'cache-reuse.json').write_text(json.dumps(report, indent=2)+'\n')
           print(json.dumps(report))
           PY
       - uses: actions/upload-artifact@v6
         with:
           name: native-cache-reuse-${{ github.sha }}-${{ github.run_attempt }}
-          path: ${{ env.CI_JOB_TEMP }}/cache-reuse.json
+          path: |
+            ${{ env.CI_JOB_TEMP }}/cache-reuse.json
+            ${{ env.CI_JOB_TEMP }}/apt-reuse.log
+            ${{ env.CI_JOB_TEMP }}/native-apt-sources.json
           if-no-files-found: error
       - uses: ./.github/actions/job-temp
         if: always()
