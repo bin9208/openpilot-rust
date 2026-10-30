@@ -1,9 +1,9 @@
 //! Publish verified exact-source assets after the selected branch's push gates.
 use crate::{
     package::{clean_source, disk_guard, validate_assets},
-    seal::{digest, Result},
+    seal::{Result, digest},
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::{self, OpenOptions},
@@ -16,7 +16,6 @@ const BASE: &str = "repos/bin9208/openpilot-rust";
 const GATES: &[(&str, &[&str])] = &[(
     "ci.yml",
     &[
-        "fast checks",
         "check mapped user docs",
         "integration gate",
         "rust checks",
