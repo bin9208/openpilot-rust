@@ -1,5 +1,11 @@
 # 조건부 ARM 러너 전환의 실험 검증 (#643)
 
+현재 전체 검증은 `151858a97ffb5f02ab1a3abe343b4b55304584ae`의
+[40989886027](https://github.com/bin9208/openpilot-rust/actions/runs/40989886027)이다.
+이전78fe 실행은 원래 검증 스크립트의 미정의 source mount 오류로 실패해
+[646](https://github.com/bin9208/openpilot-rust/issues/646)에서 수정한다. 아래 기록은 각
+시점의 범위와 결과이며, 전체 AGNOS 성공이나 실제 배정 전환은 아직 완료되지 않았다.
+
 2026-10-30 KST 전체 AGNOS 비교가 준비 단계에서 오래 진행돼, 대기 시간에 전환 초안을
 별도 `codex/feat-643-arm-routing-draft`에서 검증한다. 기본 브랜치와 기존 작업 브랜치의
 ARM 배정 전환은 전체 비교 결과를 확인한 뒤 진행한다. 현재 초안을 전환 완료로 취급하지 않는다.
