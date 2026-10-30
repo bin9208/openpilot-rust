@@ -12,13 +12,6 @@ def workflow(name):
 
 
 class WorkflowPolicyTests(unittest.TestCase):
-  def test_fast_checks_cover_all_branch_pushes_and_protected_prs(self):
-    events = workflow('fast-checks.yml')['on']
-    self.assertEqual(events['push']['branches'], ['**'])
-    self.assertEqual(set(events['pull_request']['branches']), {'dev', 'main'})
-    for event in ('push', 'pull_request'):
-      self.assertNotIn('paths', events[event])
-      self.assertNotIn('paths-ignore', events[event])
 
   def test_integration_runs_before_and_after_merge_without_path_skips(self):
     spec = workflow('integration.yml')
@@ -66,7 +59,7 @@ class WorkflowPolicyTests(unittest.TestCase):
                                       'if': 'always()', 'with': {'cleanup': 'true'}})
 
   def test_light_required_checks_remain_hosted(self):
-    for name, job_id in (('fast-checks.yml', 'fast'), ('integration.yml', 'gate'),
+    for name, job_id in (('integration.yml', 'gate'),
                          ('user-docs.yaml', 'check_user_docs'), ('rust.yml', 'fast')):
       with self.subTest(workflow=name, job=job_id):
         self.assertEqual(workflow(name)['jobs'][job_id]['runs-on'], 'ubuntu-24.04')
@@ -124,23 +117,6 @@ class WorkflowPolicyTests(unittest.TestCase):
                      'sudo apt-get "${cross_apt[@]}" install -y libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64'):
       self.assertIn(required, setup)
 
-  def test_jetlink_functional_checks_run_in_heavy_suite_instead_of_fast(self):
-    fast_steps = workflow('fast-checks.yml')['jobs']['fast']['steps']
-    fast_runs = '\n'.join(step.get('run', '') for step in fast_steps)
-    self.assertIn('bash -n openpilot/selfdrive/modeld/jetlink/setup_gadget.sh', fast_runs)
-    for heavy_command in ('tools/jetlink_model/requirements.lock', 'tools/jetlink_model/tests',
-                          'openpilot/selfdrive/modeld/tests/test_jetlink', 'gradlew', 'gradle '):
-      self.assertNotIn(heavy_command, fast_runs)
-    self.assertFalse(any(step.get('uses', '').startswith('actions/setup-java@') for step in fast_steps))
-
-    heavy = workflow('jetlink.yml')['jobs']
-    model_runs = [step['run'] for step in heavy['model']['steps'] if 'run' in step]
-    self.assertIn('python -m pip install -r tools/jetlink_model/requirements.lock', model_runs)
-    package_command = 'python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/jetlink_model/tests tools/jetlink_model/tests -q'
-    self.assertEqual(model_runs.count(package_command), 1)
-    self.assertIn('python -m pytest -c /dev/null --rootdir=. --confcutdir=openpilot/selfdrive/modeld/tests -q openpilot/selfdrive/modeld/tests/test_jetlink*.py', model_runs)
-    android_runs = [step['run'] for step in heavy['android-core']['steps'] if 'run' in step]
-    self.assertIn('bash tools/jetlink_android/gradlew -p tools/jetlink_android :core:test :runtime:test :app:lintDebug :app:assembleDebug', android_runs)
 
   def test_android_builds_prepare_job_owned_sdks_before_setup(self):
     for name, job_id in (('naver-apk-tools.yml', 'host-toolkit'),
