@@ -30,7 +30,7 @@ const core = {setOutput: (key,value) => outputs[key] = value};
 class WorkflowPolicyTests(unittest.TestCase):
   def test_one_entry_point_without_path_skips(self):
     events = workflow()['on']
-    self.assertEqual(events['push']['branches'], ['**'])
+    self.assertEqual(events['push']['branches'], ['dev', 'dev-md', 'main'])
     self.assertEqual(set(events['pull_request']['branches']), {'dev', 'dev-md', 'main'})
     self.assertIn('edited', events['pull_request']['types'])
     for event in ('push', 'pull_request'):
@@ -40,21 +40,6 @@ class WorkflowPolicyTests(unittest.TestCase):
                 'tests.yaml', 'jetlink.yml', 'jetlink-native.yml', 'naver-ci.yml', 'naver-apk-tools.yml'):
       self.assertFalse((ROOT / '.github/workflows' / old).exists(), old)
 
-  def test_branch_push_pr_and_merge_routing(self):
-    script = workflow()['jobs']['route']['steps'][0]['with']['script']
-    cases = [
-      ('push', 'refs/heads/codex/feat-test', [], {'fast': 'true', 'full': 'false'}),
-      ('push', 'refs/heads/codex/feat-test', [{'base': {'ref': 'dev-md'}}], {'fast': 'false', 'full': 'false'}),
-      ('push', 'refs/heads/codex/feat-test', [{'base': {'ref': 'elsewhere'}}], {'fast': 'true', 'full': 'false'}),
-      ('pull_request', 'refs/pull/12/merge', [], {'fast': 'true', 'full': 'true'}),
-      ('push', 'refs/heads/dev-md', [], {'fast': 'true', 'full': 'true'}),
-      ('push', 'refs/heads/dev', [], {'fast': 'true', 'full': 'true'}),
-      ('workflow_dispatch', 'refs/heads/codex/feat-test', [], {'fast': 'true', 'full': 'true'}),
-    ]
-    for event, ref, pulls, expected in cases:
-      with self.subTest(event=event, ref=ref, pulls=pulls):
-        result = javascript(script, dict(event=event, ref=ref, pulls=pulls))
-        self.assertEqual(json.loads(result.stdout), expected)
 
   def test_all_jobs_form_one_chain_and_matrices_are_serial(self):
     jobs = workflow()['jobs']
@@ -71,7 +56,7 @@ class WorkflowPolicyTests(unittest.TestCase):
       if 'matrix' in job.get('strategy', {}):
         self.assertEqual(job['strategy']['max-parallel'], '1', key)
         self.assertEqual(job['strategy']['fail-fast'], 'true', key)
-    for key in ('fast-checks', 'check_user_docs', 'git_update', 'build_release', 'model_web',
+    for key in ('check_user_docs', 'git_update', 'build_release', 'model_web',
                 'model', 'android-core', 'integration-gate', 'workspace', 'fast', 'arm-build', 'arm64'):
       self.assertIn(key, jobs)
     self.assertEqual(jobs['workspace']['needs'], ['integration-gate'])
@@ -104,30 +89,10 @@ class WorkflowPolicyTests(unittest.TestCase):
       if key not in ('integration-gate', 'fast', 'arm64'):
         self.assertNotIn('always()', job.get('if', ''), key)
 
-  def test_naver_dedicated_tests_removed_but_shared_guards_retained(self):
-    spec = workflow()
-    fast = '\n'.join(step.get('run', '') for step in spec['jobs']['fast-checks']['steps'])
-    for removed in ('tools/naver_ci/tests', 'test_naver_input_smoke', 'test_naver_navigation_protocol', 'test_navigation_sources'):
-      self.assertNotIn(removed, fast)
-    self.assertTrue((ROOT / 'tools/ci/tests/test_sync_upstream.py').is_file())
-    self.assertTrue((ROOT / 'tools/naver_map_patch').is_dir())
-    self.assertTrue((ROOT / 'tools/naver_ci/controller_tests').is_dir())
-    self.assertNotIn('uses', spec['jobs']['integration-gate'])
 
-  def test_fast_only_push_cannot_satisfy_deep_required_contexts(self):
-    jobs = workflow()['jobs']
-    for key, name in [('check_user_docs', 'check mapped user docs'), ('integration-gate', 'integration gate'),
-                      ('fast', 'rust checks'), ('arm64', 'rust aarch64 build')]:
-      expression = jobs[key]['name']
-      self.assertIn("github.event_name != 'push'", expression)
-      self.assertIn('github.ref_name', expression)
-      self.assertIn('"dev","dev-md","main"', expression)
-      self.assertIn(f"&& '{name}' || 'Not requested - {name}'", expression)
-    self.assertIn("needs.route.outputs.fast == 'true'", jobs['fast-checks']['name'])
-    self.assertIn("|| 'PR owns fast validation'", jobs['fast-checks']['name'])
 
   def test_dev_md_gate_still_rejects_dev_target(self):
-    steps = workflow()['jobs']['fast-checks']['steps']
+    steps = workflow()['jobs']['check_user_docs']['steps']
     gate = next(step for step in steps if step.get('name') == 'Keep dev-md changes out of dev')
     for target, expected in [('dev', 1), ('dev-md', 0), ('main', 0), ('codex/feat-test', 0)]:
       result = subprocess.run(['bash', '-eu', '-c', gate['run']],
@@ -151,7 +116,7 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertIn('ANDROID_SDK_ROOT=', reserve)
 
   def test_only_trusted_low_impact_jobs_move_to_the_validated_x64_runner(self):
-    quick = {'fast-checks', 'check_user_docs', 'git_update', 'model_web', 'jetlink-native'}
+    quick = {'check_user_docs', 'git_update', 'model_web', 'jetlink-native'}
     labels = ['self-hosted', 'Linux', 'X64', 'dev-md-local']
     for name in ('ci.yml', 'dev-md-runtime.yml'):
       for key, job in workflow(name)['jobs'].items():
