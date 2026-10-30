@@ -121,6 +121,7 @@ def bootstrap_memory_observer(job, owner, work, pin, output):
                             memory_stat = dict(line.split() for line in read(group/'memory.stat').splitlines())
                             meminfo = read(Path('/proc/meminfo'))
                             available = next(line for line in meminfo.splitlines() if line.startswith('MemAvailable:'))
+                            total = next(line for line in meminfo.splitlines() if line.startswith('MemTotal:'))
                             markers = {}
                             for name, root, receipt in (
                                     ('rust_receipt', work/'bootstrap-current-cache/rust-prefixes', 'generation/receipt.json'),
@@ -142,6 +143,7 @@ def bootstrap_memory_observer(job, owner, work, pin, output):
                                 current_bytes=int(read(group/'memory.current')), kernel_peak_bytes=int(read(group/'memory.peak')),
                                 maximum_bytes=int(read(group/'memory.max')),
                                 available_system_memory_bytes=int(available.split()[1])*1024,
+                                system_memory_total_bytes=int(total.split()[1])*1024,
                                 processes=processes, process_limit=64, process_errors=errors,
                                 receipt_markers=markers, markers_are_phase_observations_not_verification=True))
                     except Exception as error:

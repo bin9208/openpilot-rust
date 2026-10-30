@@ -1,5 +1,25 @@
 # 성능 개선·콤마 자체 빌드 우선 실행 — #598
 
+## S237 Genuine 실패와 메모리 진단 보강 — 2026-10-30
+
+source `2375949c19c63667ad66de0f9ee7e2c90ad8ba70`의
+[Genuine run40961936699](https://github.com/bin9208/openpilot-rust/actions/runs/40961936699/job/123757390030)은
+bootstrap initial 컴파일 중 host 잔여 headroom 검사로 중단됐다. CI fixture의6GiB
+한도(`6442450944` bytes)에서 kernel peak는 `5021356032` bytes였고,
+`limit_events=0`, observer의 raw `max/oom/oom_kill`도 모두0이었다. OOM이나
+양산·기기 메모리 요구량의 측정 결과로 표현하지 않는다.
+
+`resources.jsonl`의 실패 행은 current `1370300416`과 reserve `134217728` bytes로
+잔여 요구량 `5206368256` bytes를 계산했지만, 실패 순간의 정확한 MemAvailable은
+보존하지 않았다. historical minimum `5230579712` bytes는 검사 실패 전까지 갱신된
+값이며 실패 순간 값이 아니다. 이번 변경은 기존 한 번의 읽기값과 required 계산의
+locals를 host/ancestor 오류 reason에 남기고, CI observer가 이미 읽은 meminfo에서
+`system_memory_total_bytes`만 추가한다. guard 수식·예산·controller·동시실행 정책과
+정상 startup의20초 deadline은 변경하지 않는다.
+
+로컬 확인은 Python AST·scoped Rustfmt·diff로 한정한다. 진단 보강 후 실제 값의 기록,
+기존 resource CI 검사와 bootstrap 재사용 및 이후 Genuine 전체 검증은 아직 미완료다.
+
 [전체 입력과 빌드 연결](native-complete-inputs-599.md)은18개 역할과 ordinary Git 자산을
 하나의 검증된 Layout에 묶고 실제99개 빌드·source-built 봉인/ABI·재사용 검사를 실행하도록
 연결한다. 구현 후 새 Actions 성공은 아직 미확인이며 정상 기기 수용은 계속 남아 있다.

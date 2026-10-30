@@ -123,8 +123,12 @@ fn parent_headroom(parent: &Path, requested: u64, minimum: u64) -> Result<()> {
     let required = requested
         .checked_add(minimum)
         .ok_or("memory budget overflow")?;
-    if available_memory()? < required {
-        return Err("insufficient memory for this build plus normal runtime margin".into());
+    let available = available_memory()?;
+    if available < required {
+        return Err(format!(
+            "insufficient memory for this build plus normal runtime margin; boundary=host available_bytes={available} requested_bytes={requested} normal_reserve_bytes={minimum} required_bytes={required}"
+        )
+        .into());
     }
     // Include visible ancestor limits: host MemAvailable alone can overstate
     // the memory actually available inside a runner/service/container.
@@ -154,9 +158,11 @@ fn parent_headroom(parent: &Path, requested: u64, minimum: u64) -> Result<()> {
                     .unwrap_or(0)
                     .min(usage);
                 if limit.saturating_sub(usage.saturating_sub(reclaimable)) < required {
-                    return Err(
-                        "ancestor memory cgroup has insufficient headroom for this build".into(),
-                    );
+                    return Err(format!(
+                        "ancestor memory cgroup has insufficient headroom for this build; boundary=ancestor path={} limit_bytes={limit} usage_bytes={usage} reclaimable_bytes={reclaimable} requested_bytes={requested} normal_reserve_bytes={minimum} required_bytes={required}",
+                        path.display()
+                    )
+                    .into());
                 }
             }
         } else {
