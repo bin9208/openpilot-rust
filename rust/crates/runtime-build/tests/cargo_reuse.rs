@@ -64,6 +64,8 @@ impl Fixture {
             expected_growth_bytes: 8 * 1024 * 1024,
         };
         let cache = temp.path().join("cache");
+        git(&root, &["init", "--quiet"]);
+        commit(&root);
         Self {
             _temp: temp,
             root,
@@ -78,6 +80,36 @@ impl Fixture {
     }
 }
 
+fn git(root: &std::path::Path, args: &[&str]) -> String {
+    let output = Command::new("/usr/bin/git")
+        .args([
+            "-c",
+            "user.name=Runtime fixture",
+            "-c",
+            "user.email=fixture@example.invalid",
+            "-c",
+            "commit.gpgsign=false",
+            "-c",
+            "core.hooksPath=/dev/null",
+        ])
+        .arg("-C")
+        .arg(root)
+        .args(args)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout).unwrap().trim().into()
+}
+
+fn commit(root: &std::path::Path) {
+    git(root, &["add", "."]);
+    git(root, &["commit", "--quiet", "-m", "fixture input"]);
+}
+
 #[test]
 fn docs_change_reuses_real_binary_and_source_change_rebuilds_it_without_network() {
     let fixture = Fixture::new();
@@ -86,15 +118,23 @@ fn docs_change_reuses_real_binary_and_source_change_rebuilds_it_without_network(
     assert!(!first.artifacts[0].fresh);
     let before = digest_file(&first.artifacts[0].executable).unwrap();
     fs::write(fixture.root.join("README.md"), "documentation-only change").unwrap();
+    commit(&fixture.root);
     let docs = fixture.run();
     assert_eq!(docs.cache_key, first.cache_key);
     assert!(docs.artifacts.iter().all(|a| a.fresh));
     assert_eq!(digest_file(&docs.artifacts[0].executable).unwrap(), before);
+    assert_ne!(docs.source.commit, first.source.commit);
+    assert_eq!(docs.artifacts[0].sha256, before);
+    assert_eq!(
+        docs.source.commit,
+        git(&fixture.root, &["rev-parse", "HEAD"])
+    );
     fs::write(
         fixture.root.join("rust/src/main.rs"),
         "fn main() { println!(\"43\"); }\n",
     )
     .unwrap();
+    commit(&fixture.root);
     let changed = fixture.run();
     assert_eq!(changed.cache_key, first.cache_key);
     assert!(!changed.artifacts[0].fresh);
@@ -129,6 +169,7 @@ fn provider_tampering_is_rejected_and_changed_provider_partitions_the_build_cach
         PathBuf::from("provider.receipt"),
         digest_file(&fixture.root.join("provider.receipt")).unwrap(),
     );
+    commit(&fixture.root);
     let updated = fixture.run();
     assert_ne!(first.cache_key, updated.cache_key);
     assert!(!updated.artifacts[0].fresh);
@@ -159,6 +200,7 @@ fn compile_failure_preserves_previous_runtime_and_concurrent_cache_owner_is_reje
         "compile_error!(\"intentional build failure\");",
     )
     .unwrap();
+    commit(&fixture.root);
     assert!(build(
         &fixture.root,
         &fixture.cache,
@@ -192,6 +234,7 @@ fn changing_one_workspace_target_keeps_the_unrelated_target_fresh() {
     fs::write(fixture.root.join("rust/Cargo.lock"), lock).unwrap();
     fixture.recipe.packages.push("runtime-unrelated".into());
     fixture.recipe.binaries.push("runtime-unrelated".into());
+    commit(&fixture.root);
     let first = fixture.run();
     assert_eq!(first.artifacts.len(), 2);
     let unrelated = first
@@ -205,6 +248,7 @@ fn changing_one_workspace_target_keeps_the_unrelated_target_fresh() {
         "fn main() { println!(\"changed\"); }\n",
     )
     .unwrap();
+    commit(&fixture.root);
     let changed = fixture.run();
     assert_eq!(changed.cache_key, first.cache_key);
     let unrelated = changed
@@ -215,4 +259,37 @@ fn changing_one_workspace_target_keeps_the_unrelated_target_fresh() {
     assert!(unrelated.fresh);
     assert_eq!(digest_file(&unrelated.executable).unwrap(), before);
     assert!(changed.artifacts.iter().any(|a| !a.fresh));
+}
+
+#[test]
+fn dirty_source_and_source_mutation_during_build_cannot_publish_a_success_report() {
+    let fixture = Fixture::new();
+    let first = fixture.run();
+    let report = first
+        .target_directory
+        .parent()
+        .unwrap()
+        .join("last-successful-build.json");
+    let before = fs::read(&report).unwrap();
+    fs::write(fixture.root.join("untracked.rs"), "unrecorded input").unwrap();
+    assert!(build(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &fixture.recipe
+    )
+    .is_err());
+    fs::remove_file(fixture.root.join("untracked.rs")).unwrap();
+    fs::write(fixture.root.join("README.md"), "recorded source").unwrap();
+    fs::write(fixture.root.join("rust/build.rs"), "fn main() { std::fs::write(\"../README.md\", \"source changed during build\").unwrap(); }\n").unwrap();
+    commit(&fixture.root);
+    let error = build(
+        &fixture.root,
+        &fixture.cache,
+        &fixture.toolchain,
+        &fixture.recipe,
+    )
+    .unwrap_err();
+    assert!(error.to_string().contains("source"));
+    assert_eq!(fs::read(report).unwrap(), before);
 }

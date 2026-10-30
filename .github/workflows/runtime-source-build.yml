@@ -1,12 +1,13 @@
 name: Runtime source build foundation
 on:
   push:
-    branches: [codex/feat-598-device-native-build, dev, main]
+    branches: [codex/feat-598-device-native-build, 'codex/feat-600-*', dev, main]
     paths:
       - 'rust/crates/runtime-build/**'
       - 'rust/Cargo.toml'
       - 'rust/Cargo.lock'
       - '.github/workflows/runtime-source-build.yml'
+  workflow_dispatch:
 # Branch push checks the actual x64/ARM build driver once; the required PR Rust
 # workspace gate also includes this crate. Do not duplicate this focused matrix on PR.
 permissions:
@@ -46,13 +47,31 @@ jobs:
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
       - name: Check syntax formatting and the locked dependency graph
         run: |
-          rustfmt --edition 2021 --check rust/crates/runtime-build/src/lib.rs rust/crates/runtime-build/src/main.rs rust/crates/runtime-build/tests/cargo_reuse.rs
+          rustfmt --edition 2021 --check rust/crates/runtime-build/src/*.rs rust/crates/runtime-build/tests/*.rs
           cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 > "$RUNNER_TEMP/runtime-build-metadata.json"
       - name: Compile and exercise real offline build reuse
         run: |
           set -o pipefail
-          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build -- --nocapture 2>&1 | tee "$RUNNER_TEMP/runtime-build-tests.log"
+          /usr/bin/time -v -o "$RUNNER_TEMP/runtime-build-test-resources.txt" cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build -- --nocapture 2>&1 | tee "$RUNNER_TEMP/runtime-build-tests.log"
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
+      - name: Verify the real HTTPS CLI and zero-transfer reuse of a pinned public input
+        run: |
+          cargo run --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-build --bin openpilot-runtime-assets -- \
+            --plan rust/crates/runtime-build/tests/fixtures/assets-github.json --cache "$RUNNER_TEMP/runtime-https-assets" > "$RUNNER_TEMP/runtime-https-first.json"
+          cargo run --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-build --bin openpilot-runtime-assets -- \
+            --plan rust/crates/runtime-build/tests/fixtures/assets-github.json --cache "$RUNNER_TEMP/runtime-https-assets" > "$RUNNER_TEMP/runtime-https-reused.json"
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          temp = Path(os.environ['RUNNER_TEMP'])
+          first = json.loads((temp / 'runtime-https-first.json').read_text())['pinned-public-input']
+          reused = json.loads((temp / 'runtime-https-reused.json').read_text())['pinned-public-input']
+          assert first['transferred_bytes'] == first['stored_bytes'] == first['bytes'] == 403
+          assert reused['transferred_bytes'] == reused['stored_bytes'] == 0
+          assert first['path'] == reused['path']
+          assert hashlib.sha256(Path(reused['path']).read_bytes()).hexdigest() == reused['sha256']
+          print('Actual HTTPS CLI: initial_body_bytes=403 repeated_body_bytes=0')
+          PY
       - name: Preserve actual build evidence
         if: always()
         uses: actions/upload-artifact@v6
@@ -61,3 +80,6 @@ jobs:
           path: |
             ${{ runner.temp }}/runtime-build-metadata.json
             ${{ runner.temp }}/runtime-build-tests.log
+            ${{ runner.temp }}/runtime-build-test-resources.txt
+            ${{ runner.temp }}/runtime-https-first.json
+            ${{ runner.temp }}/runtime-https-reused.json

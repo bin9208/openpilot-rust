@@ -5,6 +5,10 @@
 //! Explicit external inputs and toolchain identities partition incompatible caches.
 #![forbid(unsafe_code)]
 
+pub mod assets;
+mod source;
+pub use source::Source;
+
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -13,6 +17,7 @@ use std::{
     io::{BufRead, BufReader, Read, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
+    time::Instant,
 };
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -38,12 +43,20 @@ pub struct Report {
     pub cache_key: String,
     pub target_directory: PathBuf,
     pub artifacts: Vec<Artifact>,
+    pub source: Source,
+    pub recipe_sha256: String,
+    pub rustc_sha256: String,
+    pub cargo_sha256: String,
+    pub native_tools: BTreeMap<PathBuf, String>,
+    pub elapsed_ms: u128,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Artifact {
     pub executable: PathBuf,
     pub fresh: bool,
+    pub sha256: String,
+    pub bytes: u64,
 }
 
 fn regular_file(path: &Path) -> Result<File> {
@@ -168,8 +181,10 @@ fn native_linker() -> Result<(PathBuf, BTreeMap<PathBuf, String>)> {
 /// Build only. The caller must seal, validate and activate the complete runtime separately.
 /// No runtime release is downloaded, and no existing runtime or Cargo cache is removed.
 pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Result<Report> {
+    let started = Instant::now();
     recipe.validate()?;
     let root = root.canonicalize()?;
+    let source = source::inspect(&root)?;
     let toolchain = toolchain.canonicalize()?;
     recipe.verify_inputs(&root)?;
     let rustc = toolchain.join("rustc");
@@ -194,8 +209,8 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
     cache_recipe.expected_growth_bytes = 0;
     let identity = serde_json::to_vec(&(
         cache_recipe,
-        compiler_digest,
-        cargo_digest,
+        &compiler_digest,
+        &cargo_digest,
         version.stdout,
         &native_tools,
     ))?;
@@ -294,6 +309,8 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
                         fresh: value["fresh"]
                             .as_bool()
                             .ok_or("Cargo fresh status missing")?,
+                        sha256: String::new(),
+                        bytes: 0,
                     });
                 }
             } else if let Some(rendered) = value["message"]["rendered"].as_str() {
@@ -306,7 +323,7 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         let _ = child.kill();
     }
     let status = child.wait()?;
-    let artifacts = result?;
+    let mut artifacts = result?;
     if !status.success() || artifacts.is_empty() {
         return Err(format!(
             "native Cargo build failed: {status}; previous runtime was not changed"
@@ -314,16 +331,35 @@ pub fn build(root: &Path, cache: &Path, toolchain: &Path, recipe: &Recipe) -> Re
         .into());
     }
     recipe.verify_inputs(&root)?;
-    for (path, expected) in native_tools {
-        if digest_file(&path)? != expected {
+    if source::inspect(&root)? != source {
+        return Err("runtime build source changed during compilation".into());
+    }
+    if digest_file(&rustc)? != compiler_digest || digest_file(&cargo)? != cargo_digest {
+        return Err("Rust compiler or Cargo changed during build".into());
+    }
+    for (path, expected) in &native_tools {
+        if digest_file(path)? != *expected {
             return Err("native linker tools changed during build".into());
         }
     }
+    for artifact in &mut artifacts {
+        if !artifact.executable.canonicalize()?.starts_with(&target) {
+            return Err("Cargo executable escapes the build target directory".into());
+        }
+        artifact.bytes = regular_file(&artifact.executable)?.metadata()?.len();
+        artifact.sha256 = digest_file(&artifact.executable)?;
+    }
     let report = Report {
-        schema: 1,
+        schema: 2,
         cache_key: key,
         target_directory: target,
         artifacts,
+        source,
+        recipe_sha256: format!("{:x}", Sha256::digest(serde_json::to_vec(recipe)?)),
+        rustc_sha256: compiler_digest,
+        cargo_sha256: cargo_digest,
+        native_tools,
+        elapsed_ms: started.elapsed().as_millis(),
     };
     let mut saved = tempfile::NamedTempFile::new_in(&directory)?;
     serde_json::to_writer_pretty(saved.as_file_mut(), &report)?;
