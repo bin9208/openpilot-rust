@@ -147,11 +147,14 @@ class RustIsolationTests(unittest.TestCase):
                 self.assertNotIn('if', step)
                 self.assertNotIn('continue-on-error', step)
 
-    def test_workspace_checks_run_without_waiting_for_runtime_jobs(self):
+    def test_workspace_requires_its_genuine_arm_compiler_check(self):
         data = yaml.load((ROOT / '.github/workflows/rust.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['workspace']
-        self.assertNotIn('needs', job)
-        self.assertEqual(job.get('if'), TRUSTED_SOURCE)
+        self.assertEqual(job['needs'], ['offline-qcom-arm'])
+        self.assertEqual(job.get('if'), '${{ always() && (github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) }}')
+        gate = job['steps'][0]
+        self.assertEqual(gate['env']['ARM_COMPILER_RESULT'], '${{ needs.offline-qcom-arm.result }}')
+        self.assertEqual(gate['run'], 'test "$ARM_COMPILER_RESULT" = success')
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('cargo fmt --all --check', 'cargo clippy --workspace', 'cargo test --workspace',
                          'cargo build --workspace --release --locked', 'check_usbgpu_hardware.py',

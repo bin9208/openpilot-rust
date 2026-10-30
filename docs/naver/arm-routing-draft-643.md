@@ -132,3 +132,7 @@ Rust DevTools lib87개, full-generation 재사용4개 검사가 모두 통과했
 비워 둔다. 고정 비교 브랜치·기준 SHA·기존 QEMU run은 실험 workflow의 명시적 환경
 변수로만 제공한다. 개별 명령 시간은 artifact에 보존하고 콘솔에는 요약만 출력한다.
 진행 중인640f/78fe 측정 실행의 source와 시간 기록은 바꾸지 않는다.
+
+별도 rust-isolation 정책에 남아 있던 workspace 무의존성 가정도 새 필수 ARM QCOM
+검사 연결로 갱신한다. 기존 나머지 runtime job을 선행 조건으로 추가하지 않는다.
+해당 정책 파일 전체를 실험 policy 선택 실행에 포함해 Actions에서 확인한다.

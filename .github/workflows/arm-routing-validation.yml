@@ -48,6 +48,7 @@ jobs:
     - name: Validate routing, unchanged target commands and production identity mapping
       run: |-
         python -m unittest discover -s tools/ci/tests -p test_workflow_policy.py -v
+        python -m unittest discover -s tools/ci/tests -p test_rust_isolation.py -v
         python -m unittest discover -s tools/ci/tests -p test_local_native_workflows.py -v
         python -m unittest discover -s tools/ci/tests -p test_native_arm_routing.py -v
         python -m unittest discover -s tools/ci/tests -p test_native_source_entry.py -v
