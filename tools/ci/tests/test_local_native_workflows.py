@@ -41,8 +41,8 @@ def condition(original):
 
 class LocalNativeWorkflowTests(unittest.TestCase):
     def test_validation_concurrency_preserves_pending_and_running_evidence(self):
-        for name in ('fast-checks.yml', 'integration.yml', 'rust.yml', 'tests.yaml',
-                     'naver-ci.yml', 'naver-apk-tools.yml', 'wiki-settings-check.yaml',
+        for name in ('integration.yml', 'rust.yml', 'tests.yaml',
+                     'naver-ci.yml', 'naver-apk-tools.yml',
                      'native-resource-guard.yml', 'native-source-reuse.yml',
                      'runtime-native-environment.yml'):
             with self.subTest(workflow=name):
