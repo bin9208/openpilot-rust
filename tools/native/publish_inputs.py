@@ -33,11 +33,12 @@ CASES = ['git-index-initial', 'git-index-reused', 'git-index-docs']
 PREFIX = 'native-agnos/runtime-inputs-evidence/'
 MARKER = 'openpilot-native-inputs-publication-v1'
 FOUNDATION_ARM_JOB = 'Actual offline Cargo reuse (ARM native)'
+PRODUCER_ARM_JOB = 'Native compiler in pinned AGNOS ARM userspace'
 GATES = [
     ('runtime-source-build.yml', ('push', 'workflow_dispatch'),
       {FOUNDATION_ARM_JOB, 'Actual offline Cargo reuse (X64)'}),
     ('runtime-native-environment.yml', ('push', 'workflow_dispatch'),
-      {'Native compiler in pinned AGNOS ARM userspace'}),
+      {PRODUCER_ARM_JOB}),
     ('native-resource-guard.yml', ('push', 'workflow_dispatch'), {'Real memory limit and cancellation (X64 host kernel)'}),
     ('rust.yml', ('pull_request',), {'rust checks', 'rust workspace checks', 'rust aarch64 build'}),
     ('integration.yml', ('pull_request',), {'integration gate', 'build / build release'}),
@@ -284,8 +285,10 @@ def artifact_pin(value, run, source, maximum):
 
 
 def gate_job_allowed(filename, job):
-  if filename == 'runtime-source-build.yml' and job.get('name') == FOUNDATION_ARM_JOB:
-    # Only this native ARM job may cross the foundation's self-hosted boundary.
+  if (filename, job.get('name')) in {
+      ('runtime-source-build.yml', FOUNDATION_ARM_JOB),
+      ('runtime-native-environment.yml', PRODUCER_ARM_JOB)}:
+    # Only these exact native ARM jobs may cross their self-hosted boundaries.
     # Labels/group/identity come from the Actions jobs API, not a claimed environment.
     return (runner_policy.job_is_allowed(job)
         and 'ubuntu-24.04-arm' in job['labels'] and 'self-hosted' not in job['labels']
@@ -340,10 +343,10 @@ def gates(client, source, producer_id, pr_number):
   # The chosen producer itself must have run its real job, even if a newer
   # successful producer happens to exist for the same Git commit.
   jobs = client.collect(f'actions/runs/{producer_id}/jobs', 'jobs')
-  if not any(j['name'] == 'Native compiler in pinned AGNOS ARM userspace'
-      and runner_policy.job_is_allowed(j, self_hosted_only=True)
+  if not any(j['name'] == PRODUCER_ARM_JOB
+      and gate_job_allowed('runtime-native-environment.yml', j)
       and j['status'] == 'completed' and j['conclusion'] == 'success' for j in jobs):
-    raise ValueError('selected native producer lacks its actual registered-runner job')
+    raise ValueError('selected native producer lacks its actual official native ARM job')
   return producer, states
 
 

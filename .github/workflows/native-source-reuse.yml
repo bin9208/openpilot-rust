@@ -20,7 +20,7 @@ jobs:
   real-runtime:
     name: Actual logger source reuse (${{ matrix.arch }})
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     timeout-minutes: ${{ matrix.arch == 'aarch64' && 360 || 45 }}
     strategy:
       fail-fast: false
@@ -40,6 +40,16 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Require the GitHub-hosted Linux ARM64 reuse runner
+        if: matrix.arch == 'aarch64'
+        shell: bash
+        run: |
+          test "$GITHUB_ACTIONS" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = ARM64
+          test "$(uname -m)" = aarch64
+          test "$(dpkg --print-architecture)" = arm64
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
         if: env.LOCAL_CI_ARCH != 'aarch64'

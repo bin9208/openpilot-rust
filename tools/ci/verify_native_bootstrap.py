@@ -2,7 +2,7 @@
 """Exercise the pinned ARM seed's guarded current-tools build on a real host cgroup.
 
 Called once through native_resource_scope enter, after credentials are dropped.
-The AGNOS user space and emulation pins come from the original genuine probe.
+The AGNOS user space and native PRoot proof come from the original genuine probe.
 """
 import hashlib
 from itertools import islice
@@ -16,6 +16,8 @@ import subprocess
 import sys
 import threading
 import time
+
+NATIVE_PROOT = runpy.run_path(str(Path(__file__).with_name('native_proot.py')))
 
 
 def digest(path):
@@ -160,7 +162,7 @@ def bootstrap_memory_observer(job, owner, work, pin, output):
 
 def main():
     assert os.geteuid() != 0 and not os.getgroups()
-    runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_environment'](self_hosted_only=True)
+    runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_github_native_arm']()
     job = Path(os.environ['CI_JOB_TEMP'])
     assert job.parent == Path('/tmp') and job.name.startswith('openpilot-ci.') and job.resolve() == job
     owner = ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB'))
@@ -172,9 +174,7 @@ def main():
     assert context['work'] == str(work)
     source = Path(os.environ['GITHUB_WORKSPACE'])
     guest_work = Path(context['guest_work'])
-    guest = context['guest']
-    assert guest[0] == str(work/'proot') and '-0' not in guest
-    assert digest(work/'proot') == context['proot_sha256']
+    guest = NATIVE_PROOT['verify_context'](context, work)
     cache = work/'bootstrap-current-cache'
     cache.mkdir()
     for name in ('rust-assets', 'cargo-assets'):
@@ -192,6 +192,7 @@ def main():
     evidence.mkdir()
 
     def execute(arguments, name, required=True, observe_bootstrap=False):
+        NATIVE_PROOT['verify_context'](context, work)
         command = [*guest, *(str(arg).replace(str(work), str(guest_work)) for arg in arguments)]
         output = evidence/name
         with output.open('xb') as stdout, (evidence/(name+'.stderr')).open('xb') as stderr:
@@ -216,6 +217,7 @@ def main():
                     thread.join(timeout=3)
                     if thread.is_alive():
                         print('bootstrap memory diagnostic stop timed out; daemon cancellation requested', file=sys.stderr, flush=True)
+        NATIVE_PROOT['verify_context'](context, work)
         if required and result.returncode:
             raise RuntimeError(f'guarded bootstrap command failed ({result.returncode}): {name}; retained output {output}')
         return output, result.returncode
@@ -333,6 +335,8 @@ def main():
         original_bundle_provenance_retained=True, public_seed_download_tested=False,
         request_owner_pid_and_start_time_bound=True,
         actual_host_kernel_cgroup=True, process_architecture='aarch64', physical_arm_cpu=False,
+        native_arm_execution=True, emulated=False, proot_used=True, execution_mode=NATIVE_PROOT['MODE'],
+        proot_build_receipt_sha256=context['proot_build_receipt_sha256'],
         agnos_kernel=False, runtime_activated=False, runtime_started=False,
         resource_policy_is_ci_fixture_not_device_budget=True, metrics=metrics), indent=2)+'\n')
 

@@ -24,6 +24,23 @@ def require_environment(*, self_hosted_only=False, env=None):
                          else 'registered self-hosted or supported Linux GitHub-hosted Actions runner required')
 
 
+def github_native_arm_allowed(env):
+    return (isinstance(env, Mapping) and env.get('GITHUB_ACTIONS') == 'true'
+            and env.get('RUNNER_ENVIRONMENT') == 'github-hosted'
+            and env.get('RUNNER_OS') == 'Linux' and env.get('RUNNER_ARCH') == 'ARM64')
+
+
+def require_github_native_arm(*, env=None):
+    if not github_native_arm_allowed(os.environ if env is None else env):
+        raise ValueError('GitHub-hosted Linux ARM64 Actions runner required for AGNOS validation')
+
+
+def require_resource_scope_environment(*, env=None):
+    value = os.environ if env is None else env
+    if not (environment_allowed(value, self_hosted_only=True) or github_native_arm_allowed(value)):
+        raise ValueError('registered self-hosted or GitHub-hosted Linux ARM64 resource scope required')
+
+
 def job_is_allowed(job, *, self_hosted_only=False):
     if not isinstance(job, Mapping):
         return False
@@ -40,6 +57,11 @@ def job_is_allowed(job, *, self_hosted_only=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--self-hosted-only', action='store_true')
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument('--self-hosted-only', action='store_true')
+    selection.add_argument('--github-native-arm-only', action='store_true')
     arguments = parser.parse_args()
-    require_environment(self_hosted_only=arguments.self_hosted_only)
+    if arguments.github_native_arm_only:
+        require_github_native_arm()
+    else:
+        require_environment(self_hosted_only=arguments.self_hosted_only)

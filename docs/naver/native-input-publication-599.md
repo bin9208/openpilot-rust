@@ -22,7 +22,11 @@ SHA의 Git blob에서 source profile을 읽으며 artifact의 코드는 실행�
 
 - 지정 run은 같은 저장소의 정확한 genuine workflow/source에서 성공해야 한다.
   foundation 두 matrix, genuine, kernel guard와 PR Rust/workspace/ARM·integration·fast·
-  mapped docs의 최신 같은 SHA 결과와 필수 job/bin-actions를 확인한다. 이전 green,
+  mapped docs의 최신 같은 SHA 결과와 워크플로별 지정 runner의 실제 필수 job을 확인한다.
+  foundation ARM 및 Genuine의 정확 compiler job은 공식 GitHub native ARM이어야 한다.
+  Actions jobs API의 `ubuntu-24.04-arm` label, GitHub Actions group0, 양의 runner ID와
+  실제 runner 이름을 결속하고 self-hosted label 혼합·X64 대체·등록 self 이름 위장을 거부한다.
+  foundation X64·kernel guard와 발행 job의 기존 self-hosted 경계는 유지한다. 이전 green,
   skipped ARM, 다른 runner 또는 대기 중인 최신 검사를 대신 사용하지 않는다.
   PR 검사는 같은 저장소의 정확 head SHA와 `dev` 대상을 요구하고, 모든 필수 PR
   결과에 공통인 PR 번호·base SHA가 있어야 한다. 다른 대상의 실행은 섞지 않으며,

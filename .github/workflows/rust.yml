@@ -10,7 +10,7 @@ permissions:
 env:
   RUSTUP_TOOLCHAIN: '1.94.0'
 concurrency:
-  group: rust-${{ github.event_name }}-${{ github.ref }}-parallel-v2
+  group: rust-${{ github.event_name }}-${{ github.ref }}-native-arm-v1
   queue: max
   cancel-in-progress: false
 jobs:
@@ -3372,7 +3372,7 @@ jobs:
   arm64:
     name: rust aarch64 build
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 120
     env:
       CARGO_INCREMENTAL: '0'
@@ -3388,12 +3388,15 @@ jobs:
       - name: Reserve capacity for generic ARM build dependencies
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
-          sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make cmake
+          test "$(uname -m)" = aarch64
+          test "$(dpkg --print-architecture)" = arm64
+          sudo apt-get -o APT::Architectures=arm64 update && sudo apt-get -o APT::Architectures=arm64 install -y gcc g++ binutils capnproto libcapnp-dev clang libclang-dev make cmake
+          test "$(gcc -dumpmachine)" = aarch64-linux-gnu
+          command -v aarch64-linux-gnu-gcc aarch64-linux-gnu-g++ aarch64-linux-gnu-ar aarch64-linux-gnu-ranlib aarch64-linux-gnu-readelf
+          test -r /usr/include/aarch64-linux-gnu/gnu/stubs-lp64.h
       - name: Stage native GNU aarch64 startup renderer and portable loader headers
         run: |
-          sudo dpkg --add-architecture arm64
-          sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- update
-          sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- install -y libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
+          sudo apt-get -o APT::Architectures=arm64 install -y libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
           cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch aarch64 --output "$RUNNER_TEMP/startup-raylib-arm" --shared --cxx aarch64-linux-gnu-g++
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-arm\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
@@ -3507,7 +3510,7 @@ jobs:
           python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_aarch64.py \
             --binary target/aarch64-unknown-linux-musl/release/openpilot-proclogd \
-            --runner /usr/bin/qemu-aarch64-static --report "$RUNNER_TEMP/aarch64-probe.json"
+            --report "$RUNNER_TEMP/aarch64-probe.json"
           mkdir -p target/c3x-probe
           cp target/aarch64-unknown-linux-musl/release/openpilot-proclogd target/c3x-probe/
           git rev-parse HEAD > target/c3x-probe/SOURCE_COMMIT
@@ -3610,7 +3613,7 @@ jobs:
           CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
           CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
           AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
-          BINDGEN_EXTRA_CLANG_ARGS: --target=aarch64-linux-gnu -I/usr/aarch64-linux-gnu/include
+          BINDGEN_EXTRA_CLANG_ARGS: --target=aarch64-linux-gnu -I/usr/include/aarch64-linux-gnu
           FFMPEG_DIR: ${{ env.ENCODER_ARM_FFMPEG }}
           ENCODER_LIBYUV_LIB: ${{ env.ENCODER_ARM_LIBYUV }}
           ENCODER_FFMPEG_EXTRA_LIBS: swresample,x264,z,va,va-drm,drm,gcc

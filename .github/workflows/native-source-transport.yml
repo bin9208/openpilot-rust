@@ -1,7 +1,7 @@
 name: Factory ARM sudo transport admission
 on:
   push:
-    branches: ['codex/feat-613-*', 'codex/fix-613-*', dev, main]
+    branches: ['codex/feat-599-*', 'codex/feat-613-*', 'codex/fix-613-*', dev, main]
     paths:
       - 'tools/ci/probe_native_source_transport.py'
       - '.github/workflows/native-source-transport.yml'
@@ -16,19 +16,26 @@ jobs:
   admission:
     name: Real factory sudo and owned cgroup in private namespaces
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     env:
-      LOCAL_CI_ARCH: x86_64
+      LOCAL_CI_ARCH: aarch64
       RUSTUP_TOOLCHAIN: '1.94.0'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
-      SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA
+      SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA
     steps:
       - uses: actions/checkout@v7
         with: {persist-credentials: false}
-      - name: Require the registered self-hosted factory admission runner
-        run: /usr/bin/python3 -I -B -S tools/ci/runner_policy.py --self-hosted-only
+      - name: Require the GitHub-hosted Linux ARM64 factory admission runner
+        run: |
+          /usr/bin/python3 -I -B -S -c 'import runpy; runpy.run_path("tools/ci/runner_policy.py")["require_github_native_arm"]()'
+          test "$GITHUB_ACTIONS" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = ARM64
+          test "$(uname -m)" = aarch64
+          test "$(dpkg --print-architecture)" = arm64
       - uses: ./.github/actions/job-temp
       - uses: ./.github/actions/rust-path
       - name: Admit the image and tool operation before allocating its files
@@ -40,10 +47,10 @@ jobs:
           print(dict(available_bytes=free, expected_image_and_tool_growth_bytes=growth))
           assert free >= growth, 'insufficient space for this operation; existing data retained'
           PY
-          sudo apt-get -o APT::Architectures=amd64 update
-          sudo apt-get -o APT::Architectures=amd64 install -y qemu-user-static android-sdk-libsparse-utils e2fsprogs xz-utils
+          sudo apt-get -o APT::Architectures=arm64 update
+          sudo apt-get -o APT::Architectures=arm64 install -y gcc make pkg-config libtalloc-dev android-sdk-libsparse-utils e2fsprogs xz-utils
           rustup toolchain install 1.94.0 --profile minimal
-          command -v /usr/bin/mount /usr/bin/simg2img /usr/sbin/debugfs /usr/bin/qemu-aarch64-static
+          command -v /usr/bin/mount /usr/bin/simg2img /usr/sbin/debugfs
       - uses: ./.github/actions/native-cache
         id: image
         with:

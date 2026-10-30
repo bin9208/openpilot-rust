@@ -18,11 +18,15 @@ HTTPS로 받아 SHA/byte와 현재 SDK plan/provider profile을 확인한다. se
 production entry도 공개 입력을 다시 독립 검증한다. 별도 producer artifact의 공개·pin
 검증은 기존 publication workflow의 책임이며 여기서 발행을 수행하지 않는다.
 
-고정 factory raw image와 static X64 QEMU를 기존 transport helper로 검증한다.
+고정 factory raw image를 기존 transport helper로 검증하고 GitHub native ARM에서
+에뮬레이터 없이 실행한다. hosted host identity와 factory comma1000을 별도로 결속한다.
 `debugfs rdump` 뒤 원래 인증 image inode의 root 소유/mode04755와 sudo body SHA를
 확인해 **그 sudo 한 파일의 SUID만** 복원한다. 새 child만 job cgroup으로 이동시키고,
-identity map0..65535를 만든 private user/mount/cgroup namespace에서 private binfmt
-`CF` 규칙을 사용한다. 원래 ARM `/usr/bin/python3 -I -B -S`, UID/GID1000과 `comma`
+private user/mount/cgroup namespace의 명시적 UID/GID map으로 host runner와 내부 comma를
+연결한다. host identity가1001이면 새로 추출한 private factory tree의 대응 소유만
+역매핑해 내부 원래 소유가 유지되도록 하며 symlink를 따라가거나 image/source/cache를
+변경하지 않는다. native ARM 경로는 QEMU나 binfmt 규칙을 등록하지 않는다.
+원래 ARM `/usr/bin/python3 -I -B -S`, UID/GID1000과 `comma`
 passwd/group, 실제 `sudo -n -l` 및 원래 admission payload의 root 권한 전환을 요구한다.
 원래 sudoers는 편집하지 않는다. 공유 binfmt/controller의 전후 상태도 비교한다.
 
@@ -47,7 +51,7 @@ bind한다. 실제 CLI로 다음을 실행한다.
    원본 readonly mount는 수정하지 않으며 derived SHA/tree를 P라고 재표기하지 않는다.
 
 `--verify-package`는 원래 launcher의 패키지 검증 후 manager 시작 전에 반환한다.
-따라서 manager 정상 부팅, hardware/model/녹화/업로드, 실제 AGNOS kernel/ARM CPU,
+따라서 manager 정상 부팅, hardware/model/녹화/업로드, 실제 AGNOS kernel과 사용자 기기,
 update/recovery는 이 driver가 검증했다고 표시하지 않는다. docs/작은 변경 재사용은
 아래 실제 receipt 대조까지 성공한 실행에서만 표시한다. 현재 Actions 실행 증거는 없다.
 정상 startup의 20초 deadline과 정책은 바꾸지 않는다. `build_timeout_seconds`는

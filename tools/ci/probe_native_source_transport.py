@@ -63,7 +63,7 @@ def readonly_proc_tree(target):
             result[int(fields[0])] = (path, fields[5])
         return result
 
-    assert os.uname().machine == 'x86_64', 'mount_setattr syscall number is pinned to the X64 host'
+    assert os.uname().machine == 'aarch64', 'mount_setattr uses the verified ARM64 asm-generic ABI'
     assert target.is_absolute() and target.resolve(strict=True) == target and target.name == 'proc'
     before = mounts()
     source = {key: row for key, row in before.items() if row[0].is_relative_to('/proc')}
@@ -81,7 +81,7 @@ def readonly_proc_tree(target):
     try:
         library = ctypes.CDLL(None, use_errno=True)
         library.syscall.restype = ctypes.c_long
-        # X64 __NR_mount_setattr=442, AT_EMPTY_PATH=0x1000, AT_RECURSIVE=0x8000.
+        # ARM64 asm-generic __NR_mount_setattr=442; AT_EMPTY_PATH | AT_RECURSIVE.
         if library.syscall(ctypes.c_long(442), ctypes.c_int(fd), ctypes.c_char_p(b''),
                            ctypes.c_uint(0x9000), ctypes.byref(attributes), ctypes.c_size_t(32)):
             error = ctypes.get_errno()
@@ -97,24 +97,85 @@ def readonly_proc_tree(target):
 
 def handlers():
     root = Path('/proc/sys/fs/binfmt_misc')
-    return {p.name: p.read_text() for p in root.iterdir() if p.name != 'register'}
+    if not root.exists():
+        return dict(present=False)
+    return dict(present=True, files={p.name: p.read_text() for p in root.iterdir() if p.name != 'register'})
 
 
-def static_emulator():
-    path = Path('/usr/bin/qemu-aarch64-static')
-    with path.open('rb') as stream:
-        header = stream.read(64)
-        assert header[:6] == b'\x7fELF\x02\x01' and int.from_bytes(header[18:20], 'little') == 62
-        offset = int.from_bytes(header[32:40], 'little')
-        size = int.from_bytes(header[54:56], 'little')
-        count = int.from_bytes(header[56:58], 'little')
-        assert size == 56 and 0 < count <= 4096
-        stream.seek(offset)
-        for _ in range(count):
-            row = stream.read(size)
-            assert len(row) == size
-            assert int.from_bytes(row[:4], 'little') != 3, 'fixed chroot interpreter must not require a host ELF loader'
-    return digest(path)
+def factory_id_map(host):
+    # These are the existing registered caller and the proposed hosted caller.
+    # CI must prove its real uid/gid; unknown identities never receive a broad map.
+    if type(host) is not int or host not in (1000, 1001):
+        raise ValueError('factory namespace supports only verified host uid/gid 1000 or 1001')
+    if host == 1000:
+        return '0 0 65536\n'
+    return '0 0 1000\n1000 1001 1\n1001 1000 1\n1002 1002 64534\n'
+
+
+def factory_host_id(original, host):
+    factory_id_map(host)
+    return 2001-original if host == 1001 and original in (1000, 1001) else original
+
+
+def remap_factory_owners(factory, uid, gid):
+    mapping = dict(host_uid=uid, host_gid=gid, factory_uid=1000, factory_gid=1000,
+                   uid_map=factory_id_map(uid), gid_map=factory_id_map(gid))
+    job = Path(os.environ['CI_JOB_TEMP'])
+    if (os.geteuid() != 0 or factory.resolve(strict=True) != factory
+            or factory.name != 'factory' or factory.parent.parent != job
+            or factory.parent.name not in ('source-entry-transport', 'source-entry-full')
+            or factory.parent.stat().st_uid != 0 or factory.stat().st_uid != 0):
+        raise ValueError('ownership mapping requires this job\'s newly extracted private factory tree')
+    # No payload or bind mount exists yet. Never descend through a symlink and
+    # visit hardlinked inodes once, so a swap cannot be applied a second time.
+    pending, seen, changed = [factory], set(), 0
+    device = factory.stat().st_dev
+    while pending:
+        path = pending.pop()
+        before = path.lstat()
+        if before.st_dev != device:
+            raise ValueError('private factory ownership mapping crossed a filesystem')
+        inode = (before.st_dev, before.st_ino)
+        if inode in seen:
+            continue
+        seen.add(inode)
+        if stat.S_ISDIR(before.st_mode):
+            pending.extend(path/entry.name for entry in path.iterdir())
+        new_uid = factory_host_id(before.st_uid, uid)
+        new_gid = factory_host_id(before.st_gid, gid)
+        if (new_uid, new_gid) != (before.st_uid, before.st_gid):
+            link = os.readlink(path) if stat.S_ISLNK(before.st_mode) else None
+            if link is not None:
+                os.chown(path, new_uid, new_gid, follow_symlinks=False)
+            elif stat.S_ISREG(before.st_mode) or stat.S_ISDIR(before.st_mode):
+                fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+                try:
+                    opened = os.fstat(fd)
+                    if (opened.st_dev, opened.st_ino) != inode:
+                        raise ValueError('private factory inode changed before ownership mapping')
+                    os.fchown(fd, new_uid, new_gid)
+                    os.fchmod(fd, stat.S_IMODE(before.st_mode))
+                finally:
+                    os.close(fd)
+            else:
+                raise ValueError('unsupported non-root-owned private factory inode type')
+            after = path.lstat()
+            if ((after.st_dev, after.st_ino, after.st_uid, after.st_gid, after.st_mode)
+                    != (before.st_dev, before.st_ino, new_uid, new_gid, before.st_mode)
+                    or (link is not None and os.readlink(path) != link)):
+                raise ValueError('private factory ownership mapping changed an inode, mode or link')
+            changed += 1
+    return dict(mapping, remapped_inodes=changed, extracted_modes_and_links_preserved=True)
+
+
+def write_factory_id_maps(procfd, uid, gid):
+    for name, host in (('uid_map', uid), ('gid_map', gid)):
+        data = factory_id_map(host).encode('ascii')
+        fd = os.open(name, os.O_WRONLY | os.O_NOFOLLOW, dir_fd=procfd)
+        try:
+            assert os.write(fd, data) == len(data)
+        finally:
+            os.close(fd)
 
 
 def restore_factory_sudo(raw, sudo):
@@ -199,10 +260,12 @@ finally:
 '''
 
 USER_PROBE = r'''
-import hashlib, json, os, platform, stat, subprocess, sys
+import grp, hashlib, json, os, platform, pwd, stat, subprocess, sys
 from pathlib import Path
 assert platform.machine() == 'aarch64'
 assert os.getuid() == os.geteuid() == int(sys.argv[1]) > 0
+assert os.getuid() == os.getgid() == 1000
+assert pwd.getpwuid(1000).pw_name == grp.getgrgid(1000).gr_name == 'comma'
 assert not os.getgroups()
 sudo = Path('/usr/bin/sudo')
 assert sudo.stat().st_uid == 0 and sudo.stat().st_mode & stat.S_ISUID
@@ -237,15 +300,8 @@ def child(uid, gid, work, factory, ready, go, expected_userns, group, group_inod
     assert os.readlink('/proc/self/ns/user') != expected_userns
     unshare(NEWNS | NEWCGROUP)
     command('/usr/bin/mount', '--make-rprivate', '/')
-    registry, memory = work/'binfmt', work/'memory'
-    registry.mkdir()
+    memory = work/'memory'
     memory.mkdir()
-    command('/usr/bin/mount', '-t', 'binfmt_misc', 'binfmt_misc', registry)
-    assert {p.name for p in registry.iterdir()} == {'status', 'register'}
-    magic = r'\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00'
-    mask = r'\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff'
-    (registry/'register').write_text(':owned-arm:M::'+magic+':'+mask+':/usr/bin/qemu-aarch64-static:CF')
-    assert 'flags: OCF' in (registry/'owned-arm').read_text()
     command('/usr/bin/mount', '-t', 'cgroup2', 'cgroup2', memory)
     assert memory.stat().st_ino == group_inode
     (memory/'control').mkdir()
@@ -267,21 +323,22 @@ def child(uid, gid, work, factory, ready, go, expected_userns, group, group_inod
     os.chroot(factory)
     os.chdir('/')
     os.setgroups([])
-    os.setgid(gid)
-    os.setuid(uid)
+    os.setgid(1000)
+    os.setuid(1000)
     os.execve('/usr/bin/python3', ['/usr/bin/python3', '-I', '-B', '-S', '-c', USER_PROBE,
-        str(uid), ROOT_PROBE], {'PATH':'/usr/sbin:/usr/bin:/sbin:/bin', 'LC_ALL':'C', 'HOME':'/home/comma'})
+        '1000', ROOT_PROBE], {'PATH':'/usr/sbin:/usr/bin:/sbin:/bin', 'LC_ALL':'C', 'HOME':'/home/comma'})
 
 
 def probe():
     scope_module = source_module('native_resource_scope')
     write = scope_module['write']
     uid, gid, job, scope, version = scope_module['owned']()
-    assert version == 2 and max(uid, gid) < 65536
+    assert version == 2 and os.uname().machine == 'aarch64'
+    factory_id_map(uid)
+    factory_id_map(gid)
     raw = job/'native-agnos/system.raw'
     assert raw.resolve(strict=True) == raw and raw.stat().st_uid == uid
     assert raw.stat().st_size == RAW_BYTES and digest(raw) == RAW_SHA
-    emulator_sha = static_emulator()
     original = handlers()
     global_control = Path('/sys/fs/cgroup/cgroup.subtree_control').read_text()
     outer_userns = os.readlink('/proc/self/ns/user')
@@ -295,6 +352,7 @@ def probe():
     # changing global loop devices or requiring an ext4 mount in the host ns.
     command('/usr/sbin/debugfs', '-R', f'rdump / {factory}', raw, timeout=600)
     assert (factory/'VERSION').read_text().strip() == '19.8-carrot-bt1'
+    identity = remap_factory_owners(factory, uid, gid)
     sudo = factory/'usr/bin/sudo'
     sudo_metadata = restore_factory_sudo(raw, sudo)
     assert sudo.stat().st_uid == 0 and sudo.stat().st_mode & 0o4000
@@ -325,12 +383,7 @@ def probe():
     try:
         assert select.select([read_ready], [], [], 30)[0], 'user namespace readiness exceeded 30 seconds'
         assert os.read(read_ready, 1) == b'U', (work/'arm.stderr').read_text()[-8192:]
-        for name in ('uid_map', 'gid_map'):
-            fd = os.open(name, os.O_WRONLY | os.O_NOFOLLOW, dir_fd=procfd)
-            try:
-                assert os.write(fd, b'0 0 65536\n') == len(b'0 0 65536\n')
-            finally:
-                os.close(fd)
+        write_factory_id_maps(procfd, uid, gid)
         os.write(send_go, b'M')
         deadline = time.monotonic()+120
         while True:
@@ -346,12 +399,13 @@ def probe():
         assert Path('/sys/fs/cgroup/cgroup.subtree_control').read_text() == global_control
         result = json.loads((work/'arm.stdout').read_text())
         assert result['factory_sudo_sha256'] == sudo_metadata['sha256']
+        # The host executes ARM directly; no physical board/device acceptance is claimed.
         result.update(source_commit=os.environ['GITHUB_SHA'], host_kernel=os.uname().release,
             host_architecture=os.uname().machine, physical_arm_cpu=False, agnos_kernel=False,
             factory_image_sha256=RAW_SHA, shared_binfmt_modified=False,
             shared_controller_modified=False, namespace_cgroup_inode=group_inode,
-            root_cgroup_namespace_verified=True, qemu_sha256=emulator_sha,
-            static_fixed_interpreter_verified=True, factory_sudo_image_metadata=sudo_metadata)
+            root_cgroup_namespace_verified=True, native_arm_execution=True,
+            emulated=False, factory_identity=identity, factory_sudo_image_metadata=sudo_metadata)
     finally:
         assert group.stat().st_ino == group_inode and group.parent == scope
         write(group/'cgroup.kill', 1)
@@ -383,7 +437,8 @@ def probe():
 if __name__ == '__main__':
     if not (sys.flags.isolated and sys.flags.no_site and sys.flags.dont_write_bytecode):
         raise SystemExit('requires /usr/bin/python3 -I -B -S')
-    source_module('runner_policy')['require_environment'](self_hosted_only=True)
+    source_module('runner_policy')['require_github_native_arm']()
+    assert os.uname().machine == 'aarch64'
     if sys.argv[1:] == ['--prepare-image']:
         prepare_image()
     elif sys.argv[1:] == ['--probe']:

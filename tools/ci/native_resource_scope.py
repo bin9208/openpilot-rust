@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Real, job-owned host-kernel memory scope; no mocked controller or hosted fallback.
+"""Real, job-owned host-kernel memory scope on registered or hosted ARM runners.
 
 Root only sets up/enters/removes this job's cgroup. Test commands execute after
 dropping to the original runner user. Existing runner processes are never moved.
@@ -15,9 +15,12 @@ import time
 
 
 def identity():
-    runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))['require_environment'](self_hosted_only=True)
+    policy = runpy.run_path(str(Path(__file__).with_name('runner_policy.py')))
+    policy['require_resource_scope_environment']()
+    if policy['github_native_arm_allowed'](os.environ) and os.uname().machine != 'aarch64':
+        raise RuntimeError('hosted ARM resource scope requires an actual AArch64 host')
     if os.geteuid() != 0:
-        raise RuntimeError('registered self-hosted root setup required')
+        raise RuntimeError('owned Actions root setup required')
     uid, gid = int(os.environ['SUDO_UID']), int(os.environ['SUDO_GID'])
     if uid <= 0 or gid < 0:
         raise RuntimeError('non-root runner identity required')
@@ -70,8 +73,11 @@ def prepare():
     for entry in (path / 'cgroup.procs', control, control / 'cgroup.procs'):
         os.chown(entry, uid, gid)
     with (job / 'resource-scope-evidence.json').open('x') as stream:
+        # Native ARM VM execution is separate from physical board/device acceptance.
         json.dump({**lease, 'host_kernel': os.uname().release,
                    'host_architecture': os.uname().machine, 'physical_arm_cpu': False,
+                   'native_arm_execution': os.uname().machine == 'aarch64',
+                   'device_execution': False,
                    'existing_processes_migrated': False, 'shared_controller_modified': False}, stream)
     print(json.dumps(lease), flush=True)
 

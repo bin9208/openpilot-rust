@@ -188,11 +188,12 @@ jobs:
   compiler:
     name: Native compiler in pinned AGNOS ARM userspace
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04-arm
     # #608 actual ARM release build alone took 6,386,611 ms. This job now also
     # builds the real encoder; retain every command/pin and allow a bounded 6h.
     timeout-minutes: 360
     env:
+      LOCAL_CI_ARCH: aarch64
       RUSTUP_TOOLCHAIN: '1.94.0'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
@@ -204,8 +205,13 @@ jobs:
       - uses: ./.github/actions/rust-path
       - name: Admit this host tool and extract operation
         run: |
-          [[ $RUNNER_NAME == bin-actions || $RUNNER_NAME == bin-actions2 || $RUNNER_NAME == bin-actions3 ]]
-          test "$RUNNER_ENVIRONMENT" = self-hosted
+          /usr/bin/python3 -I -B -S -c 'import runpy; runpy.run_path("tools/ci/runner_policy.py")["require_github_native_arm"]()'
+          test "$GITHUB_ACTIONS" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = ARM64
+          test "$(uname -m)" = aarch64
+          test "$(dpkg --print-architecture)" = arm64
           python3 - <<'PY'
           import os, shutil
           growth = 4 * 1024**3
@@ -215,12 +221,14 @@ jobs:
               if free < growth:
                   raise SystemExit('insufficient capacity for this operation; other data retained')
           PY
-          sudo apt-get -o APT::Architectures=amd64 update
-          sudo apt-get -o APT::Architectures=amd64 install -y qemu-user-static android-sdk-libsparse-utils e2fsprogs xz-utils
+          sudo apt-get -o APT::Architectures=arm64 update
+          sudo apt-get -o APT::Architectures=arm64 install -y gcc make pkg-config libtalloc-dev android-sdk-libsparse-utils e2fsprogs xz-utils
           rustup toolchain install 1.94.0 --profile minimal
+      - name: Prepare only this bootstrap job kernel scope
+        run: sudo -n --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA /usr/bin/python3 tools/ci/native_resource_scope.py prepare
       - name: Validate the current package growth policy before deep ARM preparation
         run: |
-          sudo apt-get -o APT::Architectures=amd64 install -y g++ liblzma-dev pkg-config
+          sudo apt-get -o APT::Architectures=arm64 install -y g++ liblzma-dev pkg-config
           set -o pipefail
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib package::tests \
             2>&1 | tee "$CI_JOB_TEMP/host-package-space-tests.log"
@@ -232,7 +240,7 @@ jobs:
           OPENBLAS_NUM_THREADS: '1'
           PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
         run: |
-          sudo apt-get -o APT::Architectures=amd64 install -y capnproto libcapnp-dev g++ libzmq3-dev gdb cmake make
+          sudo apt-get -o APT::Architectures=arm64 install -y capnproto libcapnp-dev g++ libzmq3-dev gdb cmake make
           python - <<'PY'
           import json, os, platform, shutil
           from pathlib import Path
@@ -259,7 +267,7 @@ jobs:
           python -m pip download --only-binary=:all: --no-deps comma-deps-acados==0.2.2.post103 --dest "$CI_JOB_TEMP/host-planner-wheel"
           python -m pip install --no-deps "$CI_JOB_TEMP"/host-planner-wheel/*.whl
           planner_generator=$(python -P -c 'import acados; from pathlib import Path; print(Path(acados.__file__).parent)')
-          python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --python "$(command -v python)" --acados "$planner_generator" --wheel "$CI_JOB_TEMP"/host-planner-wheel/*.whl --output "$CI_JOB_TEMP/host-planner-artifact"
+          python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_acados.py --architecture aarch64 --cc gcc --python "$(command -v python)" --acados "$planner_generator" --wheel "$CI_JOB_TEMP"/host-planner-wheel/*.whl --output "$CI_JOB_TEMP/host-planner-artifact"
           python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_source.py --artifact "$CI_JOB_TEMP/host-planner-artifact" --python "$(command -v python)" --acados "$planner_generator" --generator-wheel "$CI_JOB_TEMP"/host-planner-wheel/*.whl --cc gcc --output "$CI_JOB_TEMP/host-planner-source"
       - name: Exercise the unchanged original planner ABI before the full AGNOS build
         id: planner-host-abi
@@ -770,13 +778,11 @@ jobs:
           assert all(rows[1][part]['copied_bytes']==0 for part in ('headers','provider'))
           print('One content-addressed FFmpeg input prefix; repeat archive transfer, prefix copy and hardlink bytes zero.')
           PY
-      - name: Prepare only this bootstrap job kernel scope
-        run: sudo -n --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA /usr/bin/python3 tools/ci/native_resource_scope.py prepare
       - name: Execute Rust and C++ standard ABI probes inside the original AGNOS filesystem
         run: python3 tools/ci/probe_native_agnos.py
       - name: Stop and remove only the bootstrap job kernel scope
         if: always()
-        run: sudo -n --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA /usr/bin/python3 tools/ci/native_resource_scope.py cleanup
+        run: sudo -n --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA /usr/bin/python3 tools/ci/native_resource_scope.py cleanup
       - name: Retain only the verified input files and evidence for publication
         run: /usr/bin/python3 -I -B -S tools/ci/stage_native_input_payload.py
       - uses: actions/upload-artifact@v6

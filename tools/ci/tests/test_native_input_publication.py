@@ -478,7 +478,10 @@ class GateTests(unittest.TestCase):
     producer = dict(id=42, run_attempt=1, head_sha=SOURCE, path=publication.PRODUCER, event='push',
         repository=dict(full_name=publication.REPO, id=7), head_repository=dict(full_name=publication.REPO),
         status='completed', conclusion='success')
-    runs, proofs, jobs = [], {}, {42:[job_fixture('Native compiler in pinned AGNOS ARM userspace')]}
+    def arm_job(name):
+      return dict(job_fixture(name, runner_name='GitHub Actions 1000030832', labels=['ubuntu-24.04-arm']),
+          runner_group_id=0, runner_group_name='GitHub Actions', runner_id=1000030832)
+    runs, proofs, jobs = [], {}, {42:[arm_job('Native compiler in pinned AGNOS ARM userspace')]}
     for number, (name, events, required) in enumerate(publication.GATES, 100):
       run = dict(producer, id=number, path='.github/workflows/'+name, event=events[0])
       if run['event'] == 'pull_request':
@@ -488,9 +491,9 @@ class GateTests(unittest.TestCase):
             head=dict(ref='codex/owned-source', sha=SOURCE, repo=repository.copy()))]
         proofs[number] = context_fixture(number, publication.PROOF_JOBS[name])
       runs.append(run)
-      jobs[number] = [dict(job_fixture(n, runner_name='GitHub Actions 1000030832', labels=['ubuntu-24.04-arm']),
-          runner_group_id=0, runner_group_name='GitHub Actions', runner_id=1000030832)
-          if name == 'runtime-source-build.yml' and n == publication.FOUNDATION_ARM_JOB
+      jobs[number] = [arm_job(n)
+          if (name, n) in {('runtime-source-build.yml', publication.FOUNDATION_ARM_JOB),
+              ('runtime-native-environment.yml', 'Native compiler in pinned AGNOS ARM userspace')}
           else job_fixture(n) for n in required]
     client = mock.Mock()
     client.json.return_value = producer
@@ -518,7 +521,7 @@ class GateTests(unittest.TestCase):
     self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][0]['ready'])
     jobs[100].append(job_fixture('Actual offline Cargo reuse (ARM QEMU)'))
     self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][0]['ready'])
-    next(job for job in jobs[101] if job['name'] == 'Native compiler in pinned AGNOS ARM userspace')['runner_name'] = 'unregistered-hosted-runner'
+    next(job for job in jobs[101] if job['name'] == 'Native compiler in pinned AGNOS ARM userspace')['runner_name'] = 'bin-actions2'
     self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][1]['ready'])
     client.json.return_value = dict(producer, conclusion='failure')
     with self.assertRaisesRegex(ValueError, 'completed successfully'):
@@ -578,11 +581,11 @@ class GateTests(unittest.TestCase):
         arm.update(changed)
         self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][0]['ready'])
 
-  def test_native_gates_and_selected_producer_keep_the_self_hosted_boundary(self):
+  def test_unrelated_native_gates_keep_the_self_hosted_boundary(self):
     client, _, _, jobs, _ = self.fixture()
     for rows in jobs.values():
       for actual in rows:
-        if actual['name'] != publication.FOUNDATION_ARM_JOB:
+        if actual['name'] not in (publication.FOUNDATION_ARM_JOB, publication.PRODUCER_ARM_JOB):
           actual['runner_name'] = 'bin-actions2'
     # Keep unchanged original PR receipts attached to their actual runner.
     for number in (103, 104, 106, 107):
@@ -591,7 +594,6 @@ class GateTests(unittest.TestCase):
     self.assertTrue(all(state['ready'] for state in publication.gates(client, SOURCE, 42, 611)[1]))
     for number, job_name, hosted_label in [
         (100, 'Actual offline Cargo reuse (X64)', 'ubuntu-24.04'),
-        (101, 'Native compiler in pinned AGNOS ARM userspace', 'ubuntu-24.04-arm'),
         (102, 'Real memory limit and cancellation (X64 host kernel)', 'ubuntu-24.04-arm')]:
       with self.subTest(job=job_name):
         actual = next(job for job in jobs[number] if job['name'] == job_name)
@@ -601,8 +603,32 @@ class GateTests(unittest.TestCase):
         actual.update(original)
     next(job for job in jobs[42] if job['name'] == 'Native compiler in pinned AGNOS ARM userspace').update(
         runner_name='GitHub Actions owned', labels=['ubuntu-24.04'])
-    with self.assertRaisesRegex(ValueError, 'registered-runner job'):
+    with self.assertRaisesRegex(ValueError, 'official native ARM job'):
       publication.gates(client, SOURCE, 42, 611)
+
+  def test_genuine_and_selected_producer_require_the_actual_official_native_arm_job(self):
+    for fields in [
+        dict(runner_name='bin-actions2', labels=['self-hosted', 'Linux', 'X64']),
+        dict(runner_name='GitHub Actions owned X64', labels=['ubuntu-24.04']),
+        dict(runner_name='bin-actions2', labels=['ubuntu-24.04-arm']),
+        dict(labels=['self-hosted', 'ubuntu-24.04-arm']),
+        dict(runner_name=''), dict(runner_group_id=1), dict(runner_group_id=False),
+        dict(runner_group_name='Default'), dict(runner_id=0), dict(runner_id=False)]:
+      with self.subTest(fields=fields):
+        client, _, _, jobs, _ = self.fixture()
+        jobs[101][0].update(fields)
+        self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][1]['ready'])
+        jobs[42][0].update(fields)
+        with self.assertRaisesRegex(ValueError, 'official native ARM job'):
+          publication.gates(client, SOURCE, 42, 611)
+    for missing in ('runner_group_id', 'runner_group_name', 'runner_id'):
+      with self.subTest(missing=missing):
+        client, _, _, jobs, _ = self.fixture()
+        jobs[101][0].pop(missing)
+        self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][1]['ready'])
+        jobs[42][0].pop(missing)
+        with self.assertRaisesRegex(ValueError, 'official native ARM job'):
+          publication.gates(client, SOURCE, 42, 611)
 
   def test_unregistered_self_hosted_and_mislabelled_jobs_never_satisfy_general_gates(self):
     for name, labels in [('unregistered-actions', ['self-hosted', 'Linux', 'X64']),

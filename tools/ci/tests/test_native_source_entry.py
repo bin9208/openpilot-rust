@@ -21,6 +21,8 @@ _FULL_SPEC = importlib.util.spec_from_file_location('owned_full_source_entry',
     Path(__file__).resolve().parents[1]/'verify_native_source_entry.py')
 full_entry = importlib.util.module_from_spec(_FULL_SPEC)
 _FULL_SPEC.loader.exec_module(full_entry)
+transport = full_entry.module(Path(__file__).resolve().parents[1]/'probe_native_source_transport.py', 'owned_factory_transport')
+runner_policy = full_entry.module(Path(__file__).resolve().parents[1]/'runner_policy.py', 'owned_arm_runner_policy')
 
 
 class Fixture:
@@ -503,6 +505,69 @@ class PublicSourceReuseTests(unittest.TestCase):
       write(row)
       with self.assertRaises(AssertionError):
         full_entry.resource_receipt(entry, attempt, parent, source, 'e'*64, policy)
+
+
+class NativeArmAdmissionTests(unittest.TestCase):
+  def test_agnos_requires_hosted_linux_arm_and_scope_preserves_registered_x64(self):
+    hosted = dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='github-hosted', RUNNER_OS='Linux', RUNNER_ARCH='ARM64')
+    runner_policy.require_github_native_arm(env=hosted)
+    runner_policy.require_resource_scope_environment(env=hosted)
+    self.assertFalse(runner_policy.environment_allowed(hosted, self_hosted_only=True))
+    private = dict(GITHUB_ACTIONS='true', RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='bin-actions3')
+    runner_policy.require_resource_scope_environment(env=private)
+    with self.assertRaises(ValueError):
+      runner_policy.require_github_native_arm(env=private)
+    for changed in (dict(RUNNER_ARCH='X64'), dict(RUNNER_OS='Windows'), dict(GITHUB_ACTIONS='false'),
+                    dict(RUNNER_ENVIRONMENT='self-hosted', RUNNER_NAME='unknown')):
+      env = dict(hosted, **changed)
+      with self.assertRaises(ValueError):
+        runner_policy.require_github_native_arm(env=env)
+      with self.assertRaises(ValueError):
+        runner_policy.require_resource_scope_environment(env=env)
+    for missing in ('RUNNER_OS', 'RUNNER_ARCH'):
+      env = dict(hosted)
+      del env[missing]
+      with self.assertRaises(ValueError):
+        runner_policy.require_github_native_arm(env=env)
+
+  def test_factory_mapping_preserves_root_comma_and_other_ids_without_overlaps(self):
+    for host in (1000, 1001):
+      ranges = [list(map(int, row.split())) for row in transport.factory_id_map(host).splitlines()]
+      guest_ids, host_ids = set(), set()
+      for inner, outer, length in ranges:
+        a, b = set(range(inner, inner+length)), set(range(outer, outer+length))
+        self.assertFalse(guest_ids & a)
+        self.assertFalse(host_ids & b)
+        guest_ids.update(a)
+        host_ids.update(b)
+      self.assertEqual(guest_ids, set(range(65536)))
+      self.assertEqual(host_ids, set(range(65536)))
+      for original in (0, 5, 999, 1000, 1001, 1002, 65534):
+        mapped = transport.factory_host_id(original, host)
+        actual = next(inner+mapped-outer for inner, outer, length in ranges if outer <= mapped < outer+length)
+        self.assertEqual(actual, original)
+      self.assertEqual(transport.factory_host_id(1000, host), host)
+    for host in (0, 999, 1002, 65536, True, '1001'):
+      with self.assertRaises(ValueError):
+        transport.factory_id_map(host)
+
+  def test_factory_owner_remap_refuses_a_shared_or_redirected_tree_before_chown(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      job = Path(temporary)
+      original = job/'shared-source'
+      original.mkdir()
+      alias = job/'source-entry-full'
+      alias.mkdir()
+      (alias/'factory').symlink_to(original, target_is_directory=True)
+      with mock.patch.dict(os.environ, CI_JOB_TEMP=str(job)), \
+           mock.patch.object(transport.os, 'geteuid', return_value=0), \
+           mock.patch.object(transport.os, 'chown') as chown, \
+           mock.patch.object(transport.os, 'fchown') as fchown:
+        for candidate in (original, alias/'factory'):
+          with self.assertRaises(ValueError):
+            transport.remap_factory_owners(candidate, 1001, 1001)
+        chown.assert_not_called()
+        fchown.assert_not_called()
 
 
 if __name__ == '__main__':

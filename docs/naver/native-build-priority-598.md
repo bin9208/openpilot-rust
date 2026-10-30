@@ -1,5 +1,39 @@
 # 성능 개선·콤마 자체 빌드 우선 실행 — #598
 
+## 자체 빌드 집중과 native ARM 실행 — 2026-10-30 사용자 지시
+
+최우선 결과는 공개 입력을 Git에 고정한 완전한 자체 빌드 후보다. 현재 완료 순서는
+AGNOS native ARM 검증 → 정상 PR/병합 후 검사 → 입력34개 실제 발행·공개 body 검증 →
+최종 index 원본 bytes의 정상 Git pin → production source entry의 최초/반복/문서/작은 변경
+빌드·시작용 패키지 검증 → 정확 SHA와 한/영 시험 절차 제공이다. 모델 준비 Python과
+기존 C/C++ 라이브러리를 유지하며 새 기능·광범위 언어 전환·별도 cache 작업을 추가하지 않는다.
+
+사용자는 AGNOS와 다른 ARM 빌드를 `ubuntu-24.04-arm`에서 수행하고 QEMU 비용을
+제거하도록 명시했다. 기존8개 native ARM 검사는 유지하고 Genuine·factory transport·
+전체 source entry·standalone ARM 빌드의 실제 실행 경로를 ARM에 맞춘다. 기존 x86 전용
+PRoot 대신 같은 v5.5.0과 원래 uthash gitlink의 고정 source를 Actions에서 native C로
+빌드하며, 임의 PATH 바이너리나 다른 AGNOS 이미지를 사용하지 않는다. 원래 이미지,
+factory sudo body/mode, comma UID/GID1000, 실제 kernel controller와 readonly proc,
+source/ABI/seed pin·성장/메모리 예산·deadline·소유 범위/cleanup 조건을 유지한다.
+hosted ARM의 실제 권한·용량·빌드 시간은 새 정확 source의 Actions로 확인해야 한다.
+
+성능 이슈의 실제 계층은 #422 → #524 → #522다. #598 본문의 관련 참조와 정식 하위
+관계를 구분한다. 사용자의 자체 빌드 집중 지시에 따라 PR #494→dev-md의 추가 수정·
+push/병합/발행을 보류하고 기존 실행·검토 초안·실패 증거를 보존한다. 해당 별도 트랙의
+완료를 자체 빌드 병합·발행의 선행 조건으로 추가하지 않는다. #606/#644의 별도 cache
+소스와 실행도 보존하며 사용자가 거부한 다른 채팅 메시지를 보내지 않는다.
+
+이 결정 전 source `27547f08c6daf7deac99e35b0f6e1d0c8ffb0298`의 검사는 보존한다.
+새 native ARM source가 실제 등록되기 전 현재 실행을 취소하지 않고, 구형 x86/QEMU의
+성공을 새 ARM 경로의 성공으로 대체하지 않는다. 실제 공개 발행·Git pin·전체 source
+entry·후보는 아직 미완료다. 실제 사용자 기기 수용은 계속 #528에서 별도로 기록한다.
+
+새 ARM 실행은 기존 x86 검사의 대기열 때문에 시작이 지연되지 않도록 Rust의 전용
+preserve queue를 사용한다. `queue: max`와 `cancel-in-progress: false`는 유지하고
+기존 실행·다른 작업의 cache 검사를 취소하지 않는다. 기존 factory transport workflow도
+현재 #599 issue branch의 변경에서 자동 실행해 실제 sudo/UID/controller 능력을 먼저
+확인한다. 같은 source의 factory 검사를 별도로 중복 dispatch하지 않는다.
+
 ## S237 Genuine 실패와 메모리 진단 보강 — 2026-10-30
 
 source `2375949c19c63667ad66de0f9ee7e2c90ad8ba70`의

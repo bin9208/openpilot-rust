@@ -1,5 +1,6 @@
 """Owned ELF-shaped fixtures are never executed or described as native proof."""
 import fcntl
+import copy
 import hashlib
 import importlib.util
 import json
@@ -17,6 +18,10 @@ SOURCE = Path(__file__).resolve().parents[2]/'native/bootstrap_seed.py'
 SPEC = importlib.util.spec_from_file_location('native_bootstrap_seed', SOURCE)
 seed = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(seed)
+PROOT_SPEC = importlib.util.spec_from_file_location('owned_native_proot',
+    Path(__file__).resolve().parents[1]/'native_proot.py')
+proot = importlib.util.module_from_spec(PROOT_SPEC)
+PROOT_SPEC.loader.exec_module(proot)
 
 
 class Fixture:
@@ -181,6 +186,153 @@ class BootstrapSeedTests(unittest.TestCase):
       with self.assertRaises(OSError): fixture.prepare()
       helper.unlink(); helper.write_bytes(saved); helper.chmod(0o555)
       self.assertEqual(fixture.prepare()['stored_bytes'],0)
+
+
+class NativeProotPolicyTests(unittest.TestCase):
+  """ELF-shaped bytes and source-pin stubs; no native tool build or execution."""
+
+  def elf(self, kind=1, machine=183):
+    data = bytearray(128)
+    data[:7] = b'\x7fELF\x02\x01\x01'
+    data[18:20] = machine.to_bytes(2, 'little')
+    data[32:40] = (64).to_bytes(8, 'little')
+    data[54:56] = (56).to_bytes(2, 'little')
+    data[56:58] = (1).to_bytes(2, 'little')
+    data[64:68] = kind.to_bytes(4, 'little')
+    if kind == 2:
+      data[72:80] = (128).to_bytes(8, 'little')
+      data[96:104] = (32).to_bytes(8, 'little')
+      data += (1).to_bytes(8, 'little')+bytes(24)  # DT_NEEDED followed by DT_NULL.
+    return data
+
+  def fixture(self, work):
+    source = work.parent/'source'
+    source.mkdir()
+    with mock.patch.dict(os.environ, CI_JOB_TEMP=str(work.parent), GITHUB_WORKSPACE=str(source)):
+      guest = proot.expected_guest_command(work)
+    binary = work/'proot'
+    binary.write_bytes(self.elf())
+    binary.chmod(0o555)
+    talloc_pin = dict(bytes=1, sha256='a'*64)
+    proof = dict(schema=1, source_commit='b'*40, execution_mode=proot.MODE, host_architecture='aarch64',
+        sources=copy.deepcopy(proot.SOURCES), build_affinity=[2, 4], build_argv=proot.build_argv(work, [2, 4]),
+        build_environment=proot.build_environment(work), build_exit_code=0,
+        static_talloc=dict(path='/usr/lib/aarch64-linux-gnu/libtalloc.a', **talloc_pin),
+        executable=dict(path=str(binary), **proot.static_arm_elf(binary)))
+    receipt = work/'native-bootstrap-proot-build.json'
+    receipt.write_text(json.dumps(proof))
+    context = dict(schema=1, source_commit='b'*40, work=str(work), execution_mode=proot.MODE,
+        guest_work=proot.GUEST_WORK, source_mount=proot.SOURCE_MOUNT,
+        proot_source_sha256=proot.SOURCES['proot']['sha256'],
+        uthash_source_sha256=proot.SOURCES['uthash']['sha256'],
+        proot_sha256=proof['executable']['sha256'], proot_build_receipt_sha256=proot.file_pin(receipt)['sha256'],
+        guest=guest)
+    pins = {str(work/(name+'-source.tar.gz')): {k: pin[k] for k in ('bytes', 'sha256')}
+            for name, pin in proot.SOURCES.items()}
+    pins['/usr/lib/aarch64-linux-gnu/libtalloc.a'] = talloc_pin
+    original_pin = proot.file_pin
+    def file_pin(path):
+      return pins[str(path)] if str(path) in pins else original_pin(path)
+    return context, proof, file_pin, pins
+
+  def test_static_arm_checker_rejects_other_cpu_interpreter_and_dynamic_dependencies(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      path = Path(temporary)/'owned-elf'
+      for data in (self.elf(machine=62), self.elf(kind=3), self.elf(kind=2)):
+        path.write_bytes(data)
+        path.chmod(0o555)
+        with self.assertRaises(ValueError):
+          proot.static_arm_elf(path)
+        path.chmod(0o755)
+      path.write_bytes(self.elf())
+      path.chmod(0o555)
+      self.assertTrue(proot.static_arm_elf(path)['static'])
+      path.chmod(0o755)
+      with self.assertRaisesRegex(ValueError, 'mode'):
+        proot.static_arm_elf(path)
+
+  def test_build_jobs_match_recorded_cpu_affinity_without_a_fixed_cap(self):
+    argv = proot.build_argv(Path('/owned'), [0, 4, 9])
+    self.assertIn('-j3', argv)
+    for affinity in ([], [1, 1], [4, 1], [-1], [True], '0,1'):
+      with self.assertRaises(ValueError):
+        proot.build_argv(Path('/owned'), affinity)
+
+  def test_context_binds_built_bytes_source_gitlink_and_build_command(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      work = Path(temporary)/'native-agnos'
+      work.mkdir()
+      context, proof, file_pin, pins = self.fixture(work)
+      with mock.patch.dict(os.environ, GITHUB_SHA='b'*40, CI_JOB_TEMP=str(work.parent),
+                           GITHUB_WORKSPACE=str(work.parent/'source')), \
+           mock.patch.object(proot.os, 'uname', return_value=SimpleNamespace(machine='aarch64')), \
+           mock.patch.object(proot, 'file_pin', side_effect=file_pin):
+        self.assertEqual(proot.verify_context(context, work), context['guest'])
+        for key in ('proot_source_sha256', 'uthash_source_sha256', 'proot_sha256', 'proot_build_receipt_sha256'):
+          with self.assertRaises(ValueError):
+            proot.verify_context(dict(context, **{key: 'c'*64}), work)
+        pin = pins[str(work/'uthash-source.tar.gz')]
+        pins[str(work/'uthash-source.tar.gz')] = dict(pin, sha256='c'*64)
+        with self.assertRaisesRegex(ValueError, 'source archive'):
+          proot.verify_context(context, work)
+        pins[str(work/'uthash-source.tar.gz')] = pin
+        receipt = work/'native-bootstrap-proot-build.json'
+        changed = dict(proof, build_environment=dict(proof['build_environment'], LDFLAGS=''))
+        receipt.write_text(json.dumps(changed))
+        changed_context = dict(context, proot_build_receipt_sha256=proot.file_pin(receipt)['sha256'])
+        with self.assertRaisesRegex(ValueError, 'provenance'):
+          proot.verify_context(changed_context, work)
+
+  def test_guest_rejects_qemu_and_fake_credentials_but_keeps_env_clear(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      work = Path(temporary)/'native-agnos'
+      work.mkdir()
+      context, _, file_pin, _ = self.fixture(work)
+      with mock.patch.dict(os.environ, GITHUB_SHA='b'*40, CI_JOB_TEMP=str(work.parent),
+                           GITHUB_WORKSPACE=str(work.parent/'source')), \
+           mock.patch.object(proot.os, 'uname', return_value=SimpleNamespace(machine='aarch64')), \
+           mock.patch.object(proot, 'file_pin', side_effect=file_pin):
+        for options in (['-q', '/usr/bin/qemu-aarch64-static'], ['-0'], ['-i', '1000:1000'], ['-S', '/']):
+          changed = dict(context, guest=[context['guest'][0], *options, *context['guest'][1:]])
+          with self.assertRaisesRegex(ValueError, 'fixed bind/environment'):
+            proot.verify_context(changed, work)
+        actual = proot.verify_context(context, work)
+        self.assertEqual(actual[actual.index('/usr/bin/env')+1], '-i')
+
+  def test_guest_rejects_every_changed_bind_and_modified_env_tail(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      work = Path(temporary)/'native-agnos'
+      work.mkdir()
+      context, _, file_pin, _ = self.fixture(work)
+      original = context['guest']
+      mutations = []
+      for position, value in enumerate(original):
+        if value == '-b':
+          changed = original.copy()
+          changed[position+1] = '/unrelated:/unexpected'
+          mutations.append(changed)
+      missing_bind = original.copy()
+      position = missing_bind.index('-b')
+      del missing_bind[position:position+2]
+      mutations.append(missing_bind)
+      missing_env_clear = original.copy()
+      del missing_env_clear[missing_env_clear.index('/usr/bin/env')+1]
+      mutations.append(missing_env_clear)
+      mutations.append([*original, 'LD_LIBRARY_PATH=/unrelated'])
+      for position, value in enumerate(original):
+        if value.startswith(('PATH=', 'CARGO_HOME=', 'RUSTUP_HOME=', 'GIT_CONFIG_GLOBAL=')):
+          changed = original.copy()
+          changed[position] = value.split('=', 1)[0]+'=/unrelated'
+          mutations.append(changed)
+      with mock.patch.dict(os.environ, GITHUB_SHA='b'*40, CI_JOB_TEMP=str(work.parent),
+                           GITHUB_WORKSPACE=str(work.parent/'source')), \
+           mock.patch.object(proot.os, 'uname', return_value=SimpleNamespace(machine='aarch64')), \
+           mock.patch.object(proot, 'file_pin', side_effect=file_pin):
+        for guest in mutations:
+          with self.subTest(guest=guest):
+            with self.assertRaisesRegex(ValueError, 'fixed bind/environment'):
+              proot.verify_context(dict(context, guest=guest), work)
+        self.assertEqual(proot.verify_context(context, work), original)
 
 
 if __name__ == '__main__':

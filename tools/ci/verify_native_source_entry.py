@@ -382,7 +382,8 @@ def policy(raw, source):
 
 def preflight():
     transport = module(ROOT/'tools/ci/probe_native_source_transport.py', 'entry_transport')
-    transport.source_module('runner_policy')['require_environment'](self_hosted_only=True)
+    transport.source_module('runner_policy')['require_github_native_arm']()
+    assert os.uname().machine == 'aarch64'
     context = transport.source_module('native_cache')['Context']()
     source = context.workspace
     entry = module(source/'tools/native/source_entry.py', 'entry_preflight')
@@ -573,6 +574,7 @@ def arm():
         cross_job_cargo_cache_reused=False, warm_zero_download_claimed=True,
         docs_and_small_change_reuse_tested=True, update_and_recovery_tested=False,
         physical_arm_cpu=False, agnos_kernel=False, proot_used=False,
+        native_arm_execution=True, emulated=False, factory_identity=request['factory_identity'],
         manager_started=False, hardware_model_record_upload_tested=False,
         resource_policy_is_ci_fixture_not_device_budget=True))
 
@@ -589,15 +591,8 @@ def namespace_child(transport, uid, gid, work, factory, source, ready, go, group
     transport.unshare(transport.NEWNS | transport.NEWCGROUP)
     mount = lambda *args: transport.command('/usr/bin/mount', *args)
     mount('--make-rprivate', '/')
-    registry, memory = work/'binfmt', work/'memory'
-    registry.mkdir()
+    memory = work/'memory'
     memory.mkdir()
-    mount('-t', 'binfmt_misc', 'binfmt_misc', registry)
-    assert {p.name for p in registry.iterdir()} == {'status', 'register'}
-    magic = r'\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00'
-    mask = r'\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff'
-    (registry/'register').write_text(':owned-arm:M::'+magic+':'+mask+':/usr/bin/qemu-aarch64-static:CF')
-    assert 'flags: OCF' in (registry/'owned-arm').read_text()
     mount('-t', 'cgroup2', 'cgroup2', memory)
     assert memory.stat().st_ino == inode
     (memory/'control').mkdir()
@@ -625,8 +620,8 @@ def namespace_child(transport, uid, gid, work, factory, source, ready, go, group
     os.chroot(factory)
     os.chdir('/')
     os.setgroups([])
-    os.setgid(gid)
-    os.setuid(uid)
+    os.setgid(1000)
+    os.setuid(1000)
     os.execve('/usr/bin/python3', ['/usr/bin/python3', '-I', '-B', '-S',
         '/native/source/tools/ci/verify_native_source_entry.py', '--inside-factory'],
         {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LC_ALL': 'C', 'HOME': '/home/comma'})
@@ -634,20 +629,22 @@ def namespace_child(transport, uid, gid, work, factory, source, ready, go, group
 
 def run():
     transport = module(ROOT/'tools/ci/probe_native_source_transport.py', 'entry_transport')
-    transport.source_module('runner_policy')['require_environment'](self_hosted_only=True)
+    transport.source_module('runner_policy')['require_github_native_arm']()
+    assert os.uname().machine == 'aarch64'
     scope_module = transport.source_module('native_resource_scope')
     uid, gid, job, scope, version = scope_module['owned']()
-    assert version == 2 and uid == gid == 1000
+    assert version == 2
+    transport.factory_id_map(uid)
+    transport.factory_id_map(gid)
     request = json.loads((job/'source-entry-request.json').read_text())
     source = Path(os.environ['GITHUB_WORKSPACE'])
     assert source == ROOT and source.resolve() == source
-    # Git is checked again by the actual uid1000 factory caller before sudo,
+    # Git is checked again by the mapped uid1000 factory caller before sudo,
     # avoiding root safe.directory overrides for the runner-owned checkout.
     assert request['source']['commit'] == os.environ['GITHUB_SHA']
     raw = job/'native-agnos/system.raw'
     assert raw.resolve(strict=True) == raw and raw.stat().st_uid == uid
     assert raw.stat().st_size == transport.RAW_BYTES and checksum(raw) == transport.RAW_SHA
-    qemu_sha = transport.static_emulator()
     expected = request['estimates']['maximum_growth_bytes']+request['estimates']['minimum_free_bytes']
     assert shutil.disk_usage(job).free >= transport.RAW_BYTES+expected
     work = job/'source-entry-full'
@@ -658,6 +655,7 @@ def run():
     os.chown(state, uid, gid)
     transport.command('/usr/sbin/debugfs', '-R', f'rdump / {factory}', raw, timeout=600)
     assert (factory/'VERSION').read_text().strip() == '19.8-carrot-bt1'
+    request['factory_identity'] = transport.remap_factory_owners(factory, uid, gid)
     request['factory_sudo'] = transport.restore_factory_sudo(raw, factory/'usr/bin/sudo')
     # Only the private extracted image's resolver is updated. The host is read.
     resolver = factory/'etc/resolv.conf'
@@ -700,12 +698,7 @@ def run():
     try:
         assert select.select([ready], [], [], remaining(deadline_ns, 30))[0]
         assert os.read(ready, 1) == b'U', 'new user namespace did not become ready'
-        for name in ('uid_map', 'gid_map'):
-            fd = os.open(name, os.O_WRONLY | os.O_NOFOLLOW, dir_fd=procfd)
-            try:
-                assert os.write(fd, b'0 0 65536\n') == len(b'0 0 65536\n')
-            finally:
-                os.close(fd)
+        transport.write_factory_id_maps(procfd, uid, gid)
         os.write(send_go, b'M')
         while True:
             remaining(deadline_ns)
@@ -761,7 +754,7 @@ def run():
     assert result is not None and cleanup['owned_cgroup_removed']
     result.update(cleanup_verified=True, cleanup_evidence_sha256=checksum(state/'cleanup.json'),
         host_kernel=os.uname().release, host_architecture=os.uname().machine,
-        factory_image_sha256=transport.RAW_SHA, qemu_sha256=qemu_sha)
+        factory_image_sha256=transport.RAW_SHA, native_arm_execution=True, emulated=False)
     save(work/'result.json', result)
 
 

@@ -3,7 +3,7 @@
 
 The original genuine probe runs first and supplies independently exported small
 components and authenticated raw caches. No original command or input pin is
-replaced. This is ARM userspace emulation, not a physical ARM or AGNOS kernel.
+replaced. This is native ARM userspace under PRoot, not an AGNOS kernel or device.
 """
 import copy
 import json
@@ -14,7 +14,7 @@ import shutil
 import subprocess
 from urllib.parse import urlsplit
 
-from verify_native_bootstrap import digest
+from verify_native_bootstrap import digest, NATIVE_PROOT
 
 
 # This runs in the original AGNOS user space with the factory isolated Python.
@@ -55,7 +55,7 @@ with tempfile.TemporaryDirectory(prefix='native-index-bytecode-', dir='/tmp') as
 
 def main():
   assert os.geteuid() != 0 and not os.getgroups()
-  runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_environment'](self_hosted_only=True)
+  runpy.run_path(str(Path(__file__).resolve().parent/'runner_policy.py'))['require_github_native_arm']()
   job = Path(os.environ['CI_JOB_TEMP'])
   assert job.parent == Path('/tmp') and job.name.startswith('openpilot-ci.') and job.resolve() == job
   owner = ':'.join(os.environ[k] for k in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'GITHUB_JOB'))
@@ -65,9 +65,7 @@ def main():
   assert context['schema'] == 1 and context['source_commit'] == os.environ['GITHUB_SHA']
   assert context['work'] == str(work)
   guest_work = Path(context['guest_work'])
-  guest = context['guest']
-  assert guest[0] == str(work/'proot') and '-0' not in guest
-  assert digest(work/'proot') == context['proot_sha256']
+  guest = NATIVE_PROOT['verify_context'](context, work)
   source = Path(os.environ['GITHUB_WORKSPACE'])
   evidence = work/'runtime-inputs-evidence'
   evidence.mkdir()
@@ -107,10 +105,12 @@ def main():
       f'OPENPILOT_NATIVE_REQUEST_OWNER={request_owner}']
 
   def execute(arguments, name):
+    NATIVE_PROOT['verify_context'](context, work)
     command = [*guest, *(str(arg).replace(str(work), str(guest_work)) for arg in arguments)]
     output = evidence/name
     with output.open('xb') as stdout, (evidence/(name+'.stderr')).open('xb') as stderr:
       result = subprocess.run(command, stdout=stdout, stderr=stderr, check=False)
+    NATIVE_PROOT['verify_context'](context, work)
     if result.returncode:
       raise RuntimeError(f'production runtime input command failed ({result.returncode}): {name}; retained {output}')
     return output
@@ -301,6 +301,8 @@ def main():
       cases=list(metrics), metrics=metrics, production_input_orchestrator_executed=True,
       provider_roles=15, runtime_roles=18, compiler_input_roles=9, actual_host_kernel_cgroup=True,
       process_architecture='aarch64', physical_arm_cpu=False, agnos_kernel=False,
+      native_arm_execution=True, emulated=False, proot_used=True, execution_mode=NATIVE_PROOT['MODE'],
+      proot_build_receipt_sha256=context['proot_build_receipt_sha256'],
       runtime_started=False, runtime_activated=False, public_component_download_tested=False,
       input_index_candidate_sha256=digest(candidate_path), input_index_committed=False, published_release=False,
       production_source_index_resolver_executed=True, owned_input_index_source_commit=indexed_commit,
