@@ -449,3 +449,20 @@ source entry와 완전 후보 성공은 Actions에서 별도 확인한다. 기�
 확장의 실제 DT_NEEDED에 있으며 별도 Tcl 소유자 예외를 추가하지 않는다. factory 의존성과 전체 ABI의
 실제 수용은 Actions에서 확인해야 한다. 이 추가 원본 읽기는 실행 중인46b9e 검사의 성공/실패 판정이 아니며,
 그 검사·기존 성공 결과를 취소하거나 변경하지 않는다.
+
+## 2026-10-31 — 같은 ORIGIN 오류의 I/O 원문 확보
+
+`bcd395ba8cb9a471807dbb1c84ca5e59ce775ee0`의 [Genuine41107570272](https://github.com/bin9208/openpilot-rust/actions/runs/41107570272)는
+확장3개 import·RTLD_NOW·prefix 검사와 early codec을 통과했지만 독립7 ELF 검사에서 같은 경로 오류로 실패했다.
+진단 artifact13009388723은47,422,909B·SHA `169c614723b36078bfac3c3e26d26b337aaba8d20630e7ede85b3612889a6e4e`다.
+원래 I/O 오류와 확장한 경로가 버려져 정확한 OS 원인·실제 분기는 미확정이다. 반면 현재 PR611의
+`8b9d2c429e6ad11701cea54b079edba313d3d0e1`은 정상 runner의 workspace에서 strict Clippy와
+ELF 통합12개·unit4개를 실제 통과했다. 호스트 회귀를 AGNOS 전체 성공으로 대신하지 않는다.
+
+현재 PR과 진행 검사는 보존하고 진단 브랜치에서 기존 seed ABI 조기 단계의 경로 읽기만 보강한다.
+원래 Python cache3단계의 본문·키·인자·횟수는 유지한 채 앞으로 옮긴다. 인증된2파일을 같은 guest
+경로에 투영하고 factory Python에서 [Rust1.94와 같은 `realpath(path,NULL)`](https://raw.githubusercontent.com/rust-lang/rust/1.94.0/library/std/src/sys/fs/unix.rs)을
+호출해 경로·errno·stat·SHA를 남긴다. 이 결과는 projection 전용이며 전체 prefix/ABI 검증이 아니다.
+후보 ELF·인터프리터·모델은 실행하지 않고 원래 seed 검사·Cargo argv·공간 admission·전체 probe를 유지한다.
+Rust resolver도 원래 I/O 오류와 확장 경로를 보존한다. 원인을 추측해 경로 fallback이나 ABI 예외를 넣지 않는다.
+별도 workflow·모드·검증 체계·발행 후보를 추가하지 않으며 실제 진단 결과는 Actions에서 확인한다.

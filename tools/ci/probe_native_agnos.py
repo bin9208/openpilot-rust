@@ -2444,7 +2444,8 @@ def retain_seed_abi_preflight(work, destination):
   for name in ('commands.log', 'native-bootstrap-context.json',
                'native-bootstrap-proot-build.json', 'native-cereal-inputs-build.jsonl',
                'native-bootstrap-seed-abi.json', 'native-preflight-source.txt',
-               'native-preflight-status.txt'):
+               'native-preflight-status.txt', 'native-python-origin-metadata.json',
+               'native-python-origin-metadata.stdout'):
     path = work/name
     if path.exists():
       assert path.is_file() and not path.is_symlink()
@@ -2452,6 +2453,82 @@ def retain_seed_abi_preflight(work, destination):
 
 
 def native_seed_abi_preflight(guest_command, work, source_mount, evidence, log):
+  room(work, 2*1024**3)
+  # 인증된 두 파일의 메타데이터만 읽는다. 후보 ELF/인터프리터는 실행하지 않는다.
+  plan = json.loads((Path(os.environ['GITHUB_WORKSPACE'])/'rust/native-python-toolchain.json').read_text())
+  host = json.loads((work.parent/'native-python-initial.json').read_text())
+  assert host['version'] == plan['version'] and host['target'] == plan['target']
+  assert all(host['asset'][key] == plan['asset'][key] for key in ('sha256', 'bytes'))
+  assert re.fullmatch('[0-9a-f]{64}', host['identity'])
+  relative = Path('native-python-prefixes')/host['identity']/'generation/tree'
+  prefix = work.parent/relative
+  receipt = prefix.parent/'tree.json'
+  assert Path(host['root']) == prefix.resolve(strict=True) == prefix
+  assert Path(host['tree_receipt']) == receipt and not receipt.is_symlink()
+  assert receipt.stat().st_size <= 16*1024**2 and digest(receipt) == host['tree_sha256']
+  entries = json.loads(receipt.read_text())['entries']
+  library = work/relative/'lib'
+  library.mkdir(parents=True)
+  expected = dict(source_cwd=os.getcwd(), host_prefix=str(prefix), tree_sha256=host['tree_sha256'], files={})
+  for name in ('libpython3.so', 'libpython3.12.so.1.0'):
+    entry, source = entries['lib/'+name], prefix/'lib'/name
+    info = source.lstat()
+    assert entry['kind'] == 'file' and stat.S_ISREG(info.st_mode) and source.resolve(strict=True) == source
+    assert (info.st_size, stat.S_IMODE(info.st_mode), digest(source)) == (entry['bytes'], entry['mode'], entry['sha256'])
+    shutil.copyfile(source, library/name)
+    (library/name).chmod(entry['mode'])
+    assert digest(library/name) == entry['sha256']
+    expected['files'][name] = dict(host_path=str(source), **entry)
+  metadata_code = '''import ctypes, hashlib, json, os, stat, sys
+libc = ctypes.CDLL(None, use_errno=True)
+libc.realpath.argtypes = [ctypes.c_char_p, ctypes.c_void_p]
+libc.realpath.restype = ctypes.c_void_p
+libc.free.argtypes = [ctypes.c_void_p]
+libc.free.restype = None
+libc.getcwd.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+libc.getcwd.restype = ctypes.c_void_p
+cwd = ctypes.create_string_buffer(4096)
+ctypes.set_errno(0)
+cwd_result = libc.getcwd(cwd, len(cwd))
+cwd_errno = ctypes.get_errno()
+expected, rows = json.loads(sys.argv[2]), []
+for name in ('libpython3.so', 'libpython3.12.so.1.0'):
+  for form, middle in (('plain', '/'), ('origin_expanded', '/../lib/')):
+    path = sys.argv[1]+middle+name
+    ctypes.set_errno(0)
+    pointer = libc.realpath(os.fsencode(path), None)
+    saved_errno = ctypes.get_errno()
+    row = dict(name=name, form=form, path=path, realpath=None,
+        errno=saved_errno, strerror=os.strerror(saved_errno))
+    if pointer:
+      try: row['realpath'] = os.fsdecode(ctypes.string_at(pointer))
+      finally: libc.free(pointer)
+    try:
+      info, sha = os.stat(path), hashlib.sha256()
+      with open(path, 'rb') as stream:
+        for block in iter(lambda: stream.read(1024*1024), b''): sha.update(block)
+      row.update(sha256=sha.hexdigest(), stat=dict(dev=info.st_dev, ino=info.st_ino,
+          uid=info.st_uid, gid=info.st_gid, mode=stat.S_IMODE(info.st_mode),
+          bytes=info.st_size, nlink=info.st_nlink))
+    except OSError as error:
+      row['stat_error'] = dict(errno=error.errno, strerror=error.strerror)
+    rows.append(row)
+report = dict(schema=1, host=expected, library=sys.argv[1],
+    cwd=os.fsdecode(cwd.value) if cwd_result else None, cwd_errno=cwd_errno,
+    cwd_strerror=os.strerror(cwd_errno), rows=rows, candidate_elf_executed=False,
+    projection_only=True, full_prefix_verified=False, abi_checked=False)
+with open(sys.argv[3], 'w') as output: json.dump(report, output, indent=2)
+print(json.dumps(report), flush=True)
+for row in rows:
+  pin = expected['files'][row['name']]
+  assert row['realpath'] is not None and 'stat_error' not in row, row
+  assert (row['sha256'], row['stat']['bytes'], row['stat']['mode']) == (pin['sha256'], pin['bytes'], pin['mode']), row
+for name in expected['files']:
+  assert len({row['realpath'] for row in rows if row['name'] == name}) == 1, rows
+'''
+  evidence['commands'].append(run(guest_command(['/usr/bin/python3', '-B', '-c', metadata_code,
+      library, json.dumps(expected), work/'native-python-origin-metadata.json']), log,
+      stdout_path=work/'native-python-origin-metadata.stdout'))
   room(work, 2*1024**3)
   build_native_inputs(guest_command, work, source_mount, evidence, log)
   binary = work/'project-target/debug/openpilot-runtime-inputs'

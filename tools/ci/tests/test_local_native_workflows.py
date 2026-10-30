@@ -343,7 +343,15 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                         if step.get('id') == 'codec-wheels-cache')
                     self.assertLess(cargo_index, index)
                     self.assertLess(index, heavy_index)
+                    python_index = next(i for i, step in enumerate(old['steps'])
+                        if step.get('id') == 'python-input-cache')
+                    python_steps = old['steps'][python_index:python_index+3]
+                    for step in python_steps:
+                        self.assertEqual(new['steps'].count(step), 1)
+                    self.assertEqual(new['steps'][index-3:index], python_steps)
+                    del new['steps'][index-3:index]
                     new['steps'].remove(preflight)
+                    new['steps'][python_index:python_index] = python_steps
                     new['steps'].insert(original_index, scope)
                     artifact = next(step for step in new['steps'] if step.get('with', {}).get('name') == 'native-agnos-environment-${{ github.sha }}')
                     additions = ['${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight.json',

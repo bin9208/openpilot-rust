@@ -180,7 +180,9 @@ fn provider(object: &Path, needed: &str, libraries: &[PathBuf]) -> Result<PathBu
         if !path.is_absolute() {
             return Err(format!("relative provider pathname is unsupported: {needed}").into());
         }
-        let found = path.canonicalize().map_err(|_| missing())?;
+        let found = path
+            .canonicalize()
+            .map_err(|error| format!("{} (expanded {}): {error}", missing(), path.display()))?;
         if !found.is_file()
             || !libraries
                 .iter()

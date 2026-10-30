@@ -434,6 +434,21 @@ jobs:
           mode: save
           name: native-cargo-assets
           key: native-cargo-crates-${{ hashFiles('rust/Cargo.lock') }}-v1
+      - uses: ./.github/actions/native-cache
+        id: python-input-cache
+        with:
+          mode: restore
+          name: native-python-assets
+          key: native-python-arm-${{ hashFiles('rust/native-python-toolchain.json') }}-v1
+          restore-keys: native-python-arm-
+      - name: Prepare the independently pinned ARM Python without running an installer
+        run: python3 tools/ci/prepare_native_python.py
+      - uses: ./.github/actions/native-cache
+        if: steps.python-input-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-python-assets
+          key: native-python-arm-${{ hashFiles('rust/native-python-toolchain.json') }}-v1
       - name: Fail fast on the exact native bootstrap seed ABI before heavy providers
         run: python3 tools/ci/probe_native_agnos.py --bootstrap-seed-abi-preflight
       - uses: ./.github/actions/native-cache
@@ -692,21 +707,6 @@ jobs:
           mode: save
           name: native-usbgpu-model-assets
           key: native-usbgpu-model-${{ hashFiles('rust/native-usbgpu-model.json') }}-v1
-      - uses: ./.github/actions/native-cache
-        id: python-input-cache
-        with:
-          mode: restore
-          name: native-python-assets
-          key: native-python-arm-${{ hashFiles('rust/native-python-toolchain.json') }}-v1
-          restore-keys: native-python-arm-
-      - name: Prepare the independently pinned ARM Python without running an installer
-        run: python3 tools/ci/prepare_native_python.py
-      - uses: ./.github/actions/native-cache
-        if: steps.python-input-cache.outputs.cache-hit != 'true'
-        with:
-          mode: save
-          name: native-python-assets
-          key: native-python-arm-${{ hashFiles('rust/native-python-toolchain.json') }}-v1
       - uses: ./.github/actions/native-cache
         id: model-wheel-cache
         with:
