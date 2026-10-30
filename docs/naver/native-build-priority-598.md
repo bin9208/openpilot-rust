@@ -385,3 +385,15 @@ fresh work에서 원래 모든 검사와 late seed export를 계속 수행한다
 실행하지 않는다. 새 patch source의 실제 preflight·Genuine 전체 성공·입력 발행 검증은
 후속 Actions에서 필요하며 현재 성공으로 계산하지 않는다. commit/push/CI 재실행·취소는
 이 변경 담당 범위에 포함되지 않는다.
+
+## 2026-10-30 — #598 c774 Genuine SDK probe 인자 전달 누락
+
+`c774453b5a9c0a39f7c89288de6299e0a7cf6761`의 Genuine
+[41018353145/job123939710792](https://github.com/bin9208/openpilot-rust/actions/runs/41018353145/job/123939710792)는
+step66에서 `native_system_sdk_probe`의 미정의 `source_mount`로 실패했다. seed export와
+prepare 2회는 실제 exit0이며, 뒤쪽 SDK 회귀 cargo test argv 작성 중 Python 오류가 났다.
+함수 signature와 main 호출에 기존 canonical `source_mount`를 전달하는 두 곳만 수정한다.
+기존 명령·단언·ABI·입력 pin·자원 한도·startup20은 유지한다. 함수 body AST 불변과 호출1개·인자7개 일치를 확인했다.
+`uv.lock`에 고정된 Ruff0.16.7 wheel의 SHA·bytes를 검증해 정적 검사에만 사용했다. 원본은 F821 한 건을 재현했고,
+수정본의 native CI·source entry·모델 준비 helper·fixture·관련 검사 파일은 F821/F823이 없다. 로컬 기능 검사는 실행하지 않았다.
+원본 성공6개와3 immutable context는 보존하며, 후속 정확 source의 전체 Genuine·I/payload·필수 검사 성공은 별도로 확인한다.
