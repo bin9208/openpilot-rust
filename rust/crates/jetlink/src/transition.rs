@@ -1,16 +1,15 @@
-//! Source-compatible stopped acknowledgement and loss latch.
+//! Explicit external selection, stopped source switching, and loss acknowledgement.
 use serde::{Deserialize, Serialize};
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum Mode {
     Off,
-    Shadow,
     ActiveRequest,
 }
 impl Mode {
     pub fn from_setting(value: i32) -> Self {
         match value {
-            1 => Self::Shadow,
-            2 => Self::ActiveRequest,
+            // Both historical nonzero settings now request actual external output.
+            1 | 2 => Self::ActiveRequest,
             _ => Self::Off,
         }
     }
@@ -58,23 +57,19 @@ pub struct Decision {
 pub struct Transition {
     active: bool,
     loss_latched: bool,
-    armed: bool,
-    previous_mode: Mode,
 }
 impl Transition {
     pub fn new(previously_active: bool) -> Self {
         Self {
             active: false,
             loss_latched: previously_active,
-            armed: false,
-            previous_mode: Mode::ActiveRequest,
         }
     }
     pub fn update(
         &mut self,
         mode: Mode,
         ready: bool,
-        validated: bool,
+        compatible: bool,
         controls: ControlState,
         outcome: Outcome,
     ) -> Decision {
@@ -82,33 +77,26 @@ impl Transition {
         if self.active
             && (matches!(outcome, Outcome::Lost)
                 || !ready
-                || !validated
+                || !compatible
                 || mode != Mode::ActiveRequest)
         {
             self.active = false;
             self.loss_latched = true;
-            self.armed = false;
         }
-        if !self.active && mode != Mode::ActiveRequest && controls.inactive_stop() {
-            if ready || mode == Mode::Off {
-                self.loss_latched = false;
-            }
-            self.armed = true;
+        if !self.active && mode == Mode::Off && controls.inactive_stop() {
+            self.loss_latched = false;
         }
-        let edge = mode == Mode::ActiveRequest && self.previous_mode != Mode::ActiveRequest;
         if !self.active
-            && edge
-            && self.armed
+            && mode == Mode::ActiveRequest
             && !self.loss_latched
             && ready
-            && validated
+            && compatible
+            && !matches!(outcome, Outcome::Lost)
             && controls.inactive_stop()
         {
             self.active = true;
             reset = true;
-            self.armed = false;
         }
-        self.previous_mode = mode;
         Decision {
             source: if self.active {
                 Source::Jetlink

@@ -171,7 +171,60 @@ fn onroad_setup_teardown_and_reconnect_release_the_controller() {
     let root = fixture.dir.path();
     let next = Session::open(root, root, &root.join("udcs")).unwrap();
     assert!(next.bound().unwrap());
+    // An old completed owner must not unbind a newer session on the same gadget.
+    fixture.session.teardown().unwrap();
+    assert!(next.bound().unwrap());
     next.teardown().unwrap();
+}
+#[test]
+fn already_unbound_controller_is_not_written_again() {
+    use std::os::{
+        fd::{AsRawFd, FromRawFd},
+        unix::fs::symlink,
+    };
+    let fixture = Fixture::new();
+    // Model configfs's empty-but-unwritable UDC after FunctionFS/watchdog unbind.
+    // Sealing enforces the failure even when a test is run with root privileges.
+    let fd = unsafe { libc::memfd_create(c"unbound-UDC".as_ptr(), libc::MFD_ALLOW_SEALING) };
+    assert!(fd >= 0);
+    // SAFETY: memfd_create returned this newly owned descriptor exactly once.
+    let sealed = unsafe { File::from_raw_fd(fd) };
+    assert_eq!(
+        unsafe {
+            libc::fcntl(
+                sealed.as_raw_fd(),
+                libc::F_ADD_SEALS,
+                libc::F_SEAL_WRITE | libc::F_SEAL_GROW | libc::F_SEAL_SHRINK | libc::F_SEAL_SEAL,
+            )
+        },
+        0
+    );
+    let udc = fixture.dir.path().join("UDC");
+    fs::remove_file(&udc).unwrap();
+    symlink(format!("/proc/self/fd/{}", sealed.as_raw_fd()), &udc).unwrap();
+    assert_eq!(fs::read_to_string(&udc).unwrap(), "");
+    assert_eq!(
+        fs::write(&udc, b"\n").unwrap_err().raw_os_error(),
+        Some(libc::EPERM)
+    );
+    let result = fixture.session.teardown();
+    // Keep fixture cleanup writable even when reproducing the old failure.
+    fs::remove_file(&udc).unwrap();
+    fs::write(&udc, "").unwrap();
+    result.unwrap();
+    fixture.session.teardown().unwrap();
+}
+#[test]
+fn teardown_retries_a_real_controller_error_before_releasing_ep0() {
+    let fixture = Fixture::new();
+    let udc = fixture.dir.path().join("UDC");
+    fs::remove_file(&udc).unwrap();
+    fs::create_dir(&udc).unwrap();
+    assert!(fixture.session.teardown().is_err());
+    fs::remove_dir(&udc).unwrap();
+    fs::write(&udc, "test\n").unwrap();
+    fixture.session.teardown().unwrap();
+    assert_eq!(fs::read_to_string(&udc).unwrap().trim(), "");
 }
 #[test]
 fn transport_close_releases_its_own_controller() {

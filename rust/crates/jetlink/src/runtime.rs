@@ -47,6 +47,7 @@ pub struct Status {
     pub generation: String,
     pub frame: u32,
     pub execution_ms: f64,
+    /// Matching historical device acceptance, independent of explicit source selection.
     pub validated: bool,
 }
 pub struct FrameInput<'a> {
@@ -163,13 +164,9 @@ impl Runtime {
             }
         }
         self.detail = error.to_string().chars().take(240).collect();
-        self.status.decision = self.transition.update(
-            self.mode,
-            false,
-            self.status.validated,
-            self.controls,
-            Outcome::Lost,
-        );
+        self.status.decision =
+            self.transition
+                .update(self.mode, false, false, self.controls, Outcome::Lost);
         self.cancel();
         self.model = None;
         self.identity = None;
@@ -187,6 +184,15 @@ impl Runtime {
         }
         match result {
             Ok(Complete::Connected(model)) => {
+                // The session graph is parsed by ProxyClient and checked by Adapter.
+                // Bind its selected hash to the artifact actually reported by the peer.
+                if !contract::identity_matches_model(
+                    &model.client.identity,
+                    &model.client.session.spec.sha256,
+                ) {
+                    self.lost("Jetlink model identity does not match session");
+                    return None;
+                }
                 self.status.generation = crate::rpc::encode_generation(model.client.generation);
                 self.identity = Some(model.client.identity.clone());
                 self.selected_sha = model.client.session.spec.sha256.clone();
@@ -280,9 +286,13 @@ impl Runtime {
         self.status.validated = self.identity.as_ref().is_some_and(|identity| {
             contract::validation_matches_model(validation, identity, &self.selected_sha)
         });
+        let compatible = self
+            .identity
+            .as_ref()
+            .is_some_and(|identity| contract::identity_matches_model(identity, &self.selected_sha));
         self.status.decision =
             self.transition
-                .update(mode, ready, self.status.validated, controls, Outcome::None);
+                .update(mode, ready, compatible, controls, Outcome::None);
         if !ready || mode == Mode::Off {
             return;
         }

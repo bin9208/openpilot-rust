@@ -1,5 +1,5 @@
 import json
-from openpilot.selfdrive.modeld.jetlink.validation import validation_matches, WARP_CONTRACT
+from openpilot.selfdrive.modeld.jetlink.validation import identity_matches_model, validation_matches, WARP_CONTRACT
 from openpilot.selfdrive.modeld.jetlink.client import CONTRACT
 
 
@@ -13,7 +13,7 @@ def receipt():
           'deadline_misses': 0, 'numerical_parity': True, 'device_test': True, 'validation_id': 'a' * 64}
 
 
-def test_missing_or_unmeasured_profile_cannot_activate():
+def test_missing_or_unmeasured_profile_cannot_claim_device_acceptance():
   assert not validation_matches(None, IDENTITY)
   assert not validation_matches(json.dumps(receipt()), {})
   assert validation_matches(json.dumps(receipt()), IDENTITY)
@@ -23,3 +23,10 @@ def test_missing_or_unmeasured_profile_cannot_activate():
     assert not validation_matches(json.dumps(value_dict), IDENTITY)
   assert not validation_matches(json.dumps(receipt()), {**IDENTITY, 'backend_requested': 'CPU'})
   assert not validation_matches(json.dumps(receipt()), {**IDENTITY, 'artifact_sha256': 'b' * 64})
+
+
+def test_live_identity_is_independent_of_historical_acceptance():
+  assert identity_matches_model(IDENTITY)
+  assert not validation_matches(None, IDENTITY)
+  assert not identity_matches_model({})
+  assert not identity_matches_model({**IDENTITY, 'artifact_sha256': 'b' * 64})

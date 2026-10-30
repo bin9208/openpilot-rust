@@ -12,15 +12,54 @@
     "jetlink/comma/jetlink-root.sh": "ef1f26470765711857d68f20fa00b276b137ef591e9b26b71653973571e22fb7"
   },
   "coverage": [
-    {"upstream": "Owner.steer_draw / cmd_draw / cmd_boot", "native": ["rust/crates/runtime-core/src/jetlink_power.rs", "rust/crates/runtime-launcher/src/bootstrap/power.rs", "launch_openpilot.sh"], "behavior": "Cut input current before gadget setup and from boot for any nonzero setting; retain while wanted; restore only on an empty port; settle failed attempts rather than retrying each poll."},
-    {"upstream": "Port / cmd_port / cmd_udc", "native": ["rust/crates/runtime-core/src/jetlink_port.rs", "rust/crates/jetlink/src/usb_policy.rs", "rust/crates/jetlink/src/main.rs"], "behavior": "Three bounded DR swaps, one PD reset, source hold/release, UDC start/restart/unplug, existing eGPU exclusion and prior-owner preservation. Upstream optional phone charging policy is preserved in the core; the fork has no charging setting, so daemon input remains false (upstream default)."},
-    {"upstream": "vm_apply / vm_restore / release_tuning", "native": ["rust/crates/jetlink/src/usb_policy.rs", "rust/crates/jetlink/src/main.rs"], "behavior": "Once per owner/setting transition; snapshot stock values before changes, restore dirty-ratio mode correctly, independent UDC writes, preserve tuning across a wanted restart."},
-    {"upstream": "GADGET_HELD_RETRY / GADGET_SETUP_BACKOFF", "native": ["rust/crates/jetlink/src/main.rs", "rust/crates/jetlink/src/gadget.rs"], "behavior": "Identify the actual foreign owner and retry after 2s when it releases UDC; other gadget failures back off 60s. Never forcibly unbind a foreign gadget."}
+    {
+      "upstream": "Owner.steer_draw / cmd_draw / cmd_boot",
+      "native": [
+        "rust/crates/runtime-core/src/jetlink_power.rs",
+        "rust/crates/runtime-launcher/src/bootstrap/power.rs",
+        "launch_openpilot.sh"
+      ],
+      "behavior": "Cut input current before gadget setup and from boot for any nonzero setting; retain while wanted; restore only on an empty port; settle failed attempts rather than retrying each poll."
+    },
+    {
+      "upstream": "Port / cmd_port / cmd_udc",
+      "native": [
+        "rust/crates/runtime-core/src/jetlink_port.rs",
+        "rust/crates/jetlink/src/usb_policy.rs",
+        "rust/crates/jetlink/src/main.rs"
+      ],
+      "behavior": "Three bounded DR swaps, one PD reset, source hold/release, UDC start/restart/unplug, existing eGPU exclusion and prior-owner preservation. Upstream optional phone charging policy is preserved in the core; the fork has no charging setting, so daemon input remains false (upstream default)."
+    },
+    {
+      "upstream": "vm_apply / vm_restore / release_tuning",
+      "native": [
+        "rust/crates/jetlink/src/usb_policy.rs",
+        "rust/crates/jetlink/src/main.rs"
+      ],
+      "behavior": "Once per owner/setting transition; snapshot stock values before changes, restore dirty-ratio mode correctly, independent UDC writes, preserve tuning across a wanted restart."
+    },
+    {
+      "upstream": "GADGET_HELD_RETRY / GADGET_SETUP_BACKOFF",
+      "native": [
+        "rust/crates/jetlink/src/main.rs",
+        "rust/crates/jetlink/src/gadget.rs",
+        "rust/crates/jetlink/src/gadget/adb.rs"
+      ],
+      "behavior": "Temporarily hand over only identity-checked stock AGNOS g1 NCM+ADB with root-owned restoration journal; stop watcher/adbd, unbind g1, restore on disable/setup failure under current AdbEnabled. Unknown foreign owners still retry after 2s without unbinding; other setup failures back off 60s."
+    }
   ],
   "intentional_native_adaptations": [
     "Rust fixed-path root helper replaces upstream shell/Python runtime calls. Root-owned regular non-symlink VM snapshot is required; an unwritable snapshot aborts tuning before stock settings can be lost.",
     "Fork onroad transport/preparation authorization, model deadlines, recurring-state identity, existing v2/v3 compatibility and CPU scheduling remain in place. Upstream offroad setup gating and network RPS core6 placement are not imported: native controlsd/selfdrived use core6 and worker scheduling is already governed by this fork's measured CPU policy.",
-    "Persistent native owner/RPC workers retain their existing process lifecycle rather than importing upstream Python launcher/lender subprocess topology. Existing checked-in protocol reference remains pinned; new power/port oracle fetches and hashes the actual hardware-policy revision separately."
+    "Persistent native owner/RPC workers retain their existing process lifecycle rather than importing upstream Python launcher/lender subprocess topology. Existing checked-in protocol reference remains pinned; new power/port oracle fetches and hashes the actual hardware-policy revision separately.",
+    "2026-10-22 #487: explicit external-model enable replaces Shadow and the extra activation edge; live model/session/frame/deadline checks and stopped/disengaged handover remain. Historical approval telemetry stays diagnostic, never fabricated. Stock AGNOS ADB handover is a native addition required by the reported g1 collision; original source set_adb.sh at ajouatom/agnos-builder 61073bdd9d92c3695aa54eef4d2c33707a82687f identifies the exact gadget."
   ],
-  "verification": {"execution": "GitHub Actions only; local syntax/format/diff", "fast": ".github/workflows/ci.yml", "deep": ".github/workflows/ci.yml", "package": ".github/workflows/dev-md-runtime.yml", "oracle": "tools/check_jetlink_usb_policy.py", "hardware_acceptance": "Pending user device test; no proof that the reported reboot had the same UVLO cause."}
+  "verification": {
+    "execution": "GitHub Actions only; local syntax/format/diff",
+    "fast": ".github/workflows/ci.yml",
+    "deep": ".github/workflows/ci.yml",
+    "package": ".github/workflows/dev-md-runtime.yml",
+    "oracle": "tools/check_jetlink_usb_policy.py",
+    "hardware_acceptance": "Pending user device test; no proof that the reported reboot had the same UVLO cause."
+  }
 }

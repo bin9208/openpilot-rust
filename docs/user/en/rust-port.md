@@ -22,9 +22,15 @@ compatibility, CPU savings, temperature improvements, or safe vehicle operation.
 Do not deploy the generic CI build to a vehicle; target validation remains open.
 
 The `dev-md` native Jetlink candidate binds each App session to the model selected
-offroad. Shadow preserves native-model control; Active still requires a matching
-device and numerical validation record and the existing stopped/disengaged gate.
-Readiness, host tests and ARM emulation do not supply that record. See the
+offroad. Select **External GPU model (1)** to use its actual output once the live
+session/artifact contract matches and the vehicle is stopped with all control
+disengaged. The Shadow mode and its activation edge are removed; old saved values
+1 and 2 both request external output. Off (0) remains the default and is restored
+on manager restart. Historical device acceptance is diagnostic only: `validated`
+remains false without matching evidence. Live frame/deadline checks and the loss
+latch remain enforced; after loss, acknowledge Off while stopped/disengaged before
+selecting external again. Host tests and ARM emulation do not establish device
+or driving acceptance. See the
 [Jetlink settings](settings.md#jetlink-external-model-experimental).
 
 For a compatible host, the candidate forwards saved Wi-Fi profiles over the
