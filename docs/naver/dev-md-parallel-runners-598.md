@@ -501,3 +501,26 @@ workflow/runtime이 불변임을 정적으로 확인했으며 unit·기능·buil
 부모 diff review 전 commit/push·PR 본문/제목 edit·Actions cancel/rerun/dispatch는 하지 않는다.
 이번 정책 보정과 원래 loader 수정의 실제 성공 및 원본 비교·memory·전체 ARM 결과는
 다음 정확 source의 Actions 검증 대기 상태다. 현재 main/S·Genuine·다른 checkout은 변경하지 않는다.
+
+## 2026-10-30 — generic ARM build의 official hosted X64 분담 검토 (#598)
+
+부모가 보고한 main source S의 Genuine
+[40961936699](https://github.com/bin9208/openpilot-rust/actions/runs/40961936699)는
+6 GiB 보호 경계에서 global remaining headroom 부족으로 실패했다. 보고된 peak는
+4.677 GiB이며 max/oom/oomkill은0이다. guard는 정상 동작했고 어느 프로세스가
+pressure를 만들었는지는 미확정이다. 이 기록은 perf CI나 실제 AGNOS 후보의 실패를
+관측한 결과가 아니며, 배치 분리만으로 원인을 해결했다고 주장하지 않는다.
+
+기준 `9abb67d00206b516833a91994a046d7ec8213cb2`에서 generic GNU/musl ARM 산출물을
+만드는 `arm-build`의 `runs-on`만 `ubuntu-24.04`로 옮기고 기존 runner 정책 테스트의
+해당 job 기대값만 hosted로 분리한다. 원래120분·12 GiB growth·FFmpeg3 GiB 경계,
+전체 argv/compiler/sysroot/ABI/corpus·`needs: [fast]`·최종 arm64 gate와 profile pin은
+유지한다. 실제 AGNOS package/publish 및 메모리 보호 Genuine/entry self 경계는 그대로다.
+
+공통 self-hosted/GitHub 병렬 분담 범위의 로컬3파일 검토안이다. official hosted의
+실제 capacity·완료 시간은 아직 검증하지 않았다. 기존9abb 원격 CI는 보존하며 이 결과를
+새 배치 source의 검증으로 대신하지 않는다. main 대응안과 source H 검증은 부모가
+별도로 담당한다. 현재 main/S·Genuine·다른 branch/runtime은 가져오거나 변경하지 않는다.
+로컬 AST·YAML·ARM job16개 Bash body 구문·diff 검사를 통과했다. runner 선택을
+되돌리면9abb workflow 전체 바이트·구조가 같음을 확인했으며 unit/build는 실행하지 않았다.
+review 전 commit/push·CI cancel·PR remote edit은 하지 않는다.

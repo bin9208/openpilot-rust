@@ -3870,7 +3870,7 @@ jobs:
     name: Build generic ARM64 artifacts
     needs: [fast]
     # Share the existing cross-build and private ARM sysroot across registered X64 runners.
-    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
       CARGO_INCREMENTAL: '0'

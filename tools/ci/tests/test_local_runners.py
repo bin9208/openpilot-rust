@@ -46,10 +46,10 @@ class LocalRunnerPolicyTests(unittest.TestCase):
 
     def test_heavy_x64_uses_the_shared_pool_without_pinning_support630(self):
         jobs = workflow(ROOT/'.github/workflows/ci.yml')['jobs']
-        for name in ('workspace', 'build_release', 'arm-build', 'android-core'):
+        for name in ('workspace', 'build_release', 'android-core'):
             self.assertEqual(jobs[name]['runs-on'], POOL)
         for name in ('route', 'fast-checks', 'check_user_docs', 'model_web',
-                     'integration-gate', 'fast', 'arm64', 'runtime-delivery'):
+                     'integration-gate', 'fast', 'arm-build', 'arm64', 'runtime-delivery'):
             self.assertEqual(jobs[name]['runs-on'], 'ubuntu-24.04')
         for name in HOSTED_X64_RUNTIME_JOBS:
             self.assertEqual(jobs[name]['runs-on'], 'ubuntu-24.04', name)
