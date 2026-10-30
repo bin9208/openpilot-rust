@@ -67,6 +67,14 @@ X64 job은 아직 대기 중이며 전체 runtime/production entry·후보 완�
 이 결과 기록만 추가한 후속 source에서 [PR611 필수 검사](https://github.com/bin9208/openpilot-rust/pull/611/checks)를
 재개한다. 기능 파일·입력 pin·명령·deadline은458과 동일하며 S 입력 준비와 기존 실행을 보존한다.
 
+source `8c537abed1b21f17469f43f25e4ff71557a16f02`의 [foundation](https://github.com/bin9208/openpilot-rust/actions/runs/41016536626)은
+ARM/X64 모두 routing15개 중14개 통과·1개 normalization 비교 실패였다.
+preflight 제거 전에 scope를 baseline index에 복원하여 scope 위치가 한 칸 당겨졌다.
+기존 단언과 전체 YAML 대조를 유지하고 preflight 제거 뒤 scope를 복원하도록 순서만 고친다.
+로컬 AST·diff만 확인했으며 수정 후 실제 회귀는 Actions 검증 대기다.
+같은 source의 [Genuine 조기 seed ABI 단계](https://github.com/bin9208/openpilot-rust/actions/runs/41016536609/job/123934032903)는
+07:03:39~07:07:22 UTC에 실제 성공했다. 정규 전체 Genuine·입력 발행·전체 source entry 성공과 구분한다.
+
 ## 기존 #484 복구 unit fixture의 PID 공개 경합 — 2026-10-30
 
 source `ed1061eb5f6bdc540a70c8a2fbc84071f64388b0`의

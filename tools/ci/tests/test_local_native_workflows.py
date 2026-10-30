@@ -309,7 +309,6 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                         'Validate the current package growth policy before deep ARM preparation'])
                     scope = new['steps'].pop(4)
                     original_index = next(i for i, s in enumerate(old['steps']) if s.get('name') == scope_name)
-                    new['steps'].insert(original_index, scope)
                     preflight = dict(name='Fail fast on the exact native bootstrap seed ABI before heavy providers',
                         run='python3 tools/ci/probe_native_agnos.py --bootstrap-seed-abi-preflight')
                     self.assertEqual(new['steps'].count(preflight), 1)
@@ -321,6 +320,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     self.assertLess(cargo_index, index)
                     self.assertLess(index, heavy_index)
                     new['steps'].remove(preflight)
+                    new['steps'].insert(original_index, scope)
                     artifact = next(step for step in new['steps'] if step.get('with', {}).get('name') == 'native-agnos-environment-${{ github.sha }}')
                     additions = ['${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight.json',
                                  '${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight/']
