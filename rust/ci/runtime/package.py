@@ -112,6 +112,8 @@ def source_path_allowed(path, source_entry="", inherited_entry=""):
         '.github/workflows/user-docs.yaml',
         '.github/workflows/rust.yml',
         'tools/ci/tests/test_changed_files.py',
+        'tools/ci/tests/test_dev_md_ci_dag.py',
+        'docs/naver/dev-md-ci-bottlenecks-649.md',
         'tools/ci/tests/test_card_warmup.py',
         'tools/ci/tests/test_dmonitoring_snapshot.py',
         'tools/ci/tests/test_eintr_cleanup.py',

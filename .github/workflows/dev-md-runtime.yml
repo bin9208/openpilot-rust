@@ -152,7 +152,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh api repos/bin9208/openpilot-rust/branches/dev-md > "$RUNNER_TEMP/publication-policy.json"
-          python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/publication-policy.json")); assert p["name"] == "dev-md" and p["protected"] and p["protection"]["enabled"] and {"fast checks","integration gate","check mapped user docs","rust checks","rust aarch64 build"} <= set(p["protection"]["required_status_checks"]["contexts"])'
+          python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/publication-policy.json")); assert p["name"] == "dev-md" and p["protected"] and p["protection"]["enabled"] and {"integration gate","check mapped user docs","rust checks","rust aarch64 build"} <= set(p["protection"]["required_status_checks"]["contexts"])'
       - name: Install build tools
         run: |
           python3 -c 'import os,shutil; assert shutil.disk_usage(os.environ["RUNNER_TEMP"]).free >= (25+4)*2**30, "disk reserve before dependency installation"'

@@ -47,6 +47,8 @@ class SourcePolicyTests(unittest.TestCase):
             "docs/user/en/lane-change.md", "docs/user/ko/lane-change.md",
             "docs/user/en/settings.md", "docs/user/ko/settings.md",
             "rust/ci/runtime/test_package_policy.py",
+            "tools/ci/tests/test_dev_md_ci_dag.py",
+            "docs/naver/dev-md-ci-bottlenecks-649.md",
         ):
             with self.subTest(path=path):
                 self.assertTrue(allowed(path))
