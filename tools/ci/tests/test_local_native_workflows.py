@@ -2,6 +2,7 @@
 from collections import Counter
 from functools import cache
 import ast
+import copy
 import hashlib
 import json
 import os
@@ -185,8 +186,13 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         original = {n.name: n for n in before.body if isinstance(n, ast.FunctionDef)}
         current = {n.name: n for n in after.body if isinstance(n, ast.FunctionDef)}
         dump = lambda n: ast.dump(n, include_attributes=False)
-        self.assertEqual(dump(current['native_bootstrap_seed_probe']),
-                         dump(original['native_bootstrap_seed_probe']))
+        combined = copy.deepcopy(current['native_bootstrap_seed_probe'])
+        tail = copy.deepcopy(current['native_bootstrap_current_probe'].body)
+        for statement in tail:
+            for node in ast.walk(statement):
+                if isinstance(node, ast.Name) and node.id == 'runner': node.id = 'run'
+        combined.body.extend(tail)
+        self.assertEqual(dump(combined), dump(original['native_bootstrap_seed_probe']))
         def probe_calls(node):
             return [n.func.id for n in ast.walk(node) if isinstance(n, ast.Call)
                 and isinstance(n.func, ast.Name) and n.func.id in original
@@ -398,7 +404,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     new['steps'][python_index:python_index] = python_steps
                     new['steps'].insert(original_index, scope)
                     artifact = next(step for step in new['steps'] if step.get('with', {}).get('name') == 'native-agnos-environment-${{ github.sha }}')
-                    additions = ['${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight.json',
+                    additions = ['${{ env.CI_JOB_TEMP }}/native-agnos-phase-times.json',
+                                 '${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-parallel.log',
+                                 '${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight.json',
                                  '${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight/']
                     paths = artifact['with']['path'].splitlines()
                     for path in additions:

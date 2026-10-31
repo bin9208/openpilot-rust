@@ -11,6 +11,11 @@ on:
       - '.github/workflows/rust.yml'
       - 'tools/native/publish_inputs.py'
       - 'tools/ci/tests/**'
+      - 'rust/crates/logging/build.rs'
+      - 'rust/crates/loggerd/build.rs'
+      - 'rust/crates/logging/tests/git_source_stamp.rs'
+      - 'tools/ci/agnos_phases.py'
+      - 'tools/ci/probe_native_agnos.py'
       - 'rust/tools/ci_cases.py'
       - 'rust/tools/check_card_ci.py'
       - 'rust/tools/check_ui_ci.py'
@@ -55,6 +60,7 @@ jobs:
         run: |
           set -o pipefail
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_provider:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/provider-tests.log"
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-logging --test git_source_stamp
           cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib -- -D warnings
           cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg
       - name: Preserve batch validation evidence
@@ -189,3 +195,4 @@ jobs:
       - run: python3 -m unittest discover -s tools/ci/tests -p test_native_input_publication.py -v
       - run: python3 -m unittest discover -s tools/ci/tests -p test_local_native_workflows.py -v
       - run: python3 -m unittest discover -s tools/ci/tests -p test_parallel_cases.py -v
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_agnos_phases.py -v

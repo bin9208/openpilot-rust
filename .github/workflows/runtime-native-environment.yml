@@ -915,6 +915,8 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-rust-toolchains/**/generation/receipt.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/commands.log
+            ${{ env.CI_JOB_TEMP }}/native-agnos-phase-times.json
+            ${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-parallel.log
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-*.json
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-*.txt
             ${{ env.CI_JOB_TEMP }}/native-agnos/native-companion-probe.cc

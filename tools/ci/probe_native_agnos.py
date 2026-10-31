@@ -19,6 +19,7 @@ import stat
 import subprocess
 import time
 from pathlib import Path
+from agnos_phases import phase, independent_bootstrap
 
 RAW_BYTES = 4718592000
 SPARSE_SHA = 'a67410a888105ecce7bcc05e17cda77fd10572aa4380e9de242a7c92f3497114'
@@ -374,12 +375,15 @@ def native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log
       seed_executed=True,compiler_executed=True,
       new_native_rust_prefix=True,actual_std_programs=2,repeated_artifacts_fresh=True,
       project_runtime_release_downloaded=False,full_runtime_build=False,device_execution=False)
+
+
+def native_bootstrap_current_probe(guest_command, work, source_mount, evidence, log, guest_work, *, runner=run):
   # Only this added bootstrap test enters a job-owned host-kernel scope. The
   # original guest commands and the other engineering probes remain unchanged.
   preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH'
   scope = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/native_resource_scope.py'
   driver = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/verify_native_bootstrap.py'
-  evidence['commands'].append(run(['sudo','-n',f'--preserve-env={preserve}','/usr/bin/python3',scope,
+  evidence['commands'].append(runner(['sudo','-n',f'--preserve-env={preserve}','/usr/bin/python3',scope,
       'enter','--','/usr/bin/python3',driver], log, stdout_path=work/'native-bootstrap-current-driver.txt'))
   evidence['native_bootstrap_current_tools'] = json.loads((work/'bootstrap-current-evidence/summary.json').read_text())
 
@@ -2739,39 +2743,70 @@ def main():
       evidence['commands'].append(run(guest_command([work / 'target/debug' / name]), log))
     evidence['binaries'] = before
     evidence['toolchain_files'] = {str(path.relative_to(work)): digest(path) for path in (work / 'rustup/toolchains').glob('*/bin/*') if path.is_file()}
-    native_driver_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_python_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_system_sdk_probe(guest_command, work, source_mount, rootfs, evidence, log, guest_work)
-    native_ffmpeg_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_provider_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_model_wheels_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_encoder_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_eigen_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_opencv_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_opencv_prefix_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_runtime_companions_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_display_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_media_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_source_assets_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_panda_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_dbc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_usbgpu_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_model_generation_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    native_complete_layout_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    evidence.setdefault('phase_times', []).append(dict(name='common-preparation', state='success', started_monotonic=started, elapsed_seconds=time.monotonic()-started))
+    with phase(evidence, 'native_driver_probe'):
+      native_driver_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    with phase(evidence, 'native_cereal_probe'):
+      native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    with phase(evidence, 'native_codec_probe'):
+      native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    with phase(evidence, 'native_python_probe'):
+      native_python_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    with phase(evidence, 'native_system_sdk_probe'):
+      native_system_sdk_probe(guest_command, work, source_mount, rootfs, evidence, log, guest_work)
+    with phase(evidence, 'native_ffmpeg_headers_probe'):
+      native_ffmpeg_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    with phase(evidence, 'native_provider_probe'):
+      native_provider_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    with phase(evidence, 'native_model_wheels_probe'):
+      native_model_wheels_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    with phase(evidence, 'native_encoder_probe'):
+      native_encoder_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    with phase(evidence, 'native_bootstrap_seed_probe'):
+      native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    def bootstrap(current_evidence, current_log, **options):
+      return native_bootstrap_current_probe(guest_command, work, source_mount, current_evidence,
+          current_log, guest_work, **options)
+    with independent_bootstrap(bootstrap, source, work, evidence, log):
+      with phase(evidence, 'native_eigen_probe'):
+        native_eigen_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with phase(evidence, 'native_raylib_probe'):
+        native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with phase(evidence, 'native_opencv_headers_probe'):
+        native_opencv_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with phase(evidence, 'native_opencv_prefix_probe'):
+        native_opencv_prefix_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with phase(evidence, 'native_runtime_companions_probe'):
+        native_runtime_companions_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with phase(evidence, 'native_display_inputs_probe'):
+        native_display_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with phase(evidence, 'native_media_inputs_probe'):
+        native_media_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with phase(evidence, 'native_source_assets_probe'):
+        native_source_assets_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with phase(evidence, 'native_mpc_inputs_probe'):
+        native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with phase(evidence, 'native_panda_inputs_probe'):
+        native_panda_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with phase(evidence, 'native_dbc_inputs_probe'):
+        native_dbc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with phase(evidence, 'native_usbgpu_inputs_probe'):
+        native_usbgpu_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
+      with phase(evidence, 'native_catalog_bindings_probe'):
+        native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    with phase(evidence, 'native_model_generation_probe'):
+      native_model_generation_probe(guest_command, work, source_mount, evidence, log, guest_work)
+    with phase(evidence, 'native_complete_layout_probe'):
+      native_complete_layout_probe(guest_command, work, source_mount, evidence, log, guest_work)
     # Add the production orchestration as a separate guarded command after all
     # original ARM commands. Keep their user space, pins and evidence intact.
     preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH'
     scope = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/native_resource_scope.py'
     driver = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/verify_native_runtime_inputs.py'
-    evidence['commands'].append(run(['sudo', '-n', f'--preserve-env={preserve}', '/usr/bin/python3', scope,
-        'enter', '--', '/usr/bin/python3', driver], log, stdout_path=work/'native-runtime-inputs-driver.txt'))
-    evidence['native_production_runtime_inputs'] = json.loads((work/'runtime-inputs-evidence/summary.json').read_text())
+    with phase(evidence, 'final-production-validation'):
+      evidence['commands'].append(run(['sudo', '-n', f'--preserve-env={preserve}', '/usr/bin/python3', scope,
+          'enter', '--', '/usr/bin/python3', driver], log, stdout_path=work/'native-runtime-inputs-driver.txt'))
+      evidence['native_production_runtime_inputs'] = json.loads((work/'runtime-inputs-evidence/summary.json').read_text())
     source_after = work/'native-project-final-source.txt'
     status_after = work/'native-project-final-status.txt'
     evidence['commands'].append(run(guest_command(['git','-C',source_mount,'rev-parse','HEAD']),log,stdout_path=source_after))
@@ -2783,6 +2818,7 @@ def main():
     evidence.update(success=False, failure=str(error))
     raise
   finally:
+    (owned/'native-agnos-phase-times.json').write_text(json.dumps(dict(phase_times=evidence.get('phase_times', []), admission=evidence.get('bootstrap_component_admission')), indent=2)+'\n')
     evidence['elapsed_seconds'] = time.monotonic() - started
     evidence['observed_final_disk_growth_bytes'] = initial_disk - shutil.disk_usage(owned).free
     evidence['maximum_single_child_rss_kib'] = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
