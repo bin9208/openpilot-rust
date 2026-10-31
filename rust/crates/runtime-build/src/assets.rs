@@ -61,7 +61,7 @@ impl Curl {
         alternate.url = mirror.into();
         alternate.validate()?;
         fetch_from_curl_sources(
-            Path::new("/usr/bin/curl"),
+            || Command::new("/usr/bin/curl"),
             asset,
             destination,
             std::thread::sleep,
@@ -86,11 +86,17 @@ fn fetch_with_curl(
     destination: &Path,
     sleep: impl Fn(Duration),
 ) -> Result<u64> {
-    fetch_from_curl_sources(curl, asset, destination, sleep, &[&asset.url])
+    fetch_from_curl_sources(
+        || Command::new(curl),
+        asset,
+        destination,
+        sleep,
+        &[&asset.url],
+    )
 }
 
 fn fetch_from_curl_sources(
-    curl: &Path,
+    curl: impl Fn() -> Command,
     asset: &Asset,
     destination: &Path,
     sleep: impl Fn(Duration),
@@ -103,7 +109,7 @@ fn fetch_from_curl_sources(
             if remaining == 0 {
                 return Err("build input download time budget exhausted".into());
             }
-            let output = Command::new(curl)
+            let output = curl()
                 .args([
                     "--fail",
                     "--silent",
@@ -333,6 +339,15 @@ mod curl_tests {
     use super::*;
     use std::cell::RefCell;
 
+    fn script_command(script: &Path) -> Command {
+        // A concurrent fork can inherit a just-written script's writable fd
+        // until exec. Execute the immutable interpreter and read the fixture,
+        // avoiding ETXTBSY without a retry or serializing unrelated tests.
+        let mut command = Command::new("/bin/sh");
+        command.arg(script);
+        command
+    }
+
     fn scenario(failures: usize, exit: i32, body_bytes: u64) -> (bool, usize, Vec<u64>) {
         let temp = tempfile::tempdir().unwrap();
         let curl = temp.path().join("curl");
@@ -355,9 +370,13 @@ mod curl_tests {
             sha256: "a".repeat(64),
             bytes: 8,
         };
-        let result = fetch_with_curl(&curl, &asset, &temp.path().join("pending"), |duration| {
-            sleeps.borrow_mut().push(duration.as_secs());
-        });
+        let result = fetch_from_curl_sources(
+            || script_command(&curl),
+            &asset,
+            &temp.path().join("pending"),
+            |duration| sleeps.borrow_mut().push(duration.as_secs()),
+            &[&asset.url],
+        );
         if let Ok(bytes) = &result {
             assert_eq!(*bytes, 8);
         }
@@ -403,7 +422,7 @@ mod curl_tests {
             };
             let sleeps = RefCell::new(Vec::new());
             let result = fetch_from_curl_sources(
-                &curl,
+                || script_command(&curl),
                 &asset,
                 &temp.path().join("pending"),
                 |duration| sleeps.borrow_mut().push(duration.as_secs()),
@@ -422,6 +441,38 @@ mod curl_tests {
                 assert!(sleeps.into_inner().is_empty());
             }
         }
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn fixture_with_a_retained_writer_executes_without_retry_or_parallelism_limits() {
+        let temp = tempfile::tempdir().unwrap();
+        let curl = temp.path().join("curl");
+        fs::write(&curl, b"#!/bin/sh\nprintf '8'\n").unwrap();
+        fs::set_permissions(&curl, fs::Permissions::from_mode(0o700)).unwrap();
+        let writer = OpenOptions::new().write(true).open(&curl).unwrap();
+        // Deterministically reproduce the original fixture's kernel failure.
+        assert_eq!(
+            Command::new(&curl).output().unwrap_err().raw_os_error(),
+            Some(26)
+        );
+        let asset = Asset {
+            url: "https://fixture.invalid/never-contacted".into(),
+            sha256: "a".repeat(64),
+            bytes: 8,
+        };
+        assert_eq!(
+            fetch_from_curl_sources(
+                || script_command(&curl),
+                &asset,
+                &temp.path().join("pending"),
+                |_| panic!("the fixture must succeed without a retry"),
+                &[&asset.url],
+            )
+            .unwrap(),
+            8
+        );
+        drop(writer);
     }
 
     #[test]

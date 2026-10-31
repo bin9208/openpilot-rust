@@ -112,3 +112,11 @@ batch의 profile별 Export는 기존 필드를 유지하며 `origin`은 작은 c
 현재 `39c9d92e2f0245352dd6ed66c1470f1f684494b6`와 비교해 모든 컴파일 대상 Rust 파일·Cargo.lock·profile/contract가 같다. `rust/`의 유일한 차이는 이 benchmark가 호출하지 않는 `rust/tools/ci_cases.py`이며, benchmark job 전체·harness·runner policy·job-temp/rust-path setup도 동일하다. 이 비교는 성공한 ARM job 내부의 짝지은 측정이다. 해당 workflow의 별도 execution-contract job은 당시 누락된 Python `zstandard` 때문에 실패했고 후속 집중 검증에서 수정됐다. 실패 workflow 전체의 경과를 성공 기준으로 사용하지 않는다. 추가 최신 SHA benchmark `41238463727`도 취소하지 않고 유지한다.
 
 이 성능 증거는 provider 처리의 수용 조건이다. 전체 필수 gate·현재 AGNOS·UI/Card 공유 입력 보호·dev-md 직렬 기준 비교는 별도로 완료해야 한다.
+
+## ARM foundation의 가짜 curl 실행 경합 — #654
+
+공통 후보 `b9c590dc150ba57e2e4f5dad29221a6390e8fb4e`의 [ARM foundation job 124678033356](https://github.com/bin9208/openpilot-rust/actions/runs/41248896562/job/124678033356)은 mirror 회귀의 호출 기록 누락으로 첫 library 검사에서 실패했다. 기존 나머지 실패 수집 단계에서는 34개가 모두 통과했으나 첫 실패를 성공으로 대체하지 않는다.
+
+진단 소스 `4577f399cb375cbf131e5a4f6b3b43a22ed76a3e`의 [ARM 반복 재현 job 124679928888](https://github.com/bin9208/openpilot-rust/actions/runs/41249525491/job/124679928888)은 기본 병렬 library 검사 81번째에서 `Err(Os { code: 26, kind: ExecutableFileBusy, message: "Text file busy" })`를 보존했다. 새 fake curl 스크립트의 실행 오류가 뒤따르는 journal 읽기 오류에 가려졌다. [#654](https://github.com/bin9208/openpilot-rust/issues/654)로 추적한다.
+
+실제 production `/usr/bin/curl` 명령·인수·retry·전송량·mirror 판정은 유지하고, private command 생성 경계에서 테스트 스크립트만 `/bin/sh`의 읽기 입력으로 전달한다. writable fd를 강제로 보유해 기존 직접 실행의 오류 26을 재현하고 새 실행은 retry 없이 성공해야 하는 회귀를 추가한다. 전역 Cargo/test 병렬 제한은 도입하지 않는다. 같은 ARM 병렬 검사 200회 전부와 전체 foundation의 성공은 후속 Actions에서 확인한다.
