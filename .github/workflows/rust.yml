@@ -692,7 +692,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: rustup toolchain install 1.94.0 --profile minimal
+      - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
       - name: Prepare recovery comparison dependencies
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072

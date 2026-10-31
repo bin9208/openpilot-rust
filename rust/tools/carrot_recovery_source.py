@@ -8,6 +8,8 @@ from pathlib import Path
 import sys
 import threading
 
+from recovery_exit_status import install_exit_status_barrier
+
 
 def main() -> None:
   parser = argparse.ArgumentParser()
@@ -18,6 +20,7 @@ def main() -> None:
   spec = importlib.util.spec_from_file_location('owned_recovery_source', source)
   module = importlib.util.module_from_spec(spec)
   spec.loader.exec_module(module)
+  install_exit_status_barrier(module, args.output)
   server = module.ThreadingHTTPServer(('127.0.0.1', args.port), module.RecoveryHandler)
   server.daemon_threads = True
   args.output.joinpath('source-proof.json').write_text(
@@ -25,7 +28,7 @@ def main() -> None:
       {
         'source': str(source),
         'sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
-        'runtime_functions': 'unchanged actual RecoveryHandler/WsConn/RecoveryPty/SupportManager; only the owned listener wrapper is substituted',
+        'runtime_functions': 'original method bodies retained; owned listener and explicit PTY EOF exit-status barrier; raw and reaped exit statuses recorded, no expected status injected',
         'source_main_cleanup_not_claimed': True,
       },
       indent=2,

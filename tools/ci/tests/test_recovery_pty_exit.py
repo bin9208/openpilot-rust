@@ -5,6 +5,11 @@ from pathlib import Path
 import subprocess
 import sys
 import unittest
+from types import SimpleNamespace
+import tempfile
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]/'rust/tools'))
+from recovery_exit_status import install_exit_status_barrier
 
 SOURCE = Path(__file__).resolve().parents[3]/'openpilot/selfdrive/carrot/recovery/server.py'
 spec = importlib.util.spec_from_file_location('recovery_pty_exit_source', SOURCE)
@@ -28,14 +33,21 @@ class Client:
 class PtyExitTests(unittest.TestCase):
   def test_eof_before_exit_preserves_actual_zero_and_nonzero_status(self):
     for code in (0, 7):
-      with self.subTest(code=code):
+      with self.subTest(code=code), tempfile.TemporaryDirectory() as temporary:
         # stdout closes first, exactly the ordering that makes a single poll
         # after terminal EIO racy. The child exits only after the EOF.
         child = subprocess.Popen([sys.executable, '-c',
             f'import os,time; os.close(1); time.sleep(0.3); os._exit({code})'],
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
             start_new_session=True)
-        terminal, client = server.RecoveryPty(), Client()
+        # A fresh original source class is used per case; only the listener's
+        # explicit exit-status observation boundary is installed.
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        class OwnedClient(Client): pass
+        module.WsConn = OwnedClient
+        install_exit_status_barrier(module, Path(temporary))
+        terminal, client = module.RecoveryPty(), OwnedClient()
         terminal.proc = child
         terminal.master_fd = os.dup(child.stdout.fileno())
         terminal.clients.add(client)

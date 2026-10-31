@@ -22,7 +22,7 @@ NATIVE_ARM_BASE = '27547f08c6daf7deac99e35b0f6e1d0c8ffb0298'
 LABELS = ['self-hosted', 'Linux', 'X64', 'dev-md-local']
 HOSTED_WORKFLOWS = {'integration.yml', 'jetlink.yml', 'native-cache-reuse.yml',
     'naver-apk-tools.yml', 'naver-ci.yml', 'tests.yaml', 'user-docs.yaml',
-    'carrot-peer-readiness.yml', 'rust.yml'}
+    'carrot-peer-readiness.yml', 'rust.yml', 'provider-batch.yml'}
 OWNED_WORKFLOWS = {'native-apt-scope.yml', 'native-input-publication.yml', 'native-resource-guard.yml',
     'native-source-entry.yml', 'native-source-reuse.yml', 'native-source-transport.yml',
     'runtime-native-environment.yml', 'runtime-source-build.yml'}
@@ -498,7 +498,9 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             for name, job in document.get('jobs', {}).items():
                 if 'runs-on' in job:
                     with self.subTest(path=path.name, job=name):
-                        if path.name == 'native-cache-reuse.yml':
+                        if path.name == 'provider-batch.yml':
+                            expected = 'ubuntu-24.04-arm' if name == 'actual-arm-batch' else 'ubuntu-24.04'
+                        elif path.name == 'native-cache-reuse.yml':
                             expected = LABELS  # #644 cache proof uses only registered bin-actions.
                         elif path.name == 'runtime-source-build.yml' and name == 'offline-cargo-reuse':
                             expected = '${{ matrix.runner == \'ubuntu-24.04-arm\' && \'ubuntu-24.04-arm\' || fromJSON(\'["self-hosted","Linux","X64","openpilot-rust"]\') }}'
@@ -518,7 +520,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                                 'radar-runtime', 'navd-runtime', 'carrot-navi-runtime', 'startup-runtime',
                                 'startup-services', 'sensor-audio', 'gnss-runtime', 'controls-runtime',
                                 'estimation-runtime', 'ui-connectivity', 'platform-runtime', 'hardware-runtime',
-                                'logger-runtime', 'athena-runtime', 'planner-memory', 'radar-memory'}:
+                                'logger-runtime', 'athena-runtime', 'planner-memory', 'radar-memory', 'recovery-runtime'}:
                             expected = 'ubuntu-24.04'
                         elif path.name == 'rust.yml' and name in {
                                 'radard-runtime', 'carrot-man-runtime', 'webrtc-runtime', 'webcam-runtime'}:
