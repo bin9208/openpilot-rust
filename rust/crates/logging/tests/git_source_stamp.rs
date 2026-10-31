@@ -87,6 +87,13 @@ fn real_git_inputs_stay_fresh_and_packed_to_loose_refs_update_both_source_stamps
             "#define COMMA_VERSION \"owned\"\n",
         )
         .unwrap();
+        let link_parent = root.join("openpilot/system/hardware/comma");
+        fs::create_dir_all(&link_parent).unwrap();
+        std::os::unix::fs::symlink(
+            "../../../common/hardware/comma/agnos.json",
+            link_parent.join("agnos.json"),
+        )
+        .unwrap();
         fs::write(root.join("README.md"), "owned tracked input\n").unwrap();
         fs::write(package.join("build.rs"), script).unwrap();
         fs::write(
@@ -177,6 +184,11 @@ fn real_git_inputs_stay_fresh_and_packed_to_loose_refs_update_both_source_stamps
         git(&root, &["update-ref", "--no-deref", "HEAD", &initial]);
         check(false, &initial, "clean");
         check(true, &initial, "clean");
+        fs::remove_file(link_parent.join("agnos.json")).unwrap();
+        std::os::unix::fs::symlink("another-missing-target", link_parent.join("agnos.json"))
+            .unwrap();
+        check(false, &initial, "dirty");
+        check(true, &initial, "dirty");
         fs::write(root.join("README.md"), "owned changed tracked input\n").unwrap();
         check(false, &initial, "dirty");
         check(true, &initial, "dirty");

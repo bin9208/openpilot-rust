@@ -82,7 +82,20 @@ fn main() {
     // Track source modifications as well as the commit/index; ignored build caches do not participate.
     if let Some(files) = git(&root, &["ls-files", "-z"]) {
         for file in files.split('\0').filter(|file| !file.is_empty()) {
-            println!("cargo:rerun-if-changed={}", root.join(file).display());
+            let path = root.join(file);
+            // Cargo follows the path when reading timestamps. A tracked
+            // dangling symlink is permanently "missing" and otherwise forces
+            // every dependent binary to rebuild. Watch its existing parent
+            // for link replacement/creation, retaining Git index/HEAD watches.
+            let watched = if path.exists() {
+                path.as_path()
+            } else {
+                path.ancestors()
+                    .skip(1)
+                    .find(|parent| parent.is_dir())
+                    .expect("tracked input has an existing source parent")
+            };
+            println!("cargo:rerun-if-changed={}", watched.display());
         }
     }
 }
