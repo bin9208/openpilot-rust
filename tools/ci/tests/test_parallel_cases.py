@@ -56,6 +56,19 @@ class OriginalCasesTests(unittest.TestCase):
 
 
 class SchedulerTests(unittest.TestCase):
+  def test_resource_pressure_reduces_parallelism_before_failing_a_valid_case(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      output = Path(temporary)
+      cases = [dict(name=name, argv=[sys.executable, '-c', 'import time; time.sleep(0.1)'],
+                    memory_bytes=128*ci_cases.MIB, growth_bytes=ci_cases.MIB) for name in ('a', 'b')]
+      samples = iter([1024*ci_cases.MIB])
+      with mock.patch.object(ci_cases.os, 'sched_getaffinity', return_value={0, 1}), \
+           mock.patch.object(ci_cases, 'available_memory', side_effect=lambda: next(samples, 256*ci_cases.MIB)):
+        ci_cases.run_cases(cases, output, ROOT)
+      summary = json.loads((output/'summary.json').read_text())
+      self.assertEqual(summary['admission']['workers'], 2)
+      self.assertTrue(summary['success'])
+
   def test_real_children_own_temporary_and_ipc_namespaces_and_failure_is_not_pass(self):
     for fail in (False, True):
       with self.subTest(fail=fail), tempfile.TemporaryDirectory() as temporary:

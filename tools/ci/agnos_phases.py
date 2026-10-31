@@ -93,6 +93,17 @@ def independent_bootstrap(callback, source, work, evidence, log):
 
   thread = threading.Thread(target=execute, name='agnos-bootstrap-proof')
   thread.start()
+  def stop(child, name):
+    if child.poll() is not None:
+      return
+    try:
+      os.killpg(child.pid, getattr(signal, 'SIG'+name))
+    except ProcessLookupError:
+      pass
+    except PermissionError:
+      # sudo can retain a root monitor before its scoped command drops uid.
+      # This PID/group was just created here; no runner/service PID is used.
+      subprocess.run(['sudo', '-n', '/bin/kill', '-'+name, '--', '-'+str(child.pid)], check=True)
   try:
     yield
     thread.join()
@@ -104,13 +115,9 @@ def independent_bootstrap(callback, source, work, evidence, log):
       # A component failure cancels only this newly owned bootstrap process
       # group; never signal a runner, another Action or pre-existing process.
       for child in processes:
-        if child.poll() is None:
-          try: os.killpg(child.pid, signal.SIGTERM)
-          except ProcessLookupError: pass
+        stop(child, 'TERM')
       thread.join(timeout=5)
       if thread.is_alive():
         for child in processes:
-          if child.poll() is None:
-            try: os.killpg(child.pid, signal.SIGKILL)
-            except ProcessLookupError: pass
+          stop(child, 'KILL')
         thread.join()

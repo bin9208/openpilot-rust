@@ -79,6 +79,7 @@ def run_cases(cases, output, cwd):
   policy = admission(output, cases)
   reserved = [0, 0]
   lock, failed = threading.Lock(), threading.Event()
+  capacity = threading.Condition(lock)
   rows, active = {}, {}
 
   def execute(case):
@@ -95,13 +96,19 @@ def run_cases(cases, output, cwd):
                temporary=str(temporary), state='failed')
     admitted = False
     try:
-      with lock:
-        if failed.is_set():
-          row['state'] = 'not-started'
-          return row
-        if (shutil.disk_usage(output).free < reserved[0]+case['growth_bytes']+64*MIB
-            or available_memory() < reserved[1]+case['memory_bytes']+128*MIB):
-          raise RuntimeError('aggregate case admission no longer fits')
+      with capacity:
+        while True:
+          if failed.is_set():
+            row['state'] = 'not-started'
+            return row
+          if (shutil.disk_usage(output).free >= reserved[0]+case['growth_bytes']+64*MIB
+              and available_memory() >= reserved[1]+case['memory_bytes']+128*MIB):
+            break
+          if reserved == [0, 0]:
+            raise RuntimeError('resources no longer fit even one case')
+          # A running case can release capacity. Reduce concurrency before
+          # rejecting the operation; never change Cargo/test global limits.
+          capacity.wait(timeout=1)
         reserved[0] += case['growth_bytes']
         reserved[1] += case['memory_bytes']
         admitted = True
@@ -135,9 +142,10 @@ def run_cases(cases, output, cwd):
       raise
     finally:
       if admitted:
-        with lock:
+        with capacity:
           reserved[0] -= case['growth_bytes']
           reserved[1] -= case['memory_bytes']
+          capacity.notify_all()
       row['elapsed_seconds'] = time.monotonic()-started
       (private/'command.json').write_text(json.dumps(row, indent=2)+'\n')
       rows[name] = row
