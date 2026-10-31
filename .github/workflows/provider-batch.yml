@@ -9,6 +9,11 @@ on:
       - 'tools/ci/verify_provider_batch.py'
       - '.github/workflows/provider-batch.yml'
   workflow_dispatch:
+    inputs:
+      benchmark:
+        description: Run the original pinned ARM archive equivalence and timing
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -46,6 +51,47 @@ jobs:
         with:
           name: provider-batch-contract-${{ github.sha }}
           path: ${{ env.CI_JOB_TEMP }}/provider-tests.log
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with:
+          cleanup: 'true'
+  actual-arm-batch:
+    if: github.event_name == 'workflow_dispatch' && inputs.benchmark
+    needs: component-contract
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Admit the real fixed provider comparison
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          growth = 5 * 1024**3
+          free = shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          assert free >= growth, (free, growth)
+          PY
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev clang libclang-dev pkg-config liblzma-dev libssl-dev
+          rustup toolchain install 1.94.0 --profile minimal
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bin openpilot-runtime-assets
+      - name: Compare every production profile and measure real cold and warm reuse
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/verify_provider_batch.py --preparer "$native_target/debug/build-runtime-ffmpeg" --assets "$native_target/debug/openpilot-runtime-assets" --root "$GITHUB_WORKSPACE" --work "$CI_JOB_TEMP/provider-benchmark"
+      - name: Preserve real provider comparison and timing evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: provider-batch-arm-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/provider-benchmark/*.json
+            ${{ env.CI_JOB_TEMP }}/provider-benchmark/*.stderr
           if-no-files-found: warn
       - uses: ./.github/actions/job-temp
         if: always()
