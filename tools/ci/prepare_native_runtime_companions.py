@@ -44,9 +44,9 @@ def main():
     print(json.dumps(dict(component=name, available_bytes=free, expected_additional_bytes=growth)), flush=True)
     if free < growth:
       raise RuntimeError('insufficient capacity for this component export/reuse; other inputs retained')
-    exported = execute([args.preparer, '--export-released-provider', '--plan', plan_path,
-        '--cache', work/'native-provider-origin', '--store', work/'native-provider-origins',
-        '--output', exports/name], f'{name}-export')
+    exported = runpy.run_path(str(Path(__file__).with_name('native_provider_batch.py')))['export_component'](
+        args.preparer, plan_path, source, work, work/f'native-companion-{name}-export.json',
+        work/'native-provider-origins', exports/name)
     assert exported['origin']['asset']['transferred_bytes'] == exported['origin']['asset']['stored_bytes'] == 0
     assert not exported['published_release'] and not exported['provider_executed']
     consume = [args.preparer, '--prepare-released-provider', '--plan', plan_path,

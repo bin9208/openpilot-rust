@@ -44,9 +44,9 @@ def main():
     assert value['inputs_match'] and not value['regenerated']
     return value
 
-  exported = execute([args.preparer, '--export-released-provider', '--source-root', source,
-      '--plan', plan_path, '--cache', work/'native-provider-origin',
-      '--store', work/'native-mpc-origins', '--output', work/'native-mpc-export'], 'export')
+  exported = runpy.run_path(str(Path(__file__).with_name('native_provider_batch.py')))['export_component'](
+      args.preparer, plan_path, source, work, work/'native-mpc-export.json',
+      work/'native-mpc-origins', work/'native-mpc-export')
   assert exported['origin']['asset']['transferred_bytes'] == exported['origin']['asset']['stored_bytes'] == 0
   assert not exported['published_release'] and not exported['provider_executed']
   binding(exported)

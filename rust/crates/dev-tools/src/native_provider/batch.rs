@@ -249,7 +249,7 @@ fn export_batch_inner(
         let descriptor = descriptor(plan, &descriptor_path, &pin)?;
         let component = components.join(&plan.profile);
         directory(&component)?;
-        let prepared = prepare(
+        let prepared = prepare_inner(
             plan,
             &descriptor_path,
             &pin,
@@ -659,5 +659,38 @@ mod tests {
         for object in fs::read_dir(temp.path().join("batch")).unwrap() {
             assert!(!object.unwrap().path().join("generation").exists());
         }
+    }
+
+    #[test]
+    fn forged_descriptor_cannot_authorize_a_different_cached_payload() {
+        let temp = tempfile::tempdir().unwrap();
+        let (plan, download) = super::super::tests::fixture();
+        let plans = [plan];
+        let cold = export_batch_inner(
+            &plans,
+            &temp.path().join("raw"),
+            &temp.path().join("batch"),
+            &temp.path().join("cold"),
+            &download,
+        )
+        .unwrap();
+        let export = &cold.exports[&plans[0].profile];
+        fs::set_permissions(&export.archive, fs::Permissions::from_mode(0o644)).unwrap();
+        fs::write(&export.archive, b"forged component").unwrap();
+        fs::set_permissions(&export.descriptor, fs::Permissions::from_mode(0o644)).unwrap();
+        fs::write(
+            &export.descriptor,
+            json(&component_descriptor(&plans[0], &export.archive).unwrap()).unwrap(),
+        )
+        .unwrap();
+        assert!(export_batch_inner(
+            &plans,
+            &temp.path().join("raw"),
+            &temp.path().join("batch"),
+            &temp.path().join("forged"),
+            &download,
+        )
+        .is_err());
+        assert!(!temp.path().join("forged").exists());
     }
 }

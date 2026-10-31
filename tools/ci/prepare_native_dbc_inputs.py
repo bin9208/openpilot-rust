@@ -36,9 +36,9 @@ def main():
       subprocess.run(list(map(str, command)), stdout=output, check=True)
     return json.loads(path.read_text())
 
-  exported = execute([args.preparer, '--export-released-provider', '--source-root', source,
-      '--plan', plan_path, '--cache', work/'native-provider-origin',
-      '--store', work/'native-dbc-origins', '--output', work/'native-dbc-export'], 'export')
+  exported = runpy.run_path(str(Path(__file__).with_name('native_provider_batch.py')))['export_component'](
+      args.preparer, plan_path, source, work, work/'native-dbc-export.json',
+      work/'native-dbc-origins', work/'native-dbc-export')
   assert exported['origin']['asset']['transferred_bytes'] == exported['origin']['asset']['stored_bytes'] == 0
   assert not exported['published_release'] and not exported['provider_executed']
   consume = [args.preparer, '--prepare-released-provider', '--source-root', source,

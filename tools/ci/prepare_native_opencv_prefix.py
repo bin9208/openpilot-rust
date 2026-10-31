@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import runpy
 from pathlib import Path
 import shutil
 import subprocess
@@ -31,9 +32,9 @@ def main():
       subprocess.run(list(map(str, command)), stdout=output, check=True)
     return json.loads(path.read_text())
 
-  export = execute([args.provider_preparer, '--export-released-provider', '--plan', plan,
-      '--cache', work/'native-provider-origin', '--store', work/'native-provider-origins',
-      '--output', work/'native-opencv-provider-export'], 'provider-export')
+  export = runpy.run_path(str(Path(__file__).with_name('native_provider_batch.py')))['export_component'](
+      args.provider_preparer, plan, args.root, work, work/'native-opencv-provider-export.json',
+      work/'native-provider-origins', work/'native-opencv-provider-export')
   assert export['origin']['asset']['transferred_bytes'] == export['origin']['asset']['stored_bytes'] == 0
   assert not export['published_release'] and not export['provider_executed']
   consume = [args.provider_preparer, '--prepare-released-provider', '--plan', plan,
