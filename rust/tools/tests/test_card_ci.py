@@ -10,7 +10,6 @@ import pytest
 import yaml
 import check_card_ci
 import ci_cases
-import card_ci_space
 from card_qa.ci import ROOT, TOOLS, source_command
 from card_qa.runtime_inputs import frames
 
