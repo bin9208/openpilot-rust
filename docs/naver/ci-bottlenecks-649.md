@@ -132,3 +132,9 @@ batch의 profile별 Export는 기존 필드를 유지하며 `origin`은 작은 c
 최초 그룹 실행 `439d0a94987617d3ab38a93e41d1305fea7b2581`의 [UI job 124642155904](https://github.com/bin9208/openpilot-rust/actions/runs/41236788017/job/124642155904)은 13개 case가 모두 성공했다. 다만 artifact `13060425296`에서 affinity 4 CPU·가용 memory 4,122,618,880 bytes·disk 51,957,874,688 bytes에 **workers=1**을 확인했다. 세 그룹이 차례로 실행돼 Xvfb `:0`을 재사용했다. 이 실행을 실제 병행 성공 증거로 취급하지 않는다. 픽셀 1,888.556초가 주된 실행 구간이었다.
 
 [#655](https://github.com/bin9208/openpilot-rust/issues/655)는 1/1/2 GiB 그룹을 모두 최대 2 GiB로 계산한 pool 상한을 바로잡는다. 실제 비용 합으로 상한을 정하고, spawn 직전의 정확한 합산 reservation·개별 최대 case 거부·기존 CPU affinity·memory/disk 여유는 유지한다. 실제 동시 process peak·PID·시간·IPC prefix를 기록하며, 같은 budget의 실제 자식 겹침과 부족 시 거부를 Actions에서 확인한다. 최신 소스의 UI/Card 전체 성공은 계속 필요하다.
+
+## control tools 시작 구독 정렬 — #656
+
+`4af4aa54bc80824b786320b4a180dcababf5c3bf`의 [control tools job 124686916736](https://github.com/bin9208/openpilot-rust/actions/runs/41251875743/job/124686916736)은 원본 8 case/1,805 step mismatch 0과 5개 상태 일치 후 마지막 IPC 수거에서 실패했다. artifact `13061009772`의 239개 pair는 두 서비스 각각 중간 누락 없이 처음부터 약 한 프레임씩 어긋났다. 원본 msgq의 publisher 시작·reader 재등록 시 write pointer 초기화 때문에 첫 `controlsState`만 놓친 검사기가 서로 다른 프레임을 계속 짝지었다.
+
+[#656](https://github.com/bin9208/openpilot-rust/issues/656)은 검사기에서 state를 먼저 읽고 원본 발행 순서의 단조 타임스탬프로 시작 구간을 정렬한다. 시작 시 짝 없는 메시지는 별도 artifact로 남기며, 실행 중 누락과 짝 없는 마지막 메시지는 실패한다. 기존 235개 이상 관측·상태별 원본 일치·발행 경과·CLI·시그널·실제 종료 코드 조건과 daemon/runtime은 유지한다. 로컬은 문법/diff만 확인하고 강제 경합 회귀 및 실제 원래 IPC 전체 검증은 Actions에서 수행한다.
