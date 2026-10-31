@@ -1,0 +1,53 @@
+name: Native provider batch validation
+on:
+  push:
+    branches: ['codex/fix-649-*']
+    paths:
+      - 'rust/crates/dev-tools/src/native_provider.rs'
+      - 'rust/crates/dev-tools/src/native_provider/**'
+      - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
+      - 'tools/ci/verify_provider_batch.py'
+      - '.github/workflows/provider-batch.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  component-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Admit the bounded provider test build
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          growth = 3 * 1024**3
+          free = shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          assert free >= growth, (free, growth)
+          PY
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev clang libclang-dev pkg-config liblzma-dev libssl-dev
+          rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
+      - name: Verify unchanged provider safety and new batch equivalence
+        run: |
+          set -o pipefail
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_provider:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/provider-tests.log"
+          cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib -- -D warnings
+          cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg
+      - name: Preserve batch validation evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: provider-batch-contract-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/provider-tests.log
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with:
+          cleanup: 'true'

@@ -507,7 +507,9 @@ pub fn cli(runtime: bool) -> Result<()> {
         && arguments.iter().any(|arg| {
             matches!(
                 arg.as_str(),
-                "--export-released-provider" | "--prepare-released-provider"
+                "--export-released-provider"
+                    | "--export-released-provider-batch"
+                    | "--prepare-released-provider"
             )
         })
     {

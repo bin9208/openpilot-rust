@@ -21,6 +21,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
+mod batch;
+pub use batch::{export_batch, BatchExport};
+
 const INVENTORY: &str = "be0bb63d0d7f71ea38a3f17f923d2b02c0149cc541f785916aaa93f311dbc3f2";
 const RAYLIB_INVENTORY: &str = "4c19e76d8ce5072e60a2a244634f44b62f254b3f02facc08a3dd39637f486cfd";
 const OPENCV_INVENTORY: &str = "aba0eb2961db6b8d19b245bae8138a34f28e42b21eec008553ee95c1f270c15a";
@@ -903,6 +906,12 @@ fn prepare_inner(
 }
 
 pub fn cli(args: &[String]) -> Result<()> {
+    if args
+        .iter()
+        .any(|arg| arg == "--export-released-provider-batch")
+    {
+        return batch::cli(args);
+    }
     let mut values = BTreeMap::new();
     let mut mode = None;
     let mut args = args.iter();
@@ -1327,9 +1336,9 @@ mod tests {
         assert!(raylib.validate().is_err());
     }
     use std::cell::Cell;
-    struct Download {
+    pub(super) struct Download {
         bytes: Vec<u8>,
-        calls: Cell<usize>,
+        pub(super) calls: Cell<usize>,
     }
     impl assets::Download for Download {
         fn fetch(&self, _: &assets::Asset, path: &Path) -> Result<u64> {
@@ -1342,7 +1351,7 @@ mod tests {
         Plan::read(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../native-ffmpeg-provider.json"))
             .unwrap()
     }
-    fn fixture() -> (Plan, Download) {
+    pub(super) fn fixture() -> (Plan, Download) {
         let mut plan = original();
         plan.members.clear();
         let data = b"owned foreign library";
