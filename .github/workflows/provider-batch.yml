@@ -59,6 +59,7 @@ jobs:
           rustup toolchain install 1.94.0 --profile minimal
           cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg
       - uses: ./.github/actions/native-cache
+        id: numerics-provider-cache
         with:
           mode: restore
           name: native-provider-batch-cache
@@ -67,9 +68,16 @@ jobs:
         run: |
           native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
           python3 tools/ci/prepare_native_provider_batch.py --preparer "$native_target/debug/build-runtime-ffmpeg" --root "$GITHUB_WORKSPACE" --work "$CI_JOB_TEMP"
+      - uses: ./.github/actions/native-cache
+        if: steps.numerics-provider-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-provider-batch-cache
+          key: native-provider-batch-v1-${{ hashFiles('rust/native-*-provider.json', 'rust/native-*-source-contract.json', 'rust/crates/dev-tools/src/native_provider.rs', 'rust/crates/dev-tools/src/native_provider/**', 'rust/Cargo.lock') }}
       - name: Reproduce the original SVD comparison with exact hexadecimal values
         run: |
           g++ -std=c++17 -O2 -Wall -Wextra -Werror tools/ci/fixtures/native-companion-probe.cc -ldl -o "$CI_JOB_TEMP/numerics-probe"
+          "$CI_JOB_TEMP/numerics-probe" --svd-check-self-test
           numerics_root=$(python3 -c 'import json,os;print(json.load(open(os.environ["NATIVE_PROVIDER_BATCH"]))["exports"]["numpy253-openblas"]["origin"]["root"]+"/numerics")')
           LD_LIBRARY_PATH="$numerics_root:/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu" "$CI_JOB_TEMP/numerics-probe" --numerics "$numerics_root" "$CI_JOB_TEMP/numerics-maps.txt" > "$CI_JOB_TEMP/numerics.stdout" 2> "$CI_JOB_TEMP/numerics.stderr"
       - uses: actions/upload-artifact@v6

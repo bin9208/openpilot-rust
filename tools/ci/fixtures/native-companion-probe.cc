@@ -1,12 +1,14 @@
 // Actions-only ABI calls for the exact foreign components. This is not an MPC,
 // full daemon, model or device regression. Signatures match current Rust FFIs.
 #include <cstdint>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -37,6 +39,32 @@ struct Library {
     return reinterpret_cast<T>(symbol);
   }
 };
+
+bool diagonal_svd_matches(int64_t info, double first, double second) {
+  // The pinned ARM DGESDD returns the adjacent doubles below 3 and above 2.
+  // Bound this small ABI fixture by one representable step, not a relative or
+  // percentage tolerance. Runtime numerical policy is outside this fixture.
+  auto adjacent = [](double actual, double expected) {
+    return std::isfinite(actual) && actual >= std::nextafter(expected, 0.0) &&
+           actual <= std::nextafter(expected, std::numeric_limits<double>::infinity());
+  };
+  return info == 0 && adjacent(first, 3.0) && adjacent(second, 2.0);
+}
+
+void check_svd_result_boundary() {
+  const double low = std::nextafter(3.0, 0.0), high = std::nextafter(2.0, 3.0);
+  require(diagonal_svd_matches(0, 3.0, 2.0), "exact SVD result rejected");
+  require(diagonal_svd_matches(0, low, high), "observed adjacent SVD result rejected");
+  require(!diagonal_svd_matches(1, 3.0, 2.0), "failed SVD accepted");
+  require(!diagonal_svd_matches(0, std::nextafter(low, 0.0), 2.0), "two-ULP first result accepted");
+  require(!diagonal_svd_matches(0, std::nextafter(std::nextafter(3.0, 4.0), 4.0), 2.0), "two-ULP upper first result accepted");
+  require(!diagonal_svd_matches(0, 3.0, std::nextafter(std::nextafter(2.0, 0.0), 0.0)), "two-ULP lower second result accepted");
+  require(!diagonal_svd_matches(0, 3.0, std::nextafter(high, 3.0)), "two-ULP second result accepted");
+  require(!diagonal_svd_matches(0, 2.0, 3.0), "reordered SVD accepted");
+  require(!diagonal_svd_matches(0, -3.0, 2.0), "negative SVD accepted");
+  require(!diagonal_svd_matches(0, std::numeric_limits<double>::quiet_NaN(), 2.0), "NaN SVD accepted");
+  require(!diagonal_svd_matches(0, 3.0, std::numeric_limits<double>::infinity()), "infinite SVD accepted");
+}
 
 void numerics(const fs::path &root) {
   Library dependency(root / "libgfortran-e1b7dfc8-d8198c01.so.5.0.0");
@@ -73,7 +101,17 @@ void numerics(const fs::path &root) {
   gesdd(&job, &size, &size, diagonal, &leading, singular, unused_u, &unused_leading, unused_vt, &unused_leading, workspace.data(), &workspace_length, integer_work, &info);
   std::cerr << "ILP64 SVD info=" << info << " singular=" << std::hexfloat
             << singular[0] << ',' << singular[1] << std::defaultfloat << '\n';
-  require(info == 0 && singular[0] == 3.0 && singular[1] == 2.0, "ILP64 SVD result");
+  require(diagonal_svd_matches(info, singular[0], singular[1]), "ILP64 SVD result");
+  // A second dyadic diagonal retains a bit-exact result check alongside the
+  // original (3,2) case.
+  const double dyadic[] = {4, 0, 0, 2};
+  std::memcpy(diagonal, dyadic, sizeof(dyadic));
+  singular[0] = singular[1] = 0;
+  info = -1;
+  gesdd(&job, &size, &size, diagonal, &leading, singular, unused_u, &unused_leading, unused_vt, &unused_leading, workspace.data(), &workspace_length, integer_work, &info);
+  std::cerr << "ILP64 dyadic SVD info=" << info << " singular=" << std::hexfloat
+            << singular[0] << ',' << singular[1] << std::defaultfloat << '\n';
+  require(info == 0 && singular[0] == 4.0 && singular[1] == 2.0, "ILP64 dyadic SVD result");
   record_maps();
 }
 
@@ -131,6 +169,8 @@ void acados(const fs::path &root) {
 
 int main(int argc, char **argv) {
   try {
+    check_svd_result_boundary();
+    if (argc == 2 && std::strcmp(argv[1], "--svd-check-self-test") == 0) return 0;
     if (argc == 4 && std::strcmp(argv[1], "--numerics") == 0) {
       maps_output = argv[3];
       setenv("OPENBLAS_NUM_THREADS", "1", 1);
