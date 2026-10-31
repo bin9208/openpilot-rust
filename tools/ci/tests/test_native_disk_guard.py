@@ -1,5 +1,6 @@
 """Native CI guard bootstrap must reserve capacity before any toolchain/build work."""
 import os
+from collections import Counter
 import hashlib
 import re
 from pathlib import Path
@@ -123,7 +124,17 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
         assert 'cargo +1.94.0 run' in lines[index]
         assert '"$GITHUB_WORKSPACE/rust/tools/check-disk-space"' in lines[index - 1]
     assert 'stage_startup_ui_raylib.py' not in text
-    assert hashlib.sha256('\n'.join(arguments).encode()).hexdigest() == '952f3b9fc8820e701aae55f88368236acddd3da2af55465448aa00eddaf9fe55'
+    # Recovery moved before workspace, so order changes intentionally. Freeze
+    # the old ordered list independently, then require the identical multiset.
+    baseline = subprocess.check_output(['git', 'show',
+        '44fbc7a34526950063713fd8255b96b0e543f554:.github/workflows/rust.yml'], cwd=ROOT, text=True).splitlines()
+    previous = []
+    for index, line in enumerate(baseline):
+        match = re.search(r'"\$GITHUB_WORKSPACE/rust/tools/check-disk-space"([^\n]*)', line)
+        if match and not (index+1 < len(baseline) and '--bin stage-startup-ui-raylib' in baseline[index+1]):
+            previous.append(match.group(1))
+    assert hashlib.sha256('\n'.join(previous).encode()).hexdigest() == '952f3b9fc8820e701aae55f88368236acddd3da2af55465448aa00eddaf9fe55'
+    assert Counter(arguments) == Counter(previous)
     template = (ROOT / 'rust/crates/carrot-man/ci-jobs.yml').read_text()
     assert 'card_ci_space.py' not in template
     assert template.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 9
