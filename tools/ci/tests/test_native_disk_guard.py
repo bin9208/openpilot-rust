@@ -84,17 +84,17 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
     workflow = ROOT / '.github/workflows/rust.yml'
     text = workflow.read_text()
     assert 'card_ci_space.py' not in text
-    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 184
+    assert text.count('"$GITHUB_WORKSPACE/rust/tools/check-disk-space"') == 185
     jobs = yaml.safe_load(text)['jobs']
     guarded = [job for job in jobs.values() if any('check-disk-space' in step.get('run', '') for step in job.get('steps', []))]
-    assert len(guarded) == 26
+    assert len(guarded) == 27
     def has_baseline_guard(script):
         lines = script.splitlines()
         return any('check-disk-space' in line and
                    (index + 1 == len(lines) or '--bin stage-startup-ui-raylib' not in lines[index + 1])
                    for index, line in enumerate(lines))
     assert sum(any(has_baseline_guard(step.get('run', '')) for step in job.get('steps', []))
-               for job in jobs.values()) == 24
+               for job in jobs.values()) == 25
     # Preserve the original179 migration baseline independently of the five
     # #326 guards added specifically before compiling its native stager.
     lines = text.splitlines()
@@ -106,6 +106,13 @@ def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
                 raylib_guards.append(match.group(1))
             else:
                 arguments.append(match.group(1))
+    # #649 adds one explicit dependency/build admission for the early hosted
+    # recovery job. Its two original guards moved intact from workspace.
+    new_guard = ' --path "$GITHUB_WORKSPACE" --growth-mib 3072'
+    recovery = jobs['recovery-runtime']
+    preparation = next(step for step in recovery['steps'] if step.get('name') == 'Prepare recovery comparison dependencies')
+    assert new_guard in preparation['run']
+    arguments.remove(new_guard)
     assert len(arguments) == 179
     assert raylib_guards == [' --path "$GITHUB_WORKSPACE" --growth-mib 2048'] * 5
     native_calls = [index for index, line in enumerate(lines) if '--bin stage-startup-ui-raylib' in line]
