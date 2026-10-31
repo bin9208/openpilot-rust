@@ -867,7 +867,7 @@ def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest
       *search,'--output',audit],'native-model-environment-abi-summary.json')
   standalone=json.loads(audit.read_text())
   assert standalone['compatible'] is True and len(standalone['roots'])==len(roots)
-  assert {row['root'] for row in standalone['roots']}=={str(path) for path in roots}
+  assert {row['root'] for row in standalone['roots']}=={str(path).replace(str(work),guest_work) for path in roots}
   # Python extensions resolve interpreter symbols from their verified loader;
   # unrelated binaries and bundled native libraries retain independent audits.
   owner=Path(python['python'])

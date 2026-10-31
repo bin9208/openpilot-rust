@@ -572,3 +572,26 @@ QCOM2352B 커널 생성·잘못된 QCOM source 거부·외부 ONNX weight 거부
 
 로컬은 구문·diff와 고정 원문 읽기만 수행한다. 수정 후 실제 모델 ABI와 그 뒤 정규
 bootstrap13 tools·전체99·production 다섯 phase·입력 payload/I는 새 Actions에서 확인한다.
+
+
+## 2026-10-31 — 모델 ABI 보고서의 guest 경로 대조
+
+`767eea06d04999f4e5c935adc27cf62a049baddf`의
+[Genuine41176569018/job124465239123](https://github.com/bin9208/openpilot-rust/actions/runs/41176569018/job/124465239123)은
+모델 standalone7개 ABI의 `compatible=true` 뒤 새 exact-root 집합 단언에서 실패했다.
+artifact13036614632는48,538,732B·SHA
+`cf2212e9f2d558492e6b7cc9c232b4a8c024e139cf11cc2fb2e0506e0045410a`로 검증했다.
+새 단언의 기대값에 호스트 work 아래 실행파일3개 경로를 그대로 넣은 작성 오류다.
+원래 `guest_command`는 실제 argv의 work 경로를 `/openpilot-native-build-probe-599`로
+바꾸고 auditor는 guest 경로를 보고한다. 나머지4개 기대경로는 이미 guest/factory 경로다.
+실제 명령의7개 root와 보고서7개 root는 완전히 일치하며 ABI 실패 항목은 없다.
+
+기대 집합에 원래 `guest_command`와 동일한 `str(path).replace(str(work),guest_work)`를
+적용한다. 실제 audit argv·정확7개 집합/호환 단언·owner 포함22개 검사·모든 pin과 ABI
+기준은 유지한다. 로컬은 보존한 원문의 호스트/guest 경로와 보고서 집합을 읽어 대조하고
+구문·diff만 확인한다. 검사 함수나 compiler·모델을 로컬에서 실행하지 않는다.
+
+같은 source의 별도6workflow68jobs, seed ABI·Python7+3·SDK4·CPU LLVM/QCOM fixture와
+모델 standalone7 ABI는 실제 통과했다. owner 포함22개 ABI·정규13tools·전체99·production
+다섯 phase·payload/I는 이 단언 뒤라 미도달이다. 수정 source의 실제 결과는 새 Actions로
+확인하며 이전 source의 성공으로 대신하지 않는다.
