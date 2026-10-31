@@ -361,7 +361,12 @@ mod curl_tests {
         if let Ok(bytes) = &result {
             assert_eq!(*bytes, 8);
         }
-        let count = fs::read_to_string(calls).unwrap().lines().count();
+        let count = fs::read_to_string(calls)
+            .unwrap_or_else(|error| {
+                panic!("fake curl call journal: {error}; transport: {result:?}")
+            })
+            .lines()
+            .count();
         (result.is_ok(), count, sleeps.into_inner())
     }
 
@@ -404,7 +409,9 @@ mod curl_tests {
                 |duration| sleeps.borrow_mut().push(duration.as_secs()),
                 &[&asset.url, "https://mirror.invalid/source"],
             );
-            let calls = fs::read_to_string(temp.path().join("calls")).unwrap();
+            let calls = fs::read_to_string(temp.path().join("calls")).unwrap_or_else(|error| {
+                panic!("fake mirror curl call journal: {error}; transport: {result:?}")
+            });
             assert_eq!(calls.lines().count(), expected_calls);
             assert_eq!(result.is_ok(), expected_success);
             if expected_success {

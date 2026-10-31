@@ -32,6 +32,10 @@ on:
         description: Reproduce the exact pinned ARM numerics ABI assertion
         type: boolean
         default: false
+      transport_repro:
+        description: Reproduce parallel native input transport fixture failures
+        type: boolean
+        default: false
 
 env:
   RUSTUP_TOOLCHAIN: '1.94.0'
@@ -40,6 +44,39 @@ permissions:
   contents: read
 
 jobs:
+  transport-repro:
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'workflow_dispatch' && inputs.transport_repro }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Prepare the pinned native ARM transport test
+        run: |
+          python3 -c 'import runpy;runpy.run_path("tools/ci/runner_policy.py")["require_github_native_arm"]()'
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$CI_JOB_TEMP" --growth-mib 3072
+          rustup toolchain install 1.94.0 --profile minimal
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib --no-run
+      - name: Require every parallel transport fixture iteration to succeed
+        run: |
+          set -o pipefail
+          for iteration in $(seq 1 200); do
+            printf 'transport iteration %s\n' "$iteration" >> "$CI_JOB_TEMP/transport-stress.log"
+            cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --lib -- --nocapture >> "$CI_JOB_TEMP/transport-stress.log" 2>&1 || { tail -100 "$CI_JOB_TEMP/transport-stress.log"; exit 1; }
+          done
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: transport-arm-repro-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/transport-stress.log
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with:
+          cleanup: 'true'
   numerics-repro:
     if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'workflow_dispatch' && inputs.numerics_repro }}
     runs-on: ubuntu-24.04-arm
