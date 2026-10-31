@@ -194,7 +194,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         combined.body.extend(tail)
         self.assertEqual(dump(combined), dump(original['native_bootstrap_seed_probe']))
         def probe_calls(node):
-            return [n.func.id for n in ast.walk(node) if isinstance(n, ast.Call)
+            return [n.func.id for n in sorted(ast.walk(node), key=lambda n: getattr(n, "lineno", 0)) if isinstance(n, ast.Call)
                 and isinstance(n.func, ast.Name) and n.func.id in original
                 and n.func.id.startswith('native_')]
         original_calls = probe_calls(original['main'])
