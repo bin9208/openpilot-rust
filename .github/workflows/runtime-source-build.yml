@@ -48,6 +48,7 @@ on:
       - 'rust/crates/dev-tools/src/native_ffmpeg_headers.rs'
       - 'rust/crates/dev-tools/src/native_ffmpeg_prefix.rs'
       - 'rust/crates/dev-tools/src/native_provider.rs'
+      - 'rust/crates/dev-tools/src/native_provider/**'
       - 'rust/crates/dev-tools/src/native_raylib_inputs.rs'
       - 'rust/crates/dev-tools/src/raylib_stage.rs'
       - 'rust/crates/dev-tools/src/raylib_stage_tests.rs'

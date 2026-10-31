@@ -39,6 +39,10 @@ on:
       - 'rust/crates/dev-tools/src/native_ffmpeg_headers.rs'
       - 'rust/crates/dev-tools/src/native_ffmpeg_prefix.rs'
       - 'rust/crates/dev-tools/src/native_provider.rs'
+      - 'rust/crates/dev-tools/src/native_provider/**'
+      - 'tools/ci/prepare_native_provider_batch.py'
+      - 'tools/ci/native_provider_batch.py'
+      - 'tools/ci/agnos_phases.py'
       - 'rust/crates/dev-tools/src/native_raylib_inputs.rs'
       - 'rust/crates/dev-tools/src/raylib_stage.rs'
       - 'rust/crates/dev-tools/src/raylib_stage_tests.rs'
@@ -879,6 +883,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers-reused.json
             ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-provider-export.json
+            ${{ env.CI_JOB_TEMP }}/native-provider-batch.json
             ${{ env.CI_JOB_TEMP }}/native-ffmpeg-prefix-*.json
             ${{ env.CI_JOB_TEMP }}/native-ffmpeg-prefixes/**/generation/tree.json
             ${{ env.CI_JOB_TEMP }}/native-provider-export/*

@@ -346,6 +346,13 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     after['on']['push']['branches'] = branches
                 old, new = before['jobs'][name], after['jobs'][name]
                 if filename == 'runtime-native-environment.yml':
+                    paths = after['on']['push']['paths']
+                    for path in ('rust/crates/dev-tools/src/native_provider/**',
+                                 'tools/ci/prepare_native_provider_batch.py',
+                                 'tools/ci/native_provider_batch.py',
+                                 'tools/ci/agnos_phases.py'):
+                        self.assertEqual(paths.count(path), 1)
+                        paths.remove(path)
                     restore_provider_batch_steps(new)
                 self.assertEqual(new['runs-on'], route)
                 new['runs-on'] = old['runs-on']
@@ -405,6 +412,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     new['steps'].insert(original_index, scope)
                     artifact = next(step for step in new['steps'] if step.get('with', {}).get('name') == 'native-agnos-environment-${{ github.sha }}')
                     additions = ['${{ env.CI_JOB_TEMP }}/native-agnos-phase-times.json',
+                                 '${{ env.CI_JOB_TEMP }}/native-provider-batch.json',
                                  '${{ env.CI_JOB_TEMP }}/native-agnos/bootstrap-parallel.log',
                                  '${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight.json',
                                  '${{ env.CI_JOB_TEMP }}/native-bootstrap-seed-abi-preflight/']
@@ -414,6 +422,18 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                         paths.remove(path)
                     artifact['with']['path'] = '\n'.join(paths)+'\n'
                 self.assertEqual(after, before, 'unreviewed workflow, command, pin, gate or deadline change')
+
+    def test_provider_submodule_changes_keep_original_foundation_push_boundary(self):
+        relative = '.github/workflows/runtime-source-build.yml'
+        before = yaml.load(subprocess.check_output(
+            ['git', 'show', '44fbc7a34526950063713fd8255b96b0e543f554:'+relative],
+            cwd=ROOT, text=True), Loader=yaml.BaseLoader)['on']
+        after = load(ROOT/relative)['on']
+        paths = after['push']['paths']
+        addition = 'rust/crates/dev-tools/src/native_provider/**'
+        self.assertEqual(paths.count(addition), 1)
+        paths.remove(addition)
+        self.assertEqual(after, before, 'original trigger boundary changed beyond the batch dependency')
 
     def test_native_arm_probe_preserves_original_acceptance_and_deadlines(self):
         path = 'rust/tools/check_aarch64.py'
