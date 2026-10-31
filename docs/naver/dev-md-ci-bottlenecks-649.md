@@ -32,3 +32,9 @@
 후보 `67b4e3451a6b58ba48e1639bdce62cd5dd3ed8c7`의 [workspace job 124646557294](https://github.com/bin9208/openpilot-rust/actions/runs/41237373712/job/124646557294)은 첫 `cargo fmt --all --check`에서 실패했다. 기준 `96c69111e53fbeaa49d629c634830353bb823cf7`에 있던 `dev-tools/src/publish.rs`, `dev-tools/tests/publish.rs`의 import 순서가 원인이며, 함수 본문·정책·기능은 바꾸지 않고 Rust 1.94/edition 2021 서식만 적용한다.
 
 실패하는 기준 실행을 전체 성공 시간의 기준으로 삼지 않는다. 비교용 `codex/fix-649-dev-md-serial-baseline`에는 원래 직렬 CI와 이 두 파일의 동일한 서식 수정만 둔다. 후보와 모든 제품 소스·의존성·모델·기능 검사 명령을 맞추며, 후보에 새로 추가한 CI 정책 회귀의 시간은 별도 식별한다. 두 전체 실행이 성공한 뒤 배정 대기·순수 실행·전체 경과를 비교한다.
+
+## 기준 소스의 shallow oracle 누락 — #651
+
+후보 `5e50ef247671d79c83f3aefd81de5f1eb2242f74`의 [Xiaoge X64 job 124651882280](https://github.com/bin9208/openpilot-rust/actions/runs/41238731422/job/124651882280)은 마지막 고정 Rust oracle 비교에서 실패했다. checkout depth=1 뒤 upstream commit 네 개만 fetch하고, receipt 세 개가 요구하는 Rust source `0682e933d3fea06e8953ace63fc521a29ee02b6e`를 가져오지 않은 기존 설정이 원인이다. 같은 matrix의 ARM은 기존 fail-fast에 의해 취소됐다. 사용자가 요청한 Actions 취소나 러너 조작은 하지 않았다.
+
+[#651](https://github.com/bin9208/openpilot-rust/issues/651)에서 이 정확한 원본 commit만 추가 fetch한다. 원래 receipt·SHA·경로·digest·byte 비교와 모든 기능 명령을 유지한다. 후보와 직렬 기준에 같은 설정 수정을 적용하고 새 정확 SHA를 비교한다. 실패한 이전 전체 실행을 성공 시간 기준으로 사용하지 않는다.

@@ -33,6 +33,15 @@ class CiDagTests(unittest.TestCase):
           current['steps'] = [step for step in current['steps'] if not (
               step.get('uses') == 'actions/setup-python@v6'
               or step.get('name') == 'Verify the complete CI graph and unchanged delivery boundary')]
+        if name == 'xiaoge-runtime':
+          # The original shallow checkout omitted its frozen Rust oracle SHA.
+          # Fetch only that independent source; preserve the byte/hash checks.
+          fetch = dict(name='Fetch exact frozen Rust Xiaoge oracle source',
+              run='git fetch --no-tags --depth=1 origin 0682e933d3fea06e8953ace63fc521a29ee02b6e')
+          self.assertEqual(current['steps'].count(fetch), 1)
+          self.assertLess(current['steps'].index(fetch), next(i for i, step in enumerate(current['steps'])
+              if step.get('name') == 'Fetch exact upstream reference commits'))
+          current['steps'].remove(fetch)
         self.assertEqual(current, original)
     self.assertEqual(after['on'], before['on'])
     self.assertEqual(after['permissions'], before['permissions'])
