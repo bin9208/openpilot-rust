@@ -112,7 +112,9 @@ class WorkflowPolicyTests(unittest.TestCase):
     self.assertIn('buildToolsVersion = "35.0.0"', app)
     self.assertIn("'platforms;android-35' 'build-tools;35.0.0'", steps[install]['run'])
     reserve = next(step['run'] for step in steps[:setup] if 'ANDROID_HOME=' in step.get('run', ''))
-    self.assertIn('25 + 4', reserve)
+    self.assertIn('free_bytes < 4 * 1024 * 1024 * 1024', reserve)
+    self.assertIn('estimated Android SDK/build growth (4 GiB)', reserve)
+    self.assertNotIn('25 + 4', reserve)
     self.assertIn('ANDROID_SDK_ROOT=', reserve)
 
   def test_latest_base_hosted_runner_policy_is_preserved(self):
