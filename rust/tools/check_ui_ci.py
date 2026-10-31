@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 from card_qa.ci import ROOT, TOOLS, hashes, require_space, run
-from ci_cases import run_cases
+from ci_cases import readonly_inputs, run_cases
 
 GROUPS = {
   'policy-geometry': ('state', 'scheduler', 'qr', 'calibration', 'torque'),
@@ -147,7 +147,9 @@ def main() -> None:
         '--output', str(output/name), '--group', name],
         growth_bytes=3*1024**3, memory_bytes=(2 if name == 'lifecycle-safety' else 1)*1024**3)
         for name in GROUPS]
-    run_cases(cases, output/'groups', ROOT)
+    with readonly_inputs([binaries, peer, Path(os.environ['STARTUP_UI_RAYLIB_ROOT']),
+                          Path(os.environ['STARTUP_UI_RAYLIB_LIBRARY']), python]):
+      run_cases(cases, output/'groups', ROOT)
     completed = []
     for name, expected in GROUPS.items():
       result = json.loads((output/name/'result.json').read_text())

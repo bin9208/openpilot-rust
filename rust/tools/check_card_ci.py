@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 from card_qa.ci import ROOT, TOOLS, hashes, require_space, run, source_command
 from stage_card_corpus import BRANDS
-from ci_cases import run_cases
+from ci_cases import readonly_inputs, run_cases
 
 SHARED = ('core', 'startup', 'startup_params', 'cruise', 'vehicle', 'mini_vehicle', 'isotp', 'query',
   'firmware', 'firmware_query', 'identification', 'diagnostic', 'xiaoge', 'toyota_secoc')
@@ -95,10 +95,13 @@ def main() -> None:
   receipt = {'phase': arguments.phase, 'source_sha256': hashes(sources), 'binary_sha256': {
     str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in binaries if path.is_file()}, 'argv': sys.argv}
   (arguments.evidence / 'invocation.json').write_text(json.dumps(receipt, indent=2) + '\n')
-  if arguments.phase == 'reference':
-    reference(arguments)
-  else:
-    ipc(arguments)
+  inputs = [arguments.binaries, arguments.daemon, arguments.numerics, arguments.binding, arguments.dbc]
+  if arguments.phase == 'ipc': inputs.append(arguments.corpus)
+  with readonly_inputs(inputs):
+    if arguments.phase == 'reference':
+      reference(arguments)
+    else:
+      ipc(arguments)
   assert receipt['source_sha256'] == hashes(sources)
   assert receipt['binary_sha256'] == {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in binaries if path.is_file()}
   (arguments.evidence / 'result.json').write_text(json.dumps({'status': 'pass', 'phase': arguments.phase}) + '\n')

@@ -1,15 +1,42 @@
 """Job-owned independent commands with affinity and aggregate resource admission."""
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
 import shutil
 import signal
+import stat
 import subprocess
 import threading
 import time
 
 MIB = 1024**2
+
+
+@contextmanager
+def readonly_inputs(paths):
+  """Temporarily protect only this job's prepared inputs, then restore modes."""
+  owner = Path(os.environ['CI_JOB_TEMP']).resolve(strict=True)
+  modes = {}
+  try:
+    for root in paths:
+      root = Path(root).resolve(strict=True)
+      if not root.is_relative_to(owner):
+        raise ValueError('refusing to chmod an input outside this job')
+      for path in [root, *root.rglob('*')] if root.is_dir() else [root]:
+        info = path.lstat()
+        if stat.S_ISLNK(info.st_mode):
+          continue
+        if not (stat.S_ISDIR(info.st_mode) or stat.S_ISREG(info.st_mode)) or info.st_uid != os.getuid():
+          raise ValueError('prepared input is not an owned file or directory')
+        if path not in modes:
+          modes[path] = stat.S_IMODE(info.st_mode)
+          path.chmod(modes[path] & ~0o222)
+    yield
+  finally:
+    for path, mode in modes.items():
+      path.chmod(mode)
 
 
 def available_memory():

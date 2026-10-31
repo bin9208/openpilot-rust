@@ -78,6 +78,24 @@ class SchedulerTests(unittest.TestCase):
           self.assertNotEqual(*[r[0] for r in results])
           self.assertNotEqual(*[r[1] for r in results])
 
+  def test_prepared_inputs_are_readonly_during_cases_and_restored_on_failure(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      root = Path(temporary)
+      data = root/'input'
+      data.write_text('prepared')
+      mode = data.stat().st_mode
+      with mock.patch.dict(os.environ, dict(CI_JOB_TEMP=str(root))):
+        with self.assertRaisesRegex(RuntimeError, 'case failure'):
+          with ci_cases.readonly_inputs([data]):
+            self.assertEqual(data.stat().st_mode & 0o222, 0)
+            result = subprocess.run([sys.executable, '-c',
+                'import pathlib,sys; pathlib.Path(sys.argv[1]).write_text("changed")', str(data)],
+                capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            raise RuntimeError('case failure')
+      self.assertEqual(data.read_text(), 'prepared')
+      self.assertEqual(data.stat().st_mode, mode)
+
   def test_insufficient_combined_resources_fall_back_to_one_and_never_change_cargo_limits(self):
     cases = [dict(memory_bytes=1024*ci_cases.MIB, growth_bytes=ci_cases.MIB)]*3
     before = {key:os.environ.get(key) for key in ('CARGO_BUILD_JOBS', 'RUST_TEST_THREADS')}
