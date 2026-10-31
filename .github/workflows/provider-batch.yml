@@ -1,4 +1,4 @@
-name: Native provider batch validation
+name: CI bottleneck validation
 on:
   push:
     branches: ['codex/fix-649-*']
@@ -8,6 +8,10 @@ on:
       - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
       - 'tools/ci/verify_provider_batch.py'
       - '.github/workflows/provider-batch.yml'
+      - '.github/workflows/rust.yml'
+      - 'tools/native/publish_inputs.py'
+      - 'tools/ci/tests/**'
+      - 'openpilot/selfdrive/carrot/recovery/server.py'
   workflow_dispatch:
     inputs:
       benchmark:
@@ -97,3 +101,81 @@ jobs:
         if: always()
         with:
           cleanup: 'true'
+
+  recovery-runtime:
+    name: rust recovery runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      PYTHONPATH: ${{ github.workspace }}/rust/tools
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/job-temp
+        with: {validation-context: 'true'}
+      - uses: ./.github/actions/rust-path
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: rustup toolchain install 1.94.0 --profile minimal
+      - name: Prepare recovery comparison dependencies
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 3072
+          sudo apt-get update
+          sudo apt-get install -y capnproto libcapnp-dev clang libclang-dev pkg-config libssl-dev
+          python -m pip install anyio==4.12.1 aiohttp==3.13.3
+      - name: Reproduce PTY EOF before child exit without loosening exit checks
+        working-directory: .
+        run: python3 -m unittest discover -s tools/ci/tests -p test_recovery_pty_exit.py -v
+      - name: Build standalone recovery service
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
+          cargo build -p openpilot-carrot-recovery -p openpilot-process-supervision --bins --examples --locked
+          sudo apt-get install -y tmux
+      - name: Compare recovery HTTP, terminal, support, actions and upload paths
+        working-directory: .
+        run: |
+          "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
+          python -P rust/tools/carrot_recovery_http_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/http" --standalone
+          python -P rust/tools/carrot_recovery_terminal_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/terminal"
+          python -P rust/tools/carrot_recovery_terminal_lifecycle.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/lifecycle"
+          python -P rust/tools/carrot_recovery_support_control.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/support"
+          python -P rust/tools/carrot_recovery_support_shutdown.py --binary rust/target/debug/openpilot-carrot-recovery --output "$RUNNER_TEMP/recovery/shutdown"
+          python -P rust/tools/carrot_recovery_actions_control.py --binary rust/target/debug/examples/recovery_actions --tmux /usr/bin/tmux --output "$RUNNER_TEMP/recovery/actions"
+          python -P rust/tools/check_carrot_recovery_upload.py --binary rust/target/debug/examples/upload --http-binary rust/target/debug/examples/recovery_actions --output "$RUNNER_TEMP/recovery/upload"
+          cargo test --manifest-path rust/Cargo.toml -p openpilot-carrot-recovery --lib --no-run --locked --message-format=json > "$RUNNER_TEMP/recovery/tests.jsonl"
+          recovery_test=$(python -c 'import json,sys; print(next(x["executable"] for x in map(json.loads,open(sys.argv[1])) if x.get("reason")=="compiler-artifact" and x.get("profile",{}).get("test") and x["target"]["name"]=="openpilot_carrot_recovery"))' "$RUNNER_TEMP/recovery/tests.jsonl")
+          python -P rust/tools/carrot_recovery_cwp_check.py --test-binary "$recovery_test" --output "$RUNNER_TEMP/recovery/cwp"
+      - name: Preserve recovery source comparisons
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-recovery-evidence
+          path: ${{ env.CI_JOB_TEMP }}/recovery/
+          if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true', validation-context: 'true'}
+
+  execution-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install PyYAML==6.0.2
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_native_input_publication.py -v
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_local_native_workflows.py -v

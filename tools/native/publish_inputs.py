@@ -40,13 +40,14 @@ GATES = [
     ('runtime-native-environment.yml', ('push', 'workflow_dispatch'),
       {PRODUCER_ARM_JOB}),
     ('native-resource-guard.yml', ('push', 'workflow_dispatch'), {'Real memory limit and cancellation (X64 host kernel)'}),
-    ('rust.yml', ('pull_request',), {'rust checks', 'rust workspace checks', 'rust aarch64 build'}),
+    ('rust.yml', ('pull_request',), {'rust checks', 'rust workspace checks', 'rust recovery runtime', 'rust aarch64 build'}),
     ('integration.yml', ('pull_request',), {'integration gate', 'build / build release'}),
     ('user-docs.yaml', ('pull_request',), {'check mapped user docs'}),
 ]
 PROOF_JOBS = {'rust.yml': 'workspace', 'integration.yml': 'build_release',
               'user-docs.yaml': 'check_user_docs'}
-PROOF_JOB_NAMES = {'workspace': 'rust workspace checks', 'build_release': 'build / build release',
+ADDITIONAL_PROOF_JOBS = {'rust.yml': ('recovery-runtime',)}
+PROOF_JOB_NAMES = {'workspace': 'rust workspace checks', 'recovery-runtime': 'rust recovery runtime', 'build_release': 'build / build release',
                    'check_user_docs': 'check mapped user docs'}
 SELF_HOSTED_GATES = {'runtime-source-build.yml', 'runtime-native-environment.yml', 'native-resource-guard.yml'}
 _CONTEXT = importlib.util.spec_from_file_location('native_validation_context_source',
@@ -348,7 +349,7 @@ def gates(client, source, producer_id, pr_number):
       candidates = [r for r in candidates if any(isinstance(p, dict) and p.get('number') == pr_number
           for p in r.get('pull_requests') or [])]
     selected = max(candidates, key=lambda r: r['id']) if candidates else None
-    contexts, proof = set(), None
+    contexts, proof, additional_proofs = set(), None, {}
     ready = False
     if selected is not None:
       trusted_run(selected, source)
@@ -360,12 +361,17 @@ def gates(client, source, producer_id, pr_number):
             for j in jobs if j['conclusion'] == 'success')
         if ready and is_pr:
           contexts, proof = client.pr_context(selected, source, pr_number, PROOF_JOBS[filename])
+          for job in ADDITIONAL_PROOF_JOBS.get(filename, ()):
+            extra_contexts, extra_proof = client.pr_context(selected, source, pr_number, job)
+            contexts &= extra_contexts
+            additional_proofs[job] = extra_proof
+          ready = bool(contexts)
     if is_pr:
       pr_contexts.append(contexts)
     states.append(dict(workflow=filename, events=events, run=None if selected is None else selected['id'],
         target_branch='dev' if is_pr else None,
         pull_requests=[dict(number=number, base_sha=base) for number, base in sorted(contexts)],
-        validation_context=proof, ready=ready))
+        validation_context=proof, additional_validation_contexts=additional_proofs, ready=ready))
   # Individual green runs from different PRs or base commits do not prove one
   # coherent dev candidate. A missing PR context must also fail this intersection.
   if pr_contexts and not set.intersection(*pr_contexts):

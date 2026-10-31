@@ -114,6 +114,36 @@ def native_arm_updates():
     return updates
 
 
+@cache
+def provider_batch_updates():
+    # #649: only the reviewed replacement of the original export with the
+    # byte-equivalent batch selector, plus its three cache/preparation steps.
+    def steps(ref):
+        return yaml.load(subprocess.check_output(['git', 'show', ref+
+            ':.github/workflows/runtime-native-environment.yml'], cwd=ROOT, text=True),
+            Loader=yaml.BaseLoader)['jobs']['compiler']['steps']
+    before, after = steps('44fbc7a34526950063713fd8255b96b0e543f554'), steps('49ec9d63d')
+    def identity(step):
+        return step.get('id') or step.get('name') or (step.get('uses'),
+            step.get('with', {}).get('name'), step.get('with', {}).get('mode'))
+    changes = []
+    for step in after:
+        if step in before: continue
+        previous = [old for old in before if identity(old) == identity(step)]
+        assert len(previous) <= 1
+        changes.append((step, previous[0] if previous else None))
+    assert len(changes) == 7
+    return changes
+
+
+def restore_provider_batch_steps(job):
+    for new, old in provider_batch_updates():
+        assert job['steps'].count(new) == 1, 'provider batch command changed without review'
+        index = job['steps'].index(new)
+        if old is None: job['steps'].pop(index)
+        else: job['steps'][index] = old
+
+
 def ci_adapter(script, *, native_arm=False):
     # The original builder is frozen by the ARM source contract. This adapter
     # calls its original main and retains the complete original argument list.
@@ -124,6 +154,11 @@ def ci_adapter(script, *, native_arm=False):
                             'python rust/tools/radarcan_prepare_assets.py ')
     if native_arm:
         script = native_arm_updates().get(script, script)
+    for new, old in provider_batch_updates():
+        if old and 'run' in new and script == new['run']:
+            script = old['run']
+    script = ''.join(line for line in script.splitlines(keepends=True)
+                     if line != 'test "$RECOVERY" = success\n')
     return support_workspace_updates().get(script, script)
 
 
@@ -304,6 +339,8 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                     self.assertEqual(after['on']['push']['branches'], ['codex/feat-599-*', *branches])
                     after['on']['push']['branches'] = branches
                 old, new = before['jobs'][name], after['jobs'][name]
+                if filename == 'runtime-native-environment.yml':
+                    restore_provider_batch_steps(new)
                 self.assertEqual(new['runs-on'], route)
                 new['runs-on'] = old['runs-on']
                 if filename in ('native-source-entry.yml', 'native-source-transport.yml'):
@@ -508,6 +545,25 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         for admission in ('bin-actions', 'bin-actions2', 'bin-actions3', 'github-hosted'):
             self.assertIn(admission, policy)
 
+    def test_recovery_is_early_hosted_and_required_with_its_own_source_receipt(self):
+        jobs = load(ROOT/'.github/workflows/rust.yml')['jobs']
+        recovery = jobs['recovery-runtime']
+        self.assertEqual(recovery['runs-on'], 'ubuntu-24.04')
+        self.assertNotIn('needs', recovery)
+        self.assertIn('recovery-runtime', jobs['fast']['needs'])
+        self.assertTrue(any(s.get('with', {}).get('validation-context') == 'true'
+            for s in recovery['steps']))
+        self.assertTrue(any('test "$RECOVERY" = success' in s.get('run', '') for s in jobs['fast']['steps']))
+        names = {'Build standalone recovery service',
+                 'Compare recovery HTTP, terminal, support, actions and upload paths',
+                 'Preserve recovery source comparisons'}
+        old = yaml.load(subprocess.check_output(['git', 'show',
+            '44fbc7a34526950063713fd8255b96b0e543f554:.github/workflows/rust.yml'],
+            cwd=ROOT, text=True), Loader=yaml.BaseLoader)['jobs']['workspace']['steps']
+        self.assertEqual([s for s in recovery['steps'] if s.get('name') in names],
+                         [s for s in old if s.get('name') in names])
+        self.assertFalse(any(s.get('name') in names for s in jobs['workspace']['steps']))
+
     def test_frozen_jobs_dependencies_matrix_and_each_original_command_survive(self):
         snapshot = json.loads((ROOT / 'tools/ci/fixtures/local-native-workflows-605.json').read_text())
         self.assertEqual(snapshot['schema'], 1)
@@ -516,12 +572,18 @@ class LocalNativeWorkflowTests(unittest.TestCase):
             original = yaml.load(subprocess.check_output(['git', 'show', BASE + ':' + relative],
                                                         cwd=ROOT, text=True), Loader=yaml.BaseLoader)
             current = load(ROOT / relative)
-            self.assertEqual(set(current['jobs']), set(original['jobs']))
+            extras = {'recovery-runtime'} if relative == '.github/workflows/rust.yml' else set()
+            self.assertEqual(set(current['jobs']), set(original['jobs']) | extras)
             for name, before in original['jobs'].items():
                 with self.subTest(path=relative, job=name):
                     after = current['jobs'][name]
                     native_arm = relative == '.github/workflows/rust.yml' and name == 'arm64'
-                    self.assertEqual(after.get('needs'), before.get('needs'))
+                    expected_needs = before.get('needs')
+                    if relative == '.github/workflows/rust.yml' and name == 'fast':
+                        expected_needs = [expected_needs[0], 'recovery-runtime', *expected_needs[1:]]
+                    self.assertEqual(after.get('needs'), expected_needs)
+                    if relative == '.github/workflows/rust.yml' and name == 'workspace':
+                        after = dict(after, steps=after['steps'] + current['jobs']['recovery-runtime']['steps'])
                     self.assertEqual(after.get('strategy', {}).get('matrix'), before.get('strategy', {}).get('matrix'))
                     expected = [digest(normalize(step['run'])) for step in before.get('steps', []) if 'run' in step]
                     self.assertEqual(frozen['jobs'][name]['scripts'], expected)

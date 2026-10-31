@@ -539,6 +539,8 @@ class GateTests(unittest.TestCase):
             base=dict(ref='dev', sha=TREE, repo=repository.copy()),
             head=dict(ref='codex/owned-source', sha=SOURCE, repo=repository.copy()))]
         proofs[number] = context_fixture(number, publication.PROOF_JOBS[name])
+        for job in publication.ADDITIONAL_PROOF_JOBS.get(name, ()):
+          proofs[number, job] = context_fixture(number, job)
       runs.append(run)
       jobs[number] = [arm_job(n)
           if (name, n) in {('runtime-source-build.yml', publication.FOUNDATION_ARM_JOB),
@@ -550,7 +552,7 @@ class GateTests(unittest.TestCase):
       return runs if key == 'workflow_runs' else jobs[int(route.split('/')[2])]
     client.collect.side_effect = collect
     def pr_context(run, source, number, job):
-      value = proofs[run['id']]
+      value = proofs.get((run['id'], job), proofs[run['id']])
       actual = [row for row in jobs[run['id']] if row['name'] == publication.PROOF_JOB_NAMES[job]]
       if len(actual) != 1:
         raise ValueError('owned fixture needs one actual proof job')
@@ -559,6 +561,22 @@ class GateTests(unittest.TestCase):
       return {context}, dict(pr_number=context[0], base_sha=context[1])
     client.pr_context.side_effect = pr_context
     return client, producer, runs, jobs, proofs
+
+  def test_recovery_job_and_bound_receipt_are_required(self):
+    for fault in ('missing-job', 'failure', 'cancelled', 'base', 'source', 'attempt', 'runner'):
+      with self.subTest(fault=fault):
+        client, _, _, jobs, proofs = self.fixture()
+        actual = next(row for row in jobs[103] if row['name'] == 'rust recovery runtime')
+        if fault == 'missing-job': jobs[103].remove(actual)
+        elif fault in ('failure', 'cancelled'): actual['conclusion'] = fault
+        elif fault == 'base': proofs[103, 'recovery-runtime'] = context_fixture(103, 'recovery-runtime', 'e'*40)
+        else:
+          key = dict(source='head_sha', attempt='run_attempt', runner='runner_name')[fault]
+          proofs[103, 'recovery-runtime'][key] = dict(source='f'*40, attempt=99, runner='unknown')[fault]
+        if fault in ('source', 'attempt', 'runner'):
+          with self.assertRaises(ValueError): publication.gates(client, SOURCE, 42, 611)
+        else:
+          self.assertFalse(publication.gates(client, SOURCE, 42, 611)[1][3]['ready'])
 
   def test_fast_checks_are_retired_from_publication_gates(self):
     self.assertNotIn('fast-checks.yml', {name for name, _, _ in publication.GATES})
@@ -597,6 +615,9 @@ class GateTests(unittest.TestCase):
           if run['event'] == 'pull_request':
             proofs[run['id']] = context_fixture(run['id'], publication.PROOF_JOBS[filename],
                 runner_name=name, runner_environment=environment)
+            for job in publication.ADDITIONAL_PROOF_JOBS.get(filename, ()):
+              proofs[run['id'], job] = context_fixture(run['id'], job,
+                  runner_name=name, runner_environment=environment)
         self.assertTrue(all(state['ready'] for state in publication.gates(client, SOURCE, 42, 611)[1]))
 
   def test_foundation_arm_requires_the_actual_official_hosted_arm_job(self):

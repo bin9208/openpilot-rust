@@ -351,6 +351,7 @@ class RecoveryPty:
     try:
       with self.lock:
         fd = self.master_fd
+        proc = self.proc
       sel.register(fd, selectors.EVENT_READ)
       while True:
         with self.lock:
@@ -378,8 +379,20 @@ class RecoveryPty:
         sel.close()
       except Exception:
         pass
+      # PTY EOF/EIO can precede waitpid visibility. Reap this reader's child
+      # before publishing its exit status; poll() alone can report None for an
+      # otherwise successful exit. Never wait while holding the session lock.
+      exit_code = None
+      if proc is not None:
+        try:
+          exit_code = proc.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+          pass
       with self.lock:
-        exit_code = self.proc.poll() if self.proc else None
+        # A reset can already have installed another session. Its child, fd
+        # and clients belong to its own reader.
+        if self.proc is not proc:
+          return
         session = self.session
         clients = list(self.clients)
         self.clients.clear()
