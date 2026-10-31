@@ -12,6 +12,8 @@
 
 ## 구현과 검증 상태
 
+이 문서는 커밋 시점의 단계별 증거다. 이후 최종 SHA·Actions·시간·남은 실패는 [#649의 작업 기록](https://github.com/bin9208/openpilot-rust/issues/649)에 이어서 갱신한다.
+
 - [x] 같은 원본의 15개 provider를 한 번 순회하고 검증된 작은 component를 재사용한다.
 - [x] 기존 단일 provider의 descriptor/archive/tree와 동등성을 Actions에서 확인한다.
 - [x] 실제 같은 입력·러너에서 cold 12분 이하, warm 3분 이하를 확인한다.
@@ -99,17 +101,19 @@ batch의 profile별 Export는 기존 필드를 유지하며 `origin`은 작은 c
 
 ## 표준 archive 검증을 포함한 동일 VM 성능 증거
 
-`7a89ba78f47c25dc5698e6293315fdea253548b7`의 [ARM benchmark job 124645339328](https://github.com/bin9208/openpilot-rust/actions/runs/41237656640/job/124645339328)은 전체 성공했다. artifact `13059921474`는 15개 단일 export 각각과 batch의 tree·descriptor·archive 바이트 일치, 모든 case의 exit 0, 성능 assertion 성공을 보존한다.
+`96db9a64b77b35a4918611c984c8c9a4f422a1bb`의 [ARM benchmark job 124648578861](https://github.com/bin9208/openpilot-rust/actions/runs/41238463727/job/124648578861)과 workflow 전체가 성공했다. artifact `13059864245`는 15개 단일 export 각각과 batch의 tree·descriptor·archive 바이트 일치, 모든 case의 exit 0, 성능 assertion 성공을 보존한다.
 
 | 같은 VM·입력·Rust 1.94.0 측정 | 초 | 결과 |
 | --- | ---: | --- |
-| 별도 원본 prefetch | 108.442 | 1,155,969,168 bytes 원본 준비 |
-| 기존 8개 companion 합계 | 3,682.832 | 61분 23초 |
-| 새 15개 전체 cold | 549.405 | 원본 gzip 1회 · 9분 9초 |
-| prefetch + cold | 657.848 | 다운로드 포함 10분 58초 |
-| 새 15개 전체 warm | 178.761 | 원본 경로 없음 · 순회/원본 bytes/HTTP bytes 모두 0 |
+| 별도 원본 prefetch | 106.150 | 1,155,969,168 bytes 원본 준비 |
+| 기존 8개 companion 합계 | 3,683.817 | 61분 24초 |
+| 새 15개 전체 cold | 503.360 | 원본 gzip 1회 · 8분 23초 |
+| prefetch + cold | 609.511 | 다운로드 포함 10분 10초 |
+| 새 15개 전체 warm | 144.312 | 원본 경로 없음 · 순회/원본 bytes/HTTP bytes 모두 0 |
 
-현재 `39c9d92e2f0245352dd6ed66c1470f1f684494b6`와 비교해 모든 컴파일 대상 Rust 파일·Cargo.lock·profile/contract가 같다. `rust/`의 유일한 차이는 이 benchmark가 호출하지 않는 `rust/tools/ci_cases.py`이며, benchmark job 전체·harness·runner policy·job-temp/rust-path setup도 동일하다. 이 비교는 성공한 ARM job 내부의 짝지은 측정이다. 해당 workflow의 별도 execution-contract job은 당시 누락된 Python `zstandard` 때문에 실패했고 후속 집중 검증에서 수정됐다. 실패 workflow 전체의 경과를 성공 기준으로 사용하지 않는다. 추가 최신 SHA benchmark `41238463727`도 취소하지 않고 유지한다.
+측정 소스와 공통 후보 `b9c590dc150ba57e2e4f5dad29221a6390e8fb4e`의 전체 Rust tree는 `e04c86b17bd7bc7c0912813e909ab10f82c00ca1`로 같다. benchmark job·harness·runner policy·job-temp/rust-path setup도 동일하다. 이후 #654의 테스트 command 생성 경계 수정은 아래에서 따로 검증하며 provider exporter·profile·contract·archive 형식은 유지한다. 다른 SHA의 성능 증거가 현재 SHA의 입력 공개 gate를 대신하지 않는다.
+
+앞선 [7a89ba78f ARM job 124645339328](https://github.com/bin9208/openpilot-rust/actions/runs/41237656640/job/124645339328)도 15개 동등성·cold 549.405초·warm 178.761초로 성공했다. 당시 workflow의 별도 execution-contract는 누락된 Python `zstandard` 때문에 실패했으나 이후 수정됐다. 실패 workflow 전체 경과를 성공 기준으로 사용하지 않는다.
 
 이 성능 증거는 provider 처리의 수용 조건이다. 전체 필수 gate·현재 AGNOS·UI/Card 공유 입력 보호·dev-md 직렬 기준 비교는 별도로 완료해야 한다.
 
@@ -120,3 +124,5 @@ batch의 profile별 Export는 기존 필드를 유지하며 `origin`은 작은 c
 진단 소스 `4577f399cb375cbf131e5a4f6b3b43a22ed76a3e`의 [ARM 반복 재현 job 124679928888](https://github.com/bin9208/openpilot-rust/actions/runs/41249525491/job/124679928888)은 기본 병렬 library 검사 81번째에서 `Err(Os { code: 26, kind: ExecutableFileBusy, message: "Text file busy" })`를 보존했다. 새 fake curl 스크립트의 실행 오류가 뒤따르는 journal 읽기 오류에 가려졌다. [#654](https://github.com/bin9208/openpilot-rust/issues/654)로 추적한다.
 
 실제 production `/usr/bin/curl` 명령·인수·retry·전송량·mirror 판정은 유지하고, private command 생성 경계에서 테스트 스크립트만 `/bin/sh`의 읽기 입력으로 전달한다. writable fd를 강제로 보유해 기존 직접 실행의 오류 26을 재현하고 새 실행은 retry 없이 성공해야 하는 회귀를 추가한다. 전역 Cargo/test 병렬 제한은 도입하지 않는다. 같은 ARM 병렬 검사 200회 전부와 전체 foundation의 성공은 후속 Actions에서 확인한다.
+
+수정 소스 `6a8ce8bd2607b1bbf172302ea7385ee8cefe4427`의 [ARM job 124680788202](https://github.com/bin9208/openpilot-rust/actions/runs/41249815074/job/124680788202)은 **35개 × 200회 = 7,000개 모두 성공**했다. artifact `13060249876`에서 순서대로 1..200 반복, 각 반복의 35개 성공, 강제 writer-fd 회귀의 200회 성공과 실패 0을 확인했다. provider·logging 재사용·recovery 전체·공개/원래 명령 보존을 포함한 같은 workflow 전체도 성공했다. 전체 foundation과 현재 SHA 필수 gate는 계속 확인한다.
