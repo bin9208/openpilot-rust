@@ -61,13 +61,27 @@ def admission(path, cases):
   # Preserve each operation's estimate; parallel groups reserve their sum.
   maximum_memory = max(c['memory_bytes'] for c in cases)
   maximum_growth = max(c['growth_bytes'] for c in cases)
-  workers = min(len(cases), cpus, max(0, memory-128*MIB)//maximum_memory,
-                max(0, disk-64*MIB)//maximum_growth)
+  if memory < maximum_memory+128*MIB or disk < maximum_growth+64*MIB:
+    raise RuntimeError('insufficient resources for even one case; existing data retained')
+  def slots(costs, budget):
+    count, used = 0, 0
+    for cost in sorted(costs):
+      if used+cost > budget:
+        break
+      used += cost
+      count += 1
+    return count
+  # Mixed groups need their actual sum, not N copies of the largest group.
+  # These slot counts only bound the pool. The exact joint disk/memory sum is
+  # still reserved under the condition lock immediately before each spawn.
+  workers = min(len(cases), cpus,
+                slots((c['memory_bytes'] for c in cases), memory-128*MIB),
+                slots((c['growth_bytes'] for c in cases), disk-64*MIB))
   if workers < 1:
     raise RuntimeError('insufficient resources for even one case; existing data retained')
   return dict(workers=workers, affinity_cpus=cpus, available_memory_bytes=memory,
               free_disk_bytes=disk, per_worker_memory_bytes=maximum_memory,
-              per_worker_growth_bytes=maximum_growth)
+              per_worker_growth_bytes=maximum_growth, mode='per-case-aggregate-reservation')
 
 
 def run_cases(cases, output, cwd):
@@ -81,8 +95,10 @@ def run_cases(cases, output, cwd):
   lock, failed = threading.Lock(), threading.Event()
   capacity = threading.Condition(lock)
   rows, active = {}, {}
+  peak_processes = 0
 
   def execute(case):
+    nonlocal peak_processes
     name = case['name']
     private = output/name
     private.mkdir()
@@ -93,7 +109,8 @@ def run_cases(cases, output, cwd):
     environment.update(case.get('env', {}))
     started = time.monotonic()
     row = dict(name=name, argv=list(map(str, case['argv'])), cwd=str(cwd),
-               temporary=str(temporary), state='failed')
+               temporary=str(temporary), ipc_prefix=environment['OPENPILOT_PREFIX'],
+               started_monotonic=started, state='failed')
     admitted = False
     try:
       with capacity:
@@ -112,11 +129,14 @@ def run_cases(cases, output, cwd):
         reserved[0] += case['growth_bytes']
         reserved[1] += case['memory_bytes']
         admitted = True
+        row['admitted_monotonic'] = time.monotonic()
       with (private/'stdout').open('wb') as stdout, (private/'stderr').open('wb') as stderr:
         child = subprocess.Popen(row['argv'], cwd=cwd, env=environment, stdout=stdout,
                                  stderr=stderr, start_new_session=True)
         with lock:
           active[name] = child
+          row.update(pid=child.pid, spawned_monotonic=time.monotonic())
+          peak_processes = max(peak_processes, sum(p.poll() is None for p in active.values()))
           if failed.is_set():
             os.killpg(child.pid, signal.SIGTERM)
         try:
@@ -147,6 +167,7 @@ def run_cases(cases, output, cwd):
           reserved[1] -= case['memory_bytes']
           capacity.notify_all()
       row['elapsed_seconds'] = time.monotonic()-started
+      row['finished_monotonic'] = time.monotonic()
       (private/'command.json').write_text(json.dumps(row, indent=2)+'\n')
       rows[name] = row
 
@@ -168,7 +189,8 @@ def run_cases(cases, output, cwd):
     pool.shutdown(wait=True)
     complete = set(rows) == set(names) and all(r['state'] == 'success' for r in rows.values())
     (output/'summary.json').write_text(json.dumps(dict(schema=1, admission=policy,
-        expected_cases=names, cases=rows, success=complete), indent=2)+'\n')
+        expected_cases=names, cases=rows, observed_maximum_parallel_processes=peak_processes,
+        success=complete), indent=2)+'\n')
   if error: raise error
   if not complete: raise RuntimeError('not every original case completed successfully')
   return rows

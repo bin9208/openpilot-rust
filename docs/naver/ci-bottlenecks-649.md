@@ -126,3 +126,9 @@ batch의 profile별 Export는 기존 필드를 유지하며 `origin`은 작은 c
 실제 production `/usr/bin/curl` 명령·인수·retry·전송량·mirror 판정은 유지하고, private command 생성 경계에서 테스트 스크립트만 `/bin/sh`의 읽기 입력으로 전달한다. writable fd를 강제로 보유해 기존 직접 실행의 오류 26을 재현하고 새 실행은 retry 없이 성공해야 하는 회귀를 추가한다. 전역 Cargo/test 병렬 제한은 도입하지 않는다. 같은 ARM 병렬 검사 200회 전부와 전체 foundation의 성공은 후속 Actions에서 확인한다.
 
 수정 소스 `6a8ce8bd2607b1bbf172302ea7385ee8cefe4427`의 [ARM job 124680788202](https://github.com/bin9208/openpilot-rust/actions/runs/41249815074/job/124680788202)은 **35개 × 200회 = 7,000개 모두 성공**했다. artifact `13060249876`에서 순서대로 1..200 반복, 각 반복의 35개 성공, 강제 writer-fd 회귀의 200회 성공과 실패 0을 확인했다. provider·logging 재사용·recovery 전체·공개/원래 명령 보존을 포함한 같은 workflow 전체도 성공했다. 전체 foundation과 현재 SHA 필수 gate는 계속 확인한다.
+
+## 실제 UI admission과 혼합 비용 — #655
+
+최초 그룹 실행 `439d0a94987617d3ab38a93e41d1305fea7b2581`의 [UI job 124642155904](https://github.com/bin9208/openpilot-rust/actions/runs/41236788017/job/124642155904)은 13개 case가 모두 성공했다. 다만 artifact `13060425296`에서 affinity 4 CPU·가용 memory 4,122,618,880 bytes·disk 51,957,874,688 bytes에 **workers=1**을 확인했다. 세 그룹이 차례로 실행돼 Xvfb `:0`을 재사용했다. 이 실행을 실제 병행 성공 증거로 취급하지 않는다. 픽셀 1,888.556초가 주된 실행 구간이었다.
+
+[#655](https://github.com/bin9208/openpilot-rust/issues/655)는 1/1/2 GiB 그룹을 모두 최대 2 GiB로 계산한 pool 상한을 바로잡는다. 실제 비용 합으로 상한을 정하고, spawn 직전의 정확한 합산 reservation·개별 최대 case 거부·기존 CPU affinity·memory/disk 여유는 유지한다. 실제 동시 process peak·PID·시간·IPC prefix를 기록하며, 같은 budget의 실제 자식 겹침과 부족 시 거부를 Actions에서 확인한다. 최신 소스의 UI/Card 전체 성공은 계속 필요하다.

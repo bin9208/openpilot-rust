@@ -56,6 +56,41 @@ class OriginalCasesTests(unittest.TestCase):
 
 
 class SchedulerTests(unittest.TestCase):
+  def test_mixed_ui_costs_admit_two_real_children_at_the_observed_four_gib_budget(self):
+    with tempfile.TemporaryDirectory() as temporary:
+      output = Path(temporary)
+      code = '''import pathlib,sys,time
+root, name = pathlib.Path(sys.argv[1]), sys.argv[2]
+(root/(name+'.ready')).write_text('ready')
+if name in ('a', 'b'):
+  end = time.monotonic()+10
+  while not all((root/(other+'.ready')).exists() for other in ('a', 'b')):
+    if time.monotonic() >= end: raise RuntimeError('mixed groups were serialized')
+    time.sleep(0.01)
+  time.sleep(0.2)
+'''
+      cases = [dict(name=name, argv=[sys.executable, '-c', code, str(output), name],
+                    memory_bytes=memory*1024**3, growth_bytes=3*1024**3)
+               for name, memory in (('a', 1), ('b', 1), ('c', 2))]
+      with mock.patch.object(ci_cases.os, 'sched_getaffinity', return_value={0, 1, 2, 3}), \
+           mock.patch.object(ci_cases, 'available_memory', return_value=4122618880), \
+           mock.patch.object(ci_cases.shutil, 'disk_usage', return_value=mock.Mock(free=51957874688)):
+        self.assertEqual(ci_cases.admission(output, cases)['workers'], 2)
+        ci_cases.run_cases(cases, output, ROOT)
+      summary = json.loads((output/'summary.json').read_text())
+      self.assertTrue(summary['success'])
+      self.assertEqual(summary['observed_maximum_parallel_processes'], 2)
+      self.assertEqual(len({r['temporary'] for r in summary['cases'].values()}), 3)
+      self.assertEqual(len({r['ipc_prefix'] for r in summary['cases'].values()}), 3)
+
+  def test_one_oversized_case_is_rejected_before_any_child_even_if_smaller_cases_fit(self):
+    cases = [dict(memory_bytes=memory*1024**3, growth_bytes=ci_cases.MIB) for memory in (1, 1, 4)]
+    with tempfile.TemporaryDirectory() as output, \
+         mock.patch.object(ci_cases, 'available_memory', return_value=3*1024**3), \
+         mock.patch.object(ci_cases.os, 'sched_getaffinity', return_value={0, 1, 2, 3}):
+      with self.assertRaisesRegex(RuntimeError, 'insufficient resources'):
+        ci_cases.admission(output, cases)
+
   def test_resource_pressure_reduces_parallelism_before_failing_a_valid_case(self):
     with tempfile.TemporaryDirectory() as temporary:
       output = Path(temporary)
