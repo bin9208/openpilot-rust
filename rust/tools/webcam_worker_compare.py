@@ -133,7 +133,7 @@ def main() -> None:
   parser.add_argument('--cases', nargs='+', default=['unequal-eof', 'odd-worker', 'unavailable-worker'])
   args = parser.parse_args()
   output = args.output.resolve()
-  if shutil.disk_usage(output.parent).free < 25 * 1024**3 + args.reserve_mib * 1024**2:
+  if shutil.disk_usage(output.parent).free < args.reserve_mib * 1024**2:
     raise OSError('owned webcam worker fixtures require disk reserve')
   output.mkdir(exist_ok=False)
   assert (args.native is None) == (args.source is None)

@@ -177,7 +177,7 @@ def main() -> None:
   args = parser.parse_args()
   for name in ["binary", "binding", "assets", "opencv", "output"]:
     setattr(args, name, getattr(args, name).resolve())
-  assert shutil.disk_usage(args.output.parent).free > 25 * 2**30 + 128 * 2**20
+  assert shutil.disk_usage(args.output.parent).free > 128 * 2**20
   args.output.mkdir(parents=True, exist_ok=False)
   rows = []
   for case in Case:

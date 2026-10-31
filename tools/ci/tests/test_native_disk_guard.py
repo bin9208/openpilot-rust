@@ -56,10 +56,10 @@ def invoke(environment):
 
 
 def test_capacity_failure_precedes_rustup_and_cargo(tmp_path):
-    environment, log = fixture(tmp_path, str(25 * 1024**3 + 1024**3 - 1))
+    environment, log = fixture(tmp_path, str(1024**3 - 1))
     result = invoke(environment)
     assert result.returncode != 0
-    assert 'recover at least 35 GiB' in result.stderr
+    assert 'estimated operation growth' in result.stderr
     assert not log.exists(), 'toolchain/build ran before capacity admission'
 
 
@@ -78,6 +78,13 @@ def test_cold_bootstrap_builds_only_host_guard_and_survives_target_cleanup(tmp_p
     result = invoke(environment)
     assert result.returncode == 0, result.stdout + result.stderr
     assert log.read_text().splitlines() == first + [first[2]]
+
+
+def test_bootstrap_accepts_estimated_growth_without_a_fixed_25_gib_floor(tmp_path):
+    environment, log = fixture(tmp_path, str(2 * 1024**3))
+    result = invoke(environment)
+    assert result.returncode == 0, result.stderr
+    assert any(line.startswith('native ') for line in log.read_text().splitlines())
 
 
 def test_workflow_guards_use_absolute_native_bootstrap_and_keep_all_growths():
@@ -163,10 +170,10 @@ def test_requested_operation_filesystem_is_checked_before_toolchain_work(tmp_pat
     operation = tmp_path / 'operation space'
     operation.mkdir()
     environment['GUARD_OPERATION_PATH'] = str(operation / 'new output')
-    environment['GUARD_OPERATION_FREE'] = str(25 * 1024**3 + 128 * 1024**2 - 1)
+    environment['GUARD_OPERATION_FREE'] = str(128 * 1024**2 - 1)
     result = invoke(environment)
     assert result.returncode != 0
-    assert 'recover at least 35 GiB' in result.stderr
+    assert 'estimated operation growth' in result.stderr
     assert not log.exists()
 
 

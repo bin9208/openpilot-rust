@@ -58,7 +58,7 @@ def main() -> None:
   provider = output / "libowneddma.so"
   command = ["cc", "-std=c11", "-shared", "-fPIC", "-O0", str(root / "rust/tools/fixtures/cluster_gles_dmabuf_provider.c"), "-o", str(provider)]
   free = shutil.disk_usage(output).free
-  if free < 25 * 1024**3 + 1024**2:
+  if free < 1024**2:
     raise ProcessFailure("disk floor", output)
   with (output / "build-provider.log").open("w") as log:
     subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=30, check=True)

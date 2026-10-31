@@ -42,7 +42,7 @@ def records(path: Path) -> list[dict]:
 def run(binary: Path, provider: Path, output: Path, entry: Path | None = None) -> None:
   output.mkdir(parents=True, exist_ok=False)
   estimated_growth = 14 * len(ROLES) * provider.stat().st_size + 64 * 1024**2
-  if shutil.disk_usage(output).free < (25 * 1024**3 + estimated_growth):
+  if shutil.disk_usage(output).free < (estimated_growth):
     raise RuntimeError('insufficient space for owned bootstrap package')
   rows = []
   for scenario in ('ready', 'manager-failed', 'package-corrupt', 'metadata-mismatch', 'installer-unlisted', 'installer-missing',

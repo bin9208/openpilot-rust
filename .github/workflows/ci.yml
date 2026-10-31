@@ -41,8 +41,8 @@ jobs:
           DOCS_EVENT_NAME: ${{ github.event_name }}
         run: |
           free_bytes=$(df --output=avail -B1 "$GITHUB_WORKSPACE" | tail -n 1)
-          if (( free_bytes < (25 + 2) * 1024 * 1024 * 1024 )); then
-            echo 'Retain 25 GiB plus build growth; recover at least 35 GiB before retry.' >&2
+          if (( free_bytes < 2 * 1024 * 1024 * 1024 )); then
+            echo 'Insufficient capacity for estimated documentation build growth (2 GiB).' >&2
             exit 1
           fi
           args=(--base "$DOCS_BASE_SHA")
@@ -54,8 +54,8 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           free_bytes=$(df --output=avail -B1 "$GITHUB_WORKSPACE" | tail -n 1)
-          if (( free_bytes < (25 + 2) * 1024 * 1024 * 1024 )); then
-            echo 'Retain 25 GiB plus build growth; recover at least 35 GiB before retry.' >&2
+          if (( free_bytes < 2 * 1024 * 1024 * 1024 )); then
+            echo 'Insufficient capacity for estimated documentation build growth (2 GiB).' >&2
             exit 1
           fi
           CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test user_docs
@@ -69,11 +69,16 @@ jobs:
           python-version: '3.12'
       - name: Verify the complete CI graph and unchanged delivery boundary
         run: |
-          python -m pip install PyYAML==6.0.3
+          python -m pip install PyYAML==6.0.3 pytest==9.0.2
           python3 -m unittest discover -s tools/ci/tests -p test_dev_md_ci_dag.py -v
           python3 -m unittest discover -s tools/ci/tests -p test_workflow_policy.py -v
           python3 -m unittest discover -s tools/ci/tests -p test_rust_isolation.py -v
           python3 -m unittest discover -s tools/ci/tests -p test_runtime_delivery.py -v
+          python3 -m unittest discover -s tools/ci/tests -p test_rust_path.py -v
+          python -m pytest -c /dev/null --noconftest -p no:cacheprovider tools/ci/tests/test_native_disk_guard.py -q
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-disk-space
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test disk_space
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib package::tests::disk_
       - name: Verify runtime packaging policy
         run: python3 rust/ci/runtime/test_package_policy.py
       - uses: ./.github/actions/job-temp
@@ -205,8 +210,8 @@ jobs:
       - name: Reserve capacity and select a job-owned Android SDK
         run: |
           free_bytes=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
-          if (( free_bytes < (25 + 4) * 1024 * 1024 * 1024 )); then
-            echo 'Retain 25 GiB plus Android SDK/build growth; recover at least 35 GiB before retry.' >&2
+          if (( free_bytes < 4 * 1024 * 1024 * 1024 )); then
+            echo 'Insufficient capacity for estimated Android SDK/build growth (4 GiB).' >&2
             exit 1
           fi
           echo "ANDROID_HOME=$RUNNER_TEMP/jetlink-android-sdk" >> "$GITHUB_ENV"

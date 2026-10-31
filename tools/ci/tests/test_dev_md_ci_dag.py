@@ -7,6 +7,14 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 BASE = '96c69111e53fbeaa49d629c634830353bb823cf7'
+GROWTH_REPLACEMENTS = (
+    ('(25 + 2) * 1024 * 1024 * 1024', '2 * 1024 * 1024 * 1024'),
+    ('(25 + 4) * 1024 * 1024 * 1024', '4 * 1024 * 1024 * 1024'),
+    ('Retain 25 GiB plus build growth; recover at least 35 GiB before retry.',
+     'Insufficient capacity for estimated documentation build growth (2 GiB).'),
+    ('Retain 25 GiB plus Android SDK/build growth; recover at least 35 GiB before retry.',
+     'Insufficient capacity for estimated Android SDK/build growth (4 GiB).'),
+)
 
 
 def load(name, before=False):
@@ -18,6 +26,14 @@ def load(name, before=False):
 class CiDagTests(unittest.TestCase):
   def test_every_original_command_condition_runner_and_artifact_remains(self):
     before, after = load('ci.yml', True), load('ci.yml')
+    growth_updates = {}
+    for job in before['jobs'].values():
+      for step in job['steps']:
+        original = updated = step.get('run', '')
+        for old, new in GROWTH_REPLACEMENTS:
+          updated = updated.replace(old, new)
+        if updated != original: growth_updates[updated] = original
+    self.assertEqual(len(growth_updates), 3)
     self.assertEqual(set(before['jobs']), set(after['jobs']))
     for name, original in before['jobs'].items():
       with self.subTest(job=name):
@@ -42,6 +58,9 @@ class CiDagTests(unittest.TestCase):
           self.assertLess(current['steps'].index(fetch), next(i for i, step in enumerate(current['steps'])
               if step.get('name') == 'Fetch exact upstream reference commits'))
           current['steps'].remove(fetch)
+        for step in current['steps']:
+          if step.get('run') in growth_updates:
+            step['run'] = growth_updates[step['run']]
         self.assertEqual(current, original)
     self.assertEqual(after['on'], before['on'])
     self.assertEqual(after['permissions'], before['permissions'])
@@ -79,7 +98,7 @@ class CiDagTests(unittest.TestCase):
     self.assertIn('[runtime-package]', delivery['if'])
     self.assertEqual(delivery, load('ci.yml', True)['jobs']['runtime-delivery'])
 
-  def test_package_changes_only_the_retired_fast_checks_requirement(self):
+  def test_package_changes_only_retired_fast_requirement_and_fixed_disk_floor(self):
     before, after = load('dev-md-runtime.yml', True), load('dev-md-runtime.yml')
     old = '{"fast checks","integration gate","check mapped user docs","rust checks","rust aarch64 build"}'
     new = '{"integration gate","check mapped user docs","rust checks","rust aarch64 build"}'
@@ -90,6 +109,10 @@ class CiDagTests(unittest.TestCase):
         if old in step.get('run', ''):
           step['run'] = step['run'].replace(old, new)
           replacements += 1
+        if 'run' in step:
+          step['run'] = step['run'].replace('(25+4)*2**30', '4*2**30').replace(
+              '(25+2)*2**30', '2*2**30').replace('disk reserve before dependency installation',
+              'insufficient capacity for estimated dependency installation growth')
     self.assertEqual(replacements, 1)
     self.assertEqual(after, expected)
     self.assertEqual(set(after['on']), {'workflow_dispatch'})

@@ -119,7 +119,7 @@ def main() -> None:
   parser.add_argument("--binary", type=Path, required=True)
   parser.add_argument("--output", type=Path, required=True)
   args = parser.parse_args()
-  assert shutil.disk_usage(args.output.parent).free > 25 * 2**30 + 64 * 2**20
+  assert shutil.disk_usage(args.output.parent).free > 64 * 2**20
   args.output.mkdir(parents=True, exist_ok=False)
   inputs = []
   expected = []
