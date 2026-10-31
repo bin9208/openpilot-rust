@@ -148,7 +148,7 @@ fn export_batch_inner(
     directory(store)?;
     let store = store.canonicalize()?;
     if parent.starts_with(&store)
-        || store.starts_with(&parent.join(output.file_name().ok_or("missing batch output name")?))
+        || store.starts_with(parent.join(output.file_name().ok_or("missing batch output name")?))
     {
         return Err("provider batch output must be outside its immutable cache".into());
     }
