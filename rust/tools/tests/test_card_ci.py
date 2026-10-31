@@ -9,6 +9,7 @@ import subprocess
 import pytest
 import yaml
 import check_card_ci
+import ci_cases
 import card_ci_space
 from card_qa.ci import ROOT, TOOLS, source_command
 from card_qa.runtime_inputs import frames
@@ -71,7 +72,7 @@ def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -
     'joystickd-runtime', 'planner-runtime', 'planner-memory', 'radar-runtime', 'radar-arm', 'radar-memory', 'navd-runtime', 'radard-runtime',
     'carrot-navi-runtime', 'carrot-navi-arm', 'selfdrive-runtime', 'panda-runtime', 'camera-runtime', 'encoder-runtime',
     'xiaoge-runtime', 'xiaoge-memory', 'ui-runtime', 'carrot-man-runtime'}
-  assert set(jobs['fast']['needs']) == inherited | {'card-runtime', 'webrtc-runtime', 'webcam-runtime'}
+  assert set(jobs['fast']['needs']) == inherited | {'card-runtime', 'webrtc-runtime', 'webcam-runtime', 'recovery-runtime'}
   gate, = [step for step in jobs['fast']['steps'] if 'CARD' in step.get('env', {})]
   assert 'test "$CARD" = success' in gate['run']
   for job, test_command in (('workspace', 'cargo test --workspace'), ('card-runtime', 'cargo test -p openpilot-can')):
@@ -90,12 +91,12 @@ def test_required_ci_generates_fixtures_before_tests_and_checks_full_schemas() -
   assert any('aarch64-unknown-linux-gnu/release/openpilot-card' in path for path in uploads)
 
 
-def test_reference_phase_stops_before_brand_outputs_can_cross_disk_floor(tmp_path: Path, monkeypatch) -> None:
-  monkeypatch.setattr(card_ci_space.shutil, 'disk_usage', lambda _: type('Usage', (), {'free': 27 * 1024**3})())
+def test_reference_phase_rejects_insufficient_aggregate_case_growth_before_spawning(tmp_path: Path, monkeypatch) -> None:
+  monkeypatch.setattr(ci_cases.shutil, 'disk_usage', lambda _: type('Usage', (), {'free': 3 * 1024**3})())
   executed = []
-  monkeypatch.setattr(check_card_ci, 'run', lambda command, evidence, name: executed.append(name))
+  monkeypatch.setattr(ci_cases.subprocess, 'Popen', lambda *a, **kw: executed.append(a))
   arguments = argparse.Namespace(binaries=tmp_path, dbc=tmp_path, numerics=tmp_path, evidence=tmp_path,
     binding=tmp_path / 'binding')
-  with pytest.raises(OSError, match='recover at least 35 GiB'):
+  with pytest.raises(RuntimeError, match='insufficient resources'):
     check_card_ci.reference(arguments)
-  assert executed == [*check_card_ci.SHARED, 'git_source', 'carlog', 'common']
+  assert executed == []
