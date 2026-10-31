@@ -100,12 +100,12 @@ fn verify_generation(plans: &[&Plan], generation: &Path, contents: bool) -> Resu
         if directory_names(&root)? != ["provider.json".into(), filename.into()].into() {
             return Err("provider batch component has missing or unexpected files".into());
         }
-        let expected = json(&component_descriptor(plan, &root.join(filename))?)?;
+        let expected_descriptor = json(&component_descriptor(plan, &root.join(filename))?)?;
         let mut actual = Vec::new();
         regular(&root.join("provider.json"))?
             .take(1024 * 1024 + 1)
             .read_to_end(&mut actual)?;
-        if actual != expected {
+        if actual != expected_descriptor {
             return Err(
                 "provider batch descriptor differs from the current independent profile".into(),
             );
