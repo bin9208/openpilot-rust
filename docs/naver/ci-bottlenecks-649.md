@@ -12,9 +12,9 @@
 
 ## 구현과 검증 상태
 
-- [ ] 같은 원본의 15개 provider를 한 번 순회하고 검증된 작은 component를 재사용한다.
-- [ ] 기존 단일 provider의 descriptor/archive/tree와 동등성을 Actions에서 확인한다.
-- [ ] 실제 같은 입력·러너에서 cold 12분 이하, warm 3분 이하를 확인한다.
+- [x] 같은 원본의 15개 provider를 한 번 순회하고 검증된 작은 component를 재사용한다.
+- [x] 기존 단일 provider의 descriptor/archive/tree와 동등성을 Actions에서 확인한다.
+- [x] 실제 같은 입력·러너에서 cold 12분 이하, warm 3분 이하를 확인한다.
 - [ ] recovery를 독립 검사로 옮기고 공개 gate에 같은 source/base/실제 execution 증거를 결속한다.
 - [ ] PTY 종료의 원래/네이티브 실패를 정확히 재현하고 재시도/허용값 완화 없이 수정한다.
 - [ ] AGNOS 단계 계측과 자원 admission 기반 독립 그룹, UI/Card case 병렬화를 확인한다.
@@ -95,3 +95,19 @@ batch의 profile별 Export는 기존 필드를 유지하며 `origin`은 작은 c
 - 정확한 반환값이 기존 stderr에 없어 fixture에 16진 부동소수점 진단을 추가한다. 별도 수동 ARM 재현은 동일 provider를 현재 plan과 표준 archive까지 재검증한 뒤 원래 SVD assertion을 그대로 실행한다. 수치 허용값·runtime 정책·원본 비교를 완화하지 않고 원인을 먼저 확인한다.
 - [#653 수동 ARM 재현 41247090318 / job 124672660333](https://github.com/bin9208/openpilot-rust/actions/runs/41247090318/job/124672660333)의 artifact `13060455328`에서 실제 `info=0`, singular 값 `0x1.7ffffffffffffp+1`, `0x1.0000000000001p+1`을 확인했다. 각각 3의 바로 아래, 2의 바로 위 double이며 1 ULP 차이다. tree `5e4960d1cd4d595ff4b6727f2a84b91699d1759772ccf6ff3c5acb77a8dea777`와 archive `0590119e68a7a119581e4817dc1334fb7f921f5106dc7dadc14d2465822b8de8`는 기존 단일 export와 일치한다.
 - 원래 diag(3,2) SVD case를 유지하면서 이 작은 CI ABI fixture만 인접 double 한 칸으로 제한한다. 2 ULP·실패 info·음수·순서 변경·NaN·무한대는 거부하고 diag(4,2)의 bit-exact case를 추가한다. runtime·모델 정밀도와 기존 원본 비교 기준은 바꾸지 않는다. 수정된 실제 ARM·전체 AGNOS 성공은 계속 필요하다.
+
+## 표준 archive 검증을 포함한 동일 VM 성능 증거
+
+`7a89ba78f47c25dc5698e6293315fdea253548b7`의 [ARM benchmark job 124645339328](https://github.com/bin9208/openpilot-rust/actions/runs/41237656640/job/124645339328)은 전체 성공했다. artifact `13059921474`는 15개 단일 export 각각과 batch의 tree·descriptor·archive 바이트 일치, 모든 case의 exit 0, 성능 assertion 성공을 보존한다.
+
+| 같은 VM·입력·Rust 1.94.0 측정 | 초 | 결과 |
+| --- | ---: | --- |
+| 별도 원본 prefetch | 108.442 | 1,155,969,168 bytes 원본 준비 |
+| 기존 8개 companion 합계 | 3,682.832 | 61분 23초 |
+| 새 15개 전체 cold | 549.405 | 원본 gzip 1회 · 9분 9초 |
+| prefetch + cold | 657.848 | 다운로드 포함 10분 58초 |
+| 새 15개 전체 warm | 178.761 | 원본 경로 없음 · 순회/원본 bytes/HTTP bytes 모두 0 |
+
+현재 `39c9d92e2f0245352dd6ed66c1470f1f684494b6`와 비교해 모든 컴파일 대상 Rust 파일·Cargo.lock·profile/contract가 같다. `rust/`의 유일한 차이는 이 benchmark가 호출하지 않는 `rust/tools/ci_cases.py`이며, benchmark job 전체·harness·runner policy·job-temp/rust-path setup도 동일하다. 이 비교는 성공한 ARM job 내부의 짝지은 측정이다. 해당 workflow의 별도 execution-contract job은 당시 누락된 Python `zstandard` 때문에 실패했고 후속 집중 검증에서 수정됐다. 실패 workflow 전체의 경과를 성공 기준으로 사용하지 않는다. 추가 최신 SHA benchmark `41238463727`도 취소하지 않고 유지한다.
+
+이 성능 증거는 provider 처리의 수용 조건이다. 전체 필수 gate·현재 AGNOS·UI/Card 공유 입력 보호·dev-md 직렬 기준 비교는 별도로 완료해야 한다.
