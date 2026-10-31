@@ -515,3 +515,30 @@ Python 독립7개 및 실제 owner/확장3개의 전체10 ELF·health, SDK 회�
 bootstrap 전용 출력물을 읽지 않음을 정적으로 대조했다. 나머지 원래 probe의 상대 순서와
 호출 횟수·함수본문·Cargo argv·후속 production driver를 유지하며, 기존 순서 회귀도 seed
 정확1회·새 위치와 나머지 원래 순서를 검사한다. 실제 순서 변경의 수용은 새 Actions로 확인한다.
+
+
+## 2026-10-31 — 모델 fixture의 장치 번호와 LLVM 선택 구분
+
+`91633bf7ceb5de859be157c444fc1675135c80c0`의
+[Genuine41155319735/job124400717255](https://github.com/bin9208/openpilot-rust/actions/runs/41155319735/job/124400717255)은
+앞당긴 모델 환경 fixture에서 `ValueError: invalid literal for int() with base 10: 'LLVM'`로 실패했다.
+artifact13028432772는48,532,255B·SHA
+`cf3102b681fd7437f9bfbb9213f5a8d4ab2c969e0c6baf4a903df1b7009e7a77`이며 API/ZIP 값이 일치한다.
+원래 seed ABI·Python7+3/health·SDK4와 SVD·역행렬·Zstd는 실제 통과했다.
+CPU LLVM tensor 결과·QCOM·모델 ABI와 정규 bootstrap13 tools·99개 full·payload/I는 미완료다.
+별도의 기반/Rust/Integration/docs/Messaging/kernel6개 검사 묶음은 같은 source에서 모두 성공했지만
+이 결과를 전체 Genuine 또는 다음 수정 source의 성공으로 대신하지 않는다.
+
+[고정 소스의 HCQCompiled](https://github.com/bin9208/openpilot-rust/blob/91633bf7ceb5de859be157c444fc1675135c80c0/tinygrad_repo/tinygrad/runtime/support/hcq.py)은
+실행 장치 문자열의 콜론 뒤를 정수 device ID로 읽는다. 반면
+[Target/DEV 선택자](https://github.com/bin9208/openpilot-rust/blob/91633bf7ceb5de859be157c444fc1675135c80c0/tinygrad_repo/tinygrad/helpers.py)는
+`DEV=CPU:LLVM`을 CPU와 LLVM renderer로 나눈다.
+[기존 소스 회귀](https://github.com/bin9208/openpilot-rust/blob/91633bf7ceb5de859be157c444fc1675135c80c0/tinygrad_repo/test/null/test_device.py)의
+`test_env_online`도 `Context(DEV="CPU:LLVM")` 안에서 `Device["CPU"].compiler`가
+`CPULLVMCompiler`인지 확인한다.
+
+수정은 fixture의 `Tensor(..., device='CPU:LLVM')` 인자 한 곳만 `device='CPU'`로 바꾼다.
+기존 `DEV='CPU:LLVM'`, 고정 `LLVM_PATH`, host-only 장치 제한, 정확한 tensor 결과,
+실제 `/proc/self/maps`의 `libLLVM.so.20.1` 확인과 QCOM·전체 ABI·모든 입력 pin은 유지한다.
+로컬은 구문·diff와 고정 소스 읽기만 수행하며 실제 LLVM 실행과 나머지 검증은 새 source의
+Actions에서 확인한다. 이전 실행을 재시도하거나 새 검증 모드를 추가하지 않는다.

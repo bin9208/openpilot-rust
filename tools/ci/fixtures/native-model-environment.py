@@ -56,7 +56,7 @@ def main():
   assert {offline_pipeline.DM_INPUT_SIZE,offline_pipeline.MEDMODEL_INPUT_SIZE} == {(1440,960),(512,256)}
   cameras = {str(camera):get_nv12_info(*camera) for camera in ((1928,1208),(1344,760))}
   with host_only_devices():
-    tensor = Tensor([1.,2.,3.,4.],device='CPU:LLVM')
+    tensor = Tensor([1.,2.,3.,4.],device='CPU')
     np.testing.assert_array_equal(((tensor+1)*2).numpy(),[4.,6.,8.,10.])
     # Owned protobufs exercise both initializer and nested attribute handling.
     # They include raw bytes AND an external reference, so a normal parser
