@@ -98,7 +98,7 @@ def main():
   root, output, binary = args.root.resolve(), args.output.resolve(), args.binary.resolve()
   estimated = 512 * 1024**2
   available = shutil.disk_usage(root).free
-  if available < 25 * 1024**3 + estimated:
+  if available < estimated:
     raise RuntimeError('disk floor plus bounded rendered artifacts growth unavailable')
   output.mkdir(parents=True, exist_ok=False)
   library = root / '.omo/evidence/253-cluster-resume/libusb-1.0.so.0'

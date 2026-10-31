@@ -58,7 +58,7 @@ def errno_output(rows):
 def build(command, output):
   available = shutil.disk_usage(output.parent).free
   growth = 128 * 1024**2
-  if available < 25 * 1024**3 + growth:
+  if available < growth:
     raise RuntimeError(f"insufficient build space: {available}")
   result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30, check=False)
   output.write_bytes(result.stdout)

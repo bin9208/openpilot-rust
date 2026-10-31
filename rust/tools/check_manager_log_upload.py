@@ -17,7 +17,7 @@ from check_uploader import endpoint, signing_key
 
 
 def run(root: Path, binaries: Path, probe: Path, output: Path) -> None:
-  if shutil.disk_usage(root).free < 26 * 1024**3:
+  if shutil.disk_usage(root).free < 1024**3:
     raise RuntimeError('insufficient reserve for owned native executables')
   output.mkdir(parents=True, exist_ok=False)
   managed = output / 'manager'

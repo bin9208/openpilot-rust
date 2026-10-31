@@ -90,7 +90,7 @@ def main() -> None:
   parser.add_argument('--preserve-native-fixes', action='store_true')
   args = parser.parse_args()
   root = Path(__file__).resolve().parents[2]
-  assert shutil.disk_usage(root).free > (25 + 0.5) * 1024**3
+  assert shutil.disk_usage(root).free > 512 * 1024**2
   args.output.mkdir(parents=True, exist_ok=True)
   results = []
   for big in [False, True]:

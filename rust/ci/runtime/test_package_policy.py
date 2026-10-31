@@ -20,6 +20,24 @@ exec(compile(ast.Module(body=[node for node in tree.body if isinstance(node, ast
 
 
 class SourcePolicyTests(unittest.TestCase):
+    def test_growth_guards_require_exact_reviewed_source_blobs(self):
+        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
+                        and node.name == 'source_path_allowed')
+        pins = ast.literal_eval(next(node.value for node in function.body if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == 'growth_guard_blobs' for target in node.targets)))
+        self.assertGreater(len(pins), 50)
+        allowed = namespace['source_path_allowed']
+        for path, (mode, blob) in pins.items():
+            with self.subTest(path=path):
+                content = (SOURCE.resolve().parents[3] / path).read_bytes()
+                self.assertEqual(hashlib.sha1(f'blob {len(content)}\0'.encode()+content).hexdigest(), blob)
+                entry = f'{mode} blob {blob}\t{path}'
+                self.assertTrue(allowed(path, entry))
+                self.assertFalse(allowed(path))
+                self.assertFalse(allowed(path, entry.replace(blob, '0'*40)))
+                self.assertFalse(allowed(path, entry.replace(mode, '120000')))
+                self.assertFalse(allowed(path+'.extra', entry))
+
     def test_gpu_exceptions_are_exact_paths(self):
         allowed = namespace["source_path_allowed"]
         for path in (
@@ -47,6 +65,8 @@ class SourcePolicyTests(unittest.TestCase):
             "docs/user/en/lane-change.md", "docs/user/ko/lane-change.md",
             "docs/user/en/settings.md", "docs/user/ko/settings.md",
             "rust/ci/runtime/test_package_policy.py",
+            "tools/ci/tests/test_dev_md_ci_dag.py",
+            "docs/naver/dev-md-ci-bottlenecks-649.md",
         ):
             with self.subTest(path=path):
                 self.assertTrue(allowed(path))

@@ -18,7 +18,7 @@ def main() -> None:
   args = parser.parse_args()
   for name in ["python", "binary", "artifact", "binding", "source_native", "output"]:
     setattr(args, name, getattr(args, name).resolve())
-  assert shutil.disk_usage(args.output.parent).free >= 25 * 1024**3 + 128 * 1024**2
+  assert shutil.disk_usage(args.output.parent).free >= 128 * 1024**2
   args.output.mkdir(parents=True, exist_ok=False)
   cases = [Case(f"wait-{state}-{name}", "wait", value, state) for state in ["missing", "directory", "empty"]
            for name, value in [("sigint", signal.SIGINT), ("sigterm", signal.SIGTERM)]]

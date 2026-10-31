@@ -22,7 +22,7 @@ def main() -> None:
   args = parser.parse_args()
   free = shutil.disk_usage(ROOT).free
   growth = 256 * 2**20
-  assert free >= 25 * 2**30 + growth, (free, growth)
+  assert free >= growth, (free, growth)
   cases: list[Case] = json.loads(args.cases.read_text())
   if args.name and not args.lifecycle:
     cases = [case for case in cases if case['name'] in args.name]

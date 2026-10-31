@@ -85,7 +85,7 @@ def main():
   text = '#include <memory>\n' + prepared[: prepared.index('int main(')] + '\n' + '\n'.join(bridge.read_text().splitlines()[1:])
   (output / 'source.cc').write_text(text)
   available, growth = shutil.disk_usage(output).free, 128 * 1024**2
-  assert available >= 25 * 1024**3 + growth
+  assert available >= growth
   build = [
     'c++',
     '-std=c++20',

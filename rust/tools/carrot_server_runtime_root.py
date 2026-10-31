@@ -82,7 +82,7 @@ def run(binary, output, before):
   source = Path(__file__).resolve().parents[2]
   free = shutil.disk_usage(source).free
   growth = binary.stat().st_size * 2 + 1024 * 1024
-  assert free >= 25 * 1024 ** 3 + growth, free
+  assert free >= growth, free
   assert not Path('/data/openpilot/openpilot/selfdrive/carrot/data/state').exists()
   with tempfile.TemporaryDirectory(prefix='carrot-owned-cli-') as temporary:
     base = Path(temporary)

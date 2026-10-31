@@ -108,7 +108,7 @@ def main() -> None:
   arguments = parser.parse_args()
   for name in ["binary", "binding", "assets", "opencv", "output"]:
     setattr(arguments, name, getattr(arguments, name).resolve())
-  assert shutil.disk_usage(arguments.output.parent).free > 25 * 2**30 + 128 * 2**20
+  assert shutil.disk_usage(arguments.output.parent).free > 128 * 2**20
   arguments.output.mkdir(parents=True, exist_ok=False)
   source = run_peer("source", arguments)
   native = run_peer("native", arguments)

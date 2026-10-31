@@ -146,10 +146,10 @@ class RustIsolationTests(unittest.TestCase):
                 self.assertNotIn('if', step)
                 self.assertNotIn('continue-on-error', step)
 
-    def test_workspace_checks_wait_for_integration(self):
+    def test_workspace_checks_wait_for_source_policy(self):
         data = yaml.load((ROOT / '.github/workflows/ci.yml').read_text(), Loader=yaml.BaseLoader)
         job = data['jobs']['workspace']
-        self.assertEqual(job['needs'], ['integration-gate'])
+        self.assertEqual(job['needs'], ['check_user_docs'])
         self.assertNotIn('if', job)
         commands = '\n'.join(step.get('run', '') for step in job['steps'])
         for required in ('cargo fmt --all --check', 'cargo clippy --workspace', 'cargo test --workspace',
@@ -287,15 +287,14 @@ class RustIsolationTests(unittest.TestCase):
         self.assertIn('cargo build -p openpilot-navd --features native --bins --examples --release --locked --target aarch64-unknown-linux-gnu', arm)
         self.assertIn('release/openpilot-set-destination', arm)
 
-    def test_inherited_side_effects_are_source_repository_only(self):
+    def test_retired_inherited_side_effect_workflows_stay_absent(self):
         for file, job in [('sync.yml', 'sync'), ('naver-upstream-sync.yml', 'sync'), ('wiki-settings-publish.yaml', 'synchronize'), ('carrot-route-vault-publish.yaml', 'publish')]:
             with self.subTest(file=file):
-                data = yaml.load((ROOT / '.github/workflows' / file).read_text(), Loader=yaml.BaseLoader)
-                self.assertIn("github.repository == 'bin9208/openpilot'", data['jobs'][job].get('if', ''))
+                self.assertFalse((ROOT / '.github/workflows' / file).exists(), file)
 
     def test_rust_checks_cover_protected_pushes_and_prs(self):
         data = yaml.load((ROOT / '.github/workflows/ci.yml').read_text(), Loader=yaml.BaseLoader)
-        self.assertEqual(data['on']['push']['branches'], ['**'])
+        self.assertEqual(data['on']['push']['branches'], ['dev', 'dev-md', 'main'])
         self.assertEqual(set(data['on']['pull_request']['branches']), {'dev', 'dev-md', 'main'})
         for event in ['push', 'pull_request']:
             self.assertNotIn('paths', data['on'][event])

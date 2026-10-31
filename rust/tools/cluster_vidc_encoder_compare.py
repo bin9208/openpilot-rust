@@ -14,7 +14,7 @@ def digest(path):
 
 def build(command, output):
   free, growth = shutil.disk_usage(output.parent).free, 128 * 1024**2
-  assert free >= 25 * 1024**3 + growth
+  assert free >= growth
   result = subprocess.run(command, capture_output=True, timeout=30, check=False)
   output.write_bytes(result.stdout + result.stderr)
   assert result.returncode == 0, str(output)

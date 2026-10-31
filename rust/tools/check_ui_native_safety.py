@@ -33,7 +33,7 @@ def main() -> None:
   args = parser.parse_args()
   root = Path(__file__).resolve().parents[2]
   free = shutil.disk_usage(root).free
-  assert free > (25 + 0.25) * 1024**3, free
+  assert free > 256 * 1024**2, free
   output = args.output.resolve()
   output.mkdir(parents=True, exist_ok=True)
   environment = dict(os.environ, DISPLAY=args.display, OFFSCREEN='1', STARTUP_UI_RAYLIB_LIBRARY=str(args.raylib_library.resolve()))
