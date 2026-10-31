@@ -7,6 +7,7 @@ on:
       - 'rust/crates/dev-tools/src/native_provider/**'
       - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
       - 'tools/ci/verify_provider_batch.py'
+      - 'tools/ci/native_provider_batch.py'
       - '.github/workflows/provider-batch.yml'
       - '.github/workflows/rust.yml'
       - 'tools/native/publish_inputs.py'
@@ -196,4 +197,5 @@ jobs:
       - run: python3 -m unittest discover -s tools/ci/tests -p test_local_native_workflows.py -v
       - run: python3 -m unittest discover -s tools/ci/tests -p test_parallel_cases.py -v
       - run: python3 -m unittest discover -s tools/ci/tests -p test_agnos_phases.py -v
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_provider_batch_adapter.py -v
       - run: PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/opendbc_repo:$GITHUB_WORKSPACE/rust/tools" python -m pytest -c /dev/null --noconftest -p no:cacheprovider rust/tools/tests/test_card_ci.py rust/tools/tests/test_card_phase_fence.py rust/tools/tests/test_card_admission.py rust/tools/tests/test_ui_ci.py tools/ci/tests/test_native_disk_guard.py -q

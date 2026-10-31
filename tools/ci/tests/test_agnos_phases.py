@@ -1,4 +1,5 @@
 import importlib.util
+import ast
 from pathlib import Path
 import sys
 import tempfile
@@ -12,6 +13,14 @@ spec.loader.exec_module(phases)
 
 
 class PhaseTests(unittest.TestCase):
+  def test_probe_does_not_shadow_called_imports_with_local_loop_variables(self):
+    tree = ast.parse((Path(__file__).parents[1]/'probe_native_agnos.py').read_text())
+    imports = {a.asname or a.name for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom)) for a in n.names}
+    main = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == 'main')
+    assigned = {n.id for n in ast.walk(main) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
+    called = {n.func.id for n in ast.walk(main) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    self.assertFalse(imports & assigned & called)
+
   def test_parallel_child_and_components_both_complete_before_final(self):
     with tempfile.TemporaryDirectory() as temporary:
       work, evidence = Path(temporary), dict(commands=[], source_commit='a'*40)

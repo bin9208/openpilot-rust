@@ -19,7 +19,7 @@ import stat
 import subprocess
 import time
 from pathlib import Path
-from agnos_phases import phase, independent_bootstrap
+from agnos_phases import phase as record_phase, independent_bootstrap
 
 RAW_BYTES = 4718592000
 SPARSE_SHA = 'a67410a888105ecce7bcc05e17cda77fd10572aa4380e9de242a7c92f3497114'
@@ -2744,66 +2744,66 @@ def main():
     evidence['binaries'] = before
     evidence['toolchain_files'] = {str(path.relative_to(work)): digest(path) for path in (work / 'rustup/toolchains').glob('*/bin/*') if path.is_file()}
     evidence.setdefault('phase_times', []).append(dict(name='common-preparation', state='success', started_monotonic=started, elapsed_seconds=time.monotonic()-started))
-    with phase(evidence, 'native_driver_probe'):
+    with record_phase(evidence, 'native_driver_probe'):
       native_driver_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    with phase(evidence, 'native_cereal_probe'):
+    with record_phase(evidence, 'native_cereal_probe'):
       native_cereal_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    with phase(evidence, 'native_codec_probe'):
+    with record_phase(evidence, 'native_codec_probe'):
       native_codec_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    with phase(evidence, 'native_python_probe'):
+    with record_phase(evidence, 'native_python_probe'):
       native_python_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    with phase(evidence, 'native_system_sdk_probe'):
+    with record_phase(evidence, 'native_system_sdk_probe'):
       native_system_sdk_probe(guest_command, work, source_mount, rootfs, evidence, log, guest_work)
-    with phase(evidence, 'native_ffmpeg_headers_probe'):
+    with record_phase(evidence, 'native_ffmpeg_headers_probe'):
       native_ffmpeg_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    with phase(evidence, 'native_provider_probe'):
+    with record_phase(evidence, 'native_provider_probe'):
       native_provider_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    with phase(evidence, 'native_model_wheels_probe'):
+    with record_phase(evidence, 'native_model_wheels_probe'):
       native_model_wheels_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    with phase(evidence, 'native_encoder_probe'):
+    with record_phase(evidence, 'native_encoder_probe'):
       native_encoder_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    with phase(evidence, 'native_bootstrap_seed_probe'):
+    with record_phase(evidence, 'native_bootstrap_seed_probe'):
       native_bootstrap_seed_probe(guest_command, work, source_mount, evidence, log, guest_work)
     def bootstrap(current_evidence, current_log, **options):
       return native_bootstrap_current_probe(guest_command, work, source_mount, current_evidence,
           current_log, guest_work, **options)
     with independent_bootstrap(bootstrap, source, work, evidence, log):
-      with phase(evidence, 'native_eigen_probe'):
+      with record_phase(evidence, 'native_eigen_probe'):
         native_eigen_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with phase(evidence, 'native_raylib_probe'):
+      with record_phase(evidence, 'native_raylib_probe'):
         native_raylib_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with phase(evidence, 'native_opencv_headers_probe'):
+      with record_phase(evidence, 'native_opencv_headers_probe'):
         native_opencv_headers_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with phase(evidence, 'native_opencv_prefix_probe'):
+      with record_phase(evidence, 'native_opencv_prefix_probe'):
         native_opencv_prefix_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with phase(evidence, 'native_runtime_companions_probe'):
+      with record_phase(evidence, 'native_runtime_companions_probe'):
         native_runtime_companions_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with phase(evidence, 'native_display_inputs_probe'):
+      with record_phase(evidence, 'native_display_inputs_probe'):
         native_display_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with phase(evidence, 'native_media_inputs_probe'):
+      with record_phase(evidence, 'native_media_inputs_probe'):
         native_media_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with phase(evidence, 'native_source_assets_probe'):
+      with record_phase(evidence, 'native_source_assets_probe'):
         native_source_assets_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with phase(evidence, 'native_mpc_inputs_probe'):
+      with record_phase(evidence, 'native_mpc_inputs_probe'):
         native_mpc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with phase(evidence, 'native_panda_inputs_probe'):
+      with record_phase(evidence, 'native_panda_inputs_probe'):
         native_panda_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with phase(evidence, 'native_dbc_inputs_probe'):
+      with record_phase(evidence, 'native_dbc_inputs_probe'):
         native_dbc_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with phase(evidence, 'native_usbgpu_inputs_probe'):
+      with record_phase(evidence, 'native_usbgpu_inputs_probe'):
         native_usbgpu_inputs_probe(guest_command, work, source_mount, evidence, log, guest_work)
-      with phase(evidence, 'native_catalog_bindings_probe'):
+      with record_phase(evidence, 'native_catalog_bindings_probe'):
         native_catalog_bindings_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    with phase(evidence, 'native_model_generation_probe'):
+    with record_phase(evidence, 'native_model_generation_probe'):
       native_model_generation_probe(guest_command, work, source_mount, evidence, log, guest_work)
-    with phase(evidence, 'native_complete_layout_probe'):
+    with record_phase(evidence, 'native_complete_layout_probe'):
       native_complete_layout_probe(guest_command, work, source_mount, evidence, log, guest_work)
     # Add the production orchestration as a separate guarded command after all
     # original ARM commands. Keep their user space, pins and evidence intact.
     preserve = 'GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,RUNNER_OS,RUNNER_ARCH,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,GITHUB_WORKSPACE,PATH'
     scope = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/native_resource_scope.py'
     driver = Path(os.environ['GITHUB_WORKSPACE'])/'tools/ci/verify_native_runtime_inputs.py'
-    with phase(evidence, 'final-production-validation'):
+    with record_phase(evidence, 'final-production-validation'):
       evidence['commands'].append(run(['sudo', '-n', f'--preserve-env={preserve}', '/usr/bin/python3', scope,
           'enter', '--', '/usr/bin/python3', driver], log, stdout_path=work/'native-runtime-inputs-driver.txt'))
       evidence['native_production_runtime_inputs'] = json.loads((work/'runtime-inputs-evidence/summary.json').read_text())

@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 
 
@@ -50,9 +51,39 @@ def export_component(preparer, plan_path, source, work, output, legacy_store, le
     if (binding['source']['commit'] != head or binding['contract_sha256'] != plan['source_contract_sha256']
         or not binding['inputs_match'] or binding['regenerated']):
       raise ValueError('provider batch source contract differs from the current checkout')
-  with output.open('x') as stream:
-    json.dump(value, stream, indent=2)
-    stream.write('\n')
+  # The original AGNOS PRoot namespace binds these per-profile export paths.
+  # Materialize only verified small files there; cache locations are not guest
+  # paths. Keep Export's descriptor/archive addresses compatible with its old
+  # single-provider caller and preserve any pre-existing output.
+  legacy_output = Path(legacy_output)
+  if not legacy_output.resolve().is_relative_to(work.resolve()):
+    raise ValueError('provider export view is outside this job')
+  legacy_output.mkdir()
+  opened = False
+  try:
+    value = dict(value)
+    for field, pin_field in [('descriptor', 'descriptor_sha256'), ('archive', 'component_sha256')]:
+      original = Path(value[field])
+      destination = legacy_output/('provider.json' if field == 'descriptor' else original.name)
+      with original.open('rb') as reader, destination.open('xb') as writer:
+        shutil.copyfileobj(reader, writer)
+        writer.flush()
+        os.fsync(writer.fileno())
+      with destination.open('rb') as reader:
+        if hashlib.file_digest(reader, 'sha256').hexdigest() != value[pin_field]:
+          raise ValueError('provider changed while materializing its guest export')
+      destination.chmod(0o444)
+      value[field] = str(destination)
+    with output.open('x') as stream:
+      opened = True
+      json.dump(value, stream, indent=2)
+      stream.write('\n')
+      stream.flush()
+      os.fsync(stream.fileno())
+  except BaseException:
+    shutil.rmtree(legacy_output)
+    if opened: output.unlink()
+    raise
   return value
 
 
