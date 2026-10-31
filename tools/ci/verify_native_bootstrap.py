@@ -241,6 +241,19 @@ def main():
     compile_growth = 2*1024**3  # Serial release compilation of these 13 tools, not all runtime targets.
     object_growth = 512*1024**2
     growth = rust_growth+cargo_growth+source_growth+compile_growth+object_growth
+    admission = json.loads((work/'native-bootstrap-component-admission.json').read_text())
+    assert admission['schema'] == 1 and admission['source_commit'] == context['source_commit']
+    assert admission['bootstrap_growth_bytes'] == growth
+    assert type(admission['parallel']) is bool
+    shared_growth = 0
+    if admission['parallel']:
+        assert admission['component_growth_bytes'] == 12*1024**3
+        assert admission['required_growth_bytes'] == growth+admission['component_growth_bytes']+64*1024**2
+        assert admission['free_disk_bytes'] >= admission['required_growth_bytes']
+        shared_growth = admission['component_growth_bytes']
+    # The filesystem observer measures the whole filesystem, including the
+    # simultaneously admitted component group. Keep the bootstrap memory cap
+    # and per-store/compile estimates intact; account for the other operation.
     assert shutil.disk_usage(work).free >= growth
     execute(['/usr/bin/env', 'GIT_LFS_SKIP_SMUDGE=1', *git, 'clone', '--shared', '--no-checkout',
         context['source_mount'], fixture], 'source-clone.txt')
@@ -265,7 +278,7 @@ def main():
         remaining_object_growth_bytes=object_growth,
         resources=dict(schema=1, memory_cgroup_parent=os.environ['NATIVE_TEST_CGROUP_PARENT'],
             maximum_memory_bytes=6*1024**3, minimum_available_memory_bytes=128*1024**2,
-            filesystems={str(guest_work):dict(maximum_growth_bytes=growth, minimum_free_bytes=64*1024**2)}))
+            filesystems={str(guest_work):dict(maximum_growth_bytes=growth+shared_growth, minimum_free_bytes=64*1024**2)}))
     configuration = work/'bootstrap-current-config.json'
     configuration.write_text(json.dumps(config)+'\n')
     configuration_sha256 = digest(configuration)
@@ -329,6 +342,8 @@ def main():
         reports[phase] = row
     (evidence/'summary.json').write_text(json.dumps(dict(schema=1,
         actual_current_tools=13, cases=list(reports), source_commit=context['source_commit'],
+        concurrent_component_growth_budget_bytes=shared_growth,
+        filesystem_measurement_scope='shared filesystem; includes admitted concurrent components',
         seed_source=manifest['source'], expected_seed_descriptor_sha256=seed['descriptor_sha256'],
         repeated_and_docs_all_fresh=True, repeated_and_docs_binary_storage_bytes=0,
         small_changed_tool='openpilot-runtime-build', unmodified_tools_fresh=12,

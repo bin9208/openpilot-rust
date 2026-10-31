@@ -14,7 +14,7 @@ spec.loader.exec_module(phases)
 class PhaseTests(unittest.TestCase):
   def test_parallel_child_and_components_both_complete_before_final(self):
     with tempfile.TemporaryDirectory() as temporary:
-      work, evidence = Path(temporary), dict(commands=[])
+      work, evidence = Path(temporary), dict(commands=[], source_commit='a'*40)
       def bootstrap(current, log, *, runner):
         current['commands'].append(runner([sys.executable, '-c', 'import time; time.sleep(0.2)'],
             log, stdout_path=work/'bootstrap.stdout'))
@@ -28,7 +28,7 @@ class PhaseTests(unittest.TestCase):
 
   def test_insufficient_combined_admission_uses_sequential_proof(self):
     with tempfile.TemporaryDirectory() as temporary:
-      work, evidence = Path(temporary), dict(commands=[])
+      work, evidence = Path(temporary), dict(commands=[], source_commit='a'*40)
       def bootstrap(current, log): current['native_bootstrap_current_tools'] = dict(success=True)
       with mock.patch.object(phases, 'parallel_admission', return_value=dict(parallel=False)):
         with phases.independent_bootstrap(bootstrap, work, work, evidence, work/'log'):
@@ -37,7 +37,7 @@ class PhaseTests(unittest.TestCase):
 
   def test_failed_bootstrap_never_reaches_final(self):
     with tempfile.TemporaryDirectory() as temporary:
-      work, evidence = Path(temporary), dict(commands=[])
+      work, evidence = Path(temporary), dict(commands=[], source_commit='a'*40)
       def bootstrap(current, log, *, runner):
         runner([sys.executable, '-c', 'raise SystemExit(7)'], log, stdout_path=work/'stdout')
       with mock.patch.object(phases, 'parallel_admission', return_value=dict(parallel=True)):

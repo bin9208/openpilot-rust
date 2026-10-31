@@ -58,6 +58,8 @@ def parallel_admission(source, work):
 def independent_bootstrap(callback, source, work, evidence, log):
   policy = parallel_admission(source, work)
   evidence['bootstrap_component_admission'] = policy
+  (work/'native-bootstrap-component-admission.json').write_text(json.dumps(dict(
+      schema=1, source_commit=evidence['source_commit'], **policy))+'\n')
   if not policy['parallel']:
     with phase(evidence, 'bootstrap-current-tools-sequential'):
       callback(evidence, log)
