@@ -1071,7 +1071,7 @@ def native_encoder_probe(guest_command,work,source_mount,evidence,log,guest_work
   rust_receipt=Path(guest_work)/'pinned-rust'/Path(rust['tree_receipt']).relative_to(owned/'native-rust-toolchains')
   environment=dict(FFMPEG_DIR=prefix['root'],ENCODER_LIBYUV_LIB=str(Path(yuv['root'])/'lib'),
       OPENPILOT_CAPNP=str(Path(sdk['root'])/'usr/bin/capnp'),OPENPILOT_CARGO_VENDOR=registry['vendor'],
-      LIBCLANG_PATH='/usr/lib/llvm-18/lib',
+      GIT_OPTIONAL_LOCKS='0',LIBCLANG_PATH='/usr/lib/llvm-18/lib',
       LD_LIBRARY_PATH=f"{prefix['root']}/lib:{sdk['root']}/usr/lib/aarch64-linux-gnu",
       RUSTFLAGS=f"-C link-arg=-Wl,-rpath-link,{prefix['root']}/lib")
   for name in ('CC','CXX','AR','RANLIB'):
@@ -1101,6 +1101,7 @@ def native_encoder_probe(guest_command,work,source_mount,evidence,log,guest_work
   assert set(initial['verified_input_trees'])==set(trees)
   linker=execute(['readlink','-f','/usr/bin/cc'],'native-encoder-linker.txt').read_text().strip()
   example_environment={**environment,'RUSTC':str(rust_root/'bin/rustc'),
+      'CARGO_LOG':'cargo::core::compiler::fingerprint=info',
       'CARGO_ENCODED_RUSTFLAGS':'\x1f'.join([*environment['RUSTFLAGS'].split(),'-C',f'linker={linker}']),
       'CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER':linker}
   env=['/usr/bin/env',*(f'{key}={value}' for key,value in example_environment.items())]

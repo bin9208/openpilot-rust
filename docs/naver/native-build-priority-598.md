@@ -595,3 +595,36 @@ artifact13036614632는48,538,732B·SHA
 모델 standalone7 ABI는 실제 통과했다. owner 포함22개 ABI·정규13tools·전체99·production
 다섯 phase·payload/I는 이 단언 뒤라 미도달이다. 수정 source의 실제 결과는 새 Actions로
 확인하며 이전 source의 성공으로 대신하지 않는다.
+
+
+## 2026-10-31 — encoder 반복 빌드의 실제 freshness 실패
+
+`cdc3d9ece5d2de160a00c2be1f3f3e6daf79892f`의
+[Genuine41186780782/job124495209212](https://github.com/bin9208/openpilot-rust/actions/runs/41186780782/job/124495209212)은
+`native_encoder_probe`에서 codec/ABI 검사 뒤 동일 recipe 반복 결과의 `fresh=false`로 실패했다.
+반복 driver의 exit는0이고 ELF SHA는 초기와 같지만 이를 재사용 성공으로 계산하지 않는다.
+artifact13042498996은52,222,685B·SHA
+`88a353b3ae1d79be9f400cda28abd676747f2c455c1b9fe1556190467d7e645a`로 검증했다.
+
+같은 source에서 seed ABI·Python7+3·SDK4·CPU LLVM/QCOM fixture·모델 독립7 및 owner 포함22
+ABI가 실제 통과했다. 정규 bootstrap13 tools의 initial/reused/docs/small4개 사례와
+encoder 원래 codec5개·ABI3개 root도 통과했다. 별도6workflow68jobs도 성공했다.
+전체99·production 다섯 phase·입력 payload/I는 아직 미도달이다.
+
+초기/반복 driver argv와 report는 elapsed를 제외하고 같고, 중간 example은 동일 target을
+사용한다. example의147개 compiler-artifact 중144개는 fresh이며 logging lib·encoderd lib·example
+3개만 다시 빌드했다. 실제 package102개의 버전·출처는 Cargo.lock과 일치한다.
+초기/반복의 상세 Cargo JSONL·fingerprint 무효화 원문은 없어 정확한 원인은 미확정이다.
+
+확인된 환경 차이는 driver가 env_clear 뒤 자신의 HOME/CARGO_HOME/PATH를 사용하여 기존
+명시적 `GIT_OPTIONAL_LOCKS=0`을 상속하지 않는다는 점이다. logging의 exact-source build
+script는 git status를 실행하고 Git index를 추적한다. encoder recipe에 `GIT_OPTIONAL_LOCKS=0`을
+명시해 선택적 index 갱신을 막고, 기존 example에는 fingerprint info 로그를 켜서 원래
+commands.log의 stderr에 다음 실제 무효화 이유를 보존한다. 이 조정만으로 index 갱신이
+이번 실패의 원인이라거나 freshness가 회복됐다고 단정하지 않는다.
+
+원래 codec 뒤 동일 recipe 반복 순서·fresh/SHA 단언·zero-transfer/prefix 확인·모든 입력과
+ABI 검사를 유지한다. exact-source stamp·실제 변경 탐지·driver/core/CLI도 유지하며
+`OPENPILOT_NATIVE_INCREMENTAL` 전환이나 순서 이동으로 재사용 검증을 줄이지 않는다.
+recipe environment가 달라져 cache key는 새로 생기지만 새 실행의 initial/repeat는 같은 key를
+사용한다. 로컬은 구문·diff·원문 읽기만 확인하고 실제 freshness는 새 Actions에서 판단한다.
