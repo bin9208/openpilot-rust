@@ -1,4 +1,4 @@
-"""Fail-closed sequential CI, event routing and release dispatch contracts."""
+"""Fail-closed parallel CI, event routing and release dispatch contracts."""
 from pathlib import Path
 import json
 import os
@@ -41,25 +41,26 @@ class WorkflowPolicyTests(unittest.TestCase):
       self.assertFalse((ROOT / '.github/workflows' / old).exists(), old)
 
 
-  def test_all_jobs_form_one_chain_and_matrices_are_serial(self):
+  def test_all_compute_jobs_follow_source_policy_and_gates_cover_the_dag(self):
     jobs = workflow()['jobs']
     ancestors = {}
-    # Jobs are stored in execution order; every pair must be ordered by needs.
+    # Compute jobs share source-policy ancestry; aggregate gates retain every result.
     for key, job in jobs.items():
       needs = job.get('needs', [])
       if isinstance(needs, str):
         needs = [needs]
       self.assertTrue(all(dep in ancestors for dep in needs), key)
       ancestors[key] = set(needs).union(*(ancestors[dep] for dep in needs))
-      self.assertEqual(ancestors[key], set(ancestors) - {key}, key)
+      if key != 'check_user_docs': self.assertIn('check_user_docs', ancestors[key], key)
       self.assertNotIn('continue-on-error', job)
       if 'matrix' in job.get('strategy', {}):
-        self.assertEqual(job['strategy']['max-parallel'], '1', key)
+        self.assertNotIn('max-parallel', job['strategy'], key)
         self.assertEqual(job['strategy']['fail-fast'], 'true', key)
     for key in ('check_user_docs', 'git_update', 'build_release', 'model_web',
                 'model', 'android-core', 'integration-gate', 'workspace', 'fast', 'arm-build', 'arm64'):
       self.assertIn(key, jobs)
-    self.assertEqual(jobs['workspace']['needs'], ['integration-gate'])
+    self.assertEqual(jobs['workspace']['needs'], ['check_user_docs'])
+    self.assertEqual(ancestors['runtime-delivery'], set(jobs)-{'runtime-delivery'})
     self.assertEqual(jobs['runtime-delivery']['needs'], 'arm64')
 
   def test_gates_reject_failure_cancellation_skips_and_missing_results(self):
@@ -79,9 +80,9 @@ class WorkflowPolicyTests(unittest.TestCase):
             self.assertNotEqual(invoke(results | {dependency: {'result': state}}), 0)
         self.assertNotEqual(invoke({name: value for name, value in results.items() if name != dependency}), 0)
 
-  def test_cancelled_validation_never_starts_the_expensive_arm_build(self):
+  def test_arm_build_waits_for_source_policy_and_delivery_waits_for_all_checks(self):
     jobs = workflow()['jobs']
-    self.assertEqual(jobs['arm-build']['needs'], ['fast'])
+    self.assertEqual(jobs['arm-build']['needs'], ['check_user_docs'])
     self.assertNotIn('if', jobs['arm-build'])
     self.assertIn('arm-build', jobs['arm64']['needs'])
     self.assertIn('always()', jobs['arm64']['if'])
