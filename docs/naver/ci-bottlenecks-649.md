@@ -138,3 +138,9 @@ batch의 profile별 Export는 기존 필드를 유지하며 `origin`은 작은 c
 `4af4aa54bc80824b786320b4a180dcababf5c3bf`의 [control tools job 124686916736](https://github.com/bin9208/openpilot-rust/actions/runs/41251875743/job/124686916736)은 원본 8 case/1,805 step mismatch 0과 5개 상태 일치 후 마지막 IPC 수거에서 실패했다. artifact `13061009772`의 239개 pair는 두 서비스 각각 중간 누락 없이 처음부터 약 한 프레임씩 어긋났다. 원본 msgq의 publisher 시작·reader 재등록 시 write pointer 초기화 때문에 첫 `controlsState`만 놓친 검사기가 서로 다른 프레임을 계속 짝지었다.
 
 [#656](https://github.com/bin9208/openpilot-rust/issues/656)은 검사기에서 state를 먼저 읽고 원본 발행 순서의 단조 타임스탬프로 시작 구간을 정렬한다. 시작 시 짝 없는 메시지는 별도 artifact로 남기며, 실행 중 누락과 짝 없는 마지막 메시지는 실패한다. 기존 235개 이상 관측·상태별 원본 일치·발행 경과·CLI·시그널·실제 종료 코드 조건과 daemon/runtime은 유지한다. 로컬은 문법/diff만 확인하고 강제 경합 회귀 및 실제 원래 IPC 전체 검증은 Actions에서 수행한다.
+
+## 주소 ABI 검사에 남은 폐지된 예비분 — #652
+
+`316ad0573da933b47c8cad839d8723c92926a03d`의 [UI/connectivity job 124689288692](https://github.com/bin9208/openpilot-rust/actions/runs/41252678646/job/124689288692)은 discovery 원본 32 case/16,000 frame, 실제 HTTP 20 case와 daemon lifecycle을 성공한 뒤 `check_cweb_address.py`의 고정 26 GiB 사전 조건에서 실패했다. 주소 sanitizer/ABI 자체는 아직 시작하지 않은 상태였다.
+
+같은 검사에서 폐지된 25 GiB 예비분만 빼고 기존 추가 증가량 1 GiB를 유지한다. 이 파일은 이미 전체 성공한 dev-md 후보 `3448238b610c4c7c53e612fc2940ac215cdfcae5`의 검증된 파일과 동일한 Git blob `2f70537e53113841cc36cf44b66ecf552f23b0ad`다. dev-md runtime을 역통합하지 않고 같은 한 줄의 운영 조건 수정만 적용한다. 실제 ASan/UBSan C++ 빌드/실행·네 인터페이스 원본 주소 비교·실패 전파는 그대로다. 임계 증가량 바로 아래/정확한 경계와 24 GiB 허용, 원본 불일치 거부를 Actions에서 확인하고 같은 원래 sanitizer/주소 검사를 집중 CI에도 실행한다.
