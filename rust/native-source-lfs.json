@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "origin_commit": "11f0de76cd4c97941109339003f8f98d9614f2d0",
+  "assets": {
+    "openpilot/selfdrive/carrot/web/assets/alert_camera.svg": {
+      "url": "https://media.githubusercontent.com/media/bin9208/openpilot-rust/11f0de76cd4c97941109339003f8f98d9614f2d0/openpilot/selfdrive/carrot/web/assets/alert_camera.svg",
+      "sha256": "f1086279a32f49f68de1db4e89a93aa2aae779395cfb908e5f6a0cbf2bf7dae6",
+      "bytes": 989
+    },
+    "openpilot/selfdrive/carrot/web/assets/alert_police.svg": {
+      "url": "https://media.githubusercontent.com/media/bin9208/openpilot-rust/11f0de76cd4c97941109339003f8f98d9614f2d0/openpilot/selfdrive/carrot/web/assets/alert_police.svg",
+      "sha256": "d0dea6745d5cd5cf8206ced256310fed587555b3309d80cad46a4c066a931401",
+      "bytes": 707
+    },
+    "openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx": {
+      "url": "https://media.githubusercontent.com/media/bin9208/openpilot-rust/11f0de76cd4c97941109339003f8f98d9614f2d0/openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx",
+      "sha256": "d3761c185daf33897ff3ff5edf28115c5dc829c06c538033accb616d6c67528c",
+      "bytes": 13194895
+    },
+    "openpilot/selfdrive/carrot/xiaoge/assets/v_asm_model.onnx": {
+      "url": "https://media.githubusercontent.com/media/bin9208/openpilot-rust/11f0de76cd4c97941109339003f8f98d9614f2d0/openpilot/selfdrive/carrot/xiaoge/assets/v_asm_model.onnx",
+      "sha256": "00247ede5159dff9a0768c171095711d40f1ee109ac7b5e24adce344fe4ba6f9",
+      "bytes": 9625905
+    }
+  }
+}

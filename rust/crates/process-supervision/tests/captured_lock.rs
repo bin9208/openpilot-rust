@@ -3,7 +3,7 @@ use std::{
     fs::{self, OpenOptions},
     io::{Read, Write},
     os::fd::AsFd,
-    path::Path,
+    path::PathBuf,
     process::Command,
 };
 
@@ -76,8 +76,10 @@ fn separate_pipes_preserve_lock_and_parent_session() {
     assert_eq!(out, b"out");
     assert_eq!(err, b"err");
     contender.try_lock().unwrap();
-    let evidence = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../.omo/evidence/225-git-config/captured-lock");
+    let evidence = std::env::var_os("CI_JOB_TEMP")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| root.to_path_buf())
+        .join("test-evidence/225-git-config/captured-lock");
     fs::create_dir_all(&evidence).unwrap();
     fs::write(
         evidence.join("observations.json"),

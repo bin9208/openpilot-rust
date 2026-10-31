@@ -495,8 +495,33 @@ fn verify_headers(source: &Path, work: &Path, prefix: &Path) -> Result<BTreeMap<
     Ok(hashes)
 }
 pub fn cli(runtime: bool) -> Result<()> {
+    let arguments: Vec<String> = std::env::args().skip(1).collect();
+    if runtime
+        && arguments
+            .iter()
+            .any(|arg| arg == "--prepare-released-prefix")
+    {
+        return crate::native_ffmpeg_prefix::cli(&arguments);
+    }
+    if runtime
+        && arguments.iter().any(|arg| {
+            matches!(
+                arg.as_str(),
+                "--export-released-provider" | "--prepare-released-provider"
+            )
+        })
+    {
+        return crate::native_provider::cli(&arguments);
+    }
+    if runtime
+        && arguments
+            .iter()
+            .any(|arg| arg == "--prepare-released-headers")
+    {
+        return crate::native_ffmpeg_headers::cli(&arguments);
+    }
     let mut values = BTreeMap::new();
-    let mut args = std::env::args().skip(1);
+    let mut args = arguments.into_iter();
     let mut headers_only = false;
     while let Some(key) = args.next() {
         if key == "--headers-only" {

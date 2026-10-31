@@ -40,6 +40,28 @@ def peers_ready(publishers, child):
   raise TimeoutError('original CPP input peers did not observe every planner subscription')
 
 
+def frame_packets(index):
+  packets = messages(messaging.new_message, 45 + index, 1.0 + index * 0.05)
+  packets['selfdriveState'].selfdriveState.experimentalMode = 12 <= index < 16
+  packets['carState'].carState.gasPressed = index == 22
+  packets['controlsState'].controlsState.longControlState = 'off' if index == 24 else 'pid'
+  if index >= 26:
+    state = packets['carState'].carState
+    state.vEgo = state.vEgoCluster = state.aEgo = 0.0
+    state.standstill = True
+    packets['controlsState'].controlsState.longControlState = 'stopping'
+    for lead in (packets['radarState'].radarState.leadOne, packets['radarState'].radarState.leadTwo):
+      lead.dRel = 15.0 + (0.2 if index >= 35 else 0.0)
+      lead.vLead = lead.vLeadK = lead.vRel = 0.1
+      lead.aLead = lead.aLeadK = lead.jLead = 0.0
+  live = messaging.new_message('liveTracks', logMonoTime=1_000_000_000 + index * 50_000_000 + 25_000_000, valid=index != 19)
+  points = live.liveTracks.init('points', 2)
+  for point, lead in zip(points, (packets['radarState'].radarState.leadOne, packets['radarState'].radarState.leadTwo), strict=True):
+    point.trackId, point.measured, point.radarSource = lead.radarTrackId, True, 'frontRadar'
+    point.dRel, point.vRel, point.aRel, point.aLead, point.jLead = lead.dRel, lead.vRel, lead.aLeadK, lead.aLeadK, lead.jLead
+  return {name: packet.to_bytes() for name, packet in packets.items()}, live.to_bytes()
+
+
 def run(args, root, mode, epoch, prefix):
   os.environ['OPENPILOT_PREFIX'] = prefix
   publisher = messaging.PubMaster(SERVICES)
@@ -65,6 +87,11 @@ def run(args, root, mode, epoch, prefix):
     if mode == 'source'
     else [str(args.binary), '--solver', str(args.artifact)]
   )
+  # Build and serialize the unchanged scenarios before timed IPC publication.
+  # QEMU model-message construction must not throttle the input service cadence.
+  preparation_started = time.monotonic()
+  prepared = [frame_packets(index) for index in range(args.frames)]
+  preparation_elapsed = time.monotonic() - preparation_started
   records, timing = [], []
   subscribers = {}
   with (case / 'stdout.log').open('wb') as stdout, (case / 'stderr.log').open('wb') as stderr:
@@ -107,22 +134,9 @@ def run(args, root, mode, epoch, prefix):
       drain()
       assert not records, 'a liveTracks-only startup published without a model'
       started = time.monotonic() + 0.05
-      for index in range(args.frames):
+      for index, (packets, live) in enumerate(prepared):
         target = started + index * 0.05
         time.sleep(max(0.0, target - time.monotonic()))
-        packets = messages(messaging.new_message, 45 + index, 1.0 + index * 0.05)
-        packets['selfdriveState'].selfdriveState.experimentalMode = 12 <= index < 16
-        packets['carState'].carState.gasPressed = index == 22
-        packets['controlsState'].controlsState.longControlState = 'off' if index == 24 else 'pid'
-        if index >= 26:
-          state = packets['carState'].carState
-          state.vEgo = state.vEgoCluster = state.aEgo = 0.0
-          state.standstill = True
-          packets['controlsState'].controlsState.longControlState = 'stopping'
-          for lead in (packets['radarState'].radarState.leadOne, packets['radarState'].radarState.leadTwo):
-            lead.dRel = 15.0 + (0.2 if index >= 35 else 0.0)
-            lead.vLead = lead.vLeadK = lead.vRel = 0.1
-            lead.aLead = lead.aLeadK = lead.jLead = 0.0
         before = sum(row['service'] == 'driverAssistance' for row in records)
         for name, packet in packets.items():
           if name != 'modelV2':
@@ -131,11 +145,6 @@ def run(args, root, mode, epoch, prefix):
         wait_for('driverAssistance', before)
         model_done = time.monotonic()
         time.sleep(max(0.0, target + 0.025 - time.monotonic()))
-        live = messaging.new_message('liveTracks', logMonoTime=1_000_000_000 + index * 50_000_000 + 25_000_000, valid=index != 19)
-        points = live.liveTracks.init('points', 2)
-        for point, lead in zip(points, (packets['radarState'].radarState.leadOne, packets['radarState'].radarState.leadTwo), strict=True):
-          point.trackId, point.measured, point.radarSource = lead.radarTrackId, True, 'frontRadar'
-          point.dRel, point.vRel, point.aRel, point.aLead, point.jLead = lead.dRel, lead.vRel, lead.aLeadK, lead.aLeadK, lead.jLead
         before = sum(row['service'] == 'longitudinalPlan' for row in records)
         publisher.send('liveTracks', live)
         if index >= 1 and not 12 <= index < 16:
@@ -159,6 +168,7 @@ def run(args, root, mode, epoch, prefix):
     'returncode': child.returncode,
     'records': records,
     'timing': timing,
+    'packet_preparation_seconds': preparation_elapsed,
     'valid_counts': {name: sum(row['service'] == name and row['valid'] for row in records) for name in OUTPUTS},
     'triggers': {
       name: sum(row['service'] == 'longitudinalPlan' and row['data']['planningTrigger'] == name for row in records) for name in ('modelV2', 'liveTracks')

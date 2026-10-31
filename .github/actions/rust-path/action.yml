@@ -1,0 +1,64 @@
+name: Expose provisioned Rust tools
+description: Preserve Rust shims on persistent runners and restore verified missing tools.
+runs:
+  using: composite
+  steps:
+    - name: Use the runner CPU capacity for Cargo and Rust tests
+      shell: bash
+      run: |
+        cpu_count=$(/usr/bin/python3 -I -B -S - <<'PY_CPU'
+        import os
+        print(max(1, len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else os.cpu_count() or 1))
+        PY_CPU
+        )
+        export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-$cpu_count}"
+        export RUST_TEST_THREADS="${RUST_TEST_THREADS:-$cpu_count}"
+        printf 'CARGO_BUILD_JOBS=%s\nRUST_TEST_THREADS=%s\n' "$CARGO_BUILD_JOBS" "$RUST_TEST_THREADS" >> "$GITHUB_ENV"
+        printf 'available_cpus=%s cargo_build_jobs=%s rust_test_threads=%s\n' "$cpu_count" "$CARGO_BUILD_JOBS" "$RUST_TEST_THREADS"
+    - id: locate
+      shell: bash
+      run: |
+        if command -v rustup >/dev/null 2>&1; then
+          rust_bin=$(dirname "$(command -v rustup)")
+        else
+          rust_bin="${CARGO_HOME:-$HOME/.cargo}/bin"
+        fi
+        if [ -x "$rust_bin/rustup" ] && [ -x "$rust_bin/cargo" ]; then
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+        else
+          echo 'ready=false' >> "$GITHUB_OUTPUT"
+        fi
+    - name: Restore missing shims from verified Rustup 1.29.1
+      if: steps.locate.outputs.ready != 'true'
+      shell: bash
+      run: |
+        free_bytes=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
+        if (( free_bytes < 512 * 1024 * 1024 )); then
+          echo 'Insufficient disk space for estimated Rust bootstrap growth (512 MiB).' >&2
+          exit 1
+        fi
+        case "$(uname -m)" in
+          x86_64) rust_host=x86_64-unknown-linux-gnu; rust_hash=dda7234360b7f578ca8b0ddcb80145646fa61a67c1720a5abc7051b35c9fcb71 ;;
+          aarch64) rust_host=aarch64-unknown-linux-gnu; rust_hash=15f6e4ce9f583b929c996c91562bad6d4454f3281de858b02cdfdef615fac433 ;;
+          *) echo 'Unsupported Rust bootstrap architecture' >&2; exit 1 ;;
+        esac
+        bootstrap_dir=$(mktemp -d "$RUNNER_TEMP/rustup-bootstrap.XXXXXX")
+        trap 'rm -rf -- "$bootstrap_dir"' EXIT
+        curl --proto '=https' --tlsv1.2 --fail --location --retry 5 --retry-all-errors \
+          "https://static.rust-lang.org/rustup/archive/1.29.1/$rust_host/rustup-init" --output "$bootstrap_dir/rustup-init"
+        printf '%s  %s\n' "$rust_hash" "$bootstrap_dir/rustup-init" | sha256sum --check -
+        chmod u+x "$bootstrap_dir/rustup-init"
+        CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" "$bootstrap_dir/rustup-init" -y --default-toolchain none --no-modify-path
+    - name: Publish the installed Rust tool path
+      shell: bash
+      run: |
+        if command -v rustup >/dev/null 2>&1; then
+          rust_bin=$(dirname "$(command -v rustup)")
+        else
+          rust_bin="${CARGO_HOME:-$HOME/.cargo}/bin"
+        fi
+        if [ ! -x "$rust_bin/rustup" ] || [ ! -x "$rust_bin/cargo" ]; then
+          echo 'Rust tools are not provisioned; install rustup/cargo for the runner service account.' >&2
+          exit 1
+        fi
+        printf '%s\n' "$rust_bin" >> "$GITHUB_PATH"

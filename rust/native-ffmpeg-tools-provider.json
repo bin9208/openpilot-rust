@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "profile": "ffmpeg611-tools",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "source_archive": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/runtime-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31/openpilot-rust-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31-aarch64.tar.gz",
+    "sha256": "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291",
+    "bytes": 1155969168
+  },
+  "runtime_manifest_sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+  "members": {
+    "bin/ffmpeg": {
+      "source": "rust/bin/ffmpeg",
+      "sha256": "f2cc8824d08d9d4d4e6beb36e89d10ef69bb0a8c2ea7f1840f23ca456b1847c8",
+      "bytes": 329952,
+      "mode": 365,
+      "link": null
+    },
+    "bin/ffprobe": {
+      "source": "rust/bin/ffprobe",
+      "sha256": "bb8992db3348212b870083099f60c2771dbe2d490b76205c824899637beb4e46",
+      "bytes": 203896,
+      "mode": 365,
+      "link": null
+    },
+    "provenance/original-runtime-manifest.json": {
+      "source": "rust/runtime-manifest.json",
+      "sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+      "bytes": 241671,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/ffmpeg/COPYING.GPLv2": {
+      "source": "rust/bin/licenses/ffmpeg/COPYING.GPLv2",
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
+      "bytes": 18092,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/ffmpeg/COPYING.GPLv3": {
+      "source": "rust/bin/licenses/ffmpeg/COPYING.GPLv3",
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+      "bytes": 35147,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/ffmpeg/COPYING.LGPLv2.1": {
+      "source": "rust/bin/licenses/ffmpeg/COPYING.LGPLv2.1",
+      "sha256": "b634ab5640e258563c536e658cad87080553df6f34f62269a21d554844e58bfe",
+      "bytes": 26526,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/ffmpeg/COPYING.LGPLv3": {
+      "source": "rust/bin/licenses/ffmpeg/COPYING.LGPLv3",
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+      "bytes": 7651,
+      "mode": 292,
+      "link": null
+    },
+    "share/licenses/ffmpeg/build.json": {
+      "source": "rust/bin/licenses/ffmpeg/build.json",
+      "sha256": "fa7815aa65aa90a18fc55d80a36e348c3a0bbb7ad7b46d197390cd600574df28",
+      "bytes": 24812,
+      "mode": 292,
+      "link": null
+    }
+  }
+}

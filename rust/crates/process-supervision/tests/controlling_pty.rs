@@ -1,5 +1,5 @@
 use openpilot_process_supervision::{pty::Pair, CapturedCommand};
-use std::{io::Read, path::Path};
+use std::{io::Read, path::PathBuf};
 fn main() {
     if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("--fixture")) {
         let stdin = std::io::stdin();
@@ -68,8 +68,10 @@ fn controlling_terminal_is_additive_and_web_session_remains_uncontrolled() {
         );
         observed.push(serde_json::json!({"controlling":controlled,"child":row,"reaped":true}));
     }
-    let evidence = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../.omo/evidence/269-runtime-review-fixes/controlling-pty.json");
+    let evidence = std::env::var_os("CI_JOB_TEMP")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| root.path().to_path_buf())
+        .join("test-evidence/269-runtime-review-fixes/controlling-pty.json");
     std::fs::create_dir_all(evidence.parent().unwrap()).unwrap();
     std::fs::write(evidence, serde_json::to_vec_pretty(&observed).unwrap()).unwrap();
     println!("{}", serde_json::json!(observed));

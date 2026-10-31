@@ -39,6 +39,9 @@ pub(super) fn context(version: &str, device: &str) -> Result<Context, Error> {
         env!("OPENPILOT_LOGGING_SOURCE_COMMIT").into(),
     );
     context.insert("source_tree", env!("OPENPILOT_LOGGING_SOURCE_TREE").into());
+    if env!("OPENPILOT_LOGGING_SOURCE_STAMP_MODE") == "compiled-native-incremental" {
+        context.insert("source_commit_kind", "compiled artifact".into());
+    }
     Ok(context)
 }
 

@@ -28,3 +28,11 @@ pedantic = "deny"
 [[test]]
 name = "virtual_devices"
 required-features = ["fixture-inspection"]
+
+[[example]]
+name = "native_font"
+required-features = ["gui"]
+
+[[example]]
+name = "native_provider"
+required-features = ["fixture-inspection"]

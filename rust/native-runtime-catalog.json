@@ -1,0 +1,399 @@
+{
+  "schema": 1,
+  "target": "aarch64-unknown-linux-gnu",
+  "roster_provenance": "Original runtime roster: b55552dbb7bb16cf5dae0cfc0f2571d14ed8643a (89 binaries, 11 groups); source-build and sealing tools added separately. Historical compilation is not current build evidence.",
+  "groups": {
+    "00": {
+      "packages": [
+        "openpilot-webjoystick",
+        "openpilot-runtime-core",
+        "openpilot-usbgpu",
+        "openpilot-model-runtime",
+        "openpilot-runtime-installer",
+        "openpilot-cluster",
+        "openpilot-msgq"
+      ],
+      "features": [
+        "openpilot-msgq/visionipc-ion",
+        "openpilot-usbgpu/native-skip-miri",
+        "openpilot-model-runtime/native-skip-miri",
+        "openpilot-cluster/native-media"
+      ],
+      "binaries": [
+        "openpilot-webjoystick",
+        "cpu-sample",
+        "openpilot-usbgpu-check",
+        "openpilot-usbgpu-model",
+        "openpilot-usbgpu-probe",
+        "openpilot-usbgpu-worker",
+        "model-run",
+        "offline-qcom-compile",
+        "qcom-model-run",
+        "openpilot-runtime-install",
+        "openpilot-cluster",
+        "openpilot-cluster-autorun"
+      ],
+      "compiler_inputs": {
+        "ENCODER_LIBYUV_LIB": "lib",
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor",
+        "STARTUP_UI_RAYLIB_ROOT": ""
+      }
+    },
+    "01": {
+      "packages": [
+        "openpilot-carrot-navi",
+        "openpilot-beepd",
+        "openpilot-logmessaged",
+        "openpilot-encoderd",
+        "openpilot-process-supervision",
+        "openpilot-startup-ui",
+        "openpilot-msgq"
+      ],
+      "features": [
+        "openpilot-msgq/visionipc-ion",
+        "openpilot-carrot-navi/native",
+        "openpilot-encoderd/native",
+        "openpilot-encoderd/visionipc-ion",
+        "openpilot-startup-ui/native"
+      ],
+      "binaries": [
+        "openpilot-carrot-navi",
+        "openpilot-beepd",
+        "openpilot-logmessaged",
+        "openpilot-encoderd",
+        "openpilot-process-child",
+        "openpilot-spinner",
+        "openpilot-text-window"
+      ],
+      "compiler_inputs": {
+        "ENCODER_LIBYUV_LIB": "lib",
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor",
+        "STARTUP_UI_RAYLIB_ROOT": ""
+      }
+    },
+    "02": {
+      "packages": [
+        "openpilot-uploader",
+        "openpilot-deleter",
+        "openpilot-ui-application",
+        "openpilot-agnos",
+        "openpilot-timed",
+        "openpilot-carrot-recovery",
+        "openpilot-msgq"
+      ],
+      "features": [
+        "openpilot-msgq/visionipc-ion"
+      ],
+      "binaries": [
+        "openpilot-uploader",
+        "openpilot-deleter",
+        "openpilot-agnos-updater",
+        "openpilot-ui",
+        "openpilot-agnos",
+        "openpilot-timed",
+        "openpilot-carrot-recovery"
+      ],
+      "compiler_inputs": {
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor",
+        "STARTUP_UI_RAYLIB_ROOT": ""
+      }
+    },
+    "03": {
+      "packages": [
+        "openpilot-cweb-push",
+        "openpilot-runtime-launcher",
+        "openpilot-webcam",
+        "openpilot-webrtc",
+        "openpilot-carrot-man",
+        "openpilot-calibrationd",
+        "openpilot-msgq"
+      ],
+      "features": [
+        "openpilot-msgq/visionipc-ion",
+        "openpilot-webcam/native",
+        "openpilot-webrtc/native",
+        "openpilot-carrot-man/native-skip-miri",
+        "openpilot-calibrationd/native-skip-miri"
+      ],
+      "binaries": [
+        "openpilot-cweb-push",
+        "openpilot-carrot-web-watchdog",
+        "openpilot-launch",
+        "openpilot-webcam",
+        "openpilot-carrot-webrtcd",
+        "openpilot-webrtcd",
+        "openpilot-carrot-man",
+        "openpilot-calibrationd"
+      ],
+      "compiler_inputs": {
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor",
+        "OPENPILOT_WEBCAM_OPENCV_ROOT": ""
+      }
+    },
+    "04": {
+      "packages": [
+        "openpilot-navd",
+        "openpilot-xiaoge",
+        "openpilot-camerad-runtime",
+        "openpilot-pandad",
+        "openpilot-selfdrived",
+        "openpilot-locationd",
+        "openpilot-msgq"
+      ],
+      "features": [
+        "openpilot-msgq/visionipc-ion",
+        "openpilot-navd/native",
+        "openpilot-xiaoge/native-skip-miri",
+        "openpilot-camerad-runtime/native-skip-miri",
+        "openpilot-camerad-runtime/visionipc-ion",
+        "openpilot-pandad/native-skip-miri",
+        "openpilot-locationd/native"
+      ],
+      "binaries": [
+        "openpilot-navd",
+        "openpilot-set-destination",
+        "openpilot-xiaoge",
+        "openpilot-camerad",
+        "openpilot-pandad",
+        "openpilot-pandad-supervisor",
+        "openpilot-selfdrived",
+        "openpilot-locationd"
+      ],
+      "compiler_inputs": {
+        "LOCATIOND_EIGEN_INCLUDE": "",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor",
+        "OPENPILOT_OPENCV_ROOT": ""
+      }
+    },
+    "05": {
+      "packages": [
+        "openpilot-radard",
+        "openpilot-plannerd",
+        "openpilot-radarcan",
+        "openpilot-card",
+        "openpilot-control-tools",
+        "openpilot-controlsd",
+        "openpilot-msgq"
+      ],
+      "features": [
+        "openpilot-msgq/visionipc-ion",
+        "openpilot-radard/native-skip-miri",
+        "openpilot-plannerd/native-skip-miri",
+        "openpilot-card/native",
+        "openpilot-control-tools/native",
+        "openpilot-controlsd/native"
+      ],
+      "binaries": [
+        "openpilot-radard",
+        "openpilot-plannerd",
+        "openpilot-radarcan",
+        "openpilot-card",
+        "openpilot-joystick",
+        "openpilot-joystick-control",
+        "openpilot-joystickd",
+        "openpilot-lateral-maneuversd",
+        "openpilot-longitudinal-maneuversd",
+        "openpilot-controlsd"
+      ],
+      "compiler_inputs": {
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
+    },
+    "06": {
+      "packages": [
+        "openpilot-athena",
+        "openpilot-paramsd",
+        "openpilot-lagd",
+        "openpilot-torqued",
+        "openpilot-feedbackd",
+        "openpilot-proclogd",
+        "openpilot-msgq"
+      ],
+      "features": [
+        "openpilot-msgq/visionipc-ion",
+        "openpilot-paramsd/native",
+        "openpilot-torqued/native-skip-miri"
+      ],
+      "binaries": [
+        "openpilot-athenad",
+        "openpilot-manage-athenad",
+        "openpilot-paramsd",
+        "openpilot-lagd",
+        "openpilot-torqued",
+        "openpilot-feedbackd",
+        "openpilot-proclogd",
+        "openpilot-proclogd-runtime"
+      ],
+      "compiler_inputs": {
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor",
+        "PARAMSD_EIGEN_INCLUDE": ""
+      }
+    },
+    "07": {
+      "packages": [
+        "openpilot-dmonitoringmodeld",
+        "openpilot-monitoring",
+        "openpilot-driving-modeld",
+        "openpilot-jetlink",
+        "openpilot-dmonitoringd",
+        "openpilot-loggerd",
+        "openpilot-msgq"
+      ],
+      "features": [
+        "openpilot-msgq/visionipc-ion",
+        "openpilot-dmonitoringmodeld/visionipc-ion",
+        "openpilot-driving-modeld/visionipc-ion"
+      ],
+      "binaries": [
+        "openpilot-dmonitoringmodeld",
+        "monitoring-probe",
+        "openpilot-driving-modeld",
+        "jetlinkd-rs",
+        "openpilot-dmonitoringd",
+        "openpilot-loggerd"
+      ],
+      "compiler_inputs": {
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
+    },
+    "08": {
+      "packages": [
+        "openpilot-dashcam-upload",
+        "openpilot-journald",
+        "openpilot-statsd",
+        "openpilot-tombstoned",
+        "openpilot-bootlog",
+        "openpilot-modem",
+        "openpilot-msgq"
+      ],
+      "features": [
+        "openpilot-msgq/visionipc-ion"
+      ],
+      "binaries": [
+        "openpilot-dashcam-upload",
+        "journald-rs",
+        "statsd-rs",
+        "openpilot-tombstoned",
+        "openpilot-bootlog",
+        "openpilot-modem"
+      ],
+      "compiler_inputs": {
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
+    },
+    "09": {
+      "packages": [
+        "openpilot-manager",
+        "openpilot-hardwared",
+        "openpilot-lpa",
+        "openpilot-bridge",
+        "openpilot-updated",
+        "openpilot-micd",
+        "openpilot-msgq"
+      ],
+      "features": [
+        "openpilot-msgq/visionipc-ion"
+      ],
+      "binaries": [
+        "openpilot-manager",
+        "openpilot-hardwared",
+        "openpilot-lpa",
+        "bridge",
+        "openpilot-updated",
+        "openpilot-micd"
+      ],
+      "compiler_inputs": {
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
+    },
+    "10": {
+      "packages": [
+        "openpilot-sensord",
+        "openpilot-soundd",
+        "openpilot-ublox",
+        "openpilot-qcomgpsd",
+        "openpilot-bluetooth",
+        "openpilot-carrot-server",
+        "openpilot-msgq"
+      ],
+      "features": [
+        "openpilot-msgq/visionipc-ion",
+        "openpilot-sensord/native",
+        "openpilot-ublox/native"
+      ],
+      "binaries": [
+        "openpilot-sensord",
+        "openpilot-soundd",
+        "openpilot-pigeond",
+        "openpilot-ubloxd",
+        "nmeaport",
+        "openpilot-qcomgpsd",
+        "openpilot-bluetoothd",
+        "openpilot-carrot-command",
+        "openpilot-carrot-server",
+        "openpilot-vision-test",
+        "openpilot-youtube-test"
+      ],
+      "compiler_inputs": {
+        "FFMPEG_DIR": "",
+        "LIBCLANG_PATH": "usr/lib/llvm-18/lib",
+        "OPENPILOT_CAPNP": "usr/bin/capnp",
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
+    },
+    "11": {
+      "packages": [
+        "openpilot-runtime-build"
+      ],
+      "features": [],
+      "binaries": [
+        "openpilot-runtime-build",
+        "openpilot-runtime-assets",
+        "openpilot-runtime-inputs",
+        "openpilot-runtime-source",
+        "openpilot-runtime-prepare",
+        "openpilot-runtime-native",
+        "openpilot-native-build-scope",
+        "openpilot-runtime-plan"
+      ],
+      "compiler_inputs": {
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
+    },
+    "12": {
+      "packages": [
+        "openpilot-dev-tools"
+      ],
+      "features": [],
+      "binaries": [
+        "seal-runtime-package",
+        "runtime-elf-audit"
+      ],
+      "compiler_inputs": {
+        "OPENPILOT_CARGO_VENDOR": "vendor"
+      }
+    }
+  }
+}

@@ -1,0 +1,192 @@
+name: Native build kernel resource guard
+on:
+  push:
+    branches: ['codex/feat-600-native-resource-*', 'codex/feat-599-*']
+    paths:
+      - 'rust/crates/runtime-build/**'
+      - 'rust/crates/updated/src/native.rs'
+      - 'tools/ci/native_resource_scope.py'
+      - 'tools/ci/verify_native_bootstrap.py'
+      - 'tools/native/publish_inputs.py'
+      - 'tools/ci/tests/test_native_input_publication.py'
+      - '.github/workflows/native-input-publication.yml'
+      - '.github/workflows/native-resource-guard.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-resource-guard-${{ github.ref }}-parallel-v2
+  queue: max
+  cancel-in-progress: false
+jobs:
+  actual-kernel:
+    name: Real memory limit and cancellation (X64 host kernel)
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    timeout-minutes: 25
+    env:
+      LOCAL_CI_ARCH: x86_64
+      RUSTUP_TOOLCHAIN: '1.94.0'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      # Only this explicit context crosses sudo for job ownership and tool paths.
+      SCOPE_CONTEXT: GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_NAME,CI_JOB_TEMP,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_JOB,GITHUB_SHA,PATH,CARGO_HOME,RUSTUP_HOME,RUSTUP_TOOLCHAIN
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false}
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+      - name: Admit this bounded test build
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          growth = 2 * 1024**3
+          for path in (os.environ['CI_JOB_TEMP'], os.environ['GITHUB_WORKSPACE']):
+              free = shutil.disk_usage(path).free
+              print(f'path={path} available_bytes={free} expected_build_and_fixture_growth_bytes={growth}')
+              if free < growth:
+                  raise SystemExit('insufficient space for this operation; other data retained')
+          PY
+          rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
+      - name: Compile actual tools and mandatory real-controller test
+        shell: bash
+        run: |
+          rustfmt --edition 2021 --check rust/crates/runtime-build/src/*.rs rust/crates/runtime-build/tests/*.rs
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --bins
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --test resources --no-run --message-format=json > "$CI_JOB_TEMP/resource-test-build.jsonl"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          job = Path(os.environ['CI_JOB_TEMP'])
+          outputs = [row['executable'] for line in (job/'resource-test-build.jsonl').read_text().splitlines()
+                     if (row := json.loads(line)).get('reason') == 'compiler-artifact'
+                     and row.get('target', {}).get('name') == 'resources' and row.get('executable')]
+          assert len(outputs) == 1
+          (job/'resource-test-executable').write_text(outputs[0])
+          PY
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
+      - name: Verify the actual root scope helper drops to its original caller
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          job = Path(os.environ['CI_JOB_TEMP'])
+          base = Path('/sys/fs/cgroup')
+          if not (base/'cgroup.controllers').exists(): base /= 'memory'
+          # These fixture values are not a production comma 3X resource policy.
+          config = dict(schema=1, stores={name:str(job/name) for name in ('sources','objects','generations','params')},
+                        cache=str(job/'cache'), toolchain=str(job/'toolchain'),
+                        build_plan=str(job/'plan.json'), layout=str(job/'layout.json'),
+                        resources=dict(schema=1, memory_cgroup_parent=str(base/f'openpilot-native-build-{os.getuid()}'),
+                            maximum_memory_bytes=256*1024**2, minimum_available_memory_bytes=32*1024**2,
+                            filesystems={str(job):dict(maximum_growth_bytes=64*1024**2, minimum_free_bytes=32*1024**2)}))
+          (job/'scope-config.json').write_text(json.dumps(config))
+          PY
+          sudo -n rust/target/debug/openpilot-native-build-scope --config "$CI_JOB_TEMP/scope-config.json" --verify | tee "$CI_JOB_TEMP/source-built-scope-verification.json"
+      - name: Retain an actual worker rejection separately from frontend output
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          job = Path(os.environ['CI_JOB_TEMP'])
+          config = json.loads((job/'scope-config.json').read_text())
+          params = Path(config['stores']['params'])/'d'
+          params.mkdir(parents=True)
+          (params/'IsOnroad').write_bytes(b'0')
+          fields = Path('/proc/self/stat').read_text().rsplit(') ',1)[1].split()
+          owner = f'{os.getpid()}:{int(fields[19])}'
+          # X64 cannot complete a genuine full AGNOS generation. This is a
+          # negative output-retention check, not a synthetic successful seal.
+          with (job/'native-worker-frontend.stdout').open('wb') as stdout, (job/'native-worker-frontend.stderr').open('wb') as stderr:
+              result = subprocess.run(['sudo','-n','rust/target/debug/openpilot-native-build-scope',
+                  '--config',str(job/'scope-config.json'),'--build','--root',os.environ['GITHUB_WORKSPACE'],
+                  '--request-owner',owner],
+                  stdout=stdout, stderr=stderr, check=False)
+          assert result.returncode != 0
+          attempts = list((Path(config['stores']['generations'])/'build-attempts').glob('attempt-*'))
+          assert len(attempts) == 1
+          attempt = attempts[0]
+          assert (attempt/'build.log').stat().st_size > 0
+          assert (job/'native-worker-frontend.stderr').stat().st_size < 128*1024
+          assert not (Path(config['stores']['generations'])/'pending.json').exists()
+          assert not (Path(config['stores']['generations'])/'active.json').exists()
+          rows = [json.loads(line) for line in (attempt/'resources.jsonl').read_text().splitlines()]
+          assert rows[-1]['state'] == 'failed'
+          (job/'native-worker-output-result.json').write_text(json.dumps(dict(
+              expected_worker_failure=True, full_generation_seal=False,
+              worker_log_bytes=(attempt/'build.log').stat().st_size,
+              frontend_output_bytes=(job/'native-worker-frontend.stderr').stat().st_size)))
+          PY
+      - name: Verify the bootstrap seed root gateway drops credentials and retains failure output
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          job = Path(os.environ['CI_JOB_TEMP'])
+          original = json.loads((job/'scope-config.json').read_text())
+          config = dict(schema=1, stores=original['stores'], cache=str(job/'bootstrap-cache'),
+              system_sdk_receipt=str(job/'independent-factory-sdk.json'), system_sdk_sha256='a'*64,
+              expected_source_growth_bytes=64*1024**2, expected_compile_growth_bytes=64*1024**2,
+              remaining_object_growth_bytes=64*1024**2, resources=original['resources'])
+          path = job/'bootstrap-scope-config.json'
+          path.write_text(json.dumps(config))
+          fields = Path('/proc/self/stat').read_text().rsplit(') ',1)[1].split()
+          owner = f'{os.getpid()}:{int(fields[19])}'
+          with (job/'bootstrap-gateway.stdout').open('wb') as stdout, (job/'bootstrap-gateway.stderr').open('wb') as stderr:
+              result = subprocess.run(['sudo','-n','rust/target/debug/openpilot-runtime-inputs',
+                  '--bootstrap-tools-scope','--config',str(path),'--root',os.environ['GITHUB_WORKSPACE'],
+                  '--request-owner',owner], stdout=stdout, stderr=stderr, check=False)
+          assert result.returncode != 0
+          attempts = list((Path(config['stores']['generations'])/'bootstrap-attempts').glob('attempt-*'))
+          assert len(attempts) == 1
+          attempt = attempts[0]
+          rows = [json.loads(line) for line in (attempt/'resources.jsonl').read_text().splitlines()]
+          assert rows[0]['context']['frontend_uid'] == os.getuid() != 0
+          assert rows[0]['context']['supplementary_groups_cleared']
+          assert rows[-1]['state'] == 'failed'
+          assert 'requires actual AGNOS' in (attempt/'build.log').read_text()
+          assert not (attempt/'worker-result.json').exists()
+          assert not (Path(config['cache'])/'tools').exists()
+          assert not (Path(config['stores']['generations'])/'active.json').exists()
+          (job/'bootstrap-gateway-result.json').write_text(json.dumps(dict(
+              original_uid=os.getuid(), root_gateway_dropped_credentials=True,
+              expected_non_agnos_rejection=True, unbounded_fallback=False, runtime_activated=False)))
+          PY
+      - name: Prepare only this job kernel scope
+        shell: bash
+        run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 tools/ci/native_resource_scope.py prepare
+      - name: Run mandatory real memory, filesystem-growth and process-death cases
+        shell: bash
+        run: |
+          set -o pipefail
+          executable=$(cat "$CI_JOB_TEMP/resource-test-executable")
+          sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 tools/ci/native_resource_scope.py enter -- "$executable" --ignored --exact real_memory_and_filesystem_limits_preserve_normal_execution --nocapture 2>&1 | tee "$CI_JOB_TEMP/native-resource-tests.log"
+      - name: Stop and remove only the job-owned kernel scope
+        if: always()
+        shell: bash
+        run: sudo -n --preserve-env="$SCOPE_CONTEXT" /usr/bin/python3 tools/ci/native_resource_scope.py cleanup
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: native-resource-guard-${{ github.sha }}
+          path: |
+            ${{ env.CI_JOB_TEMP }}/resource-scope-evidence.json
+            ${{ env.CI_JOB_TEMP }}/source-built-scope-verification.json
+            ${{ env.CI_JOB_TEMP }}/native-resource-tests.log
+            ${{ env.CI_JOB_TEMP }}/native-resource-evidence/**
+            ${{ env.CI_JOB_TEMP }}/native-worker-frontend.*
+            ${{ env.CI_JOB_TEMP }}/native-worker-output-result.json
+            ${{ env.CI_JOB_TEMP }}/bootstrap-gateway.*
+            ${{ env.CI_JOB_TEMP }}/bootstrap-gateway-result.json
+            ${{ env.CI_JOB_TEMP }}/generations/bootstrap-attempts/**/build.log
+            ${{ env.CI_JOB_TEMP }}/generations/bootstrap-attempts/**/resources.jsonl
+            ${{ env.CI_JOB_TEMP }}/generations/build-attempts/**/build.log
+            ${{ env.CI_JOB_TEMP }}/generations/build-attempts/**/resources.jsonl
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

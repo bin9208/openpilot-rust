@@ -60,6 +60,7 @@ impl Factory {
                 for key in [
                     "runtime_language",
                     "source_commit",
+                    "source_commit_kind",
                     "source_tree",
                     "runtime_implementation",
                     "daemon",

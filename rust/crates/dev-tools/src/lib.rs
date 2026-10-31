@@ -12,6 +12,13 @@ pub mod user_docs;
 
 pub mod elf_audit;
 pub mod encoder_stage;
+pub mod native_codec_inputs;
+pub mod native_ffmpeg_headers;
+pub mod native_ffmpeg_prefix;
+pub mod native_opencv_headers;
+pub mod native_opencv_prefix;
+pub mod native_provider;
+pub mod native_raylib_inputs;
 
 pub mod ffmpeg_build;
 pub mod qcom_compiler_stage;

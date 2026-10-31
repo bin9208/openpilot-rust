@@ -1,11 +1,11 @@
 #[path = "common/release.rs"]
 mod release;
 use openpilot_dev_tools::{
-    publish::{Github, publish},
-    seal::{Result, digest},
+    publish::{publish, Github},
+    seal::{digest, Result},
 };
-use release::{Fixture, git};
-use serde_json::{Value, json};
+use release::{git, Fixture};
+use serde_json::{json, Value};
 use std::{collections::BTreeMap, fs, path::Path};
 const REPO: &str = "bin9208/openpilot-rust";
 const GATES: &[(&str, &[&str])] = &[

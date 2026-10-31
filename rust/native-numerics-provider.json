@@ -1,0 +1,169 @@
+{
+  "schema": 1,
+  "profile": "numpy253-openblas",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "source_archive": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/runtime-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31/openpilot-rust-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31-aarch64.tar.gz",
+    "sha256": "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291",
+    "bytes": 1155969168
+  },
+  "runtime_manifest_sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+  "members": {
+    "numerics/libgfortran-e1b7dfc8-d8198c01.so.5.0.0": {
+      "source": "rust/bin/card-numerics/libgfortran-e1b7dfc8-d8198c01.so.5.0.0",
+      "sha256": "25899a29a06d3f2927021b4823d858558839fea0e7e759eedb8926fd0a339ea4",
+      "bytes": 1605377,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/libscipy_openblas64_-f552eb69.so": {
+      "source": "rust/bin/card-numerics/libscipy_openblas64_-f552eb69.so",
+      "sha256": "e58b9ec0d373252b70f37d9dc891d7183a4f57f062db87f38e9a1bf7442d3037",
+      "bytes": 27121113,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/LICENSE.txt": {
+      "source": "rust/bin/card-numerics/licenses/LICENSE.txt",
+      "sha256": "4860083caa0de2ac3292ca98bd074bd8f45d8b32624e37b1e70a240bff61e488",
+      "bytes": 46794,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/_core/include/numpy/libdivide/LICENSE.txt": {
+      "source": "rust/bin/card-numerics/licenses/numpy/_core/include/numpy/libdivide/LICENSE.txt",
+      "sha256": "fbc539f47d0cf83bc61378080fb873d5c14630126cacbfe754035c3926daa5ec",
+      "bytes": 1018,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/_core/src/common/pythoncapi-compat/COPYING": {
+      "source": "rust/bin/card-numerics/licenses/numpy/_core/src/common/pythoncapi-compat/COPYING",
+      "sha256": "3f2c1ffa76383a55ae0aac01c9737cd70050dff63e1f026694fbe9d662573c98",
+      "bytes": 690,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/_core/src/highway/LICENSE": {
+      "source": "rust/bin/card-numerics/licenses/numpy/_core/src/highway/LICENSE",
+      "sha256": "e340270d4f64384569a91d546acb5b094d69ce47f0c015db77abb74dc6f815af",
+      "bytes": 20785,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/_core/src/multiarray/dragon4_LICENSE.txt": {
+      "source": "rust/bin/card-numerics/licenses/numpy/_core/src/multiarray/dragon4_LICENSE.txt",
+      "sha256": "f7b14309e5f54e5022b26448eefd419988ada2aec01d3c1162d84a0ea8f21f2c",
+      "bytes": 1414,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/_core/src/npysort/x86-simd-sort/LICENSE.md": {
+      "source": "rust/bin/card-numerics/licenses/numpy/_core/src/npysort/x86-simd-sort/LICENSE.md",
+      "sha256": "211e7d737d6179a08f791ebb0a99897ce7cd2457410c542876d125576edfe910",
+      "bytes": 1514,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/_core/src/umath/svml/LICENSE": {
+      "source": "rust/bin/card-numerics/licenses/numpy/_core/src/umath/svml/LICENSE",
+      "sha256": "c17011467b4fe6e20fbfbeda4df09e58c2bca5480a063e55735a4000a379aad9",
+      "bytes": 1543,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/fft/pocketfft/LICENSE.md": {
+      "source": "rust/bin/card-numerics/licenses/numpy/fft/pocketfft/LICENSE.md",
+      "sha256": "a85ca13fdf90160b64a0698215868c13b74d835ad0a4e2ba44713b8c5058a056",
+      "bytes": 1498,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/linalg/lapack_lite/LICENSE.txt": {
+      "source": "rust/bin/card-numerics/licenses/numpy/linalg/lapack_lite/LICENSE.txt",
+      "sha256": "a14cc25e10d40a3aa705b7de2fb764a6535d8ee9b2db4e1724900585457dfd55",
+      "bytes": 2266,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/ma/LICENSE": {
+      "source": "rust/bin/card-numerics/licenses/numpy/ma/LICENSE",
+      "sha256": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6",
+      "bytes": 1593,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/random/LICENSE.md": {
+      "source": "rust/bin/card-numerics/licenses/numpy/random/LICENSE.md",
+      "sha256": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f",
+      "bytes": 3511,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/random/src/distributions/LICENSE.md": {
+      "source": "rust/bin/card-numerics/licenses/numpy/random/src/distributions/LICENSE.md",
+      "sha256": "469778be8f33d54e1bcaab28c281cc472916d2d273f835e55bc487d30503face",
+      "bytes": 2745,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/random/src/mt19937/LICENSE.md": {
+      "source": "rust/bin/card-numerics/licenses/numpy/random/src/mt19937/LICENSE.md",
+      "sha256": "0e111337b25494a773106695f0e799f642b8567aaacca4f116a74a8177179156",
+      "bytes": 2926,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/random/src/pcg64/LICENSE.md": {
+      "source": "rust/bin/card-numerics/licenses/numpy/random/src/pcg64/LICENSE.md",
+      "sha256": "e7d4f4fb20358f314210a892ae17351e04993813646f697ec387385ca2a36918",
+      "bytes": 1154,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/random/src/philox/LICENSE.md": {
+      "source": "rust/bin/card-numerics/licenses/numpy/random/src/philox/LICENSE.md",
+      "sha256": "6f5828a57223d4cc7f8ea505a2623e7b978b242752c1515e355f46ba2cec1800",
+      "bytes": 1509,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/random/src/sfc64/LICENSE.md": {
+      "source": "rust/bin/card-numerics/licenses/numpy/random/src/sfc64/LICENSE.md",
+      "sha256": "9d4098846018319cd68e228ee6220361787f73bccbf00237a85e4fc9621b998f",
+      "bytes": 1226,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/licenses/numpy/random/src/splitmix64/LICENSE.md": {
+      "source": "rust/bin/card-numerics/licenses/numpy/random/src/splitmix64/LICENSE.md",
+      "sha256": "268b0ca06759d31ea3ca68dd35f20e877916e927b1c2a835e4592a3c4354b1f9",
+      "bytes": 332,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/manifest.json": {
+      "source": "rust/bin/card-numerics/manifest.json",
+      "sha256": "214edd01df9788b127b3f6dac9d31971f8ab7e8c0273f5375dec1bd8d0fd230a",
+      "bytes": 431,
+      "mode": 292,
+      "link": null
+    },
+    "numerics/provenance.json": {
+      "source": "rust/bin/card-numerics/provenance.json",
+      "sha256": "ec41a7afc8c6e3dc35fac1ed4454858f8175de862da266ade6744d90545351f8",
+      "bytes": 293,
+      "mode": 292,
+      "link": null
+    },
+    "provenance/original-runtime-manifest.json": {
+      "source": "rust/runtime-manifest.json",
+      "sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+      "bytes": 241671,
+      "mode": 292,
+      "link": null
+    }
+  }
+}

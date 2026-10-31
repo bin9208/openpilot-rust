@@ -3,7 +3,7 @@ use std::{
     error::Error,
     io::{Read, Write},
     net::TcpListener,
-    path::Path,
+    path::PathBuf,
     time::Duration,
 };
 
@@ -72,8 +72,11 @@ fn observe(wire: Vec<u8>, tracked: bool, decoded: bool) -> Result<Observation, B
 }
 
 fn record(name: &str, rows: &[Observation]) -> Result<(), Box<dyn Error>> {
-    let directory = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../.omo/evidence/225-heartbeat/provider-controls");
+    let temporary = tempfile::tempdir()?;
+    let directory = std::env::var_os("CI_JOB_TEMP")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| temporary.path().to_path_buf())
+        .join("test-evidence/225-heartbeat/provider-controls");
     std::fs::create_dir_all(&directory)?;
     std::fs::write(
         directory.join(format!("{name}.json")),

@@ -1,35 +1,176 @@
 name: Runtime source build foundation
 on:
   push:
-    branches: [codex/feat-598-device-native-build, dev, main]
+    branches: [codex/feat-598-device-native-build, 'codex/feat-598-*', 'codex/feat-599-*', 'codex/feat-600-*', 'codex/feat-605-*', dev, main]
     paths:
       - 'rust/crates/runtime-build/**'
+      - 'rust/crates/runtime-installer/src/lib.rs'
+      - 'rust/crates/runtime-installer/src/identity.rs'
+      - 'rust/native-source-lfs.json'
+      - 'rust/native-python-toolchain.json'
+      - 'rust/native-model-wheels.json'
+      - 'rust/native-model-compilers.json'
+      - 'rust/native-model-source-scope.json'
+      - 'rust/crates/runtime-installer/src/model_inputs.rs'
+      - 'rust/crates/runtime-installer/tests/model_inputs.rs'
+      - 'rust/crates/runtime-installer/tests/support/model_inputs.rs'
+      - 'rust/tools/native_model_export.py'
+      - 'rust/tools/tests/test_native_model_export.py'
+      - 'rust/tools/native_model_inputs.py'
+      - 'rust/tools/native_model_cache.py'
+      - 'rust/tools/native_model_generation.py'
+      - 'rust/tools/model_export/**'
+      - 'rust/tools/build_offline_model_pipelines.py'
+      - 'rust/tools/tests/test_native_model_cache.py'
+      - 'rust/tools/tests/test_native_model_generation_inputs.py'
+      - 'tools/ci/prepare_native_model_assets.py'
+      - 'rust/tools/tests/test_native_model_inputs.py'
+      - 'tools/ci/prepare_native_model_wheels.py'
+      - 'tools/ci/fixtures/native-model-environment.py'
+      - 'tools/ci/prepare_native_python.py'
+      - 'tools/ci/fixtures/native-python-health.py'
+      - 'rust/native-panda-source-contract.json'
+      - 'rust/native-panda-provider.json'
+      - 'rust/native-dbc-provider.json'
+      - 'rust/native-usbgpu-provider.json'
+      - 'rust/native-usbgpu-source-contract.json'
+      - 'rust/native-usbgpu-model.json'
+      - 'rust/tools/native_runtime_layout.py'
+      - 'rust/tools/native_runtime_inputs.py'
+      - 'rust/tools/tests/test_native_runtime_inputs.py'
+      - 'rust/tools/tests/test_native_runtime_layout.py'
+      - 'rust/native-dbc-source-contract.json'
+      - 'tools/ci/fixtures/native-dbc-inputs.py'
+      - 'tools/ci/prepare_native_panda_inputs.py'
+      - 'tools/ci/fixtures/native-panda-firmware.py'
+      - 'tools/ci/prepare_native_source_assets.py'
+      - 'rust/crates/dev-tools/src/native_codec_inputs.rs'
+      - 'rust/crates/dev-tools/src/native_ffmpeg_headers.rs'
+      - 'rust/crates/dev-tools/src/native_ffmpeg_prefix.rs'
+      - 'rust/crates/dev-tools/src/native_provider.rs'
+      - 'rust/crates/dev-tools/src/native_raylib_inputs.rs'
+      - 'rust/crates/dev-tools/src/raylib_stage.rs'
+      - 'rust/crates/dev-tools/src/raylib_stage_tests.rs'
+      - 'rust/crates/dev-tools/src/bin/stage_startup_ui_raylib.rs'
+      - 'rust/crates/dev-tools/tests/native_raylib.rs'
+      - 'rust/native-raylib-provider.json'
+      - 'rust/native-opencv-headers.json'
+      - 'rust/native-opencv-provider.json'
+      - 'rust/native-numerics-provider.json'
+      - 'rust/native-geos-provider.json'
+      - 'rust/native-brotli-provider.json'
+      - 'rust/native-acados-provider.json'
+      - 'rust/native-sdl-provider.json'
+      - 'rust/native-turbojpeg-provider.json'
+      - 'rust/native-ffmpeg-tools-provider.json'
+      - 'rust/native-freesans-provider.json'
+      - 'rust/crates/sdl2/examples/native_font.rs'
+      - 'tools/ci/fixtures/native-font-reference.cc'
+      - 'tools/ci/fixtures/native-media-tools.py'
+      - 'tools/ci/fixtures/native-display-probe.cc'
+      - 'rust/crates/sdl2/examples/native_provider.rs'
+      - 'rust/crates/sdl2/Cargo.toml'
+      - 'rust/crates/jpeg/examples/native_turbojpeg.rs'
+      - 'rust/crates/jpeg/Cargo.toml'
+      - 'rust/native-mpc-provider.json'
+      - 'rust/native-mpc-source-contract.json'
+      - 'tools/ci/prepare_native_mpc_inputs.py'
+      - 'tools/ci/fixtures/native-mpc-abi.py'
+      - 'tools/ci/prepare_native_runtime_companions.py'
+      - 'tools/ci/fixtures/native-companion-probe.cc'
+      - 'rust/crates/dev-tools/src/native_opencv_prefix.rs'
+      - 'rust/crates/dev-tools/tests/native_opencv_prefix.rs'
+      - 'tools/ci/prepare_native_opencv_prefix.py'
+      - 'tools/ci/verify_native_compiler_features.py'
+      - 'rust/crates/dev-tools/src/native_opencv_headers.rs'
+      - 'rust/crates/dev-tools/src/bin/build_runtime_opencv.rs'
+      - 'rust/crates/dev-tools/tests/native_opencv_headers.rs'
+      - 'tools/ci/prepare_native_opencv_headers.py'
+      - 'tools/ci/prepare_native_raylib.py'
+      - 'rust/native-ffmpeg-provider.json'
+      - 'rust/crates/dev-tools/src/ffmpeg_build.rs'
+      - 'rust/crates/dev-tools/tests/ffmpeg_build.rs'
+      - 'rust/native-ffmpeg-headers.json'
+      - 'rust/crates/dev-tools/src/encoder_stage.rs'
+      - 'rust/crates/dev-tools/src/bin/stage_encoder_target.rs'
+      - 'rust/crates/dev-tools/tests/encoder_stage.rs'
+      - 'tools/ci/prepare_native_eigen.py'
+      - 'uv.lock'
+      - 'rust/crates/runtime-launcher/**'
+      - 'rust/crates/updated/**'
       - 'rust/Cargo.toml'
       - 'rust/Cargo.lock'
+      - 'rust/.gitignore'
+      - 'rust/native-runtime-catalog.json'
+      - 'rust/native-cargo-inputs.json'
+      - 'rust/native-system-sdk.json'
+      - 'tools/native/bootstrap_seed.py'
+      - 'tools/native/source_runtime.py'
+      - 'tools/native/source_entry.py'
+      - 'tools/native/publish_inputs.py'
+      - 'tools/ci/stage_native_input_payload.py'
+      - 'tools/ci/validation_context.py'
+      - 'tools/ci/tests/test_native_input_publication.py'
+      - '.github/workflows/native-input-publication.yml'
+      - 'launch_openpilot.sh'
+      - 'rust/native-bootstrap-inputs.json'
+      - 'tools/ci/tests/test_native_source_entry.py'
+      - 'tools/ci/tests/test_native_source_runtime.py'
+      - 'tools/ci/tests/test_native_bootstrap_seed.py'
       - '.github/workflows/runtime-source-build.yml'
+      - '.github/actions/**'
+      - 'tools/ci/local-arm'
+      - 'tools/ci/tests/test_local_native_workflows.py'
+      - 'tools/ci/tests/test_cargo_target_view.py'
+      - 'tools/ci/tests/test_readonly_publication.py'
+      - 'tools/ci/fixtures/local-native-workflows-605.json'
+      - 'rust/crates/disk-space/**'
+      - 'rust/tools/check-disk-space'
+  workflow_dispatch:
 # Branch push checks the actual x64/ARM build driver once; the required PR Rust
 # workspace gate also includes this crate. Do not duplicate this focused matrix on PR.
 permissions:
   contents: read
 jobs:
   offline-cargo-reuse:
-    name: Actual offline Cargo reuse (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    name: Actual offline Cargo reuse (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
       fail-fast: false
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
-    timeout-minutes: 15
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 90 || 15 }}
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
+      LOCAL_CI_GUEST_IDENTITY: unprivileged
       RUSTUP_TOOLCHAIN: '1.94.0'
-      CARGO_BUILD_JOBS: '2'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
+      - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+        with:
+          python-version: '3.12.14'
       - name: Inspect resources for this bounded toolchain and crate build
         run: |
           python3 - <<'PY'
@@ -44,20 +185,341 @@ jobs:
           PY
       - name: Install the pinned Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy --component rustfmt
+      - name: Verify local routing and retained original commands
+        run: |
+          python -m pip install PyYAML==6.0.2 pytest==9.0.2
+          python -m unittest discover -s tools/ci/tests -p 'test_local_native_workflows.py' -v
+      - name: Verify target views preserve strict source cleanliness
+        run: python3 -m unittest discover -s tools/ci/tests -p test_cargo_target_view.py -v
+      - name: Verify read-only publication permissions in the actual execution environment
+        run: python3 -m unittest discover -s tools/ci/tests -p test_readonly_publication.py -v
       - name: Check syntax formatting and the locked dependency graph
         run: |
           rustfmt --edition 2021 --check rust/crates/runtime-build/src/lib.rs rust/crates/runtime-build/src/main.rs rust/crates/runtime-build/tests/cargo_reuse.rs
           cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 > "$RUNNER_TEMP/runtime-build-metadata.json"
+      - name: Verify independently pinned bootstrap seed cache and failure preservation
+        run: python -m unittest discover -s tools/ci/tests -p 'test_native_bootstrap_seed.py' -v
+      - name: Verify full native source driver boundaries and cancellation
+        run: python3 -m unittest discover -s tools/ci/tests -p 'test_native_source_runtime.py' -v
+      - name: Verify current-source metadata resolution and independent cache reuse
+        run: python3 -m unittest discover -s tools/ci/tests -p 'test_native_source_entry.py' -v
+      - name: Verify exact-source publication gates, archive integrity and resumable uploads
+        run: python3 -m unittest discover -s tools/ci/tests -p test_native_input_publication.py -v
+      - name: Check formatting of additional source and asset preparation modules
+        run: rustfmt --edition 2021 --check rust/crates/runtime-build/src/*.rs rust/crates/runtime-build/tests/*.rs
       - name: Compile and exercise real offline build reuse
+        id: offline-reuse
         run: |
           set -o pipefail
           cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build -- --nocapture 2>&1 | tee "$RUNNER_TEMP/runtime-build-tests.log"
           cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --all-targets -- -D warnings
+      - name: Collect remaining build-reuse failures after the required command fails
+        if: failure() && steps.offline-reuse.outcome == 'failure'
+        run: |
+          set -o pipefail
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-fail-fast -- --nocapture 2>&1 | tee "$RUNNER_TEMP/runtime-build-tests-remaining.log"
+      - name: Audit the full runtime roster against the actual source workspace
+        run: |
+          cargo run --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-build --bin openpilot-runtime-plan -- \
+            --root "$GITHUB_WORKSPACE" --cargo "$(rustup which cargo)" --check > "$RUNNER_TEMP/native-runtime-catalog.json"
+      - name: Compile the runtime consumer configuration without archive preparation dependencies
+        run: cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --all-targets -- -D warnings
+      - name: Verify the core asset CLI and Python model wheel admission
+        run: |
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --test assets_cli -- --nocapture
+          python3 -m unittest discover -s rust/tools/tests -p test_native_model_inputs.py -v
+          python3 -m unittest discover -s rust/tools/tests -p test_native_model_cache.py -v
+          python3 -m unittest discover -s rust/tools/tests -p test_native_model_generation_inputs.py -v
+          python3 -m unittest discover -s rust/tools/tests -p test_native_model_export.py -v
+          python3 -m unittest discover -s rust/tools/tests -p test_native_runtime_layout.py -v
+          python3 -m unittest discover -s rust/tools/tests -p test_native_runtime_inputs.py -v
+      - name: Verify source-bound runtime model payloads before building or selecting a generation
+        run: |
+          rustfmt --edition 2021 --check rust/crates/runtime-installer/src/model_inputs.rs rust/crates/runtime-installer/tests/model_inputs.rs rust/crates/runtime-installer/tests/support/model_inputs.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-installer --test model_inputs -- --nocapture
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-installer --all-targets -- -D warnings
+      - name: Verify committed LFS preparation without archive features
+        run: |
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-source-assets --test source_assets -- --nocapture
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-source-assets --all-targets -- -D warnings
+      - name: Verify pinned Python preparation without other preparation features
+        run: |
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-python --test python -- --nocapture
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-build --no-default-features --features prepare-python --all-targets -- -D warnings
+      - name: Verify unchanged codec wheel admission and independent component reuse
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          free=shutil.disk_usage(os.environ['CI_JOB_TEMP']).free
+          growth=1024**3
+          print(f'available_bytes={free} expected_codec_tool_and_inputs_growth_bytes={growth}')
+          if free<growth:
+              raise SystemExit('insufficient capacity for this codec operation; other data retained')
+          PY
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/{native_codec_inputs,encoder_stage}.rs rust/crates/dev-tools/src/bin/stage_encoder_target.rs rust/crates/dev-tools/tests/encoder_stage.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test encoder_stage
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_codec_inputs::tests -- --nocapture
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --bin stage-encoder-target -- -D warnings
+      - uses: ./.github/actions/native-cache
+        id: codec-wheels-cache
+        with:
+          mode: restore
+          name: native-codec-assets
+          key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
+      - name: Prepare the original ARM codec wheels without pip or compiler execution
+        run: |
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-encoder-target -- \
+            --prepare-wheels --root "$GITHUB_WORKSPACE" --cache "$RUNNER_TEMP/native-codec-assets" --store "$RUNNER_TEMP/native-codec-prefixes" > "$RUNNER_TEMP/native-codec-first.json"
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-encoder-target -- \
+            --prepare-wheels --root "$GITHUB_WORKSPACE" --cache "$RUNNER_TEMP/native-codec-assets" --store "$RUNNER_TEMP/native-codec-prefixes" > "$RUNNER_TEMP/native-codec-reused.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          first=json.loads((root/'native-codec-first.json').read_text())
+          repeat=json.loads((root/'native-codec-reused.json').read_text())
+          assert set(first)==set(repeat)=={'ffmpeg','libyuv'}
+          for name,row in first.items():
+            reused=repeat[name]
+            assert row['copied_bytes']>0 and reused['copied_bytes']==0
+            assert row['tree_sha256']==reused['tree_sha256'] and row['root']==reused['root']
+            assert reused['asset']['transferred_bytes']==reused['asset']['stored_bytes']==0
+            assert not row['compiler_executed'] and not row['runtime_activated']
+          print('Original codec wheels verified; repeat HTTP body, stored archive bytes and copied prefix bytes zero. This step does not execute ARM codecs.')
+          PY
+      - uses: ./.github/actions/native-cache
+        if: steps.codec-wheels-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-codec-assets
+          key: native-codec-wheels-ce758b64c0343574e18ab97cbcff1e29868c66ccc5e0c866b5970266451203d4-1659e55a357f732836e5ed2a17fa65e715a11bf9bfa6d305e71fd7ac00a8e475-v1
+      - uses: ./.github/actions/native-cache
+        id: eigen-headers-cache
+        with:
+          mode: restore
+          name: native-eigen-assets
+          key: native-eigen-340-arm-b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a-v1
+      - name: Prepare only the original Eigen headers and reuse libyuv without the other wheel
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_eigen.py --preparer "$native_target/debug/stage-encoder-target" \
+            --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: ./.github/actions/native-cache
+        if: steps.eigen-headers-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-eigen-assets
+          key: native-eigen-340-arm-b02ee704aa964d9d7bafb53cc0e096680e4a3b4f6fb1cd98b0a85c7298f3dc0a-v1
+      - name: Verify unchanged legacy raylib admission and independent native preparation
+        run: |
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/{raylib_stage,native_raylib_inputs}.rs rust/crates/dev-tools/src/bin/stage_startup_ui_raylib.rs rust/crates/dev-tools/tests/native_raylib.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib raylib_stage::tests -- --nocapture
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_raylib_inputs::tests -- --nocapture
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test native_raylib
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --bin stage-startup-ui-raylib -- -D warnings
+      - uses: ./.github/actions/native-cache
+        id: raylib-sdk-cache
+        with:
+          mode: restore
+          name: native-raylib-assets
+          key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
+      - name: Prepare only the original native raylib SDK and reject forged local receipts
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-startup-ui-raylib
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_raylib.py --preparer "$native_target/debug/stage-startup-ui-raylib" \
+            --root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP"
+      - uses: ./.github/actions/native-cache
+        if: steps.raylib-sdk-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-raylib-assets
+          key: native-raylib-arm-d9b9bebb39167442bacf627958d57ae95e452550ced1b68337cbf2a73375856a-v1
+      - name: Verify released OpenCV header and generated configuration admission
+        run: |
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/native_opencv_headers.rs rust/crates/dev-tools/src/bin/build_runtime_opencv.rs rust/crates/dev-tools/tests/native_opencv_headers.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_opencv_headers::tests -- --nocapture
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib opencv_build::tests -- --nocapture
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test native_opencv_headers
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/native_opencv_prefix.rs rust/crates/dev-tools/tests/native_opencv_prefix.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_opencv_prefix::tests -- --nocapture
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test native_opencv_prefix
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --bin build-runtime-opencv -- -D warnings
+      - uses: ./.github/actions/native-cache
+        id: opencv-header-source-cache
+        with:
+          mode: restore
+          name: native-opencv-source
+          key: native-opencv-source-6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61-v1
+      - name: Restore original OpenCV headers without rebuilding its native libraries
+        run: |
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-opencv
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/prepare_native_opencv_headers.py --preparer "$native_target/debug/build-runtime-opencv" \
+            --plan rust/native-opencv-headers.json --work "$RUNNER_TEMP"
+      - uses: ./.github/actions/native-cache
+        if: steps.opencv-header-source-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-opencv-source
+          key: native-opencv-source-6a7508554941c1a698c243b2212b2985ce59a65a3e0348d53c2158607d801e61-v1
+      - name: Verify released FFmpeg header reconstruction without changing existing profiles
+        run: |
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/{native_codec_inputs,native_ffmpeg_headers,ffmpeg_build}.rs rust/crates/dev-tools/tests/ffmpeg_build.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test ffmpeg_build
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_ffmpeg_headers::tests -- --nocapture
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib --bin build-runtime-ffmpeg -- -D warnings
+      - name: Verify component-only provider export and independently pinned consumption
+        run: |
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/native_provider.rs rust/crates/dev-tools/src/ffmpeg_build.rs rust/crates/dev-tools/tests/ffmpeg_build.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_provider::tests -- --nocapture
+      - name: Check the actual display provider examples
+        run: |
+          rustfmt --edition 2021 --check rust/crates/sdl2/examples/native_provider.rs rust/crates/jpeg/examples/native_turbojpeg.rs
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-sdl2 --features fixture-inspection --example native_provider -- -D warnings
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-jpeg --features native-skip-miri --example native_turbojpeg -- -D warnings
+      - name: Check the actual font provider example
+        run: |
+          rustfmt --edition 2021 --check rust/crates/sdl2/examples/native_font.rs
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-sdl2 --features gui --example native_font -- -D warnings
+      - name: Verify composed FFmpeg input identity, collisions and reuse
+        run: |
+          rustfmt --edition 2021 --check rust/crates/dev-tools/src/native_ffmpeg_prefix.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_ffmpeg_prefix::tests -- --nocapture
+      - uses: ./.github/actions/native-cache
+        id: ffmpeg-headers-cache
+        with:
+          mode: restore
+          name: native-ffmpeg-source
+          key: native-ffmpeg-source-8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968-v1
+      - name: Prepare all original released headers and prove zero-transfer repeat
+        run: |
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg -- \
+            --prepare-released-headers --plan rust/native-ffmpeg-headers.json --cache "$RUNNER_TEMP/native-ffmpeg-source" --store "$RUNNER_TEMP/native-ffmpeg-headers" > "$RUNNER_TEMP/native-ffmpeg-headers-first.json"
+          cargo run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg -- \
+            --prepare-released-headers --plan rust/native-ffmpeg-headers.json --cache "$RUNNER_TEMP/native-ffmpeg-source" --store "$RUNNER_TEMP/native-ffmpeg-headers" > "$RUNNER_TEMP/native-ffmpeg-headers-reused.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path(os.environ['CI_JOB_TEMP'])
+          first=json.loads((root/'native-ffmpeg-headers-first.json').read_text())
+          repeat=json.loads((root/'native-ffmpeg-headers-reused.json').read_text())
+          assert first['public_headers']==repeat['public_headers']==140
+          assert first['root']==repeat['root'] and first['tree_sha256']==repeat['tree_sha256']
+          assert first['copied_bytes']>0 and repeat['copied_bytes']==0
+          assert repeat['asset']['transferred_bytes']==repeat['asset']['stored_bytes']==0
+          assert not first['compiler_executed'] and not first['provider_libraries_prepared'] and not first['actual_target_execution']
+          PY
+      - uses: ./.github/actions/native-cache
+        if: steps.ffmpeg-headers-cache.outputs.cache-hit != 'true'
+        with:
+          mode: save
+          name: native-ffmpeg-source
+          key: native-ffmpeg-source-8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968-v1
+      - name: Verify the real HTTPS CLI and zero-transfer reuse of a pinned public input
+        run: |
+          cargo run --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-build --bin openpilot-runtime-assets -- \
+            --plan rust/crates/runtime-build/tests/fixtures/assets-github.json --cache "$RUNNER_TEMP/runtime-https-assets" > "$RUNNER_TEMP/runtime-https-first.json"
+          cargo run --manifest-path rust/Cargo.toml --locked --offline -p openpilot-runtime-build --bin openpilot-runtime-assets -- \
+            --plan rust/crates/runtime-build/tests/fixtures/assets-github.json --cache "$RUNNER_TEMP/runtime-https-assets" > "$RUNNER_TEMP/runtime-https-reused.json"
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          temp = Path(os.environ['RUNNER_TEMP'])
+          first = json.loads((temp / 'runtime-https-first.json').read_text())['pinned-public-input']
+          reused = json.loads((temp / 'runtime-https-reused.json').read_text())['pinned-public-input']
+          assert first['transferred_bytes'] == first['stored_bytes'] == first['bytes'] == 403
+          assert reused['transferred_bytes'] == reused['stored_bytes'] == 0
+          assert first['path'] == reused['path']
+          assert hashlib.sha256(Path(reused['path']).read_bytes()).hexdigest() == reused['sha256']
+          print('Actual HTTPS CLI: initial_body_bytes=403 repeated_body_bytes=0')
+          PY
+      - name: Verify bootstrap HTTPS transport with the independently pinned public text fixture
+        run: |
+          python3 - <<'PY'
+          import hashlib, importlib.util, json, os
+          from pathlib import Path
+          spec = importlib.util.spec_from_file_location('bootstrap_seed','tools/native/bootstrap_seed.py')
+          seed = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(seed)
+          plan = json.loads(Path('rust/crates/runtime-build/tests/fixtures/assets-github.json').read_text())
+          asset = plan['assets']['pinned-public-input']
+          output = Path(os.environ['CI_JOB_TEMP'])/'bootstrap-http-public-text'
+          transferred = seed.fetch(asset,output)
+          assert transferred == asset['bytes'] == output.stat().st_size == 403
+          assert hashlib.sha256(output.read_bytes()).hexdigest() == asset['sha256']
+          print('Bootstrap HTTPS transport: public text body403; not a published native seed download test.')
+          PY
+      - name: Verify growth-only native capacity admission and bootstrap preservation
+        run: |
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-disk-space
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test disk_space
+          python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/ci/tests -q tools/ci/tests/test_native_disk_guard.py
+      - name: Verify shared source-build manifest checks and compile the source-aware sealer
+        run: |
+          rustfmt --edition 2021 --check rust/crates/runtime-installer/src/lib.rs rust/crates/runtime-installer/src/identity.rs rust/crates/runtime-installer/tests/cli.rs rust/crates/dev-tools/src/bin/seal_runtime_package.rs
+          cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-installer --test cli source_build_reuses_original_manifest_checks_without_a_release_descriptor
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin seal-runtime-package
+      - name: Admit and prepare native startup and updater regression prerequisites
+        run: |
+          python3 - <<'PY'
+          import os, shutil
+          growth = 4 * 1024**3
+          for path in (os.environ['RUNNER_TEMP'], os.environ['GITHUB_WORKSPACE']):
+              free = shutil.disk_usage(path).free
+              print(f'path={path} available_bytes={free} additional_startup_test_growth_bytes={growth}')
+              if free < growth:
+                  raise SystemExit('insufficient space for this startup/update test operation; other data retained')
+          PY
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" update
+          sudo apt-get -o APT::Architectures="$(dpkg --print-architecture)" install -y capnproto libcapnp-dev g++ libzmq3-dev time
+      - name: Verify the actual launcher and updater source-generation protocol and regressions
+        run: |
+          set -o pipefail
+          rustfmt --edition 2021 --check rust/crates/runtime-launcher/src/native.rs rust/crates/runtime-launcher/src/bootstrap.rs rust/crates/runtime-launcher/tests/native_protocol.rs rust/crates/updated/src/{lib,native,main,overlay,updater,runtime,report}.rs
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-updated --bin openpilot-updated
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          export NATIVE_PROTOCOL_UPDATED_BINARY="$native_target/debug/openpilot-updated"
+          test -x "$NATIVE_PROTOCOL_UPDATED_BINARY"
+          /usr/bin/time -v -o "$RUNNER_TEMP/native-startup-resources.txt" cargo test --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-launcher -p openpilot-updated -- --nocapture 2>&1 | tee "$RUNNER_TEMP/native-startup-tests.log"
+          cargo clippy --manifest-path rust/Cargo.toml --locked -p openpilot-runtime-launcher -p openpilot-updated --all-targets -- -D warnings
       - name: Preserve actual build evidence
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: runtime-source-build-${{ matrix.runner }}-${{ github.sha }}
           path: |
-            ${{ runner.temp }}/runtime-build-metadata.json
-            ${{ runner.temp }}/runtime-build-tests.log
+            ${{ env.CI_JOB_TEMP }}/runtime-build-metadata.json
+            ${{ env.CI_JOB_TEMP }}/native-runtime-catalog.json
+            ${{ env.CI_JOB_TEMP }}/runtime-build-tests.log
+            ${{ env.CI_JOB_TEMP }}/runtime-build-tests-remaining.log
+            ${{ env.CI_JOB_TEMP }}/native-codec-first.json
+            ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-*.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-headers-*.json
+            ${{ env.CI_JOB_TEMP }}/native-opencv-headers-tamper.*
+            ${{ env.CI_JOB_TEMP }}/native-opencv-headers/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-tamper.*
+            ${{ env.CI_JOB_TEMP }}/native-raylib-sdk-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-eigen-*.json
+            ${{ env.CI_JOB_TEMP }}/native-libyuv-only.json
+            ${{ env.CI_JOB_TEMP }}/native-eigen-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-codec-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-codec-prefixes/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers-first.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-ffmpeg-headers/**/generation/tree.json
+            ${{ env.CI_JOB_TEMP }}/runtime-https-first.json
+            ${{ env.CI_JOB_TEMP }}/runtime-https-reused.json
+            ${{ env.CI_JOB_TEMP }}/native-startup-resources.txt
+            ${{ env.CI_JOB_TEMP }}/native-startup-tests.log
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always() && env.LOCAL_CI_ARCH == 'aarch64'
+        with:
+          name: local-arm-offline-cargo-reuse-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

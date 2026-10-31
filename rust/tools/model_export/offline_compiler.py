@@ -34,8 +34,10 @@ class OfflineQcomCompiler(Compiler):
     def __init__(self, command: CompilerCommand) -> None:
         super().__init__(None)
         self.command = command
+        self.compile_calls = 0
 
     def compile(self, source: str) -> bytes:
+        self.compile_calls += 1
         try:
             result = subprocess.run(
                 self.command.argv,

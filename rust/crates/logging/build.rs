@@ -13,6 +13,12 @@ fn git(root: &Path, arguments: &[&str]) -> Option<String> {
         .flatten()
 }
 fn main() {
+    println!("cargo:rerun-if-env-changed=OPENPILOT_NATIVE_INCREMENTAL");
+    let incremental = match env::var("OPENPILOT_NATIVE_INCREMENTAL").as_deref() {
+        Err(env::VarError::NotPresent) => false,
+        Ok("1") => true,
+        _ => panic!("OPENPILOT_NATIVE_INCREMENTAL must be absent or exactly 1"),
+    };
     let directory = env::var_os("CARGO_MANIFEST_DIR").expect("Cargo provides manifest directory");
     let root = Path::new(&directory).join("../../..");
     let commit = git(&root, &["rev-parse", "--verify", "HEAD"]).filter(|value| {
@@ -30,8 +36,23 @@ fn main() {
     };
     println!("cargo:rustc-env=OPENPILOT_LOGGING_SOURCE_COMMIT={commit}");
     println!("cargo:rustc-env=OPENPILOT_LOGGING_SOURCE_TREE={tree}");
+    println!(
+        "cargo:rustc-env=OPENPILOT_LOGGING_SOURCE_STAMP_MODE={}",
+        if incremental {
+            "compiled-native-incremental"
+        } else {
+            "exact-source"
+        }
+    );
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src");
+    println!("cargo:rerun-if-changed=Cargo.toml");
+    if incremental {
+        // Keep the real commit of the compilation that produced these bytes.
+        // The source-generation descriptor independently binds any reuse to its
+        // actual clean source, compiler inputs and verified output hash.
+        return;
+    }
     for name in ["HEAD", "index", "packed-refs"] {
         if let Some(path) = git(&root, &["rev-parse", "--git-path", name]) {
             let path = Path::new(path.trim());

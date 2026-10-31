@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "profile": "geos313-shared",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "source_archive": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/runtime-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31/openpilot-rust-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31-aarch64.tar.gz",
+    "sha256": "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291",
+    "bytes": 1155969168
+  },
+  "runtime_manifest_sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+  "members": {
+    "carrot-geos/LICENSE.txt": {
+      "source": "rust/bin/carrot-geos/LICENSE.txt",
+      "sha256": "4a207eac9bf257ed286e1c6f0fce253d1abfdb134fc61ec855e37f5692a3f754",
+      "bytes": 1583,
+      "mode": 292,
+      "link": null
+    },
+    "carrot-geos/LICENSE_GEOS": {
+      "source": "rust/bin/carrot-geos/LICENSE_GEOS",
+      "sha256": "138b2c2f9450073d7c116abe397ca4382625671c752b7a9a5f320b33fc3f3f2a",
+      "bytes": 26786,
+      "mode": 292,
+      "link": null
+    },
+    "carrot-geos/libgeos-9c5cb28e.so.3.13.1": {
+      "source": "rust/bin/carrot-geos/libgeos-9c5cb28e.so.3.13.1",
+      "sha256": "ff5ec5bbedb286bfa5fa63ef44385a3f6b26d297e64e21b75eb19985f31bf63a",
+      "bytes": 5165105,
+      "mode": 292,
+      "link": null
+    },
+    "carrot-geos/libgeos_c-42bdf9a9.so.1.19.2": {
+      "source": "rust/bin/carrot-geos/libgeos_c-42bdf9a9.so.1.19.2",
+      "sha256": "882f6aaa28e24418fd1ed695b0fb3a36362ffa386c4ca840526962c2aab21eb3",
+      "bytes": 563409,
+      "mode": 292,
+      "link": null
+    },
+    "carrot-geos/manifest.json": {
+      "source": "rust/bin/carrot-geos/manifest.json",
+      "sha256": "c88211c9763c0d8a42bdc5bf0b5a15da74dda00e02790173d6fa397acbe90b0c",
+      "bytes": 695,
+      "mode": 292,
+      "link": null
+    },
+    "carrot-geos/provenance.json": {
+      "source": "rust/bin/carrot-geos/provenance.json",
+      "sha256": "6dd824a16ba6e7e6c9cccd597a8145775aa8680d86a971f447fcbeb0078f6dfa",
+      "bytes": 267,
+      "mode": 292,
+      "link": null
+    },
+    "provenance/original-geos-environment.txt": {
+      "source": "rust/bin/carrot-geos/environment.txt",
+      "sha256": "76a9ffd99122c16ad6455e890f05c893a4d63150d9be086753b5344cb020dcfe",
+      "bytes": 252,
+      "mode": 292,
+      "link": null
+    },
+    "provenance/original-runtime-manifest.json": {
+      "source": "rust/runtime-manifest.json",
+      "sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+      "bytes": 241671,
+      "mode": 292,
+      "link": null
+    }
+  }
+}

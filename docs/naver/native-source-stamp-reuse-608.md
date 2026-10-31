@@ -1,0 +1,136 @@
+# 실제 runtime의 문서 변경 재사용 — #608 (X64·ARM6개 비교 통과)
+
+상위 #598/#600. dependency-free fixture의 Cargo fresh만으로 실제 runtime의 문서 변경
+재사용을 입증할 수 없었다. `logging/build.rs`와 `loggerd/build.rs`가 Git HEAD/index 및
+모든 추적 파일을 감시하고 전체 소스 SHA를 바이너리에 넣으므로, 문서 변경도 공통 logging
+및 관련 실행 파일의 재빌드를 유발할 수 있었다. 아래 정확 소스의 X64·ARM6개 비교는 모두 통과했다.
+정상 PR/병합 후 검사와 전체 generation의 정확 SHA 검증은 아직 미완료다.
+
+## 변경 경계
+
+기본 release 경로는 기존 exact-source 감시와 stamp를 유지한다. 명시적으로
+`OPENPILOT_NATIVE_INCREMENTAL=1`을 recipe 환경에 넣은 native 경로만 Git 메타데이터와
+전체 저장소 파일의 감시를 생략한다. 실제 crate의 src/build.rs/Cargo.toml, loggerd의 version.h
+및 Cargo가 추적하는 실제 의존성/feature/입력은 그대로 감시한다. 다른 flag 값은 거부한다.
+native generation의 모든 group은 이 모드를 명시적으로 고정해야 하며, 값은 기존 recipe와
+cache identity에 포함되므로 기본 모드와 같은 target cache로 혼용하지 않는다.
+
+재사용된 artifact의 내장 source commit/tree는 **실제로 컴파일했던 원래 값**이다. 문서만
+바뀐 커밋으로 그 값을 덮어쓰지 않는다. native logging에는 `source_commit_kind=compiled
+artifact`, loggerd의 기록에는 같은 의미의 항목을 추가해 compilation provenance임을
+표시한다. parent logging context가 이를 덮어쓰지 못하게 한다. 선택한 runtime의 실제
+commit은 별도 source generation descriptor/build.json/manager Git metadata에 남으며,
+기존 source·compiler·provider·결과 hash와 ABI 검증을 통과해야만 해당 source로 선택된다.
+작업 중인 다른 SHA의 runtime을 현재 source 결과로 바꾸는 예외는 추가하지 않는다.
+
+## 실제 crate 검증 방법
+
+`native-source-reuse.yml`은 bin-actions의 X64 및 별도 ARM QEMU/PRoot에서 다음을 수행한다.
+로컬에서는 구문·서식·diff/읽기만 수행했다.
+
+1. 원래 logging/loggerd 전체 회귀와 strict Clippy를 유지한다.
+2. 해당 Actions source의 job 소유 clone을 만들고 실제 runtime build driver로
+   `openpilot-loggerd`와 `openpilot-logmessaged`를 빌드한다. 기본 경로와 다른 native recipe
+   identity, 실제 toolchain/native linker 및 각 출력 hash를 기록한다.
+3. 같은 입력 반복과 문서만 추가한 source commit에서 두 실행 파일 모두 fresh=true이고
+   출력 hash가 같아야 한다. 실제 컴파일 SHA가 원래 값으로 남는지도 확인한다.
+4. loggerd의 `--help` 문자열만 바꾼 격리된 source commit을 빌드한다. loggerd의 실제
+   help 출력/hash가 바뀌고 logmessaged는 fresh/같은 hash를 유지해야 한다.
+5. 기본 모드로 전환해 별도 cache에서 빌드하고 다시 문서를 바꾼다. 기존 exact-source
+   stamp 동작에 따라 두 출력이 재빌드되고 새 컴파일 SHA가 남아야 한다.
+
+이 시험은 실제 logger crate의 증분 빌드와 provenance를 다룬다. 전체 AGNOS generation의
+설치·부팅·모델·기록·기존 업로드·기기 수용 및 aggregate peak resource 측정은 별도다.
+실행 파일은 격리된 CI clone에서만 바꾸며, 원래 source·다른 cache·사용자 로그를 reset/
+삭제하지 않는다. 정확 SHA의 결과를 확인하기 전까지 #608과 #598을 닫지 않는다.
+
+## 실제 ARM6개 비교 통과 — 2026-10-27
+
+정확 소스 `2b896bd0e32764ddc7f19bcda1ef935ac79ec2c7`의
+[40376779331 / ARM job121761883702](https://github.com/bin9208/openpilot-rust/actions/runs/40376779331/job/121761883702)이
+2026-10-27T01:39:24Z에 **success**로 끝났다. 원래 logging/loggerd 회귀·strict Clippy와
+실제6개 비교 단계가 모두 통과했다. artifact12702798313의 모든 보고서와 summary,
+execution 정보를 읽고 확인했다. X64 job121761883374는 조회 시 queued이며 전체 run의
+성공을 주장하지 않는다. 실행을 수동 취소하거나 재시작하지 않았다.
+
+| 경우 | driver elapsed | loggerd / logmessaged fresh | 출력 검사 |
+| --- | --- | --- | --- |
+| native 최초 |7217.097초 | false / false | 실제 두 실행 파일 빌드 |
+| native 반복 |20.378초 | true / true | 최초와 각각 같은 SHA |
+| native 문서 변경 |19.955초 | true / true | 최초와 각각 같은 SHA |
+| native loggerd만 수정 |263.135초 | false / true | loggerd hash/실제 help 변경, logmessaged 같은 SHA |
+| legacy 최초 |7251.467초 | false / false | 별도 원래 source-stamp cache |
+| legacy 문서 변경 |1066.657초 | false / false | 원래 동작대로 두 hash 모두 변경 |
+
+native cache key는 여섯 비교 중 native4개에서
+`8bc1bd63af1165d5815fa9bf5ddf9c6ebbdcf11b49abdfd048bb415586f27d81`로 같았다.
+최초 loggerd는 `b323ecbd677ed245ba94d0286703049d875208b5749969d51470f091f99978b2`,
+logmessaged는 `05c60481bb18f16dac95570cbf70d06ac7c5ffaf2ff1f3f5b42e98b645c1e543`다.
+작은 수정의 loggerd는 `fea4e00f9ea1c619f4ce3fd3128d919a1f0467a55960c7916b168d265002ac50`다.
+문서 commit `1b2be9b5524dfaa18ecc9ebcbc039dda0093c5da`에서 실제 컴파일했던 원래 SHA를
+유지했고, 수정 commit `19f42f7b54bd6140606034fdd30fa6b7855ee243`에서는 새 SHA를 확인했다.
+legacy 문서 control commit은 `add171636c61430354a6626bf16352dda493c8fd`다.
+이 commit들은 해당 job 소유 fixture clone 안에서만 만들었다.
+
+host는 x86_64 `bin-actions`, guest target은 `aarch64-unknown-linux-gnu`, 실행은
+QEMU user/PRoot다. rootfs SHA는
+`a91d5a93010193712d346d761372b7c9db6df093893161c64ca107f05914f2`,
+PRoot SHA는 `db185300a9daabbce86aca7632d8c7fdc4249f6f153171954013b70c5f491ec0`다.
+고정 genuine AGNOS 이미지 검사는 다른 workflow이며 이 결과를 AGNOS kernel 부팅이나
+물리 ARM CPU/comma3X 성능으로 표현하지 않는다.
+
+6-case script wall time은4:29:06, `/usr/bin/time -v` 최대 RSS는1005268KiB다.
+이는 단일 child의 최대 관측이며 aggregate process-tree peak RAM/swap 증거가 아니다.
+정확 디스크 최대 증가량과 대형 자산 전송량도 이 시험이 측정하지 않았다. 실행 시간을
+대형 runtime 전체나 사용자 기기의 절감률로 확장하지 않는다. 두 실제 logger 실행 파일의
+문서 재사용·선택적 재빌드·원래 provenance/legacy stamp 보존 증거로 기록한다.
+
+## 과거 ARM 부분 결과와 실행 예산
+
+source `27402df851b43afff74b3987df62d17e71d068ec`의
+[40337336625](https://github.com/bin9208/openpilot-rust/actions/runs/40337336625),
+ARM job121622330958은 원래 logging/loggerd 회귀와 Clippy를 통과했다. 실제 release 출력의
+초기/반복/문서 변경3개 보고서를 artifact12673131513에서 확인했다.
+
+| 경우 | driver elapsed | loggerd/logmessaged fresh | 두 출력 hash |
+| --- | --- | --- | --- |
+| 최초 | 6386.611초 | false / false | 각각905b97026c8b… / de4d8e2c473d… |
+| 반복 | 91.356초 | true / true | 최초와 동일 |
+| 문서 변경 | 91.224초 | true / true | 최초와 동일 |
+
+문서 변경 fixture commit은 `61f6eec772ec05b871de7df548f14ddded5fb695`이고 cache key는
+최초와 같았다. 원래 SHA를 바이너리에서 확인하는 fixture도 다음 단계로 진행했다.
+이후 loggerd 하나의 수정 빌드 중3시간 한도를 초과했다. check-run annotation은
+`The job has exceeded the maximum execution time of 3h0m0s`이며 성공이 아니다.
+작은 변경과 legacy 비교3개는 미완료이고 X64는 당시 대기였다. 수동 취소하지 않았다.
+
+같은 ARM 실행에서 Cargo 자체는 반복5.47초/문서5.38초를 보고했다. 전체 driver의 약91초와
+차이가 있어 그 오버헤드의 원인을 추정으로 확정하지 않는다. 후속 비교는 실제 runtime과
+같이 release build driver를 사용하고, 선택적 `OPENPILOT_NATIVE_BUILD_TIMINGS=1`로 source
+검사·입력 검사·도구 확인·Cargo·출력 hash 단계를 stderr의 JSON에 분리한다. 보고서/manifest
+schema와 입력 검증은 바꾸지 않는다. ARM 예산만360분으로 늘려 원래6개 비교를 모두 수행한다.
+X6445분, 원래 logging/loggerd 회귀·Clippy·Rust/tool/input pin은 유지한다. 이 시간은 QEMU
+user-space의 해당 CI 실행이며 comma 3X 시간·CPU 개선이나 전체 runtime 성능이 아니다.
+
+## X64까지 완료된 전체 실행 — 2026-10-27
+
+같은 source `2b896bd0e32764ddc7f19bcda1ef935ac79ec2c7`의
+[Actions40376779331](https://github.com/bin9208/openpilot-rust/actions/runs/40376779331)은 전체 success다.
+X64 job121761883374와 ARM job121761883702 모두 원래 logging/loggerd 회귀·strict Clippy·6개 비교를
+통과했다. X64 artifact12731260583(14,977bytes)와 기존 ARM artifact12702798313(15,392bytes)의
+실제 보고서를 읽고 대조했다. 앞 절의 X64 queued는 당시 관측이며 현재 상태는 success다.
+
+| 실제 비교 | X64 elapsed ms | ARM QEMU/PRoot elapsed ms |
+| --- | ---: | ---: |
+| native 초기 | 394120 | 7217097 |
+| native 같은 입력 반복 | 1769 | 20378 |
+| native 문서 변경 | 1568 | 19955 |
+| native logger help 변경 | 13107 | 263135 |
+| legacy 초기 | 395272 | 7251467 |
+| legacy 문서 변경 | 53538 | 1066657 |
+
+양쪽 모두 반복/docs에서는 loggerd와 logmessaged가 fresh=true이고 hash가 그대로였다.
+logger help 변경에서는 실제 loggerd 출력/hash가 바뀌고 logmessaged는 fresh/동일 hash였다.
+legacy 기본 source stamp와 실제 compilation provenance 보존도 summary에서 확인했다.
+이것은 logger 두 실행 파일의 실제 Cargo 입력 재사용 증거다. 전체99개 generation/기기 시간,
+전체 CPU 개선 또는 aggregate RAM peak의 증거가 아니며 정상 PR/병합 후 확인은 남는다.

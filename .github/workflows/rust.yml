@@ -10,16 +10,26 @@ permissions:
 env:
   RUSTUP_TOOLCHAIN: '1.94.0'
 concurrency:
-  group: rust-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: rust-${{ github.event_name }}-${{ github.ref }}-${{ github.sha }}-native-arm-v1
+  queue: max
+  cancel-in-progress: false
 jobs:
   fast:
     name: rust checks
     needs: [workspace, model-memory, model-pipelines, logger-runtime, support-runtime, telemetry-runtime, startup-runtime, hardware-runtime, platform-runtime, startup-services, sensor-audio, gnss-runtime, estimation-runtime, ui-connectivity, athena-runtime, controls-runtime, web-upload-timeouts, joystickd-runtime, planner-runtime, planner-memory, card-runtime, radar-runtime, radar-arm, radar-memory, navd-runtime, radard-runtime, carrot-navi-runtime, carrot-navi-arm, selfdrive-runtime, panda-runtime, camera-runtime, encoder-runtime, xiaoge-runtime, xiaoge-memory, ui-runtime, carrot-man-runtime, webrtc-runtime, webcam-runtime]
-    if: ${{ always() }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (always()) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
+      - name: Require the registered execution environment
+        run: |
+          test "$GITHUB_ACTIONS" = true
+          if [[ $RUNNER_ENVIRONMENT == self-hosted ]]; then
+            [[ $RUNNER_NAME == bin-actions || $RUNNER_NAME == bin-actions2 || $RUNNER_NAME == bin-actions3 ]]
+          else
+            [[ $RUNNER_ENVIRONMENT == github-hosted && $RUNNER_OS == Linux &&
+               ( $RUNNER_ARCH == X64 || $RUNNER_ARCH == ARM64 ) ]]
+          fi
       - name: Require runtime validation
         env:
           WORKSPACE: ${{ needs.workspace.result }}
@@ -100,30 +110,46 @@ jobs:
           test "$XIAOGE_MEMORY" = success
           test "$UI_RUNTIME" = success
   webcam-runtime:
-    name: rust webcam source runtime (${{ matrix.runner }})
+    name: rust webcam source runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 35
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 35 }}
     strategy:
       fail-fast: false
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       LIBCLANG_PATH: /usr/lib/llvm-18/lib
       CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
       PYTHONPATH: ${{ github.workspace }}/rust/tools:${{ github.workspace }}
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH != 'aarch64'
         with:
           python-version: '3.12.14'
       - name: Install exact source closure and native capture providers
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update
           sudo apt-get install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*' 'libswscale-dev=7:6.1.1-*'
@@ -145,6 +171,13 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/webcam/binding"
           printf 'OPENPILOT_WEBCAM_OPENCV_ROOT=%s/webcam/provider\nLD_LIBRARY_PATH=%s/webcam/provider/install/lib\nPYTHONPATH=%s/webcam/binding:%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
+      - name: Preserve the selected X64 Python shared library for the source oracle
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+        env:
+          LD_LIBRARY_PATH: ${{ env.pythonLocation }}/lib:${{ env.LD_LIBRARY_PATH }}
+        run: |
+          "$pythonLocation/bin/python" -P -c 'import av,sys; print("webcam_source_python", sys.executable, sys.version, av.__version__)'
+          printf 'LD_LIBRARY_PATH=%s\n' "$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
       - name: Build native daemon and check all webcam targets
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
@@ -167,48 +200,76 @@ jobs:
         with:
           name: rust-webcam-${{ matrix.runner }}-evidence
           path: |
-            ${{ runner.temp }}/webcam/**/result.json
-            ${{ runner.temp }}/webcam/**/*invocation.json
-            ${{ runner.temp }}/webcam/**/*.log
-            ${{ runner.temp }}/webcam/**/*.stdout
-            ${{ runner.temp }}/webcam/**/*.stderr
-            ${{ runner.temp }}/webcam/**/*.nv12
-            ${{ runner.temp }}/webcam/**/*.bin
-            ${{ runner.temp }}/webcam/*.txt
-            ${{ runner.temp }}/webcam/SOURCE_COMMIT
-            ${{ runner.temp }}/webcam/SHA256SUMS
-            ${{ runner.temp }}/webcam/provider/receipt.json
-            ${{ runner.temp }}/webcam/provider/native-libraries.sha256
-            ${{ runner.temp }}/webcam/provider/source-files.json
-            ${{ runner.temp }}/webcam/provider/licenses/
-            ${{ runner.temp }}/webcam/provider/install/lib/
-            ${{ runner.temp }}/webcam-opencv-source/source.json
-            ${{ runner.temp }}/webcam-opencv-source/hardening.json
-            rust/target/debug/openpilot-webcam
+            ${{ env.CI_JOB_TEMP }}/webcam/**/result.json
+            ${{ env.CI_JOB_TEMP }}/webcam/**/*invocation.json
+            ${{ env.CI_JOB_TEMP }}/webcam/**/*.log
+            ${{ env.CI_JOB_TEMP }}/webcam/**/*.stdout
+            ${{ env.CI_JOB_TEMP }}/webcam/**/*.stderr
+            ${{ env.CI_JOB_TEMP }}/webcam/**/*.nv12
+            ${{ env.CI_JOB_TEMP }}/webcam/**/*.bin
+            ${{ env.CI_JOB_TEMP }}/webcam/*.txt
+            ${{ env.CI_JOB_TEMP }}/webcam/SOURCE_COMMIT
+            ${{ env.CI_JOB_TEMP }}/webcam/SHA256SUMS
+            ${{ env.CI_JOB_TEMP }}/webcam/provider/receipt.json
+            ${{ env.CI_JOB_TEMP }}/webcam/provider/native-libraries.sha256
+            ${{ env.CI_JOB_TEMP }}/webcam/provider/source-files.json
+            ${{ env.CI_JOB_TEMP }}/webcam/provider/licenses/
+            ${{ env.CI_JOB_TEMP }}/webcam/provider/install/lib/
+            ${{ env.CI_JOB_TEMP }}/webcam-opencv-source/source.json
+            ${{ env.CI_JOB_TEMP }}/webcam-opencv-source/hardening.json
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-webcam
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always() && env.LOCAL_CI_ARCH == 'aarch64'
+        with:
+          name: local-arm-webcam-runtime-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   planner-runtime:
-    name: rust planner source comparison (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    name: rust planner source comparison (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
       fail-fast: false
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
-    timeout-minutes: 45
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       OPENBLAS_NUM_THREADS: '1'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH != 'aarch64'
         with:
           python-version: '3.12.14'
       - name: Reserve capacity and install original planner dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -219,12 +280,15 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           rustup toolchain install 1.94.0 --profile minimal --component clippy
           python -P -c 'import acados; from pathlib import Path; print("PLANNER_GENERATOR="+str(Path(acados.__file__).parent))' >> "$GITHUB_ENV"
+      - name: Provision the CI host SDK build tools
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+        run: sudo apt-get install -y cmake make
       - name: Build pinned solvers and unchanged original bindings
         run: |
           planner_cc=gcc
           if [ "$(uname -m)" = aarch64 ]; then planner_cc=clang-18; fi
-          python rust/tools/build_plannerd_acados.py --architecture "$(uname -m)" --cc "$planner_cc" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-artifact"
-          python rust/tools/build_plannerd_source.py --artifact "$RUNNER_TEMP/planner-artifact" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --generator-wheel "$RUNNER_TEMP"/planner-wheel/*.whl --cc "$planner_cc" --output "$RUNNER_TEMP/planner-source"
+          python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_acados.py --architecture "$(uname -m)" --cc "$planner_cc" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-artifact"
+          python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_source.py --artifact "$RUNNER_TEMP/planner-artifact" --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --generator-wheel "$RUNNER_TEMP"/planner-wheel/*.whl --cc "$planner_cc" --output "$RUNNER_TEMP/planner-source"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_params_python.py --output "$RUNNER_TEMP/planner-original/params"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -243,26 +307,63 @@ jobs:
       - name: Compare exact policies, main loops, real IPC and lifecycle
         run: |
           python -P rust/tools/check_plannerd_ci.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-artifact" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --output "$RUNNER_TEMP/planner-comparison"
+      - name: Capture the actual instruction and library after a planner SIGILL
+        if: failure() && env.LOCAL_CI_ARCH != 'aarch64'
+        run: |
+          if python - <<'PY'
+          import json, os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP'])/'planner-comparison/commands.json'
+          rows = json.loads(path.read_text()) if path.exists() else []
+          raise SystemExit(0 if any(row['name'] == 'abi' and row['returncode'] == -4 for row in rows) else 1)
+          PY
+          then
+            sudo apt-get install -y gdb
+            lscpu > "$RUNNER_TEMP/planner-sigill-cpu.txt"
+            gdb --batch -ex run -ex 'info registers' -ex 'x/16i $pc-16' \
+              -ex 'info sharedlibrary' -ex 'thread apply all bt' --args \
+              "$(command -v python)" -u -P rust/tools/plannerd_acados_source.py \
+              --baseline "$RUNNER_TEMP/planner-source" --artifact "$RUNNER_TEMP/planner-artifact" \
+              --trace "$GITHUB_WORKSPACE/rust/target/debug/examples/plannerd_solver_trace" \
+              --evidence "$RUNNER_TEMP/planner-sigill-abi" \
+              > "$RUNNER_TEMP/planner-sigill.txt" 2>&1
+          fi
       - name: Check generated C with ASan, UBSan and allocator leak detection
         if: matrix.runner == 'ubuntu-24.04'
         run: |
-          python rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --sanitize --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-sanitized"
+          python rust/tools/plannerd_ci_builder.py -- rust/tools/build_plannerd_acados.py --architecture x86_64 --cc gcc --sanitize --python "$(command -v python)" --acados "$PLANNER_GENERATOR" --wheel "$RUNNER_TEMP"/planner-wheel/*.whl --output "$RUNNER_TEMP/planner-sanitized"
           python -P rust/tools/check_plannerd_native_memory.py --bin-dir rust/target/debug --artifact "$RUNNER_TEMP/planner-sanitized" --source-native "$RUNNER_TEMP/planner-source" --binding "$PLANNER_PARAMS_BINDING" --asan-library "$(gcc -print-file-name=libasan.so)" --output "$RUNNER_TEMP/planner-native-memory"
       - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: rust-planner-${{ matrix.runner }}-evidence
           path: |
-            ${{ runner.temp }}/planner-comparison/
-            ${{ runner.temp }}/planner-native-memory/
-            ${{ runner.temp }}/planner-artifact/
-            ${{ runner.temp }}/planner-source/
-            ${{ runner.temp }}/planner-sanitized/
-            ${{ runner.temp }}/planner-original/params/*.json
-            rust/target/debug/openpilot-plannerd
-            rust/target/debug/examples/plannerd_*
+            ${{ env.CI_JOB_TEMP }}/planner-comparison/
+            ${{ env.CI_JOB_TEMP }}/planner-native-memory/
+            ${{ env.CI_JOB_TEMP }}/planner-sigill*
+            ${{ env.CI_JOB_TEMP }}/planner-artifact/
+            ${{ env.CI_JOB_TEMP }}/planner-source/
+            ${{ env.CI_JOB_TEMP }}/planner-host-sdk-*/receipt.json
+            ${{ env.CI_JOB_TEMP }}/planner-host-build-*/*.log
+            ${{ env.CI_JOB_TEMP }}/planner-sanitized/
+            ${{ env.CI_JOB_TEMP }}/planner-original/params/*.json
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-plannerd
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/plannerd_*
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always() && env.LOCAL_CI_ARCH == 'aarch64'
+        with:
+          name: local-arm-planner-runtime-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   planner-memory:
     name: rust planner pure memory contracts
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -271,9 +372,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - name: Reserve capacity and prepare Miri
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           sudo apt-get update && sudo apt-get install -y capnproto
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -291,15 +393,20 @@ jobs:
               tree) planner_flags="$planner_flags -Zmiri-strict-provenance -Zmiri-symbolic-alignment-check -Zmiri-preemption-rate=0.1 -Zmiri-tree-borrows" ;;
             esac
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-            MIRIFLAGS="$planner_flags" cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-plannerd --lib --tests --no-default-features --locked -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/planner-memory/$planner_mode.log"
+            MIRIFLAGS="$planner_flags" cargo +nightly-2026-09-29 miri test --manifest-path rust/Cargo.toml -p openpilot-plannerd --lib --tests --no-default-features --locked -- 2>&1 | tee "$RUNNER_TEMP/planner-memory/$planner_mode.log"
           done
       - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: rust-planner-memory-evidence
-          path: ${{ runner.temp }}/planner-memory/
+          path: ${{ env.CI_JOB_TEMP }}/planner-memory/
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   joystickd-runtime:
     name: rust control tools source and native runtimes
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -309,6 +416,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -340,20 +449,25 @@ jobs:
         with:
           name: rust-joystickd-evidence
           path: |
-            ${{ runner.temp }}/joystickd/source/receipt.json
-            ${{ runner.temp }}/joystickd/compare/**
-            ${{ runner.temp }}/joystickd/runtime/**
-            ${{ runner.temp }}/joystickd/input-source/receipt.json
-            ${{ runner.temp }}/joystickd/input-compare/**
-            ${{ runner.temp }}/joystickd/input-runtime/**
-            ${{ runner.temp }}/joystickd/longitudinal-source/receipt.json
-            ${{ runner.temp }}/joystickd/longitudinal-runtime/**
-            ${{ runner.temp }}/joystickd/lateral-source/receipt.json
-            ${{ runner.temp }}/joystickd/lateral-runtime/**
+            ${{ env.CI_JOB_TEMP }}/joystickd/source/receipt.json
+            ${{ env.CI_JOB_TEMP }}/joystickd/compare/**
+            ${{ env.CI_JOB_TEMP }}/joystickd/runtime/**
+            ${{ env.CI_JOB_TEMP }}/joystickd/input-source/receipt.json
+            ${{ env.CI_JOB_TEMP }}/joystickd/input-compare/**
+            ${{ env.CI_JOB_TEMP }}/joystickd/input-runtime/**
+            ${{ env.CI_JOB_TEMP }}/joystickd/longitudinal-source/receipt.json
+            ${{ env.CI_JOB_TEMP }}/joystickd/longitudinal-runtime/**
+            ${{ env.CI_JOB_TEMP }}/joystickd/lateral-source/receipt.json
+            ${{ env.CI_JOB_TEMP }}/joystickd/lateral-runtime/**
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   carrot-man-runtime:
-    name: rust CarrotMan owner (${{ matrix.arch }})
+    name: rust CarrotMan owner (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 25
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 25 }}
     strategy:
       fail-fast: false
       matrix:
@@ -361,18 +475,33 @@ jobs:
           - { arch: x86_64, runner: ubuntu-24.04 }
           - { arch: aarch64, runner: ubuntu-24.04-arm }
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
       PYTHONPATH: ${{ github.workspace }}
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH != 'aarch64'
         with:
           python-version: '3.12.14'
       - name: Reserve runner capacity and install pinned dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y g++ clang cmake pkg-config libzmq3-dev capnproto libcapnp-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -415,36 +544,64 @@ jobs:
         with:
           name: carrot-man-owner-${{ matrix.arch }}-evidence
           path: |
-            ${{ runner.temp }}/carrot-man-policy/**
-            ${{ runner.temp }}/carrot-man-owned/**
-            ${{ runner.temp }}/carrot-man-input-tests/**
-            ${{ runner.temp }}/carrot-man-geos/**
-            rust/target/debug/openpilot-carrot-man
+            ${{ env.CI_JOB_TEMP }}/carrot-man-policy/**
+            ${{ env.CI_JOB_TEMP }}/carrot-man-owned/**
+            ${{ env.CI_JOB_TEMP }}/carrot-man-input-tests/**
+            ${{ env.CI_JOB_TEMP }}/carrot-man-geos/**
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-carrot-man
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always() && env.LOCAL_CI_ARCH == 'aarch64'
+        with:
+          name: local-arm-carrot-man-runtime-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   webrtc-runtime:
-    name: rust WebRTC source runtime (${{ matrix.runner }})
+    name: rust WebRTC source runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 45
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     strategy:
       fail-fast: false
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       LIBCLANG_PATH: /usr/lib/llvm-18/lib
       CARROT_EXCEPTION_DISCORD_WEBHOOK_DISABLE: '1'
       PYTHONPATH: ${{ github.workspace }}/rust/tools:${{ github.workspace }}:${{ github.workspace }}/teleoprtc_repo:${{ github.workspace }}/opendbc_repo
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH != 'aarch64'
         with:
           python-version: '3.12.14'
       - name: Reserve capacity and install pinned source and native providers
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update
           sudo apt-get install -y g++ clang-18 libclang-18-dev cmake pkg-config capnproto libcapnp-dev libzmq3-dev ffmpeg 'libavcodec-dev=7:6.1.1-*' 'libavformat-dev=7:6.1.1-*' 'libavutil-dev=7:6.1.1-*'
@@ -493,14 +650,27 @@ jobs:
         with:
           name: rust-webrtc-${{ matrix.runner }}-evidence
           path: |
-            ${{ runner.temp }}/webrtc/
-            rust/target/debug/openpilot-webrtcd
-            rust/target/debug/openpilot-carrot-webrtcd
-            rust/target/debug/examples/webrtc_owned_http
-            rust/target/debug/examples/webrtc_stun_checks
+            ${{ env.CI_JOB_TEMP }}/webrtc/
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-webrtcd
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-carrot-webrtcd
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/webrtc_owned_http
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/webrtc_stun_checks
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always() && env.LOCAL_CI_ARCH == 'aarch64'
+        with:
+          name: local-arm-webrtc-runtime-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   workspace:
     name: rust workspace checks
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 120
     env:
       CARGO_INCREMENTAL: '0'
@@ -519,13 +689,15 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+        with: {validation-context: 'true'}
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt,clippy
       - name: Reserve capacity for workspace validation
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
       - run: sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libllvm18 git-lfs libclang-dev libavcodec-dev libavformat-dev libavutil-dev ffmpeg libsdl2-2.0-0 cmake qemu-user-static libc6-arm64-cross libstdc++6-arm64-cross strace
       - run: |
@@ -577,7 +749,14 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-card-workspace-fixtures
-          path: ${{ runner.temp }}/card-workspace/
+          path: ${{ env.CI_JOB_TEMP }}/card-workspace/
+          if-no-files-found: warn
+      - name: Preserve workspace test evidence outside the source checkout
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rust-workspace-test-evidence
+          path: ${{ env.CI_JOB_TEMP }}/test-evidence/
           if-no-files-found: warn
       - name: Compare QCOM fixtures with the original argument and packet encoder
         run: python tools/qcom_fixtures.py --verify crates/model-runtime/tests/fixtures/qcom
@@ -600,7 +779,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-offline-qcom-compiler-provenance
-          path: ${{ runner.temp }}/qcom-compiler/provenance.json
+          path: ${{ env.CI_JOB_TEMP }}/qcom-compiler/provenance.json
           if-no-files-found: warn
       - name: Compare captured graphs and original camera warps with Rust
         run: python -m pytest -c /dev/null -p no:cacheprovider --confcutdir=tools/tests tools/tests -q
@@ -642,7 +821,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-recovery-evidence
-          path: ${{ runner.temp }}/recovery/
+          path: ${{ env.CI_JOB_TEMP }}/recovery/
           if-no-files-found: warn
       - name: Compare USB GPU status and transport foundation with original source
         run: |
@@ -655,7 +834,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-usbgpu-foundation-evidence
-          path: ${{ runner.temp }}/usbgpu-foundation/
+          path: ${{ env.CI_JOB_TEMP }}/usbgpu-foundation/
           if-no-files-found: warn
       - name: Compare log-space retention with the original loop and actual low-space filesystem
         run: |
@@ -672,9 +851,9 @@ jobs:
         with:
           name: jetlink-host-oracle-evidence
           path: |
-            ${{ runner.temp }}/jetlink-reference/
-            ${{ runner.temp }}/jetlink-rpc/
-            ${{ runner.temp }}/jetlink-raw/
+            ${{ env.CI_JOB_TEMP }}/jetlink-reference/
+            ${{ env.CI_JOB_TEMP }}/jetlink-rpc/
+            ${{ env.CI_JOB_TEMP }}/jetlink-raw/
       - name: Compare message state and service catalog with original source
         run: |
           python tools/check_services.py
@@ -737,9 +916,9 @@ jobs:
         with:
           name: rust-torque-ipc-evidence
           path: |
-            ${{ runner.temp }}/torque-ipc-ordering/
-            ${{ runner.temp }}/torque-native/
-            ${{ runner.temp }}/torque-debug-capacity/
+            ${{ env.CI_JOB_TEMP }}/torque-ipc-ordering/
+            ${{ env.CI_JOB_TEMP }}/torque-native/
+            ${{ env.CI_JOB_TEMP }}/torque-debug-capacity/
           if-no-files-found: warn
       - name: Exercise calibration daemon with original Python IPC and durable Params
         run: |
@@ -766,67 +945,87 @@ jobs:
             rust/target/release/openpilot-dashcam-upload
             rust/target/release/journald-rs
             rust/target/release/openpilot-timed
-            ${{ runner.temp }}/deleter-reference/report.json
-            ${{ runner.temp }}/deleter-native/*.json
-            ${{ runner.temp }}/deleter-native/*.log
+            ${{ env.CI_JOB_TEMP }}/deleter-reference/report.json
+            ${{ env.CI_JOB_TEMP }}/deleter-native/*.json
+            ${{ env.CI_JOB_TEMP }}/deleter-native/*.log
             rust/target/release/openpilot-proclogd
             rust/target/release/openpilot-proclogd-runtime
             rust/target/release/openpilot-dmonitoringd
-            ${{ runner.temp }}/dmonitoring-daemon/**/report.json
-            ${{ runner.temp }}/dmonitoring-daemon/**/*.log
-            ${{ runner.temp }}/proclog-runtime/**/*.json
-            ${{ runner.temp }}/proclog-runtime/**/*.log
-            ${{ runner.temp }}/proclog-runtime/**/*.capnp
+            ${{ env.CI_JOB_TEMP }}/dmonitoring-daemon/**/report.json
+            ${{ env.CI_JOB_TEMP }}/dmonitoring-daemon/**/*.log
+            ${{ env.CI_JOB_TEMP }}/proclog-runtime/**/*.json
+            ${{ env.CI_JOB_TEMP }}/proclog-runtime/**/*.log
+            ${{ env.CI_JOB_TEMP }}/proclog-runtime/**/*.capnp
             rust/target/release/openpilot-torqued
-            ${{ runner.temp }}/torque-*/report.json
-            ${{ runner.temp }}/torque-native/**/*.capnp
-            ${{ runner.temp }}/torque-native/**/*.log
-            ${{ runner.temp }}/torque-debug-capacity/**/*.log
-            ${{ runner.temp }}/torque-numerics/
+            ${{ env.CI_JOB_TEMP }}/torque-*/report.json
+            ${{ env.CI_JOB_TEMP }}/torque-native/**/*.capnp
+            ${{ env.CI_JOB_TEMP }}/torque-native/**/*.log
+            ${{ env.CI_JOB_TEMP }}/torque-debug-capacity/**/*.log
+            ${{ env.CI_JOB_TEMP }}/torque-numerics/
             rust/target/release/openpilot-calibrationd
-            ${{ runner.temp }}/calibration-*/report.json
-            ${{ runner.temp }}/calibration-native/**/*.capnp
-            ${{ runner.temp }}/calibration-native/**/*.log
-            ${{ runner.temp }}/host-probe.json
-            ${{ runner.temp }}/dm-native/report.json
-            ${{ runner.temp }}/driving-native/report.json
-            ${{ runner.temp }}/policy-native/report.json
-            ${{ runner.temp }}/message-state/report.json
-            ${{ runner.temp }}/model-timing/
-            ${{ runner.temp }}/model-desire/report.json
-            ${{ runner.temp }}/model-commands/report.json
-            ${{ runner.temp }}/model-inputs/report.json
-            ${{ runner.temp }}/monitoring-policy/report.json
-            ${{ runner.temp }}/logmessaged-reference/report.json
-            ${{ runner.temp }}/logmessaged-native/**/report.json
-            ${{ runner.temp }}/logmessaged-native/**/*.log
-            ${{ runner.temp }}/runtime-diagnostics/report.json
-            ${{ runner.temp }}/communication-snapshot/report.json
-            ${{ runner.temp }}/logging-producer/**/report.json
-            ${{ runner.temp }}/logging-producer/**/*.log
+            ${{ env.CI_JOB_TEMP }}/calibration-*/report.json
+            ${{ env.CI_JOB_TEMP }}/calibration-native/**/*.capnp
+            ${{ env.CI_JOB_TEMP }}/calibration-native/**/*.log
+            ${{ env.CI_JOB_TEMP }}/host-probe.json
+            ${{ env.CI_JOB_TEMP }}/dm-native/report.json
+            ${{ env.CI_JOB_TEMP }}/driving-native/report.json
+            ${{ env.CI_JOB_TEMP }}/policy-native/report.json
+            ${{ env.CI_JOB_TEMP }}/message-state/report.json
+            ${{ env.CI_JOB_TEMP }}/model-timing/
+            ${{ env.CI_JOB_TEMP }}/model-desire/report.json
+            ${{ env.CI_JOB_TEMP }}/model-commands/report.json
+            ${{ env.CI_JOB_TEMP }}/model-inputs/report.json
+            ${{ env.CI_JOB_TEMP }}/monitoring-policy/report.json
+            ${{ env.CI_JOB_TEMP }}/logmessaged-reference/report.json
+            ${{ env.CI_JOB_TEMP }}/logmessaged-native/**/report.json
+            ${{ env.CI_JOB_TEMP }}/logmessaged-native/**/*.log
+            ${{ env.CI_JOB_TEMP }}/runtime-diagnostics/report.json
+            ${{ env.CI_JOB_TEMP }}/communication-snapshot/report.json
+            ${{ env.CI_JOB_TEMP }}/logging-producer/**/report.json
+            ${{ env.CI_JOB_TEMP }}/logging-producer/**/*.log
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true', validation-context: 'true'}
+
   xiaoge-runtime:
-    name: rust Xiaoge source comparison (${{ matrix.runner }})
-    runs-on: ${{ matrix.runner }}
+    name: rust Xiaoge source comparison (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'ubuntu-24.04-arm' || fromJSON('["self-hosted","Linux","X64","openpilot-rust"]') }}
     strategy:
       fail-fast: false
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
-    timeout-minutes: 75
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 240 || 75 }}
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH != 'aarch64'
         with:
           python-version: '3.12'
       - name: Reserve capacity and install Xiaoge build prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ cmake ninja-build libzmq3-dev git-lfs
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -847,6 +1046,13 @@ jobs:
           python rust/tools/build_visionipc_python.py --output "$RUNNER_TEMP/xiaoge-original/ipc"
           python -P -c 'import json,os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"xiaoge-original/params/provenance.json"; print("XIAOGE_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
           printf 'OPENPILOT_OPENCV_ROOT=%s/xiaoge-opencv\nLD_LIBRARY_PATH=%s/xiaoge-opencv/install/lib\nPYTHONPATH=%s/xiaoge-original/ipc:%s\nOPENCV_TEST_LANE_MODEL=%s/openpilot/selfdrive/carrot/xiaoge/assets/lane.onnx\n' "$RUNNER_TEMP" "$RUNNER_TEMP" "$RUNNER_TEMP" "$PYTHONPATH" "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: Preserve selected Python for Xiaoge source comparisons
+        if: env.LOCAL_CI_ARCH == 'x86_64'
+        env:
+          LD_LIBRARY_PATH: ${{ env.pythonLocation }}/lib:${{ env.LD_LIBRARY_PATH }}
+        run: |
+          "$pythonLocation/bin/python" -P -c 'import numpy,sys; print("xiaoge_source_python", sys.executable, sys.version, numpy.__version__)'
+          printf 'LD_LIBRARY_PATH=%s\n' "$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
       - name: Compile and check all native Xiaoge targets
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
@@ -864,18 +1070,31 @@ jobs:
         with:
           name: rust-xiaoge-${{ matrix.runner }}-evidence
           path: |
-            ${{ runner.temp }}/xiaoge-comparison/
-            ${{ runner.temp }}/xiaoge-original/params/*.json
-            ${{ runner.temp }}/xiaoge-opencv/*.json
-            ${{ runner.temp }}/xiaoge-opencv/*.log
-            ${{ runner.temp }}/xiaoge-opencv/native-libraries.sha256
-            rust/target/debug/openpilot-xiaoge
-            rust/target/debug/examples/xiaoge_*
-            rust/target/debug/examples/opencv_trace
-            rust/target/debug/examples/jpeg_options
+            ${{ env.CI_JOB_TEMP }}/xiaoge-comparison/
+            ${{ env.CI_JOB_TEMP }}/xiaoge-original/params/*.json
+            ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/*.json
+            ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/*.log
+            ${{ env.CI_JOB_TEMP }}/xiaoge-opencv/native-libraries.sha256
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/openpilot-xiaoge
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/xiaoge_*
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/opencv_trace
+            ${{ env.LOCAL_CI_TARGET_DIR }}/debug/examples/jpeg_options
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always() && env.LOCAL_CI_ARCH == 'aarch64'
+        with:
+          name: local-arm-xiaoge-runtime-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   xiaoge-memory:
     name: rust Xiaoge native memory
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 75
     env:
       CARGO_INCREMENTAL: '0'
@@ -886,12 +1105,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Reserve capacity and install memory-check prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y clang-18 cmake g++ git-lfs
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -925,13 +1145,18 @@ jobs:
         with:
           name: rust-xiaoge-memory-evidence
           path: |
-            ${{ runner.temp }}/xiaoge-memory/
-            ${{ runner.temp }}/xiaoge-native-memory/
-            ${{ runner.temp }}/xiaoge-opencv-asan/*.json
-            ${{ runner.temp }}/xiaoge-opencv-asan/*.log
-            ${{ runner.temp }}/xiaoge-opencv-asan/native-libraries.sha256
+            ${{ env.CI_JOB_TEMP }}/xiaoge-memory/
+            ${{ env.CI_JOB_TEMP }}/xiaoge-native-memory/
+            ${{ env.CI_JOB_TEMP }}/xiaoge-opencv-asan/*.json
+            ${{ env.CI_JOB_TEMP }}/xiaoge-opencv-asan/*.log
+            ${{ env.CI_JOB_TEMP }}/xiaoge-opencv-asan/native-libraries.sha256
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   encoder-runtime:
     name: rust encoder runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -944,6 +1169,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -951,7 +1178,6 @@ jobs:
         run: printf 'PYTHONPATH=%s/encoder-native/python:%s\nENCODER_MSGQ_PYTHON=%s/encoder-native/python\n' "$RUNNER_TEMP" "$PYTHONPATH" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Reserve capacity and install native codec prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y g++ clang libclang-dev cmake pkg-config capnproto libcapnp-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libyuv-dev libzmq3-dev ffmpeg
       - name: Install pinned encoder oracle dependencies
@@ -987,13 +1213,18 @@ jobs:
         with:
           name: rust-encoder-runtime-evidence
           path: |
-            ${{ runner.temp }}/encoder-native/
+            ${{ env.CI_JOB_TEMP }}/encoder-native/
             rust/target/debug/openpilot-encoderd
             rust/target/debug/examples/encoder_codec_trace
             rust/target/debug/examples/encoder_v4l_trace
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   camera-runtime:
     name: rust camera runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
@@ -1005,6 +1236,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1012,7 +1245,6 @@ jobs:
         run: printf 'PYTHONPATH=%s/camera-native/python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve capacity and install camera prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang-18 libclang-rt-18-dev libzmq3-dev
       - name: Install pinned camera oracle dependencies
@@ -1048,10 +1280,15 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-camera-runtime-evidence
-          path: ${{ runner.temp }}/camera-native/
+          path: ${{ env.CI_JOB_TEMP }}/camera-native/
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   panda-runtime:
     name: rust Panda runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
@@ -1063,6 +1300,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1070,7 +1309,6 @@ jobs:
         run: printf 'PYTHONPATH=%s/panda-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve capacity and install Panda prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang libusb-1.0-0-dev libzmq3-dev cmake pkg-config curl
       - name: Install pinned Panda oracle dependencies
@@ -1103,10 +1341,15 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-panda-runtime-evidence
-          path: ${{ runner.temp }}/panda-native/
+          path: ${{ env.CI_JOB_TEMP }}/panda-native/
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   selfdrive-runtime:
     name: rust selfdrived runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -1119,6 +1362,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1126,7 +1371,6 @@ jobs:
         run: printf 'PYTHONPATH=%s/selfdrived-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve runner capacity and install native prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
       - name: Install pinned selfdrived oracle dependencies
@@ -1186,12 +1430,17 @@ jobs:
         with:
           name: rust-selfdrived-host-evidence
           path: |
-            ${{ runner.temp }}/selfdrived-native/
+            ${{ env.CI_JOB_TEMP }}/selfdrived-native/
             rust/target/debug/openpilot-selfdrived
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   card-runtime:
     name: rust Card and CAN runtime
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 90
     env:
       CARGO_INCREMENTAL: '0'
@@ -1203,6 +1452,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1210,7 +1461,6 @@ jobs:
         run: printf 'PYTHONPATH=%s/card-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve runner capacity before dependency installation
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
       - name: Install pinned Card oracle dependencies
@@ -1275,10 +1525,15 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-card-can-host-evidence
-          path: ${{ runner.temp }}/card-native/
+          path: ${{ env.CI_JOB_TEMP }}/card-native/
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   radar-runtime:
     name: rust RadarCAN source and host runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -1291,6 +1546,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1298,7 +1555,6 @@ jobs:
         run: printf 'PYTHONPATH=%s/radar-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve runner capacity and install source binding dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1314,7 +1570,7 @@ jobs:
           python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
       - name: Generate original DBC assets and stage pinned numerical libraries
         run: |
-          python rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
+          python rust/tools/radarcan_ci_builder.py -- rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
           python -m pip download --only-binary=:all: --no-deps numpy==2.5.3 --dest "$RUNNER_TEMP/radar-native/wheels"
           cargo +1.94.0 run --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin stage-torque-numerics -- --wheel "$RUNNER_TEMP"/radar-native/wheels/numpy-2.5.3-*.whl --output "$RUNNER_TEMP/radar-native/numerics"
@@ -1337,31 +1593,51 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-radar-host-evidence
-          path: ${{ runner.temp }}/radar-native/
+          path: ${{ env.CI_JOB_TEMP }}/radar-native/
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   radar-arm:
     name: rust RadarCAN native ARM functional validation
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 45
+    timeout-minutes: 180
     env:
+      LOCAL_CI_ARCH: aarch64
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_RELEASE_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: gcc
       OPENBLAS_NUM_THREADS: '1'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH != 'aarch64'
         with:
           python-version: '3.12'
       - name: Configure original Radar IPC imports
         run: printf 'PYTHONPATH=%s/radar-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve runner capacity and install generic ARM dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ binutils libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1376,7 +1652,7 @@ jobs:
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
           python rust/tools/build_msgq_python.py --output "$RUNNER_TEMP/radar-native/msgq"
           python -c 'import json, os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"radar-native/params/provenance.json"; print("RADAR_PARAMS_BINDING="+json.loads(p.read_text())["module"])' >> "$GITHUB_ENV"
-          python rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
+          python rust/tools/radarcan_ci_builder.py -- rust/tools/radarcan_prepare_assets.py "$RUNNER_TEMP/radar-native/dbc"
       - name: Stage pinned generic ARM numerical dependency
         run: |
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 512
@@ -1400,7 +1676,7 @@ jobs:
             "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 128
             cp "$radar_test" "$RUNNER_TEMP/radar-arm/tests/"
             sha256sum "$radar_test" >> "$RUNNER_TEMP/radar-arm/tests-SHA256SUMS"
-            "$radar_test" --test-threads=1 2>&1 | tee "$RUNNER_TEMP/radar-arm/tests/$(basename "$radar_test").log"
+            "$radar_test" 2>&1 | tee "$RUNNER_TEMP/radar-arm/tests/$(basename "$radar_test").log"
           done < "$RUNNER_TEMP/radar-arm/tests.txt"
           for radar_binary in target/aarch64-unknown-linux-gnu/release/openpilot-radarcan target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy; do
             readelf -h -d -V "$radar_binary" > "$RUNNER_TEMP/radar-arm/$(basename "$radar_binary").readelf.txt"
@@ -1417,13 +1693,26 @@ jobs:
         with:
           name: rust-radar-arm-not-device-validated
           path: |
-            ${{ runner.temp }}/radar-arm/
-            ${{ runner.temp }}/radar-native/
-            rust/target/aarch64-unknown-linux-gnu/release/openpilot-radarcan
-            rust/target/aarch64-unknown-linux-gnu/release/examples/radarcan-policy
+            ${{ env.CI_JOB_TEMP }}/radar-arm/
+            ${{ env.CI_JOB_TEMP }}/radar-native/
+            ${{ env.LOCAL_CI_TARGET_DIR }}/aarch64-unknown-linux-gnu/release/openpilot-radarcan
+            ${{ env.LOCAL_CI_TARGET_DIR }}/aarch64-unknown-linux-gnu/release/examples/radarcan-policy
           if-no-files-found: warn
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always() && env.LOCAL_CI_ARCH == 'aarch64'
+        with:
+          name: local-arm-radar-arm-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   radar-memory:
     name: rust RadarCAN buffer ownership with Miri
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -1434,12 +1723,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Reserve capacity for pinned interpreter dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 4096
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1463,8 +1753,8 @@ jobs:
             if test "$radar_level" = tree; then radar_flags="$radar_flags -Zmiri-tree-borrows"; fi
             for radar_filter in numerics_ scheduler_argument_abi_preserves_source_fifo_priority; do
               "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
-              printf '%s\n' "MIRIFLAGS=$radar_flags cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked $radar_filter -- --test-threads=1" > "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.command"
-              MIRIFLAGS="$radar_flags" cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked "$radar_filter" -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.log"
+              printf '%s\n' "MIRIFLAGS=$radar_flags cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked $radar_filter --" > "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.command"
+              MIRIFLAGS="$radar_flags" cargo +nightly-2026-09-29 miri test -p openpilot-radarcan --lib --locked "$radar_filter" -- 2>&1 | tee "$RUNNER_TEMP/radar-memory/$radar_level-$radar_filter.log"
             done
           done
       - name: Preserve pinned Radar memory invocations and failures
@@ -1472,10 +1762,15 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-radar-memory-evidence
-          path: ${{ runner.temp }}/radar-memory/
+          path: ${{ env.CI_JOB_TEMP }}/radar-memory/
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   navd-runtime:
     name: rust navigation runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -1487,6 +1782,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1494,7 +1791,6 @@ jobs:
         run: printf 'PYTHONPATH=%s/navd-native/msgq:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve runner capacity and install navigation prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1531,13 +1827,18 @@ jobs:
         with:
           name: rust-navd-host-evidence
           path: |
-            ${{ runner.temp }}/navd-native/
+            ${{ env.CI_JOB_TEMP }}/navd-native/
             rust/target/debug/openpilot-navd
             rust/target/debug/openpilot-set-destination
             rust/target/debug/examples/navd_*
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   radard-runtime:
-    name: rust radard source and native runtime (${{ matrix.runner }})
+    name: rust radard source and native runtime (${{ matrix.runner == 'ubuntu-24.04-arm' && 'ARM native' || 'X64' }})
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -1547,19 +1848,35 @@ jobs:
             machine: x86_64
           - runner: ubuntu-24.04-arm
             machine: aarch64
-    timeout-minutes: 45
+    timeout-minutes: ${{ matrix.runner == 'ubuntu-24.04-arm' && 180 || 45 }}
     env:
+      LOCAL_CI_ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }}
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       OPENBLAS_NUM_THREADS: '1'
       PYTHONDONTWRITEBYTECODE: '1'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/opendbc_repo:${{ github.workspace }}/rust/tools
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH != 'aarch64'
         with:
           python-version: '3.12.14'
       - name: Reserve capacity and install original oracle dependencies
@@ -1569,7 +1886,6 @@ jobs:
           git rev-parse HEAD > "$RUNNER_TEMP/radard-native/SOURCE_COMMIT"
           uname -m | tee "$RUNNER_TEMP/radard-native/machine.txt"
           test "$(uname -m)" = '${{ matrix.machine }}'
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ binutils libzmq3-dev
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1668,20 +1984,33 @@ jobs:
         with:
           name: rust-radard-${{ matrix.runner }}-not-device-validated
           path: |
-            ${{ runner.temp }}/radard-native/logs/
-            ${{ runner.temp }}/radard-native/source-*/
-            ${{ runner.temp }}/radard-native/ipc/
-            ${{ runner.temp }}/radard-native/lifecycle/
-            ${{ runner.temp }}/radard-native/bin/
-            ${{ runner.temp }}/radard-native/*.txt
-            ${{ runner.temp }}/radard-native/SOURCE_COMMIT
-            ${{ runner.temp }}/radard-native/SHA256SUMS
-            ${{ runner.temp }}/radard-native/params/*.json
-            ${{ runner.temp }}/radard-native/params/*.so
-            ${{ runner.temp }}/radard-native/msgq/msgq/*.so
+            ${{ env.CI_JOB_TEMP }}/radard-native/logs/
+            ${{ env.CI_JOB_TEMP }}/radard-native/source-*/
+            ${{ env.CI_JOB_TEMP }}/radard-native/ipc/
+            ${{ env.CI_JOB_TEMP }}/radard-native/lifecycle/
+            ${{ env.CI_JOB_TEMP }}/radard-native/bin/
+            ${{ env.CI_JOB_TEMP }}/radard-native/*.txt
+            ${{ env.CI_JOB_TEMP }}/radard-native/SOURCE_COMMIT
+            ${{ env.CI_JOB_TEMP }}/radard-native/SHA256SUMS
+            ${{ env.CI_JOB_TEMP }}/radard-native/params/*.json
+            ${{ env.CI_JOB_TEMP }}/radard-native/params/*.so
+            ${{ env.CI_JOB_TEMP }}/radard-native/msgq/msgq/*.so
           if-no-files-found: warn
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always() && env.LOCAL_CI_ARCH == 'aarch64'
+        with:
+          name: local-arm-radard-runtime-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   carrot-navi-runtime:
     name: rust Carrot Navi original and host runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -1695,12 +2024,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12.14'
       - name: Reserve runner capacity and install confirmed binding dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ libzmq3-dev iproute2 util-linux
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1807,31 +2137,50 @@ jobs:
         with:
           name: rust-carrot-navi-host-evidence
           path: |
-            ${{ runner.temp }}/carrot-navi/
+            ${{ env.CI_JOB_TEMP }}/carrot-navi/
             rust/target/debug/openpilot-carrot-navi
             rust/target/debug/examples/carrot-navi-policy
             rust/target/debug/examples/carrot-navi-wire
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
 
   carrot-navi-arm:
     name: rust Carrot Navi native ARM build
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 25
+    timeout-minutes: 180
     env:
+      LOCAL_CI_ARCH: aarch64
       RUSTUP_TOOLCHAIN: '1.94.0'
       CARGO_INCREMENTAL: '0'
       CARGO_PROFILE_RELEASE_DEBUG: '0'
       CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: gcc
+    defaults:
+      run:
+        shell: openpilot-local-shell {0}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
+        if: env.LOCAL_CI_ARCH != 'aarch64'
+      - name: Pin the native ARM oracle interpreter
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: actions/setup-python@v6
+        with: {python-version: '3.12.14'}
+      - name: Expose native ARM Rust tools
+        if: runner.arch == 'ARM64' && env.LOCAL_CI_ARCH == 'aarch64'
+        uses: ./.github/actions/rust-path
+      - uses: ./.github/actions/local-arm
       - uses: actions/setup-python@v6
+        if: env.LOCAL_CI_ARCH != 'aarch64'
         with:
           python-version: '3.12.14'
       - name: Reserve runner capacity and install native ARM build dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto g++ binutils
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 1024
@@ -1854,11 +2203,24 @@ jobs:
         with:
           name: rust-carrot-navi-native-arm
           path: |
-            ${{ runner.temp }}/carrot-navi-arm/
-            rust/target/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi
+            ${{ env.CI_JOB_TEMP }}/carrot-navi-arm/
+            ${{ env.LOCAL_CI_TARGET_DIR }}/aarch64-unknown-linux-gnu/release/openpilot-carrot-navi
           if-no-files-found: warn
+      - uses: ./.github/actions/local-arm
+        if: always()
+        with: {cleanup: 'true'}
+      - uses: actions/upload-artifact@v6
+        if: always() && env.LOCAL_CI_ARCH == 'aarch64'
+        with:
+          name: local-arm-carrot-navi-arm-${{ github.sha }}
+          path: ${{ env.CI_JOB_TEMP }}/local-arm/*.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   support-runtime:
     name: rust support runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -1867,6 +2229,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -1950,11 +2314,16 @@ jobs:
         with:
           name: rust-support-runtime-evidence
           path: |
-            ${{ runner.temp }}/support-runtime/
-            ${{ runner.temp }}/support-params-binding/commands.json
-            ${{ runner.temp }}/support-params-binding/provenance.json
+            ${{ env.CI_JOB_TEMP }}/support-runtime/
+            ${{ env.CI_JOB_TEMP }}/support-params-binding/commands.json
+            ${{ env.CI_JOB_TEMP }}/support-params-binding/provenance.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   telemetry-runtime:
     name: rust telemetry runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -1963,6 +2332,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2032,19 +2403,27 @@ jobs:
         with:
           name: rust-telemetry-runtime-evidence
           path: |
-            ${{ runner.temp }}/telemetry-runtime/
-            ${{ runner.temp }}/telemetry-params-binding/commands.json
-            ${{ runner.temp }}/telemetry-params-binding/provenance.json
+            ${{ env.CI_JOB_TEMP }}/telemetry-runtime/
+            ${{ env.CI_JOB_TEMP }}/telemetry-params-binding/commands.json
+            ${{ env.CI_JOB_TEMP }}/telemetry-params-binding/provenance.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   startup-runtime:
     name: rust startup prerequisites
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
+      CARGO_PROFILE_DEV_DEBUG: '0'
       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/rust/tools
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2119,11 +2498,16 @@ jobs:
         with:
           name: rust-startup-runtime-evidence
           path: |
-            ${{ runner.temp }}/startup-runtime/
-            ${{ runner.temp }}/startup-params-binding/commands.json
-            ${{ runner.temp }}/startup-params-binding/provenance.json
+            ${{ env.CI_JOB_TEMP }}/startup-runtime/
+            ${{ env.CI_JOB_TEMP }}/startup-params-binding/commands.json
+            ${{ env.CI_JOB_TEMP }}/startup-params-binding/provenance.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   startup-services:
     name: rust startup services
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -2132,6 +2516,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2175,9 +2561,14 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-startup-services-evidence
-          path: ${{ runner.temp }}/startup-services/
+          path: ${{ env.CI_JOB_TEMP }}/startup-services/
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   sensor-audio:
     name: rust sensor and audio runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -2186,6 +2577,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2225,9 +2618,14 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-sensor-audio-evidence
-          path: ${{ runner.temp }}/sensor-audio/
+          path: ${{ env.CI_JOB_TEMP }}/sensor-audio/
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   gnss-runtime:
     name: rust GNSS runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -2237,6 +2635,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2268,9 +2668,14 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-gnss-evidence
-          path: ${{ runner.temp }}/gnss/
+          path: ${{ env.CI_JOB_TEMP }}/gnss/
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   controls-runtime:
     name: rust control runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -2281,6 +2686,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2318,9 +2725,14 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-controls-evidence
-          path: ${{ runner.temp }}/controls/
+          path: ${{ env.CI_JOB_TEMP }}/controls/
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   estimation-runtime:
     name: rust estimation runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -2331,6 +2743,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2384,12 +2798,17 @@ jobs:
         with:
           name: rust-estimation-evidence
           path: |
-            ${{ runner.temp }}/estimation/
-            ${{ runner.temp }}/locationd-oracle/build.log
-            ${{ runner.temp }}/paramsd-oracle/build.log
+            ${{ env.CI_JOB_TEMP }}/estimation/
+            ${{ env.CI_JOB_TEMP }}/locationd-oracle/build.log
+            ${{ env.CI_JOB_TEMP }}/paramsd-oracle/build.log
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   ui-runtime:
     name: rust UI application runtime
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 60
     env:
       CARGO_INCREMENTAL: '0'
@@ -2401,6 +2820,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2408,7 +2829,6 @@ jobs:
         run: printf 'PYTHONPATH=%s/ui-native/python:%s\n' "$RUNNER_TEMP" "$PYTHONPATH" >> "$GITHUB_ENV"
       - name: Reserve capacity and install UI prerequisites
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 8192
           sudo apt-get update && sudo apt-get install -y capnproto libcapnp-dev g++ clang cmake pkg-config libgl-dev libx11-dev xvfb xauth x11-utils mesa-utils ffmpeg strace
       - name: Install pinned original GUI dependencies
@@ -2476,7 +2896,7 @@ jobs:
         with:
           name: rust-ui-application-runtime-evidence
           path: |
-            ${{ runner.temp }}/ui-native/
+            ${{ env.CI_JOB_TEMP }}/ui-native/
             rust/target/debug/openpilot-ui
             rust/target/debug/examples/product_render
             rust/target/debug/examples/product_runtime
@@ -2486,8 +2906,13 @@ jobs:
             rust/target/debug/examples/calibration_geometry
             rust/target/debug/examples/torque_geometry
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   ui-connectivity:
     name: rust UI and connectivity
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -2498,6 +2923,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2541,12 +2968,17 @@ jobs:
         with:
           name: rust-ui-connectivity-evidence
           path: |
-            ${{ runner.temp }}/ui-connectivity/
-            ${{ runner.temp }}/ui-params-binding/provenance.json
-            ${{ runner.temp }}/ui-raylib/SOURCE_SHA256
-            ${{ runner.temp }}/ui-raylib/plugin-build.json
+            ${{ env.CI_JOB_TEMP }}/ui-connectivity/
+            ${{ env.CI_JOB_TEMP }}/ui-params-binding/provenance.json
+            ${{ env.CI_JOB_TEMP }}/ui-raylib/SOURCE_SHA256
+            ${{ env.CI_JOB_TEMP }}/ui-raylib/plugin-build.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   platform-runtime:
     name: rust platform runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -2555,6 +2987,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2592,11 +3026,16 @@ jobs:
         with:
           name: rust-platform-runtime-evidence
           path: |
-            ${{ runner.temp }}/platform-runtime/
-            ${{ runner.temp }}/platform-params-binding/commands.json
-            ${{ runner.temp }}/platform-params-binding/provenance.json
+            ${{ env.CI_JOB_TEMP }}/platform-runtime/
+            ${{ env.CI_JOB_TEMP }}/platform-params-binding/commands.json
+            ${{ env.CI_JOB_TEMP }}/platform-params-binding/provenance.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   hardware-runtime:
     name: rust hardware and boot runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -2605,6 +3044,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2650,11 +3091,16 @@ jobs:
         with:
           name: rust-hardware-runtime-evidence
           path: |
-            ${{ runner.temp }}/hardware-runtime/
-            ${{ runner.temp }}/hardware-params-binding/commands.json
-            ${{ runner.temp }}/hardware-params-binding/provenance.json
+            ${{ env.CI_JOB_TEMP }}/hardware-runtime/
+            ${{ env.CI_JOB_TEMP }}/hardware-params-binding/commands.json
+            ${{ env.CI_JOB_TEMP }}/hardware-params-binding/provenance.json
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   logger-runtime:
     name: rust original route logger
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -2666,6 +3112,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2739,21 +3187,26 @@ jobs:
         with:
           name: rust-route-logger-evidence
           path: |
-            ${{ runner.temp }}/logger-native/
-            ${{ runner.temp }}/logger-asan/
-            ${{ runner.temp }}/logger-asan-io/
-            ${{ runner.temp }}/logger-flush/
-            ${{ runner.temp }}/logger-io/
-            ${{ runner.temp }}/logger-counters/
-            ${{ runner.temp }}/logger-pipeline/
-            ${{ runner.temp }}/runtime-log-upload/
-            ${{ runner.temp }}/native-logging/
-            ${{ runner.temp }}/logger-original/*.json
-            ${{ runner.temp }}/logger-original/*.log
+            ${{ env.CI_JOB_TEMP }}/logger-native/
+            ${{ env.CI_JOB_TEMP }}/logger-asan/
+            ${{ env.CI_JOB_TEMP }}/logger-asan-io/
+            ${{ env.CI_JOB_TEMP }}/logger-flush/
+            ${{ env.CI_JOB_TEMP }}/logger-io/
+            ${{ env.CI_JOB_TEMP }}/logger-counters/
+            ${{ env.CI_JOB_TEMP }}/logger-pipeline/
+            ${{ env.CI_JOB_TEMP }}/runtime-log-upload/
+            ${{ env.CI_JOB_TEMP }}/native-logging/
+            ${{ env.CI_JOB_TEMP }}/logger-original/*.json
+            ${{ env.CI_JOB_TEMP }}/logger-original/*.log
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   model-pipelines:
     name: rust original model pipelines
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
+    timeout-minutes: 30
     env:
       CPU_COUNT: '2'
       DEV: CPU:LLVM
@@ -2766,6 +3219,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -2839,18 +3294,23 @@ jobs:
         with:
           name: rust-original-pipeline-comparison
           path: |
-            ${{ runner.temp }}/road-pipeline-*/report.json
-            ${{ runner.temp }}/dm-pipeline-*/report.json
-            ${{ runner.temp }}/native-catalog/current.json
-            ${{ runner.temp }}/model-outputs-*/**/report.json
-            ${{ runner.temp }}/model-input-pipelines/**/report.json
-            ${{ runner.temp }}/model-startup/
-            ${{ runner.temp }}/driver-daemon/
-            ${{ runner.temp }}/driving-daemon/
-            ${{ runner.temp }}/model-logging-faults/
+            ${{ env.CI_JOB_TEMP }}/road-pipeline-*/report.json
+            ${{ env.CI_JOB_TEMP }}/dm-pipeline-*/report.json
+            ${{ env.CI_JOB_TEMP }}/native-catalog/current.json
+            ${{ env.CI_JOB_TEMP }}/model-outputs-*/**/report.json
+            ${{ env.CI_JOB_TEMP }}/model-input-pipelines/**/report.json
+            ${{ env.CI_JOB_TEMP }}/model-startup/
+            ${{ env.CI_JOB_TEMP }}/driver-daemon/
+            ${{ env.CI_JOB_TEMP }}/driving-daemon/
+            ${{ env.CI_JOB_TEMP }}/model-logging-faults/
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   model-memory:
     name: rust model memory
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, Linux, X64, openpilot-rust]
     timeout-minutes: 15
     defaults:
       run:
@@ -2859,6 +3319,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - run: sudo apt-get update && sudo apt-get install -y clang capnproto libcapnp-dev g++-aarch64-linux-gnu
       - run: rustup toolchain install nightly-2026-09-29 --profile minimal --component miri,rust-src
       - name: Check Rust allocation and aliasing on ARM with Miri
@@ -2903,10 +3365,14 @@ jobs:
           MODEL_TEST_ASAN: '1'
           RUSTFLAGS: -Zsanitizer=address -Clink-arg=-Wl,--export-dynamic
         run: cargo +nightly-2026-09-29 test -p openpilot-model-runtime --test cpu --locked -Zbuild-std --target x86_64-unknown-linux-gnu
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   arm64:
     name: rust aarch64 build
-    if: github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'push' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') }}
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 120
     env:
       CARGO_INCREMENTAL: '0'
@@ -2914,19 +3380,23 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Reserve capacity for generic ARM build dependencies
         run: |
-          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 12288
-          sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu capnproto libcapnp-dev qemu-user-static clang libclang-dev make cmake
+          test "$(uname -m)" = aarch64
+          test "$(dpkg --print-architecture)" = arm64
+          sudo apt-get -o APT::Architectures=arm64 update && sudo apt-get -o APT::Architectures=arm64 install -y gcc g++ binutils capnproto libcapnp-dev clang libclang-dev make cmake
+          test "$(gcc -dumpmachine)" = aarch64-linux-gnu
+          command -v aarch64-linux-gnu-gcc aarch64-linux-gnu-g++ aarch64-linux-gnu-ar aarch64-linux-gnu-ranlib aarch64-linux-gnu-readelf
+          test -r /usr/include/aarch64-linux-gnu/gnu/stubs-lp64.h
       - name: Stage native GNU aarch64 startup renderer and portable loader headers
         run: |
-          sudo dpkg --add-architecture arm64
-          sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- update
-          sudo apt-get -o Dir::Etc::sourcelist="$PWD/.github/apt/startup-ui-cross.sources" -o Dir::Etc::sourceparts=- install -y libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
+          sudo apt-get -o APT::Architectures=arm64 install -y libegl-dev:arm64 libgles-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
           "$GITHUB_WORKSPACE/rust/tools/check-disk-space" --path "$GITHUB_WORKSPACE" --growth-mib 2048
           cargo +1.94.0 run --manifest-path "$GITHUB_WORKSPACE/rust/Cargo.toml" -p openpilot-dev-tools --locked --bin stage-startup-ui-raylib -- --arch aarch64 --output "$RUNNER_TEMP/startup-raylib-arm" --shared --cxx aarch64-linux-gnu-g++
           printf 'STARTUP_UI_RAYLIB_ROOT=%s/startup-raylib-arm\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
@@ -2970,7 +3440,7 @@ jobs:
           path: |
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-card
             rust/target/aarch64-unknown-linux-gnu/release/examples/*_trace
-            ${{ runner.temp }}/card-arm/
+            ${{ env.CI_JOB_TEMP }}/card-arm/
           if-no-files-found: warn
       - name: Stage native GNU aarch64 torque dependency (not AGNOS validation)
         working-directory: rust
@@ -2996,7 +3466,7 @@ jobs:
         with:
           name: rust-selfdrived-arm-evidence
           path: |
-            ${{ runner.temp }}/selfdrived-arm/
+            ${{ env.CI_JOB_TEMP }}/selfdrived-arm/
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-selfdrived
             rust/target/aarch64-unknown-linux-gnu/release/examples/controller
             rust/target/aarch64-unknown-linux-gnu/release/examples/ratekeeper
@@ -3020,7 +3490,7 @@ jobs:
         with:
           name: rust-navd-arm-evidence
           path: |
-            ${{ runner.temp }}/navd-arm/
+            ${{ env.CI_JOB_TEMP }}/navd-arm/
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-navd
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-set-destination
             rust/target/aarch64-unknown-linux-gnu/release/examples/navd_*
@@ -3040,7 +3510,7 @@ jobs:
           python tools/build_msgq_python.py --output "$RUNNER_TEMP/rust-msgq-python"
           PYTHONPATH="$RUNNER_TEMP/rust-msgq-python:$GITHUB_WORKSPACE" python tools/check_aarch64.py \
             --binary target/aarch64-unknown-linux-musl/release/openpilot-proclogd \
-            --runner /usr/bin/qemu-aarch64-static --report "$RUNNER_TEMP/aarch64-probe.json"
+            --report "$RUNNER_TEMP/aarch64-probe.json"
           mkdir -p target/c3x-probe
           cp target/aarch64-unknown-linux-musl/release/openpilot-proclogd target/c3x-probe/
           git rev-parse HEAD > target/c3x-probe/SOURCE_COMMIT
@@ -3067,21 +3537,21 @@ jobs:
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-calibrationd
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-loggerd
             rust/target/aarch64-unknown-linux-musl/release/openpilot-loggerd
-            ${{ runner.temp }}/logger-ffmpeg-gnu/invocation.json
-            ${{ runner.temp }}/logger-ffmpeg-gnu/build.log
-            ${{ runner.temp }}/startup-raylib-arm/SOURCE_SHA256
-            ${{ runner.temp }}/startup-raylib-arm/plugin-build.json
-            ${{ runner.temp }}/startup-raylib-arm/lib/libopenpilot-raylib.so
-            ${{ runner.temp }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/COPYING.LGPLv2.1
-            ${{ runner.temp }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/LICENSE.md
-            ${{ runner.temp }}/logger-ffmpeg-musl/invocation.json
-            ${{ runner.temp }}/logger-ffmpeg-musl/build.log
+            ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-gnu/invocation.json
+            ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-gnu/build.log
+            ${{ env.CI_JOB_TEMP }}/startup-raylib-arm/SOURCE_SHA256
+            ${{ env.CI_JOB_TEMP }}/startup-raylib-arm/plugin-build.json
+            ${{ env.CI_JOB_TEMP }}/startup-raylib-arm/lib/libopenpilot-raylib.so
+            ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/COPYING.LGPLv2.1
+            ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-gnu/ffmpeg-6.1.1/LICENSE.md
+            ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-musl/invocation.json
+            ${{ env.CI_JOB_TEMP }}/logger-ffmpeg-musl/build.log
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-torqued
-            ${{ runner.temp }}/torque-arm-numerics/
+            ${{ env.CI_JOB_TEMP }}/torque-arm-numerics/
             rust/target/aarch64-unknown-linux-gnu/release/jetlinkd-rs
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-card
             rust/target/aarch64-unknown-linux-gnu/release/examples/*_trace
-            ${{ runner.temp }}/card-arm/
+            ${{ env.CI_JOB_TEMP }}/card-arm/
       - name: Build native Panda for generic Linux aarch64
         working-directory: rust
         env:
@@ -3100,7 +3570,7 @@ jobs:
         with:
           name: rust-panda-arm-evidence
           path: |
-            ${{ runner.temp }}/panda-arm/
+            ${{ env.CI_JOB_TEMP }}/panda-arm/
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-pandad
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-pandad-supervisor
           if-no-files-found: warn
@@ -3128,7 +3598,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-camera-arm-evidence
-          path: ${{ runner.temp }}/camera-arm/
+          path: ${{ env.CI_JOB_TEMP }}/camera-arm/
           if-no-files-found: warn
 
       - name: Stage exact source-pinned native ARM codec packages
@@ -3143,7 +3613,7 @@ jobs:
           CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
           CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
           AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
-          BINDGEN_EXTRA_CLANG_ARGS: --target=aarch64-linux-gnu -I/usr/aarch64-linux-gnu/include
+          BINDGEN_EXTRA_CLANG_ARGS: --target=aarch64-linux-gnu -I/usr/include/aarch64-linux-gnu
           FFMPEG_DIR: ${{ env.ENCODER_ARM_FFMPEG }}
           ENCODER_LIBYUV_LIB: ${{ env.ENCODER_ARM_LIBYUV }}
           ENCODER_FFMPEG_EXTRA_LIBS: swresample,x264,z,va,va-drm,drm,gcc
@@ -3162,7 +3632,7 @@ jobs:
         with:
           name: rust-encoder-arm-evidence
           path: |
-            ${{ runner.temp }}/encoder-arm/
+            ${{ env.CI_JOB_TEMP }}/encoder-arm/
             rust/target/aarch64-unknown-linux-gnu/release/openpilot-encoderd
             rust/target/aarch64-unknown-linux-gnu/release/examples/encoder_codec_trace
             rust/target/aarch64-unknown-linux-gnu/release/examples/encoder_v4l_trace
@@ -3197,10 +3667,15 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: rust-ui-application-arm-not-device-validated
-          path: ${{ runner.temp }}/ui-arm/
+          path: ${{ env.CI_JOB_TEMP }}/ui-arm/
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   athena-runtime:
     name: rust Athena runtime
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -3210,6 +3685,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -3231,17 +3708,23 @@ jobs:
         with:
           name: rust-athena-evidence
           path: |
-            ${{ runner.temp }}/athena-runtime/**
-            ${{ runner.temp }}/athena-jpeg-sanitizers/**
+            ${{ env.CI_JOB_TEMP }}/athena-runtime/**
+            ${{ env.CI_JOB_TEMP }}/athena-jpeg-sanitizers/**
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
 
   web-upload-timeouts:
     name: active upload timeout contracts
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -3260,5 +3743,8 @@ jobs:
         with:
           name: active-upload-timeout-evidence
           path: |
-            ${{ runner.temp }}/web-upload-timeouts/**
-            ${{ runner.temp }}/web-upload-eintr/**
+            ${{ env.CI_JOB_TEMP }}/web-upload-timeouts/**
+            ${{ env.CI_JOB_TEMP }}/web-upload-eintr/**
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

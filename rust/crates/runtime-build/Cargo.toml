@@ -9,13 +9,59 @@ publish = false
 [lints]
 workspace = true
 
+[features]
+default = ["prepare-rust", "prepare-capnp", "prepare-cargo", "prepare-source-assets", "prepare-python"]
+prepare-source-assets = []
+prepare-python = ["dep:tar", "dep:flate2"]
+prepare-rust = ["dep:tar", "dep:xz2"]
+prepare-capnp = ["dep:tar", "dep:zstd"]
+prepare-cargo = ["dep:tar", "dep:flate2", "dep:toml"]
+
 [dependencies]
-rustix = { version = "1", features = ["fs"] }
+flate2 = { version = "1", default-features = false, features = ["rust_backend"], optional = true }
+openpilot-runtime-installer = { path = "../runtime-installer" }
+rustix = { version = "1", features = ["fs", "process"] }
+signal-hook = "0.3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
 tempfile = "3"
+tar = { version = "0.4", default-features = false, optional = true }
+xz2 = { version = "0.1.7", optional = true }
+zstd = { version = "0.13", optional = true }
+toml = { version = "0.8", optional = true }
+
+[dev-dependencies]
+rustix = { version = "1", features = ["stdio"] }
 
 [[bin]]
 name = "openpilot-runtime-build"
 path = "src/main.rs"
+
+[[bin]]
+name = "openpilot-runtime-assets"
+path = "src/assets_main.rs"
+
+[[bin]]
+name = "openpilot-runtime-inputs"
+path = "src/inputs_main.rs"
+
+[[bin]]
+name = "openpilot-runtime-source"
+path = "src/source_main.rs"
+
+[[bin]]
+name = "openpilot-runtime-prepare"
+path = "src/prepare_main.rs"
+
+[[bin]]
+name = "openpilot-runtime-native"
+path = "src/native_main.rs"
+
+[[bin]]
+name = "openpilot-native-build-scope"
+path = "src/scope_main.rs"
+
+[[bin]]
+name = "openpilot-runtime-plan"
+path = "src/catalog_main.rs"

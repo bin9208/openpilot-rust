@@ -20,6 +20,12 @@ impl Default for GlobalContext {
             "source_tree".into(),
             Value::Text(env!("OPENPILOT_LOGGING_SOURCE_TREE").into()),
         );
+        if env!("OPENPILOT_LOGGING_SOURCE_STAMP_MODE") == "compiled-native-incremental" {
+            context.insert(
+                "source_commit_kind".into(),
+                Value::Text("compiled artifact".into()),
+            );
+        }
         Self(Arc::new(RwLock::new(context)))
     }
 }

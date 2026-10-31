@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "kind": "openpilot-mpc-source-v1",
+  "original_source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "roots": [
+    "msgq",
+    "msgq_repo",
+    "opendbc",
+    "opendbc_repo",
+    "openpilot",
+    "panda",
+    "pyproject.toml",
+    "rednose",
+    "rednose_repo",
+    "rust/crates/plannerd/licenses",
+    "rust/tools/build_plannerd_acados.py",
+    "rust/tools/plannerd_generate_source.py",
+    "rust/tools/plannerd_policy_source.py",
+    "teleoprtc",
+    "teleoprtc_repo",
+    "third_party",
+    "tinygrad",
+    "tinygrad_repo",
+    "uv.lock"
+  ],
+  "excludes": [
+    "openpilot/selfdrive/carrot/web/generated",
+    "openpilot/selfdrive/carrot/web/js",
+    "openpilot/selfdrive/carrot/web/src",
+    "openpilot/selfdrive/carrot/web/tests"
+  ],
+  "entries": 4662,
+  "entries_sha256": "298082a7f6b0a246c82e261a26a98687f52830eea255f6a5a0c9f5563990ca77",
+  "outputs": {
+    "plannerd-acados/libacados.so": "c3b25e257ed8befa95c5d56493289881c34c790f7f75deae7acfc6d6bdd60335",
+    "plannerd-acados/libacados_ocp_solver_lat.so": "120e241f56f2173b640464b9028493b6343948593f9d78e95094fe75fe755213",
+    "plannerd-acados/libacados_ocp_solver_long.so": "ad06db01d7eb857aac0334102f3570fb1cb502d1627e2592f0919f877711eaa2",
+    "plannerd-acados/libblasfeo.so": "bfa126e6d2f881be97792a1b3611c1aa786a68a7233c36f86c0091be08cf95da",
+    "plannerd-acados/libhpipm.so": "bc1f5825c52b53327f109821082af47c6053b49cc38381b0bd4845963a3d5075",
+    "plannerd-acados/libqpOASES_e.so": "36b4eb60baba69fdaa1b4ef42bcc09e7b766bbcf0b0006be8e82e3c20e8dde85",
+    "plannerd-acados/libqpOASES_e.so.3.1": "36b4eb60baba69fdaa1b4ef42bcc09e7b766bbcf0b0006be8e82e3c20e8dde85",
+    "plannerd-acados/manifest.json": "dfbe33a6876a5ef8f96d8de3008babf2cbe8765d04d4e04e0bef6ed27476f509",
+    "plannerd-acados/provenance.json": "a0ec8beb7c70b34c15aca4b4f4948dd6df57702792091c1dd2ff75abeb07bd07"
+  }
+}

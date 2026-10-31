@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "profile": "acados022-libraries",
+  "target": "aarch64-unknown-linux-gnu",
+  "agnos_version": "19.8-carrot-bt1",
+  "source_commit": "a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31",
+  "source_archive": {
+    "url": "https://github.com/bin9208/openpilot-rust/releases/download/runtime-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31/openpilot-rust-a3d0e3a497b4ae4d23c7cf5ee2275177600bbb31-aarch64.tar.gz",
+    "sha256": "9c9c16a72bad163226388ef84327b0db1fa64bbe4828e64388e0a7e92d364291",
+    "bytes": 1155969168
+  },
+  "runtime_manifest_sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+  "members": {
+    "plannerd-acados/libacados.so": {
+      "source": "rust/bin/plannerd-acados/libacados.so",
+      "sha256": "c3b25e257ed8befa95c5d56493289881c34c790f7f75deae7acfc6d6bdd60335",
+      "bytes": 599184,
+      "mode": 292,
+      "link": null
+    },
+    "plannerd-acados/libblasfeo.so": {
+      "source": "rust/bin/plannerd-acados/libblasfeo.so",
+      "sha256": "bfa126e6d2f881be97792a1b3611c1aa786a68a7233c36f86c0091be08cf95da",
+      "bytes": 1256672,
+      "mode": 292,
+      "link": null
+    },
+    "plannerd-acados/libhpipm.so": {
+      "source": "rust/bin/plannerd-acados/libhpipm.so",
+      "sha256": "bc1f5825c52b53327f109821082af47c6053b49cc38381b0bd4845963a3d5075",
+      "bytes": 1383976,
+      "mode": 292,
+      "link": null
+    },
+    "plannerd-acados/libqpOASES_e.so": {
+      "source": "rust/bin/plannerd-acados/libqpOASES_e.so",
+      "sha256": "36b4eb60baba69fdaa1b4ef42bcc09e7b766bbcf0b0006be8e82e3c20e8dde85",
+      "bytes": 350176,
+      "mode": 292,
+      "link": null
+    },
+    "plannerd-acados/libqpOASES_e.so.3.1": {
+      "source": "rust/bin/plannerd-acados/libqpOASES_e.so.3.1",
+      "sha256": "36b4eb60baba69fdaa1b4ef42bcc09e7b766bbcf0b0006be8e82e3c20e8dde85",
+      "bytes": 350176,
+      "mode": 292,
+      "link": null
+    },
+    "plannerd-acados/licenses/acados.txt": {
+      "source": "rust/bin/plannerd-acados/licenses/acados.txt",
+      "sha256": "43c978e77d8d3721cbd701539724b3460e68f9d0dddfad76902237dc706f7fcc",
+      "bytes": 1326,
+      "mode": 292,
+      "link": null
+    },
+    "plannerd-acados/licenses/blasfeo.txt": {
+      "source": "rust/bin/plannerd-acados/licenses/blasfeo.txt",
+      "sha256": "03bf34700337cb892d143a84398e43319a11cab1494fd78aa047b55972129542",
+      "bytes": 1456,
+      "mode": 292,
+      "link": null
+    },
+    "plannerd-acados/licenses/hpipm.txt": {
+      "source": "rust/bin/plannerd-acados/licenses/hpipm.txt",
+      "sha256": "9d35e846dd1c2f122c7edf1512cf2952c14574c3b773be76c3d1e4ad749d9d07",
+      "bytes": 1462,
+      "mode": 292,
+      "link": null
+    },
+    "plannerd-acados/licenses/qpoases.txt": {
+      "source": "rust/bin/plannerd-acados/licenses/qpoases.txt",
+      "sha256": "e5d44cfd3a10f2f0e54b262b46089845c9ef27d288ab678240d7ef6d73d58b19",
+      "bytes": 26445,
+      "mode": 292,
+      "link": null
+    },
+    "plannerd-acados/licenses/sources.json": {
+      "source": "rust/bin/plannerd-acados/licenses/sources.json",
+      "sha256": "ecc3722664771f1fc5d73e1da92ab748652ce4a7b5abaf18f6c511682be7f414",
+      "bytes": 1270,
+      "mode": 292,
+      "link": null
+    },
+    "provenance/original-acados-build.json": {
+      "source": "rust/bin/plannerd-acados/provenance.json",
+      "sha256": "a0ec8beb7c70b34c15aca4b4f4948dd6df57702792091c1dd2ff75abeb07bd07",
+      "bytes": 74697,
+      "mode": 292,
+      "link": null
+    },
+    "provenance/original-acados-manifest.json": {
+      "source": "rust/bin/plannerd-acados/manifest.json",
+      "sha256": "dfbe33a6876a5ef8f96d8de3008babf2cbe8765d04d4e04e0bef6ed27476f509",
+      "bytes": 1129,
+      "mode": 292,
+      "link": null
+    },
+    "provenance/original-runtime-manifest.json": {
+      "source": "rust/runtime-manifest.json",
+      "sha256": "8adbc002388fb97420e4bef9dcf58a5ed75de4c4632a1bc0d10c555f1c2d39ee",
+      "bytes": 241671,
+      "mode": 292,
+      "link": null
+    }
+  }
+}

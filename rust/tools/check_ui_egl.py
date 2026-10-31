@@ -25,11 +25,13 @@ for case in ['success', 'retry', 'fallback', 'fail', 'retry-fail', 'no-display',
   for lane in ['source', 'native']:
     trace = args.output / f'{case}-{lane}.jsonl'
     trace.write_text('')
-    env = dict(os.environ, EGL_CASE=case, EGL_TRACE=str(trace.resolve()), LD_LIBRARY_PATH=str(args.output.resolve()), PYTHONPATH=str(root))
+    libraries = os.pathsep.join(filter(None, (str(args.output.resolve()), os.environ.get('LD_LIBRARY_PATH', ''))))
+    env = dict(os.environ, EGL_CASE=case, EGL_TRACE=str(trace.resolve()), LD_LIBRARY_PATH=libraries, PYTHONPATH=str(root))
     command = [sys.executable, str(root / 'rust/tools/ui_qa/egl_source.py')] if lane == 'source' else [str(args.binary)]
-    result = subprocess.run(command, env=env, capture_output=True, text=True, check=True)
+    result = subprocess.run(command, env=env, capture_output=True, text=True, check=False)
     (args.output / f'{case}-{lane}.stdout').write_text(result.stdout)
     (args.output / f'{case}-{lane}.stderr').write_text(result.stderr or '(no stderr)\n')
+    result.check_returncode()
     states.append(json.loads(result.stdout))
     traces.append([json.loads(line) for line in trace.read_text().splitlines()])
   result = {'case': case, 'state_equal': states[0] == states[1], 'trace_equal': traces[0] == traces[1], 'fd_delta': states[1]['fd_delta']}

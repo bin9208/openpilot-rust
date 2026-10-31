@@ -10,15 +10,19 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: naver-apk-tools-${{ github.ref }}
-  cancel-in-progress: true
+  group: naver-apk-tools-${{ github.ref }}-parallel-v2
+  queue: max
+  cancel-in-progress: false
 jobs:
   host-toolkit:
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
         with: {lfs: false, persist-credentials: false}
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-python@v6
         with: {python-version: '3.12'}
       - uses: actions/setup-java@v5
@@ -31,7 +35,12 @@ jobs:
       - run: python -m pip install pytest==9.0.2
       - name: Synthetic APK packaging and privacy tests only
         run: python -m pytest -c /dev/null --rootdir=. --confcutdir=tools/naver_map_patch/tests -q tools/naver_map_patch/tests
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}
+
   payload:
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
@@ -41,6 +50,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with: {lfs: false, persist-credentials: false}
+      - uses: ./.github/actions/job-temp
+      - uses: ./.github/actions/rust-path
       - uses: actions/setup-java@v5
         with: {distribution: temurin, java-version: '21'}
       - uses: gradle/actions/setup-gradle@4c125117fe7c5aed11272ec4213f602f012f89f2 # v5
@@ -59,3 +70,6 @@ jobs:
           path: tools/naver_map_patch/dexpatch/build/test-results/test/*.xml
           retention-days: 7
           if-no-files-found: warn
+      - uses: ./.github/actions/job-temp
+        if: always()
+        with: {cleanup: 'true'}

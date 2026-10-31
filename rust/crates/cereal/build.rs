@@ -5,6 +5,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let staging = PathBuf::from(env::var("OUT_DIR")?).join("schema");
     fs::create_dir_all(staging.join("include"))?;
     let mut compiler = capnpc::CompilerCommand::new();
+    println!("cargo:rerun-if-env-changed=OPENPILOT_CAPNP");
+    if let Some(executable) = env::var_os("OPENPILOT_CAPNP") {
+        let executable = PathBuf::from(executable);
+        if !executable.is_absolute()
+            || !fs::metadata(&executable)?.is_file()
+            || executable.to_string_lossy().contains(['\n', '\r'])
+        {
+            return Err("OPENPILOT_CAPNP must name an absolute schema compiler file".into());
+        }
+        println!("cargo:rerun-if-changed={}", executable.display());
+        compiler.capnp_executable(executable);
+    }
     compiler.src_prefix(&staging).import_path(&staging);
     for (name, source) in [
         ("log.capnp", "openpilot/cereal/log.capnp"),

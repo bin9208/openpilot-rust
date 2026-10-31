@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Final
 
 from tinygrad import Context, Tensor, dtypes
-from tinygrad.nn.onnx import OnnxRunner, _to_python_const, required_input_python_consts
+from tinygrad.nn.onnx import OnnxPBParser, OnnxRunner, _to_python_const, required_input_python_consts
 
 from .offline_model import InitializedBuffer, OfflineModel
 from .offline_devices import host_build
@@ -26,12 +26,37 @@ class OfflineOnnx:
     initialized: tuple[InitializedBuffer, ...]
 
 
+class InlineOnnxParser(OnnxPBParser):
+    """The input contract binds this ONNX object, not arbitrary external files."""
+
+    def __init__(self, path: Path, load_external_data: bool = False) -> None:
+        if load_external_data:
+            raise ExportError("offline ONNX external reads must remain disabled")
+        super().__init__(path, load_external_data=False)
+
+    def _parse_TensorProto(self) -> dict:
+        try:
+            value = super()._parse_TensorProto()
+        except AssertionError as error:
+            raise ExportError("offline ONNX requires self-contained constant tensors") from error
+        if value.get("external_data") or value.get("data_location", 0) != 0:
+            raise ExportError("offline ONNX external tensor inputs are not bound")
+        return value
+
+
+class InlineOnnxRunner(OnnxRunner):
+    def __init__(self, path: Path) -> None:
+        # Match the original constructor, with external reads disabled before
+        # any tensor (including one nested in an attribute) can be loaded.
+        self._init_from_graph(InlineOnnxParser(path, load_external_data=False).parse()["graph"])
+
+
 @host_build
 def load_runner(path: Path, expected_sha256: str) -> OfflineOnnx:
     if hashlib.sha256(path.read_bytes()).hexdigest() != expected_sha256:
         raise ExportError("ONNX model identity differs from the pinned object")
     with Context(DEV="CPU:LLVM", IMAGE=1, FLOAT16=1, OPENPILOT_HACKS=1):
-        runner = OnnxRunner(path)
+        runner = InlineOnnxRunner(path)
         if runner.is_training:
             raise ExportError("offline ONNX training graph is unsupported")
         original_values = dict(runner.graph_values)

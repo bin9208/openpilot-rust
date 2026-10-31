@@ -16,8 +16,8 @@ def run(command, environment, path):
 
 def disk(path):
   free = shutil.disk_usage(path).free
-  if free < 27 * 1024**3:
-    raise RuntimeError('25 GiB floor plus 2 GiB native build growth unavailable')
+  if free < 2 * 1024**3:
+    raise RuntimeError('2 GiB estimated native build growth unavailable')
   return free
 
 
@@ -51,7 +51,6 @@ def main():
       'ownership',
       '--no-run',
       '--locked',
-      '-j2',
       '--message-format=json',
     ],
     environment,
