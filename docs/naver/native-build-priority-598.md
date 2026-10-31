@@ -542,3 +542,33 @@ CPU LLVM tensor 결과·QCOM·모델 ABI와 정규 bootstrap13 tools·99개 full
 실제 `/proc/self/maps`의 `libLLVM.so.20.1` 확인과 QCOM·전체 ABI·모든 입력 pin은 유지한다.
 로컬은 구문·diff와 고정 소스 읽기만 수행하며 실제 LLVM 실행과 나머지 검증은 새 source의
 Actions에서 확인한다. 이전 실행을 재시도하거나 새 검증 모드를 추가하지 않는다.
+
+
+## 2026-10-31 — 모델 wheel ABI의 실제 Python 로딩 문맥
+
+`6e8e0922d73e29afb35b99af9682501a9f8093de`의
+[Genuine41166345540/job124434636224](https://github.com/bin9208/openpilot-rust/actions/runs/41166345540/job/124434636224)은
+`native_model_wheels_probe`의 별도 ELF 검사에서 `native library closure is incompatible`로 실패했다.
+artifact13031899937은48,546,962B·SHA
+`f6a539a246b6d65d29c4e64810d397bc152f85ce48f8240e1ffc6623a272bd3b`로 API/ZIP 값이 일치한다.
+원래 seed ABI·Python7+3/health·SDK4·SVD·역행렬·Zstd에 이어 실제 CPU LLVM tensor 결과,
+QCOM2352B 커널 생성·잘못된 QCOM source 거부·외부 ONNX weight 거부도 통과했다.
+이는 고정 모델 준비 fixture 결과이며 전체 모델 생성·실기 GPU·전체99 성공은 아니다.
+
+실제 audit의28 roots 중 NumPy19개와 zstandard2개인 CPython 확장21개만 실패했다.
+누락405종은 모두 `Py*`/`_Py*`이며 다른 강한 심볼·symbol version 실패는 없다.
+405종 모두 같은 고정 Python 실행파일의 export에 존재함을 원문 ELF 읽기로 대조했다.
+해당 owner의 SHA는 `323c98709b03c4624442afd97b7f09d9978e4031bd1957f1afb080b038d8e9b4`다.
+독립7개(실행파일3·LLVM/QCOM2·NumPy bundled library2)는 실제 호환 판정을 받았다.
+같은 source의 별도6개 검사 묶음68jobs도 성공했지만 새 수정 source의 성공으로 대신하지 않는다.
+
+호출자에서 고정 receipt의 전체23 wheel ELF를 CPython3.12/AArch64 확장21개와
+`numpy.libs`의 독립2개로 구분한다. 원래 실행파일·compiler library와 합친 독립7개는
+기존 검색 경계에서 검사하고, 확장21개에는 기존 `--load-owner`와 실제 검증된 Python만
+명시한다. owner는 별도로 독립 검사되며 다른 확장끼리 서로의 누락을 보충하지 않는다.
+각 결과의 정확한 root 집합(독립7, owner 포함22)·호환 여부·owner identity를 확인하고,
+원래 wheel pin·모든 ELF·architecture/version/강한 심볼·실행 후 prefix 재사용 검사를 유지한다.
+새 결과 JSON은 기존 `native-model-*.json` artifact 범위에 포함된다.
+
+로컬은 구문·diff와 고정 원문 읽기만 수행한다. 수정 후 실제 모델 ABI와 그 뒤 정규
+bootstrap13 tools·전체99·production 다섯 phase·입력 payload/I는 새 Actions에서 확인한다.

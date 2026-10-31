@@ -846,18 +846,39 @@ def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest
   receipt=json.loads((work/Path(rows[0]['tree_receipt']).relative_to(guest_work)).read_text())
   roots=[compiler,work/'project-target/debug/model-run',work/'project-target/debug/qcom-model-run',report['cpu_llvm']['path'],report['qcom']['path']]
   libraries=set()
+  extensions=[]
   for path,entry in receipt['entries'].items():
     if entry['kind']!='file': continue
     with (actual_prefix/path).open('rb') as stream: magic=stream.read(4)
     if magic==b'\x7fELF':
-      roots.append(prefix/path)
+      member=Path(path)
+      if member.parts[:2] in {('site-packages','numpy'),('site-packages','zstandard')}:
+        assert member.name.endswith('.cpython-312-aarch64-linux-gnu.so')
+        extensions.append(prefix/path)
+      else:
+        assert member.parent==Path('site-packages/numpy.libs')
+        roots.append(prefix/path)
       libraries.add((prefix/path).parent)
+  assert len(roots)==7 and len(extensions)==21
+  search=[*(arg for path in sorted(libraries) for arg in ('--library',path)),
+      '--library','/usr/lib/aarch64-linux-gnu','--library','/lib/aarch64-linux-gnu']
   audit=work/'native-model-environment-abi.json'
   execute([work/'project-target/debug/runtime-elf-audit',*(arg for path in roots for arg in ('--root',path)),
-      *(arg for path in sorted(libraries) for arg in ('--library',path)),
-      '--library','/usr/lib/aarch64-linux-gnu','--library','/lib/aarch64-linux-gnu','--output',audit],
-      'native-model-environment-abi-summary.json')
-  assert json.loads(audit.read_text())['compatible'] is True
+      *search,'--output',audit],'native-model-environment-abi-summary.json')
+  standalone=json.loads(audit.read_text())
+  assert standalone['compatible'] is True and len(standalone['roots'])==len(roots)
+  assert {row['root'] for row in standalone['roots']}=={str(path) for path in roots}
+  # Python extensions resolve interpreter symbols from their verified loader;
+  # unrelated binaries and bundled native libraries retain independent audits.
+  owner=Path(python['python'])
+  extension_audit=work/'native-model-extensions-abi.json'
+  execute([work/'project-target/debug/runtime-elf-audit','--load-owner',owner,
+      *(arg for path in extensions for arg in ('--root',path)),*search,'--output',extension_audit],
+      'native-model-extensions-abi-summary.json')
+  loaded=json.loads(extension_audit.read_text())
+  assert loaded['compatible'] is True and loaded['load_owner']==str(owner)
+  assert len(loaded['roots'])==len(extensions)+1
+  assert {row['root'] for row in loaded['roots']}=={str(path) for path in [owner,*extensions]}
   execute([*command,'--output',work/'native-model-wheels-after-health.json'],'native-model-wheels-after-health.txt')
   after=json.loads((work/'native-model-wheels-after-health.json').read_text())
   assert after['tree_sha256']==rows[0]['tree_sha256']
@@ -867,7 +888,8 @@ def native_model_wheels_probe(guest_command,work,source_mount,evidence,log,guest
       cpu_llvm=report['cpu_llvm'],qcom=report['qcom'],qcom_compiler_sha256=report['compiler_executable_sha256'],
       qcom_kernel_sha256=report['qcom_kernel_sha256'],invalid_qcom_source_rejected=True,
       unbound_external_initializer_and_attribute_rejected=True,
-      strict_elf_closure_compatible=True,prefix_unchanged_after_execution=True,
+      strict_elf_closure_compatible=True,standalone_elf_members=len(roots),
+      extension_elf_members=len(extensions),extension_load_owner=str(owner),prefix_unchanged_after_execution=True,
       repeated_http_body_bytes=0,repeated_copied_bytes=0,repeated_linked_bytes=0,
       full_model_generation=False,full_model_regression=False,full_runtime_build=False,gpu_executed=False,
       physical_device_execution=False,execution_mode=NATIVE_PROOT['MODE'], native_arm_execution=True, emulated=False)
