@@ -44,7 +44,7 @@ def main():
   assert np.__version__ == '2.5.3' and zstandard.__version__ == '0.25.0' and zstandard.backend == 'cext'
   assert Path(np.__file__).resolve().is_relative_to(packages) and Path(zstandard.__file__).resolve().is_relative_to(packages)
   value = np.array([[3.,0.],[0.,2.]],dtype=np.float64)
-  np.testing.assert_array_equal(np.linalg.svd(value,compute_uv=False),[3.,2.])
+  np.testing.assert_array_max_ulp(np.linalg.svd(value,compute_uv=False),np.array([3.,2.],dtype=np.float64),maxulp=1)
   np.testing.assert_array_equal(np.linalg.inv(value)@value,np.eye(2))
   data = b'owned model preparation zstandard roundtrip\x00'*100
   assert zstandard.ZstdDecompressor().decompress(zstandard.ZstdCompressor().compress(data)) == data

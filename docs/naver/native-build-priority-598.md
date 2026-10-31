@@ -487,3 +487,31 @@ Rust resolver도 원래 I/O 오류와 확장 경로를 보존한다. 원인을 �
 CI 도구의 ARM64 매핑 한 항목만 보완하고 원본 archive 및 수정 전후 파일 SHA와 빌드 receipt를 검증한다.
 원래 네 경로 검사가 실제 통과하는지 Actions에서 먼저 확인하며 내부 원인의 완전한 입증이나 전체 성공을
 수정만으로 주장하지 않는다. 원본 이미지·libc·후보 resolver·Python·네이티브 라이브러리·ABI 경계는 유지한다.
+
+## 2026-10-31 — 모델 준비 수치 fixture의 float64 비교
+
+`26598ebfe4b24ddcf640bebce79aeadedcb5d638`의
+[Genuine41133249968/job124329282603](https://github.com/bin9208/openpilot-rust/actions/runs/41133249968/job/124329282603)은
+정규 모델 환경 fixture의 SVD 비교에서 실패했다. NumPy2.5.3의 고정 float64 대각행렬
+`[[3,0],[0,2]]` 결과는 `[2.9999999999999996,2.0000000000000004]`이며,
+기대값 `[3,2]`와 각1 ULP 차이인데 `assert_array_equal`이 완전동일을 요구했다.
+artifact13024950834의52,149,990B·SHA
+`5c26b912720c195837de8dd9b5e7aaf5012f709fcbbe11e6e8db291ad0400a07`가 API와 일치한다.
+
+이 실행에서는 네 경로의 realpath/stat/hash와 PRoot patch receipt, 원래 seed ABI,
+Python 독립7개 및 실제 owner/확장3개의 전체10 ELF·health, SDK 회귀4개,
+현재 bootstrap13 tools의 initial/reused/docs/small이 실제 통과했다.
+13 tools의 성공은99개 full-generation·전체 source entry·입력 index의 성공이 아니다.
+역행렬 검사와 zstandard·CPU LLVM·QCOM fixture 및 그 뒤 전체 검증은 아직 미확인이다.
+
+수정은 해당 SVD 비교 한 곳에만 명시적 float64·최대1 ULP를 사용한다.
+[NumPy의 ULP 비교 API](https://numpy.org/doc/stable/reference/generated/numpy.testing.assert_array_max_ulp.html)로
+한 단위보다 큰 차이는 계속 거부한다. 원래 행렬·역행렬/정수 tensor의 완전동일 검사,
+모델·provider·버전·SHA·ABI·유효성·시작 deadline은 유지한다.
+로컬은 구문·diff와 원문 읽기만 수행하며 수정 후 실제 수치/모델 검증은 Actions에서 확인한다.
+
+같은 실패의 늦은 발견을 줄이기 위해 긴 `native_bootstrap_seed_probe` 한 호출을
+기존 model wheels 검사 바로 뒤로 옮긴다. SDK·FFmpeg headers·provider·model wheels는
+bootstrap 전용 출력물을 읽지 않음을 정적으로 대조했다. 나머지 원래 probe의 상대 순서와
+호출 횟수·함수본문·Cargo argv·후속 production driver를 유지하며, 기존 순서 회귀도 seed
+정확1회·새 위치와 나머지 원래 순서를 검사한다. 실제 순서 변경의 수용은 새 Actions로 확인한다.
