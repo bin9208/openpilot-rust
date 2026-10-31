@@ -71,6 +71,8 @@ void numerics(const fs::path &root) {
   const double initial[] = {3, 0, 0, 2};
   std::memcpy(diagonal, initial, sizeof(initial));
   gesdd(&job, &size, &size, diagonal, &leading, singular, unused_u, &unused_leading, unused_vt, &unused_leading, workspace.data(), &workspace_length, integer_work, &info);
+  std::cerr << "ILP64 SVD info=" << info << " singular=" << std::hexfloat
+            << singular[0] << ',' << singular[1] << std::defaultfloat << '\n';
   require(info == 0 && singular[0] == 3.0 && singular[1] == 2.0, "ILP64 SVD result");
   record_maps();
 }
@@ -129,6 +131,13 @@ void acados(const fs::path &root) {
 
 int main(int argc, char **argv) {
   try {
+    if (argc == 4 && std::strcmp(argv[1], "--numerics") == 0) {
+      maps_output = argv[3];
+      setenv("OPENBLAS_NUM_THREADS", "1", 1);
+      setenv("OMP_NUM_THREADS", "1", 1);
+      numerics(argv[2]);
+      return 0;
+    }
     require(argc == 6, "numerics/geos/brotli/acados directories and maps output required");
     maps_output = argv[5];
     setenv("OPENBLAS_NUM_THREADS", "1", 1);
