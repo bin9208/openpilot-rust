@@ -26,3 +26,9 @@
 - [ ] 네 필수 gate와 성공 후 marked 전달·수동 경계 보존 확인.
 
 로컬은 YAML/Python 구문 및 diff만 확인한다. 기능·성능·ARM 검증은 GitHub Actions에서 수행한다. 성능 목표 미달이나 필수 검사 실패가 있으면 완료 처리하지 않는다.
+
+## 2026-11-01 기준 소스의 서식 실패
+
+후보 `67b4e3451a6b58ba48e1639bdce62cd5dd3ed8c7`의 [workspace job 124646557294](https://github.com/bin9208/openpilot-rust/actions/runs/41237373712/job/124646557294)은 첫 `cargo fmt --all --check`에서 실패했다. 기준 `96c69111e53fbeaa49d629c634830353bb823cf7`에 있던 `dev-tools/src/publish.rs`, `dev-tools/tests/publish.rs`의 import 순서가 원인이며, 함수 본문·정책·기능은 바꾸지 않고 Rust 1.94/edition 2021 서식만 적용한다.
+
+실패하는 기준 실행을 전체 성공 시간의 기준으로 삼지 않는다. 비교용 `codex/fix-649-dev-md-serial-baseline`에는 원래 직렬 CI와 이 두 파일의 동일한 서식 수정만 둔다. 후보와 모든 제품 소스·의존성·모델·기능 검사 명령을 맞추며, 후보에 새로 추가한 CI 정책 회귀의 시간은 별도 식별한다. 두 전체 실행이 성공한 뒤 배정 대기·순수 실행·전체 경과를 비교한다.

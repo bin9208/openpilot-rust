@@ -1,9 +1,9 @@
 //! Publish verified exact-source assets after the selected branch's push gates.
 use crate::{
     package::{clean_source, disk_guard, validate_assets},
-    seal::{Result, digest},
+    seal::{digest, Result},
 };
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::{self, OpenOptions},
