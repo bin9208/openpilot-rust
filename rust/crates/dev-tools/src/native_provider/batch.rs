@@ -121,6 +121,14 @@ fn verify_generation(plans: &[&Plan], generation: &Path, contents: bool) -> Resu
                 &verify.path().join("tree"),
                 true,
             )?;
+            // The archive hash inside a cached descriptor is not an independent
+            // pin. Recreate the legacy canonical bytes from the verified small
+            // tree too, rejecting re-packed archives with forged descriptors.
+            let canonical = verify.path().join("canonical.tar.gz");
+            compress(&verify.path().join("tree"), &expected(plan)?, &canonical)?;
+            if digest_file(&canonical)? != digest_file(&root.join(filename))? {
+                return Err("provider batch cache archive is not the canonical export".into());
+            }
         }
     }
     Ok(())
@@ -692,5 +700,44 @@ mod tests {
         )
         .is_err());
         assert!(!temp.path().join("forged").exists());
+    }
+
+    #[test]
+    fn forged_descriptor_cannot_authorize_repacked_identical_members() {
+        let temp = tempfile::tempdir().unwrap();
+        let (plan, download) = super::super::tests::fixture();
+        let plans = [plan];
+        let cold = export_batch_inner(
+            &plans,
+            &temp.path().join("raw"),
+            &temp.path().join("batch"),
+            &temp.path().join("cold"),
+            &download,
+        )
+        .unwrap();
+        let export = &cold.exports[&plans[0].profile];
+        let mut bytes = fs::read(&export.archive).unwrap();
+        bytes[4] ^= 1; // gzip timestamp; the validated members remain identical.
+        fs::set_permissions(&export.archive, fs::Permissions::from_mode(0o644)).unwrap();
+        fs::write(&export.archive, bytes).unwrap();
+        fs::set_permissions(&export.descriptor, fs::Permissions::from_mode(0o644)).unwrap();
+        fs::write(
+            &export.descriptor,
+            json(&component_descriptor(&plans[0], &export.archive).unwrap()).unwrap(),
+        )
+        .unwrap();
+        let calls = download.calls.get();
+        assert!(export_batch_inner(
+            &plans,
+            &temp.path().join("absent-raw"),
+            &temp.path().join("batch"),
+            &temp.path().join("repacked"),
+            &download,
+        )
+        .unwrap_err()
+        .to_string()
+        .contains("canonical export"));
+        assert_eq!(download.calls.get(), calls);
+        assert!(!temp.path().join("repacked").exists());
     }
 }
