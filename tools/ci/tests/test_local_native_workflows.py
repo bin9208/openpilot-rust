@@ -527,7 +527,7 @@ class LocalNativeWorkflowTests(unittest.TestCase):
                 if 'runs-on' in job:
                     with self.subTest(path=path.name, job=name):
                         if path.name == 'provider-batch.yml':
-                            expected = 'ubuntu-24.04-arm' if name == 'actual-arm-batch' else 'ubuntu-24.04'
+                            expected = 'ubuntu-24.04-arm' if name in {'actual-arm-batch', 'numerics-repro'} else 'ubuntu-24.04'
                         elif path.name == 'native-cache-reuse.yml':
                             expected = LABELS  # #644 cache proof uses only registered bin-actions.
                         elif path.name == 'runtime-source-build.yml' and name == 'offline-cargo-reuse':
