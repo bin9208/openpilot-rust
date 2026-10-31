@@ -40,7 +40,12 @@ def context_fixture(run_id=42, job='workspace', base=TREE, base_ref='dev', *,
 
 
 def job_fixture(name, runner_name='bin-actions', labels=None):
-  return dict(name=name, status='completed', conclusion='success', runner_name=runner_name,
+  return dict(id=101, run_id=42, run_attempt=1, head_sha=SOURCE,
+      name=name, status='completed', conclusion='success', runner_name=runner_name,
+      runner_id=22, runner_group_id=1, runner_group_name='Default',
+      started_at='2026-10-31T01:00:00Z', completed_at='2026-10-31T01:00:02Z',
+      steps=[dict(number=1, name='Owned proof', status='completed', conclusion='success',
+          started_at='2026-10-31T01:00:00Z', completed_at='2026-10-31T01:00:02Z')],
       labels=['self-hosted', 'Linux', 'X64'] if labels is None else labels)
 
 
@@ -437,8 +442,13 @@ class ContextEvidenceTests(unittest.TestCase):
           workflow_run=dict(id=42, head_sha=SOURCE, repository_id=7, head_repository_id=7))
       client = publication.GitHub(root)
       actual_job = job_fixture('rust workspace checks')
+      latest_changes = {}
       def collect(route, key):
-        return [artifact] if key == 'artifacts' else [actual_job]
+        if key == 'artifacts': return [artifact]
+        if '/attempts/1/jobs' in route: return [actual_job]
+        if route == 'actions/runs/42/jobs' and fixture.run['run_attempt'] == 2:
+          return [dict(actual_job, id=202, run_attempt=2, **latest_changes)]
+        return [actual_job]
       with mock.patch.object(client, 'collect', side_effect=collect), \
            mock.patch.object(client, 'download', side_effect=lambda route, pin, path:shutil.copyfile(original, path)) as download:
         context, proof = client.pr_context(fixture.run, SOURCE, 611, 'workspace')
@@ -448,6 +458,44 @@ class ContextEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'runner differs'):
           client.pr_context(fixture.run, SOURCE, 611, 'workspace')
         actual_job['runner_name'] = 'bin-actions'
+        # Failed-only retries preserve successful jobs and their original attempt.
+        fixture.run['run_attempt'] = 2
+        self.assertEqual(client.pr_context(fixture.run, SOURCE, 611, 'workspace')[0], context)
+        self.assertEqual(download.call_count, 1)
+        for field, changed in [('id', True), ('run_id', 43), ('head_sha', 'e'*40),
+                               ('run_attempt', 0), ('run_attempt', True), ('run_attempt', 3),
+                               ('started_at', None), ('completed_at', None), ('runner_id', 0),
+                               ('runner_id', True), ('steps', None), ('steps', [])]:
+          with self.subTest(field=field, changed=changed):
+            previous = actual_job[field]
+            actual_job[field] = changed
+            with self.assertRaises(ValueError):
+              client.pr_context(fixture.run, SOURCE, 611, 'workspace')
+            actual_job[field] = previous
+        for field in ('run_id', 'head_sha', 'name', 'status', 'conclusion', 'started_at', 'completed_at',
+                      'runner_id', 'runner_name', 'runner_group_id', 'runner_group_name', 'labels', 'steps'):
+          with self.subTest(missing=field):
+            previous = actual_job.pop(field)
+            with self.assertRaises(ValueError):
+              client.pr_context(fixture.run, SOURCE, 611, 'workspace')
+            actual_job[field] = previous
+        # A new execution with a later start cannot use the older proof.
+        latest_changes['started_at'] = '2026-10-31T01:00:01Z'
+        with self.assertRaisesRegex(ValueError, 'actual proof execution'):
+          client.pr_context(fixture.run, SOURCE, 611, 'workspace')
+        latest_changes.clear()
+        # Changed runner/steps also cannot be treated as carried success.
+        for changed in [dict(runner_id=23), dict(steps=[])]:
+          latest_changes.update(changed)
+          with self.assertRaises(ValueError):
+            client.pr_context(fixture.run, SOURCE, 611, 'workspace')
+          latest_changes.clear()
+        # A re-executed proof job cannot fall back to an older receipt.
+        actual_job['run_attempt'] = 2
+        with self.assertRaisesRegex(ValueError, 'one unexpired context artifact'):
+          client.pr_context(fixture.run, SOURCE, 611, 'workspace')
+        actual_job['run_attempt'] = 1
+        self.assertEqual(download.call_count, 1)
         # GitHub's live linked PR fields may move after the original event.
         fixture.run['pull_requests'] = [dict(number=611, head=dict(sha='e'*40), base=dict(sha='f'*40))]
         self.assertEqual(client.pr_context(fixture.run, SOURCE, 611, 'workspace')[0], context)

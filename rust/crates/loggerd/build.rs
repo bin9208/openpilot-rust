@@ -1,4 +1,23 @@
-use std::{error::Error, path::PathBuf, process::Command};
+use std::{
+    error::Error,
+    path::{Path, PathBuf},
+    process::Command,
+};
+
+fn watch_git_path(path: &Path, refs: Option<&Path>) {
+    if path.is_file() {
+        println!("cargo:rerun-if-changed={}", path.display());
+    } else if let Some(refs) = refs {
+        // A packed branch can acquire a loose ref without changing packed-refs.
+        // Stay within refs; watching all of .git would also track objects/logs.
+        for parent in path.ancestors().skip(1).take_while(|p| p.starts_with(refs)) {
+            if parent.is_dir() {
+                println!("cargo:rerun-if-changed={}", parent.display());
+                break;
+            }
+        }
+    }
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-env-changed=OPENPILOT_NATIVE_INCREMENTAL");
@@ -48,11 +67,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .current_dir(&root)
                 .output()?;
             if output.status.success() {
-                println!(
-                    "cargo:rerun-if-changed={}",
-                    root.join(String::from_utf8(output.stdout)?.trim())
-                        .display()
-                );
+                let path = root.join(String::from_utf8(output.stdout)?.trim());
+                let refs = if reference.starts_with("refs/") {
+                    git(&["rev-parse", "--git-path", "refs"]).map(|path| root.join(path.trim()))
+                } else {
+                    None
+                };
+                watch_git_path(&path, refs.as_deref());
             }
         }
     }

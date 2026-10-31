@@ -12,6 +12,20 @@ fn git(root: &Path, arguments: &[&str]) -> Option<String> {
         .then(|| String::from_utf8(output.stdout).ok())
         .flatten()
 }
+fn watch_git_path(path: &Path, refs: Option<&Path>) {
+    if path.is_file() {
+        println!("cargo:rerun-if-changed={}", path.display());
+    } else if let Some(refs) = refs {
+        // A packed branch can acquire a loose ref without changing packed-refs.
+        // Stay within refs; watching all of .git would also track objects/logs.
+        for parent in path.ancestors().skip(1).take_while(|p| p.starts_with(refs)) {
+            if parent.is_dir() {
+                println!("cargo:rerun-if-changed={}", parent.display());
+                break;
+            }
+        }
+    }
+}
 fn main() {
     println!("cargo:rerun-if-env-changed=OPENPILOT_NATIVE_INCREMENTAL");
     let incremental = match env::var("OPENPILOT_NATIVE_INCREMENTAL").as_deref() {
@@ -55,30 +69,14 @@ fn main() {
     }
     for name in ["HEAD", "index", "packed-refs"] {
         if let Some(path) = git(&root, &["rev-parse", "--git-path", name]) {
-            let path = Path::new(path.trim());
-            println!(
-                "cargo:rerun-if-changed={}",
-                if path.is_absolute() {
-                    path.to_owned()
-                } else {
-                    root.join(path)
-                }
-                .display()
-            );
+            watch_git_path(&root.join(path.trim()), None);
         }
     }
     if let Some(reference) = git(&root, &["symbolic-ref", "-q", "HEAD"]) {
         if let Some(path) = git(&root, &["rev-parse", "--git-path", reference.trim()]) {
-            let path = Path::new(path.trim());
-            println!(
-                "cargo:rerun-if-changed={}",
-                if path.is_absolute() {
-                    path.to_owned()
-                } else {
-                    root.join(path)
-                }
-                .display()
-            );
+            let refs =
+                git(&root, &["rev-parse", "--git-path", "refs"]).map(|path| root.join(path.trim()));
+            watch_git_path(&root.join(path.trim()), refs.as_deref());
         }
     }
     // Track source modifications as well as the commit/index; ignored build caches do not participate.

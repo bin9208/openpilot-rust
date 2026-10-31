@@ -223,18 +223,57 @@ class GitHub:
       raise ValueError('PR validation evidence cannot belong to another event type')
     if self.root is None:
       raise ValueError('PR validation evidence needs an owned publication directory')
-    name = f'native-validation-context-{run["id"]}-{run["run_attempt"]}-{job}'
+    execution = ('run_id', 'head_sha', 'name', 'status', 'conclusion', 'started_at', 'completed_at',
+        'runner_id', 'runner_name', 'runner_group_id', 'runner_group_name', 'labels', 'steps')
+    jobs = self.collect(f'actions/runs/{run["id"]}/jobs', 'jobs')
+    actual = [row for row in jobs if row.get('name') == PROOF_JOB_NAMES[job]
+        and row.get('status') == 'completed' and row.get('conclusion') == 'success']
+    if len(actual) != 1:
+      raise ValueError('PR validation context needs one actual successful proof job')
+    actual = actual[0]
+    attempt = actual.get('run_attempt')
+    if (not all(key in actual for key in execution)
+        or not positive(actual.get('id')) or actual.get('run_id') != run['id']
+        or actual.get('head_sha') != source or not positive(attempt)
+        or not positive(run['run_attempt']) or attempt > run['run_attempt']
+        or not positive(actual.get('runner_id'))
+        or not all(isinstance(actual.get(key), str) and actual[key] for key in ('started_at', 'completed_at'))
+        or not isinstance(actual.get('steps'), list) or not actual['steps']
+        or not all(isinstance(step, dict) and positive(step.get('number'))
+            and isinstance(step.get('name'), str) and step['name'] and step.get('status') == 'completed'
+            and isinstance(step.get('conclusion'), str) and step['conclusion'] for step in actual['steps'])):
+      raise ValueError('PR validation proof job run/attempt/source identity differs')
     artifacts = self.collect(f'actions/runs/{run["id"]}/artifacts', 'artifacts')
-    selected = [row for row in artifacts if row['name'] == name and not row['expired']]
+    selected = []
+    for artifact in artifacts:
+      match = re.fullmatch(r'native-validation-context-'+str(run['id'])+r'-([1-9][0-9]*)-'+re.escape(job), artifact['name'])
+      if artifact['expired'] or match is None:
+        continue
+      original_attempt = int(match[1])
+      if original_attempt > run['run_attempt']:
+        continue
+      original_jobs = self.collect(f'actions/runs/{run["id"]}/attempts/{original_attempt}/jobs', 'jobs')
+      original = [row for row in original_jobs if row.get('name') == PROOF_JOB_NAMES[job]
+          and row.get('status') == 'completed' and row.get('conclusion') == 'success']
+      if len(original) != 1:
+        continue
+      original = original[0]
+      if (all(key in original for key in execution)
+          and positive(original.get('id')) and positive(original.get('run_attempt'))
+          and original['run_attempt'] == original_attempt
+          and all(original.get(key) == actual.get(key) for key in execution)):
+        selected.append((artifact, original, original_attempt))
+    # Failed-only retries may clone successful job IDs/attempts. The actual
+    # execution times, steps and runner must still match the original proof.
     if len(selected) != 1:
-      raise ValueError(f'PR validation {name} requires one unexpired context artifact')
-    selected = selected[0]
+      raise ValueError('PR validation requires one unexpired context artifact for the actual proof execution')
+    selected, actual, attempt = selected[0]
     pin = artifact_pin(selected, run, source, 1024**2)
     parent = self.root/'validation-contexts'
     parent.mkdir(exist_ok=True)
     if parent.is_symlink() or parent.resolve() != parent:
       raise ValueError('PR validation evidence directory is redirected')
-    archive = parent/f'{run["id"]}-{run["run_attempt"]}-{job}.zip'
+    archive = parent/f'{run["id"]}-{attempt}-{job}.zip'
     if archive.is_symlink() or (archive.exists() and not archive.is_file()):
       raise ValueError('retained PR validation ZIP is redirected or not regular')
     if archive.exists():
@@ -251,13 +290,8 @@ class GitHub:
       value = bundle.json('validation-context.json', 256*1024)
     finally:
       bundle.close()
-    jobs = self.collect(f'actions/runs/{run["id"]}/jobs', 'jobs')
-    actual = [row for row in jobs if row['name'] == PROOF_JOB_NAMES[job]
-        and row['status'] == 'completed' and row['conclusion'] == 'success']
-    if len(actual) != 1:
-      raise ValueError('PR validation context needs one actual successful proof job')
-    context = validation_context.verify(value, run['id'], run['run_attempt'], job,
-        run['repository']['id'], source, pr_number, runner_job=actual[0])
+    context = validation_context.verify(value, run['id'], attempt, job,
+        run['repository']['id'], source, pr_number, runner_job=actual)
     proof = dict(artifact_id=selected['id'], artifact_digest=selected['digest'],
         checkout_sha=value['checkout_sha'], checkout_tree=value['checkout_tree'],
         pr_number=context[0], base_sha=context[1])

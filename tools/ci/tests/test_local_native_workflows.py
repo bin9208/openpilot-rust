@@ -169,9 +169,13 @@ class LocalNativeWorkflowTests(unittest.TestCase):
         seed = 'native_bootstrap_seed_probe'
         self.assertEqual(current_calls.count(seed), 1)
         self.assertEqual(original_calls.count(seed), 1)
-        self.assertEqual(current_calls.index(seed), current_calls.index('native_model_wheels_probe') + 1)
-        # 독립 codec/Python 검사와 model wheels 뒤 seed 이동만 허용하고 나머지 순서·개수는 보존한다.
-        moved = {codec, python, seed}
+        encoder = 'native_encoder_probe'
+        self.assertEqual(current_calls.count(encoder), 1)
+        self.assertEqual(original_calls.count(encoder), 1)
+        self.assertEqual(current_calls.index(encoder), current_calls.index('native_model_wheels_probe') + 1)
+        self.assertEqual(current_calls.index(seed), current_calls.index(encoder) + 1)
+        # codec/Python 및 model wheels→encoder→seed 이동 외 원래 순서·개수는 보존한다.
+        moved = {codec, python, seed, encoder}
         self.assertEqual([name for name in current_calls if name not in moved],
                          [name for name in original_calls if name not in moved])
         def auditor_build(node):

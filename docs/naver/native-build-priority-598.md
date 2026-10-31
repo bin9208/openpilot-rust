@@ -628,3 +628,51 @@ ABI 검사를 유지한다. exact-source stamp·실제 변경 탐지·driver/cor
 `OPENPILOT_NATIVE_INCREMENTAL` 전환이나 순서 이동으로 재사용 검증을 줄이지 않는다.
 recipe environment가 달라져 cache key는 새로 생기지만 새 실행의 initial/repeat는 같은 key를
 사용한다. 로컬은 구문·diff·원문 읽기만 확인하고 실제 freshness는 새 Actions에서 판단한다.
+
+
+## 2026-11-01 — 없는 Git 추적 입력의 실제 fingerprint 원인
+
+`5eee2a3eb79e0adc5265c4bb829aad1363414a21`의
+[Genuine41203146581/job124542804392](https://github.com/bin9208/openpilot-rust/actions/runs/41203146581/job/124542804392)은
+encoder codec 뒤 동일 recipe 반복의 `fresh=false`에서 실패했다. 모델 ABI7+22,
+bootstrap13 도구의4사례, encoder 원래 codec/ABI는 통과했지만 전체99·production 다섯 phase·
+입력 payload/I는 미완료다. artifact13050086338은52,222,409B·SHA
+`d48e837f2325c9e6e36b06ac0fa551e5d91b6038e15a1615e92e7e78efe6ec84`로 검증했다.
+
+추가한 실제 fingerprint INFO는 logging build script가
+`MissingFile { path: "/openpilot-native-source-599/rust/crates/logging/../../../.git/packed-refs" }`
+때문에 stale이라고 기록한다. logging과 encoderd library에 그 결과가 전파됐다.
+이는 중간 example의 직접 원인이다. 반복 driver 내부에는 직접 trace가 없어 동일 원인으로
+단정하지 않으며, 이전 Git 읽기 환경 정렬만으로 해결됐다고 주장하지 않는다.
+최초 example 자체의 fingerprint 파일 부재는 별도 최초 빌드 현상이다.
+
+logging과 같은 패턴의 loggerd는 존재하지 않는 Git metadata를 무조건 추적하지 않도록
+보완한다. HEAD/index/packed-refs와 현재 loose ref는 존재하는 파일만 등록하고,
+현재 ref가 packed 상태라 loose 경로가 없으면 기존 refs 상위 디렉터리의 생성도 감지한다.
+[Cargo의 파일 변경 계약](https://doc.rust-lang.org/cargo/reference/build-scripts.html#rerun-if-changed)과
+[Git의 packed/loose ref 우선순위](https://git-scm.com/docs/git-pack-refs)를 유지한다.
+Git 디렉터리 전체·누락 파일 생성·incremental stamp 전환으로 우회하지 않고 원래 tracked
+source·HEAD·현재 branch 변경 감지를 보존한다. 같은 입력 반복의 실제 fresh와 Git ref 전환은
+좁은 실제 Cargo/Git 회귀를 기존 Actions에서 확인한다. 로컬은 작성·서식·구문·diff만 수행한다.
+
+늦은 실패를 줄이기 위해 기존 encoder 호출 한 곳을 model wheels 뒤·긴 bootstrap13 앞에
+옮긴다. encoder가 읽는 driver/helper·SDK·codec·FFmpeg prefix·기록은 이미 준비되고
+bootstrap 전용 출력 의존이 없음을 독립적으로 대조했다. 두 함수 본문·명령/핀·encoder의
+initial→example→codec→ABI→동일 recipe 반복 fresh/SHA→prefix 검사와 전체 bootstrap은
+그대로 유지한다. 원래 frozen 순서 검사는 이 이동만 허용하고 나머지 원래 호출 횟수와 순서를
+계속 비교한다. 실제 시간 절감·수정 후 성공은 새 source의 결과 전에는 주장하지 않는다.
+
+동일 source의 필수 ARM FFmpeg 다운로드 실패는 전체 Rust terminal/active0 뒤 같은
+[run41203150169 attempt2](https://github.com/bin9208/openpilot-rust/actions/runs/41203150169)에서
+실패 job만 재시도해 musl 빌드·정적 probe가 실제 성공했다. 이전 성공 실행의 시각·runner·
+steps는 유지했다. 재시도 후 현재 publisher가 최신 run attempt와 실제 성공 workspace job의
+원래 attempt를 혼동해 발행 증거를 거부하는 기존 코드 경계도 확인했다. 소비자는 독립 Actions
+API에서 유일한 실제 성공 proof execution을 먼저 확인하고 그 원래 attempt의 정확한
+artifact와 JSON만 소비하도록 보완한다. 실제 API는 failed-only 이후 보존 성공 job의 ID와
+attempt를 복제 표시하므로 최신 숫자만 바꾸지 않는다. 원래 attempt endpoint의 성공 job과
+최신 row의 시작/종료·전체 steps·runner·source/run signature가 같을 때만 결속한다.
+실제 새 실행이면 이 signature가 달라 오래된 receipt를 거부한다. 임의의 과거 artifact
+선택이나 runner/source/base/
+원문 commit/digest 검증 완화는 하지 않으며, 실제 job이 다시 실행됐으면 오래된 receipt를
+거부하는 회귀를 유지한다. 이 정정도 전체 성공 검사를 불필요하게 재실행하지 않기 위한
+기존 #598 발행 경로의 수정이다. 입력 공개 발행·Git pin 완료를 뜻하지 않는다.
