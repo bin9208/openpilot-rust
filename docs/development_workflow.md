@@ -1,4 +1,14 @@
 # 프로젝트 개발 절차
+## CI 병목 개선 — 2026-11-01 사용자 승인 (#649)
+
+- 기존 자원을 사용하고 source/policy 성공 뒤 독립 Integration·Rust·ARM 검사를 병행한다.
+  이 지시는 아래 #409의 완전 직렬 실행·직렬 matrix 지침보다 우선한다.
+- 기존 모든 검사 명령·조건과 서버 필수 검사 네 개를 유지한다. 모든 검사 성공 후에만
+  `[runtime-package]` 전달을 허용한다. 수동 입력 공개·production 진입 경계는 유지한다.
+- `dev-md`는 콤마 설치용 최상위 통합 브랜치다. 이 변경은 별도 dev-md 대상 PR만 사용하고
+  dev/main으로 역통합하지 않는다. 이번 CI 변경으로 runtime delivery를 요청하지 않는다.
+- 실행 중인 Actions와 정비 중인 bin-actions2/3를 중단·복구하지 않는다.
+
 ## CI 비용 정리 — 2026-10-30 최신 사용자 지시
 
 - 모든 브랜치에서 별도 Fast checks workflow와 통합 CI의 fast-checks job을 제거한다.

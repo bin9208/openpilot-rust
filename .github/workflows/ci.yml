@@ -14,8 +14,9 @@ env:
   CI: '1'
   RUSTUP_TOOLCHAIN: '1.94.0'
 concurrency:
-  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.sha }}
+  queue: max
+  cancel-in-progress: false
 jobs:
   check_user_docs:
     name: ${{ (github.event_name != 'push' || contains(fromJSON('["dev","dev-md","main"]'), github.ref_name)) && 'check mapped user docs' || 'Not requested - check mapped user docs' }}
@@ -63,6 +64,13 @@ jobs:
         run: |
           CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test publish
           CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2 cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib publish::policy_tests
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Verify the complete CI graph and unchanged delivery boundary
+        run: |
+          python -m pip install PyYAML==6.0.3
+          python3 -m unittest discover -s tools/ci/tests -p test_dev_md_ci_dag.py -v
       - name: Verify runtime packaging policy
         run: python3 rust/ci/runtime/test_package_policy.py
       - uses: ./.github/actions/job-temp
@@ -93,7 +101,7 @@ jobs:
         with: {cleanup: 'true'}
 
   build_release:
-    needs: [git_update]
+    needs: [check_user_docs]
     name: build release
     # Legacy setup / noble multiarch packages require an isolated Ubuntu 24.04 host.
     runs-on: ubuntu-24.04
@@ -145,7 +153,7 @@ jobs:
         with: {cleanup: 'true'}
 
   model_web:
-    needs: [build_release]
+    needs: [check_user_docs]
     name: Model and Bluetooth web controls
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -161,7 +169,7 @@ jobs:
         with: {cleanup: 'true'}
 
   model:
-    needs: [model_web]
+    needs: [check_user_docs]
     name: model contract and CPU inference
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -179,7 +187,7 @@ jobs:
         with: {cleanup: 'true'}
 
   android-core:
-    needs: [model]
+    needs: [check_user_docs]
     name: Android protocol and Java inference
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -219,7 +227,7 @@ jobs:
         with: {cleanup: 'true'}
 
   jetlink-native:
-    needs: [android-core]
+    needs: [check_user_docs]
     name: Jetlink power policy fast checks
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -280,7 +288,7 @@ jobs:
           PYTHON
 
   workspace:
-    needs: [integration-gate]
+    needs: [check_user_docs]
     name: rust workspace checks
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -598,7 +606,7 @@ jobs:
         with: {cleanup: 'true'}
 
   model-memory:
-    needs: [workspace]
+    needs: [check_user_docs]
     name: rust model memory
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -665,7 +673,7 @@ jobs:
         with: {cleanup: 'true'}
 
   model-pipelines:
-    needs: [model-memory]
+    needs: [check_user_docs]
     name: rust original model pipelines
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -773,7 +781,7 @@ jobs:
         with: {cleanup: 'true'}
 
   logger-runtime:
-    needs: [model-pipelines]
+    needs: [check_user_docs]
     name: rust original route logger
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -878,7 +886,7 @@ jobs:
         with: {cleanup: 'true'}
 
   support-runtime:
-    needs: [logger-runtime]
+    needs: [check_user_docs]
     name: rust support runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -982,7 +990,7 @@ jobs:
         with: {cleanup: 'true'}
 
   telemetry-runtime:
-    needs: [support-runtime]
+    needs: [check_user_docs]
     name: rust telemetry runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1074,7 +1082,7 @@ jobs:
         with: {cleanup: 'true'}
 
   startup-runtime:
-    needs: [telemetry-runtime]
+    needs: [check_user_docs]
     name: rust startup prerequisites
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1172,7 +1180,7 @@ jobs:
         with: {cleanup: 'true'}
 
   hardware-runtime:
-    needs: [startup-runtime]
+    needs: [check_user_docs]
     name: rust hardware and boot runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1240,7 +1248,7 @@ jobs:
         with: {cleanup: 'true'}
 
   platform-runtime:
-    needs: [hardware-runtime]
+    needs: [check_user_docs]
     name: rust platform runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1300,7 +1308,7 @@ jobs:
         with: {cleanup: 'true'}
 
   startup-services:
-    needs: [platform-runtime]
+    needs: [check_user_docs]
     name: rust startup services
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1365,7 +1373,7 @@ jobs:
         with: {cleanup: 'true'}
 
   sensor-audio:
-    needs: [startup-services]
+    needs: [check_user_docs]
     name: rust sensor and audio runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1423,7 +1431,7 @@ jobs:
         with: {cleanup: 'true'}
 
   gnss-runtime:
-    needs: [sensor-audio]
+    needs: [check_user_docs]
     name: rust GNSS runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1474,7 +1482,7 @@ jobs:
         with: {cleanup: 'true'}
 
   estimation-runtime:
-    needs: [gnss-runtime]
+    needs: [check_user_docs]
     name: rust estimation runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -1550,7 +1558,7 @@ jobs:
         with: {cleanup: 'true'}
 
   ui-connectivity:
-    needs: [estimation-runtime]
+    needs: [check_user_docs]
     name: rust UI and connectivity
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -1620,7 +1628,7 @@ jobs:
         with: {cleanup: 'true'}
 
   athena-runtime:
-    needs: [ui-connectivity]
+    needs: [check_user_docs]
     name: rust Athena runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -1662,7 +1670,7 @@ jobs:
         with: {cleanup: 'true'}
 
   controls-runtime:
-    needs: [athena-runtime]
+    needs: [check_user_docs]
     name: rust control runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -1723,7 +1731,7 @@ jobs:
         with: {cleanup: 'true'}
 
   web-upload-timeouts:
-    needs: [controls-runtime]
+    needs: [check_user_docs]
     name: active upload timeout contracts
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -1758,7 +1766,7 @@ jobs:
         with: {cleanup: 'true'}
 
   joystickd-runtime:
-    needs: [web-upload-timeouts]
+    needs: [check_user_docs]
     name: rust control tools source and native runtimes
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -1818,11 +1826,10 @@ jobs:
         with: {cleanup: 'true'}
 
   planner-runtime:
-    needs: [joystickd-runtime]
+    needs: [check_user_docs]
     name: rust planner source comparison (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
     strategy:
-      max-parallel: 1
       fail-fast: true
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
@@ -1908,7 +1915,7 @@ jobs:
         with: {cleanup: 'true'}
 
   planner-memory:
-    needs: [planner-runtime]
+    needs: [check_user_docs]
     name: rust planner pure memory contracts
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -1956,7 +1963,7 @@ jobs:
         with: {cleanup: 'true'}
 
   card-runtime:
-    needs: [planner-memory]
+    needs: [check_user_docs]
     name: rust Card and CAN runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -2057,7 +2064,7 @@ jobs:
         with: {cleanup: 'true'}
 
   radar-runtime:
-    needs: [card-runtime]
+    needs: [check_user_docs]
     name: rust RadarCAN source and host runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -2143,7 +2150,7 @@ jobs:
         with: {cleanup: 'true'}
 
   radar-arm:
-    needs: [radar-runtime]
+    needs: [check_user_docs]
     name: rust RadarCAN native ARM functional validation
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 45
@@ -2243,7 +2250,7 @@ jobs:
         with: {cleanup: 'true'}
 
   radar-memory:
-    needs: [radar-arm]
+    needs: [check_user_docs]
     name: rust RadarCAN buffer ownership with Miri
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -2306,7 +2313,7 @@ jobs:
         with: {cleanup: 'true'}
 
   navd-runtime:
-    needs: [radar-memory]
+    needs: [check_user_docs]
     name: rust navigation runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -2379,11 +2386,10 @@ jobs:
         with: {cleanup: 'true'}
 
   radard-runtime:
-    needs: [navd-runtime]
+    needs: [check_user_docs]
     name: rust radard source and native runtime (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
     strategy:
-      max-parallel: 1
       fail-fast: true
       matrix:
         include:
@@ -2537,7 +2543,7 @@ jobs:
         with: {cleanup: 'true'}
 
   carrot-navi-runtime:
-    needs: [radard-runtime]
+    needs: [check_user_docs]
     name: rust Carrot Navi original and host runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -2680,7 +2686,7 @@ jobs:
         with: {cleanup: 'true'}
 
   carrot-navi-arm:
-    needs: [carrot-navi-runtime]
+    needs: [check_user_docs]
     name: rust Carrot Navi native ARM build
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 25
@@ -2735,7 +2741,7 @@ jobs:
         with: {cleanup: 'true'}
 
   selfdrive-runtime:
-    needs: [carrot-navi-arm]
+    needs: [check_user_docs]
     name: rust selfdrived runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -2833,7 +2839,7 @@ jobs:
         with: {cleanup: 'true'}
 
   panda-runtime:
-    needs: [selfdrive-runtime]
+    needs: [check_user_docs]
     name: rust Panda runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 40
@@ -2899,7 +2905,7 @@ jobs:
         with: {cleanup: 'true'}
 
   camera-runtime:
-    needs: [panda-runtime]
+    needs: [check_user_docs]
     name: rust camera runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 40
@@ -2970,7 +2976,7 @@ jobs:
         with: {cleanup: 'true'}
 
   encoder-runtime:
-    needs: [camera-runtime]
+    needs: [check_user_docs]
     name: rust encoder runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -3047,11 +3053,10 @@ jobs:
         with: {cleanup: 'true'}
 
   xiaoge-runtime:
-    needs: [encoder-runtime]
+    needs: [check_user_docs]
     name: rust Xiaoge source comparison (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
     strategy:
-      max-parallel: 1
       fail-fast: true
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
@@ -3143,7 +3148,7 @@ jobs:
         with: {cleanup: 'true'}
 
   xiaoge-memory:
-    needs: [xiaoge-runtime]
+    needs: [check_user_docs]
     name: rust Xiaoge native memory
     runs-on: ubuntu-24.04
     timeout-minutes: 75
@@ -3213,7 +3218,7 @@ jobs:
         with: {cleanup: 'true'}
 
   ui-runtime:
-    needs: [xiaoge-memory]
+    needs: [check_user_docs]
     name: rust UI application runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -3326,12 +3331,11 @@ jobs:
         with: {cleanup: 'true'}
 
   carrot-man-runtime:
-    needs: [ui-runtime]
+    needs: [check_user_docs]
     name: rust CarrotMan owner (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 25
     strategy:
-      max-parallel: 1
       fail-fast: true
       matrix:
         include:
@@ -3409,12 +3413,11 @@ jobs:
         with: {cleanup: 'true'}
 
   webrtc-runtime:
-    needs: [carrot-man-runtime]
+    needs: [check_user_docs]
     name: rust WebRTC source runtime (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     strategy:
-      max-parallel: 1
       fail-fast: true
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
@@ -3499,12 +3502,11 @@ jobs:
         with: {cleanup: 'true'}
 
   webcam-runtime:
-    needs: [webrtc-runtime]
+    needs: [check_user_docs]
     name: rust webcam source runtime (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 35
     strategy:
-      max-parallel: 1
       fail-fast: true
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
@@ -3618,7 +3620,7 @@ jobs:
 
   arm-build:
     name: Build generic ARM64 artifacts
-    needs: [fast]
+    needs: [check_user_docs]
     # Legacy setup / noble multiarch packages require an isolated Ubuntu 24.04 host.
     runs-on: ubuntu-24.04
     timeout-minutes: 120
