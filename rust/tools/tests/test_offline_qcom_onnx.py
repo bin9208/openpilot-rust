@@ -47,6 +47,34 @@ def test_llvm_rejects_the_original_byte_to_boolean_bitcast() -> None:
             Tensor(bytes([0, 1, 1, 0]), device="CPU").bitcast(dtypes.bool).data()
 
 
+def test_original_llvm_half_bitcast_flushes_the_observed_subnormal_weights() -> None:
+    raw = struct.pack("<2H", 0x030E, 0x80A4)
+    with Context(DEV="CPU:LLVM"):
+        assert Tensor(raw, device="CPU").bitcast(dtypes.float16).data().tobytes() == struct.pack("<2H", 0, 0x8000)
+
+
+@pytest.mark.parametrize("words", [(0x030E,), (0x80A4,), (0x8000,), (0x7E55,), range(65536)])
+def test_half_initializer_storage_preserves_every_bit_pattern(tmp_path: Path, words) -> None:
+    raw = struct.pack(f"<{len(words)}H", *words)
+    shape = () if len(words) == 1 else (len(words),)
+    weight = helper.make_tensor("weight", TensorProto.FLOAT16, shape, raw, raw=True)
+    graph = helper.make_graph([helper.make_node("Add", ["input", "weight"], ["output"])], "half_storage",
+                              [helper.make_tensor_value_info("input", TensorProto.FLOAT16, [len(words)])],
+                              [helper.make_tensor_value_info("output", TensorProto.FLOAT16, [len(words)])], [weight])
+    path = tmp_path / "half.onnx"
+    before = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)]).SerializeToString()
+    path.write_bytes(before)
+    path.chmod(0o444)
+
+    model = load_model(path, hashlib.sha256(before).hexdigest())
+
+    actual, = model.initialized
+    assert actual.buffer.dtype == dtypes.float16
+    assert actual.data == numpy_helper.to_array(weight).tobytes() == raw
+    assert model.bindings.inputs["input"].shape == model.bindings.outputs["output"].shape == (len(words),)
+    assert path.read_bytes() == before and path.stat().st_mode & 0o777 == 0o444
+
+
 @pytest.mark.parametrize("raw", [True, False])
 @pytest.mark.parametrize("shape,values", [((), [True]), ((), [False]), ((4,), [True, False, True, False])])
 def test_boolean_initializers_keep_exact_bytes_and_shape(tmp_path: Path, raw: bool, shape, values) -> None:

@@ -184,3 +184,9 @@ UI/Card의 같은 하위 실행 경로도 대조했다. DBC 준비는 기존 `4 
 첫 집중 소스 `ee845df52d7f189204afff10531492a197c69b93`의 [41353840436](https://github.com/bin9208/openpilot-rust/actions/runs/41353840436)은 기존 MPC source contract가 공통 tinygrad 변경을 거부했다. 공통 파일을 원래 바이트로 복원하고 수정은 기존 오프라인 전용 파서로 한정한다. source contract·provider pin·guard 검사는 바꾸지 않는다. 같은 실행의 BOOL 양성6개와 기존5개는 통과했으며, 추가한 음성 회귀는 잘못된 `device="CPU:LLVM"` 지정으로 실패했다. 원래 CPU device와 `Context(DEV="CPU:LLVM")`를 사용하도록 회귀를 바로잡고 전체 집중 검사를 다시 확인한다. 실패 실행은 성공으로 대체하지 않는다.
 
 집중 CI의 기존 component job에 두 실제 source ONNX의 initializer 사전 검증을 추가한다. 기존 pinned asset 준비 도구와 cache를 재사용하며 source/hash/읽기 전용 권한을 유지하고 ONNX1.20.1 numpy_helper와 dtype·shape·바이트를 대조한다. 작은 초기 회귀 후 이 검사를 실행해 긴 AGNOS의 같은 실패를 빠르게 발견한다. 실제 ARM·모델4개 생성/재사용·layout·production 검증은 그대로 유지하며, 사전 검사로 이를 대체하지 않는다. 로컬에서는 AST/YAML·diff만 확인한다.
+
+## 실제 FP16 initializer 저장 바이트 손실 — #662
+
+전용 BOOL decoder `f59e87d42101e1d1c17d031a8b00844c283e8273`의 [집중41354333055](https://github.com/bin9208/openpilot-rust/actions/runs/41354333055)은 ONNX12개·원래 provider17개·recovery가 성공했으나 실제 driving 모델의 첫 weight byte 비교에서 실패했다. 진단 전용 `8d0ed70c1d6175ff28008c6ca0860de3843f73e8`의 [집중41355230993](https://github.com/bin9208/openpilot-rust/actions/runs/41355230993) artifact `13103411030`은 FLOAT16 `[64,24,3,3]`/27,648 bytes의 dtype·shape·길이 및335개 고유 buffer를 확인했다. offset330의 원래 little-endian word `030e`가 `0000`으로, offset1872의 `80a4`가 `8000`으로 바뀌었다. 이 실패는 성공으로 대체하지 않는다.
+
+[#662](https://github.com/bin9208/openpilot-rust/issues/662)는 원래 FP16 subnormal 저장 바이트를 호스트 LLVM float 재변환 없이 dtype이 지정된 CPU buffer에 복사한다. scalar도 원래 payload를 유지하며 float 상수로 재생성하지 않는다. 기존 모델 정밀도·연산·공통 tinygrad/provider/source contract·원본 hash·읽기 전용 권한과 엄격한 byte 비교를 유지한다. 관측한 두 값의 기존 LLVM 손실을 음성 재현하고, 모든65,536 FP16 bit pattern 및 scalar의 정확 바이트와 두 실제 모델 전체 initializer를 Actions에서 검증한다. 전체 AGNOS 모델4회/layout/production 및 최신 동일 source gate는 별도 필수 완료 조건이다.

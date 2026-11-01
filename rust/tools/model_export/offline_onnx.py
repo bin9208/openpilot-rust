@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
@@ -38,8 +37,8 @@ class InlineOnnxParser(OnnxPBParser):
 
     def _parse_TensorProto(self) -> dict:
         # TensorProto decoding follows tinygrad.nn.onnx (MIT; tinygrad_repo/LICENSE).
-        # Keep the original field/float decoding, with inline-only inputs and a
-        # byte-to-BOOL value conversion instead of an invalid LLVM i8/i1 bitcast.
+        # Keep inline-only inputs, decode BOOL by value, and preserve raw HALF
+        # storage without LLVM's emulated float conversion flushing subnormals.
         value = {"dims": []}
         for field, wire_type in self._parse_message(self._decode_end_pos()):
             match field:
@@ -67,10 +66,13 @@ class InlineOnnxParser(OnnxPBParser):
         if isinstance(data, Tensor):
             if data.dtype != dtypes.uint8:
                 raise ExportError("offline ONNX requires self-contained constant tensors")
-            data = (data.cast(dtype) if dtype == dtypes.bool else data.bitcast(dtype)).reshape(shape).to(Device.DEFAULT)
-            if shape == ():
-                if data.dtype == dtypes.float16 and sys.version_info < (3, 12):
-                    data = data.cast(dtypes.float32)
+            if dtype == dtypes.float16:
+                # A typed byte buffer copies storage without executing floating
+                # arithmetic. Keep scalar payloads buffered too (including NaNs).
+                data = Tensor(data.data().tobytes(), dtype=dtype, device="CPU").reshape(shape).to(Device.DEFAULT)
+            else:
+                data = (data.cast(dtype) if dtype == dtypes.bool else data.bitcast(dtype)).reshape(shape).to(Device.DEFAULT)
+            if shape == () and dtype != dtypes.float16:
                 data = Tensor(data.item(), dtype=dtype).reshape(shape)
         else:
             data = Tensor(data, dtype=dtype).reshape(shape)
