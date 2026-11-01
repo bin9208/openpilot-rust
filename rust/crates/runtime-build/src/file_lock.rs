@@ -45,11 +45,8 @@ mod tests {
         let inherited = original.try_clone().unwrap();
         drop(original);
         assert_eq!(
-            rustix::fs::flock(
-                &open(),
-                rustix::fs::FlockOperation::NonBlockingLockExclusive
-            )
-            .unwrap_err(),
+            rustix::fs::flock(open(), rustix::fs::FlockOperation::NonBlockingLockExclusive)
+                .unwrap_err(),
             rustix::io::Errno::WOULDBLOCK
         );
         rustix::fs::flock(&inherited, rustix::fs::FlockOperation::Unlock).unwrap();
