@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import hashlib
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
 from tinygrad import Context, Tensor, dtypes
-from tinygrad.nn.onnx import OnnxPBParser, OnnxRunner, _to_python_const, required_input_python_consts
+from tinygrad.device import Device
+from tinygrad.nn.onnx import OnnxDataType, OnnxPBParser, OnnxRunner, _to_python_const, required_input_python_consts
 
 from .offline_model import InitializedBuffer, OfflineModel
 from .offline_devices import host_build
@@ -35,12 +37,44 @@ class InlineOnnxParser(OnnxPBParser):
         super().__init__(path, load_external_data=False)
 
     def _parse_TensorProto(self) -> dict:
-        try:
-            value = super()._parse_TensorProto()
-        except AssertionError as error:
-            raise ExportError("offline ONNX requires self-contained constant tensors") from error
+        # TensorProto decoding follows tinygrad.nn.onnx (MIT; tinygrad_repo/LICENSE).
+        # Keep the original field/float decoding, with inline-only inputs and a
+        # byte-to-BOOL value conversion instead of an invalid LLVM i8/i1 bitcast.
+        value = {"dims": []}
+        for field, wire_type in self._parse_message(self._decode_end_pos()):
+            match field:
+                case 1: value["dims"].append(self.reader.read_int64())
+                case 2: value["data_type"] = self.reader.read_int64()
+                case 4: value["float_data"] = self.reader.read_packed_floats()
+                case 5: value["int32_data"] = self.reader.read_packed_int64s()
+                case 7: value["int64_data"] = self.reader.read_packed_int64s()
+                case 8: value["name"] = self.reader.read_string()
+                case 9: value["raw_data"] = self.reader.read_bytes()
+                case 10: value["double_data"] = self.reader.read_packed_floats()
+                case 11: value["uint64_data"] = self.reader.read_packed_int64s()
+                case 13: value.setdefault("external_data", []).append(self._parse_StringStringEntryProto())
+                case 14: value["data_location"] = self.reader.read_int64()
+                case _: self.reader.skip_field(wire_type)
         if value.get("external_data") or value.get("data_location", 0) != 0:
             raise ExportError("offline ONNX external tensor inputs are not bound")
+        fields = [name for name in ("float_data", "int32_data", "int64_data", "double_data", "uint64_data", "raw_data")
+                  if name in value]
+        if len(fields) != 1:
+            raise ExportError("offline ONNX requires self-contained constant tensors")
+        dtype = OnnxDataType(value["data_type"]).to_dtype()
+        shape = tuple(value["dims"])
+        data = value[fields[0]]
+        if isinstance(data, Tensor):
+            if data.dtype != dtypes.uint8:
+                raise ExportError("offline ONNX requires self-contained constant tensors")
+            data = (data.cast(dtype) if dtype == dtypes.bool else data.bitcast(dtype)).reshape(shape).to(Device.DEFAULT)
+            if shape == ():
+                if data.dtype == dtypes.float16 and sys.version_info < (3, 12):
+                    data = data.cast(dtypes.float32)
+                data = Tensor(data.item(), dtype=dtype).reshape(shape)
+        else:
+            data = Tensor(data, dtype=dtype).reshape(shape)
+        value["parsed_tensor"] = data
         return value
 
 

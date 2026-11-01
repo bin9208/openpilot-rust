@@ -9,7 +9,7 @@ from pathlib import Path
 import onnx
 import pytest
 from onnx import TensorProto, helper, numpy_helper
-from tinygrad import Tensor, dtypes
+from tinygrad import Context, Tensor, dtypes
 from tinygrad.nn.onnx import OnnxPBParser
 
 from model_export import ExportError
@@ -42,8 +42,9 @@ def test_original_onnx_loader_retains_weights_when_control_values_are_static(tmp
 
 
 def test_llvm_rejects_the_original_byte_to_boolean_bitcast() -> None:
-    with pytest.raises(RuntimeError, match="invalid cast opcode"):
-        Tensor(bytes([0, 1, 1, 0]), device="CPU:LLVM").bitcast(dtypes.bool).data()
+    with Context(DEV="CPU:LLVM"):
+        with pytest.raises(RuntimeError, match="invalid cast opcode"):
+            Tensor(bytes([0, 1, 1, 0]), device="CPU").bitcast(dtypes.bool).data()
 
 
 @pytest.mark.parametrize("raw", [True, False])
