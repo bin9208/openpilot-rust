@@ -2,10 +2,10 @@
 use crate::Result;
 use std::fs::File;
 
-pub(crate) struct FileLock(File);
+pub struct FileLock(File);
 
 impl FileLock {
-    pub(crate) fn exclusive(file: File) -> Result<Self> {
+    pub fn exclusive(file: File) -> Result<Self> {
         rustix::fs::flock(&file, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
         Ok(Self(file))
     }
@@ -23,6 +23,38 @@ impl Drop for FileLock {
 mod tests {
     use super::*;
     use std::fs::OpenOptions;
+
+    #[test]
+    fn closing_only_the_original_descriptor_keeps_the_duplicate_locked() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("lock");
+        let open = || {
+            OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(false)
+                .open(&path)
+                .unwrap()
+        };
+        let original = open();
+        rustix::fs::flock(
+            &original,
+            rustix::fs::FlockOperation::NonBlockingLockExclusive,
+        )
+        .unwrap();
+        let inherited = original.try_clone().unwrap();
+        drop(original);
+        assert_eq!(
+            rustix::fs::flock(
+                &open(),
+                rustix::fs::FlockOperation::NonBlockingLockExclusive
+            )
+            .unwrap_err(),
+            rustix::io::Errno::WOULDBLOCK
+        );
+        rustix::fs::flock(&inherited, rustix::fs::FlockOperation::Unlock).unwrap();
+        let _next = FileLock::exclusive(open()).unwrap();
+    }
 
     #[test]
     fn completed_or_failed_operation_releases_lock_with_a_live_duplicate() {

@@ -172,7 +172,7 @@ fn export_batch_inner(
     if !lock.metadata()?.is_file() {
         return Err("provider batch lock is not a regular file".into());
     }
-    rustix::fs::flock(&lock, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
+    let _lock = FileLock::exclusive(lock)?;
     let generation = object.join("generation");
     let mut passes = 0;
     let mut transferred = 0;

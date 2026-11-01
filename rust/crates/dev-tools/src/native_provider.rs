@@ -9,7 +9,7 @@ use crate::{
 use openpilot_runtime_build::{
     assets, dbc_inputs, digest_file,
     inputs::{Entry, Tree},
-    mpc_inputs, panda_inputs, usbgpu_inputs, Source,
+    mpc_inputs, panda_inputs, usbgpu_inputs, FileLock, Source,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -795,7 +795,7 @@ fn seed(cache: &Path, asset: &assets::Asset, archive: &Path) -> Result<u64> {
     if !lock.metadata()?.is_file() {
         return Err("provider seed lock is not a regular file".into());
     }
-    rustix::fs::flock(&lock, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
+    let _lock = FileLock::exclusive(lock)?;
     let blob = object.join("blob");
     match fs::symlink_metadata(&blob) {
         Ok(_) => {

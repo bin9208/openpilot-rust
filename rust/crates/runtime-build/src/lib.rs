@@ -26,6 +26,7 @@ pub mod catalog_bindings;
 mod catalog_features;
 pub mod dbc_inputs;
 mod file_lock;
+pub use file_lock::FileLock;
 pub mod generation;
 pub mod inputs;
 pub mod machine;

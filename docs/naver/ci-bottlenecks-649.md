@@ -192,3 +192,11 @@ UI/Card의 같은 하위 실행 경로도 대조했다. DBC 준비는 기존 `4 
 [#662](https://github.com/bin9208/openpilot-rust/issues/662)는 원래 FP16 subnormal 저장 바이트를 호스트 LLVM float 재변환 없이 dtype이 지정된 CPU buffer에 복사한다. scalar도 원래 payload를 유지하며 float 상수로 재생성하지 않는다. 기존 모델 정밀도·연산·공통 tinygrad/provider/source contract·원본 hash·읽기 전용 권한과 엄격한 byte 비교를 유지한다. 관측한 두 값의 기존 LLVM 손실을 음성 재현하고, 모든65,536 FP16 bit pattern 및 scalar의 정확 바이트와 두 실제 모델 전체 initializer를 Actions에서 검증한다. 전체 AGNOS 모델4회/layout/production 및 최신 동일 source gate는 별도 필수 완료 조건이다.
 
 첫 수정 `72e1bd2ad8ac08ff8a7609021024df31773ec2da`의 [집중41356118205](https://github.com/bin9208/openpilot-rust/actions/runs/41356118205)은 ONNX18개 중16개가 성공하고 양/음 subnormal scalar2개가 실패했다. 전체 bit pattern의1차원 vector와 음수0/NaN scalar는 성공했다. CPU byte copy가 끝나기 전에 reshape를 적용하면 새 contiguous float kernel에 합쳐질 수 있으므로 byte copy를 먼저 realize한 뒤 원래 shape를 적용한다. 같은 bit pattern을2차원 `[256,256]`에서도 검증하고 scalar2개를 포함한 전체19개를 다시 확인한다. 실패를 숨기거나 비교를 완화하지 않는다.
+
+## Warm provider 잠금의 FD 수명 — #663
+
+`92d4fc9c0f418e1a52be27b2e603afd6a45723e3`의 [집중41356382401](https://github.com/bin9208/openpilot-rust/actions/runs/41356382401)은 ONNX19개·provider17개·recovery와 실제 두모델544 initializer의 dtype/shape/bytes/hash/권한/source 불변성이 모두 성공했다. 이후 [전체 workspace job124999206514](https://github.com/bin9208/openpilot-rust/actions/runs/41357035610/job/124999206514)은 dev-tools93개 중92개가 성공하고 warm batch 재사용1개가 errno11/WouldBlock으로 실패했다. 앞서 스레드 생성 문제로 표현한 것은 잘못된 판단이며, `batch.rs:607`의 오류는 warm export의 파일 잠금 경로다.
+
+[#663](https://github.com/bin9208/openpilot-rust/issues/663)은 기존 `9b8c6337b`의 generation/object용 FileLock guard를 batch/seed/asset3곳에도 재사용한다. 원래 비차단 배타 잠금과 NOFOLLOW/NONBLOCK/regular-file 검사·경쟁 거부는 유지한다. [Linux flock 문서](https://man7.org/linux/man-pages/man2/flock.2.html)처럼 dup/fork가 같은 open-file-description을 유지하면 File close만으로 잠금이 끝나지 않을 수 있으므로 작업 반환 시 기존 guard의 명시적 해제를 적용한다. 해당 실패의 자식 PID는 미수집이며, 실제 FD dup 음성 재현과 성공·오류 반환 뒤 해제 양성 회귀를 Actions에서 검증한다. 재시도·전역 병렬 제한·오류 허용은 추가하지 않는다.
+
+이 수정은 exporter 잠금 경로를 바꾸므로 새 source의 기존 controlled ARM benchmark를1회 재실행한다.15 profile 동등성, cold 원본1순회와 warm 원본/HTTP0 및 시간을 다시 확인하며 기존96db의 측정은 과거 증거로 유지한다. 변경 없는 dev-md 성공 직렬 기준은 반복하지 않는다. 로컬은 rustfmt/YAML/diff만 확인하고 실행 중92d의 다른 검사·다른 세션 cache를 보존한다. 전체 최신 source 검사와 AGNOS·모델4회/layout/production이 끝나기 전 #649 완료나 #598 재개를 하지 않는다.

@@ -272,7 +272,7 @@ pub fn prepare(
         if !lock.metadata()?.is_file() {
             return Err("build input lock is not a regular file".into());
         }
-        rustix::fs::flock(&lock, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
+        let _lock = crate::file_lock::FileLock::exclusive(lock)?;
         let path = object.join("blob");
         let transferred_bytes = match fs::symlink_metadata(&path) {
             Ok(_) => {
