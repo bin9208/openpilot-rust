@@ -69,7 +69,7 @@ class InlineOnnxParser(OnnxPBParser):
             if dtype == dtypes.float16:
                 # A typed byte buffer copies storage without executing floating
                 # arithmetic. Keep scalar payloads buffered too (including NaNs).
-                data = Tensor(data.data().tobytes(), dtype=dtype, device="CPU").reshape(shape).to(Device.DEFAULT)
+                data = Tensor(data.data().tobytes(), dtype=dtype, device="CPU").realize().reshape(shape).to(Device.DEFAULT)
             else:
                 data = (data.cast(dtype) if dtype == dtypes.bool else data.bitcast(dtype)).reshape(shape).to(Device.DEFAULT)
             if shape == () and dtype != dtypes.float16:

@@ -53,14 +53,15 @@ def test_original_llvm_half_bitcast_flushes_the_observed_subnormal_weights() -> 
         assert Tensor(raw, device="CPU").bitcast(dtypes.float16).data().tobytes() == struct.pack("<2H", 0, 0x8000)
 
 
-@pytest.mark.parametrize("words", [(0x030E,), (0x80A4,), (0x8000,), (0x7E55,), range(65536)])
-def test_half_initializer_storage_preserves_every_bit_pattern(tmp_path: Path, words) -> None:
+@pytest.mark.parametrize("shape,words", [((), (0x030E,)), ((), (0x80A4,)), ((), (0x8000,)), ((), (0x7E55,)),
+                                         ((65536,), range(65536)), ((256, 256), range(65536))])
+def test_half_initializer_storage_preserves_every_bit_pattern(tmp_path: Path, shape, words) -> None:
     raw = struct.pack(f"<{len(words)}H", *words)
-    shape = () if len(words) == 1 else (len(words),)
+    input_shape = shape or (1,)
     weight = helper.make_tensor("weight", TensorProto.FLOAT16, shape, raw, raw=True)
     graph = helper.make_graph([helper.make_node("Add", ["input", "weight"], ["output"])], "half_storage",
-                              [helper.make_tensor_value_info("input", TensorProto.FLOAT16, [len(words)])],
-                              [helper.make_tensor_value_info("output", TensorProto.FLOAT16, [len(words)])], [weight])
+                              [helper.make_tensor_value_info("input", TensorProto.FLOAT16, input_shape)],
+                              [helper.make_tensor_value_info("output", TensorProto.FLOAT16, input_shape)], [weight])
     path = tmp_path / "half.onnx"
     before = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)]).SerializeToString()
     path.write_bytes(before)
@@ -71,7 +72,7 @@ def test_half_initializer_storage_preserves_every_bit_pattern(tmp_path: Path, wo
     actual, = model.initialized
     assert actual.buffer.dtype == dtypes.float16
     assert actual.data == numpy_helper.to_array(weight).tobytes() == raw
-    assert model.bindings.inputs["input"].shape == model.bindings.outputs["output"].shape == (len(words),)
+    assert model.bindings.inputs["input"].shape == model.bindings.outputs["output"].shape == input_shape
     assert path.read_bytes() == before and path.stat().st_mode & 0o777 == 0o444
 
 
