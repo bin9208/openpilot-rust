@@ -16,6 +16,9 @@ def main():
   for name in ('auditor', 'probe', 'mpc-binary', 'batch', 'work'):
     parser.add_argument('--'+name, type=Path, required=True)
   args = parser.parse_args()
+  # job-temp exposes rust/target through a symlink; ELF reports use the real
+  # binary path. Bind the expected root to that same owned artifact up front.
+  args.mpc_binary = args.mpc_binary.resolve(strict=True)
   source = Path(os.environ['GITHUB_WORKSPACE'])
   runpy.run_path(str(source/'tools/ci/runner_policy.py'))['require_github_native_arm']()
   assert args.work.resolve().is_relative_to(Path(os.environ['CI_JOB_TEMP']).resolve())
