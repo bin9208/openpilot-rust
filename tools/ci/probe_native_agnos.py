@@ -20,6 +20,7 @@ import subprocess
 import time
 from pathlib import Path
 from agnos_phases import phase as record_phase, independent_bootstrap
+from companion_elf_scope import audit_requests, verify_report
 
 RAW_BYTES = 4718592000
 SPARSE_SHA = 'a67410a888105ecce7bcc05e17cda77fd10572aa4380e9de242a7c92f3497114'
@@ -1582,25 +1583,26 @@ def native_runtime_companions_probe(guest_command,work,source_mount,evidence,log
       'numerics':('libgfortran-e1b7dfc8-d8198c01.so.5.0.0','libscipy_openblas64_-f552eb69.so'),
       'geos':('libgeos-9c5cb28e.so.3.13.1','libgeos_c-42bdf9a9.so.1.19.2'),
       'brotli':('libbrotlicommon.so.1','libbrotlienc.so.1','libbrotlidec.so.1'),
-      'acados':('libacados.so',),
+      'acados':('libacados.so','libblasfeo.so','libhpipm.so','libqpOASES_e.so.3.1'),
   }.items():
     for filename in files:
       guest_path=roots[name]/filename
       host_path=work/guest_path.relative_to(guest_work)
       assert {str(guest_path),str(host_path.resolve())}&mapped_paths, f'wrong mapped component: {name}/{filename}'
-  audit=work/'native-companion-elf-audit.json'
-  command=[work/'project-target/debug/runtime-elf-audit','--root',binary]
-  for path in elf_roots: command += ['--root',path]
-  for path in [*libraries,'/usr/lib/aarch64-linux-gnu','/lib/aarch64-linux-gnu']: command += ['--library',path]
-  command += ['--output',audit]
-  execute(command,'native-companion-elf-summary.json')
-  assert json.loads(audit.read_text())['compatible']
+  audits=audit_requests(work/'project-target/debug/runtime-elf-audit',binary,elf_roots,roots['acados'],
+      [*libraries,'/usr/lib/aarch64-linux-gnu','/lib/aarch64-linux-gnu'],work)
+  for audit in audits:
+    execute(audit['argv'],f'native-companion-elf-{audit["name"]}-summary.json')
+    verify_report(audit,json.loads(audit['output'].read_text()),
+        lambda path:str(path).replace(str(work),guest_work))
   for name,command,before in commands:
     after=json.loads(execute(command,f'native-companion-{name}-after-api.json').read_text())
     assert after['tree_sha256']==before['tree_sha256'] and after['copied_bytes']==after['asset']['transferred_bytes']==after['asset']['stored_bytes']==0
   evidence['native_runtime_companions']=dict(components=reports,numerics_component_count=1,
       intended_numerics_runtime_destinations=4,foreign_api_probe=actual,
       probe_source_sha256=digest(fixture),probe_binary_sha256=digest(binary),strict_elf_audit_compatible=True,
+      elf_audit_scopes=[dict(name=audit['name'],root_count=len(audit['roots']),
+          load_owner=None if audit['load_owner'] is None else str(audit['load_owner'])) for audit in audits],
       actual_provider_maps_verified=True,python_library_mapped=False,
       actual_arm_preparer=True,actual_arm_cpp_compile_and_execution=True,
       runtime_inputs_trees=len(runtime_inputs['trees']),project_generated_mpc_solvers_reused=False,

@@ -146,3 +146,11 @@ batch의 profile별 Export는 기존 필드를 유지하며 `origin`은 작은 c
 같은 검사에서 폐지된 25 GiB 예비분만 빼고 기존 추가 증가량 1 GiB를 유지한다. 이 파일은 이미 전체 성공한 dev-md 후보 `3448238b610c4c7c53e612fc2940ac215cdfcae5`의 검증된 파일과 동일한 Git blob `2f70537e53113841cc36cf44b66ecf552f23b0ad`다. dev-md runtime을 역통합하지 않고 같은 한 줄의 운영 조건 수정만 적용한다. 실제 ASan/UBSan C++ 빌드/실행·네 인터페이스 원본 주소 비교·실패 전파는 그대로다. 임계 증가량 바로 아래/정확한 경계와 24 GiB 허용, 원본 불일치 거부를 Actions에서 확인하고 같은 원래 sanitizer/주소 검사를 집중 CI에도 실행한다.
 
 UI/Card의 같은 하위 실행 경로도 대조했다. DBC 준비는 기존 `4 × 입력 크기 + 16 MiB`, carlog 128 MiB, factory 16 MiB, UI root/augmented/torque 512 MiB, native resource 1 GiB, updater fixture 1 MiB 증가량을 유지하고 각각의 25 GiB 예비분만 제거한다. `5a184c0e2`의 이미 검증한 guard 산술 변경만 재사용하고 현재 공통 브랜치의 UI 기능·원본 비교·sanitizer·전체 case는 유지한다. 원본 MPC/DBC/eGPU source contract에 묶인 파일은 변경하지 않는다. 이 수정은 그룹별 합산 증가량 admission과 하위 검사의 모순을 없애며 성공 시 모든 원래 case가 실행돼야 하는 조건은 유지한다.
+
+## Companion ELF의 실제 acados load-owner — #657
+
+`b9c590dc150ba57e2e4f5dad29221a6390e8fb4e`의 [AGNOS job 124678033771](https://github.com/bin9208/openpilot-rust/actions/runs/41248896664/job/124678033771)은 실제 numerics/SVD·GEOS·Brotli·acados API와 prefix maps를 성공한 뒤 ELF root 검사에서 실패했다. artifact `13061828803`은 13개 독립 root 중 BLASFEO/HPIPM만 `sqrt/sqrtf` 누락임을 보존한다. 실제 `RTLD_NOW | RTLD_LOCAL` owner `libacados.so`의 DT_NEEDED에는 `libm.so.6`가 있고, maps에도 같은 검증 prefix의 acados/BLASFEO/HPIPM/qpOASES 네 파일이 모두 있다.
+
+[#657](https://github.com/bin9208/openpilot-rust/issues/657)은 기존 `runtime-elf-audit --load-owner`를 두 실제 acados 의존성에만 적용한다. 나머지 11 root는 독립 검사하고, acados owner도 독립 검사를 통과해야 한다. 모든 원래 root의 집합·개수와 성공을 확인하며, 관련 없는 component export를 합치지 않는다. 일반 ELF validator·provider 바이트·원본 pin·모델 정밀도는 유지한다.
+
+집중 CI에서 기존 ELF owner/version/strong-symbol·잘못된 owner·관계 없는 plugin 격리 회귀를 실행한다. 별도 수동 ARM 재현은 같은 검증 component와 실제 외부 API·maps를 사용해 owner 없는 두 leaf의 정확한 `sqrt/sqrtf` 실패와 acados owner 범위의 성공을 함께 요구한다. production probe의 모든 실행은 종료 코드 0을 요구하며, ARM 진단의 owner 없는 실행만 명시적인 음성 회귀다. 독립 root 누락·교체·중복, 잘못된 owner, root 실패를 숨긴 report도 거부한다. push 집중 검증과 수동 ARM 진단은 입력 의존성이 없으므로 같은 SHA의 일반 집중 작업을 중복 실행하지 않는다. benchmark는 기존 component 선행 검사를 유지한다.

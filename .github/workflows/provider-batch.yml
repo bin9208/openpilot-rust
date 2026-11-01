@@ -16,6 +16,8 @@ on:
       - 'rust/crates/loggerd/build.rs'
       - 'rust/crates/logging/tests/git_source_stamp.rs'
       - 'tools/ci/agnos_phases.py'
+      - 'tools/ci/companion_elf_scope.py'
+      - 'tools/ci/reproduce_companion_elf.py'
       - 'tools/ci/probe_native_agnos.py'
       - 'rust/tools/ci_cases.py'
       - 'rust/tools/check_card_*.py'
@@ -32,7 +34,7 @@ on:
         type: boolean
         default: false
       numerics_repro:
-        description: Reproduce the exact pinned ARM numerics ABI assertion
+        description: Reproduce pinned ARM numerics and companion ELF load scopes
         type: boolean
         default: false
       transport_repro:
@@ -97,7 +99,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y capnproto libcapnp-dev clang libclang-dev pkg-config liblzma-dev libssl-dev
           rustup toolchain install 1.94.0 --profile minimal
-          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg
+          cargo build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg --bin runtime-elf-audit
       - uses: ./.github/actions/native-cache
         id: numerics-provider-cache
         with:
@@ -120,6 +122,10 @@ jobs:
           "$CI_JOB_TEMP/numerics-probe" --svd-check-self-test
           numerics_root=$(python3 -c 'import json,os;print(json.load(open(os.environ["NATIVE_PROVIDER_BATCH"]))["exports"]["numpy253-openblas"]["origin"]["root"]+"/numerics")')
           LD_LIBRARY_PATH="$numerics_root:/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu" "$CI_JOB_TEMP/numerics-probe" --numerics "$numerics_root" "$CI_JOB_TEMP/numerics-maps.txt" > "$CI_JOB_TEMP/numerics.stdout" 2> "$CI_JOB_TEMP/numerics.stderr"
+      - name: Reproduce ownerless rejection and the exact acados load scope
+        run: |
+          native_target=$(cargo metadata --manifest-path rust/Cargo.toml --locked --no-deps --format-version 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+          python3 tools/ci/reproduce_companion_elf.py --auditor "$native_target/debug/runtime-elf-audit" --probe "$CI_JOB_TEMP/numerics-probe" --batch "$NATIVE_PROVIDER_BATCH" --work "$CI_JOB_TEMP/companion-elf-repro"
       - uses: actions/upload-artifact@v6
         if: always()
         with:
@@ -129,13 +135,14 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/numerics.stdout
             ${{ env.CI_JOB_TEMP }}/numerics.stderr
             ${{ env.CI_JOB_TEMP }}/numerics-maps.txt
+            ${{ env.CI_JOB_TEMP }}/companion-elf-repro/
           if-no-files-found: warn
       - uses: ./.github/actions/job-temp
         if: always()
         with:
           cleanup: 'true'
   component-contract:
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'workflow_dispatch' || inputs.benchmark || (!inputs.numerics_repro && !inputs.transport_repro)) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -160,6 +167,7 @@ jobs:
           set -o pipefail
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib native_provider:: -- --nocapture 2>&1 | tee "$CI_JOB_TEMP/provider-tests.log"
           cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-logging --test git_source_stamp
+          cargo +1.94.0 test --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --test elf_audit
           cargo +1.94.0 clippy --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --lib -- -D warnings
           cargo +1.94.0 build --manifest-path rust/Cargo.toml --locked -p openpilot-dev-tools --bin build-runtime-ffmpeg
       - name: Require unchanged address ABI and sanitizer checks with operation growth
@@ -224,7 +232,7 @@ jobs:
 
   recovery-runtime:
     name: rust recovery runtime
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'workflow_dispatch' || inputs.benchmark || (!inputs.numerics_repro && !inputs.transport_repro)) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -286,7 +294,7 @@ jobs:
         with: {cleanup: 'true', validation-context: 'true'}
 
   execution-contracts:
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'workflow_dispatch' || inputs.benchmark || (!inputs.numerics_repro && !inputs.transport_repro)) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -304,5 +312,6 @@ jobs:
       - run: python3 -m unittest discover -s tools/ci/tests -p test_joystick_publication_pairs.py -v
       - run: python3 -m unittest discover -s tools/ci/tests -p test_cweb_address_admission.py -v
       - run: python3 -m unittest discover -s tools/ci/tests -p test_agnos_phases.py -v
+      - run: python3 -m unittest discover -s tools/ci/tests -p test_companion_elf_scope.py -v
       - run: python3 -m unittest discover -s tools/ci/tests -p test_provider_batch_adapter.py -v
       - run: PYTHONPATH="$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/opendbc_repo:$GITHUB_WORKSPACE/rust/tools" python -m pytest -c /dev/null --noconftest -p no:cacheprovider rust/tools/tests/test_card_ci.py rust/tools/tests/test_card_phase_fence.py rust/tools/tests/test_card_admission.py rust/tools/tests/test_ui_ci.py tools/ci/tests/test_native_disk_guard.py -q
