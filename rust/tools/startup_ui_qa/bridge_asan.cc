@@ -6,7 +6,14 @@
 #include <string>
 namespace startup_ui {
 static int log_count=0;
-void trace_log(int32_t,rust::Slice<const uint8_t> bytes) noexcept { if (!bytes.empty()) ++log_count; }
+void trace_log(int32_t level,rust::Slice<const uint8_t> bytes) noexcept {
+  if (!bytes.empty()) {
+    ++log_count;
+    std::cerr << "raylib[" << level << "]: ";
+    std::cerr.write(reinterpret_cast<const char *>(bytes.data()), bytes.size());
+    std::cerr << '\n';
+  }
+}
 }
 int main(int argc, char **argv) {
   if (argc != 3)

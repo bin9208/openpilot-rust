@@ -53,8 +53,13 @@ def display_server(output: Path) -> Iterator[str]:
         if not number.isdecimal() or server.poll() is not None:
           raise RuntimeError(f'Xvfb display failed: {number!r}')
         display = ':' + number
-        (output / 'display.json').write_text(json.dumps({'argv': command, 'pid': server.pid, 'display': display}) + '\n')
-        yield display
+        from Xlib.display import Display
+        # Retain a group-owned client between transient application windows.
+        # Closing the last client resets Xvfb, even while its process is alive.
+        with closing(Display(display)):
+          (output / 'display.json').write_text(json.dumps({'argv': command, 'pid': server.pid, 'display': display,
+              'controller_pid': os.getpid(), 'controller_retained': True}) + '\n')
+          yield display
       finally:
         if server.poll() is None:
           server.terminate()

@@ -200,3 +200,13 @@ UI/Card의 같은 하위 실행 경로도 대조했다. DBC 준비는 기존 `4 
 [#663](https://github.com/bin9208/openpilot-rust/issues/663)은 기존 `9b8c6337b`의 generation/object용 FileLock guard를 batch/seed/asset3곳에도 재사용한다. 원래 비차단 배타 잠금과 NOFOLLOW/NONBLOCK/regular-file 검사·경쟁 거부는 유지한다. [Linux flock 문서](https://man7.org/linux/man-pages/man2/flock.2.html)처럼 dup/fork가 같은 open-file-description을 유지하면 File close만으로 잠금이 끝나지 않을 수 있으므로 작업 반환 시 기존 guard의 명시적 해제를 적용한다. 해당 실패의 자식 PID는 미수집이며, 실제 FD dup 음성 재현과 성공·오류 반환 뒤 해제 양성 회귀를 Actions에서 검증한다. 재시도·전역 병렬 제한·오류 허용은 추가하지 않는다.
 
 이 수정은 exporter 잠금 경로를 바꾸므로 새 source의 기존 controlled ARM benchmark를1회 재실행한다.15 profile 동등성, cold 원본1순회와 warm 원본/HTTP0 및 시간을 다시 확인하며 기존96db의 측정은 과거 증거로 유지한다. 변경 없는 dev-md 성공 직렬 기준은 반복하지 않는다. 로컬은 rustfmt/YAML/diff만 확인하고 실행 중92d의 다른 검사·다른 세션 cache를 보존한다. 전체 최신 source 검사와 AGNOS·모델4회/layout/production이 끝나기 전 #649 완료나 #598 재개를 하지 않는다.
+
+## UI Xvfb 제어 연결 수명 — #664
+
+잠금 수정 `f8f3ac684397647e515eb78c008a3cb66a04f8d1`의 [집중41359724396](https://github.com/bin9208/openpilot-rust/actions/runs/41359724396)은 실제 FD dup 음성·양성2개/provider17개/ONNX19개/두 모델544 initializer/recovery가 모두 성공했다. 기존 PR611에 정상 반영하고 [controlled ARM41360240886](https://github.com/bin9208/openpilot-rust/actions/runs/41360240886)을1회 요청했다. 전체 새 source 검증은 별도 진행 중이다.
+
+이전92d의 [UI job124999206576](https://github.com/bin9208/openpilot-rust/actions/runs/41357035610/job/124999206576)은 lifecycle-safety/native-safety에서 실패했다. artifact13104284468의 작은 log를 ZIP range로 읽었으며 `asan.log`의 원인은 sanitizer 메모리 보고가 아닌 `raylib window initialization failed`/SIGABRT다. raylib trace를 버리는 기존 fixture 때문에 더 구체적인 GLX 오류는 미수집이다. owned Xvfb PID638713/display:1의 로그에는 XKEYBOARD 초기화가 반복됐다.
+
+[#664](https://github.com/bin9208/openpilot-rust/issues/664)는 그룹 검사를 시작하기 전에 닫던 Xlib 제어 연결을 display_server context 전체에서 유지한다. 마지막 client 종료 시 server가 reset될 수 있다는 [upstream Xserver 규약](https://cgit.freedesktop.org/xorg/xserver/tree/doc/Xserver.man.pre?id=ca5ebe3971d8ebcfed00c5ebcd026cdd0ce0c6ba)에 따른 수명 공백을 제거한다. 실제 Xvfb에서 transient client20개를 닫는 동안 root marker가 보존되는 검사와 실패 시 owned child 종료·wait 검사를 Actions에서 수행한다. C++ 진단 fixture는 기존 raylib trace 원문을 stderr에 보존한다.13개 원래 UI case·ASan/UBSan·픽셀 비교와 종료 코드는 유지하며 production 경로에 retry나 sleep을 넣지 않는다. 이 원인 판단은 실제 회귀와 최신 source의 전체13 UI case 성공으로 검증한다.
+
+이번 UI 수정은 exporter/profile/contract/controlled benchmark 코드와 actual ARM job을 바꾸지 않는다. 진행 중 f8f3 controlled benchmark 및 모든 기존 Actions를 보존하고 같은 benchmark를 중복 요청하지 않는다. 최신 source의 전체 gate/AGNOS/source 증거가 성공하기 전 #649 완료나 #598 재개를 하지 않는다.
