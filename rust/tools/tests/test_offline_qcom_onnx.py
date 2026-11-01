@@ -8,7 +8,8 @@ from pathlib import Path
 
 import onnx
 import pytest
-from onnx import TensorProto, helper
+from onnx import TensorProto, helper, numpy_helper
+from tinygrad import Tensor, dtypes
 from tinygrad.nn.onnx import OnnxPBParser
 
 from model_export import ExportError
@@ -38,6 +39,30 @@ def test_original_onnx_loader_retains_weights_when_control_values_are_static(tmp
     assert model.bindings.outputs["output"].shape == (4, 4)
     assert all(tensor.device == "QCOM" for tensor in model.bindings.inputs.values())
     assert struct.pack("<16f", *((1.25, -2.5, 3.75, 0.125) * 4)) in tuple(item.data for item in model.initialized)
+
+
+def test_llvm_rejects_the_original_byte_to_boolean_bitcast() -> None:
+    with pytest.raises(RuntimeError, match="invalid cast opcode"):
+        Tensor(bytes([0, 1, 1, 0]), device="CPU:LLVM").bitcast(dtypes.bool).data()
+
+
+@pytest.mark.parametrize("raw", [True, False])
+@pytest.mark.parametrize("shape,values", [((), [True]), ((), [False]), ((4,), [True, False, True, False])])
+def test_boolean_initializers_keep_exact_bytes_and_shape(tmp_path: Path, raw: bool, shape, values) -> None:
+    condition = helper.make_tensor("condition", TensorProto.BOOL, shape, bytes(values) if raw else values, raw=raw)
+    zero = helper.make_tensor("zero", TensorProto.FLOAT, [4], [0.0] * 4)
+    graph = helper.make_graph([helper.make_node("Where", ["condition", "input", "zero"], ["output"])], "boolean_constant",
+                              [helper.make_tensor_value_info("input", TensorProto.FLOAT, [4])],
+                              [helper.make_tensor_value_info("output", TensorProto.FLOAT, [4])], [condition, zero])
+    path = tmp_path / "boolean.onnx"
+    path.write_bytes(helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)]).SerializeToString())
+    before = path.read_bytes()
+    path.chmod(0o444)
+    model = load_model(path, hashlib.sha256(before).hexdigest())
+    actual, = [item for item in model.initialized if item.buffer.dtype == dtypes.bool]
+    assert actual.data == numpy_helper.to_array(condition).tobytes() == bytes(values)
+    assert model.bindings.inputs["input"].shape == model.bindings.outputs["output"].shape == (4,)
+    assert path.read_bytes() == before and path.stat().st_mode & 0o777 == 0o444
 
 
 def test_loader_reads_authenticated_model_without_write_access(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -174,3 +174,11 @@ UI/Card의 같은 하위 실행 경로도 대조했다. DBC 준비는 기존 `4 
 공통 `a9295fee82d5dff6dd4b0b4c112950b78c941c5b`는 [필수 Rust 전체 47개](https://github.com/bin9208/openpilot-rust/actions/runs/41327914371)와 Integration/docs/foundation/kernel 검사를 성공했다. [전체 AGNOS job 124911645930](https://github.com/bin9208/openpilot-rust/actions/runs/41327909368/job/124911645930)의 artifact `13097176346`에서는 실제 bootstrap 13개 도구의 initial/reused/docs/small이 모두 성공했다. 재사용·docs의 13개 binary가 모두 fresh/저장 0, 작은 변경은 해당 도구 하나만 재빌드하고 다른 12개를 재사용했다. DBC/MPC/eGPU/catalog 원본 검증도 성공했다.
 
 그 뒤 실제 모델 생성의 첫 ONNX 파싱에서 읽기 전용 캐시를 tinygrad DISK Tensor가 `O_RDWR|O_CREAT`로 열어 `EACCES`가 발생했다. [#660](https://github.com/bin9208/openpilot-rust/issues/660)은 기존 SHA-256 확인에 읽은 동일 바이트를 CPU uint8 Tensor로 원래 parser에 전달한다. 캐시 권한·원본 tinygrad·연산/shape/정밀도·외부 tensor 금지 조건은 유지한다. 쓰기 거부를 강제로 재현한 뒤 정확 weight 바이트와 입출력 shape·파일 내용/권한 보존, 잘못된 hash·runtime shape·외부 tensor 거부를 집중 Actions에서 확인한다. 전체 genuine AGNOS의 모델 4개·재사용·layout·production이 성공하기 전 #649 완료와 #598 재개는 계속 보류한다.
+
+## ONNX BOOL 원본 decoder의 LLVM bitcast — #661
+
+수정 `6213c6d1d6f52c40860b025effd8fa1fd54e5557`의 [전체 Rust47개](https://github.com/bin9208/openpilot-rust/actions/runs/41340538057)는 성공했다. [AGNOS job124949361144](https://github.com/bin9208/openpilot-rust/actions/runs/41340533461/job/124949361144)의 artifact `13101627697`에서는 bootstrap13개×initial/reused/docs/small 및 원래 구성요소13개가 모두 성공했다. #660의 파일 접근도 통과했지만, 다음 initializer 읽기의 LLVM IR `bitcast i8 ... to i1`가 실패했다. 실패한 모델 단계는49.062초이며 전체 성공으로 처리하지 않는다.
+
+[#661](https://github.com/bin9208/openpilot-rust/issues/661)은 원본 ONNX decoder의 raw BOOL에만 Tensor.cast를 적용하는 한 줄 수정이다. 다른 dtype의 bitcast·모델/부동소수점 정밀도·연산·compiler library는 유지한다. [ONNX1.20.1](https://github.com/onnx/onnx/blob/v1.20.1/onnx/onnx.proto3)의 0/1 한 바이트 저장을 보존하며, LLVM의 i8→i1 bitcast 음성 재현과 raw/typed true/false scalar/vector의 정확 바이트를 Actions에서 검증한다. 이 source 변경은 기존 model producer의 내용 기반 identity에 반영된다.
+
+집중 CI의 기존 component job에 두 실제 source ONNX의 initializer 사전 검증을 추가한다. 기존 pinned asset 준비 도구와 cache를 재사용하며 source/hash/읽기 전용 권한을 유지하고 ONNX1.20.1 numpy_helper와 dtype·shape·바이트를 대조한다. 작은 초기 회귀 후 이 검사를 실행해 긴 AGNOS의 같은 실패를 빠르게 발견한다. 실제 ARM·모델4개 생성/재사용·layout·production 검증은 그대로 유지하며, 사전 검사로 이를 대체하지 않는다. 로컬에서는 AST/YAML·diff만 확인한다.
