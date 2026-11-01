@@ -48,7 +48,25 @@ def main():
       assert actual.dtype == OnnxDataType(tensor.data_type).to_dtype()
       assert actual.shape == tuple(tensor.dims)
       blob = data[id(actual.uop.base)]
-      assert blob == expected.tobytes(), f'initializer bytes differ from original ONNX: {kind}/{name}'
+      expected_bytes = expected.tobytes()
+      if blob != expected_bytes:
+        offsets = []
+        for offset, (got, want) in enumerate(zip(blob, expected_bytes)):
+          if got != want:
+            offsets.append(offset)
+            if len(offsets) == 8: break
+        mismatch = dict(schema=1, source=origin, model=kind, name=name,
+            data_type=tensor.data_type, dtype=str(actual.dtype), shape=list(tensor.dims),
+            expected_bytes=len(expected_bytes), actual_bytes=len(blob),
+            expected_sha256=hashlib.sha256(expected_bytes).hexdigest(),
+            actual_sha256=hashlib.sha256(blob).hexdigest(),
+            raw_bytes=len(tensor.raw_data), initialized_buffers=len(loaded.initialized),
+            unique_buffers=len(data), first_differing_offsets=offsets,
+            samples=[dict(offset=offset, expected=expected_bytes[max(0, offset-4):offset+8].hex(),
+                actual=blob[max(0, offset-4):offset+8].hex()) for offset in offsets])
+        (args.work/'model-initializer-mismatch.json').write_text(json.dumps(mismatch, indent=2)+'\n')
+        print(json.dumps(mismatch), flush=True)
+        raise AssertionError(f'initializer bytes differ from original ONNX: {kind}/{name}')
       if actual.dtype == dtypes.bool: assert set(blob) <= {0, 1}
       checked.append(dict(name=name, data_type=tensor.data_type, shape=list(tensor.dims),
           bytes=len(blob), sha256=hashlib.sha256(blob).hexdigest()))

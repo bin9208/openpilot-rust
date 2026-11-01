@@ -225,6 +225,7 @@ jobs:
             ${{ env.CI_JOB_TEMP }}/provider-tests.log
             ${{ env.CI_JOB_TEMP }}/cweb-address/result.json
             ${{ env.CI_JOB_TEMP }}/model-initializer-preflight.json
+            ${{ env.CI_JOB_TEMP }}/model-initializer-mismatch.json
             ${{ env.CI_JOB_TEMP }}/model-initializer-preflight.log
             ${{ env.CI_JOB_TEMP }}/native-model-assets-*.json
           if-no-files-found: warn
